@@ -16,6 +16,7 @@ import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
 import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
 import { listSeoPagesPublic } from "@/lib/seo.functions";
 import { SKRIPT_DO_HLAVICKY } from "@/lib/faktero/motiv";
+import { SKRIPT_DIZAJNU } from "@/lib/faktero/dizajn";
 import { SKRIPT_SUHLASU, SKRIPT_GTM, GTM_NOSCRIPT_SRC } from "@/lib/faktero/gtm";
 
 function NotFoundComponent() {
@@ -200,7 +201,7 @@ function RootShell({ children }: { children: ReactNode }) {
           bielym bliknutím. Preto je to obyčajný skript v hlavičke a nie efekt
           v komponente — ten beží až po prvom kresle.
         */}
-        <script dangerouslySetInnerHTML={{ __html: SKRIPT_DO_HLAVICKY }} />
+        <script dangerouslySetInnerHTML={{ __html: SKRIPT_DO_HLAVICKY + SKRIPT_DIZAJNU }} />
         {/*
           Google Tag Manager. Režim súhlasu musí byť v dataLayer **pred**
           kontajnerom — keby prišiel po ňom, značky by sa medzitým stihli

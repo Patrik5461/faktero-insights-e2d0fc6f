@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PrepinacDizajnu } from "@/components/faktero/PrepinacDizajnu";
+import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -88,6 +90,26 @@ function SettingsPage() {
         </form>
 
         <div className="mt-8 max-w-3xl rounded-xl border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold">Dizajn aplikácie</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Celé Faktero v pôvodnom zelenom dizajne, alebo v modrom ako v Doklado. Voľba platí pre
+            váš účet na každom zariadení a dá sa prepnúť aj v ponuke pod vaším menom.
+          </p>
+          <div className="mt-4">
+            <PrepinacDizajnu velky />
+          </div>
+          <div className="mt-6">
+            <div className="text-sm font-medium">Rozloženie nespracovaných dokladov</div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Klasické Faktero, alebo ako v Doklado (veľký náhľad, úzky panel s údajmi).
+            </p>
+            <div className="mt-2">
+              <PrepinacRozlozenia />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 max-w-3xl rounded-xl border border-border bg-card p-6">
           <h2 className="text-lg font-semibold">Používané produkty</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Vyberte, čo má byť v menu. Voľbu môžete kedykoľvek zmeniť.
@@ -124,5 +146,30 @@ function SettingsPage() {
         </div>
       </PageBody>
     </>
+  );
+}
+
+/** Rozloženie detailu nespracovaného dokladu — tá istá voľba ako prepínač na detaile. */
+function PrepinacRozlozenia() {
+  const { vzhlad, zmen } = useVzhladNespracovanych();
+  return (
+    <div className="inline-flex rounded-lg border border-border p-0.5 text-sm" role="group" aria-label="Rozloženie nespracovaných dokladov">
+      {(
+        [
+          ["klasicky", "Klasické"],
+          ["kompaktny", "Ako v Doklado"],
+        ] as const
+      ).map(([k, n]) => (
+        <button
+          key={k}
+          type="button"
+          aria-pressed={vzhlad === k}
+          onClick={() => void zmen(k)}
+          className={`rounded-md px-3 py-1.5 ${vzhlad === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}
+        >
+          {n}
+        </button>
+      ))}
+    </div>
   );
 }

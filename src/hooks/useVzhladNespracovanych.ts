@@ -14,6 +14,8 @@ export function useVzhladNespracovanych() {
     supabase.auth.getUser().then(({ data }) => {
       const v = data.user?.user_metadata?.vzhlad_nespracovanych;
       if (v === "kompaktny" || v === "klasicky") setVzhlad(v);
+      // Bez vlastnej voľby sa rozloženie riadi dizajnom aplikácie.
+      else if (data.user?.user_metadata?.dizajn === "doklado") setVzhlad("kompaktny");
     });
   }, []);
   async function zmen(v: VzhladNespracovanych) {

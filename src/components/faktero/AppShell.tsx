@@ -1,4 +1,6 @@
 import { Link, useRouter, useRouterState, useNavigate } from "@tanstack/react-router";
+import { PrepinacDizajnu } from "./PrepinacDizajnu";
+import { zosuladDizajnSUctom } from "@/lib/faktero/dizajn";
 import { Logo } from "@/components/faktero/Logo";
 import {
   LayoutDashboard,
@@ -135,6 +137,10 @@ export function AppShell({
      sa s prehliadačom nezhodlo. */
   const [panelZbaleny, setPanelZbaleny] = useState(false);
   useEffect(() => setPanelZbaleny(jeZbaleny()), []);
+  // Dizajn zvolený na inom zariadení sa po prihlásení prenesie aj sem.
+  useEffect(() => {
+    void zosuladDizajnSUctom();
+  }, []);
   function prepniPanel(v: boolean) {
     setPanelZbaleny(v);
     ulozZbalenie(v);
@@ -575,6 +581,10 @@ export function AppShell({
                       Vzhľad
                     </div>
                     <PrepinacMotivu />
+                    <div className="mb-1 mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Dizajn
+                    </div>
+                    <PrepinacDizajnu />
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>

@@ -186,6 +186,63 @@
   --app-tien: 0 1px 2px rgb(16 21 19 / 0.04);
 }
 
+/*
+  Dizajn „ako v Doklado" (Nastavenia účtu → Dizajn aplikácie). Mení farby a
+  tvary, nie rozloženie obrazoviek: modrá namiesto zelenej, modrošedé
+  pozadie, väčšie zaoblenia. Tmavý režim má vlastný blok nižšie.
+*/
+html[data-dizajn="doklado"] {
+  --radius: 0.875rem;
+  --background: oklch(0.99 0.004 255);
+  --page: oklch(0.955 0.014 255);
+  --foreground: oklch(0.24 0.03 262);
+  --card-foreground: oklch(0.24 0.03 262);
+  --popover-foreground: oklch(0.24 0.03 262);
+  --primary: oklch(0.57 0.2 262);
+  --primary-hover: oklch(0.51 0.2 262);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.016 255);
+  --secondary-foreground: oklch(0.3 0.04 262);
+  --muted: oklch(0.96 0.012 255);
+  --muted-foreground: oklch(0.55 0.03 262);
+  --accent: oklch(0.95 0.03 255);
+  --accent-foreground: oklch(0.4 0.15 262);
+  --border: oklch(0.91 0.016 255);
+  --input: oklch(0.89 0.02 255);
+  --ring: oklch(0.57 0.2 262);
+  --chart-1: oklch(0.57 0.2 262);
+  --chart-2: oklch(0.7 0.13 240);
+  --sidebar: oklch(0.99 0.004 255);
+  --sidebar-foreground: oklch(0.3 0.04 262);
+  --sidebar-primary: oklch(0.57 0.2 262);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.94 0.03 255);
+  --sidebar-accent-foreground: oklch(0.4 0.15 262);
+  --sidebar-border: oklch(0.91 0.016 255);
+  --sidebar-ring: oklch(0.57 0.2 262);
+  --brand-gradient: linear-gradient(135deg, oklch(0.57 0.2 262), oklch(0.66 0.16 250));
+  --shadow-card: 0 1px 2px oklch(0.24 0.03 262 / 0.04), 0 6px 16px oklch(0.4 0.1 262 / 0.06);
+  --shadow-glow: 0 0 0 1px oklch(0.57 0.2 262 / 0.2), 0 16px 40px -16px oklch(0.57 0.2 262 / 0.35);
+}
+html.dark[data-dizajn="doklado"] {
+  --primary: oklch(0.68 0.17 258);
+  --primary-hover: oklch(0.62 0.17 258);
+  --primary-foreground: oklch(0.16 0.03 262);
+  --ring: oklch(0.68 0.17 258);
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-border: oklch(1 0 0 / 10%);
+}
+/* Polia formulárov ako v Doklado — vyššie a zaoblenejšie. */
+html[data-dizajn="doklado"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  border-radius: 0.6rem;
+}
+html[data-dizajn="doklado"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select) {
+  min-height: 2.5rem;
+}
+
 .dark {
   --background: oklch(0.129 0.042 264.695);
   /* V tme je to naopak: stránka je najtmavšia, karty svetlejšie. */
