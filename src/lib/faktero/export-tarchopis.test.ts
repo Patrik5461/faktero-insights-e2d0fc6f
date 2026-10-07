@@ -36,3 +36,18 @@ describe("ťarchopis v exportoch", () => {
     expect(druhPodlaTypuFaktury("debit_note")).toBe("debit_note");
   });
 });
+
+describe("dobropis do Pohody", () => {
+  const dobropis: any = { ...invoice, id: "d1", type: "credit_note", invoice_number: "D1", subtotal: -10, vat_total: -2.3, total: -12.3 };
+  const zaporne: any[] = [{ name: "Vrátenie", quantity: -1, unit: "ks", unit_price: 10, subtotal: -10, vat_amount: -2.3, vat_rate: 23, total: -12.3 }];
+  it("uložený záporne ide do Pohody záporne", () => {
+    const x = buildPohodaInvoiceXml({ company, invoices: [{ invoice: dobropis, items: zaporne }] });
+    expect(x).toContain("<inv:quantity>-1</inv:quantity>");
+    expect(x).toContain("<typ:priceHigh>-10.00</typ:priceHigh>");
+  });
+  it("s voľbou „dobropis kladný“ ide kladne", () => {
+    const x = buildPohodaInvoiceXml({ company, invoices: [{ invoice: dobropis, items: zaporne }], nastavenia: { dobropisKladny: true } as any });
+    expect(x).toContain("<inv:quantity>1</inv:quantity>");
+    expect(x).toContain("<typ:priceHigh>10.00</typ:priceHigh>");
+  });
+});

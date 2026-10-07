@@ -86,3 +86,10 @@ describe("daňový doklad k prijatej platbe", () => {
     expect(sucetDokladov(doklady as any, "total")).toBe(1000);
   });
 });
+
+describe("dobropis uložený so zápornou sumou", () => {
+  it("tržby zníži, nie zvýši", () => {
+    const doklady = [f({ total: 500 }), f({ total: -30, type: "credit_note" })];
+    expect(sucetDokladov(doklady, "total")).toBe(470);
+  });
+});

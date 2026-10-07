@@ -503,8 +503,9 @@ export function suhrnnyVykaz(vstup: Vstup): SuhrnnyVykaz {
     const kluc = `${kodStatu}|${idCislo}|${kod}`;
     // Opravná faktúra hodnotu znižuje — dobropis sa do súhrnu započíta záporne.
     // Ťarchopis hodnotu zvyšuje.
-    const znamienko = jeOpravna(f) && f.typ !== "debit_note" ? -1 : 1;
-    const hodnota = znamienko * f.riadky.reduce((a, r) => a + r.zaklad, 0);
+    // Dobropis znižuje (bez ohľadu na to, či je uložený kladne či záporne), ťarchopis zvyšuje.
+    const sucet = f.riadky.reduce((a, r) => a + r.zaklad, 0);
+    const hodnota = jeOpravna(f) && f.typ !== "debit_note" ? -Math.abs(sucet) : sucet;
     const s = mapa.get(kluc) ?? { kodStatu, idCislo, hodnota: 0, kod };
     s.hodnota = centy(s.hodnota + hodnota);
     mapa.set(kluc, s);

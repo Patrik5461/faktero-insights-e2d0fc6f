@@ -475,7 +475,14 @@ export function polozkyFaktur(opts: {
       const invoiceType = TYPY_DOKLADU[typ] ?? "issuedInvoice";
       // Dobropis sa zapisuje záporne; otáča sa množstvo, nie jednotková cena,
       // aby doklad aj po vytlačení vyzeral tak, ako ho Pohoda robí sama.
-      const zn = typ === "credit_note" && !nastavenia?.dobropisKladny ? -1 : 1;
+      /*
+        Dobropis z formulára je uložený so zápornými sumami, starší kladne —
+        výsledok má byť záporný (alebo kladný pri voľbe „dobropis kladný"),
+        nech je uložený akokoľvek.
+      */
+      const ulozenyZaporne = Number(invoice.total ?? 0) < 0;
+      const chceZaporny = typ === "credit_note" && !nastavenia?.dobropisKladny;
+      const zn = typ === "credit_note" ? (ulozenyZaporne === chceZaporny ? 1 : -1) : 1;
 
       const denPlnenia = String(invoice.delivery_date ?? invoice.issue_date ?? "");
       const tab = sadzbyKuDnu(denPlnenia, krajinaDane(company.country));

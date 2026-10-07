@@ -79,7 +79,8 @@ function csvPole(h: unknown): string {
  * Dobropis znižuje výnos, ale v databáze má kladné sumy — pre súpisku aj pre
  * Flexi mu treba otočiť znamienko, lebo oba doklady len sčítavajú.
  */
-const znamienko = (typ: unknown): number => (text(typ) === "credit_note" ? -1 : 1);
+const znamienko = (typ: unknown, celkom?: unknown): number =>
+  text(typ) === "credit_note" && !(Number(celkom) < 0) ? -1 : 1;
 
 const NAZOV_TYPU: Record<string, string> = {
   regular: "Faktúra",
@@ -163,7 +164,7 @@ export function buildUniverzalCsv(opts: {
   ];
 
   const riadky = opts.invoices.map(({ invoice, items }) => {
-    const zn = znamienko(invoice.type);
+    const zn = znamienko(invoice.type, invoice.total);
     const nulova =
       zn * items.filter((p) => cislo(p.vat_rate) === 0).reduce((a, p) => a + cislo(p.subtotal), 0);
     /* Suma v EUR: pri domácej mene je to tá istá suma, inak prepočet uložený na doklade. */
@@ -251,7 +252,7 @@ export function buildFlexiXml(opts: {
       continue;
     }
 
-    const zn = znamienko(typ);
+    const zn = znamienko(typ, invoice.total);
     const zakladna = Math.max(0, ...items.map((p) => cislo(p.vat_rate)));
     const polozky = items
       .map((p) => {

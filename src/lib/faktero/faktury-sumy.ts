@@ -33,9 +33,14 @@ export function jeZapocitatelny(f: DokladRiadok): boolean {
   return true;
 }
 
-/** Dobropis znižuje — do súčtov vstupuje záporne. */
-export function znamienkoDokladu(typ: string | null | undefined): 1 | -1 {
-  return typ === "credit_note" ? -1 : 1;
+/**
+ * Dobropis znižuje — do súčtov vstupuje záporne. Formulár ho ukladá so
+ * zápornými sumami, starší import kladne; otáča sa preto len kladný, inak by
+ * záporný dobropis po druhom otočení tržby zvýšil.
+ */
+export function znamienkoDokladu(typ: string | null | undefined, celkom?: unknown): 1 | -1 {
+  if (typ !== "credit_note") return 1;
+  return Number(celkom) < 0 ? 1 : -1;
 }
 
 /** Súčet poľa cez doklady, ktoré sa počítajú, so správnym znamienkom. */
@@ -44,7 +49,8 @@ export function sucetDokladov<T extends DokladRiadok & Record<string, unknown>>(
   pole: keyof T,
 ): number {
   const s = doklady.reduce(
-    (a, f) => (jeZapocitatelny(f) ? a + znamienkoDokladu(f.type) * Number(f[pole] ?? 0) : a),
+    (a, f) =>
+      jeZapocitatelny(f) ? a + znamienkoDokladu(f.type, (f as any).total ?? f[pole]) * Number(f[pole] ?? 0) : a,
     0,
   );
   return Math.round(s * 100) / 100;

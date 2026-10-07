@@ -1216,7 +1216,7 @@ function buildRevenueChart(invoices: any[]) {
     if (!jeZapocitatelny(inv)) return;
     const k = monthKey(new Date(inv.issue_date));
     if (!buckets[k]) return;
-    const total = znamienkoDokladu(inv.type) * Number(inv.total ?? 0);
+    const total = znamienkoDokladu(inv.type, inv.total) * Number(inv.total ?? 0);
     buckets[k].issued += total;
     if (inv.status === "paid" || inv.paid_at) buckets[k].paid += total;
     if (jePoSplatnosti(inv, dnesISO)) buckets[k].overdue += Number(inv.total ?? 0);

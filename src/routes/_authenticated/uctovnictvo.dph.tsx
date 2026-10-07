@@ -201,7 +201,7 @@ function DphPage() {
       if (!inv) continue;
       const key = inv.reverse_charge ? "pdp" : vatBucketKey(it.vat_rate);
       const riadok = bucket(b, key);
-      const zn = znamienkoDokladu(inv.type);
+      const zn = znamienkoDokladu(inv.type, inv.total);
       riadok.base += zn * Number(it.subtotal || 0);
       riadok.vat += zn * Number(it.vat_amount || 0);
       riadok.docs.add(it.invoice_id);
@@ -279,7 +279,7 @@ function DphPage() {
     lines.push("VYSTAVENÉ FAKTÚRY");
     lines.push("Číslo;Dátum;Odberateľ;Základ;DPH;Spolu;PDP");
     for (const i of invoices) {
-      const zn = znamienkoDokladu(i.type);
+      const zn = znamienkoDokladu(i.type, i.total);
       lines.push(
         `${i.invoice_number};${i.issue_date};${(i.customer_name || "").replace(/;/g, ",")};${(zn * Number(i.subtotal || 0)).toFixed(2)};${(zn * Number(i.vat_total || 0)).toFixed(2)};${(zn * Number(i.total || 0)).toFixed(2)};${i.reverse_charge ? "áno" : "nie"}`,
       );
