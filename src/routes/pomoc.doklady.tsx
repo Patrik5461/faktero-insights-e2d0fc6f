@@ -51,7 +51,9 @@ const sections: HelpSection[] = [
         </ol>
         <p>
           Bločky odfotené v appke alebo zadané vo formulári sú v tom istom zozname — otvoria sa vo
-          formulári dokladu, kde ich spracujete tlačidlom Spracovať. Zmazaný nespracovaný doklad
+          formulári dokladu, kde ich spracujete tlačidlom Spracovať. Spracovaný bloček sa presunie do{" "}
+          <Link to="/doklady">Doklady → Bločky</Link>; tam sú len skontrolované bločky, rozdelené na
+          spracované a odovzdané účtovníkovi. Zmazaný nespracovaný doklad
           ide do koša a dá sa obnoviť.
         </p>
       </>

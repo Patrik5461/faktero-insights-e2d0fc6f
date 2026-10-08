@@ -111,7 +111,7 @@ export const NAV: NavGroup[] = [
     children: [
       // Ako v Doklado: všetko nahraté a z e-mailu čaká najprv tu.
       { to: "/nespracovane", label: "Nespracované doklady" },
-      { to: "/doklady", label: "Prehľad dokladov" },
+      { to: "/doklady", label: "Bločky" },
       { to: "/schvalovanie", label: "Na schválenie" },
       { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
       { to: "/doklady/mailom", label: "Doklady e-mailom" },

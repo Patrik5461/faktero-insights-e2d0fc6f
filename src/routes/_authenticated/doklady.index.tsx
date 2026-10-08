@@ -59,8 +59,9 @@ export const Route = createFileRoute("/_authenticated/doklady/")({
    * po uložení stratí z dohľadu — vyzerá to, že sa neuložil.
    */
   /*
-   * `stav` vyberá záložku. Bez neho sa zoznam otvára na nespracovaných —
-   * tam leží to, čo treba skontrolovať.
+   * `stav` vyberá záložku. Bez neho sa zoznam otvára na spracovaných —
+   * bloček na kontrolu čaká v Nespracovaných dokladoch a sem príde, až keď
+   * ho niekto spracuje (ako v sekcii Bločky v Doklado).
    */
   validateSearch: (s: Record<string, unknown>): { mesiac?: string; stav?: ZalozkaDokladov } => {
     const m = typeof s.mesiac === "string" && /^\d{4}-\d{2}$/.test(s.mesiac) ? s.mesiac : undefined;
@@ -177,7 +178,7 @@ function DokladyPage() {
   /** Doklad, ktorý sa práve presúva medzi prijaté faktúry. */
   const [presuvam, setPresuvam] = useState<string | null>(null);
   const { mesiac: mesiacZAdresy, stav: zalozkaZAdresy } = Route.useSearch();
-  const zalozka: ZalozkaDokladov = zalozkaZAdresy ?? "nespracovane";
+  const zalozka: ZalozkaDokladov = zalozkaZAdresy ?? "spracovane";
   const status = ZALOZKY_DOKLADOV.find((z) => z.kluc === zalozka)!.stav;
   /** Nespracované sa ukazujú zo všetkých mesiacov — nič nesmie ostať schované. */
   const bezMesiaca = zalozka === "nespracovane";
@@ -432,8 +433,8 @@ function DokladyPage() {
   return (
     <>
       <PageHeader
-        title="Doklady"
-        description="Naskenované a nahraté výdavkové doklady pre účtovníka."
+        title="Bločky"
+        description="Spracované bločky a výdavkové doklady. Nové najprv skontrolujete v Nespracovaných dokladoch."
         action={
           <div className="flex gap-2">
             <button
@@ -463,7 +464,9 @@ function DokladyPage() {
           aria-label="Stav dokladov"
           className="mb-4 flex flex-wrap gap-1 border-b border-border"
         >
-          {ZALOZKY_DOKLADOV.map((z) => (
+          {/* Nespracované bločky majú vlastné miesto v Nespracovaných dokladoch;
+              záložka ostáva len pre staré odkazy (?stav=nespracovane). */}
+          {ZALOZKY_DOKLADOV.filter((z) => z.kluc !== "nespracovane" || zalozka === "nespracovane").map((z) => (
             <button
               key={z.kluc}
               role="tab"
@@ -484,6 +487,19 @@ function DokladyPage() {
             </button>
           ))}
         </div>
+
+        {!bezMesiaca && nespracovanych ? (
+          <Link
+            to="/nespracovane"
+            className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            <span>
+              {nespracovanych === 1 ? "1 bloček čaká" : `${nespracovanych} bločkov čaká`} na kontrolu v Nespracovaných
+              dokladoch — sem sa presunie, keď ho spracujete.
+            </span>
+            <span className="shrink-0 font-medium">Otvoriť →</span>
+          </Link>
+        ) : null}
 
         {bezMesiaca && (
           <p className="mb-4 text-sm text-muted-foreground">
