@@ -38,6 +38,7 @@ POVINNÉ PRAVIDLÁ:
 - "supplier" je firma, ktorá tovar DODÁVA (nie odberateľ, nie príjemca)
 - "delivery_number" je číslo dodacieho listu; keď tam nie je, daj číslo faktúry
 - Keď údaj na doklade nie je, daj null a nič si nevymýšľaj
+- "unit_price" a "total_price" ber BEZ DPH, keď doklad uvádza cenu bez DPH aj s DPH
 
 FORMÁT ODPOVEDE - VÝHRADNE JSON objekt, žiadny iný text:
 {"supplier":"názov dodávateľa alebo null","delivery_number":"číslo alebo null","items":[{"name":"presný názov","code":"kód alebo null","quantity":číslo,"unit":"ks/kg/m/l/bal","unit_price":číslo alebo null,"total_price":číslo alebo null}]}`;
@@ -45,7 +46,12 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON objekt, žiadny iný text:
     const { aiVision } = await import("@/lib/faktero/ai.server");
     const content = await aiVision(base64, mt, prompt, {
       json: true,
-      maxOutputTokens: 4000,
+      /*
+        Pri 4 000 sa 68-riadkový dodací list (v júli ešte prešiel) odrezal ako
+        „nezmestila sa" — od pridania hlavičky a s modelom, ktorý časť stropu
+        minie na uvažovanie. Rovnako ako pri splátkových kalendároch.
+      */
+      maxOutputTokens: 32768,
       ucel: "dodaci-list",
     });
 

@@ -27,6 +27,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { potvrd } from "@/lib/potvrdenie";
+import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
 
 export const Route = createFileRoute("/_authenticated/sklad/dodaci-list")({
   head: () => ({ meta: [{ title: "Naskenovať dodací list — Faktero" }] }),
@@ -355,7 +357,7 @@ function DeliveryNoteScanPage() {
     }
   }
 
-  async function doImport() {
+  async function doImport(ajDuplicitu = false) {
     const cid = getActiveCompanyId();
     if (!cid) return toast.error("Vyberte firmu.");
     if (!warehouseId) return toast.error("Vyberte sklad.");
@@ -371,6 +373,7 @@ function DeliveryNoteScanPage() {
           source_filename: fileMeta?.name ?? null,
           supplier: supplier || null,
           delivery_number: deliveryNumber || null,
+          ajDuplicitu,
           items: valid.map((r) => ({
             name: r.name.trim(),
             code: r.code?.trim() || null,
@@ -402,7 +405,18 @@ function DeliveryNoteScanPage() {
       }
       nav({ to: res.bezPredajnejCeny?.length ? "/produkty" : "/sklad/pohyby" });
     } catch (e: any) {
-      toast.error(e?.message ?? "Import zlyhal.");
+      const sprava = String(e?.message ?? "");
+      if (sprava.startsWith(PREDPONA_DUPLICITY)) {
+        setImporting(false);
+        const ano = await potvrd(sprava.slice(PREDPONA_DUPLICITY.length), {
+          potvrdit: "Naskladniť aj tak",
+          zrusit: "Nenaskladňovať",
+          nebezpecne: true,
+        });
+        if (ano) return doImport(true);
+        return;
+      }
+      toast.error(sprava || "Import zlyhal.");
     } finally {
       setImporting(false);
     }
@@ -681,7 +695,7 @@ function DeliveryNoteScanPage() {
               <div className="flex justify-end">
                 <button
                   disabled={importing || rows.length === 0 || parsing}
-                  onClick={doImport}
+                  onClick={() => doImport()}
                   className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
                 >
                   {importing ? "Importujem…" : `Importovať do skladu (${rows.length})`}

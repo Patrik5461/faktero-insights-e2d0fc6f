@@ -28,6 +28,8 @@ const ImportInput = z.object({
   supplier: z.string().nullable().optional(),
   delivery_number: z.string().nullable().optional(),
   items: z.array(ImportItem).min(1),
+  /** Naskladniť aj dodací list, ktorý už raz naskladnený bol. */
+  ajDuplicitu: z.boolean().optional(),
 });
 
 export const importDeliveryNoteFn = createServerFn({ method: "POST" })
@@ -58,6 +60,36 @@ export const importDeliveryNoteFn = createServerFn({ method: "POST" })
       }
     }
     if (!whId) throw new Error("Nepodarilo sa určiť sklad.");
+
+    /*
+      Ten istý dodací list naskladnený druhýkrát zdvojí zásobu aj jej hodnotu
+      a nikto si to nevšimne až do inventúry. Typicky: dvojklik, návrat
+      prehliadača späť alebo ten istý papier od dvoch ľudí.
+    */
+    if (!data.ajDuplicitu && data.delivery_number?.trim()) {
+      const { normCislo, normNazov, PREDPONA_DUPLICITY } = await import("./prijate-duplicity");
+      const { data: skorsie } = await supabase
+        .from("stock_audit_logs")
+        .select("created_at, metadata")
+        .eq("company_id", cid)
+        .eq("action", "ai_delivery_import")
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      const cislo = normCislo(data.delivery_number);
+      const kto = normNazov(data.supplier);
+      const zhoda = (skorsie ?? []).find((r: any) => {
+        const m = r.metadata ?? {};
+        if (normCislo(m.delivery_number) !== cislo) return false;
+        const k = normNazov(m.supplier);
+        return !kto || !k || k === kto;
+      });
+      if (zhoda) {
+        const kedy = new Date((zhoda as any).created_at).toLocaleDateString("sk-SK");
+        throw new Error(
+          `${PREDPONA_DUPLICITY}Dodací list ${data.delivery_number}${data.supplier ? ` od ${data.supplier}` : ""} už bol naskladnený ${kedy}.\nNaskladniť ho aj tak druhýkrát?`,
+        );
+      }
+    }
 
     /*
      * Sadzba DPH pre nový produkt podľa firmy — neplatiteľ nulu, platiteľ
