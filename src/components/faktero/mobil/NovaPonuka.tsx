@@ -116,6 +116,7 @@ export function NovaPonuka({
           notes: poznamka.trim() || null,
           items: pouzitelne.map((x) => ({
             name: x.name.trim(),
+            description: x.popis?.trim() || null,
             quantity: cislo(x.quantity),
             unit: x.unit || "ks",
             unit_price: cislo(x.unit_price),

@@ -72,6 +72,8 @@ type Podkladove = {
 export type Riadok = {
   key: string;
   name: string;
+  /** Podrobnejší rozpis pod názvom — na PDF sa vytlačí pod položkou. */
+  popis?: string;
   quantity: string;
   unit: string;
   unit_price: string;
@@ -265,7 +267,7 @@ export function NovaFaktura({
           .single(),
         supabase
           .from("invoice_items")
-          .select("name, quantity, unit, unit_price, vat_rate, product_id")
+          .select("name, description, quantity, unit, unit_price, vat_rate, product_id")
           .eq("invoice_id", upravuje.id)
           .order("position"),
         supabase.from("efaktura_documents").select("id").eq("invoice_id", upravuje.id).limit(1),
@@ -296,6 +298,7 @@ export function NovaFaktura({
         (polozky ?? []).map((r: any) => ({
           key: Math.random().toString(36).slice(2),
           name: r.name ?? "",
+          popis: r.description ?? "",
           quantity: String(r.quantity ?? 1).replace(".", ","),
           unit: r.unit || "ks",
           unit_price: String(r.unit_price ?? 0).replace(".", ","),
@@ -402,6 +405,7 @@ export function NovaFaktura({
     if (!upravuje) return;
     const vstupy = pouzitelne.map((x) => ({
       name: x.name,
+      description: x.popis?.trim() || null,
       quantity: cislo(x.quantity),
       unit: x.unit || "ks",
       unit_price: cislo(x.unit_price),
@@ -507,6 +511,7 @@ export function NovaFaktura({
       advance_amount: zaloha ? zaloha.total : null,
       items: pouzitelne.map((x) => ({
         name: x.name.trim(),
+        description: x.popis?.trim() || null,
         quantity: cislo(x.quantity),
         unit: x.unit || "ks",
         unit_price: cislo(x.unit_price),
@@ -1157,6 +1162,7 @@ export function RiadokPolozky({
   const krajina = useKrajinaDane();
   const zaklad = +(cislo(riadok.quantity) * cislo(riadok.unit_price)).toFixed(2);
   const celkom = +(zaklad * (1 + riadok.vat_rate / 100)).toFixed(2);
+  const [popisOtvoreny, setPopisOtvoreny] = useState(false);
 
   return (
     <div className="rounded-app border border-app-ramik bg-app-karta p-3.5 shadow-app">
@@ -1177,6 +1183,30 @@ export function RiadokPolozky({
           </button>
         )}
       </div>
+      {riadok.popis !== undefined && (riadok.popis !== "" || popisOtvoreny) ? (
+        <textarea
+          value={riadok.popis}
+          onChange={(e) => onZmen({ popis: e.target.value })}
+          onBlur={() => !riadok.popis?.trim() && setPopisOtvoreny(false)}
+          autoFocus={popisOtvoreny && !riadok.popis}
+          rows={Math.min(5, Math.max(2, (riadok.popis ?? "").split("\n").length))}
+          maxLength={2000}
+          aria-label={t("nf.poznamkaPolozky")}
+          placeholder={t("nf.poznamkaPolozkyPopis")}
+          className="mt-2 w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2 text-[15px]"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            if (riadok.popis === undefined) onZmen({ popis: "" });
+            setPopisOtvoreny(true);
+          }}
+          className="mt-1.5 text-[14px] text-app-zelena"
+        >
+          + {t("nf.poznamkaPolozky")}
+        </button>
+      )}
 
       <div className={`mt-2 grid gap-2 ${platca ? "grid-cols-3" : "grid-cols-2"}`}>
         <label className="block">

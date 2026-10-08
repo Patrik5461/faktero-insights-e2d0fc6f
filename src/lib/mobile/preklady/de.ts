@@ -157,6 +157,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "nf.chybaOdberatela": "Der Kunde konnte nicht gespeichert werden.",
   "nf.polozky": "Positionen",
   "nf.nazovPolozky": "Bezeichnung",
+  "nf.poznamkaPolozky": "Anmerkung zur Position",
+  "nf.poznamkaPolozkyPopis": "Genauere Beschreibung — wird unter dem Positionsnamen gedruckt",
   "nf.mnozstvo": "Menge",
   "nf.pridajtePolozku": "Position hinzufügen",
   "nf.odstranitPolozku": "Position entfernen",

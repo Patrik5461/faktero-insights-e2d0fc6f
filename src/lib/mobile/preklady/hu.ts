@@ -157,6 +157,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "nf.chybaOdberatela": "A vevőt nem sikerült menteni.",
   "nf.polozky": "Tételek",
   "nf.nazovPolozky": "Tétel neve",
+  "nf.poznamkaPolozky": "Megjegyzés a tételhez",
+  "nf.poznamkaPolozkyPopis": "Részletesebb leírás — a tétel neve alá kerül",
   "nf.mnozstvo": "Mennyiség",
   "nf.pridajtePolozku": "Adjon hozzá tételt",
   "nf.odstranitPolozku": "Tétel eltávolítása",

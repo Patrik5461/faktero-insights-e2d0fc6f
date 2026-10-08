@@ -163,6 +163,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "nf.chybaOdberatela": "The customer could not be saved.",
   "nf.polozky": "Items",
   "nf.nazovPolozky": "Item name",
+  "nf.poznamkaPolozky": "Item note",
+  "nf.poznamkaPolozkyPopis": "More detailed description — printed under the item name",
   "nf.mnozstvo": "Quantity",
   "nf.pridajtePolozku": "Add an item",
   "nf.odstranitPolozku": "Remove item",

@@ -20,6 +20,8 @@ export type RiadokFaktury = {
   vat_rate: number;
   product_id?: string | null;
   stock_item_id?: string | null;
+  /** Podrobnejší rozpis pod názvom položky. */
+  description?: string | null;
 };
 
 export type SuctyFaktury = { subtotal: number; vat_total: number; total: number };
@@ -51,6 +53,7 @@ export function riadkyNaZapis(invoiceId: string, riadky: RiadokFaktury[]) {
       invoice_id: invoiceId,
       position: i + 1,
       name: r.name.trim(),
+      description: r.description?.trim() || null,
       quantity: Number(r.quantity),
       unit: r.unit || "ks",
       unit_price: Number(r.unit_price),

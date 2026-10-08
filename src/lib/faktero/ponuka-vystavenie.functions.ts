@@ -23,6 +23,8 @@ const Polozka = z.object({
   unit_price: z.number().nonnegative().max(10_000_000),
   vat_rate: z.number().min(0).max(100).default(23),
   product_id: z.string().uuid().nullable().optional(),
+  /** Podrobnejší rozpis pod názvom položky. */
+  description: z.string().max(2000).nullable().optional(),
 });
 
 const NovaPonuka = z.object({
@@ -130,6 +132,7 @@ export const vystavPonukuFn = createServerFn({ method: "POST" })
         position: i,
         product_id: it.product_id ?? null,
         name: it.name,
+        description: it.description?.trim() || null,
         quantity: it.quantity,
         unit: it.unit || "ks",
         unit_price: it.unit_price,

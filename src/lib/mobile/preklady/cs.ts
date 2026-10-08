@@ -162,6 +162,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "nf.chybaOdberatela": "Odběratele se nepodařilo uložit.",
   "nf.polozky": "Položky",
   "nf.nazovPolozky": "Název položky",
+  "nf.poznamkaPolozky": "Poznámka k položce",
+  "nf.poznamkaPolozkyPopis": "Podrobnější rozpis — vytiskne se pod názvem položky",
   "nf.mnozstvo": "Množství",
   "nf.pridajtePolozku": "Přidejte položku",
   "nf.odstranitPolozku": "Odstranit položku",

@@ -27,6 +27,8 @@ const Polozka = z.object({
   /** Zľava riadku v %; jednotková cena ostáva pôvodná. */
   discount_percent: z.number().min(0).max(100).default(0),
   product_id: z.string().uuid().nullable().optional(),
+  /** Podrobnejší rozpis pod názvom položky. */
+  description: z.string().max(2000).nullable().optional(),
 });
 
 const NovaFaktura = z.object({
@@ -312,6 +314,7 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       invoice_id: faktura.id,
       position: i,
       name: it.name,
+      description: it.description?.trim() || null,
       quantity: it.quantity,
       unit: it.unit || "ks",
       unit_price: it.unit_price,

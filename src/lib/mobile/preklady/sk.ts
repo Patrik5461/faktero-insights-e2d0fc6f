@@ -174,6 +174,8 @@ export const sk = {
   "nf.chybaOdberatela": "Odberateľa sa nepodarilo uložiť.",
   "nf.polozky": "Položky",
   "nf.nazovPolozky": "Názov položky",
+  "nf.poznamkaPolozky": "Poznámka k položke",
+  "nf.poznamkaPolozkyPopis": "Podrobnejší rozpis — vytlačí sa pod názvom položky",
   "nf.mnozstvo": "Množstvo",
   "nf.pridajtePolozku": "Pridajte položku",
   "nf.odstranitPolozku": "Odstrániť položku",
