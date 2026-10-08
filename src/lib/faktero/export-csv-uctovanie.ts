@@ -72,6 +72,10 @@ export const STLPCE_CSV_UCTOVANIA = [
   "celkom_doklad",
   "opravuje",
   "text",
+  // Doplnené na koniec, aby staré importy podľa poradia stĺpcov nepraskli.
+  "kurz",
+  "odpocet_zalohy",
+  "poznamka",
 ];
 
 export function buildCsvUctovanie(opts: {
@@ -103,7 +107,7 @@ export function buildCsvUctovanie(opts: {
       riadky.push(
         [
           AGENDA[d.agenda],
-          DRUH[d.druh],
+          d.dokladKPlatbe ? "daňový doklad k platbe" : DRUH[d.druh],
           FORMA[d.forma],
           pole(d.cislo),
           pole(d.vs),
@@ -133,6 +137,9 @@ export function buildCsvUctovanie(opts: {
           dveSk(zn * d.celkom),
           pole(d.opravuje),
           pole(r.text ?? d.text),
+          d.kurz ? String(d.kurz).replace(".", ",") : "",
+          d.odpocetZalohy ? dveSk(d.odpocetZalohy) : "",
+          pole(d.poznamka),
         ].join(";"),
       );
     }

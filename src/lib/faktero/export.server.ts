@@ -1240,7 +1240,16 @@ export function polozkyDokladov(opts: {
           ? nastavenia?.predkontaciaRozuctovat?.trim() ||
             (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
           : predkontaciaJedna;
-      const clenenie = rozuctovany ? null : clenenieJedno;
+      /*
+        Celá prijatá faktúra v prenesení daňovej povinnosti: bez vlastného
+        členenia dokladu ide s členením firmy pre prenesenie, inak by ju Pohoda
+        zaúčtovala ako bežný nákup a samozdanenie (r. 15/19, KV B.1) by chýbalo.
+      */
+      const clenenie = rozuctovany
+        ? null
+        : d?._pdp && !String(d?.pohoda_clenenie_dph ?? "").trim()
+          ? nastavenia?.clenenieDphPdpPrijata || clenenieJedno
+          : clenenieJedno;
 
       /*
         Agenda v Pohode. Prijatá faktúra ide vždy ako faktúra. Bloček ako
@@ -1272,7 +1281,12 @@ export function polozkyDokladov(opts: {
         // „Nezahŕňať" nemá v Pohode skratku — doklad ostane bez členenia KV.
         return k && k !== "X" ? k : "";
       };
-      const kvHlavicka = rozuctovany ? "" : kv();
+      // „Nezahŕňať" (X) si človek zvolil vedome — prenesenie ho neprepíše.
+      // Účet dodávateľa na príkaz na úhradu; bez kódu banky sa nezapíše vôbec.
+      const ucetDodavatela = d?._ucetDodavatela ? rozdelUcet(d._ucetDodavatela) : null;
+      const kvHlavicka = rozuctovany
+        ? ""
+        : kv() || (d?._pdp && !String(d?.kv_clenenie ?? "").trim() ? "B1" : "");
 
       /*
         Položky bločku (voľba firmy): v cenách s DPH, ako sú na bločku. Pri
@@ -1539,6 +1553,10 @@ export function polozkyDokladov(opts: {
             ? `\n        <inv:paymentType><typ:paymentType>${
                 FORMY_UHRADY[platba] ?? "draft"
               }</typ:paymentType></inv:paymentType>`
+            : ""
+        }${
+          p === "inv" && ucetDodavatela
+            ? `\n        <inv:paymentAccount><typ:accountNo>${esc(ucetDodavatela.cislo)}</typ:accountNo><typ:bankCode>${esc(ucetDodavatela.kodBanky)}</typ:bankCode></inv:paymentAccount>`
             : ""
         }
       </${p}:${koren}Header>${vlozZaokruhlenie(xmlPolozkyFaktury || polozkyRozuct || (cudziaD ? polozkyZRozpisu() : ""))}
@@ -2087,9 +2105,13 @@ export const OMEGA_TXT: ExportStrategy = {
   encoding: "windows-1250",
   mime: "text/plain",
   build({ company, invoices }) {
-    const content = buildOmegaTxt({ company, invoices });
+    const preskocene: string[] = [];
+    const content = buildOmegaTxt({ company, invoices, preskocene });
+    if (preskocene.length === invoices.length) {
+      throw new Error(`Do Omegy sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
+    }
     const stamp = new Date().toISOString().slice(0, 10);
-    return { content, fileName: `omega-faktury-${stamp}.txt`, mime: "text/plain" };
+    return { content, fileName: `omega-faktury-${stamp}.txt`, mime: "text/plain", preskocene };
   },
 };
 
@@ -2133,6 +2155,13 @@ export const ISDOC_ZIP: ExportStrategy = {
     const preskocene: string[] = [];
 
     for (const { invoice, items } of invoices) {
+      // Odpočet zálohy (TaxedDeposits) zatiaľ do ISDOC-u nepíšeme — bez neho by
+      // faktúra pýtala celú sumu a DPH zo zálohy by sa priznala druhýkrát.
+      const typ = (invoice as any).type;
+      if (typ !== "proforma" && typ !== "advance_payment" && Number((invoice as any).advance_amount ?? 0) > 0) {
+        preskocene.push(`${invoice.invoice_number} — faktúra s odpočtom zálohy, ISDOC ju zatiaľ neunesie`);
+        continue;
+      }
       try {
         zip.file(
           `${String(invoice.invoice_number).replace(/[^\w.-]+/g, "-")}.isdoc`,
@@ -2260,6 +2289,22 @@ function pole(v: any, max = 0): string {
   return max > 0 ? s.slice(0, max) : s;
 }
 
+/**
+ * Doklady, ktoré formát bez väzby na zálohy nezapíše správne.
+ *
+ * Daňový doklad k prijatej platbe nie je tržba (účtuje sa len daň zo zálohy)
+ * a vyúčtovacia faktúra bez odpočtu by DPH zo zálohy priznala druhýkrát —
+ * oboje radšej menovite vynechať, než poslať do účtovníctva zlú daň.
+ */
+function prekazkaBezZaloh(invoice: InvoiceRow, program: string): string | null {
+  const inv = invoice as any;
+  if (inv.type === "advance_payment")
+    return `${inv.invoice_number} — daňový doklad k prijatej platbe zaúčtujte v ${program} ručne (len DPH zo zálohy)`;
+  if (inv.type !== "proforma" && Number(inv.advance_amount ?? 0) > 0)
+    return `${inv.invoice_number} — faktúra s odpočtom zálohy, odpočet treba v ${program} zaúčtovať ručne`;
+  return null;
+}
+
 // =========================================================
 // KROS Omega — textový súbor R00/R01/R02
 // =========================================================
@@ -2278,8 +2323,11 @@ function pole(v: any, max = 0): string {
 export function buildOmegaTxt(opts: {
   company: CompanyRow;
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
+  /** Sem sa zapíšu doklady, ktoré do súboru nešli, aj s dôvodom. */
+  preskocene?: string[];
 }): string {
   const { company, invoices } = opts;
+  const preskocene = opts.preskocene ?? [];
   const riadky: string[] = [];
 
   // R00 — typ údajov a hlavička súboru: T01 = fakturácia.
@@ -2296,7 +2344,14 @@ export function buildOmegaTxt(opts: {
     ].join("\t"),
   );
 
-  for (const { invoice, items } of invoices) {
+  for (const { invoice, items: povodne } of invoices) {
+    const prekazka = prekazkaBezZaloh(invoice, "Omege");
+    if (prekazka) {
+      preskocene.push(prekazka);
+      continue;
+    }
+    // Zľava na doklad je len v hlavičke — sumy po sadzbách ju musia niesť.
+    const items = riadkySoZlavou(povodne, (invoice as any).discount_total);
     const sadzby = sadzbyDokladu(items);
     const vyssia = sadzby[0];
     const nizsia = sadzby[1];
@@ -2391,6 +2446,22 @@ export function buildOmegaTxt(opts: {
 // =========================================================
 
 /**
+ * IČO do Money — schéma pustí najviac 10 znakov. Zahraničné registračné čísla
+ * (napr. maďarské 01-09-863583) sa radšej vynechajú, než by zhodili import.
+ */
+function icoPreMoney(ico: unknown): string {
+  const v = String(ico ?? "").trim();
+  return v.length <= 10 ? v : "";
+}
+
+/** Poznámka položky pre Money: celý názov, keď sa do 50 znakov nevojde, a poznámka k položke. */
+function poznamkaPolozky(it: ItemRow): string {
+  const nazov = String((it as any).name ?? "").trim();
+  const popis = String((it as any).description ?? "").trim();
+  return [nazov.length > 50 ? nazov : "", popis].filter(Boolean).join("\n");
+}
+
+/**
  * Export do Money S3 podľa oficiálnej schémy (`__Faktura.xsd`, `__Comtypes.xsd`):
  * `MoneyData / SeznamFaktVyd / FaktVyd`.
  *
@@ -2413,7 +2484,21 @@ export function buildMoneyS3Xml(opts: {
   const preskocene: string[] = [];
 
   const doklady: string[] = [];
-  for (const { invoice, items } of invoices) {
+  for (const { invoice, items: povodne } of invoices) {
+    const inv = invoice as any;
+    // Money vedie daňový doklad k platbe ako vlastný druh (D); odpočet zálohy
+    // na vyúčtovacej faktúre ale bez väzby na zálohu v Money nezapíšeme.
+    if (inv.type !== "proforma" && inv.type !== "advance_payment" && Number(inv.advance_amount ?? 0) > 0) {
+      preskocene.push(`${invoice.invoice_number} — faktúra s odpočtom zálohy, odpočet treba v Money zaúčtovať ručne`);
+      continue;
+    }
+    // Schéma Money pripúšťa číslo dokladu najviac na 10 znakov — dlhšie by zhodilo celý import.
+    if (String(invoice.invoice_number ?? "").length > 10) {
+      preskocene.push(`${invoice.invoice_number} — číslo faktúry má viac ako 10 znakov, Money ho neprijme`);
+      continue;
+    }
+    // Zľava na doklad je len v hlavičke; Money ju chce mať v cenách položiek.
+    const items = riadkySoZlavou(povodne, inv.discount_total);
     const mena = String(invoice.currency ?? domaca).toUpperCase() || domaca;
     const cudzia = mena !== domaca;
     /*
@@ -2492,7 +2577,13 @@ ${odsadenie}</SouhrnDPH>`;
       .map(
         (it) => `
         <Polozka>
-          <Popis>${esc(it.name)}</Popis>
+          <Popis>${esc(skrat(it.name, 50))}</Popis>${
+            // Popis má v Money najviac 50 znakov — celý názov ide do poznámky
+            // spolu s poznámkou k položke, nech sa nič nestratí.
+            poznamkaPolozky(it)
+              ? `\n          <Poznamka>${esc(poznamkaPolozky(it))}</Poznamka>`
+              : ""
+          }
           <PocetMJ>${Number(it.quantity ?? 0)}</PocetMJ>
           <SazbaDPH>${Number(it.vat_rate ?? 0)}</SazbaDPH>
           <Cena>${fixed4(naDomacu(it.unit_price))}</Cena>
@@ -2515,11 +2606,29 @@ ${odsadenie}</SouhrnDPH>`;
     doklady.push(`
     <FaktVyd>
       <Doklad>${esc(invoice.invoice_number)}</Doklad>
-      <Popis>${esc(invoice.notes ?? invoice.intro_note ?? `Faktúra ${invoice.invoice_number}`)}</Popis>
+      <Popis>${esc(skrat(invoice.notes || invoice.intro_note || `Faktúra ${invoice.invoice_number}`, 50))}</Popis>
       <Vystaveno>${esc(invoice.issue_date)}</Vystaveno>
       <PlnenoDPH>${esc(invoice.delivery_date ?? invoice.issue_date)}</PlnenoDPH>
       <Splatno>${esc(invoice.due_date)}</Splatno>
-      <VarSymbol>${esc(invoice.variable_symbol ?? invoice.invoice_number)}</VarSymbol>
+      <VarSymbol>${esc(skrat(invoice.variable_symbol ?? invoice.invoice_number, 20))}</VarSymbol>${
+        String(inv.constant_symbol ?? "").trim()
+          ? `\n      <KonstSym>${esc(String(inv.constant_symbol).trim().slice(0, 4))}</KonstSym>`
+          : ""
+      }${
+        String(inv.specific_symbol ?? "").trim()
+          ? `\n      <SpecSymbol>${esc(String(inv.specific_symbol).trim().slice(0, 20))}</SpecSymbol>`
+          : ""
+      }${
+        // Pôvodná faktúra pri dobropise a ťarchopise.
+        String(inv._opravujeCislo ?? "").trim()
+          ? `\n      <PuvDoklad>${esc(String(inv._opravujeCislo).trim().slice(0, 50))}</PuvDoklad>`
+          : ""
+      }${
+        String(inv.order_number ?? "").trim()
+          ? `\n      <CObjednavk>${esc(String(inv.order_number).trim().slice(0, 50))}</CObjednavk>`
+          : ""
+      }
+      <Druh>${inv.type === "proforma" ? "L" : inv.type === "advance_payment" ? "D" : "N"}</Druh>
       <Dobropis>${invoice.type === "credit_note" ? 1 : 0}</Dobropis>
       ${nizsia != null ? `<SazbaDPH1>${nizsia}</SazbaDPH1>` : ""}
       ${vyssia != null ? `<SazbaDPH2>${vyssia}</SazbaDPH2>` : ""}
@@ -2528,21 +2637,21 @@ ${odsadenie}</SouhrnDPH>`;
       <DodOdb>
         <ObchNazev>${esc(invoice.customer_name)}</ObchNazev>
         <Adresa>
-          <Ulice>${esc(invoice.customer_street ?? "")}</Ulice>
-          <Misto>${esc(invoice.customer_city ?? "")}</Misto>
-          <PSC>${esc(invoice.customer_zip ?? "")}</PSC>
+          <Ulice>${esc(skrat(invoice.customer_street, 50))}</Ulice>
+          <Misto>${esc(skrat(invoice.customer_city, 40))}</Misto>
+          <PSC>${esc(skrat(invoice.customer_zip, 10))}</PSC>
           <KodStatu>${esc(invoice.customer_country ?? "SK")}</KodStatu>
         </Adresa>
-        <ICO>${esc(invoice.customer_ico ?? "")}</ICO>
-        <DIC>${esc(invoice.customer_ic_dph ?? invoice.customer_dic ?? "")}</DIC>
-        <EMail>${esc(invoice.customer_email ?? "")}</EMail>
+        <ICO>${esc(icoPreMoney(invoice.customer_ico))}</ICO>
+        <DIC>${esc(skrat(invoice.customer_ic_dph || invoice.customer_dic, 20))}</DIC>
+        <EMail>${esc(skrat(invoice.customer_email, 50))}</EMail>
       </DodOdb>
       <SeznamPolozek>${polozky}
       </SeznamPolozek>
       <MojeFirma>
         <Nazev>${esc(company?.name ?? "")}</Nazev>
-        <ICO>${esc(company?.ico ?? "")}</ICO>
-        <DIC>${esc(company?.ic_dph ?? company?.dic ?? "")}</DIC>
+        <ICO>${esc(icoPreMoney(company?.ico))}</ICO>
+        <DIC>${esc(skrat(company?.ic_dph || company?.dic, 20))}</DIC>
         <MenaKod>${esc(domaca)}</MenaKod>
       </MojeFirma>
     </FaktVyd>`);

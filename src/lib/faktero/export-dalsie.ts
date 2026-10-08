@@ -246,6 +246,15 @@ export function buildFlexiXml(opts: {
       preskocene.push(`${cislo_dokladu} — zálohová faktúra, Flexi ju vedie ako vlastný typ Záloha`);
       continue;
     }
+    if (typ === "advance_payment") {
+      preskocene.push(`${cislo_dokladu} — daňový doklad k prijatej platbe, vo Flexi ho založte k zálohe (účtuje sa len DPH)`);
+      continue;
+    }
+    // Vyúčtovacia faktúra bez odpočtu by DPH zo zálohy priznala druhýkrát.
+    if (cislo((invoice as any).advance_amount) > 0) {
+      preskocene.push(`${cislo_dokladu} — faktúra s odpočtom zálohy, odpočet treba vo Flexi naviazať na zálohu ručne`);
+      continue;
+    }
     const mena = text(invoice.currency) || "EUR";
     if (mena !== "EUR") {
       preskocene.push(`${cislo_dokladu} — faktúra v mene ${mena}`);

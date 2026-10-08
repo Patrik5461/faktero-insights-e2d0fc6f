@@ -28,10 +28,21 @@ export type PolozkaPrijatej = {
   clenenie: string | null;
 };
 
+/**
+ * Celá faktúra v prenesení daňovej povinnosti (§ 69 ods. 12) — dodávateľ
+ * neúčtoval žiadnu daň a odvedie ju odberateľ. Formulár ukladá len
+ * `dph_rezim: "samozdanenie"`, čítanie dokladu aj `reverse_charge`.
+ */
+export const celaPdp = (p: any) =>
+  (p?.reverse_charge === true || p?.dph_rezim === "samozdanenie") &&
+  !Number(p?.vat_amount ?? 0);
+
 const jePdp = (x: any, p: any) =>
   x?.pdp === true ||
   x?.reverse_charge === true ||
-  // Celá faktúra v prenesení: položky bez dane sú prenesené.
+  // Celá faktúra v prenesení: položky bez dane sú prenesené — aj keď je pri
+  // nich uvedená sadzba, ktorú si odberateľ dopočíta.
+  celaPdp(p) ||
   ((p?.reverse_charge === true || p?.dph_rezim === "samozdanenie") && !(Number(x?.vat_rate) > 0));
 
 /**
@@ -117,7 +128,7 @@ export function rozpisPrijatej(p: any): { sadzba: number; zaklad: number; dph: n
   const dph = Number(p?.vat_amount ?? 0);
   if (!zaklad && !dph) return [];
   const sadzba = zaklad ? najblizsiaSadzba((dph / zaklad) * 100, "SK") : 0;
-  return [{ sadzba, zaklad: r2(zaklad), dph: r2(dph) }];
+  return [{ sadzba, zaklad: r2(zaklad), dph: r2(dph), ...(celaPdp(p) ? { pdp: true } : {}) }];
 }
 
 /** Text prijatej faktúry pre Pohodu — čo sa fakturuje. */
@@ -172,6 +183,8 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
       v adrese): text nad položkami, inak názvy položiek, inak číslo faktúry.
     */
     _text: textPrijatej(p),
+    // Účet dodávateľa — Pohoda ho dá na príkaz na úhradu.
+    _ucetDodavatela: p.supplier_iban,
     _symVar: p.variable_symbol,
     _symConst: p.constant_symbol,
     _symSpec: p.specific_symbol,
@@ -182,5 +195,7 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     _datumDph: p.delivery_date || p.issue_date,
     _splatnost: p.due_date,
     _typPohody: spolu < 0 || p.opravuje_cislo ? "receivedCreditNotice" : "receivedInvoice",
+    // Celá faktúra v prenesení — hlavička dostane členenie pre prenesenie a KV B.1.
+    _pdp: celaPdp(p),
   };
 }

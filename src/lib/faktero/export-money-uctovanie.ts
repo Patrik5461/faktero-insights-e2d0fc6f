@@ -272,7 +272,8 @@ function faktura(d: DokladUctovania, m: Mena, nast: NastaveniaMoney, o: string):
   // číslo dodávateľa ide do „Číslo přijatého dokladu".
   const doklad = vydana ? skrat(d.cislo, 10) : "";
   const vs = skrat(d.vs ?? (vydana ? d.cislo : ""), 20);
-  const druh = d.druh === "zaloha" ? "L" : "N";
+  // L zálohová, D daňový doklad k prijatej platbe, N bežná faktúra.
+  const druh = d.druh === "zaloha" ? "L" : d.dokladKPlatbe ? "D" : "N";
   // Pri rozúčtovaní nesú kódy položky; hlavička dostane kód len keď je jeden.
   const pk = d.rozuctovany ? "" : (d.riadky[0]?.predkontacia ?? d.predkontacia);
   const kod = d.rozuctovany ? "" : (d.riadky[0]?.clenenie ?? d.clenenie);
@@ -286,7 +287,8 @@ ${o}  <Popis>${esc(skrat(d.text, 50))}</Popis>${el("Vystaveno", d.datumVystaveni
   }${el("VarSymbol", vs, `${o}  `)}${el("SpecSymbol", skrat(d.ss, 20), `${o}  `)}${
     vydana ? "" : el("PrijatDokl", skrat(d.cislo, 50), `${o}  `)
   }${el("ParSymbol", vydana ? "" : vs, `${o}  `)}${
-    d.druh === "dobropis" ? el("PuvDoklad", skrat(d.opravuje, 50), `${o}  `) : ""
+    // Pôvodná faktúra pri dobropise aj ťarchopise.
+    el("PuvDoklad", skrat(d.opravuje, 50), `${o}  `)
   }${el("Zakazka", d.zakazka, `${o}  `)}
 ${o}  <Druh>${druh}</Druh>
 ${o}  <Dobropis>${d.druh === "dobropis" ? 1 : 0}</Dobropis>${el("PredKontac", pk, `${o}  `)}${el("Cinnost", d.cinnost, `${o}  `)}${

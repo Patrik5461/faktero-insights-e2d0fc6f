@@ -103,6 +103,11 @@ export type DokladUctovania = {
   prenesenieDph: boolean;
   /** Odpočet zaplatenej zálohy na vyúčtovacej faktúre (kladná suma s DPH). */
   odpocetZalohy: number;
+  /**
+   * Daňový doklad k prijatej platbe (záloha). Nie je to tržba — účtuje sa
+   * len daň zo zálohy (MD 324 / D 343), tržbu prinesie až vyúčtovacia faktúra.
+   */
+  dokladKPlatbe?: boolean;
   polozky: PolozkaUctovania[];
 };
 
@@ -122,6 +127,8 @@ export type NastaveniaUctovania = {
   clenenieDphPdp?: string | null;
   predkontaciaPrijata?: string | null;
   clenenieDphPrijata?: string | null;
+  /** Členenie DPH prijatej faktúry v prenesení daňovej povinnosti. */
+  clenenieDphPrijataPdp?: string | null;
   predkontaciaDoklady?: string | null;
   clenenieDphDoklady?: string | null;
   predkontaciaPokladna?: string | null;
@@ -302,6 +309,7 @@ export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUcto
     intPoznamka: t(d?.int_poznamka),
     prenesenieDph: false,
     odpocetZalohy: 0,
+    dokladKPlatbe: false,
     polozky: [],
   };
 }
@@ -311,8 +319,19 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
   const kat = nast.podlaKategorie?.[String(p?.category ?? "")];
   const predkontacia =
     t(p?.pohoda_predkontacia) ?? t(kat?.predkontacia) ?? t(nast.predkontaciaPrijata);
-  const clenenie = t(p?.pohoda_clenenie_dph) ?? t(kat?.clenenie) ?? t(nast.clenenieDphPrijata);
-  const kv = t(p?.kv_clenenie);
+  /*
+    Prenesenie daňovej povinnosti (§ 69): formulár ukladá `dph_rezim:
+    "samozdanenie"`, čítanie dokladu `reverse_charge`. Takú faktúru treba
+    zaúčtovať s členením pre prenesenie a v KV v B.1 — inak by odišla ako
+    bežný nákup a samozdanenie by v priznaní chýbalo.
+  */
+  const prenesenie = Boolean(p?.reverse_charge) || p?.dph_rezim === "samozdanenie";
+  const clenenie =
+    t(p?.pohoda_clenenie_dph) ??
+    t(kat?.clenenie) ??
+    (prenesenie ? t(nast.clenenieDphPrijataPdp) : null) ??
+    t(nast.clenenieDphPrijata);
+  const kv = t(p?.kv_clenenie) ?? (prenesenie ? "B1" : null);
   const odpocet = p?.odpocet !== false && kv !== "X";
   const spolu = Number(p?.amount_total ?? 0);
   const dobropis = spolu < 0 || Boolean(p?.opravuje_cislo);
@@ -370,8 +389,9 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
         .slice(0, 240) || "Prijatá faktúra",
     poznamka: t(p?.note),
     intPoznamka: t(p?.int_poznamka),
-    prenesenieDph: Boolean(p?.reverse_charge) || p?.dph_rezim === "prenesenie",
+    prenesenieDph: prenesenie,
     odpocetZalohy: Math.abs(Number(p?.advance_amount ?? 0)),
+    dokladKPlatbe: false,
     polozky: items
       .filter((x) => t(x?.name))
       .map((x) => ({
@@ -396,10 +416,13 @@ export function vystavenaNaUctovanie(
 ): DokladUctovania {
   const druh: DokladUctovania["druh"] =
     inv?.type === "credit_note" ? "dobropis" : inv?.type === "proforma" ? "zaloha" : "faktura";
+  // Daňový doklad k prijatej platbe — `advance_amount` je na ňom zaplatená
+  // suma, nie odpočet; predvolene sa účtuje predkontáciou zálohy (ako v Pohode).
+  const kPlatbe = inv?.type === "advance_payment";
   const prenesenie = Boolean(inv?.reverse_charge);
   const predkontacia =
     t(inv?.pohoda_predkontacia) ??
-    (druh === "zaloha"
+    (druh === "zaloha" || kPlatbe
       ? t(nast.predkontaciaZaloha)
       : druh === "dobropis"
         ? t(nast.predkontaciaDobropis)
@@ -489,7 +512,8 @@ export function vystavenaNaUctovanie(
     poznamka: t(inv?.notes),
     intPoznamka: t(inv?.int_poznamka),
     prenesenieDph: prenesenie,
-    odpocetZalohy: Math.abs(Number(inv?.advance_amount ?? 0)),
+    odpocetZalohy: kPlatbe ? 0 : Math.abs(Number(inv?.advance_amount ?? 0)),
+    dokladKPlatbe: kPlatbe,
     polozky,
   };
 }

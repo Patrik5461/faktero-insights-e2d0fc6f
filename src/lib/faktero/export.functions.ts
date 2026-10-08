@@ -52,8 +52,27 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       .order("position");
     if (itErr) throw new Error(itErr.message);
 
+    // Dobropis a ťarchopis nesú len id opravovanej faktúry — formáty chcú jej číslo.
+    const opravovaneIds = [
+      ...new Set(invs.map((i: any) => i.opravuje_fakturu_id).filter(Boolean) as string[]),
+    ];
+    const cislaOpravovanych: Record<string, string> = {};
+    if (opravovaneIds.length) {
+      const { data: povodne } = await supabase
+        .from("invoices")
+        .select("id, invoice_number")
+        .eq("company_id", data.companyId)
+        .in("id", opravovaneIds);
+      for (const r of povodne ?? []) cislaOpravovanych[r.id] = r.invoice_number;
+    }
+
     const bundle = invs.map((invoice) => ({
-      invoice,
+      invoice: {
+        ...invoice,
+        _opravujeCislo: (invoice as any).opravuje_fakturu_id
+          ? (cislaOpravovanych[(invoice as any).opravuje_fakturu_id] ?? null)
+          : null,
+      },
       items: (items ?? []).filter((it) => it.invoice_id === invoice.id),
     }));
 

@@ -174,6 +174,10 @@ export function buildFlexiUctovanie(opts: {
       preskocene.push(`${cislo} — zálohová faktúra, Flexi ju vedie ako vlastný typ Záloha`);
       continue;
     }
+    if (d.dokladKPlatbe) {
+      preskocene.push(`${cislo} — daňový doklad k prijatej platbe, vo Flexi ho založte k zálohe (účtuje sa len DPH)`);
+      continue;
+    }
     if (d.odpocetZalohy > 0) {
       preskocene.push(`${cislo} — faktúra s odpočtom zálohy, odpočet treba vo Flexi naviazať na zálohu ručne`);
       continue;

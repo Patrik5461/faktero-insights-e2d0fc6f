@@ -64,6 +64,8 @@ function typDokladu(typ: unknown): string {
   if (t === "credit_note") return "2";
   if (t === "debit_note") return "3";
   if (t === "proforma") return "4";
+  // Daňový doklad k prijatej platbe (daňový zálohový list).
+  if (t === "advance_payment") return "5";
   return "1";
 }
 
@@ -223,7 +225,9 @@ export function buildIsdoc(opts: {
       const sadzba = Number(it.vat_rate ?? 0);
       const zaklad = Number(it.subtotal ?? Number(it.quantity ?? 0) * jc) * znamienko;
       const dan = Number(it.vat_amount ?? (zaklad * sadzba) / 100);
-      const sDanou = zaklad + (dobropis ? -Math.abs(dan) : Math.abs(dan));
+      // Daň má znamienko základu — dobropis je po otočení kladný celý, ako
+      // rekapitulácia; inak by riadok (100 / −23 / 77) nesedel so súčtom.
+      const sDanou = zaklad + Math.abs(dan) * (zaklad < 0 ? -1 : 1);
       return `
    <InvoiceLine>
     <ID>${i + 1}</ID>
@@ -309,7 +313,7 @@ export function buildIsdoc(opts: {
     vymysleným odkazom by bolo horšie než nechať ho prázdny.
   -->
   <ElectronicPossibilityAgreementReference>${esc(invoice.electronic_agreement_ref ?? "")}</ElectronicPossibilityAgreementReference>
-  ${tag("Note", invoice.note)}
+  ${tag("Note", invoice.notes ?? invoice.note)}
   <LocalCurrencyCode>${esc(mena)}</LocalCurrencyCode>
   <CurrRate>1</CurrRate>
   <RefCurrRate>1</RefCurrRate>${strana(company, "AccountingSupplierParty")}${strana(odberatel, "AccountingCustomerParty")}

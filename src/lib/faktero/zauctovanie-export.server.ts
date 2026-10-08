@@ -41,6 +41,7 @@ export async function nastaveniaUctovania(
     clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
     predkontaciaPrijata: company.pohoda_predkontacia_prijata,
     clenenieDphPrijata: company.pohoda_clenenie_dph_prijata,
+    clenenieDphPrijataPdp: company.pohoda_clenenie_dph_prijata_pdp,
     predkontaciaDoklady: company.pohoda_predkontacia_doklady,
     clenenieDphDoklady: company.pohoda_clenenie_dph_doklady,
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,

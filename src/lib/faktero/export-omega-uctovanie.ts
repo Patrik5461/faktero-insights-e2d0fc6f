@@ -206,6 +206,10 @@ export function buildOmegaUctovanie(opts: {
       preskocene.push(`${cislo} — doklad spred roka 2025 má v Omege iné typy súm, zaúčtujte ho ručne`);
       continue;
     }
+    if (d.dokladKPlatbe) {
+      preskocene.push(`${cislo} — daňový doklad k prijatej platbe zaúčtujte v Omege ručne (len DPH, 324 / 343)`);
+      continue;
+    }
     if (d.odpocetZalohy > 0) {
       preskocene.push(`${cislo} — odpočet zálohy treba v Omege zaúčtovať ručne`);
       continue;
