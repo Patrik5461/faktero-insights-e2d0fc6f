@@ -1,5 +1,5 @@
 /*
-  Ostatné doklady — listy, predpisy, exekúcie, zmluvy a ďalšie podklady pre
+  Iné doklady — listy, predpisy, exekúcie, zmluvy a ďalšie podklady pre
   účtovníka, ktoré nie sú faktúra ani bloček. Neúčtujú sa automaticky (do
   Pohody nejdú), ale účtovník z nich účtuje, tak ich musí vidieť a odkliknúť.
 */
@@ -66,7 +66,7 @@ export function stavLehoty(dueDate: string | null | undefined, dnes: string): "p
 }
 
 
-/** Čo AI prečítala z ostatného dokladu — už uprataté na hodnoty pre formulár. */
+/** Čo AI prečítala z iného dokladu — už uprataté na hodnoty pre formulár. */
 export type RozpoznanyOstatny = {
   kind: DruhOstatneho;
   sender: string | null;
@@ -112,16 +112,16 @@ export function jeRozpoznaniePouzitelne(r: RozpoznanyOstatny): boolean {
 }
 
 /**
- * Príloha z e-mailu je ostatný doklad, keď to model povedal výslovne. Pri
- * pochybnosti ostáva faktúrou — zapadnutá faktúra v ostatných dokladoch by
- * sa nezaplatila ani nezaúčtovala, kým ostatný doklad v prijatých faktúrach
+ * Príloha z e-mailu je iný doklad, keď to model povedal výslovne. Pri
+ * pochybnosti ostáva faktúrou — zapadnutá faktúra v iných dokladoch by
+ * sa nezaplatila ani nezaúčtovala, kým iný doklad v prijatých faktúrach
  * si účtovník všimne.
  */
 export function jeOstatnyZMailu(ai: Record<string, unknown> | null): boolean {
   return ai?.document_type === "ostatny";
 }
 
-/** Riadok ostatného dokladu z toho, čo AI prečítala z prílohy e-mailu. */
+/** Riadok iného dokladu z toho, čo AI prečítala z prílohy e-mailu. */
 export function ostatnyZMailu(args: {
   ai: Record<string, unknown> | null;
   odosielatel: string | null;

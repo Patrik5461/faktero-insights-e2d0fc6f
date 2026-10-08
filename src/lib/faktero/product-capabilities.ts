@@ -358,7 +358,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
   },
   {
     key: "ostatne-doklady",
-    name: "Ostatné doklady",
+    name: "Iné doklady",
     summary: "Listy úradov, predpisy poistného, exekúcie a zmluvy na jednom mieste.",
     features: [
       "Rozpoznanie dokumentu AI (druh, odosielateľ, suma, lehota)",

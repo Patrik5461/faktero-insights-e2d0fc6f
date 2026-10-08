@@ -128,7 +128,7 @@ async function notifikacieZamestnancov(companyId: string): Promise<AppNotificati
 }
 
 /**
- * Lehoty z ostatných dokladov: splatnosť predpisu, začiatok zrážok pri
+ * Lehoty z iných dokladov: splatnosť predpisu, začiatok zrážok pri
  * exekúcii, termín z listu úradu. Kľúč nesie aj dátum — keď sa lehota
  * posunie, zvonček sa ozve znova.
  */
@@ -159,7 +159,7 @@ async function lehotyOstatnych(companyId: string): Promise<AppNotification[]> {
   }));
 }
 
-/** Ostatné doklady (listy, predpisy, exekúcie) čakajúce na spracovanie. */
+/** Iné doklady (listy, predpisy, exekúcie) čakajúce na spracovanie. */
 async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, count } = await supabaseAdmin
@@ -179,8 +179,8 @@ async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[
       severity: "info",
       title:
         count === 1
-          ? "1 nespracovaný ostatný doklad"
-          : `${count} nespracovaných ostatných dokladov`,
+          ? "1 nespracovaný iný doklad"
+          : `${count} nespracovaných iných dokladov`,
       detail: "List, predpis alebo zmluva čaká na účtovníka.",
       to: "/ostatne-doklady",
       date: String(najnovsi.created_at).slice(0, 10),

@@ -96,7 +96,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Dobropis odchádza ako samostatný doklad <strong>CreditNote (typ 381)</strong> a nesie číslo
+          Dobropis odchádza ako saminý doklad <strong>CreditNote (typ 381)</strong> a nesie číslo
           pôvodnej faktúry (pole BT-25) — finančná správa to vyžaduje. Bez vyplnenej pôvodnej
           faktúry ho Faktero neodošle. Opravný doklad s kladnou sumou (napríklad vrátenie opravy
           podľa § 25a) ide ako ťarchopis (typ 383).

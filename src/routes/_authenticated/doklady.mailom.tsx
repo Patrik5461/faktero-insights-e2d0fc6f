@@ -92,7 +92,7 @@ function Stranka() {
               . AI navrhne druh — faktúra, zálohová, dobropis, bloček, alebo exekúcia, predpis
               poistného, list z úradu či zmluva (tie pôjdu do{" "}
               <Link to="/ostatne-doklady" className="text-primary underline">
-                Ostatných dokladov
+                Iných dokladov
               </Link>
               ) — a vy ho potvrdíte alebo zmeníte.
             </li>

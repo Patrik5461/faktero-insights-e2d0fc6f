@@ -475,7 +475,7 @@ describe("dobropis naviazaný na pôvodnú faktúru", () => {
     expect(xml.indexOf("correctiveDocument")).toBeLessThan(xml.indexOf("invoiceHeader"));
   });
 
-  it("bez väzby ostáva samostatným dokladom", () => {
+  it("bez väzby ostáva saminým dokladom", () => {
     // Kým sa pôvodná faktúra v Pohode nepotvrdí, jej číslo nepoznáme — vtedy je
     // lepší dobropis bez väzby než doklad, ktorý sa neimportuje.
     const xml = buildPohodaInvoiceXml({

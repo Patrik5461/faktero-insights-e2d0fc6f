@@ -28,7 +28,7 @@ import { CheckCircle2, Download, FolderOpen, Paperclip, Plus, Trash2, Undo2 } fr
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
-  head: () => ({ meta: [{ title: "Ostatné doklady — Faktero" }] }),
+  head: () => ({ meta: [{ title: "Iné doklady — Faktero" }] }),
   validateSearch: (s: Record<string, unknown>): { stav?: ZalozkaDokladov } =>
     jeZalozkaDokladov(s.stav) ? { stav: s.stav } : {},
   component: OstatneDokladyPage,
@@ -205,7 +205,7 @@ function OstatneDokladyPage() {
   return (
     <>
       <PageHeader
-        title="Ostatné doklady"
+        title="Iné doklady"
         description="Listy, predpisy, exekúcie, zmluvy a ďalšie podklady pre účtovníka."
         action={
           <Link
@@ -358,7 +358,7 @@ function OstatneDokladyPage() {
             <div className="p-12 text-center text-sm text-muted-foreground">
               <FolderOpen className="mx-auto mb-2 h-8 w-8 opacity-40" />
               {bezMesiaca
-                ? "Žiadny ostatný doklad nečaká na spracovanie."
+                ? "Žiadny iný doklad nečaká na spracovanie."
                 : "Vo výbere nie je žiadny doklad."}
               <div className="mt-4 flex justify-center gap-2">
                 <Link

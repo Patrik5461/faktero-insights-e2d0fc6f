@@ -22,7 +22,7 @@ function csv(v: unknown): string {
   return /[;"\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
 }
 
-/** Súpis ostatných dokladov v CSV — oddeľovač bodkočiarka, ako čaká Excel v SK. */
+/** Súpis iných dokladov v CSV — oddeľovač bodkočiarka, ako čaká Excel v SK. */
 export function supisOstatnych(doklady: DokladVBaliku[]): string {
   const hlavicka = [
     "prijate",
@@ -69,7 +69,7 @@ export function priecinokDokladu(d: DokladVBaliku, poradie: number): string {
 }
 
 /**
- * Pridá do ZIP-u súpis a prílohy ostatných dokladov. Príloha, ktorá sa
+ * Pridá do ZIP-u súpis a prílohy iných dokladov. Príloha, ktorá sa
  * nestiahne, balík nezhodí — spočíta sa do `vynechane`.
  */
 export async function balikOstatnych(

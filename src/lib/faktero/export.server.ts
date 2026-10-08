@@ -911,7 +911,7 @@ export function rozdelUcet(ucet: unknown): { cislo: string; kodBanky: string } |
 /**
  * Bankový výpis do Pohody.
  *
- * Pohoda drží pohyby ako samostatné doklady, nie ako jeden výpis, takže sa
+ * Pohoda drží pohyby ako saminé doklady, nie ako jeden výpis, takže sa
  * vyváža riadok po riadku. Číslo výpisu a poradie pohybu idú do
  * `statementNumber` — podľa nich účtovník pozná, z ktorého výpisu doklad je,
  * a spolu smú mať najviac desať znakov.

@@ -1,5 +1,5 @@
 /**
- * Prečítanie ostatného dokladu (list, predpis, exekúcia, zmluva) cez AI.
+ * Prečítanie iného dokladu (list, predpis, exekúcia, zmluva) cez AI.
  *
  * Model má určiť druh, odosielateľa, predmet a — ak sú — sumu a lehotu.
  * Upratovanie odpovede je v čistom `normalizujRozpoznanie`, tu je len zadanie.

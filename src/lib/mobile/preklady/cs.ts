@@ -653,9 +653,9 @@ export const cs: Partial<Record<Kluc, string>> = {
   "sken.inyDoklad": "Jiný doklad",
   "app.inyDoklad": "Jiný doklad",
   "app.inyDokladPopis":
-    "Exekuce, předpis pojistného, dopis z úřadu, smlouva… Uloží se mezi ostatní doklady a údaje doplní AI.",
-  "app.ulozitOstatny": "Uložit jako ostatní doklad",
-  "app.ostatnyUlozeny": "Uloženo mezi ostatní doklady",
+    "Exekuce, předpis pojistného, dopis z úřadu, smlouva… Uloží se mezi jiné doklady a údaje doplní AI.",
+  "app.ulozitOstatny": "Uložit jako jiný doklad",
+  "app.ostatnyUlozeny": "Uloženo mezi jiné doklady",
   "app.ostatnyBezSignalu": "Jiný doklad lze uložit jen se signálem.",
   "bp.nadpisXiaomi": "Aby Xiaomi nezastavilo detekci jízd",
   "bp.nadpisIny": "Povolte aplikaci běh na pozadí",

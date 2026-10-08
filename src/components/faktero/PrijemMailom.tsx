@@ -347,7 +347,7 @@ export function PrijemMailom({
                                 search={{ id: s.created_other_ids[0]! }}
                                 className="text-primary hover:underline"
                               >
-                                otvoriť ostatný doklad
+                                otvoriť iný doklad
                               </Link>
                             )}
                             <button

@@ -354,7 +354,7 @@ export async function vykonajImport(args: {
         const sken = plan.skeny[j]!;
         try {
           /*
-            Ten istý sken z predchádzajúceho importu. Ostatné doklady si pamätajú
+            Ten istý sken z predchádzajúceho importu. Iné doklady si pamätajú
             meno a veľkosť súboru, tak sa pozná ešte pred AI — opakovaný import
             by inak založil exekúciu či predpis druhý raz.
           */

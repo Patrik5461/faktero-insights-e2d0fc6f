@@ -421,7 +421,7 @@ function OdovzdanieZaMesiac() {
         r.pocetPrijatych ? `${r.pocetPrijatych} prijatých faktúr` : "",
         r.pocetDokladov ? `${r.pocetDokladov} prijatých dokladov` : "",
         r.pocetPokladnicnych ? `${r.pocetPokladnicnych} pokladničných` : "",
-        r.pocetOstatnych ? `${r.pocetOstatnych} ostatných dokladov` : "",
+        r.pocetOstatnych ? `${r.pocetOstatnych} iných dokladov` : "",
       ]
         .filter(Boolean)
         .join(", ") || "nič"

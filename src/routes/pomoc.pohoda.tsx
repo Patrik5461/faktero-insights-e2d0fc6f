@@ -564,7 +564,7 @@ const sections: HelpSection[] = [
           <strong>Dobropis.</strong> Pri jeho vystavení sa dá vybrať, ktorú faktúru opravuje
           (tlačidlo „Ktorú faktúru opravuje" pri položkách). V Pohode potom vznikne ako opravný
           doklad naviazaný na pôvodnú faktúru, takže sa spárujú a sedí aj kontrolný výkaz. Bez
-          výberu odíde ako samostatný doklad, ako doteraz.
+          výberu odíde ako saminý doklad, ako doteraz.
         </p>
         <p>
           <strong>Zálohová faktúra.</strong> Keď si ju konečná faktúra odpočíta, odpočet ide do

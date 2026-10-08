@@ -335,7 +335,7 @@ function ImportDokladovPage() {
                     Skeny bez páru prečítať cez AI a založiť z nich doklady
                     <span className="block text-xs text-muted-foreground">
                       Najprv sa skúsia priradiť k dokladom z XML podľa sumy, dátumu a dodávateľa.
-                      Listy, predpisy a exekúcie pôjdu do Ostatných dokladov.
+                      Listy, predpisy a exekúcie pôjdu do Iných dokladov.
                     </span>
                   </span>
                 </label>
@@ -391,7 +391,7 @@ function ImportDokladovPage() {
                   <ul className="mt-3 space-y-1 text-sm">
                     <li>Prijaté faktúry: {priebeh.vysledok.faktury}</li>
                     <li>Bločky: {priebeh.vysledok.blocky}</li>
-                    <li>Ostatné doklady: {priebeh.vysledok.ostatne}</li>
+                    <li>Iné doklady: {priebeh.vysledok.ostatne}</li>
                     <li>Priradené skeny: {priebeh.vysledok.skenyPriradene}</li>
                     <li>Preskočené (už boli vo Fakteri): {priebeh.vysledok.preskocene}</li>
                   </ul>
@@ -429,7 +429,7 @@ function ImportDokladovPage() {
                       search={{ stav: "vsetky" }}
                       className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
                     >
-                      Ostatné doklady
+                      Iné doklady
                     </Link>
                   </div>
                 )}

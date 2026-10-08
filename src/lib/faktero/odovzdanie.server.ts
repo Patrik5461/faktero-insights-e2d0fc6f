@@ -173,7 +173,7 @@ export async function zostavBalik(
         .gte("entry_date", od)
         .lt("entry_date", doDatumu)
         .order("entry_date"),
-      // Ostatné doklady sa radia podľa dňa doručenia — dátum vystavenia nemajú.
+      // Iné doklady sa radia podľa dňa doručenia — dátum vystavenia nemajú.
       supabase
         .from("other_documents")
         .select(
@@ -614,7 +614,7 @@ export async function zostavBalik(
     }
   }
 
-  // Ostatné doklady nejdú do Pohody — sú podkladom, z ktorého účtovník účtuje.
+  // Iné doklady nejdú do Pohody — sú podkladom, z ktorého účtovník účtuje.
   if (ostatne.length) {
     const { balikOstatnych } = await import("./ostatne-doklady-balik.server");
     const { vynechane } = await balikOstatnych(zip, ostatne, supabaseAdmin, "ostatne-doklady/");
@@ -785,7 +785,7 @@ export async function posliBalikMailom(opts: {
     balik.pocetFaktur ? `${balik.pocetFaktur} vydaných faktúr` : "",
     balik.pocetDokladov ? `${balik.pocetDokladov} prijatých dokladov` : "",
     balik.pocetPokladnicnych ? `${balik.pocetPokladnicnych} pokladničných dokladov` : "",
-    balik.pocetOstatnych ? `${balik.pocetOstatnych} ostatných dokladov` : "",
+    balik.pocetOstatnych ? `${balik.pocetOstatnych} iných dokladov` : "",
     balik.pocetCiselnikov ? `${balik.pocetCiselnikov} záznamov číselníkov` : "",
   ].filter(Boolean);
 

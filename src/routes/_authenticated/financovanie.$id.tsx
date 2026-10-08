@@ -407,7 +407,7 @@ function Stranka() {
             cid={cid}
             financingContractId={id}
             druhNoveho="leasing_uver"
-            popisPrazdny="Oznámenia banky, dodatky, predpisy poistenia a ďalšie doklady z Ostatných dokladov."
+            popisPrazdny="Oznámenia banky, dodatky, predpisy poistenia a ďalšie doklady z Iných dokladov."
             tlacidlo="Pridať doklad"
           />
         </section>

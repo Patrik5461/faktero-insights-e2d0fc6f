@@ -32,7 +32,7 @@ import { CheckCircle2, Loader2, Paperclip, Save, Sparkles, Trash2, Upload, X } f
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/novy")({
-  head: () => ({ meta: [{ title: "Ostatný doklad — Faktero" }] }),
+  head: () => ({ meta: [{ title: "Iný doklad — Faktero" }] }),
   /*
     `zamestnanec`, `zmluva` a `druh` predvyplnia nový doklad — z karty
     zamestnanca („Pridať exekúciu“) alebo z detailu leasingu.
@@ -388,7 +388,7 @@ function OstatnyDokladPage() {
   return (
     <>
       <PageHeader
-        title={novy ? "Pridať ostatný doklad" : "Ostatný doklad"}
+        title={novy ? "Pridať iný doklad" : "Iný doklad"}
         description="List, predpis, exekúcia, zmluva alebo iný podklad pre účtovníka."
       />
       <PageBody>

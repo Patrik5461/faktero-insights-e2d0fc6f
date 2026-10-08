@@ -132,7 +132,7 @@ export const NAZOV_UCELU: Record<string, string> = {
   "doklad-z-posty": "Doklady z e-mailu",
   "dodaci-list": "Dodacie listy",
   financovanie: "Leasingy a úvery",
-  "ostatny-doklad": "Ostatné doklady",
+  "ostatny-doklad": "Iné doklady",
   "bankovy-vypis": "Bankové výpisy",
   "import-dokladov": "Import dokladov",
   asistent: "AI asistent",

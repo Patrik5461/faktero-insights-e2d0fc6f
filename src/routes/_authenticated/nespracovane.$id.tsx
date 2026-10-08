@@ -148,7 +148,7 @@ function Detail() {
     try {
       const r = await vytvor({ data: { id, druh: druh as DruhNespracovaneho, udaje: u as any } });
       const kam =
-        r.agenda === "prijata" ? "medzi prijaté faktúry" : r.agenda === "doklad" ? "medzi doklady" : "medzi ostatné doklady";
+        r.agenda === "prijata" ? "medzi prijaté faktúry" : r.agenda === "doklad" ? "medzi doklady" : "medzi iné doklady";
       toast.success(`Doklad je vytvorený a presunutý ${kam}`, {
         action: {
           label: "Otvoriť",

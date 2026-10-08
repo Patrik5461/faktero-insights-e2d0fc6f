@@ -38,7 +38,7 @@ export const OBSAH_EXPORTU = [
   ["faktury.csv", "vystavené faktúry, zálohové faktúry a dobropisy"],
   ["faktury-polozky.csv", "položky vystavených faktúr"],
   ["prijate-faktury.csv", "prijaté faktúry vrátane režimu DPH"],
-  ["doklady.csv", "bločky a ostatné doklady s DPH"],
+  ["doklady.csv", "bločky a iné doklady s DPH"],
   ["ostatne-doklady.csv", "listy, predpisy, exekúcie a zmluvy"],
   ["odberatelia.csv", "karty odberateľov"],
   ["produkty.csv", "cenník a skladové karty"],

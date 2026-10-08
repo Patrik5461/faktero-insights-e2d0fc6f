@@ -155,7 +155,7 @@ function KartaZamestnanca() {
                 cid={cid}
                 employeeId={detail.zamestnanec.id}
                 druhNoveho="exekucia"
-                popisPrazdny="Exekučné príkazy a ďalšie doklady z Ostatných dokladov, ktoré sa týkajú tohto zamestnanca."
+                popisPrazdny="Exekučné príkazy a ďalšie doklady z Iných dokladov, ktoré sa týkajú tohto zamestnanca."
                 tlacidlo="Pridať exekúciu"
               />
             )}

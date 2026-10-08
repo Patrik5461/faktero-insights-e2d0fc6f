@@ -4,7 +4,7 @@ import { z } from "zod";
 import { DRUHY_KLUCE, bezpecneMeno, jeCestaDokladu, jeRozpoznaniePouzitelne } from "./ostatne-doklady";
 
 /*
-  Ostatné doklady. Všetko ide cez používateľského klienta, takže o tom, kto čo
+  Iné doklady. Všetko ide cez používateľského klienta, takže o tom, kto čo
   smie, rozhodujú politiky v databáze — mazať smie len správca firmy.
 */
 
@@ -336,7 +336,7 @@ export const stavRozpoznaniaOstatnehoFn = createServerFn({ method: "POST" })
   });
 
 /**
- * Ostatný doklad z mobilnej appky: nafotené strany (spojené do PDF) alebo
+ * Iný doklad z mobilnej appky: nafotené strany (spojené do PDF) alebo
  * vybraný súbor. Doklad vznikne hneď — appka nemusí čakať na AI — a údaje
  * doplní čítanie na pozadí. Nič, čo už je vyplnené, sa neprepíše.
  */

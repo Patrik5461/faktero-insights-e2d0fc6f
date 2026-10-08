@@ -45,7 +45,7 @@ const sections: HelpSection[] = [
           </li>
           <li>
             Kliknite na <strong>Vytvoriť</strong> — doklad sa presunie medzi prijaté faktúry,
-            doklady alebo ostatné doklady (s vyplneným zaúčtovaním) a otvorí sa ďalší nespracovaný.
+            doklady alebo iné doklady (s vyplneným zaúčtovaním) a otvorí sa ďalší nespracovaný.
             <strong> Uložiť zmeny</strong> ho nechá rozpracovaný na neskôr.
           </li>
         </ol>
@@ -54,7 +54,7 @@ const sections: HelpSection[] = [
           formulári dokladu, kde ich spracujete tlačidlom Spracovať. Spracovaný bloček sa presunie do{" "}
           <Link to="/doklady">Doklady → Bločky</Link>; tam sú len skontrolované bločky, rozdelené na
           spracované a odovzdané účtovníkovi. Menu Doklady má sekcie ako Doklado: Nespracované doklady,
-          Bločky, Prijaté faktúry, Vystavené faktúry, Ostatné doklady a <Link to="/kos">Kôš</Link>, kde sa
+          Bločky, Prijaté faktúry, Vystavené faktúry, Iné doklady a <Link to="/kos">Kôš</Link>, kde sa
           dajú zmazané doklady obnoviť. Zmazaný nespracovaný doklad
           ide do koša a dá sa obnoviť.
         </p>
@@ -87,7 +87,7 @@ const sections: HelpSection[] = [
           Na detaile dokladu je <strong>história zmien</strong> (kto, kedy a čo zmenil) a{" "}
           <strong>štítky</strong> — najviac päť vlastných značiek na triedenie. V komentári
           označíte kolegu napísaním <strong>@meno</strong>; dostane upozornenie do zvončeka.
-          Ostatné doklady sa dajú triediť do <strong>priečinkov</strong>.
+          Iné doklady sa dajú triediť do <strong>priečinkov</strong>.
         </p>
       </>
     ),
@@ -198,13 +198,13 @@ const sections: HelpSection[] = [
   },
   {
     id: "ostatne",
-    title: "Ostatné doklady — listy, predpisy, exekúcie",
+    title: "Iné doklady — listy, predpisy, exekúcie",
     body: (
       <>
         <p>
           Nie všetko, z čoho účtovník účtuje, je faktúra alebo bloček. Exekučný príkaz, predpis
           poistného, list z daňového úradu či zmluvu nahráte do{" "}
-          <Link to="/ostatne-doklady">Doklady → Ostatné doklady</Link>. Vyberiete druh dokladu,
+          <Link to="/ostatne-doklady">Doklady → Iné doklady</Link>. Vyberiete druh dokladu,
           odosielateľa, dátum doručenia a pripojíte PDF alebo fotky (aj viac strán). Suma a lehota
           sú nepovinné — lehota, ktorá sa blíži alebo už uplynula, sa v zozname zvýrazní.
         </p>
@@ -225,7 +225,7 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Aj tu platí <strong>Nespracované → Spracované → Odovzdané</strong>: účtovník doklad pozrie
-          a klikne na <strong>Spracovať</strong>. Ostatné doklady sa do Pohody neposielajú, sú
+          a klikne na <strong>Spracovať</strong>. Iné doklady sa do Pohody neposielajú, sú
           podkladom. V mesačnom balíku pre účtovníka sú v priečinku <strong>ostatne-doklady</strong>{" "}
           so súpisom v CSV.
         </p>
@@ -246,7 +246,7 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Prijaté faktúry pôjdu medzi prijaté faktúry, bločky do Dokladov a listy, predpisy či
-          exekúcie do Ostatných dokladov. Pred spustením uvidíte, čo sa naimportuje, a zvolíte stav
+          exekúcie do Iných dokladov. Pred spustením uvidíte, čo sa naimportuje, a zvolíte stav
           (napríklad „Odovzdané účtovníkovi“ pre doklady, ktoré sú už zaúčtované). Doklady, ktoré vo
           Fakteri už sú, sa preskočia, takže import sa dá pustiť aj opakovane. Hotovostné bločky sa
           do pokladne započítajú len vtedy, keď to zaškrtnete.
@@ -520,7 +520,7 @@ const sections: HelpSection[] = [
         </p>
         <p>
           <strong>Prílohy a presun.</strong> K dokladu sa dá priložiť ďalší súbor (dodací list,
-          druhá strana). Keď sa druhá strana či dodací list nahrali ako samostatný doklad,
+          druhá strana). Keď sa druhá strana či dodací list nahrali ako saminý doklad,
           tlačidlom <strong>Presunúť ako prílohu</strong> ho pripojíte k správnemu dokladu,
           prijatej či vystavenej faktúre — pôvodný záznam ide do koša.
         </p>

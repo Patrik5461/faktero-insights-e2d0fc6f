@@ -22,7 +22,7 @@ export type Oblast =
 export const OBLASTI: { kluc: Oblast; nazov: string; popis: string }[] = [
   { kluc: "faktury", nazov: "Faktúry a ponuky", popis: "vydané faktúry, dobropisy, zálohy, ponuky, objednávky, opakované faktúry, eFaktúry" },
   { kluc: "doklady", nazov: "Prijaté faktúry a doklady", popis: "prijaté faktúry, bločky, doklady e-mailom" },
-  { kluc: "ostatne", nazov: "Ostatné doklady", popis: "listy, predpisy, exekúcie, zmluvy" },
+  { kluc: "ostatne", nazov: "Iné doklady", popis: "listy, predpisy, exekúcie, zmluvy" },
   { kluc: "kontakty", nazov: "Kontakty", popis: "odberatelia a dodávatelia (kto smie faktúry, vidí ich tiež)" },
   { kluc: "banka", nazov: "Banka", popis: "bankové účty, pohyby, výpisy, platby, leasingy a úvery" },
   { kluc: "pokladna", nazov: "Pokladňa", popis: "pokladničné doklady a stav hotovosti" },

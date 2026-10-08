@@ -127,7 +127,7 @@ const sections: HelpSection[] = [
         <p>
           Keď nesedí ani jedna rola, zvoľte pri pozvaní alebo pri členovi rolu{" "}
           <strong>Vlastný prístup</strong> a vyklikajte oblasti: faktúry a ponuky, prijaté faktúry a
-          doklady, ostatné doklady, kontakty, banka, pokladňa, sklad a cenník, zákazky, kniha jázd,
+          doklady, iné doklady, kontakty, banka, pokladňa, sklad a cenník, zákazky, kniha jázd,
           zamestnanci, účtovníctvo a exporty. Pri každej zvolíte <strong>Bez prístupu</strong>,{" "}
           <strong>Len čítať</strong> alebo <strong>Upravovať</strong>.
         </p>

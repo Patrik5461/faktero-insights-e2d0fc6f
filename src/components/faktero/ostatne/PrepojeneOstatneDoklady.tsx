@@ -7,7 +7,7 @@ import { nazovDruhu, stavLehoty, type DruhOstatneho } from "@/lib/faktero/ostatn
 import { STAV_DOKLADU_NAZOV } from "@/lib/faktero/doklad-stav";
 
 /**
- * Ostatné doklady priradené k zamestnancovi (exekúcie) alebo k zmluve
+ * Iné doklady priradené k zamestnancovi (exekúcie) alebo k zmluve
  * o leasingu či úvere. Tá istá tabuľka na karte zamestnanca aj v detaile
  * zmluvy, aby sa správali rovnako.
  */

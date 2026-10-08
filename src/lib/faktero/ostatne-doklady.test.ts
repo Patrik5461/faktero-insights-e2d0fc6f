@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bezpecneMeno, jeCestaDokladu, nazovDruhu, stavLehoty } from "./ostatne-doklady";
 
-describe("ostatné doklady", () => {
+describe("iné doklady", () => {
   it("meno súboru bez diakritiky a lomiek", () => {
     expect(bezpecneMeno("Exekučný príkaz č. 12/2026.pdf")).toBe("Exekucny_prikaz_c._12_2026.pdf");
     expect(bezpecneMeno("../../etc/passwd")).toBe("etc_passwd");
@@ -32,7 +32,7 @@ describe("ostatné doklady", () => {
 
 import { priecinokDokladu, supisOstatnych } from "./ostatne-doklady-balik.server";
 
-describe("balík ostatných dokladov", () => {
+describe("balík iných dokladov", () => {
   const d = {
     id: "1",
     kind: "exekucia",
@@ -68,7 +68,7 @@ describe("balík ostatných dokladov", () => {
 
 import { jeRozpoznaniePouzitelne, normalizujRozpoznanie } from "./ostatne-doklady";
 
-describe("rozpoznanie ostatného dokladu", () => {
+describe("rozpoznanie iného dokladu", () => {
   it("uprace odpoveď modelu", () => {
     const r = normalizujRozpoznanie({
       kind: "exekucia",
@@ -105,7 +105,7 @@ describe("rozpoznanie ostatného dokladu", () => {
 
 import { jeOstatnyZMailu, ostatnyZMailu } from "./ostatne-doklady";
 
-describe("ostatný doklad z e-mailu", () => {
+describe("iný doklad z e-mailu", () => {
   it("pri pochybnosti ostáva faktúrou", () => {
     expect(jeOstatnyZMailu({ document_type: "ostatny" })).toBe(true);
     expect(jeOstatnyZMailu({ document_type: "faktura" })).toBe(false);
@@ -152,7 +152,7 @@ describe("ostatný doklad z e-mailu", () => {
 
 import { lehotyNaUpozornenie, navrhniZamestnanca, navrhniZmluvu } from "./ostatne-doklady";
 
-describe("väzby ostatných dokladov", () => {
+describe("väzby iných dokladov", () => {
   const ludia = [
     { id: "a", first_name: "Ján", last_name: "Novák" },
     { id: "b", first_name: "Jana", last_name: "Nováková" },

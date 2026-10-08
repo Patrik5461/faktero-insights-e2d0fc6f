@@ -666,9 +666,9 @@ export const sk = {
   "sken.inyDoklad": "Iný doklad",
   "app.inyDoklad": "Iný doklad",
   "app.inyDokladPopis":
-    "Exekúcia, predpis poistného, list z úradu, zmluva… Uloží sa medzi ostatné doklady a údaje doplní AI.",
-  "app.ulozitOstatny": "Uložiť ako ostatný doklad",
-  "app.ostatnyUlozeny": "Uložené medzi ostatné doklady",
+    "Exekúcia, predpis poistného, list z úradu, zmluva… Uloží sa medzi iné doklady a údaje doplní AI.",
+  "app.ulozitOstatny": "Uložiť ako iný doklad",
+  "app.ostatnyUlozeny": "Uložené medzi iné doklady",
   "app.ostatnyBezSignalu": "Iný doklad sa dá uložiť len so signálom.",
   "bp.nadpisXiaomi": "Aby Xiaomi nezastavilo detekciu jázd",
   "bp.nadpisIny": "Povoľte appke beh na pozadí",
