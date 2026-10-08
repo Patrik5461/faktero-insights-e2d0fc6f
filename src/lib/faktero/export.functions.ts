@@ -66,21 +66,49 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       for (const r of povodne ?? []) cislaOpravovanych[r.id] = r.invoice_number;
     }
 
+    // Odpočty záloh na vyúčtovacích faktúrach (väzba v `invoice_advances`).
+    const { nacitajOdpocty } = await import("./zalohy-odpocty.server");
+    const { odpoctyZapisatelne, suhrnOdpoctov } = await import("./zalohy-odpocty");
+    const odpocty = await nacitajOdpocty(
+      supabase,
+      data.companyId,
+      invs.map((i) => i.id),
+    );
+
     const bundle = invs.map((invoice) => ({
       invoice: {
         ...invoice,
         _opravujeCislo: (invoice as any).opravuje_fakturu_id
           ? (cislaOpravovanych[(invoice as any).opravuje_fakturu_id] ?? null)
           : null,
+        _odpocty: odpocty[invoice.id] ?? null,
       },
       items: (items ?? []).filter((it) => it.invoice_id === invoice.id),
     }));
+
+    /*
+      Pohoda berie odpočet ako jednu položku s jednou sadzbou — rovnako ako
+      konektor; zálohy v rôznych sadzbách sa vynechajú a ozvú sa.
+    */
+    const zalohy: Record<string, { cislo: string | null; zaklad: number; dph: number; sadzba: number }> = {};
+    for (const [id, zoz] of Object.entries(odpocty)) {
+      if (!odpoctyZapisatelne(zoz)) continue;
+      const s = suhrnOdpoctov(zoz);
+      if (s.length !== 1) continue;
+      zalohy[id] = {
+        cislo: zoz.length === 1 ? zoz[0].zaloha : null,
+        zaklad: s[0].zaklad,
+        dph: s[0].dph,
+        sadzba: s[0].sadzba,
+      };
+    }
 
     // Predkontácie a členenie DPH sú kódy z Pohody účtovníka; bez nich sa
     // doklad naimportuje, ale všetko okolo účtovania si musí doklikať sám.
     const built = await strategy.build({
       company,
       invoices: bundle,
+      zalohy,
       nastavenia: {
         predkontacia: company.pohoda_predkontacia,
         predkontaciaZaloha: company.pohoda_predkontacia_zaloha,

@@ -1,6 +1,7 @@
 import { krajinaDane } from "./vat-rates";
 import { sUctomFaktury } from "./platobny-ucet";
 import { riadkySoZlavou } from "./zlavy";
+import { odpoctyZapisatelne, suhrnOdpoctov, type OdpocetZalohy } from "./zalohy-odpocty";
 
 /**
  * ISDOC — český národný formát elektronickej faktúry.
@@ -252,25 +253,60 @@ export function buildIsdoc(opts: {
   const zakladSpolu = sumare.reduce((s, r) => s + r.zaklad, 0);
   const sDanouSpolu = zakladSpolu + danSpolu;
 
+  /*
+    Odpočet zdanenej zálohy: daň zo zálohy sa priznala dokladom k prijatej
+    platbe, takže v rekapitulácii je „už uplatnené" a doklad nesie len rozdiel
+    (AlreadyClaimed* / Difference*); zálohy sa vypíšu v TaxedDeposits.
+  */
+  const odpocty: OdpocetZalohy[] =
+    !dobropis && odpoctyZapisatelne(invoice._odpocty) ? invoice._odpocty : [];
+  const uplatnene = new Map(suhrnOdpoctov(odpocty).map((r) => [r.sadzba, r]));
+  // Sadzba zálohy, ktorá na vyúčtovaní nie je, musí mať v rekapitulácii vlastný riadok.
+  for (const s0 of uplatnene.keys())
+    if (!sumare.some((r) => r.sadzba === s0)) sumare.push({ sadzba: s0, zaklad: 0, dan: 0 });
+  const claimed = (s0: number) => uplatnene.get(s0) ?? { sadzba: s0, zaklad: 0, dph: 0 };
+  const uplatZaklad = [...uplatnene.values()].reduce((a, r) => a + r.zaklad, 0);
+  const uplatDan = [...uplatnene.values()].reduce((a, r) => a + r.dph, 0);
+  const rozdielZaklad = zakladSpolu - uplatZaklad;
+  const rozdielDan = danSpolu - uplatDan;
+
   const taxSubTotals = sumare
-    .map(
-      (r) => `
+    .map((r) => {
+      const u = claimed(r.sadzba);
+      return `
    <TaxSubTotal>
     <TaxableAmount>${c2(r.zaklad)}</TaxableAmount>
     <TaxAmount>${c2(r.dan)}</TaxAmount>
     <TaxInclusiveAmount>${c2(r.zaklad + r.dan)}</TaxInclusiveAmount>
-    <AlreadyClaimedTaxableAmount>0.00</AlreadyClaimedTaxableAmount>
-    <AlreadyClaimedTaxAmount>0.00</AlreadyClaimedTaxAmount>
-    <AlreadyClaimedTaxInclusiveAmount>0.00</AlreadyClaimedTaxInclusiveAmount>
-    <DifferenceTaxableAmount>${c2(r.zaklad)}</DifferenceTaxableAmount>
-    <DifferenceTaxAmount>${c2(r.dan)}</DifferenceTaxAmount>
-    <DifferenceTaxInclusiveAmount>${c2(r.zaklad + r.dan)}</DifferenceTaxInclusiveAmount>
+    <AlreadyClaimedTaxableAmount>${c2(u.zaklad)}</AlreadyClaimedTaxableAmount>
+    <AlreadyClaimedTaxAmount>${c2(u.dph)}</AlreadyClaimedTaxAmount>
+    <AlreadyClaimedTaxInclusiveAmount>${c2(u.zaklad + u.dph)}</AlreadyClaimedTaxInclusiveAmount>
+    <DifferenceTaxableAmount>${c2(r.zaklad - u.zaklad)}</DifferenceTaxableAmount>
+    <DifferenceTaxAmount>${c2(r.dan - u.dph)}</DifferenceTaxAmount>
+    <DifferenceTaxInclusiveAmount>${c2(r.zaklad + r.dan - u.zaklad - u.dph)}</DifferenceTaxInclusiveAmount>
     <TaxCategory>
      <Percent>${c2(r.sadzba)}</Percent>
     </TaxCategory>
-   </TaxSubTotal>`,
-    )
+   </TaxSubTotal>`;
+    })
     .join("");
+
+  const zlozky = odpocty.flatMap((o) =>
+    o.riadky.map(
+      (r) => `
+   <TaxedDeposit>
+    <ID>${esc(o.doklad ?? o.zaloha)}</ID>
+    <VariableSymbol>${esc(String(o.vs ?? o.zaloha).replace(/\D/g, "").slice(0, 10))}</VariableSymbol>
+    <TaxableDepositAmount>${c2(r.zaklad)}</TaxableDepositAmount>
+    <TaxInclusiveDepositAmount>${c2(r.zaklad + r.dph)}</TaxInclusiveDepositAmount>
+    <ClassifiedTaxCategory>
+     <Percent>${c2(r.sadzba)}</Percent>
+     <VATCalculationMethod>0</VATCalculationMethod>
+    </ClassifiedTaxCategory>
+   </TaxedDeposit>`,
+    ),
+  );
+  const zalohyXml = zlozky.length ? `\n  <TaxedDeposits>${zlozky.join("")}\n  </TaxedDeposits>` : "";
 
   const ucet = ucetZIbanu(company.iban);
   /*
@@ -282,7 +318,7 @@ export function buildIsdoc(opts: {
     ? `
   <PaymentMeans>
    <Payment>
-    <PaidAmount>${c2(sDanouSpolu)}</PaidAmount>
+    <PaidAmount>${c2(rozdielZaklad + rozdielDan)}</PaidAmount>
     <PaymentMeansCode>42</PaymentMeansCode>
     <Details>
      <PaymentDueDate>${esc(invoice.due_date ?? invoice.issue_date ?? "")}</PaymentDueDate>
@@ -319,19 +355,20 @@ export function buildIsdoc(opts: {
   <RefCurrRate>1</RefCurrRate>${strana(company, "AccountingSupplierParty")}${strana(odberatel, "AccountingCustomerParty")}
   <InvoiceLines>${riadky}
   </InvoiceLines>
+${zalohyXml}
   <TaxTotal>${taxSubTotals}
-   <TaxAmount>${c2(danSpolu)}</TaxAmount>
+   <TaxAmount>${c2(rozdielDan)}</TaxAmount>
   </TaxTotal>
   <LegalMonetaryTotal>
    <TaxExclusiveAmount>${c2(zakladSpolu)}</TaxExclusiveAmount>
    <TaxInclusiveAmount>${c2(sDanouSpolu)}</TaxInclusiveAmount>
-   <AlreadyClaimedTaxExclusiveAmount>0.00</AlreadyClaimedTaxExclusiveAmount>
-   <AlreadyClaimedTaxInclusiveAmount>0.00</AlreadyClaimedTaxInclusiveAmount>
-   <DifferenceTaxExclusiveAmount>${c2(zakladSpolu)}</DifferenceTaxExclusiveAmount>
-   <DifferenceTaxInclusiveAmount>${c2(sDanouSpolu)}</DifferenceTaxInclusiveAmount>
+   <AlreadyClaimedTaxExclusiveAmount>${c2(uplatZaklad)}</AlreadyClaimedTaxExclusiveAmount>
+   <AlreadyClaimedTaxInclusiveAmount>${c2(uplatZaklad + uplatDan)}</AlreadyClaimedTaxInclusiveAmount>
+   <DifferenceTaxExclusiveAmount>${c2(rozdielZaklad)}</DifferenceTaxExclusiveAmount>
+   <DifferenceTaxInclusiveAmount>${c2(rozdielZaklad + rozdielDan)}</DifferenceTaxInclusiveAmount>
    <PayableRoundingAmount>0.00</PayableRoundingAmount>
    <PaidDepositsAmount>0.00</PaidDepositsAmount>
-   <PayableAmount>${c2(sDanouSpolu)}</PayableAmount>
+   <PayableAmount>${c2(rozdielZaklad + rozdielDan)}</PayableAmount>
   </LegalMonetaryTotal>${platba}
 </Invoice>`;
 }

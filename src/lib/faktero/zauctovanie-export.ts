@@ -15,6 +15,12 @@
 
 import { riadkyDokladu, rozpisBlocku, type RozpisSadzby } from "./rozuctovanie";
 import { rozpisPrijatej } from "./prijate-do-pohody";
+import {
+  odpoctyZapisatelne,
+  sumaOdpoctov,
+  suhrnOdpoctov,
+  type OdpocetZalohy,
+} from "./zalohy-odpocty";
 
 export type AgendaUctovania = "vystavena" | "prijata" | "doklad";
 /** Ako ide doklad do účtovníctva: faktúra, pokladničný doklad alebo interný doklad. */
@@ -108,6 +114,8 @@ export type DokladUctovania = {
    * len daň zo zálohy (MD 324 / D 343), tržbu prinesie až vyúčtovacia faktúra.
    */
   dokladKPlatbe?: boolean;
+  /** Odpočet zdanenej zálohy je zapísaný ako záporné riadky (so zálohovou predkontáciou). */
+  odpocetVRiadkoch?: boolean;
   polozky: PolozkaUctovania[];
 };
 
@@ -460,9 +468,31 @@ export function vystavenaNaUctovanie(
       text: null,
     })),
   );
+  /*
+    Odpočet zdanenej zálohy: záporné riadky v sadzbách dokladu k platbe so
+    zálohovou predkontáciou (napr. 311/324) — vyrovná sa záloha aj daň z nej,
+    na faktúre ostane rozdiel. Nezdanenú zálohu nechávame na ručné zúčtovanie.
+  */
+  const odpocty = !kPlatbe && druh === "faktura" && odpoctyZapisatelne(inv?._odpocty) ? inv._odpocty : null;
+  if (odpocty) {
+    const pk = t(nast.predkontaciaZaloha) ?? predkontacia;
+    for (const o of suhrnOdpoctov(odpocty))
+      riadky.push({
+        sadzba: o.sadzba,
+        zaklad: -o.zaklad,
+        dph: -o.dph,
+        predkontacia: pk,
+        clenenie,
+        kv,
+        odpocet: true,
+        text: `Odpočet zálohy ${odpocty.map((x: OdpocetZalohy) => x.doklad ?? x.zaloha).join(", ")}`.slice(0, 240),
+      });
+  }
   const zaklad = r2(riadky.reduce((a, r) => a + r.zaklad, 0));
   const dph = r2(riadky.reduce((a, r) => a + r.dph, 0));
-  const celkom = r2(Math.abs(Number(inv?.total ?? 0)) || zaklad + dph);
+  const celkom = r2(
+    (Math.abs(Number(inv?.total ?? 0)) || zaklad + dph) - (odpocty ? sumaOdpoctov(odpocty) : 0),
+  );
   const dodanie = t(inv?.delivery_date) ?? t(inv?.issue_date);
   return {
     id: String(inv.id),
@@ -514,6 +544,7 @@ export function vystavenaNaUctovanie(
     prenesenieDph: prenesenie,
     odpocetZalohy: kPlatbe ? 0 : Math.abs(Number(inv?.advance_amount ?? 0)),
     dokladKPlatbe: kPlatbe,
+    odpocetVRiadkoch: Boolean(odpocty),
     polozky,
   };
 }

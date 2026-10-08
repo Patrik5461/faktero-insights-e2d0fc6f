@@ -440,7 +440,7 @@ export function buildMoneyS3Uctovanie(opts: {
       preskocene.push(`${nazov} — doklad nemá sumy`);
       continue;
     }
-    if (d.odpocetZalohy > 0) {
+    if (d.odpocetZalohy > 0 && !d.odpocetVRiadkoch) {
       preskocene.push(`${nazov} — odpočet zálohy treba v Money zaúčtovať ručne`);
       continue;
     }

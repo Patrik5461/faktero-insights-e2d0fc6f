@@ -96,8 +96,31 @@ const TYP_SZB: Record<Priehradka, string> = {
   Osv: "typSzbDph.dphOsv",
 };
 
-/** Súčty hlavičky po priehradkách (`sumZklZakl`, `sumDphSniz`, `sumOsv`…). */
-function sumyHlavicky(d: DokladUctovania, zn: number, o: string): string {
+type Mena = {
+  cudzia: boolean;
+  /** Suma v domácej mene; `kurz` dokladu je počet jednotiek meny za 1 €. */
+  tm: (x: number) => number;
+  /** Flexi: kurz = domácej meny za `kurzMnozstvi` jednotiek cudzej. */
+  kurz: number;
+  kurzMnozstvi: number;
+};
+
+function mena(kodMeny: string, domaca: string, kurz: number | null): Mena | null {
+  if (kodMeny === domaca) return { cudzia: false, tm: (x) => x, kurz: 1, kurzMnozstvi: 1 };
+  const k = Number(kurz ?? 0) || 0;
+  if (!(k > 0)) return null;
+  // Slabšia mena (koruny, forinty) sa udáva za 100 jednotiek, inak by kurz vyšiel 0,0397.
+  const kurzMnozstvi = k >= 10 ? 100 : 1;
+  return {
+    cudzia: true,
+    tm: (x) => Math.round((x / k) * 100) / 100,
+    kurz: Math.round((kurzMnozstvi / k) * 1e6) / 1e6,
+    kurzMnozstvi,
+  };
+}
+
+/** Súčty hlavičky po priehradkách (`sumZklZakl`, `sumDphSniz`, `sumOsv`…), pri cudzej mene aj `*Men`. */
+function sumyHlavicky(d: DokladUctovania, zn: number, o: string, m: Mena): string {
   const pr = priehradky(d.riadky);
   const zaklad: Record<Priehradka, number> = { Zakl: 0, Sniz: 0, Sniz2: 0, Osv: 0 };
   const dan: Record<Priehradka, number> = { Zakl: 0, Sniz: 0, Sniz2: 0, Osv: 0 };
@@ -107,18 +130,27 @@ function sumyHlavicky(d: DokladUctovania, zn: number, o: string): string {
     dan[p] += r.dph;
   }
   const out: string[] = [];
-  if (zaklad.Osv) out.push(`${o}<sumOsv>${dve(zn * zaklad.Osv)}</sumOsv>`);
+  const men = (nazov: string, x: number) =>
+    m.cudzia ? `\n${o}<${nazov}Men>${dve(zn * x)}</${nazov}Men>` : "";
+  let tmSpolu = 0;
+  if (zaklad.Osv) {
+    tmSpolu += m.tm(zaklad.Osv);
+    out.push(`${o}<sumOsv>${dve(zn * m.tm(zaklad.Osv))}</sumOsv>${men("sumOsv", zaklad.Osv)}`);
+  }
   for (const p of ["Zakl", "Sniz", "Sniz2"] as const) {
     if (!zaklad[p] && !dan[p]) continue;
-    out.push(`${o}<sumZkl${p}>${dve(zn * zaklad[p])}</sumZkl${p}>`);
-    out.push(`${o}<sumDph${p}>${dve(zn * dan[p])}</sumDph${p}>`);
+    tmSpolu += m.tm(zaklad[p]) + m.tm(dan[p]);
+    out.push(`${o}<sumZkl${p}>${dve(zn * m.tm(zaklad[p]))}</sumZkl${p}>${men(`sumZkl${p}`, zaklad[p])}`);
+    out.push(`${o}<sumDph${p}>${dve(zn * m.tm(dan[p]))}</sumDph${p}>${men(`sumDph${p}`, dan[p])}`);
   }
-  out.push(`${o}<sumCelkem>${dve(zn * d.celkom)}</sumCelkem>`);
+  // Celkom v domácej mene zo súčtu prevedených priehradok, aby sedel s nimi na halier.
+  const celkomTm = m.cudzia ? tmSpolu + m.tm(d.zaokruhlenie) : d.celkom;
+  out.push(`${o}<sumCelkem>${dve(zn * celkomTm)}</sumCelkem>${men("sumCelkem", d.celkom)}`);
   return "\n" + out.join("\n");
 }
 
 /** Účtovné položky rozúčtovaného dokladu — každá s vlastným predpisom a riadkom DPH. */
-function uctovnePolozky(d: DokladUctovania, zn: number, tag: string, o: string): string {
+function uctovnePolozky(d: DokladUctovania, zn: number, tag: string, o: string, m: Mena): string {
   const pr = priehradky(d.riadky);
   return d.riadky
     .map((r) => {
@@ -130,9 +162,13 @@ ${o}  <cenaMj>${dve(r.zaklad)}</cenaMj>
 ${o}  <typCenyDphK>typCeny.bezDph</typCenyDphK>
 ${o}  <typSzbDphK>${TYP_SZB[pr(r.sadzba)]}</typSzbDphK>
 ${o}  <szbDph>${dve(r.sadzba)}</szbDph>
-${o}  <sumZkl>${dve(zn * r.zaklad)}</sumZkl>
-${o}  <sumDph>${dve(zn * r.dph)}</sumDph>
-${o}  <sumCelkem>${dve(zn * (r.zaklad + r.dph))}</sumCelkem>${vazba("typUcOp", r.predkontacia, o + "  ")}${vazba(
+${o}  <sumZkl>${dve(zn * m.tm(r.zaklad))}</sumZkl>
+${o}  <sumDph>${dve(zn * m.tm(r.dph))}</sumDph>
+${o}  <sumCelkem>${dve(zn * (m.tm(r.zaklad) + m.tm(r.dph)))}</sumCelkem>${
+        m.cudzia
+          ? `\n${o}  <sumZklMen>${dve(zn * r.zaklad)}</sumZklMen>\n${o}  <sumDphMen>${dve(zn * r.dph)}</sumDphMen>\n${o}  <sumCelkemMen>${dve(zn * (r.zaklad + r.dph))}</sumCelkemMen>`
+          : ""
+      }${vazba("typUcOp", r.predkontacia, o + "  ")}${vazba(
         "clenDph",
         r.clenenie,
         o + "  ",
@@ -164,10 +200,13 @@ export function buildFlexiUctovanie(opts: {
 
   for (const d of opts.doklady) {
     const cislo = d.cislo || d.id;
-    if (d.mena !== domaca) {
-      // Polia `sum*` sú v domácej mene, cudzia patrí do `*Men` s kurzom —
-      // radšej doklad vynechať než poslať 10 000 Kč ako eurá.
-      preskocene.push(`${cislo} — doklad v mene ${d.mena}, Flexi ho čaká v domácej mene`);
+    /*
+      Cudzia mena: polia `sum*` sú v domácej mene, `*Men` v mene dokladu a
+      hlavička nesie kurz. Bez kurzu by sa 10 000 Kč dostalo do Flexi ako eurá.
+    */
+    const m = mena(d.mena, domaca, d.kurz);
+    if (!m) {
+      preskocene.push(`${cislo} — doklad v mene ${d.mena} nemá kurz`);
       continue;
     }
     if (d.druh === "zaloha") {
@@ -178,7 +217,7 @@ export function buildFlexiUctovanie(opts: {
       preskocene.push(`${cislo} — daňový doklad k prijatej platbe, vo Flexi ho založte k zálohe (účtuje sa len DPH)`);
       continue;
     }
-    if (d.odpocetZalohy > 0) {
+    if (d.odpocetZalohy > 0 && !d.odpocetVRiadkoch) {
       preskocene.push(`${cislo} — faktúra s odpočtom zálohy, odpočet treba vo Flexi naviazať na zálohu ručne`);
       continue;
     }
@@ -264,6 +303,9 @@ export function buildFlexiUctovanie(opts: {
       hlavicka +
       pole("datUcto", d.datumZauctovania, o) +
       `\n${o}<mena>code:${esc(d.mena)}</mena>` +
+      (m.cudzia
+        ? `\n${o}<kurz>${m.kurz}</kurz>\n${o}<kurzMnozstvi>${m.kurzMnozstvi}</kurzMnozstvi>`
+        : "") +
       partner +
       pole("popis", d.text, o, 255) +
       pole("poznam", poznamka(d), o, 255);
@@ -276,9 +318,10 @@ export function buildFlexiUctovanie(opts: {
           zn,
           tagPolozky,
           o + "  ",
+          m,
         )}\n${o}</${kolekcia}>`
       : `\n${o}<bezPolozek>true</bezPolozek>` +
-        sumyHlavicky(d, zn, o) +
+        sumyHlavicky(d, zn, o, m) +
         vazba("typUcOp", d.predkontacia, o) +
         vazba("clenDph", d.clenenie, o);
 

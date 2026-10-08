@@ -122,10 +122,17 @@ export async function nacitajNaUctovanie(
       for (const r of data ?? []) cisla[r.id] = r.invoice_number;
     }
     const nast = await nastaveniaUctovania(supabase, company, rows);
+    const { nacitajOdpocty } = await import("./zalohy-odpocty.server");
+    const odpocty = await nacitajOdpocty(
+      supabase,
+      company.id,
+      rows.map((i: any) => String(i.id)),
+    );
     return rows.map((inv: any) =>
       vystavenaNaUctovanie(
         {
           ...inv,
+          _odpocty: odpocty[String(inv.id)] ?? null,
           _opravujeCislo: inv.opravuje_fakturu_id ? (cisla[inv.opravuje_fakturu_id] ?? null) : null,
         },
         (items ?? []).filter((it: any) => it.invoice_id === inv.id),

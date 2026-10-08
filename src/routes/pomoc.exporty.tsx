@@ -95,8 +95,10 @@ const sections: HelpSection[] = [
         </ul>
         <p>
           Zaškrtnuté <strong>Označiť ako odovzdané</strong> doklady zamkne a nabudúce ich nepošle
-          druhýkrát. Čo do súboru nejde (doklad v cudzej mene, odpočet zálohy, chýbajúce
-          nastavenie), Faktero vymenuje aj s dôvodom. V zoznamoch Faktúry, Prijaté faktúry a
+          druhýkrát. Doklad v cudzej mene ide v eurách aj v pôvodnej mene s kurzom ECB a
+          vyúčtovacia faktúra s odpočtom zálohy ako záporný riadok v sadzbe dokladu k prijatej
+          platbe (so zálohovou predkontáciou). Čo do súboru nejde (doklad bez kurzu, záloha bez
+          dokladu k platbe, chýbajúce nastavenie), Faktero vymenuje aj s dôvodom. V zoznamoch Faktúry, Prijaté faktúry a
           Doklady potom tlačidlo pri vybraných dokladoch nesie meno vášho programu namiesto
           „XML pre Pohodu“.
         </p>
@@ -239,7 +241,8 @@ const sections: HelpSection[] = [
           <li>
             <strong>KROS Omega (TXT)</strong> — textový súbor R00/R01/R02 v kódovaní Windows-1250.
             <strong> Ten istý súbor číta aj ALFA plus</strong>, jej import sa volá{" "}
-            <em>Evidencie → Pohľadávky → Import faktúr z Omegy</em>.
+            <em>Evidencie → Pohľadávky → Import faktúr z Omegy</em>. Faktúra v cudzej mene má súčty
+            v eurách a kurz podľa špecifikácie KROS, odpočet zálohy ide ako záporná položka.
           </li>
           <li>
             <strong>Money S3 XML</strong> — dátový balík <code>MoneyData</code>, načíta ho{" "}
@@ -259,9 +262,10 @@ const sections: HelpSection[] = [
             <strong>ABRA Flexi XML</strong> — dávka <code>winstrom</code> s vydanými faktúrami.
             Import je v <em>Nástroje → Import → XML</em>. Sadzba DPH ide priehradkou (základná,
             znížená, oslobodené), lebo Flexi si percentá drží vo vlastnom číselníku podľa obdobia.
-            Dobropis ide ako typ <code>DOBROPIS</code> so zápornými sumami.{" "}
-            <strong>Zálohové faktúry a doklady v cudzej mene sa vynechajú</strong> — Flexi pre ne
-            chce vlastný typ dokladu a sumy v domácej mene s kurzom.
+            Dobropis ide ako typ <code>DOBROPIS</code> so zápornými sumami. Faktúra v cudzej mene
+            má sumy v eurách aj v pôvodnej mene (<code>…Men</code>) s kurzom; odpočet zálohy ide
+            ako záporná položka. <strong>Zálohové faktúry sa vynechajú</strong> — Flexi pre ne
+            chce vlastný typ dokladu.
           </li>
           <li>
             <strong>Súpiska CSV</strong> — jeden riadok na doklad s rozpisom po sadzbách DPH,

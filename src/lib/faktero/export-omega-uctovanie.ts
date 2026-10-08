@@ -197,10 +197,17 @@ export function buildOmegaUctovanie(opts: {
       preskocene.push(`${cislo} — v nastaveniach Omegy chýba kód evidencie alebo číselného radu pre ${druh}`);
       continue;
     }
-    if (d.mena !== "EUR") {
-      preskocene.push(`${cislo} — doklad v cudzej mene (${d.mena}) zatiaľ do Omegy neposielame`);
+    /*
+      Cudzia mena: zápisy idú v eurách (TM) aj v mene dokladu (CM), v hlavičke
+      kurz voči 1 € (množstvo jednotky 1). `kurz` je počet jednotiek meny za 1 €.
+    */
+    const cudzia = d.mena !== "EUR";
+    const kurz = Number(d.kurz ?? 0) || 0;
+    if (cudzia && !(kurz > 0)) {
+      preskocene.push(`${cislo} — doklad v mene ${d.mena} nemá kurz, do Omegy by išiel v nesprávnej sume`);
       continue;
     }
+    const tm = (x: number) => (cudzia ? r2(x / kurz) : r2(x));
     const datum = d.datumDodania ?? d.datumVystavenia;
     if (!datum || datum < "2025-01-01") {
       preskocene.push(`${cislo} — doklad spred roka 2025 má v Omege iné typy súm, zaúčtujte ho ručne`);
@@ -210,7 +217,7 @@ export function buildOmegaUctovanie(opts: {
       preskocene.push(`${cislo} — daňový doklad k prijatej platbe zaúčtujte v Omege ručne (len DPH, 324 / 343)`);
       continue;
     }
-    if (d.odpocetZalohy > 0) {
+    if (d.odpocetZalohy > 0 && !d.odpocetVRiadkoch) {
       preskocene.push(`${cislo} — odpočet zálohy treba v Omege zaúčtovať ručne`);
       continue;
     }
@@ -355,6 +362,8 @@ export function buildOmegaUctovanie(opts: {
     const ni = zaSadzbu("nizsia");
     const z2 = zaSadzbu("znizena2");
     const nulova = zn * d.riadky.filter((r) => !priehradka(r.sadzba)).reduce((a, r) => a + r.zaklad, 0);
+    // Súčet v eurách zo zápisov prevedených po jednom — inak by sa o halier rozišiel s R02.
+    const celkomTm = r2(zapisy.reduce((a, z) => a + tm(z.suma), 0));
 
     const r01: string[] = new Array(71).fill("");
     const set = (stlpec: number, hodnota: string) => {
@@ -376,21 +385,22 @@ export function buildOmegaUctovanie(opts: {
     set(13, datumSk(d.datumDodania ?? d.datumVystavenia));
     // DUUP — dátum účtovného prípadu; z uzamknutého obdobia ide na deň po uzávierke.
     set(14, datumSk(d.datumZauctovania ?? d.datumDodania ?? d.datumVystavenia));
-    set(15, "EUR");
+    set(15, cudzia ? pole(d.mena, 5) : "EUR");
     set(16, "1");
-    set(17, "1");
-    set(18, "1");
-    set(19, "");
-    set(20, cislaSk(zn * d.celkom));
+    // Kurz ECB a kurz pre DPH — Faktero pozná jeden, ten zo dňa pred dodaním.
+    set(17, cudzia ? String(kurz).replace(".", ",") : "1");
+    set(18, cudzia ? String(kurz).replace(".", ",") : "1");
+    set(19, cudzia ? cislaSk(zn * d.celkom) : "");
+    set(20, cislaSk(cudzia ? celkomTm : zn * d.celkom));
     set(21, "19");
     set(22, "23");
-    set(23, cislaSk(ni.zaklad));
-    set(24, cislaSk(vy.zaklad));
-    set(25, cislaSk(nulova));
+    set(23, cislaSk(tm(ni.zaklad)));
+    set(24, cislaSk(tm(vy.zaklad)));
+    set(25, cislaSk(tm(nulova)));
     set(26, cislaSk(0));
-    set(27, cislaSk(ni.dan));
-    set(28, cislaSk(vy.dan));
-    set(29, cislaSk(zn * vyr));
+    set(27, cislaSk(tm(ni.dan)));
+    set(28, cislaSk(tm(vy.dan)));
+    set(29, cislaSk(tm(zn * vyr)));
     set(30, "Faktero");
     set(31, pole(d.ks, 5));
     set(32, pole(d.ss));
@@ -410,8 +420,8 @@ export function buildOmegaUctovanie(opts: {
     set(59, "Faktero");
     set(62, pole(d.partner.iban, 50));
     set(69, "5");
-    set(70, cislaSk(z2.zaklad));
-    set(71, cislaSk(z2.dan));
+    set(70, cislaSk(tm(z2.zaklad)));
+    set(71, cislaSk(tm(z2.dan)));
     riadky.push(r01.join("\t").replace(/\t+$/, ""));
 
     for (const z of zapisy) {
@@ -427,8 +437,8 @@ export function buildOmegaUctovanie(opts: {
       s2(4, md.analyticky);
       s2(5, dal.synteticky);
       s2(6, dal.analyticky);
-      s2(7, cislaSk(z.suma));
-      s2(8, "");
+      s2(7, cislaSk(tm(z.suma)));
+      s2(8, cudzia ? cislaSk(z.suma) : "");
       s2(9, pole(z.text, 60));
       s2(10, z.typ);
       s2(13, pole(d.stredisko, 5));

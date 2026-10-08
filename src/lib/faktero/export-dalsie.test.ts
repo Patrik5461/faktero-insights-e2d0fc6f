@@ -22,7 +22,7 @@ const faktura = {
     subtotal: 150,
     vat_total: 29.5,
     total: 179.5,
-    discount_total: 10,
+    discount_total: 0,
     notes: "Ďakujeme; platba prevodom",
   },
   items: [
@@ -208,15 +208,20 @@ describe("dobropis a cudzia mena", () => {
     expect(preskocene).toEqual([]);
   });
 
-  it("Flexi vynechá zálohovú faktúru aj doklad v cudzej mene a povie to", () => {
+  it("Flexi vynechá zálohovú faktúru a doklad v cudzej mene bez kurzu, s kurzom ho zapíše", () => {
     const zaloha = {
       ...faktura,
       invoice: { ...faktura.invoice, invoice_number: "ZF1", type: "proforma" },
     };
-    const { xml, preskocene } = buildFlexiXml({ invoices: [faktura, zaloha, vCudzejMene] });
-    expect(xml.match(/<faktura-vydana>/g)).toHaveLength(1);
+    const bezKurzu = { ...vCudzejMene, invoice: { ...vCudzejMene.invoice, invoice_number: "BK1", exchange_rate: null } };
+    const { xml, preskocene } = buildFlexiXml({ invoices: [faktura, zaloha, vCudzejMene, bezKurzu as any] });
+    expect(xml.match(/<faktura-vydana>/g)).toHaveLength(2);
     expect(preskocene).toHaveLength(2);
     expect(preskocene[0]).toContain("ZF1");
-    expect(preskocene[1]).toContain("CZK");
+    expect(preskocene[1]).toMatch(/BK1 .*CZK/);
+    // 10 000 Kč pri kurze 25,3: v eurách 395,26, v korunách v poliach *Men, kurz za 100 Kč.
+    expect(xml).toContain("<sumCelkem>395.26</sumCelkem>");
+    expect(xml).toContain("<sumCelkemMen>10000.00</sumCelkemMen>");
+    expect(xml).toContain("<kurzMnozstvi>100</kurzMnozstvi>");
   });
 });

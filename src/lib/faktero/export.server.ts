@@ -14,6 +14,7 @@ import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
 
 import { sadzbyKuDnu as sadzbyKrajinyKuDnu, krajinaDane, type KrajinaDane } from "./vat-rates";
 import { riadkySoZlavou } from "./zlavy";
+import { polozkyOdpoctu, prekazkaOdpoctu, sumaOdpoctov } from "./zalohy-odpocty";
 import { buildFlexiXml, buildUniverzalCsv } from "./export-dalsie";
 type InvoiceRow = any;
 type ItemRow = any;
@@ -2155,11 +2156,10 @@ export const ISDOC_ZIP: ExportStrategy = {
     const preskocene: string[] = [];
 
     for (const { invoice, items } of invoices) {
-      // Odpočet zálohy (TaxedDeposits) zatiaľ do ISDOC-u nepíšeme — bez neho by
-      // faktúra pýtala celú sumu a DPH zo zálohy by sa priznala druhýkrát.
-      const typ = (invoice as any).type;
-      if (typ !== "proforma" && typ !== "advance_payment" && Number((invoice as any).advance_amount ?? 0) > 0) {
-        preskocene.push(`${invoice.invoice_number} — faktúra s odpočtom zálohy, ISDOC ju zatiaľ neunesie`);
+      // Zdanená záloha ide do TaxedDeposits; nezdanenú ISDOC bez väzby neunesie.
+      const prekazka = prekazkaOdpoctu(invoice as any, "programe príjemcu");
+      if (prekazka) {
+        preskocene.push(prekazka);
         continue;
       }
       try {
@@ -2292,17 +2292,30 @@ function pole(v: any, max = 0): string {
 /**
  * Doklady, ktoré formát bez väzby na zálohy nezapíše správne.
  *
- * Daňový doklad k prijatej platbe nie je tržba (účtuje sa len daň zo zálohy)
- * a vyúčtovacia faktúra bez odpočtu by DPH zo zálohy priznala druhýkrát —
- * oboje radšej menovite vynechať, než poslať do účtovníctva zlú daň.
+ * Daňový doklad k prijatej platbe nie je tržba (účtuje sa len daň zo zálohy).
+ * Vyúčtovacia faktúra sa zapíše s odpočtom ako zápornými položkami — len
+ * nezdanenú zálohu (bez dokladu k platbe) treba zúčtovať ručne.
  */
 function prekazkaBezZaloh(invoice: InvoiceRow, program: string): string | null {
   const inv = invoice as any;
   if (inv.type === "advance_payment")
     return `${inv.invoice_number} — daňový doklad k prijatej platbe zaúčtujte v ${program} ručne (len DPH zo zálohy)`;
-  if (inv.type !== "proforma" && Number(inv.advance_amount ?? 0) > 0)
-    return `${inv.invoice_number} — faktúra s odpočtom zálohy, odpočet treba v ${program} zaúčtovať ručne`;
-  return null;
+  return prekazkaOdpoctu(inv, program);
+}
+
+/** Položky faktúry so zľavou na doklad rozpočítanou a s odpočtom zálohy na konci. */
+function polozkySOdpoctom(invoice: InvoiceRow, items: ItemRow[]): ItemRow[] {
+  const inv = invoice as any;
+  return [
+    ...riadkySoZlavou(items, inv.discount_total),
+    ...(polozkyOdpoctu(inv._odpocty) as unknown as ItemRow[]),
+  ];
+}
+
+/** Celková suma po odpočte zálohy — to, čo ostáva uhradiť. */
+function celkomPoOdpocte(invoice: InvoiceRow, items: ItemRow[]): number {
+  const inv = invoice as any;
+  return Math.round((celkomDokladu(invoice, items) - sumaOdpoctov(inv._odpocty)) * 100) / 100;
 }
 
 // =========================================================
@@ -2350,13 +2363,24 @@ export function buildOmegaTxt(opts: {
       preskocene.push(prekazka);
       continue;
     }
-    // Zľava na doklad je len v hlavičke — sumy po sadzbách ju musia niesť.
-    const items = riadkySoZlavou(povodne, (invoice as any).discount_total);
+    // Zľava na doklad je len v hlavičke a odpočet zálohy ide ako záporné položky.
+    const items = polozkySOdpoctom(invoice, povodne);
     const sadzby = sadzbyDokladu(items);
     const vyssia = sadzby[0];
     const nizsia = sadzby[1];
     const znizena2 = sadzby[2];
 
+    const cudzia = (invoice.currency ?? "EUR") !== "EUR";
+    /*
+      Sumy hlavičky sú v eurách (tuzemská mena, DPH sa priznáva v eurách),
+      položky v mene dokladu. `exchange_rate` je počet jednotiek meny za 1 €.
+    */
+    const kurz = Number(invoice.exchange_rate ?? 0) || 0;
+    if (cudzia && !kurz) {
+      preskocene.push(`${invoice.invoice_number} — faktúra v mene ${invoice.currency} nemá kurz`);
+      continue;
+    }
+    const tm = (x: number) => (cudzia ? x / kurz : x);
     const v = zaSadzbu(items, vyssia);
     const n = zaSadzbu(items, nizsia);
     const z2 = zaSadzbu(items, znizena2);
@@ -2368,7 +2392,6 @@ export function buildOmegaTxt(opts: {
     const typDokladu =
       invoice.type === "credit_note" ? "4" : invoice.type === "proforma" ? "1" : "0";
 
-    const cudzia = (invoice.currency ?? "EUR") !== "EUR";
     const icDph = pole(invoice.customer_ic_dph);
     const kodIcDph = /^[A-Z]{2}/i.test(icDph) ? icDph.slice(0, 2).toUpperCase() : "";
 
@@ -2384,36 +2407,46 @@ export function buildOmegaTxt(opts: {
     set(5, datumSk(invoice.issue_date));
     set(6, datumSk(invoice.due_date));
     set(7, datumSk(invoice.delivery_date ?? invoice.issue_date));
-    set(8, cislaSk(n.zaklad));
-    set(9, cislaSk(v.zaklad));
-    set(10, cislaSk(nulova));
+    set(8, cislaSk(tm(n.zaklad)));
+    set(9, cislaSk(tm(v.zaklad)));
+    set(10, cislaSk(tm(nulova)));
     set(11, cislaSk(0));
     set(12, nizsia != null ? String(nizsia) : "");
     set(13, vyssia != null ? String(vyssia) : "");
-    set(14, cislaSk(n.dan));
-    set(15, cislaSk(v.dan));
+    set(14, cislaSk(tm(n.dan)));
+    set(15, cislaSk(tm(v.dan)));
     set(16, cislaSk(0));
-    set(17, cudzia ? cislaSk(celkomDokladu(invoice, items)) : "");
+    // Suma spolu v cudzej mene (CM).
+    set(17, cudzia ? cislaSk(celkomPoOdpocte(invoice, povodne)) : "");
     set(18, typDokladu);
     set(25, pole(invoice.customer_street, 40));
     set(26, pole(invoice.customer_zip, 6));
     set(27, pole(invoice.customer_city, 40));
     set(28, pole(invoice.customer_dic, 12));
+    set(31, pole((invoice as any).intro_note));
+    set(34, pole((invoice as any).order_number, 20));
+    set(36, pole((invoice as any).constant_symbol, 5));
+    set(37, pole((invoice as any).specific_symbol, 12));
     set(40, pole(invoice.currency ?? "EUR", 5));
-    // Kurz: pri eurovom doklade 1, pri cudzej mene ten, ktorým sa prepočítala
-    // daň. Natvrdo zapísaná jednotka by z 10 000 Kč spravila 10 000 €.
-    set(41, cudzia && invoice.exchange_rate ? cislaSk(Number(invoice.exchange_rate)) : "1");
-    set(43, cudzia ? "" : cislaSk(celkomDokladu(invoice, items)));
+    /*
+      Podľa špecifikácie KROS: st. 41 je množstvo jednotky (1 = kurz k 1 €),
+      st. 42 kurz a st. 43 suma spolu v tuzemskej mene. Kurz v st. 41 by z
+      10 000 Kč spravil nezmysel a suma v eurách by chýbala.
+    */
+    set(41, "1");
+    set(42, cudzia ? String(kurz).replace(".", ",") : "1");
+    set(43, cislaSk(tm(celkomPoOdpocte(invoice, povodne))));
     set(45, pole(invoice.notes));
     set(47, pole(invoice.customer_country ?? "SK", 30));
     set(48, kodIcDph);
     set(49, icDph);
+    set(57, pole((invoice as any).payment_iban, 50));
     set(71, pole(invoice.variable_symbol ?? invoice.invoice_number, 20));
     set(84, pole(invoice.customer_phone, 25));
     if (znizena2 != null) {
       set(95, String(znizena2));
-      set(96, cislaSk(z2.zaklad));
-      set(97, cislaSk(z2.dan));
+      set(96, cislaSk(tm(z2.zaklad)));
+      set(97, cislaSk(tm(z2.dan)));
     }
     riadky.push(r01.join("\t").replace(/\t+$/, ""));
 
@@ -2488,8 +2521,9 @@ export function buildMoneyS3Xml(opts: {
     const inv = invoice as any;
     // Money vedie daňový doklad k platbe ako vlastný druh (D); odpočet zálohy
     // na vyúčtovacej faktúre ale bez väzby na zálohu v Money nezapíšeme.
-    if (inv.type !== "proforma" && inv.type !== "advance_payment" && Number(inv.advance_amount ?? 0) > 0) {
-      preskocene.push(`${invoice.invoice_number} — faktúra s odpočtom zálohy, odpočet treba v Money zaúčtovať ručne`);
+    const prekazka = prekazkaOdpoctu(inv, "Money");
+    if (prekazka) {
+      preskocene.push(prekazka);
       continue;
     }
     // Schéma Money pripúšťa číslo dokladu najviac na 10 znakov — dlhšie by zhodilo celý import.
@@ -2498,7 +2532,8 @@ export function buildMoneyS3Xml(opts: {
       continue;
     }
     // Zľava na doklad je len v hlavičke; Money ju chce mať v cenách položiek.
-    const items = riadkySoZlavou(povodne, inv.discount_total);
+    // Odpočet zálohy ide ako záporné položky s príznakom zdanenej zálohy.
+    const items = polozkySOdpoctom(invoice, povodne);
     const mena = String(invoice.currency ?? domaca).toUpperCase() || domaca;
     const cudzia = mena !== domaca;
     /*
@@ -2524,7 +2559,7 @@ export function buildMoneyS3Xml(opts: {
     const nulova = items
       .filter((it) => (Number(it.vat_rate) || 0) === 0)
       .reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
-    const celkom = celkomDokladu(invoice, items);
+    const celkom = celkomPoOdpocte(invoice, povodne);
 
     const dalsieSadzby = (prepocet: (x: unknown) => number) =>
       dalsie
@@ -2598,7 +2633,13 @@ ${odsadenie}</SouhrnDPH>`;
             </Valuty>`
                 : ""
             }
-          </SouhrnDPH>${cudzia ? `\n          <Valuty>${fixed4(it.unit_price)}</Valuty>` : ""}
+          </SouhrnDPH>${cudzia ? `\n          <Valuty>${fixed4(it.unit_price)}</Valuty>` : ""}${
+            // Príznak odpočtu zdanenej zálohy patrí podľa schémy do neskladovej položky;
+            // Protizapis 0 = suma je už záporná.
+            (it as any)._odpocet
+              ? `\n          <NesklPolozka>\n            <Zaloha>1</Zaloha>\n            <ZdanZaloha>1</ZdanZaloha>\n            <Protizapis>0</Protizapis>\n          </NesklPolozka>`
+              : ""
+          }
         </Polozka>`,
       )
       .join("");

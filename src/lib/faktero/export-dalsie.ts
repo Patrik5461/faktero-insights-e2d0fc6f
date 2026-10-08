@@ -14,6 +14,15 @@
  * musí sám otočiť znamienko — inak účtovníčke dobropis výnosy zvýši.
  */
 
+import {
+  polozkyOdpoctu,
+  prekazkaOdpoctu,
+  sumaOdpoctov,
+  suhrnOdpoctov,
+  type OdpocetZalohy,
+} from "./zalohy-odpocty";
+import { riadkySoZlavou } from "./zlavy";
+
 export type RiadokFaktury = {
   invoice_number?: unknown;
   type?: unknown;
@@ -161,10 +170,17 @@ export function buildUniverzalCsv(opts: {
     ...(cudziaMena ? ["Celkom v EUR"] : []),
     "Prenos daňovej povinnosti",
     "Poznámka",
+    // Na koniec, aby staré importy podľa poradia stĺpcov nepraskli.
+    "Odpočet zálohy",
+    "Na úhradu",
   ];
 
-  const riadky = opts.invoices.map(({ invoice, items }) => {
+  const riadky = opts.invoices.map(({ invoice, items: povodne }) => {
     const zn = znamienko(invoice.type, invoice.total);
+    // Stĺpce po sadzbách musia niesť zľavu na doklad, inak nesedia so „Základ spolu".
+    const items = riadkySoZlavou(povodne, (invoice as any).discount_total);
+    const odpocet = sumaOdpoctov((invoice as any)._odpocty) || cislo((invoice as any).advance_amount);
+    const jeOdpocet = text(invoice.type) === "regular" || text(invoice.type) === "debit_note";
     const nulova =
       zn * items.filter((p) => cislo(p.vat_rate) === 0).reduce((a, p) => a + cislo(p.subtotal), 0);
     /* Suma v EUR: pri domácej mene je to tá istá suma, inak prepočet uložený na doklade. */
@@ -202,6 +218,8 @@ export function buildUniverzalCsv(opts: {
       ...(cudziaMena ? [dveSk(zn * vEur)] : []),
       invoice.reverse_charge ? "áno" : "nie",
       text(invoice.notes) || text(invoice.intro_note),
+      jeOdpocet && odpocet ? dveSk(odpocet) : "",
+      dveSk(zn * cislo(invoice.total) - (jeOdpocet ? odpocet : 0)),
     ];
     return bunky.map(csvPole).join(";");
   });
@@ -239,7 +257,7 @@ export function buildFlexiXml(opts: {
   const preskocene: string[] = [];
   const doklady: string[] = [];
 
-  for (const { invoice, items } of opts.invoices) {
+  for (const { invoice, items: povodne } of opts.invoices) {
     const cislo_dokladu = text(invoice.invoice_number) || "?";
     const typ = text(invoice.type) || "regular";
     if (typ === "proforma") {
@@ -250,18 +268,42 @@ export function buildFlexiXml(opts: {
       preskocene.push(`${cislo_dokladu} — daňový doklad k prijatej platbe, vo Flexi ho založte k zálohe (účtuje sa len DPH)`);
       continue;
     }
-    // Vyúčtovacia faktúra bez odpočtu by DPH zo zálohy priznala druhýkrát.
-    if (cislo((invoice as any).advance_amount) > 0) {
-      preskocene.push(`${cislo_dokladu} — faktúra s odpočtom zálohy, odpočet treba vo Flexi naviazať na zálohu ručne`);
+    // Odpočet zdanenej zálohy ide ako záporné položky; nezdanenú treba naviazať ručne.
+    const prekazka = prekazkaOdpoctu(invoice as any, "ABRA Flexi");
+    if (prekazka) {
+      preskocene.push(prekazka);
       continue;
     }
+    /*
+      Cudzia mena: `sum*` sú v eurách, `*Men` v mene faktúry, kurz v hlavičke
+      (Flexi: eur za `kurzMnozstvi` jednotiek). `exchange_rate` je jednotiek za 1 €.
+    */
     const mena = text(invoice.currency) || "EUR";
-    if (mena !== "EUR") {
-      preskocene.push(`${cislo_dokladu} — faktúra v mene ${mena}`);
+    const cudzia = mena !== "EUR";
+    const kurzEcb = cislo((invoice as any).exchange_rate);
+    if (cudzia && !(kurzEcb > 0)) {
+      preskocene.push(`${cislo_dokladu} — faktúra v mene ${mena} nemá kurz`);
       continue;
     }
+    const tm = (x: number) => (cudzia ? Math.round((x / kurzEcb) * 100) / 100 : x);
+    const kurzMnozstvi = kurzEcb >= 10 ? 100 : 1;
+    const men = (nazov: string, x: number, odsadenie: string) =>
+      cudzia ? `\n${odsadenie}<${nazov}Men>${dve(x)}</${nazov}Men>` : "";
 
     const zn = znamienko(typ, invoice.total);
+    /*
+      Zľava na doklad je len v hlavičke — položky ju musia niesť, inak sa súčty
+      položiek rozídu so súčtami faktúry. Odpočet zálohy ide ako záporné položky
+      a o jeho sumy sa znížia aj súčty z hlavičky.
+    */
+    const odpocty = ((invoice as any)._odpocty ?? []) as OdpocetZalohy[];
+    const items = [
+      ...riadkySoZlavou(povodne, (invoice as any).discount_total),
+      ...(polozkyOdpoctu(odpocty) as unknown as PolozkaFaktury[]),
+    ];
+    const odp = suhrnOdpoctov(odpocty);
+    const odpZaklad = odp.reduce((a, r) => a + r.zaklad, 0);
+    const odpDph = odp.reduce((a, r) => a + r.dph, 0);
     const zakladna = Math.max(0, ...items.map((p) => cislo(p.vat_rate)));
     const polozky = items
       .map((p) => {
@@ -279,9 +321,13 @@ export function buildFlexiXml(opts: {
         <typCenyDphK>typCeny.bezDph</typCenyDphK>
         <typSzbDphK>${priehradka}</typSzbDphK>
         <szbDph>${dve(p.vat_rate)}</szbDph>
-        <sumZkl>${dve(zn * cislo(p.subtotal))}</sumZkl>
-        <sumDph>${dve(zn * cislo(p.vat_amount))}</sumDph>
-        <sumCelkem>${dve(zn * cislo(p.total))}</sumCelkem>
+        <sumZkl>${dve(zn * tm(cislo(p.subtotal)))}</sumZkl>
+        <sumDph>${dve(zn * tm(cislo(p.vat_amount)))}</sumDph>
+        <sumCelkem>${dve(zn * (tm(cislo(p.subtotal)) + tm(cislo(p.vat_amount))))}</sumCelkem>${men(
+          "sumZkl",
+          zn * cislo(p.subtotal),
+          "        ",
+        )}${men("sumDph", zn * cislo(p.vat_amount), "        ")}${men("sumCelkem", zn * cislo(p.total), "        ")}
       </faktura-vydana-polozka>`;
       })
       .join("\n");
@@ -299,7 +345,11 @@ export function buildFlexiXml(opts: {
     <duzpPuv>${esc(text(invoice.delivery_date) || text(invoice.issue_date))}</duzpPuv>
     <datSplat>${esc(invoice.due_date)}</datSplat>
     <varSym>${esc(invoice.variable_symbol)}</varSym>
-    <mena>code:${esc(mena)}</mena>
+    <mena>code:${esc(mena)}</mena>${
+      cudzia
+        ? `\n    <kurz>${Math.round((kurzMnozstvi / kurzEcb) * 1e6) / 1e6}</kurz>\n    <kurzMnozstvi>${kurzMnozstvi}</kurzMnozstvi>`
+        : ""
+    }
     <nazFirmy>${esc(invoice.customer_name)}</nazFirmy>
     <ulice>${esc(invoice.customer_street)}</ulice>
     <mesto>${esc(invoice.customer_city)}</mesto>
@@ -308,9 +358,17 @@ export function buildFlexiXml(opts: {
     <dic>${esc(invoice.customer_ic_dph || invoice.customer_dic)}</dic>
     <popis>${esc(text(invoice.intro_note).slice(0, 255))}</popis>
     <poznam>${esc(text(invoice.notes).slice(0, 255))}</poznam>
-    <sumZklCelkem>${dve(zn * cislo(invoice.subtotal))}</sumZklCelkem>
-    <sumDphCelkem>${dve(zn * cislo(invoice.vat_total))}</sumDphCelkem>
-    <sumCelkem>${dve(zn * cislo(invoice.total))}</sumCelkem>
+    <sumZklCelkem>${dve(zn * tm(cislo(invoice.subtotal) - odpZaklad))}</sumZklCelkem>
+    <sumDphCelkem>${dve(zn * tm(cislo(invoice.vat_total) - odpDph))}</sumDphCelkem>
+    <sumCelkem>${dve(zn * tm(cislo(invoice.total) - odpZaklad - odpDph))}</sumCelkem>${men(
+      "sumZklCelkem",
+      zn * (cislo(invoice.subtotal) - odpZaklad),
+      "    ",
+    )}${men("sumDphCelkem", zn * (cislo(invoice.vat_total) - odpDph), "    ")}${men(
+      "sumCelkem",
+      zn * (cislo(invoice.total) - odpZaklad - odpDph),
+      "    ",
+    )}
     <polozkyFaktury>
 ${polozky}
     </polozkyFaktury>

@@ -793,15 +793,23 @@ describe("KROS Omega TXT", () => {
     expect(r[1]).toBe("20250001");
   });
 
-  it("cudzia mena ide do sumy CM, nie TM", () => {
+  it("cudzia mena: CM v st. 17, množstvo jednotky 1, kurz v st. 42 a TM v st. 43 (špecifikácia KROS)", () => {
     const d = buildOmegaTxt({
       company: {},
-      invoices: [{ invoice: { ...faktura, currency: "CZK" }, items: polozky }],
+      invoices: [{ invoice: { ...faktura, currency: "CZK", exchange_rate: 25 }, items: polozky }],
     });
     const c = d.split("\r\n")[1].split("\t");
     expect(c[16]).toBe("208,50"); // suma spolu CM
-    expect(c[42]).toBe(""); // suma spolu TM ostáva prázdna
     expect(c[39]).toBe("CZK");
+    expect(c[40]).toBe("1"); // množstvo jednotky — kurz je k 1 €
+    expect(c[41]).toBe("25"); // kurz
+    expect(c[42]).toBe("8,34"); // suma spolu TM
+  });
+
+  it("cudzia mena bez kurzu sa vynechá", () => {
+    const preskocene: string[] = [];
+    buildOmegaTxt({ company: {}, invoices: [{ invoice: { ...faktura, currency: "CZK" }, items: polozky }], preskocene });
+    expect(preskocene[0]).toMatch(/CZK nemá kurz/);
   });
 });
 
