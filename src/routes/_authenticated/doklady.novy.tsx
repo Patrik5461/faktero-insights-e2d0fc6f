@@ -31,6 +31,7 @@ import {
   poznamkySablonyFn,
   nastavStavDokladovFn,
   getExpenseFileUrlFn,
+  findExpenseDuplicateFn,
 } from "@/lib/faktero/expenses.functions";
 import { Camera, CheckCircle2, Loader2, Lock, LockOpen, QrCode, Save, Upload as UploadIcon } from "lucide-react";
 import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
@@ -308,6 +309,7 @@ function NovyDokladPage() {
       return;
     }
     applyBlocek(r, { ticho: true });
+    void overDuplicitu(r);
     if (r.qr_raw) setQrRaw(r.qr_raw);
     setSource(r.zdroj === "foto" ? "photo" : "qr");
     toast.success(
@@ -462,11 +464,43 @@ function NovyDokladPage() {
       data: { qr, image_data_url: dataUrl, krajina },
     })) as BlocekVysledok;
     applyBlocek(r);
+    void overDuplicitu(r);
+  }
+
+  /*
+    Ten istý bloček sa naskenuje ľahko dvakrát — raz v appke, raz na webe.
+    Upozornenie je pomoc, nie zákaz: uložiť sa dá aj tak, ale až po potvrdení.
+  */
+  const najdiDuplikat = useServerFn(findExpenseDuplicateFn);
+  const [duplikat, setDuplikat] = useState<any | null>(null);
+  async function overDuplicitu(r: BlocekVysledok) {
+    setDuplikat(null);
+    if (!cid || search.id) return;
+    try {
+      const n = await najdiDuplikat({
+        data: {
+          company_id: cid,
+          qr_raw: r.qr_raw ?? null,
+          supplier_ico: r.supplier_ico ?? null,
+          supplier_name: r.supplier ?? null,
+          document_number: r.document_number ?? null,
+          issue_date: r.date ?? null,
+          total_amount: r.total ?? null,
+        },
+      });
+      setDuplikat(n ?? null);
+      if (n) toast.warning("Tento bloček už vo firme máte — pozrite upozornenie nad formulárom.");
+    } catch {
+      /* hľadanie duplicity je pomoc navyše */
+    }
   }
 
   async function handleSave(spracovat = false) {
     if (!cid) {
       toast.error("Vyberte firmu");
+      return;
+    }
+    if (duplikat && !search.id && !window.confirm("Tento bloček už vo firme máte. Uložiť ho aj tak ešte raz?")) {
       return;
     }
     // Tlačidlo je bez toho zamknuté; toto je poistka pre klávesnicu a doplnky.
@@ -589,6 +623,26 @@ function NovyDokladPage() {
       />
       <PageBody>
         <div className="mx-auto max-w-3xl space-y-5">
+          {duplikat && (
+            <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+              <div className="font-semibold">Tento bloček už vo firme máte</div>
+              <div className="mt-1">
+                {duplikat.supplier_name ?? "Doklad"}
+                {duplikat.document_number ? ` č. ${duplikat.document_number}` : ""}
+                {duplikat.issue_date ? ` z ${duplikat.issue_date}` : ""}
+                {duplikat.total_amount != null ? ` na ${Number(duplikat.total_amount).toFixed(2)} ${duplikat.currency ?? "EUR"}` : ""}{" "}
+                je už {duplikat.kde === "nespracovane" ? "v Nespracovaných dokladoch" : "medzi bločkami"}.{" "}
+                <Link
+                  to={duplikat.kde === "nespracovane" ? "/nespracovane/$id" : "/doklady/novy"}
+                  params={duplikat.kde === "nespracovane" ? ({ id: duplikat.id } as any) : undefined}
+                  search={duplikat.kde === "nespracovane" ? undefined : ({ id: duplikat.id } as any)}
+                  className="font-medium underline"
+                >
+                  Otvoriť
+                </Link>
+              </div>
+            </div>
+          )}
           {!search.id && (
             <div className="grid gap-3 sm:grid-cols-3">
               <button

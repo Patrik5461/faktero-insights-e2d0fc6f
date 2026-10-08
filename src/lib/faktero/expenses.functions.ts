@@ -128,7 +128,40 @@ export const findExpenseDuplicateFn = createServerFn({ method: "POST" })
       : dopyt.eq("document_number", data.document_number!).eq("issue_date", data.issue_date!);
     const { data: najdene, error } = await dopyt;
     if (error) throw new Error(error.message);
-    return (najdene ?? []).find((r) => jeTenIstyDoklad(data, r as OdtlacokDokladu)) ?? null;
+    const bloček = (najdene ?? []).find((r) => jeTenIstyDoklad(data, r as OdtlacokDokladu));
+    if (bloček) return { ...bloček, kde: "blocky" as const };
+    /*
+      Ten istý bloček môže ešte čakať v Nespracovaných dokladoch (odfotený,
+      z mailu, nahratý na webe) — tam QR kód uložený nie je, porovnáva sa
+      číslo, dátum, suma a dodávateľ.
+    */
+    if (!data.document_number?.trim() || !data.issue_date) return null;
+    const { data: cakajuce } = await (supabase as any)
+      .from("nespracovane_doklady")
+      .select("id, udaje")
+      .eq("company_id", data.company_id)
+      .eq("udaje->>cislo", data.document_number.trim())
+      .eq("udaje->>datumVystavenia", data.issue_date)
+      .limit(10);
+    for (const r of (cakajuce ?? []) as any[]) {
+      const u = r.udaje ?? {};
+      const kandidat = {
+        document_number: u.cislo ?? null,
+        issue_date: u.datumVystavenia ?? null,
+        total_amount: u.celkom != null ? Number(u.celkom) : null,
+        supplier_ico: u.dodavatel?.ico ?? null,
+        supplier_name: u.dodavatel?.nazov ?? null,
+      };
+      if (jeTenIstyDoklad({ ...data, qr_raw: null }, kandidat as OdtlacokDokladu))
+        return {
+          id: r.id as string,
+          ...kandidat,
+          currency: (u.mena as string) || "EUR",
+          qr_raw: null,
+          kde: "nespracovane" as const,
+        };
+    }
+    return null;
   });
 
 export const createExpenseFn = createServerFn({ method: "POST" })
