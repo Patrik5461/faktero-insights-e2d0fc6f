@@ -550,3 +550,28 @@ describe("ťarchopis (zvýšenie ceny)", () => {
     expect(sv.celkom).toBe(120);
   });
 });
+
+describe("oprava oslobodeného dodania do EÚ", () => {
+  const eu = { prenosDane: true, prenosTyp: "eu_b2b", euPlnenie: "tovar" as const, odberatelIcDph: "CZ27082440" };
+  it("dobropis (záporný v databáze) znižuje r13/r14, ťarchopis zvyšuje", () => {
+    const p = priznanie(
+      vstup({
+        vystavene: [
+          faktura({ ...eu, riadky: [{ sadzba: 0, zaklad: 1000, dan: 0 }] }),
+          faktura({ ...eu, cislo: "D1", typ: "credit_note", opravujeCislo: "2026001", riadky: [{ sadzba: 0, zaklad: -200, dan: 0 }] }),
+          faktura({ ...eu, cislo: "T1", typ: "debit_note", opravujeCislo: "2026001", riadky: [{ sadzba: 0, zaklad: 50, dan: 0 }] }),
+        ],
+      }),
+    );
+    expect(p.r13).toBe(850);
+    expect(p.r14).toBe(850);
+  });
+
+  it("do KV C.1 nejde — pôvodné dodanie v KV nie je", () => {
+    const kv = kontrolnyVykaz(
+      vstup({ vystavene: [faktura({ ...eu, cislo: "D1", typ: "credit_note", opravujeCislo: "2026001", riadky: [{ sadzba: 0, zaklad: -200, dan: 0 }] })] }),
+    );
+    expect(kv.c1).toHaveLength(0);
+  });
+});
+

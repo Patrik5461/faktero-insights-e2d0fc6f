@@ -22,6 +22,7 @@ function klient(tabulky: Record<string, any[]>) {
         lte: () => q,
         order: () => q,
         limit: () => q,
+        range: () => q,
         maybeSingle: () => Promise.resolve({ data: riadky[0] ?? null, error: null }),
         single: () => Promise.resolve({ data: riadky[0] ?? null, error: null }),
         then: (ok: any, zle: any) => Promise.resolve({ data: riadky, error: null }).then(ok, zle),
@@ -121,5 +122,46 @@ describe("bločky vo výkazoch", () => {
     );
     expect(vstup.doklady).toHaveLength(0);
     expect(vytky[0].text).toMatch(/CZK/);
+  });
+});
+
+describe("opravné doklady a obdobie", () => {
+  it("vystavený dobropis patrí do obdobia vyhotovenia, nie dodania pôvodného plnenia", async () => {
+    const dobropis = {
+      id: "d1",
+      invoice_number: "D-1",
+      type: "credit_note",
+      status: "sent",
+      issue_date: "2026-10-05",
+      delivery_date: "2026-08-20",
+      currency: "EUR",
+      customer_ic_dph: "SK2020123456",
+      invoice_items: [{ vat_rate: 23, subtotal: -100, quantity: -1, unit_price: 100 }],
+    };
+    const v = await nacitajVstup(klient({ invoices: [dobropis] }) as any, "f", { rok: 2026, mesiac: 10 });
+    expect(v.vstup.vystavene).toHaveLength(1);
+    const aug = await nacitajVstup(klient({ invoices: [dobropis] }) as any, "f", { rok: 2026, mesiac: 8 });
+    expect(aug.vstup.vystavene).toHaveLength(0);
+  });
+
+  it("prijatý dobropis patrí do obdobia, v ktorom prišiel", async () => {
+    const dobropis = {
+      id: "p3",
+      invoice_number: "DOB-1",
+      supplier_ic_dph: "SK2021987654",
+      issue_date: "2026-09-29",
+      delivery_date: "2026-08-10",
+      received_date: "2026-10-02",
+      currency: "EUR",
+      amount_without_vat: -50,
+      vat_amount: -11.5,
+      amount_total: -61.5,
+      opravuje_cislo: "DF-1",
+      type: "regular",
+    };
+    const okt = await nacitajVstup(klient({ purchase_invoices: [dobropis] }) as any, "f", { rok: 2026, mesiac: 10 });
+    expect(priznanie(okt.vstup).r28).toBe(11.5);
+    const sep = await nacitajVstup(klient({ purchase_invoices: [dobropis] }) as any, "f", { rok: 2026, mesiac: 9 });
+    expect(sep.vstup.prijate).toHaveLength(0);
   });
 });

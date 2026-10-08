@@ -1,3 +1,4 @@
+import { vsetkoAkoData } from "./strankovanie";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -42,15 +43,18 @@ async function podklady(supabase: any, companyId: string) {
       .gte("booking_date", od)
       .order("booking_date", { ascending: false })
       .limit(MAX_PAROVANIA),
-    supabase
-      .from("invoices")
-      .select(
-        "id, invoice_number, variable_symbol, order_number, total, currency, status, issue_date, due_date, customer_name",
-      )
-      .eq("company_id", companyId)
-      .is("deleted_at", null)
-      .not("status", "in", "(paid,cancelled,draft)")
-      .limit(2000),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("invoices")
+        .select(
+          "id, invoice_number, variable_symbol, order_number, total, currency, status, issue_date, due_date, customer_name",
+        )
+        .eq("company_id", companyId)
+        .is("deleted_at", null)
+        .not("status", "in", "(paid,cancelled,draft)")
+        .order("id")
+        .range(zac, kon),
+    ),
   ]);
 
   const faktury = invs ?? [];

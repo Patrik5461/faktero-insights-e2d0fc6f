@@ -172,3 +172,38 @@ describe("referencia platiteľa", () => {
     expect(overSchemou(xml, "pain.001.001.03-sepa.xsd")).toBeNull();
   });
 });
+
+describe("hromadný príkaz — čo je už zaplatené a duplicity", () => {
+  const f = {
+    id: "a",
+    invoice_number: "FV-81967/2026",
+    supplier_name: "Commander Services s.r.o.",
+    supplier_iban: "SK9311000000002626712658",
+    amount_total: 98.4,
+    currency: "EUR",
+    due_date: "2026-10-10",
+    status: "received",
+    variable_symbol: "819672026",
+  };
+
+  it("odpočíta čiastočnú úhradu z banky aj zaplatenú zálohu", async () => {
+    const { pripravPlatby } = await import("./hromadny-prikaz");
+    const { platby } = pripravPlatby([{ ...f, uhradene: 40, zaloha: 20 }]);
+    expect(platby[0].suma).toBe(38.4);
+    expect(platby[0].odpocitane).toBe(60);
+  });
+
+  it("celú uhradenú faktúru vynechá", async () => {
+    const { pripravPlatby } = await import("./hromadny-prikaz");
+    const { platby, preskocene } = pripravPlatby([{ ...f, uhradene: 98.4 }]);
+    expect(platby).toHaveLength(0);
+    expect(preskocene[0].dovod).toMatch(/celá uhradená/);
+  });
+
+  it("tú istú faktúru vybranú dvakrát zaplatí raz", async () => {
+    const { pripravPlatby } = await import("./hromadny-prikaz");
+    const { platby, preskocene } = pripravPlatby([f, { ...f, id: "b" }]);
+    expect(platby).toHaveLength(1);
+    expect(preskocene[0].dovod).toMatch(/dvakrát/);
+  });
+});

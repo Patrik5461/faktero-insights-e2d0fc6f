@@ -9,6 +9,7 @@ import {
   type OdovzdanieVstup,
   type Riadok,
 } from "./odovzdanie.server";
+import { vsetkoAkoData } from "./strankovanie";
 
 export type { OdovzdanieVstup };
 
@@ -124,42 +125,62 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
       { data: firma },
       { data: prijate },
     ] = await Promise.all([
-      supabase
-        .from("invoices")
-        .select("id, total")
-        .eq("company_id", data.companyId)
-        .gte("issue_date", od)
-        .lt("issue_date", doDatumu)
-        .neq("status", "draft")
-        .neq("status", "cancelled")
-        .is("deleted_at", null),
-      supabase
-        .from("export_logs")
-        .select("invoice_id")
-        .eq("company_id", data.companyId)
-        .eq("status", "ok"),
-      supabase
-        .from("cash_entries")
-        .select("id")
-        .eq("company_id", data.companyId)
-        .gte("entry_date", od)
-        .lt("entry_date", doDatumu),
-      supabase
-        .from("expense_documents")
-        .select("id, exported_at")
-        .eq("company_id", data.companyId)
-        .gte("issue_date", od)
-        .lt("issue_date", doDatumu),
+      vsetkoAkoData((zac, kon) =>
+        supabase
+          .from("invoices")
+          .select("id, total")
+          .eq("company_id", data.companyId)
+          .gte("issue_date", od)
+          .lt("issue_date", doDatumu)
+          .neq("status", "draft")
+          .neq("status", "cancelled")
+          .is("deleted_at", null)
+          .order("id")
+          .range(zac, kon),
+      ),
+      vsetkoAkoData((zac, kon) =>
+        supabase
+          .from("export_logs")
+          .select("invoice_id")
+          .eq("company_id", data.companyId)
+          .eq("status", "ok")
+          .order("id")
+          .range(zac, kon),
+      ),
+      vsetkoAkoData((zac, kon) =>
+        supabase
+          .from("cash_entries")
+          .select("id")
+          .eq("company_id", data.companyId)
+          .gte("entry_date", od)
+          .lt("entry_date", doDatumu)
+          .order("id")
+          .range(zac, kon),
+      ),
+      vsetkoAkoData((zac, kon) =>
+        supabase
+          .from("expense_documents")
+          .select("id, exported_at")
+          .eq("company_id", data.companyId)
+          .gte("issue_date", od)
+          .lt("issue_date", doDatumu)
+          .order("id")
+          .range(zac, kon),
+      ),
       supabase.from("companies").select("uctovnik_email").eq("id", data.companyId).single(),
-      supabase
-        .from("purchase_invoices")
-        .select("id, exported_at, samofakturacia, samofakturacia_stav")
-        .eq("company_id", data.companyId)
-        .gte("issue_date", od)
-        .lt("issue_date", doDatumu)
-        .is("deleted_at", null)
-        .eq("type", "regular")
-        .not("status", "in", "(draft,cancelled)"),
+      vsetkoAkoData((zac, kon) =>
+        supabase
+          .from("purchase_invoices")
+          .select("id, exported_at, samofakturacia, samofakturacia_stav")
+          .eq("company_id", data.companyId)
+          .gte("issue_date", od)
+          .lt("issue_date", doDatumu)
+          .is("deleted_at", null)
+          .eq("type", "regular")
+          .not("status", "in", "(draft,cancelled)")
+          .order("id")
+          .range(zac, kon),
+      ),
     ]);
     const { zapocitatelna } = await import("./samofakturacia");
     const prij = (prijate ?? []).filter((p: Riadok) => zapocitatelna(p));

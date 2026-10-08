@@ -16,6 +16,7 @@
  * vystavovať mimo vnútornej siete.
  */
 import type { OdpocetZalohy, PohodaNastavenia } from "./export.server";
+import { riadkyPreIds, vsetkoAkoData } from "./strankovanie";
 
 /** Riadky z databázy sa tu netypujú — modul ich len prekladá do XML. */
 type Riadok = any;
@@ -78,12 +79,16 @@ export async function cislaVPohode(
   supabase: Klient,
   companyId: string,
 ): Promise<Map<string, string>> {
-  const { data } = await supabase
-    .from("export_logs")
-    .select("invoice_id, pohoda_cislo, potvrdene_at")
-    .eq("company_id", companyId)
-    .not("pohoda_cislo", "is", null)
-    .order("potvrdene_at", { ascending: true });
+  const { data } = await vsetkoAkoData((zac, kon) =>
+    supabase
+      .from("export_logs")
+      .select("invoice_id, pohoda_cislo, potvrdene_at")
+      .eq("company_id", companyId)
+      .not("pohoda_cislo", "is", null)
+      .order("potvrdene_at", { ascending: true })
+      .order("id")
+      .range(zac, kon),
+  );
 
   const mapa = new Map<string, string>();
   for (const r of data ?? []) {
@@ -114,16 +119,24 @@ async function cakajuce(
   stlpecZmazania: "deleted_at" | "archived_at",
 ): Promise<{ id: string; verzia: string }[]> {
   const [{ data: karty }, { data: odoslane }] = await Promise.all([
-    supabase
-      .from(tabulka)
-      .select("id, updated_at")
-      .eq("company_id", companyId)
-      .is(stlpecZmazania, null),
-    supabase
-      .from("pohoda_odoslane")
-      .select("zaznam_id, verzia")
-      .eq("company_id", companyId)
-      .eq("agenda", agenda),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from(tabulka)
+        .select("id, updated_at")
+        .eq("company_id", companyId)
+        .is(stlpecZmazania, null)
+        .order("id")
+        .range(zac, kon),
+    ),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("pohoda_odoslane")
+        .select("zaznam_id, verzia")
+        .eq("company_id", companyId)
+        .eq("agenda", agenda)
+        .order("zaznam_id")
+        .range(zac, kon),
+    ),
   ]);
 
   const uz = new Map<string, string>(
@@ -203,11 +216,16 @@ export async function zostavDavku(
       .is("deleted_at", null)
       .order("issue_date")
       .limit(STROP_DAVKY),
-    supabase
-      .from("export_logs")
-      .select("invoice_id")
-      .eq("company_id", vstup.companyId)
-      .eq("status", "ok"),
+    // Všetky odovzdané — orezaný zoznam by staršie faktúry poslal druhýkrát.
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("export_logs")
+        .select("invoice_id")
+        .eq("company_id", vstup.companyId)
+        .eq("status", "ok")
+        .order("id")
+        .range(zac, kon),
+    ),
   ]);
   if (fErr) throw new Error(fErr.message);
 
@@ -355,16 +373,18 @@ export async function zostavDavku(
     };
   }
 
-  const { data: polozky } = faktury.length
-    ? await supabase
+  const polozky = await riadkyPreIds<Riadok>(
+    faktury.map((f: Riadok) => String(f.id)),
+    (kus, zac, kon) =>
+      supabase
         .from("invoice_items")
         .select("*")
-        .in(
-          "invoice_id",
-          faktury.map((f: Riadok) => f.id),
-        )
+        .in("invoice_id", kus)
+        .order("invoice_id")
         .order("position")
-    : { data: [] };
+        .order("id")
+        .range(zac, kon),
+  );
 
   const dokladyVsetky = [...(doklady ?? []), ...prijate.map(prijataAkoDoklad)];
   const { nastaveniaDokladov } = await import("./predkontacie.server");
@@ -485,11 +505,15 @@ export async function nacitajStorna(
       .eq("company_id", companyId)
       .not("cancelled_at", "is", null)
       .in("id", [...cisla.keys()]),
-    supabase
-      .from("pohoda_odoslane")
-      .select("zaznam_id")
-      .eq("company_id", companyId)
-      .eq("agenda", "storno"),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("pohoda_odoslane")
+        .select("zaznam_id")
+        .eq("company_id", companyId)
+        .eq("agenda", "storno")
+        .order("zaznam_id")
+        .range(zac, kon),
+    ),
   ]);
 
   const uz = new Set((uzStornovane ?? []).map((r: Riadok) => String(r.zaznam_id)));
@@ -626,22 +650,35 @@ export async function nacitajPohyby(
   zasobyVDavke: Riadok[],
 ): Promise<Riadok[]> {
   const [{ data: vsetky }, { data: odoslanePohyby }, { data: odoslaneKarty }] = await Promise.all([
-    supabase
-      .from("stock_movements")
-      .select("*, stock_items(sku, unit, vat_rate, products(name, code, unit, vat_rate))")
-      .eq("company_id", companyId)
-      .order("created_at")
-      .limit(2000),
-    supabase
-      .from("pohoda_odoslane")
-      .select("zaznam_id")
-      .eq("company_id", companyId)
-      .eq("agenda", "pohyb"),
-    supabase
-      .from("pohoda_odoslane")
-      .select("zaznam_id")
-      .eq("company_id", companyId)
-      .eq("agenda", "sklad"),
+    // Všetky pohyby aj všetko odoslané — strop 1 000 riadkov by novšie pohyby
+    // nikdy neposlal a orezaný zoznam odoslaných by staršie poslal druhýkrát.
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("stock_movements")
+        .select("*, stock_items(sku, unit, vat_rate, products(name, code, unit, vat_rate))")
+        .eq("company_id", companyId)
+        .order("created_at")
+        .order("id")
+        .range(zac, kon),
+    ),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("pohoda_odoslane")
+        .select("zaznam_id")
+        .eq("company_id", companyId)
+        .eq("agenda", "pohyb")
+        .order("zaznam_id")
+        .range(zac, kon),
+    ),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("pohoda_odoslane")
+        .select("zaznam_id")
+        .eq("company_id", companyId)
+        .eq("agenda", "sklad")
+        .order("zaznam_id")
+        .range(zac, kon),
+    ),
   ]);
 
   const uz = new Set((odoslanePohyby ?? []).map((r: Riadok) => String(r.zaznam_id)));
@@ -677,12 +714,18 @@ export async function nacitajZakazky(
   faktury: Riadok[],
 ): Promise<{ nove: Riadok[]; kody: Record<string, string> }> {
   const [{ data: vsetky }, { data: odoslane }] = await Promise.all([
-    supabase.from("jobs").select("*").eq("company_id", companyId).order("created_at"),
-    supabase
-      .from("pohoda_odoslane")
-      .select("zaznam_id")
-      .eq("company_id", companyId)
-      .eq("agenda", "zakazka"),
+    vsetkoAkoData((zac, kon) =>
+      supabase.from("jobs").select("*").eq("company_id", companyId).order("created_at").order("id").range(zac, kon),
+    ),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("pohoda_odoslane")
+        .select("zaznam_id")
+        .eq("company_id", companyId)
+        .eq("agenda", "zakazka")
+        .order("zaznam_id")
+        .range(zac, kon),
+    ),
   ]);
 
   const uz = new Set((odoslane ?? []).map((r: Riadok) => String(r.zaznam_id)));

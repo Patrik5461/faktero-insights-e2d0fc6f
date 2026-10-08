@@ -1,3 +1,4 @@
+import { vsetkoAkoData } from "./strankovanie";
 import { sadzbyKrajiny } from "./vat-rates";
 import { riadkySoZlavou } from "./zlavy";
 import { prepocitajPolozku, sumySamofaktury, zapocitatelna } from "./samofakturacia";
@@ -67,34 +68,43 @@ export async function nacitajVstup(
   const vytky: Vytka[] = [];
 
   const [fakturyRes, prijateRes, dokladyRes] = await Promise.all([
-    supabase
-      .from("invoices")
-      .select(
-        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, invoice_items(vat_rate, subtotal, quantity, unit_price)",
-      )
-      .eq("company_id", companyId)
-      .is("deleted_at", null)
-      .limit(5000),
-    supabase
-      .from("purchase_invoices")
-      .select(
-        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, rozuctovanie, amount_total",
-      )
-      .eq("company_id", companyId)
-      /*
-        Prijatá zálohová faktúra nie je daňový doklad — daň z nej odpočítať
-        nemožno, tú prinesie až ostrá faktúra od dodávateľa.
-      */
-      .eq("type", "regular")
-      .is("deleted_at", null)
-      .limit(5000),
-    supabase
-      .from("expense_documents")
-      .select(
-        "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, status, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie, pohoda_predkontacia, category, items, rozuctovanie, total_amount",
-      )
-      .eq("company_id", companyId)
-      .limit(5000),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("invoices")
+        .select(
+          "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, invoice_items(vat_rate, subtotal, quantity, unit_price)",
+        )
+        .eq("company_id", companyId)
+        .is("deleted_at", null)
+        .order("id")
+        .range(zac, kon),
+    ),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("purchase_invoices")
+        .select(
+          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, rozuctovanie, amount_total",
+        )
+        .eq("company_id", companyId)
+        /*
+          Prijatá zálohová faktúra nie je daňový doklad — daň z nej odpočítať
+          nemožno, tú prinesie až ostrá faktúra od dodávateľa.
+        */
+        .eq("type", "regular")
+        .is("deleted_at", null)
+        .order("id")
+        .range(zac, kon),
+    ),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("expense_documents")
+        .select(
+          "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, status, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie, pohoda_predkontacia, category, items, rozuctovanie, total_amount",
+        )
+        .eq("company_id", companyId)
+        .order("id")
+        .range(zac, kon),
+    ),
   ]);
 
   /*
@@ -142,10 +152,14 @@ export async function nacitajVstup(
     lebo faktúra ich môže mať viac; starší stĺpec ostáva len pre doklad k
     prijatej platbe.
   */
-  const { data: odpoctyRiadky } = await supabase
-    .from("invoice_advances")
-    .select("invoice_id, advance_invoice_id")
-    .eq("company_id", companyId);
+  const { data: odpoctyRiadky } = await vsetkoAkoData((zac, kon) =>
+    supabase
+      .from("invoice_advances")
+      .select("invoice_id, advance_invoice_id")
+      .eq("company_id", companyId)
+      .order("id")
+      .range(zac, kon),
+  );
   const odpoctyFaktury = new Map<string, string[]>();
   for (const r of odpoctyRiadky ?? []) {
     const zoz = odpoctyFaktury.get(r.invoice_id) ?? [];
@@ -164,7 +178,13 @@ export async function nacitajVstup(
 
   const vystavene: VystavenaFaktura[] = [];
   for (const f of (fakturyRes.data ?? []) as any[]) {
-    const den = f.delivery_date || f.issue_date;
+    /*
+      Opravná faktúra (dobropis, ťarchopis) patrí do obdobia, v ktorom bola
+      vyhotovená (§ 25 ods. 1) — nie podľa dátumu dodania, ktorý môže niesť
+      pôvodné plnenie z už podaného obdobia.
+    */
+    const opravna = f.type === "credit_note" || f.type === "debit_note" || Boolean(f.opravuje_fakturu_id);
+    const den = opravna ? f.issue_date || f.delivery_date : f.delivery_date || f.issue_date;
     if (!vDobe(den)) continue;
     if (NEPLATNE_STAVY.includes(String(f.status))) continue;
     /*
@@ -223,7 +243,14 @@ export async function nacitajVstup(
 
   const prijate: PrijataFaktura[] = [];
   for (const p of (prijateRes.data ?? []) as any[]) {
-    const den = p.delivery_date || p.issue_date;
+    /*
+      Prijatý dobropis: odpočet sa opraví v období, v ktorom ho firma dostala
+      (§ 53 ods. 2) — dátum prijatia, inak vyhotovenia.
+    */
+    const dobropisP = Boolean(p.opravuje_cislo) || Number(p.amount_total ?? 0) < 0;
+    const den = dobropisP
+      ? p.received_date || p.issue_date || p.delivery_date
+      : p.delivery_date || p.issue_date;
     if (!vDobe(den)) continue;
     /*
       Samofaktúra je daňový doklad až po odsúhlasení dodávateľom. Dovtedy sa

@@ -16,6 +16,7 @@
  */
 
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { vsetkyRiadky } from "./strankovanie";
 import fontkit from "@pdf-lib/fontkit";
 import { RobotoRegularBase64 } from "./fonts/Roboto-Regular";
 import { RobotoBoldBase64 } from "./fonts/Roboto-Bold";
@@ -525,21 +526,34 @@ export async function generateOwnStatements(period?: {
         .eq("id", account.company_id)
         .maybeSingle();
 
-      const { data: txs } = await supabaseAdmin
-        .from("bank_transactions")
-        .select(
-          "booking_date, amount, currency, variable_symbol, counterparty, description, transaction_reference",
-        )
-        .eq("bank_account_id", accountId)
-        .gte("booking_date", start)
-        .lte("booking_date", end)
-        .order("booking_date", { ascending: true });
+      /*
+        Supabase vracia najviac 1 000 riadkov na dotaz. Účet s rušnou prevádzkou
+        ich má za mesiac viac a obratov po konci obdobia ešte viac — bez
+        stránkovania výpis vynechal pohyby a zostatky dopočítal zle.
+      */
+      const txs = await vsetkyRiadky<any>((zac, kon) =>
+        supabaseAdmin
+          .from("bank_transactions")
+          .select(
+            "booking_date, amount, currency, variable_symbol, counterparty, description, transaction_reference",
+          )
+          .eq("bank_account_id", accountId)
+          .gte("booking_date", start)
+          .lte("booking_date", end)
+          .order("booking_date", { ascending: true })
+          .order("id", { ascending: true })
+          .range(zac, kon),
+      );
 
-      const { data: after } = await supabaseAdmin
-        .from("bank_transactions")
-        .select("amount")
-        .eq("bank_account_id", accountId)
-        .gt("booking_date", end);
+      const after = await vsetkyRiadky<any>((zac, kon) =>
+        supabaseAdmin
+          .from("bank_transactions")
+          .select("amount")
+          .eq("bank_account_id", accountId)
+          .gt("booking_date", end)
+          .order("id", { ascending: true })
+          .range(zac, kon),
+      );
 
       // Bez transakcií siahajúcich pred začiatok obdobia nevieme povedať, či
       // ich za obdobie máme všetky — radšej výpis nevydáme, ako by mal klamať.

@@ -1,3 +1,4 @@
+import { vsetkoAkoData } from "./strankovanie";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -94,11 +95,14 @@ async function obnovZostatok(
   // súčet bez staršej histórie vymyslel zostatok, tak sa nechá, ako je.
   if (r.konecnyZostatok != null || !r.format.startsWith("export ")) return;
   // Export bez zostatkov (Stripe): zostatok je súčet pohybov.
-  const { data: vsetky } = await admin
-    .from("bank_transactions")
-    .select("amount")
-    .eq("bank_account_id", uctuId)
-    .limit(50000);
+  const { data: vsetky } = await vsetkoAkoData((zac, kon) =>
+    admin
+      .from("bank_transactions")
+      .select("amount")
+      .eq("bank_account_id", uctuId)
+      .order("id")
+      .range(zac, kon),
+  );
   const sucet =
     Math.round(
       ((vsetky ?? []) as { amount: number }[]).reduce((a, t) => a + Number(t.amount), 0) * 100,

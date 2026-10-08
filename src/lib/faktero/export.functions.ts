@@ -42,15 +42,20 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
     );
     if (!invs.length) throw new Error(`Vybrané faktúry čakajú na schválenie (${cakaju}).`);
 
-    const { data: items, error: itErr } = await supabase
-      .from("invoice_items")
-      .select("*")
-      .in(
-        "invoice_id",
-        invs.map((i) => i.id),
-      )
-      .order("position");
-    if (itErr) throw new Error(itErr.message);
+    // Po dávkach a stránkach — pri stovkách faktúr je položiek viac než 1 000.
+    const { riadkyPreIds } = await import("./strankovanie");
+    const items = await riadkyPreIds<any>(
+      invs.map((i) => i.id),
+      (kus, zac, kon) =>
+        supabase
+          .from("invoice_items")
+          .select("*")
+          .in("invoice_id", kus)
+          .order("invoice_id")
+          .order("position")
+          .order("id")
+          .range(zac, kon),
+    );
 
     // Dobropis a ťarchopis nesú len id opravovanej faktúry — formáty chcú jej číslo.
     const opravovaneIds = [

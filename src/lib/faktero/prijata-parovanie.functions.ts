@@ -1,3 +1,4 @@
+import { vsetkoAkoData } from "./strankovanie";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -96,11 +97,15 @@ export const navrhniParovaniePrijatych = createServerFn({ method: "POST" })
       : { data: [] as any[] };
 
     // Faktúra, ktorá už pohyb má, sa znova neponúka.
-    const { data: uzSparovane } = await supabase
-      .from("bank_transactions")
-      .select("matched_purchase_invoice_id")
-      .eq("company_id", data.company_id)
-      .not("matched_purchase_invoice_id", "is", null);
+    const { data: uzSparovane } = await vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("bank_transactions")
+        .select("matched_purchase_invoice_id")
+        .eq("company_id", data.company_id)
+        .not("matched_purchase_invoice_id", "is", null)
+        .order("id")
+        .range(zac, kon),
+    );
     const obsadene = new Set(
       ((uzSparovane as { matched_purchase_invoice_id: string }[]) ?? []).map(
         (r) => r.matched_purchase_invoice_id,

@@ -10,6 +10,7 @@
  *
  * Server-only: never import from the client bundle.
  */
+import { vsetkoAkoData } from "../strankovanie";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   registerEfakturaProvider,
@@ -673,11 +674,15 @@ export async function stiahniPrijate(
   if (!dokumenty.length) return { novych: 0, preskocenych: 0, problemy: [] };
 
   const znacky = dokumenty.map((d) => d.peppol_message_id ?? d.id).filter(Boolean) as string[];
-  const { data: uzMame } = await supabaseAdmin
-    .from("efaktura_received_documents")
-    .select("parsed_data")
-    .eq("company_id", companyId)
-    .limit(2000);
+  // Všetky prijaté — orezaný zoznam by starší doklad naimportoval druhýkrát.
+  const { data: uzMame } = await vsetkoAkoData((zac, kon) =>
+    supabaseAdmin
+      .from("efaktura_received_documents")
+      .select("parsed_data")
+      .eq("company_id", companyId)
+      .order("id")
+      .range(zac, kon),
+  );
   const znameZnacky = new Set(
     ((uzMame ?? []) as any[])
       .map((r) => r?.parsed_data?.providerMessageId)

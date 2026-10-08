@@ -106,14 +106,19 @@ export async function nacitajNaUctovanie(
       .is("deleted_at", null);
     if (error) throw new Error(error.message);
     const rows = (invs ?? []).filter((i: any) => i.status !== "draft");
-    const { data: items } = await supabase
-      .from("invoice_items")
-      .select("*")
-      .in(
-        "invoice_id",
-        rows.map((i: any) => i.id),
-      )
-      .order("position");
+    const { riadkyPreIds } = await import("./strankovanie");
+    const items = await riadkyPreIds<any>(
+      rows.map((i: any) => i.id),
+      (kus, zac, kon) =>
+        supabase
+          .from("invoice_items")
+          .select("*")
+          .in("invoice_id", kus)
+          .order("invoice_id")
+          .order("position")
+          .order("id")
+          .range(zac, kon),
+    );
     // Dobropis nesie len id opravovanej faktúry — do účtovníctva ide jej číslo.
     const opr = [...new Set(rows.map((i: any) => i.opravuje_fakturu_id).filter(Boolean))];
     const cisla: Record<string, string> = {};

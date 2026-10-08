@@ -1,3 +1,4 @@
+import { vsetkoAkoData } from "./strankovanie";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -34,20 +35,26 @@ export const getCashBook = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const [{ data: doklady }, { data: vydavky }, { data: firma }] = await Promise.all([
-      context.supabase
-        .from("cash_entries")
-        .select("*")
-        .eq("company_id", data.company_id)
-        .order("entry_date", { ascending: true })
-        .limit(5000),
-      context.supabase
-        .from("expense_documents")
-        .select("id, issue_date, total_amount, payment_method, supplier_name, document_number")
-        .eq("company_id", data.company_id)
-        .eq("payment_method", "hotovost")
-        // Starý doklad z importu, ktorý sa do pokladne vedome nezapočítal.
-        .eq("mimo_pokladne", false)
-        .limit(5000),
+      vsetkoAkoData((zac, kon) =>
+        context.supabase
+          .from("cash_entries")
+          .select("*")
+          .eq("company_id", data.company_id)
+          .order("entry_date", { ascending: true })
+          .order("id")
+          .range(zac, kon),
+      ),
+      vsetkoAkoData((zac, kon) =>
+        context.supabase
+          .from("expense_documents")
+          .select("id, issue_date, total_amount, payment_method, supplier_name, document_number")
+          .eq("company_id", data.company_id)
+          .eq("payment_method", "hotovost")
+          // Starý doklad z importu, ktorý sa do pokladne vedome nezapočítal.
+          .eq("mimo_pokladne", false)
+          .order("id")
+          .range(zac, kon),
+      ),
       context.supabase
         .from("companies")
         .select("locked_until")

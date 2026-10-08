@@ -25,6 +25,10 @@ export type FakturaNaUhradu = {
   variable_symbol?: string | null;
   specific_symbol?: string | null;
   constant_symbol?: string | null;
+  /** Už uhradené — spárované odchádzajúce platby z banky (čiastočná úhrada). */
+  uhradene?: number | null;
+  /** Zaplatená prijatá zálohová faktúra, ktorú faktúra vyúčtováva. */
+  zaloha?: number | null;
 };
 
 export type Platba = {
@@ -43,6 +47,8 @@ export type Platba = {
    * referencia `RF…` (ISO 11649). Ide do správy pre príjemcu.
    */
   referencia: string;
+  /** Koľko sa z faktúry odpočítalo (čiastočná úhrada a záloha); 0 = platí sa celá. */
+  odpocitane: number;
 };
 
 export type Preskocena = { id: string; cisloFaktury: string; dovod: string };
@@ -104,6 +110,11 @@ export function pripravPlatby(faktury: FakturaNaUhradu[]): {
 } {
   const platby: Platba[] = [];
   const preskocene: Preskocena[] = [];
+  /*
+    Tá istá faktúra vo výbere dvakrát (napr. prišla mailom dvakrát): rovnaký
+    účet, číslo či symbol a suma. Druhú neplatíme — inak odíde dvojitá úhrada.
+  */
+  const videne = new Set<string>();
   for (const f of faktury) {
     const cisloFaktury = f.invoice_number || "bez čísla";
     const skip = (dovod: string) => preskocene.push({ id: f.id, cisloFaktury, dovod });
@@ -129,11 +140,40 @@ export function pripravPlatby(faktury: FakturaNaUhradu[]): {
       skip(f.supplier_iban ? "IBAN dodávateľa nie je platný" : "chýba IBAN dodávateľa");
       continue;
     }
-    const suma = Math.round(Number(f.amount_total ?? 0) * 100) / 100;
-    if (!(suma > 0)) {
+    /*
+      Platí sa len zvyšok: čiastočná úhrada spárovaná z banky a zaplatená
+      záloha sa odpočítajú, inak by firma tú istú sumu poslala druhýkrát.
+    */
+    const celkom = Math.round(Number(f.amount_total ?? 0) * 100) / 100;
+    const odpocitane =
+      Math.round(
+        (Math.max(0, Number(f.uhradene ?? 0)) + Math.max(0, Number(f.zaloha ?? 0))) * 100,
+      ) / 100;
+    const suma = Math.round((celkom - odpocitane) * 100) / 100;
+    if (!(celkom > 0)) {
       skip("suma na úhradu nie je kladná");
       continue;
     }
+    if (!(suma > 0)) {
+      skip(
+        odpocitane
+          ? "je už celá uhradená (platby z banky alebo záloha)"
+          : "suma na úhradu nie je kladná",
+      );
+      continue;
+    }
+    const kluc = [
+      iban,
+      String(f.variable_symbol ?? "").replace(/\s/g, "") || String(f.invoice_number ?? "").trim(),
+      suma.toFixed(2),
+    ].join("|");
+    if (videne.has(kluc)) {
+      skip(
+        "rovnaká faktúra (účet, symbol aj suma) je vo výbere dvakrát — pravdepodobne duplicita, platí sa raz",
+      );
+      continue;
+    }
+    videne.add(kluc);
     platby.push({
       id: f.id,
       cisloFaktury,
@@ -145,6 +185,7 @@ export function pripravPlatby(faktury: FakturaNaUhradu[]): {
       ss: iba(f.specific_symbol, 10),
       ks: iba(f.constant_symbol, 4),
       referencia: referenciaPlatitela(f),
+      odpocitane,
     });
   }
   return { platby, preskocene };

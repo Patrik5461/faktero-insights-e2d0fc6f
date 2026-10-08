@@ -288,6 +288,12 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
   for (const f of vstup.vystavene) {
     if (!doVykazov(f)) continue;
 
+    /*
+      Oprava oslobodeného dodania do EÚ alebo vývozu: pôvodné dodanie v KV nie
+      je (nepatrí do A.1 ani A.2), preto ani jeho oprava nepatrí do C.1.
+    */
+    if (jeOpravna(f) && f.prenosDane && (f.prenosTyp === "eu_b2b" || f.prenosTyp === "export")) continue;
+
     if (jeOpravna(f)) {
       // C.1 — opravná faktúra sa páruje s pôvodnou, inak ju daniari nespoja.
       if (!f.opravujeCislo) {
@@ -598,17 +604,27 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
     // neuvádza — daň priznáva odberateľ, dodávateľ len v časti A.2 výkazu.
     if (f.prenosTyp === "domestic_69") continue;
 
+    /*
+      Oslobodené dodania: opravná faktúra sa od základu odpočíta (dobropis) alebo
+      pripočíta (ťarchopis) — bod 32 poučenia. Dobropis má v databáze sumy
+      záporné, ťarchopis kladné, takže znamienko nesie už samotná suma; dobropis
+      uložený kladne (starší import) sa otočí.
+    */
+    const oslobodeny = () => {
+      const s0 = f.riadky.reduce((a, x) => a + x.zaklad, 0);
+      return f.typ === "credit_note" ? -Math.abs(s0) : s0;
+    };
     if (f.prenosDane && f.prenosTyp === "eu_b2b") {
       // Tovar do EÚ ide do r13 a r14; služba do iného členského štátu nie je
       // predmetom dane v tuzemsku a v priznaní sa neuvádza (len v súhrnnom výkaze).
       if (f.euPlnenie === "sluzba" || f.euPlnenie === "trojstranny") continue;
-      const zaklad = f.riadky.reduce((a, x) => a + x.zaklad, 0) * (jeOpravna(f) ? -1 : 1);
+      const zaklad = oslobodeny();
       pripocitaj("r13", zaklad);
       pripocitaj("r14", zaklad);
       continue;
     }
     if (f.prenosDane && f.prenosTyp === "export") {
-      const zaklad = f.riadky.reduce((a, x) => a + x.zaklad, 0) * (jeOpravna(f) ? -1 : 1);
+      const zaklad = oslobodeny();
       pripocitaj("r13", zaklad);
       pripocitaj("r15", zaklad);
       continue;

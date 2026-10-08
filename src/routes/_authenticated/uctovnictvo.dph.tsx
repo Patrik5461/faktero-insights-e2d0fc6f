@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { riadkyPreIds, vsetkoAkoData } from "@/lib/faktero/strankovanie";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { znamienkoDokladu } from "@/lib/faktero/faktury-sumy";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -142,45 +143,54 @@ function DphPage() {
     if (!cid) return;
     setLoading(true);
     try {
+      // Po stránkach — Supabase vráti najviac 1 000 riadkov a zvyšok by v prehľade ticho chýbal.
       const [{ data: invs }, { data: purch }] = await Promise.all([
-        supabase
-          .from("invoices")
-          .select(
-            "id, invoice_number, issue_date, customer_name, subtotal, vat_total, total, currency, status, reverse_charge, type",
-          )
-          .eq("company_id", cid)
-          .gte("issue_date", period.from)
-          .lte("issue_date", period.to)
-          .is("deleted_at", null)
-          .neq("status", "draft")
-          .neq("status", "cancelled")
-          // Zálohová faktúra je výzva na zaplatenie preddavku, nie zdaniteľné
-          // plnenie — do priznania nepatrí. Plnenie prizná až vyúčtovacia
-          // faktúra, inak by tá istá suma bola v prehľade dvakrát.
-          .neq("type", "proforma")
-          .order("issue_date", { ascending: true }),
-        supabase
-          .from("purchase_invoices")
-          .select(
-            "id, invoice_number, issue_date, supplier_name, amount_without_vat, vat_amount, amount_total, currency",
-          )
-          .eq("company_id", cid)
-          .gte("issue_date", period.from)
-          .lte("issue_date", period.to)
-          .is("deleted_at", null)
-          // Samofaktúra sa odpočíta až po odsúhlasení dodávateľom.
-          .or("samofakturacia.eq.false,samofakturacia_stav.eq.odsuhlasena")
-          .order("issue_date", { ascending: true }),
+        vsetkoAkoData((zac, kon) =>
+          supabase
+            .from("invoices")
+            .select(
+              "id, invoice_number, issue_date, customer_name, subtotal, vat_total, total, currency, status, reverse_charge, type",
+            )
+            .eq("company_id", cid)
+            .gte("issue_date", period.from)
+            .lte("issue_date", period.to)
+            .is("deleted_at", null)
+            .neq("status", "draft")
+            .neq("status", "cancelled")
+            // Zálohová faktúra je výzva na zaplatenie preddavku, nie zdaniteľné
+            // plnenie — do priznania nepatrí. Plnenie prizná až vyúčtovacia
+            // faktúra, inak by tá istá suma bola v prehľade dvakrát.
+            .neq("type", "proforma")
+            .order("issue_date", { ascending: true })
+            .order("id")
+            .range(zac, kon),
+        ),
+        vsetkoAkoData((zac, kon) =>
+          supabase
+            .from("purchase_invoices")
+            .select(
+              "id, invoice_number, issue_date, supplier_name, amount_without_vat, vat_amount, amount_total, currency",
+            )
+            .eq("company_id", cid)
+            .gte("issue_date", period.from)
+            .lte("issue_date", period.to)
+            .is("deleted_at", null)
+            // Samofaktúra sa odpočíta až po odsúhlasení dodávateľom.
+            .or("samofakturacia.eq.false,samofakturacia_stav.eq.odsuhlasena")
+            .order("issue_date", { ascending: true })
+            .order("id")
+            .range(zac, kon),
+        ),
       ]);
-      const invIds = (invs ?? []).map((i) => i.id);
-      let itms: any[] = [];
-      if (invIds.length) {
-        const { data: iData } = await supabase
+      const invIds = (invs ?? []).map((i: any) => i.id);
+      const itms = await riadkyPreIds<any>(invIds, (kus, zac, kon) =>
+        supabase
           .from("invoice_items")
-          .select("invoice_id, subtotal, vat_amount, vat_rate")
-          .in("invoice_id", invIds);
-        itms = iData ?? [];
-      }
+          .select("id, invoice_id, subtotal, vat_amount, vat_rate")
+          .in("invoice_id", kus)
+          .order("id")
+          .range(zac, kon),
+      );
       setInvoices(invs ?? []);
       setItems(itms);
       setPurchases(purch ?? []);

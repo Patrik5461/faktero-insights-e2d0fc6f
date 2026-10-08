@@ -1,3 +1,4 @@
+import { vsetkoAkoData } from "./strankovanie";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -27,15 +28,18 @@ export const ossPrehladFn = createServerFn({ method: "POST" })
     const od = `${data.rok}-${String(prvyMesiac).padStart(2, "0")}-01`;
     const doDna = new Date(Date.UTC(data.rok, prvyMesiac + 2, 0)).toISOString().slice(0, 10);
 
-    const { data: rows } = await context.supabase
-      .from("invoices")
-      .select(
-        "id, invoice_number, type, status, issue_date, delivery_date, oss_country, subtotal, invoice_items(vat_rate, subtotal, quantity, unit_price)",
-      )
-      .eq("company_id", data.company_id)
-      .eq("oss", true)
-      .is("deleted_at", null)
-      .limit(5000);
+    const { data: rows } = await vsetkoAkoData((zac, kon) =>
+      context.supabase
+        .from("invoices")
+        .select(
+          "id, invoice_number, type, status, issue_date, delivery_date, oss_country, subtotal, invoice_items(vat_rate, subtotal, quantity, unit_price)",
+        )
+        .eq("company_id", data.company_id)
+        .eq("oss", true)
+        .is("deleted_at", null)
+        .order("id")
+        .range(zac, kon),
+    );
 
     const vsetky = (rows ?? []).filter(
       (f: any) => !["draft", "cancelled"].includes(String(f.status)),

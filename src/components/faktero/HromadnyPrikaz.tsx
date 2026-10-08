@@ -62,7 +62,72 @@ export function HromadnyPrikaz({
     })();
   }, [companyId]);
 
-  const { platby, preskocene } = useMemo(() => pripravPlatby(faktury), [faktury]);
+  /*
+    Čo je z faktúr už zaplatené: odchádzajúce platby spárované z banky
+    (čiastočná úhrada) a zaplatená prijatá zálohová faktúra, ktorú faktúra
+    vyúčtováva. Kým sa to nenačíta, príkaz sa nedá stiahnuť.
+  */
+  const [uhrady, setUhrady] = useState<Record<string, { uhradene: number; zaloha: number }> | null>(
+    null,
+  );
+  useEffect(() => {
+    void (async () => {
+      const ids = faktury.map((f) => f.id);
+      const zalohoveIds = [
+        ...new Set(faktury.map((f: any) => f.advance_invoice_id).filter(Boolean) as string[]),
+      ];
+      const [{ data: pohyby }, { data: zalohove }] = await Promise.all([
+        ids.length
+          ? supabase
+              .from("bank_transactions")
+              .select("matched_purchase_invoice_id, amount")
+              .eq("company_id", companyId)
+              .in("matched_purchase_invoice_id", ids)
+          : Promise.resolve({ data: [] as any[] }),
+        zalohoveIds.length
+          ? supabase
+              .from("purchase_invoices")
+              .select("id, amount_total, status")
+              .eq("company_id", companyId)
+              .in("id", zalohoveIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+      const out: Record<string, { uhradene: number; zaloha: number }> = {};
+      for (const p of (pohyby ?? []) as any[]) {
+        // Úhrada dodávateľovi je odchádzajúca platba (záporná suma).
+        if (!(Number(p.amount) < 0)) continue;
+        const k = String(p.matched_purchase_invoice_id);
+        out[k] = out[k] ?? { uhradene: 0, zaloha: 0 };
+        out[k].uhradene += Math.abs(Number(p.amount));
+      }
+      const zaplateneZalohy = new Map(
+        ((zalohove ?? []) as any[])
+          .filter((z) => z.status === "paid")
+          .map((z) => [String(z.id), Number(z.amount_total ?? 0)]),
+      );
+      for (const f of faktury as any[]) {
+        const z = f.advance_invoice_id
+          ? zaplateneZalohy.get(String(f.advance_invoice_id))
+          : undefined;
+        if (!z) continue;
+        out[f.id] = out[f.id] ?? { uhradene: 0, zaloha: 0 };
+        out[f.id].zaloha = z;
+      }
+      setUhrady(out);
+    })();
+  }, [faktury, companyId]);
+
+  const { platby, preskocene } = useMemo(
+    () =>
+      pripravPlatby(
+        faktury.map((f) => ({
+          ...f,
+          uhradene: uhrady?.[f.id]?.uhradene ?? 0,
+          zaloha: uhrady?.[f.id]?.zaloha ?? 0,
+        })),
+      ),
+    [faktury, uhrady],
+  );
   const spolu = platby.reduce((s, p) => s + Math.round(p.suma * 100), 0) / 100;
   const dni = new Set(platby.map((p) => datumUhrady(p, { datum, podlaSplatnosti }))).size;
 
@@ -121,6 +186,17 @@ export function HromadnyPrikaz({
           </span>{" "}
           spolu <span className="font-semibold tabular-nums">{eur(spolu)}</span>
         </div>
+
+        {platby.some((p) => p.odpocitane > 0) && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Platí sa len zvyšok (už uhradené z banky alebo zálohou):{" "}
+            {platby
+              .filter((p) => p.odpocitane > 0)
+              .map((p) => `${p.cisloFaktury} −${eur(p.odpocitane)}`)
+              .join(", ")}
+            .
+          </p>
+        )}
 
         {platby.some((p) => !p.vs) && (
           <p className="mt-3 text-xs text-muted-foreground">
@@ -212,7 +288,7 @@ export function HromadnyPrikaz({
           {platby.length > 0 && (
             <button
               onClick={stiahni}
-              disabled={busy || !ucetId}
+              disabled={busy || !ucetId || uhrady === null}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {busy ? (

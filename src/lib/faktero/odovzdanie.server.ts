@@ -1,3 +1,5 @@
+import { riadkyPreIds, vsetkoAkoData } from "./strankovanie";
+
 /**
  * Riadky z databázy sa tu netypujú — modul ich len prehadzuje do XML, CSV a
  * ZIPu a o ich tvare rozhodujú generátory v `export.server.ts`.
@@ -123,29 +125,36 @@ export async function zostavBalik(
 ): Promise<{ balik: Balik; company: Riadok }> {
   const { od, do: doDatumu, nazov } = rozsahMesiaca(vstup.mesiac);
 
-  const [{ data: company, error: cErr }, { data: vsetky, error: iErr }] = await Promise.all([
+  const [{ data: company, error: cErr }, { data: vsetky }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", vstup.companyId).single(),
-    supabase
-      .from("invoices")
-      .select("*")
-      .eq("company_id", vstup.companyId)
-      .gte("issue_date", od)
-      .lt("issue_date", doDatumu)
-      .neq("status", "draft")
-      .neq("status", "cancelled")
-      .is("deleted_at", null)
-      .order("issue_date"),
+    vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("invoices")
+        .select("*")
+        .eq("company_id", vstup.companyId)
+        .gte("issue_date", od)
+        .lt("issue_date", doDatumu)
+        .neq("status", "draft")
+        .neq("status", "cancelled")
+        .is("deleted_at", null)
+        .order("issue_date")
+        .order("id")
+        .range(zac, kon),
+    ),
   ]);
   if (cErr) throw new Error(cErr.message);
-  if (iErr) throw new Error(iErr.message);
   if (!company) throw new Error("Firma nenájdená");
 
   // Čo už raz odišlo, sa druhýkrát neposiela — inak doklad pribudne dvakrát.
-  const { data: uzOdovzdane } = await supabase
-    .from("export_logs")
-    .select("invoice_id")
-    .eq("company_id", vstup.companyId)
-    .eq("status", "ok");
+  const { data: uzOdovzdane } = await vsetkoAkoData((zac, kon) =>
+    supabase
+      .from("export_logs")
+      .select("invoice_id")
+      .eq("company_id", vstup.companyId)
+      .eq("status", "ok")
+      .order("id")
+      .range(zac, kon),
+  );
   const odovzdaneIds = new Set((uzOdovzdane ?? []).map((r: Riadok) => r.invoice_id));
 
   // Schvaľovanie: účtovníčke ide len schválené (doklady spred zapnutia áno).
@@ -159,30 +168,42 @@ export async function zostavBalik(
 
   const [{ data: vsetkyDoklady }, { data: pokladnica }, { data: vsetkyOstatne }] =
     await Promise.all([
-      supabase
-        .from("expense_documents")
-        .select("*")
-        .eq("company_id", vstup.companyId)
-        .gte("issue_date", od)
-        .lt("issue_date", doDatumu)
-        .order("issue_date"),
-      supabase
-        .from("cash_entries")
-        .select("*")
-        .eq("company_id", vstup.companyId)
-        .gte("entry_date", od)
-        .lt("entry_date", doDatumu)
-        .order("entry_date"),
+      vsetkoAkoData((zac, kon) =>
+        supabase
+          .from("expense_documents")
+          .select("*")
+          .eq("company_id", vstup.companyId)
+          .gte("issue_date", od)
+          .lt("issue_date", doDatumu)
+          .order("issue_date")
+          .order("id")
+          .range(zac, kon),
+      ),
+      vsetkoAkoData((zac, kon) =>
+        supabase
+          .from("cash_entries")
+          .select("*")
+          .eq("company_id", vstup.companyId)
+          .gte("entry_date", od)
+          .lt("entry_date", doDatumu)
+          .order("entry_date")
+          .order("id")
+          .range(zac, kon),
+      ),
       // Iné doklady sa radia podľa dňa doručenia — dátum vystavenia nemajú.
-      supabase
-        .from("other_documents")
-        .select(
+      vsetkoAkoData((zac, kon) =>
+        supabase
+          .from("other_documents")
+          .select(
           "*, other_document_files(path, name, position), zamestnanec:employees(first_name, last_name), zmluva:financing_contracts(name, provider_name, contract_number)",
-        )
-        .eq("company_id", vstup.companyId)
-        .gte("received_date", od)
-        .lt("received_date", doDatumu)
-        .order("received_date"),
+          )
+          .eq("company_id", vstup.companyId)
+          .gte("received_date", od)
+          .lt("received_date", doDatumu)
+          .order("received_date")
+          .order("id")
+          .range(zac, kon),
+      ),
     ]);
   const { ok: doklady, cakaju: cakajuDoklady } = await lenSchvalene(
     supabase,
@@ -196,16 +217,20 @@ export async function zostavBalik(
     idú všetky vystavené (nie len tie zaúčtované vo Fakteri) — predkontácia a
     členenie sa pridajú, keď ich faktúra má. Samofaktúra až po odsúhlasení.
   */
-  const { data: vsetkyPrijate } = await supabase
-    .from("purchase_invoices")
-    .select("*")
-    .eq("company_id", vstup.companyId)
-    .gte("issue_date", od)
-    .lt("issue_date", doDatumu)
-    .is("deleted_at", null)
-    .eq("type", "regular")
-    .not("status", "in", "(draft,cancelled)")
-    .order("issue_date");
+  const { data: vsetkyPrijate } = await vsetkoAkoData((zac, kon) =>
+    supabase
+      .from("purchase_invoices")
+      .select("*")
+      .eq("company_id", vstup.companyId)
+      .gte("issue_date", od)
+      .lt("issue_date", doDatumu)
+      .is("deleted_at", null)
+      .eq("type", "regular")
+      .not("status", "in", "(draft,cancelled)")
+      .order("issue_date")
+      .order("id")
+      .range(zac, kon),
+  );
   const { zapocitatelna } = await import("./samofakturacia");
   const { ok: prijate, cakaju: cakajuPrijate } = await lenSchvalene(
     supabase,
@@ -225,17 +250,18 @@ export async function zostavBalik(
     );
   }
 
-  const { data: polozky, error: pErr } = faktury.length
-    ? await supabase
+  const polozky = await riadkyPreIds<Riadok>(
+    faktury.map((f: Riadok) => String(f.id)),
+    (kus, zac, kon) =>
+      supabase
         .from("invoice_items")
         .select("*")
-        .in(
-          "invoice_id",
-          faktury.map((f: Riadok) => f.id),
-        )
+        .in("invoice_id", kus)
+        .order("invoice_id")
         .order("position")
-    : { data: [], error: null };
-  if (pErr) throw new Error(pErr.message);
+        .order("id")
+        .range(zac, kon),
+  );
 
   const nastavenia = {
     predkontacia: company.pohoda_predkontacia,

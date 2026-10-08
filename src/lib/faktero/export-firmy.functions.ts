@@ -59,14 +59,20 @@ export const exportFirmyFn = createServerFn({ method: "POST" })
     };
 
     const zTabulky = async (tabulka: string, stlpce = "*") => {
-      let q = (supabase as any).from(tabulka).select(stlpce).eq("company_id", data.company_id);
       // Obdobie platí len pre doklady; adresár, produkty a ostatné idú celé.
       const stlpecDatumu = DATUMY[tabulka]?.[data.podla];
-      if (stlpecDatumu && data.od) q = q.gte(stlpecDatumu, data.od);
-      if (stlpecDatumu && data.do)
-        q = stlpecDatumu === "created_at" ? q.lt(stlpecDatumu, `${data.do}T23:59:59.999Z`) : q.lte(stlpecDatumu, data.do);
-      const { data: rows } = await q.limit(50_000);
-      return (rows ?? []) as Record<string, unknown>[];
+      const dotaz = () => {
+        let q = (supabase as any).from(tabulka).select(stlpce).eq("company_id", data.company_id);
+        if (stlpecDatumu && data.od) q = q.gte(stlpecDatumu, data.od);
+        if (stlpecDatumu && data.do)
+          q = stlpecDatumu === "created_at" ? q.lt(stlpecDatumu, `${data.do}T23:59:59.999Z`) : q.lte(stlpecDatumu, data.do);
+        return q;
+      };
+      // Po stránkach — Supabase vráti najviac 1 000 riadkov, `.limit` to neobíde.
+      const { vsetkyRiadky } = await import("./strankovanie");
+      return (await vsetkyRiadky<Record<string, unknown>>((zac, kon) =>
+        dotaz().order("id").range(zac, kon),
+      )) as Record<string, unknown>[];
     };
 
     const [
@@ -94,15 +100,19 @@ export const exportFirmyFn = createServerFn({ method: "POST" })
     ]);
 
     // Položky faktúr sa viažu na faktúru, nie na firmu — berú sa po dávkach.
-    const polozky: Record<string, unknown>[] = [];
-    const idFaktur = faktury.map((f) => String(f.id));
-    for (let i = 0; i < idFaktur.length; i += 500) {
-      const { data: kus } = await supabase
-        .from("invoice_items")
-        .select("*")
-        .in("invoice_id", idFaktur.slice(i, i + 500));
-      polozky.push(...((kus ?? []) as Record<string, unknown>[]));
-    }
+    const { riadkyPreIds } = await import("./strankovanie");
+    const polozky = await riadkyPreIds<Record<string, unknown>>(
+      faktury.map((f) => String(f.id)),
+      (kus, zac, kon) =>
+        supabase
+          .from("invoice_items")
+          .select("*")
+          .in("invoice_id", kus)
+          .order("invoice_id")
+          .order("position")
+          .order("id")
+          .range(zac, kon),
+    );
 
     const pocty: Record<string, number> = {};
     pocty["firma"] = pridaj("firma.csv", [firma as Record<string, unknown>]);
