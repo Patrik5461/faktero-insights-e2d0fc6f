@@ -7,6 +7,8 @@
 import type { EN16931Invoice, EN16931Line, EN16931Party, EN16931TaxSubtotal } from "./types";
 import { sUctomFaktury } from "../platobny-ucet";
 import { riadkySoZlavou } from "../zlavy";
+import { peppolId } from "./peppol-id";
+import { textOdpoctu, type OdpocetZalohy } from "../zalohy-odpocty";
 
 type CompanyRow = {
   id: string;
@@ -22,6 +24,7 @@ type CompanyRow = {
   phone?: string | null;
   iban?: string | null;
   swift?: string | null;
+  vat_payer?: boolean | null;
 };
 
 type ProfileRow = {
@@ -53,6 +56,8 @@ type InvoiceRow = {
   customer_email?: string | null;
   reverse_charge?: boolean | null;
   reverse_charge_type?: string | null;
+  customer_peppol_id?: string | null;
+  advance_amount?: number | null;
 };
 
 type InvoiceItemRow = {
@@ -106,7 +111,10 @@ function mapDocType(type: string): EN16931Invoice["documentType"] {
 function mapVatCategory(
   rate: number,
   invoice?: Pick<InvoiceRow, "reverse_charge" | "reverse_charge_type">,
+  neplatitel = false,
 ): EN16931Line["vatCategory"] {
+  // Neplatiteľ DPH daň neuplatňuje vôbec — „Z“ by chcela jeho IČ DPH (BR-Z-02).
+  if (neplatitel) return "O";
   if (invoice?.reverse_charge) {
     if (invoice.reverse_charge_type === "eu_b2b") return "K"; // VAT exempt for EEA intra-community supply
     if (invoice.reverse_charge_type === "export") return "G"; // Free export item, tax not charged
@@ -116,6 +124,8 @@ function mapVatCategory(
   return "S";
 }
 
+const DOVOD_NEPLATITEL = "Dodávateľ nie je platiteľ DPH";
+
 function reverseChargeReason(invoice: Pick<InvoiceRow, "reverse_charge_type">): string {
   if (invoice.reverse_charge_type === "eu_b2b")
     return "Intra-Community supply — reverse charge (§43 zákona o DPH)";
@@ -124,14 +134,27 @@ function reverseChargeReason(invoice: Pick<InvoiceRow, "reverse_charge_type">): 
   return "Reverse charge — domestic supply (§69 ods. 12 zákona o DPH)";
 }
 
+/** Peppol id `schéma:hodnota` rozdelené pre EndpointID; bez neho e-mail (EM). */
+function endpoint(
+  id: string | null,
+  email?: string | null,
+): Pick<EN16931Party, "endpointId" | "endpointScheme"> {
+  if (id) {
+    const i = id.indexOf(":");
+    return { endpointScheme: id.slice(0, i), endpointId: id.slice(i + 1) };
+  }
+  return email ? { endpointScheme: "EM", endpointId: email } : {};
+}
+
 function buildSellerParty(company: CompanyRow, profile?: ProfileRow | null): EN16931Party {
   return {
     name: company.name,
     vatId: company.ic_dph || undefined,
     taxId: company.dic || undefined,
     registrationId: company.ico || undefined,
-    endpointId: profile?.peppol_participant_id || company.ic_dph || undefined,
-    endpointScheme: profile?.peppol_scheme || (company.ic_dph ? "9944" : undefined), // 9944 = SK VAT
+    ...endpoint(
+      peppolId({ zadane: profile?.peppol_participant_id, dic: company.dic, icDph: company.ic_dph }),
+    ),
     address: {
       street: company.street || undefined,
       city: company.city || undefined,
@@ -152,8 +175,15 @@ function buildBuyerParty(inv: InvoiceRow): EN16931Party {
     vatId: inv.customer_ic_dph || undefined,
     taxId: inv.customer_dic || undefined,
     registrationId: inv.customer_ico || undefined,
-    endpointId: inv.customer_ic_dph || inv.customer_email || undefined,
-    endpointScheme: inv.customer_ic_dph ? "9944" : inv.customer_email ? "EM" : undefined,
+    /*
+      Adresa ako pri odoslaní cez ePoštáka — `0245:<DIČ>`. Predtým tu bolo
+      `9944:<IČ DPH>`, ktoré v sieti nenájde nikoho, a pri dodávateľovi sa
+      schéma písala dvakrát (`0245:0245:…`).
+    */
+    ...endpoint(
+      peppolId({ zadane: inv.customer_peppol_id, dic: inv.customer_dic, icDph: inv.customer_ic_dph }),
+      inv.customer_email,
+    ),
     address: {
       street: inv.customer_street || undefined,
       city: inv.customer_city || undefined,
@@ -164,7 +194,7 @@ function buildBuyerParty(inv: InvoiceRow): EN16931Party {
   };
 }
 
-function buildLines(items: InvoiceItemRow[], invoice: InvoiceRow): EN16931Line[] {
+function buildLines(items: InvoiceItemRow[], invoice: InvoiceRow, neplatitel: boolean): EN16931Line[] {
   return items
     .slice()
     .sort((a, b) => a.position - b.position)
@@ -176,17 +206,25 @@ function buildLines(items: InvoiceItemRow[], invoice: InvoiceRow): EN16931Line[]
       unitCode: mapUnit(it.unit),
       unitPrice: Number(it.unit_price),
       lineExtensionAmount: Number(it.subtotal),
-      vatCategory: mapVatCategory(Number(it.vat_rate), invoice),
-      vatPercent: invoice.reverse_charge ? 0 : Number(it.vat_rate),
+      vatCategory: mapVatCategory(Number(it.vat_rate), invoice, neplatitel),
+      vatPercent: invoice.reverse_charge || neplatitel ? 0 : Number(it.vat_rate),
     }));
 }
 
-function buildTaxSubtotals(items: InvoiceItemRow[], invoice: InvoiceRow): EN16931TaxSubtotal[] {
+function buildTaxSubtotals(
+  items: InvoiceItemRow[],
+  invoice: InvoiceRow,
+  neplatitel: boolean,
+): EN16931TaxSubtotal[] {
   const groups = new Map<string, EN16931TaxSubtotal>();
-  const reason = invoice.reverse_charge ? reverseChargeReason(invoice) : undefined;
+  const reason = invoice.reverse_charge
+    ? reverseChargeReason(invoice)
+    : neplatitel
+      ? DOVOD_NEPLATITEL
+      : undefined;
   for (const it of items) {
-    const rate = invoice.reverse_charge ? 0 : Number(it.vat_rate);
-    const cat = mapVatCategory(rate, invoice);
+    const rate = invoice.reverse_charge || neplatitel ? 0 : Number(it.vat_rate);
+    const cat = mapVatCategory(rate, invoice, neplatitel);
     const key = `${cat}:${rate}`;
     const cur = groups.get(key) ?? {
       taxableAmount: 0,
@@ -196,7 +234,7 @@ function buildTaxSubtotals(items: InvoiceItemRow[], invoice: InvoiceRow): EN1693
       exemptionReason: reason,
     };
     cur.taxableAmount += Number(it.subtotal);
-    cur.taxAmount += invoice.reverse_charge ? 0 : Number(it.vat_amount);
+    cur.taxAmount += invoice.reverse_charge || neplatitel ? 0 : Number(it.vat_amount);
     groups.set(key, cur);
   }
   // UBL 2.1: VAT subtotals sorted by rate ascending (0 → 5 → 19 → 23),
@@ -219,10 +257,46 @@ export function mapToEN16931(args: {
   profileId?: string;
   /** Pôvodná faktúra pri dobropise (BT-25, BT-26). */
   povodnaFaktura?: { cislo: string; vystavena?: string | null } | null;
+  /** Odpočty záloh z `invoice_advances` (`nacitajOdpocty`). */
+  zalohy?: OdpocetZalohy[] | null;
 }): EN16931Invoice {
   const { profile, invoice } = args;
   /* Zľava na doklad sa rozpočíta do riadkov — UBL sumáre vychádzajú z nich. */
-  const items = riadkySoZlavou(args.items, (invoice as any).discount_total);
+  const vlastne = riadkySoZlavou(args.items, (invoice as any).discount_total);
+  const neplatitel = args.company.vat_payer === false;
+  /*
+    Záloha zdanená dokladom k prijatej platbe sa odpočíta záporným riadkom v
+    jeho sadzbe — vyúčtovanie tak nesie len rozdiel dane, ako vo výkaze k DPH.
+    Nezdanená záloha (aj starý stĺpec `advance_amount` bez väzby) len zníži
+    sumu na úhradu (BT-113).
+  */
+  const dobropisDok = invoice.type === "credit_note";
+  const zalohy = dobropisDok ? [] : (args.zalohy ?? []);
+  const odpocty: InvoiceItemRow[] = zalohy.flatMap((o) =>
+    o.doklad && o.riadky.length
+      ? o.riadky.map((r) => ({
+          id: `odpocet-${o.doklad}-${r.sadzba}`,
+          position: Number.MAX_SAFE_INTEGER,
+          name: textOdpoctu(o),
+          quantity: -1,
+          unit: "ks",
+          unit_price: r.zaklad,
+          vat_rate: r.sadzba,
+          subtotal: -r.zaklad,
+          vat_amount: -r.dph,
+          total: -(r.zaklad + r.dph),
+        }))
+      : [],
+  );
+  const items = [...vlastne, ...odpocty];
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const odpZaklad = odpocty.reduce((a, r) => a - r.subtotal, 0);
+  const odpDan = odpocty.reduce((a, r) => a - r.vat_amount, 0);
+  const nezdanene = dobropisDok
+    ? 0
+    : args.zalohy?.length
+      ? zalohy.filter((o) => !(o.doklad && o.riadky.length)).reduce((a, o) => a + o.suma, 0)
+      : Number(invoice.advance_amount ?? 0) || 0;
   // Účet z faktúry, ak si ho zapamätala — inak účet firmy.
   const company = sUctomFaktury(args.company, invoice as any);
   const customizationId =
@@ -230,6 +304,9 @@ export function mapToEN16931(args: {
     "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0";
   const profileId = args.profileId ?? "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0";
 
+  const buyer = buildBuyerParty(invoice);
+  // Mimo rozsahu DPH (O) nesmie doklad niesť IČ DPH ani jednej strany (BR-O-02 až 04).
+  if (neplatitel) buyer.vatId = undefined;
   const dto: EN16931Invoice = {
     customizationId,
     profileId,
@@ -242,8 +319,11 @@ export function mapToEN16931(args: {
     documentType: mapDocType(invoice.type),
     currency: invoice.currency || "EUR",
     buyerReference: invoice.variable_symbol || undefined,
-    seller: buildSellerParty(company, profile ?? undefined),
-    buyer: buildBuyerParty(invoice),
+    seller: {
+      ...buildSellerParty(company, profile ?? undefined),
+      ...(neplatitel ? { vatId: undefined } : {}),
+    },
+    buyer,
     paymentMeans:
       company.iban || invoice.variable_symbol
         ? {
@@ -254,17 +334,27 @@ export function mapToEN16931(args: {
             reference: invoice.variable_symbol || invoice.invoice_number,
           }
         : undefined,
-    lines: buildLines(items, invoice),
-    taxSubtotals: buildTaxSubtotals(items, invoice),
-    totals: {
-      lineExtensionAmount: Number(invoice.subtotal),
-      taxExclusiveAmount: Number(invoice.subtotal),
-      taxInclusiveAmount: Number(invoice.total),
-      taxAmount: invoice.reverse_charge ? 0 : Number(invoice.vat_total),
-      payableAmount: Number(invoice.total),
-    },
+    lines: buildLines(items, invoice, neplatitel),
+    taxSubtotals: buildTaxSubtotals(items, invoice, neplatitel),
+    totals: (() => {
+      const bezDane = r2(Number(invoice.subtotal) - odpZaklad);
+      const dan = invoice.reverse_charge || neplatitel ? 0 : r2(Number(invoice.vat_total) - odpDan);
+      const sDanou = r2(bezDane + dan);
+      return {
+        lineExtensionAmount: bezDane,
+        taxExclusiveAmount: bezDane,
+        taxInclusiveAmount: sDanou,
+        taxAmount: dan,
+        prepaidAmount: nezdanene > 0 ? r2(Math.min(nezdanene, sDanou)) : undefined,
+        payableAmount: r2(sDanou - (nezdanene > 0 ? Math.min(nezdanene, sDanou) : 0)),
+      };
+    })(),
     note:
-      [invoice.reverse_charge ? reverseChargeReason(invoice) : null, invoice.notes || null]
+      [
+        invoice.reverse_charge ? reverseChargeReason(invoice) : null,
+        neplatitel ? DOVOD_NEPLATITEL : null,
+        invoice.notes || null,
+      ]
         .filter(Boolean)
         .join(" | ") || undefined,
   };

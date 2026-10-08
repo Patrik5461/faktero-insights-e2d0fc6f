@@ -173,7 +173,17 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
         .maybeSingle();
       if (p) povodnaFaktura = { cislo: p.invoice_number, vystavena: p.issue_date };
     }
-    const dto = mapToEN16931({ company, profile, invoice, items: items ?? [], povodnaFaktura });
+    const { nacitajOdpocty } = await import("../zalohy-odpocty.server");
+    const zalohy =
+      (await nacitajOdpocty(supabase, data.companyId, [data.invoiceId]))[data.invoiceId] ?? null;
+    const dto = mapToEN16931({
+      company,
+      profile,
+      invoice,
+      items: items ?? [],
+      povodnaFaktura,
+      zalohy,
+    });
     const result = generatePeppolBisXml(dto);
 
     // Extra Faktero-side validation (basic completeness).
@@ -546,6 +556,8 @@ export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
     let rozobrate = ((doklad as any).parsed_data ?? {}) as {
       documentKind?: string;
       precedingInvoiceNumber?: string;
+      prepaid?: number;
+      payable?: number;
     };
     // Doklady stiahnuté pred rozlišovaním dobropisov sa prečítajú znova z XML.
     if (!rozobrate.documentKind && (doklad as any).xml_payload) {
@@ -567,6 +579,21 @@ export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
       započítal ako ďalší nákup a odpočet by narástol namiesto poklesu.
     */
     const znamienko = rozobrate.documentKind === "credit_note" ? -1 : 1;
+    /*
+      Faktúru so zaplatenou nezdanenou zálohou berieme v plnej sume (základ a
+      DPH musia sedieť), zálohu a zvyšok na úhradu si človek prečíta v poznámke.
+      Doklady stiahnuté skôr majú v `total` sumu na úhradu — tie sa prečítajú
+      znova z XML.
+    */
+    if (rozobrate.prepaid === undefined && (doklad as any).xml_payload) {
+      const { parseEfakturaEnvelope } = await import("./inbound.server");
+      const znova = parseEfakturaEnvelope(String((doklad as any).xml_payload));
+      if (znova.prepaid && znova.total != null) {
+        rozobrate = { ...rozobrate, prepaid: znova.prepaid, payable: znova.payable };
+        (doklad as any).total = znova.total;
+      }
+    }
+    const zaloha = znamienko > 0 && rozobrate.prepaid && rozobrate.prepaid > 0 ? rozobrate.prepaid : 0;
     const spolu = znamienko * Math.abs(Number(doklad.total ?? 0));
     const dph = znamienko * Math.abs(Number(doklad.vat_total ?? 0));
 
@@ -616,7 +643,11 @@ export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
         note:
           znamienko < 0
             ? `Dobropis prijatý cez eFaktúru (Peppol)${rozobrate.precedingInvoiceNumber ? ` k faktúre ${rozobrate.precedingInvoiceNumber}` : ""}.`
-            : "Prijaté cez eFaktúru (Peppol).",
+            : `Prijaté cez eFaktúru (Peppol).${
+                zaloha
+                  ? ` Dodávateľ odpočítal zaplatenú zálohu ${zaloha.toFixed(2)} ${doklad.currency ?? "EUR"} — na úhradu ostáva ${(rozobrate.payable ?? spolu - zaloha).toFixed(2)} ${doklad.currency ?? "EUR"}.`
+                  : ""
+              }`,
       } as TablesInsert<"purchase_invoices">)
       .select("id")
       .single();

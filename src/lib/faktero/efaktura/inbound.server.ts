@@ -29,8 +29,12 @@ export type ParsedEfaktura = {
   issueDate?: string;
   dueDate?: string;
   currency?: string;
+  /** Suma dokladu s DPH (TaxInclusiveAmount) — bez odrátanej nezdanenej zálohy. */
   total?: number;
   vatTotal?: number;
+  /** Nezdanená záloha (BT-113) a suma na úhradu (BT-115). */
+  prepaid?: number;
+  payable?: number;
   senderName?: string;
   senderVatId?: string;
   /**
@@ -80,7 +84,14 @@ export function parseEfakturaEnvelope(xml: string): ParsedEfaktura {
   const issueDate = pick(/<cbc:IssueDate>([^<]+)<\/cbc:IssueDate>/);
   const dueDate = pick(/<cbc:DueDate>([^<]+)<\/cbc:DueDate>/);
   const currency = pick(/<cbc:DocumentCurrencyCode>([^<]+)<\/cbc:DocumentCurrencyCode>/);
-  const total = num(pick(/<cbc:PayableAmount[^>]*>([^<]+)<\/cbc:PayableAmount>/));
+  /*
+    Suma faktúry je TaxInclusiveAmount. PayableAmount je len to, čo ostáva
+    zaplatiť — pri zaplatenej zálohe menej, a základ dopočítaný z neho (suma
+    mínus celá DPH) by vyšiel nižší, než naozaj je.
+  */
+  const payable = num(pick(/<cbc:PayableAmount[^>]*>([^<]+)<\/cbc:PayableAmount>/));
+  const prepaid = num(pick(/<cbc:PrepaidAmount[^>]*>([^<]+)<\/cbc:PrepaidAmount>/));
+  const total = num(pick(/<cbc:TaxInclusiveAmount[^>]*>([^<]+)<\/cbc:TaxInclusiveAmount>/)) ?? payable;
   const vatTotal = num(pick(/<cbc:TaxAmount[^>]*>([^<]+)<\/cbc:TaxAmount>/));
   const senderName = pick(
     /<cac:AccountingSupplierParty>[\s\S]*?<cbc:RegistrationName>([^<]+)<\/cbc:RegistrationName>/,
@@ -100,6 +111,8 @@ export function parseEfakturaEnvelope(xml: string): ParsedEfaktura {
     currency,
     total,
     vatTotal,
+    prepaid,
+    payable,
     senderName,
     senderVatId,
     documentKind,

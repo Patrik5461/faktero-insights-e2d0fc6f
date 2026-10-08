@@ -293,6 +293,8 @@ export async function sendEfaktura(
     povodneCislo = povodna?.invoice_number ?? null;
   }
   const zakladPredZlavou = (items ?? []).reduce((s: number, it: any) => s + Number(it.subtotal ?? 0), 0);
+  const { nacitajOdpocty } = await import("../zalohy-odpocty.server");
+  const zalohy = (await nacitajOdpocty(supabaseAdmin, invoice.company_id, [invoiceId]))[invoiceId] ?? null;
 
   const body = teloOdoslania({
     druh,
@@ -315,6 +317,7 @@ export async function sendEfaktura(
       zakladPredZlavou,
     ),
     zaplatenaZaloha: Number((invoice as any).advance_amount ?? 0) || null,
+    zalohy,
     polozky: (items ?? []).map((it: any) => ({
       name: it.name,
       description: it.description,

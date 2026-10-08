@@ -78,7 +78,9 @@ function validate(inv: EN16931Invoice): XmlGenerationResult["validationErrors"] 
     });
   }
   const expectedPayable =
-    Math.round((inv.totals.taxExclusiveAmount + inv.totals.taxAmount) * 100) / 100;
+    Math.round(
+      (inv.totals.taxExclusiveAmount + inv.totals.taxAmount - (inv.totals.prepaidAmount ?? 0)) * 100,
+    ) / 100;
   if (Math.abs(expectedPayable - inv.totals.payableAmount) > 0.02) {
     errors.push({
       code: "BR-CO-15",
@@ -108,8 +110,7 @@ export function generatePeppolBisXml(inv: EN16931Invoice): XmlGenerationResult {
       <cbc:Name>${esc(l.name)}</cbc:Name>
 ${l.description ? `      <cbc:Description>${esc(l.description)}</cbc:Description>\n` : ""}      <cac:ClassifiedTaxCategory>
         <cbc:ID>${esc(l.vatCategory)}</cbc:ID>
-        <cbc:Percent>${l.vatPercent}</cbc:Percent>
-        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+${l.vatCategory === "O" ? "" : `        <cbc:Percent>${l.vatPercent}</cbc:Percent>\n`}        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
       </cac:ClassifiedTaxCategory>
     </cac:Item>
     <cac:Price>
@@ -128,8 +129,7 @@ ${inv.taxSubtotals
       <cbc:TaxAmount currencyID="${esc(inv.currency)}">${fmt(t.taxAmount)}</cbc:TaxAmount>
       <cac:TaxCategory>
         <cbc:ID>${esc(t.vatCategory)}</cbc:ID>
-        <cbc:Percent>${t.vatPercent}</cbc:Percent>
-${t.exemptionReason ? `        <cbc:TaxExemptionReason>${esc(t.exemptionReason)}</cbc:TaxExemptionReason>\n` : ""}        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+${t.vatCategory === "O" ? "" : `        <cbc:Percent>${t.vatPercent}</cbc:Percent>\n`}${t.exemptionReason ? `        <cbc:TaxExemptionReason>${esc(t.exemptionReason)}</cbc:TaxExemptionReason>\n` : ""}        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
       </cac:TaxCategory>
     </cac:TaxSubtotal>`,
   )
@@ -174,7 +174,7 @@ ${taxXml}
     <cbc:LineExtensionAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.lineExtensionAmount)}</cbc:LineExtensionAmount>
     <cbc:TaxExclusiveAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.taxExclusiveAmount)}</cbc:TaxExclusiveAmount>
     <cbc:TaxInclusiveAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.taxInclusiveAmount)}</cbc:TaxInclusiveAmount>
-    <cbc:PayableAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.payableAmount)}</cbc:PayableAmount>
+${inv.totals.prepaidAmount ? `    <cbc:PrepaidAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.prepaidAmount)}</cbc:PrepaidAmount>\n` : ""}    <cbc:PayableAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.payableAmount)}</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
 ${linesXml}
 </${koren}>

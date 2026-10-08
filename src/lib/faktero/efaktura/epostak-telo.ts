@@ -50,8 +50,15 @@ export type DokladNaOdoslanie = {
   prenesenie?: "domestic_69" | "eu_b2b" | "export" | null;
   zlavaDokladuPercent?: number | null;
   zaplatenaZaloha?: number | null;
+  /**
+   * Odpočty záloh z `invoice_advances`. Zdanená záloha (s dokladom k prijatej
+   * platbe) znižuje základ aj daň, nezdanená len sumu na úhradu.
+   */
+  zalohy?: OdpocetZalohy[] | null;
   polozky: PolozkaNaOdoslanie[];
 };
+
+import type { OdpocetZalohy } from "../zalohy-odpocty";
 
 const r6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
@@ -155,8 +162,11 @@ export function teloOdoslania(d: DokladNaOdoslanie): Record<string, unknown> {
   if (d.zlavaDokladuPercent && d.zlavaDokladuPercent > 0) {
     body.documentDiscountPercent = r6(Math.min(d.zlavaDokladuPercent, 100));
   }
-  if (!dobropis && d.zaplatenaZaloha && d.zaplatenaZaloha > 0 && d.druh !== "advance_payment") {
-    body.prepaidAmount = Math.round(d.zaplatenaZaloha * 100) / 100;
+  if (!dobropis && d.druh !== "advance_payment") {
+    const prepayments = zalohyNaOdoslanie(d.zalohy);
+    if (prepayments.length) body.prepayments = prepayments;
+    else if (d.zaplatenaZaloha && d.zaplatenaZaloha > 0)
+      body.prepaidAmount = Math.round(d.zaplatenaZaloha * 100) / 100;
   }
   return body;
 }
@@ -172,4 +182,29 @@ export function zlavaNaPercento(
   if (typ === "percent") return Math.min(h, 100);
   if (zakladPredZlavou <= 0) return null;
   return Math.min((h / zakladPredZlavou) * 100, 100);
+}
+
+const r2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+
+/*
+  Zálohy pre ePoštáka (`prepayments`). Predtým išla každá záloha ako
+  `prepaidAmount` — vyúčtovanie potom v UBL nieslo celú daň, hoci jej časť sa
+  priznala už dokladom k prijatej platbe, a odberateľ by si ju odpočítal
+  dvakrát. Zdanenú zálohu ePošták odpočíta záporným riadkom v jej sadzbe
+  (jeden riadok na doklad a sadzbu), nezdanenú pripočíta k PrepaidAmount.
+*/
+export function zalohyNaOdoslanie(zalohy: OdpocetZalohy[] | null | undefined): Record<string, unknown>[] {
+  return (zalohy ?? []).flatMap((o) => {
+    const ref = o.zaloha ? { advanceInvoiceRef: o.zaloha } : {};
+    if (o.doklad && o.riadky.length)
+      return o.riadky.map((r) => ({
+        ...ref,
+        taxDocumentRef: o.doklad,
+        amountWithoutVat: r2(r.zaklad),
+        vatAmount: r2(r.dph),
+        amountWithVat: r2(r.zaklad + r.dph),
+        vatRate: r.sadzba,
+      }));
+    return o.suma > 0 ? [{ ...ref, amountWithVat: r2(o.suma) }] : [];
+  });
 }

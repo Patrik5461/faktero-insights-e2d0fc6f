@@ -62,6 +62,8 @@ export type EN16931Invoice = {
     taxExclusiveAmount: number;
     taxInclusiveAmount: number;
     taxAmount: number;
+    /** Nezdanená záloha (BT-113). */
+    prepaidAmount?: number;
     payableAmount: number;
   };
   note?: string;
