@@ -54,6 +54,7 @@ export { manualPre };
 import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
+import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import {
   DropdownMenu,
@@ -216,6 +217,35 @@ export function AppShell({
     };
   }, []);
 
+  /*
+    Počet nespracovaných dokladov pri položke v menu: doklady v Nespracovaných
+    a bločky, ktoré ešte nikto neskontroloval — to isté, čo ukazuje stránka.
+    Obnoví sa pri prechode na inú stránku a raz za minútu.
+  */
+  const [pocetNespracovanych, setPocetNespracovanych] = useState(0);
+  useEffect(() => {
+    let zrusene = false;
+    const nacitaj = async () => {
+      const cid = getActiveCompanyId();
+      if (!cid) return;
+      const [a, b] = await Promise.all([
+        supabase.from("nespracovane_doklady" as any).select("id", { count: "exact", head: true }).eq("company_id", cid),
+        supabase
+          .from("expense_documents")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", cid)
+          .eq("status", "new"),
+      ]);
+      if (!zrusene) setPocetNespracovanych((a.count ?? 0) + (b.count ?? 0));
+    };
+    void nacitaj().catch(() => {});
+    const t = setInterval(() => void nacitaj().catch(() => {}), 60_000);
+    return () => {
+      zrusene = true;
+      clearInterval(t);
+    };
+  }, [pathname]);
+
   /* Okno na nahlásenie chyby má stav tu — otvára sa z ponuky pod avatarom. */
   const [nahlasenieOtvorene, setNahlasenieOtvorene] = useState(false);
 
@@ -226,7 +256,12 @@ export function AppShell({
     label: g.label,
     icon: g.icon,
     cesta: g.match[0],
-    polozky: g.children.map((c) => ({ to: c.to, search: c.search, label: c.label })),
+    polozky: g.children.map((c) => ({
+      to: c.to,
+      search: c.search,
+      label: c.label,
+      pocet: c.to === "/nespracovane" ? pocetNespracovanych : undefined,
+    })),
   }));
 
   const dizajn = useDizajn();
@@ -313,6 +348,7 @@ export function AppShell({
               </SheetTrigger>
               <SheetContent side="left" className="w-80 overflow-y-auto p-0">
                 <MobileNav
+                  pocetNespracovanych={pocetNespracovanych}
                   pathname={pathname}
                   active={active}
                   companies={companies}
@@ -613,11 +649,16 @@ export function AppShell({
                       <Link
                         to={c.to as any}
                         search={c.search as any}
-                        className={`block rounded-lg px-3 py-1.5 text-[13px] ${
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] ${
                           je ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                         }`}
                       >
                         {c.label}
+                        {c.to === "/nespracovane" && pocetNespracovanych ? (
+                          <span className="rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
+                            {pocetNespracovanych > 99 ? "99+" : pocetNespracovanych}
+                          </span>
+                        ) : null}
                       </Link>
                     </li>
                   );
@@ -670,6 +711,7 @@ function MobileNav({
   onSignOut,
   onAddCompany,
   onClose,
+  pocetNespracovanych,
 }: {
   pathname: string;
   active: Company | undefined;
@@ -683,6 +725,7 @@ function MobileNav({
   onSignOut: () => void;
   onAddCompany: () => void;
   onClose: () => void;
+  pocetNespracovanych?: number;
 }) {
   const [hladanie, setHladanie] = useState("");
   const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
@@ -691,7 +734,12 @@ function MobileNav({
     label: g.label,
     icon: g.icon,
     cesta: g.match[0],
-    polozky: g.children.map((c) => ({ to: c.to, search: c.search, label: c.label })),
+    polozky: g.children.map((c) => ({
+      to: c.to,
+      search: c.search,
+      label: c.label,
+      pocet: c.to === "/nespracovane" ? pocetNespracovanych : undefined,
+    })),
   }));
   const aktivnaSekcia = nav.find((g) => isPathActive(pathname, g))?.key ?? null;
   const aktivnaPolozka = (() => {

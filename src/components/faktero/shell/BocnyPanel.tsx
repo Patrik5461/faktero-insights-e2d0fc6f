@@ -23,6 +23,8 @@ export type PolozkaPanela = {
   to: string;
   search?: Record<string, string>;
   label: string;
+  /** Počet, ktorý čaká na vybavenie (napr. nespracované doklady). */
+  pocet?: number;
 };
 
 export type SekciaPanela = {
@@ -172,13 +174,21 @@ export function SekcieNavigacie({
                         to={p.to as any}
                         search={p.search as any}
                         onClick={onPrejdi}
-                        className={`block truncate rounded-md px-2 py-1.5 text-[13px] ${
+                        className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${
                           je
                             ? "bg-primary/10 font-medium text-primary"
                             : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                         }`}
                       >
-                        {p.label}
+                        <span className="min-w-0 flex-1 truncate">{p.label}</span>
+                        {p.pocet ? (
+                          <span
+                            className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums"
+                            aria-label={`${p.pocet} čaká`}
+                          >
+                            {p.pocet > 99 ? "99+" : p.pocet}
+                          </span>
+                        ) : null}
                       </Link>
                     </li>
                   );
