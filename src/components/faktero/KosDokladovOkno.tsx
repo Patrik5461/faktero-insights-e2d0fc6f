@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, RotateCcw, Trash2 } from "lucide-react";
@@ -22,12 +22,15 @@ export function KosDokladovOkno({
   companyId,
   onClose,
   onObnovene,
+  vlozene = false,
 }: {
   companyId: string;
   onClose: () => void;
   onObnovene: () => void;
+  /** Ako obsah stránky Kôš, nie ako okno nad inou stránkou. */
+  vlozene?: boolean;
 }) {
-  useZatvorNaEscape(onClose);
+  useZatvorNaEscape(vlozene ? null : onClose);
   const nacitaj = useServerFn(kosDokladovFn);
   const obnov = useServerFn(obnovZKosaFn);
   const zmaz = useServerFn(zmazZKosaFn);
@@ -60,15 +63,25 @@ export function KosDokladovOkno({
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Kôš dokladov"
-        className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-5 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+  const obal = (obsah: ReactNode) =>
+    vlozene ? (
+      <div className="max-w-3xl rounded-xl border border-border bg-card p-5">{obsah}</div>
+    ) : (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Kôš dokladov"
+          className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-5 shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {obsah}
+        </div>
+      </div>
+    );
+
+  return obal(
+    <>
         <h2 className="text-lg font-semibold">Kôš dokladov</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Zmazané doklady sa dajú obnoviť aj s párovaním na pohyb v banke. Po 90 dňoch sa kôš
@@ -112,12 +125,13 @@ export function KosDokladovOkno({
             ))}
           </ul>
         )}
-        <div className="mt-4 flex justify-end">
-          <button onClick={onClose} className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
-            Zavrieť
-          </button>
-        </div>
-      </div>
-    </div>
+        {!vlozene && (
+          <div className="mt-4 flex justify-end">
+            <button onClick={onClose} className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
+              Zavrieť
+            </button>
+          </div>
+        )}
+    </>,
   );
 }

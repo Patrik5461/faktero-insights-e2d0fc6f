@@ -61,10 +61,15 @@ describe("bočná lišta", () => {
   });
 
   it("skupina sa zvýrazní podľa `match`, tak musí sedieť s cestami detí", () => {
+    /*
+      Položka môže viesť aj do inej sekcie (Doklady → Prijaté faktúry, ako
+      v Doklado) — vtedy sa zvýrazní tá skupina, ktorej cesta patrí. Stačí,
+      aby ju niektorá skupina poznala; inak by sa nezvýraznilo nič.
+    */
     for (const g of NAV) {
       for (const c of g.children) {
-        const sedi = g.match.some((m) => c.to === m || c.to.startsWith(m + "/"));
-        expect(sedi, `${g.key}: ${c.to} nespadá pod ${g.match.join(", ")}`).toBe(true);
+        const sedi = NAV.some((gg) => gg.match.some((m) => c.to === m || c.to.startsWith(m + "/")));
+        expect(sedi, `${g.key}: ${c.to} nespadá pod žiadnu skupinu`).toBe(true);
       }
     }
   });

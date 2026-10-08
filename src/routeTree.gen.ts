@@ -41,6 +41,7 @@ import { Route as AuthenticatedEfakturaRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedExportyRouteImport } from './routes/_authenticated/exporty'
 import { Route as AuthenticatedFirmaRouteImport } from './routes/_authenticated/firma'
 import { Route as AuthenticatedFirmyRouteImport } from './routes/_authenticated/firmy'
+import { Route as AuthenticatedKosRouteImport } from './routes/_authenticated/kos'
 import { Route as AuthenticatedOdberateliaRouteImport } from './routes/_authenticated/odberatelia'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedPokladnaRouteImport } from './routes/_authenticated/pokladna'
@@ -470,6 +471,11 @@ const AuthenticatedFirmaRoute = AuthenticatedFirmaRouteImport.update({
 const AuthenticatedFirmyRoute = AuthenticatedFirmyRouteImport.update({
   id: '/firmy',
   path: '/firmy',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedKosRoute = AuthenticatedKosRouteImport.update({
+  id: '/kos',
+  path: '/kos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedOdberateliaRoute =
@@ -1972,6 +1978,7 @@ export interface FileRoutesByFullPath {
   '/exporty': typeof AuthenticatedExportyRoute
   '/firma': typeof AuthenticatedFirmaRoute
   '/firmy': typeof AuthenticatedFirmyRoute
+  '/kos': typeof AuthenticatedKosRoute
   '/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pokladna': typeof AuthenticatedPokladnaRoute
@@ -2266,6 +2273,7 @@ export interface FileRoutesByTo {
   '/exporty': typeof AuthenticatedExportyRoute
   '/firma': typeof AuthenticatedFirmaRoute
   '/firmy': typeof AuthenticatedFirmyRoute
+  '/kos': typeof AuthenticatedKosRoute
   '/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pokladna': typeof AuthenticatedPokladnaRoute
@@ -2567,6 +2575,7 @@ export interface FileRoutesById {
   '/_authenticated/exporty': typeof AuthenticatedExportyRoute
   '/_authenticated/firma': typeof AuthenticatedFirmaRoute
   '/_authenticated/firmy': typeof AuthenticatedFirmyRoute
+  '/_authenticated/kos': typeof AuthenticatedKosRoute
   '/_authenticated/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/pokladna': typeof AuthenticatedPokladnaRoute
@@ -2870,6 +2879,7 @@ export interface FileRouteTypes {
     | '/exporty'
     | '/firma'
     | '/firmy'
+    | '/kos'
     | '/odberatelia'
     | '/onboarding'
     | '/pokladna'
@@ -3164,6 +3174,7 @@ export interface FileRouteTypes {
     | '/exporty'
     | '/firma'
     | '/firmy'
+    | '/kos'
     | '/odberatelia'
     | '/onboarding'
     | '/pokladna'
@@ -3464,6 +3475,7 @@ export interface FileRouteTypes {
     | '/_authenticated/exporty'
     | '/_authenticated/firma'
     | '/_authenticated/firmy'
+    | '/_authenticated/kos'
     | '/_authenticated/odberatelia'
     | '/_authenticated/onboarding'
     | '/_authenticated/pokladna'
@@ -4087,6 +4099,13 @@ declare module '@tanstack/react-router' {
       path: '/firmy'
       fullPath: '/firmy'
       preLoaderRoute: typeof AuthenticatedFirmyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/kos': {
+      id: '/_authenticated/kos'
+      path: '/kos'
+      fullPath: '/kos'
+      preLoaderRoute: typeof AuthenticatedKosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/odberatelia': {
@@ -6075,6 +6094,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedExportyRoute: typeof AuthenticatedExportyRoute
   AuthenticatedFirmaRoute: typeof AuthenticatedFirmaRoute
   AuthenticatedFirmyRoute: typeof AuthenticatedFirmyRoute
+  AuthenticatedKosRoute: typeof AuthenticatedKosRoute
   AuthenticatedOdberateliaRoute: typeof AuthenticatedOdberateliaRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedPokladnaRoute: typeof AuthenticatedPokladnaRoute
@@ -6179,6 +6199,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExportyRoute: AuthenticatedExportyRoute,
   AuthenticatedFirmaRoute: AuthenticatedFirmaRoute,
   AuthenticatedFirmyRoute: AuthenticatedFirmyRoute,
+  AuthenticatedKosRoute: AuthenticatedKosRoute,
   AuthenticatedOdberateliaRoute: AuthenticatedOdberateliaRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedPokladnaRoute: AuthenticatedPokladnaRoute,

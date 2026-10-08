@@ -53,7 +53,9 @@ const sections: HelpSection[] = [
           Bločky odfotené v appke alebo zadané vo formulári sú v tom istom zozname — otvoria sa vo
           formulári dokladu, kde ich spracujete tlačidlom Spracovať. Spracovaný bloček sa presunie do{" "}
           <Link to="/doklady">Doklady → Bločky</Link>; tam sú len skontrolované bločky, rozdelené na
-          spracované a odovzdané účtovníkovi. Zmazaný nespracovaný doklad
+          spracované a odovzdané účtovníkovi. Menu Doklady má sekcie ako Doklado: Nespracované doklady,
+          Bločky, Prijaté faktúry, Vystavené faktúry, Ostatné doklady a <Link to="/kos">Kôš</Link>, kde sa
+          dajú zmazané doklady obnoviť. Zmazaný nespracovaný doklad
           ide do koša a dá sa obnoviť.
         </p>
       </>

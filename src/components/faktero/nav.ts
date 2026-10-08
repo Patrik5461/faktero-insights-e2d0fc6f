@@ -107,15 +107,22 @@ export const NAV: NavGroup[] = [
       rozoznať vôbec. Doklady majú bloček, rovnako ako v mobilnej appke.
     */
     icon: Receipt,
-    match: ["/doklady", "/ostatne-doklady", "/schvalovanie", "/nespracovane"],
+    match: ["/doklady", "/ostatne-doklady", "/schvalovanie", "/nespracovane", "/kos"],
+    /*
+      Sekcie ako v Doklado: všetko nahraté a z e-mailu čaká najprv
+      v Nespracovaných a po spracovaní sa presunie do Bločkov, Prijatých
+      faktúr alebo Ostatných (iných) dokladov. Faktúry sú aj vo Fakturácii.
+    */
     children: [
-      // Ako v Doklado: všetko nahraté a z e-mailu čaká najprv tu.
       { to: "/nespracovane", label: "Nespracované doklady" },
       { to: "/doklady", label: "Bločky" },
-      { to: "/schvalovanie", label: "Na schválenie" },
-      { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
-      { to: "/doklady/mailom", label: "Doklady e-mailom" },
+      { to: "/prijate-faktury", label: "Prijaté faktúry" },
+      { to: "/faktury", label: "Vystavené faktúry" },
       { to: "/ostatne-doklady", label: "Ostatné doklady" },
+      { to: "/kos", label: "Kôš" },
+      { to: "/schvalovanie", label: "Na schválenie" },
+      { to: "/doklady/mailom", label: "Doklady e-mailom" },
+      { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
     ],
   },
   {
