@@ -894,6 +894,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "spolocne.spat": "Zpět",
   "spolocne.ulozit": "Uložit",
   "spolocne.zrusit": "Zrušit",
+  "spolocne.potvrdit": "Potvrdit",
   "spolocne.nacitavam": "Načítám…",
   "spolocne.km": "km",
 

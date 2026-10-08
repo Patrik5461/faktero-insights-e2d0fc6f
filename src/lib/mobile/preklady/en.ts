@@ -904,6 +904,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "spolocne.spat": "Back",
   "spolocne.ulozit": "Save",
   "spolocne.zrusit": "Cancel",
+  "spolocne.potvrdit": "Confirm",
   "spolocne.nacitavam": "Loading…",
   "spolocne.km": "km",
 

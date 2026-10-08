@@ -8,6 +8,7 @@ import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
+import { potvrd } from "@/lib/potvrdenie";
 /**
  * Cenové ponuky v telefóne.
  *
@@ -129,7 +130,12 @@ export function Ponuky({
       toast.error(t("ponuky.bezEmailu"));
       return;
     }
-    if (!window.confirm(t("ponuky.odoslatOtazka", { cislo: p.quote_number, email: p.customer_email })))
+    if (
+      !(await potvrd(t("ponuky.odoslatOtazka", { cislo: p.quote_number, email: p.customer_email }), {
+        potvrdit: t("ponuky.odoslat"),
+        zrusit: t("spolocne.zrusit"),
+      }))
+    )
       return;
     setPracujem(p.id);
     try {
@@ -148,7 +154,13 @@ export function Ponuky({
       toast.info(t("ponuky.uzFakturovana"));
       return;
     }
-    if (!window.confirm(t("ponuky.naFakturuOtazka", { cislo: p.quote_number }))) return;
+    if (
+      !(await potvrd(t("ponuky.naFakturuOtazka", { cislo: p.quote_number }), {
+        potvrdit: t("spolocne.potvrdit"),
+        zrusit: t("spolocne.zrusit"),
+      }))
+    )
+      return;
     setPracujem(p.id);
     try {
       await prevodFn({ data: { quoteId: p.id } });

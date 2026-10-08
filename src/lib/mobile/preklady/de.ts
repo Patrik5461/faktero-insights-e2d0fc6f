@@ -913,6 +913,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "spolocne.spat": "Zurück",
   "spolocne.ulozit": "Speichern",
   "spolocne.zrusit": "Abbrechen",
+  "spolocne.potvrdit": "Bestätigen",
   "spolocne.nacitavam": "Wird geladen…",
   "spolocne.km": "km",
 

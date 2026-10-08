@@ -909,6 +909,7 @@ export const sk = {
   "spolocne.spat": "Späť",
   "spolocne.ulozit": "Uložiť",
   "spolocne.zrusit": "Zrušiť",
+  "spolocne.potvrdit": "Potvrdiť",
   "spolocne.nacitavam": "Načítavam…",
   "spolocne.km": "km",
 

@@ -10,6 +10,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "sonner";
+import { PotvrdzovacieOkno } from "@/components/faktero/PotvrdzovacieOkno";
 import { ODSADENIE_TOASTOV } from "@/components/ui/sonner";
 import { KnihaJazdApka } from "@/components/faktero/mobil/jazdy/KnihaJazdApka";
 import "@/styles.css";
@@ -32,6 +33,8 @@ async function spusti() {
   createRoot(koren!).render(
     <StrictMode>
       <KnihaJazdApka />
+      {/* Otázky „naozaj?" — vlastné okno namiesto systémového s nadpisom „localhost". */}
+      <PotvrdzovacieOkno />
       <Toaster
         position="top-center"
         richColors

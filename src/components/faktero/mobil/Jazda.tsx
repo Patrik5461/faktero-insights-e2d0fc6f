@@ -47,6 +47,7 @@ import { PrebiehaJazda } from "./PrebiehaJazda";
 import { HistoriaJazd } from "./HistoriaJazd";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { potvrd } from "@/lib/potvrdenie";
 /**
  * Záznam jazdy v telefóne.
  *
@@ -664,7 +665,14 @@ export function Jazda({
               <button
                 disabled={ukoncujem}
                 onClick={async () => {
-                  if (!window.confirm(t("jz.zahoditOtazka"))) return;
+                  if (
+                    !(await potvrd(t("jz.zahoditOtazka"), {
+                      potvrdit: t("jz.zahodit"),
+                      zrusit: t("spolocne.spat"),
+                      nebezpecne: true,
+                    }))
+                  )
+                    return;
                   setUkoncujem(true);
                   try {
                     await zahodRozpoznanuJazdu(rozpoznana.id);

@@ -899,6 +899,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "spolocne.spat": "Vissza",
   "spolocne.ulozit": "Mentés",
   "spolocne.zrusit": "Mégse",
+  "spolocne.potvrdit": "Megerősítés",
   "spolocne.nacitavam": "Betöltés…",
   "spolocne.km": "km",
 

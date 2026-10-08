@@ -12,6 +12,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "sonner";
+import { PotvrdzovacieOkno } from "@/components/faktero/PotvrdzovacieOkno";
 import { ODSADENIE_TOASTOV } from "@/components/ui/sonner";
 import { MobilnaApka } from "@/components/faktero/mobil/MobilApp";
 import "@/styles.css";
@@ -42,6 +43,8 @@ async function spusti() {
         `richColors` je dôvod, prečo tu je `Sonner` priamo a nie obálka
         z `ui/sonner`: tá farby prebíja triedami.
       */}
+      {/* Otázky „naozaj?" — vlastné okno namiesto systémového s nadpisom „localhost". */}
+      <PotvrdzovacieOkno />
       <Toaster
         position="top-center"
         richColors
