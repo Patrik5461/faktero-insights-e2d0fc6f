@@ -1,3 +1,4 @@
+import { potvrd } from "@/lib/potvrdenie";
 /**
  * Správa partnerov, ktorí sa točia v páse na hlavnej stránke.
  *
@@ -114,8 +115,8 @@ function Page() {
               key={p.id}
               partner={p}
               onUloz={(v) => ulozenie.mutate(v)}
-              onZmaz={() => {
-                if (confirm(`Zmazať partnera „${p.name}"?`)) mazanie.mutate(p.id);
+              onZmaz={async () => {
+                if (await potvrd(`Zmazať partnera „${p.name}"?`)) mazanie.mutate(p.id);
               }}
               ukladam={ulozenie.isPending}
             />

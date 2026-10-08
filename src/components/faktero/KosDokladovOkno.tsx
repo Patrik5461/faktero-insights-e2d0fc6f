@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Loader2, RotateCcw, Trash2 } from "lucide-react";
 import { kosDokladovFn, obnovZKosaFn, zmazZKosaFn } from "@/lib/faktero/expenses.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { potvrd } from "@/lib/potvrdenie";
 
 type Polozka = {
   id: string;
@@ -112,8 +113,8 @@ export function KosDokladovOkno({
                   Obnoviť
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm("Zmazať doklad natrvalo aj so skenom? Už sa nebude dať obnoviť."))
+                  onClick={async () => {
+                    if (await potvrd("Zmazať doklad natrvalo aj so skenom? Už sa nebude dať obnoviť."))
                       void akcia(p.id, () => zmaz({ data: { id: p.id } }), "Zmazané natrvalo");
                   }}
                   disabled={!!busy}

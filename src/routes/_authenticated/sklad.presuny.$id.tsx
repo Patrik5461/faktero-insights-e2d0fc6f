@@ -5,6 +5,7 @@ import { getTransferDetail, completeTransfer, cancelTransfer } from "@/lib/fakte
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { ArrowRightLeft, CheckCircle2, XCircle } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/$id")({
   head: () => ({ meta: [{ title: "Detail presunu — Faktero" }] }),
@@ -96,7 +97,8 @@ function TransferDetailPage() {
   );
 
   const doComplete = async () => {
-    if (!confirm("Naozaj dokončiť presun? Vytvoria sa skladové pohyby (výdaj + príjem).")) return;
+    if (!(await potvrd("Naozaj dokončiť presun? Vytvoria sa skladové pohyby (výdaj + príjem).")))
+      return;
     setBusy(true);
     try {
       await complete({ data: { id } });
@@ -110,7 +112,7 @@ function TransferDetailPage() {
   };
 
   const doCancel = async () => {
-    if (!confirm("Zrušiť presun?")) return;
+    if (!(await potvrd("Zrušiť presun?"))) return;
     setBusy(true);
     try {
       await cancelFn({ data: { id } });

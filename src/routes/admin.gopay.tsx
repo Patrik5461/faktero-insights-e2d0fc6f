@@ -21,6 +21,7 @@ import {
   Save,
   Eraser,
 } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/admin/gopay")({
   head: () => ({ meta: [{ title: "GoPay (predplatné) — Admin" }] }),
@@ -172,7 +173,7 @@ function AdminGopayPage() {
 
   async function onClear() {
     if (
-      !confirm("Naozaj zmazať uložené GoPay nastavenia z DB? Použije sa fallback na ENV premenné.")
+      !(await potvrd("Naozaj zmazať uložené GoPay nastavenia z DB? Použije sa fallback na ENV premenné."))
     )
       return;
     setBusy("clear");

@@ -23,6 +23,7 @@ import {
   linkTeslaVehicle,
   syncTeslaSnapshots,
 } from "@/lib/faktero/tesla.functions";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/jazdy/integracie/tesla")({
   head: () => ({ meta: [{ title: "Tesla Fleet API — Faktero" }] }),
@@ -82,9 +83,9 @@ function TeslaPage() {
   async function onDisconnect() {
     if (!cid) return;
     if (
-      !confirm(
+      !(await potvrd(
         "Naozaj odpojiť Tesla účet?\n\nImportované dáta zostanú zachované. Vozidlá, ktoré sem priniesla integrácia a nemajú žiadnu jazdu ani tankovanie, sa odstránia.",
-      )
+      ))
     )
       return;
     setBusy("disc");

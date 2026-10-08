@@ -30,6 +30,7 @@ import {
   ulozPredvoleneFn,
   zmazPredkontaciuFn,
 } from "@/lib/faktero/predkontacie.functions";
+import { potvrd } from "@/lib/potvrdenie";
 
 /**
  * Predkontácie a členenia DPH — číselník z Pohody a predvolené kódy podľa
@@ -792,7 +793,7 @@ function Ciselnik({
   }
 
   async function zmazat(ids: string[], otazka: string) {
-    if (!confirm(otazka)) return;
+    if (!(await potvrd(otazka))) return;
     try {
       await zmaz({ data: { company_id: companyId, ids } });
       toast.success("Zmazané");

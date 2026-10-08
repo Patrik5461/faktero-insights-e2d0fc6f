@@ -50,6 +50,7 @@ import { toast } from "sonner";
 import { PredkontaciaDokladovOkno } from "@/components/faktero/PredkontaciaDokladovOkno";
 import { KosDokladovOkno } from "@/components/faktero/KosDokladovOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: () => ({ meta: [{ title: "Doklady — Faktero" }] }),
@@ -284,9 +285,9 @@ function DokladyPage() {
     if (!cid) return;
     const popis = r.supplier_name ?? "doklad";
     if (
-      !confirm(
+      !(await potvrd(
         `Presunúť ${popis} medzi prijaté faktúry? Z Dokladov zmizne, aby sa ten istý náklad nepočítal dvakrát.`,
-      )
+      ))
     )
       return;
     setPresuvam(r.id);
@@ -372,9 +373,9 @@ function DokladyPage() {
     if (
       markExported &&
       nesprac > 0 &&
-      !confirm(
+      !(await potvrd(
         `${nesprac === 1 ? "Jeden doklad je" : `${nesprac} dokladov je`} ešte nespracovaných. Odovzdať aj ${nesprac === 1 ? "ten" : "tie"}?`,
-      )
+      ))
     )
       return;
     setExporting(true);
@@ -421,7 +422,7 @@ function DokladyPage() {
   }
 
   async function del(id: string) {
-    if (!confirm("Presunúť doklad do koša? Do 90 dní sa dá obnoviť.")) return;
+    if (!(await potvrd("Presunúť doklad do koša? Do 90 dní sa dá obnoviť."))) return;
     try {
       await deleteFn({ data: { id } });
       refresh();

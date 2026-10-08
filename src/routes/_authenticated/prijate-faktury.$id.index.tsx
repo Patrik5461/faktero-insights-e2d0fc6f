@@ -41,6 +41,7 @@ import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions"
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { potvrd } from "@/lib/potvrdenie";
 
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
   ACTC: "Pripravená na podpis",
@@ -253,7 +254,7 @@ function PurchaseInvoiceDetail() {
 
   const doNespracovanych = useServerFn(prijataDoNespracovanychFn);
   async function vratitDoNespracovanych() {
-    if (!confirm("Vrátiť faktúru do Nespracovaných dokladov? Zmizne odtiaľto a spracujete ju znova.")) return;
+    if (!(await potvrd("Vrátiť faktúru do Nespracovaných dokladov? Zmizne odtiaľto a spracujete ju znova."))) return;
     try {
       const r = await doNespracovanych({ data: { id } });
       toast.success("Faktúra je späť v Nespracovaných");
@@ -276,7 +277,7 @@ function PurchaseInvoiceDetail() {
   }
 
   async function del() {
-    if (!confirm("Naozaj vymazať túto prijatú faktúru?")) return;
+    if (!(await potvrd("Naozaj vymazať túto prijatú faktúru?"))) return;
     const { error } = await supabase
       .from("purchase_invoices")
       .update({ deleted_at: new Date().toISOString() })

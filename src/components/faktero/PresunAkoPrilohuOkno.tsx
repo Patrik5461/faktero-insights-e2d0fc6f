@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { kandidatiPrilohyFn, presunAkoPrilohuFn } from "@/lib/faktero/priloha-presun.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { potvrd } from "@/lib/potvrdenie";
 
 type Druh = "purchase_invoice" | "expense" | "invoice";
 const DRUHY: [Druh, string][] = [
@@ -57,7 +58,8 @@ export function PresunAkoPrilohuOkno({
   }, [druh, hladaj, companyId]);
 
   async function vyber(x: any) {
-    if (!confirm(`Priložiť súbor k dokladu ${x.popis}? Tento doklad sa presunie do koša.`)) return;
+    if (!(await potvrd(`Priložiť súbor k dokladu ${x.popis}? Tento doklad sa presunie do koša.`)))
+      return;
     setBusy(true);
     try {
       await presun({ data: { zdroj, ciel: { druh, id: x.id } } });

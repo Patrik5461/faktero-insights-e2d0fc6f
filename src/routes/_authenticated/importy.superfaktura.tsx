@@ -21,6 +21,7 @@ import {
   previewImport,
   executeImport,
 } from "@/lib/faktero/import-superfaktura.functions";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/importy/superfaktura")({
   head: () => ({ meta: [{ title: "Import zo SuperFaktúry — Faktero" }] }),
@@ -123,7 +124,7 @@ function ImportPage() {
   async function handleRunImport() {
     const cid = getActiveCompanyId();
     if (!cid || !path || !file) return;
-    if (!confirm("Importom sa vytvoria nové záznamy vo vašej firme. Pokračovať?")) return;
+    if (!(await potvrd("Importom sa vytvoria nové záznamy vo vašej firme. Pokračovať?"))) return;
     setBusy(true);
     try {
       const r = await doImport({

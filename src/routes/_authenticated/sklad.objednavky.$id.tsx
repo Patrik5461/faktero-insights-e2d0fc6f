@@ -14,6 +14,7 @@ import {
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { PackageCheck, Send, Trash2, X } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
   head: () => ({ meta: [{ title: "Objednávka — Faktero" }] }),
@@ -190,8 +191,8 @@ function PurchaseOrderDetail() {
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => {
-                  if (!confirm("Naozaj zmazať objednávku?")) return;
+                onClick={async () => {
+                  if (!(await potvrd("Naozaj zmazať objednávku?"))) return;
                   akcia(async () => {
                     await doDelete({ data: { company_id: cid!, id } });
                     nav({ to: "/sklad/objednavky" });

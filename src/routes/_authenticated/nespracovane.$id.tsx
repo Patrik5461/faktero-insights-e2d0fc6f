@@ -28,6 +28,7 @@ import {
 } from "@/lib/faktero/nespracovane";
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/$id")({
   head: () => ({ meta: [{ title: "Nespracovaný doklad — Faktero" }] }),
@@ -171,7 +172,7 @@ function Detail() {
   }
 
   async function zmazDoklad() {
-    if (!confirm("Presunúť doklad do koša?")) return;
+    if (!(await potvrd("Presunúť doklad do koša?"))) return;
     try {
       await zmaz({ data: { id } });
       toast.success("Doklad je v koši");

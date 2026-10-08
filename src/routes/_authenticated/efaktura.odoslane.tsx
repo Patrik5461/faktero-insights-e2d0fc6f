@@ -17,6 +17,7 @@ import {
   deriveEfakturaUiStatus,
   EfakturaStatusBadge,
 } from "@/components/faktero/EfakturaStatusBadge";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/efaktura/odoslane")({
   head: () => ({ meta: [{ title: "Odoslané eFaktúry — Faktero" }] }),
@@ -60,9 +61,9 @@ function SentPage() {
   async function odosli(invoiceId: string, cislo: string) {
     if (!companyId) return;
     if (
-      !window.confirm(
+      !(await potvrd(
         `Odoslať faktúru ${cislo} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.`,
-      )
+      ))
     )
       return;
     setOdosielam(invoiceId);

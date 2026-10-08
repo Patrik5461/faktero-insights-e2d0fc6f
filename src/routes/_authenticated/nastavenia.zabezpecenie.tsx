@@ -11,6 +11,7 @@ import {
   vypni,
   zacniZapinanie,
 } from "@/lib/faktero/dvojfaktor";
+import { potvrd as potvrdAkciu } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/nastavenia/zabezpecenie")({
   head: () => ({ meta: [{ title: "Zabezpečenie účtu — Faktero" }] }),
@@ -78,7 +79,7 @@ function Dvojfaktor() {
 
   async function vypnut() {
     if (!faktor) return;
-    if (!confirm("Naozaj vypnúť dvojfaktorové overenie? Na prihlásenie potom bude stačiť heslo.")) return;
+    if (!(await potvrdAkciu("Naozaj vypnúť dvojfaktorové overenie? Na prihlásenie potom bude stačiť heslo."))) return;
     setPracujem(true);
     try {
       await vypni(faktor.id);

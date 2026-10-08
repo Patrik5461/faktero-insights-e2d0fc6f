@@ -48,6 +48,7 @@ import {
   tlacidloObrys,
   type UdajeZamestnanca,
 } from "@/components/faktero/zamestnanci/ui";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/$id")({
   head: () => ({ meta: [{ title: "Zamestnanec — Faktero" }] }),
@@ -192,7 +193,7 @@ function Udaje({ cid, detail, obnov }: Vlastnosti) {
   }
 
   async function zmazat() {
-    if (!confirm(`Naozaj zmazať ${celeMeno(detail.zamestnanec)} aj so zmluvami, dokumentmi a dochádzkou? Nedá sa to vrátiť.`)) return;
+    if (!(await potvrd(`Naozaj zmazať ${celeMeno(detail.zamestnanec)} aj so zmluvami, dokumentmi a dochádzkou? Nedá sa to vrátiť.`))) return;
     try {
       await zmaz({ data: { company_id: cid, id: detail.zamestnanec.id } });
       toast.success("Zamestnanec je zmazaný.");
@@ -475,7 +476,7 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
                     aria-label="Zmazať zmluvu"
                     className={`${tlacidloObrys} text-destructive`}
                     onClick={async () => {
-                      if (!confirm("Zmazať túto zmluvu?")) return;
+                      if (!(await potvrd("Zmazať túto zmluvu?"))) return;
                       try {
                         await zmaz({ data: { company_id: cid, id: k.id, tabulka: "employee_contracts" } });
                         obnov();
@@ -641,7 +642,7 @@ function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
                   aria-label="Zmazať dokument"
                   className={`${tlacidloObrys} text-destructive`}
                   onClick={async () => {
-                    if (!confirm(`Zmazať dokument „${d.title}“?`)) return;
+                    if (!(await potvrd(`Zmazať dokument „${d.title}“?`))) return;
                     try {
                       await zmaz({ data: { company_id: cid, id: d.id } });
                       obnov();

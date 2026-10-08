@@ -11,6 +11,7 @@ import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodava
 import { pohybNazov } from "@/lib/faktero/stock-pohyb";
 import { Lock, Unlock, Pencil, Trash2 } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/zakazky/$id")({
   head: () => ({ meta: [{ title: "Zákazka — Faktero" }] }),
@@ -541,8 +542,8 @@ function JobDetail() {
           <button
             type="button"
             disabled={busy}
-            onClick={() => {
-              if (!confirm(`Naozaj zmazať zákazku ${j.job_number}?`)) return;
+            onClick={async () => {
+              if (!(await potvrd(`Naozaj zmazať zákazku ${j.job_number}?`))) return;
               akcia(async () => {
                 await doDelete({ data: { company_id: cid!, id } });
                 nav({ to: "/zakazky" });

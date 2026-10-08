@@ -7,6 +7,7 @@ import {
   priradNepriradenyFn,
   type StavRozdelovaca,
 } from "@/lib/faktero/mail-prijem.functions";
+import { potvrd } from "@/lib/potvrdenie";
 
 const STAVY: Record<string, { text: string; trieda: string }> = {
   caka: { text: "Čaká na priradenie", trieda: "text-amber-700" },
@@ -101,7 +102,9 @@ export function RozdelovacMailov() {
                 <button
                   onClick={async () => {
                     if (
-                      !confirm("Stará adresa rozdeľovača okamžite prestane platiť. Vyrobiť novú?")
+                      !(await potvrd(
+                        "Stará adresa rozdeľovača okamžite prestane platiť. Vyrobiť novú?",
+                      ))
                     )
                       return;
                     await obnov({ vymenit: true });
@@ -194,7 +197,8 @@ export function RozdelovacMailov() {
                               <button
                                 disabled={pracuje}
                                 onClick={async () => {
-                                  if (!confirm("Zahodiť tento mail? Doklad sa nezaloží.")) return;
+                                  if (!(await potvrd("Zahodiť tento mail? Doklad sa nezaloží.")))
+                                    return;
                                   await prirad({
                                     data: { id: n.id, company_id: null, zahodit: true },
                                   });

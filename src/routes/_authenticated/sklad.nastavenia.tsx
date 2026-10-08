@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/sklad/nastavenia")({
   head: () => ({ meta: [{ title: "Sklady — Faktero" }] }),
@@ -107,7 +108,7 @@ function WarehousesPage() {
         `Sklad sa nedá zmazať, sú v ňom ${drzi.join(", ")}. Namiesto toho ho nastavte ako neaktívny.`,
       );
     }
-    if (!confirm(`Naozaj zmazať sklad ${w.name}?`)) return;
+    if (!(await potvrd(`Naozaj zmazať sklad ${w.name}?`))) return;
     const { error } = await supabase.from("warehouses").delete().eq("id", w.id);
     if (error) return toast.error(error.message);
     toast.success("Sklad zmazaný");

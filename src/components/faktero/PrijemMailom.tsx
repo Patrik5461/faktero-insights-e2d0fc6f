@@ -16,6 +16,7 @@ import { overVlastnyLocalPart } from "@/lib/faktero/mail-prijem";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PotvrdeniePreposielania } from "./PotvrdeniePreposielania";
 import { RozdelovacMailov } from "./RozdelovacMailov";
+import { potvrd } from "@/lib/potvrdenie";
 
 const STAVY: Record<string, { text: string; trieda: string }> = {
   hotovo: { text: "Založené", trieda: "text-emerald-700" },
@@ -147,7 +148,7 @@ export function PrijemMailom({
                     onClick={async () => {
                       const cid = getActiveCompanyId();
                       if (!cid) return;
-                      if (!confirm("Stará adresa okamžite prestane platiť. Vyrobiť novú?")) return;
+                      if (!(await potvrd("Stará adresa okamžite prestane platiť. Vyrobiť novú?"))) return;
                       setPracuje(true);
                       try {
                         await obnov({ data: { company_id: cid } });

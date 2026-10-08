@@ -26,6 +26,7 @@ import {
 } from "@/lib/faktero/doklad-stav";
 import { CheckCircle2, Download, FolderOpen, Paperclip, Plus, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
   head: () => ({ meta: [{ title: "Iné doklady — Faktero" }] }),
@@ -147,7 +148,7 @@ function OstatneDokladyPage() {
   }
 
   async function zmaz(r: any) {
-    if (!confirm(`Naozaj zmazať doklad „${r.subject || r.sender || nazovDruhu(r.kind)}“ aj s prílohami?`))
+    if (!(await potvrd(`Naozaj zmazať doklad „${r.subject || r.sender || nazovDruhu(r.kind)}“ aj s prílohami?`)))
       return;
     try {
       await zmazFn({ data: { id: r.id } });
@@ -165,9 +166,9 @@ function OstatneDokladyPage() {
     if (
       oznacit &&
       nesprac > 0 &&
-      !confirm(
+      !(await potvrd(
         `${nesprac === 1 ? "Jeden doklad je" : `${nesprac} dokladov je`} ešte nespracovaných. Odovzdať aj ${nesprac === 1 ? "ten" : "tie"}?`,
-      )
+      ))
     )
       return;
     setPracujem(true);

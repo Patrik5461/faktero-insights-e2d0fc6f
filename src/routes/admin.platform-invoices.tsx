@@ -3,6 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminPageBody, AdminPageHeader } from "@/components/faktero/AdminShell";
 import { AlertTriangle, ExternalLink, Trash2 } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/platform-invoices")({
   ssr: false,
@@ -68,12 +70,13 @@ function PlatformInvoicesAdmin() {
   }, [rows, month, companyFilter]);
 
   async function del(row: Row) {
-    if (!confirm(`Naozaj vymazať doklad ${row.invoice_number}?\n\nTáto akcia je NEVRATNÁ.`)) return;
+    if (!(await potvrd(`Naozaj vymazať doklad ${row.invoice_number}?\n\nTáto akcia je NEVRATNÁ.`)))
+      return;
     setBusyId(row.id);
     const { error } = await supabase.from("platform_invoices").delete().eq("id", row.id);
     setBusyId(null);
     if (error) {
-      alert("Chyba: " + error.message);
+      toast.error("Chyba: " + error.message);
       return;
     }
     setRows((prev) => prev.filter((r) => r.id !== row.id));

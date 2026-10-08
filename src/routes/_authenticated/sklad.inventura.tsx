@@ -12,6 +12,7 @@ import {
 } from "@/lib/faktero/stock.functions";
 import { toast } from "sonner";
 import { ScanLine } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/sklad/inventura")({
   head: () => ({ meta: [{ title: "Inventúra — Faktero" }] }),
@@ -115,7 +116,9 @@ function InventoryPage() {
   async function onZahodit() {
     const cid = getActiveCompanyId();
     if (!cid || !countId) return;
-    if (!confirm("Zahodiť rozpočítanú inventúru? Spočítané hodnoty sa stratia, stavy ostanú.")) {
+    if (
+      !(await potvrd("Zahodiť rozpočítanú inventúru? Spočítané hodnoty sa stratia, stavy ostanú."))
+    ) {
       return;
     }
     setBusy(true);

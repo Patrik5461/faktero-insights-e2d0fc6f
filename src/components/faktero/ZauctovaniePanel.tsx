@@ -20,6 +20,7 @@ import { KV_PRIJATE, kvAutomaticky } from "@/lib/faktero/kv-clenenie";
 import { KodPohody } from "./KodPohody";
 import { RozuctovaniePanel } from "./RozuctovaniePanel";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
+import { potvrd } from "@/lib/potvrdenie";
 
 export type Navrhy = {
   predkontacie: MoznostKodu[];
@@ -269,9 +270,9 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
 
   async function vratit() {
     if (
-      !confirm(
+      !(await potvrd(
         "Vrátiť faktúru z Pohody? Zaúčtovanie sa zruší a pri ďalšom odovzdaní pôjde znova — v Pohode ju preto najprv zmažte, inak tam bude dvakrát.",
-      )
+      ))
     )
       return;
     setBusy(true);
@@ -287,7 +288,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
   }
 
   async function doDokladov() {
-    if (!confirm("Presunúť túto faktúru medzi doklady (bločky)? Z prijatých faktúr zmizne."))
+    if (!(await potvrd("Presunúť túto faktúru medzi doklady (bločky)? Z prijatých faktúr zmizne.")))
       return;
     setBusy(true);
     try {

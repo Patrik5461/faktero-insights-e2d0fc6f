@@ -30,6 +30,7 @@ import { STAV_DOKLADU_NAZOV } from "@/lib/faktero/doklad-stav";
 import { MENY } from "@/lib/faktero/mena";
 import { CheckCircle2, Loader2, Paperclip, Save, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/novy")({
   head: () => ({ meta: [{ title: "Iný doklad — Faktero" }] }),
@@ -296,7 +297,7 @@ function OstatnyDokladPage() {
   }
 
   async function odober(fileId: string) {
-    if (!confirm("Odstrániť prílohu?")) return;
+    if (!(await potvrd("Odstrániť prílohu?"))) return;
     try {
       await odoberFn({ data: { id: fileId } });
       setUlozene((u) => u.filter((p) => p.id !== fileId));

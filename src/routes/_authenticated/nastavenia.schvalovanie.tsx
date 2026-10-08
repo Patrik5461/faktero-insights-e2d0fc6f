@@ -12,6 +12,7 @@ import {
   zmazCestuFn,
 } from "@/lib/faktero/schvalovanie.functions";
 import { NAZVY_AGEND, type AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
+import { potvrd } from "@/lib/potvrdenie";
 
 /**
  * Nastavenie schvaľovania dokladov — ako v Doklado: zapnutie, agendy,
@@ -412,7 +413,7 @@ function Stranka() {
                       </button>
                       <button
                         onClick={async () => {
-                          if (!confirm(`Zmazať cestu ${c.nazov}?`)) return;
+                          if (!(await potvrd(`Zmazať cestu ${c.nazov}?`))) return;
                           try {
                             await zmazC({ data: { company_id: companyId, id: c.id } });
                             await obnov();

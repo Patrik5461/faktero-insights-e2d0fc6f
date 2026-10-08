@@ -17,6 +17,7 @@ import { Plus, Pencil, Trash2, Tag, Percent } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/ceny/")({
   head: () => ({ meta: [{ title: "Cenník — Faktero" }] }),
@@ -233,9 +234,9 @@ function CennikPage() {
                             aria-label="Zmazať skupinu"
                             onClick={async () => {
                               if (
-                                !confirm(
+                                !(await potvrd(
                                   `Zmazať skupinu „${s.name}"? Odberatelia v nej stratia zľavu, dohodnuté ceny ostanú.`,
-                                )
+                                ))
                               )
                                 return;
                               await zmazSkupinu({ data: { company_id: cid!, id: s.id } });
@@ -333,7 +334,7 @@ function CennikPage() {
                                 type="button"
                                 aria-label="Zmazať cenu"
                                 onClick={async () => {
-                                  if (!confirm("Zmazať dohodnutú cenu?")) return;
+                                  if (!(await potvrd("Zmazať dohodnutú cenu?"))) return;
                                   await zmazCenu({ data: { company_id: cid!, id: c.id } });
                                   nacitaj();
                                 }}

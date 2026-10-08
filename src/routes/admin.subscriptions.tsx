@@ -16,6 +16,7 @@ import {
   getBillingDiagnostics,
 } from "@/lib/faktero/admin.functions";
 import { toast } from "sonner";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/admin/subscriptions")({
   head: () => ({ meta: [{ title: "Admin · Predplatné — Faktero" }] }),
@@ -136,7 +137,7 @@ function AdminSubscriptionsPage() {
     }
   }
   async function onCancel(companyId: string) {
-    if (!confirm("Zrušiť predplatné?")) return;
+    if (!(await potvrd("Zrušiť predplatné?"))) return;
     try {
       await cancelFn({ data: { companyId } });
       toast.success("Zrušené");
@@ -166,7 +167,7 @@ function AdminSubscriptionsPage() {
     }
   }
   async function onSuspend(companyId: string, suspend: boolean) {
-    if (suspend && !confirm("Pozastaviť fakturáciu (režim len na čítanie)?")) return;
+    if (suspend && !(await potvrd("Pozastaviť fakturáciu (režim len na čítanie)?"))) return;
     try {
       await suspendFn({ data: { companyId, suspend } });
       toast.success(suspend ? "Pozastavené" : "Obnovené");

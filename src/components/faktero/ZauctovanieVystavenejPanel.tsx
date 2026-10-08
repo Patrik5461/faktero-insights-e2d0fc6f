@@ -13,6 +13,7 @@ import {
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
 import { KodPohody } from "./KodPohody";
 import type { Navrhy } from "./ZauctovaniePanel";
+import { potvrd } from "@/lib/potvrdenie";
 
 const KV_VYDANE = KV_CLENENIA.filter((k) => ["A1", "A2", "C1", "D1", "D2", "X"].includes(k.kod));
 const kedy = (iso: string | null | undefined) =>
@@ -200,9 +201,9 @@ export function ZauctovanieVystavenejPanel({
               <Download className="h-4 w-4" /> Stiahnuť XML znova
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (
-                  confirm(
+                  await potvrd(
                     "Vrátiť faktúru z Pohody? Pri ďalšom odovzdaní pôjde znova — v Pohode ju preto najprv zmažte, inak tam bude dvakrát.",
                   )
                 )

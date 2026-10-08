@@ -20,6 +20,7 @@ import {
 import { FileText, Pencil, Trash2, Ban, Check } from "lucide-react";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/objednavky/$id")({
   head: () => ({ meta: [{ title: "Objednávka — Faktero" }] }),
@@ -104,7 +105,7 @@ function OrderDetail() {
   const daSaFakturovat = zostavaNieco && stav !== "cancelled" && stav !== "draft";
 
   async function nastav(novy: "draft" | "confirmed" | "cancelled", otazka?: string) {
-    if (otazka && !confirm(otazka)) return;
+    if (otazka && !(await potvrd(otazka))) return;
     try {
       await zmenStav({ data: { company_id: cid!, id, status: novy } });
       nacitajDetail();
@@ -317,7 +318,7 @@ function OrderDetail() {
               <button
                 type="button"
                 onClick={async () => {
-                  if (!confirm("Zmazať rozpracovanú objednávku?")) return;
+                  if (!(await potvrd("Zmazať rozpracovanú objednávku?"))) return;
                   try {
                     await zmaz({ data: { company_id: cid!, id } });
                     nav({ to: "/objednavky" });

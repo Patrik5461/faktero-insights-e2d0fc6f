@@ -37,6 +37,7 @@ import {
   AlertCircle,
   ShieldCheck,
 } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/")({
   head: () => ({ meta: [{ title: "Bankové účty — Faktero" }] }),
@@ -82,8 +83,8 @@ function BankAccountsPage() {
    * Odpojenie sa nedá vziať späť jedným klikom — Tatra banka chce celý súhlas
    * znova, ostatné aspoň prihlásenie. Preto sa pýta.
    */
-  function potvrdOdpojenie(nazov: string): boolean {
-    return window.confirm(
+  function potvrdOdpojenie(nazov: string): Promise<boolean> {
+    return potvrd(
       `Naozaj odpojiť ${nazov}?\n\nZostatky sa prestanú aktualizovať a pripojenie budete musieť nastaviť znova. Už stiahnuté pohyby ostanú.`,
     );
   }
@@ -93,7 +94,7 @@ function BankAccountsPage() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     // Pýtame sa pred zaneprázdnením tlačidla — inak sa točí, kým človek číta.
-    if (co === "odpojit" && !potvrdOdpojenie("Revolut")) return;
+    if (co === "odpojit" && !(await potvrdOdpojenie("Revolut"))) return;
     setBusy(connId);
     try {
       if (co === "ucty") {
@@ -123,7 +124,7 @@ function BankAccountsPage() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     // Pýtame sa pred zaneprázdnením tlačidla — inak sa točí, kým človek číta.
-    if (co === "odpojit" && !potvrdOdpojenie("Wallester")) return;
+    if (co === "odpojit" && !(await potvrdOdpojenie("Wallester"))) return;
     setBusy(connId);
     try {
       if (co === "ucty") {
@@ -153,7 +154,7 @@ function BankAccountsPage() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     // Pýtame sa pred zaneprázdnením tlačidla — inak sa točí, kým človek číta.
-    if (co === "odpojit" && !potvrdOdpojenie("Wise")) return;
+    if (co === "odpojit" && !(await potvrdOdpojenie("Wise"))) return;
     setBusy(connId);
     try {
       if (co === "ucty") {
@@ -211,7 +212,7 @@ function BankAccountsPage() {
   }
 
   async function onDisconnect(connId: string) {
-    if (!confirm("Naozaj odpojiť banku? Všetky účty a transakcie budú vymazané.")) return;
+    if (!(await potvrd("Naozaj odpojiť banku? Všetky účty a transakcie budú vymazané."))) return;
     const cid = getActiveCompanyId();
     if (!cid) return;
     try {

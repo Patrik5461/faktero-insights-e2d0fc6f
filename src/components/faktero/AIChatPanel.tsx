@@ -1,4 +1,5 @@
-"use client";
+import { potvrd } from "@/lib/potvrdenie";
+("use client");
 
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -144,8 +145,8 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
                   {c.title}
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm("Vymazať konverzáciu?")) delConv.mutate(c.id);
+                  onClick={async () => {
+                    if (await potvrd("Vymazať konverzáciu?")) delConv.mutate(c.id);
                   }}
                   className="opacity-0 transition group-hover:opacity-100 text-muted-foreground hover:text-destructive"
                 >

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/ponuky/$id")({
   head: () => ({ meta: [{ title: "Detail ponuky — Faktero" }] }),
@@ -143,7 +144,7 @@ function QuoteDetail() {
     }
   }
   async function handleConvert() {
-    if (!confirm("Konvertovať ponuku na faktúru?")) return;
+    if (!(await potvrd("Konvertovať ponuku na faktúru?"))) return;
     setBusy("conv");
     try {
       const r = await convert({ data: { quoteId: id } });
@@ -256,7 +257,7 @@ function QuoteDetail() {
               onClick={async () => {
                 const cid = getActiveCompanyId();
                 if (!cid) return;
-                if (!confirm("Vytvoriť z ponuky prijatú objednávku?")) return;
+                if (!(await potvrd("Vytvoriť z ponuky prijatú objednávku?"))) return;
                 setBusy("obj");
                 try {
                   const r: any = await naObjednavku({ data: { company_id: cid, quote_id: id } });

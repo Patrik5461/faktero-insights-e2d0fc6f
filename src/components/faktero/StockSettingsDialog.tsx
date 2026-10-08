@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { Plus, Pencil, Trash2, Tags, Warehouse as WarehouseIcon, X } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 
 const PALETTE = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#64748b"];
 
@@ -171,10 +172,12 @@ function CategoriesTab({ onChanged }: { onChanged?: () => void }) {
   async function remove(id: string, count: number) {
     if (
       count > 0 &&
-      !confirm(`Kategória má ${count} produktov. Naozaj zmazať? Produkty zostanú bez kategórie.`)
+      !(await potvrd(
+        `Kategória má ${count} produktov. Naozaj zmazať? Produkty zostanú bez kategórie.`,
+      ))
     )
       return;
-    if (count === 0 && !confirm("Zmazať kategóriu?")) return;
+    if (count === 0 && !(await potvrd("Zmazať kategóriu?"))) return;
     const cid = getActiveCompanyId();
     if (!cid) return;
     try {

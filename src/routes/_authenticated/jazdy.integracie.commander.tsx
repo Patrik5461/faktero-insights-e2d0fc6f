@@ -25,6 +25,7 @@ import {
   linkCommanderVehicle,
   syncCommanderRides,
 } from "@/lib/faktero/commander.functions";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/jazdy/integracie/commander")({
   head: () => ({ meta: [{ title: "Commander GPS — Faktero" }] }),
@@ -132,9 +133,9 @@ function CommanderPage() {
   async function onDisconnect() {
     if (!cid) return;
     if (
-      !confirm(
+      !(await potvrd(
         "Naozaj odpojiť Commander?\n\nImportované jazdy zostanú zachované. Vozidlá, ktoré sem priniesla integrácia a nemajú žiadnu jazdu ani tankovanie, sa odstránia.",
-      )
+      ))
     )
       return;
     setBusy("disc");
@@ -209,9 +210,9 @@ function CommanderPage() {
       return;
     }
     if (
-      !confirm(
+      !(await potvrd(
         "Znovu skontrolovať všetky jazdy a importovať tie, ktoré ešte nie sú v knihe jázd? Skutočné duplicity (podľa external_id) sa preskočia.",
-      )
+      ))
     )
       return;
     setBusy("forceR");

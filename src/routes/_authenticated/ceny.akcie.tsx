@@ -11,6 +11,7 @@ import { PRODUKTY, sPoctom } from "@/lib/faktero/mnozne";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/ceny/akcie")({
   head: () => ({ meta: [{ title: "Cenové akcie — Faktero" }] }),
@@ -254,7 +255,7 @@ function AkciePage() {
                         type="button"
                         aria-label="Zmazať akciu"
                         onClick={async () => {
-                          if (!confirm(`Zmazať akciu „${a.name}"?`)) return;
+                          if (!(await potvrd(`Zmazať akciu „${a.name}"?`))) return;
                           await zmazAkciu({ data: { company_id: cid!, id: a.id } });
                           nacitaj();
                         }}

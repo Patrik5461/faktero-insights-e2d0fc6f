@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatujIban, upravIban } from "@/lib/faktero/platobny-ucet";
 import { MENY } from "@/lib/faktero/mena";
 import { useUctyFirmy } from "./VyberUctu";
+import { potvrd } from "@/lib/potvrdenie";
 
 /**
  * Bankové účty firmy, na ktoré môžu prísť peniaze za faktúry. Predvolený sa
@@ -66,7 +67,7 @@ export function BankoveUctyFirmy({ companyId }: { companyId: string }) {
     if (predvoleny && (ucty?.length ?? 0) > 1) {
       return toast.error("Najprv nastavte ako predvolený iný účet.");
     }
-    if (!confirm("Odstrániť účet? Vystavené faktúry si ho ponechajú.")) return;
+    if (!(await potvrd("Odstrániť účet? Vystavené faktúry si ho ponechajú."))) return;
     const { error } = await supabase.from("company_bank_accounts").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Účet odstránený.");

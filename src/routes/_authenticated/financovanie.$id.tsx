@@ -18,6 +18,7 @@ import { formatujSumu } from "@/lib/faktero/zostatky";
 import { Check, FileText, Link2, Pencil, RefreshCw, Trash2, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FormularZmluvy } from "@/components/faktero/FormularZmluvy";
+import { potvrd as potvrdAkciu } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/financovanie/$id")({
   head: () => ({ meta: [{ title: "Zmluva o financovaní — Faktero" }] }),
@@ -190,8 +191,8 @@ function Stranka() {
               <Pencil className="h-4 w-4" /> {upravujem ? "Zavrieť úpravu" : "Upraviť"}
             </button>
             <button
-              onClick={() => {
-                if (!confirm("Zmazať zmluvu aj s celým splátkovým kalendárom?")) return;
+              onClick={async () => {
+                if (!(await potvrdAkciu("Zmazať zmluvu aj s celým splátkovým kalendárom?"))) return;
                 void urobit(async () => {
                   await zmaz({ data: { company_id: cid, id } });
                   navigate({ to: "/financovanie" });

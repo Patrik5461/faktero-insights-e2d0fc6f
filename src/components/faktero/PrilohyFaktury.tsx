@@ -15,6 +15,7 @@ import {
   odkazNaPrilohuFn,
   zmazPrilohuFn,
 } from "@/lib/faktero/faktura-prilohy.functions";
+import { potvrd } from "@/lib/potvrdenie";
 
 export type Priloha = {
   id: string;
@@ -123,7 +124,7 @@ export function PrilohyFaktury({
   }
 
   async function odstran(p: Priloha) {
-    if (!confirm(`Zmazať prílohu ${p.name}?`)) return;
+    if (!(await potvrd(`Zmazať prílohu ${p.name}?`))) return;
     try {
       await zmaz({ data: { id: p.id, druh } });
       toast.success("Príloha zmazaná.");

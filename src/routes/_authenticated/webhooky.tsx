@@ -6,6 +6,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { Plus, Trash2, Copy } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/webhooky")({
   head: () => ({ meta: [{ title: "Webhooky — Faktero" }] }),
@@ -84,7 +85,7 @@ function WebhooksPage() {
     reload();
   }
   async function remove(id: string) {
-    if (!confirm("Zmazať webhook?")) return;
+    if (!(await potvrd("Zmazať webhook?"))) return;
     const { error } = await supabase.from("webhooks").delete().eq("id", id);
     if (error) return toast.error(error.message);
     reload();

@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, Pencil, Power, Fuel, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/jazdy/vozidla")({
   head: () => ({ meta: [{ title: "Vozidlá — Faktero" }] }),
@@ -92,7 +93,7 @@ function VehiclesPage() {
         `Vozidlo sa nedá zmazať, sú naň naviazané ${co}. Namiesto toho ho deaktivujte.`,
       );
     }
-    if (!confirm(`Naozaj zmazať vozidlo ${v.name}?`)) return;
+    if (!(await potvrd(`Naozaj zmazať vozidlo ${v.name}?`))) return;
     const { error } = await supabase.from("vehicles").delete().eq("id", v.id);
     if (error) return toast.error(error.message);
     toast.success("Vozidlo zmazané");
@@ -100,7 +101,7 @@ function VehiclesPage() {
   }
 
   async function zmazTankovanie(f: any) {
-    if (!confirm("Naozaj zmazať tento záznam o tankovaní?")) return;
+    if (!(await potvrd("Naozaj zmazať tento záznam o tankovaní?"))) return;
     const { error } = await supabase.from("fuel_records").delete().eq("id", f.id);
     if (error) return toast.error(error.message);
     toast.success("Tankovanie zmazané");

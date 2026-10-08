@@ -16,6 +16,7 @@ import { ImportOptions, PREDVOLENE_VOLBY } from "@/components/faktero/ImportOpti
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createImportUploadUrl } from "@/lib/faktero/import-superfaktura.functions";
 import { previewVendorImport, executeVendorImport } from "@/lib/faktero/import-vendors.functions";
+import { potvrd } from "@/lib/potvrdenie";
 
 export type VendorId = "money-s3" | "omega" | "idoklad" | "kros" | "pohoda";
 
@@ -72,7 +73,7 @@ export function VendorImportPage(props: {
   async function handleRun() {
     const cid = getActiveCompanyId();
     if (!cid || !file || !path) return;
-    if (!confirm("Importom sa vytvoria nové záznamy. Pokračovať?")) return;
+    if (!(await potvrd("Importom sa vytvoria nové záznamy. Pokračovať?"))) return;
     setBusy(true);
     try {
       const r = await doImport({

@@ -8,6 +8,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listSablon, obnovSablonu, ulozSablonu } from "@/lib/faktero/zamestnanci.functions";
 import { TOKENY, type KlucSablony } from "@/lib/faktero/zamestnanci";
 import { ChybaModulu, pole, popis, tlacidlo, tlacidloObrys } from "@/components/faktero/zamestnanci/ui";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/sablony")({
   head: () => ({ meta: [{ title: "Šablóny dokumentov — Faktero" }] }),
@@ -119,7 +120,7 @@ function SablonyPage() {
                     type="button"
                     className={tlacidloObrys}
                     onClick={async () => {
-                      if (!cid || !confirm("Vrátiť predvolený text? Vaše úpravy sa stratia.")) return;
+                      if (!cid || !(await potvrd("Vrátiť predvolený text? Vaše úpravy sa stratia."))) return;
                       try {
                         await obnov({ data: { company_id: cid, key: vybrana } });
                         toast.success("Obnovený predvolený text.");

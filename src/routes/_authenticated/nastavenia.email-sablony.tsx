@@ -11,6 +11,7 @@ import {
   sendTestEmailTemplateFn,
 } from "@/lib/faktero/email-templates.functions";
 import { RotateCcw, Save, Send, Loader2 } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/nastavenia/email-sablony")({
   head: () => ({ meta: [{ title: "Email šablóny — Faktero" }] }),
@@ -83,7 +84,7 @@ function EmailTemplatesPage() {
   }
 
   async function onReset(r: Row) {
-    if (!confirm(`Obnoviť predvolený text pre „${r.label}"?`)) return;
+    if (!(await potvrd(`Obnoviť predvolený text pre „${r.label}"?`))) return;
     setBusy(r.template_type);
     try {
       await reset({ data: { companyId: companyId!, template_type: r.template_type as any } });

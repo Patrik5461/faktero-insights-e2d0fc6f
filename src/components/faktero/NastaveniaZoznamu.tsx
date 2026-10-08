@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { NastaveniaZoznamu as Nastavenia } from "@/hooks/useNastaveniaZoznamu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
+import { potvrd } from "@/lib/potvrdenie";
 
 /**
  * Lišta nad zoznamom: uložené filtre a výber stĺpcov (ako v Doklado).
@@ -58,7 +59,7 @@ export function NastaveniaZoznamu({
           title="Zmazať uložený filter"
           aria-label="Zmazať uložený filter"
           onClick={async () => {
-            if (!confirm(`Zmazať filter „${aktivny.nazov}"?`)) return;
+            if (!(await potvrd(`Zmazať filter „${aktivny.nazov}"?`))) return;
             await nastavenia
               .zmazFilter(aktivny)
               .catch((e) => toast.error(e?.message ?? "Nepodarilo sa"));

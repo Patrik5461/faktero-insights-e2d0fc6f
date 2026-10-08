@@ -74,6 +74,7 @@ import { isdocFakturyFn } from "@/lib/faktero/isdoc.functions";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
+import { potvrd } from "@/lib/potvrdenie";
 /** Ako sa doklad volá — rovnako v hlavičke stránky aj v PDF. */
 const NAZOV_TYPU: Record<string, string> = {
   proforma: "Zálohová faktúra",
@@ -223,7 +224,7 @@ function InvoiceDetail() {
     const otazka = efakturaTest
       ? `eFaktúra beží v TESTOVACOM režime.\n\nFaktúra ${inv.invoice_number ?? ""} odíde len do skúšobného prostredia — odberateľovi nepríde nič. Pošlite mu ju aj e-mailom.\n\nPokračovať v skúšobnom odoslaní?`
       : `Odoslať faktúru ${inv.invoice_number ?? ""} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.`;
-    if (!window.confirm(otazka)) return;
+    if (!(await potvrd(otazka))) return;
     setEfakturaBusy(true);
     try {
       const r: any = await posliEfakturu({ data: { company_id: inv.company_id, invoice_id: id } });
@@ -526,7 +527,7 @@ function InvoiceDetail() {
     if (status === "paid" && inv?.status === "cancelled")
       return toast.error("Stornovanú faktúru nemožno označiť ako uhradenú.");
     if (status === "cancelled" && inv?.status === "paid") {
-      if (!confirm("Faktúra je uhradená. Naozaj ju chcete stornovať?")) return;
+      if (!(await potvrd("Faktúra je uhradená. Naozaj ju chcete stornovať?"))) return;
     }
     const patch: any = { status };
     if (status === "paid") patch.paid_at = new Date().toISOString();

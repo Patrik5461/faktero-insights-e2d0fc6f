@@ -34,6 +34,7 @@ import { StockSettingsDialog } from "@/components/faktero/StockSettingsDialog";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import { potvrd } from "@/lib/potvrdenie";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/")({
   head: () => ({ meta: [{ title: "Skladové položky — Faktero" }] }),
   validateSearch: (s: Record<string, unknown>): { filter?: "low_stock" } => ({
@@ -427,7 +428,7 @@ function StockItemsPage() {
         .join(" a ");
       return toast.error(`Kartu sa nedá zmazať, sú na nej ${drzi}. V archíve ale prekážať nebude.`);
     }
-    if (!confirm("Zmazať skladovú kartu natrvalo? Vrátiť sa to nedá.")) return;
+    if (!(await potvrd("Zmazať skladovú kartu natrvalo? Vrátiť sa to nedá."))) return;
     const { error } = await supabase
       .from("stock_items")
       .delete()
@@ -980,7 +981,7 @@ function StockItemsPage() {
                               onClick={async () => {
                                 const cid = getActiveCompanyId();
                                 if (!cid) return;
-                                if (!confirm("Archivovať túto skladovú kartu?")) return;
+                                if (!(await potvrd("Archivovať túto skladovú kartu?"))) return;
                                 const { error } = await supabase
                                   .from("stock_items")
                                   .update({ archived_at: new Date().toISOString() })

@@ -38,6 +38,7 @@ import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { MENY } from "@/lib/faktero/mena";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: () => ({ meta: [{ title: "Nový doklad — Faktero" }] }),
@@ -172,9 +173,9 @@ function NovyDokladPage() {
   async function vratZPohody() {
     if (!cid || !search.id) return;
     if (
-      !confirm(
+      !(await potvrd(
         "Vrátiť doklad z Pohody? Pôjde späť medzi nespracované a pri ďalšom odovzdaní znova — v Pohode ho preto najprv zmažte, inak tam bude dvakrát.",
-      )
+      ))
     )
       return;
     try {
@@ -500,7 +501,7 @@ function NovyDokladPage() {
       toast.error("Vyberte firmu");
       return;
     }
-    if (duplikat && !search.id && !window.confirm("Tento bloček už vo firme máte. Uložiť ho aj tak ešte raz?")) {
+    if (duplikat && !search.id && !(await potvrd("Tento bloček už vo firme máte. Uložiť ho aj tak ešte raz?"))) {
       return;
     }
     // Tlačidlo je bez toho zamknuté; toto je poistka pre klávesnicu a doplnky.

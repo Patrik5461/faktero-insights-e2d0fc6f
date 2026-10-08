@@ -11,6 +11,7 @@ import {
   cancelReservation,
   listReservationsForItem,
 } from "@/lib/faktero/reservations.functions";
+import { potvrd } from "@/lib/potvrdenie";
 
 const SRC_LABEL: Record<string, string> = {
   quote: "Ponuka",
@@ -55,7 +56,7 @@ export function ReservationsPanel({
   }, [stockItemId]);
 
   async function doCancel(id: string) {
-    if (!confirm("Zrušiť rezerváciu?")) return;
+    if (!(await potvrd("Zrušiť rezerváciu?"))) return;
     try {
       await cancelFn({ data: { company_id: companyId, id } });
       toast.success("Rezervácia zrušená.");

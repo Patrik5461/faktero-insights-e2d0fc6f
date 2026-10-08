@@ -12,6 +12,7 @@ import {
   koniecPredoslehoStvrtroka,
 } from "@/lib/faktero/uzavierka";
 import { Lock, Unlock, ShieldCheck } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/uzavierka")({
   head: () => ({ meta: [{ title: "Uzávierka — Faktero" }] }),
@@ -56,7 +57,7 @@ function UzavierkaPage() {
   async function uloz(datum: string | null) {
     if (!cid) return;
     if (jeOdomknutie(stav?.locked_until, datum)) {
-      const potvrdene = confirm(
+      const potvrdene = await potvrd(
         datum
           ? `Posúvate zámok späť na ${formatujDatum(datum)}. Doklady medzi novým a pôvodným dátumom sa znova budú dať meniť — aj keď za to obdobie už bolo podané priznanie. Pokračovať?`
           : "Rušíte uzamknutie úplne. Všetky doklady sa znova budú dať meniť. Pokračovať?",

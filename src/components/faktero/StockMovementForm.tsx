@@ -8,6 +8,7 @@ import { createStockMovementDebug } from "@/lib/faktero/stock.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { toast } from "sonner";
+import { potvrd } from "@/lib/potvrdenie";
 
 type MovementType = "prijem" | "vydaj" | "oprava";
 const SHOW_STOCK_DEBUG =
@@ -142,9 +143,9 @@ export function MovementForm({
     const qty = Number(quantity);
     if (!Number.isFinite(qty) || qty <= 0) return toast.error("Množstvo musí byť kladné.");
     if (type === "vydaj" && availability && qty > availability.available) {
-      const ok = confirm(
+      const ok = (await potvrd(
         `Vydávate ${qty} ks, ale k dispozícii je len ${availability.available.toFixed(2)} (na sklade ${availability.on_hand.toFixed(2)}, rezervované ${availability.reserved.toFixed(2)}). Pokračovať a porušiť rezervácie?`,
-      );
+      ));
       if (!ok) return;
     }
     setBusy(true);

@@ -33,6 +33,7 @@ import { sumaSDph } from "@/lib/faktero/predplatne-cena";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveProduct } from "@/lib/faktero/active-product";
+import { potvrd } from "@/lib/potvrdenie";
 
 type ProductMode = "invoicing" | "logbook" | "both";
 type ProductTab = "invoicing" | "logbook";
@@ -229,7 +230,7 @@ function PredplatnePage() {
 
   async function doCancel() {
     if (!companyId) return;
-    if (!confirm("Naozaj zrušiť predplatné na konci aktuálneho obdobia?")) return;
+    if (!(await potvrd("Naozaj zrušiť predplatné na konci aktuálneho obdobia?"))) return;
     try {
       await cancelFn({ data: { companyId } });
       toast.success("Predplatné bude zrušené na konci obdobia");

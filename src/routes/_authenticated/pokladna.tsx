@@ -9,6 +9,7 @@ import { Wallet, Plus, Trash2, ArrowDownCircle, ArrowUpCircle } from "lucide-rea
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/pokladna")({
   head: () => ({ meta: [{ title: "Pokladňa — Faktero" }] }),
@@ -88,7 +89,7 @@ function PokladnaPage() {
   }
 
   async function zmaz(id: string) {
-    if (!cid || !confirm("Naozaj zmazať tento pokladničný doklad?")) return;
+    if (!cid || !(await potvrd("Naozaj zmazať tento pokladničný doklad?"))) return;
     setBusy(true);
     setChyba(null);
     try {

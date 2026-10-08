@@ -30,6 +30,7 @@ import {
   sendChatFn,
   getRecommendationsFn,
 } from "@/lib/faktero/ai-assistant.functions";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/ai-asistent")({
   head: () => ({ meta: [{ title: "Faktero AI — Faktero" }] }),
@@ -204,8 +205,8 @@ function ChatView({ companyId }: { companyId: string }) {
                 {c.title}
               </button>
               <button
-                onClick={() => {
-                  if (confirm("Vymazať konverzáciu?")) delConv.mutate(c.id);
+                onClick={async () => {
+                  if (await potvrd("Vymazať konverzáciu?")) delConv.mutate(c.id);
                 }}
                 className="opacity-0 transition group-hover:opacity-100 text-muted-foreground hover:text-destructive"
               >

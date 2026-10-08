@@ -12,6 +12,7 @@ import {
 } from "@/lib/faktero/stock.functions";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Tags } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/sklad/kategorie")({
   head: () => ({ meta: [{ title: "Kategórie skladu — Faktero" }] }),
@@ -103,10 +104,12 @@ function CategoriesPage() {
   async function onDelete(id: string, count: number) {
     if (
       count > 0 &&
-      !confirm(`Kategória má ${count} produktov. Naozaj zmazať? Produkty zostanú bez kategórie.`)
+      !(await potvrd(
+        `Kategória má ${count} produktov. Naozaj zmazať? Produkty zostanú bez kategórie.`,
+      ))
     )
       return;
-    if (count === 0 && !confirm("Zmazať kategóriu?")) return;
+    if (count === 0 && !(await potvrd("Zmazať kategóriu?"))) return;
     const cid = getActiveCompanyId();
     if (!cid) return;
     try {

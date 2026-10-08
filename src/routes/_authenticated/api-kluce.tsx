@@ -5,6 +5,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Copy, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/api-kluce")({
   head: () => ({ meta: [{ title: "API kľúče — Faktero" }] }),
@@ -71,7 +72,7 @@ function ApiKeysPage() {
   }
 
   async function revoke(id: string) {
-    if (!confirm("Zneplatniť kľúč?")) return;
+    if (!(await potvrd("Zneplatniť kľúč?"))) return;
     const { error } = await supabase.from("api_keys").delete().eq("id", id);
     if (error) return toast.error(error.message);
     reload();

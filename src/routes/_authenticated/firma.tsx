@@ -17,6 +17,7 @@ import { zabudniKrajinuDane, zabudniRezimDph } from "@/lib/faktero/krajina-firmy
 import { BankoveUctyFirmy } from "@/components/faktero/banka/BankoveUctyFirmy";
 import { EditorOpravneni, VysvetlenieRoli } from "@/components/faktero/pristupy/Opravnenia";
 import { suhrnOpravneni, type Opravnenia } from "@/lib/faktero/opravnenia";
+import { potvrd } from "@/lib/potvrdenie";
 export const Route = createFileRoute("/_authenticated/firma")({
   head: () => ({ meta: [{ title: "Firma — Faktero" }] }),
   component: CompanyPage,
@@ -425,7 +426,7 @@ function TeamSection({ companyId }: { companyId: string }) {
   }
 
   async function odober(userId: string, popis: string) {
-    if (!confirm(`Odobrať prístup do firmy používateľovi ${popis}?`)) return;
+    if (!(await potvrd(`Odobrať prístup do firmy používateľovi ${popis}?`))) return;
     const { removeMemberFn } = await import("@/lib/faktero/invitations.functions");
     try {
       await removeMemberFn({ data: { company_id: companyId, user_id: userId } });
@@ -476,7 +477,7 @@ function TeamSection({ companyId }: { companyId: string }) {
   }
 
   async function revoke(id: string) {
-    if (!confirm("Zrušiť pozvánku?")) return;
+    if (!(await potvrd("Zrušiť pozvánku?"))) return;
     const { revokeInvitationFn } = await import("@/lib/faktero/invitations.functions");
     await revokeInvitationFn({ data: { id } });
     load();

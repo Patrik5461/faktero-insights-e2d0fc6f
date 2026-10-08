@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { PotvrdzovacieOkno } from "@/components/faktero/PotvrdzovacieOkno";
 import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
 import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
 import { listSeoPagesPublic } from "@/lib/seo.functions";
@@ -236,6 +237,7 @@ function RootComponent() {
       <NativeRouteGuard />
       <Outlet />
       <Toaster />
+      <PotvrdzovacieOkno />
       <CookieConsentBanner />
     </QueryClientProvider>
   );
