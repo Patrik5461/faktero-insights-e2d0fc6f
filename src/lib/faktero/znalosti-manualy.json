@@ -1089,7 +1089,7 @@
    "sekcie": [
     {
      "nadpis": "Tri výkazy z tých istých dokladov",
-     "text": "<>\nÚčtovníctvo → Výkazy k DPH (/uctovnictvo/vykazy) zostaví za zvolený mesiac\nalebo štvrťrok tri podania naraz:\n-\nPriznanie k DPH (vzor DPHv21) — riadky 01 až 37,\n-\nKontrolný výkaz (schéma KVDPH 2025) — časti A.1, A.2, B.1, B.2, B.3 a\nC.1, C.2,\n-\nSúhrnný výkaz (SVDPHv20) — dodania do iného členského štátu.\nKaždý sa dá stiahnuť ako XML a nahrať do eDane alebo na portál finančnej\nsprávy. Faktero nič neodosiela samo — podpis a podanie ostávajú na vás."
+     "text": "<>\nÚčtovníctvo → Výkazy k DPH (/uctovnictvo/vykazy) zostaví za zvolený mesiac\nalebo štvrťrok tri podania naraz:\n-\nPriznanie k DPH — za obdobia od júla 2025 na novom tlačive (vzor\nDPH2025), kde má každá sadzba vlastný riadok: 19 % v r. 01 a 02, 5 % v r. 01a a 02a,\n23 % v r. 03 a 04, a rovnako pri samozdanení (r. 09 až 10b) aj odpočte (r. 18, 18a, 19).\nZa staršie obdobia (napríklad dodatočné priznanie) Faktero použije pôvodné tlačivo DPHv21,\n-\nKontrolný výkaz (schéma KVDPH 2025) — časti A.1, A.2, B.1, B.2, B.3 a\nC.1, C.2,\n-\nSúhrnný výkaz (SVDPHv20) — dodania do iného členského štátu.\nKaždý sa dá stiahnuť ako XML a nahrať do eDane alebo na portál finančnej\nsprávy. Faktero nič neodosiela samo — podpis a podanie ostávajú na vás."
     },
     {
      "nadpis": "Čo musí byť na dokladoch",

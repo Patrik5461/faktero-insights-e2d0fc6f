@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { XmlDocument, XsdValidator } from "libxml2-wasm";
 import {
+  centy,
   hraniceObdobia,
   kontrolnyVykaz,
   odpocitajZdanenuZalohu,
@@ -362,10 +363,43 @@ describe("priznanie k DPH", () => {
     const p = priznanie(
       vstup({ prijate: [prijata({ rezim: "samozdanenie", riadky: [{ sadzba: 23, zaklad: 1000, dan: 230 }] })] }),
     );
-    expect(p.r09).toBe(1000);
-    expect(p.r10).toBe(230);
+    // Tlačivo od 07/2025: § 69 v základnej sadzbe ide do r09b/r10b.
+    expect(p.r09b).toBe(1000);
+    expect(p.r10b).toBe(230);
+    expect(p.r09).toBeUndefined();
     expect(p.r19).toBe(230);
     expect(p.r32).toBe(0);
+  });
+
+  it("staré tlačivo (do 06/2025) má pre § 69 aj znížené sadzby spoločné riadky", () => {
+    const p = priznanie({
+      ...vstup({
+        vystavene: [
+          faktura({ datumDodania: "2025-03-10", riadky: [{ sadzba: 19, zaklad: 100, dan: 19 }, { sadzba: 5, zaklad: 100, dan: 5 }] }),
+        ],
+        prijate: [prijata({ datumDodania: "2025-03-10", rezim: "samozdanenie", riadky: [{ sadzba: 23, zaklad: 1000, dan: 230 }] })],
+      }),
+      obdobie: { rok: 2025, mesiac: 3 },
+    });
+    expect(p.r01).toBe(200);
+    expect(p.r02).toBe(24);
+    expect(p.r01a).toBeUndefined();
+    expect(p.r09).toBe(1000);
+    expect(p.r09b).toBeUndefined();
+  });
+
+  it("nové tlačivo delí znížené sadzby: 19 % do r01/r02, 5 % do r01a/r02a, aj pri odpočte", () => {
+    const p = priznanie(
+      vstup({
+        vystavene: [faktura({ riadky: [{ sadzba: 19, zaklad: 100, dan: 19 }, { sadzba: 5, zaklad: 200, dan: 10 }, { sadzba: 23, zaklad: 300, dan: 69 }] })],
+        prijate: [prijata({ riadky: [{ sadzba: 19, zaklad: 10, dan: 1.9 }, { sadzba: 5, zaklad: 20, dan: 1 }] })],
+        doklady: [{ odpocet: true, datum: "2026-09-05", riadky: [{ sadzba: 5, zaklad: 2, dan: 0.1 }] }],
+      }),
+    );
+    expect([p.r01, p.r02, p.r01a, p.r02a, p.r03, p.r04]).toEqual([100, 19, 200, 10, 300, 69]);
+    expect([p.r18, p.r18a, p.r20, p.r20a]).toEqual([1.9, 1.1, 1.9, 1.1]);
+    expect(p.r17).toBe(98);
+    expect(p.r32).toBe(centy(98 - 1.9 - 1.1));
   });
 
   it("odpočet znižuje daň a nadmerný odpočet ide do r33", () => {
@@ -404,9 +438,20 @@ describe("priznanie k DPH", () => {
     expect(p.r35).toBe(180);
   });
 
-  it("prejde oficiálnou schémou DPHv21", () => {
+  it("od 07/2025 prejde oficiálnou schémou DPH2025", () => {
     const p = priznanie(vstup({ vystavene: [faktura()], prijate: [prijata()] }));
-    const doc = XmlDocument.fromString(priznanieNaXml(p, firma, obdobie, { datum: "2026-10-20" }));
+    const xml = priznanieNaXml(p, firma, obdobie, { datum: "2026-10-20" });
+    expect(xml).toContain("<splneniePodmienok>0</splneniePodmienok>");
+    expect(xml).toContain("<rdp>1</rdp>");
+    const doc = XmlDocument.fromString(xml);
+    expect(() => validator("dph2025.xsd").validate(doc)).not.toThrow();
+    doc.dispose();
+  });
+
+  it("za staršie obdobie prejde schémou DPHv21", () => {
+    const stare = { rok: 2025, mesiac: 3 };
+    const p = priznanie({ ...vstup({ vystavene: [faktura({ datumDodania: "2025-03-10" })] }), obdobie: stare });
+    const doc = XmlDocument.fromString(priznanieNaXml(p, firma, stare, { datum: "2025-04-20" }));
     expect(() => validator("dph2021.xsd").validate(doc)).not.toThrow();
     doc.dispose();
   });

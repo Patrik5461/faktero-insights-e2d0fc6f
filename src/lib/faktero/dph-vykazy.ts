@@ -117,13 +117,42 @@ export function centy(n: number): number {
   return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 }
 
-function jeZnizena(sadzba: number, den: string): boolean {
-  const t = sadzbyKuDnu("SK", den);
-  return sadzba > 0 && sadzba !== t.high;
+/**
+ * Tlačivo priznania. Od obdobia 07/2025 platí vzor MF/007833/2025-731 (schéma
+ * DPH2025) — riadky sú rozčlenené podľa sadzieb (19 % / 5 % / 23 %). Za staršie
+ * obdobia (aj dodatočné priznanie) sa podáva pôvodné tlačivo DPH2021.
+ */
+export type VerziaPriznania = "2021" | "2025";
+
+export function verziaPriznania(o: Obdobie): VerziaPriznania {
+  return hraniceObdobia(o).od >= "2025-07-01" ? "2025" : "2021";
 }
 
-function jeZakladna(sadzba: number, den: string): boolean {
-  return sadzba > 0 && sadzba === sadzbyKuDnu("SK", den).high;
+/**
+ * Pásmo sadzby podľa § 27: základná (ods. 1), znížená (ods. 2 — 19 %) a
+ * druhá znížená (ods. 3 — 5 %). Nula alebo neznáma sadzba nepatrí nikam.
+ */
+type Pasmo = "zakladna" | "znizena" | "znizena2";
+
+function pasmoSadzby(sadzba: number, den: string | null | undefined): Pasmo | null {
+  if (!(sadzba > 0)) return null;
+  const t = sadzbyKuDnu("SK", den || undefined);
+  if (sadzba === t.high) return "zakladna";
+  if (t.third != null && sadzba === t.third) return "znizena2";
+  return "znizena";
+}
+
+/**
+ * Riadky priznania pre jedno pásmo sadzby. Na starom tlačive sa obe znížené
+ * sadzby sčítavajú do spoločného riadku, na novom má každá vlastný.
+ */
+function riadkyPasma(
+  pasmo: Pasmo,
+  nove: boolean,
+  riadky: { zakladna: [string, string]; znizena: [string, string]; znizena2: [string, string] },
+): [string, string] {
+  if (pasmo === "znizena2" && !nove) return riadky.znizena;
+  return riadky[pasmo];
 }
 
 /**
@@ -524,7 +553,31 @@ export function suhrnnyVykaz(vstup: Vstup): SuhrnnyVykaz {
 /** Riadky, ktoré z dokladov nevyplývajú a dopĺňa ich účtovník. */
 export type RucneRiadky = Partial<
   Record<
-    "r11" | "r12" | "r16" | "r22" | "r23" | "r26" | "r27" | "r29" | "r30" | "r31" | "r34",
+    | "r11"
+    | "r11a"
+    | "r11b"
+    | "r11c"
+    | "r11d"
+    | "r11e"
+    | "r12"
+    | "r12a"
+    | "r12b"
+    | "r12c"
+    | "r12d"
+    | "r12e"
+    | "r16"
+    | "r22"
+    | "r22a"
+    | "r23"
+    | "r23a"
+    | "r23b"
+    | "r23c"
+    | "r26"
+    | "r27"
+    | "r29"
+    | "r30"
+    | "r31"
+    | "r34",
     number
   >
 >;
@@ -533,6 +586,7 @@ export type Priznanie = Record<string, number> & { vytky?: never };
 
 export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string, number> {
   const r: Record<string, number> = {};
+  const nove = verziaPriznania(vstup.obdobie) === "2025";
   const pripocitaj = (kluc: string, hodnota: number) => {
     r[kluc] = centy((r[kluc] ?? 0) + hodnota);
   };
@@ -575,21 +629,22 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
         pripocitaj("r25", x.dan);
         continue;
       }
-      if (jeZnizena(x.sadzba, f.datumDodania)) {
-        pripocitaj("r01", x.zaklad);
-        pripocitaj("r02", x.dan);
-      } else if (jeZakladna(x.sadzba, f.datumDodania)) {
-        pripocitaj("r03", x.zaklad);
-        pripocitaj("r04", x.dan);
-      }
+      const pasmo = pasmoSadzby(x.sadzba, f.datumDodania);
+      if (!pasmo) continue;
+      const [rz, rd] = riadkyPasma(pasmo, nove, {
+        znizena: ["r01", "r02"],
+        znizena2: ["r01a", "r02a"],
+        zakladna: ["r03", "r04"],
+      });
+      pripocitaj(rz, x.zaklad);
+      pripocitaj(rd, x.dan);
     }
   }
 
   for (const p of vstup.prijate) {
     if (p.rezim === "bez_dane") continue;
     for (const x of p.riadky) {
-      const znizena = jeZnizena(x.sadzba, p.datumDodania);
-      const zakladna = jeZakladna(x.sadzba, p.datumDodania);
+      const pasmo = pasmoSadzby(x.sadzba, p.datumDodania);
 
       if (p.opravujeCislo) {
         // Prijatý dobropis: opravuje sa odpočítaná daň (§ 53).
@@ -597,26 +652,39 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
         continue;
       }
 
-      if (p.rezim === "nadobudnutie") {
-        if (znizena) {
-          pripocitaj("r05", x.zaklad);
-          pripocitaj("r06", x.dan);
-        } else if (zakladna) {
-          pripocitaj("r07", x.zaklad);
-          pripocitaj("r08", x.dan);
-        }
+      if (p.rezim === "nadobudnutie" && pasmo) {
+        const [rz, rd] = riadkyPasma(pasmo, nove, {
+          znizena: ["r05", "r06"],
+          znizena2: ["r05a", "r06a"],
+          zakladna: ["r07", "r08"],
+        });
+        pripocitaj(rz, x.zaklad);
+        pripocitaj(rd, x.dan);
       } else if (p.rezim === "samozdanenie") {
-        pripocitaj("r09", x.zaklad);
-        pripocitaj("r10", x.dan);
+        // Staré tlačivo má pre § 69 jeden riadok, nové tri podľa sadzby.
+        const [rz, rd] =
+          nove && pasmo
+            ? riadkyPasma(pasmo, nove, {
+                znizena: ["r09", "r10"],
+                znizena2: ["r09a", "r10a"],
+                zakladna: ["r09b", "r10b"],
+              })
+            : ["r09", "r10"];
+        pripocitaj(rz, x.zaklad);
+        pripocitaj(rd, x.dan);
       }
 
-      if (!p.odpocet) continue;
-      const cielCelkom = znizena ? "r18" : zakladna ? "r19" : null;
-      if (!cielCelkom) continue;
+      if (!p.odpocet || !pasmo) continue;
       const odp = centy(x.dan * (p.podielOdpoctu ?? 1));
-      pripocitaj(cielCelkom, odp);
-      if (p.rezim === "tuzemsko") pripocitaj(znizena ? "r20" : "r21", odp);
-      if (p.rezim === "dovoz") pripocitaj(znizena ? "r22" : "r23", odp);
+      const [celkom, tuzemsko, dovoz] =
+        pasmo === "zakladna"
+          ? ["r19", "r21", "r23"]
+          : pasmo === "znizena2" && nove
+            ? ["r18a", "r20a", "r22a"]
+            : ["r18", "r20", "r22"];
+      pripocitaj(celkom, odp);
+      if (p.rezim === "tuzemsko") pripocitaj(tuzemsko, odp);
+      if (p.rezim === "dovoz") pripocitaj(dovoz, odp);
     }
   }
 
@@ -629,13 +697,13 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
     if (!d.odpocet) continue;
     for (const x of d.riadky) {
       if (x.dan === 0) continue;
-      // Bloček je vždy tuzemské plnenie; deň dodania nemáme, sadzbu posúdi
-      // dnešný cenník — historické doklady sa tým nezmenia, lebo sadzba na
-      // doklade je uložená.
-      const znizena = x.sadzba > 0 && x.sadzba !== sadzbyKuDnu("SK").high;
+      // Bloček je vždy tuzemské plnenie; sadzbu posúdi cenník ku dňu dokladu.
+      const pasmo = pasmoSadzby(x.sadzba, d.datum) ?? "zakladna";
       const odp = centy(x.dan * (d.podielOdpoctu ?? 1));
-      pripocitaj(znizena ? "r18" : "r19", odp);
-      pripocitaj(znizena ? "r20" : "r21", odp);
+      const [celkom, tuzemsko] =
+        pasmo === "zakladna" ? ["r19", "r21"] : pasmo === "znizena2" && nove ? ["r18a", "r20a"] : ["r18", "r20"];
+      pripocitaj(celkom, odp);
+      pripocitaj(tuzemsko, odp);
     }
   }
 
@@ -643,21 +711,33 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
     if (typeof hodnota === "number" && hodnota !== 0) pripocitaj(kluc, hodnota);
   }
 
-  // r17 — daň celkom.
+  // r17 — daň celkom (na novom tlačive aj riadky po sadzbách, bod 34 poučenia).
   r.r17 = centy(
-    (r.r02 ?? 0) +
-      (r.r04 ?? 0) +
-      (r.r06 ?? 0) +
-      (r.r08 ?? 0) +
-      (r.r10 ?? 0) +
-      (r.r12 ?? 0) +
-      (r.r16 ?? 0),
+    [
+      "r02",
+      "r02a",
+      "r04",
+      "r06",
+      "r06a",
+      "r08",
+      "r10",
+      "r10a",
+      "r10b",
+      "r12",
+      "r12a",
+      "r12b",
+      "r12c",
+      "r12d",
+      "r12e",
+      "r16",
+    ].reduce((a, k) => a + (r[k] ?? 0), 0),
   );
 
   // Výsledok: daň celkom mínus odpočty, upravený o opravy.
   const vysledok = centy(
     r.r17 -
       (r.r18 ?? 0) -
+      (r.r18a ?? 0) -
       (r.r19 ?? 0) +
       (r.r25 ?? 0) +
       (r.r27 ?? 0) +
@@ -696,9 +776,11 @@ export function odvodRezimPrijatej(
   const ic = String(dodavatelIcDph ?? "")
     .replace(/\s/g, "")
     .toUpperCase();
-  if (ic.startsWith("SK")) return danSpolu > 0 ? "tuzemsko" : "bez_dane";
+  // Dobropis nesie zápornú daň — aj ten je tuzemská faktúra (oprava odpočtu, C.2).
+  const sDanou = Math.abs(Number(danSpolu) || 0) > 0;
+  if (ic.startsWith("SK")) return sDanou ? "tuzemsko" : "bez_dane";
   if (/^[A-Z]{2}/.test(ic)) return "samozdanenie";
-  return danSpolu > 0 ? "tuzemsko" : "bez_dane";
+  return sDanou ? "tuzemsko" : "bez_dane";
 }
 
 /**

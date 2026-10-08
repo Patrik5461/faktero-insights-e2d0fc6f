@@ -1,6 +1,7 @@
 import { sadzbyKrajiny } from "./vat-rates";
 import { riadkySoZlavou } from "./zlavy";
 import { prepocitajPolozku, sumySamofaktury, zapocitatelna } from "./samofakturacia";
+import { rozpisPrijatej } from "./prijate-do-pohody";
 /**
  * Doklady za zdaňovacie obdobie pre výkazy k DPH.
  *
@@ -90,7 +91,7 @@ export async function nacitajVstup(
     supabase
       .from("expense_documents")
       .select(
-        "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie, pohoda_predkontacia, category, items, rozuctovanie, total_amount",
+        "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, status, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie, pohoda_predkontacia, category, items, rozuctovanie, total_amount",
       )
       .eq("company_id", companyId)
       .limit(5000),
@@ -102,7 +103,6 @@ export async function nacitajVstup(
   */
   const { pomeryPredkontacii, kodyPodlaKategorie } = await import("./predkontacie.server");
   const { riadkyDokladu, podielOdpoctuRiadkov, rozpisBlocku } = await import("./rozuctovanie");
-  const { rozpisPrijatej } = await import("./prijate-do-pohody");
   const [pomery, podlaKat, { data: firmaKody }] = await Promise.all([
     pomeryPredkontacii(supabase, companyId),
     kodyPodlaKategorie(supabase, companyId),
@@ -271,7 +271,8 @@ export async function nacitajVstup(
           const s = Number(x.sadzba) > 0 ? Number(x.sadzba) : zakladna;
           return { sadzba: s, zaklad: x.zaklad, dan: Math.round(x.zaklad * s) / 100 };
         }),
-        kv: "B1",
+        // „Nezahŕňať" (X) si človek zvolil vedome; inak prenesenie patrí do B.1.
+        kv: p.kv_clenenie === "X" ? "X" : "B1",
       });
     }
     const tuzemske = prenesene.length ? rozpisP.filter((x) => !x.pdp) : null;
@@ -312,10 +313,27 @@ export async function nacitajVstup(
   }
 
   const doklady: PrijatyDoklad[] = [];
+  let nespracovanych = 0;
   for (const d of (dokladyRes.data ?? []) as any[]) {
     if (!vDobe(d.issue_date)) continue;
     const dan = Number(d.vat_amount ?? 0);
     if (dan === 0) continue;
+    /*
+      Nespracovaný doklad ešte nikto neskontroloval (sumy sú z čítania) — do
+      odpočtu ide až po kontrole, rovnako ako do Pohody.
+    */
+    if (d.status === "new") {
+      nespracovanych++;
+      continue;
+    }
+    // Bloček nemá uložený prepočet na eurá; v cudzej mene by do výkazu išiel koruna za euro.
+    if (d.currency && String(d.currency).toUpperCase() !== "EUR") {
+      vytky.push({
+        doklad: d.document_number || d.supplier_name || "doklad",
+        text: `Doklad je v mene ${d.currency} — do výkazu patria eurá. Odpočet z neho doplňte ručne prepočítaný kurzom.`,
+      });
+      continue;
+    }
     const rozpis = Array.isArray(d.vat_breakdown) ? d.vat_breakdown : null;
     const riadky: SadzbovyRiadok[] = rozpis?.length
       ? rozpis.map((r: any) =>
@@ -344,6 +362,13 @@ export async function nacitajVstup(
           firmaKody?.pohoda_predkontacia_doklady ||
           firmaKody?.pohoda_predkontacia_prijata,
       ),
+    });
+  }
+
+  if (nespracovanych) {
+    vytky.push({
+      doklad: "Bločky",
+      text: `${nespracovanych} ${nespracovanych === 1 ? "doklad ešte nie je skontrolovaný" : nespracovanych < 5 ? "doklady ešte nie sú skontrolované" : "dokladov ešte nie je skontrolovaných"} — do odpočtu vojdú až po spracovaní.`,
     });
   }
 
@@ -413,6 +438,17 @@ function riadkyPrijatej(
     ).sadzby;
     if (sadzby.length > 1) {
       return sadzby.map((x) => ({ sadzba: x.sadzba, zaklad: x.zaklad, dan: x.dan }));
+    }
+  }
+  /*
+    Faktúra s položkami vo viacerých sadzbách (materiál 23 % + kniha 5 %):
+    keď položky sedia so súčtami, rozpíše sa po nich. Zo súčtov by vyšla jedna
+    „priemerná" sadzba (20,65 % → 19 alebo 23 %) a zlé riadky priznania aj KV.
+  */
+  if (!cudziaMena) {
+    const rozpis = rozpisPrijatej(p).filter((x: any) => !x.pdp);
+    if (rozpis.length > 1) {
+      return rozpis.map((x: any) => ({ sadzba: Number(x.sadzba) || 0, zaklad: x.zaklad, dan: x.dph }));
     }
   }
   return [riadokZoSum(zaklad, dan, den)];

@@ -29,7 +29,10 @@ const sections: HelpSection[] = [
         </p>
         <ul>
           <li>
-            <strong>Priznanie k DPH</strong> (vzor DPHv21) — riadky 01 až 37,
+            <strong>Priznanie k DPH</strong> — za obdobia od júla 2025 na novom tlačive (vzor
+            DPH2025), kde má každá sadzba vlastný riadok: 19 % v r. 01 a 02, 5 % v r. 01a a 02a,
+            23 % v r. 03 a 04, a rovnako pri samozdanení (r. 09 až 10b) aj odpočte (r. 18, 18a, 19).
+            Za staršie obdobia (napríklad dodatočné priznanie) Faktero použije pôvodné tlačivo DPHv21,
           </li>
           <li>
             <strong>Kontrolný výkaz</strong> (schéma KVDPH 2025) — časti A.1, A.2, B.1, B.2, B.3 a

@@ -2,12 +2,18 @@
  * XML pre elektronickú podateľňu finančnej správy.
  *
  * Tvar sa drží oficiálnych schém, ktoré sú uložené vedľa v `schemy/`
- * (`dph2021.xsd`, `kv_dph_2025.xsd`, `svdph20.xsd`) — testy proti nim výstup
+ * (`dph2021.xsd` a od 07/2025 `dph2025.xsd`, `kv_dph_2025.xsd`, `svdph20.xsd`) — testy proti nim výstup
  * overujú, rovnako ako pri ISDOC-u. Podateľňa odmietne súbor, ktorý schéme
  * nesedí, takže „skoro správne" XML je horšie než žiadne.
  */
 
-import { centy, type KontrolnyVykaz, type Obdobie, type SuhrnnyVykaz } from "./dph-vykazy";
+import {
+  centy,
+  verziaPriznania,
+  type KontrolnyVykaz,
+  type Obdobie,
+  type SuhrnnyVykaz,
+} from "./dph-vykazy";
 
 export type UdajeFirmy = {
   icDph: string;
@@ -152,11 +158,29 @@ ${riadky.map((r) => `    ${r}`).join("\n")}
 
 // ── Priznanie k DPH ───────────────────────────────────────────────────────
 
-/** Riadky priznania, ktoré idú do XML. Prázdny riadok sa posiela ako prázdny. */
+/** Riadky priznania (tlačivo DPH2021), ktoré idú do XML. Prázdny riadok sa posiela ako prázdny. */
 export const RIADKY_PRIZNANIA = Array.from(
   { length: 37 },
   (_, i) => `r${String(i + 1).padStart(2, "0")}`,
 );
+
+/**
+ * Riadky tlačiva DPH2025 (obdobia od 07/2025) v poradí schémy `dph2025.xsd`.
+ * `splneniePodmienok` (§ 79 ods. 2) stojí v schéme medzi r32 a r33.
+ */
+export const RIADKY_PRIZNANIA_2025 = [
+  "r01", "r01a", "r02", "r02a", "r03", "r04",
+  "r05", "r05a", "r06", "r06a", "r07", "r08",
+  "r09", "r09a", "r09b", "r10", "r10a", "r10b",
+  "r11", "r11a", "r11b", "r11c", "r11d", "r11e",
+  "r12", "r12a", "r12b", "r12c", "r12d", "r12e",
+  "r13", "r14", "r15", "r16", "r17",
+  "r18", "r18a", "r19", "r20", "r20a", "r21",
+  "r22", "r22a", "r23", "r23a", "r23b", "r23c",
+  "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31", "r32",
+  "splneniePodmienok",
+  "r33", "r34", "r35", "r36", "r37",
+];
 
 function den(datum: string): string {
   // Schéma chce dd.mm.rrrr, nie ISO.
@@ -181,10 +205,19 @@ export function priznanieNaXml(
   const typ = nastavenie.typ ?? "R";
   const datum = nastavenie.datum ?? new Date().toISOString().slice(0, 10);
   const menoRiadky = rozdelNaRiadky(firma.nazov, 4);
-  const telo = RIADKY_PRIZNANIA.map((kluc) => {
-    const v = hodnoty[kluc];
-    return `    <${kluc}>${v === undefined || v === 0 ? "" : suma(v)}</${kluc}>`;
-  }).join("\n");
+  const nove = verziaPriznania(obdobie) === "2025";
+  /*
+    Príznaky: DPH2021 berie „true" alebo prázdne, DPH2025 len 0 alebo 1 —
+    prázdny príznak v novom tlačive podateľňa odmietne.
+  */
+  const b = (v: boolean | undefined) => (nove ? (v ? "1" : "0") : v ? "true" : "");
+  const telo = (nove ? RIADKY_PRIZNANIA_2025 : RIADKY_PRIZNANIA)
+    .map((kluc) => {
+      if (kluc === "splneniePodmienok") return `    <splneniePodmienok>0</splneniePodmienok>`;
+      const v = hodnoty[kluc];
+      return `    <${kluc}>${v === undefined || v === 0 ? "" : suma(v)}</${kluc}>`;
+    })
+    .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <dokument>
@@ -195,20 +228,20 @@ export function priznanieNaXml(
     </identifikacneCislo>
     <dic>${esc(firma.dic)}</dic>
     <danovyUrad>${esc(firma.danovyUrad ?? "")}</danovyUrad>
-    <nevzniklaPov>${nastavenie.nevzniklaPovinnost ? "true" : ""}</nevzniklaPov>
+    <nevzniklaPov>${b(nastavenie.nevzniklaPovinnost)}</nevzniklaPov>
     <typDP>
-      <rdp>${typ === "R" ? "true" : ""}</rdp>
-      <odp>${typ === "O" ? "true" : ""}</odp>
-      <ddp>${typ === "D" ? "true" : ""}</ddp>
+      <rdp>${b(typ === "R")}</rdp>
+      <odp>${b(typ === "O")}</odp>
+      <ddp>${b(typ === "D")}</ddp>
       <datumZisteniaDdp></datumZisteniaDdp>
     </typDP>
     <osoba>
-      <platitel>${nastavenie.registrovanaOsoba ? "" : "true"}</platitel>
-      <registrovana>${nastavenie.registrovanaOsoba ? "true" : ""}</registrovana>
-      <inaPovinna></inaPovinna>
-      <zdanitelna></zdanitelna>
-      <zastupca></zastupca>
-      <zastupca69aa></zastupca69aa>
+      <platitel>${b(!nastavenie.registrovanaOsoba)}</platitel>
+      <registrovana>${b(nastavenie.registrovanaOsoba)}</registrovana>
+      <inaPovinna>${b(false)}</inaPovinna>
+      <zdanitelna>${b(false)}</zdanitelna>
+      <zastupca>${b(false)}</zastupca>
+      <zastupca69aa>${b(false)}</zastupca69aa>
     </osoba>
     <zdanObd>
       <mesiac>${obdobie.mesiac ? String(obdobie.mesiac).padStart(2, "0") : ""}</mesiac>
