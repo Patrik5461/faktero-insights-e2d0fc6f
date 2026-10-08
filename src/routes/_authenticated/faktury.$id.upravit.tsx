@@ -1,3 +1,4 @@
+import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
 import { KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
 import { useServerFn } from "@tanstack/react-start";
 import { druhPodlaTypuFaktury, sablonaZCisla, ukazkaCisla } from "@/lib/faktero/ciselne-rady";
@@ -293,7 +294,7 @@ function EditInvoice() {
           invoice_id: id,
           position: idx,
           name: it.name,
-          description: it.description ?? null,
+          description: it.description?.trim() || null,
           quantity: it.quantity,
           unit: it.unit,
           unit_price: it.unit_price,
@@ -574,6 +575,11 @@ function EditInvoice() {
                           placeholder="Názov položky"
                           className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         />
+                        <PoznamkaPolozky
+                          value={it.description}
+                          disabled={it._locked}
+                          onChange={(v) => setItem(idx, { description: v })}
+                        />
                       </td>
                       <td className="py-2 pl-3">
                         <input
@@ -696,6 +702,12 @@ function EditInvoice() {
                     onChange={(e) => setItem(idx, { name: e.target.value })}
                     placeholder="Názov položky"
                     className="mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  />
+                  <PoznamkaPolozky
+                    mobil
+                    value={it.description}
+                    disabled={it._locked}
+                    onChange={(v) => setItem(idx, { description: v })}
                   />
                   <div className="grid grid-cols-5 gap-2">
                     <input

@@ -1220,6 +1220,11 @@ function computeCols(innerW: number) {
 // Word-wrap with hard break for tokens longer than the column.
 function wrapLines(text: string, f: PDFFont, size: number, maxW: number): string[] {
   if (!text) return [];
+  // Riadky, ktoré človek zalomil sám (rozpis položky, text nad položkami), ostávajú zalomené.
+  if (/\r?\n/.test(String(text)))
+    return String(text)
+      .split(/\r?\n/)
+      .flatMap((odstavec) => (odstavec.trim() ? wrapLines(odstavec, f, size, maxW) : [""]));
   const words = String(text).split(/\s+/).filter(Boolean);
   const out: string[] = [];
   let line = "";

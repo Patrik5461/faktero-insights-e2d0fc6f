@@ -1,3 +1,4 @@
+import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -944,7 +945,7 @@ function NewInvoice() {
           invoice_id: inv.id,
           position: idx,
           name: it.name,
-          description: it.description,
+          description: it.description?.trim() || null,
           product_id: it.product_id ?? null,
           stock_item_id: it.stock_item_id ?? null,
           quantity: it.quantity,
@@ -1821,6 +1822,7 @@ function NewInvoice() {
                           placeholder="Názov položky"
                           className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         />
+                        <PoznamkaPolozky value={it.description} onChange={(v) => setItem(idx, { description: v })} />
                         <StockHint item={it} warehouseName={warehouseName} />
                       </td>
                       <td className="py-2 pl-3">
@@ -1932,6 +1934,7 @@ function NewInvoice() {
                     placeholder="Názov položky"
                     className="mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
+                  <PoznamkaPolozky mobil value={it.description} onChange={(v) => setItem(idx, { description: v })} />
                   <StockHint item={it} warehouseName={warehouseName} />
                   <div className="grid grid-cols-5 gap-2">
                     <CellNum value={it.quantity} onChange={(v) => setItem(idx, { quantity: v })} />

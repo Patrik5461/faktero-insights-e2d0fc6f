@@ -1158,7 +1158,7 @@ function InvoiceDetail() {
                       <td className="p-3">
                         <div className="font-medium">{it.name}</div>
                         {it.description && (
-                          <div className="text-xs text-muted-foreground">{it.description}</div>
+                          <div className="whitespace-pre-line text-xs text-muted-foreground">{it.description}</div>
                         )}
                         {Number((it as any).discount_percent ?? 0) > 0 && (
                           <div className="text-xs text-emerald-600">
