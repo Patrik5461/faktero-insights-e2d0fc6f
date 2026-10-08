@@ -55,6 +55,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { vsetkoAkoData } from "@/lib/faktero/strankovanie";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Prehľad — Faktero" }] }),
@@ -159,21 +160,32 @@ function Dashboard() {
 
       const [inv, pay, cust, comp, logs, keys, hooks, deliv, recur, quotesPend] = await Promise.all(
         [
-          supabase
-            .from("invoices")
-            .select(
-              "id, invoice_number, customer_name, customer_id, total, subtotal, vat_total, currency, status, type, issue_date, due_date, paid_at, created_at",
-            )
-            .eq("company_id", companyId)
-            .is("deleted_at", null)
-            .gte("issue_date", yearAgoISO)
-            .order("created_at", { ascending: false }),
-          supabase
-            .from("payments")
-            .select("amount, paid_at, invoice_id")
-            .eq("company_id", companyId)
-            .gte("paid_at", yearAgoISO),
-          supabase.from("customers").select("id, name, created_at").eq("company_id", companyId),
+          // Súčty nástenky z úplných dát — strop 1 000 riadkov by ich ticho skrátil.
+          vsetkoAkoData((zac, kon) =>
+            supabase
+              .from("invoices")
+              .select(
+                "id, invoice_number, customer_name, customer_id, total, subtotal, vat_total, currency, status, type, issue_date, due_date, paid_at, created_at",
+              )
+              .eq("company_id", companyId)
+              .is("deleted_at", null)
+              .gte("issue_date", yearAgoISO)
+              .order("created_at", { ascending: false })
+              .order("id")
+              .range(zac, kon),
+          ),
+          vsetkoAkoData((zac, kon) =>
+            supabase
+              .from("payments")
+              .select("id, amount, paid_at, invoice_id")
+              .eq("company_id", companyId)
+              .gte("paid_at", yearAgoISO)
+              .order("id")
+              .range(zac, kon),
+          ),
+          vsetkoAkoData((zac, kon) =>
+            supabase.from("customers").select("id, name, created_at").eq("company_id", companyId).order("id").range(zac, kon),
+          ),
           supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
           supabase
             .from("api_logs")
@@ -240,12 +252,18 @@ function Dashboard() {
       const cid = getActiveCompanyId();
       if (!cid) return;
       const [{ data: items }, { data: lvl }] = await Promise.all([
-        supabase
-          .from("stock_items")
-          .select("id, min_stock, track_stock")
-          .eq("company_id", cid)
-          .eq("track_stock", true),
-        supabase.from("stock_levels").select("stock_item_id, quantity").eq("company_id", cid),
+        vsetkoAkoData((zac, kon) =>
+          supabase
+            .from("stock_items")
+            .select("id, min_stock, track_stock")
+            .eq("company_id", cid)
+            .eq("track_stock", true)
+            .order("id")
+            .range(zac, kon),
+        ),
+        vsetkoAkoData((zac, kon) =>
+          supabase.from("stock_levels").select("id, stock_item_id, quantity").eq("company_id", cid).order("id").range(zac, kon),
+        ),
       ]);
       const qty: Record<string, number> = {};
       (lvl ?? []).forEach((l: any) => {
@@ -261,11 +279,15 @@ function Dashboard() {
       if (!cid) return;
       const monthStart = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-01`;
       const [{ data: month }, { data: last }] = await Promise.all([
-        supabase
-          .from("trips")
-          .select("distance_km")
-          .eq("company_id", cid)
-          .gte("trip_date", monthStart),
+        vsetkoAkoData((zac, kon) =>
+          supabase
+            .from("trips")
+            .select("id, distance_km")
+            .eq("company_id", cid)
+            .gte("trip_date", monthStart)
+            .order("id")
+            .range(zac, kon),
+        ),
         supabase
           .from("trips")
           .select("trip_date, distance_km, start_location, end_location")
@@ -279,11 +301,15 @@ function Dashboard() {
     (async () => {
       const cid = getActiveCompanyId();
       if (!cid) return;
-      const { data: vsetky } = await supabase
-        .from("purchase_invoices")
-        .select("id, amount_total, status, due_date, supplier_name, invoice_number, type, advance_invoice_id")
-        .eq("company_id", cid)
-        .is("deleted_at", null);
+      const { data: vsetky } = await vsetkoAkoData((zac, kon) =>
+        supabase
+          .from("purchase_invoices")
+          .select("id, amount_total, status, due_date, supplier_name, invoice_number, type, advance_invoice_id")
+          .eq("company_id", cid)
+          .is("deleted_at", null)
+          .order("id")
+          .range(zac, kon),
+      );
       /*
         Zálohu treba zaplatiť, takže do záväzkov patrí — ale len dovtedy, kým
         ju nezúčtuje ostrá faktúra. Inak by tá istá dodávka visela dvakrát.

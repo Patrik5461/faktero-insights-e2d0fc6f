@@ -13,6 +13,7 @@ import {
 } from "@/lib/faktero/trip-format";
 import { dekoduj } from "@/lib/faktero/polyline";
 import { obrazokTrasy } from "@/lib/faktero/mapa-obrazok";
+import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 
 /**
  * Koľko máp sa najviac priloží. Každá je pár desiatok dlaždíc z verejného
@@ -72,19 +73,20 @@ function ExportPage() {
   async function fetchRows() {
     const cid = getActiveCompanyId();
     if (!cid) throw new Error("Žiadna firma");
-    let q = supabase
-      .from("trips")
-      .select(
-        "trip_date, driver_name, start_location, end_location, purpose, classification, distance_km, duration_seconds, average_speed_kmh, start_time, end_time, external_source, note, route, vehicles(name, license_plate)",
-      )
-      .eq("company_id", cid)
-      .gte("trip_date", from)
-      .lte("trip_date", to)
-      .order("trip_date");
-    if (vehicle_id) q = q.eq("vehicle_id", vehicle_id);
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    return data ?? [];
+    // Po stránkach — Supabase vráti najviac 1 000 riadkov a ročná kniha jázd
+    // rušného vozového parku by inak ticho skončila na tisícke.
+    return vsetkyRiadky<any>((zac, kon) => {
+      let q = supabase
+        .from("trips")
+        .select(
+          "trip_date, driver_name, start_location, end_location, purpose, classification, distance_km, duration_seconds, average_speed_kmh, start_time, end_time, external_source, note, route, vehicles(name, license_plate)",
+        )
+        .eq("company_id", cid)
+        .gte("trip_date", from)
+        .lte("trip_date", to);
+      if (vehicle_id) q = q.eq("vehicle_id", vehicle_id);
+      return q.order("trip_date").order("start_time", { nullsFirst: true }).order("id").range(zac, kon);
+    });
   }
 
   async function exportCsv() {

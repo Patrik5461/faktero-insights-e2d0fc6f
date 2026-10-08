@@ -570,6 +570,31 @@ export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
     const spolu = znamienko * Math.abs(Number(doklad.total ?? 0));
     const dph = znamienko * Math.abs(Number(doklad.vat_total ?? 0));
 
+    /*
+      Tá istá faktúra už prišla inou cestou (mailom, nahratá, zadaná ručne):
+      eFaktúra sa k nej len pripojí — druhá prijatá faktúra by bola v nákladoch,
+      odpočte DPH aj v príkaze na úhradu dvakrát.
+    */
+    if (doklad.document_number) {
+      const { najdiDuplicituPrijatej } = await import("../prijate-duplicity.server");
+      const dup = await najdiDuplicituPrijatej(supabase, data.company_id, {
+        invoice_number: doklad.document_number,
+        supplier_name: doklad.sender_name ?? null,
+        amount_total: spolu,
+      });
+      if (dup?.kde === "prijate") {
+        await supabase
+          .from("efaktura_received_documents")
+          .update({
+            matched_supplier_invoice_id: dup.id,
+            status: "matched",
+            processed_at: new Date().toISOString(),
+          } as TablesUpdate<"efaktura_received_documents">)
+          .eq("id", data.received_id);
+        return { invoiceId: dup.id, uzExistovala: true as const, pripojena: true as const };
+      }
+    }
+
     const { data: faktura, error: chybaZapisu } = await supabase
       .from("purchase_invoices")
       .insert({

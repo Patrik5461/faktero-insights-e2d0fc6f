@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
+import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
 import { exportPrijatychPohodaFn } from "@/lib/faktero/vratenie.functions";
@@ -129,6 +130,8 @@ const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
 function PurchaseInvoicesPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
+  // Tá istá faktúra v zozname dvakrát (prišla mailom znova) — označí sa pri čísle.
+  const duplicity = useMemo(() => duplicityVZozname(rows), [rows]);
   const sch = useStavSchvalovania(
     getActiveCompanyId(),
     "prijata",
@@ -815,6 +818,12 @@ function PurchaseInvoicesPage() {
           </div>
         )}
 
+        {/* Zoznam berie najviac 500 faktúr — bez tejto vety by staršie ticho chýbali aj v súčtoch. */}
+        {!loading && rows.length >= 500 && (
+          <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            Zobrazuje sa 500 najnovších prijatých faktúr. Staršie nájdete výberom mesiaca alebo hľadaním.
+          </p>
+        )}
         <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -877,7 +886,17 @@ function PurchaseInvoicesPage() {
                       onChange={() => toggle(r.id)}
                     />
                   </td>
-                  <td className="p-3 font-medium">{r.invoice_number}</td>
+                  <td className="p-3 font-medium">
+                    {r.invoice_number}
+                    {duplicity.has(r.id) && (
+                      <span
+                        title="Rovnaká faktúra (číslo aj dodávateľ) je v zozname viackrát — skontrolujte, či nejde o duplicitu."
+                        className="ml-2 inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                      >
+                        Duplicita?
+                      </span>
+                    )}
+                  </td>
                   <td className="p-3">
                     {r.supplier_name}
                     {r.stitky?.length ? (

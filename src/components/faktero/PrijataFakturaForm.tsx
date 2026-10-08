@@ -5,8 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
+import { potvrd } from "@/lib/potvrdenie";
 import { useServerFn } from "@tanstack/react-start";
 import { prepocitajPrijatuFn } from "@/lib/faktero/kurzy.functions";
+import { najdiDuplicituPrijatejFn } from "@/lib/faktero/prijate-duplicity.functions";
+import { textDuplicity } from "@/lib/faktero/prijate-duplicity";
 import { ArrowLeft, Upload, Loader2 } from "lucide-react";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { JobPicker } from "@/components/faktero/JobPicker";
@@ -36,6 +39,8 @@ export function PrijataFakturaForm({
 }) {
   const upravujeme = Boolean(id);
   const prepocitaj = useServerFn(prepocitajPrijatuFn);
+  const hladajDuplicitu = useServerFn(najdiDuplicituPrijatejFn);
+  const [povodnyKluc, setPovodnyKluc] = useState<string | null>(null);
   const navigate = useNavigate();
   const [form, setForm] = useState({
     supplier_name: "",
@@ -123,6 +128,10 @@ export function PrijataFakturaForm({
         setNacitavam(false);
         return;
       }
+      // Kľúč faktúry pri načítaní — otázka na duplicitu len keď sa zmení.
+      setPovodnyKluc(
+        [data.invoice_number, data.supplier_ico, data.supplier_name].map((x) => String(x ?? "").trim()).join("|"),
+      );
       setForm({
         supplier_name: data.supplier_name ?? "",
         supplier_ico: data.supplier_ico ?? "",
@@ -241,6 +250,36 @@ export function PrijataFakturaForm({
 
     setBusy(true);
     try {
+      /*
+        Tá istá faktúra už v evidencii je (prišla mailom, zadal ju niekto iný)?
+        Druhýkrát by bola náklad, odpočet DPH aj platba. Pýta sa pri novej
+        faktúre a pri úprave, keď sa zmenilo číslo či dodávateľ.
+      */
+      const kluc = [form.invoice_number, form.supplier_ico, form.supplier_name]
+        .map((x) => String(x ?? "").trim())
+        .join("|");
+      const dup = id && kluc === povodnyKluc ? null : await hladajDuplicitu({
+        data: {
+          company_id: cid,
+          invoice_number: form.invoice_number.trim(),
+          supplier_ico: form.supplier_ico.trim() || null,
+          supplier_name: form.supplier_name.trim(),
+          supplier_iban: form.supplier_iban.replace(/\s+/g, "") || null,
+          amount_total: parseFloat(form.amount_total || "0") || null,
+          vylucit_id: id ?? null,
+        },
+      }).catch(() => null);
+      if (
+        dup &&
+        !(await potvrd(`${textDuplicity(dup)}\nUložiť ju aj tak druhýkrát?`, {
+          potvrdit: "Uložiť aj tak",
+          zrusit: "Neukladať",
+          nebezpecne: true,
+        }))
+      ) {
+        setBusy(false);
+        return;
+      }
       const { data: user } = await supabase.auth.getUser();
       // Optional PDF upload first
       let file_path: string | null = null;

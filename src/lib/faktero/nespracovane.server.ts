@@ -312,7 +312,21 @@ export async function varovaniaNespracovaneho(
         .eq("udaje->>cislo", cislo)
         .limit(5),
     ]);
-    if ((prijate ?? []).some(tenIstyDodavatel))
+    // Prijaté porovná aj číslo zapísané inak (nuly, pomlčky) a dodávateľa podľa IBAN-u či sumy.
+    const { najdiDuplicituPrijatej } = await import("./prijate-duplicity.server");
+    const dup = await najdiDuplicituPrijatej(
+      supabase,
+      r.company_id,
+      {
+        invoice_number: cislo,
+        supplier_ico: u.dodavatel.ico,
+        supplier_name: u.dodavatel.nazov,
+        supplier_iban: u.dodavatel.iban,
+        amount_total: u.celkom,
+      },
+      { nespracovanyId: r.id },
+    );
+    if (dup?.kde === "prijate" || (prijate ?? []).some(tenIstyDodavatel))
       out.push(`Prijatá faktúra ${cislo} od tohto dodávateľa už v evidencii je — možno ide o duplicitu.`);
     else if ((blocky ?? []).some(tenIstyDodavatel))
       out.push(`Doklad ${cislo} od tohto dodávateľa už je medzi bločkami — možno ide o duplicitu.`);

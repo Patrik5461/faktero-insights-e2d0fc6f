@@ -5,6 +5,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeSukromnaJazda } from "@/lib/faktero/trip-format";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Car, Route as RouteIcon, Fuel, Wallet, Gauge, Briefcase, User } from "lucide-react";
+import { vsetkoAkoData } from "@/lib/faktero/strankovanie";
 
 export const Route = createFileRoute("/_authenticated/jazdy/prehlad")({
   head: () => ({ meta: [{ title: "Prehľad jázd — Faktero" }] }),
@@ -27,12 +28,12 @@ function OverviewPage() {
     if (!cid) return;
     const from = `${year}-01-01`;
     const to = `${year + 1}-01-01`;
-    let tQ = supabase
-      .from("trips")
-      .select("*")
-      .eq("company_id", cid)
-      .gte("trip_date", from)
-      .lt("trip_date", to);
+    // Jazdy za rok po stránkach — strop 1 000 riadkov by súčty ticho skrátil.
+    const tQ = vsetkoAkoData((zac, kon) => {
+      let q = supabase.from("trips").select("*").eq("company_id", cid).gte("trip_date", from).lt("trip_date", to);
+      if (vehicle_id) q = q.eq("vehicle_id", vehicle_id);
+      return q.order("id").range(zac, kon);
+    });
     let fQ = supabase
       .from("fuel_records")
       .select("*")
@@ -40,7 +41,6 @@ function OverviewPage() {
       .gte("fuel_date", from)
       .lt("fuel_date", to);
     if (vehicle_id) {
-      tQ = tQ.eq("vehicle_id", vehicle_id);
       fQ = fQ.eq("vehicle_id", vehicle_id);
     }
     Promise.all([

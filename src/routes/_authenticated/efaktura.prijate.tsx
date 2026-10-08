@@ -50,9 +50,11 @@ function ReceivedPage() {
     try {
       const r: any = await zaeviduj({ data: { company_id: companyId, received_id: receivedId } });
       toast.success(
-        r.uzExistovala
-          ? "Táto eFaktúra už zaevidovaná je — otváram ju."
-          : "Zaevidované ako prijatá faktúra. Skontrolujte sumy a dátumy.",
+        r.pripojena
+          ? "Táto faktúra už medzi prijatými bola (prišla inou cestou) — eFaktúra je pripojená k nej, druhá sa nezakladá."
+          : r.uzExistovala
+            ? "Táto eFaktúra už zaevidovaná je — otváram ju."
+            : "Zaevidované ako prijatá faktúra. Skontrolujte sumy a dátumy.",
       );
       q.refetch();
       window.open(`/prijate-faktury/${r.invoiceId}`, "_blank", "noopener,noreferrer");

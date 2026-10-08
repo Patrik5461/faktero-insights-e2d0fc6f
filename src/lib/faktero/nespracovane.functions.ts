@@ -187,7 +187,17 @@ export const docitajNespracovanyFn = createServerFn({ method: "POST" })
 
 export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: unknown) => z.object({ id: z.string().uuid(), druh: DRUH, udaje: UdajeVstup }).parse(d))
+  .validator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        druh: DRUH,
+        udaje: UdajeVstup,
+        /** Človek videl upozornenie na duplicitu a chce doklad aj tak. */
+        ajDuplicitu: z.boolean().optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const { nacitajUdaje, chybajuce, NAZVY_POLI } = await import("./nespracovane");
@@ -203,6 +213,29 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
     if (chyba.length) throw new Error(`Doplňte: ${chyba.map((k) => NAZVY_POLI[k] ?? k).join(", ")}.`);
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(r.company_id);
+    /*
+      Tá istá prijatá faktúra už v evidencii je (prišla mailom znova, zadal ju
+      niekto ručne) — druhýkrát by bola náklad aj odpočet DPH a príkaz na
+      úhradu by ju zaplatil dvakrát. Bez výslovného súhlasu sa nevytvorí.
+    */
+    if (!data.ajDuplicitu && (data.druh === "faktura" || data.druh === "zalohova" || data.druh === "dobropis")) {
+      const { najdiDuplicituPrijatej } = await import("./prijate-duplicity.server");
+      const { textDuplicity, PREDPONA_DUPLICITY } = await import("./prijate-duplicity");
+      const dup = await najdiDuplicituPrijatej(
+        supabase,
+        r.company_id,
+        {
+          invoice_number: u.cislo,
+          supplier_ico: u.dodavatel.ico,
+          supplier_name: u.dodavatel.nazov,
+          supplier_iban: u.dodavatel.iban,
+          amount_total: u.celkom,
+        },
+        { nespracovanyId: r.id },
+      );
+      if (dup?.kde === "prijate")
+        throw new Error(`${PREDPONA_DUPLICITY}${textDuplicity(dup)}\nVytvoriť ju aj tak druhýkrát?`);
+    }
     const { vytvorDoklad } = await import("./nespracovane.server");
     return vytvorDoklad(supabase, context.userId, r, data.druh, u);
   });

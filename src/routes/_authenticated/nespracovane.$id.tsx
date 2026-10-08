@@ -29,6 +29,7 @@ import {
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
 import { potvrd } from "@/lib/potvrdenie";
+import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/$id")({
   head: () => ({ meta: [{ title: "Nespracovaný doklad — Faktero" }] }),
@@ -140,14 +141,16 @@ function Detail() {
     }
   }
 
-  async function vytvorDoklad() {
+  async function vytvorDoklad(ajDuplicitu = false) {
     if (chyby.length) {
       toast.error(`Doplňte: ${chyby.map((k) => NAZVY_POLI[k] ?? k).join(", ")}`);
       return;
     }
     setBusy(true);
     try {
-      const r = await vytvor({ data: { id, druh: druh as DruhNespracovaneho, udaje: u as any } });
+      const r = await vytvor({
+        data: { id, druh: druh as DruhNespracovaneho, udaje: u as any, ajDuplicitu },
+      });
       const kam =
         r.agenda === "prijata" ? "medzi prijaté faktúry" : r.agenda === "doklad" ? "medzi doklady" : "medzi iné doklady";
       toast.success(`Doklad je vytvorený a presunutý ${kam}`, {
@@ -165,7 +168,21 @@ function Detail() {
       if (d!.dalsiId) navigate({ to: "/nespracovane/$id", params: { id: d!.dalsiId } });
       else navigate({ to: "/nespracovane" });
     } catch (e: any) {
-      toast.error(e?.message ?? "Doklad sa nepodarilo vytvoriť");
+      const sprava = String(e?.message ?? "");
+      // Server našiel tú istú faktúru — rozhodne človek, či ju chce dvakrát.
+      if (sprava.startsWith(PREDPONA_DUPLICITY)) {
+        setBusy(false);
+        if (
+          await potvrd(sprava.slice(PREDPONA_DUPLICITY.length), {
+            potvrdit: "Vytvoriť aj tak",
+            zrusit: "Nevytvárať",
+            nebezpecne: true,
+          })
+        )
+          await vytvorDoklad(true);
+        return;
+      }
+      toast.error(sprava || "Doklad sa nepodarilo vytvoriť");
     } finally {
       setBusy(false);
     }
@@ -602,7 +619,7 @@ function Detail() {
             ) : null}
 
             <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 p-3 pr-24 backdrop-blur">
-              <button type="button" disabled={busy || d.stav === "cita"} onClick={vytvorDoklad} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60">
+              <button type="button" disabled={busy || d.stav === "cita"} onClick={() => void vytvorDoklad()} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Vytvoriť
               </button>
               <button type="button" disabled={busy} onClick={ulozZmeny} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-60">
