@@ -642,7 +642,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.prilohaNenahrata":
     "Der Anhang konnte nicht hochgeladen werden, der Beleg wird ohne ihn gespeichert.",
   "app.dokladUlozeny": "Beleg gespeichert",
-  "app.zalohaUlozena": "Anzahlungsrechnung {cislo} ist bei den erhaltenen Anzahlungen",
+  "app.zalohaUlozena": "Anzahlungsrechnung {cislo} wartet unter Unbearbeitete Belege",
   "app.bezPripojeniaFirmy":
     "Keine Verbindung, und auf dem Telefon ist noch keine Firmenliste gespeichert. Öffnen Sie die App einmal mit Internet.",
   "app.fakturaOdoslana": "Die offline ausgestellte Rechnung wurde gesendet.",
@@ -662,9 +662,9 @@ export const de: Partial<Record<Kluc, string>> = {
   "sken.inyDoklad": "Anderes Dokument",
   "app.inyDoklad": "Anderes Dokument",
   "app.inyDokladPopis":
-    "Pfändung, Versicherungsvorschreibung, Behördenbrief, Vertrag… Wird unter sonstige Dokumente gespeichert, die Angaben ergänzt die KI.",
+    "Pfändung, Versicherungsvorschreibung, Behördenbrief, Vertrag… Wird unter Unbearbeitete Belege gespeichert, die Angaben ergänzt die KI und Sie prüfen sie nur.",
   "app.ulozitOstatny": "Als sonstiges Dokument speichern",
-  "app.ostatnyUlozeny": "Unter sonstige Dokumente gespeichert",
+  "app.ostatnyUlozeny": "Unter Unbearbeitete Belege gespeichert",
   "app.ostatnyBezSignalu": "Ein sonstiges Dokument lässt sich nur mit Verbindung speichern.",
   "bp.nadpisXiaomi": "Damit Xiaomi die Fahrterkennung nicht stoppt",
   "bp.nadpisIny": "Hintergrundbetrieb erlauben",

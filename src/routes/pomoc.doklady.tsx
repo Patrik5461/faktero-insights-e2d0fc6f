@@ -29,6 +29,25 @@ const sections: HelpSection[] = [
           <Link to="/nespracovane">Doklady → Nespracované doklady</Link>. Faktero doklad prečíta
           a navrhne, čo to je. Kým je doklad tu, nevstupuje do DPH, pokladne ani do účtovníctva.
         </p>
+        <p>
+          Kam sa čo uloží (rovnako ako v Doklado):
+        </p>
+        <ul>
+          <li>
+            <strong>Bloček s QR kódom</strong> (eKasa) ide rovno do <Link to="/doklady">Bločkov</Link> —
+            údaje sú z Finančnej správy. Kto chce aj tieto kontrolovať, zapne v Účtovníctvo →
+            Predkontácie voľbu „Bločky s QR kódom ukladať do Nespracovaných dokladov“.
+          </li>
+          <li>
+            <strong>Bloček bez QR</strong> (fotka, parkovanie, zahraničný), <strong>faktúra</strong>,{" "}
+            <strong>zálohová faktúra</strong> a <strong>iný doklad</strong> z appky, nahratie na webe aj
+            doklad z e-mailu idú do Nespracovaných dokladov.
+          </li>
+          <li>
+            Po kliknutí na <strong>Vytvoriť</strong> sa doklad presunie do Bločkov, Prijatých faktúr
+            alebo Iných dokladov podľa druhu.
+          </li>
+        </ul>
         <ol>
           <li>Kliknite na doklad — vľavo uvidíte samotný doklad, vpravo vyťažené údaje.</li>
           <li>

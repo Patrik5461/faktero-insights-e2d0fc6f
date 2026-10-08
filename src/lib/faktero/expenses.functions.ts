@@ -154,31 +154,41 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       if (uz) return uz;
     }
     /*
-      Nový doklad je vždy nespracovaný, nech ho pred zaúčtovaním niekto
-      skontroluje. Stav od klienta sa nepreberá: staršie verzie appky posielajú
-      „processed" a tie sa v telefónoch udržia ešte dlho.
+      Ako v Doklado: bloček s QR kódom (údaje z Finančnej správy) ide rovno
+      medzi Bločky ako spracovaný — keď má sumu aj dátum. Ostatné doklady
+      (fotka bez QR, ručný zápis) sú nespracované a čakajú na kontrolu
+      v Nespracovaných dokladoch. Firma si môže zapnúť, aby aj QR bločky
+      prešli Nespracovanými. Stav od klienta sa nepreberá: staršie verzie
+      appky posielajú „processed" vždy.
     */
-    const { data: row, error } = await supabase
-      .from("expense_documents")
-      .insert({ ...data, status: "new", created_by: userId })
-      .select("*")
-      .single();
-    if (error) throw new Error(error.message);
-    /*
-      Firma si môže zapnúť, aby aj bločky s QR kódom (údaje z Finančnej
-      správy) prešli Nespracovanými dokladmi ako všetko ostatné.
-    */
-    if (qr && data.source === "qr") {
+    const zQr = Boolean(qr) && data.source === "qr";
+    let qrDoNespracovanych = false;
+    if (zQr) {
       const { data: firma } = await supabase
         .from("companies")
         .select("qr_blocky_do_nespracovanych")
         .eq("id", data.company_id)
         .maybeSingle();
-      if ((firma as any)?.qr_blocky_do_nespracovanych) {
-        const { presunBlocekDoNespracovanych } = await import("./nespracovane.server");
-        const n = await presunBlocekDoNespracovanych(supabase as any, row.id, userId).catch(() => ({ id: null }));
-        if (n.id) return { ...row, nespracovany_id: n.id };
-      }
+      qrDoNespracovanych = Boolean((firma as any)?.qr_blocky_do_nespracovanych);
+    }
+    const rovnoSpracovany =
+      zQr && !qrDoNespracovanych && data.total_amount != null && Boolean(data.issue_date);
+    const { data: row, error } = await supabase
+      .from("expense_documents")
+      .insert({
+        ...data,
+        created_by: userId,
+        ...(rovnoSpracovany
+          ? { status: "processed", processed_at: new Date().toISOString(), processed_by: userId }
+          : { status: "new" }),
+      })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    if (zQr && qrDoNespracovanych) {
+      const { presunBlocekDoNespracovanych } = await import("./nespracovane.server");
+      const n = await presunBlocekDoNespracovanych(supabase as any, row.id, userId).catch(() => ({ id: null }));
+      if (n.id) return { ...row, nespracovany_id: n.id };
     }
     return row;
   });

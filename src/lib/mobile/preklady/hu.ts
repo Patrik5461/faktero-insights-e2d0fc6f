@@ -636,7 +636,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.vyplnteEmailHeslo": "Töltse ki az e-mailt és a jelszót is.",
   "app.prilohaNenahrata": "A mellékletet nem sikerült feltölteni, a bizonylatot enélkül mentem.",
   "app.dokladUlozeny": "Bizonylat mentve",
-  "app.zalohaUlozena": "A(z) {cislo} előlegszámla a beérkezett előlegek közt van",
+  "app.zalohaUlozena": "A(z) {cislo} előlegszámla a feldolgozatlan bizonylatok közt vár",
   "app.bezPripojeniaFirmy":
     "Nincs kapcsolat, és a telefonon még nincs cégjegyzék. Nyissa meg egyszer az alkalmazást internettel.",
   "app.fakturaOdoslana": "A jel nélkül kiállított számlát elküldtük.",
@@ -656,9 +656,9 @@ export const hu: Partial<Record<Kluc, string>> = {
   "sken.inyDoklad": "Egyéb dokumentum",
   "app.inyDoklad": "Egyéb dokumentum",
   "app.inyDokladPopis":
-    "Végrehajtás, biztosítási díjelőírás, hatósági levél, szerződés… Az egyéb dokumentumok közé kerül, az adatokat az MI tölti ki.",
+    "Végrehajtás, biztosítási díjelőírás, hatósági levél, szerződés… A feldolgozatlan bizonylatok közé kerül, az adatokat az MI tölti ki, Önnek csak ellenőriznie kell.",
   "app.ulozitOstatny": "Mentés egyéb dokumentumként",
-  "app.ostatnyUlozeny": "Az egyéb dokumentumok közé mentve",
+  "app.ostatnyUlozeny": "A feldolgozatlan bizonylatok közé mentve",
   "app.ostatnyBezSignalu": "Egyéb dokumentumot csak kapcsolattal lehet menteni.",
   "bp.nadpisXiaomi": "Hogy a Xiaomi ne állítsa le az útérzékelést",
   "bp.nadpisIny": "Engedélyezze a háttérben futást",

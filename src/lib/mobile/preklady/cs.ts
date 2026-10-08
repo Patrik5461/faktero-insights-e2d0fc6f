@@ -633,7 +633,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.vyplnteEmailHeslo": "Vyplňte e-mail i heslo.",
   "app.prilohaNenahrata": "Přílohu se nepodařilo nahrát, doklad uložím bez ní.",
   "app.dokladUlozeny": "Doklad uložen",
-  "app.zalohaUlozena": "Zálohová faktura {cislo} je mezi přijatými zálohami",
+  "app.zalohaUlozena": "Zálohová faktura {cislo} čeká v Nezpracovaných dokladech",
   "app.bezPripojeniaFirmy":
     "Bez připojení a v telefonu zatím není uložen seznam firem. Otevřete aplikaci jednou s internetem.",
   "app.fakturaOdoslana": "Faktura vystavená bez signálu je odeslána.",
@@ -653,9 +653,9 @@ export const cs: Partial<Record<Kluc, string>> = {
   "sken.inyDoklad": "Jiný doklad",
   "app.inyDoklad": "Jiný doklad",
   "app.inyDokladPopis":
-    "Exekuce, předpis pojistného, dopis z úřadu, smlouva… Uloží se mezi jiné doklady a údaje doplní AI.",
+    "Exekuce, předpis pojistného, dopis z úřadu, smlouva… Uloží se do Nezpracovaných dokladů, údaje doplní AI a vy ho jen zkontrolujete.",
   "app.ulozitOstatny": "Uložit jako jiný doklad",
-  "app.ostatnyUlozeny": "Uloženo mezi jiné doklady",
+  "app.ostatnyUlozeny": "Uloženo do Nezpracovaných dokladů",
   "app.ostatnyBezSignalu": "Jiný doklad lze uložit jen se signálem.",
   "bp.nadpisXiaomi": "Aby Xiaomi nezastavilo detekci jízd",
   "bp.nadpisIny": "Povolte aplikaci běh na pozadí",

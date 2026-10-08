@@ -364,80 +364,26 @@ export const ulozOstatnyZAppkyFn = createServerFn({ method: "POST" })
     if (!bajty.length) throw new Error("Súbor je prázdny.");
     if (bajty.length > MAX_NA_CITANIE) throw new Error("Súbor je väčší než 15 MB.");
 
-    const id = crypto.randomUUID();
+    /*
+      Ako v Doklado: aj iný doklad z appky ide najprv do Nespracovaných —
+      AI ho prečíta, človek skontroluje druh (exekúcia, predpis, zmluva…)
+      a kliknutím na Vytvoriť ho presunie do Iných dokladov.
+    */
+    const { assertCompanyActive } = await import("./active-check.server");
+    await assertCompanyActive(data.company_id);
     const dnes = new Date().toISOString().slice(0, 10);
     const pripona = mime === "application/pdf" ? "pdf" : mime.split("/")[1]!.replace("jpeg", "jpg");
-    const meno = data.nazov?.trim() || `doklad-${dnes}.${pripona}`;
-    const cesta = `${data.company_id}/${id}/${Date.now()}-${bezpecneMeno(meno)}`;
-
-    const { error: chybaDokladu } = await supabase.from("other_documents").insert({
-      id,
-      company_id: data.company_id,
-      kind: "ine",
-      subject: "Doklad z mobilnej appky",
-      received_date: dnes,
-      status: "new",
-      created_by: userId,
-    });
-    if (chybaDokladu) throw new Error(chybaDokladu.message);
-
-    const { error: chybaNahratia } = await supabase.storage
-      .from(KBELIK)
-      .upload(cesta, bajty, { contentType: mime, upsert: false });
-    if (chybaNahratia) {
-      await supabase.from("other_documents").delete().eq("id", id);
-      throw new Error(`Súbor sa nepodarilo uložiť: ${chybaNahratia.message}`);
-    }
-    await supabase.from("other_document_files").insert({
-      document_id: id,
-      company_id: data.company_id,
-      path: cesta,
-      name: meno,
+    const { zalozNespracovany, vytazNespracovany } = await import("./nespracovane.server");
+    const { id } = await zalozNespracovany(supabase as any, {
+      companyId: data.company_id,
+      userId,
+      zdroj: "apka",
+      bajty,
+      nazov: data.nazov?.trim() || `doklad-${dnes}.${pripona}`,
       mime,
-      size: bajty.length,
-      position: 0,
+      druh: "ostatny",
     });
-
-    void (async () => {
-      try {
-        const { precitajOstatny } = await import("./ostatne-doklady-citanie.server");
-        const r = await precitajOstatny(base64, mime);
-        if (!jeRozpoznaniePouzitelne(r)) return;
-        const { data: teraz } = await supabase
-          .from("other_documents")
-          .select("kind, sender, subject, amount, currency, due_date, note")
-          .eq("id", id)
-          .maybeSingle();
-        if (!teraz) return;
-        const zmeny: Partial<{
-          kind: string;
-          sender: string;
-          subject: string;
-          amount: number;
-          currency: string;
-          due_date: string;
-          note: string;
-          employee_id: string;
-          financing_contract_id: string;
-        }> = {};
-        if (teraz.kind === "ine" && r.kind !== "ine") zmeny.kind = r.kind;
-        if (!teraz.sender && r.sender) zmeny.sender = r.sender;
-        if (teraz.subject === "Doklad z mobilnej appky" && r.subject) zmeny.subject = r.subject;
-        if (teraz.amount == null && r.amount != null) {
-          zmeny.amount = r.amount;
-          if (r.currency) zmeny.currency = r.currency;
-        }
-        if (!teraz.due_date && r.due_date) zmeny.due_date = r.due_date;
-        if (!teraz.note && r.summary) zmeny.note = r.summary;
-        const { navrhniVazby } = await import("./ostatne-doklady-vazby.server");
-        Object.assign(zmeny, await navrhniVazby(supabase, data.company_id, { ...r, kind: (zmeny.kind ?? teraz.kind) as any }));
-        if (Object.keys(zmeny).length) {
-          await supabase.from("other_documents").update(zmeny).eq("id", id);
-        }
-      } catch (e: any) {
-        console.warn("[ostatne] čítanie dokladu z appky zlyhalo:", String(e?.message ?? e).slice(0, 200));
-      }
-    })();
+    void vytazNespracovany(id);
 
     return { id };
   });

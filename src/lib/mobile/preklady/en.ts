@@ -640,7 +640,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.prilohaNenahrata":
     "The attachment could not be uploaded, the receipt will be saved without it.",
   "app.dokladUlozeny": "Receipt saved",
-  "app.zalohaUlozena": "Advance invoice {cislo} saved to received advances",
+  "app.zalohaUlozena": "Advance invoice {cislo} is waiting in Unprocessed documents",
   "app.bezPripojeniaFirmy":
     "No connection, and no list of companies is stored on the phone yet. Open the app once with internet.",
   "app.fakturaOdoslana": "The invoice issued offline has been sent.",
@@ -660,9 +660,9 @@ export const en: Partial<Record<Kluc, string>> = {
   "sken.inyDoklad": "Other document",
   "app.inyDoklad": "Other document",
   "app.inyDokladPopis":
-    "Enforcement order, insurance statement, letter from an authority, contract… It is saved to other documents and AI fills in the details.",
+    "Enforcement order, insurance statement, letter from an authority, contract… It is saved to Unprocessed documents, AI fills in the details and you just check it.",
   "app.ulozitOstatny": "Save as other document",
-  "app.ostatnyUlozeny": "Saved to other documents",
+  "app.ostatnyUlozeny": "Saved to Unprocessed documents",
   "app.ostatnyBezSignalu": "An other document can only be saved with a connection.",
   "bp.nadpisXiaomi": "Keep Xiaomi from stopping trip detection",
   "bp.nadpisIny": "Allow the app to run in the background",

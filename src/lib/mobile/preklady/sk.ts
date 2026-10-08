@@ -646,7 +646,7 @@ export const sk = {
   "app.vyplnteEmailHeslo": "Vyplňte e-mail aj heslo.",
   "app.prilohaNenahrata": "Prílohu sa nepodarilo nahrať, doklad uložím bez nej.",
   "app.dokladUlozeny": "Doklad uložený",
-  "app.zalohaUlozena": "Zálohová faktúra {cislo} je medzi prijatými zálohami",
+  "app.zalohaUlozena": "Zálohová faktúra {cislo} čaká v Nespracovaných dokladoch",
   "app.bezPripojeniaFirmy":
     "Bez pripojenia a v telefóne zatiaľ nie je uložený zoznam firiem. Otvorte appku raz s internetom.",
   "app.fakturaOdoslana": "Faktúra vystavená bez signálu je odoslaná.",
@@ -666,9 +666,9 @@ export const sk = {
   "sken.inyDoklad": "Iný doklad",
   "app.inyDoklad": "Iný doklad",
   "app.inyDokladPopis":
-    "Exekúcia, predpis poistného, list z úradu, zmluva… Uloží sa medzi iné doklady a údaje doplní AI.",
+    "Exekúcia, predpis poistného, list z úradu, zmluva… Uloží sa do Nespracovaných dokladov, údaje doplní AI a vy ho len skontrolujete.",
   "app.ulozitOstatny": "Uložiť ako iný doklad",
-  "app.ostatnyUlozeny": "Uložené medzi iné doklady",
+  "app.ostatnyUlozeny": "Uložené do Nespracovaných dokladov",
   "app.ostatnyBezSignalu": "Iný doklad sa dá uložiť len so signálom.",
   "bp.nadpisXiaomi": "Aby Xiaomi nezastavilo detekciu jázd",
   "bp.nadpisIny": "Povoľte appke beh na pozadí",
