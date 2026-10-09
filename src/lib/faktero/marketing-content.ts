@@ -358,7 +358,7 @@ export const funkcie: HubContent = {
         {
           type: "section",
           title: "Ktoré brány",
-          body: "Stripe, PayPal, GoPay, Comgate a Barion — stačí CSV export z ich administrácie. Nájdete to v Účtovníctvo → Výpis z platobnej brány.",
+          body: "Stripe, PayPal, GoPay, Comgate, Barion, Mollie a Packeta — stačí CSV export z ich administrácie; ostatné brány cez všeobecnú šablónu. Nájdete to v Účtovníctvo → Výpis z platobnej brány.",
         },
       ],
     },
@@ -423,7 +423,7 @@ export const funkcie: HubContent = {
           title: "Ako to pracuje",
           items: [
             "Priame napojenie na Tatra banku, Revolut Business, Wise a Wallester, pre ostatné banky import výpisu",
-            "Výpisy z platobných brán (Stripe, PayPal, GoPay, Comgate, Barion) ako ďalší účet",
+            "Výpisy z platobných brán (Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta) ako ďalší účet",
             "Párovanie podľa variabilného symbolu, sumy a názvu odberateľa",
             "Čiastočné úhrady sa odrátajú, faktúra ostane otvorená na zvyšok",
             "Nesprávne spárovanie sa dá vrátiť jedným klikom",
@@ -1125,7 +1125,7 @@ export const uctovnici: HubContent = {
             "Doklado — prijaté doklady zo XML, CSV aj ZIP so skenmi",
             "Export do Pohody, Omegy, Money S3, ABRA Flexi, ISDOC a CSV",
             "WooCommerce — doplnok, ktorý vystaví faktúru z každej objednávky",
-            "Stripe, PayPal, GoPay, Comgate, Barion — výpisy z platobných brán",
+            "Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta — výpisy z platobných brán",
             "Vlastné integrácie cez REST API",
           ],
         },

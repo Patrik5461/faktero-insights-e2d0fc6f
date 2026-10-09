@@ -37,6 +37,8 @@ const EXPORTY_BRAN: { brana: string; kde: string }[] = [
   { brana: "GoPay", kde: "Obchodné účty → Výpisy → formát CSV (B a vyšší)" },
   { brana: "Comgate", kde: "Platby → Export (CSV)" },
   { brana: "Barion", kde: "Výpisy → denný výpis (CSV)" },
+  { brana: "Mollie", kde: "Reports → Settlements → vyúčtovanie → CSV" },
+  { brana: "Packeta", kde: "Faktúry → Faktúry → formát CSV v7 (Excel), jazyk účtu angličtina" },
 ];
 
 /**
@@ -405,7 +407,7 @@ function VypisDoPohodyPage() {
       {brana ? (
         <PageHeader
           title="Výpis z platobnej brány"
-          description="Z exportu Stripe, PayPal, GoPay, Comgate alebo Barion spraví bankový výpis — platby, poplatky a výbery na účet zvlášť, pripravené do Pohody."
+          description="Z exportu Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta alebo všeobecnej šablóny spraví bankový výpis — platby, poplatky a výbery na účet zvlášť, pripravené do Pohody."
         />
       ) : (
         <PageHeader
@@ -434,6 +436,30 @@ function VypisDoPohodyPage() {
                 </Link>
                 .
               </p>
+              <p className="mt-3 text-muted-foreground">
+                <strong className="text-foreground">Iná brána</strong> (Global Payments,
+                Fulfillment…)? Údaje prepíšte do{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    void import("@/lib/faktero/vypis-brany").then(({ SABLONA_BRANY_CSV }) => {
+                      // BOM, aby Excel otvoril diakritiku správne.
+                      const blob = new Blob(["\ufeff" + SABLONA_BRANY_CSV], {
+                        type: "text/csv;charset=utf-8",
+                      });
+                      const a = document.createElement("a");
+                      a.href = URL.createObjectURL(blob);
+                      a.download = "sablona-vypisu-brany.csv";
+                      a.click();
+                    });
+                  }}
+                  className="text-primary hover:underline"
+                >
+                  všeobecnej šablóny (CSV)
+                </button>{" "}
+                — typ riadku je platba, poplatok, výber alebo vrátenie; ukážkové riadky pred
+                nahratím zmažte.
+              </p>
             </div>
           )}
           <div className="rounded-2xl border border-border/70 bg-card p-5">
@@ -454,8 +480,8 @@ function VypisDoPohodyPage() {
                 <strong>XML z internetbankingu</strong> (banky mu hovoria SEPA XML alebo camt.053)
                 je presné — sumy, symboly aj protistrany sú priamo od banky a prečíta sa hneď. PDF
                 sa rozpoznáva, naskenované ešte aj z obrazu, takže riadky treba prejsť.{" "}
-                <strong>CSV z platobnej brány</strong> (Stripe, PayPal, GoPay, Comgate, Barion) sa
-                prevedie na výpis s platbami, poplatkami a výbermi na účet.
+                <strong>CSV z platobnej brány</strong> (Stripe, PayPal, GoPay, Comgate, Barion,
+                Mollie, Packeta) sa prevedie na výpis s platbami, poplatkami a výbermi na účet.
               </span>
               <input
                 type="file"

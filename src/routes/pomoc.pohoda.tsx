@@ -360,7 +360,7 @@ const sections: HelpSection[] = [
   },
   {
     id: "brany",
-    title: "Výpis z platobnej brány (Stripe, PayPal, GoPay, Comgate, Barion)",
+    title: "Výpis z platobnej brány (Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta)",
     body: (
       <>
         <p>
@@ -390,6 +390,20 @@ const sections: HelpSection[] = [
           </li>
           <li>
             <strong>Barion</strong> — denný výpis v CSV.
+          </li>
+          <li>
+            <strong>Mollie</strong> — Reports → Settlements → konkrétne vyúčtovanie → CSV. Zadržané
+            poplatky („Withheld fees") sú výdaj a celé vyúčtovanie jeden výber na účet.
+          </li>
+          <li>
+            <strong>Packeta</strong> — Faktúry → formát CSV v7 (účet v angličtine). Vybraná dobierka je
+            príjem, služby Packety výdaj; výplata dobierok príde na bankový výpis.
+          </li>
+          <li>
+            <strong>Iná brána</strong> (Global Payments, Fulfillment…) — údaje prepíšte do{" "}
+            <em>všeobecnej šablóny</em>, ktorú stiahnete na stránke výpisu. Stĺpce: dátum, typ
+            (platba, poplatok, výber, vrátenie), suma, poplatok, mena, variabilný symbol,
+            protistrana, popis.
           </li>
         </ul>
         <p>
