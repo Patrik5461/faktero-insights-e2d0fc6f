@@ -134,11 +134,14 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
       : { prilohy: [], vynechane: [] as string[] };
 
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
+    // Ponuka ide z vlastného SMTP firmy, keď ho má zapnutý; inak Resend.
+    let json: any = {};
+    let chybaOdoslania: string | null = null;
+    try {
+      const { posliMailFirmy } = await import("./odoslanie-mailu.server");
+      const r = await posliMailFirmy(q.company_id, {
         from: `${senderName} <${fromEmail}>`,
+        fromName: senderName,
         to: [data.recipient_email],
         subject,
         reply_to: company?.email_reply_to || undefined,
@@ -149,15 +152,14 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
           ${podpisHtml(company ?? {})}
         </div>`,
         attachments: [{ filename: `${q.quote_number}.pdf`, content: pdfB64 }, ...prilohy],
-      }),
-    });
-    const text = await res.text();
-    let json: any = {};
-    try {
-      json = JSON.parse(text);
-    } catch {
-      // Resend pri chybe niekedy vráti HTML/prázdno — nižšie sa použije surový text
+      });
+      json = { id: r.id };
+    } catch (e: any) {
+      chybaOdoslania = String(e?.message ?? e);
+      json = { message: chybaOdoslania };
     }
+    const res = { ok: !chybaOdoslania };
+    const text = chybaOdoslania ?? "";
     if (!res.ok) {
       const errMsg = json?.message ?? text.slice(0, 500);
       await supabaseAdmin.from("quote_email_logs" as any).insert({

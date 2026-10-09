@@ -136,7 +136,13 @@ function suma(n: number, mena = "EUR") {
   })} ${mena}`;
 }
 
-async function posli(body: Record<string, unknown>): Promise<string | null> {
+async function posli(body: Record<string, unknown>, companyId?: string): Promise<string | null> {
+  // Mail dodávateľovi ide z vlastného SMTP firmy, keď ho má zapnutý.
+  if (companyId) {
+    const { posliMailFirmy } = await import("./odoslanie-mailu.server");
+    const r = await posliMailFirmy(companyId, body as any);
+    return r.id;
+  }
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("Odosielanie e-mailov nie je nastavené.");
   const res = await fetch("https://api.resend.com/emails", {
@@ -219,15 +225,18 @@ export async function posliDodavatelovi(opts: {
     <p style="margin-top:24px">${escapeHtml(nazovFirmy)}</p>
   </div>`;
 
-  await posli({
-    from: `${nazovFirmy.replace(/[<>"]/g, "")} ${sf.language && !["sk", "cs"].includes(sf.language) ? "via" : sf.language === "cs" ? "přes" : "cez"} Faktero <${odosielatel()}>`,
-    to: [komu],
-    reply_to: firma?.email || undefined,
-    subject: predmet,
-    text,
-    html,
-    attachments: [{ filename: fileName, content: Buffer.from(bytes).toString("base64") }],
-  });
+  await posli(
+    {
+      from: `${nazovFirmy.replace(/[<>"]/g, "")} ${sf.language && !["sk", "cs"].includes(sf.language) ? "via" : sf.language === "cs" ? "přes" : "cez"} Faktero <${odosielatel()}>`,
+      to: [komu],
+      reply_to: firma?.email || undefined,
+      subject: predmet,
+      text,
+      html,
+      attachments: [{ filename: fileName, content: Buffer.from(bytes).toString("base64") }],
+    },
+    sf.company_id,
+  );
 }
 
 /** Odberateľovi (nám) príde správa, ako dodávateľ rozhodol. */

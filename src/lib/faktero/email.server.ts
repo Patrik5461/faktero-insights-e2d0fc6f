@@ -170,29 +170,19 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
     const from = `${senderName} <${fromEmail}>`;
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        from,
-        to: [input.recipient_email],
-        subject: finalSubject,
-        reply_to: company?.email_reply_to || undefined,
-        text: finalPlain,
-        html: bodyHtml,
-        attachments: [{ filename: `${invoice.invoice_number}.pdf`, content: pdfB64 }, ...prilohy],
-      }),
+    // Vlastný SMTP firmy, keď ho má zapnutý; inak Resend.
+    const { posliMailFirmy } = await import("./odoslanie-mailu.server");
+    const odoslane = await posliMailFirmy(input.company_id, {
+      from,
+      fromName: senderName,
+      to: [input.recipient_email],
+      subject: finalSubject,
+      reply_to: company?.email_reply_to || undefined,
+      text: finalPlain,
+      html: bodyHtml,
+      attachments: [{ filename: `${invoice.invoice_number}.pdf`, content: pdfB64 }, ...prilohy],
     });
-    const text = await res.text();
-    let json: any = {};
-    try {
-      json = JSON.parse(text);
-    } catch {
-      // Resend pri chybe niekedy vráti HTML/prázdno — nižšie sa použije surový text
-    }
-    if (!res.ok) {
-      throw new Error(`Resend error: ${json?.message ?? text.slice(0, 500)}`);
-    }
+    const json = { id: odoslane.id };
     await supabaseAdmin
       .from("invoice_email_logs")
       .update({

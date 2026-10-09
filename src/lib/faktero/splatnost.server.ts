@@ -26,11 +26,11 @@ export async function posliOznamenieSplatnosti(v: {
     "",
     nazov,
   ].join("\n");
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
+  const { posliMailFirmy } = await import("./odoslanie-mailu.server");
+  try {
+    await posliMailFirmy(v.f.company_id, {
       from: `${nazov.replace(/[<>"]/g, "")} cez Faktero <${process.env.RESEND_FROM_NOREPLY || "noreply@faktero.sk"}>`,
+      fromName: nazov,
       to: [v.f.customer_email],
       reply_to: firma?.email || undefined,
       subject: `Predĺženie splatnosti faktúry ${v.f.invoice_number}`,
@@ -43,7 +43,8 @@ export async function posliOznamenieSplatnosti(v: {
         <p style="color:#6b7280;font-size:13px">Faktúra sa nemení — platí doklad, ktorý ste dostali, len s novým dátumom splatnosti.</p>
         <p>${escapeHtml(nazov)}</p>
       </div>`,
-    }),
-  });
-  if (!res.ok) throw new Error("Splatnosť je zmenená, ale e-mail odberateľovi sa nepodarilo odoslať.");
+    });
+  } catch {
+    throw new Error("Splatnosť je zmenená, ale e-mail odberateľovi sa nepodarilo odoslať.");
+  }
 }

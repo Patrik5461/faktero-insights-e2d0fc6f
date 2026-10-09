@@ -551,7 +551,7 @@
     },
     {
      "nadpis": "E-mailové šablóny",
-     "text": "<>\nNastavenia → Email šablóny určujú, čo príde odberateľovi spolu s PDF —\nzvlášť pre faktúru, ponuku aj upomienku. Do textu sa dajú vložiť premenné (číslo dokladu,\nsuma, splatnosť), takže sa nič neprepisuje ručne.\nMeno odosielateľa a Odpovedať na (Reply-To) sa nastavujú\npri údajoch firmy. Odosiela sa z adresy Faktera, ale odpoveď príde vám — to je dôvod,\nprečo Reply-To netreba nechať prázdne."
+     "text": "<>\nNastavenia → Email šablóny určujú, čo príde odberateľovi spolu s PDF —\nzvlášť pre faktúru, ponuku aj upomienku. Do textu sa dajú vložiť premenné (číslo dokladu,\nsuma, splatnosť), takže sa nič neprepisuje ručne.\nMeno odosielateľa a Odpovedať na (Reply-To) sa nastavujú\npri údajoch firmy. Odosiela sa z adresy Faktera, ale odpoveď príde vám — to je dôvod,\nprečo Reply-To netreba nechať prázdne.\nOdosielanie z vlastnej adresy. V Nastavenia → Firma nastavíte\nvlastný SMTP server (Gmail, Microsoft 365, WebSupport, Seznam či server vašej domény). Faktúry,\nupomienky, cenové ponuky, samofaktúry a podklady pre účtovníka potom prídu z vašej adresy,\nnapr. faktury@vasafirma.sk. Nastaviť to môže majiteľ alebo admin firmy; po uložení príde\nskúšobný mail a zapne sa len vtedy, keď prejde. Heslo je uložené zašifrované — pri Gmaile a\nMicrosoft 365 použite heslo aplikácie. Keby váš server niekedy zlyhal, mail odíde cez Faktero\na chyba sa ukáže pri nastavení."
     },
     {
      "nadpis": "Fakturácia, kniha jázd, alebo oboje",

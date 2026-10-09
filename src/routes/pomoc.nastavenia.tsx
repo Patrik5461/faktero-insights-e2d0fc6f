@@ -163,6 +163,15 @@ const SEKCIE: HelpSection[] = [
           pri údajoch firmy. Odosiela sa z adresy Faktera, ale odpoveď príde vám — to je dôvod,
           prečo Reply-To netreba nechať prázdne.
         </p>
+        <p className="mt-3">
+          <strong>Odosielanie z vlastnej adresy.</strong> V <em>Nastavenia → Firma</em> nastavíte
+          vlastný SMTP server (Gmail, Microsoft 365, WebSupport, Seznam či server vašej domény).
+          Faktúry, upomienky, cenové ponuky, samofaktúry a podklady pre účtovníka potom prídu z
+          vašej adresy, napr. faktury@vasafirma.sk. Nastaviť to môže majiteľ alebo admin firmy; po
+          uložení príde skúšobný mail a zapne sa len vtedy, keď prejde. Heslo je uložené zašifrované
+          — pri Gmaile a Microsoft 365 použite heslo aplikácie. Keby váš server niekedy zlyhal, mail
+          odíde cez Faktero a chyba sa ukáže pri nastavení.
+        </p>
       </>
     ),
   },

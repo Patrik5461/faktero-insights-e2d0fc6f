@@ -1,4 +1,5 @@
 import { MENY } from "@/lib/faktero/mena";
+import { VlastnySmtp } from "@/components/faktero/VlastnySmtp";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -360,6 +361,8 @@ function CompanyPage() {
         <div className="mt-6">
           <BankoveUctyFirmy companyId={c.id} />
         </div>
+
+        <VlastnySmtp companyId={c.id} />
 
         <TeamSection companyId={c.id} />
       </PageBody>

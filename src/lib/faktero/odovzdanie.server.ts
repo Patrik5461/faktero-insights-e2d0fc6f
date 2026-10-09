@@ -836,11 +836,12 @@ export async function posliBalikMailom(opts: {
     .join("\n");
 
   const odosielatel = company.email_sender_name || company.name || "Faktero";
-  const odpoved = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
+  // Podklady účtovníkovi idú z vlastného SMTP firmy, keď ho má zapnutý.
+  const { posliMailFirmy } = await import("./odoslanie-mailu.server");
+  try {
+    await posliMailFirmy(String(company.id), {
       from: `${odosielatel} <${process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk"}>`,
+      fromName: odosielatel,
       to: [prijemca],
       reply_to: company.email_reply_to || company.email || undefined,
       subject: `Podklady za ${balik.nazovObdobia} — ${company.name ?? "Faktero"}`,
@@ -850,16 +851,8 @@ export async function posliBalikMailom(opts: {
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")}</div>`,
       attachments: [{ filename: balik.fileName, content: balik.base64 }],
-    }),
-  });
-  const surove = await odpoved.text();
-  if (!odpoved.ok) {
-    let sprava = surove.slice(0, 300);
-    try {
-      sprava = JSON.parse(surove)?.message ?? sprava;
-    } catch {
-      // Resend pri chybe niekedy vráti HTML — použije sa surový text
-    }
-    throw new Error(`Odoslanie zlyhalo: ${sprava}`);
+    });
+  } catch (e: any) {
+    throw new Error(`Odoslanie zlyhalo: ${String(e?.message ?? e).replace(/^Resend error: /, "").slice(0, 300)}`);
   }
 }

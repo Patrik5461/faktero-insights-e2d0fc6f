@@ -176,31 +176,18 @@ export async function sendReminder(input: SendReminderInput) {
   let errorMessage: string | null = null;
   let status: "sent" | "failed" = "sent";
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        from,
-        to: [recipient],
-        subject: built.subject,
-        reply_to: company?.email_reply_to || undefined,
-        text: built.plain,
-        html: built.html,
-      }),
+    // Upomienka ide z vlastného SMTP firmy, keď ho má zapnutý.
+    const { posliMailFirmy } = await import("./odoslanie-mailu.server");
+    const r = await posliMailFirmy(invoice.company_id, {
+      from,
+      fromName: senderName,
+      to: [recipient],
+      subject: built.subject,
+      reply_to: company?.email_reply_to || undefined,
+      text: built.plain,
+      html: built.html,
     });
-    const txt = await res.text();
-    let json: any = {};
-    try {
-      json = JSON.parse(txt);
-    } catch {
-      // Resend pri chybe niekedy vráti HTML/prázdno — nižšie sa použije surový text
-    }
-    if (!res.ok) {
-      status = "failed";
-      errorMessage = json?.message ?? txt.slice(0, 500);
-    } else {
-      providerId = json?.id ?? null;
-    }
+    providerId = r.id;
   } catch (e: any) {
     status = "failed";
     errorMessage = e?.message ?? "unknown";
