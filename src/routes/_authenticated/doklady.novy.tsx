@@ -1012,10 +1012,17 @@ function NovyDokladPage() {
                   <VyberPravidla
                     companyId={cid}
                     doklad={{ ...form, pravidlo_id: ulozeny?.pravidlo_id ?? null }}
+                    zaklad={{
+                      predkontacia: form.pohoda_predkontacia,
+                      clenenie: form.pohoda_clenenie_dph,
+                      kategoria: form.category,
+                      kv: form.kv_clenenie,
+                    }}
                     onPouzi={(p) => {
                       if (p.predkontacia) updateForm("pohoda_predkontacia", p.predkontacia);
                       if (p.clenenie_dph) updateForm("pohoda_clenenie_dph", p.clenenie_dph);
                       if (p.kategoria) updateForm("category", p.kategoria as any);
+                      if (p.kv_clenenie) updateForm("kv_clenenie", p.kv_clenenie);
                     }}
                   />
                 ) : null}

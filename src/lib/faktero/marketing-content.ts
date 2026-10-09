@@ -1040,7 +1040,7 @@ export const uctovnici: HubContent = {
       slug: "pravidla-uctovania",
       label: "Pravidlá účtovania",
       summary:
-        "Doklad od známeho dodávateľa sa zaúčtuje sám — predkontácia, kategória, členenie DPH.",
+        "Bloček, prijatá aj vystavená faktúra či pohyb v banke sa zaúčtuje sám — predkontácia, členenie DPH aj KV.",
       icon: ListChecks,
       blocks: [
         {
@@ -1050,8 +1050,10 @@ export const uctovnici: HubContent = {
         {
           type: "bullets",
           items: [
-            "Podmienky: časť názvu dodávateľa, IČO alebo spôsob úhrady",
-            "Doplní predkontáciu a členenie DPH pre Pohodu, kategóriu, odpočet DPH a poznámku",
+            "Pre bločky, prijaté aj vystavené faktúry a bankové pohyby",
+            "Podmienky: partner, IČO, typ faktúry, spôsob úhrady, kto doklad nahral, predmet mailu; pri banke účet, smer a typ pohybu",
+            "Doplní predkontáciu a členenie DPH pre Pohodu, členenie KV, kategóriu, odpočet DPH a poznámku",
+            "Pravidlo vytvoríte jedným klikom priamo z dokladu",
             "Zaberie pri skene na webe aj v appke, pri doklade z e-mailu aj z importu",
             "Dopĺňa len prázdne políčka — čo vyplní človek, neprepíše",
             "Jedným klikom ho uplatníte aj na doklady, ktoré už vo Fakteri sú",

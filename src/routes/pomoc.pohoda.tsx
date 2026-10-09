@@ -408,7 +408,7 @@ const sections: HelpSection[] = [
   },
   {
     id: "pravidla",
-    title: "Pravidlá účtovania prijatých dokladov",
+    title: "Pravidlá účtovania (automatické účtovanie)",
     body: (
       <>
         <p>
@@ -427,9 +427,27 @@ const sections: HelpSection[] = [
             <code>#YYYY#</code>, <code>#MM/YYYY#</code>, <code>#MMYYYY#</code> a{" "}
             <code>#MM-1/YYYY#</code> (predchádzajúci mesiac) — napr. „Telefón #MM-1/YYYY#".
           </li>
-          <li>Platia pre bločky a doklady aj pre prijaté faktúry.</li>
           <li>
-            Doplní: kategóriu, predkontáciu a členenie DPH pre Pohodu, odpočet DPH a poznámku.
+            Pravidlo platí pre to, čo zvolíte v poli <strong>Platí pre</strong>: bločky, prijaté
+            faktúry, <strong>vystavené faktúry</strong> alebo <strong>banku</strong>. Staršie pravidlá
+            platia pre bločky aj prijaté faktúry naraz. Pri faktúrach sa dá podmieniť aj{" "}
+            <strong>typom</strong> — napríklad iná predkontácia pre dobropisy či zálohové faktúry.
+          </li>
+          <li>
+            Doplní: kategóriu, predkontáciu a členenie DPH pre Pohodu, <strong>členenie
+            kontrolného výkazu</strong>, odpočet DPH a poznámku. Vystavenej faktúre podľa odberateľa
+            predkontáciu, členenie DPH a KV.
+          </li>
+          <li>
+            <strong>Banka:</strong> podľa účtu (IBAN), smeru (príjem/výdaj), typu pohybu (poplatok,
+            daň, mzda…) a protistrany či popisu dá pohybu predkontáciu pri vývoze výpisu do Pohody.
+            Má prednosť pred predkontáciami podľa označenia platby.
+          </li>
+          <li>
+            Na detaile dokladu, ktorý ešte žiadne pravidlo nemá, je odkaz{" "}
+            <em>Vytvoriť pravidlo pre …</em> — otvorí nové pravidlo predvyplnené partnerom a kódmi z
+            dokladu. Keď na doklad sedí viac pravidiel, vyberiete iné v ponuke pri doklade;
+            použité pravidlo označuje hviezdička.
           </li>
           <li>
             Zaberie pri každom novom doklade — zo skenu na webe aj v appke, z e-mailu, z importu —

@@ -289,7 +289,7 @@ const accounting = [
   {
     icon: ListChecks,
     title: "Pravidlá účtovania",
-    text: "Doklad od známeho dodávateľa dostane predkontáciu, kategóriu a členenie DPH sám, hneď ako vznikne.",
+    text: "Bloček, prijatá aj vystavená faktúra či pohyb v banke dostane predkontáciu, členenie DPH a KV sám, hneď ako vznikne.",
   },
   {
     icon: Send,

@@ -11,6 +11,7 @@ import {
 } from "@/lib/faktero/vypis-pdf.functions";
 import type { Vypis, VypisPohyb } from "@/lib/faktero/vypis-pohyby";
 import { OZNACENIA, type KodOznacenia } from "@/lib/faktero/vypis-oznacenie";
+import { pravidloPohybu, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
 import { Download, FileUp, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/vypis-do-pohody")({
@@ -343,7 +344,21 @@ function VypisDoPohodyPage() {
     (o) => pocetPodlaOznacenia(o.kod) > 0 || nastavenia.predkontacie[o.kod],
   );
 
+  /* Pravidlá účtovania pre banku — v XML majú prednosť pred predkontáciou podľa označenia. */
+  const [pravidlaBanky, setPravidlaBanky] = useState<Pravidlo[]>([]);
+  useEffect(() => {
+    if (!cid) return;
+    void (supabase as any)
+      .from("pravidla_uctovania")
+      .select("*")
+      .eq("company_id", cid)
+      .eq("druh", "banka")
+      .eq("aktivne", true)
+      .then(({ data }: { data: Pravidlo[] | null }) => setPravidlaBanky(data ?? []));
+  }, [cid]);
+
   const vybrane = riadky.filter((r) => r.vyviezt);
+  const sPravidlom = vybrane.filter((r) => pravidloPohybu(pravidlaBanky, r, ucet)).length;
   // Bez zostatkov sa camt.053 zostaviť dá, ale s nulovými zostatkami účtu.
   const maZostatky = vybrane.some((r) => r.zostatok != null);
   const prijmy = vybrane.filter((r) => r.smer === "prijem").reduce((s, r) => s + r.suma, 0);
@@ -510,6 +525,23 @@ function VypisDoPohodyPage() {
                   ich POHODA priradí sama a účtovník ich prepisuje ručne.
                   {ucet ? ` Výpis je k účtu ${ucet}.` : ""}
                   {mena && mena !== "EUR" ? ` Pozor, výpis je v mene ${mena}.` : ""}
+                </p>
+                <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-4">
+                  {pravidlaBanky.length ? (
+                    <>
+                      Pravidlá účtovania pre banku dajú predkontáciu{" "}
+                      <strong>
+                        {sPravidlom} z {vybrane.length}
+                      </strong>{" "}
+                      pohybov — majú prednosť pred predkontáciami nižšie.{" "}
+                    </>
+                  ) : (
+                    <>Predkontáciu podľa účtu, smeru a protistrany vedia dávať aj </>
+                  )}
+                  <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
+                    pravidlá účtovania
+                  </Link>
+                  .
                 </p>
               </div>
 

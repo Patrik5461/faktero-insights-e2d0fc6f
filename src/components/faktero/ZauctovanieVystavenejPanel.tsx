@@ -12,6 +12,7 @@ import {
 } from "@/lib/faktero/zauctovanie.functions";
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
 import { KodPohody } from "./KodPohody";
+import { VyberPravidla } from "./VyberPravidla";
 import type { Navrhy } from "./ZauctovaniePanel";
 import { potvrd } from "@/lib/potvrdenie";
 
@@ -261,6 +262,25 @@ export function ZauctovanieVystavenejPanel({
               </select>
             </label>
           </div>
+          <VyberPravidla
+            companyId={inv.company_id}
+            druh="vystavena"
+            typ={inv.type}
+            doklad={{
+              supplier_ico: inv.customer_ico,
+              supplier_name: inv.customer_name,
+              pravidlo_id: inv.pravidlo_id,
+            }}
+            zaklad={{ predkontacia: h.predkontacia, clenenie: h.clenenie, kv: h.kv }}
+            onPouzi={(p) =>
+              setH({
+                ...h,
+                predkontacia: p.predkontacia ?? h.predkontacia,
+                clenenie: p.clenenie_dph ?? h.clenenie,
+                kv: p.kv_clenenie ?? h.kv,
+              })
+            }
+          />
 
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <label className="block">

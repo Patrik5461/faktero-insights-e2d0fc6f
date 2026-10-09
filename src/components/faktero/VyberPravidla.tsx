@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Star } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { pravidloSedi, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
+
+/** Hodnoty, z ktorých sa dá založiť nové pravidlo („Vytvoriť automatické účtovanie"). */
+export type ZakladPravidla = {
+  predkontacia?: string | null;
+  clenenie?: string | null;
+  kv?: string | null;
+  kategoria?: string | null;
+};
 
 /**
  * Pravidlá účtovania pri doklade (ako „Aplikovať automatické účtovanie"
@@ -13,6 +21,9 @@ import { pravidloSedi, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
 export function VyberPravidla({
   companyId,
   doklad,
+  druh = "blocek",
+  typ,
+  zaklad,
   onPouzi,
 }: {
   companyId: string;
@@ -22,6 +33,10 @@ export function VyberPravidla({
     payment_method?: string | null;
     pravidlo_id?: string | null;
   };
+  druh?: "blocek" | "prijata" | "vystavena";
+  typ?: string | null;
+  /** Súčasné kódy dokladu — predvyplnia nové pravidlo. */
+  zaklad?: ZakladPravidla;
   onPouzi: (p: Pravidlo) => void;
 }) {
   const [pravidla, setPravidla] = useState<(Pravidlo & { id: string })[]>([]);
@@ -43,11 +58,15 @@ export function VyberPravidla({
       supplier_ico: doklad.supplier_ico ?? null,
       supplier_name: doklad.supplier_name ?? null,
       payment_method: doklad.payment_method ?? null,
+      druh,
+      typ: typ ?? null,
     }),
   );
   const pouzite = pravidla.find((p) => p.id === doklad.pravidlo_id);
 
-  if (!pouzite && !zhodne.length) return null;
+  const partner = String(doklad.supplier_name ?? "").trim();
+  const ico = String(doklad.supplier_ico ?? "").replace(/\D/g, "");
+  const novePravidlo = (partner || ico) && !pouzite && !zhodne.length;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
       {pouzite ? (
@@ -91,9 +110,29 @@ export function VyberPravidla({
           </button>
         </>
       ) : null}
-      <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
-        pravidlá
-      </Link>
+      {novePravidlo ? (
+        /* Ako „Vytvoriť automatické účtovanie" v Doklado — ďalší doklad od
+           tohto partnera dostane tie isté kódy sám. */
+        <Link
+          to="/uctovnictvo/pravidla"
+          search={{
+            novy: druh,
+            nazov: partner || undefined,
+            ico: ico.length >= 6 ? ico : undefined,
+            predkontacia: zaklad?.predkontacia || undefined,
+            clenenie: zaklad?.clenenie || undefined,
+            kv: zaklad?.kv || undefined,
+            kategoria: zaklad?.kategoria || undefined,
+          }}
+          className="inline-flex items-center gap-1 text-primary hover:underline"
+        >
+          <Plus className="h-3.5 w-3.5" /> Vytvoriť pravidlo pre {partner || `IČO ${ico}`}
+        </Link>
+      ) : (
+        <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
+          pravidlá
+        </Link>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { VyberPravidla } from "./VyberPravidla";
+import { typPrijatej } from "@/lib/faktero/pravidla-uctovania";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -413,12 +414,21 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
             <VyberPravidla
               companyId={row.company_id}
               doklad={row}
+              druh="prijata"
+              typ={typPrijatej(row.type, row.amount_total, row.opravuje_cislo)}
+              zaklad={{
+                predkontacia: h.predkontacia,
+                clenenie: h.clenenie,
+                kv: h.kv,
+                kategoria: h.kategoria,
+              }}
               onPouzi={(p) =>
                 setH({
                   ...h,
                   predkontacia: p.predkontacia ?? h.predkontacia,
                   clenenie: p.clenenie_dph ?? h.clenenie,
                   kategoria: p.kategoria ?? h.kategoria,
+                  kv: p.kv_clenenie ?? h.kv,
                 })
               }
             />

@@ -477,10 +477,28 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
       return { fileName: `sepa-vypis-${znackaSepa}.xml`, content: obsah };
     }
 
+    /*
+      Pravidlá účtovania pre banku (účet, smer, typ pohybu, protistrana) —
+      predkontácia z pravidla má prednosť pred nastavením podľa označenia.
+    */
+    const { pravidloPohybu } = await import("./pravidla-uctovania");
+    const { data: pravidlaBanky } = await supabaseAdmin
+      .from("pravidla_uctovania" as never)
+      .select("*")
+      .eq("company_id", data.company_id)
+      .eq("druh", "banka")
+      .eq("aktivne", true);
+    const pohyby = data.pohyby.map((p) => {
+      const r = pravidloPohybu((pravidlaBanky ?? []) as never[], p, data.ucet);
+      return r
+        ? { ...p, predkontacia: (r as { predkontacia: string }).predkontacia }
+        : { ...p, predkontacia: null };
+    });
+
     const { buildPohodaBankXml } = await import("./export.server");
     const content = buildPohodaBankXml({
       company: company as never,
-      pohyby: data.pohyby,
+      pohyby,
       cisloVypisu: data.cisloVypisu ?? null,
       datumVypisu: data.datumVypisu ?? null,
       nastavenia: {

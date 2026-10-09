@@ -884,6 +884,8 @@ export type VypisPohyb = {
   ss?: string | null;
   /** Čím ten pohyb je — poplatok, daň, úhrada faktúry… Viď `vypis-oznacenie.ts`. */
   oznacenie?: KodOznacenia | null;
+  /** Predkontácia z pravidla účtovania pre banku — má prednosť pred všetkým. */
+  predkontacia?: string | null;
 };
 
 /**
@@ -974,7 +976,9 @@ export function polozkyBankovehoVypisu(opts: {
       const podlaOznacenia = p.oznacenie
         ? (nastavenia?.predkontacieOznaceni?.[p.oznacenie] ?? "")
         : "";
-      const predkontacia = String(podlaOznacenia || nastavenia?.predkontaciaBanka || "").trim();
+      const predkontacia = String(
+        p.predkontacia || podlaOznacenia || nastavenia?.predkontaciaBanka || "",
+      ).trim();
 
       return `
   <dat:dataPackItem id="${esc(`VYPIS${cislo ? `-${cislo}` : ""}-${poradie}`)}" version="2.0">
