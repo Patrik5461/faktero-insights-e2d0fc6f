@@ -519,6 +519,15 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(x[2].invoice.invoiceHeader.invoiceType).toBe("receivedInvoice");
   });
 
+  it("bloček z vyúčtovania výdavkov nejde z pokladne, ale ako interný doklad", () => {
+    const x = posli(
+      [{ ...bloček, id: "v", payment_method: "hotovost", vyuctovanie_id: "vyu-1" }],
+      { blockyPodlaPlatby: true, pokladna: "HOT", predkontaciaDoklady: "1Pv" },
+    ).dataPackItem;
+    expect(x.voucher).toBeUndefined();
+    expect(x.intDoc.intDocHeader.accounting.ids).toBe("1Pv");
+  });
+
   it("číselný rad, stredisko, činnosť, zákazka, interná poznámka, párovací symbol a odkaz na sken", () => {
     const nast = {
       blockyPodlaPlatby: true,
