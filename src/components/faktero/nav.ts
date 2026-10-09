@@ -119,6 +119,7 @@ export const NAV: NavGroup[] = [
       { to: "/prijate-faktury", label: "Prijaté faktúry" },
       { to: "/faktury", label: "Vystavené faktúry" },
       { to: "/ostatne-doklady", label: "Iné doklady" },
+      { to: "/doklady/vyuctovania", label: "Vyúčtovanie výdavkov" },
       { to: "/kos", label: "Kôš" },
       { to: "/schvalovanie", label: "Na schválenie" },
       { to: "/doklady/mailom", label: "Doklady e-mailom" },

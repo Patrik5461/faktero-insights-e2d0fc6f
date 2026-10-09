@@ -29,6 +29,8 @@ export type FakturaNaUhradu = {
   uhradene?: number | null;
   /** Zaplatená prijatá zálohová faktúra, ktorú faktúra vyúčtováva. */
   zaloha?: number | null;
+  /** Faktúra vo vyúčtovaní výdavkov — zaplatil ju zamestnanec. */
+  vyuctovanie_id?: string | null;
 };
 
 export type Platba = {
@@ -124,6 +126,10 @@ export function pripravPlatby(faktury: FakturaNaUhradu[]): {
     }
     if (f.status === "cancelled") {
       skip("je stornovaná");
+      continue;
+    }
+    if (f.vyuctovanie_id) {
+      skip("zaplatil ju zamestnanec (je vo vyúčtovaní výdavkov)");
       continue;
     }
     if (f.payment_method && ZAPLATENE_NA_MIESTE.has(f.payment_method)) {

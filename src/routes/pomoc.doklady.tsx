@@ -327,6 +327,12 @@ const sections: HelpSection[] = [
           detaile dokladu len na prezretie, do skladu ani do účtovníctva nevstupujú.
         </p>
         <p>
+          <strong>Zdrojový e-mail.</strong> Text mailu, s ktorým doklad prišiel („to je za september",
+          „zákazka Novák"), sa uloží. Ukážete ho ikonou obálky v Nespracovaných alebo tlačidlom{" "}
+          <em>Zdrojový e-mail</em> pri doklade — aj po tom, čo z neho vznikla prijatá faktúra, bloček
+          či iný doklad.
+        </p>
+        <p>
           Na detaile dokladu je aj <strong>náhľad prílohy</strong>, takže na prezretie nemusíte nič
           sťahovať.
         </p>
@@ -517,6 +523,42 @@ const sections: HelpSection[] = [
           dokladu. Do Pohody, do mesačného balíka a do príkazu na úhradu idú len schválené. Vrátený
           doklad sa po oprave vráti na schválenie odznova.
         </p>
+      </>
+    ),
+  },
+  {
+    id: "vyuctovanie",
+    title: "Vyúčtovanie výdavkov zamestnanca",
+    body: (
+      <>
+        <p>
+          Bločky a faktúry, ktoré zaplatil zamestnanec, zhrnie{" "}
+          <Link to="/doklady/vyuctovania">Doklady → Vyúčtovanie výdavkov</Link>. Vyúčtovanie má tri
+          typy: <strong>poskytnutá záloha</strong> (rozdiel sa doplatí alebo vráti),{" "}
+          <strong>vlastné zdroje zamestnanca</strong> (firma preplatí celú sumu) a{" "}
+          <strong>firemná debetná karta</strong> (nič sa nedopláca, zamestnanec len preukazuje
+          výdavky).
+        </p>
+        <ul>
+          <li>
+            Najrýchlejšie: v Bločkoch alebo Prijatých faktúrach označte doklady a kliknite na{" "}
+            <em>Vyúčtovanie</em> — vytvoríte nové alebo pridáte do existujúceho.
+          </li>
+          <li>
+            Výsledok („Firma doplatí zamestnancovi 166,50 EUR") a <strong>PDF na podpis</strong>{" "}
+            zamestnanca a schvaľujúceho.
+          </li>
+          <li>
+            Účtovné nastavenia vyúčtovania (predkontácia, členenie DPH, dátum účtovania) sa doplnia
+            dokladom, ktoré ich ešte nemajú.
+          </li>
+          <li>
+            Bloček vo vyúčtovaní ide do Pohody ako <strong>interný doklad</strong>, nie ako výdaj z
+            firemnej pokladne. Prijatú faktúru vo vyúčtovaní hromadný príkaz na úhradu vynechá —
+            dodávateľa už zaplatil zamestnanec.
+          </li>
+          <li>Doklad môže byť len v jednom vyúčtovaní. Uzavreté vyúčtovanie sa dá znova otvoriť.</li>
+        </ul>
       </>
     ),
   },

@@ -1266,7 +1266,13 @@ export function polozkyDokladov(opts: {
       const p: "inv" | "vch" | "int" =
         d?._agenda === "int"
           ? "int"
-          : blocek && nastavenia?.blockyPodlaPlatby
+          : /*
+              Bloček z vyúčtovania výdavkov zaplatil zamestnanec — nie je to
+              výdaj z firemnej pokladne, ale záväzok voči nemu (interný doklad).
+            */
+            blocek && nastavenia?.blockyPodlaPlatby && d?.vyuctovanie_id
+            ? "int"
+            : blocek && nastavenia?.blockyPodlaPlatby
           ? platba === "hotovost"
             ? // Pokladničný doklad bez pokladne Pohoda nezaloží — kým firma
               // skratku pokladne nevyplní, ide bloček ako prijatá faktúra.

@@ -1,4 +1,5 @@
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
+import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
@@ -558,6 +559,9 @@ function DokladyPage() {
             >
               Predkontácia ({selected.size})
             </button>
+          )}
+          {selected.size > 0 && cid && (
+            <VyuctovanieZVyberu companyId={cid} druh="blocek" ids={Array.from(selected)} onHotovo={refresh} />
           )}
           {selected.size > 0 && program.inyProgram && (
             <button

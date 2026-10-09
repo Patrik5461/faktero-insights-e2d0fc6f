@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
 import { UpozornenieNespracovane } from "@/components/faktero/UpozornenieNespracovane";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -724,6 +725,14 @@ function PurchaseInvoicesPage() {
               )}
               Stiahnuť ZIP (PDF + CSV)
             </button>
+            {getActiveCompanyId() ? (
+              <VyuctovanieZVyberu
+                companyId={getActiveCompanyId()!}
+                druh="prijata"
+                ids={Array.from(selected)}
+                onHotovo={() => void load()}
+              />
+            ) : null}
             <button
               onClick={() => setPrikaz(true)}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary"

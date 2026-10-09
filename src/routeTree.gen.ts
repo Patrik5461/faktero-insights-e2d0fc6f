@@ -243,6 +243,8 @@ import { Route as ApiV1WarehousesRouteImport } from './routes/api/v1/warehouses'
 import { Route as ApiWebhooksGopayRouteImport } from './routes/api/webhooks/gopay'
 import { Route as DocsOnlinePlatbyGopayRouteImport } from './routes/docs.online-platby.gopay'
 import { Route as PomocOnlinePlatbyGopayRouteImport } from './routes/pomoc.online-platby.gopay'
+import { Route as AuthenticatedDokladyVyuctovaniaIndexRouteImport } from './routes/_authenticated/doklady.vyuctovania.index'
+import { Route as AuthenticatedDokladyVyuctovaniaIdRouteImport } from './routes/_authenticated/doklady.vyuctovania.$id'
 import { Route as AuthenticatedFakturyIdIndexRouteImport } from './routes/_authenticated/faktury.$id.index'
 import { Route as AuthenticatedFakturyIdUpravitRouteImport } from './routes/_authenticated/faktury.$id.upravit'
 import { Route as AuthenticatedJazdyIntegracieIndexRouteImport } from './routes/_authenticated/jazdy.integracie.index'
@@ -1570,6 +1572,18 @@ const PomocOnlinePlatbyGopayRoute = PomocOnlinePlatbyGopayRouteImport.update({
   path: '/pomoc/online-platby/gopay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedDokladyVyuctovaniaIndexRoute =
+  AuthenticatedDokladyVyuctovaniaIndexRouteImport.update({
+    id: '/doklady/vyuctovania/',
+    path: '/doklady/vyuctovania/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDokladyVyuctovaniaIdRoute =
+  AuthenticatedDokladyVyuctovaniaIdRouteImport.update({
+    id: '/doklady/vyuctovania/$id',
+    path: '/doklady/vyuctovania/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFakturyIdIndexRoute =
   AuthenticatedFakturyIdIndexRouteImport.update({
     id: '/faktury/$id/',
@@ -2180,6 +2194,7 @@ export interface FileRoutesByFullPath {
   '/admin/companies/': typeof AdminCompaniesIndexRoute
   '/admin/podpora/': typeof AdminPodporaIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
+  '/doklady/vyuctovania/$id': typeof AuthenticatedDokladyVyuctovaniaIdRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
@@ -2230,6 +2245,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/stock/low-stock': typeof ApiV1StockLowStockRoute
   '/api/v1/stock/movements': typeof ApiV1StockMovementsRouteWithChildren
   '/api/v1/stock/valuation': typeof ApiV1StockValuationRoute
+  '/doklady/vyuctovania/': typeof AuthenticatedDokladyVyuctovaniaIndexRoute
   '/faktury/$id/': typeof AuthenticatedFakturyIdIndexRoute
   '/jazdy/integracie/': typeof AuthenticatedJazdyIntegracieIndexRoute
   '/prijate-faktury/$id/': typeof AuthenticatedPrijateFakturyIdIndexRoute
@@ -2473,6 +2489,7 @@ export interface FileRoutesByTo {
   '/admin/companies': typeof AdminCompaniesIndexRoute
   '/admin/podpora': typeof AdminPodporaIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
+  '/doklady/vyuctovania/$id': typeof AuthenticatedDokladyVyuctovaniaIdRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
@@ -2523,6 +2540,7 @@ export interface FileRoutesByTo {
   '/api/v1/stock/low-stock': typeof ApiV1StockLowStockRoute
   '/api/v1/stock/movements': typeof ApiV1StockMovementsRouteWithChildren
   '/api/v1/stock/valuation': typeof ApiV1StockValuationRoute
+  '/doklady/vyuctovania': typeof AuthenticatedDokladyVyuctovaniaIndexRoute
   '/faktury/$id': typeof AuthenticatedFakturyIdIndexRoute
   '/jazdy/integracie': typeof AuthenticatedJazdyIntegracieIndexRoute
   '/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdIndexRoute
@@ -2777,6 +2795,7 @@ export interface FileRoutesById {
   '/admin/companies/': typeof AdminCompaniesIndexRoute
   '/admin/podpora/': typeof AdminPodporaIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
+  '/_authenticated/doklady/vyuctovania/$id': typeof AuthenticatedDokladyVyuctovaniaIdRoute
   '/_authenticated/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/_authenticated/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/_authenticated/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
@@ -2827,6 +2846,7 @@ export interface FileRoutesById {
   '/api/v1/stock/low-stock': typeof ApiV1StockLowStockRoute
   '/api/v1/stock/movements': typeof ApiV1StockMovementsRouteWithChildren
   '/api/v1/stock/valuation': typeof ApiV1StockValuationRoute
+  '/_authenticated/doklady/vyuctovania/': typeof AuthenticatedDokladyVyuctovaniaIndexRoute
   '/_authenticated/faktury/$id/': typeof AuthenticatedFakturyIdIndexRoute
   '/_authenticated/jazdy/integracie/': typeof AuthenticatedJazdyIntegracieIndexRoute
   '/_authenticated/prijate-faktury/$id/': typeof AuthenticatedPrijateFakturyIdIndexRoute
@@ -3081,6 +3101,7 @@ export interface FileRouteTypes {
     | '/admin/companies/'
     | '/admin/podpora/'
     | '/admin/users/'
+    | '/doklady/vyuctovania/$id'
     | '/faktury/$id/upravit'
     | '/jazdy/integracie/commander'
     | '/jazdy/integracie/tesla'
@@ -3131,6 +3152,7 @@ export interface FileRouteTypes {
     | '/api/v1/stock/low-stock'
     | '/api/v1/stock/movements'
     | '/api/v1/stock/valuation'
+    | '/doklady/vyuctovania/'
     | '/faktury/$id/'
     | '/jazdy/integracie/'
     | '/prijate-faktury/$id/'
@@ -3374,6 +3396,7 @@ export interface FileRouteTypes {
     | '/admin/companies'
     | '/admin/podpora'
     | '/admin/users'
+    | '/doklady/vyuctovania/$id'
     | '/faktury/$id/upravit'
     | '/jazdy/integracie/commander'
     | '/jazdy/integracie/tesla'
@@ -3424,6 +3447,7 @@ export interface FileRouteTypes {
     | '/api/v1/stock/low-stock'
     | '/api/v1/stock/movements'
     | '/api/v1/stock/valuation'
+    | '/doklady/vyuctovania'
     | '/faktury/$id'
     | '/jazdy/integracie'
     | '/prijate-faktury/$id'
@@ -3677,6 +3701,7 @@ export interface FileRouteTypes {
     | '/admin/companies/'
     | '/admin/podpora/'
     | '/admin/users/'
+    | '/_authenticated/doklady/vyuctovania/$id'
     | '/_authenticated/faktury/$id/upravit'
     | '/_authenticated/jazdy/integracie/commander'
     | '/_authenticated/jazdy/integracie/tesla'
@@ -3727,6 +3752,7 @@ export interface FileRouteTypes {
     | '/api/v1/stock/low-stock'
     | '/api/v1/stock/movements'
     | '/api/v1/stock/valuation'
+    | '/_authenticated/doklady/vyuctovania/'
     | '/_authenticated/faktury/$id/'
     | '/_authenticated/jazdy/integracie/'
     | '/_authenticated/prijate-faktury/$id/'
@@ -5515,6 +5541,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PomocOnlinePlatbyGopayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/doklady/vyuctovania/': {
+      id: '/_authenticated/doklady/vyuctovania/'
+      path: '/doklady/vyuctovania'
+      fullPath: '/doklady/vyuctovania/'
+      preLoaderRoute: typeof AuthenticatedDokladyVyuctovaniaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/doklady/vyuctovania/$id': {
+      id: '/_authenticated/doklady/vyuctovania/$id'
+      path: '/doklady/vyuctovania/$id'
+      fullPath: '/doklady/vyuctovania/$id'
+      preLoaderRoute: typeof AuthenticatedDokladyVyuctovaniaIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/faktury/$id/': {
       id: '/_authenticated/faktury/$id/'
       path: '/faktury/$id'
@@ -6182,8 +6222,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedZakazkyIndexRoute: typeof AuthenticatedZakazkyIndexRoute
   AuthenticatedZalohoveIndexRoute: typeof AuthenticatedZalohoveIndexRoute
   AuthenticatedZamestnanciIndexRoute: typeof AuthenticatedZamestnanciIndexRoute
+  AuthenticatedDokladyVyuctovaniaIdRoute: typeof AuthenticatedDokladyVyuctovaniaIdRoute
   AuthenticatedFakturyIdUpravitRoute: typeof AuthenticatedFakturyIdUpravitRoute
   AuthenticatedPrijateFakturyIdUpravitRoute: typeof AuthenticatedPrijateFakturyIdUpravitRoute
+  AuthenticatedDokladyVyuctovaniaIndexRoute: typeof AuthenticatedDokladyVyuctovaniaIndexRoute
   AuthenticatedFakturyIdIndexRoute: typeof AuthenticatedFakturyIdIndexRoute
   AuthenticatedPrijateFakturyIdIndexRoute: typeof AuthenticatedPrijateFakturyIdIndexRoute
 }
@@ -6299,9 +6341,13 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedZakazkyIndexRoute: AuthenticatedZakazkyIndexRoute,
   AuthenticatedZalohoveIndexRoute: AuthenticatedZalohoveIndexRoute,
   AuthenticatedZamestnanciIndexRoute: AuthenticatedZamestnanciIndexRoute,
+  AuthenticatedDokladyVyuctovaniaIdRoute:
+    AuthenticatedDokladyVyuctovaniaIdRoute,
   AuthenticatedFakturyIdUpravitRoute: AuthenticatedFakturyIdUpravitRoute,
   AuthenticatedPrijateFakturyIdUpravitRoute:
     AuthenticatedPrijateFakturyIdUpravitRoute,
+  AuthenticatedDokladyVyuctovaniaIndexRoute:
+    AuthenticatedDokladyVyuctovaniaIndexRoute,
   AuthenticatedFakturyIdIndexRoute: AuthenticatedFakturyIdIndexRoute,
   AuthenticatedPrijateFakturyIdIndexRoute:
     AuthenticatedPrijateFakturyIdIndexRoute,
