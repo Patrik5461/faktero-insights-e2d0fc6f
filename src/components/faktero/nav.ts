@@ -290,6 +290,7 @@ export const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
   { to: "/nastavenia/schvalovanie", label: "Schvaľovanie dokladov" },
   { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
   { to: "/nastavenia/email-sablony", label: "Email šablóny" },
+  { to: "/nastavenia/eshop", label: "E-shop a doprava" },
   { to: "/nastavenia/zabezpecenie", label: "Zabezpečenie účtu" },
   { to: "/nastavenia", label: "Nastavenia systému" },
 ];

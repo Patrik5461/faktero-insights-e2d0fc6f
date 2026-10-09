@@ -176,6 +176,34 @@ const SEKCIE: HelpSection[] = [
     ),
   },
   {
+    id: "eshop",
+    title: "Shoptet a Zásielkovňa",
+    body: (
+      <>
+        <p>
+          V <strong>Nastavenia → E-shop a doprava</strong> pripojíte Shoptet a Zásielkovňu. Nastaviť
+          to môže majiteľ alebo admin firmy; tokeny a heslá sú uložené zašifrované.
+        </p>
+        <p className="mt-3">
+          <strong>Shoptet</strong> — súkromný API token (Shoptet tarif Premium, v administrácii
+          Prepojenia → API partneri; stačí skupina Objednávky na čítanie). Potom sa na tej istej
+          stránke načítajú objednávky za zvolené obdobie a z vybraných vystavíte faktúry: odberateľ
+          s IČO a IČ DPH, položky, doprava a zľavy so sumami presne z obchodu, číslo objednávky na
+          faktúre. Zaplatená objednávka sa označí ako uhradená, dobierka má splatnosť v deň
+          vystavenia. Tá istá objednávka faktúru druhýkrát nedostane.
+        </p>
+        <p className="mt-3">
+          <strong>Zásielkovňa</strong> — API heslo z klientskej sekcie Zásielkovne. Na detaile
+          faktúry je potom tlačidlo <em>Poslať cez Zásielkovňu</em>: výdajné miesto vyberiete na
+          mape (alebo zadáte id dopravcu pri doručení na adresu), hmotnosť a dobierku vo výške
+          faktúry. Štítok stiahnete ako PDF a stav zásielky si viete kedykoľvek obnoviť. Vybrané
+          dobierky nahráte z exportu faktúr Packety v <em>Účtovníctvo → Výpis z platobnej brány</em>
+          .
+        </p>
+      </>
+    ),
+  },
+  {
     id: "produkty",
     title: "Fakturácia, kniha jázd, alebo oboje",
     body: (

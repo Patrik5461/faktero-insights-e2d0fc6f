@@ -5,6 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { Oprava25aPanel } from "@/components/faktero/Oprava25aPanel";
 import { ZauctovanieVystavenejPanel } from "@/components/faktero/ZauctovanieVystavenejPanel";
+import { ZasielkovnaFaktury } from "@/components/faktero/ZasielkovnaFaktury";
 import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { KomentarePanel } from "@/components/faktero/KomentarePanel";
@@ -1203,6 +1204,7 @@ function InvoiceDetail() {
           </div>
 
           <aside className="space-y-4">
+            <ZasielkovnaFaktury inv={inv} onZmena={() => void load()} />
             {zakazka && (
               <div className="rounded-xl border border-border bg-card p-5">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Zákazka</div>

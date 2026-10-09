@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { normalizePaymentMethod } from "@/lib/faktero/payment-method";
 
 const Item = z.object({
   name: z.string().min(1).max(255),
@@ -73,8 +72,6 @@ export const Route = createFileRoute("/api/v1/invoices")({
       },
       POST: async ({ request }) => {
         const { handleApi, ok, err } = await import("@/lib/faktero/api-auth.server");
-        const { nextInvoiceNumberDetailed, computeInvoiceTotals } =
-          await import("@/lib/faktero/invoice-numbering.server");
         const { triggerEvent, invoicePayload } =
           await import("@/lib/faktero/webhook-trigger.server");
         return handleApi(request, async (ctx) => {
@@ -83,122 +80,11 @@ export const Route = createFileRoute("/api/v1/invoices")({
             return err("validation_error", "Neplatné dáta faktúry.", 400, parsed.error.flatten());
           const d = parsed.data;
 
-          // Dedupe by external_id
-          if (d.external_id) {
-            const { data: dupe } = await ctx.supabase
-              .from("invoices")
-              .select("*")
-              .eq("company_id", ctx.company_id)
-              .eq("external_id", d.external_id)
-              .maybeSingle();
-            if (dupe) return ok(dupe, 200);
-          }
-
-          // Resolve customer snapshot
-          let cust: any = null;
-          if (d.customer_id) {
-            const { data } = await ctx.supabase
-              .from("customers")
-              .select("*")
-              .eq("id", d.customer_id)
-              .eq("company_id", ctx.company_id)
-              .maybeSingle();
-            if (!data) return err("not_found", "Odberateľ nenájdený.", 404);
-            cust = data;
-          } else if (d.customer) {
-            cust = d.customer;
-          } else {
-            return err("validation_error", "Vyžaduje sa customer_id alebo customer.", 400);
-          }
-
-          const today = new Date().toISOString().slice(0, 10);
-          const issue_date = d.issue_date ?? today;
-          let predvolenaSadzba = 23;
-          if (d.items.some((i) => i.vat_rate === undefined)) {
-            const { krajinaDane, zakladnaSadzba } = await import("@/lib/faktero/vat-rates");
-            const { data: firma } = await ctx.supabase
-              .from("companies")
-              .select("vat_payer, country")
-              .eq("id", ctx.company_id)
-              .maybeSingle();
-            predvolenaSadzba =
-              firma?.vat_payer === false
-                ? 0
-                : zakladnaSadzba(krajinaDane(firma?.country), issue_date);
-          }
-          const polozky = d.items.map((i) => ({ ...i, vat_rate: i.vat_rate ?? predvolenaSadzba }));
-          const { sumyRiadkov } = await import("@/lib/faktero/api-sumy-riadkov");
-          const presne = sumyRiadkov(polozky);
-          if ("chyba" in presne) return err("validation_error", presne.chyba, 400);
-          const totals =
-            presne.sumy ??
-            computeInvoiceTotals(
-              polozky.map((i) => ({
-                quantity: i.quantity,
-                unit_price: i.unit_price,
-                vat_rate: i.vat_rate,
-              })),
-            );
-          const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
-            ctx.company_id,
-            issue_date,
-          );
-          const due_date =
-            d.due_date ?? new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-          const variable_symbol = d.variable_symbol ?? invoice_number.replace(/\D/g, "");
-
-          const { data: created, error: insErr } = await ctx.supabase
-            .from("invoices")
-            .insert({
-              company_id: ctx.company_id,
-              customer_id: d.customer_id ?? null,
-              invoice_number,
-              sequence_number,
-              variable_symbol,
-              issue_date,
-              delivery_date: d.delivery_date ?? null,
-              due_date,
-              currency: d.currency ?? "EUR",
-              payment_method: normalizePaymentMethod(d.payment_method),
-              customer_name: cust.name,
-              customer_ico: cust.ico ?? null,
-              customer_dic: cust.dic ?? null,
-              customer_ic_dph: cust.ic_dph ?? null,
-              customer_street: cust.street ?? null,
-              customer_city: cust.city ?? null,
-              customer_zip: cust.zip ?? null,
-              customer_country: cust.country ?? "SK",
-              customer_email: cust.email ?? null,
-              subtotal: totals.subtotal,
-              vat_total: totals.vat_total,
-              total: totals.total,
-              notes: d.notes ?? null,
-              order_number: d.order_number ?? null,
-              external_id: d.external_id ?? null,
-              job_id: d.job_id ?? null,
-              status: "issued",
-            })
-            .select()
-            .single();
-          if (insErr || !created)
-            return err("db_error", insErr?.message ?? "Vloženie zlyhalo.", 500);
-
-          const itemRows = polozky.map((it, i) => ({
-            invoice_id: created.id,
-            position: i,
-            name: it.name,
-            description: it.description ?? null,
-            quantity: it.quantity,
-            unit: it.unit ?? "ks",
-            unit_price: it.unit_price,
-            vat_rate: it.vat_rate,
-            subtotal: totals.enriched[i].subtotal,
-            vat_amount: totals.enriched[i].vat_amount,
-            total: totals.enriched[i].total,
-          }));
-          const { error: itErr } = await ctx.supabase.from("invoice_items").insert(itemRows);
-          if (itErr) return err("db_error", itErr.message, 500);
-
+          const { vytvorFakturu } = await import("@/lib/faktero/vytvor-fakturu.server");
+          const v = await vytvorFakturu(ctx.supabase, ctx.company_id, d);
+          if (!v.ok) return err(v.kod, v.sprava, v.status);
+          if (!v.nova) return ok(v.faktura, 200);
+          const created = v.faktura;
           await triggerEvent({
             company_id: ctx.company_id,
             event: "invoice.created",
