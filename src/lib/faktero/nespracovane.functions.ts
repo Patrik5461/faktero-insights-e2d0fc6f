@@ -17,7 +17,7 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
     const [{ data: rows }, { data: blocky }] = await Promise.all([
       supabase
         .from("nespracovane_doklady")
-        .select("id, zdroj, stav, druh, file_name, udaje, chyba, created_at")
+        .select("id, zdroj, stav, druh, file_name, udaje, chyba, created_at, inbox_message_id")
         .eq("company_id", data.company_id)
         .order("created_at", { ascending: false })
         .limit(300),
@@ -49,6 +49,7 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
         mena: (r.udaje?.mena as string) || "EUR",
         subor: r.file_name as string | null,
         chyba: r.chyba as string | null,
+        inboxMessageId: (r.inbox_message_id ?? null) as string | null,
         vytvorene: r.created_at as string,
       })),
       blocky: (blocky ?? []).map((b: any) => ({
@@ -137,6 +138,7 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       stav: r.stav as string,
       chyba: r.chyba as string | null,
       druh: (r.druh ?? null) as string | null,
+      inboxMessageId: (r.inbox_message_id ?? null) as string | null,
       subor: { url, nazov: r.file_name as string | null, mime: r.file_mime as string | null },
       udaje,
       dalsiId: (dalsi?.[0]?.id as string | undefined) ?? null,

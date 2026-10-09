@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
 import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
@@ -218,6 +219,7 @@ function Detail() {
   // Prepínač rozloženia — voľba sa pamätá v účte používateľa.
   const prepinac = (
     <div className="flex flex-wrap items-center gap-2">
+      <ZdrojovyMailTlacidlo druh="nespracovany" id={d.id} inboxMessageId={d.inboxMessageId} />
       {d.subor.url && d.stav !== "cita" ? (
         <button
           type="button"

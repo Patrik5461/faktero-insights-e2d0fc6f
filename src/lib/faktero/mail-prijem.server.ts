@@ -475,6 +475,28 @@ export async function spracujPrijatyMail(
       return { stav: "potvrdenie", vytvorenych: 0, detail };
     }
 
+    /*
+      Text mailu sa uloží, aby sa dal pri doklade ukázať („Zdrojový e-mail").
+      Potvrdenie preposielania sem nedôjde — jeho telo sa zámerne neukladá.
+      Bez textu sa doklad spracuje aj tak.
+    */
+    if (zaznam?.id) {
+      try {
+        const obsah = await obsahMailu(mail.email_id, apiKey);
+        const { textMailu } = await import("./zdrojovy-mail");
+        await supabaseAdmin
+          .from("inbox_messages")
+          .update({
+            text_mailu: textMailu(rozbalTelo(obsah.text), rozbalTelo(obsah.html)),
+            to_email: (Array.isArray(obsah.to) ? obsah.to.join(", ") : obsah.to ?? null) || null,
+            // Stĺpce zo 9. 10. ešte nie sú v generovaných typoch.
+          } as never)
+          .eq("id", zaznam.id);
+      } catch (e: any) {
+        console.warn("[mail-prijem] text mailu sa neuložil:", String(e?.message ?? e).slice(0, 200));
+      }
+    }
+
     const vsetky = await prilohyMailu(mail.email_id, apiKey);
     const vsetkyDoklady = vsetky.filter((p) => jePrilohaDoklad(p.content_type, p.filename, p.size));
     // Pri rozdelenom maile sa o podpisoch a logách hovorí len raz, nie za každú firmu.

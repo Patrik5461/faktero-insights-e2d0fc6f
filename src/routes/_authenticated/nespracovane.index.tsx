@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -204,7 +205,14 @@ function Stranka() {
                   <td className="p-3 text-right tabular-nums">
                     {r.suma != null ? `${Number(r.suma).toFixed(2)} ${r.mena}` : "—"}
                   </td>
-                  <td className="p-3 text-xs text-muted-foreground">{ZDROJ[r.zdroj] ?? r.zdroj}</td>
+                  <td className="p-3 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      {ZDROJ[r.zdroj] ?? r.zdroj}
+                      {r.typ === "nespracovany" ? (
+                        <ZdrojovyMailTlacidlo druh="nespracovany" id={r.id} inboxMessageId={r.inboxMessageId} ikona />
+                      ) : null}
+                    </span>
+                  </td>
                   <td className="p-3 text-xs">
                     {r.stav === "cita" ? (
                       <span className="inline-flex items-center gap-1 text-muted-foreground">

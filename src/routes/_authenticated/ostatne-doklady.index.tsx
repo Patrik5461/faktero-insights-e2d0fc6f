@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -435,6 +436,7 @@ function OstatneDokladyPage() {
                           {r.subject && (
                             <div className="text-xs text-muted-foreground">{r.subject}</div>
                           )}
+                          <ZdrojovyMailTlacidlo druh="ostatny" id={r.id} inboxMessageId={r.inbox_message_id} ikona />
                           {(r.zamestnanec || r.zmluva) && (
                             <div className="text-xs text-primary">
                               {r.zamestnanec &&

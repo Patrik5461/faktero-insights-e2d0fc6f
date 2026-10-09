@@ -1,4 +1,5 @@
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
+import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
@@ -596,6 +597,9 @@ function NovyDokladPage() {
         action={
           search.id ? (
             <div className="flex flex-wrap gap-2">
+              {ulozeny ? (
+                <ZdrojovyMailTlacidlo druh="doklad" id={ulozeny.id} inboxMessageId={ulozeny.inbox_message_id} />
+              ) : null}
               <TlacidloZauctovat />
               {ulozeny && !ulozeny.exported_at ? (
                 <button

@@ -174,6 +174,7 @@ export async function vytvorDoklad(
         company_id: r.company_id,
         created_by: autor,
         predmet_mailu: predmetMailu,
+        inbox_message_id: r.inbox_message_id ?? null,
         status: "received",
         source: ZDROJ_PRIJATEJ[r.zdroj] ?? "nahrate",
         file_path: cesta,
@@ -219,6 +220,7 @@ export async function vytvorDoklad(
       .insert({
         ...blocekZUdajov(u),
         predmet_mailu: predmetMailu,
+        inbox_message_id: r.inbox_message_id ?? null,
         company_id: r.company_id,
         created_by: autor,
         // Človek ho práve skontroloval — je spracovaný.
@@ -243,6 +245,7 @@ export async function vytvorDoklad(
     const { error } = await supabase.from("other_documents").insert({
       id: idDokladu,
       ...ostatnyZUdajov(u, dnes),
+      inbox_message_id: r.inbox_message_id ?? null,
       company_id: r.company_id,
       created_by: userId,
       status: "new",

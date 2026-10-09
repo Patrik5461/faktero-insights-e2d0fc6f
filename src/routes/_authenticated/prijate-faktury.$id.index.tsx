@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno";
 import { useEffect, useState } from "react";
@@ -353,6 +354,11 @@ function PurchaseInvoiceDetail() {
         }
         action={
           <div className="flex flex-wrap gap-2">
+            <ZdrojovyMailTlacidlo
+              druh="prijata"
+              id={row.id}
+              inboxMessageId={(row as any).inbox_message_id}
+            />
             <span
               className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASS[row.status] ?? ""}`}
             >
