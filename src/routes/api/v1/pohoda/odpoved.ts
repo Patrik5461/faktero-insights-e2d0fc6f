@@ -22,6 +22,14 @@ export const Route = createFileRoute("/api/v1/pohoda/odpoved")({
             headers: { "content-type": "application/json; charset=utf-8" },
           });
         }
+        if (kluc.mode === "test") {
+          return new Response(
+            JSON.stringify({
+              error: "Testovací kľúč smie len čítať. Konektor potrebuje live kľúč.",
+            }),
+            { status: 403, headers: { "content-type": "application/json; charset=utf-8" } },
+          );
+        }
 
         try {
           const { dekodujOdpoved, spracujOdpoved } =

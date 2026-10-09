@@ -73,7 +73,11 @@ function ApiKeysPage() {
 
   async function revoke(id: string) {
     if (!(await potvrd("Zneplatniť kľúč?"))) return;
-    const { error } = await supabase.from("api_keys").delete().eq("id", id);
+    // Kľúč sa nemaže, len zneplatní — denník volaní si tak drží, ktorým kľúčom čo prišlo.
+    const { error } = await supabase
+      .from("api_keys")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("id", id);
     if (error) return toast.error(error.message);
     reload();
   }
@@ -149,7 +153,11 @@ function ApiKeysPage() {
               )}
               {keys.map((k) => (
                 <tr key={k.id}>
-                  <td className="p-3 font-medium">{k.name}</td>
+                  <td
+                    className={`p-3 font-medium ${k.revoked_at ? "text-muted-foreground line-through" : ""}`}
+                  >
+                    {k.name}
+                  </td>
                   <td className="p-3">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs ${k.mode === "live" ? "bg-primary/15 text-primary" : "bg-accent/30"}`}
@@ -162,12 +170,20 @@ function ApiKeysPage() {
                     {new Date(k.created_at).toLocaleDateString("sk-SK")}
                   </td>
                   <td className="p-3 text-right">
-                    <button
-                      onClick={() => revoke(k.id)}
-                      className="rounded p-1.5 text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {k.revoked_at ? (
+                      <span className="text-xs text-muted-foreground">
+                        Zneplatnený {new Date(k.revoked_at).toLocaleDateString("sk-SK")}
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => revoke(k.id)}
+                        aria-label="Zneplatniť kľúč"
+                        title="Zneplatniť kľúč"
+                        className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -775,7 +775,7 @@ export const vyvojari: HubContent = {
         {
           type: "bullets",
           items: [
-            "Bearer token autentifikácia (sk_test_ / sk_live_)",
+            "Bearer token autentifikácia (fk_test_ / fk_live_)",
             "Idempotency-Key cez Idempotency-Key header alebo external_id",
             "Konzistentné chybové kódy a stránkovanie",
             "Rate limit 100 req / min na kľúč",

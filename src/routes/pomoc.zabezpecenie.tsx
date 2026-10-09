@@ -49,6 +49,12 @@ const sections: HelpSection[] = [
           odkaz vedie späť na Faktero. Odhlásenie sa týka len zariadenia, na ktorom ho urobíte — v
           telefóne teda ostanete prihlásený.
         </p>
+        <p>
+          Stratili ste telefón alebo ste zabudli odhlásiť cudzí počítač? V{" "}
+          <Link to="/nastavenia/zabezpecenie">Zabezpečení účtu</Link> je tlačidlo{" "}
+          <strong>Odhlásiť ostatné zariadenia</strong>. Zariadenie, na ktorom ho stlačíte, ostane
+          prihlásené, všade inde sa bude treba prihlásiť znova (najneskôr do minúty).
+        </p>
       </>
     ),
   },
@@ -93,8 +99,9 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Účet sa dá zrušiť z nastavení. Mazanie má <strong>14-dňový odklad</strong> — do tej doby
-          sa dá vrátiť späť prihlásením.
+          Účet sa dá zrušiť z nastavení; na potvrdenie treba zadať heslo, aby to nemohol urobiť
+          nikto, kto sa dostane k odomknutému telefónu. Mazanie má <strong>14-dňový odklad</strong>{" "}
+          — do tej doby sa dá vrátiť späť prihlásením.
         </p>
         <p>
           Pred zrušením si stiahnite doklady. Povinnosť uchovávať účtovné doklady{" "}

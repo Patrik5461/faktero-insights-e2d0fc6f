@@ -153,7 +153,8 @@ export const adminZakazPrihlasenie = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    const { supabaseAdmin } = await getAdmin(context);
+    const { supabaseAdmin, role } = await getAdmin(context);
+    if (role !== "superadmin") throw new Error("Zakázať prihlásenie smie len superadmin.");
     if (data.userId === context.userId) {
       throw new Error("Vlastné prihlásenie si zakázať nemôžete.");
     }

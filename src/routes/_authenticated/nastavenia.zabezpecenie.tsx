@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { KeyRound, Loader2, ShieldCheck, ShieldOff } from "lucide-react";
+import { KeyRound, Loader2, LogOut, ShieldCheck, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -26,6 +26,7 @@ function ZabezpeceniePage() {
         <div className="mx-auto grid max-w-2xl gap-6">
           <Dvojfaktor />
           <ZmenaHesla />
+          <OdhlasitOstatne />
         </div>
       </PageBody>
     </>
@@ -222,6 +223,55 @@ function ZmenaHesla() {
           </p>
         </div>
       </form>
+    </section>
+  );
+}
+
+/**
+ * Odhlási všetky ostatné zariadenia (stratený telefón, cudzí počítač). Toto
+ * zariadenie ostane prihlásené. Server relácie overuje, takže starý token
+ * prestane platiť najneskôr do minúty.
+ */
+function OdhlasitOstatne() {
+  const [pracujem, setPracujem] = useState(false);
+
+  async function odhlas() {
+    const ano = await potvrdAkciu(
+      "Odhlásiť všetky ostatné zariadenia? Toto zariadenie ostane prihlásené, na ostatných (telefón, iný počítač) sa bude treba prihlásiť znova.",
+      { potvrdit: "Odhlásiť ostatné", nebezpecne: true },
+    );
+    if (!ano) return;
+    setPracujem(true);
+    try {
+      const { error } = await supabase.auth.signOut({ scope: "others" });
+      if (error) throw error;
+      toast.success("Ostatné zariadenia sú odhlásené.");
+    } catch (e: any) {
+      toast.error(prelozAuthChybu(e?.message ?? "Odhlásenie sa nepodarilo.").sprava);
+    } finally {
+      setPracujem(false);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6">
+      <div className="flex items-center gap-2">
+        <LogOut className="h-5 w-5 text-primary" />
+        <h2 className="text-base font-semibold">Prihlásené zariadenia</h2>
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Stratili ste telefón alebo ste sa prihlásili na cudzom počítači? Odhláste všetky ostatné
+        zariadenia naraz. Ak máte podozrenie, že niekto pozná vaše heslo, zmeňte ho aj vyššie.
+      </p>
+      <button
+        type="button"
+        onClick={odhlas}
+        disabled={pracujem}
+        className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+      >
+        {pracujem ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}{" "}
+        Odhlásiť ostatné zariadenia
+      </button>
     </section>
   );
 }

@@ -52,7 +52,7 @@ const sections: HelpSection[] = [
           </li>
         </ol>
         <p>
-          Kľúč posielajte v hlavičke <code>Authorization: Bearer fkt_…</code>.
+          Kľúč posielajte v hlavičke <code>Authorization: Bearer fk_live_…</code>.
         </p>
       </>
     ),
@@ -65,16 +65,19 @@ const sections: HelpSection[] = [
         <p>Pri vytváraní kľúča vyberáte režim:</p>
         <ul>
           <li>
-            <strong>Test (sandbox)</strong> — faktúry sa nezarátavajú do limitu a nemajú právne
-            účinky.
+            <strong>Test</strong> — kľúč smie len čítať (zoznamy, detaily, PDF). Na skúšanie
+            integrácie bez rizika, že niečo vystaví alebo odošle zákazníkovi. Pokus o zápis vráti
+            chybu <code>403 test_key_read_only</code>.
           </li>
           <li>
-            <strong>Live (produkcia)</strong> — reálne faktúry, ktoré sa rátajú do mesačného limitu
-            plánu.
+            <strong>Live (produkcia)</strong> — číta aj zapisuje: reálne faktúry, ktoré sa rátajú do
+            mesačného limitu plánu.
           </li>
         </ul>
         <p>
-          Test kľúče majú prefix <code>fkt_test_</code>, live kľúče <code>fkt_live_</code>.
+          Test kľúče majú prefix <code>fk_test_</code>, live kľúče <code>fk_live_</code>.
+          Zneplatnený kľúč ostáva v zozname so zneplatnením, aby bolo v denníku volaní vidno, čím čo
+          prišlo.
         </p>
       </>
     ),
@@ -87,7 +90,7 @@ const sections: HelpSection[] = [
         <p>Príklad cURL volania:</p>
         <pre className="rounded-md border border-border bg-muted p-3 text-xs overflow-x-auto">
           {`curl -X POST https://www.faktero.sk/api/v1/invoices \\
-  -H "Authorization: Bearer fkt_live_…" \\
+  -H "Authorization: Bearer fk_live_…" \\
   -H "Content-Type: application/json" \\
   -d '{
     "customer": { "name": "ACME s.r.o.", "ico": "12345678" },

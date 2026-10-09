@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { overPristup } from "./over-pristup";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { navrhniObjednavky } from "./stock-doobjednanie";
@@ -1833,6 +1834,48 @@ export const completeTransfer = createServerFn({ method: "POST" })
     // iný alebo neskôr, keď už členstvo v cieľovej firme nemusí platiť.
     if (targetCompanyId !== transfer.company_id) {
       await assertMember(supabase, userId, targetCompanyId);
+    }
+    await overPristup(context, transfer.company_id, { oblast: "sklad", zapis: true });
+    if (targetCompanyId !== transfer.company_id) {
+      await overPristup(context, targetCompanyId, { oblast: "sklad", zapis: true });
+    }
+
+    /*
+      Riadky presunu sa dajú upraviť priamo cez API (RLS stráži len zdrojovú
+      firmu) a príjem do cieľa sa pri presune medzi firmami zapisuje admin
+      klientom. Bez tejto kontroly by sa cez vlastný presun dal zmeniť stav
+      skladu úplne cudzej firmy — sklady aj karty preto musia patriť tam, kam
+      presun tvrdí.
+    */
+    {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const skladyIds = [transfer.warehouse_from_id, targetWarehouseId].filter(Boolean);
+      const { data: sklady } = await supabaseAdmin
+        .from("warehouses")
+        .select("id, company_id")
+        .in("id", skladyIds);
+      const firmaSkladu = new Map((sklady ?? []).map((w: any) => [w.id, w.company_id]));
+      if (firmaSkladu.get(transfer.warehouse_from_id) !== transfer.company_id)
+        throw new Error("Zdrojový sklad nepatrí k firme presunu.");
+      if (firmaSkladu.get(targetWarehouseId) !== targetCompanyId)
+        throw new Error("Cieľový sklad nepatrí k cieľovej firme.");
+
+      const kartyIds = [
+        ...items.map((i: any) => i.source_stock_item_id),
+        ...items.map((i: any) => i.target_stock_item_id).filter(Boolean),
+      ];
+      const { data: karty } = await supabaseAdmin
+        .from("stock_items")
+        .select("id, company_id")
+        .in("id", kartyIds);
+      const firmaKarty = new Map((karty ?? []).map((k: any) => [k.id, k.company_id]));
+      for (const it of items as any[]) {
+        if (firmaKarty.get(it.source_stock_item_id) !== transfer.company_id)
+          throw new Error("Položka presunu nepatrí k zdrojovej firme.");
+        if (it.target_stock_item_id && firmaKarty.get(it.target_stock_item_id) !== targetCompanyId)
+          throw new Error("Cieľová položka presunu nepatrí k cieľovej firme.");
+        if (!(Number(it.quantity) > 0)) throw new Error("Množstvo v presune musí byť kladné.");
+      }
     }
 
     // Load source items

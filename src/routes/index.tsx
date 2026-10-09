@@ -385,7 +385,7 @@ const plans = [
 ] as const;
 
 const codeExample = `POST /api/v1/invoices
-Authorization: Bearer sk_live_••••
+Authorization: Bearer fk_live_••••
 Idempotency-Key: ord_8421
 Content-Type: application/json
 

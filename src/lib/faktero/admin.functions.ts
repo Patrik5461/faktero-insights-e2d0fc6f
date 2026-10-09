@@ -22,6 +22,16 @@ async function getAdmin(context: { userId: string }) {
   return { supabaseAdmin, role: data.role as "admin" | "superadmin" };
 }
 
+/**
+ * Zásahy do predplatného a pozastavenie firmy menia peniaze a prístup
+ * zákazníkov — smie ich len superadmin. Bežný admin platformy vidí prehľady.
+ */
+async function getSuperadmin(context: { userId: string }) {
+  const a = await getAdmin(context);
+  if (a.role !== "superadmin") throw new Error("Túto akciu smie urobiť len superadmin.");
+  return a;
+}
+
 function mask(value: string | null | undefined, keep = 4): string | null {
   if (!value) return null;
   if (value.length <= keep) return "•".repeat(value.length);
@@ -313,7 +323,7 @@ export const suspendCompany = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), reason: z.string().min(1).max(500) }).parse(input),
   )
   .handler(async ({ context, data }) => {
-    const { supabaseAdmin } = await getAdmin(context);
+    const { supabaseAdmin } = await getSuperadmin(context);
     const { error } = await supabaseAdmin
       .from("companies")
       .update({ suspended_at: new Date().toISOString(), suspended_reason: data.reason })
@@ -329,7 +339,7 @@ export const reactivateCompany = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
-    const { supabaseAdmin } = await getAdmin(context);
+    const { supabaseAdmin } = await getSuperadmin(context);
     const { error } = await supabaseAdmin
       .from("companies")
       .update({ suspended_at: null, suspended_reason: null })
@@ -455,7 +465,7 @@ export const adminSetCompanyPlan = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    const { supabaseAdmin } = await getAdmin(context);
+    const { supabaseAdmin } = await getSuperadmin(context);
     const { data: plan } = await supabaseAdmin
       .from("subscription_plans")
       .select("id, price_monthly_cents")
@@ -483,7 +493,7 @@ export const adminExtendTrial = createServerFn({ method: "POST" })
     z.object({ companyId: z.string().uuid(), days: z.number().int().min(1).max(365) }).parse(input),
   )
   .handler(async ({ context, data }) => {
-    const { supabaseAdmin } = await getAdmin(context);
+    const { supabaseAdmin } = await getSuperadmin(context);
     const { data: sub } = await supabaseAdmin
       .from("subscriptions")
       .select("trial_ends_at")
@@ -506,7 +516,7 @@ export const adminCancelSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => z.object({ companyId: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
-    const { supabaseAdmin } = await getAdmin(context);
+    const { supabaseAdmin } = await getSuperadmin(context);
     const { error } = await supabaseAdmin
       .from("subscriptions")
       .update({ status: "cancelled", cancel_at_period_end: true })
@@ -527,7 +537,7 @@ export const adminReactivateSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => z.object({ companyId: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
-    const { supabaseAdmin } = await getAdmin(context);
+    const { supabaseAdmin } = await getSuperadmin(context);
     const { error } = await supabaseAdmin
       .from("subscriptions")
       .update({ status: "active", cancel_at_period_end: false, billing_suspended: false })
@@ -556,7 +566,7 @@ export const adminMarkActive = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    const { supabaseAdmin } = await getAdmin(context);
+    const { supabaseAdmin } = await getSuperadmin(context);
     const now = new Date();
     const end = new Date(now);
     end.setUTCDate(end.getUTCDate() + data.days);
@@ -585,7 +595,7 @@ export const adminSuspendBilling = createServerFn({ method: "POST" })
     z.object({ companyId: z.string().uuid(), suspend: z.boolean() }).parse(input),
   )
   .handler(async ({ context, data }) => {
-    const { supabaseAdmin } = await getAdmin(context);
+    const { supabaseAdmin } = await getSuperadmin(context);
     const { error } = await supabaseAdmin
       .from("subscriptions")
       .update({ billing_suspended: data.suspend })

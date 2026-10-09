@@ -10,14 +10,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-async function assertAdmin(userId: string) {
+async function assertAdmin(userId: string, lenSuperadmin = false) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: admin } = await supabaseAdmin
     .from("platform_admins")
-    .select("user_id")
+    .select("user_id, role")
     .eq("user_id", userId)
     .maybeSingle();
   if (!admin) throw new Error("Forbidden");
+  // Zmenu (kľúče brány, účty zdarma) smie len superadmin; čítať smie každý admin.
+  if (lenSuperadmin && admin.role !== "superadmin")
+    throw new Error("Túto akciu smie urobiť len superadmin.");
   return supabaseAdmin;
 }
 
@@ -77,7 +80,7 @@ export const pridajUcetZdarma = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => PridajInput.parse(d))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await assertAdmin(context.userId);
+    const supabaseAdmin = await assertAdmin(context.userId, true);
     const email = data.email.toLowerCase();
     const { error } = await supabaseAdmin.from("platform_free_accounts").upsert({
       email,
@@ -102,7 +105,7 @@ export const odoberUcetZdarma = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => OdoberInput.parse(d))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await assertAdmin(context.userId);
+    const supabaseAdmin = await assertAdmin(context.userId, true);
     const { error } = await supabaseAdmin
       .from("platform_free_accounts")
       .delete()

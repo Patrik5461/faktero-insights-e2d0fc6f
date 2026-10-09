@@ -54,6 +54,7 @@ export function ZrusenieUctu({
   const [stav, setStav] = useState<Stav | null>(null);
   const [potvrdzujem, setPotvrdzujem] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [heslo, setHeslo] = useState("");
 
   async function obnov(): Promise<Stav | null> {
     try {
@@ -72,9 +73,14 @@ export function ZrusenieUctu({
   }, []);
 
   async function potvrd() {
+    if (!heslo) {
+      toast.error(t("zrus.hesloChyba"));
+      return;
+    }
     setBusy(true);
     try {
-      await poziadaj({ data: undefined });
+      await poziadaj({ data: { heslo } });
+      setHeslo("");
       const novy = await obnov();
       setPotvrdzujem(false);
       toast.success(t("zrus.prijate"));
@@ -175,7 +181,20 @@ export function ZrusenieUctu({
           )}
         </div>
 
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+        {/* Odomknuté zariadenie ešte nemá stačiť na zrušenie účtu — heslo overí server. */}
+        <label className="mt-5 block text-sm">
+          <span className="font-medium">{t("zrus.heslo")}</span>
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={heslo}
+            onChange={(e) => setHeslo(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+          />
+          <span className="mt-1 block text-xs text-muted-foreground">{t("zrus.hesloPopis")}</span>
+        </label>
+
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <button
             onClick={potvrd}
             disabled={busy}

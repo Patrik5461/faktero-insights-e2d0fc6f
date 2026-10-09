@@ -709,6 +709,9 @@ export const hu: Partial<Record<Kluc, string>> = {
   "zrus.potvrdit": "Fiók törlése {dni} nap múlva",
   "zrus.zapisujem": "Mentés…",
   "zrus.nechat": "Fiók megtartása",
+  "zrus.heslo": "Fiók jelszava",
+  "zrus.hesloPopis": "A megerősítéshez adja meg jelszavát.",
+  "zrus.hesloChyba": "Adja meg a jelszavát.",
   "zrus.naplanovane": "A fiók törlésre van ütemezve",
   "zrus.naplanovanePopis":
     "Törlés időpontja: {termin}. Addig semmi sem törlődik, és a kérelmet visszavonhatja.",

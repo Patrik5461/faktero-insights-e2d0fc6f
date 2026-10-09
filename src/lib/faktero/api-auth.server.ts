@@ -108,6 +108,34 @@ export async function handleApi(
     return r;
   }
 
+  /*
+    Testovací kľúč smie len čítať. Dokumentácia sľubovala „bez právnych
+    účinkov“, no test aj live kľúč zapisovali rovnako ostré doklady (a
+    odosielali ich zákazníkom). Kým nie je samostatné pieskovisko, zápis ide
+    len cez live kľúč.
+  */
+  if (keyRow.mode === "test" && !["GET", "HEAD", "OPTIONS"].includes(method)) {
+    const body = {
+      error: {
+        code: "test_key_read_only",
+        message: "Testovací kľúč smie len čítať. Na vytváranie a zmeny použite live kľúč.",
+      },
+    };
+    await logRequest({
+      company_id: keyRow.company_id,
+      api_key_id: keyRow.id,
+      method,
+      path,
+      status: 403,
+      requestBody,
+      responseBody: body,
+      userAgent,
+      ip,
+      duration: Date.now() - started,
+    });
+    return jsonResp(403, body);
+  }
+
   // Rate limit: 300 requests / 5 min per API key (uses api_logs as the counter store)
   const windowStart = new Date(Date.now() - 5 * 60_000).toISOString();
   const { count: recentCount } = await supabaseAdmin

@@ -9,14 +9,17 @@ function mask(v?: string | null, keep = 3) {
   return v.slice(0, keep) + "•••" + v.slice(-2);
 }
 
-async function assertAdmin(userId: string) {
+async function assertAdmin(userId: string, lenSuperadmin = false) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: admin } = await supabaseAdmin
     .from("platform_admins")
-    .select("user_id")
+    .select("user_id, role")
     .eq("user_id", userId)
     .maybeSingle();
   if (!admin) throw new Error("Forbidden");
+  // Zmenu (kľúče brány, účty zdarma) smie len superadmin; čítať smie každý admin.
+  if (lenSuperadmin && admin.role !== "superadmin")
+    throw new Error("Túto akciu smie urobiť len superadmin.");
   return supabaseAdmin;
 }
 
@@ -135,7 +138,7 @@ export const savePlatformGopaySettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => SaveSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await assertAdmin(context.userId);
+    const supabaseAdmin = await assertAdmin(context.userId, true);
     const { encryptSecret } = await import("@/lib/faktero/payment-crypto.server");
     const stored = (await readStored(supabaseAdmin)) ?? {};
 
@@ -184,7 +187,7 @@ export const savePlatformGopaySettings = createServerFn({ method: "POST" })
 export const clearPlatformGopaySettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const supabaseAdmin = await assertAdmin(context.userId);
+    const supabaseAdmin = await assertAdmin(context.userId, true);
     await supabaseAdmin.from("platform_settings").delete().eq("key", "gopay");
     const { invalidateGopayTokenCache } = await import("@/lib/faktero/gopay.server");
     invalidateGopayTokenCache();

@@ -356,7 +356,7 @@ function AdminUcetPage() {
               </p>
             </div>
             <button
-              disabled={busy || data.jeAdmin}
+              disabled={busy || data.jeAdmin || !data.mozeMazat}
               onClick={() =>
                 zasah(
                   () => zakazFn({ data: { userId: id, zakazat: !data.zakazane } }),
@@ -395,7 +395,7 @@ function AdminUcetPage() {
           </div>
           {!data.mozeMazat && (
             <p className="text-xs text-muted-foreground">
-              Mazať účty smie len superadmin. Deaktivácia je dostupná aj vám.
+              Zakázať prihlásenie a mazať účty smie len superadmin.
             </p>
           )}
         </div>

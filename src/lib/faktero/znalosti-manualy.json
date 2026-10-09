@@ -33,15 +33,15 @@
     },
     {
      "nadpis": "Kde nájdem API kľúč",
-     "text": "<>\n-\nOtvorte Nastavenia (/nastavenia) → API kľúče .\n-\nKliknite na Vytvoriť nový kľúč a pomenujte ho (napr. „Eshop\nprodukcia\").\n-\nKľúč sa zobrazí iba raz — uložte ho na bezpečnom mieste.\nKľúč posielajte v hlavičke Authorization: Bearer fkt_… ."
+     "text": "<>\n-\nOtvorte Nastavenia (/nastavenia) → API kľúče .\n-\nKliknite na Vytvoriť nový kľúč a pomenujte ho (napr. „Eshop\nprodukcia\").\n-\nKľúč sa zobrazí iba raz — uložte ho na bezpečnom mieste.\nKľúč posielajte v hlavičke Authorization: Bearer fk_live_… ."
     },
     {
      "nadpis": "Test a live režim",
-     "text": "<>\nPri vytváraní kľúča vyberáte režim:\n-\nTest (sandbox) — faktúry sa nezarátavajú do limitu a nemajú právne\núčinky.\n-\nLive (produkcia) — reálne faktúry, ktoré sa rátajú do mesačného limitu\nplánu.\nTest kľúče majú prefix fkt_test_ , live kľúče fkt_live_ ."
+     "text": "<>\nPri vytváraní kľúča vyberáte režim:\n-\nTest — kľúč smie len čítať (zoznamy, detaily, PDF). Na skúšanie\nintegrácie bez rizika, že niečo vystaví alebo odošle zákazníkovi. Pokus o zápis vráti\nchybu 403 test_key_read_only .\n-\nLive (produkcia) — číta aj zapisuje: reálne faktúry, ktoré sa rátajú do\nmesačného limitu plánu.\nTest kľúče majú prefix fk_test_ , live kľúče fk_live_ .\nZneplatnený kľúč ostáva v zozname so zneplatnením, aby bolo v denníku volaní vidno, čím\nčo prišlo."
     },
     {
      "nadpis": "Vytvorenie faktúry cez API",
-     "text": "<>\nPríklad cURL volania:\n{`curl -X POST https://www.faktero.sk/api/v1/invoices \\\\\n-H \"Authorization: Bearer fkt_live_…\" \\\\\n-H \"Content-Type: application/json\" \\\\\n-d '{\n\"customer\": ,\n\"items\": [\n],\n\"due_date\": \"2026-07-01\"\n}'`}\nOdpoveď obsahuje id , invoice_number a URL na PDF."
+     "text": "<>\nPríklad cURL volania:\n{`curl -X POST https://www.faktero.sk/api/v1/invoices \\\\\n-H \"Authorization: Bearer fk_live_…\" \\\\\n-H \"Content-Type: application/json\" \\\\\n-d '{\n\"customer\": ,\n\"items\": [\n],\n\"due_date\": \"2026-07-01\"\n}'`}\nOdpoveď obsahuje id , invoice_number a URL na PDF."
     },
     {
      "nadpis": "Webhooky",
@@ -555,7 +555,7 @@
     },
     {
      "nadpis": "Shoptet a Zásielkovňa",
-     "text": "<>\nV Nastavenia → E-shop a doprava pripojíte Shoptet a Zásielkovňu. Nastaviť to môže\nmajiteľ alebo admin firmy; tokeny a heslá sú uložené zašifrované.\nShoptet — súkromný API token (Shoptet tarif Premium, v administrácii Prepojenia → API\npartneri; stačí skupina Objednávky na čítanie). Potom sa na tej istej stránke načítajú objednávky za\nzvolené obdobie a z vybraných vystavíte faktúry: odberateľ s IČO a IČ DPH, položky, doprava a zľavy so\nsumami presne z obchodu, číslo objednávky na faktúre. Zaplatená objednávka sa označí ako uhradená,\ndobierka má splatnosť v deň vystavenia. Tá istá objednávka faktúru druhýkrát nedostane.\nZásielkovňa — API heslo z klientskej sekcie Zásielkovne. Na detaile faktúry je potom\ntlačidlo Poslať cez Zásielkovňu : výdajné miesto vyberiete na mape (alebo zadáte id dopravcu\npri doručení na adresu), hmotnosť a dobierku vo výške faktúry. Štítok stiahnete ako PDF a stav zásielky\nsi viete kedykoľvek obnoviť. Vybrané dobierky nahráte z exportu faktúr Packety v\nÚčtovníctvo → Výpis z platobnej brány ."
+     "text": "<>\nV Nastavenia → E-shop a doprava pripojíte Shoptet a Zásielkovňu. Nastaviť\nto môže majiteľ alebo admin firmy; tokeny a heslá sú uložené zašifrované.\nShoptet — súkromný API token (Shoptet tarif Premium, v administrácii\nPrepojenia → API partneri; stačí skupina Objednávky na čítanie). Potom sa na tej istej\nstránke načítajú objednávky za zvolené obdobie a z vybraných vystavíte faktúry: odberateľ\ns IČO a IČ DPH, položky, doprava a zľavy so sumami presne z obchodu, číslo objednávky na\nfaktúre. Zaplatená objednávka sa označí ako uhradená, dobierka má splatnosť v deň\nvystavenia. Tá istá objednávka faktúru druhýkrát nedostane.\nZásielkovňa — API heslo z klientskej sekcie Zásielkovne. Na detaile\nfaktúry je potom tlačidlo Poslať cez Zásielkovňu : výdajné miesto vyberiete na\nmape (alebo zadáte id dopravcu pri doručení na adresu), hmotnosť a dobierku vo výške\nfaktúry. Štítok stiahnete ako PDF a stav zásielky si viete kedykoľvek obnoviť. Vybrané\ndobierky nahráte z exportu faktúr Packety v Účtovníctvo → Výpis z platobnej brány\n."
     },
     {
      "nadpis": "Fakturácia, kniha jázd, alebo oboje",
@@ -1157,7 +1157,7 @@
     },
     {
      "nadpis": "Heslo a prihlásenie",
-     "text": "<>\nZabudnuté heslo sa obnovuje odkazom z prihlasovacej stránky; e-mail príde do pár minút a\nodkaz vedie späť na Faktero. Odhlásenie sa týka len zariadenia, na ktorom ho urobíte — v\ntelefóne teda ostanete prihlásený."
+     "text": "<>\nZabudnuté heslo sa obnovuje odkazom z prihlasovacej stránky; e-mail príde do pár minút a\nodkaz vedie späť na Faktero. Odhlásenie sa týka len zariadenia, na ktorom ho urobíte — v\ntelefóne teda ostanete prihlásený.\nStratili ste telefón alebo ste zabudli odhlásiť cudzí počítač? V\nZabezpečení účtu (/nastavenia/zabezpecenie) je tlačidlo\nOdhlásiť ostatné zariadenia . Zariadenie, na ktorom ho stlačíte, ostane\nprihlásené, všade inde sa bude treba prihlásiť znova (najneskôr do minúty)."
     },
     {
      "nadpis": "Kto vidí vaše dáta",
@@ -1169,7 +1169,7 @@
     },
     {
      "nadpis": "Zrušenie účtu",
-     "text": "<>\nÚčet sa dá zrušiť z nastavení. Mazanie má 14-dňový odklad — do tej doby\nsa dá vrátiť späť prihlásením.\nPred zrušením si stiahnite doklady. Povinnosť uchovávať účtovné doklady\ndesať rokov platí ďalej a zrušením účtu nezaniká."
+     "text": "<>\nÚčet sa dá zrušiť z nastavení; na potvrdenie treba zadať heslo, aby to nemohol urobiť\nnikto, kto sa dostane k odomknutému telefónu. Mazanie má\n14-dňový odklad — do tej doby sa dá vrátiť späť prihlásením.\nPred zrušením si stiahnite doklady. Povinnosť uchovávať účtovné doklady\ndesať rokov platí ďalej a zrušením účtu nezaniká."
     }
    ]
   },

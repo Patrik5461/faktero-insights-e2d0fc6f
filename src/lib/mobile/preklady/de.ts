@@ -718,6 +718,9 @@ export const de: Partial<Record<Kluc, string>> = {
   "zrus.potvrdit": "Konto in {dni} Tagen löschen",
   "zrus.zapisujem": "Wird gespeichert…",
   "zrus.nechat": "Konto behalten",
+  "zrus.heslo": "Kontopasswort",
+  "zrus.hesloPopis": "Geben Sie zur Bestätigung Ihr Passwort ein.",
+  "zrus.hesloChyba": "Bitte Passwort eingeben.",
   "zrus.naplanovane": "Ihr Konto ist zur Löschung vorgemerkt",
   "zrus.naplanovanePopis":
     "Es wird am {termin} gelöscht. Bis dahin wird nichts gelöscht, und Sie können den Antrag widerrufen.",

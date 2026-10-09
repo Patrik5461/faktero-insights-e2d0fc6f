@@ -59,9 +59,42 @@ export const stavZrusenieUctuFn = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Zrušenie účtu vyžaduje heslo — odomknutý telefón alebo zabudnuté
+ * prihlásenie na cudzom počítači nemá stačiť. Staršie verzie appky heslo
+ * neposielajú; tým stačí čerstvé prihlásenie (posledných 15 minút).
+ */
+async function overHeslo(context: { userId: string; claims: any }, heslo: string | undefined) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  if (!heslo) {
+    const amr = Array.isArray(context.claims?.amr) ? context.claims.amr : [];
+    const posledne = Math.max(0, ...amr.map((a: any) => Number(a?.timestamp) || 0));
+    if (posledne && Date.now() / 1000 - posledne < 15 * 60) return;
+    throw new Error(
+      "Na zrušenie účtu zadajte heslo. V staršej verzii appky sa odhláste, prihláste znova a skúste to hneď.",
+    );
+  }
+  const { data: ja } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+  const email = ja?.user?.email;
+  if (!email) throw new Error("Účet nemá e-mail, heslo sa nedá overiť.");
+  const { createClient } = await import("@supabase/supabase-js");
+  const overovac = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
+  });
+  const { data, error } = await overovac.auth.signInWithPassword({ email, password: heslo });
+  if (error || !data.session) throw new Error("Heslo nesedí.");
+  // Overovacia relácia nemá zostať visieť medzi prihláseniami účtu.
+  await overovac.auth.signOut({ scope: "local" }).catch(() => {});
+}
+
 export const poziadajOZrusenieUctuFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .validator((d: unknown) => {
+    const heslo = (d as { heslo?: unknown } | null | undefined)?.heslo;
+    return { heslo: typeof heslo === "string" && heslo ? heslo.slice(0, 200) : undefined };
+  })
+  .handler(async ({ context, data }) => {
+    await overHeslo(context as any, data.heslo);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { firmyNaZmazanie } = await import("./ucet-zrusenie.server");
 

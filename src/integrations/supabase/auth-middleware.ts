@@ -4,8 +4,8 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-/** Používatelia bez dvojfaktorového overenia → do kedy to platí (ms). */
-const bezFaktora = new Map<string, number>();
+/** Overené relácie (session_id) → do kedy výsledok platí (ms). */
+const overeneRelacie = new Map<string, number>();
 
 export const requireSupabaseAuth = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
@@ -66,22 +66,23 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     }
 
     /*
-      Kto má zapnuté dvojfaktorové overenie, smie na server až s reláciou aal2.
-      Databáza to stráži cez `mfa_ok()`, ale serverové funkcie píšu aj cez
-      admin klienta, ktorý RLS obchádza — heslo bez kódu by tak stačilo.
-      Výsledok „nemá faktor“ si chvíľu pamätáme, aby sa DB nepýtala pri
+      Podpis tokenu nestačí: zakázaný alebo zmazaný účet a relácia zrušená
+      cez „Odhlásiť všade“ by prešli až do vypršania tokenu (hodinu). A kto má
+      zapnuté dvojfaktorové overenie, smie na server až s reláciou aal2 —
+      serverové funkcie píšu aj cez admin klienta, ktorý `mfa_ok()` v RLS
+      obchádza. Dobrý výsledok si pamätáme minútu, aby sa DB nepýtala pri
       každom volaní.
     */
-    if ((data.claims as any).aal !== "aal2") {
-      const sub = data.claims.sub as string;
-      const pamat = bezFaktora.get(sub);
-      if (!pamat || pamat < Date.now()) {
-        const { data: ok, error: mfaErr } = await supabase.rpc("mfa_ok" as any);
-        if (mfaErr) throw new Error("Unauthorized: overenie relácie zlyhalo");
-        if (!ok) throw new Error("Unauthorized: zadajte kód dvojfaktorového overenia");
-        bezFaktora.set(sub, Date.now() + 60_000);
-        if (bezFaktora.size > 10_000) bezFaktora.clear();
-      }
+    const kluc = String((data.claims as any).session_id ?? data.claims.sub);
+    const pamat = overeneRelacie.get(kluc);
+    if (!pamat || pamat < Date.now()) {
+      const { data: stav, error: stavErr } = await supabase.rpc("stav_relacie" as any);
+      if (stavErr || !stav) throw new Error("Unauthorized: overenie relácie zlyhalo");
+      const st = stav as { aktivna?: boolean; mfa_ok?: boolean };
+      if (!st.aktivna) throw new Error("Unauthorized: relácia už neplatí, prihláste sa znova");
+      if (!st.mfa_ok) throw new Error("Unauthorized: zadajte kód dvojfaktorového overenia");
+      overeneRelacie.set(kluc, Date.now() + 60_000);
+      if (overeneRelacie.size > 10_000) overeneRelacie.clear();
     }
 
     return next({

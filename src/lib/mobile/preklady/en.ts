@@ -711,6 +711,9 @@ export const en: Partial<Record<Kluc, string>> = {
   "zrus.potvrdit": "Delete account in {dni} days",
   "zrus.zapisujem": "Saving…",
   "zrus.nechat": "Keep my account",
+  "zrus.heslo": "Account password",
+  "zrus.hesloPopis": "Enter your password to confirm.",
+  "zrus.hesloChyba": "Enter your password.",
   "zrus.naplanovane": "Your account is scheduled for deletion",
   "zrus.naplanovanePopis":
     "It will be deleted on {termin}. Until then nothing is deleted and you can cancel the request.",
