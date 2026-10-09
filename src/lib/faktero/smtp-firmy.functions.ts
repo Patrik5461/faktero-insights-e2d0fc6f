@@ -122,7 +122,9 @@ export const ulozSmtpFn = createServerFn({ method: "POST" })
         text: `Dobrý deň,\n\ntento mail prišiel cez váš SMTP server ${nastavenie.host}. Faktúry, upomienky a ponuky budú odberateľom chodiť z adresy ${nastavenie.od_email}.\n\nFaktero`,
       });
     } catch (e: any) {
-      const chyba = String(e?.message ?? e).slice(0, 300);
+      let chyba = String(e?.message ?? e).slice(0, 300);
+      if (/timeout|ETIMEDOUT|ECONNREFUSED/i.test(chyba) && data.port !== 587)
+        chyba += ` — port ${data.port} je zo servera Faktera nedostupný, skúste port 587 so STARTTLS.`;
       await admin.from("firma_smtp").upsert({
         ...nastavenie,
         aktivne: false,

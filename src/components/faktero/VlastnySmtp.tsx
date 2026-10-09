@@ -245,7 +245,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                       className={vstup}
                     >
                       <option value="starttls">STARTTLS (587)</option>
-                      <option value="ssl">SSL/TLS (465)</option>
+                      <option value="ssl">SSL/TLS (465 — od nás často nedostupný)</option>
                       <option value="ziadne">Bez šifrovania</option>
                     </select>
                   </label>
