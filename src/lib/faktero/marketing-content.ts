@@ -385,6 +385,49 @@ export const funkcie: HubContent = {
       ],
     },
     {
+      slug: "vyuctovanie-vydavkov",
+      label: "Vyúčtovanie výdavkov",
+      summary: "Výdavky, ktoré zaplatil zamestnanec, v jednom súhrne na podpis.",
+      icon: Receipt,
+      blocks: [
+        {
+          type: "lead",
+          text: "Zamestnanec tankoval, nakúpil materiál či zaplatil hotel. Bločky a faktúry označíte, Faktero z nich spraví vyúčtovanie s výsledkom a PDF na podpis.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Tri typy: vyúčtovanie poskytnutej zálohy, vlastných zdrojov zamestnanca a firemnej debetnej karty",
+            "Výsledok jednou vetou — koľko firma doplatí alebo zamestnanec vráti",
+            "Nové vyúčtovanie alebo pridanie do existujúceho priamo zo zoznamu bločkov a prijatých faktúr",
+            "Účtovné nastavenia (predkontácia, členenie DPH, dátum) sa doplnia dokladom",
+            "Bloček ide do Pohody ako interný doklad, nie z firemnej pokladne; faktúru zaplatenú zamestnancom hromadný príkaz vynechá",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "vlastna-emailova-adresa",
+      label: "Odosielanie z vašej adresy",
+      summary: "Faktúry a upomienky z faktury@vasafirma.sk cez váš poštový server.",
+      icon: Mail,
+      blocks: [
+        {
+          type: "lead",
+          text: "Odberateľ dostane faktúru z vašej firemnej adresy, nie z cudzej služby. Nastavíte to raz v údajoch firmy.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Faktúry, upomienky, cenové ponuky, samofaktúry aj podklady pre účtovníka",
+            "Gmail, Microsoft 365, WebSupport, Seznam či server vašej domény",
+            "Zapne sa až po úspešnom skúšobnom maile; heslo je uložené zašifrované",
+            "Keď váš server zlyhá, mail aj tak odíde a chyba sa ukáže v nastaveniach",
+          ],
+        },
+      ],
+    },
+    {
       slug: "samofakturacia",
       label: "Samofakturácia",
       summary: "Faktúru za dodávateľa vyhotovíte vy, on ju jedným klikom odsúhlasí.",
@@ -782,6 +825,28 @@ export const vyvojari: HubContent = {
       ],
     },
     {
+      slug: "prijate-doklady-api",
+      label: "API pre prijaté doklady",
+      summary: "Prijaté faktúry a bločky so zaúčtovaním pre váš účtovný program.",
+      icon: Code2,
+      blocks: [
+        {
+          type: "lead",
+          text: "Rovnaké dáta, aké si berie konektor Pohody, cez REST API: stiahnete doklady, doptáte sa na zmeny a odovzdané označíte.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Prijaté faktúry a bločky s predkontáciou, členením DPH a KV",
+            "Filter zmien od posledného stiahnutia, neodovzdaných a zaúčtovaných",
+            "Detail s položkami a dočasným odkazom na sken",
+            "Nahratie dokladu (PDF, fotka, XML) — Faktero ho prečíta a zaradí do Nespracovaných",
+            "Pohyby na bankových účtoch",
+          ],
+        },
+      ],
+    },
+    {
       slug: "playground",
       label: "Playground",
       summary: "Interaktívne vyskúšanie API priamo z prehliadača.",
@@ -1038,7 +1103,7 @@ export const uctovnici: HubContent = {
     },
     {
       slug: "pravidla-uctovania",
-      label: "Pravidlá účtovania",
+      label: "Automatické účtovanie",
       summary:
         "Bloček, prijatá aj vystavená faktúra či pohyb v banke sa zaúčtuje sám — predkontácia, členenie DPH aj KV.",
       icon: ListChecks,

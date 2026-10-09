@@ -253,6 +253,26 @@ const features = [
     title: "Samofakturácia",
     text: "Faktúru za dodávateľa vyhotovíte vy podľa § 72 ods. 4, on ju odsúhlasí jedným klikom z e-mailu. Potom ide rovno do DPH a na úhradu.",
   },
+  {
+    icon: Wallet,
+    title: "Vyúčtovanie výdavkov",
+    text: "Bločky a faktúry, ktoré zaplatil zamestnanec zo zálohy, vlastnými peniazmi či firemnou kartou — súhrn, doplatok a PDF na podpis.",
+  },
+  {
+    icon: Mail,
+    title: "Z vašej e-mailovej adresy",
+    text: "Faktúry, upomienky a ponuky môžu odberateľom chodiť z faktury@vasafirma.sk cez váš poštový server.",
+  },
+  {
+    icon: Quote,
+    title: "Zdrojový e-mail pri doklade",
+    text: "„To je za september, zákazka Novák“ — text mailu, s ktorým doklad prišiel, ostane pri doklade aj po spracovaní.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Stráž duplicít",
+    text: "Tá istá faktúra od dodávateľa druhýkrát — mailom, nahratá či cez eFaktúru — sa nezaeviduje bez otázky a nezaplatí dvakrát.",
+  },
 ] as const;
 
 const accounting = [
@@ -288,13 +308,23 @@ const accounting = [
   },
   {
     icon: ListChecks,
-    title: "Pravidlá účtovania",
+    title: "Automatické účtovanie",
     text: "Bloček, prijatá aj vystavená faktúra či pohyb v banke dostane predkontáciu, členenie DPH a KV sám, hneď ako vznikne.",
   },
   {
     icon: Send,
     title: "Hromadný príkaz na úhradu",
     text: "Vyberte prijaté faktúry a stiahnite SEPA XML pre internetbanking — zaplatíte ich naraz, so symbolmi.",
+  },
+  {
+    icon: Wallet,
+    title: "Vyúčtovanie výdavkov zamestnancov",
+    text: "Výdavky zo zálohy či vlastných peňazí s výsledkom na podpis; bločky idú do Pohody ako interný doklad, nie z pokladne.",
+  },
+  {
+    icon: Code2,
+    title: "API pre prijaté doklady",
+    text: "Prijaté faktúry a bločky so zaúčtovaním, zmeny od posledného stiahnutia a nahratie dokladov — pre váš vlastný program.",
   },
 ] as const;
 
