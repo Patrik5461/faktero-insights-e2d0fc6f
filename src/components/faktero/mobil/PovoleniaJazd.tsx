@@ -85,6 +85,7 @@ export function PovoleniaJazd() {
     <div className="fixed inset-0 z-50 flex items-end bg-black/50 sm:items-center sm:justify-center">
       <div
         role="dialog"
+        aria-modal="true"
         aria-label={t("pov.nadpis")}
         className="w-full rounded-t-app bg-app-karta p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:max-w-sm sm:rounded-app"
       >

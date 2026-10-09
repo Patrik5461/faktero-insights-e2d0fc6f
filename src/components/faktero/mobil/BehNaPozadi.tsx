@@ -73,6 +73,7 @@ export function BehNaPozadi({ zapnuta, okno = false }: { zapnuta: boolean; okno?
   const obsah = (
     <div
       role={okno ? "dialog" : "region"}
+      aria-modal={okno ? true : undefined}
       aria-label={t(stav.xiaomi ? "bp.nadpisXiaomi" : "bp.nadpisIny")}
       className={
         okno

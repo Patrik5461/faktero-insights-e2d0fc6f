@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import {
@@ -1281,6 +1282,7 @@ function VyberProduktu({
 }) {
   const { t, locale: loc } = usePreklad();
   const [q, setQ] = useState("");
+  useZatvorNaEscape(onZavri);
   const najdene = useMemo(() => {
     const s = q.trim().toLowerCase();
     return s ? produkty.filter((p) => p.name.toLowerCase().includes(s)) : produkty;
@@ -1289,6 +1291,9 @@ function VyberProduktu({
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40" onClick={onZavri}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("nf.cennik")}
         onClick={(e) => e.stopPropagation()}
         className="max-h-[80dvh] overflow-hidden rounded-t-3xl bg-app-karta"
         style={{ paddingBottom: "var(--safe-bottom)" }}

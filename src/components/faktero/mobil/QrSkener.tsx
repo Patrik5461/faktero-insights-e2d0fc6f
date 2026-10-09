@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 /**
  * Živý skener QR kódu na celú obrazovku.
  *
@@ -19,9 +20,15 @@ export function QrSkener({
 }) {
   const { t } = usePreklad();
   const { videoRef, chyba } = useKameraQr({ onNajdene });
+  useZatvorNaEscape(onZrusit);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("qr.namierte")}
+      className="fixed inset-0 z-50 bg-black"
+    >
       <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
 
       {/* Rámik, kam mieriť. Bez neho ľudia mieria na celý bloček. */}
