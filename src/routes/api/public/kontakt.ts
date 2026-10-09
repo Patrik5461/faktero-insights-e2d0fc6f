@@ -29,8 +29,14 @@ function nedavnePokusy(ip: string): number[] {
   return (historia.get(ip) ?? []).filter((t) => teraz - t < OKNO_MS);
 }
 
+/** Spoločný strop za celý web — IP z hlavičky sa dá podvrhnúť. */
+const MAX_SPOLU_ZA_OKNO = 40;
+let spolocne: number[] = [];
+
 function prekrocenyLimit(ip: string): boolean {
-  return nedavnePokusy(ip).length >= MAX_ZA_OKNO;
+  const teraz = Date.now();
+  spolocne = spolocne.filter((t) => teraz - t < OKNO_MS);
+  return nedavnePokusy(ip).length >= MAX_ZA_OKNO || spolocne.length >= MAX_SPOLU_ZA_OKNO;
 }
 
 /**
@@ -40,6 +46,7 @@ function prekrocenyLimit(ip: string): boolean {
  */
 function zapisPokus(ip: string): void {
   const teraz = Date.now();
+  spolocne.push(teraz);
   historia.set(ip, [...nedavnePokusy(ip), teraz]);
   // Mapa by inak rástla donekonečna — staré IP adresy priebežne vyhadzujeme.
   if (historia.size > 5000) {

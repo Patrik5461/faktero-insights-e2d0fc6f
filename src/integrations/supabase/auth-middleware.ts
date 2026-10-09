@@ -4,6 +4,9 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
+/** Používatelia bez dvojfaktorového overenia → do kedy to platí (ms). */
+const bezFaktora = new Map<string, number>();
+
 export const requireSupabaseAuth = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
     const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -60,6 +63,25 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
 
     if (!data.claims.sub) {
       throw new Error("Unauthorized: No user ID found in token");
+    }
+
+    /*
+      Kto má zapnuté dvojfaktorové overenie, smie na server až s reláciou aal2.
+      Databáza to stráži cez `mfa_ok()`, ale serverové funkcie píšu aj cez
+      admin klienta, ktorý RLS obchádza — heslo bez kódu by tak stačilo.
+      Výsledok „nemá faktor“ si chvíľu pamätáme, aby sa DB nepýtala pri
+      každom volaní.
+    */
+    if ((data.claims as any).aal !== "aal2") {
+      const sub = data.claims.sub as string;
+      const pamat = bezFaktora.get(sub);
+      if (!pamat || pamat < Date.now()) {
+        const { data: ok, error: mfaErr } = await supabase.rpc("mfa_ok" as any);
+        if (mfaErr) throw new Error("Unauthorized: overenie relácie zlyhalo");
+        if (!ok) throw new Error("Unauthorized: zadajte kód dvojfaktorového overenia");
+        bezFaktora.set(sub, Date.now() + 60_000);
+        if (bezFaktora.size > 10_000) bezFaktora.clear();
+      }
     }
 
     return next({

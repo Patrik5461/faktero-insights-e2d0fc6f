@@ -22,7 +22,10 @@ const NASE_HOSTY = new Set(["www.faktero.sk", "faktero.sk"]);
 export function bezpecnyCiel(next: unknown, origin: string, predvolene = "/dashboard"): string {
   if (typeof next !== "string" || !next.trim()) return predvolene;
   const t = next.trim();
-  if (t.startsWith("/") && !t.startsWith("//") && !t.startsWith("/\\")) return t;
+  // Prehliadač tabulátor a nový riadok v adrese vynechá — z „/\t/zly.sk“ by
+  // spravil „//zly.sk“, teda cudziu stránku. Riadiace znaky a spätné lomky preč.
+  if (/[\u0000-\u001f\u007f\\]/.test(t)) return predvolene;
+  if (t.startsWith("/") && !t.startsWith("//")) return t;
   try {
     const u = new URL(t);
     const nas = new URL(origin);

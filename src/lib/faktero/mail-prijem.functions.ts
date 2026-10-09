@@ -1,18 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
+import { overPristup } from "./over-pristup";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { zostavLocalPart, celaAdresa, podomenaDokladov, overVlastnyLocalPart } from "./mail-prijem";
 
 const CompanyInput = z.object({ company_id: z.string().uuid() });
 
-async function assertMember(supabase: any, userId: string, companyId: string) {
-  const { data } = await supabase
-    .from("company_users")
-    .select("user_id")
-    .eq("company_id", companyId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!data) throw new Error("Forbidden");
+/**
+ * Príjem dokladov mailom patrí do oblasti Prijaté faktúry a doklady. Číta sa
+ * aj zapisuje cez admin klienta, preto oblasť overujeme tu, nie v RLS.
+ */
+async function assertMember(supabase: any, userId: string, companyId: string, zapis = false) {
+  await overPristup({ supabase, userId }, companyId, { oblast: "doklady", zapis });
 }
 
 export type StavPrijmuMailom = {
@@ -102,7 +101,7 @@ export const prepniPrijemMailom = createServerFn({ method: "POST" })
   .validator((input) => CompanyInput.extend({ active: z.boolean() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    await assertMember(supabase, userId, data.company_id);
+    await assertMember(supabase, userId, data.company_id, true);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("inbox_addresses")
@@ -122,7 +121,7 @@ export const obnovAdresuNaDoklady = createServerFn({ method: "POST" })
   .validator((input) => CompanyInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    await assertMember(supabase, userId, data.company_id);
+    await assertMember(supabase, userId, data.company_id, true);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: firma } = await supabaseAdmin
@@ -159,7 +158,7 @@ export const nastavVlastnuAdresu = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    await assertMember(supabase, userId, data.company_id);
+    await assertMember(supabase, userId, data.company_id, true);
 
     const overene = overVlastnyLocalPart(data.local_part);
     if (!overene.ok) throw new Error(overene.chyba);
@@ -227,7 +226,7 @@ export const povoleniOdosielateliaFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    await assertMember(supabase, userId, data.company_id);
+    await assertMember(supabase, userId, data.company_id, true);
     if (data.zoznam) {
       const zoznam = [...new Set(data.zoznam.map((x) => x.toLowerCase()).filter(Boolean))];
       const { error } = await supabase
@@ -362,7 +361,7 @@ export const priradNepriradenyFn = createServerFn({ method: "POST" })
     }
     if (!data.company_id) throw new Error("Vyberte firmu.");
     if (m.status === "spracuva" || m.status === "priradene") throw new Error("Doklad sa už priraďuje.");
-    await assertMember(supabase, userId, data.company_id);
+    await assertMember(supabase, userId, data.company_id, true);
 
     const lenPrilohy = ((m.prilohy as any[]) ?? []).map((p) => String(p.id)).filter(Boolean);
     if (!lenPrilohy.length) throw new Error("V maile nie je doklad na priradenie.");

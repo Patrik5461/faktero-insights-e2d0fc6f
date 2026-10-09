@@ -16,6 +16,13 @@ describe("potvrdenie z e-mailu", () => {
     expect(bezpecnyCiel("http://www.faktero.sk/x", o)).toBe("/dashboard");
     expect(bezpecnyCiel(undefined, o)).toBe("/dashboard");
   });
+  it("riadiace znaky neprepašujú cudziu adresu", () => {
+    const o = "https://www.faktero.sk";
+    expect(bezpecnyCiel("/\t/zly.sk", o)).toBe("/dashboard");
+    expect(bezpecnyCiel("/\n/zly.sk", o)).toBe("/dashboard");
+    expect(bezpecnyCiel("/\\zly.sk", o)).toBe("/dashboard");
+    expect(bezpecnyCiel("//zly.sk", o)).toBe("/dashboard");
+  });
   it("typy", () => {
     expect(jeTypPotvrdenia("signup")).toBe(true);
     expect(jeTypPotvrdenia("x")).toBe(false);

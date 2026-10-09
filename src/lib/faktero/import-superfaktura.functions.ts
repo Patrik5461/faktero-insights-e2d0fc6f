@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { overPristup } from "./over-pristup";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -14,11 +15,7 @@ export const createImportUploadUrl = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const ok = await context.supabase.rpc("is_company_member", {
-      _company_id: data.companyId,
-      _user_id: context.userId,
-    });
-    if (!ok.data) throw new Error("Nemáte prístup k firme.");
+    await overPristup(context, data.companyId, { oblast: "uctovnictvo", zapis: true });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const safe = data.fileName.replace(/[^\w.\-]+/g, "_").slice(0, 120);
     const path = `${data.companyId}/${Date.now()}_${safe}`;
@@ -28,6 +25,13 @@ export const createImportUploadUrl = createServerFn({ method: "POST" })
     if (error || !signed) throw new Error(error?.message ?? "Nepodarilo sa pripraviť upload.");
     return { path, token: signed.token, signedUrl: signed.signedUrl };
   });
+
+/** Cesta chodí z prehliadača — bez kontroly by sa dal načítať súbor cudzej firmy. */
+function cestaFirmy(companyId: string, path: string): string {
+  if (!path.startsWith(`${companyId}/`) || path.includes(".."))
+    throw new Error("Súbor nepatrí k tejto firme.");
+  return path;
+}
 
 // --- 2. After upload, parse + preview. Creates an import_job in 'uploaded' state. ---
 export const previewImport = createServerFn({ method: "POST" })
@@ -43,15 +47,11 @@ export const previewImport = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const ok = await context.supabase.rpc("is_company_member", {
-      _company_id: data.companyId,
-      _user_id: context.userId,
-    });
-    if (!ok.data) throw new Error("Nemáte prístup k firme.");
+    await overPristup(context, data.companyId, { oblast: "uctovnictvo", zapis: true });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: blob, error: dlErr } = await supabaseAdmin.storage
       .from("imports")
-      .download(data.path);
+      .download(cestaFirmy(data.companyId, data.path));
     if (dlErr || !blob) throw new Error("Súbor sa nepodarilo načítať.");
     const bytes = new Uint8Array(await blob.arrayBuffer());
     const { extractTables, suggestMapping, buildPreview, detectMapping } =
@@ -105,15 +105,11 @@ export const executeImport = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const ok = await context.supabase.rpc("is_company_member", {
-      _company_id: data.companyId,
-      _user_id: context.userId,
-    });
-    if (!ok.data) throw new Error("Nemáte prístup k firme.");
+    await overPristup(context, data.companyId, { oblast: "uctovnictvo", zapis: true });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: blob, error: dlErr } = await supabaseAdmin.storage
       .from("imports")
-      .download(data.path);
+      .download(cestaFirmy(data.companyId, data.path));
     if (dlErr || !blob) throw new Error("Súbor sa nepodarilo načítať.");
     const bytes = new Uint8Array(await blob.arrayBuffer());
 

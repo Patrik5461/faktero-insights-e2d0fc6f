@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { createHmac } from "crypto";
+import { overAdresuWebhooku } from "./webhook-adresa.server";
 
 export type FakteroEvent =
   | "invoice.created"
@@ -30,11 +31,14 @@ async function deliverOne(opts: {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 10_000);
   try {
+    await overAdresuWebhooku(opts.url);
     const res = await fetch(opts.url, {
       method: "POST",
       headers,
       body: opts.body,
       signal: ctrl.signal,
+      // Presmerovanie by obišlo kontrolu adresy.
+      redirect: "manual",
     });
     const text = await res.text().catch(() => "");
     return { status: res.status, body: text.slice(0, 2000), ok: res.ok };

@@ -86,15 +86,20 @@ async function handle(request: Request): Promise<Response> {
     }
 
     const isPaid = state === "PAID";
-    await supabaseAdmin
+    // Úhradu zapíšeme len pri prvom potvrdení — prehratá notifikácia inak
+    // pridala ďalší riadok do `payments` (a faktúru vrátila medzi zaplatené).
+    const { data: zmenene } = await supabaseAdmin
       .from("invoice_payment_links")
       .update({
         status: isPaid ? "paid" : state.toLowerCase(),
         paid_at: isPaid ? new Date().toISOString() : null,
       })
-      .eq("id", link.id);
+      .eq("id", link.id)
+      .neq("status", "paid")
+      .select("id");
+    const prvaUhrada = (zmenene?.length ?? 0) > 0;
 
-    if (isPaid) {
+    if (isPaid && prvaUhrada) {
       // mark invoice paid (only if not already)
       const { data: inv } = await supabaseAdmin
         .from("invoices")

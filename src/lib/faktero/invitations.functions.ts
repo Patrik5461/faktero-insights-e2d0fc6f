@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { escHtml, menoOdosielatela } from "@/lib/bezpecny-text";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { vycistiOpravnenia } from "./opravnenia";
@@ -22,9 +23,13 @@ type InviteRole = "admin" | "accountant" | "employee" | "custom";
 
 export const createInvitationFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(
-    (d: { company_id: string; email: string; role: InviteRole; permissions?: unknown }) => d,
-  )
+  .validator((d: { company_id: string; email: string; role: InviteRole; permissions?: unknown }) => {
+    // Typ v TypeScripte za behu nič nestráži — bez tejto kontroly sa dala poslať
+    // pozvánka s rolou „owner" a pozvaný by sa stal majiteľom firmy.
+    if (!["admin", "accountant", "employee", "custom"].includes(d?.role as string))
+      throw new Error("Neplatná rola pozvánky.");
+    return d;
+  })
   .handler(async ({ data, context }) => {
     const email = data.email.trim().toLowerCase();
     if (!email || !email.includes("@")) throw new Error("Neplatný email");
@@ -67,7 +72,7 @@ export const createInvitationFn = createServerFn({ method: "POST" })
       if (apiKey) {
         const url = odkaz;
         const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
-        const companyName = (inv as any)?.companies?.name || "Faktero";
+        const companyName = menoOdosielatela((inv as any)?.companies?.name);
         const odpoved = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
@@ -77,7 +82,7 @@ export const createInvitationFn = createServerFn({ method: "POST" })
             subject: `Pozvánka do firmy ${companyName} vo Faktero`,
             html: `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;max-width:560px">
               <h2 style="margin:0 0 12px">Boli ste pozvaný do Faktera</h2>
-              <p>Firma <strong>${companyName}</strong> vás pozvala do svojho účtu vo Faktero.</p>
+              <p>Firma <strong>${escHtml(companyName)}</strong> vás pozvala do svojho účtu vo Faktero.</p>
               <p><a href="${url}" style="background:#16a34a;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block">Prijať pozvánku</a></p>
               <p style="color:#666;font-size:12px">Alebo skopírujte odkaz: ${url}<br/>Platnosť pozvánky je 14 dní.</p>
             </div>`,
@@ -129,8 +134,27 @@ export const acceptInvitationFn = createServerFn({ method: "POST" })
     if (inv.accepted_at) throw new Error("Pozvánka už bola využitá");
     if (new Date(inv.expires_at) < new Date()) throw new Error("Pozvánka expirovala");
 
+    // Odkaz je len doručenie — pozvánka patrí adrese, na ktorú išla. Bez tejto
+    // kontroly sa s preposlaným (alebo od kolegu odkukaným) tokenom dal pripojiť
+    // ktokoľvek a existujúci člen si ním vedel prepísať vlastnú rolu.
+    const { data: ja } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+    const mojEmail = (ja?.user?.email ?? "").trim().toLowerCase();
+    if (!mojEmail || mojEmail !== String(inv.email).trim().toLowerCase())
+      throw new Error("Pozvánka je pre inú e-mailovú adresu. Prihláste sa účtom, na ktorý prišla.");
+
+    // Pozvánku si najprv zaberieme — dve súbežné prijatia ju nesmú využiť obe.
+    const { data: zabrata } = await supabaseAdmin
+      .from("company_invitations")
+      .update({ accepted_at: new Date().toISOString(), accepted_user_id: context.userId })
+      .eq("id", inv.id)
+      .is("accepted_at", null)
+      .select("id");
+    if (!zabrata?.length) throw new Error("Pozvánka už bola využitá");
+
     const { error: linkErr } = await supabaseAdmin
       .from("company_users")
+      // Kto už vo firme je, tomu pozvánka rolu nemení — majiteľa by inak
+      // prijatie pozvánky „používateľa" potichu zosadilo.
       .upsert(
         {
           company_id: inv.company_id,
@@ -138,14 +162,15 @@ export const acceptInvitationFn = createServerFn({ method: "POST" })
           role: inv.role,
           permissions: (inv as any).permissions ?? {},
         },
-        { onConflict: "company_id,user_id" },
+        { onConflict: "company_id,user_id", ignoreDuplicates: true },
       );
-    if (linkErr) throw linkErr;
-
-    await supabaseAdmin
-      .from("company_invitations")
-      .update({ accepted_at: new Date().toISOString(), accepted_user_id: context.userId })
-      .eq("id", inv.id);
+    if (linkErr) {
+      await supabaseAdmin
+        .from("company_invitations")
+        .update({ accepted_at: null, accepted_user_id: null })
+        .eq("id", inv.id);
+      throw linkErr;
+    }
 
     return { ok: true, company_id: inv.company_id };
   });
@@ -175,6 +200,30 @@ export const revokeInvitationFn = createServerFn({ method: "POST" })
 /* ---------- členovia firmy ---------- */
 
 type RolaClena = "owner" | "admin" | "accountant" | "employee" | "custom";
+
+/** Rola volajúceho vo firme (filtrované na seba — RLS na company_users pustí celú firmu). */
+async function mojaRola(context: any, companyId: string): Promise<string | null> {
+  const { data } = await context.supabase
+    .from("company_users")
+    .select("role")
+    .eq("company_id", companyId)
+    .eq("user_id", context.userId)
+    .maybeSingle();
+  return (data?.role as string | undefined) ?? null;
+}
+
+/** Rola člena, s ktorým sa niečo robí. */
+async function rolaClena(admin: any, companyId: string, userId: string): Promise<string | null> {
+  const { data } = await admin
+    .from("company_users")
+    .select("role")
+    .eq("company_id", companyId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return (data?.role as string | undefined) ?? null;
+}
+
+const ROLY_CLENA = ["owner", "admin", "accountant", "employee", "custom"];
 
 /** Kto v tejto firme rozhoduje o prístupoch. */
 async function overAdmina(context: any, companyId: string) {
@@ -239,7 +288,17 @@ export const changeMemberRoleFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overAdmina(context, data.company_id);
+    if (!ROLY_CLENA.includes(data.role)) throw new Error("Neplatná rola.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    /*
+      Majiteľa smie meniť a rolu majiteľa udeliť len majiteľ. Admin by si inak
+      vedel sám pridať rolu majiteľa alebo zosadiť skutočného majiteľa (prevzatie firmy).
+    */
+    if ((await mojaRola(context, data.company_id)) !== "owner") {
+      if (data.role === "owner") throw new Error("Rolu majiteľa môže udeliť len majiteľ.");
+      if ((await rolaClena(supabaseAdmin, data.company_id, data.user_id)) === "owner")
+        throw new Error("Rolu majiteľa môže zmeniť len majiteľ.");
+    }
     // Firma bez majiteľa by ostala bez toho, kto ju vie zrušiť alebo platiť.
     if (
       data.role !== "owner" &&
@@ -264,6 +323,11 @@ export const removeMemberFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await overAdmina(context, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (
+      (await mojaRola(context, data.company_id)) !== "owner" &&
+      (await rolaClena(supabaseAdmin, data.company_id, data.user_id)) === "owner"
+    )
+      throw new Error("Majiteľa môže z firmy odobrať len majiteľ.");
     if (await poslednyMajitel(supabaseAdmin, data.company_id, data.user_id))
       throw new Error("Posledného majiteľa firmy odobrať nemožno.");
     const { error } = await supabaseAdmin

@@ -1,4 +1,5 @@
 import { runInBatches, selectByIds } from "./batch.server";
+import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { podpisHtml, podpisText } from "./email-podpis";
 import { sUctomFaktury } from "./platobny-ucet";
@@ -168,7 +169,7 @@ export async function sendReminder(input: SendReminderInput) {
     overrideMessage: input.overrideMessage ?? dbBody,
   });
 
-  const senderName = company?.email_sender_name || company?.name || "Faktero";
+  const senderName = menoOdosielatela(company?.email_sender_name || company?.name);
   const fromEmail = process.env.RESEND_FROM_NOREPLY || "noreply@faktero.sk";
   const from = `${senderName} <${fromEmail}>`;
 

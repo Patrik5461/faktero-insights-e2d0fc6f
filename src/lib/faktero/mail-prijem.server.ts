@@ -25,6 +25,14 @@ import {
 import { DRUHY_PRE_AI } from "./ostatne-doklady-citanie.server";
 
 /**
+ * `%` a `_` sú v adrese povolené znaky, ale v `ilike` zastupujú čokoľvek —
+ * mail na „%sro%@…“ by trafil cudziu tajnú adresu. Porovnávame doslovne.
+ */
+function bezZastupnychZnakov(v: string): string {
+  return v.replace(/[\\%_]/g, (z) => `\\${z}`);
+}
+
+/**
  * Koľko príloh z jedného mailu spracujeme a aká veľká smie byť. Od
  * 2026-09-23 pätnásť namiesto piatich — dodávatelia posielajú aj celý mesiac
  * faktúr v jednom maile a zvyšok sa predtým ticho zahodil (poznámka o tom
@@ -341,7 +349,7 @@ export async function spracujPrijatyMail(
     const { data: najdena } = await supabaseAdmin
       .from("inbox_addresses")
       .select("id, company_id, user_id, active")
-      .ilike("local_part", localPart)
+      .ilike("local_part", bezZastupnychZnakov(localPart))
       .maybeSingle();
     adresa = najdena;
 
@@ -350,7 +358,7 @@ export async function spracujPrijatyMail(
       const { data: rozdelovac } = await supabaseAdmin
         .from("mail_rozdelovace")
         .select("user_id, active")
-        .ilike("local_part", localPart)
+        .ilike("local_part", bezZastupnychZnakov(localPart))
         .maybeSingle();
       if (rozdelovac?.active) {
         const { rozdelMail } = await import("./mail-rozdelovac.server");

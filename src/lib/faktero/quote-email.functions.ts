@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -112,7 +113,7 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
     const message = (
       data.message ?? `V prílohe Vám posielame cenovú ponuku ${q.quote_number}.`
     ).replaceAll("{quote_number}", q.quote_number);
-    const senderName = company?.email_sender_name || company?.name || "Faktero";
+    const senderName = menoOdosielatela(company?.email_sender_name || company?.name);
 
     /*
       Tlačidlá na prijatie a zamietnutie. Bez nich odpoveď chodila e-mailom

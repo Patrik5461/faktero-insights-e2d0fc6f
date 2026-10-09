@@ -304,17 +304,28 @@ export async function prijmiOdpovedEmailom(args: {
     }
 
     const odosielatelMailu = emailOdosielatela(args.od);
+    /*
+      Adresu odosielateľa si vie ktokoľvek napísať. Za podporu (a za zákazníka)
+      sa správa ráta len vtedy, keď ju doména odosielateľa podpísala — Resend
+      výsledok DMARC posiela v `authentication`. Inak ide do vlákna ako
+      interná poznámka, ktorú zákazník nevidí ani nedostane mailom.
+    */
+    const dmarc = String((obsah as any)?.authentication?.dmarc ?? "").toLowerCase();
     let od: "zakaznik" | "podpora" = "zakaznik";
     let autorId: string | null = null;
     let interna = false;
     let telo = text;
-    if (odosielatelMailu === p.email.toLowerCase()) {
+    if (dmarc === "fail") {
+      od = "podpora";
+      interna = true;
+      telo = `E-mail od ${odosielatelMailu || "neznámeho odosielateľa"} neprešiel overením odosielateľa (DMARC) — môže byť podvrhnutý:\n\n${text}`;
+    } else if (odosielatelMailu === p.email.toLowerCase()) {
       autorId = p.user_id;
     } else {
       const { data: profil } = await supabaseAdmin
         .from("profiles")
         .select("id")
-        .ilike("email", odosielatelMailu)
+        .eq("email", odosielatelMailu)
         .maybeSingle();
       const { data: admin } = profil
         ? await supabaseAdmin
@@ -323,9 +334,13 @@ export async function prijmiOdpovedEmailom(args: {
             .eq("user_id", profil.id)
             .maybeSingle()
         : { data: null };
-      if (admin || odosielatelMailu === schrankaPodpory().toLowerCase()) {
+      if ((admin || odosielatelMailu === schrankaPodpory().toLowerCase()) && dmarc === "pass") {
         od = "podpora";
         autorId = profil?.id ?? null;
+      } else if (admin || odosielatelMailu === schrankaPodpory().toLowerCase()) {
+        od = "podpora";
+        interna = true;
+        telo = `E-mail z adresy podpory ${odosielatelMailu} bez overenia odosielateľa (DMARC: ${dmarc || "chýba"}) — zákazníkovi sa neposlal:\n\n${text}`;
       } else {
         od = "podpora";
         interna = true;

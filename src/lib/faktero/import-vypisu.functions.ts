@@ -1,6 +1,7 @@
 import { vsetkoAkoData } from "./strankovanie";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { overPristup } from "./over-pristup";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { rozberVypis, rovnakyUcet } from "./import-vypisu";
 import { vlozPohyby } from "./bank-sync.server";
@@ -150,9 +151,10 @@ export const importujVypisFn = createServerFn({ method: "POST" })
   .validator((d: z.infer<typeof ImportVstup>) => ImportVstup.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    const rola = await overClena(supabase, userId, data.company_id);
     // Pohyby sú účtovný záznam; kto smie viesť doklady, smie ich aj nahrať.
-    if (rola === "viewer") throw new Error("Na nahranie výpisu nemáte oprávnenie.");
+    // Vlastný prístup musí mať Banku na úpravu — zápis ide cez admin klienta.
+    // (Predtým sa tu porovnávalo s rolou „viewer", ktorá neexistuje.)
+    await overPristup({ supabase, userId }, data.company_id, { oblast: "banka", zapis: true });
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let ucet: any;

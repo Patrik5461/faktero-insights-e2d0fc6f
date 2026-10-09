@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { overPristup } from "./over-pristup";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { navratovaAdresa } from "./revolut";
@@ -18,14 +19,22 @@ import { navratovaAdresa } from "./revolut";
 
 const Firma = z.object({ company_id: z.string().uuid() });
 
-async function overClena(supabase: any, userId: string, companyId: string) {
-  const { data } = await supabase
-    .from("company_users")
-    .select("company_id")
-    .eq("company_id", companyId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!data) throw new Error("Do tejto firmy nemáte prístup.");
+/**
+ * Pripojiť a odpojiť smie len majiteľ alebo admin — kto vymení token, tomu
+ * chodia do Faktera pohyby z jeho účtu a párujú sa s faktúrami. Vlastný
+ * prístup musí mať oblasť Banka (zápis pri synchronizácii).
+ */
+async function overClena(
+  supabase: any,
+  userId: string,
+  companyId: string,
+  uroven: "citat" | "zapis" | "spravca" = "citat",
+) {
+  await overPristup({ supabase, userId }, companyId, {
+    oblast: "banka",
+    zapis: uroven !== "citat",
+    spravca: uroven === "spravca",
+  });
 }
 
 async function spojenieFirmy(companyId: string) {
@@ -52,7 +61,7 @@ export const zacniRevolut = createServerFn({ method: "POST" })
     Firma.extend({ prostredie: z.enum(["sandbox", "produkcia"]).default("produkcia") }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "spravca");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: existuje } = await supabaseAdmin
       .from("bank_connections")
@@ -99,7 +108,7 @@ export const ulozClientIdRevolut = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => Firma.extend({ client_id: z.string().trim().min(6).max(120) }).parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "spravca");
     const { conn, meta, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
     const { error } = await supabaseAdmin
       .from("bank_connections")
@@ -116,7 +125,7 @@ export const dokonciRevolut = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => Firma.extend({ code: z.string().trim().min(6).max(500) }).parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "spravca");
     const { conn, meta, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
     if (!spojenie.clientId) throw new Error("Chýba client ID z portálu Revolutu.");
 
@@ -176,7 +185,7 @@ export const synchronizujRevolutUcty = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "zapis");
     const { spojenie, token, conn, supabaseAdmin } = await platnyToken(data.company_id);
     const { nacitajUcty } = await import("./revolut.server");
     const ucty = await nacitajUcty(spojenie, token);
@@ -193,7 +202,7 @@ export const synchronizujRevolutPohyby = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "zapis");
     const { spojenie, token, conn, supabaseAdmin } = await platnyToken(data.company_id);
     const { nacitajPohyby } = await import("./revolut.server");
     const { stiahniPohybyPripojenia } = await import("./bank-sync.server");
@@ -211,7 +220,7 @@ export const odpojRevolut = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "spravca");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("bank_connections")

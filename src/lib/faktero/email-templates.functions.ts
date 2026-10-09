@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -120,7 +121,7 @@ export const sendTestEmailTemplateFn = createServerFn({ method: "POST" })
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) throw new Error("RESEND_API_KEY nie je nakonfigurovaný.");
-    const senderName = co.email_sender_name || co.name || "Faktero";
+    const senderName = menoOdosielatela(co.email_sender_name || co.name);
     const escape = (s: string) =>
       s.replace(
         /[&<>"']/g,

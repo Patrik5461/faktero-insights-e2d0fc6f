@@ -1,3 +1,4 @@
+import { bezVzorca } from "@/lib/bezpecny-text";
 /**
  * Prevod záznamov na CSV pre kompletný export firmy.
  *
@@ -10,7 +11,7 @@ export function csvHodnota(v: unknown): string {
   if (v === null || v === undefined) return "";
   // Objekt (napríklad rozpis DPH) sa uloží ako JSON — a ten musí prejsť tým
   // istým escapovaním, inak úvodzovky vnútri rozbijú celý riadok.
-  const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+  const s = typeof v === "object" ? JSON.stringify(v) : bezVzorca(v);
   return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

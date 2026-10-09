@@ -165,16 +165,38 @@ async function processGopayPayment(paymentId: string): Promise<void> {
     }
 
     const isPaid = state === "PAID";
-    const paidAt = isPaid ? new Date().toISOString() : null;
 
-    await supabaseAdmin
-      .from("billing_payments")
-      .update({
-        status: state,
-        paid_at: paidAt,
-        raw_response: payment as any,
-      })
-      .eq("id", existing.id);
+    /*
+      Predplatné sa predlžuje len pri **prvom** potvrdení úhrady. Notifikácia
+      nemá podpis (GoPay ho neposiela) a stará zaplatená platba ostáva v bráne
+      PAID navždy — bez tejto podmienky si ju dal ktokoľvek s jej číslom
+      prehrať každý mesiac a mal predplatné zadarmo. `paid_at` zapisuje len
+      tento webhook, takže podmienka `is null` platí presne raz.
+    */
+    let prvaUhrada = false;
+    if (isPaid) {
+      const { data: zmenene } = await supabaseAdmin
+        .from("billing_payments")
+        .update({ status: state, paid_at: new Date().toISOString(), raw_response: payment as any })
+        .eq("id", existing.id)
+        .is("paid_at", null)
+        .select("id");
+      prvaUhrada = (zmenene?.length ?? 0) > 0;
+    } else {
+      await supabaseAdmin
+        .from("billing_payments")
+        .update({ status: state, paid_at: null, raw_response: payment as any })
+        .eq("id", existing.id);
+    }
+
+    if (isPaid && !prvaUhrada) {
+      await supabaseAdmin.from("billing_events").insert({
+        company_id: existing.company_id,
+        event_type: "gopay_paid_opakovane",
+        payload: { id: String(payment.id) },
+      });
+      return;
+    }
 
     if (isPaid && existing.plan_slug) {
       const { data: plan } = await supabaseAdmin

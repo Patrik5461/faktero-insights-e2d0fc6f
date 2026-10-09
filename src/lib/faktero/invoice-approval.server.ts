@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { menoOdosielatela } from "@/lib/bezpecny-text";
 
 function escapeHtml(s: string) {
   return String(s).replace(
@@ -48,7 +49,7 @@ export async function sendApprovalRequestEmail(params: {
 }) {
   const { invoice, company, recipientEmail, token } = params;
   const link = `${baseUrl()}/schvalit/${token}`;
-  const senderName = company?.email_sender_name || company?.name || "Faktero";
+  const senderName = menoOdosielatela(company?.email_sender_name || company?.name);
   const from = `${senderName} <${process.env.RESEND_FROM_NOREPLY || "noreply@faktero.sk"}>`;
   const total = `${Number(invoice.total).toFixed(2)} ${invoice.currency}`;
 

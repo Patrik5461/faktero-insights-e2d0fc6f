@@ -308,6 +308,12 @@ export async function prijmiUdalostEpostaka(args: {
   podpis: string | null;
   pecatka: string | null;
 }): Promise<{ ok: boolean; dovod?: string }> {
+  // Udalosť je pár stoviek bajtov. Hlavičky a pečiatku overíme raz ešte pred
+  // cyklom — inak nepodpísaná 20 MB požiadavka spustila stovky dešifrovaní
+  // a HMAC nad celým telom.
+  if (args.telo.length > 256 * 1024) return { ok: false, dovod: "zly_tvar" };
+  const predbezne = overEpostakPodpis({ podpis: args.podpis, pecatka: args.pecatka, telo: "", tajomstvo: "-" });
+  if (!predbezne.platny && predbezne.dovod !== "nesedi_podpis") return { ok: false, dovod: predbezne.dovod };
   const { decryptSecret } = await import("../payment-crypto.server");
   // Udalosť sa číta len na výber kandidáta; dôveruje sa jej až po podpise.
   const u = rozparsujUdalost(args.telo);

@@ -14,6 +14,7 @@
  * musí sám otočiť znamienko — inak účtovníčke dobropis výnosy zvýši.
  */
 
+import { bezVzorca } from "@/lib/bezpecny-text";
 import {
   polozkyOdpoctu,
   prekazkaOdpoctu,
@@ -80,7 +81,7 @@ const text = (h: unknown): string => String(h ?? "").trim();
 
 /** Text do CSV: bodkočiarka, úvodzovka ani nový riadok nesmú rozbiť riadok. */
 function csvPole(h: unknown): string {
-  const s = text(h).replace(/\r?\n/g, " ");
+  const s = bezVzorca(text(h).replace(/\r?\n/g, " "));
   return /[";]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

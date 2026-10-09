@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { overPristup } from "./over-pristup";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -15,14 +16,22 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const Firma = z.object({ company_id: z.string().uuid() });
 
-async function overClena(supabase: any, userId: string, companyId: string) {
-  const { data } = await supabase
-    .from("company_users")
-    .select("company_id")
-    .eq("company_id", companyId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!data) throw new Error("Do tejto firmy nemáte prístup.");
+/**
+ * Pripojiť a odpojiť smie len majiteľ alebo admin — kto vymení token, tomu
+ * chodia do Faktera pohyby z jeho účtu a párujú sa s faktúrami. Vlastný
+ * prístup musí mať oblasť Banka (zápis pri synchronizácii).
+ */
+async function overClena(
+  supabase: any,
+  userId: string,
+  companyId: string,
+  uroven: "citat" | "zapis" | "spravca" = "citat",
+) {
+  await overPristup({ supabase, userId }, companyId, {
+    oblast: "banka",
+    zapis: uroven !== "citat",
+    spravca: uroven === "spravca",
+  });
 }
 
 async function spojenieFirmy(companyId: string, musiBytUplne = true) {
@@ -35,7 +44,7 @@ export const zacniWallester = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "spravca");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: existuje } = await supabaseAdmin
       .from("bank_connections")
@@ -83,7 +92,7 @@ export const dokonciWallester = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "spravca");
     const { conn, supabaseAdmin, meta } = await spojenieFirmy(data.company_id, false);
     if (!meta.private_key) throw new Error("Chýba kľúč. Začnite pripojenie odznova.");
 
@@ -144,7 +153,7 @@ export const synchronizujWallesterUcty = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "zapis");
     const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
     const { nacitajUcty } = await import("./wallester.server");
     const ucty = await nacitajUcty(spojenie);
@@ -161,7 +170,7 @@ export const synchronizujWallesterPohyby = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "zapis");
     const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
     const { nacitajPohyby } = await import("./wallester.server");
     const { stiahniPohybyPripojenia } = await import("./bank-sync.server");
@@ -180,7 +189,7 @@ export const odpojWallester = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "spravca");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("bank_connections")

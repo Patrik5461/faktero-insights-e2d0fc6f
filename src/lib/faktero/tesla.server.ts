@@ -1,3 +1,4 @@
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 /**
  * Tesla Fleet API client (server-only).
  * OAuth 2.0 authorization code flow + Fleet API v1.
@@ -25,6 +26,46 @@ function clientCreds() {
     );
   }
   return { id, secret, redirect };
+}
+
+/*
+  OAuth `state` bol predtým holé id spojenia — platil navždy, dal sa použiť
+  opakovane a kto id poznal (napr. bývalý člen), vedel na firmu napojiť
+  vlastný Tesla účet. Teraz je podpísaný a platí 10 minút.
+*/
+function kluc(): string {
+  const k = process.env.PAYMENT_SECRETS_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!k) throw new Error("Chýba kľúč na podpis.");
+  return k;
+}
+
+export function podpisanyStav(spojenieId: string): string {
+  const telo = `${spojenieId}.${Date.now()}.${randomBytes(8).toString("hex")}`;
+  const mac = createHmac("sha256", kluc()).update(`tesla.${telo}`).digest("hex").slice(0, 32);
+  return Buffer.from(`${telo}.${mac}`).toString("base64url");
+}
+
+/** Vráti id spojenia z podpísaného stavu, inak null. */
+export function overStav(stav: string): string | null {
+  let surovy: string;
+  try {
+    surovy = Buffer.from(stav, "base64url").toString("utf8");
+  } catch {
+    return null;
+  }
+  const casti = surovy.split(".");
+  if (casti.length !== 4) return null;
+  const [id, ts, nonce, mac] = casti;
+  const ocakavany = createHmac("sha256", kluc())
+    .update(`tesla.${id}.${ts}.${nonce}`)
+    .digest("hex")
+    .slice(0, 32);
+  const a = Buffer.from(mac);
+  const b = Buffer.from(ocakavany);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  const vek = Date.now() - Number(ts);
+  if (!Number.isFinite(vek) || vek < 0 || vek > 10 * 60 * 1000) return null;
+  return id;
 }
 
 export function getTeslaAuthUrl(state: string): string {

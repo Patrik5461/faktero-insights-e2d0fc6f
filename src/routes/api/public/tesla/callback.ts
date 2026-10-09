@@ -13,14 +13,14 @@ export const Route = createFileRoute("/api/public/tesla/callback")({
         if (error) return redirect(`${back}?error=${encodeURIComponent(error)}`);
         if (!code || !state) return redirect(`${back}?error=missing_code`);
         try {
-          const { exchangeTeslaCode } = await import("@/lib/faktero/tesla.server");
+          const { exchangeTeslaCode, overStav } = await import("@/lib/faktero/tesla.server");
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { encryptSecret } = await import("@/lib/faktero/payment-crypto.server");
 
           const { data: conn } = await supabaseAdmin
             .from("tesla_connections")
             .select("id, company_id")
-            .eq("id", state)
+            .eq("id", overStav(state) ?? "00000000-0000-0000-0000-000000000000")
             .maybeSingle();
           if (!conn) return redirect(`${back}?error=invalid_state`);
 
@@ -60,7 +60,7 @@ export const Route = createFileRoute("/api/public/tesla/callback")({
           return redirect(`${back}?connected=1`);
         } catch (e: any) {
           console.error("[tesla callback]", e);
-          return redirect(`${back}?error=${encodeURIComponent(e?.message ?? "callback_failed")}`);
+          return redirect(`${back}?error=callback_failed`);
         }
       },
     },

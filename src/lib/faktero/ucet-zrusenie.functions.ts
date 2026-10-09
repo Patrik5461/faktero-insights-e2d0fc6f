@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { escHtml } from "@/lib/bezpecny-text";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { terminSlovom, terminZrusenia, ODKLAD_DNI } from "./ucet-zrusenie";
 
@@ -98,7 +99,9 @@ export const poziadajOZrusenieUctuFn = createServerFn({ method: "POST" })
         html:
           `<p>Prijali sme žiadosť o zrušenie vášho účtu.</p>` +
           `<p><strong>Účet sa zruší ${den}.</strong> Do vtedy stačí sa prihlásiť a žiadosť odvolať — nič sa nestratí.</p>` +
-          (zoznam ? `<p>Spolu s účtom zaniknú aj tieto firmy a ich doklady: ${zoznam}.</p>` : "") +
+          (zoznam
+            ? `<p>Spolu s účtom zaniknú aj tieto firmy a ich doklady: ${escHtml(zoznam)}.</p>`
+            : "") +
           `<p>Ak ste o zrušenie nežiadali, prihláste sa a žiadosť zrušte, prípadne si zmeňte heslo.</p>`,
       });
     }

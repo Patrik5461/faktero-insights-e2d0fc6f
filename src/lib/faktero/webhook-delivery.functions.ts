@@ -24,6 +24,7 @@ export const retryWebhookDelivery = createServerFn({ method: "POST" })
       .eq("id", log.webhook_id)
       .maybeSingle();
     if (!hook) throw new Error("Webhook už neexistuje");
+    if (!hook.active) throw new Error("Webhook je vypnutý.");
 
     const { createHmac } = await import("crypto");
     const body = JSON.stringify(log.payload);
@@ -46,7 +47,16 @@ export const retryWebhookDelivery = createServerFn({ method: "POST" })
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 10_000);
     try {
-      const res = await fetch(hook.url, { method: "POST", headers, body, signal: ctrl.signal });
+      const { overAdresuWebhooku } = await import("./webhook-adresa.server");
+      await overAdresuWebhooku(hook.url);
+      // Presmerovanie by obišlo kontrolu adresy.
+      const res = await fetch(hook.url, {
+        method: "POST",
+        headers,
+        body,
+        signal: ctrl.signal,
+        redirect: "manual",
+      });
       const text = await res.text().catch(() => "");
       response_status = res.status;
       response_body = text.slice(0, 2000);

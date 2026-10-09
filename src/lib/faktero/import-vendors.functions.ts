@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { overPristup } from "./over-pristup";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const VendorEnum = z.enum(["money-s3", "omega", "idoklad", "kros", "pohoda"]);
@@ -21,19 +22,18 @@ const ExecuteInput = PreviewInput.extend({
     .default({}),
 });
 
-async function assertMember(ctx: any, companyId: string) {
-  const ok = await ctx.supabase.rpc("is_company_member", {
-    _company_id: companyId,
-    _user_id: ctx.userId,
-  });
-  if (!ok.data) throw new Error("Nemáte prístup k firme.");
+async function assertMember(ctx: any, companyId: string, path?: string) {
+  await overPristup(ctx, companyId, { oblast: "uctovnictvo", zapis: true });
+  // Cesta chodí z prehliadača — bez kontroly by sa dal načítať súbor cudzej firmy.
+  if (path !== undefined && (!path.startsWith(`${companyId}/`) || path.includes("..")))
+    throw new Error("Súbor nepatrí k tejto firme.");
 }
 
 export const previewVendorImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => PreviewInput.parse(d))
   .handler(async ({ data, context }) => {
-    await assertMember(context, data.companyId);
+    await assertMember(context, data.companyId, data.path);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: blob, error } = await supabaseAdmin.storage.from("imports").download(data.path);
     if (error || !blob) throw new Error(error?.message ?? "Súbor sa nepodarilo načítať.");
@@ -49,7 +49,7 @@ export const executeVendorImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => ExecuteInput.parse(d))
   .handler(async ({ data, context }) => {
-    await assertMember(context, data.companyId);
+    await assertMember(context, data.companyId, data.path);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: blob, error: dlErr } = await supabaseAdmin.storage
       .from("imports")

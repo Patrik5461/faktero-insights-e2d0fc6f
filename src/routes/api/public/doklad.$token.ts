@@ -21,31 +21,42 @@ export const Route = createFileRoute("/api/public/doklad/$token")({
         const [{ data: doklad }, { data: prijata }] = await Promise.all([
           supabaseAdmin
             .from("expense_documents")
-            .select("file_path, file_mime, document_number")
+            .select("company_id, file_path, file_mime, document_number")
             .eq("pdf_token", token)
             .maybeSingle(),
           supabaseAdmin
             .from("purchase_invoices")
-            .select("file_path, file_mime, invoice_number, deleted_at")
+            .select("company_id, file_path, file_mime, invoice_number, deleted_at")
             .eq("pdf_token", token)
             .maybeSingle(),
         ]);
         const zdroj = doklad
-          ? { bucket: "expense-receipts", cesta: doklad.file_path, mime: doklad.file_mime, cislo: doklad.document_number }
+          ? { bucket: "expense-receipts", firma: doklad.company_id, cesta: doklad.file_path, mime: doklad.file_mime, cislo: doklad.document_number }
           : prijata && !prijata.deleted_at
-            ? { bucket: "purchase-invoices", cesta: prijata.file_path, mime: prijata.file_mime, cislo: prijata.invoice_number }
+            ? { bucket: "purchase-invoices", firma: prijata.company_id, cesta: prijata.file_path, mime: prijata.file_mime, cislo: prijata.invoice_number }
             : null;
         if (!zdroj?.cesta) return zle(404, "Odkaz nie je platný.");
+        // Cestu k súboru zapisuje prehliadač — bez kontroly by sa cez vlastný
+        // doklad dal vytiahnuť sken inej firmy.
+        if (!String(zdroj.cesta).startsWith(`${zdroj.firma}/`)) return zle(404, "Odkaz nie je platný.");
 
         const { data: subor } = await supabaseAdmin.storage.from(zdroj.bucket).download(zdroj.cesta);
         if (!subor) return zle(404, "Sken sa nenašiel.");
         const koncovka = String(zdroj.cesta).split(".").pop() ?? "pdf";
         const meno = `doklad-${String(zdroj.cislo ?? "").replace(/[^\w.-]+/g, "_") || "sken"}.${koncovka}`;
+        /*
+          Typ súboru zapisuje prehliadač alebo odosielateľ mailu. Na našej
+          doméne sa preto priamo zobrazí len PDF a obrázok; HTML alebo SVG by
+          tu spustilo cudzí skript vedľa prihlásenia. Všetko ostatné sa stiahne.
+        */
+        const typ = String(zdroj.mime || subor.type || "").toLowerCase().split(";")[0].trim();
+        const bezpecny = typ === "application/pdf" || /^image\/(png|jpe?g|gif|webp|heic|heif)$/.test(typ);
         return new Response(await subor.arrayBuffer(), {
           status: 200,
           headers: {
-            "content-type": zdroj.mime || subor.type || "application/octet-stream",
-            "content-disposition": `inline; filename="${meno}"`,
+            "content-type": bezpecny ? typ : "application/octet-stream",
+            "content-disposition": `${bezpecny ? "inline" : "attachment"}; filename="${meno}"`,
+            "x-content-type-options": "nosniff",
             "x-robots-tag": "noindex, nofollow",
             "cache-control": "private, max-age=300",
           },

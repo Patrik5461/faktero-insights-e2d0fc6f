@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { overPristup } from "./over-pristup";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { zostavaUhradit } from "./zaloha";
@@ -287,11 +288,7 @@ export const syncInvoicePayment = createServerFn({ method: "POST" })
   .validator((d: { companyId: string; invoiceId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: isMember } = await supabase.rpc("is_company_member", {
-      _company_id: data.companyId,
-      _user_id: userId,
-    });
-    if (!isMember) throw new Error("Forbidden");
+    await overPristup({ supabase, userId }, data.companyId, { oblast: "faktury", zapis: true });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { decryptSecret } = await import("./payment-crypto.server");
     const { merchantGetPayment } = await import("./payments-gopay.server");

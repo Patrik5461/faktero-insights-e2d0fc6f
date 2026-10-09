@@ -1,4 +1,5 @@
 import type JSZip from "jszip";
+import { bezVzorca } from "@/lib/bezpecny-text";
 import { bezpecneMeno, nazovDruhu } from "./ostatne-doklady";
 
 type DokladVBaliku = {
@@ -18,7 +19,7 @@ type DokladVBaliku = {
 };
 
 function csv(v: unknown): string {
-  const s = v == null ? "" : String(v);
+  const s = v == null ? "" : bezVzorca(v);
   return /[;"\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
 }
 

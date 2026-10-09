@@ -1,9 +1,10 @@
+import { bezVzorca } from "@/lib/bezpecny-text";
 // Client-side export helpers for CSV / XLSX downloads.
 export type ExportRow = Record<string, string | number | null | undefined>;
 
 function toCsvCell(v: unknown): string {
   if (v === null || v === undefined) return "";
-  const s = String(v);
+  const s = bezVzorca(v);
   if (/[;"\n\r]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
   return s;
 }

@@ -111,7 +111,7 @@ export const startTeslaOAuth = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getTeslaAuthUrl } = await import("./tesla.server");
+    const { getTeslaAuthUrl, podpisanyStav } = await import("./tesla.server");
     // Create or reuse a pending connection row; its id is used as OAuth state.
     const { data: existing } = await supabaseAdmin
       .from("tesla_connections")
@@ -133,7 +133,7 @@ export const startTeslaOAuth = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
       id = ins!.id as string;
     }
-    const url = getTeslaAuthUrl(id!);
+    const url = getTeslaAuthUrl(podpisanyStav(id!));
     return { url };
   });
 

@@ -1,4 +1,5 @@
 import { sUctomFaktury } from "./platobny-ucet";
+import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type SendInvoiceEmailInput = {
@@ -166,7 +167,7 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
         ).prilohyDoMailu("invoice", input.company_id, input.invoice_id)
       : { prilohy: [], vynechane: [] as string[] };
 
-    const senderName = company?.email_sender_name || company?.name || "Faktero";
+    const senderName = menoOdosielatela(company?.email_sender_name || company?.name);
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
     const from = `${senderName} <${fromEmail}>`;
 

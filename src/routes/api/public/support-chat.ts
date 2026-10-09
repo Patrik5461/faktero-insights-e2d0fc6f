@@ -48,6 +48,8 @@ PRAVIDLÁ:
 const OKNO_MS = 60_000;
 const MAX_ZA_OKNO = 8;
 const historia = new Map<string, number[]>();
+const MAX_SPOLU_ZA_OKNO = 120;
+let spolocne: number[] = [];
 
 function prekrocenyLimit(ip: string): boolean {
   const teraz = Date.now();
@@ -60,7 +62,13 @@ function prekrocenyLimit(ip: string): boolean {
       if (v.every((t) => teraz - t >= OKNO_MS)) historia.delete(k);
     }
   }
-  return nedavne.length > MAX_ZA_OKNO;
+  // IP z hlavičky X-Forwarded-For si klient vie vymyslieť (a skutočnú adresu
+  // nám aj tak schová router), preto ešte spoločný strop za celý web —
+  // míňanie kreditov za AI má hornú hranicu, nech hlavičku podvrhne ktokoľvek.
+  const spolu = spolocne.filter((t) => teraz - t < OKNO_MS);
+  spolu.push(teraz);
+  spolocne = spolu;
+  return nedavne.length > MAX_ZA_OKNO || spolu.length > MAX_SPOLU_ZA_OKNO;
 }
 
 export const Route = createFileRoute("/api/public/support-chat")({

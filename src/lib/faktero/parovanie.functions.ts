@@ -1,6 +1,7 @@
 import { vsetkoAkoData } from "./strankovanie";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { overPristup } from "./over-pristup";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sparuj, type Doklad, type Pohyb, type Zhoda } from "./parovanie";
 import { DNI_PAROVANIA, MAX_PAROVANIA } from "./parovanie-limity";
@@ -14,12 +15,14 @@ import { DNI_PAROVANIA, MAX_PAROVANIA } from "./parovanie-limity";
  * tú istú platbu nezapíše dvakrát.
  */
 
-async function overClena(ctx: any, companyId: string) {
-  const { data } = await ctx.supabase.rpc("is_company_member", {
-    _company_id: companyId,
-    _user_id: ctx.userId,
-  });
-  if (!data) throw new Error("Nemáte prístup k firme.");
+/**
+ * Párovanie číta pohyby a mení stav faktúr — vlastný prístup potrebuje Banku
+ * aj Faktúry (pri zmene „Upravovať"). Zápis ide cez admin klienta, RLS by
+ * oblasti nestrážila.
+ */
+async function overClena(ctx: any, companyId: string, zapis = false) {
+  await overPristup(ctx, companyId, { oblast: "banka", zapis });
+  await overPristup(ctx, companyId, { oblast: "faktury", zapis });
 }
 
 function cislo(v: unknown): number {
@@ -176,7 +179,7 @@ export const potvrdParovanie = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => ZapisSchema.parse(d))
   .handler(async ({ data, context }) => {
-    await overClena(context, data.companyId);
+    await overClena(context, data.companyId, true);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let zapisanych = 0;
@@ -266,7 +269,7 @@ export const sparujAutomaticky = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ companyId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await overClena(context, data.companyId);
+    await overClena(context, data.companyId, true);
     const { pohyby, doklady } = await podklady(context.supabase, data.companyId);
     const { auto, navrhy } = sparuj(pohyby, doklady);
     if (auto.length === 0) return { zapisanych: 0, uhradenych: 0, navrhov: navrhy.length };
@@ -318,7 +321,7 @@ export const zrusParovanie = createServerFn({ method: "POST" })
     z.object({ companyId: z.string().uuid(), transactionId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await overClena(context, data.companyId);
+    await overClena(context, data.companyId, true);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: tx } = await supabaseAdmin

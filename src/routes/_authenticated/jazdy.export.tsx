@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { escHtml, bezVzorca } from "@/lib/bezpecny-text";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -41,7 +42,7 @@ function download(name: string, content: string, mime: string) {
 }
 
 function esc(s: any) {
-  const v = s == null ? "" : String(s);
+  const v = bezVzorca(s == null ? "" : s);
   return /[";\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v;
 }
 
@@ -234,7 +235,7 @@ function ExportPage() {
       const tr = rows
         .map(
           (r: any) =>
-            `<tr><td>${r.vehicles?.name ?? ""} ${r.vehicles?.license_plate ?? ""}</td><td>${r.trip_date}</td><td>${r.start_location ?? ""}</td><td>${r.end_location ?? ""}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${Number(r.distance_km).toFixed(1)}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${r.driver_name ?? ""}</td><td>${r.purpose ?? ""}</td><td>${charakterJazdy(r.classification)}</td><td>${sourceLabel(r.external_source)}</td></tr>`,
+            `<tr><td>${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)}</td><td>${escHtml(r.trip_date)}</td><td>${escHtml(r.start_location)}</td><td>${escHtml(r.end_location)}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${Number(r.distance_km).toFixed(1)}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${escHtml(r.driver_name)}</td><td>${escHtml(r.purpose)}</td><td>${charakterJazdy(r.classification)}</td><td>${sourceLabel(r.external_source)}</td></tr>`,
         )
         .join("");
 
@@ -246,14 +247,14 @@ function ExportPage() {
           }${mapy
             .map(
               ({ r, obrazok }) =>
-                `<div class="trasa"><div class="trasa-hlavicka">${r.trip_date} · ${r.vehicles?.name ?? ""} ${r.vehicles?.license_plate ?? ""} · ${Number(r.distance_km).toFixed(1)} km · ${charakterJazdy(r.classification)}</div><img src="${obrazok}" alt="Trasa jazdy"></div>`,
+                `<div class="trasa"><div class="trasa-hlavicka">${escHtml(r.trip_date)} · ${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)} · ${Number(r.distance_km).toFixed(1)} km · ${charakterJazdy(r.classification)}</div><img src="${obrazok}" alt="Trasa jazdy"></div>`,
             )
             .join("")}`
         : "";
 
       w.document.open();
       w.document.write(
-        `<!doctype html><html><head><meta charset="utf-8"><title>Kniha jázd ${from} – ${to}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}.trasy-nadpis{page-break-before:always;margin:0 0 8px}.poznamka{font-size:11px;color:#555;margin-bottom:8px}.trasa{page-break-inside:avoid;margin-bottom:14px}.trasa-hlavicka{font-size:11px;font-weight:600;margin-bottom:4px}.trasa img{width:100%;max-width:640px;border:1px solid #ddd}</style></head><body><h1>Kniha jázd</h1><div>Obdobie: ${from} – ${to}</div><table><thead><tr><th>Vozidlo</th><th>Dátum</th><th>Od</th><th>Do</th><th>Trvanie</th><th style="text-align:right">Km</th><th style="text-align:right">Priemer</th><th>Vodič</th><th>Typ</th><th>Charakter</th><th>Zdroj</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">Spolu</td><td style="text-align:right">${total.toFixed(1)} km</td><td colspan="5"></td></tr></tfoot></table>${trasyHtml}<script>window.onload=()=>window.print()</script></body></html>`,
+        `<!doctype html><html><head><meta charset="utf-8"><title>Kniha jázd ${escHtml(from)} – ${escHtml(to)}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}.trasy-nadpis{page-break-before:always;margin:0 0 8px}.poznamka{font-size:11px;color:#555;margin-bottom:8px}.trasa{page-break-inside:avoid;margin-bottom:14px}.trasa-hlavicka{font-size:11px;font-weight:600;margin-bottom:4px}.trasa img{width:100%;max-width:640px;border:1px solid #ddd}</style></head><body><h1>Kniha jázd</h1><div>Obdobie: ${escHtml(from)} – ${escHtml(to)}</div><table><thead><tr><th>Vozidlo</th><th>Dátum</th><th>Od</th><th>Do</th><th>Trvanie</th><th style="text-align:right">Km</th><th style="text-align:right">Priemer</th><th>Vodič</th><th>Typ</th><th>Charakter</th><th>Zdroj</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">Spolu</td><td style="text-align:right">${total.toFixed(1)} km</td><td colspan="5"></td></tr></tfoot></table>${trasyHtml}<script>window.onload=()=>window.print()</script></body></html>`,
       );
       w.document.close();
     } catch (e: any) {

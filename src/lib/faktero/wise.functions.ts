@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { overPristup } from "./over-pristup";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -17,14 +18,22 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const FirmaVstup = z.object({ company_id: z.string().uuid() });
 
-async function overClena(supabase: any, userId: string, companyId: string) {
-  const { data } = await supabase
-    .from("company_users")
-    .select("company_id")
-    .eq("company_id", companyId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!data) throw new Error("Do tejto firmy nemáte prístup.");
+/**
+ * Pripojiť a odpojiť smie len majiteľ alebo admin — kto vymení token, tomu
+ * chodia do Faktera pohyby z jeho účtu a párujú sa s faktúrami. Vlastný
+ * prístup musí mať oblasť Banka (zápis pri synchronizácii).
+ */
+async function overClena(
+  supabase: any,
+  userId: string,
+  companyId: string,
+  uroven: "citat" | "zapis" | "spravca" = "citat",
+) {
+  await overPristup({ supabase, userId }, companyId, {
+    oblast: "banka",
+    zapis: uroven !== "citat",
+    spravca: uroven === "spravca",
+  });
 }
 
 /**
@@ -47,7 +56,7 @@ export const pripojWise = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => FirmaVstup.extend({ token: z.string().trim().min(20).max(200) }).parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "spravca");
     const { nacitajProfil, vyrobKluce } = await import("./wise.server");
     const profil = await nacitajProfil(data.token);
 
@@ -116,7 +125,7 @@ export const synchronizujWiseUcty = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => FirmaVstup.parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "zapis");
     const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
     const { nacitajUcty } = await import("./wise.server");
     const ucty = await nacitajUcty(spojenie);
@@ -141,7 +150,7 @@ export const synchronizujWisePohyby = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => FirmaVstup.parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "zapis");
     const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
 
     const { nacitajPohyby } = await import("./wise.server");
@@ -162,7 +171,7 @@ export const odpojWise = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) => FirmaVstup.parse(d))
   .handler(async ({ context, data }) => {
-    await overClena(context.supabase, context.userId, data.company_id);
+    await overClena(context.supabase, context.userId, data.company_id, "spravca");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("bank_connections")

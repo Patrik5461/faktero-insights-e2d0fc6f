@@ -1,4 +1,5 @@
 import { riadkyPreIds, vsetkoAkoData } from "./strankovanie";
+import { bezVzorca } from "@/lib/bezpecny-text";
 
 /**
  * Riadky z databázy sa tu netypujú — modul ich len prehadzuje do XML, CSV a
@@ -56,7 +57,7 @@ export function rozsahMesiaca(mesiac: string): { od: string; do: string; nazov: 
 }
 
 function csvHodnota(v: unknown): string {
-  const s = v == null ? "" : String(v);
+  const s = v == null ? "" : bezVzorca(v);
   return /[;"\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
 }
 
