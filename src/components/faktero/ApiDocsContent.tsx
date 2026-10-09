@@ -73,7 +73,7 @@ const SECTIONS = [
   { id: "invoices", label: "6. Faktúry" },
   { id: "quotes", label: "7. Cenové ponuky" },
   { id: "recurring", label: "8. Opakované faktúry" },
-  { id: "expenses", label: "9. Náklady" },
+  { id: "expenses", label: "9. Prijaté doklady a banka" },
   { id: "webhooks", label: "10. Webhooky" },
   { id: "examples", label: "11. Príklady kódu" },
   { id: "status-codes", label: "12. Stavové kódy" },
@@ -277,14 +277,105 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
         </section>
 
         <section id="expenses" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">9. Náklady</h2>
-          <div className="mt-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-sm text-muted-foreground">
-            Modul Náklady je v príprave. Endpointy{" "}
-            <code className="font-mono">/api/v1/expenses</code> budú dostupné v ďalšej verzii API.
-            <div className="mt-2 inline-block rounded-full bg-muted px-2 py-0.5 text-xs">
-              Pripravujeme
-            </div>
+          <h2 className="text-2xl font-semibold">9. Prijaté doklady a banka</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pre účtovný program alebo kanceláriu: prijaté faktúry a bločky so zaúčtovaním
+            (predkontácia, členenie DPH, KV), zmeny od posledného stiahnutia a označenie odovzdaných
+            — rovnako ako to robí konektor Pohody.
+          </p>
+          <div className="mt-3 space-y-2">
+            <Endpoint method="GET" path="/api/v1/purchase-invoices" desc="Prijaté faktúry" />
+            <Endpoint
+              method="GET"
+              path="/api/v1/purchase-invoices/{id}"
+              desc="Detail s položkami a odkazom na súbor (1 h)"
+            />
+            <Endpoint
+              method="POST"
+              path="/api/v1/purchase-invoices/{id}/exported"
+              desc="Označiť ako odovzdanú"
+            />
+            <Endpoint method="GET" path="/api/v1/receipts" desc="Bločky" />
+            <Endpoint
+              method="GET"
+              path="/api/v1/receipts/{id}"
+              desc="Detail bločku s odkazom na súbor"
+            />
+            <Endpoint
+              method="POST"
+              path="/api/v1/receipts/{id}/exported"
+              desc="Označiť ako odovzdaný"
+            />
+            <Endpoint
+              method="POST"
+              path="/api/v1/unprocessed-documents"
+              desc="Nahrať doklad do Nespracovaných"
+            />
+            <Endpoint
+              method="GET"
+              path="/api/v1/unprocessed-documents"
+              desc="Nespracované doklady a stav čítania"
+            />
+            <Endpoint
+              method="GET"
+              path="/api/v1/bank-transactions"
+              desc="Pohyby na bankových účtoch"
+            />
           </div>
+          <h3 className="mt-5 font-semibold">Filtre zoznamu</h3>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+            <li>
+              <code className="font-mono">updated_since</code> — len zmenené od (ISO 8601); zoznam
+              je zoradený podľa <code className="font-mono">updated_at</code>, takže sa dá
+              pokračovať od posledného.
+            </li>
+            <li>
+              <code className="font-mono">issued_from</code>,{" "}
+              <code className="font-mono">issued_to</code> — dátum vystavenia (RRRR-MM-DD).
+            </li>
+            <li>
+              <code className="font-mono">exported=false</code> — ešte neodovzdané;{" "}
+              <code className="font-mono">booked=true</code> — len zaúčtované (prijaté faktúry).
+            </li>
+            <li>
+              <code className="font-mono">limit</code> (najviac 200) a{" "}
+              <code className="font-mono">offset</code>; odpoveď má{" "}
+              <code className="font-mono">has_more</code> a{" "}
+              <code className="font-mono">next_offset</code>.
+            </li>
+            <li>
+              Banka: <code className="font-mono">date_from</code>,{" "}
+              <code className="font-mono">date_to</code>,{" "}
+              <code className="font-mono">bank_account_id</code>, limit najviac 500.
+            </li>
+          </ul>
+          <h3 className="mt-5 font-semibold">Označenie odovzdaného</h3>
+          <CodeBlock
+            lang="bash"
+            code={`curl -X POST https://faktero.sk/api/v1/purchase-invoices/{id}/exported \\
+  -H "Authorization: Bearer fk_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{ "exported": true, "accounting_number": "FP2026/0154" }'`}
+          />
+          <p className="mt-2 text-sm text-muted-foreground">
+            <code className="font-mono">{`"exported": false`}</code> označenie zruší (doklad sa dá
+            znova upraviť).
+          </p>
+          <h3 className="mt-5 font-semibold">Nahratie dokladu</h3>
+          <CodeBlock
+            lang="bash"
+            code={`curl -X POST https://faktero.sk/api/v1/unprocessed-documents \\
+  -H "Authorization: Bearer fk_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{ "file_name": "faktura.pdf", "content_type": "application/pdf",
+        "content_base64": "JVBERi0xLjQK...", "note": "zákazka Novák" }'`}
+          />
+          <p className="mt-2 text-sm text-muted-foreground">
+            PDF, JPEG, PNG, WEBP, HEIC alebo XML do 14 MB. Doklad sa prečíta na pozadí (desiatky
+            sekúnd) a čaká v Nespracovaných na kontrolu; stav (
+            <code className="font-mono">cita</code>, <code className="font-mono">vytazene</code>,{" "}
+            <code className="font-mono">chyba</code>) vráti GET.
+          </p>
         </section>
 
         <section id="webhooks" className="scroll-mt-20">

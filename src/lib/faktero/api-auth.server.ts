@@ -210,8 +210,8 @@ async function logRequest(p: {
       method: p.method,
       path: p.path,
       status: p.status,
-      request_body: p.requestBody,
-      response_body: p.responseBody,
+      request_body: skratDoDennika(p.requestBody),
+      response_body: skratDoDennika(p.responseBody),
       user_agent: p.userAgent,
       ip: p.ip,
       duration_ms: p.duration,
@@ -219,6 +219,28 @@ async function logRequest(p: {
   } catch (e) {
     console.error("[api-log]", e);
   }
+}
+
+/**
+ * Do denníka nejde obsah súborov (base64) ani obrovské telá — nahratý doklad by
+ * inak v `api_logs` ležal celý a zbytočne druhýkrát.
+ */
+export function skratDoDennika(telo: any): any {
+  if (telo === null || telo === undefined) return telo;
+  const nahrad = (v: any): any => {
+    if (typeof v === "string")
+      return v.length > 2000 ? `${v.slice(0, 200)}… (${v.length} znakov vynechaných)` : v;
+    if (Array.isArray(v)) return v.slice(0, 200).map(nahrad);
+    if (v && typeof v === "object")
+      return Object.fromEntries(
+        Object.entries(v).map(([k, x]) => [
+          k,
+          /base64|content$/i.test(k) && typeof x === "string" ? `(${x.length} znakov)` : nahrad(x),
+        ]),
+      );
+    return v;
+  };
+  return nahrad(telo);
 }
 
 /**

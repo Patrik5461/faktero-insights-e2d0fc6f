@@ -232,12 +232,16 @@ import { Route as ApiMobilOperaciaRouteImport } from './routes/api/mobil/$operac
 import { Route as ApiMobilPadRouteImport } from './routes/api/mobil/pad'
 import { Route as ApiPublicKontaktRouteImport } from './routes/api/public/kontakt'
 import { Route as ApiPublicSupportChatRouteImport } from './routes/api/public/support-chat'
+import { Route as ApiV1BankTransactionsRouteImport } from './routes/api/v1/bank-transactions'
 import { Route as ApiV1CustomersRouteImport } from './routes/api/v1/customers'
 import { Route as ApiV1FuelRecordsRouteImport } from './routes/api/v1/fuel-records'
 import { Route as ApiV1InvoicesRouteImport } from './routes/api/v1/invoices'
+import { Route as ApiV1PurchaseInvoicesRouteImport } from './routes/api/v1/purchase-invoices'
 import { Route as ApiV1QuotesRouteImport } from './routes/api/v1/quotes'
+import { Route as ApiV1ReceiptsRouteImport } from './routes/api/v1/receipts'
 import { Route as ApiV1RecurringInvoicesRouteImport } from './routes/api/v1/recurring-invoices'
 import { Route as ApiV1TripsRouteImport } from './routes/api/v1/trips'
+import { Route as ApiV1UnprocessedDocumentsRouteImport } from './routes/api/v1/unprocessed-documents'
 import { Route as ApiV1VehiclesRouteImport } from './routes/api/v1/vehicles'
 import { Route as ApiV1WarehousesRouteImport } from './routes/api/v1/warehouses'
 import { Route as ApiWebhooksGopayRouteImport } from './routes/api/webhooks/gopay'
@@ -294,7 +298,9 @@ import { Route as ApiV1CustomersIdRouteImport } from './routes/api/v1/customers.
 import { Route as ApiV1InvoicesIdRouteImport } from './routes/api/v1/invoices.$id'
 import { Route as ApiV1PohodaDavkaRouteImport } from './routes/api/v1/pohoda/davka'
 import { Route as ApiV1PohodaOdpovedRouteImport } from './routes/api/v1/pohoda/odpoved'
+import { Route as ApiV1PurchaseInvoicesIdRouteImport } from './routes/api/v1/purchase-invoices.$id'
 import { Route as ApiV1QuotesIdRouteImport } from './routes/api/v1/quotes.$id'
+import { Route as ApiV1ReceiptsIdRouteImport } from './routes/api/v1/receipts.$id'
 import { Route as ApiV1RecurringInvoicesIdRouteImport } from './routes/api/v1/recurring-invoices.$id'
 import { Route as ApiV1SkladParseDeliveryNoteRouteImport } from './routes/api/v1/sklad.parse-delivery-note'
 import { Route as ApiV1StockItemsRouteImport } from './routes/api/v1/stock.items'
@@ -308,7 +314,9 @@ import { Route as ApiV1InvoicesIdCancelRouteImport } from './routes/api/v1/invoi
 import { Route as ApiV1InvoicesIdMarkPaidRouteImport } from './routes/api/v1/invoices.$id.mark-paid'
 import { Route as ApiV1InvoicesIdPdfRouteImport } from './routes/api/v1/invoices.$id.pdf'
 import { Route as ApiV1InvoicesIdSendRouteImport } from './routes/api/v1/invoices.$id.send'
+import { Route as ApiV1PurchaseInvoicesIdExportedRouteImport } from './routes/api/v1/purchase-invoices.$id.exported'
 import { Route as ApiV1QuotesIdConvertRouteImport } from './routes/api/v1/quotes.$id.convert'
+import { Route as ApiV1ReceiptsIdExportedRouteImport } from './routes/api/v1/receipts.$id.exported'
 import { Route as ApiV1SkladParseDeliveryNoteJobIdRouteImport } from './routes/api/v1/sklad.parse-delivery-note.$jobId'
 import { Route as ApiV1StockItemsIdRouteImport } from './routes/api/v1/stock.items.$id'
 import { Route as ApiV1StockMovementsIdRouteImport } from './routes/api/v1/stock.movements.$id'
@@ -1517,6 +1525,11 @@ const ApiPublicSupportChatRoute = ApiPublicSupportChatRouteImport.update({
   path: '/api/public/support-chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1BankTransactionsRoute = ApiV1BankTransactionsRouteImport.update({
+  id: '/api/v1/bank-transactions',
+  path: '/api/v1/bank-transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1CustomersRoute = ApiV1CustomersRouteImport.update({
   id: '/api/v1/customers',
   path: '/api/v1/customers',
@@ -1532,9 +1545,19 @@ const ApiV1InvoicesRoute = ApiV1InvoicesRouteImport.update({
   path: '/api/v1/invoices',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1PurchaseInvoicesRoute = ApiV1PurchaseInvoicesRouteImport.update({
+  id: '/api/v1/purchase-invoices',
+  path: '/api/v1/purchase-invoices',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1QuotesRoute = ApiV1QuotesRouteImport.update({
   id: '/api/v1/quotes',
   path: '/api/v1/quotes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ReceiptsRoute = ApiV1ReceiptsRouteImport.update({
+  id: '/api/v1/receipts',
+  path: '/api/v1/receipts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1RecurringInvoicesRoute = ApiV1RecurringInvoicesRouteImport.update({
@@ -1547,6 +1570,12 @@ const ApiV1TripsRoute = ApiV1TripsRouteImport.update({
   path: '/api/v1/trips',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1UnprocessedDocumentsRoute =
+  ApiV1UnprocessedDocumentsRouteImport.update({
+    id: '/api/v1/unprocessed-documents',
+    path: '/api/v1/unprocessed-documents',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiV1VehiclesRoute = ApiV1VehiclesRouteImport.update({
   id: '/api/v1/vehicles',
   path: '/api/v1/vehicles',
@@ -1864,10 +1893,20 @@ const ApiV1PohodaOdpovedRoute = ApiV1PohodaOdpovedRouteImport.update({
   path: '/api/v1/pohoda/odpoved',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1PurchaseInvoicesIdRoute = ApiV1PurchaseInvoicesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiV1PurchaseInvoicesRoute,
+} as any)
 const ApiV1QuotesIdRoute = ApiV1QuotesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiV1QuotesRoute,
+} as any)
+const ApiV1ReceiptsIdRoute = ApiV1ReceiptsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiV1ReceiptsRoute,
 } as any)
 const ApiV1RecurringInvoicesIdRoute =
   ApiV1RecurringInvoicesIdRouteImport.update({
@@ -1938,10 +1977,21 @@ const ApiV1InvoicesIdSendRoute = ApiV1InvoicesIdSendRouteImport.update({
   path: '/send',
   getParentRoute: () => ApiV1InvoicesIdRoute,
 } as any)
+const ApiV1PurchaseInvoicesIdExportedRoute =
+  ApiV1PurchaseInvoicesIdExportedRouteImport.update({
+    id: '/exported',
+    path: '/exported',
+    getParentRoute: () => ApiV1PurchaseInvoicesIdRoute,
+  } as any)
 const ApiV1QuotesIdConvertRoute = ApiV1QuotesIdConvertRouteImport.update({
   id: '/convert',
   path: '/convert',
   getParentRoute: () => ApiV1QuotesIdRoute,
+} as any)
+const ApiV1ReceiptsIdExportedRoute = ApiV1ReceiptsIdExportedRouteImport.update({
+  id: '/exported',
+  path: '/exported',
+  getParentRoute: () => ApiV1ReceiptsIdRoute,
 } as any)
 const ApiV1SkladParseDeliveryNoteJobIdRoute =
   ApiV1SkladParseDeliveryNoteJobIdRouteImport.update({
@@ -2158,12 +2208,16 @@ export interface FileRoutesByFullPath {
   '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
+  '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
   '/api/v1/invoices': typeof ApiV1InvoicesRouteWithChildren
+  '/api/v1/purchase-invoices': typeof ApiV1PurchaseInvoicesRouteWithChildren
   '/api/v1/quotes': typeof ApiV1QuotesRouteWithChildren
+  '/api/v1/receipts': typeof ApiV1ReceiptsRouteWithChildren
   '/api/v1/recurring-invoices': typeof ApiV1RecurringInvoicesRouteWithChildren
   '/api/v1/trips': typeof ApiV1TripsRoute
+  '/api/v1/unprocessed-documents': typeof ApiV1UnprocessedDocumentsRoute
   '/api/v1/vehicles': typeof ApiV1VehiclesRoute
   '/api/v1/warehouses': typeof ApiV1WarehousesRoute
   '/api/webhooks/gopay': typeof ApiWebhooksGopayRoute
@@ -2237,7 +2291,9 @@ export interface FileRoutesByFullPath {
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/pohoda/davka': typeof ApiV1PohodaDavkaRoute
   '/api/v1/pohoda/odpoved': typeof ApiV1PohodaOdpovedRoute
+  '/api/v1/purchase-invoices/$id': typeof ApiV1PurchaseInvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
+  '/api/v1/receipts/$id': typeof ApiV1ReceiptsIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
   '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
   '/api/v1/stock/items': typeof ApiV1StockItemsRouteWithChildren
@@ -2258,7 +2314,9 @@ export interface FileRoutesByFullPath {
   '/api/v1/invoices/$id/mark-paid': typeof ApiV1InvoicesIdMarkPaidRoute
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
   '/api/v1/invoices/$id/send': typeof ApiV1InvoicesIdSendRoute
+  '/api/v1/purchase-invoices/$id/exported': typeof ApiV1PurchaseInvoicesIdExportedRoute
   '/api/v1/quotes/$id/convert': typeof ApiV1QuotesIdConvertRoute
+  '/api/v1/receipts/$id/exported': typeof ApiV1ReceiptsIdExportedRoute
   '/api/v1/sklad/parse-delivery-note/$jobId': typeof ApiV1SkladParseDeliveryNoteJobIdRoute
   '/api/v1/stock/items/$id': typeof ApiV1StockItemsIdRoute
   '/api/v1/stock/movements/$id': typeof ApiV1StockMovementsIdRoute
@@ -2453,12 +2511,16 @@ export interface FileRoutesByTo {
   '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
+  '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
   '/api/v1/invoices': typeof ApiV1InvoicesRouteWithChildren
+  '/api/v1/purchase-invoices': typeof ApiV1PurchaseInvoicesRouteWithChildren
   '/api/v1/quotes': typeof ApiV1QuotesRouteWithChildren
+  '/api/v1/receipts': typeof ApiV1ReceiptsRouteWithChildren
   '/api/v1/recurring-invoices': typeof ApiV1RecurringInvoicesRouteWithChildren
   '/api/v1/trips': typeof ApiV1TripsRoute
+  '/api/v1/unprocessed-documents': typeof ApiV1UnprocessedDocumentsRoute
   '/api/v1/vehicles': typeof ApiV1VehiclesRoute
   '/api/v1/warehouses': typeof ApiV1WarehousesRoute
   '/api/webhooks/gopay': typeof ApiWebhooksGopayRoute
@@ -2532,7 +2594,9 @@ export interface FileRoutesByTo {
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/pohoda/davka': typeof ApiV1PohodaDavkaRoute
   '/api/v1/pohoda/odpoved': typeof ApiV1PohodaOdpovedRoute
+  '/api/v1/purchase-invoices/$id': typeof ApiV1PurchaseInvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
+  '/api/v1/receipts/$id': typeof ApiV1ReceiptsIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
   '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
   '/api/v1/stock/items': typeof ApiV1StockItemsRouteWithChildren
@@ -2553,7 +2617,9 @@ export interface FileRoutesByTo {
   '/api/v1/invoices/$id/mark-paid': typeof ApiV1InvoicesIdMarkPaidRoute
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
   '/api/v1/invoices/$id/send': typeof ApiV1InvoicesIdSendRoute
+  '/api/v1/purchase-invoices/$id/exported': typeof ApiV1PurchaseInvoicesIdExportedRoute
   '/api/v1/quotes/$id/convert': typeof ApiV1QuotesIdConvertRoute
+  '/api/v1/receipts/$id/exported': typeof ApiV1ReceiptsIdExportedRoute
   '/api/v1/sklad/parse-delivery-note/$jobId': typeof ApiV1SkladParseDeliveryNoteJobIdRoute
   '/api/v1/stock/items/$id': typeof ApiV1StockItemsIdRoute
   '/api/v1/stock/movements/$id': typeof ApiV1StockMovementsIdRoute
@@ -2759,12 +2825,16 @@ export interface FileRoutesById {
   '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
+  '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
   '/api/v1/invoices': typeof ApiV1InvoicesRouteWithChildren
+  '/api/v1/purchase-invoices': typeof ApiV1PurchaseInvoicesRouteWithChildren
   '/api/v1/quotes': typeof ApiV1QuotesRouteWithChildren
+  '/api/v1/receipts': typeof ApiV1ReceiptsRouteWithChildren
   '/api/v1/recurring-invoices': typeof ApiV1RecurringInvoicesRouteWithChildren
   '/api/v1/trips': typeof ApiV1TripsRoute
+  '/api/v1/unprocessed-documents': typeof ApiV1UnprocessedDocumentsRoute
   '/api/v1/vehicles': typeof ApiV1VehiclesRoute
   '/api/v1/warehouses': typeof ApiV1WarehousesRoute
   '/api/webhooks/gopay': typeof ApiWebhooksGopayRoute
@@ -2838,7 +2908,9 @@ export interface FileRoutesById {
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/pohoda/davka': typeof ApiV1PohodaDavkaRoute
   '/api/v1/pohoda/odpoved': typeof ApiV1PohodaOdpovedRoute
+  '/api/v1/purchase-invoices/$id': typeof ApiV1PurchaseInvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
+  '/api/v1/receipts/$id': typeof ApiV1ReceiptsIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
   '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
   '/api/v1/stock/items': typeof ApiV1StockItemsRouteWithChildren
@@ -2859,7 +2931,9 @@ export interface FileRoutesById {
   '/api/v1/invoices/$id/mark-paid': typeof ApiV1InvoicesIdMarkPaidRoute
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
   '/api/v1/invoices/$id/send': typeof ApiV1InvoicesIdSendRoute
+  '/api/v1/purchase-invoices/$id/exported': typeof ApiV1PurchaseInvoicesIdExportedRoute
   '/api/v1/quotes/$id/convert': typeof ApiV1QuotesIdConvertRoute
+  '/api/v1/receipts/$id/exported': typeof ApiV1ReceiptsIdExportedRoute
   '/api/v1/sklad/parse-delivery-note/$jobId': typeof ApiV1SkladParseDeliveryNoteJobIdRoute
   '/api/v1/stock/items/$id': typeof ApiV1StockItemsIdRoute
   '/api/v1/stock/movements/$id': typeof ApiV1StockMovementsIdRoute
@@ -3065,12 +3139,16 @@ export interface FileRouteTypes {
     | '/api/mobil/pad'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
+    | '/api/v1/bank-transactions'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
     | '/api/v1/invoices'
+    | '/api/v1/purchase-invoices'
     | '/api/v1/quotes'
+    | '/api/v1/receipts'
     | '/api/v1/recurring-invoices'
     | '/api/v1/trips'
+    | '/api/v1/unprocessed-documents'
     | '/api/v1/vehicles'
     | '/api/v1/warehouses'
     | '/api/webhooks/gopay'
@@ -3144,7 +3222,9 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id'
     | '/api/v1/pohoda/davka'
     | '/api/v1/pohoda/odpoved'
+    | '/api/v1/purchase-invoices/$id'
     | '/api/v1/quotes/$id'
+    | '/api/v1/receipts/$id'
     | '/api/v1/recurring-invoices/$id'
     | '/api/v1/sklad/parse-delivery-note'
     | '/api/v1/stock/items'
@@ -3165,7 +3245,9 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id/mark-paid'
     | '/api/v1/invoices/$id/pdf'
     | '/api/v1/invoices/$id/send'
+    | '/api/v1/purchase-invoices/$id/exported'
     | '/api/v1/quotes/$id/convert'
+    | '/api/v1/receipts/$id/exported'
     | '/api/v1/sklad/parse-delivery-note/$jobId'
     | '/api/v1/stock/items/$id'
     | '/api/v1/stock/movements/$id'
@@ -3360,12 +3442,16 @@ export interface FileRouteTypes {
     | '/api/mobil/pad'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
+    | '/api/v1/bank-transactions'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
     | '/api/v1/invoices'
+    | '/api/v1/purchase-invoices'
     | '/api/v1/quotes'
+    | '/api/v1/receipts'
     | '/api/v1/recurring-invoices'
     | '/api/v1/trips'
+    | '/api/v1/unprocessed-documents'
     | '/api/v1/vehicles'
     | '/api/v1/warehouses'
     | '/api/webhooks/gopay'
@@ -3439,7 +3525,9 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id'
     | '/api/v1/pohoda/davka'
     | '/api/v1/pohoda/odpoved'
+    | '/api/v1/purchase-invoices/$id'
     | '/api/v1/quotes/$id'
+    | '/api/v1/receipts/$id'
     | '/api/v1/recurring-invoices/$id'
     | '/api/v1/sklad/parse-delivery-note'
     | '/api/v1/stock/items'
@@ -3460,7 +3548,9 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id/mark-paid'
     | '/api/v1/invoices/$id/pdf'
     | '/api/v1/invoices/$id/send'
+    | '/api/v1/purchase-invoices/$id/exported'
     | '/api/v1/quotes/$id/convert'
+    | '/api/v1/receipts/$id/exported'
     | '/api/v1/sklad/parse-delivery-note/$jobId'
     | '/api/v1/stock/items/$id'
     | '/api/v1/stock/movements/$id'
@@ -3665,12 +3755,16 @@ export interface FileRouteTypes {
     | '/api/mobil/pad'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
+    | '/api/v1/bank-transactions'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
     | '/api/v1/invoices'
+    | '/api/v1/purchase-invoices'
     | '/api/v1/quotes'
+    | '/api/v1/receipts'
     | '/api/v1/recurring-invoices'
     | '/api/v1/trips'
+    | '/api/v1/unprocessed-documents'
     | '/api/v1/vehicles'
     | '/api/v1/warehouses'
     | '/api/webhooks/gopay'
@@ -3744,7 +3838,9 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id'
     | '/api/v1/pohoda/davka'
     | '/api/v1/pohoda/odpoved'
+    | '/api/v1/purchase-invoices/$id'
     | '/api/v1/quotes/$id'
+    | '/api/v1/receipts/$id'
     | '/api/v1/recurring-invoices/$id'
     | '/api/v1/sklad/parse-delivery-note'
     | '/api/v1/stock/items'
@@ -3765,7 +3861,9 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id/mark-paid'
     | '/api/v1/invoices/$id/pdf'
     | '/api/v1/invoices/$id/send'
+    | '/api/v1/purchase-invoices/$id/exported'
     | '/api/v1/quotes/$id/convert'
+    | '/api/v1/receipts/$id/exported'
     | '/api/v1/sklad/parse-delivery-note/$jobId'
     | '/api/v1/stock/items/$id'
     | '/api/v1/stock/movements/$id'
@@ -3851,12 +3949,16 @@ export interface RootRouteChildren {
   ApiMobilPadRoute: typeof ApiMobilPadRoute
   ApiPublicKontaktRoute: typeof ApiPublicKontaktRoute
   ApiPublicSupportChatRoute: typeof ApiPublicSupportChatRoute
+  ApiV1BankTransactionsRoute: typeof ApiV1BankTransactionsRoute
   ApiV1CustomersRoute: typeof ApiV1CustomersRouteWithChildren
   ApiV1FuelRecordsRoute: typeof ApiV1FuelRecordsRoute
   ApiV1InvoicesRoute: typeof ApiV1InvoicesRouteWithChildren
+  ApiV1PurchaseInvoicesRoute: typeof ApiV1PurchaseInvoicesRouteWithChildren
   ApiV1QuotesRoute: typeof ApiV1QuotesRouteWithChildren
+  ApiV1ReceiptsRoute: typeof ApiV1ReceiptsRouteWithChildren
   ApiV1RecurringInvoicesRoute: typeof ApiV1RecurringInvoicesRouteWithChildren
   ApiV1TripsRoute: typeof ApiV1TripsRoute
+  ApiV1UnprocessedDocumentsRoute: typeof ApiV1UnprocessedDocumentsRoute
   ApiV1VehiclesRoute: typeof ApiV1VehiclesRoute
   ApiV1WarehousesRoute: typeof ApiV1WarehousesRoute
   ApiWebhooksGopayRoute: typeof ApiWebhooksGopayRoute
@@ -5464,6 +5566,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSupportChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/bank-transactions': {
+      id: '/api/v1/bank-transactions'
+      path: '/api/v1/bank-transactions'
+      fullPath: '/api/v1/bank-transactions'
+      preLoaderRoute: typeof ApiV1BankTransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/customers': {
       id: '/api/v1/customers'
       path: '/api/v1/customers'
@@ -5485,11 +5594,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1InvoicesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/purchase-invoices': {
+      id: '/api/v1/purchase-invoices'
+      path: '/api/v1/purchase-invoices'
+      fullPath: '/api/v1/purchase-invoices'
+      preLoaderRoute: typeof ApiV1PurchaseInvoicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/quotes': {
       id: '/api/v1/quotes'
       path: '/api/v1/quotes'
       fullPath: '/api/v1/quotes'
       preLoaderRoute: typeof ApiV1QuotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/receipts': {
+      id: '/api/v1/receipts'
+      path: '/api/v1/receipts'
+      fullPath: '/api/v1/receipts'
+      preLoaderRoute: typeof ApiV1ReceiptsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/recurring-invoices': {
@@ -5504,6 +5627,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/trips'
       fullPath: '/api/v1/trips'
       preLoaderRoute: typeof ApiV1TripsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/unprocessed-documents': {
+      id: '/api/v1/unprocessed-documents'
+      path: '/api/v1/unprocessed-documents'
+      fullPath: '/api/v1/unprocessed-documents'
+      preLoaderRoute: typeof ApiV1UnprocessedDocumentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/vehicles': {
@@ -5898,12 +6028,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1PohodaOdpovedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/purchase-invoices/$id': {
+      id: '/api/v1/purchase-invoices/$id'
+      path: '/$id'
+      fullPath: '/api/v1/purchase-invoices/$id'
+      preLoaderRoute: typeof ApiV1PurchaseInvoicesIdRouteImport
+      parentRoute: typeof ApiV1PurchaseInvoicesRoute
+    }
     '/api/v1/quotes/$id': {
       id: '/api/v1/quotes/$id'
       path: '/$id'
       fullPath: '/api/v1/quotes/$id'
       preLoaderRoute: typeof ApiV1QuotesIdRouteImport
       parentRoute: typeof ApiV1QuotesRoute
+    }
+    '/api/v1/receipts/$id': {
+      id: '/api/v1/receipts/$id'
+      path: '/$id'
+      fullPath: '/api/v1/receipts/$id'
+      preLoaderRoute: typeof ApiV1ReceiptsIdRouteImport
+      parentRoute: typeof ApiV1ReceiptsRoute
     }
     '/api/v1/recurring-invoices/$id': {
       id: '/api/v1/recurring-invoices/$id'
@@ -5996,12 +6140,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1InvoicesIdSendRouteImport
       parentRoute: typeof ApiV1InvoicesIdRoute
     }
+    '/api/v1/purchase-invoices/$id/exported': {
+      id: '/api/v1/purchase-invoices/$id/exported'
+      path: '/exported'
+      fullPath: '/api/v1/purchase-invoices/$id/exported'
+      preLoaderRoute: typeof ApiV1PurchaseInvoicesIdExportedRouteImport
+      parentRoute: typeof ApiV1PurchaseInvoicesIdRoute
+    }
     '/api/v1/quotes/$id/convert': {
       id: '/api/v1/quotes/$id/convert'
       path: '/convert'
       fullPath: '/api/v1/quotes/$id/convert'
       preLoaderRoute: typeof ApiV1QuotesIdConvertRouteImport
       parentRoute: typeof ApiV1QuotesIdRoute
+    }
+    '/api/v1/receipts/$id/exported': {
+      id: '/api/v1/receipts/$id/exported'
+      path: '/exported'
+      fullPath: '/api/v1/receipts/$id/exported'
+      preLoaderRoute: typeof ApiV1ReceiptsIdExportedRouteImport
+      parentRoute: typeof ApiV1ReceiptsIdRoute
     }
     '/api/v1/sklad/parse-delivery-note/$jobId': {
       id: '/api/v1/sklad/parse-delivery-note/$jobId'
@@ -6517,6 +6675,33 @@ const ApiV1InvoicesRouteWithChildren = ApiV1InvoicesRoute._addFileChildren(
   ApiV1InvoicesRouteChildren,
 )
 
+interface ApiV1PurchaseInvoicesIdRouteChildren {
+  ApiV1PurchaseInvoicesIdExportedRoute: typeof ApiV1PurchaseInvoicesIdExportedRoute
+}
+
+const ApiV1PurchaseInvoicesIdRouteChildren: ApiV1PurchaseInvoicesIdRouteChildren =
+  {
+    ApiV1PurchaseInvoicesIdExportedRoute: ApiV1PurchaseInvoicesIdExportedRoute,
+  }
+
+const ApiV1PurchaseInvoicesIdRouteWithChildren =
+  ApiV1PurchaseInvoicesIdRoute._addFileChildren(
+    ApiV1PurchaseInvoicesIdRouteChildren,
+  )
+
+interface ApiV1PurchaseInvoicesRouteChildren {
+  ApiV1PurchaseInvoicesIdRoute: typeof ApiV1PurchaseInvoicesIdRouteWithChildren
+}
+
+const ApiV1PurchaseInvoicesRouteChildren: ApiV1PurchaseInvoicesRouteChildren = {
+  ApiV1PurchaseInvoicesIdRoute: ApiV1PurchaseInvoicesIdRouteWithChildren,
+}
+
+const ApiV1PurchaseInvoicesRouteWithChildren =
+  ApiV1PurchaseInvoicesRoute._addFileChildren(
+    ApiV1PurchaseInvoicesRouteChildren,
+  )
+
 interface ApiV1QuotesIdRouteChildren {
   ApiV1QuotesIdConvertRoute: typeof ApiV1QuotesIdConvertRoute
 }
@@ -6539,6 +6724,30 @@ const ApiV1QuotesRouteChildren: ApiV1QuotesRouteChildren = {
 
 const ApiV1QuotesRouteWithChildren = ApiV1QuotesRoute._addFileChildren(
   ApiV1QuotesRouteChildren,
+)
+
+interface ApiV1ReceiptsIdRouteChildren {
+  ApiV1ReceiptsIdExportedRoute: typeof ApiV1ReceiptsIdExportedRoute
+}
+
+const ApiV1ReceiptsIdRouteChildren: ApiV1ReceiptsIdRouteChildren = {
+  ApiV1ReceiptsIdExportedRoute: ApiV1ReceiptsIdExportedRoute,
+}
+
+const ApiV1ReceiptsIdRouteWithChildren = ApiV1ReceiptsIdRoute._addFileChildren(
+  ApiV1ReceiptsIdRouteChildren,
+)
+
+interface ApiV1ReceiptsRouteChildren {
+  ApiV1ReceiptsIdRoute: typeof ApiV1ReceiptsIdRouteWithChildren
+}
+
+const ApiV1ReceiptsRouteChildren: ApiV1ReceiptsRouteChildren = {
+  ApiV1ReceiptsIdRoute: ApiV1ReceiptsIdRouteWithChildren,
+}
+
+const ApiV1ReceiptsRouteWithChildren = ApiV1ReceiptsRoute._addFileChildren(
+  ApiV1ReceiptsRouteChildren,
 )
 
 interface ApiV1RecurringInvoicesRouteChildren {
@@ -6672,12 +6881,16 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMobilPadRoute: ApiMobilPadRoute,
   ApiPublicKontaktRoute: ApiPublicKontaktRoute,
   ApiPublicSupportChatRoute: ApiPublicSupportChatRoute,
+  ApiV1BankTransactionsRoute: ApiV1BankTransactionsRoute,
   ApiV1CustomersRoute: ApiV1CustomersRouteWithChildren,
   ApiV1FuelRecordsRoute: ApiV1FuelRecordsRoute,
   ApiV1InvoicesRoute: ApiV1InvoicesRouteWithChildren,
+  ApiV1PurchaseInvoicesRoute: ApiV1PurchaseInvoicesRouteWithChildren,
   ApiV1QuotesRoute: ApiV1QuotesRouteWithChildren,
+  ApiV1ReceiptsRoute: ApiV1ReceiptsRouteWithChildren,
   ApiV1RecurringInvoicesRoute: ApiV1RecurringInvoicesRouteWithChildren,
   ApiV1TripsRoute: ApiV1TripsRoute,
+  ApiV1UnprocessedDocumentsRoute: ApiV1UnprocessedDocumentsRoute,
   ApiV1VehiclesRoute: ApiV1VehiclesRoute,
   ApiV1WarehousesRoute: ApiV1WarehousesRoute,
   ApiWebhooksGopayRoute: ApiWebhooksGopayRoute,

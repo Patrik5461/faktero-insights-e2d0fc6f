@@ -34,7 +34,7 @@ export async function zalozNespracovany(
   args: {
     companyId: string;
     userId: string | null;
-    zdroj: "mail" | "nahratie" | "skener" | "apka";
+    zdroj: "mail" | "nahratie" | "skener" | "apka" | "api";
     bajty: Buffer;
     nazov: string | null;
     mime: string;
@@ -121,12 +121,14 @@ const ZDROJ_PRIJATEJ: Record<string, string> = {
   nahratie: "nahrate",
   skener: "nahrate",
   apka: "nahrate",
+  api: "import",
 };
 const ZDROJ_BLOCKU: Record<string, string> = {
   mail: "upload",
   nahratie: "upload",
   skener: "upload",
   apka: "photo",
+  api: "import",
 };
 
 /**
