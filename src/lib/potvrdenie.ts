@@ -17,7 +17,24 @@ export type MoznostiPotvrdenia = {
   nebezpecne?: boolean;
 };
 
-export type Ziadost = MoznostiPotvrdenia & { sprava: string; vyries: (ano: boolean) => void };
+/** Žiadosť o text (`zadaj`) — okno ukáže políčko. */
+export type Pole = {
+  predvolene?: string;
+  placeholder?: string;
+  typ?: "text" | "email" | "number" | "date";
+  /** Prázdna odpoveď je platná (napr. „bez priečinka"). */
+  povolitPrazdne?: boolean;
+  /** Ponuka hodnôt na výber (datalist). */
+  moznosti?: string[];
+};
+
+export type Ziadost = MoznostiPotvrdenia & {
+  sprava: string;
+  vyries: (ano: boolean) => void;
+  pole?: Pole;
+  /** Pri `zadaj` — sem okno zapíše text pred `vybavZiadost(true)`. */
+  hodnota?: string;
+};
 
 type Posluchac = (z: Ziadost | null) => void;
 let posluchac: Posluchac | null = null;
@@ -37,6 +54,36 @@ export function potvrd(sprava: string, moznosti: MoznostiPotvrdenia = {}): Promi
   }
   return new Promise<boolean>((resolve) => {
     fronta.push({ ...moznosti, sprava, vyries: resolve });
+    if (fronta.length === 1) posluchac?.(fronta[0]);
+  });
+}
+
+/**
+ * Vypýta text oknom vo vzhľade Faktera namiesto systémového `prompt()`.
+ * `null` = zrušené. Bez pripojeného okna padne späť na `prompt`.
+ */
+export function zadaj(
+  sprava: string,
+  pole: Pole = {},
+  moznosti: MoznostiPotvrdenia = {},
+): Promise<string | null> {
+  if (!posluchac) {
+    return Promise.resolve(
+      typeof window !== "undefined" && typeof window.prompt === "function"
+        ? window.prompt(sprava, pole.predvolene ?? "")
+        : null,
+    );
+  }
+  return new Promise<string | null>((resolve) => {
+    const z: Ziadost = {
+      potvrdit: "OK",
+      ...moznosti,
+      sprava,
+      pole,
+      hodnota: pole.predvolene ?? "",
+      vyries: (ano) => resolve(ano ? (z.hodnota ?? "") : null),
+    };
+    fronta.push(z);
     if (fronta.length === 1) posluchac?.(fronta[0]);
   });
 }

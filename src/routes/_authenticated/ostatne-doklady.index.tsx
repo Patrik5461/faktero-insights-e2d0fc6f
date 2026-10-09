@@ -27,7 +27,7 @@ import {
 } from "@/lib/faktero/doklad-stav";
 import { CheckCircle2, Download, FolderOpen, Paperclip, Plus, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
-import { potvrd } from "@/lib/potvrdenie";
+import { potvrd, zadaj } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
   head: () => ({ meta: [{ title: "Iné doklady — Faktero" }] }),
@@ -68,7 +68,11 @@ function OstatneDokladyPage() {
     ? rows.filter((r) => String(r.priecinok ?? "").trim() === (priecinok === "__bez" ? "" : priecinok))
     : rows;
   async function doPriecinka() {
-    const nazov = window.prompt("Do ktorého priečinka? (prázdne = bez priečinka)", priecinok && priecinok !== "__bez" ? priecinok : "");
+    const nazov = await zadaj("Do ktorého priečinka?\nPrázdne = bez priečinka.", {
+      predvolene: priecinok && priecinok !== "__bez" ? priecinok : "",
+      povolitPrazdne: true,
+      moznosti: priecinky,
+    }, { potvrdit: "Presunúť" });
     if (nazov === null) return;
     const { error } = await supabase
       .from("other_documents")

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { zadaj } from "@/lib/potvrdenie";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -458,7 +459,12 @@ function OdovzdanieZaMesiac() {
     if (!cid) return;
     const email =
       prehlad?.uctovnikEmail ||
-      window.prompt("E-mail účtovníčky (uloží sa v Účtovníctvo → Prepojenie s Pohodou):")?.trim();
+      (
+        await zadaj("E-mail účtovníčky\nUloží sa v Účtovníctvo → Prepojenie s Pohodou.", {
+          typ: "email",
+          placeholder: "uctovnicka@kancelaria.sk",
+        }, { potvrdit: "Poslať podklady" })
+      )?.trim();
     if (!email) return;
     setBusy("mail");
     try {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -524,7 +525,8 @@ export function Diagnostika({ onSpat }: { onSpat: () => void }) {
             await posli(riadky);
             setOdoslane(true);
           } catch (e: any) {
-            alert(`Odoslať sa to nepodarilo (${e?.message ?? "chyba"}). Odfoťte obrazovku.`);
+            // Systémové okno by v appke ukázalo „localhost" — hláška ide do lišty.
+            toast.error(`Odoslať sa to nepodarilo (${e?.message ?? "chyba"}). Odfoťte obrazovku.`, { duration: 15000 });
           } finally {
             setOdosielam(false);
           }

@@ -42,7 +42,7 @@ import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions"
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { formatovacMeny } from "@/lib/faktero/mena";
-import { potvrd } from "@/lib/potvrdenie";
+import { potvrd, zadaj } from "@/lib/potvrdenie";
 
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
   ACTC: "Pripravená na podpis",
@@ -248,8 +248,8 @@ function PurchaseInvoiceDetail() {
   }
 
   async function markPaid() {
-    const d = prompt("Dátum úhrady (YYYY-MM-DD)", new Date().toISOString().slice(0, 10));
-    if (!d) return;
+    const d = await zadaj("Dátum úhrady", { predvolene: new Date().toISOString().slice(0, 10), typ: "date" }, { potvrdit: "Označiť ako uhradenú" });
+    if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
     await setStatus("paid", { payment_date: d });
   }
 

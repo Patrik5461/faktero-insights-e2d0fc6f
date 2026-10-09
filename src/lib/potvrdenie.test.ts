@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { _vycistiFrontu, jeNebezpecna, potvrd, prihlasOkno, vybavZiadost, type Ziadost } from "./potvrdenie";
+import { _vycistiFrontu, jeNebezpecna, potvrd, prihlasOkno, vybavZiadost, zadaj, type Ziadost } from "./potvrdenie";
 
 describe("potvrdenie akcie", () => {
   afterEach(() => _vycistiFrontu());
@@ -22,5 +22,21 @@ describe("potvrdenie akcie", () => {
     expect(jeNebezpecna("Naozaj zmazať objednávku?")).toBe(true);
     expect(jeNebezpecna("Presunúť doklad do koša?")).toBe(true);
     expect(jeNebezpecna("Konvertovať ponuku na faktúru?")).toBe(false);
+  });
+
+  it("zadaj vráti napísaný text, zrušenie null; ide v tej istej fronte", async () => {
+    let aktualna: Ziadost | null = null;
+    const odhlas = prihlasOkno((z) => (aktualna = z));
+    const a = zadaj("Priečinok", { predvolene: "Zmluvy" });
+    const b = zadaj("E-mail", { typ: "email" });
+    expect(aktualna!.hodnota).toBe("Zmluvy");
+    expect(aktualna!.potvrdit).toBe("OK");
+    aktualna!.hodnota = "Objednávky";
+    vybavZiadost(true);
+    expect(aktualna!.sprava).toBe("E-mail");
+    vybavZiadost(false);
+    await expect(a).resolves.toBe("Objednávky");
+    await expect(b).resolves.toBeNull();
+    odhlas();
   });
 });

@@ -16,7 +16,7 @@ import {
   getBillingDiagnostics,
 } from "@/lib/faktero/admin.functions";
 import { toast } from "sonner";
-import { potvrd } from "@/lib/potvrdenie";
+import { potvrd, zadaj } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/admin/subscriptions")({
   head: () => ({ meta: [{ title: "Admin · Predplatné — Faktero" }] }),
@@ -115,7 +115,10 @@ function AdminSubscriptionsPage() {
     setTotal(res.total);
   }
   async function onSetPlan(companyId: string) {
-    const slug = window.prompt("Plán (starter/premium/enterprise):", "premium");
+    const slug = await zadaj("Plán firmy", {
+      predvolene: "premium",
+      moznosti: ["starter", "premium", "enterprise"],
+    });
     if (!slug) return;
     try {
       await setPlanFn({ data: { companyId, planSlug: slug as any } });
@@ -126,7 +129,9 @@ function AdminSubscriptionsPage() {
     }
   }
   async function onExtend(companyId: string) {
-    const days = Number(window.prompt("Predĺžiť trial o (dní):", "14"));
+    const days = Number(
+      await zadaj("Predĺžiť skúšobnú dobu o (dní)", { predvolene: "14", typ: "number" }),
+    );
     if (!days || days < 1) return;
     try {
       await extendFn({ data: { companyId, days } });
@@ -156,7 +161,9 @@ function AdminSubscriptionsPage() {
     }
   }
   async function onMarkActive(companyId: string) {
-    const days = Number(window.prompt("Označiť aktívne na (dní):", "30"));
+    const days = Number(
+      await zadaj("Označiť ako aktívne na (dní)", { predvolene: "30", typ: "number" }),
+    );
     if (!days || days < 1) return;
     try {
       await markActiveFn({ data: { companyId, days } });

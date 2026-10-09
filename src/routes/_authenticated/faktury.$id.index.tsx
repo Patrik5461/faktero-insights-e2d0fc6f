@@ -74,7 +74,7 @@ import { isdocFakturyFn } from "@/lib/faktero/isdoc.functions";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
-import { potvrd } from "@/lib/potvrdenie";
+import { potvrd, zadaj } from "@/lib/potvrdenie";
 /** Ako sa doklad volá — rovnako v hlavičke stránky aj v PDF. */
 const NAZOV_TYPU: Record<string, string> = {
   proforma: "Zálohová faktúra",
@@ -152,7 +152,11 @@ function InvoiceDetail() {
   async function handleRequestApproval() {
     if (!inv) return;
     const suggested = inv.customer_email ?? "";
-    const email = window.prompt("Email zákazníka pre schválenie:", suggested);
+    const email = await zadaj("E-mail zákazníka pre schválenie faktúry", {
+      predvolene: suggested,
+      typ: "email",
+      placeholder: "zakaznik@firma.sk",
+    }, { potvrdit: "Poslať žiadosť" });
     if (!email) return;
     setApprovalBusy(true);
     try {

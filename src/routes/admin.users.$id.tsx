@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { zadaj } from "@/lib/potvrdenie";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -313,8 +314,14 @@ function AdminUcetPage() {
                   ) : (
                     <button
                       disabled={busy}
-                      onClick={() => {
-                        const dovod = window.prompt("Dôvod pozastavenia firmy:");
+                      onClick={async () => {
+                        const dovod = await zadaj(
+                          "Dôvod pozastavenia firmy",
+                          {
+                            placeholder: "napr. neuhradené predplatné",
+                          },
+                          { potvrdit: "Pozastaviť", nebezpecne: true },
+                        );
                         if (!dovod) return;
                         void zasah(
                           () => pozastavFn({ data: { id: f.id, reason: dovod } }),

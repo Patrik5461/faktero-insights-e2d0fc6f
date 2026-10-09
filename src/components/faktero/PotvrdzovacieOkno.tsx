@@ -29,10 +29,22 @@ export function PotvrdzovacieOkno() {
     vybavZiadost(ano);
   };
 
+  const [text, setText] = useState("");
+  useEffect(() => setText(ziadost?.pole ? (ziadost.hodnota ?? "") : ""), [ziadost]);
+  const pole = ziadost?.pole;
+  const prazdne = Boolean(pole && !pole.povolitPrazdne && !text.trim());
+  const potvrdPole = () => {
+    if (!ziadost || prazdne) return;
+    ziadost.hodnota = text;
+    odpovedz(true);
+  };
+
   const riadky = (ziadost?.sprava ?? "").split(/\n+/).filter(Boolean);
   const nadpis = riadky[0] ?? "";
-  const text = riadky.slice(1).join("\n");
-  const nebezpecne = ziadost?.nebezpecne ?? jeNebezpecna(ziadost?.sprava ?? "");
+  const popis = riadky.slice(1).join("\n");
+  const nebezpecne = ziadost?.pole
+    ? Boolean(ziadost.nebezpecne)
+    : (ziadost?.nebezpecne ?? jeNebezpecna(ziadost?.sprava ?? ""));
 
   return (
     <AlertDialog
@@ -50,12 +62,39 @@ export function PotvrdzovacieOkno() {
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-base leading-snug">{nadpis}</AlertDialogTitle>
-          {text ? (
-            <AlertDialogDescription className="whitespace-pre-line">{text}</AlertDialogDescription>
+          {popis ? (
+            <AlertDialogDescription className="whitespace-pre-line">{popis}</AlertDialogDescription>
           ) : (
             <AlertDialogDescription className="sr-only">Potvrďte akciu.</AlertDialogDescription>
           )}
         </AlertDialogHeader>
+        {pole ? (
+          <>
+            <input
+              autoFocus
+              aria-label={nadpis}
+              type={pole.typ ?? "text"}
+              value={text}
+              placeholder={pole.placeholder}
+              list={pole.moznosti?.length ? "potvrd-moznosti" : undefined}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  potvrdPole();
+                }
+              }}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            />
+            {pole.moznosti?.length ? (
+              <datalist id="potvrd-moznosti">
+                {pole.moznosti.map((m) => (
+                  <option key={m} value={m} />
+                ))}
+              </datalist>
+            ) : null}
+          </>
+        ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => odpovedz(false)}>
             {ziadost?.zrusit ?? "Späť"}
@@ -63,7 +102,13 @@ export function PotvrdzovacieOkno() {
           {/* Fokus ostáva na „Späť" (Radix) — Enter omylom nič nezmaže. */}
           <AlertDialogAction
             className={nebezpecne ? buttonVariants({ variant: "destructive" }) : undefined}
-            onClick={() => odpovedz(true)}
+            disabled={prazdne}
+            onClick={(e) => {
+              if (pole) {
+                e.preventDefault();
+                potvrdPole();
+              } else odpovedz(true);
+            }}
           >
             {ziadost?.potvrdit ?? (nebezpecne ? "Áno, pokračovať" : "Potvrdiť")}
           </AlertDialogAction>
