@@ -8560,7 +8560,7 @@ export type Database = {
           doklad_id: string
           user_id?: string
           text: string
-          upozornit: string[]
+          upozornit?: string[]
           created_at?: string
         }
         Update: {
@@ -8805,8 +8805,8 @@ export type Database = {
           id?: string
           company_id: string
           nazov: string
-          urovne: Json
-          podmienky: Json
+          urovne?: Json
+          podmienky?: Json
           predvolena?: boolean
           poradie?: number
           created_at?: string
@@ -8850,7 +8850,7 @@ export type Database = {
           agenda: string
           doklad_id: string
           cesta_id?: string | null
-          urovne: Json
+          urovne?: Json
           schvalena_uroven?: number
           stav?: string
           created_at?: string
@@ -8943,6 +8943,10 @@ export type Database = {
           posledna_chyba: string | null
           updated_by: string | null
           updated_at: string
+          auto_import: boolean
+          auto_stavy: number[]
+          auto_od: string | null
+          stavy: Json | null
         }
         Insert: {
           company_id: string
@@ -8953,6 +8957,10 @@ export type Database = {
           posledna_chyba?: string | null
           updated_by?: string | null
           updated_at?: string
+          auto_import?: boolean
+          auto_stavy?: number[]
+          auto_od?: string | null
+          stavy?: Json | null
         }
         Update: {
           company_id?: string
@@ -8963,6 +8971,10 @@ export type Database = {
           posledna_chyba?: string | null
           updated_by?: string | null
           updated_at?: string
+          auto_import?: boolean
+          auto_stavy?: number[]
+          auto_od?: string | null
+          stavy?: Json | null
         }
         Relationships: [
           {
@@ -9086,6 +9098,7 @@ export type Database = {
           }
         ]
       }
+
     }
     Views: {
       stock_items_with_availability: {

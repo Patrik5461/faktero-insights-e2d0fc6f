@@ -8,6 +8,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { potvrd } from "@/lib/potvrdenie";
 import {
   fakturujShoptetFn,
+  nastavAutoImportFn,
   objednavkyShoptetFn,
   odpojNapojenieFn,
   pripojShoptetFn,
@@ -319,6 +320,7 @@ function ShoptetPanel({
                   </table>
                 </div>
               )}
+              <AutoImport companyId={companyId} stav={stav} onZmena={onZmena} />
               {stav.posledna_chyba ? (
                 <p className="mt-2 text-xs text-amber-700">Posledná chyba: {stav.posledna_chyba}</p>
               ) : null}
@@ -433,5 +435,87 @@ function ZasielkovnaPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+/** Automatický import každú hodinu — z objednávok vo zvolených stavoch, vytvorených od zapnutia. */
+function AutoImport({
+  companyId,
+  stav,
+  onZmena,
+}: {
+  companyId: string;
+  stav: NonNullable<Stav["shoptet"]>;
+  onZmena: () => void;
+}) {
+  const nastav = useServerFn(nastavAutoImportFn);
+  const stavy = (Array.isArray(stav.stavy) ? stav.stavy : []) as { id: number; name: string }[];
+  const [zapnut, setZapnut] = useState(Boolean(stav.auto_import));
+  const [vybrane, setVybrane] = useState<number[]>(stav.auto_stavy ?? []);
+  const [busy, setBusy] = useState(false);
+  async function ulozit() {
+    setBusy(true);
+    try {
+      await nastav({ data: { company_id: companyId, zapnut, stavy: vybrane } });
+      toast.success(
+        zapnut
+          ? "Automatický import je zapnutý — prvý beh do hodiny."
+          : "Automatický import je vypnutý.",
+      );
+      onZmena();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="mt-5 rounded-lg border border-border p-4">
+      <label className="flex items-center gap-2 text-sm font-medium">
+        <input type="checkbox" checked={zapnut} onChange={(e) => setZapnut(e.target.checked)} />
+        Vystavovať faktúry automaticky každú hodinu
+      </label>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Z objednávok vytvorených po zapnutí, keď sú v niektorom zo stavov nižšie. Staršie objednávky
+        vystavíte ručne vyššie.{" "}
+        {stav.auto_import && stav.auto_od
+          ? `Zapnuté od ${new Date(stav.auto_od).toLocaleString("sk-SK")}.`
+          : ""}
+        {stav.posledny_import_at
+          ? ` Posledný beh ${new Date(stav.posledny_import_at).toLocaleString("sk-SK")}.`
+          : ""}
+      </p>
+      {zapnut && (
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+          {stavy.length === 0 ? (
+            <span className="text-xs text-amber-700">
+              Stavy objednávok sa nenačítali — pripojte e-shop znova.
+            </span>
+          ) : (
+            stavy.map((x) => (
+              <label key={x.id} className="flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={vybrane.includes(x.id)}
+                  onChange={(e) =>
+                    setVybrane((v) =>
+                      e.target.checked ? [...v, x.id] : v.filter((y) => y !== x.id),
+                    )
+                  }
+                />
+                {x.name}
+              </label>
+            ))
+          )}
+        </div>
+      )}
+      <button
+        onClick={() => void ulozit()}
+        disabled={busy}
+        className="mt-3 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+      >
+        Uložiť
+      </button>
+    </div>
   );
 }

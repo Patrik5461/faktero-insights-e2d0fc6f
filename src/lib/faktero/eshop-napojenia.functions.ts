@@ -37,8 +37,7 @@ async function overClena(
   }
 }
 
-const admin = async () =>
-  (await import("@/integrations/supabase/client.server")).supabaseAdmin;
+const admin = async () => (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 
 /* ------------------------------ Shoptet ------------------------------ */
 
@@ -51,7 +50,9 @@ export const stavNapojeniFn = createServerFn({ method: "POST" })
     const [{ data: s }, { data: z2 }] = await Promise.all([
       a
         .from("shoptet_napojenia")
-        .select("eshop_nazov, eshop_url, posledny_import_at, posledna_chyba")
+        .select(
+          "eshop_nazov, eshop_url, posledny_import_at, posledna_chyba, auto_import, auto_stavy, auto_od, stavy",
+        )
         .eq("company_id", data.company_id)
         .maybeSingle(),
       a
@@ -77,7 +78,7 @@ export const pripojShoptetFn = createServerFn({ method: "POST" })
     await overClena(context, data.company_id, "spravca");
     const { shoptetApi } = await import("./shoptet.server");
     // Overenie tokenu: údaje e-shopu a prístup k objednávkam.
-    const eshop = await shoptetApi<any>(data.token, "/api/eshop");
+    const eshop = await shoptetApi<any>(data.token, "/api/eshop?include=orderStatuses");
     await shoptetApi<any>(data.token, "/api/orders?itemsPerPage=1");
     const { encryptSecret } = await import("./payment-crypto.server");
     const nazov = eshop?.contactInformation?.eshopName ?? null;
@@ -88,6 +89,7 @@ export const pripojShoptetFn = createServerFn({ method: "POST" })
       token_sifrovany: encryptSecret(data.token),
       eshop_nazov: nazov,
       eshop_url: url,
+      stavy: (eshop?.orderStatuses?.statuses ?? []).map((x: any) => ({ id: x.id, name: x.name })),
       posledna_chyba: null,
       updated_by: context.userId,
       updated_at: new Date().toISOString(),
@@ -377,4 +379,46 @@ export const stavZasielkyFn = createServerFn({ method: "POST" })
       .update({ zasielkovna_stav: stav, zasielkovna_stav_at: new Date().toISOString() })
       .eq("id", data.invoice_id);
     return { stav, ulozenaDo: vysledokPola(o.vysledok, "storedUntil") || null };
+  });
+
+/** Zapne či vypne automatický import; po zapnutí berie objednávky až od tejto chvíle. */
+export const nastavAutoImportFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        zapnut: z.boolean(),
+        stavy: z.array(z.number().int()).max(20),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await overClena(context, data.company_id, "spravca");
+    if (data.zapnut && !data.stavy.length)
+      throw new Error("Vyberte aspoň jeden stav objednávky, ktorý sa má fakturovať.");
+    const a = await admin();
+    const { data: n } = await a
+      .from("shoptet_napojenia")
+      .select("auto_import, auto_od")
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!n) throw new Error("Shoptet nie je pripojený.");
+    const { error } = await a
+      .from("shoptet_napojenia")
+      .update({
+        auto_import: data.zapnut,
+        auto_stavy: data.stavy,
+        // Pri zapnutí sa staršie objednávky nefakturujú — tie sa dajú vystaviť ručne.
+        auto_od: data.zapnut
+          ? n.auto_import && n.auto_od
+            ? n.auto_od
+            : new Date().toISOString()
+          : n.auto_od,
+        updated_by: context.userId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("company_id", data.company_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

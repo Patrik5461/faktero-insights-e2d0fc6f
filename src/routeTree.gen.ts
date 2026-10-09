@@ -285,6 +285,7 @@ import { Route as ApiPublicHooksPredplatneObnovaRouteImport } from './routes/api
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
 import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
 import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public/hooks/reminders'
+import { Route as ApiPublicHooksShoptetImportRouteImport } from './routes/api/public/hooks/shoptet-import'
 import { Route as ApiPublicHooksStockAlertsRouteImport } from './routes/api/public/hooks/stock-alerts'
 import { Route as ApiPublicHooksTrialLifecycleRouteImport } from './routes/api/public/hooks/trial-lifecycle'
 import { Route as ApiPublicHooksUcetZrusenieRouteImport } from './routes/api/public/hooks/ucet-zrusenie'
@@ -1823,6 +1824,12 @@ const ApiPublicHooksRemindersRoute = ApiPublicHooksRemindersRouteImport.update({
   path: '/api/public/hooks/reminders',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksShoptetImportRoute =
+  ApiPublicHooksShoptetImportRouteImport.update({
+    id: '/api/public/hooks/shoptet-import',
+    path: '/api/public/hooks/shoptet-import',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksStockAlertsRoute =
   ApiPublicHooksStockAlertsRouteImport.update({
     id: '/api/public/hooks/stock-alerts',
@@ -2285,6 +2292,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
+  '/api/public/hooks/shoptet-import': typeof ApiPublicHooksShoptetImportRoute
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
@@ -2589,6 +2597,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
+  '/api/public/hooks/shoptet-import': typeof ApiPublicHooksShoptetImportRoute
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
@@ -2904,6 +2913,7 @@ export interface FileRoutesById {
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
+  '/api/public/hooks/shoptet-import': typeof ApiPublicHooksShoptetImportRoute
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
@@ -3219,6 +3229,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
+    | '/api/public/hooks/shoptet-import'
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
@@ -3523,6 +3534,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
+    | '/api/public/hooks/shoptet-import'
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
@@ -3837,6 +3849,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
+    | '/api/public/hooks/shoptet-import'
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
@@ -3996,6 +4009,7 @@ export interface RootRouteChildren {
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
   ApiPublicHooksRecurringRunRoute: typeof ApiPublicHooksRecurringRunRoute
   ApiPublicHooksRemindersRoute: typeof ApiPublicHooksRemindersRoute
+  ApiPublicHooksShoptetImportRoute: typeof ApiPublicHooksShoptetImportRoute
   ApiPublicHooksStockAlertsRoute: typeof ApiPublicHooksStockAlertsRoute
   ApiPublicHooksTrialLifecycleRoute: typeof ApiPublicHooksTrialLifecycleRoute
   ApiPublicHooksUcetZrusenieRoute: typeof ApiPublicHooksUcetZrusenieRoute
@@ -5950,6 +5964,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/shoptet-import': {
+      id: '/api/public/hooks/shoptet-import'
+      path: '/api/public/hooks/shoptet-import'
+      fullPath: '/api/public/hooks/shoptet-import'
+      preLoaderRoute: typeof ApiPublicHooksShoptetImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/stock-alerts': {
       id: '/api/public/hooks/stock-alerts'
       path: '/api/public/hooks/stock-alerts'
@@ -6938,6 +6959,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
   ApiPublicHooksRecurringRunRoute: ApiPublicHooksRecurringRunRoute,
   ApiPublicHooksRemindersRoute: ApiPublicHooksRemindersRoute,
+  ApiPublicHooksShoptetImportRoute: ApiPublicHooksShoptetImportRoute,
   ApiPublicHooksStockAlertsRoute: ApiPublicHooksStockAlertsRoute,
   ApiPublicHooksTrialLifecycleRoute: ApiPublicHooksTrialLifecycleRoute,
   ApiPublicHooksUcetZrusenieRoute: ApiPublicHooksUcetZrusenieRoute,
