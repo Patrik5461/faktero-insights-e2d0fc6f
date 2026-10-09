@@ -158,12 +158,16 @@ export const ulozVyuctovanieFn = createServerFn({ method: "POST" })
     };
     let id = data.id ?? null;
     if (id) {
-      const { error } = await supabase
+      // Úprava musí naozaj trafiť vyúčtovanie tejto firmy — inak by sa doklady
+      // nižšie pripojili k cudziemu id, hoci sa nič neuložilo.
+      const { data: upravene, error } = await supabase
         .from("vyuctovania_vydavkov")
         .update(riadok)
         .eq("id", id)
-        .eq("company_id", data.company_id);
+        .eq("company_id", data.company_id)
+        .select("id");
       if (error) throw new Error(error.message);
+      if (!upravene?.length) throw new Error("Vyúčtovanie sa nenašlo.");
     } else {
       const { data: novy, error } = await supabase
         .from("vyuctovania_vydavkov")

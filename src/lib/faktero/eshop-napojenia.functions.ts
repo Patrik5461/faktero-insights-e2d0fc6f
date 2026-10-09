@@ -7,7 +7,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
   Tokeny sú pre prehliadač zavreté: číta a zapisuje ich len server.
 */
 
-async function overClena(context: any, companyId: string, len: "spravca" | "clen" = "clen") {
+async function overClena(
+  context: any,
+  companyId: string,
+  len: "spravca" | "clen" = "clen",
+  oblast?: { nazov: "faktury"; zapis: boolean },
+) {
   const { data } = await context.supabase
     .from("company_users")
     .select("role")
@@ -17,6 +22,19 @@ async function overClena(context: any, companyId: string, len: "spravca" | "clen
   if (!data) throw new Error("K tejto firme nemáte prístup.");
   if (len === "spravca" && !["owner", "admin"].includes(data.role))
     throw new Error("Napojenie môže nastaviť len majiteľ alebo admin firmy.");
+  /*
+    Vlastná rola (custom) má práva po oblastiach. Objednávky a zásielky čítame
+    cez admin klienta (token je pre prehliadač zavretý), takže oblasť treba
+    overiť tu — RLS by ju pri admin klientovi nestrážila.
+  */
+  if (oblast) {
+    const { data: firmy } = await context.supabase.rpc("firmy_s_pravom", {
+      _oblast: oblast.nazov,
+      _zapis: oblast.zapis,
+    });
+    if (!((firmy ?? []) as string[]).includes(companyId))
+      throw new Error("Na faktúry nemáte v tejto firme oprávnenie.");
+  }
 }
 
 const admin = async () =>
@@ -102,7 +120,7 @@ export const objednavkyShoptetFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await overClena(context, data.company_id);
+    await overClena(context, data.company_id, "clen", { nazov: "faktury", zapis: false });
     const { shoptetApi, tokenShoptetu } = await import("./shoptet.server");
     const t = await tokenShoptetu(data.company_id);
     if (!t) throw new Error("Shoptet nie je pripojený.");
@@ -150,7 +168,7 @@ export const fakturujShoptetFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await overClena(context, data.company_id);
+    await overClena(context, data.company_id, "clen", { nazov: "faktury", zapis: true });
     const { shoptetApi, tokenShoptetu } = await import("./shoptet.server");
     const { fakturaZObjednavky } = await import("./shoptet");
     const { vytvorFakturu } = await import("./vytvor-fakturu.server");
@@ -245,7 +263,7 @@ export const vytvorZasielkuFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await overClena(context, data.company_id);
+    await overClena(context, data.company_id, "clen", { nazov: "faktury", zapis: true });
     const { hesloZasielkovne, volajZasielkovnu } = await import("./zasielkovna.server");
     const { rozdelMeno, xmlVytvorZasielku, vysledokPola } = await import("./zasielkovna");
     const n = await hesloZasielkovne(data.company_id);
@@ -318,7 +336,7 @@ export const stitokZasielkyFn = createServerFn({ method: "POST" })
     z.object({ company_id: z.string().uuid(), invoice_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await overClena(context, data.company_id);
+    await overClena(context, data.company_id, "clen", { nazov: "faktury", zapis: false });
     const { hesloZasielkovne, volajZasielkovnu } = await import("./zasielkovna.server");
     const { xmlStitok } = await import("./zasielkovna");
     const n = await hesloZasielkovne(data.company_id);
@@ -340,7 +358,7 @@ export const stavZasielkyFn = createServerFn({ method: "POST" })
     z.object({ company_id: z.string().uuid(), invoice_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await overClena(context, data.company_id);
+    await overClena(context, data.company_id, "clen", { nazov: "faktury", zapis: true });
     const { hesloZasielkovne, volajZasielkovnu } = await import("./zasielkovna.server");
     const { xmlStav, vysledokPola } = await import("./zasielkovna");
     const n = await hesloZasielkovne(data.company_id);
