@@ -150,7 +150,7 @@ function PravidlaPage() {
       { data: u2 },
     ] = await Promise.all([
       supabase
-        .from("pravidla_uctovania" as any)
+        .from("pravidla_uctovania")
         .select("*")
         .eq("company_id", cid)
         .order("poradie")
@@ -218,7 +218,7 @@ function PravidlaPage() {
 
   async function prepni(r: Riadok) {
     const { error } = await supabase
-      .from("pravidla_uctovania" as any)
+      .from("pravidla_uctovania")
       .update({ aktivne: !r.aktivne, updated_at: new Date().toISOString() })
       .eq("id", r.id);
     if (error) return toast.error(error.message);
@@ -228,7 +228,7 @@ function PravidlaPage() {
   async function zmaz() {
     if (!mazane) return;
     const { error } = await supabase
-      .from("pravidla_uctovania" as any)
+      .from("pravidla_uctovania")
       .delete()
       .eq("id", mazane.id);
     setMazane(null);
@@ -503,11 +503,11 @@ function UpravaPravidla({
       const riadok = { ...naUlozenie(ocistiPodlaDruhu(p)), updated_at: new Date().toISOString() };
       const { error } = p.id
         ? await supabase
-            .from("pravidla_uctovania" as any)
+            .from("pravidla_uctovania")
             .update(riadok)
             .eq("id", p.id)
         : await supabase
-            .from("pravidla_uctovania" as any)
+            .from("pravidla_uctovania")
             .insert({ ...riadok, company_id: companyId });
       if (error) throw new Error(error.message);
       toast.success(p.id ? "Pravidlo uložené." : "Pravidlo pridané — zaberie pri ďalšom doklade.");

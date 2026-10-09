@@ -29,7 +29,7 @@ export async function tokenShoptetu(
   companyId: string,
 ): Promise<{ token: string; nazov: string | null } | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await (supabaseAdmin as any)
+  const { data } = await supabaseAdmin
     .from("shoptet_napojenia")
     .select("token_sifrovany, eshop_nazov")
     .eq("company_id", companyId)

@@ -39,12 +39,12 @@ function DetailPoziadavky() {
   const nacitaj = useCallback(async () => {
     const [{ data: poz }, { data: sp }] = await Promise.all([
       supabase
-        .from("podpora_poziadavky" as any)
+        .from("podpora_poziadavky")
         .select("id, cislo, predmet, stav, kategoria, created_at") // token adresy klient čítať nesmie
         .eq("id", id)
         .maybeSingle(),
       supabase
-        .from("podpora_spravy" as any)
+        .from("podpora_spravy")
         .select("id, od_podpory, text, created_at, cez_email")
         .eq("poziadavka_id", id)
         .order("created_at"),

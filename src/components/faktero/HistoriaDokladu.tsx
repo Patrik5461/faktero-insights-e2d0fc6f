@@ -57,7 +57,7 @@ export function HistoriaDokladu({ companyId, agenda, id }: { companyId: string; 
 
   useEffect(() => {
     supabase
-      .from("historia_dokladov" as any)
+      .from("historia_dokladov")
       .select("id, pole, pred, po, kto, kedy")
       .eq("agenda", agenda)
       .eq("doklad_id", id)

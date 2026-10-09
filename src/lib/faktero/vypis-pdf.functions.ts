@@ -483,13 +483,13 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
     */
     const { pravidloPohybu } = await import("./pravidla-uctovania");
     const { data: pravidlaBanky } = await supabaseAdmin
-      .from("pravidla_uctovania" as never)
+      .from("pravidla_uctovania")
       .select("*")
       .eq("company_id", data.company_id)
       .eq("druh", "banka")
       .eq("aktivne", true);
     const pohyby = data.pohyby.map((p) => {
-      const r = pravidloPohybu((pravidlaBanky ?? []) as never[], p, data.ucet);
+      const r = pravidloPohybu((pravidlaBanky ?? []) as any[], p, data.ucet);
       return r
         ? { ...p, predkontacia: (r as { predkontacia: string }).predkontacia }
         : { ...p, predkontacia: null };

@@ -31,7 +31,7 @@ export function KomentarePanel({
 
   const obnov = async () => {
     const { data } = await supabase
-      .from("komentare_dokladov" as any)
+      .from("komentare_dokladov")
       .select("id, user_id, text, upozornit, created_at")
       .eq("agenda", agenda)
       .eq("doklad_id", id)
@@ -69,7 +69,7 @@ export function KomentarePanel({
     const oznaceni = ludia.filter((l) => l.id !== ja && holy(text).includes(holy(`@${l.meno}`))).map((l) => l.id);
     const upozornit = [...new Set([...upozornitVybrani, ...oznaceni])];
     try {
-      const { error } = await supabase.from("komentare_dokladov" as any).insert({
+      const { error } = await supabase.from("komentare_dokladov").insert({
         company_id: companyId,
         agenda,
         doklad_id: id,
@@ -105,7 +105,7 @@ export function KomentarePanel({
                 {k.user_id === ja && (
                   <button
                     onClick={async () => {
-                      await supabase.from("komentare_dokladov" as any).delete().eq("id", k.id);
+                      await supabase.from("komentare_dokladov").delete().eq("id", k.id);
                       await obnov();
                     }}
                     className="rounded p-0.5 hover:text-destructive"

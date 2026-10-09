@@ -489,8 +489,7 @@ export async function spracujPrijatyMail(
           .update({
             text_mailu: textMailu(rozbalTelo(obsah.text), rozbalTelo(obsah.html)),
             to_email: (Array.isArray(obsah.to) ? obsah.to.join(", ") : obsah.to ?? null) || null,
-            // Stĺpce zo 9. 10. ešte nie sú v generovaných typoch.
-          } as never)
+          })
           .eq("id", zaznam.id);
       } catch (e: any) {
         console.warn("[mail-prijem] text mailu sa neuložil:", String(e?.message ?? e).slice(0, 200));

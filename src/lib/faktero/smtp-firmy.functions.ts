@@ -40,7 +40,7 @@ export const nacitajSmtpFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<SmtpPrehlad> => {
     await overSpravcu(context, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: r } = await (supabaseAdmin as any)
+    const { data: r } = await supabaseAdmin
       .from("firma_smtp")
       .select("*")
       .eq("company_id", data.company_id)
@@ -50,7 +50,7 @@ export const nacitajSmtpFn = createServerFn({ method: "POST" })
       aktivne: r.aktivne,
       host: r.host,
       port: r.port,
-      zabezpecenie: r.zabezpecenie,
+      zabezpecenie: r.zabezpecenie as "ssl" | "starttls" | "ziadne",
       pouzivatel: r.pouzivatel ?? "",
       maHeslo: Boolean(r.heslo_sifrovane),
       od_email: r.od_email,
@@ -90,7 +90,7 @@ export const ulozSmtpFn = createServerFn({ method: "POST" })
     await overSpravcu(context, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { encryptSecret } = await import("./payment-crypto.server");
-    const admin = supabaseAdmin as any;
+    const admin = supabaseAdmin;
     const { data: stare } = await admin
       .from("firma_smtp")
       .select("heslo_sifrovane")

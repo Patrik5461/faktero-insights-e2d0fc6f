@@ -44,7 +44,7 @@ export function VyberPravidla({
 
   useEffect(() => {
     // Tabuľka nie je v generovaných typoch — pravidlá číta aj stránka pravidiel takto.
-    (supabase as any)
+    supabase
       .from("pravidla_uctovania")
       .select("*")
       .eq("company_id", companyId)

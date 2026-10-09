@@ -266,7 +266,7 @@ const PORADIE_ZAVAZNOSTI = { danger: 0, warning: 1, info: 2 } as const;
 async function notifikacieOdpovediPodpory(userId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
-    .from("podpora_poziadavky" as any)
+    .from("podpora_poziadavky")
     .select(
       "id, cislo, predmet, posledna_od, posledna_sprava_at, zakaznik_videl_at, podpora_videla_at",
     )
@@ -294,7 +294,7 @@ async function notifikacieKomentarov(companyId: string, userId: string): Promise
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const od = new Date(Date.now() - 30 * 86400000).toISOString();
   const { data } = await supabaseAdmin
-    .from("komentare_dokladov" as any)
+    .from("komentare_dokladov")
     .select("id, agenda, doklad_id, text, created_at, user_id")
     .eq("company_id", companyId)
     .contains("upozornit", [userId])
@@ -323,7 +323,7 @@ async function notifikaciaSchvalovania(companyId: string, userId: string): Promi
   ]);
   if (!(firma as any)?.schvalovanie_zapnute) return [];
   const { data } = await supabaseAdmin
-    .from("schvalovanie" as any)
+    .from("schvalovanie")
     .select("urovne, schvalena_uroven, stav")
     .eq("company_id", companyId)
     .eq("stav", "caka")

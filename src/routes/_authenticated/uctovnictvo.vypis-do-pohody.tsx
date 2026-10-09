@@ -350,13 +350,13 @@ function VypisDoPohodyPage() {
   const [pravidlaBanky, setPravidlaBanky] = useState<Pravidlo[]>([]);
   useEffect(() => {
     if (!cid) return;
-    void (supabase as any)
+    void supabase
       .from("pravidla_uctovania")
       .select("*")
       .eq("company_id", cid)
       .eq("druh", "banka")
       .eq("aktivne", true)
-      .then(({ data }: { data: Pravidlo[] | null }) => setPravidlaBanky(data ?? []));
+      .then(({ data }) => setPravidlaBanky((data ?? []) as Pravidlo[]));
   }, [cid]);
 
   const vybrane = riadky.filter((r) => r.vyviezt);

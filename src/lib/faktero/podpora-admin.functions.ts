@@ -33,7 +33,7 @@ export const adminPoziadavkyFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const db = await admin((context as { userId: string }).userId);
     let q = db
-      .from("podpora_poziadavky" as any)
+      .from("podpora_poziadavky")
       .select(
         "id, cislo, email, meno, predmet, kategoria, stav, zdroj, company_id, posledna_sprava_at, posledna_od, zakaznik_videl_at, podpora_videla_at, created_at",
       )
@@ -61,7 +61,7 @@ export const adminPoziadavkyFn = createServerFn({ method: "POST" })
     const menoFirmy = new Map((firmy ?? []).map((f: any) => [f.id, f.name]));
 
     const { data: vsetky } = await db
-      .from("podpora_poziadavky" as any)
+      .from("podpora_poziadavky")
       .select("stav")
       .limit(5000);
     const pocty: Record<string, number> = {};
@@ -82,7 +82,7 @@ export const adminPoziadavkaFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const db = await admin((context as { userId: string }).userId);
     const { data: p, error } = await db
-      .from("podpora_poziadavky" as any)
+      .from("podpora_poziadavky")
       .select("*")
       .eq("id", data.id)
       .maybeSingle();
@@ -90,7 +90,7 @@ export const adminPoziadavkaFn = createServerFn({ method: "POST" })
     if (!p) throw new Error("Požiadavka sa nenašla.");
     const poz = p as any;
     const { data: spravy } = await db
-      .from("podpora_spravy" as any)
+      .from("podpora_spravy")
       .select("id, autor_id, od_podpory, interna, text, created_at, cez_email")
       .eq("poziadavka_id", data.id)
       .order("created_at");
@@ -105,7 +105,7 @@ export const adminPoziadavkaFn = createServerFn({ method: "POST" })
 
     // Otvorením podpora požiadavku videla.
     await db
-      .from("podpora_poziadavky" as any)
+      .from("podpora_poziadavky")
       .update({ podpora_videla_at: new Date().toISOString() })
       .eq("id", data.id);
 
@@ -152,7 +152,7 @@ export const adminStavFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const db = await admin((context as { userId: string }).userId);
     const { error } = await db
-      .from("podpora_poziadavky" as any)
+      .from("podpora_poziadavky")
       .update({ stav: data.stav, updated_at: new Date().toISOString() })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -165,7 +165,7 @@ export const adminPocetNovychFn = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const db = await admin((context as { userId: string }).userId);
     const { data } = await db
-      .from("podpora_poziadavky" as any)
+      .from("podpora_poziadavky")
       .select("posledna_od, posledna_sprava_at, podpora_videla_at, stav")
       .neq("stav", "vyriesena")
       .limit(1000);

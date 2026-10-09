@@ -37,7 +37,7 @@ type NastavenieSmtp = {
 
 export async function nastavenieSmtp(companyId: string): Promise<NastavenieSmtp | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await (supabaseAdmin as any)
+  const { data } = await supabaseAdmin
     .from("firma_smtp")
     .select("aktivne, host, port, zabezpecenie, pouzivatel, heslo_sifrovane, od_email, od_meno")
     .eq("company_id", companyId)
@@ -156,7 +156,7 @@ export async function posliMailFirmy(companyId: string, m: MailFirmy): Promise<V
       const chyba = String(e?.message ?? e).slice(0, 300);
       console.warn(`[smtp] firma ${companyId}: ${chyba} — posielam cez Resend`);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await (supabaseAdmin as any)
+      await supabaseAdmin
         .from("firma_smtp")
         .update({ posledna_chyba: chyba, posledna_chyba_at: new Date().toISOString() })
         .eq("company_id", companyId);

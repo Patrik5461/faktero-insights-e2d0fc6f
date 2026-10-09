@@ -38,7 +38,7 @@ async function overClena(
 }
 
 const admin = async () =>
-  (await import("@/integrations/supabase/client.server")).supabaseAdmin as any;
+  (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 
 /* ------------------------------ Shoptet ------------------------------ */
 
@@ -271,8 +271,7 @@ export const vytvorZasielkuFn = createServerFn({ method: "POST" })
       throw new Error(
         "Zásielkovňa nie je pripojená — nastavte ju v Nastavenia → E-shop a doprava.",
       );
-    // Stĺpce Zásielkovne zo 9. 10. ešte nie sú v generovaných typoch.
-    const { data: f } = await (context.supabase as any)
+    const { data: f } = await context.supabase
       .from("invoices")
       .select(
         "id, invoice_number, variable_symbol, total, currency, customer_name, customer_email, customer_street, customer_city, customer_zip, zasielkovna_id",
@@ -325,7 +324,7 @@ export const vytvorZasielkuFn = createServerFn({ method: "POST" })
         zasielkovna_cislo: cislo,
         zasielkovna_stav: "Podaná",
         zasielkovna_stav_at: new Date().toISOString(),
-      } as never)
+      })
       .eq("id", f.id);
     return { id, cislo };
   });
@@ -346,10 +345,10 @@ export const stitokZasielkyFn = createServerFn({ method: "POST" })
       .eq("id", data.invoice_id)
       .eq("company_id", data.company_id)
       .maybeSingle();
-    if (!n || !(f as any)?.zasielkovna_id) throw new Error("Faktúra nemá zásielku.");
-    const o = await volajZasielkovnu(xmlStitok(n.heslo, (f as any).zasielkovna_id));
+    if (!n || !f?.zasielkovna_id) throw new Error("Faktúra nemá zásielku.");
+    const o = await volajZasielkovnu(xmlStitok(n.heslo, f.zasielkovna_id));
     if (!o.ok) throw new Error(o.chyba);
-    return { base64: o.vysledok.trim(), nazov: `stitok-${(f as any).invoice_number}.pdf` };
+    return { base64: o.vysledok.trim(), nazov: `stitok-${f.invoice_number}.pdf` };
   });
 
 export const stavZasielkyFn = createServerFn({ method: "POST" })
@@ -368,14 +367,14 @@ export const stavZasielkyFn = createServerFn({ method: "POST" })
       .eq("id", data.invoice_id)
       .eq("company_id", data.company_id)
       .maybeSingle();
-    if (!n || !(f as any)?.zasielkovna_id) throw new Error("Faktúra nemá zásielku.");
-    const o = await volajZasielkovnu(xmlStav(n.heslo, (f as any).zasielkovna_id));
+    if (!n || !f?.zasielkovna_id) throw new Error("Faktúra nemá zásielku.");
+    const o = await volajZasielkovnu(xmlStav(n.heslo, f.zasielkovna_id));
     if (!o.ok) throw new Error(o.chyba);
     const stav =
       vysledokPola(o.vysledok, "codeText") || vysledokPola(o.vysledok, "statusText") || "neznámy";
     await context.supabase
       .from("invoices")
-      .update({ zasielkovna_stav: stav, zasielkovna_stav_at: new Date().toISOString() } as never)
+      .update({ zasielkovna_stav: stav, zasielkovna_stav_at: new Date().toISOString() })
       .eq("id", data.invoice_id);
     return { stav, ulozenaDo: vysledokPola(o.vysledok, "storedUntil") || null };
   });

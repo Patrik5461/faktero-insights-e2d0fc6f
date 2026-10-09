@@ -26,7 +26,7 @@ export async function hesloZasielkovne(
   companyId: string,
 ): Promise<{ heslo: string; odosielatel: string | null } | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await (supabaseAdmin as any)
+  const { data } = await supabaseAdmin
     .from("zasielkovna_napojenia")
     .select("heslo_sifrovane, odosielatel")
     .eq("company_id", companyId)

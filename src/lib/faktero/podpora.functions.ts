@@ -82,7 +82,7 @@ export const uzavriPoziadavkuFn = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const teraz = new Date().toISOString();
     await supabaseAdmin
-      .from("podpora_poziadavky" as any)
+      .from("podpora_poziadavky")
       .update({ stav: "vyriesena", updated_at: teraz })
       .eq("id", data.id);
     return { ok: true };
@@ -97,7 +97,7 @@ export const oznacPrecitaneFn = createServerFn({ method: "POST" })
     await mojaPoziadavka(data.id, userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin
-      .from("podpora_poziadavky" as any)
+      .from("podpora_poziadavky")
       .update({ zakaznik_videl_at: new Date().toISOString() })
       .eq("id", data.id);
     return { ok: true };

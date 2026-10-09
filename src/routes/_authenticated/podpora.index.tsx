@@ -62,7 +62,7 @@ function PodporaPage() {
 
   const nacitaj = useCallback(async () => {
     const { data, error } = await supabase
-      .from("podpora_poziadavky" as any)
+      .from("podpora_poziadavky")
       .select(
         "id, cislo, predmet, stav, kategoria, posledna_sprava_at, posledna_od, zakaznik_videl_at, podpora_videla_at",
       )

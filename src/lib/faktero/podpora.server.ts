@@ -94,7 +94,7 @@ export type NovaPoziadavka = {
 
 export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; cislo: number }> {
   const { data: p, error } = await supabaseAdmin
-    .from("podpora_poziadavky" as any)
+    .from("podpora_poziadavky")
     .insert({
       user_id: n.userId,
       company_id: n.companyId ?? null,
@@ -113,7 +113,7 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
   if (error) throw new Error(error.message);
   const poz = p as unknown as { id: string; cislo: number; odpoved_token: string };
 
-  const { error: e2 } = await supabaseAdmin.from("podpora_spravy" as any).insert({
+  const { error: e2 } = await supabaseAdmin.from("podpora_spravy").insert({
     poziadavka_id: poz.id,
     autor_id: n.userId,
     od_podpory: false,
@@ -176,7 +176,7 @@ type Poziadavka = {
 
 export async function nacitajPoziadavku(id: string): Promise<Poziadavka | null> {
   const { data } = await supabaseAdmin
-    .from("podpora_poziadavky" as any)
+    .from("podpora_poziadavky")
     .select("id, cislo, user_id, email, predmet, stav, odpoved_token")
     .eq("id", id)
     .maybeSingle();
@@ -195,7 +195,7 @@ export async function pridajSpravu(args: {
 }): Promise<{ zapisana: boolean }> {
   const { poziadavka: p, od } = args;
   const interna = od === "podpora" && !!args.interna;
-  const { error } = await supabaseAdmin.from("podpora_spravy" as any).insert({
+  const { error } = await supabaseAdmin.from("podpora_spravy").insert({
     poziadavka_id: p.id,
     autor_id: args.autorId,
     od_podpory: od === "podpora",
@@ -212,14 +212,14 @@ export async function pridajSpravu(args: {
   // Interná poznámka nemení nič, čo vidí zákazník.
   if (interna) {
     await supabaseAdmin
-      .from("podpora_poziadavky" as any)
+      .from("podpora_poziadavky")
       .update({ podpora_videla_at: teraz, updated_at: teraz })
       .eq("id", p.id);
     return { zapisana: true };
   }
   const stav = stavPoSprave(od, p.stav);
   await supabaseAdmin
-    .from("podpora_poziadavky" as any)
+    .from("podpora_poziadavky")
     .update({
       stav,
       posledna_od: od,
@@ -283,7 +283,7 @@ export async function prijmiOdpovedEmailom(args: {
   token: string;
 }): Promise<"hotovo" | "neznama_adresa" | "chyba"> {
   const { data } = await supabaseAdmin
-    .from("podpora_poziadavky" as any)
+    .from("podpora_poziadavky")
     .select("id, cislo, user_id, email, predmet, stav, odpoved_token")
     .eq("odpoved_token", args.token)
     .maybeSingle();

@@ -114,6 +114,7 @@ export type Database = {
           created_at: string
           updated_at: string
           priecinok: string | null
+          inbox_message_id: string | null
         }
         Insert: {
           id?: string
@@ -136,6 +137,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           priecinok?: string | null
+          inbox_message_id?: string | null
         }
         Update: {
           id?: string
@@ -158,6 +160,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           priecinok?: string | null
+          inbox_message_id?: string | null
         }
         Relationships: [
           {
@@ -2857,6 +2860,9 @@ export type Database = {
           locked_by: string | null
           predmet_mailu: string | null
           stitky: string[]
+          pravidlo_id: string | null
+          inbox_message_id: string | null
+          vyuctovanie_id: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -2908,6 +2914,9 @@ export type Database = {
           locked_by?: string | null
           predmet_mailu?: string | null
           stitky?: string[]
+          pravidlo_id?: string | null
+          inbox_message_id?: string | null
+          vyuctovanie_id?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -2959,6 +2968,9 @@ export type Database = {
           locked_by?: string | null
           predmet_mailu?: string | null
           stitky?: string[]
+          pravidlo_id?: string | null
+          inbox_message_id?: string | null
+          vyuctovanie_id?: string | null
         }
         Relationships: [
           {
@@ -3802,6 +3814,8 @@ export type Database = {
           received_at: string
           status: string
           subject: string | null
+          text_mailu: string | null
+          to_email: string | null
         }
         Insert: {
           created_nespracovane_ids?: string[]
@@ -3817,6 +3831,8 @@ export type Database = {
           received_at?: string
           status?: string
           subject?: string | null
+          text_mailu?: string | null
+          to_email?: string | null
         }
         Update: {
           created_nespracovane_ids?: string[]
@@ -3832,6 +3848,8 @@ export type Database = {
           received_at?: string
           status?: string
           subject?: string | null
+          text_mailu?: string | null
+          to_email?: string | null
         }
         Relationships: [
           {
@@ -4522,6 +4540,11 @@ export type Database = {
           stredisko: string | null
           cinnost: string | null
           int_poznamka: string | null
+          pravidlo_id: string | null
+          zasielkovna_id: string | null
+          zasielkovna_cislo: string | null
+          zasielkovna_stav: string | null
+          zasielkovna_stav_at: string | null
         }
         Insert: {
           advance_amount?: number | null
@@ -4616,6 +4639,11 @@ export type Database = {
           stredisko?: string | null
           cinnost?: string | null
           int_poznamka?: string | null
+          pravidlo_id?: string | null
+          zasielkovna_id?: string | null
+          zasielkovna_cislo?: string | null
+          zasielkovna_stav?: string | null
+          zasielkovna_stav_at?: string | null
         }
         Update: {
           advance_amount?: number | null
@@ -4710,6 +4738,11 @@ export type Database = {
           stredisko?: string | null
           cinnost?: string | null
           int_poznamka?: string | null
+          pravidlo_id?: string | null
+          zasielkovna_id?: string | null
+          zasielkovna_cislo?: string | null
+          zasielkovna_stav?: string | null
+          zasielkovna_stav_at?: string | null
         }
         Relationships: [
           {
@@ -5766,6 +5799,8 @@ export type Database = {
           locked_by: string | null
           predmet_mailu: string | null
           stitky: string[]
+          inbox_message_id: string | null
+          vyuctovanie_id: string | null
         }
         Insert: {
           amount_total?: number
@@ -5862,6 +5897,8 @@ export type Database = {
           locked_by?: string | null
           predmet_mailu?: string | null
           stitky?: string[]
+          inbox_message_id?: string | null
+          vyuctovanie_id?: string | null
         }
         Update: {
           amount_total?: number
@@ -5958,6 +5995,8 @@ export type Database = {
           locked_by?: string | null
           predmet_mailu?: string | null
           stitky?: string[]
+          inbox_message_id?: string | null
+          vyuctovanie_id?: string | null
         }
         Relationships: [
           {
@@ -8283,6 +8322,768 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      efaktura_pds_ziadosti: {
+        Row: {
+          id: string
+          prijate_at: string
+          vytvorene_fs: string | null
+          dic: string
+          nazov: string | null
+          email: string | null
+          telefon: string | null
+          token_sifrovany: string | null
+          token_odtlacok: string
+          stav: string
+          company_id: string | null
+          epostak_operacia_id: string | null
+          epostak_firm_id: string | null
+          peppol_id: string | null
+          chyba: string | null
+          pokusov: number
+          posledny_pokus_at: string | null
+          pozvanka_odoslana_at: string | null
+          ip: string | null
+        }
+        Insert: {
+          id?: string
+          prijate_at?: string
+          vytvorene_fs?: string | null
+          dic: string
+          nazov?: string | null
+          email?: string | null
+          telefon?: string | null
+          token_sifrovany?: string | null
+          token_odtlacok: string
+          stav?: string
+          company_id?: string | null
+          epostak_operacia_id?: string | null
+          epostak_firm_id?: string | null
+          peppol_id?: string | null
+          chyba?: string | null
+          pokusov?: number
+          posledny_pokus_at?: string | null
+          pozvanka_odoslana_at?: string | null
+          ip?: string | null
+        }
+        Update: {
+          id?: string
+          prijate_at?: string
+          vytvorene_fs?: string | null
+          dic?: string
+          nazov?: string | null
+          email?: string | null
+          telefon?: string | null
+          token_sifrovany?: string | null
+          token_odtlacok?: string
+          stav?: string
+          company_id?: string | null
+          epostak_operacia_id?: string | null
+          epostak_firm_id?: string | null
+          peppol_id?: string | null
+          chyba?: string | null
+          pokusov?: number
+          posledny_pokus_at?: string | null
+          pozvanka_odoslana_at?: string | null
+          ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "efaktura_pds_ziadosti_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      efaktura_webhooky: {
+        Row: {
+          company_id: string
+          epostak_firm_id: string
+          webhook_id: string | null
+          tajomstvo_sifrovane: string | null
+          stav: string
+          chyba: string | null
+          vytvorene_at: string
+          posledna_udalost_at: string | null
+        }
+        Insert: {
+          company_id: string
+          epostak_firm_id: string
+          webhook_id?: string | null
+          tajomstvo_sifrovane?: string | null
+          stav?: string
+          chyba?: string | null
+          vytvorene_at?: string
+          posledna_udalost_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          epostak_firm_id?: string
+          webhook_id?: string | null
+          tajomstvo_sifrovane?: string | null
+          stav?: string
+          chyba?: string | null
+          vytvorene_at?: string
+          posledna_udalost_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "efaktura_webhooky_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      firma_smtp: {
+        Row: {
+          company_id: string
+          aktivne: boolean
+          host: string
+          port: number
+          zabezpecenie: string
+          pouzivatel: string | null
+          heslo_sifrovane: string | null
+          od_email: string
+          od_meno: string | null
+          overene_at: string | null
+          posledna_chyba: string | null
+          posledna_chyba_at: string | null
+          updated_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          aktivne?: boolean
+          host: string
+          port?: number
+          zabezpecenie?: string
+          pouzivatel?: string | null
+          heslo_sifrovane?: string | null
+          od_email: string
+          od_meno?: string | null
+          overene_at?: string | null
+          posledna_chyba?: string | null
+          posledna_chyba_at?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          aktivne?: boolean
+          host?: string
+          port?: number
+          zabezpecenie?: string
+          pouzivatel?: string | null
+          heslo_sifrovane?: string | null
+          od_email?: string
+          od_meno?: string | null
+          overene_at?: string | null
+          posledna_chyba?: string | null
+          posledna_chyba_at?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firma_smtp_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      historia_dokladov: {
+        Row: {
+          id: string
+          company_id: string
+          agenda: string
+          doklad_id: string
+          pole: string
+          pred: Json | null
+          po: Json | null
+          kto: string | null
+          kedy: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          agenda: string
+          doklad_id: string
+          pole: string
+          pred?: Json | null
+          po?: Json | null
+          kto?: string | null
+          kedy?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          agenda?: string
+          doklad_id?: string
+          pole?: string
+          pred?: Json | null
+          po?: Json | null
+          kto?: string | null
+          kedy?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historia_dokladov_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      komentare_dokladov: {
+        Row: {
+          id: string
+          company_id: string
+          agenda: string
+          doklad_id: string
+          user_id: string
+          text: string
+          upozornit: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          agenda: string
+          doklad_id: string
+          user_id?: string
+          text: string
+          upozornit: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          agenda?: string
+          doklad_id?: string
+          user_id?: string
+          text?: string
+          upozornit?: string[]
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "komentare_dokladov_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      podpora_poziadavky: {
+        Row: {
+          id: string
+          cislo: number
+          user_id: string | null
+          company_id: string | null
+          email: string
+          meno: string | null
+          predmet: string
+          kategoria: string
+          stav: string
+          zdroj: string
+          url: string | null
+          user_agent: string | null
+          posledna_sprava_at: string
+          posledna_od: string
+          zakaznik_videl_at: string | null
+          podpora_videla_at: string | null
+          created_at: string
+          updated_at: string
+          odpoved_token: string
+        }
+        Insert: {
+          id?: string
+          cislo?: number
+          user_id?: string | null
+          company_id?: string | null
+          email: string
+          meno?: string | null
+          predmet: string
+          kategoria?: string
+          stav?: string
+          zdroj?: string
+          url?: string | null
+          user_agent?: string | null
+          posledna_sprava_at?: string
+          posledna_od?: string
+          zakaznik_videl_at?: string | null
+          podpora_videla_at?: string | null
+          created_at?: string
+          updated_at?: string
+          odpoved_token?: string
+        }
+        Update: {
+          id?: string
+          cislo?: number
+          user_id?: string | null
+          company_id?: string | null
+          email?: string
+          meno?: string | null
+          predmet?: string
+          kategoria?: string
+          stav?: string
+          zdroj?: string
+          url?: string | null
+          user_agent?: string | null
+          posledna_sprava_at?: string
+          posledna_od?: string
+          zakaznik_videl_at?: string | null
+          podpora_videla_at?: string | null
+          created_at?: string
+          updated_at?: string
+          odpoved_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podpora_poziadavky_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      podpora_spravy: {
+        Row: {
+          id: string
+          poziadavka_id: string
+          autor_id: string | null
+          od_podpory: boolean
+          interna: boolean
+          text: string
+          created_at: string
+          provider_email_id: string | null
+          cez_email: boolean
+        }
+        Insert: {
+          id?: string
+          poziadavka_id: string
+          autor_id?: string | null
+          od_podpory?: boolean
+          interna?: boolean
+          text: string
+          created_at?: string
+          provider_email_id?: string | null
+          cez_email?: boolean
+        }
+        Update: {
+          id?: string
+          poziadavka_id?: string
+          autor_id?: string | null
+          od_podpory?: boolean
+          interna?: boolean
+          text?: string
+          created_at?: string
+          provider_email_id?: string | null
+          cez_email?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podpora_spravy_poziadavka_id_fkey"
+            columns: ["poziadavka_id"]
+            isOneToOne: false
+            referencedRelation: "podpora_poziadavky"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      pravidla_uctovania: {
+        Row: {
+          id: string
+          company_id: string
+          nazov: string
+          poradie: number
+          aktivne: boolean
+          dodavatel_ico: string | null
+          dodavatel_text: string | null
+          sposob_uhrady: string | null
+          kategoria: string | null
+          predkontacia: string | null
+          clenenie_dph: string | null
+          odpocet: boolean | null
+          poznamka: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+          pouzivatel_id: string | null
+          predmet_text: string | null
+          druh: string | null
+          typ_dokladu: string | null
+          kv_clenenie: string | null
+          bankovy_ucet: string | null
+          smer: string | null
+          oznacenie: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          nazov: string
+          poradie?: number
+          aktivne?: boolean
+          dodavatel_ico?: string | null
+          dodavatel_text?: string | null
+          sposob_uhrady?: string | null
+          kategoria?: string | null
+          predkontacia?: string | null
+          clenenie_dph?: string | null
+          odpocet?: boolean | null
+          poznamka?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+          pouzivatel_id?: string | null
+          predmet_text?: string | null
+          druh?: string | null
+          typ_dokladu?: string | null
+          kv_clenenie?: string | null
+          bankovy_ucet?: string | null
+          smer?: string | null
+          oznacenie?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          nazov?: string
+          poradie?: number
+          aktivne?: boolean
+          dodavatel_ico?: string | null
+          dodavatel_text?: string | null
+          sposob_uhrady?: string | null
+          kategoria?: string | null
+          predkontacia?: string | null
+          clenenie_dph?: string | null
+          odpocet?: boolean | null
+          poznamka?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+          pouzivatel_id?: string | null
+          predmet_text?: string | null
+          druh?: string | null
+          typ_dokladu?: string | null
+          kv_clenenie?: string | null
+          bankovy_ucet?: string | null
+          smer?: string | null
+          oznacenie?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pravidla_uctovania_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      schvalovacie_cesty: {
+        Row: {
+          id: string
+          company_id: string
+          nazov: string
+          urovne: Json
+          podmienky: Json
+          predvolena: boolean
+          poradie: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          nazov: string
+          urovne: Json
+          podmienky: Json
+          predvolena?: boolean
+          poradie?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          nazov?: string
+          urovne?: Json
+          podmienky?: Json
+          predvolena?: boolean
+          poradie?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schvalovacie_cesty_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      schvalovanie: {
+        Row: {
+          id: string
+          company_id: string
+          agenda: string
+          doklad_id: string
+          cesta_id: string | null
+          urovne: Json
+          schvalena_uroven: number
+          stav: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          agenda: string
+          doklad_id: string
+          cesta_id?: string | null
+          urovne: Json
+          schvalena_uroven?: number
+          stav?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          agenda?: string
+          doklad_id?: string
+          cesta_id?: string | null
+          urovne?: Json
+          schvalena_uroven?: number
+          stav?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schvalovanie_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schvalovanie_cesta_id_fkey"
+            columns: ["cesta_id"]
+            isOneToOne: false
+            referencedRelation: "schvalovacie_cesty"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      schvalovanie_historia: {
+        Row: {
+          id: string
+          schvalovanie_id: string
+          company_id: string
+          user_id: string | null
+          akcia: string
+          uroven: number | null
+          poznamka: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          schvalovanie_id: string
+          company_id: string
+          user_id?: string | null
+          akcia: string
+          uroven?: number | null
+          poznamka?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          schvalovanie_id?: string
+          company_id?: string
+          user_id?: string | null
+          akcia?: string
+          uroven?: number | null
+          poznamka?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schvalovanie_historia_schvalovanie_id_fkey"
+            columns: ["schvalovanie_id"]
+            isOneToOne: false
+            referencedRelation: "schvalovanie"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schvalovanie_historia_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      shoptet_napojenia: {
+        Row: {
+          company_id: string
+          token_sifrovany: string
+          eshop_nazov: string | null
+          eshop_url: string | null
+          posledny_import_at: string | null
+          posledna_chyba: string | null
+          updated_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          token_sifrovany: string
+          eshop_nazov?: string | null
+          eshop_url?: string | null
+          posledny_import_at?: string | null
+          posledna_chyba?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          token_sifrovany?: string
+          eshop_nazov?: string | null
+          eshop_url?: string | null
+          posledny_import_at?: string | null
+          posledna_chyba?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shoptet_napojenia_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      vyuctovania_vydavkov: {
+        Row: {
+          id: string
+          company_id: string
+          nazov: string
+          typ: string
+          zamestnanec_id: string | null
+          zamestnanec_meno: string | null
+          obdobie_od: string | null
+          obdobie_do: string | null
+          zaloha: number
+          mena: string
+          predkontacia: string | null
+          clenenie_dph: string | null
+          datum_uctovania: string | null
+          poznamka: string | null
+          stav: string
+          vyplatene_at: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          nazov: string
+          typ: string
+          zamestnanec_id?: string | null
+          zamestnanec_meno?: string | null
+          obdobie_od?: string | null
+          obdobie_do?: string | null
+          zaloha?: number
+          mena?: string
+          predkontacia?: string | null
+          clenenie_dph?: string | null
+          datum_uctovania?: string | null
+          poznamka?: string | null
+          stav?: string
+          vyplatene_at?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          nazov?: string
+          typ?: string
+          zamestnanec_id?: string | null
+          zamestnanec_meno?: string | null
+          obdobie_od?: string | null
+          obdobie_do?: string | null
+          zaloha?: number
+          mena?: string
+          predkontacia?: string | null
+          clenenie_dph?: string | null
+          datum_uctovania?: string | null
+          poznamka?: string | null
+          stav?: string
+          vyplatene_at?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vyuctovania_vydavkov_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      zasielkovna_napojenia: {
+        Row: {
+          company_id: string
+          heslo_sifrovane: string
+          api_kluc: string
+          odosielatel: string | null
+          posledna_chyba: string | null
+          updated_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          heslo_sifrovane: string
+          api_kluc: string
+          odosielatel?: string | null
+          posledna_chyba?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          heslo_sifrovane?: string
+          api_kluc?: string
+          odosielatel?: string | null
+          posledna_chyba?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zasielkovna_napojenia_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
         ]
       }
     }
