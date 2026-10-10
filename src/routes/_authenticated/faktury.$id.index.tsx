@@ -241,6 +241,7 @@ function InvoiceDetail() {
         toast.success(`Odoslané cez eFaktúru — stav ${r.status}.`);
       }
       efakturaQuery.refetch();
+      dorucenieQuery.refetch();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -260,6 +261,23 @@ function InvoiceDetail() {
   });
   const efakturaDoc = efakturaQuery.data ?? null;
   const efakturaUi = deriveEfakturaUiStatus(efakturaDoc);
+  // Posledné doručenie eFaktúry — či už odišla a v akom je stave u odberateľa.
+  const dorucenieQuery = useQuery({
+    queryKey: ["efaktura-dorucenie", (efakturaDoc as any)?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("efaktura_deliveries")
+        .select("status, sent_at, delivered_at")
+        .eq("document_id", (efakturaDoc as any).id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!(efakturaDoc as any)?.id,
+  });
+  const dorucenie = dorucenieQuery.data ?? null;
+  const efakturaOdoslana = !!dorucenie && !["failed", "error", "rejected"].includes(String(dorucenie.status));
 
   async function handleGenerateXml() {
     if (!inv?.company_id) return;
@@ -809,6 +827,44 @@ function InvoiceDetail() {
             >
               <Mail className="h-4 w-4" /> Odoslať emailom
             </button>
+            {/*
+              eFaktúra hneď vedľa e-mailu — v ponuke „Ďalšie akcie“ ju ľudia
+              nehľadali. Po odoslaní namiesto tlačidla ukáže stav; opakované
+              odoslanie ostáva v ponuke.
+            */}
+            {inv.status !== "draft" &&
+              inv.status !== "cancelled" &&
+              (efakturaOdoslana ? (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600/10 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400"
+                  title={
+                    dorucenie?.delivered_at
+                      ? `Doručená ${new Date(dorucenie.delivered_at).toLocaleString("sk-SK")}`
+                      : dorucenie?.sent_at
+                        ? `Odoslaná ${new Date(dorucenie.sent_at).toLocaleString("sk-SK")}`
+                        : undefined
+                  }
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {dorucenie?.delivered_at || dorucenie?.status === "delivered"
+                    ? "eFaktúra doručená"
+                    : "eFaktúra odoslaná"}
+                  {efakturaTest ? " (test)" : ""}
+                </span>
+              ) : (
+                <button
+                  onClick={handleSendEfaktura}
+                  disabled={efakturaBusy}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4" />
+                  {efakturaBusy
+                    ? "Odosielam…"
+                    : efakturaTest
+                      ? "Odoslať eFaktúru (test)"
+                      : "Odoslať eFaktúru"}
+                </button>
+              ))}
             <button
               onClick={inv.pdf_url ? handleDownload : handleGenerate}
               disabled={pdfBusy}
