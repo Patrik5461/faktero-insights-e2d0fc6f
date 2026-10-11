@@ -442,6 +442,7 @@ export function CzVykazyDph() {
                 onXml={() =>
                   hlavicka &&
                   overHlavicku() &&
+                  bezChybajucehoDic(kh as KontrolniHlaseni) &&
                   (!(kh.a1.length || kh.b1.length) || h.kodPredmetu
                     ? stiahni(
                         `dphkh1-${rok}-${String(m).padStart(2, "0")}.xml`,
@@ -462,6 +463,19 @@ export function CzVykazyDph() {
       </PageBody>
     </>
   );
+}
+
+/**
+ * Riadky A.1 a B.1 bez DIČ by podateľňa odmietla (DIČ je povinné) — súbor sa
+ * nestiahne, kým sa v dokladoch nedoplní, a povie sa, v ktorých.
+ */
+function bezChybajucehoDic(kh: KontrolniHlaseni): boolean {
+  const bez = [...kh.a1, ...kh.b1].filter((r) => !r.dic).map((r) => r.doklad);
+  if (!bez.length) return true;
+  toast.error(
+    `Doplňte DIČ ${bez.length === 1 ? "u dokladu" : "u dokladů"} ${bez.slice(0, 5).join(", ")} — v přenesení daňové povinnosti je povinné.`,
+  );
+  return false;
 }
 
 function KontrolniHlaseniKarta({
