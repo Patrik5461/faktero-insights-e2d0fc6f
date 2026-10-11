@@ -9,6 +9,7 @@
 
 import {
   datumCz,
+  type SouhrnneHlaseni,
   kontrolniRadkyC,
   type KontrolniHlaseni,
   type PriznaniCz,
@@ -18,6 +19,7 @@ import type { Obdobie } from "./dph-vykazy";
 
 export const VERZIA_DP3 = "03.01.04";
 export const VERZIA_KH1 = "03.01.15";
+export const VERZIA_SHV = "02.01.05";
 
 /** Údaje firmy a podania, ktoré z dokladov nevyplývajú. */
 export type HlavickaCz = {
@@ -76,7 +78,8 @@ export function rozdelUlicu(v?: string | null): {
   return { ulice: m[1].slice(0, 38), c_pop: m[2], c_orient: m[3] };
 }
 
-function vetaP(h: HlavickaCz): string {
+/** `kontakt: false` — súhrnné hlásenie e-mail ani telefón v hlavičke nepozná. */
+function vetaP(h: HlavickaCz, kontakt = true): string {
   const u = rozdelUlicu(h.ulica);
   return `<VetaP${atributy({
     c_ufo: h.cUfo,
@@ -92,8 +95,8 @@ function vetaP(h: HlavickaCz): string {
       .replace(/\s/g, "")
       .slice(0, 10),
     stat: "ČESKÁ REPUBLIKA",
-    email: h.email,
-    c_telef: String(h.telefon ?? "").slice(0, 14),
+    email: kontakt ? h.email : undefined,
+    c_telef: kontakt ? String(h.telefon ?? "").slice(0, 14) : undefined,
     opr_jmeno: h.oprJmeno,
     opr_prijmeni: h.oprPrijmeni,
     opr_postaveni: h.oprPostaveni,
@@ -317,4 +320,44 @@ export function kh1NaXml(
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/**
+ * Súhrnné hlásenie VIES (DPHSHV). Riadok má číslo najviac dvojmiestne, preto
+ * sa po 99 riadkoch pokračuje na ďalšej strane (`por_c_stran`).
+ */
+export function shvNaXml(
+  sh: SouhrnneHlaseni,
+  h: HlavickaCz,
+  obdobie: Obdobie,
+  opts: { forma?: "R" | "N"; dnes?: Date } = {},
+): string {
+  const riadky = sh.riadky.map(
+    (r, i) =>
+      `<VetaR${atributy({
+        por_c_stran: Math.floor(i / 99) + 1,
+        c_rad: (i % 99) + 1,
+        k_stat: r.stat,
+        c_vat: r.vatId,
+        k_pln_eu: r.kod,
+        pln_pocet: r.pocet,
+        pln_hodnota: String(Math.round(r.hodnota)),
+      })}/>`,
+  );
+  return [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<Pisemnost nazevSW="Faktero" verzeSW="1.0">`,
+    `<DPHSHV verzePis="${VERZIA_SHV}">`,
+    `<VetaD${atributy({
+      dokument: "SHV",
+      k_uladis: "DPH",
+      shvies_forma: opts.forma ?? "R",
+      ...obdobieAtr(obdobie),
+      d_poddp: datumCz((opts.dnes ?? new Date()).toISOString()),
+    })}/>`,
+    vetaP(h, false),
+    ...riadky,
+    `</DPHSHV>`,
+    `</Pisemnost>`,
+  ].join("\n");
 }

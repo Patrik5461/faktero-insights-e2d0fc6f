@@ -1,5 +1,5 @@
 /**
- * Nočné sťahovanie pre banky mimo Tatra banky — Wise, Revolut a Wallester.
+ * Nočné sťahovanie pre banky mimo Tatra banky — Wise, Revolut, Wallester a Fio.
  *
  * Prečo vlastný súbor a nie vetva v `bank-sync.server`: každá z týchto bánk si
  * prihlásenie stavia z tajomstiev, ktoré treba rozšifrovať
@@ -23,7 +23,7 @@ type Vysledok = {
 };
 
 /** Banky, ktoré vie nočný beh stiahnuť sám. Tatra banka má vlastný beh. */
-export const OSTATNE_BANKY = ["wise", "revolut", "wallester"];
+export const OSTATNE_BANKY = ["wise", "revolut", "wallester", "fio"];
 
 /**
  * Sťahovanie jedného pripojenia. Prihlásenie si postaví ten modul, ktorý banke
@@ -43,6 +43,11 @@ async function syncJedno(conn: any): Promise<Vysledok> {
       if (conn.provider === "wise") {
         const { synchronizujWiseZoServera } = await import("./wise.server");
         return synchronizujWiseZoServera(conn.company_id);
+      }
+      if (conn.provider === "fio") {
+        // Fio má token na účet, nie na firmu — sťahuje sa po pripojeniach.
+        const { synchronizujFioZoServera } = await import("./fio.server");
+        return synchronizujFioZoServera(conn.id);
       }
       if (conn.provider === "revolut") {
         const { synchronizujRevolutZoServera } = await import("./revolut.server");

@@ -33,6 +33,8 @@ vi.mock("@/integrations/supabase/client.server", () => ({
 const wise = vi.fn();
 const revolut = vi.fn();
 const wallester = vi.fn();
+const fio = vi.fn();
+vi.mock("./fio.server", () => ({ synchronizujFioZoServera: (c: string) => fio(c) }));
 vi.mock("./wise.server", () => ({ synchronizujWiseZoServera: (c: string) => wise(c) }));
 vi.mock("./revolut.server", () => ({ synchronizujRevolutZoServera: (c: string) => revolut(c) }));
 vi.mock("./wallester.server", () => ({
@@ -45,7 +47,7 @@ function pripojenie(provider: string, id: string) {
 
 beforeEach(() => {
   pripojenia.length = 0;
-  for (const f of [wise, revolut, wallester]) {
+  for (const f of [wise, revolut, wallester, fio]) {
     f.mockReset();
     f.mockResolvedValue({ accounts: 1, inserted: 2, problemy: [] });
   }
@@ -95,6 +97,18 @@ describe("denný beh a ostatné banky", () => {
 
     expect(r.failed).toBe(0);
     expect(r.results[0].problemy).toEqual(["USD: podpis odmietnutý"]);
+  });
+
+  it("Fio sťahuje po pripojeniach (token patrí účtu, nie firme)", async () => {
+    pripojenia.push(pripojenie("fio", "f1"), pripojenie("fio", "f2"));
+    const { runDailySyncOstatnych } = await import("./bank-sync-ostatne.server");
+
+    const r = await runDailySyncOstatnych();
+
+    expect(fio).toHaveBeenCalledWith("f1");
+    expect(fio).toHaveBeenCalledWith("f2");
+    expect(r.connections).toBe(2);
+    expect(wallester).not.toHaveBeenCalled();
   });
 
   it("banku, ktorú beh nevie stiahnuť, si ani nevypýta", async () => {

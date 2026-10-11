@@ -79,6 +79,28 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "fio",
+    title: "Fio banka",
+    body: (
+      <>
+        <p>
+          Fio sa pripája <strong>tokenom</strong> z internetbankingu:{" "}
+          <em>Nastavení → API → Přidat nový token</em>, vyberte účet a oprávnenie{" "}
+          <em>Pouze sledovat účet</em>. Token vložte v Bankové účty → Pripojiť banku.
+        </p>
+        <p>
+          Jeden token patrí jednému účtu — ak máte korunový aj eurový účet, pridajte dva tokeny. Pri
+          pripojení sa hneď stiahnu pohyby za posledných 90 dní (staršie Fio bez ďalšej autorizácie
+          nevydá), potom sa sťahujú každú noc.
+        </p>
+        <p>
+          Fio pustí na jeden token len jedno stiahnutie za 30 sekúnd; keď tlačidlo stlačíte dvakrát
+          rýchlo po sebe, Faktero povie, nech chvíľu počkáte.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "wallester",
     title: "Wallester",
     body: (

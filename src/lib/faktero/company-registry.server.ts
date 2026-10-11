@@ -122,7 +122,68 @@ export async function clearCompanyCache(icoInput: string): Promise<void> {
   }
 }
 
+/**
+ * Česká firma: FinStat CZ nedáva DIČ ani platiteľstvo DPH a krajinu vracia
+ * slovom. ARES (verejný register, bez kľúča) to vie — údaje sa ním doplnia,
+ * a keď FinStat firmu nepozná, zostaví sa celá z ARES. Slovenské firmy idú
+ * ďalej len cez FinStat.
+ */
 export async function lookupCompany(icoInput: string): Promise<RegistryLookupResult> {
+  const r = await lookupCompanyFinstat(icoInput);
+  const cz = r.status === "ok" ? /^(CZ|ČESK|CESK|CZECH)/i.test(String(r.data.country ?? "")) : true;
+  if (!cz) return r;
+  const ico = (icoInput ?? "").replace(/\s+/g, "").trim();
+  if (!/^\d{8}$/.test(ico)) return r;
+  const { firmaZAres } = await import("./ares.server");
+  const ares = await firmaZAres(ico);
+  if (!ares) return r;
+  const dic = ares.dic
+    ? ares.dic.toUpperCase().startsWith("CZ")
+      ? ares.dic.toUpperCase()
+      : `CZ${ares.dic}`
+    : null;
+  const doplnene = {
+    dic,
+    ic_dph: ares.platitelDph && dic ? dic : null,
+    vatStatus: (ares.platitelDph ? "Áno" : "Nie") as NormalizedCompany["vatStatus"],
+    country: "CZ",
+  };
+  if (r.status === "ok") {
+    return {
+      ...r,
+      data: {
+        ...r.data,
+        ...doplnene,
+        street: r.data.street || ares.ulica || null,
+        city: r.data.city || ares.mesto || null,
+        zip: r.data.zip || ares.psc || null,
+      },
+    };
+  }
+  if (!ares.nazov) return r;
+  return {
+    status: "ok",
+    provider: "finstat",
+    cached: false,
+    raw: { zdroj: "ares" },
+    data: {
+      ico,
+      name: ares.nazov,
+      ...doplnene,
+      street: ares.ulica ?? null,
+      city: ares.mesto ?? null,
+      zip: ares.psc ?? null,
+      legalForm: null,
+      registrationNumber: null,
+      registrationDate: null,
+      financials: null as any,
+      riskIndicators: null,
+      statutoryRepresentatives: [],
+    },
+  };
+}
+
+async function lookupCompanyFinstat(icoInput: string): Promise<RegistryLookupResult> {
   const ico = (icoInput ?? "").replace(/\s+/g, "").trim();
   if (!/^\d{6,8}$/.test(ico)) {
     return {

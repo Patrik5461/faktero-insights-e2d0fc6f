@@ -22,6 +22,10 @@ export type AresFirma = {
   /** DIČ z registra — a teda aj IČ DPH, keď je firma platiteľom. */
   dic?: string;
   platitelDph?: boolean;
+  /** Rozpísaná adresa sídla — na doplnenie formulára firmy. */
+  ulica?: string;
+  mesto?: string;
+  psc?: string;
 };
 
 const pamat = new Map<string, { do: number; firma: AresFirma | null }>();
@@ -52,6 +56,7 @@ export async function firmaZAres(ico: string): Promise<AresFirma | null> {
       adresa: typeof d?.sidlo?.textovaAdresa === "string" ? d.sidlo.textovaAdresa : undefined,
       dic: typeof d?.dic === "string" ? d.dic : undefined,
       platitelDph: d?.seznamRegistraci?.stavZdrojeDph === "AKTIVNI",
+      ...rozpisAdresy(d?.sidlo),
     };
     pamat.set(kluc, { do: Date.now() + PLATNOST_MS, firma });
     return firma;
@@ -59,4 +64,24 @@ export async function firmaZAres(ico: string): Promise<AresFirma | null> {
     console.warn("[ares] firmu sa nepodarilo dohľadať:", e instanceof Error ? e.message : e);
     return null;
   }
+}
+
+/** „Jeremiášova 1422/7b“, „Praha 5“, „155 00“ zo štruktúrovaného sídla ARES. */
+function rozpisAdresy(sidlo: any): Pick<AresFirma, "ulica" | "mesto" | "psc"> {
+  if (!sidlo || typeof sidlo !== "object") return {};
+  const cislo = [
+    sidlo.cisloDomovni,
+    sidlo.cisloOrientacni != null
+      ? `${sidlo.cisloOrientacni}${sidlo.cisloOrientacniPismeno ?? ""}`
+      : null,
+  ]
+    .filter((x) => x != null && x !== "")
+    .join("/");
+  const ulice = sidlo.nazevUlice || sidlo.nazevCastiObce || sidlo.nazevObce;
+  const psc = sidlo.psc != null ? String(sidlo.psc).padStart(5, "0") : "";
+  return {
+    ulica: ulice ? [ulice, cislo].filter(Boolean).join(" ") : undefined,
+    mesto: sidlo.nazevMestskehoObvodu || sidlo.nazevObce || undefined,
+    psc: psc ? `${psc.slice(0, 3)} ${psc.slice(3)}` : undefined,
+  };
 }

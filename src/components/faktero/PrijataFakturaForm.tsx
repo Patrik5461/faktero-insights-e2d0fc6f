@@ -13,6 +13,8 @@ import { textDuplicity } from "@/lib/faktero/prijate-duplicity";
 import { ArrowLeft, Upload, Loader2 } from "lucide-react";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { JobPicker } from "@/components/faktero/JobPicker";
+import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
+import { dicPreRegister, ucetNaIban } from "@/lib/faktero/cz-registr-dph";
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -478,6 +480,7 @@ export function PrijataFakturaForm({
                   className="input font-mono"
                 />
               </Field>
+              <OverenieRegistraCz dic={form.supplier_dic} icDph={form.supplier_ic_dph} iban={form.supplier_iban} />
               <Field label="Variabilný symbol">
                 <input
                   value={form.variable_symbol}
@@ -781,5 +784,32 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <div className="mb-1 text-xs font-medium text-muted-foreground">{label}</div>
       {children}
     </label>
+  );
+}
+
+/**
+ * Česká firma: pri zadaní českého DIČ a IBAN-u dodávateľa hneď overí Registr
+ * plátců DPH (nespoľahlivý platca, zverejnený účet). Pýta sa až po chvíli
+ * bez písania a len keď je účet celý (alebo prázdny), nie pri každom znaku.
+ */
+function OverenieRegistraCz({ dic, icDph, iban }: { dic: string; icDph: string; iban: string }) {
+  const [hodnoty, setHodnoty] = useState({ dic, icDph, iban });
+  useEffect(() => {
+    const t = setTimeout(() => setHodnoty({ dic, icDph, iban }), 700);
+    return () => clearTimeout(t);
+  }, [dic, icDph, iban]);
+  const cid = getActiveCompanyId();
+  const ucetOk = !hodnoty.iban.trim() || ucetNaIban(hodnoty.iban) != null;
+  if (!cid || !ucetOk || !(dicPreRegister(hodnoty.icDph) ?? dicPreRegister(hodnoty.dic))) return null;
+  return (
+    <div className="sm:col-span-2">
+      <RegistrPlatcuDph
+        key={`${hodnoty.dic}|${hodnoty.icDph}|${hodnoty.iban}`}
+        companyId={cid}
+        dic={hodnoty.dic}
+        icDph={hodnoty.icDph}
+        iban={hodnoty.iban.replace(/\s+/g, "") || null}
+      />
+    </div>
   );
 }

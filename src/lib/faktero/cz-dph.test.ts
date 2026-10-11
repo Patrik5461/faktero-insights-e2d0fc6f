@@ -6,8 +6,8 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { XmlDocument, XsdValidator } from "libxml2-wasm";
-import { kontrolniHlaseni, priznaniCz, dicCz, kontrolniRadkyC } from "./cz-dph";
-import { dp3NaXml, kh1NaXml, rozdelUlicu, type HlavickaCz } from "./cz-dph-xml";
+import { kontrolniHlaseni, priznaniCz, dicCz, kontrolniRadkyC, souhrnneHlaseni } from "./cz-dph";
+import { dp3NaXml, kh1NaXml, rozdelUlicu, shvNaXml, type HlavickaCz } from "./cz-dph-xml";
 import type { Vstup } from "./dph-vykazy";
 
 function overSchemou(xml: string, subor: string): string | null {
@@ -226,5 +226,122 @@ describe("pomocné", () => {
       c_orient: "7b",
     });
     expect(rozdelUlicu("Náměstí")).toEqual({ ulice: "Náměstí" });
+  });
+});
+
+describe("souhrnné hlášení", () => {
+  const vstupSh: Vstup = {
+    obdobie: { rok: 2026, mesiac: 9 },
+    vystavene: [
+      {
+        cislo: "F1",
+        typ: "regular",
+        datumDodania: "2026-09-02",
+        odberatelIcDph: "DE123456789",
+        prenosDane: true,
+        prenosTyp: "eu_b2b",
+        euPlnenie: "tovar",
+        riadky: [{ sadzba: 0, zaklad: 10000.4, dan: 0 }],
+      },
+      {
+        cislo: "F2",
+        typ: "regular",
+        datumDodania: "2026-09-10",
+        odberatelIcDph: "DE123456789",
+        prenosDane: true,
+        prenosTyp: "eu_b2b",
+        euPlnenie: "tovar",
+        riadky: [{ sadzba: 0, zaklad: 5000, dan: 0 }],
+      },
+      // Dobropis k F1 — hodnota sa zníži, počet plnení nie.
+      {
+        cislo: "D1",
+        typ: "credit_note",
+        datumDodania: "2026-09-15",
+        odberatelIcDph: "DE123456789",
+        prenosDane: true,
+        prenosTyp: "eu_b2b",
+        euPlnenie: "tovar",
+        riadky: [{ sadzba: 0, zaklad: -1000, dan: 0 }],
+      },
+      {
+        cislo: "F3",
+        typ: "regular",
+        datumDodania: "2026-09-12",
+        odberatelIcDph: "SK2122358579",
+        prenosDane: true,
+        prenosTyp: "eu_b2b",
+        euPlnenie: "sluzba",
+        riadky: [{ sadzba: 0, zaklad: 8000, dan: 0 }],
+      },
+      {
+        cislo: "F4",
+        typ: "regular",
+        datumDodania: "2026-09-13",
+        odberatelIcDph: "EL123456789",
+        prenosDane: true,
+        prenosTyp: "eu_b2b",
+        euPlnenie: "trojstranny",
+        riadky: [{ sadzba: 0, zaklad: 3000, dan: 0 }],
+      },
+      // Bez IČ DPH → výtka.
+      {
+        cislo: "F5",
+        typ: "regular",
+        datumDodania: "2026-09-14",
+        odberatelIcDph: "",
+        prenosDane: true,
+        prenosTyp: "eu_b2b",
+        euPlnenie: "tovar",
+        riadky: [{ sadzba: 0, zaklad: 100, dan: 0 }],
+      },
+      // Tuzemská faktúra do SH nepatrí.
+      {
+        cislo: "F6",
+        typ: "regular",
+        datumDodania: "2026-09-14",
+        odberatelIcDph: "CZ27082440",
+        riadky: [{ sadzba: 21, zaklad: 100, dan: 21 }],
+      },
+    ],
+    prijate: [],
+    doklady: [],
+  };
+  const sh = souhrnneHlaseni(vstupSh);
+
+  it("sčíta podľa odberateľa a kódu plnenia, dobropis odpočíta", () => {
+    expect(sh.riadky).toEqual([
+      { stat: "DE", vatId: "123456789", kod: 0, hodnota: 14001, pocet: 2 },
+      { stat: "EL", vatId: "123456789", kod: 2, hodnota: 3000, pocet: 1 },
+      { stat: "SK", vatId: "2122358579", kod: 3, hodnota: 8000, pocet: 1 },
+    ]);
+    expect(sh.vytky.map((v) => v.doklad)).toEqual(["F5"]);
+  });
+
+  it("XML zodpovedá schéme DPHSHV", () => {
+    const xml = shvNaXml(sh, hlavicka, { rok: 2026, mesiac: 9 }, { dnes: new Date("2026-10-11") });
+    expect(overSchemou(xml, "dphshv_epo2.xsd")).toBeNull();
+    expect(xml).toContain('dokument="SHV"');
+    expect(xml).toContain(
+      'k_stat="DE" c_vat="123456789" k_pln_eu="0" pln_pocet="2" pln_hodnota="14001"',
+    );
+    expect(xml).not.toContain("email=");
+  });
+
+  it("štvrťročné a nad 99 riadkov pokračuje na ďalšej strane", () => {
+    const vela = {
+      riadky: Array.from({ length: 120 }, (_, i) => ({
+        stat: "DE",
+        vatId: String(100000000 + i),
+        kod: 3 as const,
+        hodnota: 10,
+        pocet: 1,
+      })),
+      vytky: [],
+    };
+    const xml = shvNaXml(vela, hlavicka, { rok: 2026, stvrtrok: 3 });
+    expect(overSchemou(xml, "dphshv_epo2.xsd")).toBeNull();
+    expect(xml).toContain('ctvrt="3"');
+    expect(xml).toContain('por_c_stran="2" c_rad="21"');
   });
 });

@@ -395,6 +395,27 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "registr-platcu-dph",
+    title: "Česká firma: spoľahlivý platca a zverejnený účet",
+    body: (
+      <>
+        <p>
+          Pri prijatej faktúre od dodávateľa s českým DIČ si Faktero samo overí dodávateľa v{" "}
+          <strong>Registri plátců DPH</strong> Finančnej správy ČR: či nie je{" "}
+          <strong>nespoľahlivý platca</strong> a či je IBAN z faktúry medzi jeho{" "}
+          <strong>zverejnenými účtami</strong>. Výsledok je na detaile faktúry aj vo formulári hneď
+          po zadaní DIČ a IBAN-u, s dátumom overenia; tlačidlom <em>Ověřit znovu</em> sa dá overiť
+          pred úhradou.
+        </p>
+        <p>
+          Prečo na tom záleží: odberateľ ručí za DPH dodávateľa (§ 109 zákona o DPH), keď zaplatí
+          nespoľahlivému platcovi, alebo pri sume nad 540 000 Kč na účet, ktorý platca nezverejnil.
+          Overenie sa týka len firiem s krajinou Česko.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

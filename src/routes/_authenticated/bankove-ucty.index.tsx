@@ -14,6 +14,7 @@ import {
   synchronizujWiseUcty,
   synchronizujWisePohyby,
 } from "@/lib/faktero/wise.functions";
+import { synchronizujFio, odpojFio } from "@/lib/faktero/fio.functions";
 import {
   odpojWallester,
   synchronizujWallesterUcty,
@@ -54,6 +55,8 @@ function BankAccountsPage() {
   const wiseUcty = useServerFn(synchronizujWiseUcty);
   const wisePohyby = useServerFn(synchronizujWisePohyby);
   const wiseOdpoj = useServerFn(odpojWise);
+  const fioSync = useServerFn(synchronizujFio);
+  const fioOdpoj = useServerFn(odpojFio);
   const walUcty = useServerFn(synchronizujWallesterUcty);
   const walPohyby = useServerFn(synchronizujWallesterPohyby);
   const walOdpoj = useServerFn(odpojWallester);
@@ -179,6 +182,28 @@ function BankAccountsPage() {
     }
   }
 
+  /** Fio: jedno volanie dá zostatok aj pohyby jedného účtu (token = účet). */
+  async function onFio(connId: string, co: "sync" | "odpojit") {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    if (co === "odpojit" && !(await potvrdOdpojenie("Fio"))) return;
+    setBusy(connId);
+    try {
+      if (co === "sync") {
+        const r: any = await fioSync({ data: { company_id: cid, connection_id: connId } });
+        toast.success(`Nových pohybov: ${r.vlozenych}`);
+      } else {
+        await fioOdpoj({ data: { company_id: cid, connection_id: connId } });
+        toast.success("Fio účet odpojený.");
+      }
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa to.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function onSync(connId: string) {
     const cid = getActiveCompanyId();
     if (!cid) return;
@@ -231,7 +256,7 @@ function BankAccountsPage() {
     <>
       <PageHeader
         title="Bankové účty"
-        description="Tatra banka, Wise, Wallester a Revolut. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie."
+        description="Tatra banka, Fio banka, Wise, Wallester a Revolut. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie."
         action={
           <div className="flex items-center gap-2">
             {/* Banky bez priameho pripojenia (Akcenta a spol.) sa dostanú dnu
@@ -330,7 +355,25 @@ function BankAccountsPage() {
                   hoci s Wise nemá nič spoločné. Wise nemá ani súhlas, ktorý by
                   sa dal obnovovať.
                 */}
-                {c.provider === "revolut" ? (
+                {c.provider === "fio" ? (
+                  <>
+                    <button
+                      onClick={() => onFio(c.id, "sync")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
+                      Stiahnuť pohyby
+                    </button>
+                    <button
+                      onClick={() => onFio(c.id, "odpojit")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Odpojiť
+                    </button>
+                  </>
+                ) : c.provider === "revolut" ? (
                   <>
                     <button
                       onClick={() => onRevolut(c.id, "ucty")}

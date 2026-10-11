@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
+import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
 import { ZauctovaniePanel } from "@/components/faktero/ZauctovaniePanel";
 import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
@@ -462,6 +463,12 @@ function PurchaseInvoiceDetail() {
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
             {samo && <SamofakturaPanel row={row} onZmena={load} />}
+            <RegistrPlatcuDph
+              companyId={row.company_id}
+              dic={row.supplier_dic}
+              icDph={row.supplier_ic_dph}
+              iban={row.supplier_iban}
+            />
             <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">

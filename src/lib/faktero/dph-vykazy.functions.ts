@@ -76,7 +76,7 @@ export const zostavVykazyFn = createServerFn({ method: "POST" })
 
 const Ulozenie = z.object({
   company_id: z.string().uuid(),
-  druh: z.enum(["priznanie", "kv", "sv", "cz_dp3", "cz_kh"]),
+  druh: z.enum(["priznanie", "kv", "sv", "cz_dp3", "cz_kh", "cz_sh"]),
   typ: z.enum(["R", "O", "D", "B", "E", "N"]).default("R"),
   rok: z.number().int(),
   mesiac: z.number().int().min(1).max(12).nullable().optional(),
@@ -146,7 +146,7 @@ export const zostavCzVykazyFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { nacitajVstup } = await import("./dph-vykazy.server");
-    const { priznaniCz, kontrolniHlaseni } = await import("./cz-dph");
+    const { priznaniCz, kontrolniHlaseni, souhrnneHlaseni } = await import("./cz-dph");
 
     const { data: firma } = await context.supabase
       .from("companies")
@@ -160,6 +160,8 @@ export const zostavCzVykazyFn = createServerFn({ method: "POST" })
     const obdobie = { rok: data.rok, mesiac: data.mesiac ?? null, stvrtrok: data.stvrtrok ?? null };
     const { vstup, vytky } = await nacitajVstup(context.supabase as any, data.company_id, obdobie);
     const dp = priznaniCz(vstup);
+    // Súhrnné hlásenie za to isté obdobie (mesiac, pri samotných službách aj štvrťrok).
+    const sh = souhrnneHlaseni(vstup);
 
     const { dicCz } = await import("./cz-dph");
     const vlastneDic = dicCz(firma.ic_dph, firma.dic);
@@ -182,7 +184,7 @@ export const zostavCzVykazyFn = createServerFn({ method: "POST" })
       .from("vat_reports")
       .select("data")
       .eq("company_id", data.company_id)
-      .in("druh", ["cz_dp3", "cz_kh"])
+      .in("druh", ["cz_dp3", "cz_kh", "cz_sh"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -193,7 +195,8 @@ export const zostavCzVykazyFn = createServerFn({ method: "POST" })
       firma,
       priznani: dp.riadky,
       hlasenia,
-      vytky: [...vytky, ...dp.vytky, ...hlasenia.flatMap((x) => x.kh.vytky)],
+      souhrnne: sh.riadky,
+      vytky: [...vytky, ...dp.vytky, ...sh.vytky, ...hlasenia.flatMap((x) => x.kh.vytky)],
       pocty: {
         vystavene: vstup.vystavene.length,
         prijate: vstup.prijate.length,

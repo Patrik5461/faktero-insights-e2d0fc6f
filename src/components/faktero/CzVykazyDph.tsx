@@ -5,7 +5,13 @@ import { AlertTriangle, CheckCircle2, Download, Loader2 } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { ulozVykazFn, zostavCzVykazyFn } from "@/lib/faktero/dph-vykazy.functions";
-import { dp3NaXml, kh1NaXml, type FormaCz, type HlavickaCz } from "@/lib/faktero/cz-dph-xml";
+import {
+  dp3NaXml,
+  kh1NaXml,
+  shvNaXml,
+  type FormaCz,
+  type HlavickaCz,
+} from "@/lib/faktero/cz-dph-xml";
 import { KODY_PREDMETU_PLNENI, kontrolniRadkyC, type KontrolniHlaseni } from "@/lib/faktero/cz-dph";
 
 /*
@@ -92,6 +98,7 @@ export function CzVykazyDph() {
   const [stvrtrok, setStvrtrok] = useState(Math.floor(minuly.getMonth() / 3) + 1);
   const [formaDp, setFormaDp] = useState<Exclude<FormaCz, "N">>("B");
   const [formaKh, setFormaKh] = useState<Exclude<FormaCz, "D">>("B");
+  const [formaSh, setFormaSh] = useState<"R" | "N">("R");
   const [h, setH] = useState({
     cUfo: "",
     cPracufo: "",
@@ -178,7 +185,7 @@ export function CzVykazyDph() {
   }
 
   async function oznacPodane(
-    druh: "cz_dp3" | "cz_kh",
+    druh: "cz_dp3" | "cz_kh" | "cz_sh",
     forma: string,
     obsah: Record<string, unknown>,
     mesiacKh?: number,
@@ -429,6 +436,99 @@ export function CzVykazyDph() {
                   </tbody>
                 </table>
               </div>
+            </section>
+
+            {/* Souhrnné hlášení VIES — dodávky do EU */}
+            <section className="mb-6 rounded-xl border border-border bg-card">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+                <div>
+                  <div className="font-medium">Souhrnné hlášení</div>
+                  <div className="text-xs text-muted-foreground">
+                    DPHSHV · dodání zboží a služeb do EU · v celých korunách
+                  </div>
+                </div>
+                {data.souhrnne.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={formaSh}
+                      onChange={(e) => setFormaSh(e.target.value as "R" | "N")}
+                      className="input w-auto"
+                    >
+                      <option value="R">Řádné</option>
+                      <option value="N">Následné</option>
+                    </select>
+                    <button
+                      onClick={() =>
+                        hlavicka &&
+                        overHlavicku() &&
+                        stiahni(
+                          `dphshv-${oznacenie}.xml`,
+                          shvNaXml({ riadky: data.souhrnne, vytky: [] }, hlavicka, data.obdobie, {
+                            forma: formaSh,
+                          }),
+                        )
+                      }
+                      className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90"
+                    >
+                      <Download className="h-4 w-4" /> XML
+                    </button>
+                    <button
+                      onClick={() => oznacPodane("cz_sh", formaSh, { riadky: data.souhrnne })}
+                      className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    >
+                      <CheckCircle2 className="h-4 w-4" /> Podané
+                    </button>
+                  </div>
+                )}
+              </div>
+              {data.souhrnne.length === 0 ? (
+                <p className="px-4 py-3 text-sm text-muted-foreground">
+                  V období nejsou žádné dodávky do EU — souhrnné hlášení se nepodává.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                        <th className="px-4 py-2">Odběratel (VAT ID)</th>
+                        <th className="px-4 py-2">Kód plnění</th>
+                        <th className="px-4 py-2 text-right">Počet</th>
+                        <th className="px-4 py-2 text-right">Hodnota</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.souhrnne.map((r) => (
+                        <tr
+                          key={`${r.stat}${r.vatId}${r.kod}`}
+                          className="border-b border-border last:border-0"
+                        >
+                          <td className="px-4 py-2 font-mono">
+                            {r.stat}
+                            {r.vatId}
+                          </td>
+                          <td className="px-4 py-2">
+                            {r.kod === 0
+                              ? "0 – dodání zboží"
+                              : r.kod === 2
+                                ? "2 – třístranný obchod"
+                                : "3 – služba"}
+                          </td>
+                          <td className="px-4 py-2 text-right tabular-nums">{r.pocet}</td>
+                          <td className="px-4 py-2 text-right tabular-nums">{kc(r.hodnota)} Kč</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {data.souhrnne.length > 0 &&
+                rezim === "stvrtrok" &&
+                data.souhrnne.some((r) => r.kod !== 3) && (
+                  <p className="border-t border-border px-4 py-2 text-xs text-amber-700 dark:text-amber-400">
+                    Při dodání zboží se souhrnné hlášení podává za každý měsíc — přepněte období na
+                    měsíc.
+                  </p>
+                )}
             </section>
 
             {/* Kontrolní hlášení — po měsících */}

@@ -452,4 +452,70 @@ export function kontrolniRadkyC(kh: KontrolniHlaseni) {
   };
 }
 
+/* ─── Souhrnné hlášení (DPHSHV) ─────────────────────────────────────────── */
+
+/**
+ * Kód plnenia v súhrnnom hlásení: 0 dodanie tovaru do EÚ (§ 13 ods. 1, 2),
+ * 2 trojstranný obchod (len prostredná osoba, § 17), 3 služba s miestom
+ * plnenia v inom štáte (§ 9 ods. 1). Kód 1 (premiestnenie majetku) z faktúr
+ * nevzniká.
+ */
+export type KodPlneniEu = 0 | 2 | 3;
+
+export type RiadokSh = {
+  /** Kód štátu podľa SH (Grécko = EL). */
+  stat: string;
+  /** DIČ pořizovatele bez kódu štátu. */
+  vatId: string;
+  kod: KodPlneniEu;
+  /** Celková hodnota v celých korunách (dobropisy odpočítané, zaokrúhlené nahor). */
+  hodnota: number;
+  pocet: number;
+};
+
+export type SouhrnneHlaseni = { riadky: RiadokSh[]; vytky: Vytka[] };
+
+/** Súhrnné hlásenie VIES — dodávky tovaru a služieb do EÚ podľa odberateľa a kódu plnenia. */
+export function souhrnneHlaseni(vstup: Vstup): SouhrnneHlaseni {
+  const vytky: Vytka[] = [];
+  const mapa = new Map<
+    string,
+    { stat: string; vatId: string; kod: KodPlneniEu; suma: number; pocet: number }
+  >();
+  for (const f of vstup.vystavene) {
+    if (f.typ === "proforma" || !f.prenosDane || f.prenosTyp !== "eu_b2b") continue;
+    const r = rozdelIcDph(f.odberatelIcDph);
+    if (!r || !jeEuIcDph(f.odberatelIcDph) || r.kod === "CZ") {
+      vytky.push({
+        doklad: f.cislo,
+        text: "Dodanie do EÚ bez platného IČ DPH odberateľa z iného štátu EÚ — do súhrnného hlásenia ho treba doplniť.",
+      });
+      continue;
+    }
+    const kod: KodPlneniEu = f.euPlnenie === "sluzba" ? 3 : f.euPlnenie === "trojstranny" ? 2 : 0;
+    const stat = r.kod === "GR" ? "EL" : r.kod;
+    const kluc = `${stat}|${r.cislo}|${kod}`;
+    const zaklad = f.riadky.reduce((a, x) => a + x.zaklad, 0);
+    const z = mapa.get(kluc) ?? { stat, vatId: r.cislo, kod, suma: 0, pocet: 0 };
+    z.suma += zaklad;
+    // Dobropis plnenie nepridáva, len znižuje hodnotu.
+    if (zaklad > 0) z.pocet += 1;
+    mapa.set(kluc, z);
+  }
+  const riadky: RiadokSh[] = [...mapa.values()]
+    .map((z) => ({
+      stat: z.stat,
+      vatId: z.vatId,
+      kod: z.kod,
+      // Pokyny: hodnota sa zaokrúhľuje na celé koruny nahor.
+      hodnota: Math.ceil(Math.round(z.suma * 100) / 100),
+      pocet: Math.max(z.pocet, 1),
+    }))
+    .filter((r) => r.hodnota !== 0)
+    .sort(
+      (a, b) => a.stat.localeCompare(b.stat) || a.vatId.localeCompare(b.vatId) || a.kod - b.kod,
+    );
+  return { riadky, vytky };
+}
+
 export type { Obdobie };

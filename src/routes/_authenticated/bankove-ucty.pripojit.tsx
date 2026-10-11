@@ -24,6 +24,8 @@ import {
   synchronizujWiseUcty,
   synchronizujWisePohyby,
 } from "@/lib/faktero/wise.functions";
+import { pripojFio, stavFio, synchronizujFio, odpojFio } from "@/lib/faktero/fio.functions";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { toast } from "sonner";
 import {
   Building2,
@@ -41,6 +43,8 @@ export const Route = createFileRoute("/_authenticated/bankove-ucty/pripojit")({
 
 function ConnectPage() {
   const startFn = useServerFn(startBankConnect);
+  // Českej firme je Fio najbližšia banka — ide hneď za Tatra banku.
+  const ceska = useKrajinaDane() === "CZ";
   const [busy, setBusy] = useState(false);
 
   async function connect() {
@@ -71,7 +75,7 @@ function ConnectPage() {
     <>
       <PageHeader
         title="Pripojiť banku"
-        description="Tatra banka, Wise, Wallester a Revolut Business. Všetky iba na čítanie."
+        description="Tatra banka, Fio banka, Wise, Wallester a Revolut Business. Všetky iba na čítanie."
       />
       <PageBody>
         {/* Dva a dva vedľa seba: štyri panely pod sebou pôsobili rozhádzane. */}
@@ -121,9 +125,11 @@ function ConnectPage() {
               na serveri a nikdy nie sú dostupné v prehliadači.
             </p>
           </div>
+          {ceska && <FioPripojenie />}
           <WisePripojenie />
           <WallesterPripojenie />
           <RevolutPripojenie />
+          {!ceska && <FioPripojenie />}
         </div>
       </PageBody>
     </>
@@ -147,6 +153,148 @@ function stiahniKluc(pem: string, nazov = "faktero-wise-public-key.pem") {
   a.remove();
   // Bez uvoľnenia by odkaz na obsah ostal v pamäti až do zatvorenia karty.
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Pripojenie Fio banky.
+ *
+ * Token z internetbankingu, jeden na účet — firma s korunovým aj eurovým
+ * účtom vloží dva. Pri pripojení sa rovno stiahnu pohyby za 89 dní: Fio
+ * pustí ďalšie volanie na ten istý token až o 30 sekúnd.
+ */
+function FioPripojenie() {
+  const pripoj = useServerFn(pripojFio);
+  const stavFn = useServerFn(stavFio);
+  const syncFn = useServerFn(synchronizujFio);
+  const odpojFn = useServerFn(odpojFio);
+  const [token, setToken] = useState("");
+  const [ucty, setUcty] = useState<any[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const cid = getActiveCompanyId();
+
+  async function obnov() {
+    if (!cid) return;
+    try {
+      const r: any = await stavFn({ data: { company_id: cid } });
+      setUcty(r.ucty ?? []);
+    } catch {
+      setUcty([]);
+    }
+  }
+
+  useEffect(() => {
+    obnov();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cid]);
+
+  async function sprav(co: string, akcia: () => Promise<any>, hlaska: (r: any) => string) {
+    if (!cid) return;
+    setBusy(co);
+    try {
+      const r = await akcia();
+      toast.success(hlaska(r));
+      await obnov();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa to.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const platny = /^[A-Za-z0-9]{20,128}$/.test(token.trim());
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="grid h-12 w-12 place-items-center rounded-xl bg-[#0067b1] text-white">
+          <Landmark className="h-6 w-6" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">Fio banka</h2>
+          <p className="text-sm text-muted-foreground">
+            Token z internetbankingu, iba na čítanie. Jeden token = jeden účet.
+          </p>
+        </div>
+      </div>
+
+      {ucty.length > 0 && (
+        <ul className="mt-6 space-y-2">
+          {ucty.map((u) => (
+            <li key={u.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3 text-sm">
+              <span className="min-w-0 flex-1">
+                <span className="font-medium">{u.iban ?? u.cislo}</span>
+                {u.mena ? ` · ${u.mena}` : ""}
+                <span className="block text-xs text-muted-foreground">
+                  {u.last_synced_at
+                    ? `Naposledy ${new Date(u.last_synced_at).toLocaleString("sk-SK")}`
+                    : "Ešte nesynchronizované"}
+                </span>
+              </span>
+              <button
+                disabled={busy !== null}
+                onClick={() =>
+                  sprav(
+                    `sync-${u.id}`,
+                    () => syncFn({ data: { company_id: cid!, connection_id: u.id } }),
+                    (r) => `Nových pohybov: ${r.vlozenych}`,
+                  )
+                }
+                className="inline-flex h-8 items-center rounded-md border border-border px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+              >
+                {busy === `sync-${u.id}` ? "Sťahujem…" : "Stiahnuť pohyby"}
+              </button>
+              <button
+                disabled={busy !== null}
+                onClick={() =>
+                  sprav(
+                    `odpoj-${u.id}`,
+                    () => odpojFn({ data: { company_id: cid!, connection_id: u.id } }),
+                    () => "Fio účet odpojený. Pohyby ostávajú.",
+                  )
+                }
+                className="inline-flex h-8 items-center rounded-md border border-border px-2.5 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              >
+                Odpojiť
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <ol className="mt-6 space-y-1 text-sm text-foreground/80">
+        <li>1. V internetbankingu Fio otvorte Nastavení → API → Přidat nový token.</li>
+        <li>2. Vyberte účet a oprávnenie „Pouze sledovat účet“, token potvrďte.</li>
+        <li>3. Token (64 znakov) vložte sem. Pre ďalší účet pridajte ďalší token.</li>
+      </ol>
+      <input
+        value={token}
+        onChange={(e) => setToken(e.target.value)}
+        placeholder="Token z Fio internetbankingu"
+        autoComplete="off"
+        className="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
+      />
+      <button
+        disabled={busy !== null || !platny}
+        onClick={() =>
+          sprav(
+            "pripojenie",
+            () => pripoj({ data: { company_id: cid!, token: token.trim() } }),
+            (r) => {
+              setToken("");
+              return `Pripojený ${r.iban ?? r.ucet}. Stiahnutých pohybov: ${r.vlozenych}.`;
+            },
+          )
+        }
+        className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+      >
+        {busy === "pripojenie" ? "Overujem token…" : ucty.length ? "Pripojiť ďalší účet" : "Pripojiť Fio"}
+      </button>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Bez ďalšej autorizácie vydá Fio pohyby za posledných 90 dní. Ďalej sa sťahujú každú noc
+        automaticky. Overenie neplatného tokenu môže trvať až pol minúty.
+      </p>
+    </div>
+  );
 }
 
 /**

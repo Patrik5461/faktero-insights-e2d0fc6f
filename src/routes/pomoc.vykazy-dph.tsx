@@ -176,6 +176,12 @@ const sections: HelpSection[] = [
           štvrťročnom priznaní sa zostaví za každý mesiac zvlášť. Oba výstupy sú overené proti
           oficiálnym schémam Finančnej správy ČR.
         </p>
+        <p>
+          Kto dodáva tovar alebo služby platiteľom v iných štátoch EÚ, podáva aj{" "}
+          <strong>souhrnné hlášení</strong> (DPHSHV) — zostaví sa na tej istej stránke podľa
+          odberateľov a kódu plnenia (0 tovar, 2 trojstranný obchod, 3 služba). Pri dodaní tovaru
+          sa podáva za každý mesiac, pri samotných službách stačí štvrťrok.
+        </p>
       </>
     ),
   },
