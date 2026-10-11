@@ -44,7 +44,17 @@ export function mergeCompanyAutofill<T extends AutofillTarget>(
   const icDph = take("ic_dph", d.ic_dph ?? null);
   const krajina = krajinaDane(take("country", kodKrajiny(d.country) || "SK"));
   const uzVybrate = jeSchemaDph((prev as any).vat_scheme);
-  const platitel = uzVybrate ? (prev as any).vat_payer : Boolean(String(icDph ?? "").trim());
+  /*
+    České firmy: ARES povie platiteľstvo priamo (registrácia DPH aktívna) —
+    to platí aj nad skôr predvoleným „neplatiteľom“. Slovenské IČ DPH samo
+    platiteľstvo neznamená (§ 7), tam ostáva voľba človeka.
+  */
+  const zRegistraPlatitel = krajina === "CZ" && d.vatStatus === "Áno";
+  const platitel = zRegistraPlatitel
+    ? true
+    : uzVybrate
+      ? (prev as any).vat_payer
+      : Boolean(String(icDph ?? "").trim());
   // Vybraný režim ostáva, len ak patrí ku krajine z registra — inak by česká
   // firma odišla do databázy so slovenským „neplatiteľom“.
   const schema: SchemaDph = uzVybrate
