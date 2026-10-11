@@ -73,6 +73,30 @@ function fmt(n: number, currency: string | null | undefined = menaPrehladu) {
   return formatujMenu(n, currency || menaPrehladu);
 }
 
+function naDomacuMenu(invoices: any[], domaca: string): any[] {
+  return invoices.map((i) =>
+    (i.currency || domaca) !== domaca && i.total_eur != null
+      ? {
+          ...i,
+          total: Number(i.total_eur),
+          subtotal: i.subtotal_eur != null ? Number(i.subtotal_eur) : i.subtotal,
+          vat_total: i.vat_total_eur != null ? Number(i.vat_total_eur) : i.vat_total,
+        }
+      : i,
+  );
+}
+
+function prijateNaDomacuMenu(rows: any[], domaca: string): any[] {
+  return rows.map((p) =>
+    (p.currency || domaca) !== domaca && p.amount_without_vat_eur != null
+      ? {
+          ...p,
+          amount_total: Number(p.amount_without_vat_eur) + Number(p.vat_amount_eur ?? 0),
+        }
+      : p,
+  );
+}
+
 function fmtCompact(n: number) {
   return new Intl.NumberFormat("sk-SK", { notation: "compact", maximumFractionDigits: 1 }).format(
     n,
@@ -173,7 +197,7 @@ function Dashboard() {
             supabase
               .from("invoices")
               .select(
-                "id, invoice_number, customer_name, customer_id, total, subtotal, vat_total, currency, status, type, issue_date, due_date, paid_at, created_at",
+                "id, invoice_number, customer_name, customer_id, total, subtotal, vat_total, currency, subtotal_eur, vat_total_eur, total_eur, status, type, issue_date, due_date, paid_at, created_at",
               )
               .eq("company_id", companyId)
               .is("deleted_at", null)
@@ -312,7 +336,9 @@ function Dashboard() {
       const { data: vsetky } = await vsetkoAkoData((zac, kon) =>
         supabase
           .from("purchase_invoices")
-          .select("id, amount_total, status, due_date, supplier_name, invoice_number, type, advance_invoice_id")
+          .select(
+            "id, amount_total, currency, amount_without_vat_eur, vat_amount_eur, status, due_date, supplier_name, invoice_number, type, advance_invoice_id",
+          )
           .eq("company_id", cid)
           .is("deleted_at", null)
           .order("id")
@@ -342,24 +368,34 @@ function Dashboard() {
     })();
   }, []);
 
-  const metrics = useMemo(
-    () => computeMetrics(allInvoices, payments, customers),
-    [allInvoices, payments, customers],
+  /*
+    Súčty, grafy a splatnosti v domácej mene firmy. Faktúra v cudzej mene ide
+    do súčtu prepočítaná (sumy `*_eur` nesú domácu menu firmy) — inak by sa
+    1 210 € pripočítalo ku korunám ako 1 210 Kč.
+  */
+  const invDomace = useMemo(() => naDomacuMenu(allInvoices, menaPrehladu), [allInvoices, krajina]);
+  const prijateDomace = useMemo(
+    () => prijateNaDomacuMenu(purchaseInvoices, menaPrehladu),
+    [purchaseInvoices, krajina],
   );
-  const chartData = useMemo(() => buildRevenueChart(allInvoices), [allInvoices]);
-  const statusData = useMemo(() => buildStatusDistribution(allInvoices), [allInvoices]);
-  const topDebtors = useMemo(() => buildTopDebtors(allInvoices), [allInvoices]);
+  const metrics = useMemo(
+    () => computeMetrics(invDomace, payments, customers),
+    [invDomace, payments, customers],
+  );
+  const chartData = useMemo(() => buildRevenueChart(invDomace), [invDomace]);
+  const statusData = useMemo(() => buildStatusDistribution(invDomace), [invDomace]);
+  const topDebtors = useMemo(() => buildTopDebtors(invDomace), [invDomace]);
   const activity = useMemo(
     () => buildActivity(allInvoices, customers, webhookDeliveries, apiLogs),
     [allInvoices, customers, webhookDeliveries, apiLogs],
   );
   const apiStats = useMemo(() => computeApiStats(apiLogs), [apiLogs]);
-  const agingReceivables = useMemo(() => buildAging(allInvoices, "receivable"), [allInvoices]);
-  const agingPayables = useMemo(() => buildAging(purchaseInvoices, "payable"), [purchaseInvoices]);
-  const dso = useMemo(() => computeDSO(allInvoices), [allInvoices]);
+  const agingReceivables = useMemo(() => buildAging(invDomace, "receivable"), [invDomace]);
+  const agingPayables = useMemo(() => buildAging(prijateDomace, "payable"), [prijateDomace]);
+  const dso = useMemo(() => computeDSO(invDomace), [invDomace]);
   const forecast = useMemo(
-    () => buildCashflowForecast(allInvoices, purchaseInvoices),
-    [allInvoices, purchaseInvoices],
+    () => buildCashflowForecast(invDomace, prijateDomace),
+    [invDomace, prijateDomace],
   );
 
   const countdown = useCountdown(new Date("2027-01-01T00:00:00"));
