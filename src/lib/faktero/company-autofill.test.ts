@@ -17,4 +17,12 @@ describe("kodKrajiny", () => {
     );
     expect((r as any).country).toBe("CZ");
   });
+  it("režim DPH sa prispôsobí krajine z registra", () => {
+    const r = mergeCompanyAutofill(
+      { name: "", country: "SK", vat_payer: false, vat_scheme: "sk_neplatitel" } as any,
+      { name: "ABRA Software s.r.o.", country: "Česká republika" } as any,
+      { mode: "overwrite" },
+    );
+    expect((r as any).vat_scheme).toBe("cz_neplatce");
+  });
 });

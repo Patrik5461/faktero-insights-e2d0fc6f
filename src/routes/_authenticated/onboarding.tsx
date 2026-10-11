@@ -76,7 +76,7 @@ function Onboarding() {
         _iban: form.iban || undefined,
         _default_currency: form.default_currency || "EUR",
         _vat_payer: form.vat_payer,
-        _vat_scheme: form.vat_scheme,
+        _vat_scheme: zosuladSchemu(form.vat_scheme, krajinaDane(form.country), form.vat_payer),
       });
       if (error || !companyId) {
         throw new Error(error?.message ?? "Nepodarilo sa vytvoriť firmu.");

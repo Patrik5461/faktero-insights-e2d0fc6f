@@ -1,5 +1,5 @@
 import type { NormalizedCompany } from "./company-registry.server";
-import { jeSchemaDph, predvolenaSchema, type SchemaDph } from "./dph-rezim";
+import { jeSchemaDph, predvolenaSchema, zosuladSchemu, type SchemaDph } from "./dph-rezim";
 import { krajinaDane } from "./vat-rates";
 
 export type AutofillTarget = {
@@ -45,8 +45,10 @@ export function mergeCompanyAutofill<T extends AutofillTarget>(
   const krajina = krajinaDane(take("country", kodKrajiny(d.country) || "SK"));
   const uzVybrate = jeSchemaDph((prev as any).vat_scheme);
   const platitel = uzVybrate ? (prev as any).vat_payer : Boolean(String(icDph ?? "").trim());
+  // Vybraný režim ostáva, len ak patrí ku krajine z registra — inak by česká
+  // firma odišla do databázy so slovenským „neplatiteľom“.
   const schema: SchemaDph = uzVybrate
-    ? ((prev as any).vat_scheme as SchemaDph)
+    ? zosuladSchemu((prev as any).vat_scheme as SchemaDph, krajina, Boolean(platitel))
     : predvolenaSchema(krajina, Boolean(platitel));
 
   return {

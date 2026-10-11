@@ -83,7 +83,7 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
         _phone: form.phone || undefined,
         _default_currency: "EUR",
         _vat_payer: form.vat_payer,
-        _vat_scheme: form.vat_scheme,
+        _vat_scheme: zosuladSchemu(form.vat_scheme, krajinaDane(form.country), form.vat_payer),
       });
       if (error || !companyId) {
         console.error("[create_company]", error);

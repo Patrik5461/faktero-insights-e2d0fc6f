@@ -7,6 +7,7 @@
  */
 import type { Kluc } from "./preklady";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
+import { zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
 
 /** Kam má viesť odkaz z potvrdzovacieho e-mailu. */
 export function adresaPotvrdenia(nativna: boolean, origin: string | null, server: string): string {
@@ -82,6 +83,10 @@ export function firmaNaZapis(v: Record<string, string | boolean>) {
     _default_currency: "EUR",
     // Postavenie k DPH: register ho nehovorí, vyberá ho človek.
     _vat_payer: Boolean(v.vat_payer),
-    _vat_scheme: cistaHodnota("vat_scheme"),
+    _vat_scheme: zosuladSchemu(
+      cistaHodnota("vat_scheme") as SchemaDph | null,
+      krajinaDane(cistaHodnota("country") ?? "SK"),
+      Boolean(v.vat_payer),
+    ),
   };
 }
