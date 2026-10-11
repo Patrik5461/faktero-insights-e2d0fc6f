@@ -8,6 +8,8 @@ import { zostavVykazyFn, ulozVykazFn } from "@/lib/faktero/dph-vykazy.functions"
 import { kvNaXml, priznanieNaXml, svNaXml, type TypVykazu } from "@/lib/faktero/dph-vykazy-xml";
 import { verziaPriznania } from "@/lib/faktero/dph-vykazy";
 import { AlertTriangle, Download, Loader2, CheckCircle2 } from "lucide-react";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { CzVykazyDph } from "@/components/faktero/CzVykazyDph";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/vykazy")({
   head: () => ({
@@ -20,8 +22,13 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/vykazy")({
       },
     ],
   }),
-  component: VykazyPage,
+  component: VykazyStranka,
 });
+
+/** Česká firma podáva iné tlačivá (DPHDP3, DPHKH1) — vlastná obrazovka. */
+function VykazyStranka() {
+  return useKrajinaDane() === "CZ" ? <CzVykazyDph /> : <VykazyPage />;
+}
 
 type Vysledok = Awaited<ReturnType<typeof zostavVykazyFn>>;
 

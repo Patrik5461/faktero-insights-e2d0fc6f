@@ -377,7 +377,14 @@ export function filterNav(
           ? g
           : {
               ...g,
-              children: g.children.filter((c) => !LEN_SK.some((x) => String(c.to).startsWith(x))),
+              children: g.children
+                .filter((c) => !LEN_SK.some((x) => String(c.to).startsWith(x)))
+                // Česká firma podáva přiznání a kontrolní hlášení, nie KV a SV.
+                .map((c) =>
+                  c.to === "/uctovnictvo/vykazy"
+                    ? { ...c, label: "Výkazy k DPH (přiznání, kontrolní hlášení)" }
+                    : c,
+                ),
             },
       )
       // Vlastný prístup: položky oblastí bez práva sa skryjú (databáza by aj tak nevydala nič).

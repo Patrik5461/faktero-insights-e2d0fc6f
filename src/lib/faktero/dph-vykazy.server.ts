@@ -25,6 +25,7 @@ import {
   odpocitajZdanenuZalohu,
 } from "./dph-vykazy";
 import { domacaMena, domacejZaJednotku } from "./kurzy";
+import { krajinaDane } from "./vat-rates";
 
 type Klient = {
   from: (t: string) => any;
@@ -73,7 +74,7 @@ export async function nacitajVstup(
       supabase
         .from("invoices")
         .select(
-          "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, invoice_items(vat_rate, subtotal, quantity, unit_price)",
+          "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_dic, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, invoice_items(vat_rate, subtotal, quantity, unit_price)",
         )
         .eq("company_id", companyId)
         .is("deleted_at", null)
@@ -233,6 +234,7 @@ export async function nacitajVstup(
       typ: String(f.type),
       datumDodania: String(den),
       odberatelIcDph: f.customer_ic_dph,
+      odberatelDic: f.customer_dic,
       odberatelNazov: f.customer_name,
       prenosDane: Boolean(f.reverse_charge),
       prenosTyp: f.reverse_charge_type,
@@ -288,7 +290,7 @@ export async function nacitajVstup(
     const rozpisP = cudziaP ? [] : rozpisPrijatej(p);
     const prenesene = rozpisP.filter((x) => x.pdp);
     if (prenesene.length && !p.opravuje_cislo) {
-      const zakladna = sadzbyKrajiny("SK", String(den))[0] ?? 23;
+      const zakladna = sadzbyKrajiny(krajinaDane((firmaKody as any)?.country), String(den))[0] ?? 23;
       prijate.push({
         cislo: String(p.invoice_number ?? ""),
         dodavatelNazov: p.supplier_name,
@@ -324,7 +326,7 @@ export async function nacitajVstup(
         : rezimP === "samozdanenie" && !dan && zaklad
           ? // Faktúra v prenesení nesie nulovú daň; odberateľ ju samozdaní základnou sadzbou.
             (() => {
-              const sz = sadzbyKrajiny("SK", String(den))[0] ?? 23;
+              const sz = sadzbyKrajiny(krajinaDane((firmaKody as any)?.country), String(den))[0] ?? 23;
               return [{ sadzba: sz, zaklad, dan: Math.round(zaklad * sz) / 100 }];
             })()
           : riadkyPrijatej(p, zaklad, dan, den, cudziaP),

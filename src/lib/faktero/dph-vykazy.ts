@@ -35,6 +35,8 @@ export type VystavenaFaktura = {
   /** Dátum dodania; keď chýba, dátum vyhotovenia. */
   datumDodania: string;
   odberatelIcDph?: string | null;
+  /** DIČ odberateľa (pri českej firme kmeňová časť CZ DIČ do kontrolného hlásenia). */
+  odberatelDic?: string | null;
   odberatelNazov?: string | null;
   prenosDane?: boolean | null;
   /** `domestic_69` tuzemský prenos, `eu_b2b` dodanie do EÚ, `export` vývoz. */

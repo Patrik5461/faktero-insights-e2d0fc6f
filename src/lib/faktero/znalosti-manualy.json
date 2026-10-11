@@ -1118,6 +1118,10 @@
     {
      "nadpis": "Po podaní",
      "text": "<>\nTlačidlo Podané si výkaz uloží aj s dátumom, takže je dohľadateľné, čo a\nkedy sa odoslalo. Potom sa oplatí obdobie uzamknúť (/pomoc/uzavierka) —\ndodatočná zmena dokladu by inak rozišla účtovníctvo s tým, čo už má finančná správa.\nLehota je do 25 dní po skončení zdaňovacieho obdobia; kontrolný výkaz sa podáva aj vtedy,\nkeď je priznanie nulové, ak v ňom sú plnenia."
+    },
+    {
+     "nadpis": "Česká firma: přiznání a kontrolní hlášení",
+     "text": "<>\nFirma s krajinou Česko vidí na tej istej stránke české tlačivá:\npřiznání k DPH (DPHDP3) a kontrolní hlášení (DPHKH1).\nOba súbory XML sa nahrajú na portál MOJE daně (elektronické podání, EPO). Sumy sú v\nkorunách — priznanie v celých korunách, kontrolné hlásenie na halier.\nRaz treba vyplniť kód finančního úřadu (napr. 451 pre Prahu), prípadne\núzemné pracovisko, CZ-NACE hlavnej činnosti a kto podáva — pri ďalšom mesiaci sa doplnia\nsamy. Ak firma fakturuje v prenesení daňovej povinnosti (§ 92a), vyberie sa\nkód předmětu plnění (napr. 4 – stavební a montážní práce).\nDoklady nad 10 000 Kč vrátane dane idú do kontrolného hlásenia jednotlivo (A.4, B.2),\nmenšie súhrnne (A.5, B.3). Kontrolné hlásenie podáva právnická osoba vždy za mesiac — pri\nštvrťročnom priznaní sa zostaví za každý mesiac zvlášť. Oba výstupy sú overené proti\noficiálnym schémam Finančnej správy ČR."
     }
    ]
   },

@@ -153,6 +153,32 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "ceska-firma",
+    title: "Česká firma: přiznání a kontrolní hlášení",
+    body: (
+      <>
+        <p>
+          Firma s krajinou Česko vidí na tej istej stránke české tlačivá:{" "}
+          <strong>přiznání k DPH</strong> (DPHDP3) a <strong>kontrolní hlášení</strong> (DPHKH1).
+          Oba súbory XML sa nahrajú na portál MOJE daně (elektronické podání, EPO). Sumy sú v
+          korunách — priznanie v celých korunách, kontrolné hlásenie na halier.
+        </p>
+        <p>
+          Raz treba vyplniť <strong>kód finančního úřadu</strong> (napr. 451 pre Prahu), prípadne
+          územné pracovisko, CZ-NACE hlavnej činnosti a kto podáva — pri ďalšom mesiaci sa doplnia
+          samy. Ak firma fakturuje v prenesení daňovej povinnosti (§ 92a), vyberie sa{" "}
+          <strong>kód předmětu plnění</strong> (napr. 4 – stavební a montážní práce).
+        </p>
+        <p>
+          Doklady nad 10 000 Kč vrátane dane idú do kontrolného hlásenia jednotlivo (A.4, B.2),
+          menšie súhrnne (A.5, B.3). Kontrolné hlásenie podáva právnická osoba vždy za mesiac — pri
+          štvrťročnom priznaní sa zostaví za každý mesiac zvlášť. Oba výstupy sú overené proti
+          oficiálnym schémam Finančnej správy ČR.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {
