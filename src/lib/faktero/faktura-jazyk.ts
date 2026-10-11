@@ -369,3 +369,55 @@ export function popisky(jazyk: unknown): Popisky {
 export function localeDokladu(jazyk: unknown): string {
   return { sk: "sk-SK", cs: "cs-CZ", en: "en-GB", de: "de-DE", hu: "hu-HU" }[jazykDokladu(jazyk)];
 }
+
+/**
+ * Zákonné vety k preneseniu a oslobodeniu, keď faktúru vystavuje **česká**
+ * firma. Slovník vyššie cituje slovenský zákon 222/2004 — českej firme platí
+ * zákon č. 235/2004 Sb.: tuzemské prenesenie § 92a, dodanie tovaru do EÚ § 64,
+ * služba s miestom plnenia v inom štáte § 9 odst. 1 a vývoz § 66. Pri
+ * prenesení musí na doklade byť „daň odvede zákazník“ (§ 29 odst. 2).
+ */
+export type VetyPreneseniaCz = { euTovar: string; euSluzba: string; vyvoz: string; tuzemsko: string };
+
+const VETY_CZ: Record<JazykDokladu, VetyPreneseniaCz> = {
+  cs: {
+    euTovar: "Dodání zboží do jiného členského státu osvobozené od daně podle § 64 zákona č. 235/2004 Sb., o DPH.",
+    euSluzba:
+      "Poskytnutí služby s místem plnění v jiném členském státě podle § 9 odst. 1 zákona č. 235/2004 Sb., o DPH. Daň odvede zákazník.",
+    vyvoz: "Vývoz zboží osvobozený od daně podle § 66 zákona č. 235/2004 Sb., o DPH.",
+    tuzemsko: "Přenesení daňové povinnosti podle § 92a zákona č. 235/2004 Sb., o DPH. Daň odvede zákazník.",
+  },
+  sk: {
+    euTovar: "Dodanie tovaru do iného členského štátu oslobodené od dane podľa § 64 českého zákona č. 235/2004 Sb. o DPH.",
+    euSluzba:
+      "Služba s miestom plnenia v inom členskom štáte podľa § 9 ods. 1 českého zákona č. 235/2004 Sb. o DPH. Daň odvedie zákazník.",
+    vyvoz: "Vývoz tovaru oslobodený od dane podľa § 66 českého zákona č. 235/2004 Sb. o DPH.",
+    tuzemsko: "Prenesenie daňovej povinnosti podľa § 92a českého zákona č. 235/2004 Sb. o DPH. Daň odvedie zákazník.",
+  },
+  en: {
+    euTovar: "Exempt intra-Community supply of goods under Section 64 of Czech VAT Act No. 235/2004 Coll.",
+    euSluzba:
+      "Supply of services with place of supply in another Member State under Section 9(1) of Czech VAT Act No. 235/2004 Coll. Reverse charge — VAT to be paid by the customer.",
+    vyvoz: "Export of goods exempt from VAT under Section 66 of Czech VAT Act No. 235/2004 Coll.",
+    tuzemsko: "Reverse charge under Section 92a of Czech VAT Act No. 235/2004 Coll. VAT to be paid by the customer.",
+  },
+  de: {
+    euTovar: "Steuerfreie innergemeinschaftliche Lieferung nach § 64 des tschechischen Gesetzes Nr. 235/2004 Slg. über die MwSt.",
+    euSluzba:
+      "Leistung mit Leistungsort in einem anderen Mitgliedstaat nach § 9 Abs. 1 des tschechischen Gesetzes Nr. 235/2004 Slg. Die Steuer schuldet der Leistungsempfänger.",
+    vyvoz: "Steuerfreie Ausfuhrlieferung nach § 66 des tschechischen Gesetzes Nr. 235/2004 Slg. über die MwSt.",
+    tuzemsko:
+      "Übergang der Steuerschuld nach § 92a des tschechischen Gesetzes Nr. 235/2004 Slg. Die Steuer schuldet der Leistungsempfänger.",
+  },
+  hu: {
+    euTovar: "Adómentes Közösségen belüli termékértékesítés a 235/2004. sz. cseh áfatörvény 64. §-a alapján.",
+    euSluzba:
+      "Szolgáltatás, amelynek teljesítési helye másik tagállam, a 235/2004. sz. cseh áfatörvény 9. § (1) bekezdése alapján. Az adót a vevő fizeti.",
+    vyvoz: "Adómentes termékexport a 235/2004. sz. cseh áfatörvény 66. §-a alapján.",
+    tuzemsko: "Fordított adózás a 235/2004. sz. cseh áfatörvény 92a. §-a alapján. Az adót a vevő fizeti.",
+  },
+};
+
+export function vetyPreneseniaCz(jazyk: unknown): VetyPreneseniaCz {
+  return VETY_CZ[jazykDokladu(jazyk)];
+}

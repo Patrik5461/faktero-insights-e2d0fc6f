@@ -935,6 +935,7 @@ export type Database = {
       }
       billing_payments: {
         Row: {
+          prenesenie_dph: boolean
           amount_cents: number
           company_id: string
           created_at: string
@@ -950,6 +951,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          prenesenie_dph?: boolean
           amount_cents: number
           company_id: string
           created_at?: string
@@ -965,6 +967,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          prenesenie_dph?: boolean
           amount_cents?: number
           company_id?: string
           created_at?: string
@@ -5163,6 +5166,7 @@ export type Database = {
       }
       platform_invoices: {
         Row: {
+          prenesenie_dph: boolean
           billing_payment_id: string | null
           buyer_snapshot: Json
           company_id: string
@@ -5185,6 +5189,7 @@ export type Database = {
           vat_rate: number
         }
         Insert: {
+          prenesenie_dph?: boolean
           billing_payment_id?: string | null
           buyer_snapshot?: Json
           company_id: string
@@ -5207,6 +5212,7 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
+          prenesenie_dph?: boolean
           billing_payment_id?: string | null
           buyer_snapshot?: Json
           company_id?: string

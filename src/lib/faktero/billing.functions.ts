@@ -163,8 +163,11 @@ export const createCheckout = createServerFn({ method: "POST" })
       suma s daňou, inak zákazník zaplatí menej, než čo mu web sľúbil, a doklad
       by na tú istú sumu vykázal nižší základ.
     */
-    const { sumaSDph } = await import("@/lib/faktero/predplatne-cena");
-    const naUhradu = sumaSDph(plan.price_monthly_cents);
+    // Platiteľ DPH z iného štátu EÚ (overený vo VIES) platí bez DPH — prenesenie.
+    const { sumaNaUhradu } = await import("@/lib/faktero/predplatne-cena");
+    const { prenesenieDphPredplatneho } = await import("@/lib/faktero/predplatne-dph.server");
+    const prenesenieDph = await prenesenieDphPredplatneho(data.companyId);
+    const naUhradu = sumaNaUhradu(plan.price_monthly_cents, prenesenieDph);
     const { gopayCreatePayment, OPAKOVANIE_NEPOVOLENE } = await import(
       "@/lib/faktero/gopay.server"
     );
@@ -208,6 +211,7 @@ export const createCheckout = createServerFn({ method: "POST" })
         plan_slug: plan.slug,
         amount_cents: naUhradu,
         currency: "EUR",
+        prenesenie_dph: prenesenieDph,
         status: String(payment.state ?? "CREATED"),
         provider: "gopay",
         provider_payment_id: String(payment.id),

@@ -48,3 +48,20 @@ describe("jazyk dokladu", () => {
     expect(f("sk")).toBe("1 234,56");
   });
 });
+
+describe("vety k preneseniu pre českú firmu", () => {
+  it("citujú český zákon 235/2004, nie slovenský", async () => {
+    const { vetyPreneseniaCz } = await import("./faktura-jazyk");
+    for (const j of ["cs", "sk", "en", "de", "hu"]) {
+      const v = vetyPreneseniaCz(j);
+      for (const t of Object.values(v)) {
+        expect(t).toContain("235/2004");
+        expect(t).not.toContain("222/2004");
+      }
+    }
+    expect(vetyPreneseniaCz("cs").tuzemsko).toContain("§ 92a");
+    expect(vetyPreneseniaCz("cs").tuzemsko).toContain("Daň odvede zákazník");
+    expect(vetyPreneseniaCz("cs").euTovar).toContain("§ 64");
+    expect(vetyPreneseniaCz("cs").vyvoz).toContain("§ 66");
+  });
+});

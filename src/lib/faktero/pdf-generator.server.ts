@@ -14,6 +14,7 @@ import {
   jazykDokladu,
   localeDokladu,
   popisky,
+  vetyPreneseniaCz,
   type JazykDokladu,
 } from "./faktura-jazyk";
 import { krajinaDane } from "./vat-rates";
@@ -739,8 +740,20 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   // Vystavovateľ mimo Slovenska (samofaktúra za dodávateľa z EÚ): odkaz na smernicu.
   const cudziVystavovatel =
     Boolean(invoice.samofakturacia) && String(company.country ?? "SK").toUpperCase() !== "SK";
-  const textPrenesenia = invoice.reverse_charge
-    ? invoice.reverse_charge_type === "eu_b2b"
+  // Česká firma cituje český zákon o DPH (235/2004 Sb.), nie slovenský 222/2004.
+  const vetyCz =
+    !cudziVystavovatel && krajinaDane(company.country) === "CZ" ? vetyPreneseniaCz(jazyk) : null;
+  const textPrenesenia = !invoice.reverse_charge
+    ? null
+    : vetyCz
+      ? invoice.reverse_charge_type === "eu_b2b"
+        ? invoice.eu_plnenie === "sluzba"
+          ? vetyCz.euSluzba
+          : vetyCz.euTovar
+        : invoice.reverse_charge_type === "export"
+          ? vetyCz.vyvoz
+          : vetyCz.tuzemsko
+      : invoice.reverse_charge_type === "eu_b2b"
       ? cudziVystavovatel
         ? invoice.eu_plnenie === "sluzba"
           ? t.prenosEuSluzbaSmernica
@@ -748,8 +761,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
         : t.prenosEu
       : invoice.reverse_charge_type === "export"
         ? t.prenosVyvoz
-        : t.prenosTuzemsko
-    : null;
+        : t.prenosTuzemsko;
   /*
     Rámik „Faktúra online“ s QR na otvorenie dokladu. Široký (pod platobnými
     údajmi) nesie aj odkaz textom; úzky (vľavo vedľa súčtov) len výzvu a QR —

@@ -9,6 +9,7 @@
  * Jedno miesto pravdy pre oba konce: čo sa strhne a čo sa vyfakturuje.
  */
 import { pripocitajMesiace } from "./opakovane";
+import { jeEuIcDph, jeTuzemske } from "./vies";
 
 export const SADZBA_DPH_PREDPLATNEHO = 23;
 
@@ -16,6 +17,23 @@ export const SADZBA_DPH_PREDPLATNEHO = 23;
 export function sumaSDph(cenaBezDphCentov: number, sadzba = SADZBA_DPH_PREDPLATNEHO): number {
   if (!Number.isFinite(cenaBezDphCentov) || cenaBezDphCentov <= 0) return 0;
   return Math.round(cenaBezDphCentov * (1 + sadzba / 100));
+}
+
+/**
+ * Môže ísť predplatné bez DPH s prenesením daňovej povinnosti? Áno, keď je
+ * odberateľ platiteľ DPH z **iného** štátu EÚ (česká s.r.o. s IČ DPH CZ…):
+ * služba B2B má miesto plnenia u neho (§ 15 ods. 1 zákona 222/2004). Toto je
+ * len predbežná kontrola tvaru — o prenesení rozhodne až overenie vo VIES.
+ */
+export function mozePrenesenieDph(firma: { ic_dph?: string | null } | null | undefined): boolean {
+  const ic = firma?.ic_dph;
+  return jeEuIcDph(ic) && !jeTuzemske(ic);
+}
+
+/** Suma, ktorá sa strhne: pri prenesení cena bez DPH, inak s DPH. */
+export function sumaNaUhradu(cenaBezDphCentov: number, prenesenie: boolean): number {
+  if (!Number.isFinite(cenaBezDphCentov) || cenaBezDphCentov <= 0) return 0;
+  return prenesenie ? Math.round(cenaBezDphCentov) : sumaSDph(cenaBezDphCentov);
 }
 
 /** Opačný smer — z účtovanej sumy vyberie základ a daň. */

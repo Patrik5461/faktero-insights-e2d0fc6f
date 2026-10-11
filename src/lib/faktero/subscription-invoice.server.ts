@@ -62,7 +62,7 @@ export async function issueSubscriptionInvoiceForPayment(billingPaymentId: strin
   const { data: bp, error: bpErr } = await supabaseAdmin
     .from("billing_payments")
     .select(
-      "id, company_id, plan_slug, amount_cents, currency, status, provider, provider_payment_id, paid_at",
+      "id, company_id, plan_slug, amount_cents, currency, status, provider, provider_payment_id, paid_at, prenesenie_dph",
     )
     .eq("id", billingPaymentId)
     .maybeSingle();
@@ -96,7 +96,14 @@ export async function issueSubscriptionInvoiceForPayment(billingPaymentId: strin
     .maybeSingle();
 
   const gross = bp.amount_cents;
-  const { subtotal_cents, vat_cents, total_cents } = centsFromGrossInclVat(gross, 23);
+  /*
+    Platiteľ DPH z iného štátu EÚ: strhla sa cena bez DPH a doklad ide s 0 %
+    a vetou o prenesení (§ 15 ods. 1, čl. 196 smernice). Rozhodnutie padlo pri
+    platbe po overení VIES — doklad ho len prevezme.
+  */
+  const prenesenie = Boolean((bp as any).prenesenie_dph);
+  const sadzba = prenesenie ? 0 : 23;
+  const { subtotal_cents, vat_cents, total_cents } = centsFromGrossInclVat(gross, sadzba);
 
   // 5. Sekvenčné číslo
   const { data: numRow, error: numErr } = await supabaseAdmin.rpc(
@@ -126,7 +133,8 @@ export async function issueSubscriptionInvoiceForPayment(billingPaymentId: strin
       plan_slug: bp.plan_slug ?? "premium",
       plan_name: plan?.name ?? bp.plan_slug ?? "Predplatné",
       currency: bp.currency ?? "EUR",
-      vat_rate: 23,
+      vat_rate: sadzba,
+      prenesenie_dph: prenesenie,
       subtotal_cents,
       vat_cents,
       total_cents,

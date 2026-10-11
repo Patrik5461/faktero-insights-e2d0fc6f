@@ -44,3 +44,20 @@ describe("dátum obnovy", () => {
     expect(oMesiacNeskor("2026-03-15T08:30:00Z").toISOString()).toContain("T08:30:00");
   });
 });
+
+describe("predplatné pre platiteľa DPH z inej krajiny EÚ", () => {
+  it("česká firma s IČ DPH môže ísť bez DPH, slovenská ani bez IČ DPH nie", async () => {
+    const { mozePrenesenieDph } = await import("./predplatne-cena");
+    expect(mozePrenesenieDph({ ic_dph: "CZ25097563" })).toBe(true);
+    expect(mozePrenesenieDph({ ic_dph: "SK2122358579" })).toBe(false);
+    expect(mozePrenesenieDph({ ic_dph: "" })).toBe(false);
+    expect(mozePrenesenieDph({ ic_dph: null })).toBe(false);
+    expect(mozePrenesenieDph({ ic_dph: "US123456" })).toBe(false);
+  });
+
+  it("pri prenesení sa strhne cena bez DPH", async () => {
+    const { sumaNaUhradu } = await import("./predplatne-cena");
+    expect(sumaNaUhradu(900, true)).toBe(900);
+    expect(sumaNaUhradu(900, false)).toBe(1107);
+  });
+});

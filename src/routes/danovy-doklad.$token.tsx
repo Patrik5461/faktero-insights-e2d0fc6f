@@ -26,7 +26,7 @@ const getPlatformInvoice = createServerFn({ method: "POST" })
     const { data: row, error } = await supabaseAdmin
       .from("platform_invoices")
       .select(
-        "invoice_number, plan_name, plan_slug, issue_date, taxable_date, due_date, currency, vat_rate, subtotal_cents, vat_cents, total_cents, provider, provider_payment_id, buyer_snapshot, created_at",
+        "invoice_number, plan_name, plan_slug, issue_date, taxable_date, due_date, currency, vat_rate, prenesenie_dph, subtotal_cents, vat_cents, total_cents, provider, provider_payment_id, buyer_snapshot, created_at",
       )
       .eq("public_token", data.token)
       .maybeSingle();
@@ -266,10 +266,17 @@ function PlatformInvoicePage() {
           <div style={{ marginTop: 6 }}>
             Doklad je vystavený elektronicky a je platný bez podpisu a pečiatky.
           </div>
-          <div style={{ marginTop: 6 }}>
-            Dodávateľ je platiteľom DPH. Uplatnená sadzba DPH 23 % podľa zákona č. 222/2004 Z. z. v
-            znení účinnom od 1. 1. 2025.
-          </div>
+          {(inv as any).prenesenie_dph ? (
+            <div style={{ marginTop: 6, fontWeight: 600 }}>
+              Prenesenie daňovej povinnosti — daň je povinný priznať odberateľ (čl. 196 smernice
+              2006/112/ES, § 15 ods. 1 zákona č. 222/2004 Z. z.). Reverse charge.
+            </div>
+          ) : (
+            <div style={{ marginTop: 6 }}>
+              Dodávateľ je platiteľom DPH. Uplatnená sadzba DPH 23 % podľa zákona č. 222/2004 Z. z.
+              v znení účinnom od 1. 1. 2025.
+            </div>
+          )}
         </div>
       </div>
     </div>

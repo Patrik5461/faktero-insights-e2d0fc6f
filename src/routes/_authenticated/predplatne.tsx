@@ -34,6 +34,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveProduct } from "@/lib/faktero/active-product";
 import { potvrd } from "@/lib/potvrdenie";
+import { mozePrenesenieDph } from "@/lib/faktero/predplatne-cena";
 
 type ProductMode = "invoicing" | "logbook" | "both";
 type ProductTab = "invoicing" | "logbook";
@@ -116,6 +117,8 @@ function PredplatnePage() {
 
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [billing, setBilling] = useState<any>(null);
+  /** Platiteľ DPH z iného štátu EÚ — predplatné bez DPH s prenesením (overí sa vo VIES pri platbe). */
+  const [bezDph, setBezDph] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,12 +182,14 @@ function PredplatnePage() {
           if (!cancelled) setLoading(false);
           return;
         }
-        const [b, p, h] = await Promise.all([
+        const [b, p, h, f] = await Promise.all([
           fetchBilling({ data: { companyId: cid } }),
           fetchPlans(),
           fetchHistory({ data: { companyId: cid } }),
+          supabase.from("companies").select("ic_dph").eq("id", cid).maybeSingle(),
         ]);
         if (!cancelled) {
+          setBezDph(mozePrenesenieDph(f.data));
           setCompanyId(cid);
           setBilling(b);
           setPlans(p as any[]);
@@ -473,6 +478,7 @@ function PredplatnePage() {
                 loading={busySlug === p.slug}
                 disabled={!isAdminLike || busySlug !== null}
                 onSelect={() => selectPlan(p.slug)}
+                bezDph={bezDph}
               />
             ))}
           </div>
@@ -534,6 +540,14 @@ function PredplatnePage() {
           Prevádzkovateľ je platca DPH; k cene sa uplatňuje sadzba <strong>23 %</strong> (Starter 9
           € → 11,07 € s DPH; Premium 19 € → 23,37 € s DPH).
         </p>
+        {bezDph && (
+          <p>
+            <strong className="text-foreground">Platiteľ DPH z inej krajiny EÚ:</strong> vaša firma
+            má zahraničné IČ DPH, takže predplatné sa fakturuje bez DPH s prenesením daňovej
+            povinnosti — daň priznáte vy. IČ DPH sa pri platbe overí v registri VIES; ak by nebolo
+            platné, účtuje sa s DPH 23 %.
+          </p>
+        )}
         <p>
           <strong className="text-foreground">Automatické obnovenie:</strong> Predplatné sa po
           skončení obdobia automaticky obnovuje, kým ho nezrušíte. Zrušiť môžete kedykoľvek —
@@ -624,8 +638,11 @@ function PlanCard({
   loading,
   disabled,
   onSelect,
+  bezDph = false,
 }: {
   p: any;
+  /** Platiteľ DPH z iného štátu EÚ — cena bez DPH, prenesenie daňovej povinnosti. */
+  bezDph?: boolean;
   current: boolean;
   /** Plán vybraný na objednávkovej stránke — zvýraznený, aby ho bolo hneď vidieť. */
   wanted?: boolean;
@@ -686,14 +703,19 @@ function PlanCard({
             </>
           )}
         </div>
-        {p.price_monthly_cents != null && (
-          <p className="text-xs text-muted-foreground">
-            s DPH 23 %:{" "}
-            <span className="font-medium text-foreground">
-              {((p.price_monthly_cents * 1.23) / 100).toFixed(2).replace(".", ",")} €
-            </span>
-          </p>
-        )}
+        {p.price_monthly_cents != null &&
+          (bezDph ? (
+            <p className="text-xs text-muted-foreground">
+              bez DPH — prenesenie daňovej povinnosti (reverse charge)
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              s DPH 23 %:{" "}
+              <span className="font-medium text-foreground">
+                {((p.price_monthly_cents * 1.23) / 100).toFixed(2).replace(".", ",")} €
+              </span>
+            </p>
+          ))}
       </CardHeader>
       <CardContent className="space-y-3">
         <ul className="space-y-1.5 text-sm">

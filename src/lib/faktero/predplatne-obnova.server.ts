@@ -51,7 +51,7 @@ export async function posliUpozorneniaNaObnovu() {
   const { data: riadky } = await supabaseAdmin
     .from("subscriptions")
     .select(
-      "company_id, plan, next_billing_at, monthly_price_cents, cancel_at_period_end, gopay_subscription_id, companies(name, email)",
+      "company_id, plan, next_billing_at, monthly_price_cents, cancel_at_period_end, gopay_subscription_id, companies(name, email, ic_dph)",
     )
     .eq("status", "active")
     .eq("cancel_at_period_end", false)
@@ -59,14 +59,18 @@ export async function posliUpozorneniaNaObnovu() {
     .gte("next_billing_at", od)
     .lt("next_billing_at", do_);
 
-  const { sumaSDph } = await import("./predplatne-cena");
+  const { sumaNaUhradu, mozePrenesenieDph } = await import("./predplatne-cena");
   let odoslane = 0;
   let zlyhalo = 0;
 
   for (const r of riadky ?? []) {
     const email = (r as any).companies?.email as string | undefined;
     const firma = escapeHtml((r as any).companies?.name ?? "vaša firma");
-    const suma = sumaSDph(Number(r.monthly_price_cents ?? 0));
+    // Pripomienka len informuje — platiteľovi z EÚ ukáže sumu bez DPH podľa tvaru IČ DPH.
+    const suma = sumaNaUhradu(
+      Number(r.monthly_price_cents ?? 0),
+      mozePrenesenieDph({ ic_dph: (r as any).companies?.ic_dph }),
+    );
     const den = r.next_billing_at
       ? new Date(r.next_billing_at).toLocaleDateString("sk-SK")
       : "čoskoro";
@@ -173,7 +177,8 @@ export async function strhniObnovy() {
     .not("gopay_subscription_id", "is", null)
     .lte("next_billing_at", teraz);
 
-  const { sumaSDph } = await import("./predplatne-cena");
+  const { sumaNaUhradu } = await import("./predplatne-cena");
+  const { prenesenieDphPredplatneho } = await import("./predplatne-dph.server");
   const { gopayCreateRecurrence } = await import("./gopay.server");
   let spustene = 0;
   let zlyhane = 0;
@@ -184,7 +189,8 @@ export async function strhniObnovy() {
   for (const r of riadky ?? []) {
     const cenaBezDph = Number(r.monthly_price_cents ?? 0);
     if (cenaBezDph <= 0) continue; // Enterprise a ručne dohodnuté plány sa neúčtujú automaticky.
-    const suma = sumaSDph(cenaBezDph);
+    const prenesenieDph = await prenesenieDphPredplatneho(r.company_id);
+    const suma = sumaNaUhradu(cenaBezDph, prenesenieDph);
     const email = (r as any).companies?.email as string | undefined;
     const orderNumber = `FK-${r.company_id.slice(0, 8)}-${Date.now()}`;
 
@@ -205,6 +211,7 @@ export async function strhniObnovy() {
           plan_slug: r.plan,
           amount_cents: suma,
           currency: "EUR",
+          prenesenie_dph: prenesenieDph,
           status: String(platba.state ?? "CREATED"),
           provider: "gopay",
           provider_payment_id: String(platba.id),
