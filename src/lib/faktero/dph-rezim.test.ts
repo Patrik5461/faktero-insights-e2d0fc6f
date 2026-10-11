@@ -114,4 +114,9 @@ describe("doplnenie z registra", () => {
     );
     expect("vat_scheme" in odberatel).toBe(false);
   });
+  it("neplatiteľ sa predvolí bez registrácie, nie ako § 7 / identifikovaná osoba", () => {
+    expect(predvolenaSchema("SK", false)).toBe("sk_neplatitel");
+    expect(predvolenaSchema("CZ", false)).toBe("cz_neplatce");
+    expect(zosuladSchemu("sk_neplatitel", "CZ", false)).toBe("cz_neplatce");
+  });
 });

@@ -70,7 +70,7 @@ function Onboarding() {
         _street: form.street || undefined,
         _city: form.city || undefined,
         _zip: form.zip || undefined,
-        _country: form.country || "SK",
+        _country: krajinaDane(form.country),
         _email: form.email || undefined,
         _phone: form.phone || undefined,
         _iban: form.iban || undefined,

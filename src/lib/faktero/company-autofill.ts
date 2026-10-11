@@ -42,7 +42,7 @@ export function mergeCompanyAutofill<T extends AutofillTarget>(
     return value ?? current ?? null;
   };
   const icDph = take("ic_dph", d.ic_dph ?? null);
-  const krajina = krajinaDane(take("country", d.country || "SK"));
+  const krajina = krajinaDane(take("country", kodKrajiny(d.country) || "SK"));
   const uzVybrate = jeSchemaDph((prev as any).vat_scheme);
   const platitel = uzVybrate ? (prev as any).vat_payer : Boolean(String(icDph ?? "").trim());
   const schema: SchemaDph = uzVybrate
@@ -59,6 +59,20 @@ export function mergeCompanyAutofill<T extends AutofillTarget>(
     street: take("street", d.street ?? null),
     city: take("city", d.city ?? null),
     zip: take("zip", d.zip ?? null),
-    country: take("country", d.country || "SK"),
+    country: take("country", kodKrajiny(d.country) || "SK"),
   } as T;
+}
+
+/**
+ * Register vracia krajinu slovom („Česká republika“), no všade inde sa
+ * porovnáva kód (QR platba, eFaktúra, VIES). Slovenské a české názvy sa
+ * preložia na kód, ostatné sa nechajú tak.
+ */
+export function kodKrajiny(v: string | null | undefined): string | null {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  const n = s.toUpperCase();
+  if (/^(CZ|CZE|ČESK|CESK|CZECH)/.test(n)) return "CZ";
+  if (/^(SK|SVK|SLOVENSK|SLOVAK)/.test(n)) return "SK";
+  return s;
 }

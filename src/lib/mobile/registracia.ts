@@ -6,6 +6,7 @@
  * tlačidlo nič nespraví.
  */
 import type { Kluc } from "./preklady";
+import { krajinaDane } from "@/lib/faktero/vat-rates";
 
 /** Kam má viesť odkaz z potvrdzovacieho e-mailu. */
 export function adresaPotvrdenia(nativna: boolean, origin: string | null, server: string): string {
@@ -73,7 +74,8 @@ export function firmaNaZapis(v: Record<string, string | boolean>) {
     _street: cistaHodnota("street"),
     _city: cistaHodnota("city"),
     _zip: cistaHodnota("zip"),
-    _country: cistaHodnota("country") ?? "SK",
+    // Kód krajiny, nie názov z registra („Česká republika“).
+    _country: krajinaDane(cistaHodnota("country") ?? "SK"),
     _email: cistaHodnota("email"),
     _phone: cistaHodnota("phone"),
     _iban: cistaHodnota("iban")?.replace(/\s+/g, "").toUpperCase(),

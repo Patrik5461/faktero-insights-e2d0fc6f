@@ -832,8 +832,10 @@ function InvoiceDetail() {
               nehľadali. Po odoslaní namiesto tlačidla ukáže stav; opakované
               odoslanie ostáva v ponuke.
             */}
+            {/* Zálohová faktúra nie je daňový doklad — cez eFaktúru sa neposiela. */}
             {inv.status !== "draft" &&
               inv.status !== "cancelled" &&
+              inv.type !== "proforma" &&
               (efakturaOdoslana ? (
                 <span
                   className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600/10 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400"
@@ -1020,7 +1022,15 @@ function InvoiceDetail() {
                   eFaktúr. Ten je prázdny, kým sa XML nevygeneruje, takže tam
                   tlačidlo nemal kto nájsť.
                 */}
-                <DropdownMenuItem onClick={handleSendEfaktura} disabled={efakturaBusy}>
+                <DropdownMenuItem
+                  onClick={handleSendEfaktura}
+                  disabled={efakturaBusy || inv.type === "proforma"}
+                  title={
+                    inv.type === "proforma"
+                      ? "Zálohová faktúra nie je daňový doklad — pošlite ju e-mailom."
+                      : undefined
+                  }
+                >
                   <Send className="mr-2 h-4 w-4" />
                   {efakturaBusy
                     ? "Odosielam…"

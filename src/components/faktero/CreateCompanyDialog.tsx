@@ -77,7 +77,8 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
         _street: form.street || undefined,
         _city: form.city || undefined,
         _zip: form.zip || undefined,
-        _country: form.country || "SK",
+        // Do databázy kód krajiny, nie názov z registra („Česká republika“).
+        _country: krajinaDane(form.country),
         _email: form.email || undefined,
         _phone: form.phone || undefined,
         _default_currency: "EUR",

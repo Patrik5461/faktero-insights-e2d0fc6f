@@ -157,7 +157,12 @@ export function jePlatitel(kod: SchemaDph): boolean {
 
 /** Prvá možnosť pre krajinu a zaškrtnutie — predvolí sa pri prepnutí. */
 export function predvolenaSchema(krajina: KrajinaDane, platitel: boolean): SchemaDph {
-  return schemyKrajiny(krajina, platitel)[0].kod;
+  const moznosti = schemyKrajiny(krajina, platitel);
+  // Neplatiteľ je najčastejšie bez registrácie. Prvá v zozname je registrácia
+  // s IČ DPH (§ 7 / identifikovaná osoba) — tá sa predvoliť nesmie, inak by
+  // obyčajný neplatiteľ mal na faktúrach vetu o registrácii, ktorú nemá.
+  if (!platitel) return (moznosti.find((m) => !m.maIcDph) ?? moznosti[0]).kod;
+  return moznosti[0].kod;
 }
 
 /**
