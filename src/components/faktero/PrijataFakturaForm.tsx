@@ -95,16 +95,17 @@ export function PrijataFakturaForm({
   const [prilohaCesta, setPrilohaCesta] = useState<string | null>(null);
 
   /*
-    Faktúra v cudzej mene sa do priznania k DPH uvádza v eurách, prepočítaná
-    kurzom ECB zo dňa pred dodaním. Prepočet robí server hneď po uložení —
+    Faktúra v cudzej mene sa do priznania k DPH uvádza v domácej mene firmy
+    (SK eurá kurzom ECB zo dňa pred dodaním, CZ koruny kurzom ČNB). Prepočet robí server hneď po uložení —
     inak by doklad vo výkazoch chýbal alebo by tam bol v cudzej sume.
   */
   async function doplnKurz(id: string) {
-    if (!form.currency || form.currency === "EUR") return;
+    // Či je mena domáca (SK eurá, CZ koruny), rozhodne server podľa krajiny firmy.
+    if (!form.currency) return;
     try {
       await prepocitaj({ data: { id } });
     } catch {
-      toast.warning("Kurz ECB sa nepodarilo načítať — prepočet doplňte pred podaním DPH.");
+      toast.warning("Kurz sa nepodarilo načítať — prepočet doplňte pred podaním DPH.");
     }
   }
 

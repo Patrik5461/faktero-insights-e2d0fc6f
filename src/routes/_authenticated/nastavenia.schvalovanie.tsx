@@ -13,6 +13,7 @@ import {
 } from "@/lib/faktero/schvalovanie.functions";
 import { NAZVY_AGEND, type AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
 import { potvrd } from "@/lib/potvrdenie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 /**
  * Nastavenie schvaľovania dokladov — ako v Doklado: zapnutie, agendy,
@@ -38,6 +39,7 @@ const AGENDY: AgendaSchvalovania[] = ["doklad", "prijata", "vystavena"];
 const vstup = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 
 function Stranka() {
+  const mena = useMenaFirmy();
   const companyId = getActiveCompanyId();
   const nacitaj = useServerFn(nastavenieSchvalovaniaFn);
   const ulozN = useServerFn(ulozNastavenieSchvalovaniaFn);
@@ -186,7 +188,7 @@ function Stranka() {
               </div>
             </div>
             <label className="block">
-              <span className="text-xs text-muted-foreground">Automaticky schváliť doklad so sumou pod (€)</span>
+              <span className="text-xs text-muted-foreground">Automaticky schváliť doklad so sumou pod ({mena.symbol})</span>
               <input
                 value={n.autoPod}
                 disabled={!spravca}
@@ -316,7 +318,7 @@ function Stranka() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-muted-foreground">Suma od (€)</span>
+                  <span className="text-xs text-muted-foreground">Suma od ({mena.symbol})</span>
                   <input
                     value={form.podmienky.suma_od ?? ""}
                     inputMode="decimal"
@@ -386,7 +388,7 @@ function Stranka() {
                       {[
                         c.podmienky?.agenda ? NAZVY_AGEND[c.podmienky.agenda as AgendaSchvalovania] : null,
                         c.podmienky?.ico ? `IČO ${c.podmienky.ico}` : null,
-                        c.podmienky?.suma_od != null ? `od ${c.podmienky.suma_od} €` : null,
+                        c.podmienky?.suma_od != null ? `od ${c.podmienky.suma_od} ${mena.symbol}` : null,
                         c.podmienky?.predkontacia ? `predkontácia ${c.podmienky.predkontacia}` : null,
                       ]
                         .filter(Boolean)

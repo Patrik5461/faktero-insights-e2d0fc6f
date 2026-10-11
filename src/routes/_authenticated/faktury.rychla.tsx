@@ -9,7 +9,7 @@ import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { vystavFakturuFn } from "@/lib/faktero/faktura-vystavenie.functions";
 import { friendlyError } from "@/lib/faktero/plan-error";
 
-import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/faktury/rychla")({
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/faktury/rychla")({
 });
 
 function QuickInvoicePage() {
+  const mena = useMenaFirmy();
   const navigate = useNavigate();
   const vystav = useServerFn(vystavFakturuFn);
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
@@ -219,7 +220,7 @@ function QuickInvoicePage() {
                   value={customers.find((c) => c.id === customerId)?.name ?? ""}
                 />
                 <Row label="Text nad položkami" value={description} />
-                <Row label="Suma" value={`${amount} € (vrátane ${vatRate}% DPH)`} />
+                <Row label="Suma" value={`${amount} ${mena.symbol} (vrátane ${vatRate}% DPH)`} />
               </div>
               <div className="flex gap-2">
                 <button

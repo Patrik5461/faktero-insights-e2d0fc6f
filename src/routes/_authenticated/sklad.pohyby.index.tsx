@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
 import { toast } from "sonner";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/sklad/pohyby/")({
   head: () => ({ meta: [{ title: "Skladové pohyby — Faktero" }] }),
@@ -34,6 +35,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 function MovementsPage() {
+  const mena = useMenaFirmy();
   const { stock_item_id } = Route.useSearch();
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
@@ -388,7 +390,9 @@ function MovementsPage() {
                   <td className="p-3 text-right tabular-nums">
                     {m.unit_cost != null ? Number(m.unit_cost).toFixed(4) : "—"}
                   </td>
-                  <td className="p-3 text-right tabular-nums">{hodnotaPohybu(m).toFixed(2)} €</td>
+                  <td className="p-3 text-right tabular-nums">
+                    {hodnotaPohybu(m).toFixed(2)} {mena.symbol}
+                  </td>
                   <td className="p-3 text-xs" onClick={(e) => e.stopPropagation()}>
                     {(m.source_document_type === "invoice" || m.reference_type === "invoice") &&
                     (m.source_document_id || m.reference_id) &&
@@ -471,7 +475,9 @@ function MovementsPage() {
               </div>
               <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                 <span>{warehouses[m.warehouse_id] ?? "—"}</span>
-                <span>{hodnotaPohybu(m).toFixed(2)} €</span>
+                <span>
+                  {hodnotaPohybu(m).toFixed(2)} {mena.symbol}
+                </span>
               </div>
               {m.note && <div className="mt-1 text-xs text-muted-foreground">{m.note}</div>}
             </Link>

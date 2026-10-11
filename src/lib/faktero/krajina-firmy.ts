@@ -123,4 +123,12 @@ export function useKrajinaDane(): KrajinaDane {
   return useRezimDph().krajina;
 }
 
+/**
+ * Domáca mena aktívnej firmy na popisky súm (sklad, pokladňa, zákazky…).
+ * Slovenská firma eurá, česká koruny — sumy v nej vedie celá agenda.
+ */
+export function useMenaFirmy(): { kod: "EUR" | "CZK"; symbol: string } {
+  return useKrajinaDane() === "CZ" ? { kod: "CZK", symbol: "Kč" } : { kod: "EUR", symbol: "€" };
+}
+
 export { krajinaDane };

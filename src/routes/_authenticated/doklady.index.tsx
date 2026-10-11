@@ -52,6 +52,7 @@ import { PredkontaciaDokladovOkno } from "@/components/faktero/PredkontaciaDokla
 import { KosDokladovOkno } from "@/components/faktero/KosDokladovOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { potvrd } from "@/lib/potvrdenie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: () => ({ meta: [{ title: "Doklady — Faktero" }] }),
@@ -1111,12 +1112,13 @@ function SummaryCard({
   value: number;
   highlight?: boolean;
 }) {
+  const mena = useMenaFirmy();
   return (
     <div
       className={`rounded-xl border border-border p-4 ${highlight ? "bg-primary/5" : "bg-card"}`}
     >
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-xl font-semibold tabular-nums">{value.toFixed(2)} €</div>
+      <div className="mt-1 text-xl font-semibold tabular-nums">{value.toFixed(2)} {mena.symbol}</div>
     </div>
   );
 }

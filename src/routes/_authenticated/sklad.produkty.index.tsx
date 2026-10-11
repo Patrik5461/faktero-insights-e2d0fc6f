@@ -32,7 +32,7 @@ import {
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
 import { StockSettingsDialog } from "@/components/faktero/StockSettingsDialog";
 
-import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { potvrd } from "@/lib/potvrdenie";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/")({
@@ -101,6 +101,7 @@ const SHOW_STOCK_DEBUG =
   (typeof window !== "undefined" && window.location.hostname.includes("lovable"));
 
 function StockItemsPage() {
+  const mena = useMenaFirmy();
   const { filter: urlFilter } = Route.useSearch();
   const createProductWithDebug = useServerFn(createStockProductDebug);
   const fetchDebugSnapshot = useServerFn(getStockDebugSnapshot);
@@ -906,15 +907,15 @@ function StockItemsPage() {
                     </td>
                     <td className="p-3 text-right">{Number(s.min_stock).toFixed(2)}</td>
                     <td className="p-3 text-right tabular-nums">
-                      {formatujJednotkovuCenu(s.purchase_price)} €
+                      {formatujJednotkovuCenu(s.purchase_price)} {mena.symbol}
                     </td>
                     <td className="p-3 text-right tabular-nums text-muted-foreground">
                       {s.avg_purchase_price != null
-                        ? `${formatujJednotkovuCenu(s.avg_purchase_price)} €`
+                        ? `${formatujJednotkovuCenu(s.avg_purchase_price)} ${mena.symbol}`
                         : "—"}
                     </td>
                     <td className="p-3 text-right tabular-nums">
-                      {formatujJednotkovuCenu(s.sale_price)} €
+                      {formatujJednotkovuCenu(s.sale_price)} {mena.symbol}
                     </td>
                     <td className="p-3 text-right">
                       <div className="inline-flex items-center gap-1">

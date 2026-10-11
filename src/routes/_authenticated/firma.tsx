@@ -19,6 +19,7 @@ import { BankoveUctyFirmy } from "@/components/faktero/banka/BankoveUctyFirmy";
 import { EditorOpravneni, VysvetlenieRoli } from "@/components/faktero/pristupy/Opravnenia";
 import { suhrnOpravneni, type Opravnenia } from "@/lib/faktero/opravnenia";
 import { potvrd } from "@/lib/potvrdenie";
+import { domacaMena } from "@/lib/faktero/kurzy";
 export const Route = createFileRoute("/_authenticated/firma")({
   head: () => ({ meta: [{ title: "Firma — Faktero" }] }),
   component: CompanyPage,
@@ -111,6 +112,11 @@ function CompanyPage() {
                 ...prev,
                 country: v,
                 vat_scheme: zosuladSchemu(prev.vat_scheme, krajinaDane(v), Boolean(prev.vat_payer)),
+                // Mena faktúr nasleduje domácu menu krajiny, ak ju nikto nezmenil vedome.
+                default_currency:
+                  (prev.default_currency ?? "EUR") === domacaMena(prev.country)
+                    ? domacaMena(v)
+                    : prev.default_currency,
               }))
             }
           />

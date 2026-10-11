@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { vynutSvetlyMotiv } from "@/lib/faktero/motiv";
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { textPrepoctu } from "@/lib/faktero/kurzy";
+import { domacaMena, krajinaKurzu, textPrepoctu } from "@/lib/faktero/kurzy";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { formatujMenu } from "@/lib/faktero/mena";
@@ -240,13 +240,17 @@ function VerejnaFaktura() {
         <Riadok k="IBAN" v={firma?.iban} />
       </div>
 
-      {doklad.currency !== "EUR" && doklad.exchange_rate && doklad.vat_total_eur != null && (
+      {doklad.currency !== domacaMena(firma?.country) &&
+        doklad.exchange_rate &&
+        doklad.vat_total_eur != null && (
         <p className="mt-4 text-sm text-muted-foreground">
           {textPrepoctu(
             String(doklad.currency),
             Number(doklad.exchange_rate),
             String(doklad.exchange_rate_date ?? doklad.delivery_date ?? doklad.issue_date),
             Number(doklad.vat_total_eur),
+            krajinaKurzu(firma?.country) === "CZ" ? "cz" : "sk",
+            krajinaKurzu(firma?.country),
           )}
         </p>
       )}

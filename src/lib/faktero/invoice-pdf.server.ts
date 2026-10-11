@@ -135,11 +135,18 @@ export async function ensureInvoicePdf(
   }
 
   /*
-    Faktúra v cudzej mene musí niesť daň aj v eurách. Keď prepočet chýba (napr.
+    Faktúra v cudzej mene musí niesť daň aj v domácej mene firmy (SK eurá,
+    CZ koruny). Keď prepočet chýba (napr.
     doklad z importu alebo z času, keď sa kurz neukladal), dotiahne sa teraz —
     inak by na tlači chýbal údaj, ktorý zákon vyžaduje.
   */
-  if (invoice.currency && invoice.currency !== "EUR" && invoice.vat_total_eur == null) {
+  const { domacaMena, krajinaKurzu } = await import("./kurzy");
+  const krajinaKurzuFirmy = krajinaKurzu(company.country);
+  if (
+    invoice.currency &&
+    invoice.currency !== domacaMena(company.country) &&
+    invoice.vat_total_eur == null
+  ) {
     try {
       const { prepocitajDoklad } = await import("./kurzy.server");
       const p = await prepocitajDoklad(
@@ -150,6 +157,7 @@ export async function ensureInvoicePdf(
           dan: Number(invoice.vat_total ?? 0),
           celkom: Number(invoice.total ?? 0),
         },
+        krajinaKurzuFirmy,
       );
       if (p) {
         Object.assign(invoice, {
@@ -171,7 +179,7 @@ export async function ensureInvoicePdf(
           .eq("id", invoice.id);
       }
     } catch (e) {
-      console.warn("[pdf] kurz ECB sa nepodarilo doplniť:", String((e as Error)?.message ?? e));
+      console.warn("[pdf] kurz sa nepodarilo doplniť:", String((e as Error)?.message ?? e));
     }
   }
 

@@ -22,7 +22,7 @@ import {
   type TypZlavy,
 } from "@/lib/faktero/zlavy";
 
-import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
@@ -48,6 +48,7 @@ type Item = {
 const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 23 };
 
 function NewQuote() {
+  const mena = useMenaFirmy();
   const navigate = useNavigate();
   /* Sadzby DPH podľa krajiny registrácie firmy. */
   const rezim = useRezimDph();
@@ -378,7 +379,7 @@ function NewQuote() {
                     <option value="">Z katalógu…</option>
                     {produkty.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} — {Number(p.unit_price).toFixed(2)} €
+                        {p.name} — {Number(p.unit_price).toFixed(2)} {mena.symbol}
                       </option>
                     ))}
                   </select>

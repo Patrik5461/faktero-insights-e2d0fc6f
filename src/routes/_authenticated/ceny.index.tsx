@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/ceny/")({
   head: () => ({ meta: [{ title: "Cenník — Faktero" }] }),
@@ -32,6 +33,7 @@ const pole = "w-full rounded-md border border-border bg-background px-3 py-2 tex
 const popis = "mb-1 block text-xs font-medium text-muted-foreground";
 
 function CennikPage() {
+  const mena = useMenaFirmy();
   const nacitajSkupiny = useServerFn(listPriceGroups);
   const nacitajCeny = useServerFn(listProductPrices);
   const ulozSkupinu = useServerFn(savePriceGroup);
@@ -465,7 +467,7 @@ function CennikPage() {
             )}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={popis}>Cena bez DPH (€)</label>
+                <label className={popis}>Cena bez DPH ({mena.symbol})</label>
                 <input
                   type="number"
                   step={KROK_CENY}

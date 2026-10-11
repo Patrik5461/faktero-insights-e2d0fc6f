@@ -62,8 +62,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-function fmt(n: number, currency: string | null | undefined = "EUR") {
-  return formatujMenu(n, currency);
+/*
+  Súčty na prehľade sú v domácej mene firmy (SK eurá, CZ koruny). Prehľad je
+  jedna stránka, takže mena sa nastaví pri jeho vykreslení a podkomponenty ju
+  len čítajú.
+*/
+let menaPrehladu = "EUR";
+
+function fmt(n: number, currency: string | null | undefined = menaPrehladu) {
+  return formatujMenu(n, currency || menaPrehladu);
 }
 
 function fmtCompact(n: number) {
@@ -117,6 +124,7 @@ function useCountdown(target: Date) {
 function Dashboard() {
   /* Slovenské povinnosti sa českej firme neponúkajú. */
   const krajina = useKrajinaDane();
+  menaPrehladu = krajina === "CZ" ? "CZK" : "EUR";
   const [allInvoices, setAllInvoices] = useState<any[]>([]);
   const [activeRecurring, setActiveRecurring] = useState<any[]>([]);
   const [recurringStats, setRecurringStats] = useState<{
@@ -1310,7 +1318,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
       icon: FilePlus2,
       tone: "bg-primary/15 text-primary",
       title: `Faktúra ${i.invoice_number} vytvorená`,
-      subtitle: `${i.customer_name ?? "—"} · ${fmt(Number(i.total), i.currency || "EUR")}`,
+      subtitle: `${i.customer_name ?? "—"} · ${fmt(Number(i.total), i.currency || menaPrehladu)}`,
       time: fmtTime(i.created_at),
       at: new Date(i.created_at).getTime(),
     });
@@ -1329,7 +1337,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
         icon: CheckCircle2,
         tone: "bg-emerald-500/15 text-emerald-500",
         title: `Faktúra ${i.invoice_number} zaplatená`,
-        subtitle: fmt(Number(i.total), i.currency || "EUR"),
+        subtitle: fmt(Number(i.total), i.currency || menaPrehladu),
         time: fmtTime(i.paid_at),
         at: new Date(i.paid_at).getTime(),
       });

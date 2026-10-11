@@ -7,7 +7,7 @@ import { RobotoBoldBase64 } from "./fonts/Roboto-Bold";
 import { paymentMethodLabel } from "./payment-method";
 import { maZuctovanuZalohu, zostavaUhradit } from "./zaloha";
 import { rezimFirmy, type FirmaDph } from "./dph-rezim";
-import { textPrepoctu, trebaPrepocet } from "./kurzy";
+import { domacaMena, krajinaKurzu, textPrepoctu, trebaPrepocet } from "./kurzy";
 import { vetyNaDoklad } from "./faktura-nalezitosti";
 import { VETA_25A } from "./dph-nezaplatene";
 import {
@@ -840,14 +840,15 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   y = ty - heroH - (isPaid ? 38 : 18);
 
   /*
-    Faktúra v cudzej mene musí mať daň vyčíslenú aj v eurách, prepočítanú
-    kurzom ECB zo dňa predchádzajúceho dňu dodania (§ 26 ods. 1 zákona o DPH).
+    Faktúra v cudzej mene musí mať daň vyčíslenú aj v domácej mene firmy:
+    slovenská v eurách kurzom ECB zo dňa pred dodaním (§ 26 ods. 1 zákona o
+    DPH), česká v korunách kurzom ČNB ke dni plnění (§ 4 odst. 5 ZDPH).
     Bez tejto vety je doklad neúplný, hoci sumy v nej sedia. Stojí hneď pod
     súčtami (ku ktorým patrí) — za platobnými údajmi sama odpadávala na
     druhú stranu.
   */
   if (
-    trebaPrepocet(invoice.currency) &&
+    trebaPrepocet(invoice.currency, domacaMena(company.country)) &&
     invoice.exchange_rate &&
     invoice.vat_total_eur != null &&
     Number(invoice.vat_total ?? 0) !== 0
@@ -858,6 +859,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       String(invoice.exchange_rate_date ?? invoice.delivery_date ?? invoice.issue_date),
       Number(invoice.vat_total_eur),
       krajinaDane(company.country) === "CZ" ? "cz" : "sk",
+      krajinaKurzu(company.country),
     );
     const lines = wrapLines(text, font, 9, innerW);
     ensureSpace(14 + lines.length * 11 + 8);

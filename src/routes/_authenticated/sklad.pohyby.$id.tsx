@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getMovementDetail } from "@/lib/faktero/stock.functions";
 import { ArrowLeft } from "lucide-react";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/sklad/pohyby/$id")({
   head: () => ({ meta: [{ title: "Detail pohybu — Faktero" }] }),
@@ -25,6 +26,7 @@ const SHOW_STOCK_DEBUG =
   (typeof window !== "undefined" && window.location.hostname.includes("lovable"));
 
 function MovementDetail() {
+  const mena = useMenaFirmy();
   const { id } = Route.useParams();
   const fetchDetail = useServerFn(getMovementDetail);
   const [data, setData] = useState<any>(null);
@@ -106,8 +108,14 @@ function MovementDetail() {
                   pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"
                 }
               />
-              <Pair label="Jednotková cena" value={`${Number(m.unit_price).toFixed(4)} €`} />
-              <Pair label="Celková hodnota" value={`${Number(m.total_value).toFixed(2)} €`} />
+              <Pair
+                label="Jednotková cena"
+                value={`${Number(m.unit_price).toFixed(4)} ${mena.symbol}`}
+              />
+              <Pair
+                label="Celková hodnota"
+                value={`${Number(m.total_value).toFixed(2)} ${mena.symbol}`}
+              />
               <Pair label="Sklad" value={data.warehouse?.name ?? "—"} />
               <Pair
                 label="Skladová karta"

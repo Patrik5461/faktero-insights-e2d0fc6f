@@ -15,7 +15,7 @@ import {
 import { useStockPermissions } from "@/hooks/useStockPermissions";
 import { ArrowLeft, Save, Upload, X } from "lucide-react";
 
-import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { moznostiSadziebRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť skladovú kartu — Faktero" }] }),
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/upravit
 const UNITS = ["ks", "bal", "kg", "g", "l", "ml", "m", "cm", "m²", "m³", "h", "deň"];
 
 function EditStockProduct() {
+  const mena = useMenaFirmy();
   const { id } = Route.useParams();
   const nav = useNavigate();
   const { canManage } = useStockPermissions();
@@ -346,7 +347,7 @@ function EditStockProduct() {
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="mb-3 text-sm font-semibold">Ceny a DPH (2025)</div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="Nákupná cena (€)">
+              <Field label={`Nákupná cena (${mena.symbol})`}>
                 <input
                   type="number"
                   step={KROK_CENY}
@@ -356,7 +357,7 @@ function EditStockProduct() {
                   className="input"
                 />
               </Field>
-              <Field label="Predajná cena (€)">
+              <Field label={`Predajná cena (${mena.symbol})`}>
                 <input
                   type="number"
                   step={KROK_CENY}
@@ -382,7 +383,7 @@ function EditStockProduct() {
             </div>
             {form.sale_price > 0 && (
               <p className="mt-2 text-xs text-muted-foreground">
-                S DPH: {(form.sale_price * (1 + form.vat_rate / 100)).toFixed(2)} € · Marža:{" "}
+                S DPH: {(form.sale_price * (1 + form.vat_rate / 100)).toFixed(2)} {mena.symbol} · Marža:{" "}
                 {form.purchase_price > 0
                   ? (((form.sale_price - form.purchase_price) / form.purchase_price) * 100).toFixed(
                       1,

@@ -7,6 +7,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createJob } from "@/lib/faktero/jobs.functions";
 import { ArrowLeft } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/zakazky/nova")({
   head: () => ({ meta: [{ title: "Nová zákazka — Faktero" }] }),
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/zakazky/nova")({
 });
 
 function NewJob() {
+  const mena = useMenaFirmy();
   const nav = useNavigate();
   const doCreate = useServerFn(createJob);
 
@@ -150,7 +152,7 @@ function NewJob() {
             <div className="mb-3 text-sm font-medium">Plán zákazky</div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={popis}>Plánované výnosy bez DPH (€)</label>
+                <label className={popis}>Plánované výnosy bez DPH ({mena.symbol})</label>
                 <input
                   type="number"
                   step="0.01"
@@ -161,7 +163,7 @@ function NewJob() {
                 />
               </div>
               <div>
-                <label className={popis}>Plánované náklady bez DPH (€)</label>
+                <label className={popis}>Plánované náklady bez DPH ({mena.symbol})</label>
                 <input
                   type="number"
                   step="0.01"

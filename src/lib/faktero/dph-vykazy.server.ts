@@ -24,6 +24,7 @@ import {
   type VystavenaFaktura,
   odpocitajZdanenuZalohu,
 } from "./dph-vykazy";
+import { domacaMena, domacejZaJednotku } from "./kurzy";
 
 type Klient = {
   from: (t: string) => any;
@@ -118,10 +119,12 @@ export async function nacitajVstup(
     kodyPodlaKategorie(supabase, companyId),
     supabase
       .from("companies")
-      .select("pohoda_predkontacia_prijata, pohoda_predkontacia_doklady")
+      .select("pohoda_predkontacia_prijata, pohoda_predkontacia_doklady, country")
       .eq("id", companyId)
       .maybeSingle(),
   ]);
+  // Do výkazu ide domáca mena firmy (SK eurá, CZ koruny); cudzia je všetko ostatné.
+  const domaca = domacaMena((firmaKody as any)?.country);
   /*
     Podiel odpočítateľnej DPH dokladu z jeho riadkov zaúčtovania — pomer
     predkontácie v hlavičke aj pri jednotlivých položkách (nafta 50/50 na
@@ -188,28 +191,29 @@ export async function nacitajVstup(
     if (!vDobe(den)) continue;
     if (NEPLATNE_STAVY.includes(String(f.status))) continue;
     /*
-      Do výkazu patria eurá. Keď je faktúra v cudzej mene, berú sa prepočítané
-      sumy (kurz ECB zo dňa pred dodaním) a riadky po sadzbách sa prepočítajú
+      Do výkazu patrí domáca mena. Keď je faktúra v cudzej mene, berú sa prepočítané
+      sumy (SK kurz ECB zo dňa pred dodaním, CZ kurz ČNB) a riadky po sadzbách sa prepočítajú
       rovnakým pomerom — chýbajúci prepočet sa ozve, nezamlčí.
     */
-    const cudzia = Boolean(f.currency && f.currency !== "EUR");
+    const cudzia = Boolean(f.currency && f.currency !== domaca);
     /*
       Zľava na doklad znižuje základ dane, ale v položkách nie je — do výkazu
       by inak išla vyššia daň, než faktúra pýta.
     */
     let riadky = riadkyZPoloziek(riadkySoZlavou(f.invoice_items ?? [], f.discount_total));
     if (cudzia) {
-      const kurz = Number(f.exchange_rate ?? 0);
-      if (kurz > 0) {
+      // Kurz je v zápise banky krajiny firmy (SK ECB, CZ ČNB).
+      const zaJednu = domacejZaJednotku(f.exchange_rate, (firmaKody as any)?.country);
+      if (zaJednu > 0) {
         riadky = riadky.map((r) => ({
           sadzba: r.sadzba,
-          zaklad: Math.round((r.zaklad / kurz) * 100) / 100,
-          dan: Math.round((r.dan / kurz) * 100) / 100,
+          zaklad: Math.round(r.zaklad * zaJednu * 100) / 100,
+          dan: Math.round(r.dan * zaJednu * 100) / 100,
         }));
       } else {
         vytky.push({
           doklad: f.invoice_number,
-          text: `Faktúra je v mene ${f.currency} a chýba jej prepočet kurzom ECB. Otvorte ju a uložte znova, alebo sumu do výkazu opravte ručne.`,
+          text: `Faktúra je v mene ${f.currency} a chýba jej prepočet kurzom. Otvorte ju a uložte znova, alebo sumu do výkazu opravte ručne.`,
         });
       }
     }
@@ -263,7 +267,7 @@ export async function nacitajVstup(
       });
       continue;
     }
-    const cudziaP = Boolean(p.currency && p.currency !== "EUR");
+    const cudziaP = Boolean(p.currency && p.currency !== domaca);
     const maPrepocet = p.vat_amount_eur != null || p.amount_without_vat_eur != null;
     if (cudziaP && !maPrepocet) {
       vytky.push({
@@ -354,10 +358,10 @@ export async function nacitajVstup(
       continue;
     }
     // Bloček nemá uložený prepočet na eurá; v cudzej mene by do výkazu išiel koruna za euro.
-    if (d.currency && String(d.currency).toUpperCase() !== "EUR") {
+    if (d.currency && String(d.currency).toUpperCase() !== domaca) {
       vytky.push({
         doklad: d.document_number || d.supplier_name || "doklad",
-        text: `Doklad je v mene ${d.currency} — do výkazu patria eurá. Odpočet z neho doplňte ručne prepočítaný kurzom.`,
+        text: `Doklad je v mene ${d.currency} — do výkazu patrí ${domaca}. Odpočet z neho doplňte ručne prepočítaný kurzom.`,
       });
       continue;
     }
@@ -416,7 +420,7 @@ export async function nacitajVstup(
     .filter((p) => zapocitatelna(p) && (p.povodna_splatnost || p.due_date))
     .map((p) => {
       const den = p.delivery_date || p.issue_date;
-      const cudziaP = Boolean(p.currency && p.currency !== "EUR");
+      const cudziaP = Boolean(p.currency && p.currency !== domaca);
       const maPrepocet = p.vat_amount_eur != null || p.amount_without_vat_eur != null;
       const dan = cudziaP && maPrepocet ? Number(p.vat_amount_eur ?? 0) : Number(p.vat_amount ?? 0);
       const zaklad =

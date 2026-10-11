@@ -12,6 +12,7 @@ import { pohybNazov } from "@/lib/faktero/stock-pohyb";
 import { Lock, Unlock, Pencil, Trash2 } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/zakazky/$id")({
   head: () => ({ meta: [{ title: "Zákazka — Faktero" }] }),
@@ -56,6 +57,7 @@ function Prucok({ percento, obratene }: { percento: number; obratene?: boolean }
 }
 
 function JobDetail() {
+  const mena = useMenaFirmy();
   const { id } = useParams({ from: "/_authenticated/zakazky/$id" });
   const nav = useNavigate();
   const fetchJob = useServerFn(getJob);
@@ -299,7 +301,7 @@ function JobDetail() {
                 />
               </div>
               <div>
-                <label className={popis}>Plánované výnosy (€)</label>
+                <label className={popis}>Plánované výnosy ({mena.symbol})</label>
                 <input
                   type="number"
                   step="0.01"
@@ -310,7 +312,7 @@ function JobDetail() {
                 />
               </div>
               <div>
-                <label className={popis}>Plánované náklady (€)</label>
+                <label className={popis}>Plánované náklady ({mena.symbol})</label>
                 <input
                   type="number"
                   step="0.01"

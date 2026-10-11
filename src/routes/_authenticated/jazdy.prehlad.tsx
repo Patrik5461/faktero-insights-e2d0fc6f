@@ -6,6 +6,7 @@ import { jeSukromnaJazda } from "@/lib/faktero/trip-format";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Car, Route as RouteIcon, Fuel, Wallet, Gauge, Briefcase, User } from "lucide-react";
 import { vsetkoAkoData } from "@/lib/faktero/strankovanie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/jazdy/prehlad")({
   head: () => ({ meta: [{ title: "Prehľad jázd — Faktero" }] }),
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/jazdy/prehlad")({
 });
 
 function OverviewPage() {
+  const mena = useMenaFirmy();
   const { vehicle_id } = Route.useSearch();
   const navigate = useNavigate({ from: "/jazdy/prehlad" });
   const [trips, setTrips] = useState<any[]>([]);
@@ -188,7 +190,7 @@ function OverviewPage() {
           <Stat icon={Briefcase} label="Služobné km" value={`${bizKm.toFixed(1)} km`} />
           <Stat icon={User} label="Súkromné km" value={`${privKm.toFixed(1)} km`} />
           <Stat icon={Fuel} label={`Spotreba ${year}`} value={`${fuelLiters.toFixed(1)} l`} />
-          <Stat icon={Wallet} label={`Náklady PHM ${year}`} value={`${fuelCost.toFixed(2)} €`} />
+          <Stat icon={Wallet} label={`Náklady PHM ${year}`} value={`${fuelCost.toFixed(2)} ${mena.symbol}`} />
         </div>
 
         <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">
@@ -202,7 +204,7 @@ function OverviewPage() {
                 <th className="p-3 text-right">Jazdy</th>
                 <th className="p-3 text-right">Km</th>
                 <th className="p-3 text-right">PHM (l)</th>
-                <th className="p-3 text-right">Náklady (€)</th>
+                <th className="p-3 text-right">Náklady ({mena.symbol})</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -230,7 +232,7 @@ function OverviewPage() {
                 <th className="p-3 text-right">Jazdy</th>
                 <th className="p-3 text-right">Km</th>
                 <th className="p-3 text-right">PHM (l)</th>
-                <th className="p-3 text-right">Náklady (€)</th>
+                <th className="p-3 text-right">Náklady ({mena.symbol})</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

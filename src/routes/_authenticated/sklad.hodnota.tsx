@@ -5,6 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getStockValuation } from "@/lib/faktero/stock.functions";
 import { Download } from "lucide-react";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/sklad/hodnota")({
   head: () => ({ meta: [{ title: "Hodnota skladu — Faktero" }] }),
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/_authenticated/sklad/hodnota")({
 });
 
 function ValuationPage() {
+  const mena = useMenaFirmy();
   const fetchVal = useServerFn(getStockValuation);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -108,8 +110,14 @@ function ValuationPage() {
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Stat label="Celková nákupná hodnota" value={`${data.total_purchase.toFixed(2)} €`} />
-              <Stat label="Odhad predajnej hodnoty" value={`${data.total_sale.toFixed(2)} €`} />
+              <Stat
+                label="Celková nákupná hodnota"
+                value={`${data.total_purchase.toFixed(2)} ${mena.symbol}`}
+              />
+              <Stat
+                label="Odhad predajnej hodnoty"
+                value={`${data.total_sale.toFixed(2)} ${mena.symbol}`}
+              />
             </div>
 
             <div className="mt-6 rounded-xl border border-border bg-card p-4">
@@ -135,8 +143,12 @@ function ValuationPage() {
                     <tr key={w.id}>
                       <td className="p-2">{w.name}</td>
                       <td className="p-2 text-right tabular-nums">{w.qty.toFixed(2)}</td>
-                      <td className="p-2 text-right tabular-nums">{w.purchase.toFixed(2)} €</td>
-                      <td className="p-2 text-right tabular-nums">{w.sale.toFixed(2)} €</td>
+                      <td className="p-2 text-right tabular-nums">
+                        {w.purchase.toFixed(2)} {mena.symbol}
+                      </td>
+                      <td className="p-2 text-right tabular-nums">
+                        {w.sale.toFixed(2)} {mena.symbol}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -168,8 +180,12 @@ function ValuationPage() {
                       <td className="p-2">{p.name}</td>
                       <td className="p-2 text-muted-foreground">{p.sku ?? "—"}</td>
                       <td className="p-2 text-right tabular-nums">{p.qty.toFixed(2)}</td>
-                      <td className="p-2 text-right tabular-nums">{p.purchase.toFixed(2)} €</td>
-                      <td className="p-2 text-right tabular-nums">{p.sale.toFixed(2)} €</td>
+                      <td className="p-2 text-right tabular-nums">
+                        {p.purchase.toFixed(2)} {mena.symbol}
+                      </td>
+                      <td className="p-2 text-right tabular-nums">
+                        {p.sale.toFixed(2)} {mena.symbol}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

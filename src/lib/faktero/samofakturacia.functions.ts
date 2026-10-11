@@ -158,22 +158,32 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
     }
 
     /*
-      Cudzia mena: daň musí byť aj v eurách, kurzom ECB zo dňa pred dodaním
-      (§ 26 ods. 1). Výkazy berú eurá, PDF si prepočet vypíše.
+      Cudzia mena: daň musí byť aj v domácej mene firmy (SK eurá kurzom ECB
+      zo dňa pred dodaním, CZ koruny kurzom ČNB). Výkazy berú domácu menu.
     */
     let eur: Record<string, number | null> = {
       exchange_rate: null,
       amount_without_vat_eur: null,
       vat_amount_eur: null,
     };
-    if (data.currency !== "EUR") {
-      const { prepocitajDoklad } = await import("./kurzy.server");
-      const p = await prepocitajDoklad(data.currency, data.delivery_date || data.issue_date, {
-        zaklad: naZapis.amount_without_vat,
-        dan: naZapis.vat_amount,
-        celkom: naZapis.amount_total,
-      });
-      if (!p) throw new Error(`Kurz ECB pre ${data.currency} sa nepodarilo zistiť — skúste o chvíľu.`);
+    const { prepocitajDoklad, krajinaFirmy } = await import("./kurzy.server");
+    const { domacaMena } = await import("./kurzy");
+    const krajinaKurzu = await krajinaFirmy(data.company_id);
+    if (data.currency !== domacaMena(krajinaKurzu)) {
+      const p = await prepocitajDoklad(
+        data.currency,
+        data.delivery_date || data.issue_date,
+        {
+          zaklad: naZapis.amount_without_vat,
+          dan: naZapis.vat_amount,
+          celkom: naZapis.amount_total,
+        },
+        krajinaKurzu,
+      );
+      if (!p)
+        throw new Error(
+          `Kurz ${krajinaKurzu === "CZ" ? "ČNB" : "ECB"} pre ${data.currency} sa nepodarilo zistiť — skúste o chvíľu.`,
+        );
       eur = { exchange_rate: p.kurz, amount_without_vat_eur: p.zaklad, vat_amount_eur: p.dan };
     }
 

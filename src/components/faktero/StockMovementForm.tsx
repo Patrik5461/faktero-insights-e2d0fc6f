@@ -9,6 +9,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 type MovementType = "prijem" | "vydaj" | "oprava";
 const SHOW_STOCK_DEBUG =
@@ -31,6 +32,7 @@ export function MovementForm({
   onDone?: () => void;
   polozkaId?: string;
 }) {
+  const mena = useMenaFirmy();
   const createMovement = useServerFn(createStockMovementDebug);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
@@ -331,7 +333,7 @@ export function MovementForm({
                       const s = Number(sideCosts) || 0;
                       return (p + (q > 0 ? s / q : 0)).toFixed(4);
                     })()}{" "}
-                    €
+                    {mena.symbol}
                   </div>
                 </div>
               </>

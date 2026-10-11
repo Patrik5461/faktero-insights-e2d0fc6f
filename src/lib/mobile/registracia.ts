@@ -8,6 +8,7 @@
 import type { Kluc } from "./preklady";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
+import { domacaMena } from "@/lib/faktero/kurzy";
 
 /** Kam má viesť odkaz z potvrdzovacieho e-mailu. */
 export function adresaPotvrdenia(nativna: boolean, origin: string | null, server: string): string {
@@ -80,7 +81,7 @@ export function firmaNaZapis(v: Record<string, string | boolean>) {
     _email: cistaHodnota("email"),
     _phone: cistaHodnota("phone"),
     _iban: cistaHodnota("iban")?.replace(/\s+/g, "").toUpperCase(),
-    _default_currency: "EUR",
+    _default_currency: domacaMena(cistaHodnota("country") ?? "SK"),
     // Postavenie k DPH: register ho nehovorí, vyberá ho človek.
     _vat_payer: Boolean(v.vat_payer),
     _vat_scheme: zosuladSchemu(

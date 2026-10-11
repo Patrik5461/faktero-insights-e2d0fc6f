@@ -18,6 +18,7 @@ import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
 import { VyberRezimuDph } from "@/components/faktero/VyberRezimuDph";
 import { zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
+import { domacaMena } from "@/lib/faktero/kurzy";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -81,7 +82,8 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
         _country: krajinaDane(form.country),
         _email: form.email || undefined,
         _phone: form.phone || undefined,
-        _default_currency: "EUR",
+        // Domáca mena podľa krajiny — česká firma fakturuje predvolene v korunách.
+        _default_currency: domacaMena(form.country),
         _vat_payer: form.vat_payer,
         _vat_scheme: zosuladSchemu(form.vat_scheme, krajinaDane(form.country), form.vat_payer),
       });

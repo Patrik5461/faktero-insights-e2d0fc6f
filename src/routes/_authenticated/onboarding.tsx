@@ -13,6 +13,7 @@ import { VyberRezimuDph } from "@/components/faktero/VyberRezimuDph";
 import { zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { MENY } from "@/lib/faktero/mena";
+import { domacaMena } from "@/lib/faktero/kurzy";
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({ meta: [{ title: "Nastavenie firmy — Faktero" }] }),
   component: Onboarding,
@@ -43,9 +44,24 @@ function Onboarding() {
     setForm((f) => {
       const n = { ...f, [k]: v };
       // Krajina prepína, ktoré paragrafy pripadajú do úvahy.
-      if (k === "country") n.vat_scheme = zosuladSchemu(f.vat_scheme, krajinaDane(v), f.vat_payer);
+      if (k === "country") return sMenouKrajiny(f, n);
       return n;
     });
+  }
+
+  /**
+   * Po zmene krajiny (ručne aj z registra) prispôsobí režim DPH a menu. Mena sa
+   * prepne len vtedy, keď bola domácou menou pôvodnej krajiny — vedome
+   * vybranú inú menu nemení.
+   */
+  function sMenouKrajiny(pred: typeof form, po: typeof form): typeof form {
+    const n = {
+      ...po,
+      vat_scheme: zosuladSchemu(po.vat_scheme, krajinaDane(po.country), po.vat_payer),
+    };
+    if (pred.default_currency === domacaMena(pred.country))
+      n.default_currency = domacaMena(po.country);
+    return n;
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -74,7 +90,7 @@ function Onboarding() {
         _email: form.email || undefined,
         _phone: form.phone || undefined,
         _iban: form.iban || undefined,
-        _default_currency: form.default_currency || "EUR",
+        _default_currency: form.default_currency || domacaMena(form.country),
         _vat_payer: form.vat_payer,
         _vat_scheme: zosuladSchemu(form.vat_scheme, krajinaDane(form.country), form.vat_payer),
       });
@@ -133,7 +149,10 @@ function Onboarding() {
               onChange={(v) => set("name", v)}
               onPick={(d, { auto }) =>
                 setForm((f) =>
-                  mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }),
+                  sMenouKrajiny(
+                    f,
+                    mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }),
+                  ),
                 )
               }
             />
@@ -152,7 +171,10 @@ function Onboarding() {
                 ico={form.ico}
                 onResult={(d, { auto }) =>
                   setForm((f) =>
-                    mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }),
+                    sMenouKrajiny(
+                      f,
+                      mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }),
+                    ),
                   )
                 }
               />

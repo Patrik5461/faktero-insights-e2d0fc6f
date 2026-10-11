@@ -48,6 +48,17 @@ export type VysledokFaktury =
   | { ok: true; faktura: any; nova: boolean }
   | { ok: false; kod: string; sprava: string; status: number };
 
+/** Mena faktúry, keď ju volajúci neposlal — predvolená mena firmy (CZ firma koruny). */
+async function predvolenaMena(supabase: Klient, companyId: string): Promise<string> {
+  const { data } = await supabase
+    .from("companies")
+    .select("default_currency, country")
+    .eq("id", companyId)
+    .maybeSingle();
+  const { domacaMena } = await import("./kurzy");
+  return String(data?.default_currency || domacaMena(data?.country));
+}
+
 export async function vytvorFakturu(
   supabase: Klient,
   companyId: string,
@@ -132,7 +143,7 @@ export async function vytvorFakturu(
       issue_date,
       delivery_date: d.delivery_date ?? null,
       due_date,
-      currency: d.currency ?? "EUR",
+      currency: d.currency ?? (await predvolenaMena(supabase, companyId)),
       payment_method: normalizePaymentMethod(d.payment_method),
       customer_name: cust.name,
       customer_ico: cust.ico ?? null,

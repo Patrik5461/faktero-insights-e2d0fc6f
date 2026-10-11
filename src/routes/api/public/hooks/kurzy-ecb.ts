@@ -21,9 +21,15 @@ export const Route = createFileRoute("/api/public/hooks/kurzy-ecb")({
           });
         }
         try {
-          const { stiahniDenneKurzy } = await import("@/lib/faktero/kurzy.server");
+          const { stiahniDenneKurzy, stiahniDenneKurzyCnb } =
+            await import("@/lib/faktero/kurzy.server");
           const pocet = await stiahniDenneKurzy();
-          return new Response(JSON.stringify({ ok: true, kurzov: pocet }), {
+          // Kurzy ČNB pre české firmy — výpadok ČNB nesmie zhodiť eurové kurzy.
+          const cnb = await stiahniDenneKurzyCnb().catch((e) => {
+            console.warn("[kurzy-cnb]", String(e?.message ?? e));
+            return 0;
+          });
+          return new Response(JSON.stringify({ ok: true, kurzov: pocet, kurzovCnb: cnb }), {
             status: 200,
             headers: { "content-type": "application/json" },
           });

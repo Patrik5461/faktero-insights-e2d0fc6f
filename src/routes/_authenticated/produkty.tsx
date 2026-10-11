@@ -19,7 +19,7 @@ import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { setProductStockTracking, zosuladPredajnuCenu } from "@/lib/faktero/stock.functions";
 
-import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/produkty")({
   head: () => ({ meta: [{ title: "Produkty a služby — Faktero" }] }),
@@ -51,6 +51,7 @@ const EMPTY: Product = {
 };
 
 function ProductsPage() {
+  const mena = useMenaFirmy();
   const list = usePagedList({ resource: "products", searchColumns: ["name", "code"] });
   /* Sadzby DPH podľa krajiny registrácie firmy. */
   const rezim = useRezimDph();
@@ -251,7 +252,9 @@ function ProductsPage() {
                   <td className="p-3 font-medium">{p.name}</td>
                   <td className="p-3 text-muted-foreground">{p.code ?? "—"}</td>
                   <td className="p-3">{p.unit}</td>
-                  <td className="p-3 text-right">{formatujJednotkovuCenu(p.unit_price)} €</td>
+                  <td className="p-3 text-right">
+                    {formatujJednotkovuCenu(p.unit_price)} {mena.symbol}
+                  </td>
                   <td className="p-3 text-right">{p.vat_rate} %</td>
                   <td className="p-3 text-right">
                     {!list.showDeleted && (

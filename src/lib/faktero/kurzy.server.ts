@@ -7,7 +7,7 @@
  */
 
 import { XMLParser } from "fast-xml-parser";
-import { denKurzu, kurzKDatumu, naEur, type Kurz } from "./kurzy";
+import { denKurzu, kurzKDatumu, naDomacu, type KrajinaKurzu, type Kurz } from "./kurzy";
 
 const DENNE = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
 const POSLEDNYCH_90 = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml";
@@ -63,7 +63,9 @@ async function uloz(kurzy: Kurz[]): Promise<void> {
 export async function kurzPreDoklad(
   mena: string,
   datumDodania: string,
+  krajina: KrajinaKurzu = "SK",
 ): Promise<{ kurz: number; den: string } | null> {
+  if (krajina === "CZ") return kurzCnb(mena, datumDodania);
   const m = String(mena).toUpperCase();
   if (!m || m === "EUR") return null;
   const hranica = denKurzu(datumDodania);
@@ -109,21 +111,145 @@ function rozdielDni(a: string, b: string): number {
   );
 }
 
-/** Prepočet dokladu na eurá — vráti kurz aj prepočítané sumy. */
+/**
+ * Prepočet dokladu na domácu menu firmy — vráti kurz aj prepočítané sumy.
+ * Slovenská firma → eurá (ECB), česká → koruny (ČNB).
+ */
 export async function prepocitajDoklad(
   mena: string,
   datumDodania: string,
   sumy: { zaklad: number; dan: number; celkom: number },
+  krajina: KrajinaKurzu = "SK",
 ): Promise<{ kurz: number; den: string; zaklad: number; dan: number; celkom: number } | null> {
-  const k = await kurzPreDoklad(mena, datumDodania);
+  const k = await kurzPreDoklad(mena, datumDodania, krajina);
   if (!k) return null;
   return {
     kurz: k.kurz,
     den: k.den,
-    zaklad: naEur(sumy.zaklad, k.kurz),
-    dan: naEur(sumy.dan, k.kurz),
-    celkom: naEur(sumy.celkom, k.kurz),
+    zaklad: naDomacu(sumy.zaklad, k.kurz, krajina),
+    dan: naDomacu(sumy.dan, k.kurz, krajina),
+    celkom: naDomacu(sumy.celkom, k.kurz, krajina),
   };
+}
+
+/** Krajina firmy kvôli prepočtu — podľa nej domáca mena a banka kurzu. */
+export async function krajinaFirmy(companyId: string): Promise<KrajinaKurzu> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("companies")
+    .select("country")
+    .eq("id", companyId)
+    .maybeSingle();
+  const { krajinaKurzu } = await import("./kurzy");
+  return krajinaKurzu(data?.country);
+}
+
+/* ─── ČNB ─────────────────────────────────────────────────────────────── */
+
+const CNB_ROK =
+  "https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/rok.txt";
+
+/**
+ * Ročný súbor ČNB: hlavička `Datum|1 AUD|…|100 HUF|…`, riadky `02.01.2026|13,797|…`.
+ * Kurz sa ukladá prepočítaný na 1 jednotku meny.
+ */
+export function kurzyZCnbRoka(text: string): Kurz[] {
+  const riadky = text.split(/\r?\n/).filter((r) => r.trim());
+  const von: Kurz[] = [];
+  let hlavicka: { mena: string; mnozstvo: number }[] = [];
+  for (const r of riadky) {
+    const bunky = r.split("|");
+    if (/^Datum/i.test(bunky[0])) {
+      // Rok môže mať viac hlavičiek (zmena zoznamu mien uprostred roka).
+      hlavicka = bunky.slice(1).map((b) => {
+        const [mnoz, mena] = b.trim().split(/\s+/);
+        return { mena: String(mena ?? "").toUpperCase(), mnozstvo: Number(mnoz) || 1 };
+      });
+      continue;
+    }
+    const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(bunky[0].trim());
+    if (!m) continue;
+    const den = `${m[3]}-${m[2]}-${m[1]}`;
+    bunky.slice(1).forEach((b, i) => {
+      const h = hlavicka[i];
+      const hodnota = Number(String(b).trim().replace(",", "."));
+      if (h?.mena && Number.isFinite(hodnota) && hodnota > 0) {
+        von.push({ den, mena: h.mena, kurz: Math.round((hodnota / h.mnozstvo) * 1e6) / 1e6 });
+      }
+    });
+  }
+  return von;
+}
+
+async function stiahniCnbRok(rok: number): Promise<Kurz[]> {
+  const res = await fetch(`${CNB_ROK}?rok=${rok}`, { signal: AbortSignal.timeout(20_000) });
+  if (!res.ok) throw new Error(`ČNB ${res.status}`);
+  return kurzyZCnbRoka(await res.text());
+}
+
+async function ulozCnb(kurzy: Kurz[]): Promise<void> {
+  if (!kurzy.length) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  for (let i = 0; i < kurzy.length; i += 1000) {
+    const { error } = await supabaseAdmin
+      .from("kurzy_cnb" as any)
+      .upsert(kurzy.slice(i, i + 1000) as any, { onConflict: "den,mena" });
+    if (error) {
+      console.warn("[kurzy-cnb] zápis zlyhal:", error.message);
+      return;
+    }
+  }
+}
+
+/**
+ * Kurz ČNB („CZK za 1 jednotku“) platný v deň plnenia — posledný vyhlásený
+ * najneskôr v ten deň (cez víkend a sviatky piatkový).
+ */
+export async function kurzCnb(
+  mena: string,
+  datumPlnenia: string,
+): Promise<{ kurz: number; den: string } | null> {
+  const m = String(mena).toUpperCase();
+  if (!m || m === "CZK") return null;
+  const hranica = denKurzu(datumPlnenia, "CZ");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const zDb = async () => {
+    const { data } = await supabaseAdmin
+      .from("kurzy_cnb" as any)
+      .select("den, mena, kurz")
+      .eq("mena", m)
+      .lte("den", hranica)
+      .order("den", { ascending: false })
+      .limit(1);
+    const r = ((data ?? []) as any[])[0];
+    return r ? { kurz: Number(r.kurz), den: String(r.den) } : null;
+  };
+  const najdene = await zDb();
+  if (najdene && rozdielDni(najdene.den, hranica) <= 5) return najdene;
+
+  const rok = Number(hranica.slice(0, 4));
+  // Začiatkom januára môže platiť ešte decembrový kurz — preto aj predošlý rok.
+  for (const r of [rok, rok - 1]) {
+    try {
+      const stiahnute = await stiahniCnbRok(r);
+      await ulozCnb(stiahnute);
+      const zo = kurzKDatumu(stiahnute, m, hranica);
+      if (zo) return { kurz: zo.kurz, den: zo.den };
+    } catch (e) {
+      console.warn("[kurzy-cnb] ČNB nedostupná:", String((e as Error)?.message ?? e));
+    }
+  }
+  return najdene;
+}
+
+/** Denné kurzy ČNB do pamäte — z cronu spolu s ECB. */
+export async function stiahniDenneKurzyCnb(): Promise<number> {
+  const kurzy = await stiahniCnbRok(new Date().getUTCFullYear());
+  // Stačí posledný týždeň, zvyšok roka už v pamäti je.
+  const hranica = new Date(Date.now() - 8 * 86_400_000).toISOString().slice(0, 10);
+  const nove = kurzy.filter((k) => k.den >= hranica);
+  await ulozCnb(nove);
+  return nove.length;
 }
 
 /** Denné kurzy do pamäte — volá ich cron `faktero-kurzy-ecb` (hook `kurzy-ecb`). */

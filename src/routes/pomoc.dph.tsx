@@ -178,6 +178,12 @@ const sections: HelpSection[] = [
           Cez víkend a sviatky sa použije posledný zverejnený kurz. Do výkazov k DPH vstupuje
           prepočítaná suma v eurách.
         </p>
+        <p>
+          <strong>Česká firma</strong> má domácu menu korunu: faktúry vystavuje predvolene v CZK a
+          pri inej mene (napríklad v eurách) sa daň prepočíta na koruny{" "}
+          <strong>kurzom ČNB platným v deň uskutočnenia plnenia</strong> (§ 4 zákona o DPH). Na
+          doklade je potom riadok „DPH v přepočtu“ s kurzom ČNB.
+        </p>
       </>
     ),
   },

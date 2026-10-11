@@ -7,6 +7,7 @@ import { Plus, Pencil, Power, Fuel, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { potvrd } from "@/lib/potvrdenie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/jazdy/vozidla")({
   head: () => ({ meta: [{ title: "Vozidlá — Faktero" }] }),
@@ -27,6 +28,7 @@ type Vehicle = {
 const EMPTY: Vehicle = { name: "", initial_odometer: 0, active: true, fuel_type: "diesel" };
 
 function VehiclesPage() {
+  const mena = useMenaFirmy();
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [fuel, setFuel] = useState<any[]>([]);
   const [editing, setEditing] = useState<Vehicle | null>(null);
@@ -198,7 +200,7 @@ function VehiclesPage() {
                 <th className="p-3">Dátum</th>
                 <th className="p-3">Vozidlo</th>
                 <th className="p-3 text-right">Litre</th>
-                <th className="p-3 text-right">€/l</th>
+                <th className="p-3 text-right">{mena.symbol}/l</th>
                 <th className="p-3 text-right">Spolu</th>
                 <th className="p-3">Stanica</th>
                 <th className="p-3">Doklad</th>
@@ -222,7 +224,7 @@ function VehiclesPage() {
                     {Number(f.price_per_liter).toFixed(3)}
                   </td>
                   <td className="p-3 text-right tabular-nums font-medium">
-                    {Number(f.total_amount).toFixed(2)} €
+                    {Number(f.total_amount).toFixed(2)} {mena.symbol}
                   </td>
                   <td className="p-3">{f.station_name ?? "—"}</td>
                   <td className="p-3">{f.receipt_number ?? "—"}</td>
@@ -364,6 +366,7 @@ function FuelDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const mena = useMenaFirmy();
   const [f, setF] = useState({
     vehicle_id: vehicles[0]?.id ?? "",
     fuel_date: new Date().toISOString().slice(0, 10),
@@ -446,7 +449,10 @@ function FuelDialog({
             />
           </div>
           <div className="rounded-md bg-muted/40 px-3 py-2 text-sm">
-            Spolu: <strong className="tabular-nums">{total} €</strong>
+            Spolu:{" "}
+            <strong className="tabular-nums">
+              {total} {mena.symbol}
+            </strong>
           </div>
           <In
             label="Čerpacia stanica"

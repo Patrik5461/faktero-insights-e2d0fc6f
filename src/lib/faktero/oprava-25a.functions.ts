@@ -209,7 +209,13 @@ export const vystavOpravu25aFn = createServerFn({ method: "POST" })
 
     const zaklad = r2(riadky.reduce((s, r) => s + r.zaklad, 0)) * znamienko;
     const dan = r2(riadky.reduce((s, r) => s + r.dan, 0)) * znamienko;
-    const kurz = f.currency && f.currency !== "EUR" ? Number(f.exchange_rate ?? 0) || null : null;
+    const { krajinaFirmy } = await import("./kurzy.server");
+    const { domacaMena, naDomacu } = await import("./kurzy");
+    const krajinaKurzuFirmy = await krajinaFirmy(f.company_id);
+    const kurz =
+      f.currency && f.currency !== domacaMena(krajinaKurzuFirmy)
+        ? Number(f.exchange_rate ?? 0) || null
+        : null;
     const pridajDni = (d: string, n: number) => {
       const x = new Date(`${d}T12:00:00Z`);
       x.setUTCDate(x.getUTCDate() + n);
@@ -255,9 +261,9 @@ export const vystavOpravu25aFn = createServerFn({ method: "POST" })
           ? {
               exchange_rate: kurz,
               exchange_rate_date: f.exchange_rate_date ?? null,
-              subtotal_eur: r2(zaklad / kurz),
-              vat_total_eur: r2(dan / kurz),
-              total_eur: r2((zaklad + dan) / kurz),
+              subtotal_eur: naDomacu(zaklad, kurz, krajinaKurzuFirmy),
+              vat_total_eur: naDomacu(dan, kurz, krajinaKurzuFirmy),
+              total_eur: naDomacu(zaklad + dan, kurz, krajinaKurzuFirmy),
             }
           : {}),
       })

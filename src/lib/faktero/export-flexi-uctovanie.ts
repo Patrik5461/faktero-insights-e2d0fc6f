@@ -26,6 +26,7 @@
  */
 
 import type { DokladUctovania, KodUctovania, RiadokUctovania } from "./zauctovanie-export";
+import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 
 export type NastaveniaFlexi = {
   /** Typ vystavenej faktúry (číselník `typ-faktury-vydane`), predvolene FAKTURA. */
@@ -98,24 +99,29 @@ const TYP_SZB: Record<Priehradka, string> = {
 
 type Mena = {
   cudzia: boolean;
-  /** Suma v domácej mene; `kurz` dokladu je počet jednotiek meny za 1 €. */
+  /** Suma v domácej mene; `kurz` dokladu je v zápise banky krajiny firmy (SK ECB, CZ ČNB). */
   tm: (x: number) => number;
   /** Flexi: kurz = domácej meny za `kurzMnozstvi` jednotiek cudzej. */
   kurz: number;
   kurzMnozstvi: number;
 };
 
-function mena(kodMeny: string, domaca: string, kurz: number | null): Mena | null {
+function mena(
+  kodMeny: string,
+  domaca: string,
+  kurz: number | null,
+  krajina: string | null | undefined,
+): Mena | null {
   if (kodMeny === domaca) return { cudzia: false, tm: (x) => x, kurz: 1, kurzMnozstvi: 1 };
-  const k = Number(kurz ?? 0) || 0;
-  if (!(k > 0)) return null;
-  // Slabšia mena (koruny, forinty) sa udáva za 100 jednotiek, inak by kurz vyšiel 0,0397.
-  const kurzMnozstvi = k >= 10 ? 100 : 1;
+  const zaJednu = domacejZaJednotku(kurz, krajina);
+  if (!(zaJednu > 0)) return null;
+  // Slabšia mena (forinty, pri SK firme koruny) sa udáva za 100 jednotiek.
+  const { kurz: k, mnozstvo } = kurzZaMnozstvo(kurz, krajina);
   return {
     cudzia: true,
-    tm: (x) => Math.round((x / k) * 100) / 100,
-    kurz: Math.round((kurzMnozstvi / k) * 1e6) / 1e6,
-    kurzMnozstvi,
+    tm: (x) => Math.round(x * zaJednu * 100) / 100,
+    kurz: k,
+    kurzMnozstvi: mnozstvo,
   };
 }
 
@@ -194,7 +200,8 @@ export function buildFlexiUctovanie(opts: {
   nastavenia?: NastaveniaFlexi;
 }): { xml: string; preskocene: string[] } {
   const n = opts.nastavenia ?? {};
-  const domaca = String(opts.firma?.default_currency ?? "EUR").toUpperCase() || "EUR";
+  // Domáca mena podľa krajiny firmy (SK → EUR, CZ → CZK).
+  const domaca = domacaMena(opts.firma?.country);
   const preskocene: string[] = [];
   const vystup: string[] = [];
 
@@ -204,7 +211,7 @@ export function buildFlexiUctovanie(opts: {
       Cudzia mena: polia `sum*` sú v domácej mene, `*Men` v mene dokladu a
       hlavička nesie kurz. Bez kurzu by sa 10 000 Kč dostalo do Flexi ako eurá.
     */
-    const m = mena(d.mena, domaca, d.kurz);
+    const m = mena(d.mena, domaca, d.kurz, opts.firma?.country);
     if (!m) {
       preskocene.push(`${cislo} — doklad v mene ${d.mena} nemá kurz`);
       continue;

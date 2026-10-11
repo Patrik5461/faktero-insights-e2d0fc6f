@@ -8,6 +8,7 @@ import {
   type StavRozdelovaca,
 } from "@/lib/faktero/mail-prijem.functions";
 import { potvrd } from "@/lib/potvrdenie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 const STAVY: Record<string, { text: string; trieda: string }> = {
   caka: { text: "Čaká na priradenie", trieda: "text-amber-700" },
@@ -21,6 +22,7 @@ const STAVY: Record<string, { text: string; trieda: string }> = {
  * Doklad ide firme podľa IČO odberateľa; čo nesedí, čaká tu na priradenie.
  */
 export function RozdelovacMailov() {
+  const mena = useMenaFirmy();
   const [otvorene, setOtvorene] = useState(false);
   const [stav, setStav] = useState<StavRozdelovaca | null>(null);
   const [skopirovane, setSkopirovane] = useState(false);
@@ -149,8 +151,8 @@ export function RozdelovacMailov() {
                           {n.prilohy.map((p) => (
                             <div key={p.id} className="mt-1 text-xs text-muted-foreground">
                               {p.nazov ?? "príloha"} — {p.dodavatel ?? "dodávateľ ?"}
-                              {p.suma != null ? `, ${p.suma} ${p.mena ?? "€"}` : ""} · odberateľ{" "}
-                              {p.odberatel ?? "neuvedený"}
+                              {p.suma != null ? `, ${p.suma} ${p.mena ?? mena.symbol}` : ""} ·
+                              odberateľ {p.odberatel ?? "neuvedený"}
                               {p.ico ? ` (IČO ${p.ico})` : p.ic_dph ? ` (IČ DPH ${p.ic_dph})` : ""}
                             </div>
                           ))}

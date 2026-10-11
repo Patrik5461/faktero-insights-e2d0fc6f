@@ -29,6 +29,7 @@
 
 import type { DokladUctovania, KodUctovania, RiadokUctovania } from "./zauctovanie-export";
 import { rozdelUcet } from "./zauctovanie-export";
+import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 
 export type NastaveniaMoney = {
   /** Zkratky číselných řad v Money (max. 5 znakov). */
@@ -123,6 +124,7 @@ type Mena = {
   /** Prepočet sumy dokladu do domácej meny agendy. */
   naDomacu: (x: number) => number;
   mnozstvo: number;
+  /** Koľko domácej meny za `mnozstvo` jednotiek cudzej. */
   kurz: number;
 };
 
@@ -134,7 +136,7 @@ ${o}<Valuty>
 ${o}  <Mena>
 ${o}    <Kod>${esc(m.kod)}</Kod>
 ${o}    <Mnozstvi>${m.mnozstvo}</Mnozstvi>
-${o}    <Kurs>${(m.mnozstvo / m.kurz).toFixed(4)}</Kurs>
+${o}    <Kurs>${m.kurz.toFixed(4)}</Kurs>
 ${o}  </Mena>
 ${o}  ${souhrnDph(d.riadky, (x) => x, `${o}  `)}
 ${o}  <Celkem>${f2(d.celkom)}</Celkem>
@@ -427,7 +429,8 @@ export function buildMoneyS3Uctovanie(opts: {
   nastavenia?: NastaveniaMoney;
 }): { xml: string; preskocene: string[] } {
   const nast = opts.nastavenia ?? {};
-  const domaca = String(opts.firma?.default_currency ?? "EUR").toUpperCase() || "EUR";
+  // Domáca mena podľa krajiny firmy (SK → EUR, CZ → CZK).
+  const domaca = domacaMena(opts.firma?.country);
   const preskocene: string[] = [];
   const vydane: string[] = [];
   const prijate: string[] = [];
@@ -455,18 +458,19 @@ export function buildMoneyS3Uctovanie(opts: {
     }
     const mena = d.mena || domaca;
     const cudzia = mena !== domaca;
-    // `kurz` je počet jednotiek cudzej meny za jedno euro (ako pri faktúrach).
-    const kurz = Number(d.kurz ?? 0) || 0;
-    if (cudzia && !kurz) {
+    // Kurz dokladu je v zápise banky krajiny firmy (SK ECB „X za 1 €“, CZ ČNB „CZK za 1 X“).
+    const zaJednu = domacejZaJednotku(d.kurz, opts.firma?.country);
+    if (cudzia && !zaJednu) {
       preskocene.push(`${nazov} — doklad v mene ${mena} nemá kurz`);
       continue;
     }
+    const kzm = kurzZaMnozstvo(d.kurz, opts.firma?.country);
     const m: Mena = {
       cudzia,
       kod: mena,
-      naDomacu: (x) => (cudzia ? Number(x ?? 0) / kurz : Number(x ?? 0)),
-      mnozstvo: kurz >= 10 ? 100 : 1,
-      kurz,
+      naDomacu: (x) => (cudzia ? Number(x ?? 0) * zaJednu : Number(x ?? 0)),
+      mnozstvo: kzm.mnozstvo,
+      kurz: kzm.kurz,
     };
 
     if (d.agenda === "vystavena") vydane.push(faktura(d, m, nast, "    "));

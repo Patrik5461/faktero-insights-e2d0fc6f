@@ -10,6 +10,7 @@ import { useStockPermissions } from "@/hooks/useStockPermissions";
 import { ReservationsPanel } from "@/components/faktero/ReservationsPanel";
 import { Download, FileText, Package, Pencil, Warehouse, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/")({
   head: () => ({ meta: [{ title: "Skladová karta — Faktero" }] }),
@@ -26,6 +27,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 function ProductStockDetail() {
+  const mena = useMenaFirmy();
   const { id } = Route.useParams();
   const fetchDetail = useServerFn(getProductStockDetail);
   const recompute = useServerFn(recomputeStockAvgCost);
@@ -137,25 +139,25 @@ function ProductStockDetail() {
             label="K dispozícii"
             value={`${(Number(data.totalQuantity) - Number(data.reservedQuantity ?? 0)).toFixed(2)} ${si?.unit ?? ""}`}
           />
-          <Stat label="Hodnota skladu" value={`${stockValue.toFixed(2)} €`} />
+          <Stat label="Hodnota skladu" value={`${stockValue.toFixed(2)} ${mena.symbol}`} />
           <Stat
             label="Minimálny stav"
             value={si ? `${Number(si.min_stock).toFixed(2)} ${si.unit}` : "—"}
           />
           <Stat
             label="Nákupná cena"
-            value={si ? `${formatujJednotkovuCenu(si.purchase_price)} €` : "—"}
+            value={si ? `${formatujJednotkovuCenu(si.purchase_price)} ${mena.symbol}` : "—"}
           />
-          <Stat label="Predajná cena" value={si ? `${formatujJednotkovuCenu(si.sale_price)} €` : "—"} />
+          <Stat label="Predajná cena" value={si ? `${formatujJednotkovuCenu(si.sale_price)} ${mena.symbol}` : "—"} />
           <Stat
             label="Priemerná nákupná cena"
-            value={si ? `${formatujJednotkovuCenu(si.avg_purchase_price ?? 0)} €` : "—"}
+            value={si ? `${formatujJednotkovuCenu(si.avg_purchase_price ?? 0)} ${mena.symbol}` : "—"}
           />
           <Stat
             label="Posledná nákupná cena"
             value={
               si?.last_purchase_price != null
-                ? `${formatujJednotkovuCenu(si.last_purchase_price)} €`
+                ? `${formatujJednotkovuCenu(si.last_purchase_price)} ${mena.symbol}`
                 : "—"
             }
           />
@@ -310,7 +312,7 @@ function ProductStockDetail() {
                       {m.unit_cost != null ? formatujJednotkovuCenu(m.unit_cost) : "—"}
                     </td>
                     <td className="p-2 text-right tabular-nums">
-                      {Number(m.total_value).toFixed(2)} €
+                      {Number(m.total_value).toFixed(2)} {mena.symbol}
                     </td>
                     <td className="p-2">
                       <SourceBadge type={m.source_document_type} id={m.source_document_id} />
@@ -345,7 +347,7 @@ function ProductStockDetail() {
                     {inv.invoice_number}
                   </Link>
                   <span className="text-xs text-muted-foreground">
-                    {inv.status} · {Number(inv.total ?? 0).toFixed(2)} €
+                    {inv.status} · {Number(inv.total ?? 0).toFixed(2)} {mena.symbol}
                   </span>
                 </li>
               ))}

@@ -52,7 +52,7 @@ import {
   type TypZlavy,
 } from "@/lib/faktero/zlavy";
 
-import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { prepocitajFakturuFn } from "@/lib/faktero/kurzy.functions";
 import { jeHotovost, prekrocenyStrop } from "@/lib/faktero/hotovost";
@@ -138,6 +138,7 @@ type StockMeta = {
 };
 
 function NewInvoice() {
+  const mena = useMenaFirmy();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const triggerEvt = useServerFn(triggerEventFn);
@@ -1031,13 +1032,14 @@ function NewInvoice() {
         }
       }
 
-      // Faktúra v cudzej mene musí niesť daň aj v eurách — kurz sa doťahuje
-      // na serveri hneď po vystavení, aby ho mala aj tlač a výkazy k DPH.
-      if (form.currency && form.currency !== "EUR") {
+      // Faktúra v cudzej mene musí niesť daň aj v domácej mene firmy (SK eurá,
+      // CZ koruny) — kurz doťahuje server hneď po vystavení, aby ho mala aj
+      // tlač a výkazy. Či je mena domáca, rozhodne server podľa krajiny firmy.
+      if (form.currency) {
         try {
           await prepocitaj({ data: { invoice_id: inv.id } });
         } catch {
-          toast.warning("Kurz ECB sa nepodarilo načítať — daň v eurách doplňte pred podaním DPH.");
+          toast.warning("Kurz sa nepodarilo načítať — prepočet dane doplňte pred podaním DPH.");
         }
       }
 
@@ -1851,7 +1853,7 @@ function NewInvoice() {
                           <div className="pr-2 text-right text-[10px] leading-tight text-emerald-600">
                             {it._zakladna != null && it._zakladna !== it.unit_price && (
                               <span className="mr-1 text-muted-foreground line-through">
-                                {it._zakladna.toFixed(2)} €
+                                {it._zakladna.toFixed(2)} {mena.symbol}
                               </span>
                             )}
                             {it._dovod}
@@ -2348,6 +2350,7 @@ function ProductSearch({
   onPick: (p: any) => void;
   stockByProduct: Record<string, StockMeta>;
 }) {
+  const mena = useMenaFirmy();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const ref = useRef<HTMLDivElement>(null);
@@ -2411,7 +2414,7 @@ function ProductSearch({
                     )}
                   </span>
                   <span className="text-xs text-muted-foreground tabular-nums">
-                    {Number(p.unit_price).toFixed(2)} €
+                    {Number(p.unit_price).toFixed(2)} {mena.symbol}
                   </span>
                 </button>
               </li>

@@ -14,18 +14,26 @@ export const prepocitajFakturuFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: f } = await context.supabase
       .from("invoices")
-      .select("id, currency, issue_date, delivery_date, subtotal, vat_total, total")
+      .select("id, company_id, currency, issue_date, delivery_date, subtotal, vat_total, total")
       .eq("id", data.invoice_id)
       .maybeSingle();
     if (!f) throw new Error("Faktúra sa nenašla.");
-    if (!f.currency || f.currency === "EUR") return { prepocitane: false as const };
+    const { prepocitajDoklad, krajinaFirmy } = await import("./kurzy.server");
+    const { domacaMena } = await import("./kurzy");
+    const krajina = await krajinaFirmy(f.company_id);
+    // Doklad v domácej mene firmy (SK → EUR, CZ → CZK) sa neprepočítava.
+    if (!f.currency || f.currency === domacaMena(krajina)) return { prepocitane: false as const };
 
-    const { prepocitajDoklad } = await import("./kurzy.server");
-    const p = await prepocitajDoklad(f.currency, String(f.delivery_date || f.issue_date), {
-      zaklad: Number(f.subtotal ?? 0),
-      dan: Number(f.vat_total ?? 0),
-      celkom: Number(f.total ?? 0),
-    });
+    const p = await prepocitajDoklad(
+      f.currency,
+      String(f.delivery_date || f.issue_date),
+      {
+        zaklad: Number(f.subtotal ?? 0),
+        dan: Number(f.vat_total ?? 0),
+        celkom: Number(f.total ?? 0),
+      },
+      krajina,
+    );
     if (!p) return { prepocitane: false as const };
 
     await context.supabase
@@ -49,19 +57,26 @@ export const prepocitajPrijatuFn = createServerFn({ method: "POST" })
     const { data: f } = await context.supabase
       .from("purchase_invoices")
       .select(
-        "id, currency, issue_date, delivery_date, amount_without_vat, vat_amount, amount_total",
+        "id, company_id, currency, issue_date, delivery_date, amount_without_vat, vat_amount, amount_total",
       )
       .eq("id", data.id)
       .maybeSingle();
     if (!f) throw new Error("Faktúra sa nenašla.");
-    if (!f.currency || f.currency === "EUR") return { prepocitane: false as const };
+    const { prepocitajDoklad, krajinaFirmy } = await import("./kurzy.server");
+    const { domacaMena } = await import("./kurzy");
+    const krajina = await krajinaFirmy(f.company_id);
+    if (!f.currency || f.currency === domacaMena(krajina)) return { prepocitane: false as const };
 
-    const { prepocitajDoklad } = await import("./kurzy.server");
-    const p = await prepocitajDoklad(f.currency, String(f.delivery_date || f.issue_date), {
-      zaklad: Number(f.amount_without_vat ?? 0),
-      dan: Number(f.vat_amount ?? 0),
-      celkom: Number(f.amount_total ?? 0),
-    });
+    const p = await prepocitajDoklad(
+      f.currency,
+      String(f.delivery_date || f.issue_date),
+      {
+        zaklad: Number(f.amount_without_vat ?? 0),
+        dan: Number(f.vat_amount ?? 0),
+        celkom: Number(f.amount_total ?? 0),
+      },
+      krajina,
+    );
     if (!p) return { prepocitane: false as const };
 
     await context.supabase
@@ -79,9 +94,16 @@ export const prepocitajPrijatuFn = createServerFn({ method: "POST" })
 export const kurzKuDnuFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
-    z.object({ mena: z.string().min(3).max(3), den: z.string() }).parse(input),
+    z
+      .object({
+        mena: z.string().min(3).max(3),
+        den: z.string(),
+        company_id: z.string().uuid().optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data }) => {
-    const { kurzPreDoklad } = await import("./kurzy.server");
-    return (await kurzPreDoklad(data.mena, data.den)) ?? null;
+    const { kurzPreDoklad, krajinaFirmy } = await import("./kurzy.server");
+    const krajina = data.company_id ? await krajinaFirmy(data.company_id) : "SK";
+    return (await kurzPreDoklad(data.mena, data.den, krajina)) ?? null;
   });

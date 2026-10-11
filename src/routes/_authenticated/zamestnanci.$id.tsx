@@ -49,6 +49,7 @@ import {
   type UdajeZamestnanca,
 } from "@/components/faktero/zamestnanci/ui";
 import { potvrd } from "@/lib/potvrdenie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/$id")({
   head: () => ({ meta: [{ title: "Zamestnanec — Faktero" }] }),
@@ -343,6 +344,7 @@ const prazdnaZmluva = () => ({
 });
 
 function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
+  const mena = useMenaFirmy();
   const uloz = useServerFn(ulozZmluvu);
   const zmaz = useServerFn(zmazZaznam);
   const [forma, setForma] = useState<ReturnType<typeof prazdnaZmluva> | null>(null);
@@ -412,7 +414,7 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className={popis} htmlFor="k-salary">Mzda / odmena (€)</label>
+                <label className={popis} htmlFor="k-salary">Mzda / odmena ({mena.symbol})</label>
                 <input id="k-salary" inputMode="decimal" className={pole} value={forma.salary} onChange={nastav("salary")} />
               </div>
               <div>

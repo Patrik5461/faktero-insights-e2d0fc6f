@@ -14,6 +14,7 @@ import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { trasaDoPolyline } from "@/lib/faktero/polyline";
 import { Play, Square } from "lucide-react";
 import { toast } from "sonner";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/jazdy/gps")({
   head: () => ({ meta: [{ title: "GPS jazda — Faktero" }] }),
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/_authenticated/jazdy/gps")({
 });
 
 function GpsTripPage() {
+  const mena = useMenaFirmy();
   const navigate = useNavigate();
   const [tracking, setTracking] = useState(false);
   const [distance, setDistance] = useState(0);
@@ -136,7 +138,7 @@ function GpsTripPage() {
             <JobPicker value={jobId} onChange={setJobId} disabled={tracking} />
             {fuelPrice != null && (
               <div className="text-xs text-muted-foreground">
-                Cena PHM {fuelPrice.toFixed(3)} €/l z posledného tankovania.
+                Cena PHM {fuelPrice.toFixed(3)} {mena.symbol}/l z posledného tankovania.
               </div>
             )}
           </div>

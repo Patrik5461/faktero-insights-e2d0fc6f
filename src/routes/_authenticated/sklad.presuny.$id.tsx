@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { ArrowRightLeft, CheckCircle2, XCircle } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/$id")({
   head: () => ({ meta: [{ title: "Detail presunu — Faktero" }] }),
@@ -24,6 +25,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 function TransferDetailPage() {
+  const mena = useMenaFirmy();
   const { id } = Route.useParams();
   const nav = useNavigate();
   const fetchDetail = useServerFn(getTransferDetail);
@@ -212,9 +214,11 @@ function TransferDetailPage() {
                       <td className="px-3 py-2">{name ?? "—"}</td>
                       <td className="px-3 py-2">{src?.sku ?? "—"}</td>
                       <td className="px-3 py-2 text-right">{Number(it.quantity)}</td>
-                      <td className="px-3 py-2 text-right">{Number(it.unit_price).toFixed(2)} €</td>
                       <td className="px-3 py-2 text-right">
-                        {(Number(it.quantity) * Number(it.unit_price)).toFixed(2)} €
+                        {Number(it.unit_price).toFixed(2)} {mena.symbol}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {(Number(it.quantity) * Number(it.unit_price)).toFixed(2)} {mena.symbol}
                       </td>
                       {transfer.target_company_id && (
                         <td className="px-3 py-2 text-muted-foreground">
@@ -234,7 +238,9 @@ function TransferDetailPage() {
                   <td className="px-3 py-2" colSpan={4}>
                     Spolu
                   </td>
-                  <td className="px-3 py-2 text-right">{total.toFixed(2)} €</td>
+                  <td className="px-3 py-2 text-right">
+                    {total.toFixed(2)} {mena.symbol}
+                  </td>
                   {transfer.target_company_id && <td />}
                 </tr>
               </tfoot>

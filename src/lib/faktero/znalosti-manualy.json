@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-09",
+ "vytvorene": "2026-10-11",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -37,7 +37,7 @@
     },
     {
      "nadpis": "Test a live režim",
-     "text": "<>\nPri vytváraní kľúča vyberáte režim:\n-\nTest — kľúč smie len čítať (zoznamy, detaily, PDF). Na skúšanie\nintegrácie bez rizika, že niečo vystaví alebo odošle zákazníkovi. Pokus o zápis vráti\nchybu 403 test_key_read_only .\n-\nLive (produkcia) — číta aj zapisuje: reálne faktúry, ktoré sa rátajú do\nmesačného limitu plánu.\nTest kľúče majú prefix fk_test_ , live kľúče fk_live_ .\nZneplatnený kľúč ostáva v zozname so zneplatnením, aby bolo v denníku volaní vidno, čím\nčo prišlo."
+     "text": "<>\nPri vytváraní kľúča vyberáte režim:\n-\nTest — kľúč smie len čítať (zoznamy, detaily, PDF). Na skúšanie\nintegrácie bez rizika, že niečo vystaví alebo odošle zákazníkovi. Pokus o zápis vráti\nchybu 403 test_key_read_only .\n-\nLive (produkcia) — číta aj zapisuje: reálne faktúry, ktoré sa rátajú do\nmesačného limitu plánu.\nTest kľúče majú prefix fk_test_ , live kľúče fk_live_ .\nZneplatnený kľúč ostáva v zozname so zneplatnením, aby bolo v denníku volaní vidno, čím čo\nprišlo."
     },
     {
      "nadpis": "Vytvorenie faktúry cez API",
@@ -287,7 +287,7 @@
     },
     {
      "nadpis": "Faktúra v cudzej mene",
-     "text": "<>\nPri faktúre v inej mene než euro sa daň prepočíta\nkurzom ECB zo dňa predchádzajúceho dňu dodania a na doklade pribudne\nriadok s daňou v eurách, kurzom a dňom, z ktorého je (§ 26 ods. 1 zákona o DPH). Robí sa\nto samo pri vystavení; kurz si faktúra zapamätá, takže sa spätne nemení.\nCez víkend a sviatky sa použije posledný zverejnený kurz. Do výkazov k DPH vstupuje\nprepočítaná suma v eurách."
+     "text": "<>\nPri faktúre v inej mene než euro sa daň prepočíta\nkurzom ECB zo dňa predchádzajúceho dňu dodania a na doklade pribudne\nriadok s daňou v eurách, kurzom a dňom, z ktorého je (§ 26 ods. 1 zákona o DPH). Robí sa\nto samo pri vystavení; kurz si faktúra zapamätá, takže sa spätne nemení.\nCez víkend a sviatky sa použije posledný zverejnený kurz. Do výkazov k DPH vstupuje\nprepočítaná suma v eurách.\nČeská firma má domácu menu korunu: faktúry vystavuje predvolene v CZK a\npri inej mene (napríklad v eurách) sa daň prepočíta na koruny\nkurzom ČNB platným v deň uskutočnenia plnenia (§ 4 zákona o DPH). Na\ndoklade je potom riadok „DPH v přepočtu“ s kurzom ČNB."
     },
     {
      "nadpis": "Priznanie a výkazy",
@@ -1169,7 +1169,7 @@
     },
     {
      "nadpis": "Zrušenie účtu",
-     "text": "<>\nÚčet sa dá zrušiť z nastavení; na potvrdenie treba zadať heslo, aby to nemohol urobiť\nnikto, kto sa dostane k odomknutému telefónu. Mazanie má\n14-dňový odklad — do tej doby sa dá vrátiť späť prihlásením.\nPred zrušením si stiahnite doklady. Povinnosť uchovávať účtovné doklady\ndesať rokov platí ďalej a zrušením účtu nezaniká."
+     "text": "<>\nÚčet sa dá zrušiť z nastavení; na potvrdenie treba zadať heslo, aby to nemohol urobiť\nnikto, kto sa dostane k odomknutému telefónu. Mazanie má 14-dňový odklad\n— do tej doby sa dá vrátiť späť prihlásením.\nPred zrušením si stiahnite doklady. Povinnosť uchovávať účtovné doklady\ndesať rokov platí ďalej a zrušením účtu nezaniká."
     }
    ]
   },

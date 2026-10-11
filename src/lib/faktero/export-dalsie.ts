@@ -15,6 +15,7 @@
  */
 
 import { bezVzorca } from "@/lib/bezpecny-text";
+import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 import {
   polozkyOdpoctu,
   prekazkaOdpoctu,
@@ -130,7 +131,10 @@ function zaSadzbu(polozky: PolozkaFaktury[], sadzba: number, zn = 1) {
  */
 export function buildUniverzalCsv(opts: {
   invoices: { invoice: RiadokFaktury; items: PolozkaFaktury[] }[];
+  /** Krajina firmy — podľa nej domáca mena (SK → EUR, CZ → CZK). */
+  krajina?: string | null;
 }): string {
+  const domaca = domacaMena(opts.krajina);
   /* Stĺpce sadzieb podľa toho, čo sa v dávke naozaj vyskytlo — prázdne by len zavadzali. */
   const pouziteSadzby = [...new Set(opts.invoices.flatMap(({ items }) => sadzby(items)))].sort(
     (a, b) => b - a,
@@ -139,7 +143,7 @@ export function buildUniverzalCsv(opts: {
   /* Stĺpce kurzu pribudnú len vtedy, keď je v dávke doklad v cudzej mene.
      Bez nich by si účtovníčka sčítala koruny s eurami do jedného súčtu. */
   const cudziaMena = opts.invoices.some(
-    ({ invoice }) => (text(invoice.currency) || "EUR") !== "EUR",
+    ({ invoice }) => (text(invoice.currency) || domaca) !== domaca,
   );
 
   const hlavicka = [
@@ -168,7 +172,7 @@ export function buildUniverzalCsv(opts: {
     "Základ spolu",
     "DPH spolu",
     "Celkom",
-    ...(cudziaMena ? ["Celkom v EUR"] : []),
+    ...(cudziaMena ? [`Celkom v ${domaca}`] : []),
     "Prenos daňovej povinnosti",
     "Poznámka",
     // Na koniec, aby staré importy podľa poradia stĺpcov nepraskli.
@@ -184,9 +188,9 @@ export function buildUniverzalCsv(opts: {
     const jeOdpocet = text(invoice.type) === "regular" || text(invoice.type) === "debit_note";
     const nulova =
       zn * items.filter((p) => cislo(p.vat_rate) === 0).reduce((a, p) => a + cislo(p.subtotal), 0);
-    /* Suma v EUR: pri domácej mene je to tá istá suma, inak prepočet uložený na doklade. */
+    /* Suma v domácej mene: pri nej tá istá suma, inak prepočet uložený na doklade. */
     const vEur =
-      (text(invoice.currency) || "EUR") === "EUR" ? cislo(invoice.total) : cislo(invoice.total_eur);
+      (text(invoice.currency) || domaca) === domaca ? cislo(invoice.total) : cislo(invoice.total_eur);
     const bunky = [
       text(invoice.invoice_number),
       NAZOV_TYPU[text(invoice.type) || "regular"] ?? "Faktúra",
@@ -201,7 +205,7 @@ export function buildUniverzalCsv(opts: {
       text(invoice.customer_city),
       text(invoice.customer_zip),
       text(invoice.customer_country) || "SK",
-      text(invoice.currency) || "EUR",
+      text(invoice.currency) || domaca,
       ...(cudziaMena ? [invoice.exchange_rate ? dveSk(invoice.exchange_rate) : ""] : []),
       text(invoice.variable_symbol),
       text(invoice.constant_symbol),
@@ -254,7 +258,10 @@ const esc = (h: unknown): string =>
  */
 export function buildFlexiXml(opts: {
   invoices: { invoice: RiadokFaktury; items: PolozkaFaktury[] }[];
+  /** Krajina firmy — podľa nej domáca mena a zápis kurzu (SK ECB, CZ ČNB). */
+  krajina?: string | null;
 }): { xml: string; preskocene: string[] } {
+  const domaca = domacaMena(opts.krajina);
   const preskocene: string[] = [];
   const doklady: string[] = [];
 
@@ -276,18 +283,21 @@ export function buildFlexiXml(opts: {
       continue;
     }
     /*
-      Cudzia mena: `sum*` sú v eurách, `*Men` v mene faktúry, kurz v hlavičke
-      (Flexi: eur za `kurzMnozstvi` jednotiek). `exchange_rate` je jednotiek za 1 €.
+      Cudzia mena: `sum*` sú v domácej mene, `*Men` v mene faktúry, kurz v
+      hlavičke (Flexi: domácej meny za `kurzMnozstvi` jednotiek).
     */
-    const mena = text(invoice.currency) || "EUR";
-    const cudzia = mena !== "EUR";
-    const kurzEcb = cislo((invoice as any).exchange_rate);
-    if (cudzia && !(kurzEcb > 0)) {
+    const mena = text(invoice.currency) || domaca;
+    const cudzia = mena !== domaca;
+    const zaJednu = domacejZaJednotku((invoice as any).exchange_rate, opts.krajina);
+    if (cudzia && !(zaJednu > 0)) {
       preskocene.push(`${cislo_dokladu} — faktúra v mene ${mena} nemá kurz`);
       continue;
     }
-    const tm = (x: number) => (cudzia ? Math.round((x / kurzEcb) * 100) / 100 : x);
-    const kurzMnozstvi = kurzEcb >= 10 ? 100 : 1;
+    const tm = (x: number) => (cudzia ? Math.round(x * zaJednu * 100) / 100 : x);
+    const { kurz: kurzFlexi, mnozstvo: kurzMnozstvi } = kurzZaMnozstvo(
+      (invoice as any).exchange_rate,
+      opts.krajina,
+    );
     const men = (nazov: string, x: number, odsadenie: string) =>
       cudzia ? `\n${odsadenie}<${nazov}Men>${dve(x)}</${nazov}Men>` : "";
 
@@ -348,7 +358,7 @@ export function buildFlexiXml(opts: {
     <varSym>${esc(invoice.variable_symbol)}</varSym>
     <mena>code:${esc(mena)}</mena>${
       cudzia
-        ? `\n    <kurz>${Math.round((kurzMnozstvi / kurzEcb) * 1e6) / 1e6}</kurz>\n    <kurzMnozstvi>${kurzMnozstvi}</kurzMnozstvi>`
+        ? `\n    <kurz>${kurzFlexi}</kurz>\n    <kurzMnozstvi>${kurzMnozstvi}</kurzMnozstvi>`
         : ""
     }
     <nazFirmy>${esc(invoice.customer_name)}</nazFirmy>

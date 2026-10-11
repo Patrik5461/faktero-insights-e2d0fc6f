@@ -10,6 +10,7 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
 import { potvrd } from "@/lib/potvrdenie";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/pokladna")({
   head: () => ({ meta: [{ title: "Pokladňa — Faktero" }] }),
@@ -25,6 +26,7 @@ function tentoMesiac() {
 }
 
 function PokladnaPage() {
+  const mena = useMenaFirmy();
   const fetchBook = useServerFn(getCashBook);
   const doCreate = useServerFn(createCashEntry);
   const doDelete = useServerFn(deleteCashEntry);
@@ -204,7 +206,7 @@ function PokladnaPage() {
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs text-muted-foreground">Suma (€)</span>
+              <span className="mb-1 block text-xs text-muted-foreground">Suma ({mena.symbol})</span>
               <input
                 type="number"
                 step="0.01"

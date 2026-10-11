@@ -5,6 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getStockDashboard } from "@/lib/faktero/stock.functions";
 import { Warehouse, AlertTriangle, Package, TrendingUp, ArrowRight } from "lucide-react";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/sklad/")({
   head: () => ({ meta: [{ title: "Sklad — Faktero" }] }),
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/_authenticated/sklad/")({
 });
 
 function SkladDashboard() {
+  const mena = useMenaFirmy();
   const fetch = useServerFn(getStockDashboard);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ function SkladDashboard() {
               <Stat
                 icon={TrendingUp}
                 label="Hodnota skladu"
-                value={`${Number(data.total_value).toFixed(2)} €`}
+                value={`${Number(data.total_value).toFixed(2)} ${mena.symbol}`}
                 accent="text-emerald-600"
               />
               <Stat

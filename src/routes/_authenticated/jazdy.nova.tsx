@@ -12,6 +12,7 @@ import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { Map as MapIcon } from "lucide-react";
 import { PoleAdresy } from "@/components/faktero/PoleAdresy";
 import { PoleOdberatela, adresaOdberatela } from "@/components/faktero/PoleOdberatela";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 /**
  * Tá istá stránka zakladá aj upravuje. Kniha jázd je účtovný záznam a preklep v
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/jazdy/nova")({
 });
 
 function NewTripPage() {
+  const mena = useMenaFirmy();
   const navigate = useNavigate();
   const { id } = Route.useSearch();
   const upravujem = !!id;
@@ -393,7 +395,7 @@ function NewTripPage() {
                   className="input"
                 />
               </Field>
-              <Field label="Cena PHM (€/l)">
+              <Field label={`Cena PHM (${mena.symbol}/l)`}>
                 <input
                   type="number"
                   step="0.001"

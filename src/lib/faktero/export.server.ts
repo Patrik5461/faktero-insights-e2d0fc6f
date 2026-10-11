@@ -16,6 +16,7 @@ import { sadzbyKuDnu as sadzbyKrajinyKuDnu, krajinaDane, type KrajinaDane } from
 import { riadkySoZlavou } from "./zlavy";
 import { polozkyOdpoctu, prekazkaOdpoctu, sumaOdpoctov } from "./zalohy-odpocty";
 import { buildFlexiXml, buildUniverzalCsv } from "./export-dalsie";
+import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 type InvoiceRow = any;
 type ItemRow = any;
 type CompanyRow = any;
@@ -254,8 +255,9 @@ export type PohodaNastavenia = {
   predkontacieOznaceni?: Partial<Record<KodOznacenia, string | null>> | null;
 };
 
+/** Domáca mena podľa krajiny firmy (SK → EUR, CZ → CZK), nie podľa predvolenej meny faktúr. */
 function domacaMenaFirmy(company: CompanyRow): string {
-  return String(company?.default_currency ?? "EUR").toUpperCase() || "EUR";
+  return domacaMena((company as any)?.country);
 }
 
 /**
@@ -338,25 +340,28 @@ export function pohodaPrekazka(invoice: InvoiceRow, company: CompanyRow): string
 }
 
 /**
- * Kurz pre Pohodu. U nás je kurz ECB: koľko jednotiek cudzej meny za 1 €.
- * Pohoda chce opačne — koľko domácej meny za `amount` jednotiek cudzej. Pri
- * „lacných" menách (CZK, HUF) ide kurz na 100 jednotiek, aby sa nestratil
- * v zaokrúhlení.
+ * Kurz pre Pohodu — koľko domácej meny za `amount` jednotiek cudzej. Na
+ * doklade je kurz banky podľa krajiny firmy (SK ECB „X za 1 €“, CZ ČNB
+ * „CZK za 1 X“); prevod robí `kurzZaMnozstvo`.
  */
-export function kurzPrePohodu(kurzEcb: number): { rate: number; amount: number } {
-  const amount = kurzEcb >= 10 ? 100 : 1;
-  return { rate: Math.round((amount / kurzEcb) * 1e6) / 1e6, amount };
+export function kurzPrePohodu(
+  kurzDokladu: number,
+  country: string | null | undefined = "SK",
+): { rate: number; amount: number } {
+  const { kurz, mnozstvo } = kurzZaMnozstvo(kurzDokladu, country);
+  return { rate: kurz, amount: mnozstvo };
 }
 
 /** Blok `foreignCurrency` do súhrnu dokladu. */
 export function cudziaMenaSuhrn(
   mena: string,
-  kurzEcb: number,
+  kurzDokladu: number,
   spolu: number,
   zaokruhlenie: number,
   odsadenie: string,
+  country: string | null | undefined = "SK",
 ): string {
-  const { rate, amount } = kurzPrePohodu(kurzEcb);
+  const { rate, amount } = kurzPrePohodu(kurzDokladu, country);
   const o = odsadenie;
   return `
 ${o}<inv:foreignCurrency>
@@ -770,6 +775,7 @@ export function polozkyFaktur(opts: {
                 zn * celkom,
                 zn * zaokruhlenie,
                 "        ",
+                (company as any)?.country,
               )
             : ""
         }
@@ -1571,7 +1577,7 @@ export function polozkyDokladov(opts: {
             : ""
         }
       </${p}:${koren}Header>${vlozZaokruhlenie(xmlPolozkyFaktury || polozkyRozuct || (cudziaD ? polozkyZRozpisu() : ""))}
-      <${p}:${koren}Summary>${cudziaD ? cudziaMenaSuhrn(menaDokladu, Number(d?._kurz), celkom, zaokruhlenie, "        ").replace(/inv:foreignCurrency/g, `${p}:foreignCurrency`) : `
+      <${p}:${koren}Summary>${cudziaD ? cudziaMenaSuhrn(menaDokladu, Number(d?._kurz), celkom, zaokruhlenie, "        ", (company as any)?.country).replace(/inv:foreignCurrency/g, `${p}:foreignCurrency`) : `
         <${p}:homeCurrency>${elSuma("typ:priceNone", zaklad(s0), "          ")}${elSuma(
           "typ:price3",
           zaklad(s3),
@@ -2200,8 +2206,11 @@ export const FLEXI_XML: ExportStrategy = {
   note: "Import v ABRA Flexi: Nástroje → Import → XML.",
   encoding: "utf-8",
   mime: "application/xml",
-  build({ invoices }) {
-    const { xml, preskocene } = buildFlexiXml({ invoices: invoices as never });
+  build({ invoices, company }) {
+    const { xml, preskocene } = buildFlexiXml({
+      invoices: invoices as never,
+      krajina: (company as any)?.country,
+    });
     if (preskocene.length === invoices.length) {
       throw new Error(`Do ABRA Flexi sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
     }
@@ -2223,8 +2232,11 @@ export const CSV_UNIVERZAL: ExportStrategy = {
   note: "Jeden riadok na doklad s rozpisom po sadzbách DPH. Oddeľovač je bodkočiarka a kódovanie Windows-1250, aby sa v Exceli otvorila správne.",
   encoding: "windows-1250",
   mime: "text/csv",
-  build({ invoices }) {
-    const content = buildUniverzalCsv({ invoices: invoices as never });
+  build({ invoices, company }) {
+    const content = buildUniverzalCsv({
+      invoices: invoices as never,
+      krajina: (company as any)?.country,
+    });
     const stamp = new Date().toISOString().slice(0, 10);
     return { content, fileName: `faktury-${stamp}.csv`, mime: "text/csv" };
   },
@@ -2380,7 +2392,7 @@ export function buildOmegaTxt(opts: {
     const nizsia = sadzby[1];
     const znizena2 = sadzby[2];
 
-    const cudzia = (invoice.currency ?? "EUR") !== "EUR";
+    const cudzia = (invoice.currency ?? domacaMenaFirmy(company)) !== domacaMenaFirmy(company);
     /*
       Sumy hlavičky sú v eurách (tuzemská mena, DPH sa priznáva v eurách),
       položky v mene dokladu. `exchange_rate` je počet jednotiek meny za 1 €.
@@ -2390,7 +2402,8 @@ export function buildOmegaTxt(opts: {
       preskocene.push(`${invoice.invoice_number} — faktúra v mene ${invoice.currency} nemá kurz`);
       continue;
     }
-    const tm = (x: number) => (cudzia ? x / kurz : x);
+    const zaJednu = domacejZaJednotku(kurz, (company as any)?.country);
+    const tm = (x: number) => (cudzia ? x * zaJednu : x);
     const v = zaSadzbu(items, vyssia);
     const n = zaSadzbu(items, nizsia);
     const z2 = zaSadzbu(items, znizena2);
@@ -2556,8 +2569,9 @@ export function buildMoneyS3Xml(opts: {
       preskocene.push(`${invoice.invoice_number} — faktúra v mene ${mena} nemá kurz`);
       continue;
     }
-    /* `exchange_rate` je počet jednotiek cudzej meny za jedno euro. */
-    const naDomacu = (x: unknown) => (cudzia ? Number(x ?? 0) / kurz : Number(x ?? 0));
+    // Kurz na doklade je v zápise banky krajiny firmy (SK ECB, CZ ČNB).
+    const zaJednu = domacejZaJednotku(kurz, (company as any)?.country);
+    const naDomacu = (x: unknown) => (cudzia ? Number(x ?? 0) * zaJednu : Number(x ?? 0));
 
     const sadzby = sadzbyDokladu(items);
     const vyssia = sadzby[0];
@@ -2604,14 +2618,14 @@ ${odsadenie}</SouhrnDPH>`;
      * Pri slabšej mene (koruny, forinty) je to zvykom za sto jednotiek, inak by
      * kurz vyšiel ako 0,0395 a v Money by sa zaokrúhlil na nulu.
      */
-    const mnozstvo = kurz >= 10 ? 100 : 1;
+    const { kurz: kursMoney, mnozstvo } = kurzZaMnozstvo(kurz, (company as any)?.country);
     const valuty = cudzia
       ? `
       <Valuty>
         <Mena>
           <Kod>${esc(mena)}</Kod>
           <Mnozstvi>${mnozstvo}</Mnozstvi>
-          <Kurs>${(mnozstvo / kurz).toFixed(4)}</Kurs>
+          <Kurs>${kursMoney.toFixed(4)}</Kurs>
         </Mena>
         ${souhrn((x) => Number(x ?? 0), "        ")}
         <Celkem>${fixed2(celkom)}</Celkem>

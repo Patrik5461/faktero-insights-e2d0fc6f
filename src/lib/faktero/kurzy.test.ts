@@ -78,3 +78,64 @@ describe("čítanie kurzov z ECB", () => {
     expect(kurzyZXml("<html>chyba</html>")).toEqual([]);
   });
 });
+
+describe("domáca mena podľa krajiny firmy", () => {
+  it("slovenská firma eurá, česká koruny", async () => {
+    const { domacaMena, krajinaKurzu } = await import("./kurzy");
+    expect(domacaMena("SK")).toBe("EUR");
+    expect(domacaMena("CZ")).toBe("CZK");
+    expect(domacaMena("Česká republika")).toBe("CZK");
+    expect(domacaMena(null)).toBe("EUR");
+    expect(krajinaKurzu("cz")).toBe("CZ");
+  });
+
+  it("česká firma berie kurz ČNB z dňa plnenia, nie z dňa pred ním", () => {
+    expect(denKurzu("2026-09-10", "CZ")).toBe("2026-09-10");
+    expect(denKurzu("2026-09-10", "SK")).toBe("2026-09-09");
+  });
+
+  it("prepočet do korún násobí kurzom ČNB (CZK za 1 jednotku)", async () => {
+    const { naDomacu } = await import("./kurzy");
+    expect(naDomacu(100, 24.365, "CZ")).toBe(2436.5);
+    expect(naDomacu(254, 25.4, "SK")).toBe(10);
+  });
+
+  it("kurz do účtovného programu — domácej meny za množstvo", async () => {
+    const { domacejZaJednotku, kurzZaMnozstvo } = await import("./kurzy");
+    // SK firma, faktúra v CZK: 25,4 CZK za euro → 3,937008 € za 100 Kč.
+    expect(kurzZaMnozstvo(25.4, "SK")).toEqual({ kurz: 3.937008, mnozstvo: 100 });
+    // CZ firma, faktúra v EUR: 24,365 Kč za 1 €.
+    expect(kurzZaMnozstvo(24.365, "CZ")).toEqual({ kurz: 24.365, mnozstvo: 1 });
+    // CZ firma, forinty: ČNB 6,304 Kč za 100 HUF → uložené 0,06304 za 1.
+    expect(kurzZaMnozstvo(0.06304, "CZ")).toEqual({ kurz: 6.304, mnozstvo: 100 });
+    expect(domacejZaJednotku(0, "CZ")).toBe(0);
+  });
+
+  it("text pod súčty pre českú firmu hovorí o ČNB a korunách", () => {
+    const t = textPrepoctu("EUR", 24.365, "2026-10-09", 5116.65, "cz", "CZ");
+    expect(t).toContain("CZK");
+    expect(t).toContain("ČNB");
+    expect(t).toContain("1 EUR = 24,365 CZK");
+  });
+
+  it("v domácej mene sa neprepočítava", () => {
+    expect(trebaPrepocet("CZK", "CZK")).toBe(false);
+    expect(trebaPrepocet("EUR", "CZK")).toBe(true);
+    expect(trebaPrepocet("EUR")).toBe(false);
+  });
+});
+
+describe("ročný súbor ČNB", () => {
+  it("prepočíta kurz na 1 jednotku a prečíta dátum", async () => {
+    const { kurzyZCnbRoka } = await import("./kurzy.server");
+    const text = [
+      "Datum|1 EUR|100 HUF|1 USD",
+      "02.01.2026|24,170|6,304|20,611",
+      "05.01.2026|24,195|6,291|20,742",
+    ].join("\n");
+    const k = kurzyZCnbRoka(text);
+    expect(k).toContainEqual({ den: "2026-01-02", mena: "EUR", kurz: 24.17 });
+    expect(k).toContainEqual({ den: "2026-01-02", mena: "HUF", kurz: 0.06304 });
+    expect(k.filter((x) => x.den === "2026-01-05")).toHaveLength(3);
+  });
+});

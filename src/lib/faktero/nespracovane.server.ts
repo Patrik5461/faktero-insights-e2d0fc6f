@@ -192,15 +192,25 @@ export async function vytvorDoklad(
       if (cesta) await supabase.storage.from("purchase-invoices").remove([cesta]);
       throw new Error(error.message);
     }
-    /* Doklad v cudzej mene potrebuje kurz ECB; bez neho by chýbal vo výkaze k DPH. */
-    if (zakl.currency !== "EUR") {
+    /* Doklad v cudzej mene potrebuje kurz (SK ECB, CZ ČNB); bez neho by chýbal vo výkaze k DPH. */
+    {
       try {
-        const { prepocitajDoklad } = await import("./kurzy.server");
-        const p = await prepocitajDoklad(zakl.currency, zakl.delivery_date ?? zakl.issue_date, {
-          zaklad: zakl.amount_without_vat,
-          dan: zakl.vat_amount,
-          celkom: zakl.amount_total,
-        });
+        const { prepocitajDoklad, krajinaFirmy } = await import("./kurzy.server");
+        const { domacaMena } = await import("./kurzy");
+        const krajinaKurzu = await krajinaFirmy(r.company_id);
+        const p =
+          zakl.currency !== domacaMena(krajinaKurzu)
+            ? await prepocitajDoklad(
+                zakl.currency,
+                zakl.delivery_date ?? zakl.issue_date,
+                {
+                  zaklad: zakl.amount_without_vat,
+                  dan: zakl.vat_amount,
+                  celkom: zakl.amount_total,
+                },
+                krajinaKurzu,
+              )
+            : null;
         if (p)
           await supabase
             .from("purchase_invoices")
