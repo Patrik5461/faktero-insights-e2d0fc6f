@@ -8375,6 +8375,36 @@ export type Database = {
           },
         ]
       }
+      efaktura_pds_odmietnute: {
+        Row: {
+          chyba: string | null
+          dovod: string
+          firmy: Json
+          id: string
+          ip: string | null
+          overene: boolean
+          prijate_at: string
+        }
+        Insert: {
+          chyba?: string | null
+          dovod: string
+          firmy?: Json
+          id?: string
+          ip?: string | null
+          overene?: boolean
+          prijate_at?: string
+        }
+        Update: {
+          chyba?: string | null
+          dovod?: string
+          firmy?: Json
+          id?: string
+          ip?: string | null
+          overene?: boolean
+          prijate_at?: string
+        }
+        Relationships: []
+      }
       efaktura_pds_ziadosti: {
         Row: {
           id: string

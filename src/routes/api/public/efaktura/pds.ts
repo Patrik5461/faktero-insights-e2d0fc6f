@@ -27,21 +27,35 @@ export const Route = createFileRoute("/api/public/efaktura/pds")({
       GET: async () => odpoved(200, "Faktero — webhook PDS je dostupný, údaje prijíma metódou POST."),
       POST: async ({ request }) => {
         const telo = await request.text();
-        const { overPdsPodpis } = await import("@/lib/faktero/efaktura/webhooky.server");
-        if (!overPdsPodpis(telo, request.headers.get("x-pds-secret"), process.env.EFAKTURA_PDS_SECRET)) {
-          return odpoved(401, "Unauthorized");
-        }
+        const { overPdsPodpis, rozparsujPds } = await import("@/lib/faktero/efaktura/webhooky.server");
+        const { zapisOdmietnutie } = await import("@/lib/faktero/efaktura/upozornenia.server");
+        const tajomstvo = process.env.EFAKTURA_PDS_SECRET;
         const ip =
           request.headers.get("x-real-ip") ??
           request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
           null;
+        if (!overPdsPodpis(telo, request.headers.get("x-pds-secret"), tajomstvo)) {
+          // Ohlási sa len telo, ktoré vyzerá ako žiadosť FS — nie hocijaký pokus zvonku.
+          const r = rozparsujPds(telo);
+          if ("ziadosti" in r) {
+            await zapisOdmietnutie(tajomstvo ? "zly_podpis" : "bez_tajomstva", {
+              firmy: r.ziadosti,
+              ip,
+            });
+          }
+          return odpoved(401, "Unauthorized");
+        }
         try {
           const { prijmiZiadostiFs } = await import("@/lib/faktero/efaktura/webhooky-obsluha.server");
           const r = await prijmiZiadostiFs(telo, ip);
-          if (!r.ok) return odpoved(400, r.chyba);
+          if (!r.ok) {
+            await zapisOdmietnutie("zly_obsah", { chyba: r.chyba, ip });
+            return odpoved(400, r.chyba);
+          }
           return odpoved(200, "OK");
         } catch (e: any) {
           console.error("[efaktura-pds]", String(e?.message ?? e));
+          await zapisOdmietnutie("chyba_servera", { chyba: String(e?.message ?? e).slice(0, 300), ip });
           return odpoved(500, "Server error");
         }
       },

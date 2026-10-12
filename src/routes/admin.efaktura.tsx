@@ -175,6 +175,60 @@ function Page() {
       </section>
 
       <section>
+        <h2 className="mb-1 text-lg font-semibold">Odmietnuté žiadosti FS</h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Žiadosti, ktoré Faktero neprijalo. Údaje firiem pri zlom podpise sú neoverené — FS treba
+          požiadať o opätovné zaslanie, alebo firma vyberie Faktero na portáli znova.
+        </p>
+        {!data?.odmietnute.length ? (
+          <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+            Žiadna odmietnutá žiadosť.
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full min-w-[48rem] text-sm">
+              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="p-3">Kedy</th>
+                  <th className="p-3">Dôvod</th>
+                  <th className="p-3">Firmy v žiadosti</th>
+                  <th className="p-3">IP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.odmietnute.map((o) => (
+                  <tr key={o.id} className="border-t border-border align-top">
+                    <td className="p-3 whitespace-nowrap">{kedy(o.prijate_at)}</td>
+                    <td className="p-3">
+                      <div className="font-medium text-rose-700">{DOVODY[o.dovod] ?? o.dovod}</div>
+                      {o.chyba && <div className="mt-1 max-w-sm text-xs text-muted-foreground">{o.chyba}</div>}
+                    </td>
+                    <td className="p-3 text-xs">
+                      {o.firmy.length ? (
+                        o.firmy.map((f, i) => (
+                          <div key={i}>
+                            <span className="font-medium">{f.nazov ?? "—"}</span> · DIČ {f.dic}
+                            {f.email ? ` · ${f.email}` : ""}
+                            {f.telefon ? ` · ${f.telefon}` : ""}
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground">neznáme</span>
+                      )}
+                      {!o.overene && o.firmy.length > 0 && (
+                        <div className="mt-1 text-muted-foreground">neoverené</div>
+                      )}
+                    </td>
+                    <td className="p-3 text-xs text-muted-foreground">{o.ip ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section>
         <div className="mb-3 flex items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">Webhooky ePoštáka</h2>
           <button
@@ -232,6 +286,13 @@ function Page() {
     </div>
   );
 }
+
+const DOVODY: Record<string, string> = {
+  bez_tajomstva: "Chýbal verifikačný údaj FS (401)",
+  zly_podpis: "Podpis nesedí (401)",
+  zly_obsah: "Nezrozumiteľný obsah (400)",
+  chyba_servera: "Chyba pri zápise (500)",
+};
 
 function Stav({ ok, ano, nie }: { ok: boolean; ano: string; nie: string }) {
   return (

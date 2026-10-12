@@ -50,14 +50,25 @@ export type WebhookAdmin = {
 export type EfakturaPrehlad = {
   nastavene: { pdsTajomstvo: boolean; epostakProdukcia: boolean };
   ziadosti: ZiadostFsAdmin[];
+  odmietnute: OdmietnutaFsAdmin[];
   webhooky: WebhookAdmin[];
+};
+
+export type OdmietnutaFsAdmin = {
+  id: string;
+  prijate_at: string;
+  dovod: string;
+  overene: boolean;
+  firmy: { nazov: string | null; dic: string; email: string | null; telefon: string | null }[];
+  chyba: string | null;
+  ip: string | null;
 };
 
 export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<EfakturaPrehlad> => {
     const db = await admin((context as { userId: string }).userId);
-    const [{ data: ziadosti }, { data: webhooky }] = await Promise.all([
+    const [{ data: ziadosti }, { data: webhooky }, { data: odmietnute }] = await Promise.all([
       db
         .from("efaktura_pds_ziadosti")
         .select(
@@ -70,6 +81,11 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
         .select("company_id, epostak_firm_id, webhook_id, stav, chyba, vytvorene_at, posledna_udalost_at, companies(name)")
         .order("vytvorene_at", { ascending: false })
         .limit(300),
+      db
+        .from("efaktura_pds_odmietnute")
+        .select("id, prijate_at, dovod, overene, firmy, chyba, ip")
+        .order("prijate_at", { ascending: false })
+        .limit(100),
     ]);
     return {
       nastavene: {
@@ -94,6 +110,7 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
           ma_token: Boolean(z.token_sifrovany),
         }),
       ),
+      odmietnute: (odmietnute ?? []) as OdmietnutaFsAdmin[],
       webhooky: (webhooky ?? []).map((w: any): WebhookAdmin => ({
         company_id: w.company_id as string,
         firma: (w.companies?.name ?? null) as string | null,

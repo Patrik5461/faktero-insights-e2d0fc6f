@@ -16,6 +16,7 @@ import {
   rozparsujPds,
   rozparsujUdalost,
 } from "./webhooky.server";
+import { upozorniNoveZiadosti, upozorniVysledokRegistracie } from "./upozornenia.server";
 
 const db = supabaseAdmin as any;
 const web = () => (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
@@ -34,6 +35,8 @@ export async function prijmiZiadostiFs(
   const { encryptSecret } = await import("../payment-crypto.server");
 
   const nove: string[] = [];
+  const noveFirmy: { nazov: string | null; dic: string; email: string | null; telefon: string | null }[] =
+    [];
   for (const z of r.ziadosti) {
     const { data, error } = await db
       .from("efaktura_pds_ziadosti")
@@ -53,8 +56,14 @@ export async function prijmiZiadostiFs(
       )
       .select("id");
     if (error) throw new Error(error.message);
-    for (const row of data ?? []) nove.push(row.id);
+    for (const row of data ?? []) {
+      nove.push(row.id);
+      noveFirmy.push({ nazov: z.nazov, dic: z.dic, email: z.email, telefon: z.telefon });
+    }
   }
+
+  // Opakovane poslaná žiadosť (rovnaký token) sa nezapíše, a preto ani neohlási.
+  await upozorniNoveZiadosti(noveFirmy);
 
   /*
     FS čaká synchrónnu odpoveď a registrácia u ePoštáka môže trvať. Žiadosti
@@ -166,6 +175,20 @@ export async function spracujZiadost(id: string): Promise<string> {
 
   await db.from("efaktura_pds_ziadosti").update(zmena).eq("id", id);
 
+  // Ohlási sa zmena stavu; ďalší neúspešný pokus s tým istým stavom už nie.
+  if (zmena.stav !== z.stav) {
+    await upozorniVysledokRegistracie({
+      nazov: z.nazov,
+      dic: z.dic,
+      email,
+      telefon: z.telefon,
+      stav: String(zmena.stav),
+      chyba: (zmena.chyba as string | null) ?? null,
+      pokusov: zmena.pokusov as number,
+      maFirmu: Boolean(firma?.id),
+    });
+  }
+
   if (zmena.stav === "registrovana" && !zmena.company_id && !z.pozvanka_odoslana_at && email) {
     await posliPozvanku({ id, email, nazov: z.nazov, dic: z.dic });
   }
@@ -226,7 +249,7 @@ async function posliPozvanku(v: { id: string; email: string; nazov: string | nul
 export async function dokonciRozbehnuteRegistracie(): Promise<void> {
   const { data: rozbehnute } = await db
     .from("efaktura_pds_ziadosti")
-    .select("id, epostak_operacia_id, company_id, stav, pokusov")
+    .select("id, epostak_operacia_id, company_id, stav, pokusov, dic, nazov, email, telefon")
     .in("stav", ["prijata", "registruje_sa", "chyba", "na_kontrolu"])
     .limit(200);
   for (const z of rozbehnute ?? []) {
@@ -243,6 +266,16 @@ export async function dokonciRozbehnuteRegistracie(): Promise<void> {
         if (stav === "registrovana" || stav === "zamietnuta") zmena.token_sifrovany = null;
         await db.from("efaktura_pds_ziadosti").update(zmena).eq("id", z.id);
         if (stav === "registrovana" && z.company_id) await zapniProfil(z.company_id, op);
+        if (stav !== z.stav) {
+          await upozorniVysledokRegistracie({
+            nazov: z.nazov,
+            dic: z.dic,
+            email: z.email,
+            telefon: z.telefon,
+            stav,
+            maFirmu: Boolean(z.company_id),
+          });
+        }
       } else if ((z.stav === "prijata" || z.stav === "chyba") && (z.pokusov ?? 0) < MAX_POKUSOV) {
         await spracujZiadost(z.id);
       }
