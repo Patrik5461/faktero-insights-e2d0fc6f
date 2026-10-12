@@ -65,7 +65,7 @@ function NahladOkno({ nahlad, onClose }: { nahlad: Nahlad; onClose: () => void }
           </div>
           <a
             href={nahlad.url}
-            download={`${nahlad.nazov}.pdf`}
+            download={nahlad.nazov.endsWith(".pdf") ? nahlad.nazov : `${nahlad.nazov}.pdf`}
             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
           >
             <Download className="h-3.5 w-3.5" /> Stiahnuť PDF
