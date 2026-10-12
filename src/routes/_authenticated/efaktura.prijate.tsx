@@ -3,11 +3,15 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Inbox, RefreshCw, FileInput, ExternalLink } from "lucide-react";
+import { Inbox, RefreshCw, FileInput, ExternalLink, Eye, Download, X } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { NahladPdf } from "@/components/faktero/NahladPdf";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import {
   listPrijateEfakturyFn,
+  nahladPrijatejEfakturyFn,
   stiahniPrijateEfakturyFn,
   zaevidujPrijatuEfakturuFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
@@ -33,6 +37,55 @@ function StavDokladu({ stav }: { stav: string | null }) {
   );
 }
 
+type Nahlad = { url: string; nazov: string; prilozene: boolean };
+
+/** Okno s náhľadom eFaktúry — PDF od dodávateľa, alebo vykreslené z XML. */
+function NahladOkno({ nahlad, onClose }: { nahlad: Nahlad; onClose: () => void }) {
+  useZatvorNaEscape(onClose);
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Náhľad ${nahlad.nazov}`}
+        className="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-card shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-medium">{nahlad.nazov}</div>
+            {!nahlad.prilozene && (
+              <div className="text-xs text-muted-foreground">
+                Dodávateľ k eFaktúre PDF nepriložil — náhľad je vykreslený z údajov eFaktúry.
+              </div>
+            )}
+          </div>
+          <a
+            href={nahlad.url}
+            download={`${nahlad.nazov}.pdf`}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+          >
+            <Download className="h-3.5 w-3.5" /> Stiahnuť PDF
+          </a>
+          <button
+            onClick={onClose}
+            aria-label="Zavrieť"
+            className="rounded-md p-1 hover:bg-secondary"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto bg-muted/30 p-3">
+          <NahladPdf url={nahlad.url} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReceivedPage() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [stahujem, setStahujem] = useState(false);
@@ -42,6 +95,31 @@ function ReceivedPage() {
   const stiahni = useServerFn(stiahniPrijateEfakturyFn);
   const zaeviduj = useServerFn(zaevidujPrijatuEfakturuFn);
   const [evidujem, setEvidujem] = useState<string | null>(null);
+  const nahladFn = useServerFn(nahladPrijatejEfakturyFn);
+  const [nacitavamNahlad, setNacitavamNahlad] = useState<string | null>(null);
+  const [nahlad, setNahlad] = useState<Nahlad | null>(null);
+
+  async function otvorNahlad(receivedId: string) {
+    if (!companyId) return;
+    setNacitavamNahlad(receivedId);
+    try {
+      const r: any = await nahladFn({ data: { company_id: companyId, received_id: receivedId } });
+      const bajty = Uint8Array.from(atob(r.pdf), (c) => c.charCodeAt(0));
+      const url = URL.createObjectURL(new Blob([bajty], { type: "application/pdf" }));
+      setNahlad({ url, nazov: r.nazov, prilozene: r.prilozene });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setNacitavamNahlad(null);
+    }
+  }
+
+  function zavriNahlad() {
+    setNahlad((n) => {
+      if (n) URL.revokeObjectURL(n.url);
+      return null;
+    });
+  }
 
   /** Z prijatej eFaktúry spraví prijatú faktúru — inak by sa prepisovala ručne. */
   async function zaevidujDoklad(receivedId: string) {
@@ -161,14 +239,26 @@ function ReceivedPage() {
                       )}
                     </td>
                     <td className="p-3 font-medium">{r.document_number ?? "—"}</td>
-                    <td className="p-3">{r.issue_date ?? "—"}</td>
-                    <td className="p-3">{r.due_date ?? "—"}</td>
+                    <td className="p-3 whitespace-nowrap">
+                      {r.issue_date ? datumNaDoklade(r.issue_date) : "—"}
+                    </td>
+                    <td className="p-3 whitespace-nowrap">
+                      {r.due_date ? datumNaDoklade(r.due_date) : "—"}
+                    </td>
                     <td className="p-3 text-right tabular-nums">{suma(r.total, r.currency)}</td>
                     <td className="p-3">
                       <StavDokladu stav={r.status} />
                     </td>
                     <td className="p-3">
-                      <div className="flex justify-end">
+                      <div className="flex flex-wrap justify-end gap-1.5">
+                        <button
+                          onClick={() => otvorNahlad(r.id)}
+                          disabled={nacitavamNahlad === r.id}
+                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+                        >
+                          <Eye className="h-3.5 w-3.5" />{" "}
+                          {nacitavamNahlad === r.id ? "Načítavam…" : "Náhľad"}
+                        </button>
                         {r.matched_supplier_invoice_id ? (
                           <a
                             href={`/prijate-faktury/${r.matched_supplier_invoice_id}`}
@@ -195,6 +285,7 @@ function ReceivedPage() {
           </div>
         )}
       </PageBody>
+      {nahlad && <NahladOkno nahlad={nahlad} onClose={zavriNahlad} />}
     </>
   );
 }

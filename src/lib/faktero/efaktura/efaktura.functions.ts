@@ -618,6 +618,11 @@ export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
             processed_at: new Date().toISOString(),
           } as TablesUpdate<"efaktura_received_documents">)
           .eq("id", data.received_id);
+        // Pripojená faktúra bez prílohy dostane PDF z eFaktúry.
+        if ((doklad as any).xml_payload) {
+          const { prilozPdfKPrijatej } = await import("./nahlad.server");
+          await prilozPdfKPrijatej(supabase, data.company_id, dup.id, String((doklad as any).xml_payload));
+        }
         return { invoiceId: dup.id, uzExistovala: true as const, pripojena: true as const };
       }
     }
@@ -653,6 +658,12 @@ export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
       .single();
     if (chybaZapisu) throw new Error(chybaZapisu.message);
 
+    // Náhľad: PDF z eFaktúry (priložené alebo vykreslené z XML) ako príloha prijatej faktúry.
+    if ((doklad as any).xml_payload) {
+      const { prilozPdfKPrijatej } = await import("./nahlad.server");
+      await prilozPdfKPrijatej(supabase, data.company_id, faktura.id, String((doklad as any).xml_payload));
+    }
+
     await supabase
       .from("efaktura_received_documents")
       .update({
@@ -664,4 +675,38 @@ export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
       .eq("id", data.received_id);
 
     return { invoiceId: faktura.id, uzExistovala: false as const };
+  });
+
+
+/**
+ * Náhľad prijatej eFaktúry ako PDF (base64). Priložené PDF odosielateľa, inak
+ * faktúra vykreslená z XML. Zaevidovaná faktúra bez prílohy ho pri tom dostane.
+ */
+export const nahladPrijatejEfakturyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string; received_id?: string };
+    if (!v?.company_id || !v?.received_id) throw new Error("Chýba company_id alebo received_id.");
+    return { company_id: v.company_id, received_id: v.received_id };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+    const { data: doklad } = await supabase
+      .from("efaktura_received_documents")
+      .select("xml_payload, matched_supplier_invoice_id, document_number")
+      .eq("id", data.received_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!doklad?.xml_payload) throw new Error("eFaktúra nemá uložené XML — náhľad sa nedá vytvoriť.");
+    const { pdfPrijatejEfaktury, prilozPdfKPrijatej } = await import("./nahlad.server");
+    const { bajty, prilozene } = await pdfPrijatejEfaktury(String(doklad.xml_payload));
+    if (doklad.matched_supplier_invoice_id) {
+      await prilozPdfKPrijatej(supabase, data.company_id, doklad.matched_supplier_invoice_id, String(doklad.xml_payload));
+    }
+    return {
+      pdf: Buffer.from(bajty).toString("base64"),
+      prilozene,
+      nazov: `efaktura-${String(doklad.document_number ?? data.received_id).replace(/[^\w.-]+/g, "_")}.pdf`,
+    };
   });
