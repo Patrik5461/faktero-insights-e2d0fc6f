@@ -72,11 +72,13 @@ export function VyberColnehoKodu({
 
   useEffect(() => {
     const zavri = (e: MouseEvent) => {
-      if (koren.current && !koren.current.contains(e.target as Node)) setOtvorene(false);
+      if (koren.current && e.target instanceof Node && !koren.current.contains(e.target))
+        setOtvorene(false);
     };
     // Posun stránky zoznam zavrie (stratil by polohu), posun v samotnom zozname nie.
     const priPosune = (e: Event) => {
-      if (koren.current?.contains(e.target as Node)) return;
+      // Pri posune okna je cieľom `window`, ktoré nie je uzol.
+      if (e.target instanceof Node && koren.current?.contains(e.target)) return;
       setOtvorene(false);
     };
     document.addEventListener("mousedown", zavri);
