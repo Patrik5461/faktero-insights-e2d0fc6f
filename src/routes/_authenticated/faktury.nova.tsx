@@ -2324,14 +2324,25 @@ function CellNum({
   step?: string;
   title?: string;
 }) {
+  /*
+    Nula sa v poli nezobrazuje — je len sivo ako nápoveda, aby sa po kliknutí
+    dalo hneď písať a nemusela sa najprv mazať. Kým sa píše, pole drží vlastný
+    text (inak by „0,“ alebo „1.“ preskočilo).
+  */
+  const [rozpisane, setRozpisane] = useState<string | null>(null);
   return (
     <input
       type="number"
       step={step}
       inputMode="decimal"
       title={title}
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
+      placeholder="0"
+      value={rozpisane ?? (Number(value) === 0 ? "" : value)}
+      onChange={(e) => {
+        setRozpisane(e.target.value);
+        onChange(Number(e.target.value));
+      }}
+      onBlur={() => setRozpisane(null)}
       className={`${w} rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm tabular-nums hover:border-input focus:border-input focus:bg-background ${align === "right" ? "text-right" : ""}`}
     />
   );
@@ -2360,7 +2371,9 @@ function CellSpolu({
       step="0.01"
       inputMode="decimal"
       title="Suma s DPH — cena bez dane sa dopočíta"
-      value={rozpisane ?? (Number.isFinite(hodnota) ? hodnota.toFixed(2) : "0.00")}
+      placeholder="0.00"
+      // Nulová suma sa nepíše do poľa, je len nápovedou — klik a hneď sa píše.
+      value={rozpisane ?? (Number.isFinite(hodnota) && hodnota !== 0 ? hodnota.toFixed(2) : "")}
       onChange={(e) => {
         setRozpisane(e.target.value);
         onZmena(Number(e.target.value));

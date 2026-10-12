@@ -626,7 +626,8 @@ function EditInvoice() {
                         <input
                           type="number"
                           step={KROK_CENY}
-                          value={it.unit_price}
+                          value={it.unit_price === 0 ? "" : it.unit_price}
+                          placeholder="0"
                           disabled={it._locked}
                           onChange={(e) => setItem(idx, { unit_price: Number(e.target.value) })}
                           className="w-24 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm tabular-nums text-right hover:border-input focus:border-input focus:bg-background"
@@ -638,7 +639,8 @@ function EditInvoice() {
                           step="0.01"
                           min="0"
                           max="100"
-                          value={it.discount_percent ?? 0}
+                          value={Number(it.discount_percent ?? 0) === 0 ? "" : it.discount_percent}
+                          placeholder="0"
                           disabled={it._locked}
                           onChange={(e) =>
                             setItem(idx, { discount_percent: percentoZlavy(e.target.value) })
@@ -765,7 +767,8 @@ function EditInvoice() {
                     <input
                       type="number"
                       step={KROK_CENY}
-                      value={it.unit_price}
+                      value={it.unit_price === 0 ? "" : it.unit_price}
+                      placeholder="0"
                       disabled={it._locked}
                       onChange={(e) => setItem(idx, { unit_price: Number(e.target.value) })}
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
@@ -776,7 +779,8 @@ function EditInvoice() {
                       min="0"
                       max="100"
                       title="Zľava v %"
-                      value={it.discount_percent ?? 0}
+                      value={Number(it.discount_percent ?? 0) === 0 ? "" : it.discount_percent}
+                      placeholder="0"
                       disabled={it._locked}
                       onChange={(e) =>
                         setItem(idx, { discount_percent: percentoZlavy(e.target.value) })
@@ -1023,7 +1027,9 @@ function CellSpolu({
       inputMode="decimal"
       disabled={disabled}
       title="Suma s DPH — cena bez dane sa dopočíta"
-      value={rozpisane ?? (Number.isFinite(hodnota) ? hodnota.toFixed(2) : "0.00")}
+      placeholder="0.00"
+      // Nulová suma sa nepíše do poľa, je len nápovedou — klik a hneď sa píše.
+      value={rozpisane ?? (Number.isFinite(hodnota) && hodnota !== 0 ? hodnota.toFixed(2) : "")}
       onChange={(e) => {
         setRozpisane(e.target.value);
         onZmena(Number(e.target.value));
