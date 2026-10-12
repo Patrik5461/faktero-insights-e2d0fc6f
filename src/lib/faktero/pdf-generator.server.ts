@@ -1,4 +1,5 @@
 import { PDFDocument, PDFString, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { riadkySoZlavou } from "./zlavy";
 import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
 import { paymeOdkaz, textQrPlatby } from "./qr-platba";
@@ -559,9 +560,30 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     }
   };
 
+  /*
+    Rozpis DPH podľa sadzieb — povinný, keď je na faktúre viac sadzieb alebo
+    sa miešajú položky s DPH a bez nej (PDP, 0 %). Zľava na doklad sa do
+    sadzieb rozpočíta rovnako ako do exportov.
+  */
+  const rozpisDph = (() => {
+    const skupiny = new Map<string, { label: string; zaklad: number; dph: number; pdp: boolean; sadzba: number }>();
+    for (const it of riadkySoZlavou(items as any[], discount)) {
+      const pdp = Boolean(invoice.reverse_charge || (it as any).prenesenie);
+      const sadzba = pdp ? 0 : Number(it.vat_rate ?? 0);
+      const kluc = pdp ? "pdp" : String(sadzba);
+      const s0 = skupiny.get(kluc) ?? { label: "", zaklad: 0, dph: 0, pdp, sadzba };
+      s0.zaklad += Number(it.subtotal ?? 0);
+      s0.dph += pdp ? 0 : Number(it.vat_amount ?? 0);
+      skupiny.set(kluc, s0);
+    }
+    if (skupiny.size < 2) return [];
+    return [...skupiny.values()].sort((a, b) => Number(a.pdp) - Number(b.pdp) || b.sadzba - a.sadzba);
+  })();
+
   // Estimate totals block height
   const totalsRows = 2 + (discount > 0 ? 2 : 0);
-  const totalsH = totalsRows * 18 + 8 + 60;
+  const rozpisH = rozpisDph.length ? 13 + rozpisDph.length * 14 + 8 : 0;
+  const totalsH = totalsRows * 18 + rozpisH + 8 + 60;
   ensureSpace(totalsH);
 
   const totalsTop = y;
@@ -609,11 +631,38 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     );
     ty -= 18;
   }
+  // Rozpis ako malá tabuľka Sadzba | Základ | DPH — po riadku na sadzbu, aby
+  // faktúra zbytočne nenarástla o stranu.
+  if (rozpisDph.length) {
+    const stlpecZaklad = totalsX + totalsBlockW * 0.66;
+    const pravy = totalsX + totalsBlockW;
+    cur.drawText(san(t.sadzba), { x: totalsX, y: ty, size: 8, font, color: sub });
+    drawAligned(cur, font, san(t.zakladDane), stlpecZaklad, ty, 8, sub, "right");
+    drawAligned(cur, font, san(t.dph), pravy, ty, 8, sub, "right");
+    ty -= 13;
+    for (const r of rozpisDph) {
+      const nazov = r.pdp ? "PDP" : `${String(r.sadzba).replace(".", ",")}\u00A0%`;
+      cur.drawText(san(nazov), { x: totalsX, y: ty, size: 9.5, font, color: sub });
+      drawAligned(cur, font, san(fmt(r.zaklad, invoice.currency)), stlpecZaklad, ty, 9.5, ink, "right");
+      drawAligned(
+        cur,
+        font,
+        san(r.pdp ? "—" : fmt(r.dph, invoice.currency)),
+        pravy,
+        ty,
+        9.5,
+        ink,
+        "right",
+      );
+      ty -= 14;
+    }
+    ty -= 4;
+  }
   if (!invoice.reverse_charge) {
     drawTotalRow(
       cur,
       font,
-      t.dph,
+      rozpisDph.length ? t.dphSpolu : t.dph,
       fmt(Number(invoice.vat_total), invoice.currency),
       totalsX,
       ty,

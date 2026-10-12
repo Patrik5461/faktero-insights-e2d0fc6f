@@ -146,7 +146,6 @@ function Predvolene({
   const [odkazNaDoklady, setOdkazNaDoklady] = useState(true);
   const [polozkyBlockov, setPolozkyBlockov] = useState(false);
   const [ine, setIne] = useState({
-    dobropisKladny: false,
     parovaciSymbol: "vs" as "vs" | "dodaci_list" | "cislo",
     predkontaciaZaokruhlenie: "",
     qrDoNespracovanych: false,
@@ -164,7 +163,6 @@ function Predvolene({
     setOdkazNaDoklady(firma.pohoda_odkaz_na_doklady !== false);
     setPolozkyBlockov(Boolean(firma.pohoda_polozky_blockov));
     setIne({
-      dobropisKladny: Boolean(firma.pohoda_dobropis_kladny),
       parovaciSymbol: (firma.pohoda_parovaci_symbol as any) || "vs",
       predkontaciaZaokruhlenie: String(firma.pohoda_predkontacia_zaokruhlenie ?? ""),
       qrDoNespracovanych: Boolean(firma.qr_blocky_do_nespracovanych),
@@ -351,18 +349,6 @@ function Predvolene({
         <legend className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Export a spracovanie dokladov
         </legend>
-        <label className="flex items-start gap-2">
-          <input
-            type="checkbox"
-            className="mt-1"
-            checked={ine.dobropisKladny}
-            onChange={(e) => setIne({ ...ine, dobropisKladny: e.target.checked })}
-          />
-          <span>
-            Exportovať dobropis vždy s kladnými sumami
-            <span className="block text-xs text-muted-foreground">Inak ide záporný, tak ako ho zakladá Pohoda.</span>
-          </span>
-        </label>
         <label className="block">
           <span className="text-xs text-muted-foreground">Párovací symbol v Pohode</span>
           <select

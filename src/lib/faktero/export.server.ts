@@ -223,8 +223,6 @@ export type PohodaNastavenia = {
   zamknuteDo?: string | null;
   /** Dátum zaúčtovania zvolený pri exporte — prebije dátum dokladu aj uzávierku. */
   datumZauctovaniaPevny?: string | null;
-  /** Dobropis s kladnými sumami (niektoré účtovné jednotky ho tak vedú). */
-  dobropisKladny?: boolean;
   /** Čo ide do párovacieho symbolu: VS (predvolené), číslo dodacieho listu, číslo dokladu. */
   parovaciSymbol?: "vs" | "dodaci_list" | "cislo" | null;
   /** Predkontácia pre zaokrúhlenie — rozdiel ide ako položka namiesto zaokrúhlenia dokladu. */
@@ -479,16 +477,13 @@ export function polozkyFaktur(opts: {
       const items = riadkySoZlavou(povodneRiadky, (invoice as any).discount_total);
       const typ = String(invoice.type ?? "regular");
       const invoiceType = TYPY_DOKLADU[typ] ?? "issuedInvoice";
-      // Dobropis sa zapisuje záporne; otáča sa množstvo, nie jednotková cena,
-      // aby doklad aj po vytlačení vyzeral tak, ako ho Pohoda robí sama.
       /*
-        Dobropis z formulára je uložený so zápornými sumami, starší kladne —
-        výsledok má byť záporný (alebo kladný pri voľbe „dobropis kladný"),
-        nech je uložený akokoľvek.
+        Dobropis ide do Pohody vždy s kladnými sumami — o tom, že znižuje,
+        rozhoduje typ dokladu (issuedCreditNotice). So zápornými sumami by ho
+        Pohoda zaúčtovala zle. V DB je dobropis z formulára záporný, starší
+        kladný — otáča sa množstvo, nie jednotková cena.
       */
-      const ulozenyZaporne = Number(invoice.total ?? 0) < 0;
-      const chceZaporny = typ === "credit_note" && !nastavenia?.dobropisKladny;
-      const zn = typ === "credit_note" ? (ulozenyZaporne === chceZaporny ? 1 : -1) : 1;
+      const zn = typ === "credit_note" && Number(invoice.total ?? 0) < 0 ? -1 : 1;
 
       const denPlnenia = String(invoice.delivery_date ?? invoice.issue_date ?? "");
       const tab = sadzbyKuDnu(denPlnenia, krajinaDane(company.country));
@@ -1163,9 +1158,8 @@ export function polozkyDokladov(opts: {
 
   return doklady
     .map((d0, idx) => {
-      // Dobropis s kladnými sumami, keď to firma chce — inak záporný, ako ho robí Pohoda.
-      const d =
-        nastavenia?.dobropisKladny && d0?._typPohody === "receivedCreditNotice" ? kladnyDobropis(d0) : d0;
+      // Dobropis vždy s kladnými sumami — záporný by Pohoda zaúčtovala zle.
+      const d = d0?._typPohody === "receivedCreditNotice" ? kladnyDobropis(d0) : d0;
       const tab = sadzbyKuDnu(String(d?.issue_date ?? ""), krajinaDane(company.country));
       const rozpis = rozpisDokladu(d);
       const zaSadzbu = (p: Priehradka) =>

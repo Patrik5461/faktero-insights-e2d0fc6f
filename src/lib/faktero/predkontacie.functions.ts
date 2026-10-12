@@ -133,7 +133,6 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
         pokladna: z.string().max(20).optional().nullable(),
         odkazNaDoklady: z.boolean().optional(),
         polozkyBlockov: z.boolean().optional(),
-        dobropisKladny: z.boolean().optional(),
         parovaciSymbol: z.enum(["vs", "dodaci_list", "cislo"]).optional(),
         predkontaciaZaokruhlenie: z.string().max(30).optional().nullable(),
         qrDoNespracovanych: z.boolean().optional(),
@@ -159,7 +158,6 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
     if (data.pokladna !== undefined) zmena.pohoda_pokladna = data.pokladna?.trim() || null;
     if (data.odkazNaDoklady !== undefined) zmena.pohoda_odkaz_na_doklady = data.odkazNaDoklady;
     if (data.polozkyBlockov !== undefined) zmena.pohoda_polozky_blockov = data.polozkyBlockov;
-    if (data.dobropisKladny !== undefined) zmena.pohoda_dobropis_kladny = data.dobropisKladny;
     if (data.parovaciSymbol) zmena.pohoda_parovaci_symbol = data.parovaciSymbol;
     if (data.predkontaciaZaokruhlenie !== undefined)
       zmena.pohoda_predkontacia_zaokruhlenie = data.predkontaciaZaokruhlenie?.trim() || null;

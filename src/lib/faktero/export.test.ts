@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { XMLParser, XMLValidator } from "fast-xml-parser";
-import { datumZauctovania,
+import {
+  datumZauctovania,
   buildPohodaInvoiceXml,
   buildPohodaExpensesXml,
   buildPohodaCashXml,
@@ -211,13 +212,17 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
     );
     expect(d.invoiceHeader.text).toBe("Fakturujeme vám práce za september");
     expect(d.invoiceHeader.note).toContain("Ďakujeme");
-    expect(([] as any[]).concat(d.invoiceDetail.invoiceItem)[0]).toMatchObject({ note: "Montáž a doprava" });
+    expect(([] as any[]).concat(d.invoiceDetail.invoiceItem)[0]).toMatchObject({
+      note: "Montáž a doprava",
+    });
   });
 
   it("zľava položky ide ako percento, účet ako skratka z Pohody", () => {
     const [prva, ...zvysok] = polozky as any[];
     const d = posli(faktura, [{ ...prva, discount_percent: 10 }, ...zvysok], { banka: "TB" });
-    expect(Number(([] as any[]).concat(d.invoiceDetail.invoiceItem)[0].discountPercentage)).toBe(10);
+    expect(Number(([] as any[]).concat(d.invoiceDetail.invoiceItem)[0].discountPercentage)).toBe(
+      10,
+    );
     expect(d.invoiceHeader.account.ids).toBe("TB");
     expect(posli(faktura).invoiceHeader.account).toBeUndefined();
   });
@@ -234,7 +239,11 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
     expect(vlastne.classificationKVDPH.ids).toBe("A1");
 
     const [prva, ...zvysok] = polozky as any[];
-    const rozuct = posli(faktura, [{ ...prva, pohoda_predkontacia: "4Fv", kv_clenenie: "A2" }, ...zvysok], nast);
+    const rozuct = posli(
+      faktura,
+      [{ ...prva, pohoda_predkontacia: "4Fv", kv_clenenie: "A2" }, ...zvysok],
+      nast,
+    );
     expect(rozuct.invoiceHeader.accounting.ids).toBe("Rozúčtovať");
     const pol = [].concat(rozuct.invoiceDetail.invoiceItem);
     expect((pol[0] as any).accounting.ids).toBe("4Fv");
@@ -249,16 +258,33 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
     );
   });
 
-  it("dobropis má záporné sumy", () => {
-    // Pohoda zakladá dobropis záporne; s kladnými sumami by pohľadávku zvýšil.
-    const d = posli({ ...faktura, type: "credit_note" });
-    expect(Number(d.invoiceSummary.homeCurrency.priceHigh)).toBe(-100);
-    expect(Number(d.invoiceSummary.homeCurrency.priceHighVAT)).toBe(-23);
-    const p = d.invoiceDetail.invoiceItem;
-    expect(Number(p[0].quantity)).toBe(-10);
-    expect(Number(p[0].homeCurrency.priceSum)).toBe(-123);
-    // Jednotková cena ostáva kladná — otáča sa množstvo, ako to robí Pohoda.
-    expect(Number(p[0].homeCurrency.unitPrice)).toBe(10);
+  it("dobropis ide s kladnými sumami", () => {
+    // Pohoda chce dobropis kladne — že znižuje, určuje typ issuedCreditNotice.
+    // So zápornými sumami ho zaúčtuje zle.
+    for (const znamienko of [1, -1]) {
+      const d = posli(
+        {
+          ...faktura,
+          type: "credit_note",
+          subtotal: znamienko * 100,
+          vat_total: znamienko * 23,
+          total: znamienko * 123,
+        },
+        (polozky as any[]).map((it) => ({
+          ...it,
+          quantity: znamienko * Number(it.quantity),
+          subtotal: znamienko * Number(it.subtotal),
+          vat_amount: znamienko * Number(it.vat_amount),
+          total: znamienko * Number(it.total),
+        })),
+      );
+      expect(Number(d.invoiceSummary.homeCurrency.priceHigh)).toBe(100);
+      expect(Number(d.invoiceSummary.homeCurrency.priceHighVAT)).toBe(23);
+      const p = d.invoiceDetail.invoiceItem;
+      expect(Number(p[0].quantity)).toBe(10);
+      expect(Number(p[0].homeCurrency.priceSum)).toBe(123);
+      expect(Number(p[0].homeCurrency.unitPrice)).toBe(10);
+    }
   });
 
   it("forma úhrady ide z dokladu, nie natvrdo príkazom", () => {
@@ -520,10 +546,11 @@ describe("Pohoda XML — prijaté doklady", () => {
   });
 
   it("bloček z vyúčtovania výdavkov nejde z pokladne, ale ako interný doklad", () => {
-    const x = posli(
-      [{ ...bloček, id: "v", payment_method: "hotovost", vyuctovanie_id: "vyu-1" }],
-      { blockyPodlaPlatby: true, pokladna: "HOT", predkontaciaDoklady: "1Pv" },
-    ).dataPackItem;
+    const x = posli([{ ...bloček, id: "v", payment_method: "hotovost", vyuctovanie_id: "vyu-1" }], {
+      blockyPodlaPlatby: true,
+      pokladna: "HOT",
+      predkontaciaDoklady: "1Pv",
+    }).dataPackItem;
     expect(x.voucher).toBeUndefined();
     expect(x.intDoc.intDocHeader.accounting.ids).toBe("1Pv");
   });
@@ -541,7 +568,14 @@ describe("Pohoda XML — prijaté doklady", () => {
     };
     const x = posli(
       [
-        { ...bloček, id: "a", payment_method: "hotovost", cinnost: "VYR", job_id: "j1", int_poznamka: "kontrola" },
+        {
+          ...bloček,
+          id: "a",
+          payment_method: "hotovost",
+          cinnost: "VYR",
+          job_id: "j1",
+          int_poznamka: "kontrola",
+        },
         { ...bloček, id: "b", payment_method: "karta", pohoda_rad: "VLASTNY", stredisko: "KE" },
         { ...bloček, id: "c", payment_method: "prevod" },
       ],
@@ -572,22 +606,45 @@ describe("Pohoda XML — prijaté doklady", () => {
     };
     const x = posli(
       [
-        { ...bloček, id: "a", payment_method: "prevod", _typPohody: "receivedInvoice", pohoda_predkontacia: "OZ1" },
-        { ...bloček, id: "b", payment_method: "hotovost", pohoda_pokladna: "HP2",
-          items: [{ name: "Nafta", quantity: 1, unit_price: 20, total: 20, vat_rate: 23 }] },
+        {
+          ...bloček,
+          id: "a",
+          payment_method: "prevod",
+          _typPohody: "receivedInvoice",
+          pohoda_predkontacia: "OZ1",
+        },
+        {
+          ...bloček,
+          id: "b",
+          payment_method: "hotovost",
+          pohoda_pokladna: "HP2",
+          items: [{ name: "Nafta", quantity: 1, unit_price: 20, total: 20, vat_rate: 23 }],
+        },
       ],
       nast,
     ).dataPackItem;
     expect(x[0].invoice.invoiceHeader.invoiceType).toBe("commitment");
     expect(x[0].invoice.invoiceHeader.dateAccounting).toBe("2026-09-01");
     expect(x[1].voucher.voucherHeader.cashAccount.ids).toBe("HP2");
-    expect(x[1].voucher.voucherDetail.voucherItem).toMatchObject({ text: "Nafta", payVAT: true, rateVAT: "high" });
+    expect(x[1].voucher.voucherDetail.voucherItem).toMatchObject({
+      text: "Nafta",
+      payVAT: true,
+      rateVAT: "high",
+    });
   });
 
   it("predkontácia s pomerom rozúčtuje doklad sama", () => {
     const nast = {
       predkontaciaDoklady: "PHM",
-      pomeryPredkontacii: { PHM: { typ: "dph5050", zaklad: 80, zdanitelna: "PHM1", lenZaklad: "PHM2", nezdanitelna: "PHM3" } },
+      pomeryPredkontacii: {
+        PHM: {
+          typ: "dph5050",
+          zaklad: 80,
+          zdanitelna: "PHM1",
+          lenZaklad: "PHM2",
+          nezdanitelna: "PHM3",
+        },
+      },
     };
     const inv = posli([bloček], nast).dataPackItem.invoice;
     expect(inv.invoiceHeader.accounting.ids).toBe("Rozúčtovať");
@@ -602,8 +659,9 @@ describe("Pohoda XML — prijaté doklady", () => {
   });
 
   it("hotovostný bloček bez skratky pokladne ide ako faktúra — Pohoda by ho odmietla", () => {
-    const x = posli([{ ...bloček, payment_method: "hotovost" }], { blockyPodlaPlatby: true })
-      .dataPackItem;
+    const x = posli([{ ...bloček, payment_method: "hotovost" }], {
+      blockyPodlaPlatby: true,
+    }).dataPackItem;
     expect(x.voucher).toBeUndefined();
     expect(x.invoice.invoiceHeader.invoiceType).toBe("receivedInvoice");
   });
@@ -643,8 +701,8 @@ describe("Pohoda XML — prijaté doklady", () => {
     const blok = posli([bloček], nast).dataPackItem.invoice.invoiceHeader;
     expect(blok.accounting.ids).toBe("1Pv");
     expect(blok.classificationVAT.ids).toBe("PDb");
-    const faktura = posli([{ ...bloček, _typPohody: "receivedInvoice" }], nast).dataPackItem
-      .invoice.invoiceHeader;
+    const faktura = posli([{ ...bloček, _typPohody: "receivedInvoice" }], nast).dataPackItem.invoice
+      .invoiceHeader;
     expect(faktura.accounting.ids).toBe("5Fp");
     expect(faktura.classificationVAT.ids).toBe("PD");
   });
@@ -817,7 +875,11 @@ describe("KROS Omega TXT", () => {
 
   it("cudzia mena bez kurzu sa vynechá", () => {
     const preskocene: string[] = [];
-    buildOmegaTxt({ company: {}, invoices: [{ invoice: { ...faktura, currency: "CZK" }, items: polozky }], preskocene });
+    buildOmegaTxt({
+      company: {},
+      invoices: [{ invoice: { ...faktura, currency: "CZK" }, items: polozky }],
+      preskocene,
+    });
     expect(preskocene[0]).toMatch(/CZK nemá kurz/);
   });
 });

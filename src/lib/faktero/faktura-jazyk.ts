@@ -68,6 +68,10 @@ type Popisky = {
   celkom: string;
   medzisucet: string;
   zakladDane: string;
+  /** Súčet DPH pod rozpisom podľa sadzieb. */
+  dphSpolu: string;
+  /** Hlavička stĺpca v rozpise DPH. */
+  sadzba: string;
   zlava: string;
   spolu: string;
   zuctovanaZaloha: string;
@@ -125,6 +129,8 @@ const SK: Popisky = {
   celkom: "CELKOM",
   medzisucet: "Medzisúčet",
   zakladDane: "Základ dane",
+  dphSpolu: "DPH spolu",
+  sadzba: "Sadzba",
   zlava: "Zľava",
   spolu: "Spolu",
   zuctovanaZaloha: "Zúčtovaná záloha",
@@ -176,6 +182,8 @@ const CS: Popisky = {
   celkom: "CELKEM",
   medzisucet: "Mezisoučet",
   zakladDane: "Základ daně",
+  dphSpolu: "DPH celkem",
+  sadzba: "Sazba",
   zlava: "Sleva",
   spolu: "Celkem",
   zuctovanaZaloha: "Zúčtovaná záloha",
@@ -228,6 +236,8 @@ const EN: Popisky = {
   celkom: "TOTAL",
   medzisucet: "Subtotal",
   zakladDane: "Taxable amount",
+  dphSpolu: "VAT total",
+  sadzba: "Rate",
   zlava: "Discount",
   spolu: "Total",
   zuctovanaZaloha: "Advance settled",
@@ -284,6 +294,8 @@ const DE: Popisky = {
   celkom: "GESAMT",
   medzisucet: "Zwischensumme",
   zakladDane: "Nettobetrag",
+  dphSpolu: "USt. gesamt",
+  sadzba: "Satz",
   zlava: "Rabatt",
   spolu: "Summe",
   zuctovanaZaloha: "Verrechnete Anzahlung",
@@ -341,6 +353,8 @@ const HU: Popisky = {
   celkom: "ÖSSZESEN",
   medzisucet: "Részösszeg",
   zakladDane: "Adóalap",
+  dphSpolu: "ÁFA összesen",
+  sadzba: "Kulcs",
   zlava: "Kedvezmény",
   spolu: "Összesen",
   zuctovanaZaloha: "Beszámított előleg",
