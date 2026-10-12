@@ -72,7 +72,8 @@ const ZORADENIE_FAKTUR: MoznostZoradenia[] = [
  * robili karty v AI asistentovi s `?status=overdue`.
  */
 type InvoiceSearch = {
-  type?: "credit";
+  /** credit = dobropisy a ťarchopisy, vydane = len bežné faktúry, danove = daňové doklady k platbe. */
+  type?: "credit" | "vydane" | "danove";
   status?: "draft" | "issued";
   poSplatnosti?: true;
   /**
@@ -108,7 +109,7 @@ function jePoSplatnosti(r: Splatnost, dnes: string): boolean {
 export const Route = createFileRoute("/_authenticated/faktury/")({
   head: () => ({ meta: [{ title: "Faktúry — Faktero" }] }),
   validateSearch: (s: Record<string, unknown>): InvoiceSearch => ({
-    type: s.type === "credit" ? "credit" : undefined,
+    type: s.type === "credit" || s.type === "vydane" || s.type === "danove" ? s.type : undefined,
     status: s.status === "draft" || s.status === "issued" ? s.status : undefined,
     // Smerovač si hodnotu z adresy rozparsuje sám: `=true` je `true`, `=1` je
     // číslo `1`. Porovnanie s reťazcom `"1"` preto neplatilo nikdy a odkaz
@@ -126,7 +127,13 @@ function InvoicesPage() {
   // Opravné faktúry: dobropis `credit_note` a ťarchopis `debit_note`; v adrese je kratšie `credit`.
   const equals = useMemo(
     () => ({
-      ...(type === "credit" ? { type: ["credit_note", "debit_note"] } : {}),
+      ...(type === "credit"
+        ? { type: ["credit_note", "debit_note"] }
+        : type === "vydane"
+          ? { type: ["regular"] }
+          : type === "danove"
+            ? { type: ["advance_payment"] }
+            : {}),
       ...(status ? { status } : {}),
     }),
     [type, status],
@@ -560,7 +567,11 @@ function InvoicesPage() {
         title={
           type === "credit"
             ? "Dobropisy a ťarchopisy"
-            : poSplatnosti
+            : type === "vydane"
+              ? "Vydané faktúry"
+              : type === "danove"
+                ? "Daňové doklady"
+                : poSplatnosti
               ? "Faktúry po splatnosti"
               : neuhradene
                 ? "Neuhradené faktúry"
@@ -575,7 +586,11 @@ function InvoicesPage() {
             ? `Výsledky hľadania „${q}“.`
             : type === "credit"
               ? "Vystavené opravné faktúry — dobropisy cenu znižujú, ťarchopisy zvyšujú."
-              : poSplatnosti
+              : type === "vydane"
+                ? "Len faktúry — bez zálohových, dobropisov a daňových dokladov."
+                : type === "danove"
+                  ? "Daňové doklady k prijatej platbe. Vystavujú sa zo zálohovej faktúry po jej úhrade."
+                  : poSplatnosti
                 ? "Vystavené a odoslané faktúry, ktorým uplynula splatnosť a nie sú uhradené."
                 : neuhradene
                   ? "Faktúry, ktoré vám zákazníci ešte nezaplatili."
@@ -653,7 +668,7 @@ function InvoicesPage() {
             </Link>
             )}
             {/* Krátka cesta pre jednu položku — plný formulár je na zvyšok. */}
-            {type !== "credit" && (
+            {type !== "credit" && type !== "danove" && (
             <Link
               to="/faktury/rychla"
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
@@ -661,7 +676,14 @@ function InvoicesPage() {
               <Zap className="h-4 w-4" /> Rýchla faktúra
             </Link>
             )}
-            {type === "credit" ? (
+            {type === "danove" ? (
+              <Link
+                to="/zalohove"
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                <Plus className="h-4 w-4" /> Vystaviť zo zálohovej faktúry
+              </Link>
+            ) : type === "credit" ? (
               <Link
                 to="/faktury/nova"
                 search={{ type: "credit_note" } as any}

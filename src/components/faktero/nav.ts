@@ -68,7 +68,8 @@ export const NAV: NavGroup[] = [
         príslušnom zozname a rýchle „Vytvoriť“ v hlavičke. V menu ostávajú len
         agendy, nie akcie — inak tá istá vec visí na troch miestach.
       */
-      { to: "/faktury", label: "Faktúry" },
+      { to: "/faktury", search: { type: "vydane" }, label: "Vydané faktúry" },
+      { to: "/faktury", search: { type: "danove" }, label: "Daňové doklady" },
       { to: "/zalohove", label: "Zálohové faktúry" },
       { to: "/prijate-faktury", label: "Prijaté faktúry" },
       { to: "/prijate-zalohove", label: "Prijaté zálohové faktúry" },
