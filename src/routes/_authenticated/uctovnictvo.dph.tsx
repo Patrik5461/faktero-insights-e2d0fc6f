@@ -32,6 +32,7 @@ import {
   vatBucketLabel,
   vatBucketOrder,
 } from "@/lib/faktero/vat-rates";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/dph")({
   head: () => ({
@@ -343,10 +344,10 @@ function DphPage() {
 <table><tr class="tot"><td>${rozdiel >= 0 ? "Odvod DPH" : "Nadmerný odpočet"}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
 <h2>Vystavené faktúry (${invoices.length})</h2>
 <table><thead><tr><th>Číslo</th><th>Dátum</th><th>Odberateľ</th><th style="text-align:right">Základ</th><th style="text-align:right">DPH</th><th style="text-align:right">Spolu</th></tr></thead>
-<tbody>${invoices.map((i) => `<tr><td>${escHtml(i.invoice_number)}</td><td>${escHtml(i.issue_date)}</td><td>${escHtml(i.customer_name)}${i.reverse_charge ? " (PDP)" : ""}${i.type === "credit_note" ? " (dobropis)" : i.type === "debit_note" ? " (ťarchopis)" : ""}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
+<tbody>${invoices.map((i) => `<tr><td>${escHtml(i.invoice_number)}</td><td>${escHtml(datumNaDoklade(i.issue_date))}</td><td>${escHtml(i.customer_name)}${i.reverse_charge ? " (PDP)" : ""}${i.type === "credit_note" ? " (dobropis)" : i.type === "debit_note" ? " (ťarchopis)" : ""}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
 <h2>Prijaté faktúry (${purchases.length})</h2>
 <table><thead><tr><th>Číslo</th><th>Dátum</th><th>Dodávateľ</th><th style="text-align:right">Základ</th><th style="text-align:right">DPH</th><th style="text-align:right">Spolu</th></tr></thead>
-<tbody>${purchases.map((p) => `<tr><td>${escHtml(p.invoice_number)}</td><td>${escHtml(p.issue_date)}</td><td>${escHtml(p.supplier_name)}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
+<tbody>${purchases.map((p) => `<tr><td>${escHtml(p.invoice_number)}</td><td>${escHtml(datumNaDoklade(p.issue_date))}</td><td>${escHtml(p.supplier_name)}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
 </body></html>`;
     win.document.open();
@@ -560,7 +561,7 @@ function DphPage() {
                 {invoices.map((i) => (
                   <TableRow key={i.id}>
                     <TableCell className="font-medium">{i.invoice_number}</TableCell>
-                    <TableCell>{i.issue_date}</TableCell>
+                    <TableCell>{datumNaDoklade(i.issue_date)}</TableCell>
                     <TableCell>
                       {i.customer_name}
                       {i.reverse_charge ? " (PDP)" : ""}
@@ -612,7 +613,7 @@ function DphPage() {
                 {purchases.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.invoice_number}</TableCell>
-                    <TableCell>{p.issue_date}</TableCell>
+                    <TableCell>{datumNaDoklade(p.issue_date)}</TableCell>
                     <TableCell>{p.supplier_name}</TableCell>
                     <TableCell className="text-right">
                       {fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}

@@ -21,6 +21,7 @@ import { setProductStockTracking, zosuladPredajnuCenu } from "@/lib/faktero/stoc
 
 import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import { colneUdajeNaZapis, jePlatnyColnyKod } from "@/lib/faktero/colny-kod";
 export const Route = createFileRoute("/_authenticated/produkty")({
   head: () => ({ meta: [{ title: "Produkty a služby — Faktero" }] }),
   /** `?new=1` z menu („Nový produkt“) rovno otvorí formulár. */
@@ -40,6 +41,10 @@ type Product = {
   vat_rate: number;
   active: boolean;
   track_stock?: boolean; // virtual — mirrors stock_items.track_stock
+  /** Colný kód (KN), krajina pôvodu a hmotnosť — prenesú sa do položky faktúry. */
+  colny_kod?: string | null;
+  krajina_povodu?: string | null;
+  hmotnost_kg?: string | number | null;
 };
 const EMPTY: Product = {
   name: "",
@@ -109,7 +114,10 @@ function ProductsPage() {
       company_id: cid,
       unit_price: Number(p.unit_price),
       vat_rate: Number(p.vat_rate),
+      ...colneUdajeNaZapis(p),
     };
+    if (!jePlatnyColnyKod(p.colny_kod))
+      return toast.error("Colný kód má mať 6 až 10 číslic (napr. 8517 13 00).");
     const op = p.id
       ? supabase.from("products").update(payload).eq("id", p.id)
       : supabase.from("products").insert(payload);
@@ -368,6 +376,26 @@ function ProductsPage() {
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </label>
+              {/* Colné údaje — len pri tovare, ktorý sa vyváža alebo hlási do Intrastatu. */}
+              <In
+                label="Colný kód (KN)"
+                value={editing.colny_kod ?? ""}
+                onChange={(v) => setEditing({ ...editing, colny_kod: v })}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <In
+                  label="Krajina pôvodu"
+                  value={editing.krajina_povodu ?? ""}
+                  onChange={(v) =>
+                    setEditing({ ...editing, krajina_povodu: v.toUpperCase().slice(0, 2) })
+                  }
+                />
+                <In
+                  label="Hmotnosť (kg)"
+                  value={editing.hmotnost_kg == null ? "" : String(editing.hmotnost_kg)}
+                  onChange={(v) => setEditing({ ...editing, hmotnost_kg: v })}
+                />
+              </div>
               <label className="sm:col-span-2 inline-flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"

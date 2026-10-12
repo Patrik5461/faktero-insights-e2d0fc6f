@@ -95,6 +95,10 @@ export type EN16931Line = {
   lineExtensionAmount: number; // net
   vatCategory: "S" | "Z" | "E" | "AE" | "K" | "G" | "O"; // UNCL5305
   vatPercent: number;
+  /** Colný kód (KN/HS) — BT-158, CommodityClassification listID="HS". */
+  colnyKod?: string;
+  /** Krajina pôvodu — BT-159, OriginCountry. */
+  krajinaPovodu?: string;
 };
 
 export type EN16931TaxSubtotal = {

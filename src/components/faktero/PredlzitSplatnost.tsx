@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { CalendarClock, Loader2 } from "lucide-react";
 import { predlzSplatnostFn } from "@/lib/faktero/splatnost.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 /**
  * Tlačidlo a okno „Predĺžiť splatnosť“ pre vydanú aj prijatú faktúru.
@@ -78,7 +79,7 @@ export function PredlzitSplatnost({
           >
             <h2 className="text-lg font-semibold">Predĺžiť splatnosť</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Faktúra {faktura.invoice_number}, doteraz splatná {faktura.due_date}
+              Faktúra {faktura.invoice_number}, doteraz splatná {datumNaDoklade(faktura.due_date)}
               {faktura.povodna_splatnost && faktura.povodna_splatnost !== faktura.due_date
                 ? ` (pôvodne ${faktura.povodna_splatnost})`
                 : ""}

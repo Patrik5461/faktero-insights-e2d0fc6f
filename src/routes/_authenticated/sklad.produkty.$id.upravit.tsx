@@ -73,6 +73,9 @@ function EditStockProduct() {
     location: "",
     photo_url: "" as string,
     active: true,
+    colny_kod: "",
+    krajina_povodu: "",
+    hmotnost_kg: "",
   });
 
   const cid = useMemo(() => getActiveCompanyId(), []);
@@ -113,6 +116,9 @@ function EditStockProduct() {
           location: si?.location ?? "",
           photo_url: si?.photo_url ?? "",
           active: p?.active ?? true,
+          colny_kod: (p as any)?.colny_kod ?? (si as any)?.colny_kod ?? "",
+          krajina_povodu: (p as any)?.krajina_povodu ?? (si as any)?.krajina_povodu ?? "",
+          hmotnost_kg: String((p as any)?.hmotnost_kg ?? (si as any)?.hmotnost_kg ?? ""),
         });
       })
       .catch((e) => {
@@ -479,6 +485,35 @@ function EditStockProduct() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   Stav, na ktorý sa doobjednáva. Keď je 0, dopĺňa sa len po minimum.
                 </p>
+              </Field>
+              <Field label="Colný kód (KN)">
+                <input
+                  value={form.colny_kod}
+                  onChange={(e) => set("colny_kod", e.target.value)}
+                  className="input"
+                  placeholder="napr. 8517 13 00"
+                  inputMode="numeric"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Kód kombinovanej nomenklatúry pre vývoz mimo EÚ a Intrastat — prenesie sa do faktúry.
+                </p>
+              </Field>
+              <Field label="Krajina pôvodu / hmotnosť (kg)">
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    value={form.krajina_povodu}
+                    onChange={(e) => set("krajina_povodu", e.target.value.toUpperCase().slice(0, 2))}
+                    className="input"
+                    placeholder="SK"
+                  />
+                  <input
+                    value={form.hmotnost_kg}
+                    onChange={(e) => set("hmotnost_kg", e.target.value)}
+                    className="input"
+                    placeholder="0,5"
+                    inputMode="decimal"
+                  />
+                </div>
               </Field>
               <Field label="Lokácia (regál/pozícia)">
                 <input

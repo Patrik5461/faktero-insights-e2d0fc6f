@@ -1,4 +1,6 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
+import { ColneUdajePolozky } from "@/components/faktero/ColneUdajePolozky";
+import { colneUdajeNaZapis } from "@/lib/faktero/colny-kod";
 import { KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
 import { useServerFn } from "@tanstack/react-start";
 import { druhPodlaTypuFaktury, sablonaZCisla, ukazkaCisla } from "@/lib/faktero/ciselne-rady";
@@ -47,6 +49,11 @@ type Item = {
   /** Zľava riadku v %; jednotková cena ostáva pôvodná. */
   discount_percent?: number;
   stock_item_id?: string | null;
+  product_id?: string | null;
+  /** Colný kód (KN), krajina pôvodu a hmotnosť. */
+  colny_kod?: string | null;
+  krajina_povodu?: string | null;
+  hmotnost_kg?: string | number | null;
   _original_quantity?: number;
   _original_stock_item_id?: string | null;
   _original_name?: string;
@@ -161,6 +168,10 @@ function EditInvoice() {
           vat_rate: Number(r.vat_rate),
           discount_percent: Number(r.discount_percent ?? 0),
           stock_item_id: r.stock_item_id ?? null,
+          product_id: r.product_id ?? null,
+          colny_kod: r.colny_kod ?? null,
+          krajina_povodu: r.krajina_povodu ?? null,
+          hmotnost_kg: r.hmotnost_kg ?? null,
           _original_quantity: Number(r.quantity),
           _original_stock_item_id: r.stock_item_id ?? null,
           _original_name: r.name,
@@ -301,6 +312,9 @@ function EditInvoice() {
           discount_percent: percentoZlavy(it.discount_percent),
           vat_rate: it.vat_rate,
           stock_item_id: it.stock_item_id ?? null,
+          // Väzba na cenník sa pri úprave nesmie stratiť (predtým sa zahodila).
+          product_id: it.product_id ?? null,
+          ...colneUdajeNaZapis(it),
           subtotal: Number(s.toFixed(2)),
           vat_amount: Number(v.toFixed(2)),
           total: Number((s + v).toFixed(2)),
@@ -580,6 +594,11 @@ function EditInvoice() {
                           disabled={it._locked}
                           onChange={(v) => setItem(idx, { description: v })}
                         />
+                        <ColneUdajePolozky
+                          value={it}
+                          disabled={it._locked}
+                          onChange={(v) => setItem(idx, v)}
+                        />
                       </td>
                       <td className="py-2 pl-3">
                         <input
@@ -708,6 +727,12 @@ function EditInvoice() {
                     value={it.description}
                     disabled={it._locked}
                     onChange={(v) => setItem(idx, { description: v })}
+                  />
+                  <ColneUdajePolozky
+                    mobil
+                    value={it}
+                    disabled={it._locked}
+                    onChange={(v) => setItem(idx, v)}
                   />
                   <div className="grid grid-cols-5 gap-2">
                     <input

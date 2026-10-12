@@ -5,6 +5,7 @@ import { domacaMena, krajinaKurzu, textPrepoctu } from "@/lib/faktero/kurzy";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 /**
  * Faktúra otvorená z QR kódu na doklade.
@@ -233,9 +234,9 @@ function VerejnaFaktura() {
       </div>
 
       <div className="mt-6 rounded-xl border border-border bg-muted/30 p-4">
-        <Riadok k="Dátum vystavenia" v={doklad.issue_date} />
-        <Riadok k="Dátum dodania" v={doklad.delivery_date} />
-        <Riadok k="Splatnosť" v={doklad.due_date} />
+        <Riadok k="Dátum vystavenia" v={datumNaDoklade(doklad.issue_date)} />
+        <Riadok k="Dátum dodania" v={datumNaDoklade(doklad.delivery_date)} />
+        <Riadok k="Splatnosť" v={datumNaDoklade(doklad.due_date)} />
         <Riadok k="Variabilný symbol" v={doklad.variable_symbol} />
         <Riadok k="IBAN" v={firma?.iban} />
       </div>

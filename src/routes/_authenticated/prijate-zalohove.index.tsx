@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/prijate-zalohove/")({
   head: () => ({ meta: [{ title: "Prijaté zálohové faktúry — Faktero" }] }),
@@ -174,8 +175,8 @@ function PrijateZalohovePage() {
                         >
                           <td className="p-3 font-medium">{r.invoice_number}</td>
                           <td className="p-3">{r.supplier_name}</td>
-                          <td className="p-3">{r.issue_date}</td>
-                          <td className="p-3">{r.due_date}</td>
+                          <td className="p-3">{datumNaDoklade(r.issue_date)}</td>
+                          <td className="p-3">{datumNaDoklade(r.due_date)}</td>
                           <td className="p-3 text-right tabular-nums">
                             {Number(r.amount_total).toFixed(2)} {r.currency}
                           </td>
@@ -209,7 +210,7 @@ function PrijateZalohovePage() {
                   subtitle={r.supplier_name}
                   amount={`${Number(r.amount_total).toFixed(2)} ${r.currency}`}
                   status={<StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />}
-                  meta={`splatná ${r.due_date}`}
+                  meta={`splatná ${datumNaDoklade(r.due_date)}`}
                 />
               )}
             />

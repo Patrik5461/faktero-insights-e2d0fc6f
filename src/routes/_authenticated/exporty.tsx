@@ -21,6 +21,7 @@ import { PROGRAMY_UCTOVANIA, type AgendaExportu } from "@/lib/faktero/uctovanie-
 import { NastaveniaProgramu } from "@/components/faktero/NastaveniaProgramu";
 import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight, Mail } from "lucide-react";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/exporty")({
   head: () => ({ meta: [{ title: "Účtovné exporty — Faktero" }] }),
@@ -230,7 +231,7 @@ function ExportsPage() {
                         </td>
                         <td className="p-3 font-medium">{i.invoice_number}</td>
                         <td className="p-3">{i.customer_name ?? "—"}</td>
-                        <td className="p-3">{i.issue_date}</td>
+                        <td className="p-3">{datumNaDoklade(i.issue_date)}</td>
                         <td className="p-3 text-right tabular-nums">
                           {Number(i.total).toFixed(2)} {i.currency}
                         </td>

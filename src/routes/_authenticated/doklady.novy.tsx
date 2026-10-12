@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { MENY } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: () => ({ meta: [{ title: "Nový doklad — Faktero" }] }),
@@ -634,7 +635,7 @@ function NovyDokladPage() {
               <div className="mt-1">
                 {duplikat.supplier_name ?? "Doklad"}
                 {duplikat.document_number ? ` č. ${duplikat.document_number}` : ""}
-                {duplikat.issue_date ? ` z ${duplikat.issue_date}` : ""}
+                {duplikat.issue_date ? ` z ${datumNaDoklade(duplikat.issue_date)}` : ""}
                 {duplikat.total_amount != null ? ` na ${Number(duplikat.total_amount).toFixed(2)} ${duplikat.currency ?? "EUR"}` : ""}{" "}
                 je už {duplikat.kde === "nespracovane" ? "v Nespracovaných dokladoch" : "medzi bločkami"}.{" "}
                 <Link

@@ -44,6 +44,7 @@ import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
   ACTC: "Pripravená na podpis",
@@ -350,8 +351,8 @@ function PurchaseInvoiceDetail() {
         title={`${samo ? (row.opravuje_cislo ? "Dobropis (samofaktúra)" : "Samofaktúra") : (row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra"} ${row.invoice_number}`}
         description={
           (row as any).type === "proforma"
-            ? `Dodávateľ: ${row.supplier_name} · Vystavená ${row.issue_date} · Nie je daňový doklad — daň prinesie ostrá faktúra.`
-            : `Dodávateľ: ${row.supplier_name} · Vystavená ${row.issue_date}`
+            ? `Dodávateľ: ${row.supplier_name} · Vystavená ${datumNaDoklade(row.issue_date)} · Nie je daňový doklad — daň prinesie ostrá faktúra.`
+            : `Dodávateľ: ${row.supplier_name} · Vystavená ${datumNaDoklade(row.issue_date)}`
         }
         action={
           <div className="flex flex-wrap gap-2">
@@ -500,7 +501,7 @@ function PurchaseInvoiceDetail() {
                 <Row label="Vystavenie" value={row.issue_date} />
                 <Row
                   label="Dodanie (daňové plnenie)"
-                  value={row.delivery_date || `${row.issue_date} (ako vystavenie)`}
+                  value={row.delivery_date || `${datumNaDoklade(row.issue_date)} (ako vystavenie)`}
                 />
                 <Row label="Prijatie" value={row.received_date} />
                 <Row label="Splatnosť" value={popisSplatnosti(row)} />

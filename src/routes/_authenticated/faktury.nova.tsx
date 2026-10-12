@@ -63,6 +63,9 @@ import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { historickeSadzby } from "@/lib/faktero/vat-rates";
 import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
+import { ColneUdajePolozky } from "@/components/faktero/ColneUdajePolozky";
+import { colneUdajeNaZapis } from "@/lib/faktero/colny-kod";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
   /**
@@ -108,6 +111,10 @@ type Item = {
   discount_percent?: number;
   product_id?: string | null;
   stock_item_id?: string | null;
+  /** Colný kód (KN), krajina pôvodu a hmotnosť — pre vývoz mimo EÚ a Intrastat. */
+  colny_kod?: string | null;
+  krajina_povodu?: string | null;
+  hmotnost_kg?: string | number | null;
   // UI hints (not persisted):
   _track_stock?: boolean;
   _available?: number;
@@ -132,6 +139,9 @@ const EMPTY_ITEM: Item = {
 
 type StockMeta = {
   stock_item_id: string;
+  colny_kod?: string | null;
+  krajina_povodu?: string | null;
+  hmotnost_kg?: number | null;
   track_stock: boolean;
   available: number;
   sku: string | null;
@@ -366,7 +376,9 @@ function NewInvoice() {
       }
       const { data: polozky } = await supabase
         .from("invoice_items")
-        .select("name, description, quantity, unit, unit_price, vat_rate, discount_percent, product_id, stock_item_id")
+        .select(
+          "name, description, quantity, unit, unit_price, vat_rate, discount_percent, product_id, stock_item_id, colny_kod, krajina_povodu, hmotnost_kg",
+        )
         .eq("invoice_id", f.id)
         .order("position");
       const ff = f as any;
@@ -400,6 +412,9 @@ function NewInvoice() {
             discount_percent: Number(p.discount_percent ?? 0),
             product_id: p.product_id ?? null,
             stock_item_id: p.stock_item_id ?? null,
+            colny_kod: p.colny_kod ?? null,
+            krajina_povodu: p.krajina_povodu ?? null,
+            hmotnost_kg: p.hmotnost_kg ?? null,
             _cena_rucne: true,
           })),
         );
@@ -554,7 +569,7 @@ function NewInvoice() {
       .then(({ data }) => setCustomers(data ?? []));
     supabase
       .from("products")
-      .select("id, name, unit, unit_price, vat_rate, description")
+      .select("id, name, unit, unit_price, vat_rate, description, colny_kod, krajina_povodu, hmotnost_kg")
       .eq("company_id", cid)
       .eq("active", true)
       .order("name")
@@ -575,7 +590,7 @@ function NewInvoice() {
       const [{ data: si }, { data: lvl }, { data: wh }] = await Promise.all([
         supabase
           .from("stock_items")
-          .select("id, product_id, sku, track_stock")
+          .select("id, product_id, sku, track_stock, colny_kod, krajina_povodu, hmotnost_kg")
           .eq("company_id", cid),
         supabase.from("stock_levels").select("stock_item_id, quantity").eq("company_id", cid),
         supabase
@@ -598,6 +613,9 @@ function NewInvoice() {
           track_stock: !!s.track_stock,
           available: totals.get(s.id) ?? 0,
           sku: s.sku ?? null,
+          colny_kod: s.colny_kod ?? null,
+          krajina_povodu: s.krajina_povodu ?? null,
+          hmotnost_kg: s.hmotnost_kg ?? null,
         };
       });
       setStockByProduct(m);
@@ -949,6 +967,7 @@ function NewInvoice() {
           description: it.description?.trim() || null,
           product_id: it.product_id ?? null,
           stock_item_id: it.stock_item_id ?? null,
+          ...colneUdajeNaZapis(it),
           quantity: it.quantity,
           unit: it.unit,
           unit_price: it.unit_price,
@@ -1382,7 +1401,7 @@ function NewInvoice() {
                       .map((z) => (
                       <li key={z.id} className="flex flex-wrap items-center gap-2">
                         <span className="tabular-nums">
-                          <strong>{z.invoice_number}</strong> · {z.issue_date} ·{" "}
+                          <strong>{z.invoice_number}</strong> · {datumNaDoklade(z.issue_date)} ·{" "}
                           {z.total.toFixed(2)} {z.currency}
                         </span>
                         {z.doklad_k_platbe && (
@@ -1786,6 +1805,10 @@ function NewInvoice() {
                       vat_rate: Number(p.vat_rate ?? DEFAULT_VAT_RATE),
                       product_id: p.id,
                       stock_item_id: meta?.stock_item_id ?? null,
+                      // Colné údaje sa dedia z cenníka (pri skladovej karte z nej).
+                      colny_kod: (p as any).colny_kod ?? meta?.colny_kod ?? null,
+                      krajina_povodu: (p as any).krajina_povodu ?? meta?.krajina_povodu ?? null,
+                      hmotnost_kg: (p as any).hmotnost_kg ?? meta?.hmotnost_kg ?? null,
                       _track_stock: meta?.track_stock ?? false,
                       _available: meta?.available ?? 0,
                       _sku: meta?.sku ?? null,
@@ -1825,6 +1848,7 @@ function NewInvoice() {
                           className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         />
                         <PoznamkaPolozky value={it.description} onChange={(v) => setItem(idx, { description: v })} />
+                        <ColneUdajePolozky value={it} onChange={(v) => setItem(idx, v)} />
                         <StockHint item={it} warehouseName={warehouseName} />
                       </td>
                       <td className="py-2 pl-3">
@@ -1937,6 +1961,7 @@ function NewInvoice() {
                     className="mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                   <PoznamkaPolozky mobil value={it.description} onChange={(v) => setItem(idx, { description: v })} />
+                  <ColneUdajePolozky mobil value={it} onChange={(v) => setItem(idx, v)} />
                   <StockHint item={it} warehouseName={warehouseName} />
                   <div className="grid grid-cols-5 gap-2">
                     <CellNum value={it.quantity} onChange={(v) => setItem(idx, { quantity: v })} />
@@ -2635,7 +2660,7 @@ function InvoicePickerModal({
                 <div>
                   <div className="font-medium">{inv.invoice_number}</div>
                   <div className="text-xs text-muted-foreground">
-                    {inv.customer_name} · {inv.issue_date}
+                    {inv.customer_name} · {datumNaDoklade(inv.issue_date)}
                   </div>
                 </div>
                 <div className="tabular-nums font-medium">

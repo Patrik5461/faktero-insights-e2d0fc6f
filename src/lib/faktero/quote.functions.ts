@@ -125,6 +125,10 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
         subtotal: it.subtotal,
         vat_amount: it.vat_amount,
         total: it.total,
+        product_id: it.product_id ?? null,
+        colny_kod: it.colny_kod ?? null,
+        krajina_povodu: it.krajina_povodu ?? null,
+        hmotnost_kg: it.hmotnost_kg ?? null,
       }));
       const { error: copyErr } = await supabase.from("invoice_items").insert(rows);
       if (copyErr) throw new Error(copyErr.message);

@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getApprovalInvoice, respondToApproval } from "@/lib/faktero/invoice-approval.functions";
 import { CheckCircle2, XCircle, Loader2, FileText } from "lucide-react";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/schvalit/$token")({
   head: () => ({
@@ -148,7 +149,7 @@ function ApprovalPage() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Faktúra</div>
               <div className="mt-1 text-2xl font-bold tabular-nums">{inv.invoice_number}</div>
               <div className="text-xs text-muted-foreground">
-                Vystavená {inv.issue_date} · splatná {inv.due_date}
+                Vystavená {datumNaDoklade(inv.issue_date)} · splatná {datumNaDoklade(inv.due_date)}
               </div>
             </div>
           </div>

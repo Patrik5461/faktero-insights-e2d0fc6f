@@ -28,6 +28,7 @@ import {
 import { CheckCircle2, Download, FolderOpen, Paperclip, Plus, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
   head: () => ({ meta: [{ title: "Iné doklady — Faktero" }] }),
@@ -480,7 +481,7 @@ function OstatneDokladyPage() {
                                     : ""
                               }
                             >
-                              {r.due_date}
+                              {datumNaDoklade(r.due_date)}
                             </span>
                           ) : (
                             <span className="text-muted-foreground">—</span>

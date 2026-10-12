@@ -14,10 +14,21 @@ import {
   jazykDokladu,
   localeDokladu,
   popisky,
+  datumNaDoklade,
   vetyPreneseniaCz,
   type JazykDokladu,
 } from "./faktura-jazyk";
 import { krajinaDane } from "./vat-rates";
+import { popisColnychUdajov } from "./colny-kod";
+
+/** Popisky colných údajov pod položkou v jazyku dokladu. */
+const POPIS_COLNYCH: Record<string, { kod: string; povod: string; hmotnost: string }> = {
+  sk: { kod: "KN", povod: "pôvod", hmotnost: "hmotnosť" },
+  cs: { kod: "KN", povod: "původ", hmotnost: "hmotnost" },
+  en: { kod: "CN code", povod: "origin", hmotnost: "net weight" },
+  de: { kod: "Zolltarifnr.", povod: "Ursprung", hmotnost: "Gewicht" },
+  hu: { kod: "KN", povod: "származás", hmotnost: "tömeg" },
+};
 import { sUctomFaktury } from "./platobny-ucet";
 
 function b64ToBytes(b64: string): Uint8Array {
@@ -311,15 +322,15 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     input.metaOverride ??
     (isPaid
       ? [
-          [t.datumVystavenia, invoice.issue_date ?? "—"],
-          [t.datumDodania, invoice.delivery_date ?? "—"],
-          [t.datumUhrady, paidDate ?? "—"],
+          [t.datumVystavenia, datumNaDoklade(invoice.issue_date, jazyk)],
+          [t.datumDodania, datumNaDoklade(invoice.delivery_date, jazyk)],
+          [t.datumUhrady, datumNaDoklade(paidDate, jazyk)],
           [t.formaUhrady, sposobUhrady(invoice.payment_method)],
         ]
       : [
-          [t.datumVystavenia, invoice.issue_date ?? "—"],
-          [t.datumDodania, invoice.delivery_date ?? "—"],
-          [t.datumSplatnosti, invoice.due_date ?? "—"],
+          [t.datumVystavenia, datumNaDoklade(invoice.issue_date, jazyk)],
+          [t.datumDodania, datumNaDoklade(invoice.delivery_date, jazyk)],
+          [t.datumSplatnosti, datumNaDoklade(invoice.due_date, jazyk)],
           [t.variabilnySymbol, invoice.variable_symbol ?? "—"],
           [t.formaUhrady, sposobUhrady(invoice.payment_method)],
         ]);
@@ -433,6 +444,9 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
         `${t.zlava} ${new Intl.NumberFormat(localeDokladu(jazyk), { maximumFractionDigits: 2 }).format(zlavaRiadku)} %`,
       );
     }
+    /* Colný kód, krajina pôvodu a hmotnosť — pre vývoz mimo EÚ; len keď sú vyplnené. */
+    const colne = popisColnychUdajov(it as any, POPIS_COLNYCH[jazyk] ?? POPIS_COLNYCH.sk);
+    if (colne) descLines.push(colne);
     const textH =
       nameLines.length * (NAME_SIZE + 2) +
       (descLines.length ? 2 + descLines.length * (DESC_SIZE + 2) : 0);
@@ -922,7 +936,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       [t.iban, company.iban ?? "—"],
       [t.swift, company.swift ?? "—"],
       [t.variabilnySymbol, invoice.variable_symbol ?? "—"],
-      [t.datumSplatnosti, invoice.due_date ?? "—"],
+      [t.datumSplatnosti, datumNaDoklade(invoice.due_date, jazyk)],
     ];
     const labelColW = 110;
     const valueColW = Math.max(80, dataColW - labelColW - 16);
@@ -989,7 +1003,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
             : null;
         if (payme) {
           // V riadku splatnosti, hneď za dátumom — karta sa nezväčší.
-          const datum = String(invoice.due_date ?? "—");
+          const datum = datumNaDoklade(invoice.due_date, jazyk);
           const bx = payX + 16 + 110 + bold.widthOfTextAtSize(datum, 10) + 12;
           const by = payY - 42 - 3 * 20 - 3.5;
           const popis = "PAYME · zaplatiť v mobile";

@@ -12,6 +12,7 @@ import {
   BulkBar,
   DeletedToggle,
 } from "@/components/faktero/ListControls";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/ponuky/")({
   head: () => ({ meta: [{ title: "Cenové ponuky — Faktero" }] }),
@@ -184,7 +185,7 @@ function QuotesPage() {
                   </td>
                   <td className="p-3 font-medium">{q.quote_number}</td>
                   <td className="p-3">{q.customer_name ?? "—"}</td>
-                  <td className="p-3">{q.issue_date}</td>
+                  <td className="p-3">{datumNaDoklade(q.issue_date)}</td>
                   <td className="p-3">{q.valid_until}</td>
                   <td className="p-3 text-right">
                     {Number(q.total).toFixed(2)} {q.currency}

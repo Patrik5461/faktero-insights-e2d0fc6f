@@ -4164,6 +4164,9 @@ export type Database = {
       }
       invoice_items: {
         Row: {
+          colny_kod: string | null
+          hmotnost_kg: number | null
+          krajina_povodu: string | null
           created_at: string
           description: string | null
           id: string
@@ -4185,6 +4188,9 @@ export type Database = {
           kv_clenenie: string | null
         }
         Insert: {
+          colny_kod?: string | null
+          hmotnost_kg?: number | null
+          krajina_povodu?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -4206,6 +4212,9 @@ export type Database = {
           kv_clenenie?: string | null
         }
         Update: {
+          colny_kod?: string | null
+          hmotnost_kg?: number | null
+          krajina_povodu?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -5574,6 +5583,9 @@ export type Database = {
       }
       products: {
         Row: {
+          colny_kod: string | null
+          hmotnost_kg: number | null
+          krajina_povodu: string | null
           active: boolean
           code: string | null
           company_id: string
@@ -5588,6 +5600,9 @@ export type Database = {
           vat_rate: number
         }
         Insert: {
+          colny_kod?: string | null
+          hmotnost_kg?: number | null
+          krajina_povodu?: string | null
           active?: boolean
           code?: string | null
           company_id: string
@@ -5602,6 +5617,9 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
+          colny_kod?: string | null
+          hmotnost_kg?: number | null
+          krajina_povodu?: string | null
           active?: boolean
           code?: string | null
           company_id?: string
@@ -6236,6 +6254,9 @@ export type Database = {
       }
       quote_items: {
         Row: {
+          colny_kod: string | null
+          hmotnost_kg: number | null
+          krajina_povodu: string | null
           created_at: string
           description: string | null
           id: string
@@ -6253,6 +6274,9 @@ export type Database = {
           discount_percent: number
         }
         Insert: {
+          colny_kod?: string | null
+          hmotnost_kg?: number | null
+          krajina_povodu?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -6270,6 +6294,9 @@ export type Database = {
           discount_percent?: number
         }
         Update: {
+          colny_kod?: string | null
+          hmotnost_kg?: number | null
+          krajina_povodu?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -6986,6 +7013,9 @@ export type Database = {
       }
       stock_items: {
         Row: {
+          colny_kod: string | null
+          hmotnost_kg: number | null
+          krajina_povodu: string | null
           archived_at: string | null
           avg_purchase_price: number
           barcode: string | null
@@ -7011,6 +7041,9 @@ export type Database = {
           vat_rate: number
         }
         Insert: {
+          colny_kod?: string | null
+          hmotnost_kg?: number | null
+          krajina_povodu?: string | null
           archived_at?: string | null
           avg_purchase_price?: number
           barcode?: string | null
@@ -7036,6 +7069,9 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
+          colny_kod?: string | null
+          hmotnost_kg?: number | null
+          krajina_povodu?: string | null
           archived_at?: string | null
           avg_purchase_price?: number
           barcode?: string | null

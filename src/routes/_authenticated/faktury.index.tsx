@@ -47,6 +47,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 
@@ -786,7 +787,7 @@ function InvoicesPage() {
               }
               subtitle={i.customer_name ?? "—"}
               status={<StatusBadge status={i.status} />}
-              meta={`${i.issue_date} · splat. ${i.due_date}`}
+              meta={`${datumNaDoklade(i.issue_date)} · splat. ${datumNaDoklade(i.due_date)}`}
               amount={`${Number(i.total).toFixed(2)} ${i.currency}`}
               actions={
                 list.showDeleted ? (
@@ -898,9 +899,9 @@ function InvoicesPage() {
                       </td>
 
                       <td className="p-3">{i.customer_name ?? "—"}</td>
-                      <td className="p-3">{i.issue_date}</td>
+                      <td className="p-3">{datumNaDoklade(i.issue_date)}</td>
                       <td className="p-3">
-                        {i.due_date}
+                        {datumNaDoklade(i.due_date)}
                         {i.povodna_splatnost && i.povodna_splatnost !== i.due_date && (
                           <span className="block text-xs text-muted-foreground" title={`Pôvodne ${i.povodna_splatnost}`}>
                             predĺžená

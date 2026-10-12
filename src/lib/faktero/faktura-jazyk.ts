@@ -421,3 +421,19 @@ const VETY_CZ: Record<JazykDokladu, VetyPreneseniaCz> = {
 export function vetyPreneseniaCz(jazyk: unknown): VetyPreneseniaCz {
   return VETY_CZ[jazykDokladu(jazyk)];
 }
+
+/**
+ * Dátum na doklade — deň, mesiac, rok (nie „2026-10-11“). Po slovensky,
+ * česky a maďarsky „11. 10. 2026“, po nemecky „11.10.2026“, po anglicky
+ * „11/10/2026“. Prázdny alebo nečitateľný dátum vráti, ako prišiel.
+ */
+export function datumNaDoklade(v: unknown, jazyk: unknown = "sk"): string {
+  const s = String(v ?? "").trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!m) return s || "—";
+  const [, r, mes, d] = m;
+  const j = jazykDokladu(jazyk);
+  if (j === "de") return `${d}.${mes}.${r}`;
+  if (j === "en") return `${d}/${mes}/${r}`;
+  return `${Number(d)}. ${Number(mes)}. ${r}`;
+}

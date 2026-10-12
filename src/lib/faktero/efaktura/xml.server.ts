@@ -107,8 +107,8 @@ export function generatePeppolBisXml(inv: EN16931Invoice): XmlGenerationResult {
     <cbc:${mnozstvo} unitCode="${esc(l.unitCode)}">${l.quantity}</cbc:${mnozstvo}>
     <cbc:LineExtensionAmount currencyID="${esc(inv.currency)}">${fmt(l.lineExtensionAmount)}</cbc:LineExtensionAmount>
     <cac:Item>
-      <cbc:Name>${esc(l.name)}</cbc:Name>
-${l.description ? `      <cbc:Description>${esc(l.description)}</cbc:Description>\n` : ""}      <cac:ClassifiedTaxCategory>
+${l.description ? `      <cbc:Description>${esc(l.description)}</cbc:Description>\n` : ""}      <cbc:Name>${esc(l.name)}</cbc:Name>
+${l.krajinaPovodu ? `      <cac:OriginCountry><cbc:IdentificationCode>${esc(l.krajinaPovodu)}</cbc:IdentificationCode></cac:OriginCountry>\n` : ""}${l.colnyKod ? `      <cac:CommodityClassification><cbc:ItemClassificationCode listID="HS">${esc(l.colnyKod)}</cbc:ItemClassificationCode></cac:CommodityClassification>\n` : ""}      <cac:ClassifiedTaxCategory>
         <cbc:ID>${esc(l.vatCategory)}</cbc:ID>
 ${l.vatCategory === "O" ? "" : `        <cbc:Percent>${l.vatPercent}</cbc:Percent>\n`}        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
       </cac:ClassifiedTaxCategory>

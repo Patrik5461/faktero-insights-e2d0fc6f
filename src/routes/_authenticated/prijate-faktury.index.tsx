@@ -51,6 +51,7 @@ import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyE
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samofakturacia";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: () => ({ meta: [{ title: "Prijaté faktúry — Faktero" }] }),
@@ -930,13 +931,13 @@ function PurchaseInvoicesPage() {
                   )}
                   {je("vystavena") && (
                     <td className="p-3">
-                      {r.issue_date}
+                      {datumNaDoklade(r.issue_date)}
                       {r.delivery_date && r.delivery_date !== r.issue_date ? (
                         <div
                           className="text-xs text-muted-foreground"
                           title="Dátum dodania (daňového plnenia)"
                         >
-                          DUZP {r.delivery_date}
+                          DUZP {datumNaDoklade(r.delivery_date)}
                         </div>
                       ) : null}
                     </td>
@@ -944,7 +945,7 @@ function PurchaseInvoicesPage() {
                   {je("duzp") && <td className="p-3">{r.delivery_date ?? "—"}</td>}
                   {je("splatnost") && (
                     <td className="p-3">
-                      {r.due_date}
+                      {datumNaDoklade(r.due_date)}
                       {r.povodna_splatnost && r.povodna_splatnost !== r.due_date && (
                         <span
                           className="block text-xs text-muted-foreground"

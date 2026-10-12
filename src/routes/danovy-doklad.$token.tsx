@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 const Input = z.object({ token: z.string().min(16).max(128) });
 
@@ -133,13 +134,13 @@ function PlatformInvoicePage() {
           </div>
           <div style={{ textAlign: "right", color: "#555" }}>
             <div>
-              Dátum vystavenia: <b>{inv.issue_date}</b>
+              Dátum vystavenia: <b>{datumNaDoklade(inv.issue_date)}</b>
             </div>
             <div>
               Dátum dodania: <b>{inv.taxable_date}</b>
             </div>
             <div>
-              Dátum splatnosti: <b>{inv.due_date}</b>
+              Dátum splatnosti: <b>{datumNaDoklade(inv.due_date)}</b>
             </div>
             <div style={{ marginTop: 6, color: "#16a34a", fontWeight: 600 }}>UHRADENÁ</div>
           </div>

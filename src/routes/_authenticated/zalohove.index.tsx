@@ -15,6 +15,7 @@ import {
 } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/zalohove/")({
   head: () => ({ meta: [{ title: "Zálohové faktúry — Faktero" }] }),
@@ -145,7 +146,7 @@ function ProformaListPage() {
                 title={i.invoice_number}
                 subtitle={i.customer_name ?? "—"}
                 status={<ProformaStatus value={s} settled={settledMap[i.id]} />}
-                meta={`${i.issue_date} · splat. ${i.due_date}`}
+                meta={`${datumNaDoklade(i.issue_date)} · splat. ${datumNaDoklade(i.due_date)}`}
                 amount={`${Number(i.total).toFixed(2)} ${i.currency}`}
                 actions={
                   list.showDeleted ? (
@@ -225,8 +226,8 @@ function ProformaListPage() {
                       >
                         <td className="p-3 font-medium">{i.invoice_number}</td>
                         <td className="p-3">{i.customer_name ?? "—"}</td>
-                        <td className="p-3">{i.issue_date}</td>
-                        <td className="p-3">{i.due_date}</td>
+                        <td className="p-3">{datumNaDoklade(i.issue_date)}</td>
+                        <td className="p-3">{datumNaDoklade(i.due_date)}</td>
                         <td className="p-3 text-right">
                           {Number(i.total).toFixed(2)} {i.currency}
                         </td>

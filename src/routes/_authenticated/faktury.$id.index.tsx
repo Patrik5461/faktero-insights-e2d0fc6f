@@ -76,6 +76,7 @@ import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 /** Ako sa doklad volá — rovnako v hlavičke stránky aj v PDF. */
 const NAZOV_TYPU: Record<string, string> = {
   proforma: "Zálohová faktúra",
@@ -799,7 +800,7 @@ function InvoiceDetail() {
     <>
       <PageHeader
         title={`${inv.oprava_25a ? "Opravný doklad (§ 25a)" : (NAZOV_TYPU[inv.type as string] ?? "Faktúra")} ${inv.invoice_number}`}
-        description={`Vystavená ${inv.issue_date} · splatná ${popisSplatnosti(inv)}${predlzena(inv) && inv.predlzenie_poznamka ? ` — ${inv.predlzenie_poznamka}` : ""}`}
+        description={`Vystavená ${datumNaDoklade(inv.issue_date)} · splatná ${popisSplatnosti(inv)}${predlzena(inv) && inv.predlzenie_poznamka ? ` — ${inv.predlzenie_poznamka}` : ""}`}
         action={
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={inv.status} />
@@ -1423,7 +1424,7 @@ function InvoiceDetail() {
                       </Link>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {settledIn.issue_date} · {Number(settledIn.total).toFixed(2)}{" "}
+                      {datumNaDoklade(settledIn.issue_date)} · {Number(settledIn.total).toFixed(2)}{" "}
                       {settledIn.currency}
                     </div>
                   </div>
@@ -1453,7 +1454,7 @@ function InvoiceDetail() {
                         {dokladKPlatbe.invoice_number}
                       </Link>
                       <div className="text-xs text-muted-foreground">
-                        {dokladKPlatbe.issue_date} · {Number(dokladKPlatbe.total).toFixed(2)}{" "}
+                        {datumNaDoklade(dokladKPlatbe.issue_date)} · {Number(dokladKPlatbe.total).toFixed(2)}{" "}
                         {dokladKPlatbe.currency} · daň sa priznáva v tomto období
                       </div>
                     </div>

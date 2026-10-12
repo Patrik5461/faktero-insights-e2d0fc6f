@@ -5,6 +5,7 @@ import { AdminPageBody, AdminPageHeader } from "@/components/faktero/AdminShell"
 import { AlertTriangle, ExternalLink, Trash2 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import { toast } from "sonner";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/admin/platform-invoices")({
   ssr: false,
@@ -173,7 +174,7 @@ function PlatformInvoicesAdmin() {
                     <td className="px-3 py-2 text-right tabular-nums">
                       {fmtEur(r.total_cents, r.currency)}
                     </td>
-                    <td className="px-3 py-2">{r.issue_date}</td>
+                    <td className="px-3 py-2">{datumNaDoklade(r.issue_date)}</td>
                     <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
                       {r.provider_payment_id ?? "—"}
                     </td>

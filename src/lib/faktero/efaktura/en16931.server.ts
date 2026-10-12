@@ -9,6 +9,7 @@ import { sUctomFaktury } from "../platobny-ucet";
 import { riadkySoZlavou } from "../zlavy";
 import { peppolId } from "./peppol-id";
 import { textOdpoctu, type OdpocetZalohy } from "../zalohy-odpocty";
+import { upravColnyKod, upravKrajinuPovodu } from "../colny-kod";
 
 type CompanyRow = {
   id: string;
@@ -208,6 +209,8 @@ function buildLines(items: InvoiceItemRow[], invoice: InvoiceRow, neplatitel: bo
       lineExtensionAmount: Number(it.subtotal),
       vatCategory: mapVatCategory(Number(it.vat_rate), invoice, neplatitel),
       vatPercent: invoice.reverse_charge || neplatitel ? 0 : Number(it.vat_rate),
+      colnyKod: upravColnyKod((it as any).colny_kod) ?? undefined,
+      krajinaPovodu: upravKrajinuPovodu((it as any).krajina_povodu) ?? undefined,
     }));
 }
 

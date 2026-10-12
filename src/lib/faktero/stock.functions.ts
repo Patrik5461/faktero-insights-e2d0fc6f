@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { navrhniObjednavky } from "./stock-doobjednanie";
 import { objednaneNaCeste } from "./objednavky-dodavatel";
+import { colneUdajeNaZapis, jePlatnyColnyKod } from "./colny-kod";
 
 const CompanyScoped = z.object({ company_id: z.string().uuid() });
 
@@ -1411,12 +1412,17 @@ const UpdateStockProductInput = z.object({
   location: z.string().trim().max(120).optional().nullable(),
   photo_url: z.string().trim().max(500).optional().nullable(),
   active: z.boolean().default(true),
+  /** Colný kód (KN), krajina pôvodu, hmotnosť — voľný vstup, upraví sa pri zápise. */
+  colny_kod: z.string().trim().max(20).optional().nullable(),
+  krajina_povodu: z.string().trim().max(2).optional().nullable(),
+  hmotnost_kg: z.union([z.string(), z.number()]).optional().nullable(),
 });
 export const updateStockProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => UpdateStockProductInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    if (!jePlatnyColnyKod(data.colny_kod)) throw new Error("Colný kód má mať 6 až 10 číslic (napr. 8517 13 00).");
 
     const { error: pErr } = await supabase
       .from("products")
@@ -1428,6 +1434,7 @@ export const updateStockProduct = createServerFn({ method: "POST" })
         unit_price: data.sale_price,
         vat_rate: data.vat_rate,
         active: data.active,
+        ...colneUdajeNaZapis(data),
       })
       .eq("id", data.product_id)
       .eq("company_id", data.company_id);
@@ -1458,6 +1465,7 @@ export const updateStockProduct = createServerFn({ method: "POST" })
       photo_url: data.photo_url || null,
       name_en: data.name_en || null,
       description: data.description || null,
+      ...colneUdajeNaZapis(data),
     };
 
     if (existing) {

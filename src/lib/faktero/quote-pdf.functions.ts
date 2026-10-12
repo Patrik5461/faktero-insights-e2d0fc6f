@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { datumNaDoklade } from "./faktura-jazyk";
 
 const input = z.object({ quoteId: z.string().uuid() });
 
@@ -59,8 +60,8 @@ export const generateQuotePdf = createServerFn({ method: "POST" })
       numberLabel: `č. ${quote.quote_number}`,
       hidePayment: true,
       metaOverride: [
-        ["Dátum vystavenia", quote.issue_date ?? ""],
-        ["Platnosť do", quote.valid_until ?? "—"],
+        ["Dátum vystavenia", datumNaDoklade(quote.issue_date)],
+        ["Platnosť do", datumNaDoklade(quote.valid_until)],
         ["Mena", quote.currency ?? "EUR"],
         ["Stav", labelForStatus(quote.status)],
       ],

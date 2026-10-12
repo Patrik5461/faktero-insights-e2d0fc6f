@@ -29,6 +29,8 @@ export type PolozkaNaOdoslanie = {
   unit_price: number;
   vat_rate: number;
   discount_percent?: number | null;
+  /** Colný kód (KN) — ePošták ho zapíše ako CommodityClassification listID=HS. */
+  colny_kod?: string | null;
 };
 
 export type DokladNaOdoslanie = {
@@ -59,6 +61,7 @@ export type DokladNaOdoslanie = {
 };
 
 import type { OdpocetZalohy } from "../zalohy-odpocty";
+import { upravColnyKod } from "../colny-kod";
 
 const r6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
@@ -131,6 +134,7 @@ export function teloOdoslania(d: DokladNaOdoslanie): Record<string, unknown> {
       vatRate: taxTreatment ? 0 : Number(p.vat_rate) || 0,
       ...(zlava > 0 ? { discount: Math.min(zlava, 100) } : {}),
       ...(taxTreatment ? { taxTreatment } : {}),
+      ...(upravColnyKod(p.colny_kod) ? { customsTariffCode: upravColnyKod(p.colny_kod) } : {}),
     };
   });
 

@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { potvrd } from "@/lib/potvrdenie";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/ponuky/$id")({
   head: () => ({ meta: [{ title: "Detail ponuky — Faktero" }] }),
@@ -206,7 +207,7 @@ function QuoteDetail() {
     <>
       <PageHeader
         title={`Ponuka ${q.quote_number}`}
-        description={`Vystavená ${q.issue_date} · platná do ${q.valid_until}`}
+        description={`Vystavená ${datumNaDoklade(q.issue_date)} · platná do ${q.valid_until}`}
         action={
           <div className="flex flex-wrap gap-2">
             <span
