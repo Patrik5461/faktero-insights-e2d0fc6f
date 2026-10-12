@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Plus, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { Plus, Pencil, Trash2, RotateCcw, Upload } from "lucide-react";
+import { ImportOdberatelovOkno } from "@/components/faktero/ImportOdberatelovOkno";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useServerFn } from "@tanstack/react-start";
@@ -82,6 +83,7 @@ function CustomersPage() {
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
   const [bulkHardDelete, setBulkHardDelete] = useState(false);
+  const [importOtvoreny, setImportOtvoreny] = useState(false);
   async function confirmBulkHardDelete() {
     const pocet = list.selectedIds.length;
     try {
@@ -192,14 +194,29 @@ function CustomersPage() {
         title="Odberatelia"
         description="Vaši zákazníci a ich fakturačné údaje."
         action={
-          <button
-            onClick={() => setEditing(EMPTY)}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> Nový odberateľ
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setImportOtvoreny(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+            >
+              <Upload className="h-4 w-4" /> Importovať
+            </button>
+            <button
+              onClick={() => setEditing(EMPTY)}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Nový odberateľ
+            </button>
+          </div>
         }
       />
+      {importOtvoreny && getActiveCompanyId() && (
+        <ImportOdberatelovOkno
+          companyId={getActiveCompanyId()!}
+          onClose={() => setImportOtvoreny(false)}
+          onHotovo={() => list.reload()}
+        />
+      )}
       <PageBody>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <input

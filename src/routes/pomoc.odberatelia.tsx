@@ -47,6 +47,39 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "import",
+    title: "Import odberateľov z Pohody a iných systémov",
+    body: (
+      <>
+        <p>
+          V <Link to="/odberatelia">Odberateľoch</Link> kliknite na <strong>Importovať</strong> a
+          vyberte súbor. Faktero rozpozná:
+        </p>
+        <ul>
+          <li>
+            <strong>Pohoda</strong> — XML export adresára (Súbor → Dátová komunikácia → XML export),
+            XML export faktúr (odberatelia sa vyberú z nich) alebo tabuľku adresára uloženú do
+            Excelu.
+          </li>
+          <li>
+            <strong>Money S3</strong> — XML export adresára.
+          </li>
+          <li>
+            <strong>SuperFaktúra, iDoklad, Fakturoid, KROS, Omega</strong> a ďalšie — export
+            klientov do CSV alebo Excelu. Stĺpce sa priradia podľa hlavičky; ak niektorý nesedí,
+            zmeníte ho priamo v okne importu.
+          </li>
+        </ul>
+        <p>
+          Pred importom uvidíte, koľko odberateľov sa založí a koľko už máte. Existujúci sa hľadajú
+          podľa IČO, bez neho podľa názvu, a <strong>nikdy sa neprepíšu</strong> — ak chcete,
+          doplnia sa im len prázdne údaje (napríklad e-mail alebo IČ DPH). Ten istý odberateľ v
+          súbore viackrát sa založí raz.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "ceny",
     title: "Cenová skupina a zľava",
     body: (

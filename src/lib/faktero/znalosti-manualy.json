@@ -640,6 +640,10 @@
      "text": "<>\nV Kontakty → Odberatelia (/odberatelia) stačí začať písať názov firmy\nalebo zadať IČO — Faktero doplní adresu, DIČ aj IČ DPH z registra. Údaje sa dajú prepísať.\nAk už odberateľ s rovnakým IČOm existuje, Faktero na to upozorní ešte pred uložením. Dva\nrovnaké kontakty znamenajú rozdelenú históriu faktúr.\nE-mail vyplňte vždy, keď chcete posielať faktúry a ponuky z Fakera — bez\nneho sa odoslanie neponúkne."
     },
     {
+     "nadpis": "Import odberateľov z Pohody a iných systémov",
+     "text": "<>\nV Odberateľoch (/odberatelia) kliknite na Importovať a\nvyberte súbor. Faktero rozpozná:\n-\nPohoda — XML export adresára (Súbor → Dátová komunikácia → XML\nexport), XML export faktúr (odberatelia sa vyberú z nich) alebo tabuľku adresára uloženú\ndo Excelu.\n-\nMoney S3 — XML export adresára.\n-\nSuperFaktúra, iDoklad, Fakturoid, KROS, Omega a ďalšie — export\nklientov do CSV alebo Excelu. Stĺpce sa priradia podľa hlavičky; ak niektorý nesedí,\nzmeníte ho priamo v okne importu.\nPred importom uvidíte, koľko odberateľov sa založí a koľko už máte. Existujúci sa hľadajú\npodľa IČO, bez neho podľa názvu, a nikdy sa neprepíšu — ak chcete,\ndoplnia sa im len prázdne údaje (napríklad e-mail alebo IČ DPH). Ten istý odberateľ\nv súbore viackrát sa založí raz."
+    },
+    {
      "nadpis": "Cenová skupina a zľava",
      "text": "<>\nNa karte odberateľa sa nastavuje, za koľko nakupuje:\n-\nCenová skupina — spoločné podmienky pre viacerých odberateľov\n(veľkoobchod, stáli zákazníci).\n-\nIndividuálna zľava v % — platí len pre neho a\nprebíja zľavu skupiny ; nesčítavajú sa.\nKonkrétne dohodnuté ceny na jednotlivé produkty sa zadávajú v\ncenníku (/ceny) a prebíjajú obe zľavy. Celé poradie vysvetľuje\nmanuál k cenníku (/pomoc/ceny)."
     },

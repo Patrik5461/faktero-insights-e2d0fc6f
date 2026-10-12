@@ -1,0 +1,329 @@
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Upload, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
+import {
+  naplanuj,
+  POLIA,
+  rozparsujSubor,
+  zTabulky,
+  type Odberatel,
+  type Pole,
+  type Vysledok,
+} from "@/lib/faktero/import-odberatelov";
+
+const STLPCE =
+  "id, name, ico, dic, ic_dph, street, city, zip, country, email, phone, contact_person, external_id";
+
+/**
+ * Import odberateľov z Pohody, Money S3 a CSV/Excelu z ostatných systémov.
+ * Existujúcich neprepisuje — na požiadanie im len doplní prázdne údaje.
+ */
+export function ImportOdberatelovOkno({
+  companyId,
+  onClose,
+  onHotovo,
+}: {
+  companyId: string;
+  onClose: () => void;
+  onHotovo: () => void;
+}) {
+  useZatvorNaEscape(onClose);
+  const [subor, setSubor] = useState<File | null>(null);
+  const [vysledok, setVysledok] = useState<Vysledok | null>(null);
+  const [mapovanie, setMapovanie] = useState<Record<number, Pole>>({});
+  const [existujuci, setExistujuci] = useState<any[] | null>(null);
+  const [doplnit, setDoplnit] = useState(false);
+  const [citam, setCitam] = useState(false);
+  const [importujem, setImportujem] = useState(false);
+
+  useEffect(() => {
+    vsetkyRiadky((od, po) =>
+      supabase
+        .from("customers")
+        .select(STLPCE)
+        .eq("company_id", companyId)
+        .is("deleted_at", null)
+        .order("id")
+        .range(od, po),
+    )
+      .then(setExistujuci)
+      .catch((e) => toast.error(`Existujúcich odberateľov sa nepodarilo načítať: ${e.message}`));
+  }, [companyId]);
+
+  async function nacitaj(f: File) {
+    setSubor(f);
+    setCitam(true);
+    try {
+      const r = await rozparsujSubor(f);
+      setVysledok(r);
+      if (r.druh === "tabulka") setMapovanie(r.mapovanie);
+    } catch (e) {
+      setVysledok(null);
+      toast.error(`Súbor sa nepodarilo prečítať: ${(e as Error).message}`);
+    } finally {
+      setCitam(false);
+    }
+  }
+
+  const odberatelia: Odberatel[] = useMemo(() => {
+    if (!vysledok) return [];
+    return vysledok.druh === "xml" ? vysledok.odberatelia : zTabulky(vysledok.riadky, mapovanie);
+  }, [vysledok, mapovanie]);
+
+  const plan = useMemo(
+    () => (existujuci ? naplanuj(odberatelia, existujuci, doplnit) : null),
+    [odberatelia, existujuci, doplnit],
+  );
+  const chybaNazov = vysledok?.druh === "tabulka" && !Object.values(mapovanie).includes("name");
+
+  async function importuj() {
+    if (!plan) return;
+    setImportujem(true);
+    let zalozenych = 0;
+    let doplnenych = 0;
+    try {
+      for (let i = 0; i < plan.novi.length; i += 500) {
+        const davka = plan.novi.slice(i, i + 500).map((o) => ({
+          ...o,
+          country: o.country ?? "SK",
+          company_id: companyId,
+        }));
+        const { error } = await supabase.from("customers").insert(davka as any);
+        if (error) throw new Error(error.message);
+        zalozenych += davka.length;
+      }
+      for (const d of plan.doplnit) {
+        const { error } = await supabase
+          .from("customers")
+          .update(d.zmena as any)
+          .eq("id", d.id)
+          .eq("company_id", companyId);
+        if (error) throw new Error(`${d.name}: ${error.message}`);
+        doplnenych += 1;
+      }
+      toast.success(
+        `Import hotový: ${zalozenych} nových odberateľov` +
+          (doplnenych ? `, doplnené údaje u ${doplnenych}` : "") +
+          ".",
+      );
+      onHotovo();
+      onClose();
+    } catch (e) {
+      toast.error(
+        `Import sa zastavil: ${(e as Error).message}` +
+          (zalozenych || doplnenych
+            ? ` Dovtedy sa založilo ${zalozenych} a doplnilo ${doplnenych} — opätovný import ich už nezaloží druhýkrát.`
+            : ""),
+        { duration: 12000 },
+      );
+      onHotovo();
+    } finally {
+      setImportujem(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Import odberateľov"
+        className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 border-b border-border p-4">
+          <h2 className="flex-1 text-lg font-semibold">Import odberateľov</h2>
+          <button
+            onClick={onClose}
+            aria-label="Zavrieť"
+            className="rounded-md p-1 hover:bg-secondary"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4 text-sm">
+          <div>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90">
+              <Upload className="h-4 w-4" /> {subor ? "Vybrať iný súbor" : "Vybrať súbor"}
+              <input
+                type="file"
+                accept=".xml,.csv,.txt,.tsv,.xlsx,.xls,.ods"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) nacitaj(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {subor && <span className="ml-3 text-muted-foreground">{subor.name}</span>}
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+              <li>
+                <strong>Pohoda:</strong> adresár cez Súbor → Dátová komunikácia → XML export
+                (Adresár), alebo XML export faktúr — odberatelia sa vyberú z nich. Funguje aj
+                tabuľka adresára uložená do Excelu.
+              </li>
+              <li>
+                <strong>Money S3:</strong> XML export adresára.
+              </li>
+              <li>
+                <strong>SuperFaktúra, iDoklad, Fakturoid, KROS, Omega a ďalšie:</strong> export
+                klientov do CSV alebo Excelu. Stĺpce sa rozpoznajú podľa hlavičky a dajú sa upraviť.
+              </li>
+            </ul>
+          </div>
+
+          {citam && <p className="text-muted-foreground">Čítam súbor…</p>}
+
+          {vysledok?.druh === "tabulka" && (
+            <div className="rounded-lg border border-border p-3">
+              <div className="mb-2 font-medium">Stĺpce ({vysledok.zdroj})</div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {vysledok.hlavicka.map((h, i) => (
+                  <label key={i} className="flex min-w-0 items-center gap-2">
+                    <span className="w-1/2 truncate text-muted-foreground" title={h}>
+                      {h || `Stĺpec ${i + 1}`}
+                    </span>
+                    <select
+                      value={mapovanie[i] ?? ""}
+                      onChange={(e) => {
+                        const m = { ...mapovanie };
+                        const p = e.target.value as Pole | "";
+                        // Jedno pole len z jedného stĺpca.
+                        for (const k of Object.keys(m)) if (m[Number(k)] === p) delete m[Number(k)];
+                        if (p) m[i] = p;
+                        else delete m[i];
+                        setMapovanie(m);
+                      }}
+                      className="min-w-0 flex-1 rounded border border-input bg-background px-2 py-1"
+                    >
+                      <option value="">— neimportovať —</option>
+                      {POLIA.map((p) => (
+                        <option key={p.pole} value={p.pole}>
+                          {p.nazov}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+              {chybaNazov && (
+                <p className="mt-2 text-xs text-destructive">Vyberte stĺpec s názvom odberateľa.</p>
+              )}
+            </div>
+          )}
+
+          {vysledok && !citam && odberatelia.length === 0 && !chybaNazov && (
+            <p className="rounded-lg border border-dashed border-border p-4 text-center text-muted-foreground">
+              V súbore sme nenašli žiadnych odberateľov
+              {vysledok.druh === "xml"
+                ? " — je to export adresára alebo faktúr z Pohody či Money S3?"
+                : "."}
+            </p>
+          )}
+
+          {plan && odberatelia.length > 0 && (
+            <>
+              <div className="rounded-lg bg-muted/40 p-3">
+                <div>
+                  Zdroj: <strong>{vysledok?.zdroj}</strong> · v súbore {odberatelia.length}
+                  {plan.duplicityVSubore ? ` (z toho ${plan.duplicityVSubore} opakovaní)` : ""}
+                </div>
+                <div className="mt-1">
+                  Založí sa <strong>{plan.novi.length}</strong> nových. Už ich máte{" "}
+                  <strong>{plan.existujuci}</strong>
+                  {doplnit
+                    ? ` — údaje sa doplnia u ${plan.doplnit.length}`
+                    : " — tých sa import nedotkne"}
+                  .
+                </div>
+                <label className="mt-2 flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={doplnit}
+                    onChange={(e) => setDoplnit(e.target.checked)}
+                  />
+                  <span>
+                    Existujúcim odberateľom doplniť chýbajúce údaje
+                    <span className="block text-xs text-muted-foreground">
+                      Vyplnené údaje sa neprepíšu, doplnia sa len prázdne (napr. e-mail, IČ DPH).
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+              {plan.novi.length > 0 && (
+                <div className="overflow-x-auto rounded-lg border border-border">
+                  <table className="w-full min-w-[36rem] text-xs">
+                    <thead className="bg-muted/40 text-left uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="p-2">Názov</th>
+                        <th className="p-2">IČO</th>
+                        <th className="p-2">IČ DPH</th>
+                        <th className="p-2">Adresa</th>
+                        <th className="p-2">E-mail</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {plan.novi.slice(0, 50).map((o, i) => (
+                        <tr key={i} className="border-t border-border">
+                          <td className="p-2 font-medium">{o.name}</td>
+                          <td className="p-2">{o.ico ?? "—"}</td>
+                          <td className="p-2">{o.ic_dph ?? "—"}</td>
+                          <td className="p-2">
+                            {[o.street, [o.zip, o.city].filter(Boolean).join(" "), o.country]
+                              .filter(Boolean)
+                              .join(", ") || "—"}
+                          </td>
+                          <td className="p-2">{o.email ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {plan.novi.length > 50 && (
+                    <p className="p-2 text-xs text-muted-foreground">
+                      … a ďalších {plan.novi.length - 50}.
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-border p-4">
+          <button
+            onClick={onClose}
+            className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+          >
+            Zrušiť
+          </button>
+          <button
+            onClick={importuj}
+            disabled={
+              importujem ||
+              !plan ||
+              chybaNazov ||
+              (plan.novi.length === 0 && plan.doplnit.length === 0)
+            }
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            {importujem
+              ? "Importujem…"
+              : plan && (plan.novi.length || plan.doplnit.length)
+                ? `Importovať (${plan.novi.length} nových${plan.doplnit.length ? `, ${plan.doplnit.length} doplniť` : ""})`
+                : "Importovať"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
