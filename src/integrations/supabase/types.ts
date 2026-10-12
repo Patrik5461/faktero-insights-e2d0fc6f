@@ -5732,6 +5732,7 @@ export type Database = {
       }
       purchase_invoices: {
         Row: {
+          polozky_vypnute: Json | null
           amount_total: number
           amount_without_vat: number
           company_id: string
@@ -5830,6 +5831,7 @@ export type Database = {
           vyuctovanie_id: string | null
         }
         Insert: {
+          polozky_vypnute?: Json | null
           amount_total?: number
           amount_without_vat?: number
           company_id: string
@@ -5928,6 +5930,7 @@ export type Database = {
           vyuctovanie_id?: string | null
         }
         Update: {
+          polozky_vypnute?: Json | null
           amount_total?: number
           amount_without_vat?: number
           company_id?: string

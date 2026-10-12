@@ -97,6 +97,12 @@ const sections: HelpSection[] = [
           <strong>Pridať vyrovnávaciu položku</strong> — bez nej sa doklad nevytvorí.
         </p>
         <p>
+          Keď sú položky vyčítané úplne zle, stlačte <strong>Vypnúť položky</strong>. Doklad sa
+          potom vytvorí a zaúčtuje len podľa súčtov a rozpisu DPH — rozúčtovanie, export do
+          Pohody aj výkazy k DPH položky nepoužijú. To isté tlačidlo je aj v detaile prijatej
+          faktúry a položky sa ním dajú kedykoľvek vrátiť.
+        </p>
+        <p>
           Prijatú faktúru aj bloček môžete <strong>zamknúť</strong> — sumy, dátumy ani zaúčtovanie
           sa potom nedajú meniť, kým ho neodomknete. Doklad odovzdaný do účtovníctva je zamknutý
           vždy. Zle zaradenú prijatú faktúru vrátite tlačidlom{" "}

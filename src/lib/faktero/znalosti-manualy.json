@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-11",
+ "vytvorene": "2026-10-12",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -121,7 +121,7 @@
     },
     {
      "nadpis": "Fio banka",
-     "text": "<>\nFio sa pripája tokenom z internetbankingu: Nastavení → API → Přidat\nnový token , vyberte účet a oprávnenie Pouze sledovat účet . Token vložte v\nBankové účty → Pripojiť banku.\nJeden token patrí jednému účtu — ak máte korunový aj eurový účet, pridajte dva tokeny.\nPri pripojení sa hneď stiahnu pohyby za posledných 90 dní (staršie Fio bez ďalšej\nautorizácie nevydá), potom sa sťahujú každú noc.\nFio pustí na jeden token len jedno stiahnutie za 30 sekúnd; keď tlačidlo stlačíte\ndvakrát rýchlo po sebe, Faktero povie, nech chvíľu počkáte."
+     "text": "<>\nFio sa pripája tokenom z internetbankingu:\nNastavení → API → Přidat nový token , vyberte účet a oprávnenie\nPouze sledovat účet . Token vložte v Bankové účty → Pripojiť banku.\nJeden token patrí jednému účtu — ak máte korunový aj eurový účet, pridajte dva tokeny. Pri\npripojení sa hneď stiahnu pohyby za posledných 90 dní (staršie Fio bez ďalšej autorizácie\nnevydá), potom sa sťahujú každú noc.\nFio pustí na jeden token len jedno stiahnutie za 30 sekúnd; keď tlačidlo stlačíte dvakrát\nrýchlo po sebe, Faktero povie, nech chvíľu počkáte."
     },
     {
      "nadpis": "Wallester",
@@ -197,7 +197,7 @@
     },
     {
      "nadpis": "Kontroly, položky, zamknutie a história",
-     "text": "<>\nPri spracovaní Faktero upozorní, keď doklad už v evidencii je (rovnaké\nčíslo od toho istého dodávateľa), keď je faktúra vystavená na inú firmu ,\na keď je splatnosť skôr ako dátum vystavenia. Tlačidlo Dočítať z dokladu\ndoplní chýbajúce údaje (VS, IBAN, splatnosť, adresu) bez prepísania vyplnených.\nPoložky majú pri každej sadzbu DPH a príznak prenesenia daňovej\npovinnosti. Keď súčet položiek nesedí so sumou dokladu, zobrazí sa rozdiel a tlačidlo\nPridať vyrovnávaciu položku — bez nej sa doklad nevytvorí.\nPrijatú faktúru aj bloček môžete zamknúť — sumy, dátumy ani zaúčtovanie\nsa potom nedajú meniť, kým ho neodomknete. Doklad odovzdaný do účtovníctva je zamknutý\nvždy. Zle zaradenú prijatú faktúru vrátite tlačidlom\nVrátiť do Nespracovaných .\nNa detaile dokladu je história zmien (kto, kedy a čo zmenil) a\nštítky — najviac päť vlastných značiek na triedenie. V komentári\noznačíte kolegu napísaním @meno ; dostane upozornenie do zvončeka.\nIné doklady sa dajú triediť do priečinkov ."
+     "text": "<>\nPri spracovaní Faktero upozorní, keď doklad už v evidencii je (rovnaké\nčíslo od toho istého dodávateľa), keď je faktúra vystavená na inú firmu ,\na keď je splatnosť skôr ako dátum vystavenia. Tlačidlo Dočítať z dokladu\ndoplní chýbajúce údaje (VS, IBAN, splatnosť, adresu) bez prepísania vyplnených.\nPoložky majú pri každej sadzbu DPH a príznak prenesenia daňovej\npovinnosti. Keď súčet položiek nesedí so sumou dokladu, zobrazí sa rozdiel a tlačidlo\nPridať vyrovnávaciu položku — bez nej sa doklad nevytvorí.\nKeď sú položky vyčítané úplne zle, stlačte Vypnúť položky . Doklad sa\npotom vytvorí a zaúčtuje len podľa súčtov a rozpisu DPH — rozúčtovanie, export do\nPohody aj výkazy k DPH položky nepoužijú. To isté tlačidlo je aj v detaile prijatej\nfaktúry a položky sa ním dajú kedykoľvek vrátiť.\nPrijatú faktúru aj bloček môžete zamknúť — sumy, dátumy ani zaúčtovanie\nsa potom nedajú meniť, kým ho neodomknete. Doklad odovzdaný do účtovníctva je zamknutý\nvždy. Zle zaradenú prijatú faktúru vrátite tlačidlom\nVrátiť do Nespracovaných .\nNa detaile dokladu je história zmien (kto, kedy a čo zmenil) a\nštítky — najviac päť vlastných značiek na triedenie. V komentári\noznačíte kolegu napísaním @meno ; dostane upozornenie do zvončeka.\nIné doklady sa dajú triediť do priečinkov ."
     },
     {
      "nadpis": "Čo sú Doklady a čím sa líšia od prijatých faktúr",

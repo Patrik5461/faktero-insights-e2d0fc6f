@@ -6,6 +6,9 @@ import {
   prijataZUdajov,
   rozpisZAi,
   udajeZAi,
+  prazdneUdaje,
+  rozdielPoloziek,
+  udajeZPrijatej,
 } from "./nespracovane";
 
 describe("nespracované doklady", () => {
@@ -81,5 +84,29 @@ describe("vyťaženie adresy, popisu a dátumov", () => {
       intro_note: "Stavebné práce za október",
       due_date: "2026-10-19",
     });
+  });
+});
+
+describe("vypnuté položky (zle vyčítané)", () => {
+  const zle = () => {
+    const u = prazdneUdaje();
+    u.rozpis = [{ sadzba: 23, zaklad: 100, dph: 23 }] as any;
+    u.polozky = [{ name: "Nezmysel", quantity: 1, unit: null, unit_price: 999, vat_rate: 23, total: 999 }];
+    return u;
+  };
+  it("nesúlad položiek blokuje, kým sú zapnuté", () => {
+    expect(rozdielPoloziek(zle())).not.toBeNull();
+  });
+  it("po vypnutí sa nesúlad nekontroluje a položky idú bokom", () => {
+    const u = { ...zle(), polozkyVypnute: true };
+    expect(rozdielPoloziek(u)).toBeNull();
+    const r: any = prijataZUdajov("faktura", u as any, "2026-10-12");
+    expect(r.items).toBeNull();
+    expect(r.polozky_vypnute).toHaveLength(1);
+  });
+  it("pri vrátení do Nespracovaných sa vypnutie zachová", () => {
+    const { udaje } = udajeZPrijatej({ items: [], polozky_vypnute: [{ name: "X" }] } as any);
+    expect(udaje.polozkyVypnute).toBe(true);
+    expect(udaje.polozky).toHaveLength(1);
   });
 });

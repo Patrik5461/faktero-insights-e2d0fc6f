@@ -541,7 +541,27 @@ function PurchaseInvoiceDetail() {
               />
             )}
 
-            <PolozkyDokladu items={row.items} mena={row.currency} samo={samo} />
+            <PolozkyDokladu
+              items={row.items}
+              vypnute={row.polozky_vypnute}
+              mena={row.currency}
+              samo={samo}
+              mozeMenit={!row.exported_at}
+              onPrepni={async (vypnut) => {
+                // Položky sa presunú bokom (a späť) — všetko, čo z nich počíta, ich prestane vidieť.
+                const zmena = vypnut
+                  ? { items: [], polozky_vypnute: row.items }
+                  : { items: row.polozky_vypnute ?? [], polozky_vypnute: null };
+                const { error } = await supabase.from("purchase_invoices").update(zmena as any).eq("id", row.id);
+                if (error) return toast.error(error.message);
+                toast.success(
+                  vypnut
+                    ? "Položky sú vypnuté — faktúra sa zaúčtuje podľa súčtov dokladu."
+                    : "Položky sú znova zapnuté.",
+                );
+                load();
+              }}
+            />
 
             <NahladPrilohy
               url={nahlad}
@@ -726,28 +746,61 @@ function Row({ label, value }: { label: string; value: string | number }) {
  */
 function PolozkyDokladu({
   items,
+  vypnute,
   mena,
   samo,
+  mozeMenit,
+  onPrepni,
 }: {
   items: unknown;
+  /** Položky, ktoré človek vypol (zle vyčítané) — účtuje sa bez nich. */
+  vypnute?: unknown;
   mena?: string | null;
   /** Samofaktúru sme písali my — položky nie sú prečítané z prílohy. */
   samo?: boolean;
+  /** Odovzdanú faktúru už meniť nemožno. */
+  mozeMenit?: boolean;
+  onPrepni?: (vypnut: boolean) => void;
 }) {
-  if (!Array.isArray(items) || items.length === 0) return null;
+  const jeVypnute = Array.isArray(vypnute) && vypnute.length > 0 && (!Array.isArray(items) || items.length === 0);
+  const zoznam = (jeVypnute ? vypnute : items) as any[];
+  if (!Array.isArray(zoznam) || zoznam.length === 0) return null;
   const cena = (n: unknown) =>
     typeof n === "number" && Number.isFinite(n) ? formatovacMeny(mena || "EUR", "sk-SK")(n) : "—";
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-3">
-        <h2 className="text-sm font-medium">{samo ? "Položky" : "Položky z dokladu"}</h2>
-        <span className="text-xs text-muted-foreground">
-          {items.length === 1 ? "1 položka" : items.length < 5 ? `${items.length} položky` : `${items.length} položiek`}
-          {samo ? " · ceny bez DPH" : " · prečítané z prílohy"}
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
+        <h2 className="text-sm font-medium">
+          {samo ? "Položky" : "Položky z dokladu"}
+          {jeVypnute && (
+            <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+              vypnuté
+            </span>
+          )}
+        </h2>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            {zoznam.length === 1 ? "1 položka" : zoznam.length < 5 ? `${zoznam.length} položky` : `${zoznam.length} položiek`}
+            {samo ? " · ceny bez DPH" : " · prečítané z prílohy"}
+          </span>
+          {!samo && onPrepni && mozeMenit !== false && (
+            <button
+              type="button"
+              onClick={() => onPrepni(!jeVypnute)}
+              className="rounded-md border border-border px-2.5 py-1 text-xs hover:bg-secondary"
+              title={
+                jeVypnute
+                  ? "Vrátiť položky — rozúčtovanie a export ich znova použijú"
+                  : "Zle vyčítané položky — účtovať len podľa súčtov a rozpisu DPH v hlavičke"
+              }
+            >
+              {jeVypnute ? "Zapnúť položky" : "Vypnúť položky"}
+            </button>
+          )}
+        </div>
       </div>
-      <div className="overflow-x-auto">
+      <div className={`overflow-x-auto ${jeVypnute ? "opacity-50" : ""}`}>
         <table className="w-full min-w-[34rem] text-sm">
           <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -758,8 +811,8 @@ function PolozkyDokladu({
               <th className="p-3 text-right">Spolu</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
-            {(items as any[]).map((p, i) => (
+          <tbody className={`divide-y divide-border ${jeVypnute ? "line-through" : ""}`}>
+            {zoznam.map((p, i) => (
               <tr key={i}>
                 <td className="p-3">{p?.name ?? "—"}</td>
                 <td className="p-3 text-right tabular-nums">
@@ -778,7 +831,9 @@ function PolozkyDokladu({
       <p className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
         {samo
           ? "Položky samofaktúry určujú jej sumy a DPH po sadzbách. Skladové položky sa po odsúhlasení dajú prijať na sklad."
-          : "Položky sú len na prezretie — do skladu ani do účtovníctva nevstupujú. Rozhodujú sumy v hlavičke dokladu."}
+          : jeVypnute
+            ? "Položky sú vypnuté — zaúčtovanie, export do Pohody aj výkazy k DPH idú len podľa súčtov a rozpisu DPH v hlavičke dokladu."
+            : "Rozhodujú sumy v hlavičke dokladu. Položky sa použijú pri rozúčtovaní a v exporte do Pohody, ak sedia so súčtami — keď sú vyčítané zle, vypnite ich."}
       </p>
     </div>
   );

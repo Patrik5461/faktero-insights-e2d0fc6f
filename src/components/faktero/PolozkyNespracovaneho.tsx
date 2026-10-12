@@ -29,14 +29,31 @@ export function PolozkyNespracovaneho({
   sadzby: number[];
 }) {
   const nesuhlas = rozdielPoloziek(u);
+  const vypnute = Boolean(u.polozkyVypnute);
   const zmen = (i: number, z: Partial<Polozka>) =>
     setU({ ...u, polozky: u.polozky.map((p, j) => (j === i ? { ...p, ...z } : p)) });
   const pdpCela = Boolean(u.prenesenie);
 
   return (
     <div className="space-y-2">
+      {u.polozky.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <span className="text-muted-foreground">
+            {vypnute
+              ? "Položky sú vypnuté — doklad sa zaúčtuje len podľa súčtov a rozpisu DPH."
+              : "Položky zle vyčítané? Vypnite ich a doklad pôjde podľa súčtov."}
+          </span>
+          <button
+            type="button"
+            onClick={() => setU({ ...u, polozkyVypnute: !vypnute })}
+            className="rounded-md border border-border px-2.5 py-1 hover:bg-secondary"
+          >
+            {vypnute ? "Zapnúť položky" : "Vypnúť položky"}
+          </button>
+        </div>
+      )}
       {u.polozky.length ? (
-        <div className="overflow-x-auto">
+        <div className={`overflow-x-auto ${vypnute ? "pointer-events-none opacity-50" : ""}`}>
           <table className="w-full min-w-[30rem] text-sm">
             <thead>
               <tr className="text-left text-xs text-muted-foreground">

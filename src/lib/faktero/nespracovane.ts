@@ -81,6 +81,11 @@ export type UdajeNespracovaneho = {
   }[];
   /** Celá faktúra je v prenesení daňovej povinnosti. */
   prenesenie?: boolean;
+  /**
+   * Položky sú zle vyčítané a nemajú sa použiť — doklad ide do účtovníctva
+   * len podľa súčtov a rozpisu DPH (ako vypnuté vyťažovanie položiek v Doklado).
+   */
+  polozkyVypnute?: boolean;
 };
 
 const r2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
@@ -294,6 +299,8 @@ export const VYROVNAVACIA_POLOZKA = "Vyrovnanie centového rozdielu";
 export function rozdielPoloziek(
   u: UdajeNespracovaneho,
 ): { sucet: number; rozdiel: number; netto: boolean } | null {
+  // Vypnuté položky sa nekontrolujú — účtuje sa podľa súčtov.
+  if (u.polozkyVypnute) return null;
   const p = u.polozky.filter((x) => x.name?.trim());
   if (!p.length) return null;
   const sucet = r2(
@@ -411,7 +418,8 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
   u.platba = s(p.payment_method);
   u.kategoria = s(p.category);
   u.poznamka = s(p.note);
-  u.polozky = Array.isArray(p.items) ? p.items : [];
+  u.polozky = Array.isArray(p.items) && p.items.length ? p.items : Array.isArray(p.polozky_vypnute) ? p.polozky_vypnute : [];
+  u.polozkyVypnute = !(Array.isArray(p.items) && p.items.length) && Array.isArray(p.polozky_vypnute) && p.polozky_vypnute.length > 0;
   u.opravuje = s(p.opravuje_cislo);
   u.jobId = s(p.job_id);
   u.prenesenie = p.reverse_charge === true && p.dph_rezim === "samozdanenie" ? true : undefined;
@@ -468,7 +476,9 @@ export function prijataZUdajov(
     intro_note: prazdne(u.popis ?? ""),
     category: prazdne(u.kategoria),
     note: prazdne(u.poznamka),
-    items: u.polozky.length ? u.polozky : null,
+    // Vypnuté položky sa odložia bokom — účtovanie ani export ich nepoužije, ale dajú sa vrátiť.
+    items: u.polozky.length && !u.polozkyVypnute ? u.polozky : null,
+    polozky_vypnute: u.polozkyVypnute && u.polozky.length ? u.polozky : null,
     // Celá faktúra v prenesení: odberateľ daň samozdaní (KV B.1).
     ...(u.prenesenie ? { reverse_charge: true, dph_rezim: "samozdanenie" } : {}),
     job_id: prazdne(u.jobId),
@@ -501,7 +511,7 @@ export function blocekZUdajov(u: UdajeNespracovaneho) {
     payment_method: u.platba || "karta",
     category: prazdne(u.kategoria),
     note: prazdne(u.poznamka),
-    items: u.polozky.length ? u.polozky : null,
+    items: u.polozky.length && !u.polozkyVypnute ? u.polozky : null,
     job_id: prazdne(u.jobId),
     pohoda_predkontacia: prazdne(u.kody.predkontacia),
     pohoda_clenenie_dph: prazdne(u.kody.clenenie),
