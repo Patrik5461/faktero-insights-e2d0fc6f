@@ -17,6 +17,7 @@ import { ArrowLeft, Save, Upload, X } from "lucide-react";
 
 import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { moznostiSadziebRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import { VyberColnehoKodu } from "@/components/faktero/VyberColnehoKodu";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť skladovú kartu — Faktero" }] }),
   component: EditStockProduct,
@@ -487,12 +488,10 @@ function EditStockProduct() {
                 </p>
               </Field>
               <Field label="Colný kód (KN)">
-                <input
+                <VyberColnehoKodu
                   value={form.colny_kod}
-                  onChange={(e) => set("colny_kod", e.target.value)}
+                  onChange={(kod) => set("colny_kod", kod)}
                   className="input"
-                  placeholder="napr. 8517 13 00"
-                  inputMode="numeric"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
                   Kód kombinovanej nomenklatúry pre vývoz mimo EÚ a Intrastat — prenesie sa do faktúry.

@@ -22,6 +22,7 @@ import { setProductStockTracking, zosuladPredajnuCenu } from "@/lib/faktero/stoc
 import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { colneUdajeNaZapis, jePlatnyColnyKod } from "@/lib/faktero/colny-kod";
+import { VyberColnehoKodu } from "@/components/faktero/VyberColnehoKodu";
 export const Route = createFileRoute("/_authenticated/produkty")({
   head: () => ({ meta: [{ title: "Produkty a služby — Faktero" }] }),
   /** `?new=1` z menu („Nový produkt“) rovno otvorí formulár. */
@@ -377,11 +378,16 @@ function ProductsPage() {
                 />
               </label>
               {/* Colné údaje — len pri tovare, ktorý sa vyváža alebo hlási do Intrastatu. */}
-              <In
-                label="Colný kód (KN)"
-                value={editing.colny_kod ?? ""}
-                onChange={(v) => setEditing({ ...editing, colny_kod: v })}
-              />
+              <label className="block">
+                <span className="text-sm font-medium">Colný kód (KN)</span>
+                <div className="mt-1">
+                  <VyberColnehoKodu
+                    value={editing.colny_kod}
+                    onChange={(kod) => setEditing({ ...editing, colny_kod: kod })}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+              </label>
               <div className="grid grid-cols-2 gap-3">
                 <In
                   label="Krajina pôvodu"

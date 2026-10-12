@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { jePlatnyColnyKod } from "@/lib/faktero/colny-kod";
+import { VyberColnehoKodu } from "@/components/faktero/VyberColnehoKodu";
 
 /*
   Colný kód (KN), krajina pôvodu a hmotnosť pri položke dokladu — pre vývoz
@@ -42,20 +43,18 @@ export function ColneUdajePolozky({
   const pole =
     "rounded-md border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring";
   return (
-    <div className={`flex flex-wrap items-center gap-2 ${mobil ? "mb-2" : "mt-1"}`}>
-      <label className="flex items-center gap-1 text-xs text-muted-foreground">
-        KN
-        <input
-          aria-label="Colný kód (KN)"
-          value={value.colny_kod ?? ""}
-          disabled={disabled}
-          autoFocus={otvorene && !vyplnene}
-          inputMode="numeric"
-          onChange={(e) => onChange({ ...value, colny_kod: e.target.value })}
-          placeholder="8517 13 00"
-          title="Kód kombinovanej nomenklatúry — 8 číslic (prvých 6 je HS kód)"
-          className={`${pole} w-28 ${zlyKod ? "border-destructive" : "border-input"}`}
-        />
+    <div className={`flex flex-wrap items-start gap-2 ${mobil ? "mb-2" : "mt-1"}`}>
+      <label className="flex items-start gap-1 text-xs text-muted-foreground">
+        <span className="pt-1">KN</span>
+        <div className="w-56">
+          <VyberColnehoKodu
+            value={value.colny_kod}
+            disabled={disabled}
+            autoFocus={otvorene && !vyplnene}
+            onChange={(kod) => onChange({ ...value, colny_kod: kod })}
+            className={`${pole} w-full ${zlyKod ? "border-destructive" : "border-input"}`}
+          />
+        </div>
       </label>
       <label className="flex items-center gap-1 text-xs text-muted-foreground">
         pôvod
