@@ -31,6 +31,8 @@ export type PolozkaNaOdoslanie = {
   discount_percent?: number | null;
   /** Colný kód (KN) — ePošták ho zapíše ako CommodityClassification listID=HS. */
   colny_kod?: string | null;
+  /** Prenesenie daňovej povinnosti len na túto položku (zmiešaná faktúra). */
+  prenesenie?: boolean | null;
 };
 
 export type DokladNaOdoslanie = {
@@ -131,9 +133,10 @@ export function teloOdoslania(d: DokladNaOdoslanie): Record<string, unknown> {
       description: p.description ? `${p.name} — ${p.description}` : p.name,
       quantity: Math.abs(q),
       unitPrice: Math.abs(c),
-      vatRate: taxTreatment ? 0 : Number(p.vat_rate) || 0,
+      vatRate: taxTreatment || p.prenesenie ? 0 : Number(p.vat_rate) || 0,
       ...(zlava > 0 ? { discount: Math.min(zlava, 100) } : {}),
-      ...(taxTreatment ? { taxTreatment } : {}),
+      // Položka v prenesení na inak bežnej faktúre — tuzemské prenesenie len pre ňu.
+      ...(taxTreatment ? { taxTreatment } : p.prenesenie ? { taxTreatment: "reverse_charge_domestic" } : {}),
       ...(upravColnyKod(p.colny_kod) ? { customsTariffCode: upravColnyKod(p.colny_kod) } : {}),
     };
   });

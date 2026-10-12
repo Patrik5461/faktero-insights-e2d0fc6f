@@ -74,7 +74,7 @@ export async function nacitajVstup(
       supabase
         .from("invoices")
         .select(
-          "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_dic, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, invoice_items(vat_rate, subtotal, quantity, unit_price)",
+          "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_dic, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, invoice_items(vat_rate, subtotal, quantity, unit_price, prenesenie)",
         )
         .eq("company_id", companyId)
         .is("deleted_at", null)
@@ -201,22 +201,43 @@ export async function nacitajVstup(
       Zľava na doklad znižuje základ dane, ale v položkách nie je — do výkazu
       by inak išla vyššia daň, než faktúra pýta.
     */
-    let riadky = riadkyZPoloziek(riadkySoZlavou(f.invoice_items ?? [], f.discount_total));
-    if (cudzia) {
+    /*
+      Zmiešaná faktúra: položky v prenesení daňovej povinnosti (bez celofaktúrového
+      prenesenia) idú do výkazu ako samostatné plnenie v prenesení — v SK do KV
+      A.2, v CZ do A.1 a ř. 25. Zľava na doklad sa rozdelí pomerom základov.
+    */
+    const vsetkyPolozky = (f.invoice_items ?? []) as any[];
+    const pdpPolozky = f.reverse_charge ? [] : vsetkyPolozky.filter((x) => x.prenesenie);
+    const zakladPoloziek = (xs: any[]) =>
+      xs.reduce((a, x) => a + (x.subtotal != null ? Number(x.subtotal) : Number(x.quantity ?? 0) * Number(x.unit_price ?? 0)), 0);
+    const zlavaSpolu = Number(f.discount_total ?? 0);
+    const zakladVsetko = zakladPoloziek(vsetkyPolozky);
+    const zlavaPdp = zakladVsetko && pdpPolozky.length ? (zlavaSpolu * zakladPoloziek(pdpPolozky)) / zakladVsetko : 0;
+    const vDomacej = (riadkyX: SadzbovyRiadok[]): SadzbovyRiadok[] => {
+      if (!cudzia) return riadkyX;
       // Kurz je v zápise banky krajiny firmy (SK ECB, CZ ČNB).
       const zaJednu = domacejZaJednotku(f.exchange_rate, (firmaKody as any)?.country);
-      if (zaJednu > 0) {
-        riadky = riadky.map((r) => ({
-          sadzba: r.sadzba,
-          zaklad: Math.round(r.zaklad * zaJednu * 100) / 100,
-          dan: Math.round(r.dan * zaJednu * 100) / 100,
-        }));
-      } else {
-        vytky.push({
-          doklad: f.invoice_number,
-          text: `Faktúra je v mene ${f.currency} a chýba jej prepočet kurzom. Otvorte ju a uložte znova, alebo sumu do výkazu opravte ručne.`,
-        });
-      }
+      if (!(zaJednu > 0)) return riadkyX;
+      return riadkyX.map((r) => ({
+        sadzba: r.sadzba,
+        zaklad: Math.round(r.zaklad * zaJednu * 100) / 100,
+        dan: Math.round(r.dan * zaJednu * 100) / 100,
+      }));
+    };
+    let riadky = vDomacej(
+      riadkyZPoloziek(
+        riadkySoZlavou(
+          pdpPolozky.length ? vsetkyPolozky.filter((x) => !x.prenesenie) : vsetkyPolozky,
+          pdpPolozky.length ? zlavaSpolu - zlavaPdp : f.discount_total,
+        ),
+      ),
+    );
+    const riadkyPdp = pdpPolozky.length ? vDomacej(riadkyZPoloziek(riadkySoZlavou(pdpPolozky, zlavaPdp))) : [];
+    if (cudzia && !(domacejZaJednotku(f.exchange_rate, (firmaKody as any)?.country) > 0)) {
+      vytky.push({
+        doklad: f.invoice_number,
+        text: `Faktúra je v mene ${f.currency} a chýba jej prepočet kurzom. Otvorte ju a uložte znova, alebo sumu do výkazu opravte ručne.`,
+      });
     }
     /*
       Vyúčtovanie zálohy, z ktorej sa už daň priznala: do výkazu ide len
@@ -245,6 +266,20 @@ export async function nacitajVstup(
       oprava25a: Boolean(f.oprava_25a),
       riadky,
     });
+    if (riadkyPdp.length) {
+      vystavene.push({
+        cislo: String(f.invoice_number),
+        typ: String(f.type),
+        datumDodania: String(den),
+        odberatelIcDph: f.customer_ic_dph,
+        odberatelDic: f.customer_dic,
+        odberatelNazov: f.customer_name,
+        prenosDane: true,
+        prenosTyp: "domestic_69",
+        opravujeCislo: f.opravuje_fakturu_id ? (cisla.get(f.opravuje_fakturu_id) ?? null) : null,
+        riadky: riadkyPdp,
+      });
+    }
   }
 
   const prijate: PrijataFaktura[] = [];

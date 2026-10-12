@@ -93,3 +93,57 @@ describe("colný kód v eFaktúre", () => {
     expect(telo.items[0].customsTariffCode).toBe("85171300");
   });
 });
+
+describe("zmiešaná faktúra — prenesenie len pri položke", () => {
+  it("UBL má AE pre položku v prenesení a S pre ostatné", () => {
+    const r = generatePeppolBisXml(
+      mapToEN16931({
+        company: firma,
+        invoice: { ...faktura, subtotal: 1500, vat_total: 230, total: 1730 },
+        items: [
+          { ...polozka, colny_kod: null, krajina_povodu: null, description: null },
+          {
+            position: 2,
+            name: "Betonárska oceľ",
+            quantity: 1,
+            unit: "ks",
+            unit_price: 500,
+            vat_rate: 0,
+            subtotal: 500,
+            vat_amount: 0,
+            total: 500,
+            prenesenie: true,
+          },
+        ],
+      }),
+    );
+    expect(r.validationErrors).toEqual([]);
+    expect(r.xml).toContain("<cbc:ID>AE</cbc:ID>");
+    expect(r.xml).toContain("<cbc:ID>S</cbc:ID>");
+    if (process.env.ULOZ_UBL2) writeFileSync(process.env.ULOZ_UBL2, r.xml);
+  });
+
+  it("ePošták dostane taxTreatment len pri položke v prenesení", () => {
+    const telo: any = teloOdoslania({
+      druh: "invoice",
+      cislo: "FA2026100",
+      vystavena: "2026-10-12",
+      splatnost: "2026-10-26",
+      dodanie: null,
+      mena: "EUR",
+      vs: null,
+      iban: null,
+      poznamka: null,
+      buyerReference: "x",
+      protistranaPeppolId: "0245:5843291067",
+      protistranaNazov: "test2",
+      polozky: [
+        { name: "Montáž", quantity: 1, unit_price: 1000, vat_rate: 23 },
+        { name: "Oceľ", quantity: 1, unit_price: 500, vat_rate: 0, prenesenie: true },
+      ],
+    } as any);
+    expect(telo.items[0].taxTreatment).toBeUndefined();
+    expect(telo.items[0].vatRate).toBe(23);
+    expect(telo.items[1]).toMatchObject({ vatRate: 0, taxTreatment: "reverse_charge_domestic" });
+  });
+});

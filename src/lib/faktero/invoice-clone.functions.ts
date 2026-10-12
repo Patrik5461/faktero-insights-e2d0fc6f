@@ -120,6 +120,7 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
         colny_kod: it.colny_kod ?? null,
         krajina_povodu: it.krajina_povodu ?? null,
         hmotnost_kg: it.hmotnost_kg ?? null,
+        prenesenie: Boolean(it.prenesenie),
         // Do NOT copy stock_item_id — a fresh draft should not lock stock.
       }));
       const { error: iiErr } = await supabase.from("invoice_items").insert(itemsPayload);

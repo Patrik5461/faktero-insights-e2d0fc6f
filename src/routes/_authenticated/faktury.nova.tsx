@@ -111,6 +111,11 @@ type Item = {
   discount_percent?: number;
   product_id?: string | null;
   stock_item_id?: string | null;
+  /**
+   * Prenesenie daňovej povinnosti len na túto položku (zmiešaná faktúra —
+   * napr. železo podľa § 69 ods. 12 bez DPH, montáž s DPH).
+   */
+  prenesenie?: boolean;
   /** Colný kód (KN), krajina pôvodu a hmotnosť — pre vývoz mimo EÚ a Intrastat. */
   colny_kod?: string | null;
   krajina_povodu?: string | null;
@@ -377,7 +382,7 @@ function NewInvoice() {
       const { data: polozky } = await supabase
         .from("invoice_items")
         .select(
-          "name, description, quantity, unit, unit_price, vat_rate, discount_percent, product_id, stock_item_id, colny_kod, krajina_povodu, hmotnost_kg",
+          "name, description, quantity, unit, unit_price, vat_rate, discount_percent, product_id, stock_item_id, colny_kod, krajina_povodu, hmotnost_kg, prenesenie",
         )
         .eq("invoice_id", f.id)
         .order("position");
@@ -415,6 +420,7 @@ function NewInvoice() {
             colny_kod: p.colny_kod ?? null,
             krajina_povodu: p.krajina_povodu ?? null,
             hmotnost_kg: p.hmotnost_kg ?? null,
+            prenesenie: Boolean(p.prenesenie),
             _cena_rucne: true,
           })),
         );
@@ -663,7 +669,7 @@ function NewInvoice() {
       // Riadková zľava je už v základe; jednotková cena ostáva pôvodná, nech
       // je na doklade vidieť, z čoho sa zľavovalo.
       let s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
-      let v = rc ? 0 : s * (Number(it.vat_rate) / 100);
+      let v = rc || it.prenesenie ? 0 : s * (Number(it.vat_rate) / 100);
       if (mode === "per_item") {
         s = r2(s);
         v = r2(v);
@@ -738,7 +744,7 @@ function NewInvoice() {
   function nastavSpolu(idx: number, spolu: number) {
     const it = items[idx];
     if (!it) return;
-    const sadzba = form.reverse_charge ? 0 : it.vat_rate;
+    const sadzba = form.reverse_charge || it.prenesenie ? 0 : it.vat_rate;
     // So zľavou riadku sa počíta späť: napísaná suma je to, čo zákazník platí.
     const zlava = percentoZlavy(it.discount_percent);
     const cena = cenaZoSumySDph(spolu, it.quantity, sadzba);
@@ -958,7 +964,7 @@ function NewInvoice() {
         // Sumy riadku sú po jeho vlastnej zľave; zľava na doklad sa do
         // riadkov nepremieta, tá sedí v hlavičke.
         const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
-        const effRate = form.reverse_charge ? 0 : Number(it.vat_rate);
+        const effRate = form.reverse_charge || it.prenesenie ? 0 : Number(it.vat_rate);
         const v = s * (effRate / 100);
         return {
           invoice_id: inv.id,
@@ -968,6 +974,8 @@ function NewInvoice() {
           product_id: it.product_id ?? null,
           stock_item_id: it.stock_item_id ?? null,
           ...colneUdajeNaZapis(it),
+          // Prenesenie po položke má zmysel len bez celofaktúrového prenesenia.
+          prenesenie: !form.reverse_charge && Boolean(it.prenesenie),
           quantity: it.quantity,
           unit: it.unit,
           unit_price: it.unit_price,
@@ -1902,10 +1910,17 @@ function NewInvoice() {
                           </span>
                         ) : (
                           <select
-                            value={it.vat_rate}
+                            value={it.prenesenie ? "pdp" : it.vat_rate}
                             onChange={(e) =>
-                              setItem(idx, { vat_rate: Number(e.target.value), _dph_rucne: true })
+                              e.target.value === "pdp"
+                                ? setItem(idx, { prenesenie: true })
+                                : setItem(idx, {
+                                    vat_rate: Number(e.target.value),
+                                    prenesenie: false,
+                                    _dph_rucne: true,
+                                  })
                             }
+                            title={it.prenesenie ? "Prenesenie daňovej povinnosti — daň priznáva odberateľ" : undefined}
                             className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                           >
                             {sadzbyPolozky.map((r) => (
@@ -1913,6 +1928,8 @@ function NewInvoice() {
                                 {r}%
                               </option>
                             ))}
+                            {/* Prenesenie len na túto položku — zvyšok faktúry ide s DPH. */}
+                            {rezim.platitel && !form.oss && <option value="pdp">PDP (prenesenie)</option>}
                             {historickeSadzbyDokladu.length > 0 && (
                               <optgroup label="Historické sadzby">
                                 {historickeSadzbyDokladu.map((h) => (
@@ -1929,7 +1946,7 @@ function NewInvoice() {
                         <CellSpolu
                           hodnota={
                             zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
-                            (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)
+                            (form.reverse_charge || it.prenesenie ? 1 : 1 + it.vat_rate / 100)
                           }
                           onZmena={(v) => nastavSpolu(idx, v)}
                           w="w-28"
@@ -1986,9 +2003,15 @@ function NewInvoice() {
                       </span>
                     ) : (
                       <select
-                        value={it.vat_rate}
+                        value={it.prenesenie ? "pdp" : it.vat_rate}
                         onChange={(e) =>
-                          setItem(idx, { vat_rate: Number(e.target.value), _dph_rucne: true })
+                          e.target.value === "pdp"
+                            ? setItem(idx, { prenesenie: true })
+                            : setItem(idx, {
+                                vat_rate: Number(e.target.value),
+                                prenesenie: false,
+                                _dph_rucne: true,
+                              })
                         }
                         className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                       >
@@ -1997,6 +2020,8 @@ function NewInvoice() {
                             {r}%
                           </option>
                         ))}
+                            {/* Prenesenie len na túto položku — zvyšok faktúry ide s DPH. */}
+                            {rezim.platitel && !form.oss && <option value="pdp">PDP (prenesenie)</option>}
                         {historickeSadzbyDokladu.length > 0 && (
                           <optgroup label="Historické sadzby">
                             {historickeSadzbyDokladu.map((h) => (
@@ -2015,7 +2040,7 @@ function NewInvoice() {
                       <CellSpolu
                         hodnota={
                           zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
-                          (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)
+                          (form.reverse_charge || it.prenesenie ? 1 : 1 + it.vat_rate / 100)
                         }
                         onZmena={(v) => nastavSpolu(idx, v)}
                         w="w-28"

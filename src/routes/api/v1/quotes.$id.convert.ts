@@ -84,6 +84,7 @@ export const Route = createFileRoute("/api/v1/quotes/$id/convert")({
               colny_kod: it.colny_kod ?? null,
               krajina_povodu: it.krajina_povodu ?? null,
               hmotnost_kg: it.hmotnost_kg ?? null,
+              prenesenie: Boolean(it.prenesenie),
             }));
             await ctx.supabase.from("invoice_items").insert(rows);
           }

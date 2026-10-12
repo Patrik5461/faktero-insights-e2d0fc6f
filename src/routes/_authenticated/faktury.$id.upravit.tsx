@@ -50,6 +50,8 @@ type Item = {
   discount_percent?: number;
   stock_item_id?: string | null;
   product_id?: string | null;
+  /** Prenesenie daňovej povinnosti len na túto položku. */
+  prenesenie?: boolean;
   /** Colný kód (KN), krajina pôvodu a hmotnosť. */
   colny_kod?: string | null;
   krajina_povodu?: string | null;
@@ -169,6 +171,7 @@ function EditInvoice() {
           discount_percent: Number(r.discount_percent ?? 0),
           stock_item_id: r.stock_item_id ?? null,
           product_id: r.product_id ?? null,
+          prenesenie: Boolean(r.prenesenie),
           colny_kod: r.colny_kod ?? null,
           krajina_povodu: r.krajina_povodu ?? null,
           hmotnost_kg: r.hmotnost_kg ?? null,
@@ -205,7 +208,7 @@ function EditInvoice() {
     for (const it of riadkyDokladu) {
       const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
       sub += s;
-      vat += s * (Number(it.vat_rate) / 100);
+      vat += it.prenesenie ? 0 : s * (Number(it.vat_rate) / 100);
     }
     // Zľava na doklad prenásobí základ aj daň rovnakým koeficientom, takže
     // pomer medzi sadzbami DPH ostane nedotknutý.
@@ -225,7 +228,7 @@ function EditInvoice() {
     const it = items[idx];
     if (!it || it._locked) return;
     const zlava = percentoZlavy(it.discount_percent);
-    const cena = cenaZoSumySDph(spolu, it.quantity, it.vat_rate);
+    const cena = cenaZoSumySDph(spolu, it.quantity, it.prenesenie ? 0 : it.vat_rate);
     setItem(idx, {
       unit_price: zlava >= 100 ? cena : Number((cena / (1 - zlava / 100)).toFixed(5)),
     });
@@ -300,7 +303,7 @@ function EditInvoice() {
 
       const rows = riadkyDokladu.map((it, idx) => {
         const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
-        const v = s * (Number(it.vat_rate) / 100);
+        const v = it.prenesenie ? 0 : s * (Number(it.vat_rate) / 100);
         return {
           invoice_id: id,
           position: idx,
@@ -310,7 +313,8 @@ function EditInvoice() {
           unit: it.unit,
           unit_price: it.unit_price,
           discount_percent: percentoZlavy(it.discount_percent),
-          vat_rate: it.vat_rate,
+          vat_rate: it.prenesenie ? 0 : it.vat_rate,
+          prenesenie: Boolean(it.prenesenie),
           stock_item_id: it.stock_item_id ?? null,
           // Väzba na cenník sa pri úprave nesmie stratiť (predtým sa zahodila).
           product_id: it.product_id ?? null,
@@ -644,9 +648,16 @@ function EditInvoice() {
                       </td>
                       <td className="py-2 pl-3">
                         <select
-                          value={it.vat_rate}
+                          value={it.prenesenie ? "pdp" : it.vat_rate}
                           disabled={it._locked}
-                          onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
+                          onChange={(e) =>
+                            e.target.value === "pdp"
+                              ? setItem(idx, { prenesenie: true })
+                              : setItem(idx, {
+                                  vat_rate: Number(e.target.value),
+                                  prenesenie: false,
+                                })
+                          }
                           className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         >
                           {(() => {
@@ -658,6 +669,8 @@ function EditInvoice() {
                                     {r}%
                                   </option>
                                 ))}
+                                {/* Prenesenie len na túto položku. */}
+                                {rezim.platitel && <option value="pdp">PDP (prenesenie)</option>}
                                 {v.historicke.length > 0 && (
                                   <optgroup label="Historické sadzby">
                                     {v.historicke.map((h) => (
@@ -676,7 +689,7 @@ function EditInvoice() {
                         <CellSpolu
                           hodnota={
                             zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
-                            (1 + it.vat_rate / 100)
+                            (it.prenesenie ? 1 : 1 + it.vat_rate / 100)
                           }
                           onZmena={(v) => nastavSpolu(idx, v)}
                           disabled={it._locked}
@@ -771,9 +784,13 @@ function EditInvoice() {
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                     />
                     <select
-                      value={it.vat_rate}
+                      value={it.prenesenie ? "pdp" : it.vat_rate}
                       disabled={it._locked}
-                      onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
+                      onChange={(e) =>
+                        e.target.value === "pdp"
+                          ? setItem(idx, { prenesenie: true })
+                          : setItem(idx, { vat_rate: Number(e.target.value), prenesenie: false })
+                      }
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                     >
                       {(() => {
@@ -785,6 +802,8 @@ function EditInvoice() {
                                 {r}%
                               </option>
                             ))}
+                            {/* Prenesenie len na túto položku. */}
+                            {rezim.platitel && <option value="pdp">PDP (prenesenie)</option>}
                             {v.historicke.length > 0 && (
                               <optgroup label="Historické sadzby">
                                 {v.historicke.map((h) => (
@@ -805,7 +824,7 @@ function EditInvoice() {
                       <CellSpolu
                         hodnota={
                           zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
-                          (1 + it.vat_rate / 100)
+                          (it.prenesenie ? 1 : 1 + it.vat_rate / 100)
                         }
                         onZmena={(v) => nastavSpolu(idx, v)}
                         disabled={it._locked}

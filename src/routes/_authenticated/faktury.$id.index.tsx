@@ -1242,7 +1242,13 @@ function InvoiceDetail() {
                       <td className="p-3 text-right">{Number(it.quantity)}</td>
                       <td className="p-3">{it.unit}</td>
                       <td className="p-3 text-right">{Number(it.unit_price).toFixed(2)}</td>
-                      <td className="p-3 text-right">{it.vat_rate}%</td>
+                      <td className="p-3 text-right">
+                        {inv.reverse_charge || (it as any).prenesenie ? (
+                          <span title="Prenesenie daňovej povinnosti — daň priznáva odberateľ">PDP</span>
+                        ) : (
+                          `${it.vat_rate}%`
+                        )}
+                      </td>
                       <td className="p-3 text-right font-medium">{Number(it.total).toFixed(2)}</td>
                     </tr>
                   ))}

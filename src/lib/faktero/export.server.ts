@@ -556,8 +556,15 @@ export function polozkyFaktur(opts: {
         const pk = poPolozkach
           ? String((it as any).pohoda_predkontacia ?? "").trim() || predkontaciaJedna
           : "";
-        const cl = String((it as any).pohoda_clenenie_dph ?? "").trim();
-        const kvp = String((it as any).kv_clenenie ?? "").trim();
+        // Položka v prenesení na inak bežnej faktúre: členenie DPH pre prenesenie
+        // a riadok kontrolného výkazu (SK A.2) / hlášení (CZ A.1) priamo na položke.
+        const pdpRiadok = !invoice.reverse_charge && Boolean((it as any).prenesenie);
+        const cl =
+          String((it as any).pohoda_clenenie_dph ?? "").trim() ||
+          (pdpRiadok ? String(nastavenia?.clenenieDphPdp ?? "").trim() : "");
+        const kvp =
+          String((it as any).kv_clenenie ?? "").trim() ||
+          (pdpRiadok ? (krajinaDane(company.country) === "CZ" ? "A1" : "A2") : "");
         return `${pk ? `\n          <inv:accounting><typ:ids>${esc(pk)}</typ:ids></inv:accounting>` : ""}${
           cl ? `\n          <inv:classificationVAT><typ:ids>${esc(cl)}</typ:ids></inv:classificationVAT>` : ""
         }${
@@ -646,7 +653,11 @@ export function polozkyFaktur(opts: {
       // Poznámka pre účtovníka. Prenesenie daňovej povinnosti sa z holých čísel
       // nedá spoznať — na doklade sú nulové sadzby ako pri oslobodení.
       const poznamky = [
-        invoice.reverse_charge ? "Prenesenie daňovej povinnosti" : "",
+        invoice.reverse_charge
+          ? "Prenesenie daňovej povinnosti"
+          : items.some((x: any) => x.prenesenie)
+            ? "Prenesenie daňovej povinnosti pri položkách PDP"
+            : "",
         skrat(invoice.notes, 200),
       ]
         .filter(Boolean)

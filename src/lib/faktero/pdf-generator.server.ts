@@ -21,6 +21,15 @@ import {
 import { krajinaDane } from "./vat-rates";
 import { popisColnychUdajov } from "./colny-kod";
 
+/** Úvod vety o prenesení, keď sa týka len položiek označených PDP. */
+const PRI_POLOZKACH_PDP: Record<string, string> = {
+  sk: "Položky označené PDP:",
+  cs: "Položky označené PDP:",
+  en: "Items marked PDP:",
+  de: "Mit PDP gekennzeichnete Positionen:",
+  hu: "A PDP jelölésű tételek:",
+};
+
 /** Popisky colných údajov pod položkou v jazyku dokladu. */
 const POPIS_COLNYCH: Record<string, { kod: string; povod: string; hmotnost: string }> = {
   sk: { kod: "KN", povod: "pôvod", hmotnost: "hmotnosť" },
@@ -509,7 +518,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawAligned(
       cur,
       font,
-      invoice.reverse_charge ? "PDP" : `${Number(it.vat_rate)}%`,
+      invoice.reverse_charge || (it as any).prenesenie ? "PDP" : `${Number(it.vat_rate)}%`,
       cols.vat.x + cols.vat.w - PAD,
       numBaseline,
       10,
@@ -757,8 +766,12 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   // Česká firma cituje český zákon o DPH (235/2004 Sb.), nie slovenský 222/2004.
   const vetyCz =
     !cudziVystavovatel && krajinaDane(company.country) === "CZ" ? vetyPreneseniaCz(jazyk) : null;
+  // Zmiešaná faktúra: prenesenie len pri niektorých položkách — veta o tuzemskom prenesení.
+  const pdpPolozky = !invoice.reverse_charge && items.some((x: any) => x.prenesenie);
   const textPrenesenia = !invoice.reverse_charge
-    ? null
+    ? pdpPolozky
+      ? `${PRI_POLOZKACH_PDP[jazyk] ?? PRI_POLOZKACH_PDP.sk} ${vetyCz ? vetyCz.tuzemsko : t.prenosTuzemsko}`
+      : null
     : vetyCz
       ? invoice.reverse_charge_type === "eu_b2b"
         ? invoice.eu_plnenie === "sluzba"

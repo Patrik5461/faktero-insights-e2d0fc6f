@@ -326,6 +326,7 @@ export async function sendEfaktura(
       vat_rate: Number(it.vat_rate),
       discount_percent: it.discount_percent,
       colny_kod: it.colny_kod ?? null,
+      prenesenie: Boolean(it.prenesenie),
     })),
   });
 

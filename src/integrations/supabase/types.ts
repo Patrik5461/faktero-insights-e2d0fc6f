@@ -4164,6 +4164,7 @@ export type Database = {
       }
       invoice_items: {
         Row: {
+          prenesenie: boolean
           colny_kod: string | null
           hmotnost_kg: number | null
           krajina_povodu: string | null
@@ -4188,6 +4189,7 @@ export type Database = {
           kv_clenenie: string | null
         }
         Insert: {
+          prenesenie?: boolean
           colny_kod?: string | null
           hmotnost_kg?: number | null
           krajina_povodu?: string | null
@@ -4212,6 +4214,7 @@ export type Database = {
           kv_clenenie?: string | null
         }
         Update: {
+          prenesenie?: boolean
           colny_kod?: string | null
           hmotnost_kg?: number | null
           krajina_povodu?: string | null
@@ -6254,6 +6257,7 @@ export type Database = {
       }
       quote_items: {
         Row: {
+          prenesenie: boolean
           colny_kod: string | null
           hmotnost_kg: number | null
           krajina_povodu: string | null
@@ -6274,6 +6278,7 @@ export type Database = {
           discount_percent: number
         }
         Insert: {
+          prenesenie?: boolean
           colny_kod?: string | null
           hmotnost_kg?: number | null
           krajina_povodu?: string | null
@@ -6294,6 +6299,7 @@ export type Database = {
           discount_percent?: number
         }
         Update: {
+          prenesenie?: boolean
           colny_kod?: string | null
           hmotnost_kg?: number | null
           krajina_povodu?: string | null

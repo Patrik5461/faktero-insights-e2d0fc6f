@@ -127,6 +127,16 @@ function mapVatCategory(
 
 const DOVOD_NEPLATITEL = "Dodávateľ nie je platiteľ DPH";
 
+/**
+ * Položka v prenesení na inak bežnej faktúre (zmiešaná faktúra) sa správa,
+ * akoby mala faktúra tuzemské prenesenie — kategória AE, sadzba 0.
+ */
+function pravidlaRiadku(it: InvoiceItemRow, invoice: InvoiceRow): InvoiceRow {
+  return !invoice.reverse_charge && (it as any).prenesenie
+    ? ({ ...invoice, reverse_charge: true, reverse_charge_type: "domestic_69" } as InvoiceRow)
+    : invoice;
+}
+
 function reverseChargeReason(invoice: Pick<InvoiceRow, "reverse_charge_type">): string {
   if (invoice.reverse_charge_type === "eu_b2b")
     return "Intra-Community supply — reverse charge (§43 zákona o DPH)";
@@ -207,8 +217,8 @@ function buildLines(items: InvoiceItemRow[], invoice: InvoiceRow, neplatitel: bo
       unitCode: mapUnit(it.unit),
       unitPrice: Number(it.unit_price),
       lineExtensionAmount: Number(it.subtotal),
-      vatCategory: mapVatCategory(Number(it.vat_rate), invoice, neplatitel),
-      vatPercent: invoice.reverse_charge || neplatitel ? 0 : Number(it.vat_rate),
+      vatCategory: mapVatCategory(Number(it.vat_rate), pravidlaRiadku(it, invoice), neplatitel),
+      vatPercent: pravidlaRiadku(it, invoice).reverse_charge || neplatitel ? 0 : Number(it.vat_rate),
       colnyKod: upravColnyKod((it as any).colny_kod) ?? undefined,
       krajinaPovodu: upravKrajinuPovodu((it as any).krajina_povodu) ?? undefined,
     }));
@@ -226,18 +236,19 @@ function buildTaxSubtotals(
       ? DOVOD_NEPLATITEL
       : undefined;
   for (const it of items) {
-    const rate = invoice.reverse_charge || neplatitel ? 0 : Number(it.vat_rate);
-    const cat = mapVatCategory(rate, invoice, neplatitel);
+    const inv = pravidlaRiadku(it, invoice);
+    const rate = inv.reverse_charge || neplatitel ? 0 : Number(it.vat_rate);
+    const cat = mapVatCategory(rate, inv, neplatitel);
     const key = `${cat}:${rate}`;
     const cur = groups.get(key) ?? {
       taxableAmount: 0,
       taxAmount: 0,
       vatCategory: cat,
       vatPercent: rate,
-      exemptionReason: reason,
+      exemptionReason: inv.reverse_charge && !invoice.reverse_charge ? reverseChargeReason(inv) : reason,
     };
     cur.taxableAmount += Number(it.subtotal);
-    cur.taxAmount += invoice.reverse_charge || neplatitel ? 0 : Number(it.vat_amount);
+    cur.taxAmount += inv.reverse_charge || neplatitel ? 0 : Number(it.vat_amount);
     groups.set(key, cur);
   }
   // UBL 2.1: VAT subtotals sorted by rate ascending (0 → 5 → 19 → 23),
