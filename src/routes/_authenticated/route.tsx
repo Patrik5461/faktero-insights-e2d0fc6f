@@ -21,6 +21,7 @@ import { ProductModePicker } from "@/components/faktero/ProductModePicker";
 import {
   ACTIVE_PRODUCT_EVENT,
   getActiveProduct,
+  landingPathFor,
   setActiveProduct,
   type ActiveProduct,
 } from "@/lib/faktero/active-product";
@@ -190,7 +191,12 @@ function AuthedLayout() {
       onChangeCompany={(id) => {
         setActiveCompanyId(id);
         setActiveId(id);
-        window.location.reload();
+        /*
+          Po prepnutí na prehľad, nie na otvorenú stránku — detail faktúry či
+          rozpracovaný formulár patria predchádzajúcej firme a v novej by
+          ukazovali „nenájdené“ alebo by sa uložili do nesprávnej firmy.
+        */
+        window.location.assign(landingPathFor(shellActiveProduct));
       }}
     >
       {zrusiSa && <ZrusenieBanner zrusiSa={zrusiSa} />}
