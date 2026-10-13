@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
 import { UpozornenieNespracovane } from "@/components/faktero/UpozornenieNespracovane";
 import { useEffect, useMemo, useState } from "react";
@@ -898,6 +899,9 @@ function PurchaseInvoicesPage() {
                   </td>
                   <td className="p-3 font-medium">
                     {r.invoice_number}
+                    <span className="ml-1.5 inline-flex align-middle">
+                      <OdovzdaneIkona kedy={r.exported_at} />
+                    </span>
                     {duplicity.has(r.id) && (
                       <span
                         title="Rovnaká faktúra (číslo aj dodávateľ) je v zozname viackrát — skontrolujte, či nejde o duplicitu."

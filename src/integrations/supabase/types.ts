@@ -4508,6 +4508,7 @@ export type Database = {
           delivery_method: string | null
           due_date: string
           external_id: string | null
+          exported_at: string | null
           id: string
           import_source: string | null
           imported_at: string | null
@@ -4607,6 +4608,7 @@ export type Database = {
           delivery_method?: string | null
           due_date?: string
           external_id?: string | null
+          exported_at?: string | null
           id?: string
           import_source?: string | null
           imported_at?: string | null
@@ -4706,6 +4708,7 @@ export type Database = {
           delivery_method?: string | null
           due_date?: string
           external_id?: string | null
+          exported_at?: string | null
           id?: string
           import_source?: string | null
           imported_at?: string | null

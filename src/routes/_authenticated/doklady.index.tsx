@@ -1,4 +1,5 @@
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
+import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
@@ -874,6 +875,9 @@ function DokladyPage() {
                           <span className="text-muted-foreground italic">bez názvu</span>
                         )}
                       </button>
+                      <span className="ml-1.5 inline-flex align-middle">
+                        <OdovzdaneIkona kedy={r.exported_at} />
+                      </span>
                       {r.supplier_ico ? (
                         <div className="text-xs text-muted-foreground">IČO {r.supplier_ico}</div>
                       ) : null}

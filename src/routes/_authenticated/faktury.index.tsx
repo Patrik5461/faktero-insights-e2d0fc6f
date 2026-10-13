@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -800,6 +801,7 @@ function InvoicesPage() {
               title={
                 <span className="inline-flex items-center gap-2">
                   {i.invoice_number}
+                  <OdovzdaneIkona kedy={i.exported_at} />
                   {reminderMap[i.id] ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200">
                       <Bell className="h-3 w-3" /> Upomienka #{reminderMap[i.id]}
@@ -904,6 +906,7 @@ function InvoicesPage() {
                       <td className="p-3 font-medium">
                         <span className="inline-flex items-center gap-2">
                           {i.invoice_number}
+                          <OdovzdaneIkona kedy={i.exported_at} />
                           {i.type === "credit_note" || i.type === "debit_note" ? (
                             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                               {i.type === "credit_note" ? "Dobropis" : "Ťarchopis"}
