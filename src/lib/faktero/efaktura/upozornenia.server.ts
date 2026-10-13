@@ -69,6 +69,20 @@ export function upozorniNoveZiadosti(firmy: Firma[]) {
   ]);
 }
 
+/** 1b) Žiadosť s nesediacim podpisom čaká na ručné schválenie. */
+export function upozorniNaSchvalenie(firmy: Firma[], via: string | null) {
+  if (!firmy.length) return Promise.resolve(false);
+  return upozorniPeppol(`${firmy[0].nazov || `DIČ ${firmy[0].dic}`} — žiadosť čaká na schválenie`, [
+    "Na Portáli finančnej správy si Faktero vybrali, no podpis žiadosti nesedel s naším webhook secretom:",
+    "",
+    ...firmy.map((f) => `• ${popisFirmy(f)}`),
+    "",
+    via ? `Prišla cez: ${via}` : "Hlavička Via chýba — over, či žiadosť naozaj prišla od FS.",
+    "",
+    "Žiadosť je uložená. V Admin → eFaktúra ju schváľ (spustí registráciu cez ePošták) alebo zamietni.",
+  ]);
+}
+
 const POPIS_STAVU: Record<string, string> = {
   registrovana: "registrácia v Peppole je hotová",
   chyba: "registrácia zlyhala — skúsi sa znova v noci",

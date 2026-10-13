@@ -34,6 +34,9 @@ export type ZiadostFsAdmin = {
   pokusov: number;
   pozvanka_odoslana_at: string | null;
   ma_token: boolean;
+  /** false = podpis FS nesedel, žiadosť prešla len na ručné schválenie. */
+  podpis_overeny: boolean;
+  via: string | null;
 };
 
 export type WebhookAdmin = {
@@ -72,7 +75,7 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
       db
         .from("efaktura_pds_ziadosti")
         .select(
-          "id, prijate_at, dic, nazov, email, telefon, stav, company_id, peppol_id, chyba, pokusov, pozvanka_odoslana_at, token_sifrovany, companies(name)",
+          "id, prijate_at, dic, nazov, email, telefon, stav, company_id, peppol_id, chyba, pokusov, pozvanka_odoslana_at, token_sifrovany, podpis_overeny, via, companies(name)",
         )
         .order("prijate_at", { ascending: false })
         .limit(300),
@@ -108,6 +111,8 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
           pokusov: z.pokusov ?? 0,
           pozvanka_odoslana_at: z.pozvanka_odoslana_at,
           ma_token: Boolean(z.token_sifrovany),
+          podpis_overeny: z.podpis_overeny !== false,
+          via: z.via ?? null,
         }),
       ),
       odmietnute: (odmietnute ?? []) as OdmietnutaFsAdmin[],
@@ -133,6 +138,37 @@ export const adminZopakujZiadostFn = createServerFn({ method: "POST" })
     await db.from("efaktura_pds_ziadosti").update({ pokusov: 0 }).eq("id", data.id);
     const { spracujZiadost } = await import("./efaktura/webhooky-obsluha.server");
     return { stav: await spracujZiadost(data.id) };
+  });
+
+/** Schváli žiadosť s nesediacim podpisom a spustí registráciu cez ePošták. */
+export const adminSchvalZiadostFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const db = await admin((context as { userId: string }).userId);
+    const { error } = await db
+      .from("efaktura_pds_ziadosti")
+      .update({ stav: "prijata", pokusov: 0, chyba: null })
+      .eq("id", data.id)
+      .eq("stav", "na_schvalenie");
+    if (error) throw new Error(error.message);
+    const { spracujZiadost } = await import("./efaktura/webhooky-obsluha.server");
+    return { stav: await spracujZiadost(data.id) };
+  });
+
+/** Zamietne neoverenú žiadosť — token sa zahodí. */
+export const adminZamietniZiadostFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const db = await admin((context as { userId: string }).userId);
+    const { error } = await db
+      .from("efaktura_pds_ziadosti")
+      .update({ stav: "zamietnuta", token_sifrovany: null, chyba: "Zamietnuté ručne v admine." })
+      .eq("id", data.id)
+      .eq("stav", "na_schvalenie");
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 /** Priradí registrovanú žiadosť firme vo Fakteri a zapne jej eFaktúru. */

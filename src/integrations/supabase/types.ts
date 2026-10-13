@@ -8427,6 +8427,7 @@ export type Database = {
           email: string | null
           telefon: string | null
           token_sifrovany: string | null
+          via: string | null
           token_odtlacok: string
           stav: string
           company_id: string | null
@@ -8435,6 +8436,7 @@ export type Database = {
           peppol_id: string | null
           chyba: string | null
           pokusov: number
+          podpis_overeny: boolean
           posledny_pokus_at: string | null
           pozvanka_odoslana_at: string | null
           ip: string | null
@@ -8448,6 +8450,7 @@ export type Database = {
           email?: string | null
           telefon?: string | null
           token_sifrovany?: string | null
+          via?: string | null
           token_odtlacok: string
           stav?: string
           company_id?: string | null
@@ -8456,6 +8459,7 @@ export type Database = {
           peppol_id?: string | null
           chyba?: string | null
           pokusov?: number
+          podpis_overeny?: boolean
           posledny_pokus_at?: string | null
           pozvanka_odoslana_at?: string | null
           ip?: string | null
@@ -8469,6 +8473,7 @@ export type Database = {
           email?: string | null
           telefon?: string | null
           token_sifrovany?: string | null
+          via?: string | null
           token_odtlacok?: string
           stav?: string
           company_id?: string | null
@@ -8477,6 +8482,7 @@ export type Database = {
           peppol_id?: string | null
           chyba?: string | null
           pokusov?: number
+          podpis_overeny?: boolean
           posledny_pokus_at?: string | null
           pozvanka_odoslana_at?: string | null
           ip?: string | null

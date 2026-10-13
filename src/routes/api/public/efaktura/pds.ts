@@ -44,22 +44,24 @@ export const Route = createFileRoute("/api/public/efaktura/pds")({
           const r = rozparsujPds(telo);
           if ("ziadosti" in r) {
             /*
-              Dočasne: surová odmietnutá požiadavka FS do súboru na serveri
-              (práva 600, mimo DB a logov) — na zistenie, prečo podpis nesedí.
+              Kým FS podpisuje iným secretom, než aký nám dala, môže žiadosť
+              počkať na ručné schválenie namiesto odmietnutia
+              (EFAKTURA_PDS_NEOVERENE=schvalit). FS dostane OK.
             */
-            try {
-              const fs = await import("node:fs/promises");
-              const dir = "/home/patrik/fs-diag";
-              await fs.mkdir(dir, { recursive: true, mode: 0o700 });
-              const meno = `${dir}/${new Date().toISOString().replace(/[:.]/g, "-")}`;
-              await fs.writeFile(`${meno}.body`, telo, { mode: 0o600 });
-              await fs.writeFile(
-                `${meno}.headers.json`,
-                JSON.stringify(Object.fromEntries(request.headers.entries()), null, 1),
-                { mode: 0o600 },
-              );
-            } catch {
-              /* diagnostika nesmie zhodiť odpoveď */
+            if (tajomstvo && process.env.EFAKTURA_PDS_NEOVERENE === "schvalit") {
+              try {
+                const { prijmiZiadostiFs } = await import(
+                  "@/lib/faktero/efaktura/webhooky-obsluha.server"
+                );
+                const ok = await prijmiZiadostiFs(telo, ip, {
+                  via: request.headers.get("via"),
+                  diagnostika: diagnostikaPdsPodpisu(telo, request.headers.get("x-pds-secret"), tajomstvo, {}),
+                });
+                if (ok.ok) return odpoved(200, "OK");
+              } catch (e: any) {
+                console.error("[efaktura-pds] neoverená žiadosť:", String(e?.message ?? e));
+                return odpoved(500, "Server error");
+              }
             }
             await zapisOdmietnutie(tajomstvo ? "zly_podpis" : "bez_tajomstva", {
               firmy: r.ziadosti,

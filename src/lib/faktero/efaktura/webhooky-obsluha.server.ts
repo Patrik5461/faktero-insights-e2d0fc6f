@@ -16,7 +16,11 @@ import {
   rozparsujPds,
   rozparsujUdalost,
 } from "./webhooky.server";
-import { upozorniNoveZiadosti, upozorniVysledokRegistracie } from "./upozornenia.server";
+import {
+  upozorniNaSchvalenie,
+  upozorniNoveZiadosti,
+  upozorniVysledokRegistracie,
+} from "./upozornenia.server";
 
 const db = supabaseAdmin as any;
 const web = () => (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
@@ -26,9 +30,15 @@ const MAX_POKUSOV = 5;
 
 // ─── Finančná správa ─────────────────────────────────────────────────────────
 
+/**
+ * `neoverena`: podpis nesedel, no ručné schvaľovanie je zapnuté — žiadosť sa
+ * uloží ako „na_schvalenie“ a registrácia počká na admina. Pravosť tokenu
+ * aj tak overí ePošták/SMP; falošný token registráciu nespustí.
+ */
 export async function prijmiZiadostiFs(
   telo: string,
   ip: string | null,
+  neoverena?: { via: string | null; diagnostika: string },
 ): Promise<{ ok: true; novych: number } | { ok: false; chyba: string }> {
   const r = rozparsujPds(telo);
   if ("chyba" in r) return { ok: false, chyba: r.chyba };
@@ -50,6 +60,14 @@ export async function prijmiZiadostiFs(
           token_sifrovany: encryptSecret(z.token),
           token_odtlacok: odtlacokTokenu(z.token),
           ip,
+          ...(neoverena
+            ? {
+                stav: "na_schvalenie",
+                podpis_overeny: false,
+                via: neoverena.via?.slice(0, 300) ?? null,
+                chyba: `Podpis X-PDS-Secret nesedel — čaká na ručné schválenie. ${neoverena.diagnostika}`.slice(0, 500),
+              }
+            : {}),
         },
         // Tú istú žiadosť (rovnaký token) FS môže poslať znova — zapíše sa raz.
         { onConflict: "token_odtlacok", ignoreDuplicates: true },
@@ -63,6 +81,10 @@ export async function prijmiZiadostiFs(
   }
 
   // Opakovane poslaná žiadosť (rovnaký token) sa nezapíše, a preto ani neohlási.
+  if (neoverena) {
+    await upozorniNaSchvalenie(noveFirmy, neoverena.via);
+    return { ok: true, novych: nove.length };
+  }
   await upozorniNoveZiadosti(noveFirmy);
 
   /*
@@ -118,6 +140,8 @@ export async function spracujZiadost(id: string): Promise<string> {
   const { data: z } = await db.from("efaktura_pds_ziadosti").select("*").eq("id", id).maybeSingle();
   if (!z) throw new Error("Žiadosť sa nenašla.");
   if (z.stav === "registrovana" || z.stav === "zamietnuta") return z.stav;
+  // Neoverená žiadosť ide ďalej až po schválení v admine.
+  if (z.stav === "na_schvalenie") return z.stav;
 
   const firma = z.company_id ? { id: z.company_id, email: null } : await firmaPodlaDic(z.dic);
   const email = z.email || firma?.email;

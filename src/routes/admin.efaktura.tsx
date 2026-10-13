@@ -14,6 +14,8 @@ import { CheckCircle2, Loader2, RefreshCw, TriangleAlert, Webhook } from "lucide
 import {
   adminEfakturaPrehladFn,
   adminPriradZiadostFn,
+  adminSchvalZiadostFn,
+  adminZamietniZiadostFn,
   adminZapniWebhookyFn,
   adminZmazWebhookFn,
   adminZopakujZiadostFn,
@@ -22,6 +24,7 @@ import {
 export const Route = createFileRoute("/admin/efaktura")({ component: Page });
 
 const STAVY: Record<string, { text: string; cls: string }> = {
+  na_schvalenie: { text: "Čaká na schválenie", cls: "bg-amber-100 text-amber-800" },
   prijata: { text: "Prijatá", cls: "bg-muted text-muted-foreground" },
   registruje_sa: { text: "Registruje sa", cls: "bg-amber-100 text-amber-800" },
   registrovana: { text: "Registrovaná", cls: "bg-emerald-100 text-emerald-800" },
@@ -38,6 +41,8 @@ function Page() {
   const nacitaj = useServerFn(adminEfakturaPrehladFn);
   const zopakuj = useServerFn(adminZopakujZiadostFn);
   const prirad = useServerFn(adminPriradZiadostFn);
+  const schval = useServerFn(adminSchvalZiadostFn);
+  const zamietni = useServerFn(adminZamietniZiadostFn);
   const zapni = useServerFn(adminZapniWebhookyFn);
   const zmaz = useServerFn(adminZmazWebhookFn);
   const [priradenie, setPriradenie] = useState<Record<string, string>>({});
@@ -127,6 +132,11 @@ function Page() {
                         {STAVY[z.stav]?.text ?? z.stav}
                       </span>
                       {z.chyba && <div className="mt-1 max-w-xs text-xs text-rose-700">{z.chyba}</div>}
+                      {!z.podpis_overeny && (
+                        <div className="mt-1 max-w-xs text-xs text-muted-foreground">
+                          Podpis neoverený · {z.via ? `prišla cez ${z.via}` : "bez hlavičky Via"}
+                        </div>
+                      )}
                       <div className="mt-1 text-xs text-muted-foreground">pokusov: {z.pokusov}</div>
                     </td>
                     <td className="p-3 text-xs">
@@ -157,7 +167,23 @@ function Page() {
                       )}
                     </td>
                     <td className="p-3">
-                      {z.ma_token && z.stav !== "registrovana" && (
+                      {z.stav === "na_schvalenie" && (
+                        <div className="flex flex-col gap-1">
+                          <button
+                            onClick={() => akcia.mutate(() => schval({ data: { id: z.id } }))}
+                            className="rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90"
+                          >
+                            Schváliť
+                          </button>
+                          <button
+                            onClick={() => akcia.mutate(() => zamietni({ data: { id: z.id } }))}
+                            className="rounded border border-border px-2 py-1 text-xs hover:bg-secondary"
+                          >
+                            Zamietnuť
+                          </button>
+                        </div>
+                      )}
+                      {z.ma_token && z.stav !== "registrovana" && z.stav !== "na_schvalenie" && (
                         <button
                           onClick={() => akcia.mutate(() => zopakuj({ data: { id: z.id } }))}
                           className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs hover:bg-secondary"
