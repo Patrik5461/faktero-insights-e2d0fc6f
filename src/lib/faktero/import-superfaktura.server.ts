@@ -923,6 +923,8 @@ export type ImportResult = {
   imported_invoices: number;
   failed_rows: number;
   duplicates: number;
+  /** Číslovanie rozpoznané z naimportovaných faktúr — nastavené alebo na potvrdenie. */
+  ciselneRady?: import("./ciselne-rady-import.server").RadZImportu[];
 };
 
 export async function runImport(args: {
@@ -1194,6 +1196,16 @@ export async function runImport(args: {
         String(e?.message ?? e),
         group[0],
       );
+    }
+  }
+
+  // Ďalšie faktúry pokračujú v číslovaní z pôvodného systému.
+  if (result.imported_invoices > 0) {
+    try {
+      const { rozpoznajRadyPoImporte } = await import("./ciselne-rady-import.server");
+      result.ciselneRady = await rozpoznajRadyPoImporte(supabaseAdmin, companyId);
+    } catch (e) {
+      console.warn("[import] číselné rady:", String((e as Error)?.message ?? e));
     }
   }
 

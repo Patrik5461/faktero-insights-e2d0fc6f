@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { CislovaniePoImporte } from "@/components/faktero/CislovaniePoImporte";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -413,6 +414,7 @@ function ImportPage() {
                 <Stat label="Duplikáty" value={result.duplicates} />
                 <Stat label="Chyby" value={result.failed_rows} />
               </div>
+              <CislovaniePoImporte rady={(result as any).ciselneRady} />
               <div className="mt-6 flex justify-center gap-2">
                 <Link
                   to="/faktury"

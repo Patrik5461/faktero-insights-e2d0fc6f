@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CislovaniePoImporte } from "@/components/faktero/CislovaniePoImporte";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -23,6 +24,7 @@ import {
   ciselneRadyFn,
   ulozCiselnyRadFn,
   zmazCiselnyRadFn,
+  radyZImportuFn,
 } from "@/lib/faktero/ciselne-rady.functions";
 
 export const Route = createFileRoute("/_authenticated/ciselne-rady/")({
@@ -41,6 +43,25 @@ function CiselneRadyPage() {
   const nacitaj = useServerFn(ciselneRadyFn);
   const uloz = useServerFn(ulozCiselnyRadFn);
   const zmaz = useServerFn(zmazCiselnyRadFn);
+  const zImportu = useServerFn(radyZImportuFn);
+  const [radyZImportu, setRadyZImportu] = useState<any[] | null>(null);
+  const [hladam, setHladam] = useState(false);
+
+  /** Faktúry prenesené z iného programu — v ktorom čísle sa má pokračovať. */
+  async function rozpoznaj() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setHladam(true);
+    try {
+      const v = await zImportu({ data: { company_id: cid } });
+      setRadyZImportu(v.rady);
+      if (!v.rady.length) toast.info("Medzi naimportovanými faktúrami sme číslovanie nenašli.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa.");
+    } finally {
+      setHladam(false);
+    }
+  }
 
   const [rady, setRady] = useState<CiselnyRad[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,6 +154,28 @@ function CiselneRadyPage() {
           </div>
         ) : (
           <div className="space-y-6">
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-[13px] font-semibold uppercase tracking-wide text-foreground">
+                    Prechod z iného programu
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Faktero z naimportovaných faktúr zistí, ako ste číslovali, a nové doklady
+                    nadviažu na posledné číslo.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={rozpoznaj}
+                  disabled={hladam}
+                  className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+                >
+                  {hladam ? "Hľadám…" : "Rozpoznať z naimportovaných faktúr"}
+                </button>
+              </div>
+              {radyZImportu && <CislovaniePoImporte rady={radyZImportu} onZmena={load} />}
+            </section>
             {DRUHY_RADOV.map((druh) => {
               const zoznam = podlaDruhu.get(druh) ?? [];
               return (

@@ -187,8 +187,17 @@ export function sablonaZCisla(
     [rok, "{YYYY}"],
     [rok2 + mesiac, "{YY}{MM}"],
   ];
-  for (const [hodnota, znacka] of kandidati) {
-    const kde = c.indexOf(hodnota);
+  /*
+    Samotné dvojčíslie roka (25800016 = 25 · 8 · 0016) len na začiatku čísla
+    alebo za predponou a pred ďalšími číslicami — inak by sa „26" našlo aj
+    uprostred poradia.
+  */
+  const kdeYY = (() => {
+    const m = new RegExp(`(^|\\D)${rok2}(?=\\d)`).exec(c);
+    return m ? m.index + m[1].length : -1;
+  })();
+  for (const [hodnota, znacka] of [...kandidati, [rok2, "{YY}"] as [string, string]]) {
+    const kde = znacka === "{YY}" ? kdeYY : c.indexOf(hodnota);
     if (kde === -1) continue;
     predRokom = c.slice(0, kde);
     znackaRoku = znacka;
@@ -253,3 +262,73 @@ const PREDPONA: Record<DruhRadu, string> = {
   cash: "PD",
   self_billing: "SF",
 };
+
+/**
+ * Číselný rad z dokladov naimportovaných z iného systému.
+ *
+ * Z každého čísla sa odvodí šablóna (`sablonaZCisla`), vyhrá tá, ktorou je
+ * očíslovaných najviac dokladov. Pokračuje sa za najvyšším poradím v
+ * poslednom období — keď je v šablóne rok (mesiac) a posledný import je zo
+ * staršieho obdobia, nové obdobie začína od 1.
+ */
+export function rozpoznajRad(
+  doklady: { cislo: string | null; datum: string | null }[],
+  dnes: Date = new Date(),
+): { format: string; cislo: string; poradie: number; startFrom: number; pocet: number } | null {
+  const skupiny = new Map<string, { cislo: string; datum: string; poradie: number }[]>();
+  for (const d of doklady) {
+    if (!d.cislo || !d.datum) continue;
+    const r = sablonaZCisla(d.cislo, d.datum);
+    if (!r) continue;
+    const zoznam = skupiny.get(r.format) ?? [];
+    zoznam.push({ cislo: d.cislo.trim(), datum: d.datum.slice(0, 10), poradie: r.poradie });
+    skupiny.set(r.format, zoznam);
+  }
+  if (!skupiny.size) return null;
+  let [format, zoznam] = [...skupiny.entries()].sort(
+    (a, b) =>
+      b[1].length - a[1].length ||
+      Math.max(...b[1].map((x) => Date.parse(x.datum))) -
+        Math.max(...a[1].map((x) => Date.parse(x.datum))),
+  )[0];
+
+  const mesacne = format.includes("{MM}");
+  const sRokom = format.includes("{YYYY}") || format.includes("{YY}");
+  const obdobie = (datum: string) =>
+    mesacne ? datum.slice(0, 7) : sRokom ? datum.slice(0, 4) : "";
+  /*
+    Pevná číslica zlepená s poradím (PALIERA: 25·8·0016 → šablóna {YY}{NNNNNN}
+    by v novom roku dala 27000001). Spoločný začiatok všetkých poradí bez
+    koncových núl sa presunie do šablóny: {YY}8{NNNNN}.
+  */
+  const sirka = /\{(N+)\}/.exec(format)?.[1].length ?? 0;
+  if (sirka >= 5 && zoznam.length >= 2) {
+    const texty = zoznam.map((x) => String(x.poradie).padStart(sirka, "0"));
+    let spolocne = texty[0];
+    for (const t of texty) while (!t.startsWith(spolocne)) spolocne = spolocne.slice(0, -1);
+    const pevne = spolocne.replace(/0+$/, "").slice(0, sirka - 3);
+    if (pevne && !pevne.startsWith("0")) {
+      const zbytok = sirka - pevne.length;
+      format = format.replace(`{${"N".repeat(sirka)}}`, `${pevne}{${"N".repeat(zbytok)}}`);
+      for (const x of zoznam)
+        x.poradie = Number(String(x.poradie).padStart(sirka, "0").slice(pevne.length));
+    }
+  }
+  const posledne =
+    zoznam
+      .map((x) => obdobie(x.datum))
+      .sort()
+      .pop() ?? "";
+  const vObdobi = zoznam.filter((x) => obdobie(x.datum) === posledne);
+  const najvyssi = vObdobi.reduce((a, b) => (b.poradie > a.poradie ? b : a));
+
+  const dnesIso = `${dnes.getFullYear()}-${String(dnes.getMonth() + 1).padStart(2, "0")}-01`;
+  const noveObdobie = (mesacne || sRokom) && obdobie(dnesIso) !== posledne;
+  return {
+    format,
+    cislo: najvyssi.cislo,
+    poradie: najvyssi.poradie,
+    startFrom: noveObdobie ? 1 : najvyssi.poradie + 1,
+    pocet: zoznam.length,
+  };
+}

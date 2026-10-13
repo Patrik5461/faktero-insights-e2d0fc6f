@@ -196,13 +196,16 @@ export const pokracujVRaduFn = createServerFn({ method: "POST" })
         datum: z.string().date(),
         /** Keď doklad rad pozná, upraví sa ten; inak predvolený pre druh. */
         series_id: z.string().uuid().nullish(),
+        /** Odkiaľ pokračovať, keď nie za zadaným číslom (import z minulého roka → 1). */
+        start_from: z.number().int().min(1).max(999999).optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ format: string; start_from: number }> => {
     const { supabase } = context;
     const { sablonaZCisla } = await import("./ciselne-rady");
-    const odvodene = sablonaZCisla(data.cislo, data.datum);
+    const sablona = sablonaZCisla(data.cislo, data.datum);
+    const odvodene = sablona && data.start_from ? { ...sablona, poradie: data.start_from - 1 } : sablona;
     if (!odvodene) {
       throw new Error(
         "Z tohto čísla sa číselný rad odvodiť nedá — potrebuje poradie aspoň o dvoch číslach na konci. Šablónu si nastavte v Číselných radoch.",
@@ -249,4 +252,17 @@ export const pokracujVRaduFn = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id);
     if (error) throw new Error(prelozChybu(error.message));
     return { format: odvodene.format, start_from: odvodene.poradie + 1 };
+  });
+
+/**
+ * Číslovanie rozpoznané z faktúr naimportovaných z iného systému — len návrh,
+ * potvrdzuje sa tlačidlom (`pokracujVRaduFn`).
+ */
+export const radyZImportuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    // Číta sa cez RLS používateľa — vidí len faktúry svojej firmy.
+    const { rozpoznajRadyPoImporte } = await import("./ciselne-rady-import.server");
+    return { rady: await rozpoznajRadyPoImporte(context.supabase, data.company_id, false) };
   });
