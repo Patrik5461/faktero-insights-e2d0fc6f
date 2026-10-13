@@ -290,6 +290,8 @@ export type PrijataFakturaZMailu = {
   invoice_number: string;
   variable_symbol: string | null;
   issue_date: string;
+  /** Dátum dodania (vzniku daňovej povinnosti), keď je na doklade — inak dátum vystavenia. */
+  delivery_date: string;
   due_date: string;
   received_date: string;
   amount_without_vat: number;
@@ -345,6 +347,7 @@ export function zostavPrijatuFakturu(args: {
     invoice_number: cisloDokladu,
     variable_symbol: text(ai.variable_symbol, 20),
     issue_date: vystavenie,
+    delivery_date: datum(ai.delivery_date) ?? vystavenie,
     due_date: splatnost,
     received_date: args.dnes,
     amount_without_vat: zaklad ?? 0,

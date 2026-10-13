@@ -90,10 +90,16 @@ Vráť VÝLUČNE JSON v tvare:
 {"supplier_name": string|null, "supplier_ico": string|null, "supplier_dic": string|null,
  "supplier_ic_dph": string|null, "supplier_iban": string|null, "invoice_number": string|null,
  "variable_symbol": string|null, "issue_date": "YYYY-MM-DD"|null, "due_date": "YYYY-MM-DD"|null,
+ "delivery_date": "YYYY-MM-DD"|null,
  "amount_without_vat": number|null, "vat_amount": number|null, "amount_total": number|null,
  "currency": string|null,
+ "reverse_charge": boolean, "reverse_charge_text": string|null,
  "items": [{"name": string, "quantity": number|null, "unit": string|null,
-            "unit_price": number|null, "vat_rate": number|null, "total": number|null}]}
+            "unit_price": number|null, "vat_rate": number|null, "total": number|null,
+            "reverse_charge": boolean}]}
+Dátum dodania ("delivery_date") hľadaj pod „Dátum dodania", „Dátum dodania tovaru/služby",
+„Dátum vzniku daňovej povinnosti", „Dátum uskutočnenia zdaniteľného plnenia", „DUZP",
+„Datum zdanitelného plnění" — keď na doklade nie je, null (nie dátum vystavenia).
 Dodávateľ je ten, KTO doklad vystavil, nie odberateľ. Sumy uveď ako čísla s bodkou.
 Pridaj aj údaje ODBERATEĽA, ak sú na doklade: "buyer_name", "buyer_ico", "buyer_ic_dph" (inak null).
 Pridaj ADRESU DODÁVATEĽA: "supplier_street" (ulica a číslo), "supplier_city", "supplier_zip",
@@ -107,7 +113,8 @@ Pridaj aj "constant_symbol" (KS), "specific_symbol" (ŠS), "order_number" (čís
 a "delivery_note_number" (číslo dodacieho listu) — keď na doklade nie sú, null.
 Prenesenie daňovej povinnosti: keď je na faktúre text „prenesenie daňovej povinnosti",
 „§ 69 ods. 12", „reverse charge" alebo „daň odvedie odberateľ", daj "reverse_charge": true
-pre celú faktúru, inak false. Keď sa to týka len niektorých položiek (napr. stavebné práce,
+pre celú faktúru, inak false, a do "reverse_charge_text" skopíruj tú vetu presne tak, ako je na
+doklade (inak null). Keď sa to týka len niektorých položiek (napr. stavebné práce,
 kovový šrot, roxor), daj "reverse_charge": true k tým položkám v "items" a celé faktúre false.
 
 Najprv rozhodni "document_type":

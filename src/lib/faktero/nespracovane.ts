@@ -229,6 +229,24 @@ export function doplnUdaje(povodne: UdajeNespracovaneho, nove: UdajeNespracovane
   return u;
 }
 
+/** Text o prenesení daňovej povinnosti, ako ho píšu slovenské aj české faktúry. */
+const TEXT_PRENESENIA =
+  /(prenesenie da[ňn]ovej povinnosti|§\s*69\s*ods\.?\s*12|reverse\s*charge|da[ňn] odvedie odberate[ľl]|p[řr]enesen[íi] da[ňn]ov[ée] povinnosti|§\s*92a)/i;
+
+/**
+ * Prenesenie na celej faktúre: AI to povie príznakom, vetou z dokladu, alebo
+ * sú v prenesení všetky položky. Na samotný príznak sa nedalo spoľahnúť —
+ * pri prvom čítaní ho AI často vynechala a chytilo sa až „Čítať znova“.
+ */
+export function jePrenesenieZAi(
+  ai: Record<string, unknown>,
+  polozky: { pdp?: boolean }[] = [],
+): boolean {
+  if (ai.reverse_charge === true) return true;
+  if (typeof ai.reverse_charge_text === "string" && TEXT_PRENESENIA.test(ai.reverse_charge_text)) return true;
+  return polozky.length > 0 && polozky.every((p) => p.pdp === true);
+}
+
 /** Údaje formulára predvyplnené z vyťaženia. */
 export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: string): UdajeNespracovaneho {
   const u = prazdneUdaje();
@@ -252,7 +270,8 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
   u.objednavka = t(ai.order_number, 40);
   u.dodaciList = t(ai.delivery_note_number, 40);
   u.datumVystavenia = vystavenie || dnes;
-  u.datumDodania = vystavenie || dnes;
+  // Dátum dodania (vzniku daňovej povinnosti) — predtým sa brával vždy dátum vystavenia.
+  u.datumDodania = datum(ai.delivery_date) || vystavenie || dnes;
   u.splatnost = datum(ai.due_date) || datum(ai.other_due_date);
   u.mena = (t(ai.currency, 3) || "EUR").toUpperCase();
   u.rozpis = rozpisZAi(ai);
@@ -269,7 +288,7 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
       total: num(p.total),
       ...(p.reverse_charge === true ? { pdp: true } : {}),
     }));
-  u.prenesenie = ai.reverse_charge === true;
+  u.prenesenie = jePrenesenieZAi(ai, u.polozky);
   u.ostatny = {
     druh: t(ai.other_kind, 30) || "ine",
     predmet: t(ai.other_subject, 500),
