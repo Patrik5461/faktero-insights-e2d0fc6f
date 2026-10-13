@@ -137,6 +137,7 @@ function EFakturaPage() {
     staleTime: 30_000,
   });
 
+  const profil = readinessQuery.data?.profile ?? null;
   const checklist = useMemo(() => {
     const has = (v: any) => typeof v === "string" && v.trim().length > 0;
     const hasCompanyDetails =
@@ -153,10 +154,19 @@ function EFakturaPage() {
         status: has(company?.ic_dph) ? "done" : ("missing" as Status),
       },
       { label: "IBAN vyplnený", status: has(company?.iban) ? "done" : ("missing" as Status) },
-      { label: "Peppol ID pripravené", status: "soon" as Status },
-      { label: "eFaktúra režim aktivovaný", status: "soon" as Status },
+      // Skutočný stav z profilu eFaktúry — predtým tu bolo natvrdo „Pripravujeme“.
+      {
+        label: profil?.peppol_participant_id
+          ? `Peppol ID pripravené (${profil.peppol_participant_id})`
+          : "Peppol ID pripravené",
+        status: profil?.peppol_participant_id ? "done" : ("missing" as Status),
+      },
+      {
+        label: "eFaktúra režim aktivovaný",
+        status: profil?.enabled ? "done" : ("missing" as Status),
+      },
     ];
-  }, [company]);
+  }, [company, profil]);
 
   async function onSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -184,7 +194,11 @@ function EFakturaPage() {
     <>
       <PageHeader
         title="eFaktúra"
-        description="Pripravte sa na povinnú elektronickú fakturáciu od 1.1.2027."
+        description={
+          profil?.enabled
+            ? "eFaktúry posielate a prijímate cez sieť Peppol."
+            : "Povinná elektronická fakturácia od 1. 1. 2027 — zapnite si ju cez Portál finančnej správy."
+        }
       />
       <PageBody>
         {/*
@@ -331,35 +345,38 @@ function EFakturaPage() {
           </div>
         </div>
 
-        <div className="mt-6 rounded-xl border border-border bg-card p-6">
-          <div className="flex items-start gap-3">
-            <Mail className="mt-0.5 h-5 w-5 text-primary" />
-            <div className="flex-1">
-              <h2 className="font-semibold">Chcem dostávať novinky k eFaktúre</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Pošleme vám e-mail, keď bude eFaktúra v Faktero k dispozícii a pri každom dôležitom
-                kroku.
-              </p>
-              <form onSubmit={onSignup} className="mt-4 flex flex-col gap-3 sm:flex-row">
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="vas@email.sk"
-                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                />
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-                >
-                  {submitting ? "Odosielam…" : "Chcem novinky k eFaktúre"}
-                </button>
-              </form>
+        {/* Odber noviniek dáva zmysel, kým firma eFaktúru nemá zapnutú. */}
+        {!profil?.enabled && (
+          <div className="mt-6 rounded-xl border border-border bg-card p-6">
+            <div className="flex items-start gap-3">
+              <Mail className="mt-0.5 h-5 w-5 text-primary" />
+              <div className="flex-1">
+                <h2 className="font-semibold">Chcem dostávať novinky k eFaktúre</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Pošleme vám e-mail, keď bude eFaktúra v Faktero k dispozícii a pri každom
+                  dôležitom kroku.
+                </p>
+                <form onSubmit={onSignup} className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="vas@email.sk"
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                  >
+                    {submitting ? "Odosielam…" : "Chcem novinky k eFaktúre"}
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </PageBody>
     </>
   );
