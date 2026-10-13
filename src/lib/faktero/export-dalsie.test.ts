@@ -82,7 +82,15 @@ describe("univerzálna súpiska v CSV", () => {
   it("text s bodkočiarkou zabalí do úvodzoviek, nech nerozbije stĺpce", () => {
     expect(riadky[1]).toContain('"Ďakujeme; platba prevodom"');
     /* Počítame polia ako CSV, nie naivným splitom — bodkočiarka v úvodzovkách stĺpec nerozdeľuje. */
-    const poli = (r: string) => r.match(/("([^"]|"")*"|[^;]*)(;|$)/g)!.length - 1;
+    const poli = (r: string) => {
+      let n = 1;
+      let vUvodzovkach = false;
+      for (const ch of r) {
+        if (ch === '"') vUvodzovkach = !vUvodzovkach;
+        else if (ch === ";" && !vUvodzovkach) n += 1;
+      }
+      return n;
+    };
     expect(poli(riadky[1])).toBe(poli(riadky[0]));
   });
 

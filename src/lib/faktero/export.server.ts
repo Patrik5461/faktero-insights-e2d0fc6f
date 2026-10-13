@@ -547,6 +547,29 @@ export function polozkyFaktur(opts: {
       const clenenie = clenenieJedno;
       const kvDokl = String((invoice as any).kv_clenenie ?? "").trim();
       const kvHlavicka = kvDokl && kvDokl !== "X" ? kvDokl : "";
+      /*
+        Colné údaje položky do Pohody: blok `intrastatItem` (kód tovaru KN,
+        krajina pôvodu, krajina určenia, vlastná hmotnosť riadku). Hmotnosť
+        na položke je za jednotku (ako pri produkte), Intrastat chce riadok.
+      */
+      const krajinaUrcenia = String(invoice.customer_country ?? "").trim().toUpperCase();
+      const intrastatPolozky = (it: ItemRow) => {
+        const kn = String((it as any).colny_kod ?? "").replace(/\D/g, "").slice(0, 8);
+        if (!kn) return "";
+        const povod = String((it as any).krajina_povodu ?? "").trim().toUpperCase();
+        const kg = Number((it as any).hmotnost_kg ?? 0);
+        const hmotnost = kg > 0 ? Math.round(kg * Math.abs(Number(it.quantity ?? 1) || 1) * 1000) / 1000 : 0;
+        return (
+          `\n          <inv:intrastatItem>` +
+          `\n            <inv:goodsCode>${kn}</inv:goodsCode>` +
+          (/^[A-Z]{2}$/.test(povod) ? `\n            <inv:countryOfOrigin>${povod}</inv:countryOfOrigin>` : "") +
+          (/^[A-Z]{2}$/.test(krajinaUrcenia)
+            ? `\n            <inv:countryOfDestination>${krajinaUrcenia}</inv:countryOfDestination>`
+            : "") +
+          (hmotnost > 0 ? `\n            <inv:ownWeight>${hmotnost}</inv:ownWeight>` : "") +
+          `\n          </inv:intrastatItem>`
+        );
+      };
       const kodyPolozky = (it: ItemRow) => {
         const pk = poPolozkach
           ? String((it as any).pohoda_predkontacia ?? "").trim() || predkontaciaJedna
@@ -601,7 +624,7 @@ export function polozkyFaktur(opts: {
             zn * Number(it.total ?? 0),
             "            ",
           )}
-          </inv:${menaBlok}>${kodyPolozky(it)}
+          </inv:${menaBlok}>${kodyPolozky(it)}${intrastatPolozky(it)}
         </inv:invoiceItem>`;
         })
         .join("");

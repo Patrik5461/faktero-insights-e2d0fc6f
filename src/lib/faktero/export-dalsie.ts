@@ -178,6 +178,9 @@ export function buildUniverzalCsv(opts: {
     // Na koniec, aby staré importy podľa poradia stĺpcov nepraskli.
     "Odpočet zálohy",
     "Na úhradu",
+    // Prenesenie len pri niektorých položkách a colné kódy (KN) položiek.
+    "Základ v prenesení",
+    "Colné kódy",
   ];
 
   const riadky = opts.invoices.map(({ invoice, items: povodne }) => {
@@ -186,8 +189,17 @@ export function buildUniverzalCsv(opts: {
     const items = riadkySoZlavou(povodne, (invoice as any).discount_total);
     const odpocet = sumaOdpoctov((invoice as any)._odpocty) || cislo((invoice as any).advance_amount);
     const jeOdpocet = text(invoice.type) === "regular" || text(invoice.type) === "debit_note";
+    // Položka v prenesení nie je oslobodené plnenie — má vlastný stĺpec.
+    const vPreneseni = (p: PolozkaFaktury) => Boolean((p as any).prenesenie);
     const nulova =
-      zn * items.filter((p) => cislo(p.vat_rate) === 0).reduce((a, p) => a + cislo(p.subtotal), 0);
+      zn *
+      items
+        .filter((p) => cislo(p.vat_rate) === 0 && !vPreneseni(p))
+        .reduce((a, p) => a + cislo(p.subtotal), 0);
+    const zakladPdp = zn * items.filter(vPreneseni).reduce((a, p) => a + cislo(p.subtotal), 0);
+    const colneKody = [
+      ...new Set(povodne.map((p) => text((p as any).colny_kod)).filter(Boolean)),
+    ].join(", ");
     /* Suma v domácej mene: pri nej tá istá suma, inak prepočet uložený na doklade. */
     const vEur =
       (text(invoice.currency) || domaca) === domaca ? cislo(invoice.total) : cislo(invoice.total_eur);
@@ -221,10 +233,12 @@ export function buildUniverzalCsv(opts: {
       dveSk(zn * cislo(invoice.vat_total)),
       dveSk(zn * cislo(invoice.total)),
       ...(cudziaMena ? [dveSk(zn * vEur)] : []),
-      invoice.reverse_charge ? "áno" : "nie",
+      invoice.reverse_charge ? "áno" : items.some(vPreneseni) ? "pri položkách" : "nie",
       text(invoice.notes) || text(invoice.intro_note),
       jeOdpocet && odpocet ? dveSk(odpocet) : "",
       dveSk(zn * cislo(invoice.total) - (jeOdpocet ? odpocet : 0)),
+      zakladPdp ? dveSk(zakladPdp) : "",
+      colneKody,
     ];
     return bunky.map(csvPole).join(";");
   });
