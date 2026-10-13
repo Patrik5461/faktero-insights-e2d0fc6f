@@ -1,4 +1,5 @@
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
+import { jePalivo } from "@/lib/faktero/palivo";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
@@ -447,7 +448,19 @@ function NovyDokladPage() {
     }
 
     if (r.payment_method) updateForm("payment_method", r.payment_method);
-    setPolozky(r.items ?? []);
+    /*
+      Palivo na bločku dostane predkontáciu kategórie „Nákup PHM“ (často
+      účtovanú pomerom 50/50) samo — ako v Doklado; ostatné položky ostávajú
+      na kóde dokladu. Bloček len s palivom dostane aj kategóriu.
+    */
+    const kodPhm = kody?.podlaKategorie?.palivo?.predkontacia ?? null;
+    const polozkyZBlocku = (r.items ?? []).map((p: any) =>
+      kodPhm && !p.predkontacia && jePalivo(p.name) ? { ...p, predkontacia: kodPhm } : p,
+    );
+    setPolozky(polozkyZBlocku);
+    if (polozkyZBlocku.length && polozkyZBlocku.every((p: any) => jePalivo(p.name)) && !form.category) {
+      updateForm("category", "palivo");
+    }
     setRozpisDph(r.vat_breakdown ?? null);
 
     setEkasaBadge({ source: r.zdroj, overeny: r.overeny });
