@@ -277,6 +277,7 @@ import { Route as ApiPublicHooksBankStatementsRouteImport } from './routes/api/p
 import { Route as ApiPublicHooksBankStatementsRestoreRouteImport } from './routes/api/public/hooks/bank-statements-restore'
 import { Route as ApiPublicHooksBankSyncRouteImport } from './routes/api/public/hooks/bank-sync'
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
+import { Route as ApiPublicHooksEfakturaRegistracieRouteImport } from './routes/api/public/hooks/efaktura-registracie'
 import { Route as ApiPublicHooksEfakturaSyncRouteImport } from './routes/api/public/hooks/efaktura-sync'
 import { Route as ApiPublicHooksJazdyDoplnenieRouteImport } from './routes/api/public/hooks/jazdy-doplnenie'
 import { Route as ApiPublicHooksKurzyEcbRouteImport } from './routes/api/public/hooks/kurzy-ecb'
@@ -1779,6 +1780,12 @@ const ApiPublicHooksCommanderSyncRoute =
     path: '/api/public/hooks/commander-sync',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksEfakturaRegistracieRoute =
+  ApiPublicHooksEfakturaRegistracieRouteImport.update({
+    id: '/api/public/hooks/efaktura-registracie',
+    path: '/api/public/hooks/efaktura-registracie',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksEfakturaSyncRoute =
   ApiPublicHooksEfakturaSyncRouteImport.update({
     id: '/api/public/hooks/efaktura-sync',
@@ -2291,6 +2298,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/efaktura-registracie': typeof ApiPublicHooksEfakturaRegistracieRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
@@ -2597,6 +2605,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/efaktura-registracie': typeof ApiPublicHooksEfakturaRegistracieRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
@@ -2914,6 +2923,7 @@ export interface FileRoutesById {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/efaktura-registracie': typeof ApiPublicHooksEfakturaRegistracieRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
@@ -3231,6 +3241,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/efaktura-registracie'
     | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
@@ -3537,6 +3548,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/efaktura-registracie'
     | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
@@ -3853,6 +3865,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/efaktura-registracie'
     | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
@@ -4013,6 +4026,7 @@ export interface RootRouteChildren {
   ApiPublicHooksBankStatementsRestoreRoute: typeof ApiPublicHooksBankStatementsRestoreRoute
   ApiPublicHooksBankSyncRoute: typeof ApiPublicHooksBankSyncRoute
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
+  ApiPublicHooksEfakturaRegistracieRoute: typeof ApiPublicHooksEfakturaRegistracieRoute
   ApiPublicHooksEfakturaSyncRoute: typeof ApiPublicHooksEfakturaSyncRoute
   ApiPublicHooksJazdyDoplnenieRoute: typeof ApiPublicHooksJazdyDoplnenieRoute
   ApiPublicHooksKurzyEcbRoute: typeof ApiPublicHooksKurzyEcbRoute
@@ -5921,6 +5935,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksCommanderSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/efaktura-registracie': {
+      id: '/api/public/hooks/efaktura-registracie'
+      path: '/api/public/hooks/efaktura-registracie'
+      fullPath: '/api/public/hooks/efaktura-registracie'
+      preLoaderRoute: typeof ApiPublicHooksEfakturaRegistracieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/efaktura-sync': {
       id: '/api/public/hooks/efaktura-sync'
       path: '/api/public/hooks/efaktura-sync'
@@ -6972,6 +6993,8 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicHooksBankStatementsRestoreRoute,
   ApiPublicHooksBankSyncRoute: ApiPublicHooksBankSyncRoute,
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
+  ApiPublicHooksEfakturaRegistracieRoute:
+    ApiPublicHooksEfakturaRegistracieRoute,
   ApiPublicHooksEfakturaSyncRoute: ApiPublicHooksEfakturaSyncRoute,
   ApiPublicHooksJazdyDoplnenieRoute: ApiPublicHooksJazdyDoplnenieRoute,
   ApiPublicHooksKurzyEcbRoute: ApiPublicHooksKurzyEcbRoute,
