@@ -375,6 +375,11 @@ export const sparujEpostakFirmuFn = createServerFn({ method: "POST" })
         peppol_provider: "epostak",
         peppol_participant_id: najdena.peppolId,
         peppol_scheme: najdena.peppolId?.split(":")[0] ?? null,
+        // Firma zapísaná v Peppole je spárovaním hotová — inak by ostala „vypnutá“
+        // a nikde v rozhraní sa zapnúť nedá.
+        ...(najdena.peppolId
+          ? { enabled: true, test_mode: false, activated_at: new Date().toISOString() }
+          : {}),
       } as EfakturaProfileInsert,
       { onConflict: "company_id" },
     );

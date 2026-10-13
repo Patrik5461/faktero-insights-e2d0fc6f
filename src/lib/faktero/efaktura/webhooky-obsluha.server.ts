@@ -101,13 +101,15 @@ export async function prijmiZiadostiFs(
 }
 
 async function firmaPodlaDic(dic: string): Promise<{ id: string; email: string | null } | null> {
-  const { data } = await db
+  // `companies` nemá `deleted_at` — filter naň zhodil dotaz a firma sa „nenašla“
+  // nikdy (PALIERA dostala pozvánku, hoci účet mala). Chyba sa teraz neprehltne.
+  const { data, error } = await db
     .from("companies")
     .select("id, email, created_at")
     .eq("dic", dic)
-    .is("deleted_at", null)
     .order("created_at", { ascending: true })
     .limit(1);
+  if (error) throw new Error(`Firma podľa DIČ: ${error.message}`);
   return data?.[0] ?? null;
 }
 

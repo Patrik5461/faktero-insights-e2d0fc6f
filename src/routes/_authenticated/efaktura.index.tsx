@@ -39,7 +39,7 @@ function SparovanieSPostakom({ companyId }: { companyId: string | null }) {
   }
 
   return (
-    <div className="mb-6 rounded-xl border border-border bg-card p-6">
+    <div id="sparovanie" className="mb-6 scroll-mt-20 rounded-xl border border-border bg-card p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Odosielanie cez ePoštáka</h2>
@@ -225,11 +225,25 @@ function EFakturaPage() {
                   {readinessQuery.data.blockers.map((b) => (
                     <li key={b.key} className="flex items-center justify-between">
                       <span>{b.label}</span>
-                      {b.fixUrl && (
+                      {b.fixUrl === "/efaktura" ? (
+                        /* Peppol nedostatky sa riešia spárovaním na tejto stránke —
+                           odkaz na tú istú stránku by nespravil nič. */
+                        <button
+                          type="button"
+                          onClick={() =>
+                            document
+                              .getElementById("sparovanie")
+                              ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Spárovať →
+                        </button>
+                      ) : b.fixUrl ? (
                         <Link to={b.fixUrl} className="text-xs text-primary hover:underline">
                           Opraviť →
                         </Link>
-                      )}
+                      ) : null}
                     </li>
                   ))}
                 </ul>
