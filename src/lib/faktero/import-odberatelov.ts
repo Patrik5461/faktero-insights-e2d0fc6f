@@ -27,6 +27,7 @@ export type Odberatel = {
   phone: string | null;
   contact_person: string | null;
   external_id: string | null;
+  iban: string | null;
   typ: "firma" | "fyzicka";
 };
 
@@ -45,6 +46,7 @@ export const POLIA: { pole: Pole; nazov: string }[] = [
   { pole: "phone", nazov: "Telefón" },
   { pole: "contact_person", nazov: "Kontaktná osoba" },
   { pole: "external_id", nazov: "Kód v pôvodnom systéme" },
+  { pole: "iban", nazov: "IBAN" },
 ];
 
 export type Vysledok =
@@ -72,6 +74,25 @@ const bezDiakritiky = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").
 // ─── čistenie hodnôt ──────────────────────────────────────────────────────────
 
 const lenCislice = (v: string | null) => (v ? v.replace(/\s+/g, "") || null : null);
+/** Len skutočný IBAN (dve písmená, dve číslice, zvyšok) — číslo účtu bez IBAN sa nepreberá. */
+const jeIban = (v: string | null) => (v && /^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(v) ? v : null);
+
+/** Prvá hodnota pod kľúčom IBAN kdekoľvek v uzle (bankové účty v adresári Pohody a Money). */
+function najdiIban(uzol: any): string | null {
+  if (!uzol || typeof uzol !== "object") return null;
+  for (const [k, v] of Object.entries(uzol)) {
+    if (/^iban$/i.test(k)) {
+      const t = txt(v);
+      if (t) return t;
+    }
+    const vnorene = najdiIban(v);
+    if (vnorene) return vnorene;
+  }
+  return null;
+}
+
+/** Jeden kontakt z voľných údajov (napr. z prijatej faktúry) — rovnaké čistenie ako pri súbore. */
+export const vycistiOdberatela = (o: Partial<Record<Pole, string | null>>) => vycisti(o);
 
 function vycisti(
   o: Partial<Record<Pole, string | null>>,
@@ -97,6 +118,7 @@ function vycisti(
     phone: txt(o.phone),
     contact_person: txt(o.contact_person),
     external_id: txt(o.external_id),
+    iban: jeIban(lenCislice(txt(o.iban))?.toUpperCase() ?? null),
     typ: typ ?? "firma",
   };
 }
@@ -158,6 +180,7 @@ function zPohody(d: any): Odberatel[] {
         email: a.email ?? txt(h?.email),
         phone: a.phone ?? txt(h?.phone) ?? txt(h?.mobil),
         external_id: txt(h?.identity?.id) ?? txt(h?.id),
+        iban: najdiIban(u),
       },
       a._firma || a.ico ? "firma" : "fyzicka",
     );
@@ -200,6 +223,7 @@ function zMoneyS3(d: any): Odberatel[] {
           ? [txt(osoba.Jmeno), txt(osoba.Prijmeni)].filter(Boolean).join(" ") || null
           : null,
         external_id: txt((f as any).Zkrat) ?? txt((f as any).KodFirmy),
+        iban: najdiIban(f),
       });
       if (o) out.push(o);
     }
@@ -227,6 +251,7 @@ export function rozparsujXml(text: string): { zdroj: string; odberatelia: Odbera
   diakritiky a bez interpunkcie; prvá zhoda vyhráva.
 */
 const HLAVICKY: [Pole, RegExp][] = [
+  ["iban", /^(iban|iban uctu|bankovy ucet iban|ucet iban|bank ?account|cislo uctu iban)$/],
   ["ic_dph", /^(ic ?dph|icdph|vat ?(id|no|number)|ic pre dph|dic dph|dic ?\(dph\))$/],
   [
     "ico",
@@ -355,8 +380,10 @@ export const klucOdberatela = (o: { name: string; ico: string | null }) =>
 
 export type Plan = {
   novi: Odberatel[];
-  doplnit: { id: string; zmena: Partial<Odberatel>; name: string }[];
+  doplnit: { id: string; zmena: Record<string, unknown>; name: string }[];
   existujuci: number;
+  /** Koľkým existujúcim kontaktom sa pridá rola (odberateľ → aj dodávateľ). */
+  pridanaRola: number;
   duplicityVSubore: number;
 };
 
@@ -366,8 +393,15 @@ export type Plan = {
  */
 export function naplanuj(
   odberatelia: Odberatel[],
-  existujuci: (Partial<Odberatel> & { id: string; name: string; ico: string | null })[],
+  existujuci: (Partial<Odberatel> & {
+    id: string;
+    name: string;
+    ico: string | null;
+    odberatel?: boolean;
+    dodavatel?: boolean;
+  })[],
   doplnitPrazdne: boolean,
+  rola: "odberatel" | "dodavatel" = "odberatel",
 ): Plan {
   const zoSuboru = new Map<string, Odberatel>();
   let duplicity = 0;
@@ -388,7 +422,13 @@ export function naplanuj(
     // Odberateľ s IČO sa nájde aj podľa názvu — v súbore IČO chýbať môže.
     if (e.ico) mame.set(klucOdberatela({ name: e.name, ico: null }), e);
   }
-  const plan: Plan = { novi: [], doplnit: [], existujuci: 0, duplicityVSubore: duplicity };
+  const plan: Plan = {
+    novi: [],
+    doplnit: [],
+    existujuci: 0,
+    pridanaRola: 0,
+    duplicityVSubore: duplicity,
+  };
   for (const o of zoSuboru.values()) {
     // Podľa IČO, inak podľa názvu — ale firma s iným IČO a rovnakým názvom je iná firma.
     const podlaNazvu = mame.get(klucOdberatela({ name: o.name, ico: null }));
@@ -402,12 +442,19 @@ export function naplanuj(
       continue;
     }
     plan.existujuci += 1;
-    if (!doplnitPrazdne) continue;
-    const zmena: Partial<Odberatel> = {};
-    for (const { pole: p } of POLIA) {
-      if (p === "name") continue;
-      const stare = (e as any)[p];
-      if ((stare == null || String(stare).trim() === "") && o[p] != null) (zmena as any)[p] = o[p];
+    const zmena: Record<string, unknown> = {};
+    // Kontakt z adresára, ktorý túto rolu ešte nemá, ju dostane — inak by sa
+    // napríklad odberateľ po importe dodávateľov v Dodávateľoch neukázal.
+    if (e[rola] === false) {
+      zmena[rola] = true;
+      plan.pridanaRola += 1;
+    }
+    if (doplnitPrazdne) {
+      for (const { pole: p } of POLIA) {
+        if (p === "name") continue;
+        const stare = (e as any)[p];
+        if ((stare == null || String(stare).trim() === "") && o[p] != null) zmena[p] = o[p];
+      }
     }
     if (Object.keys(zmena).length) plan.doplnit.push({ id: e.id, zmena, name: e.name });
   }

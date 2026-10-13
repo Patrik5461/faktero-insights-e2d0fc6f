@@ -37,6 +37,7 @@ import { Route as AuthenticatedApiKluceRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedApiPlaygroundRouteImport } from './routes/_authenticated/api-playground'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDiagnostikaRouteImport } from './routes/_authenticated/diagnostika'
+import { Route as AuthenticatedDodavateliaRouteImport } from './routes/_authenticated/dodavatelia'
 import { Route as AuthenticatedEfakturaRouteImport } from './routes/_authenticated/efaktura'
 import { Route as AuthenticatedExportyRouteImport } from './routes/_authenticated/exporty'
 import { Route as AuthenticatedFirmaRouteImport } from './routes/_authenticated/firma'
@@ -463,6 +464,12 @@ const AuthenticatedDiagnostikaRoute =
   AuthenticatedDiagnostikaRouteImport.update({
     id: '/diagnostika',
     path: '/diagnostika',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDodavateliaRoute =
+  AuthenticatedDodavateliaRouteImport.update({
+    id: '/dodavatelia',
+    path: '/dodavatelia',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedEfakturaRoute = AuthenticatedEfakturaRouteImport.update({
@@ -2052,6 +2059,7 @@ export interface FileRoutesByFullPath {
   '/api-playground': typeof AuthenticatedApiPlaygroundRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/diagnostika': typeof AuthenticatedDiagnostikaRoute
+  '/dodavatelia': typeof AuthenticatedDodavateliaRoute
   '/efaktura': typeof AuthenticatedEfakturaRouteWithChildren
   '/exporty': typeof AuthenticatedExportyRoute
   '/firma': typeof AuthenticatedFirmaRoute
@@ -2360,6 +2368,7 @@ export interface FileRoutesByTo {
   '/api-playground': typeof AuthenticatedApiPlaygroundRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/diagnostika': typeof AuthenticatedDiagnostikaRoute
+  '/dodavatelia': typeof AuthenticatedDodavateliaRoute
   '/exporty': typeof AuthenticatedExportyRoute
   '/firma': typeof AuthenticatedFirmaRoute
   '/firmy': typeof AuthenticatedFirmyRoute
@@ -2673,6 +2682,7 @@ export interface FileRoutesById {
   '/_authenticated/api-playground': typeof AuthenticatedApiPlaygroundRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/diagnostika': typeof AuthenticatedDiagnostikaRoute
+  '/_authenticated/dodavatelia': typeof AuthenticatedDodavateliaRoute
   '/_authenticated/efaktura': typeof AuthenticatedEfakturaRouteWithChildren
   '/_authenticated/exporty': typeof AuthenticatedExportyRoute
   '/_authenticated/firma': typeof AuthenticatedFirmaRoute
@@ -2989,6 +2999,7 @@ export interface FileRouteTypes {
     | '/api-playground'
     | '/dashboard'
     | '/diagnostika'
+    | '/dodavatelia'
     | '/efaktura'
     | '/exporty'
     | '/firma'
@@ -3297,6 +3308,7 @@ export interface FileRouteTypes {
     | '/api-playground'
     | '/dashboard'
     | '/diagnostika'
+    | '/dodavatelia'
     | '/exporty'
     | '/firma'
     | '/firmy'
@@ -3609,6 +3621,7 @@ export interface FileRouteTypes {
     | '/_authenticated/api-playground'
     | '/_authenticated/dashboard'
     | '/_authenticated/diagnostika'
+    | '/_authenticated/dodavatelia'
     | '/_authenticated/efaktura'
     | '/_authenticated/exporty'
     | '/_authenticated/firma'
@@ -4226,6 +4239,13 @@ declare module '@tanstack/react-router' {
       path: '/diagnostika'
       fullPath: '/diagnostika'
       preLoaderRoute: typeof AuthenticatedDiagnostikaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dodavatelia': {
+      id: '/_authenticated/dodavatelia'
+      path: '/dodavatelia'
+      fullPath: '/dodavatelia'
+      preLoaderRoute: typeof AuthenticatedDodavateliaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/efaktura': {
@@ -6329,6 +6349,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedApiPlaygroundRoute: typeof AuthenticatedApiPlaygroundRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDiagnostikaRoute: typeof AuthenticatedDiagnostikaRoute
+  AuthenticatedDodavateliaRoute: typeof AuthenticatedDodavateliaRoute
   AuthenticatedEfakturaRoute: typeof AuthenticatedEfakturaRouteWithChildren
   AuthenticatedExportyRoute: typeof AuthenticatedExportyRoute
   AuthenticatedFirmaRoute: typeof AuthenticatedFirmaRoute
@@ -6437,6 +6458,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApiPlaygroundRoute: AuthenticatedApiPlaygroundRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDiagnostikaRoute: AuthenticatedDiagnostikaRoute,
+  AuthenticatedDodavateliaRoute: AuthenticatedDodavateliaRoute,
   AuthenticatedEfakturaRoute: AuthenticatedEfakturaRouteWithChildren,
   AuthenticatedExportyRoute: AuthenticatedExportyRoute,
   AuthenticatedFirmaRoute: AuthenticatedFirmaRoute,

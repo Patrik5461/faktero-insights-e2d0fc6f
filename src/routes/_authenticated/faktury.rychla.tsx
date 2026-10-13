@@ -49,6 +49,7 @@ function QuickInvoicePage() {
       .from("customers")
       .select("id,name")
       .eq("company_id", cid)
+      .eq("odberatel", true)
       // Zmazaného odberateľa fakturovať nejde — server ho neprijme.
       .is("deleted_at", null)
       .order("name")

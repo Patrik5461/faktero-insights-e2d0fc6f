@@ -39,6 +39,7 @@ function NewJob() {
       .from("customers")
       .select("id, name")
       .eq("company_id", cid)
+      .eq("odberatel", true)
       .is("deleted_at", null)
       .order("name")
       .then(({ data }) => setCustomers(data ?? []));

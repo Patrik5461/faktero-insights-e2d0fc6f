@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-12",
+ "vytvorene": "2026-10-13",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -640,8 +640,12 @@
      "text": "<>\nV Kontakty → Odberatelia (/odberatelia) stačí začať písať názov firmy\nalebo zadať IČO — Faktero doplní adresu, DIČ aj IČ DPH z registra. Údaje sa dajú prepísať.\nAk už odberateľ s rovnakým IČOm existuje, Faktero na to upozorní ešte pred uložením. Dva\nrovnaké kontakty znamenajú rozdelenú históriu faktúr.\nE-mail vyplňte vždy, keď chcete posielať faktúry a ponuky z Fakera — bez\nneho sa odoslanie neponúkne."
     },
     {
-     "nadpis": "Import odberateľov z Pohody a iných systémov",
-     "text": "<>\nV Odberateľoch (/odberatelia) kliknite na Importovať a\nvyberte súbor. Faktero rozpozná:\n-\nPohoda — XML export adresára (Súbor → Dátová komunikácia → XML\nexport), XML export faktúr (odberatelia sa vyberú z nich) alebo tabuľku adresára uloženú\ndo Excelu.\n-\nMoney S3 — XML export adresára.\n-\nSuperFaktúra, iDoklad, Fakturoid, KROS, Omega a ďalšie — export\nklientov do CSV alebo Excelu. Stĺpce sa priradia podľa hlavičky; ak niektorý nesedí,\nzmeníte ho priamo v okne importu.\nPred importom uvidíte, koľko odberateľov sa založí a koľko už máte. Existujúci sa hľadajú\npodľa IČO, bez neho podľa názvu, a nikdy sa neprepíšu — ak chcete,\ndoplnia sa im len prázdne údaje (napríklad e-mail alebo IČ DPH). Ten istý odberateľ\nv súbore viackrát sa založí raz."
+     "nadpis": "Dodávatelia a spoločný adresár",
+     "text": "<>\nOdberatelia aj dodávatelia (/dodavatelia) sú v jednom adresári, ako v\nPohode. Na karte kontaktu zaškrtnete Odberateľ ,\nDodávateľ alebo oboje — firma, ktorá vám dodáva aj od vás nakupuje, je\nv adresári raz.\nPri faktúre, ponuke či objednávke sa ponúkajú len odberatelia. Pri\nprijatej faktúre vyberiete dodávateľa zo zoznamu a doplní sa jeho IČO,\nDIČ, IČ DPH aj IBAN. Nového dodávateľa z prijatej faktúry Faktero do adresára uloží samo\n(dá sa to odškrtnúť).\nDodávateľov, od ktorých už máte prijaté faktúry, naplníte naraz: v Dodávateľoch\nkliknite na Importovať → Načítať z prijatých faktúr ."
+    },
+    {
+     "nadpis": "Import odberateľov a dodávateľov z Pohody a iných systémov",
+     "text": "<>\nV Odberateľoch (/odberatelia) alebo\nDodávateľoch (/dodavatelia) kliknite na Importovať a\nvyberte súbor. Faktero rozpozná:\n-\nPohoda — XML export adresára (Súbor → Dátová komunikácia → XML export),\nXML export faktúr (odberatelia sa vyberú z nich) alebo tabuľku adresára uloženú do\nExcelu.\n-\nMoney S3 — XML export adresára.\n-\nSuperFaktúra, iDoklad, Fakturoid, KROS, Omega a ďalšie — export\nklientov do CSV alebo Excelu. Stĺpce sa priradia podľa hlavičky; ak niektorý nesedí,\nzmeníte ho priamo v okne importu.\nPred importom uvidíte, koľko odberateľov sa založí a koľko už máte. Existujúci sa hľadajú\npodľa IČO, bez neho podľa názvu, a nikdy sa neprepíšu — ak chcete,\ndoplnia sa im len prázdne údaje (napríklad e-mail alebo IČ DPH). Ten istý odberateľ v\nsúbore viackrát sa založí raz."
     },
     {
      "nadpis": "Cenová skupina a zľava",

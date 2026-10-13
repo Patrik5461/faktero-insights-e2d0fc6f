@@ -50,6 +50,7 @@ export function PoleOdberatela({
       .from("customers")
       .select("id, name, street, city, zip")
       .eq("company_id", cid)
+      .eq("odberatel", true)
       .is("deleted_at", null)
       .order("name")
       .limit(1000)

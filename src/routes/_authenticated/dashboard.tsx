@@ -216,7 +216,7 @@ function Dashboard() {
               .range(zac, kon),
           ),
           vsetkoAkoData((zac, kon) =>
-            supabase.from("customers").select("id, name, created_at").eq("company_id", companyId).order("id").range(zac, kon),
+            supabase.from("customers").select("id, name, created_at").eq("company_id", companyId).eq("odberatel", true).order("id").range(zac, kon),
           ),
           supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
           supabase

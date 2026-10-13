@@ -8,6 +8,7 @@ import {
   naplanuj,
   POLIA,
   rozparsujSubor,
+  vycistiOdberatela,
   zTabulky,
   type Odberatel,
   type Pole,
@@ -15,17 +16,19 @@ import {
 } from "@/lib/faktero/import-odberatelov";
 
 const STLPCE =
-  "id, name, ico, dic, ic_dph, street, city, zip, country, email, phone, contact_person, external_id";
+  "id, name, ico, dic, ic_dph, street, city, zip, country, email, phone, contact_person, external_id, iban, odberatel, dodavatel";
 
 /**
  * Import odberateľov z Pohody, Money S3 a CSV/Excelu z ostatných systémov.
  * Existujúcich neprepisuje — na požiadanie im len doplní prázdne údaje.
  */
 export function ImportOdberatelovOkno({
+  rola = "odberatel",
   companyId,
   onClose,
   onHotovo,
 }: {
+  rola?: "odberatel" | "dodavatel";
   companyId: string;
   onClose: () => void;
   onHotovo: () => void;
@@ -74,9 +77,58 @@ export function ImportOdberatelovOkno({
   }, [vysledok, mapovanie]);
 
   const plan = useMemo(
-    () => (existujuci ? naplanuj(odberatelia, existujuci, doplnit) : null),
-    [odberatelia, existujuci, doplnit],
+    () => (existujuci ? naplanuj(odberatelia, existujuci, doplnit, rola) : null),
+    [odberatelia, existujuci, doplnit, rola],
   );
+  const kto = rola === "dodavatel" ? "dodávateľov" : "odberateľov";
+  const komu = rola === "dodavatel" ? "dodávateľom" : "odberateľom";
+
+  /*
+    Dodávatelia z prijatých faktúr: kto chodí s faktúrami, toho netreba písať
+    znova. Berie sa posledný doklad od každého, takže adresa a IBAN sú čerstvé.
+  */
+  async function zPrijatychFaktur() {
+    setCitam(true);
+    setSubor(null);
+    try {
+      const riadky = await vsetkyRiadky((od, po) =>
+        supabase
+          .from("purchase_invoices")
+          .select(
+            "id, issue_date, supplier_name, supplier_ico, supplier_dic, supplier_ic_dph, supplier_iban, supplier_street, supplier_city, supplier_zip, supplier_country, supplier_email",
+          )
+          .eq("company_id", companyId)
+          .is("deleted_at", null)
+          .order("id")
+          .range(od, po),
+      );
+      riadky.sort((a: any, b: any) =>
+        String(b.issue_date ?? "").localeCompare(String(a.issue_date ?? "")),
+      );
+      const zoznam = riadky
+        .map((r: any) =>
+          vycistiOdberatela({
+            name: r.supplier_name,
+            ico: r.supplier_ico,
+            dic: r.supplier_dic,
+            ic_dph: r.supplier_ic_dph,
+            iban: r.supplier_iban,
+            street: r.supplier_street,
+            city: r.supplier_city,
+            zip: r.supplier_zip,
+            country: r.supplier_country,
+            email: r.supplier_email,
+          }),
+        )
+        .filter((x): x is Odberatel => Boolean(x));
+      setVysledok({ druh: "xml", zdroj: "Prijaté faktúry vo Fakteri", odberatelia: zoznam });
+    } catch (e) {
+      toast.error(`Prijaté faktúry sa nepodarilo načítať: ${(e as Error).message}`);
+    } finally {
+      setCitam(false);
+    }
+  }
+
   const chybaNazov = vysledok?.druh === "tabulka" && !Object.values(mapovanie).includes("name");
 
   async function importuj() {
@@ -90,6 +142,8 @@ export function ImportOdberatelovOkno({
           ...o,
           country: o.country ?? "SK",
           company_id: companyId,
+          odberatel: rola === "odberatel",
+          dodavatel: rola === "dodavatel",
         }));
         const { error } = await supabase.from("customers").insert(davka as any);
         if (error) throw new Error(error.message);
@@ -105,7 +159,7 @@ export function ImportOdberatelovOkno({
         doplnenych += 1;
       }
       toast.success(
-        `Import hotový: ${zalozenych} nových odberateľov` +
+        `Import hotový: ${zalozenych} nových ${kto}` +
           (doplnenych ? `, doplnené údaje u ${doplnenych}` : "") +
           ".",
       );
@@ -133,12 +187,12 @@ export function ImportOdberatelovOkno({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Import odberateľov"
+        aria-label={`Import ${kto}`}
         className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-border p-4">
-          <h2 className="flex-1 text-lg font-semibold">Import odberateľov</h2>
+          <h2 className="flex-1 text-lg font-semibold">Import {kto}</h2>
           <button
             onClick={onClose}
             aria-label="Zavrieť"
@@ -163,11 +217,21 @@ export function ImportOdberatelovOkno({
                 }}
               />
             </label>
+            {rola === "dodavatel" && (
+              <button
+                type="button"
+                onClick={zPrijatychFaktur}
+                className="ml-2 inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 hover:bg-secondary"
+              >
+                Načítať z prijatých faktúr
+              </button>
+            )}
             {subor && <span className="ml-3 text-muted-foreground">{subor.name}</span>}
             <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
               <li>
                 <strong>Pohoda:</strong> adresár cez Súbor → Dátová komunikácia → XML export
-                (Adresár), alebo XML export faktúr — odberatelia sa vyberú z nich. Funguje aj
+                (Adresár), alebo XML export faktúr —{" "}
+                {kto === "dodávateľov" ? "dodávatelia" : "odberatelia"} sa vyberú z nich. Funguje aj
                 tabuľka adresára uložená do Excelu.
               </li>
               <li>
@@ -215,14 +279,14 @@ export function ImportOdberatelovOkno({
                 ))}
               </div>
               {chybaNazov && (
-                <p className="mt-2 text-xs text-destructive">Vyberte stĺpec s názvom odberateľa.</p>
+                <p className="mt-2 text-xs text-destructive">Vyberte stĺpec s názvom.</p>
               )}
             </div>
           )}
 
           {vysledok && !citam && odberatelia.length === 0 && !chybaNazov && (
             <p className="rounded-lg border border-dashed border-border p-4 text-center text-muted-foreground">
-              V súbore sme nenašli žiadnych odberateľov
+              V súbore sme nenašli žiadnych {kto}
               {vysledok.druh === "xml"
                 ? " — je to export adresára alebo faktúr z Pohody či Money S3?"
                 : "."}
@@ -241,7 +305,9 @@ export function ImportOdberatelovOkno({
                   <strong>{plan.existujuci}</strong>
                   {doplnit
                     ? ` — údaje sa doplnia u ${plan.doplnit.length}`
-                    : " — tých sa import nedotkne"}
+                    : plan.pridanaRola
+                      ? ` — ${plan.pridanaRola} z nich sú zatiaľ len ${rola === "dodavatel" ? "odberatelia, označia sa aj ako dodávatelia" : "dodávatelia, označia sa aj ako odberatelia"}`
+                      : " — tých sa import nedotkne"}
                   .
                 </div>
                 <label className="mt-2 flex items-start gap-2">
@@ -252,7 +318,7 @@ export function ImportOdberatelovOkno({
                     onChange={(e) => setDoplnit(e.target.checked)}
                   />
                   <span>
-                    Existujúcim odberateľom doplniť chýbajúce údaje
+                    Existujúcim {komu} doplniť chýbajúce údaje
                     <span className="block text-xs text-muted-foreground">
                       Vyplnené údaje sa neprepíšu, doplnia sa len prázdne (napr. e-mail, IČ DPH).
                     </span>

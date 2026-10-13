@@ -571,6 +571,7 @@ function NewInvoice() {
         "id, name, ico, dic, ic_dph, street, city, zip, country, email, invoice_language, vies_platne, vies_overene_at",
       )
       .eq("company_id", cid)
+      .eq("odberatel", true)
       .order("name")
       .then(({ data }) => setCustomers(data ?? []));
     supabase

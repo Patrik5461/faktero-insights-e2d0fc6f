@@ -139,6 +139,7 @@ function EditInvoice() {
           .from("customers")
           .select("*")
           .eq("company_id", i.company_id)
+          .eq("odberatel", true)
           .is("deleted_at", null)
           .order("name"),
         supabase.from("efaktura_documents").select("id").eq("invoice_id", id).limit(1),

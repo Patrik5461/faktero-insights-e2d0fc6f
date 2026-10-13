@@ -210,3 +210,31 @@ describe("import odberateľov", () => {
     expect(p.novi).toHaveLength(1);
   });
 });
+
+describe("import dodávateľov", () => {
+  it("odberateľ z adresára dostane aj rolu dodávateľa, nový sa nezaloží", () => {
+    const p = naplanuj(
+      [
+        { name: "Alfa a.s.", ico: "12345678" } as any,
+        { name: "Nový dodávateľ s.r.o.", ico: "87654321" } as any,
+      ],
+      [{ id: "a", name: "Alfa a.s.", ico: "12345678", odberatel: true, dodavatel: false }],
+      false,
+      "dodavatel",
+    );
+    expect(p.novi.map((n) => n.name)).toEqual(["Nový dodávateľ s.r.o."]);
+    expect(p.pridanaRola).toBe(1);
+    expect(p.doplnit).toEqual([{ id: "a", name: "Alfa a.s.", zmena: { dodavatel: true } }]);
+  });
+
+  it("IBAN z adresára Pohody a z tabuľky; číslo účtu bez IBAN sa nepreberie", () => {
+    const xml = POHODA_ADRESAR.replace(
+      "<adb:email>info@novak.sk</adb:email>",
+      "<adb:email>info@novak.sk</adb:email><adb:addressbookAccount><adb:accountItem><typ:accountNo>123</typ:accountNo><typ:IBAN>SK31 1200 0000 1987 4263 7541</typ:IBAN></adb:accountItem></adb:addressbookAccount>",
+    );
+    expect(rozparsujXml(xml).odberatelia[0].iban).toBe("SK3112000000198742637541");
+    const m = navrhniMapovanie(["Názov", "IBAN"]);
+    expect(m[1]).toBe("iban");
+    expect(zTabulky([["X", "2600123456/2010"]], m)[0].iban).toBeNull();
+  });
+});

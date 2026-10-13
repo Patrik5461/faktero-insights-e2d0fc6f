@@ -13,6 +13,7 @@ import { textDuplicity } from "@/lib/faktero/prijate-duplicity";
 import { ArrowLeft, Upload, Loader2 } from "lucide-react";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { JobPicker } from "@/components/faktero/JobPicker";
+import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
 import { dicPreRegister, ucetNaIban } from "@/lib/faktero/cz-registr-dph";
 
@@ -85,6 +86,89 @@ export function PrijataFakturaForm({
     { id: string; invoice_number: string; amount_total: number; currency: string }[]
   >([]);
   const [file, setFile] = useState<File | null>(null);
+  /*
+    Dodávatelia z adresára (Kontakty → Dodávatelia). Výber doplní údaje
+    dodávateľa; nový dodávateľ sa po uložení faktúry do adresára pridá sám.
+  */
+  const [dodavatelia, setDodavatelia] = useState<any[]>([]);
+  const [adresaDodavatela, setAdresaDodavatela] = useState<Record<string, string | null> | null>(
+    null,
+  );
+  const [pridatDoAdresara, setPridatDoAdresara] = useState(true);
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    vsetkyRiadky((od, po) =>
+      supabase
+        .from("customers")
+        .select("id, name, ico, dic, ic_dph, iban, street, city, zip, country, email")
+        .eq("company_id", cid)
+        .eq("dodavatel", true)
+        .is("deleted_at", null)
+        .order("id")
+        .range(od, po),
+    )
+      .then((r) => setDodavatelia(r.sort((a: any, b: any) => a.name.localeCompare(b.name, "sk"))))
+      .catch(() => setDodavatelia([]));
+  }, []);
+  const icoBezMedzier = form.supplier_ico.replace(/\s+/g, "");
+  const znamyDodavatel = dodavatelia.find((d) =>
+    icoBezMedzier
+      ? String(d.ico ?? "").replace(/\s+/g, "") === icoBezMedzier
+      : d.name.trim().toLowerCase() === form.supplier_name.trim().toLowerCase(),
+  );
+  function vyberDodavatela(idDodavatela: string) {
+    const d = dodavatelia.find((x) => x.id === idDodavatela);
+    if (!d) return;
+    setForm((p) => ({
+      ...p,
+      supplier_name: d.name ?? "",
+      supplier_ico: d.ico ?? "",
+      supplier_dic: d.dic ?? "",
+      supplier_ic_dph: d.ic_dph ?? "",
+      supplier_iban: d.iban ?? p.supplier_iban,
+    }));
+    setAdresaDodavatela({
+      supplier_street: d.street,
+      supplier_city: d.city,
+      supplier_zip: d.zip,
+      supplier_country: d.country,
+      supplier_email: d.email,
+    });
+  }
+
+  /** Dodávateľ z novej faktúry do adresára — ak tam ešte nie je. Nezhodí uloženie faktúry. */
+  async function ulozDodavatelaDoAdresara(cid: string) {
+    if (!pridatDoAdresara || znamyDodavatel || !form.supplier_name.trim()) return;
+    try {
+      // Kontakt môže v adresári byť ako odberateľ — vtedy sa mu len pridá rola.
+      if (icoBezMedzier) {
+        const { data: uz } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("company_id", cid)
+          .eq("ico", icoBezMedzier)
+          .is("deleted_at", null)
+          .limit(1);
+        if (uz?.length) {
+          await supabase.from("customers").update({ dodavatel: true }).eq("id", uz[0].id);
+          return;
+        }
+      }
+      await supabase.from("customers").insert({
+        company_id: cid,
+        name: form.supplier_name.trim(),
+        ico: icoBezMedzier || null,
+        dic: form.supplier_dic.trim() || null,
+        ic_dph: form.supplier_ic_dph.trim() || null,
+        iban: form.supplier_iban.replace(/\s+/g, "").toUpperCase() || null,
+        odberatel: false,
+        dodavatel: true,
+      });
+    } catch (e) {
+      console.warn("[prijata] dodávateľ do adresára:", e);
+    }
+  }
   const [busy, setBusy] = useState(false);
   const [nacitavam, setNacitavam] = useState(Boolean(id));
   /*
@@ -360,10 +444,11 @@ export function PrijataFakturaForm({
       }
       const { data, error } = await supabase
         .from("purchase_invoices")
-        .insert(payload)
+        .insert({ ...(znamyDodavatel && adresaDodavatela ? adresaDodavatela : {}), ...payload })
         .select("id")
         .single();
       if (error) throw error;
+      await ulozDodavatelaDoAdresara(cid);
       await doplnKurz(data!.id);
       toast.success("Prijatá faktúra bola uložená");
       navigate({ to: "/prijate-faktury/$id", params: { id: data!.id } });
@@ -433,6 +518,23 @@ export function PrijataFakturaForm({
               Dodávateľ
             </h3>
             <div className="grid gap-3 sm:grid-cols-2">
+              {dodavatelia.length > 0 && (
+                <Field label="Z adresára dodávateľov">
+                  <select
+                    value={znamyDodavatel?.id ?? ""}
+                    onChange={(e) => vyberDodavatela(e.target.value)}
+                    className="input"
+                  >
+                    <option value="">— vybrať dodávateľa —</option>
+                    {dodavatelia.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                        {d.ico ? ` · IČO ${d.ico}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
               <Field label="Názov *">
                 <input
                   required
@@ -481,6 +583,22 @@ export function PrijataFakturaForm({
                 />
               </Field>
               <OverenieRegistraCz dic={form.supplier_dic} icDph={form.supplier_ic_dph} iban={form.supplier_iban} />
+              {!upravujeme && !znamyDodavatel && form.supplier_name.trim() && (
+                <label className="flex items-start gap-2 text-sm sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={pridatDoAdresara}
+                    onChange={(e) => setPridatDoAdresara(e.target.checked)}
+                  />
+                  <span>
+                    Uložiť dodávateľa do adresára
+                    <span className="block text-xs text-muted-foreground">
+                      Nabudúce ho vyberiete zo zoznamu a údaje sa doplnia samy.
+                    </span>
+                  </span>
+                </label>
+              )}
               <Field label="Variabilný symbol">
                 <input
                   value={form.variable_symbol}

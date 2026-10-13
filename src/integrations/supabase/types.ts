@@ -1760,6 +1760,10 @@ export type Database = {
           deleted_at: string | null
           dic: string | null
           discount_percent: number | null
+          dodavatel: boolean
+          iban: string | null
+          odberatel: boolean
+          swift: string | null
           email: string | null
           external_id: string | null
           ic_dph: string | null
@@ -1790,6 +1794,10 @@ export type Database = {
           deleted_at?: string | null
           dic?: string | null
           discount_percent?: number | null
+          dodavatel?: boolean
+          iban?: string | null
+          odberatel?: boolean
+          swift?: string | null
           email?: string | null
           external_id?: string | null
           ic_dph?: string | null
@@ -1820,6 +1828,10 @@ export type Database = {
           deleted_at?: string | null
           dic?: string | null
           discount_percent?: number | null
+          dodavatel?: boolean
+          iban?: string | null
+          odberatel?: boolean
+          swift?: string | null
           email?: string | null
           external_id?: string | null
           ic_dph?: string | null

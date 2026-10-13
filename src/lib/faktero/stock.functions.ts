@@ -1383,11 +1383,13 @@ export const listSuppliers = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: rows } = await context.supabase
       .from("customers")
-      .select("id, name, ico")
+      .select("id, name, ico, dodavatel")
       .eq("company_id", data.company_id)
       .is("deleted_at", null)
+      // Dodávatelia z adresára prví; ostatné kontakty ostávajú na výber.
+      .order("dodavatel", { ascending: false })
       .order("name", { ascending: true })
-      .limit(500);
+      .limit(1000);
     return rows ?? [];
   });
 

@@ -47,12 +47,37 @@ const sections: HelpSection[] = [
     ),
   },
   {
-    id: "import",
-    title: "Import odberateľov z Pohody a iných systémov",
+    id: "dodavatelia",
+    title: "Dodávatelia a spoločný adresár",
     body: (
       <>
         <p>
-          V <Link to="/odberatelia">Odberateľoch</Link> kliknite na <strong>Importovať</strong> a
+          Odberatelia aj <Link to="/dodavatelia">dodávatelia</Link> sú v jednom adresári, ako v
+          Pohode. Na karte kontaktu zaškrtnete <strong>Odberateľ</strong>,{" "}
+          <strong>Dodávateľ</strong> alebo oboje — firma, ktorá vám dodáva aj od vás nakupuje, je v
+          adresári raz.
+        </p>
+        <p>
+          Pri faktúre, ponuke či objednávke sa ponúkajú len odberatelia. Pri{" "}
+          <strong>prijatej faktúre</strong> vyberiete dodávateľa zo zoznamu a doplní sa jeho IČO,
+          DIČ, IČ DPH aj IBAN. Nového dodávateľa z prijatej faktúry Faktero do adresára uloží samo
+          (dá sa to odškrtnúť).
+        </p>
+        <p>
+          Dodávateľov, od ktorých už máte prijaté faktúry, naplníte naraz: v Dodávateľoch kliknite
+          na <strong>Importovať</strong> → <strong>Načítať z prijatých faktúr</strong>.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "import",
+    title: "Import odberateľov a dodávateľov z Pohody a iných systémov",
+    body: (
+      <>
+        <p>
+          V <Link to="/odberatelia">Odberateľoch</Link> alebo{" "}
+          <Link to="/dodavatelia">Dodávateľoch</Link> kliknite na <strong>Importovať</strong> a
           vyberte súbor. Faktero rozpozná:
         </p>
         <ul>

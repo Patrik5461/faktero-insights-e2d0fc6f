@@ -131,10 +131,12 @@ export const NAV: NavGroup[] = [
     key: "kontakty",
     label: "Kontakty",
     icon: Users,
-    match: ["/odberatelia"],
+    match: ["/odberatelia", "/dodavatelia"],
     children: [
       { to: "/odberatelia", label: "Odberatelia" },
       { to: "/odberatelia", search: { new: "1" }, label: "Nový odberateľ" },
+      { to: "/dodavatelia", label: "Dodávatelia" },
+      { to: "/dodavatelia", search: { new: "1" }, label: "Nový dodávateľ" },
     ],
   },
   {

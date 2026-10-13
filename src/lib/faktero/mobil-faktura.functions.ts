@@ -36,6 +36,7 @@ export const podkladyFakturyFn = createServerFn({ method: "POST" })
           "id, name, email, ico, dic, ic_dph, street, city, zip, country, discount_percent, price_group_id",
         )
         .eq("company_id", data.company_id)
+        .eq("odberatel", true)
         .is("deleted_at", null)
         .order("name")
         .limit(1000),
