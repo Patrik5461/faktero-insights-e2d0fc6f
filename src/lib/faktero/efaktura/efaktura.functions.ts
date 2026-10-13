@@ -207,8 +207,15 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
     const valid = allErrors.length === 0;
 
     // Upload XML to private storage.
+    /*
+      Bucket `efaktura-xml` zapisuje len service_role — klient používateľa
+      dostal „new row violates row-level security policy“ a tlačidlo
+      „Vygenerovať eFaktúru XML“ nefungovalo nikomu. Členstvo vo firme je
+      overené vyššie a faktúra načítaná cez RLS, cesta je z ich id.
+    */
     const storagePath = `${data.companyId}/${data.invoiceId}.xml`;
-    const upload = await supabase.storage
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const upload = await supabaseAdmin.storage
       .from("efaktura-xml")
       .upload(storagePath, new Blob([result.xml], { type: "application/xml" }), {
         upsert: true,
@@ -272,7 +279,9 @@ export const getEfakturaXmlUrlFn = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await assertCompanyMember(supabase, data.companyId, userId);
     const path = `${data.companyId}/${data.invoiceId}.xml`;
-    const { data: signed, error } = await supabase.storage
+    // Čítať z `efaktura-xml` smie len service_role; cesta je vo firme, ktorej je používateľ členom.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error } = await supabaseAdmin.storage
       .from("efaktura-xml")
       .createSignedUrl(path, 300, { download: `faktura-${data.invoiceId}.xml` });
     if (error) throw error;
