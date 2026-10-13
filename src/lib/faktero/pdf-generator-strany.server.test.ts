@@ -109,7 +109,7 @@ describe("faktúra na jednu stranu", () => {
     expect(await strany(b)).toBe(1);
   });
 
-  it("bežná faktúra s textom nad položkami, platobným QR a odkazom Faktúra online", async () => {
+  it("bežná faktúra s textom nad položkami a platobným QR", async () => {
     const b = await generateInvoicePdfBytes({
       company: { ...dodavatel, vat_payer: true },
       invoice: {
@@ -130,7 +130,43 @@ describe("faktúra na jednu stranu", () => {
         { name: "Montáž", description: "Výjazd a práca", quantity: 10, unit: "h", unit_price: 25, vat_rate: 23, total: 307.5 },
         { name: "Materiál", quantity: 1, unit: "ks", unit_price: 50, vat_rate: 23, total: 61.5 },
       ],
-      verejnyOdkaz: "https://www.faktero.sk/faktura/52376f872a9b372e59b67e3cf58ee86b",
+    });
+    expect(await strany(b)).toBe(1);
+  });
+
+  it("zálohová faktúra s textom, poznámkou a vetou o dani z prijatej platby (ZF20261001 od Tobify)", async () => {
+    const b = await generateInvoicePdfBytes({
+      company: {
+        ...dodavatel,
+        vat_payer: true,
+        iban: "SK5375002000020008091808",
+        swift: "CEKOSKBX",
+        email: "ekonom@tobify.sk",
+        dan_z_prijatej_platby: true,
+      } as any,
+      invoice: {
+        ...odberatel,
+        type: "proforma",
+        invoice_number: "ZF20261001",
+        issue_date: "2026-10-14",
+        delivery_date: "2026-10-13",
+        due_date: "2026-10-14",
+        variable_symbol: "20261001",
+        payment_method: "bank_transfer",
+        currency: "EUR",
+        customer_email: "diana@foufou.sk",
+        intro_note:
+          "Fakturujeme vám zálohu 50 % podľa cenovej ponuky č. 2026-10-01 zo dňa 7. 10. 2026 na vývoj, nasadenie a prevádzku CRM systému na mieru (11 modulov vrátane online katalógu na prenájom) a hosting, zálohy a správu systému na 1 rok. Celková cena 2 600 € bez DPH, zostávajúcich 50 % bude vyfakturovaných po odovzdaní systému.",
+        notes:
+          "Zálohová faktúra nie je daňovým dokladom. Po prijatí platby vám bude do 15 dní vystavený daňový doklad k prijatej platbe.",
+        subtotal: 1300,
+        vat_total: 299,
+        total: 1599,
+      } as any,
+      items: [
+        { name: "Záloha 50 % – CRM systém na mieru podľa ponuky č. 2026-10-01", quantity: 1, unit: "ks", unit_price: 1100, vat_rate: 23, subtotal: 1100, vat_amount: 253, total: 1353 },
+        { name: "Záloha 50 % – hosting, zálohy a správa systému na 1 rok", quantity: 1, unit: "ks", unit_price: 200.00001, vat_rate: 23, subtotal: 200, vat_amount: 46, total: 246 },
+      ] as any,
     });
     expect(await strany(b)).toBe(1);
   });

@@ -84,11 +84,6 @@ export type InvoicePdfInput = {
   numberLabel?: string;
   /** Optional public URL where the customer can pay this invoice online (e.g. GoPay). */
   paymentLinkUrl?: string | null;
-  /**
-   * Verejný odkaz na faktúru pre QR na doklade. Odberateľ ho naskenuje a
-   * doklad sa mu otvorí — nemusí hľadať prílohu v e-maile ani nič prepisovať.
-   */
-  verejnyOdkaz?: string | null;
 };
 
 /**
@@ -118,7 +113,12 @@ function sumaVJazyku(n: number, currency = "EUR", jazyk: JazykDokladu = "sk") {
  * miesta, ktoré cena naozaj má.
  */
 function cenaVJazyku(n: number, currency = "EUR", jazyk: JazykDokladu = "sk") {
-  const v = Number.isFinite(n) ? n : 0;
+  const v0 = Number.isFinite(n) ? n : 0;
+  /*
+    Zvyšok po spätnom výpočte zo sumy s DPH (246 / 1,23 = 200,00001) nie je
+    cena v zlomkoch centa — od celých centov sa líši menej než o 0,00002.
+  */
+  const v = Math.abs(v0 - Math.round(v0 * 100) / 100) < 0.00002 ? Math.round(v0 * 100) / 100 : v0;
   // Koľko desatinných miest cena naozaj má — dve sú základ, päť je strop.
   const orezana = Math.abs(v).toFixed(5).replace(/(\.\d{2}\d*?)0+$/, "$1");
   const miest = (orezana.split(".")[1] ?? "").length;
@@ -838,52 +838,6 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       : invoice.reverse_charge_type === "export"
         ? t.prenosVyvoz
         : t.prenosTuzemsko;
-  /*
-    Rámik „Faktúra online“ s QR na otvorenie dokladu. Široký (pod platobnými
-    údajmi) nesie aj odkaz textom; úzky (vľavo vedľa súčtov) len výzvu a QR —
-    odkaz by sa doň nezmestil a orezaný odkaz vyzerá ako chyba.
-  */
-  const kresliOnline = async (strana: PDFPage, x: number, hore: number, w: number, h: number) => {
-    const vQR = 68;
-    strana.drawRectangle({
-      x,
-      y: hore - h,
-      width: w,
-      height: h,
-      color: white,
-      borderColor: hairline,
-      borderWidth: 0.7,
-    });
-    strana.drawText(t.fakturaOnline, { x: x + 16, y: hore - 22, size: 8, font: bold, color: muted });
-    const textW = w - vQR - 48;
-    const siroky = textW > 260;
-    const vyzva = wrapLines(t.naskenujteKod, font, 9, textW);
-    vyzva.forEach((ln, i) =>
-      strana.drawText(ln, { x: x + 16, y: hore - 42 - i * 11, size: 9, font, color: ink }),
-    );
-    if (siroky) {
-      strana.drawText(ellipsize(String(input.verejnyOdkaz), font, 8.5, textW), {
-        x: x + 16,
-        y: hore - 42 - vyzva.length * 11 - 5,
-        size: 8.5,
-        font: bold,
-        color: primaryDark,
-      });
-    }
-    try {
-      const dataUrl = await QRCode.toDataURL(String(input.verejnyOdkaz), { margin: 0, width: 200 });
-      const png = await doc.embedPng(dataUrl);
-      strana.drawImage(png, {
-        x: x + w - vQR - 16,
-        y: hore - h + (h - vQR) / 2,
-        width: vQR,
-        height: vQR,
-      });
-    } catch {
-      /* bez QR ostane aspoň odkaz napísaný textom */
-    }
-  };
-
   let prenesenieHotove = false;
   if (textPrenesenia && !kresliPeciatku) {
     const sirka = totalsX - margin - 20;
@@ -911,21 +865,49 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   }
 
   /*
-    Rámik „Faktúra online“ tiež do voľného miesta vedľa súčtov — pod
-    platobnými údajmi sám posúval bežnú faktúru s textom nad položkami na
-    druhú stranu.
+    Vety pod súčtami (§ 68d/§ 65/§ 66, režim DPH) a poznámky do voľného
+    miesta vľavo vedľa súčtov, keď sa tam zmestia — pod platobnými údajmi
+    posúvali zálohovú faktúru na druhú stranu. (Predtým tu bol rámik
+    „Faktúra online“ s QR; ten sa už nekreslí.)
   */
-  let onlineHotove = false;
-  if (input.verejnyOdkaz && !kresliPeciatku && !prenesenieHotove) {
+  const vetyPodSuctami = vetyNaDoklad({
+    danZPrijatejPlatby: (company as any).dan_z_prijatej_platby,
+    osobitnaUprava: invoice.osobitna_uprava,
+  });
+  const textDph =
+    Number(invoice.vat_total ?? 0) > 0 ? null : rezimFirmy(company as FirmaDph).textNaDoklad;
+  let poznamkyHotove = false;
+  if (!kresliPeciatku && !prenesenieHotove) {
     const sirka = totalsX - margin - 20;
-    const vyska = 92;
-    if (sirka >= 200 && vyska <= totalsTop - (ty - heroH) + 4) {
-      await kresliOnline(cur, margin, totalsTop + 4, sirka, vyska);
-      onlineHotove = true;
+    const tucne = [...vetyPodSuctami, ...(textDph ? [textDph] : [])].flatMap((v) =>
+      wrapLines(v, bold, 9, sirka),
+    );
+    const pozn = invoice.notes ? wrapLines(String(invoice.notes), font, 9, sirka) : [];
+    const vyska =
+      tucne.length * 11 + (tucne.length && pozn.length ? 6 : 0) + (pozn.length ? 13 + pozn.length * 11 : 0);
+    const dostupne = totalsTop - (ty - heroH);
+    if (sirka >= 160 && vyska > 0 && vyska <= dostupne) {
+      let ly = totalsTop - 2;
+      for (const ln of tucne) {
+        cur.drawText(ln, { x: margin, y: ly, size: 9, font: bold, color: sub });
+        ly -= 11;
+      }
+      if (pozn.length) {
+        if (tucne.length) ly -= 6;
+        cur.drawText(t.poznamky, { x: margin, y: ly, size: 8, font: bold, color: muted });
+        ly -= 13;
+        for (const ln of pozn) {
+          cur.drawText(ln, { x: margin, y: ly, size: 9, font, color: sub });
+          ly -= 11;
+        }
+      }
+      poznamkyHotove = true;
     }
   }
 
   y = ty - heroH - (isPaid ? 38 : 18);
+  /** Kde končí blok súčtov — medzeru pod ním smie kompaktná platobná karta zúžiť. */
+  const yPodSuctami = y;
 
   /*
     Faktúra v cudzej mene musí mať daň vyčíslenú aj v domácej mene firmy:
@@ -966,12 +948,26 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       textom nad položkami a prenesením nezmestila na jednu stranu.
     */
     const kresliQr = Boolean(company.iban) && naUhradu > 0;
-    const payH = kresliQr ? 126 : 116;
+    /*
+      Keď sa plná karta na stranu tesne nezmestí, nakreslí sa kompaktná
+      (menší QR, hustejšie riadky) — inak by platobné údaje osamoteli na
+      druhej strane.
+    */
+    const plnaH = kresliQr ? 126 : 116;
+    const kompaktH = kresliQr ? 102 : 92;
+    // Hneď pod súčtami (nič medzi nimi) sa smie medzera zúžiť o 8 bodov.
+    const posun = y === yPodSuctami ? 8 : 0;
+    const kompakt =
+      y - (plnaH + 12) < BOTTOM_LIMIT && y + posun - (kompaktH + 12) >= BOTTOM_LIMIT;
+    if (kompakt && y - (kompaktH + 12) < BOTTOM_LIMIT) y += posun;
+    const payH = kompakt ? kompaktH : plnaH;
+    const rStart = kompakt ? 34 : 42;
+    const rKrok = kompakt ? 15 : 20;
     ensureSpace(payH + 12);
     const payX = margin;
     const payY = y;
     const payW = innerW;
-    const qrSize = 100;
+    const qrSize = kompakt ? 72 : 100;
     const qrGap = 24; // gap between data column and QR
     const qrCol = qrSize + 32; // right column width with padding
     const dataColW = payW - qrCol - qrGap;
@@ -1003,7 +999,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     const labelColW = 110;
     const valueColW = Math.max(80, dataColW - labelColW - 16);
     rows.forEach(([k, v], i) => {
-      const ry = payY - 42 - i * 20;
+      const ry = payY - rStart - i * rKrok;
       cur.drawText(String(k), { x: payX + 16, y: ry, size: 8.5, font, color: muted });
       // Truncate value to fit value column
       const valStr = ellipsize(String(v), bold, 10, valueColW);
@@ -1067,7 +1063,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
           // V riadku splatnosti, hneď za dátumom — karta sa nezväčší.
           const datum = datumNaDoklade(invoice.due_date, jazyk);
           const bx = payX + 16 + 110 + bold.widthOfTextAtSize(datum, 10) + 12;
-          const by = payY - 42 - 3 * 20 - 3.5;
+          const by = payY - rStart - 3 * rKrok - 3.5;
           const popis = "PAYME · zaplatiť v mobile";
           const bw = bold.widthOfTextAtSize(popis, 7.5) + 14;
           cur.drawRectangle({ x: bx, y: by, width: bw, height: 13, color: primary });
@@ -1206,10 +1202,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     keď sumy na ňom sedia — na rozdiel od prenesenia daňovej povinnosti nemajú
     vlastný rámik, sú to riadky pod súčtami.
   */
-  for (const veta of vetyNaDoklad({
-    danZPrijatejPlatby: (company as any).dan_z_prijatej_platby,
-    osobitnaUprava: invoice.osobitna_uprava,
-  })) {
+  for (const veta of poznamkyHotove ? [] : vetyPodSuctami) {
     const lines = wrapLines(veta, bold, 9.5, innerW);
     ensureSpace(14 + lines.length * 12 + 6);
     lines.forEach((ln) => {
@@ -1227,9 +1220,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     Doklad, na ktorom daň vyčíslená je, vetu nedostane ani vtedy, keď je firma
     dnes vedená ako neplatiteľ: faktúra má niesť stav spred zmeny, nie dnešný.
   */
-  const textDph =
-    Number(invoice.vat_total ?? 0) > 0 ? null : rezimFirmy(company as FirmaDph).textNaDoklad;
-  if (textDph) {
+  if (textDph && !poznamkyHotove) {
     const lines = wrapLines(textDph, bold, 9.5, innerW);
     ensureSpace(18 + lines.length * 12 + 8);
     lines.forEach((ln) => {
@@ -1239,7 +1230,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     y -= 10;
   }
 
-  if (invoice.notes) {
+  if (invoice.notes && !poznamkyHotove) {
     const noteLines = wrapLines(String(invoice.notes), font, 9.5, innerW);
     const needed = 18 + noteLines.length * 12 + 12;
     ensureSpace(needed);
@@ -1253,22 +1244,6 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   }
 
   // ── Footer on every page ──
-  /*
-    QR na otvorenie faktúry.
-
-    Zámerne **mimo** platobného bloku: ten sa na uhradenej faktúre nekreslí
-    vôbec, a otvorenie dokladu s platením nesúvisí — odberateľ si ho chce
-    pozrieť aj potom, čo zaplatil. Je to iná vec než platobný QR: ten
-    predvyplní platbu v banke, tento otvorí samotný doklad. Preto sú oba
-    popísané, nech si ich nikto nepomýli.
-  */
-  if (input.verejnyOdkaz && !onlineHotove) {
-    const vH = 92;
-    ensureSpace(vH + 12);
-    await kresliOnline(cur, margin, y, innerW, vH);
-    y -= vH + 12;
-  }
-
   const footerText = company.invoice_footer ?? t.vystaveneCez;
   pages.forEach((p, i) => {
     p.drawLine({
