@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -41,6 +42,7 @@ import {
   AlertTriangle,
   Undo2,
   Plus,
+  Eye,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -104,6 +106,7 @@ function InvoiceDetail() {
   const [stockSkus, setStockSkus] = useState<Record<string, string>>({});
   const [zakazka, setZakazka] = useState<any>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [nahladUrl, setNahladUrl] = useState<string | null>(null);
   const [emailOpen, setEmailOpen] = useState(false);
   /* Koľko príloh doklad má — podľa toho sa v maile ponúkne, či ich priložiť. */
   const [pocetPriloh, setPocetPriloh] = useState(0);
@@ -642,24 +645,40 @@ function InvoiceDetail() {
     }
   }
 
+  /** Podpísaný odkaz na aktuálne PDF — keď ešte nie je, vyrobí sa. */
+  async function odkazNaPdf(): Promise<string | null> {
+    try {
+      const r = await getPdf({ data: { invoiceId: id } });
+      return r?.signedUrl ?? null;
+    } catch (e: any) {
+      const msg = String(e?.message ?? "");
+      if (msg.includes("zatiaľ neexistuje") || msg.includes("not_found")) {
+        const g = await genPdf({ data: { invoiceId: id } });
+        load();
+        return g?.signedUrl ?? null;
+      }
+      throw e;
+    }
+  }
+
+  /** Náhľad v okne nad stránkou — bez sťahovania súboru. */
+  async function handleNahlad() {
+    setPdfBusy(true);
+    try {
+      const url = await odkazNaPdf();
+      if (!url) return toast.error("PDF sa nepodarilo pripraviť.");
+      setNahladUrl(url);
+    } catch (e: any) {
+      toast.error(e?.message ?? "PDF sa nepodarilo pripraviť.");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
   async function handleDownload() {
     setPdfBusy(true);
     try {
-      let signedUrl: string | null = null;
-      try {
-        const r = await getPdf({ data: { invoiceId: id } });
-        signedUrl = r?.signedUrl ?? null;
-      } catch (e: any) {
-        const msg = String(e?.message ?? "");
-        if (msg.includes("zatiaľ neexistuje") || msg.includes("not_found")) {
-          // Auto-generate if missing
-          const g = await genPdf({ data: { invoiceId: id } });
-          signedUrl = g?.signedUrl ?? null;
-          load();
-        } else {
-          throw e;
-        }
-      }
+      const signedUrl = await odkazNaPdf();
       if (!signedUrl) {
         toast.error("PDF zatiaľ neexistuje.");
         return;
@@ -798,6 +817,13 @@ function InvoiceDetail() {
 
   return (
     <>
+      {nahladUrl && (
+        <NahladPdfOkno
+          url={nahladUrl}
+          nazov={inv.invoice_number ?? "faktura"}
+          onClose={() => setNahladUrl(null)}
+        />
+      )}
       <PageHeader
         title={`${inv.oprava_25a ? "Opravný doklad (§ 25a)" : (NAZOV_TYPU[inv.type as string] ?? "Faktúra")} ${inv.invoice_number}`}
         description={`Vystavená ${datumNaDoklade(inv.issue_date)} · splatná ${popisSplatnosti(inv)}${predlzena(inv) && inv.predlzenie_poznamka ? ` — ${inv.predlzenie_poznamka}` : ""}`}
@@ -868,6 +894,13 @@ function InvoiceDetail() {
                       : "Odoslať eFaktúru"}
                 </button>
               ))}
+            <button
+              onClick={handleNahlad}
+              disabled={pdfBusy}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <Eye className="h-4 w-4" /> Náhľad
+            </button>
             <button
               onClick={inv.pdf_url ? handleDownload : handleGenerate}
               disabled={pdfBusy}

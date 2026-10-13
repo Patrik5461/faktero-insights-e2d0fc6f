@@ -5,8 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Inbox, RefreshCw, FileInput, ExternalLink, Eye, Download, X } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { NahladPdf } from "@/components/faktero/NahladPdf";
-import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import {
@@ -38,53 +37,6 @@ function StavDokladu({ stav }: { stav: string | null }) {
 }
 
 type Nahlad = { url: string; nazov: string; prilozene: boolean };
-
-/** Okno s náhľadom eFaktúry — PDF od dodávateľa, alebo vykreslené z XML. */
-function NahladOkno({ nahlad, onClose }: { nahlad: Nahlad; onClose: () => void }) {
-  useZatvorNaEscape(onClose);
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-6"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Náhľad ${nahlad.nazov}`}
-        className="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-card shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
-          <div className="min-w-0 flex-1">
-            <div className="truncate font-medium">{nahlad.nazov}</div>
-            {!nahlad.prilozene && (
-              <div className="text-xs text-muted-foreground">
-                Dodávateľ k eFaktúre PDF nepriložil — náhľad je vykreslený z údajov eFaktúry.
-              </div>
-            )}
-          </div>
-          <a
-            href={nahlad.url}
-            download={nahlad.nazov.endsWith(".pdf") ? nahlad.nazov : `${nahlad.nazov}.pdf`}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
-          >
-            <Download className="h-3.5 w-3.5" /> Stiahnuť PDF
-          </a>
-          <button
-            onClick={onClose}
-            aria-label="Zavrieť"
-            className="rounded-md p-1 hover:bg-secondary"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-auto bg-muted/30 p-3">
-          <NahladPdf url={nahlad.url} />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ReceivedPage() {
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -285,7 +237,18 @@ function ReceivedPage() {
           </div>
         )}
       </PageBody>
-      {nahlad && <NahladOkno nahlad={nahlad} onClose={zavriNahlad} />}
+      {nahlad && (
+        <NahladPdfOkno
+          url={nahlad.url}
+          nazov={nahlad.nazov}
+          poznamka={
+            nahlad.prilozene
+              ? null
+              : "Dodávateľ k eFaktúre PDF nepriložil — náhľad je vykreslený z údajov eFaktúry."
+          }
+          onClose={zavriNahlad}
+        />
+      )}
     </>
   );
 }

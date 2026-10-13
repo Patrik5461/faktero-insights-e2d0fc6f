@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { useEffect, useMemo, useState } from "react";
@@ -24,6 +25,7 @@ import {
   X,
   Zap,
   BookCheck,
+  Eye,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
@@ -31,7 +33,7 @@ import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
 import { sendReminderFn } from "@/lib/faktero/reminders.functions";
-import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
+import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
 import {
@@ -168,6 +170,17 @@ function InvoicesPage() {
     list.rows.filter((r: any) => r.status !== "draft").map((r: any) => r.id),
   );
   const cloneFn = useServerFn(cloneInvoiceFn);
+  const pdfUrlFn = useServerFn(getInvoicePdfSignedUrl);
+  const [nahlad, setNahlad] = useState<{ url: string; nazov: string } | null>(null);
+  /** Náhľad PDF priamo zo zoznamu — v okne, bez sťahovania. */
+  async function nahladRiadku(i: any) {
+    try {
+      const r = await pdfUrlFn({ data: { invoiceId: i.id } });
+      if (r?.signedUrl) setNahlad({ url: r.signedUrl, nazov: i.invoice_number ?? "faktura" });
+    } catch (e: any) {
+      toast.error(e?.message ?? "PDF sa nepodarilo pripraviť.");
+    }
+  }
   const markPaidFn = useServerFn(bulkMarkPaidFn);
   const emailFn = useServerFn(sendInvoiceEmailFn);
   const reminderFn = useServerFn(sendReminderFn);
@@ -564,6 +577,9 @@ function InvoicesPage() {
   const rowWarning = rowDelete && (rowDelete.status === "paid" || rowDelete.status === "sent");
   return (
     <>
+      {nahlad && (
+        <NahladPdfOkno url={nahlad.url} nazov={nahlad.nazov} onClose={() => setNahlad(null)} />
+      )}
       <PageHeader
         title={
           type === "credit"
@@ -971,6 +987,14 @@ function InvoicesPage() {
                           </button>
                         ) : (
                           <div className="flex justify-end gap-1">
+                            <button
+                              title="Náhľad"
+                              aria-label={`Náhľad ${i.invoice_number ?? "faktúry"}`}
+                              onClick={() => nahladRiadku(i)}
+                              className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
                             <button
                               title="Klonovať"
                               onClick={() => cloneRow(i.id)}
