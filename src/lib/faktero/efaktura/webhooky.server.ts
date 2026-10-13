@@ -26,12 +26,15 @@ function rovnakeHex(a: string, b: string): boolean {
 }
 
 /** Hodnota `X-PDS-Secret`, ktorú by FS poslala k tomuto telu. */
-export function podpisPds(telo: string, tajomstvo: string): string {
-  return createHash("sha512").update(Buffer.from(telo + tajomstvo, "utf8")).digest("hex");
+export function podpisPds(telo: string | Buffer, tajomstvo: string): string {
+  const bajty = typeof telo === "string" ? Buffer.from(telo, "utf8") : telo;
+  return createHash("sha512")
+    .update(Buffer.concat([bajty, Buffer.from(tajomstvo, "utf8")]))
+    .digest("hex");
 }
 
 export function overPdsPodpis(
-  telo: string,
+  telo: string | Buffer,
   hlavicka: string | null | undefined,
   tajomstvo: string | null | undefined,
 ): boolean {

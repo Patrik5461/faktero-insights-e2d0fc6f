@@ -12,7 +12,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 const odpoved = (kod: number, popis: string) =>
-  new Response(JSON.stringify({ Kod: kod, Popis: popis }), {
+  // FS chce presne „Kód“ s dĺžňom — `Kod` nespozná a odpoveď berie ako chybnú.
+  new Response(JSON.stringify({ Kód: kod, Popis: popis }), {
     status: kod,
     headers: { "content-type": "application/json" },
   });
@@ -26,7 +27,9 @@ export const Route = createFileRoute("/api/public/efaktura/pds")({
       */
       GET: async () => odpoved(200, "Faktero — webhook PDS je dostupný, údaje prijíma metódou POST."),
       POST: async ({ request }) => {
-        const telo = await request.text();
+        // Podpis sa počíta z presných prijatých bajtov — telo sa pred overením neprepisuje.
+        const surove = Buffer.from(await request.arrayBuffer());
+        const telo = surove.toString("utf8");
         const { overPdsPodpis, rozparsujPds, diagnostikaPdsPodpisu } = await import(
           "@/lib/faktero/efaktura/webhooky.server"
         );
@@ -36,7 +39,7 @@ export const Route = createFileRoute("/api/public/efaktura/pds")({
           request.headers.get("x-real-ip") ??
           request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
           null;
-        if (!overPdsPodpis(telo, request.headers.get("x-pds-secret"), tajomstvo)) {
+        if (!overPdsPodpis(surove, request.headers.get("x-pds-secret"), tajomstvo)) {
           // Ohlási sa len telo, ktoré vyzerá ako žiadosť FS — nie hocijaký pokus zvonku.
           const r = rozparsujPds(telo);
           if ("ziadosti" in r) {
