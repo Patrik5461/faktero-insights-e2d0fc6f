@@ -8,12 +8,12 @@ export const Route = createFileRoute("/pomoc/efaktura")({
       {
         name: "description",
         content:
-          "Čo je eFaktúra, prečo to nie je PDF a ako vám Faktero pomôže pripraviť sa na rok 2027.",
+          "Ako si vo Fakteri zapnúť eFaktúru cez Portál finančnej správy, ako ju odoslať a ako spracovať prijaté eFaktúry.",
       },
       { property: "og:title", content: "Pomoc — eFaktúra — Faktero" },
       {
         property: "og:description",
-        content: "Pripravenosť na povinnú elektronickú fakturáciu v SR.",
+        content: "eFaktúra vo Fakteri — zapnutie, odoslanie a príjem cez sieť Peppol.",
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/efaktura" },
     ],
@@ -29,12 +29,93 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          eFaktúra je <strong>štruktúrovaný elektronický dokument</strong> (XML), ktorý si
-          vystavovateľ a príjemca vymieňajú strojovo čitateľnou formou. Spĺňa európsku normu{" "}
-          <code>EN 16931</code> a v SR sa odovzdáva cez informačný systém Finančnej správy.
+          eFaktúra je <strong>elektronický doklad v štruktúrovanej podobe</strong> (XML podľa normy{" "}
+          <code>EN 16931</code>), ktorý sa doručuje cez sieť <strong>Peppol</strong> — nie e-mailom
+          ako PDF. Od <strong>1. 1. 2027</strong> ju musia platitelia DPH na Slovensku používať pri
+          faktúrach medzi firmami.
         </p>
         <p>
-          Slovensko zavádza povinnú eFakturáciu pre B2B postupne v roku <strong>2027</strong>.
+          Faktero je napojené na sieť Peppol cez certifikovaný prístupový bod. eFaktúry vystavujete,
+          posielate aj prijímate priamo vo Fakteri — žiadny ďalší program netreba.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "zapnutie",
+    title: "Ako si eFaktúru zapnúť",
+    body: (
+      <>
+        <ol>
+          <li>
+            Prihláste sa na <strong>Portál finančnej správy</strong> do osobnej internetovej zóny a
+            v časti <strong>eFaktúra</strong> vyberte ako poskytovateľa doručovacej služby{" "}
+            <strong>Faktero</strong>.
+          </li>
+          <li>
+            Finančná správa nám pošle údaje vašej firmy a Faktero ju zaregistruje v sieti Peppol —
+            zvyčajne do niekoľkých minút.
+          </li>
+          <li>
+            Keď je registrácia hotová, eFaktúra sa vo Fakteri zapne sama pri firme s rovnakým DIČ.
+            Ak vo Fakteri ešte účet nemáte, príde vám e-mailom pozvánka — po registrácii s tým istým
+            DIČ sa eFaktúra k firme pripojí automaticky.
+          </li>
+        </ol>
+        <p>
+          Stav nájdete v <Link to="/efaktura">eFaktúra → Prehľad eFaktúry</Link>. Ak tam firma
+          spárovaná nie je, hoci registrácia prebehla, kliknite na <strong>Spárovať</strong> —
+          Faktero ju nájde podľa IČO.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "odoslanie",
+    title: "Odoslanie eFaktúry",
+    body: (
+      <>
+        <p>
+          Faktúru vystavíte ako doteraz a na jej detaile kliknete na{" "}
+          <strong>Odoslať eFaktúru</strong>. Faktero z nej vytvorí XML, skontroluje ho podľa normy a
+          pošle odberateľovi.
+        </p>
+        <p>
+          Pred odoslaním overí, či je <strong>odberateľ v sieti Peppol</strong>. Ak nie je, povie to
+          hneď — faktúra by inak odišla do prázdna. Odberateľ potrebuje vyplnené DIČ alebo IČ DPH,
+          podľa nich sa v sieti hľadá.
+        </p>
+        <p>
+          Odoslané doklady sú v <Link to="/efaktura/odoslane">eFaktúra → Odoslané eFaktúry</Link> a
+          v <Link to="/efaktura/dorucenia">Doručeniach</Link> vidíte, kedy si ich odberateľ prevzal.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "prijem",
+    title: "Prijaté eFaktúry",
+    body: (
+      <>
+        <p>
+          eFaktúry od dodávateľov pribúdajú v{" "}
+          <Link to="/efaktura/prijate">eFaktúra → Prijaté eFaktúry</Link> samy; tlačidlom{" "}
+          <strong>Stiahnuť nové</strong> ich načítate hneď.
+        </p>
+        <ul>
+          <li>
+            <strong>Náhľad</strong> ukáže eFaktúru ako bežnú faktúru v PDF. Ak dodávateľ priložil
+            vlastné PDF, uvidíte jeho; inak ju Faktero vykreslí z údajov eFaktúry.
+          </li>
+          <li>
+            <strong>Zaevidovať</strong> z nej spraví{" "}
+            <Link to="/prijate-faktury">prijatú faktúru</Link> aj s PDF v prílohe — netreba nič
+            prepisovať. Potom ju zaúčtujete, uhradíte alebo pošlete do Pohody ako každú inú.
+          </li>
+        </ul>
+        <p>
+          Ak tá istá faktúra prišla aj inou cestou (napríklad e-mailom), Faktero ju nezaloží druhý
+          raz, ale eFaktúru pripojí k existujúcej.
         </p>
       </>
     ),
@@ -46,46 +127,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           PDF je obrázok faktúry pre ľudí. eFaktúra je <strong>XML súbor pre stroje</strong> —
-          účtovný systém príjemcu ho vie spracovať automaticky bez ručného prepisovania.
-        </p>
-        <p>
-          PDF prílohu môžete posielať aj naďalej, ale právne záväzná bude eFaktúra v XML formáte
-          podľa normy EN 16931 / Peppol BIS.
-        </p>
-      </>
-    ),
-  },
-  {
-    id: "readiness",
-    title: "Faktero readiness score",
-    body: (
-      <>
-        <p>
-          Na dashboarde vidíte <strong>skóre pripravenosti</strong> vašej firmy na eFakturáciu.
-          Skóre zohľadňuje:
-        </p>
-        <ul>
-          <li>Doplnené identifikačné údaje firmy (IČO, DIČ, IČ DPH, adresa).</li>
-          <li>Vyplnené údaje odberateľov.</li>
-          <li>Korektne nastavené sadzby DPH a meny.</li>
-          <li>Validitu vygenerovaných XML dokumentov.</li>
-        </ul>
-        <p>Čím vyššie skóre, tým menej úprav vás čaká pred povinným prechodom.</p>
-      </>
-    ),
-  },
-  {
-    id: "xml-peppol",
-    title: "XML / Peppol pripravenosť",
-    body: (
-      <>
-        <p>
-          Faktero už dnes vie vygenerovať XML eFaktúry vo formáte kompatibilnom s normou EN 16931
-          (UBL 2.1). Súbor si môžete stiahnuť na detaile faktúry.
-        </p>
-        <p>
-          Pre Peppol sieť pripravujeme priame napojenie cez akreditovaný Access Point — bude k
-          dispozícii pred spustením povinnej eFakturácie.
+          účtovný systém príjemcu ho spracuje bez ručného prepisovania. Právne záväzná je eFaktúra;
+          PDF môže ísť len ako príloha na pozretie.
         </p>
       </>
     ),
@@ -96,7 +139,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Dobropis odchádza ako saminý doklad <strong>CreditNote (typ 381)</strong> a nesie číslo
+          Dobropis odchádza ako samostatný doklad <strong>CreditNote (typ 381)</strong> a nesie číslo
           pôvodnej faktúry (pole BT-25) — finančná správa to vyžaduje. Bez vyplnenej pôvodnej
           faktúry ho Faktero neodošle. Opravný doklad s kladnou sumou (napríklad vrátenie opravy
           podľa § 25a) ide ako ťarchopis (typ 383).
@@ -114,27 +157,15 @@ const sections: HelpSection[] = [
     ),
   },
   {
-    id: "2027",
-    title: "Čo bude dostupné pred rokom 2027",
+    id: "readiness",
+    title: "Skóre pripravenosti",
     body: (
       <>
-        <ul>
-          <li>
-            <strong>Validátor</strong> XML voči SK rozšíreniam EN 16931.
-          </li>
-          <li>
-            <strong>Priame odosielanie</strong> do IS Finančnej správy (IS EFA).
-          </li>
-          <li>
-            <strong>Príjem</strong> eFaktúr od dodávateľov priamo do Faktera.
-          </li>
-          <li>
-            <strong>Archív</strong> v zákonom požadovanej lehote.
-          </li>
-        </ul>
         <p>
-          Ak chcete byť informovaní o spustení, prihláste sa cez{" "}
-          <Link to="/efaktura">stránku eFaktúra</Link>.
+          V <Link to="/efaktura">eFaktúra → Prehľad eFaktúry</Link> vidíte{" "}
+          <strong>skóre pripravenosti</strong> a zoznam toho, čo ešte chýba — napríklad vyplnené
+          údaje firmy, IČ DPH pri platiteľovi DPH alebo Peppol ID. Čím vyššie skóre, tým menej
+          prekvapení pri prvej eFaktúre.
         </p>
       </>
     ),
@@ -146,7 +177,12 @@ function Page() {
     <HelpArticle
       category="Pomoc · eFaktúra"
       title="Elektronická fakturácia (eFaktúra)"
-      intro={<p>Príprava na povinnú elektronickú fakturáciu v Slovenskej republike.</p>}
+      intro={
+        <p>
+          Zapnutie eFaktúry cez Portál finančnej správy, odosielanie a príjem eFaktúr cez sieť
+          Peppol.
+        </p>
+      }
       sections={sections}
     />
   );

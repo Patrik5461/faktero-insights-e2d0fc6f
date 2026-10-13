@@ -305,27 +305,31 @@
    "sekcie": [
     {
      "nadpis": "Čo je eFaktúra",
-     "text": "<>\neFaktúra je štruktúrovaný elektronický dokument (XML), ktorý si\nvystavovateľ a príjemca vymieňajú strojovo čitateľnou formou. Spĺňa európsku normu\nEN 16931 a v SR sa odovzdáva cez informačný systém Finančnej správy.\nSlovensko zavádza povinnú eFakturáciu pre B2B postupne v roku 2027 ."
+     "text": "<>\neFaktúra je elektronický doklad v štruktúrovanej podobe (XML podľa normy\nEN 16931 ), ktorý sa doručuje cez sieť Peppol — nie e-mailom\nako PDF. Od 1. 1. 2027 ju musia platitelia DPH na Slovensku používať pri\nfaktúrach medzi firmami.\nFaktero je napojené na sieť Peppol cez certifikovaný prístupový bod. eFaktúry vystavujete,\nposielate aj prijímate priamo vo Fakteri — žiadny ďalší program netreba."
+    },
+    {
+     "nadpis": "Ako si eFaktúru zapnúť",
+     "text": "<>\n-\nPrihláste sa na Portál finančnej správy do osobnej internetovej zóny a\nv časti eFaktúra vyberte ako poskytovateľa doručovacej služby\nFaktero .\n-\nFinančná správa nám pošle údaje vašej firmy a Faktero ju zaregistruje v sieti Peppol —\nzvyčajne do niekoľkých minút.\n-\nKeď je registrácia hotová, eFaktúra sa vo Fakteri zapne sama pri firme s rovnakým DIČ.\nAk vo Fakteri ešte účet nemáte, príde vám e-mailom pozvánka — po registrácii s tým istým\nDIČ sa eFaktúra k firme pripojí automaticky.\nStav nájdete v eFaktúra → Prehľad eFaktúry (/efaktura). Ak tam firma\nspárovaná nie je, hoci registrácia prebehla, kliknite na Spárovať —\nFaktero ju nájde podľa IČO."
+    },
+    {
+     "nadpis": "Odoslanie eFaktúry",
+     "text": "<>\nFaktúru vystavíte ako doteraz a na jej detaile kliknete na\nOdoslať eFaktúru . Faktero z nej vytvorí XML, skontroluje ho podľa normy a\npošle odberateľovi.\nPred odoslaním overí, či je odberateľ v sieti Peppol . Ak nie je, povie to\nhneď — faktúra by inak odišla do prázdna. Odberateľ potrebuje vyplnené DIČ alebo IČ DPH,\npodľa nich sa v sieti hľadá.\nOdoslané doklady sú v eFaktúra → Odoslané eFaktúry (/efaktura/odoslane) a\nv Doručeniach (/efaktura/dorucenia) vidíte, kedy si ich odberateľ prevzal."
+    },
+    {
+     "nadpis": "Prijaté eFaktúry",
+     "text": "<>\neFaktúry od dodávateľov pribúdajú v\neFaktúra → Prijaté eFaktúry (/efaktura/prijate) samy; tlačidlom\nStiahnuť nové ich načítate hneď.\n-\nNáhľad ukáže eFaktúru ako bežnú faktúru v PDF. Ak dodávateľ priložil\nvlastné PDF, uvidíte jeho; inak ju Faktero vykreslí z údajov eFaktúry.\n-\nZaevidovať z nej spraví\nprijatú faktúru (/prijate-faktury) aj s PDF v prílohe — netreba nič\nprepisovať. Potom ju zaúčtujete, uhradíte alebo pošlete do Pohody ako každú inú.\nAk tá istá faktúra prišla aj inou cestou (napríklad e-mailom), Faktero ju nezaloží druhý\nraz, ale eFaktúru pripojí k existujúcej."
     },
     {
      "nadpis": "eFaktúra nie je PDF",
-     "text": "<>\nPDF je obrázok faktúry pre ľudí. eFaktúra je XML súbor pre stroje —\núčtovný systém príjemcu ho vie spracovať automaticky bez ručného prepisovania.\nPDF prílohu môžete posielať aj naďalej, ale právne záväzná bude eFaktúra v XML formáte\npodľa normy EN 16931 / Peppol BIS."
-    },
-    {
-     "nadpis": "Faktero readiness score",
-     "text": "<>\nNa dashboarde vidíte skóre pripravenosti vašej firmy na eFakturáciu.\nSkóre zohľadňuje:\n- Doplnené identifikačné údaje firmy (IČO, DIČ, IČ DPH, adresa).\n- Vyplnené údaje odberateľov.\n- Korektne nastavené sadzby DPH a meny.\n- Validitu vygenerovaných XML dokumentov.\nČím vyššie skóre, tým menej úprav vás čaká pred povinným prechodom."
-    },
-    {
-     "nadpis": "XML / Peppol pripravenosť",
-     "text": "<>\nFaktero už dnes vie vygenerovať XML eFaktúry vo formáte kompatibilnom s normou EN 16931\n(UBL 2.1). Súbor si môžete stiahnuť na detaile faktúry.\nPre Peppol sieť pripravujeme priame napojenie cez akreditovaný Access Point — bude k\ndispozícii pred spustením povinnej eFakturácie."
+     "text": "<>\nPDF je obrázok faktúry pre ľudí. eFaktúra je XML súbor pre stroje —\núčtovný systém príjemcu ho spracuje bez ručného prepisovania. Právne záväzná je eFaktúra;\nPDF môže ísť len ako príloha na pozretie."
     },
     {
      "nadpis": "Dobropis a samofaktúra cez eFaktúru",
-     "text": "<>\nDobropis odchádza ako saminý doklad CreditNote (typ 381) a nesie číslo\npôvodnej faktúry (pole BT-25) — finančná správa to vyžaduje. Bez vyplnenej pôvodnej\nfaktúry ho Faktero neodošle. Opravný doklad s kladnou sumou (napríklad vrátenie opravy\npodľa § 25a) ide ako ťarchopis (typ 383).\nPrijatý dobropis sa pri zaevidovaní uloží medzi prijaté faktúry so zápornou sumou a s\nčíslom faktúry, ktorú opravuje — do výkazu DPH tak ide ako oprava odpočtu, nie ako ďalší\nnákup.\nOdsúhlasenú samofaktúru (/pomoc/prijate-faktury) pošlete dodávateľovi aj\ncez eFaktúru tlačidlom Poslať cez eFaktúru na jej detaile (typ self-billing)."
+     "text": "<>\nDobropis odchádza ako samostatný doklad CreditNote (typ 381) a nesie číslo\npôvodnej faktúry (pole BT-25) — finančná správa to vyžaduje. Bez vyplnenej pôvodnej\nfaktúry ho Faktero neodošle. Opravný doklad s kladnou sumou (napríklad vrátenie opravy\npodľa § 25a) ide ako ťarchopis (typ 383).\nPrijatý dobropis sa pri zaevidovaní uloží medzi prijaté faktúry so zápornou sumou a s\nčíslom faktúry, ktorú opravuje — do výkazu DPH tak ide ako oprava odpočtu, nie ako ďalší\nnákup.\nOdsúhlasenú samofaktúru (/pomoc/prijate-faktury) pošlete dodávateľovi aj\ncez eFaktúru tlačidlom Poslať cez eFaktúru na jej detaile (typ self-billing)."
     },
     {
-     "nadpis": "Čo bude dostupné pred rokom 2027",
-     "text": "<>\n-\nValidátor XML voči SK rozšíreniam EN 16931.\n-\nPriame odosielanie do IS Finančnej správy (IS EFA).\n-\nPríjem eFaktúr od dodávateľov priamo do Faktera.\n-\nArchív v zákonom požadovanej lehote.\nAk chcete byť informovaní o spustení, prihláste sa cez\nstránku eFaktúra (/efaktura)."
+     "nadpis": "Skóre pripravenosti",
+     "text": "<>\nV eFaktúra → Prehľad eFaktúry (/efaktura) vidíte\nskóre pripravenosti a zoznam toho, čo ešte chýba — napríklad vyplnené\núdaje firmy, IČ DPH pri platiteľovi DPH alebo Peppol ID. Čím vyššie skóre, tým menej\nprekvapení pri prvej eFaktúre."
     }
    ]
   },
@@ -641,7 +645,7 @@
     },
     {
      "nadpis": "Dodávatelia a spoločný adresár",
-     "text": "<>\nOdberatelia aj dodávatelia (/dodavatelia) sú v jednom adresári, ako v\nPohode. Na karte kontaktu zaškrtnete Odberateľ ,\nDodávateľ alebo oboje — firma, ktorá vám dodáva aj od vás nakupuje, je\nv adresári raz.\nPri faktúre, ponuke či objednávke sa ponúkajú len odberatelia. Pri\nprijatej faktúre vyberiete dodávateľa zo zoznamu a doplní sa jeho IČO,\nDIČ, IČ DPH aj IBAN. Nového dodávateľa z prijatej faktúry Faktero do adresára uloží samo\n(dá sa to odškrtnúť).\nDodávateľov, od ktorých už máte prijaté faktúry, naplníte naraz: v Dodávateľoch\nkliknite na Importovať → Načítať z prijatých faktúr ."
+     "text": "<>\nOdberatelia aj dodávatelia (/dodavatelia) sú v jednom adresári, ako v\nPohode. Na karte kontaktu zaškrtnete Odberateľ ,\nDodávateľ alebo oboje — firma, ktorá vám dodáva aj od vás nakupuje, je v\nadresári raz.\nPri faktúre, ponuke či objednávke sa ponúkajú len odberatelia. Pri\nprijatej faktúre vyberiete dodávateľa zo zoznamu a doplní sa jeho IČO,\nDIČ, IČ DPH aj IBAN. Nového dodávateľa z prijatej faktúry Faktero do adresára uloží samo\n(dá sa to odškrtnúť).\nDodávateľov, od ktorých už máte prijaté faktúry, naplníte naraz: v Dodávateľoch kliknite\nna Importovať → Načítať z prijatých faktúr ."
     },
     {
      "nadpis": "Import odberateľov a dodávateľov z Pohody a iných systémov",
