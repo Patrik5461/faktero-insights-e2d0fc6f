@@ -274,6 +274,8 @@ export function buildFlexiXml(opts: {
   invoices: { invoice: RiadokFaktury; items: PolozkaFaktury[] }[];
   /** Krajina firmy — podľa nej domáca mena a zápis kurzu (SK ECB, CZ ČNB). */
   krajina?: string | null;
+  /** Členenie DPH pre tuzemské prenesenie (nastavenie firmy) — do `clenDph` položky. */
+  clenenieDphPdp?: string | null;
 }): { xml: string; preskocene: string[] } {
   const domaca = domacaMena(opts.krajina);
   const preskocene: string[] = [];
@@ -330,6 +332,11 @@ export function buildFlexiXml(opts: {
     const odpZaklad = odp.reduce((a, r) => a + r.zaklad, 0);
     const odpDph = odp.reduce((a, r) => a + r.dph, 0);
     const zakladna = Math.max(0, ...items.map((p) => cislo(p.vat_rate)));
+    // Tuzemské prenesenie: položka dostane členenie DPH z nastavenia firmy.
+    const pdpCela =
+      Boolean((invoice as any).reverse_charge) &&
+      !/^(eu|export)/i.test(String((invoice as any).reverse_charge_type ?? ""));
+    const kodPdp = String(opts.clenenieDphPdp ?? "").trim();
     const polozky = items
       .map((p) => {
         const sadzba = cislo(p.vat_rate);
@@ -348,7 +355,11 @@ export function buildFlexiXml(opts: {
         <szbDph>${dve(p.vat_rate)}</szbDph>
         <sumZkl>${dve(zn * tm(cislo(p.subtotal)))}</sumZkl>
         <sumDph>${dve(zn * tm(cislo(p.vat_amount)))}</sumDph>
-        <sumCelkem>${dve(zn * (tm(cislo(p.subtotal)) + tm(cislo(p.vat_amount))))}</sumCelkem>${men(
+        <sumCelkem>${dve(zn * (tm(cislo(p.subtotal)) + tm(cislo(p.vat_amount))))}</sumCelkem>${
+          kodPdp && (pdpCela || (p as any).prenesenie)
+            ? `\n        <clenDph>code:${esc(kodPdp)}</clenDph>`
+            : ""
+        }${men(
           "sumZkl",
           zn * cislo(p.subtotal),
           "        ",

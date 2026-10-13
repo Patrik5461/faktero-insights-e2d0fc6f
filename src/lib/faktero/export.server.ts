@@ -2166,8 +2166,12 @@ export const MONEY_S3_XML: ExportStrategy = {
   label: "Money S3 XML",
   encoding: "utf-8",
   mime: "application/xml",
-  build({ company, invoices }) {
-    const { xml, preskocene } = buildMoneyS3Xml({ company, invoices });
+  build({ company, invoices, nastavenia }) {
+    const { xml, preskocene } = buildMoneyS3Xml({
+      company,
+      invoices,
+      clenenieDphPdp: nastavenia?.clenenieDphPdp ?? null,
+    });
     if (preskocene.length === invoices.length) {
       throw new Error(`Do Money S3 sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
     }
@@ -2234,10 +2238,11 @@ export const FLEXI_XML: ExportStrategy = {
   note: "Import v ABRA Flexi: Nástroje → Import → XML.",
   encoding: "utf-8",
   mime: "application/xml",
-  build({ invoices, company }) {
+  build({ invoices, company, nastavenia }) {
     const { xml, preskocene } = buildFlexiXml({
       invoices: invoices as never,
       krajina: (company as any)?.country,
+      clenenieDphPdp: nastavenia?.clenenieDphPdp ?? null,
     });
     if (preskocene.length === invoices.length) {
       throw new Error(`Do ABRA Flexi sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
@@ -2435,9 +2440,19 @@ export function buildOmegaTxt(opts: {
     const v = zaSadzbu(items, vyssia);
     const n = zaSadzbu(items, nizsia);
     const z2 = zaSadzbu(items, znizena2);
+    /*
+      Tuzemské prenesenie (§ 69 ods. 12) — celá faktúra alebo len niektoré
+      položky. Nie je to oslobodené plnenie (sadzba 0), ale plnenie bez DPH
+      u dodávateľa: Omega ho čaká ako „neobsahuje“ (X) s oddielom KV A.2.
+    */
+    const tuzemskePdpCela =
+      Boolean(invoice.reverse_charge) &&
+      !/^(eu|export)/i.test(String((invoice as any).reverse_charge_type ?? ""));
+    const jePdp = (it: ItemRow) => tuzemskePdpCela || Boolean((it as any).prenesenie);
     const nulova = items
-      .filter((it) => (Number(it.vat_rate) || 0) === 0)
+      .filter((it) => (Number(it.vat_rate) || 0) === 0 && !jePdp(it))
       .reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
+    const zakladPdp = items.filter(jePdp).reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
 
     // 0 = odberateľská faktúra, 1 = preddavková, 4 = odoslaný dobropis.
     const typDokladu =
@@ -2461,7 +2476,7 @@ export function buildOmegaTxt(opts: {
     set(8, cislaSk(tm(n.zaklad)));
     set(9, cislaSk(tm(v.zaklad)));
     set(10, cislaSk(tm(nulova)));
-    set(11, cislaSk(0));
+    set(11, cislaSk(tm(zakladPdp)));
     set(12, nizsia != null ? String(nizsia) : "");
     set(13, vyssia != null ? String(vyssia) : "");
     set(14, cislaSk(tm(n.dan)));
@@ -2503,21 +2518,36 @@ export function buildOmegaTxt(opts: {
 
     for (const it of items) {
       const sadzba = Number(it.vat_rate) || 0;
+      const pdp = jePdp(it);
       // 0 nulová, N nižšia, Y znížená 2, V vyššia, X neobsahuje.
-      const kod = sadzba === 0 ? "0" : sadzba === vyssia ? "V" : sadzba === nizsia ? "N" : "Y";
-      const r02 = [
-        "R02",
-        pole(it.name),
-        String(Number(it.quantity ?? 0)),
-        pole(it.unit ?? "ks", 5),
-        cislaSk(it.unit_price),
-        kod,
-        "",
-        "",
-        "",
-        // K = skladová karta, S = služba, V = voľná položka.
-        "V",
-      ];
+      const kod = pdp
+        ? "X"
+        : sadzba === 0
+          ? "0"
+          : sadzba === vyssia
+            ? "V"
+            : sadzba === nizsia
+              ? "N"
+              : "Y";
+      const kn = String((it as any).colny_kod ?? "").replace(/\D/g, "").slice(0, 10);
+      // Stĺpce R02 podľa špecifikácie KROS, číslované od 1.
+      const r02: string[] = new Array(56).fill("");
+      const dajR02 = (stlpec: number, hodnota: string) => {
+        r02[stlpec - 1] = hodnota;
+      };
+      dajR02(1, "R02");
+      dajR02(2, pole(it.name));
+      dajR02(3, String(Number(it.quantity ?? 0)));
+      dajR02(4, pole(it.unit ?? "ks", 5));
+      dajR02(5, cislaSk(it.unit_price));
+      dajR02(6, kod);
+      // K = skladová karta, S = služba, V = voľná položka.
+      dajR02(10, "V");
+      dajR02(16, kn); // colný sadzobník
+      if (pdp) {
+        dajR02(54, "A2"); // oddiel kontrolného výkazu DPH
+        dajR02(56, kn); // kód tovaru pre KV DPH
+      }
       riadky.push(r02.join("\t").replace(/\t+$/, ""));
     }
   }
@@ -2562,6 +2592,8 @@ function poznamkaPolozky(it: ItemRow): string {
 export function buildMoneyS3Xml(opts: {
   company: CompanyRow;
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
+  /** Členenie DPH pre tuzemské prenesenie (nastavenie firmy) — do `KodDPH` položky. */
+  clenenieDphPdp?: string | null;
 }): { xml: string; preskocene: string[] } {
   const { company, invoices } = opts;
   const domaca = domacaMenaFirmy(company);
@@ -2660,11 +2692,34 @@ ${odsadenie}</SouhrnDPH>`;
       </Valuty>`
       : "";
 
+    const pdpCela =
+      Boolean(invoice.reverse_charge) &&
+      !/^(eu|export)/i.test(String((invoice as any).reverse_charge_type ?? ""));
+    const kodPdp = String(opts.clenenieDphPdp ?? "").trim().slice(0, 10);
+    /** Neskladová časť položky: odpočet zálohy a hmotnosť (za MJ). */
+    const neskladova = (it: ItemRow) => {
+      const casti: string[] = [];
+      if ((it as any)._odpocet) {
+        // Odpočet zdanenej zálohy; Protizapis 0 = suma je už záporná.
+        casti.push("<Zaloha>1</Zaloha>", "<ZdanZaloha>1</ZdanZaloha>");
+      }
+      const kg = Number((it as any).hmotnost_kg ?? 0);
+      if (kg > 0) casti.push(`<Hmotnost>${kg}</Hmotnost>`);
+      // Protizapis je v neskladovej položke povinný (schéma Money).
+      if (casti.length) casti.push("<Protizapis>0</Protizapis>");
+      return casti.length
+        ? `\n          <NesklPolozka>${casti.map((c) => `\n            ${c}`).join("")}\n          </NesklPolozka>`
+        : "";
+    };
     const polozky = items
       .map(
         (it) => `
         <Polozka>
           <Popis>${esc(skrat(it.name, 50))}</Popis>${
+            // Tuzemské prenesenie: členenie DPH z nastavenia firmy, inak by
+            // Money položku s 0 % zaúčtovalo ako oslobodené plnenie.
+            kodPdp && (pdpCela || (it as any).prenesenie) ? `\n          <KodDPH>${esc(kodPdp)}</KodDPH>` : ""
+          }${
             // Popis má v Money najviac 50 znakov — celý názov ide do poznámky
             // spolu s poznámkou k položke, nech sa nič nestratí.
             poznamkaPolozky(it)
@@ -2685,13 +2740,7 @@ ${odsadenie}</SouhrnDPH>`;
             </Valuty>`
                 : ""
             }
-          </SouhrnDPH>${cudzia ? `\n          <Valuty>${fixed4(it.unit_price)}</Valuty>` : ""}${
-            // Príznak odpočtu zdanenej zálohy patrí podľa schémy do neskladovej položky;
-            // Protizapis 0 = suma je už záporná.
-            (it as any)._odpocet
-              ? `\n          <NesklPolozka>\n            <Zaloha>1</Zaloha>\n            <ZdanZaloha>1</ZdanZaloha>\n            <Protizapis>0</Protizapis>\n          </NesklPolozka>`
-              : ""
-          }
+          </SouhrnDPH>${cudzia ? `\n          <Valuty>${fixed4(it.unit_price)}</Valuty>` : ""}${neskladova(it)}
         </Polozka>`,
       )
       .join("");
