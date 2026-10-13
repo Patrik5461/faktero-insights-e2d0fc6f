@@ -40,6 +40,24 @@ export const Route = createFileRoute("/api/public/efaktura/pds")({
           // Ohlási sa len telo, ktoré vyzerá ako žiadosť FS — nie hocijaký pokus zvonku.
           const r = rozparsujPds(telo);
           if ("ziadosti" in r) {
+            /*
+              Dočasne: surová odmietnutá požiadavka FS do súboru na serveri
+              (práva 600, mimo DB a logov) — na zistenie, prečo podpis nesedí.
+            */
+            try {
+              const fs = await import("node:fs/promises");
+              const dir = "/home/patrik/fs-diag";
+              await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+              const meno = `${dir}/${new Date().toISOString().replace(/[:.]/g, "-")}`;
+              await fs.writeFile(`${meno}.body`, telo, { mode: 0o600 });
+              await fs.writeFile(
+                `${meno}.headers.json`,
+                JSON.stringify(Object.fromEntries(request.headers.entries()), null, 1),
+                { mode: 0o600 },
+              );
+            } catch {
+              /* diagnostika nesmie zhodiť odpoveď */
+            }
             await zapisOdmietnutie(tajomstvo ? "zly_podpis" : "bez_tajomstva", {
               firmy: r.ziadosti,
               ip,
