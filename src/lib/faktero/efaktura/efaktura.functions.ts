@@ -162,6 +162,16 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
       ]);
     if (!company) throw new Error("Firma neexistuje.");
     if (!invoice) throw new Error("Faktúra neexistuje.");
+    /*
+      eFaktúra je len medzi firmami. Faktúra pre súkromnú osobu (bez IČO, DIČ
+      aj IČ DPH) by sa zapísala ako neúspešná a znižovala by pripravenosť,
+      hoci s ňou nie je nič zlé — ide ďalej ako PDF.
+    */
+    if (!invoice.customer_ico && !invoice.customer_dic && !invoice.customer_ic_dph) {
+      throw new Error(
+        "Odberateľ je súkromná osoba (nemá IČO ani DIČ) — eFaktúra sa posiela len firmám. Túto faktúru pošlite ako PDF.",
+      );
+    }
 
     // Dobropis nesie číslo a dátum pôvodnej faktúry (BT-25, BT-26).
     let povodnaFaktura: { cislo: string; vystavena: string | null } | null = null;
@@ -200,8 +210,9 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
     if (!items || items.length === 0)
       extra.push({ code: "FK-LINES", message: "Faktúra nemá žiadne položky." });
     if (dto.taxSubtotals.length === 0) extra.push({ code: "FK-VAT", message: "Chýba rozpis DPH." });
-    if (Number(invoice.total) <= 0)
-      extra.push({ code: "FK-TOTAL", message: "Celková suma musí byť väčšia ako 0." });
+    // Dobropis je v DB záporný — rozhoduje, že suma nie je nulová.
+    if (Number(invoice.total ?? 0) === 0)
+      extra.push({ code: "FK-TOTAL", message: "Celková suma nesmie byť nulová." });
 
     const allErrors = [...result.validationErrors, ...extra];
     const valid = allErrors.length === 0;
