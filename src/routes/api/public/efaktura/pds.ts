@@ -27,7 +27,9 @@ export const Route = createFileRoute("/api/public/efaktura/pds")({
       GET: async () => odpoved(200, "Faktero — webhook PDS je dostupný, údaje prijíma metódou POST."),
       POST: async ({ request }) => {
         const telo = await request.text();
-        const { overPdsPodpis, rozparsujPds } = await import("@/lib/faktero/efaktura/webhooky.server");
+        const { overPdsPodpis, rozparsujPds, diagnostikaPdsPodpisu } = await import(
+          "@/lib/faktero/efaktura/webhooky.server"
+        );
         const { zapisOdmietnutie } = await import("@/lib/faktero/efaktura/upozornenia.server");
         const tajomstvo = process.env.EFAKTURA_PDS_SECRET;
         const ip =
@@ -41,6 +43,12 @@ export const Route = createFileRoute("/api/public/efaktura/pds")({
             await zapisOdmietnutie(tajomstvo ? "zly_podpis" : "bez_tajomstva", {
               firmy: r.ziadosti,
               ip,
+              // Ktorá odchýlka od špecifikácie by sedela — bez tajomstva aj bez tela.
+              chyba: diagnostikaPdsPodpisu(telo, request.headers.get("x-pds-secret"), tajomstvo, {
+                "content-type": request.headers.get("content-type"),
+                "content-encoding": request.headers.get("content-encoding"),
+                "user-agent": request.headers.get("user-agent"),
+              }),
             });
           }
           return odpoved(401, "Unauthorized");

@@ -40,6 +40,52 @@ export function overPdsPodpis(
   return rovnakeHex(h, podpisPds(telo, tajomstvo));
 }
 
+/**
+ * Diagnostika nesediaceho podpisu FS — ktorá odchýlka od špecifikácie by
+ * sedela. Vracia len áno/nie a dĺžky, nič z tajomstva ani z tela.
+ */
+export function diagnostikaPdsPodpisu(
+  telo: string,
+  hlavicka: string | null | undefined,
+  tajomstvo: string | null | undefined,
+  hlavickyPoziadavky: Record<string, string | null>,
+): string {
+  const h = String(hlavicka ?? "").trim();
+  const t = String(tajomstvo ?? "");
+  const hex = (b: Buffer | string) => createHash("sha512").update(b).digest("hex");
+  const b64 = (b: Buffer | string) => createHash("sha512").update(b).digest("base64");
+  const hm = (k: Buffer | string, alg: "hex" | "base64") =>
+    createHmac("sha512", k).update(Buffer.from(telo, "utf8")).digest(alg);
+  const varianty: Record<string, () => string> = {
+    spec: () => hex(Buffer.from(telo + t, "utf8")),
+    tajomstvo_trim: () => hex(Buffer.from(telo + t.trim(), "utf8")),
+    opacne: () => hex(Buffer.from(t + telo, "utf8")),
+    telo_trim: () => hex(Buffer.from(telo.trim() + t, "utf8")),
+    bez_bom: () => hex(Buffer.from(telo.replace(/^\uFEFF/, "") + t, "utf8")),
+    hmac_hex: () => hm(t, "hex"),
+    hmac_b64: () => hm(t, "base64"),
+    base64: () => b64(Buffer.from(telo + t, "utf8")),
+    tajomstvo_hex_bajty: () =>
+      /^[0-9a-f]+$/i.test(t) ? hex(Buffer.concat([Buffer.from(telo, "utf8"), Buffer.from(t, "hex")])) : "",
+    tajomstvo_b64_bajty: () =>
+      hex(Buffer.concat([Buffer.from(telo, "utf8"), Buffer.from(t, "base64")])),
+    hlavicka_je_tajomstvo: () => t,
+  };
+  const zhoda = Object.entries(varianty)
+    .filter(([, f]) => {
+      const v = f();
+      return v && v.toLowerCase() === h.toLowerCase();
+    })
+    .map(([k]) => k);
+  return [
+    `zhoda: ${zhoda.join(",") || "žiadna"}`,
+    `hlavička: dĺžka ${h.length}, hex128 ${/^[0-9a-fA-F]{128}$/.test(h)}`,
+    `telo: ${Buffer.byteLength(telo, "utf8")} B, bom ${telo.startsWith("\uFEFF")}, koniec-nový-riadok ${/\n$/.test(telo)}`,
+    `tajomstvo: dĺžka ${t.length}, okraj ${t !== t.trim()}, hex ${/^[0-9a-f]+$/i.test(t)}`,
+    ...Object.entries(hlavickyPoziadavky).map(([k, v]) => `${k}: ${v ?? "-"}`),
+  ].join(" · ");
+}
+
 export type DovodOdmietnutia =
   | "chyba_hlavicka"
   | "zly_tvar"
