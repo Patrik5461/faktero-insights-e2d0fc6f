@@ -138,7 +138,8 @@ export async function spracujZiadost(id: string): Promise<string> {
       const { decryptSecret } = await import("../payment-crypto.server");
       const { registrujWhiteLabel } = await import("./epostak.server");
       const op = await registrujWhiteLabel({
-        customerRef: `dic:${z.dic}`,
+        // ePošták povolí len písmená, číslice, bodku, podčiarkovník a pomlčku.
+        customerRef: `dic-${z.dic}`,
         dic: z.dic,
         companyEmail: email,
         verificationToken: decryptSecret(z.token_sifrovany),
