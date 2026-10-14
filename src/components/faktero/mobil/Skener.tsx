@@ -1,6 +1,6 @@
 import { useOperacia } from "@/lib/mobile/server-most";
 import { useEffect, useState } from "react";
-import { Files, FileText, Image as ImageIcon, Mail, Receipt, SlidersHorizontal } from "lucide-react";
+import { Files, FileText, Image as ImageIcon, Receipt, SlidersHorizontal } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
@@ -28,8 +28,11 @@ export type NastavenieDokladu = {
  *
  * Čítanie kódu ani ukladanie dokladu tu nie je — kód sa odovzdá ďalej do
  * existujúceho toku (`Zachyt`), ktorý ho prečíta cez `blocek-precitaj` a uloží
- * cez `vydavok-uloz`. Táto obrazovka len rozhoduje, **čím** sa doklad zachytí a
- * **s akým nastavením** (úhrada, kategória) pôjde ďalej.
+ * cez `vydavok-uloz`. Fotka, súbor aj viac strán idú do jedného skenera:
+ * server sám rozpozná, či je to bloček, faktúra alebo iný doklad
+ * (`RozpoznanyDoklad`). Samostatný vstup „Iný doklad" preto už nie je. Táto
+ * obrazovka len rozhoduje, **čím** sa doklad zachytí a **s akým nastavením**
+ * (úhrada, kategória) pôjde ďalej.
  */
 export function Skener({
   onQr,
@@ -37,7 +40,6 @@ export function Skener({
   onZGalerie,
   onViacstranovy,
   onPrijateDoklady,
-  onInyDoklad,
   nastavenie,
   onNastavenie,
   companyId,
@@ -47,8 +49,6 @@ export function Skener({
   onZGalerie: () => void;
   onViacstranovy: () => void;
   onPrijateDoklady: () => void;
-  /** Exekúcia, predpis, list z úradu — nie bloček ani faktúra. */
-  onInyDoklad?: () => void;
   nastavenie: NastavenieDokladu;
   onNastavenie: (n: NastavenieDokladu) => void;
   companyId?: string;
@@ -326,9 +326,6 @@ export function Skener({
               label={t("sken.nastavenie")}
               onClick={() => setNastaveniaOtvorene((v) => !v)}
             />
-          )}
-          {onInyDoklad && (
-            <MalyOdkaz icon={Mail} label={t("sken.inyDoklad")} onClick={onInyDoklad} />
           )}
           <MalyOdkaz icon={Receipt} label={t("pd.nazov")} onClick={onPrijateDoklady} />
         </div>

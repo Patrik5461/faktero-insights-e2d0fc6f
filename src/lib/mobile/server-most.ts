@@ -48,6 +48,11 @@ import {
 } from "@/lib/faktero/doklad-parovanie.functions";
 import { ulozOstatnyZAppkyFn } from "@/lib/faktero/ostatne-doklady.functions";
 import {
+  nahrajNespracovaneFn,
+  detailNespracovanehoFn,
+  vytvorZNespracovanehoFn,
+} from "@/lib/faktero/nespracovane.functions";
+import {
   prilohyFakturyFn,
   nahrajPrilohuFn,
   odkazNaPrilohuFn,
@@ -63,6 +68,9 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "prijata-zaloha-uloz": nahrajPrijatuFakturuFn,
   "vydavok-duplikat": findExpenseDuplicateFn,
   "ostatny-uloz": ulozOstatnyZAppkyFn,
+  "sken-nahraj": nahrajNespracovaneFn,
+  "sken-stav": detailNespracovanehoFn,
+  "sken-vytvor": vytvorZNespracovanehoFn,
   "banka-prehlad": bankaPrehladFn,
   "banka-stiahni": syncBankTransactions,
   "faktury-zoznam": vystaveneFakturyFn,

@@ -75,6 +75,8 @@ export const nahrajNespracovaneFn = createServerFn({ method: "POST" })
         nazov: z.string().min(1).max(255),
         mime: z.string().min(3).max(120),
         subor: z.string().min(16).max(21_000_000),
+        /** Odkiaľ doklad prišiel — „apka" posiela jeden skener v mobilnej appke. */
+        zdroj: z.enum(["nahratie", "apka"]).optional(),
       })
       .parse(d),
   )
@@ -88,7 +90,7 @@ export const nahrajNespracovaneFn = createServerFn({ method: "POST" })
     const { id } = await zalozNespracovany(context.supabase as any, {
       companyId: data.company_id,
       userId: context.userId,
-      zdroj: "nahratie",
+      zdroj: data.zdroj ?? "nahratie",
       bajty,
       nazov: data.nazov,
       mime: data.mime,

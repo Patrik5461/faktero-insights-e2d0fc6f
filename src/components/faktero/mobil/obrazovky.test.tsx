@@ -12,6 +12,7 @@ import { Banka } from "./Banka";
 import { MobilPanel } from "./MobilPanel";
 import { StavPushu } from "./StavPushu";
 import { PruhJazdy } from "./PrebiehaJazda";
+import { RozpoznanyDoklad } from "./RozpoznanyDoklad";
 
 /**
  * Že sa obrazovka vôbec vykreslí.
@@ -72,6 +73,19 @@ describe("mobilné obrazovky sa vykreslia", () => {
 
   it("banka", () => {
     expect(renderToString(<Banka firma={firma} onSpat={nic} />)).toBeTruthy();
+  });
+
+  it("rozpoznaný doklad začína nahrávaním", () => {
+    const html = renderToString(
+      <RozpoznanyDoklad
+        firma={firma}
+        subor="data:image/jpeg;base64,AAAA"
+        onUlozene={nic}
+        onNechat={nic}
+        onSpat={nic}
+      />,
+    );
+    expect(html).toContain("Nahrávam doklad");
   });
 
   it("stav pushu", () => {

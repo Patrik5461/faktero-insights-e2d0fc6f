@@ -56,6 +56,8 @@ import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { odosliCakajuceJazdy } from "@/lib/mobile/auto-jazdy-sync";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
+import { RozpoznanyDoklad } from "@/components/faktero/mobil/RozpoznanyDoklad";
+import { jeBlockovyQr } from "@/lib/mobile/sken-rozpoznanie";
 import { StavPushu } from "@/components/faktero/mobil/StavPushu";
 import { CislaDopredu } from "@/components/faktero/mobil/CislaDopredu";
 import { datum } from "@/components/faktero/mobil/PrijateDoklady";
@@ -207,7 +209,7 @@ export type Krok =
   | "banka"
   | "ucet"
   | "zmazanieUctu";
-type Zachyt = "blocek" | "pdf" | "strany" | "ostatny";
+type Zachyt = "blocek" | "pdf" | "strany";
 
 /** Obrazovky bez rozpísaných údajov — z nich smie rýchla akcia odskočiť na skener. */
 const KROKY_PRE_RYCHLU_AKCIU = new Set<Krok>([
@@ -996,10 +998,6 @@ function ObsahApky() {
             doZachytu("strany", "skener");
           }}
           onPrijateDoklady={() => setKrok("doklady")}
-          onInyDoklad={() => {
-            setQrZoSkenera(null);
-            doZachytu("ostatny", "skener");
-          }}
         />
         <TabBar aktivna="skener" onPrepni={prepniZalozku} />
         <MobilPanel
@@ -1518,7 +1516,6 @@ const NAZVY: Record<Zachyt, Kluc> = {
   blocek: "app.blocekQr",
   pdf: "app.fakturaPdf",
   strany: "app.viacstranovyDoklad",
-  ostatny: "app.inyDoklad",
 };
 
 function ZachytDokladu({
@@ -1547,7 +1544,6 @@ function ZachytDokladu({
   const nacitaj = useOperacia<BlocekVysledok>("blocek-precitaj");
   const uloz = useOperacia("vydavok-uloz");
   const hladajDuplikat = useOperacia<NajdenyDoklad | null>("vydavok-duplikat");
-  const ulozOstatny = useOperacia<{ id: string }>("ostatny-uloz");
   /* Zálohová faktúra od dodávateľa nie je bloček — ide rovno medzi prijaté zálohy. */
   const ulozZalohu = useOperacia<{ id: string; invoice_number: string }>("prijata-zaloha-uloz");
 
@@ -1561,6 +1557,8 @@ function ZachytDokladu({
   const [qrKod, setQrKod] = useState<string | null>(null);
   /** Doklad, ktorý už vo firme je. Neblokuje uloženie, len naň upozorní. */
   const [duplikat, setDuplikat] = useState<NajdenyDoklad | null>(null);
+  /** Súbor odovzdaný na rozpoznanie (jeden skener na všetko). */
+  const [naRozpoznanie, setNaRozpoznanie] = useState<string | null>(null);
 
   /** Doklad prečítaný — ďalej sa pýtame na úhradu a na fotku. */
   function prijmi(r: BlocekVysledok, prilozene?: string | null) {
@@ -1653,19 +1651,41 @@ function ZachytDokladu({
     setSkenujem(true);
   }
 
+  /*
+    Jeden skener na všetko. Fotka, súbor aj spojené strany idú do
+    Nespracovaných dokladov a server sám rozpozná, či je to bloček, prijatá
+    faktúra, zálohová, dobropis alebo iný doklad — človek nemusí vopred
+    vedieť, kam čo patrí.
+
+    Rozpoznanie robí AI na serveri, takže potrebuje sieť. Bez signálu ide
+    doklad po starom ako bloček do fronty v telefóne: tá vie počkať aj
+    prežiť zatvorenie appky, a bloček je to, čo sa fotí v teréne najčastejšie.
+  */
+  async function rozpoznajAleboPrecitaj(dataUrl: string, qr?: string) {
+    const { isOnline } = await import("@/lib/mobile/offline-queue");
+    if (!(await isOnline())) return precitaj({ qr, image_data_url: dataUrl }, dataUrl);
+    setNaRozpoznanie(dataUrl);
+  }
+
   async function odfotDoklad() {
     const cap = await captureReceipt();
     if (!cap) return;
     // QR sa hľadá v obrázku ešte v telefóne, takže ho fronta má aj bez signálu.
     const qr = await scanQrFromImage(cap.dataUrl);
-    await precitaj({ qr: qr?.raw, image_data_url: cap.dataUrl }, cap.dataUrl);
+    /*
+      Kód bločku (eKasa, český EET) sa číta ďalej po starom cez Finančnú
+      správu — je presnejší než AI. Platobný QR na faktúre bloček nerobí.
+    */
+    if (qr?.raw && jeBlockovyQr(qr.raw))
+      return precitaj({ qr: qr.raw, image_data_url: cap.dataUrl }, cap.dataUrl);
+    await rozpoznajAleboPrecitaj(cap.dataUrl, qr?.raw);
   }
 
-  /* --- PDF faktúra --- */
+  /* --- Súbor z telefónu: PDF alebo obrázok --- */
   async function vyberPdf() {
     const dataUrl = await vyberSubor("application/pdf,image/*");
     if (!dataUrl) return;
-    await precitaj({ image_data_url: dataUrl }, dataUrl);
+    await rozpoznajAleboPrecitaj(dataUrl);
   }
 
   /* --- Viacstranový doklad --- */
@@ -1686,48 +1706,9 @@ function ZachytDokladu({
       setStav("start");
       return;
     }
-    await precitaj({ image_data_url: pdf }, pdf);
-  }
-
-  /* --- Iný doklad: exekúcia, predpis, list z úradu, zmluva --- */
-
-  /*
-    Ide rovno na server, bez čítania bločku a bez fronty: AI ho prečíta až
-    tam a doklad nemá úhradu ani sumu, na ktoré by sa appka pýtala. Bez
-    signálu sa preto uložiť nedá — radšej to povedať, než ho potichu stratiť.
-  */
-  async function ulozAkoOstatny(subor: string, nazov?: string) {
-    const { isOnline } = await import("@/lib/mobile/offline-queue");
-    if (!(await isOnline())) {
-      toast.error(t("app.ostatnyBezSignalu"));
-      return;
-    }
-    setStav("citam");
-    try {
-      await ulozOstatny({ data: { company_id: firma.id, subor, nazov: nazov ?? null } });
-      toast.success(t("app.ostatnyUlozeny"));
-      onUlozene();
-    } catch (e: any) {
-      toast.error(e?.message ?? t("app.citanieZlyhalo"));
-      setStav("start");
-    }
-  }
-
-  async function dokonciOstatny() {
-    if (strany.length === 0) return;
-    let pdf: string;
-    try {
-      pdf = strany.length === 1 ? strany[0]! : await stranyDoPdf(strany);
-    } catch (e: any) {
-      toast.error(e?.message ?? t("app.spojenieStranZlyhalo"));
-      return;
-    }
-    await ulozAkoOstatny(pdf);
-  }
-
-  async function vyberOstatny() {
-    const dataUrl = await vyberSubor("application/pdf,image/*");
-    if (dataUrl) await ulozAkoOstatny(dataUrl);
+    // Všetky strany idú ako jedno PDF — AI číta celý doklad naraz.
+    setStav("start");
+    await rozpoznajAleboPrecitaj(pdf);
   }
 
   /* --- Uloženie --- */
@@ -1815,6 +1796,22 @@ function ZachytDokladu({
   }
 
   if (skenujem) return <QrSkener onNajdene={precitajQr} onZrusit={() => setSkenujem(false)} />;
+  if (naRozpoznanie)
+    return (
+      <RozpoznanyDoklad
+        firma={firma}
+        subor={naRozpoznanie}
+        nastavenie={prednastavene}
+        onUlozene={onUlozene}
+        // Doklad je v Nespracovaných — odchádza sa rovnako ako po uložení.
+        onNechat={onUlozene}
+        onSpat={() => {
+          setNaRozpoznanie(null);
+          setStrany([]);
+          if (zoSkenera) onSpat();
+        }}
+      />
+    );
   if (stav === "citam") return <Pracujem text={t("app.citamDoklad")} />;
 
   if (stav === "potvrdenie" && vysledok) {
@@ -1922,52 +1919,6 @@ function ZachytDokladu({
         </div>
       )}
 
-      {druh === "ostatny" && (
-        <div className="space-y-3">
-          <p className="text-sm text-app-text-2">{t("app.inyDokladPopis")}</p>
-          <VelkeTlacidlo
-            icon={Camera}
-            label={strany.length === 0 ? t("app.odfotitPrvuStranu") : t("app.pridatDalsiuStranu")}
-            hint={
-              strany.length > 0
-                ? t("app.zatialStran", { pocet: strany.length })
-                : t("app.dokladOdfotteCely")
-            }
-            variant="primary"
-            onClick={pridajStranu}
-          />
-          {strany.length > 0 && (
-            <>
-              <div className="grid grid-cols-3 gap-2">
-                {strany.map((s, i) => (
-                  <div
-                    key={i}
-                    className="relative overflow-hidden rounded-lg border border-app-ramik"
-                  >
-                    <img src={s} alt={`strana ${i + 1}`} className="h-24 w-full object-cover" />
-                    <button
-                      onClick={() => setStrany((p) => p.filter((_, j) => j !== i))}
-                      className="absolute right-1 top-1 rounded-full bg-black/60 px-2 text-xs text-white"
-                      aria-label={t("app.odstranitStranu", { n: i + 1 })}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <VelkeTlacidlo icon={Check} label={t("app.ulozitOstatny")} onClick={dokonciOstatny} />
-            </>
-          )}
-          {strany.length === 0 && (
-            <VelkeTlacidlo
-              icon={FileText}
-              label={t("app.vybratSubor")}
-              hint={t("app.pdfAleboObrazok")}
-              onClick={vyberOstatny}
-            />
-          )}
-        </div>
-      )}
     </MobilObrazovka>
   );
 }

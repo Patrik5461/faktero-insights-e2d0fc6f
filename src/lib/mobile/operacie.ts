@@ -20,6 +20,14 @@ export const OPERACIE = [
   /* Naskenovaná zálohová faktúra od dodávateľa — nepatrí medzi bločky. */
   "prijata-zaloha-uloz",
   "ostatny-uloz",
+  /*
+    Jeden skener na všetko: nahratie do Nespracovaných, doptávanie sa na
+    rozpoznanie AI a vytvorenie dokladu podľa druhu — tie isté serverové
+    funkcie ako Nespracované doklady na webe.
+  */
+  "sken-nahraj",
+  "sken-stav",
+  "sken-vytvor",
   "banka-prehlad",
   "banka-stiahni",
   "faktury-zoznam",
