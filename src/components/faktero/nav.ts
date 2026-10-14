@@ -414,7 +414,8 @@ export function filterNav(
             }
           : g,
       )
-      .filter((g) => g.children.length > 0)
+      // Skupina bez položiek zmizne — okrem Moje úlohy, ktoré sú samy odkazom.
+      .filter((g) => g.children.length > 0 || g.key === "moje-ulohy")
   );
 }
 

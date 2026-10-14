@@ -40,6 +40,12 @@ describe("bočná lišta", () => {
    * Skupina bez kľúča sa z lišty vytratí, aj keď má položky aj trasy —
    * takto boli Zákazky istý čas neviditeľné.
    */
+  it("Moje úlohy sú v menu, hoci nemajú podpoložky", () => {
+    // Filter zahadzuje skupiny bez položiek — Moje úlohy pre to v menu chýbali.
+    expect(filterNav("invoicing", true).map((g) => g.key)).toContain("moje-ulohy");
+    expect(filterNav("invoicing", false, "SK", false, "custom", {}).map((g) => g.key)).toContain("moje-ulohy");
+  });
+
   it("každá skupina má kľúč v jednej z dvoch množín", () => {
     const bezKluca = NAV.filter(
       (g) => !INVOICING_KEYS.has(g.key) && !LOGBOOK_KEYS.has(g.key) && g.key !== "viac",
@@ -114,7 +120,8 @@ describe("filterNav", () => {
   });
 
   it("prázdna skupina z lišty vypadne", () => {
-    for (const g of filterNav("invoicing", false, "CZ")) {
+    // Moje úlohy sú samy odkazom, podpoložky nemajú.
+    for (const g of filterNav("invoicing", false, "CZ").filter((x) => x.key !== "moje-ulohy")) {
       expect(g.children.length, g.key).toBeGreaterThan(0);
     }
   });
