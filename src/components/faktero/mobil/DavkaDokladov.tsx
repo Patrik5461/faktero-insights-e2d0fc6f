@@ -299,20 +299,20 @@ export function DavkaDokladov({
           <button
             onClick={() => void odfot()}
             disabled={davka.length >= MAX_V_DAVKE}
-            className="flex min-h-[48px] items-center justify-center gap-2 rounded-app-sm bg-app-zelena px-3 text-[14px] font-medium text-white disabled:opacity-50"
+            className="flex min-h-[48px] items-center justify-center gap-2 rounded-app-sm bg-app-zelena px-3 py-2 text-[14px] font-medium text-white disabled:opacity-50"
           >
             <Camera className="h-4 w-4 shrink-0" />
-            <span className="min-w-0 truncate">
+            <span className="min-w-0 text-center leading-tight">
               {davka.length ? t("davka.odfotitDalsi") : t("davka.odfotit")}
             </span>
           </button>
           <button
             onClick={() => void zGalerie()}
             disabled={davka.length >= MAX_V_DAVKE}
-            className="flex min-h-[48px] items-center justify-center gap-2 rounded-app-sm border border-app-ramik bg-app-karta px-3 text-[14px] disabled:opacity-50"
+            className="flex min-h-[48px] items-center justify-center gap-2 rounded-app-sm border border-app-ramik bg-app-karta px-3 py-2 text-[14px] disabled:opacity-50"
           >
             <ImageIcon className="h-4 w-4 shrink-0" />
-            <span className="min-w-0 truncate">{t("davka.zGalerie")}</span>
+            <span className="min-w-0 text-center leading-tight">{t("davka.zGalerie")}</span>
           </button>
         </div>
 
