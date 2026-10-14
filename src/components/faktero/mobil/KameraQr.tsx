@@ -1,6 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { oznacStavKamery } from "@/lib/mobile/kamera-dokladu";
+
+/**
+ * Zadná kamera v najvyššom rozlíšení, aké telefón dá. Z toho istého prúdu sa
+ * fotí aj doklad (`odfotZVidea`), takže rozlíšenie prúdu je rozlíšenie fotky.
+ * `ideal` nič nevynucuje — slabší telefón dá menej a nezlyhá.
+ */
+export const OBRAZ_KAMERY: MediaTrackConstraints = {
+  facingMode: { ideal: "environment" },
+  width: { ideal: 3840 },
+  height: { ideal: 2160 },
+};
+
 /**
  * Kamera, ktorá číta QR kód.
  *
@@ -16,10 +29,19 @@ import { usePreklad } from "@/lib/mobile/preklady/hook";
 export function useKameraQr({
   onNajdene,
   aktivne = true,
+  citajQr = true,
+  naFotenie = false,
 }: {
   onNajdene: (raw: string) => void;
   /** Kým je `false`, kamera nebeží — nesvieti kontrolka a nežerie batériu. */
   aktivne?: boolean;
+  /**
+   * Kým je `false`, obraz beží, ale QR sa nečíta — napr. kým je otvorená
+   * „Upraviť doklad". Cez odkaz, aby sa kamera kvôli tomu nereštartovala.
+   */
+  citajQr?: boolean;
+  /** Z prúdu sa bude fotiť doklad — pýtame si najvyššie rozlíšenie. */
+  naFotenie?: boolean;
 }) {
   const { t } = usePreklad();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -31,6 +53,8 @@ export function useKameraQr({
   */
   const posledny = useRef(onNajdene);
   posledny.current = onNajdene;
+  const citajRef = useRef(citajQr);
+  citajRef.current = citajQr;
 
   useEffect(() => {
     if (!aktivne) return;
@@ -44,11 +68,12 @@ export function useKameraQr({
           throw Object.assign(new Error("bez kamery"), { name: "NotFoundError" });
         }
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
+          video: naFotenie ? OBRAZ_KAMERY : { facingMode: { ideal: "environment" } },
           audio: false,
         });
         const video = videoRef.current;
         if (!video) return;
+        oznacStavKamery(true);
         video.srcObject = stream;
         // Bez `playsinline` prehrá iOS video na celú obrazovku vo vlastnom
         // prehrávači a zo skenera nezostane nič.
@@ -65,9 +90,14 @@ export function useKameraQr({
         const krok = async () => {
           if (!citaj || !ctx || !videoRef.current) return;
           const v = videoRef.current;
-          if (v.videoWidth > 0) {
-            // Čítame zmenšený obraz — na QR to stačí a telefón sa nezadýcha.
-            const mierka = Math.min(1, 800 / Math.max(v.videoWidth, v.videoHeight));
+          if (v.videoWidth > 0 && citajRef.current) {
+            /*
+              Čítame zmenšený obraz — na QR to stačí a telefón sa nezadýcha.
+              Prúd je teraz vo vysokom rozlíšení kvôli fotke dokladu, preto
+              o kúsok väčší rámec než kedysi (800): kód na bločku je malý.
+              Pri bežnom prúde (640–1280 px) to vyjde na plné rozlíšenie.
+            */
+            const mierka = Math.min(1, 1024 / Math.max(v.videoWidth, v.videoHeight));
             canvas.width = Math.round(v.videoWidth * mierka);
             canvas.height = Math.round(v.videoHeight * mierka);
             ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
@@ -86,6 +116,8 @@ export function useKameraQr({
         void krok();
       } catch (e: any) {
         setBezi(false);
+        // Ďalšie fotenie dokladu pôjde rovno cez fotoaparát / výber súboru.
+        oznacStavKamery(false);
         setChyba(
           e?.name === "NotAllowedError"
             ? t("qr.kameraZamietnuta")

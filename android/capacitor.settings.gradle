@@ -41,8 +41,5 @@ project(':capacitor-splash-screen').projectDir = new File('../node_modules/@capa
 include ':capacitor-status-bar'
 project(':capacitor-status-bar').projectDir = new File('../node_modules/@capacitor/status-bar/android')
 
-include ':capgo-capacitor-document-scanner'
-project(':capgo-capacitor-document-scanner').projectDir = new File('../node_modules/@capgo/capacitor-document-scanner/android')
-
 include ':faktero-drive-detector'
 project(':faktero-drive-detector').projectDir = new File('../node_modules/@faktero/drive-detector/android')

@@ -1,108 +1,75 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * Systémový skener dokumentov bez telefónu.
+ * Zachytenie strán bez telefónu.
  *
- * VisionKit ani ML Kit sa v testoch spustiť nedajú — plugin je podstrčený a
- * testuje sa naše rozhodovanie okolo neho: čo sa stane pri zrušení, kedy sa
- * padá späť na fotoaparát a s akým nastavením sa skener na ktorej platforme
- * otvára.
+ * Kamera v stránke sa v testoch spustiť nedá — obrazovka s ňou je
+ * podstrčená a testuje sa rozhodovanie okolo nej: čo sa stane pri zrušení,
+ * a kedy sa padá späť na fotoaparát. Systémový skener dokumentov
+ * (capgo) je z appky preč — druhá kamera po stlačení spúšte miatla.
  */
-
-const platforma = { nativna: true, nazov: "android", plugin: true };
-vi.mock("@capacitor/core", () => ({
-  Capacitor: {
-    isNativePlatform: () => platforma.nativna,
-    getPlatform: () => platforma.nazov,
-    isPluginAvailable: () => platforma.plugin,
-  },
-}));
-
-const skenuj = vi.fn();
-vi.mock("@capgo/capacitor-document-scanner", () => ({
-  DocumentScanner: { scanDocument: (...a: unknown[]) => skenuj(...a) },
-}));
 
 const fotak = vi.fn();
 vi.mock("./receipt-scanner", () => ({ captureReceipt: () => fotak() }));
 
-import {
-  cielovaStrana,
-  moznostiSkenera,
-  naDataUrl,
-  trebaZmensit,
-  zachytStrany,
-  ROZPOCET_DOKLADU_B,
-} from "./skener-dokumentov";
+import { cielovaStrana, trebaZmensit, zachytStrany, ROZPOCET_DOKLADU_B } from "./skener-dokumentov";
+import { oznacStavKamery, registrujKameruDokladu, type VysledokKamery } from "./kamera-dokladu";
+
+const kamera = vi.fn<(z: { jednaStrana: boolean; davka: boolean }) => Promise<VysledokKamery>>();
 
 beforeEach(() => {
-  platforma.nativna = true;
-  platforma.nazov = "android";
-  platforma.plugin = true;
-  skenuj.mockReset();
   fotak.mockReset();
-  vi.spyOn(console, "warn").mockImplementation(() => {});
+  kamera.mockReset();
+  registrujKameruDokladu(kamera);
+  oznacStavKamery(true);
+  vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: () => {} } });
 });
 
-describe("nastavenie skenera", () => {
-  it("Android dostane filtre, orezanie a strop strán", () => {
-    const m = moznostiSkenera("android", false);
-    expect(m.scannerMode).toBe("full");
-    expect(m.croppedImageQuality).toBe(80);
-    expect(m.responseType).toBe("base64");
-    expect(m.maxNumDocuments).toBe(20);
-    expect(moznostiSkenera("android", true).maxNumDocuments).toBe(1);
-  });
-
-  it("iOS nedostane nič, čo by zaplo neverejné časti VisionKitu", () => {
-    const m = moznostiSkenera("ios", true);
-    expect(m.letUserAdjustCrop).toBe(false);
-    expect(m.maxNumDocuments).toBeUndefined();
-    expect(m.scannerMode).toBeUndefined();
-  });
-});
-
-describe("výsledok skenera", () => {
-  it("čisté base64 dostane hlavičku, data URL ostane", () => {
-    expect(naDataUrl("AAAA")).toBe("data:image/jpeg;base64,AAAA");
-    expect(naDataUrl("data:image/png;base64,BBBB")).toBe("data:image/png;base64,BBBB");
-  });
-
-  it("viac strán vráti všetky, jedna strana len prvú", async () => {
-    skenuj.mockResolvedValue({ status: "success", scannedImages: ["AAAA", "BBBB"] });
+describe("zachytenie strán", () => {
+  it("strany z kamery v stránke; jedna strana len prvú", async () => {
+    kamera.mockResolvedValue({
+      stav: "ok",
+      strany: ["data:image/jpeg;base64,AAAA", "data:image/jpeg;base64,BBBB"],
+    });
     expect(await zachytStrany()).toEqual([
       "data:image/jpeg;base64,AAAA",
       "data:image/jpeg;base64,BBBB",
     ]);
     expect(await zachytStrany({ jednaStrana: true })).toEqual(["data:image/jpeg;base64,AAAA"]);
+    expect(kamera).toHaveBeenLastCalledWith({ jednaStrana: true, davka: false });
     expect(fotak).not.toHaveBeenCalled();
   });
 
+  it("dávka sa kamere povie", async () => {
+    kamera.mockResolvedValue({ stav: "ok", strany: ["data:image/jpeg;base64,AAAA"] });
+    await zachytStrany({ davka: true });
+    expect(kamera).toHaveBeenCalledWith({ jednaStrana: false, davka: true });
+  });
+
   it("zrušenie je návrat bez fotoaparátu", async () => {
-    skenuj.mockResolvedValue({ status: "cancel" });
+    kamera.mockResolvedValue({ stav: "zrusene" });
     expect(await zachytStrany()).toBeNull();
     expect(fotak).not.toHaveBeenCalled();
   });
 
-  it("chyba pluginu (Android bez Play služieb) padne na fotoaparát", async () => {
-    skenuj.mockRejectedValue(new Error("Google Play Services not available"));
+  it("kamera v stránke nejde — fotoaparát", async () => {
+    kamera.mockResolvedValue({ stav: "nedostupna" });
     fotak.mockResolvedValue({ dataUrl: "data:image/jpeg;base64,CCCC", mimeType: "image/jpeg" });
     expect(await zachytStrany()).toEqual(["data:image/jpeg;base64,CCCC"]);
   });
 
-  it("na webe sa plugin vôbec nevolá", async () => {
-    platforma.nativna = false;
-    fotak.mockResolvedValue(null);
-    expect(await zachytStrany()).toBeNull();
-    expect(skenuj).not.toHaveBeenCalled();
-    expect(fotak).toHaveBeenCalledOnce();
-  });
-
-  it("starý balík bez pluginu ide po starom", async () => {
-    platforma.plugin = false;
+  it("keď kamera raz zlyhala, ide sa rovno na výber súboru", async () => {
+    oznacStavKamery(false);
     fotak.mockResolvedValue({ dataUrl: "data:image/jpeg;base64,DDDD", mimeType: "image/jpeg" });
     expect(await zachytStrany()).toEqual(["data:image/jpeg;base64,DDDD"]);
-    expect(skenuj).not.toHaveBeenCalled();
+    expect(kamera).not.toHaveBeenCalled();
+  });
+
+  it("bez obrazovky s kamerou (napr. iná appka) ide po starom", async () => {
+    registrujKameruDokladu(null);
+    fotak.mockResolvedValue(null);
+    expect(await zachytStrany()).toBeNull();
+    expect(fotak).toHaveBeenCalledOnce();
   });
 });
 

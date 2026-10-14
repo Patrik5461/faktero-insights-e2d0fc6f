@@ -185,14 +185,14 @@ export function DavkaDokladov({
       bloček spozná aj bez neho; presnejšie čítanie z Finančnej správy ostáva
       pri jednom doklade zo skenera.
 
-      Systémový skener vie naskenovať viac strán za sebou. V dávke je každá
-      naskenovaná strana **samostatný doklad** — presne na to dávka je: kôpka
-      bločkov sa prejde jedným skenovaním bez vracania sa do appky. Kto má
+      Kamera dokladu vie odfotiť viac strán za sebou. V dávke je každá
+      odfotená strana **samostatný doklad** — presne na to dávka je: kôpka
+      bločkov sa prejde jedným fotením bez vracania sa do appky. Kto má
       jeden doklad o viacerých stranách, naskenuje ho cez „Viacstranový" na
       skeneri; tam sa strany spoja do jedného PDF. Voľbu tu neponúkame: otázka
       po každom skenovaní by zdržala práve to, kvôli čomu je dávka rýchla.
     */
-    const strany = await zachytStrany();
+    const strany = await zachytStrany({ davka: true });
     if (strany?.length) pridaj(strany.map((subor) => ({ subor })));
   }
 

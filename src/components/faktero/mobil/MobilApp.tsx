@@ -58,6 +58,7 @@ import { odosliCakajuceJazdy } from "@/lib/mobile/auto-jazdy-sync";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { RozpoznanyDoklad } from "@/components/faktero/mobil/RozpoznanyDoklad";
 import { DavkaDokladov, type VstupDavky } from "@/components/faktero/mobil/DavkaDokladov";
+import { KameraDokladuHost } from "@/components/faktero/mobil/KameraDokladu";
 import { vyberSubory } from "@/lib/mobile/vyber-suborov";
 import { jeBlockovyQr } from "@/lib/mobile/sken-rozpoznanie";
 import { StavPushu } from "@/components/faktero/mobil/StavPushu";
@@ -270,6 +271,8 @@ export function MobilnaApka() {
     <>
       <PasHore />
       <ObsahApky />
+      {/* Kamera dokladu pre fotenie mimo skenera (dávka, ďalšia strana, prefotenie). */}
+      <KameraDokladuHost />
     </>
   );
 }
@@ -333,8 +336,10 @@ function ObsahApky() {
     prezerať zoznam.
   */
   const [zachytZo, setZachytZo] = useState<Krok>("prehlad");
-  /** Spúšť na skeneri — na telefóne sa hneď otvorí systémový skener dokumentov. */
+  /** Spúšť na skeneri, keď kamera v stránke nejde — na telefóne sa hneď otvorí fotoaparát. */
   const [zachytHned, setZachytHned] = useState(false);
+  /** Strany odfotené a upravené už na skeneri — zachytávanie ich len spracuje. */
+  const [stranyZoSkenera, setStranyZoSkenera] = useState<string[] | null>(null);
 
   /*
    * Povolenie na notifikácie sa pýta až tu: na domovskej obrazovke, teda po
@@ -861,10 +866,11 @@ function ObsahApky() {
   }
   const naNovuFakturu = () => setKrok("novaFaktura");
   /** Otvorí zachytávanie dokladu a zapamätá si, kam sa z neho vrátiť. */
-  const doZachytu = (druh: Zachyt, odkial: Krok, hnedSkenovat = false) => {
+  const doZachytu = (druh: Zachyt, odkial: Krok, hnedSkenovat = false, strany?: string[]) => {
     setZachyt(druh);
     setZachytZo(odkial);
     setZachytHned(hnedSkenovat);
+    setStranyZoSkenera(strany?.length ? strany : null);
     setKrok("zachyt");
   };
 
@@ -993,6 +999,10 @@ function ObsahApky() {
           onOdfotit={() => {
             setQrZoSkenera(null);
             doZachytu("blocek", "skener", true);
+          }}
+          onZachytene={(strany) => {
+            setQrZoSkenera(null);
+            doZachytu(strany.length > 1 ? "strany" : "blocek", "skener", false, strany);
           }}
           onZGalerie={() => {
             setQrZoSkenera(null);
@@ -1167,6 +1177,7 @@ function ObsahApky() {
         hotovyQr={qrZoSkenera}
         zoSkenera={zachytZo === "skener"}
         hnedSkenovat={zachytHned}
+        hotoveStrany={stranyZoSkenera}
         onSpat={() => setKrok(navratZoZachytu(zachytZo, false))}
         /*
           Zo skenera sa po uložení vraciame na skener, aby sa dal hneď nasnímať
@@ -1538,6 +1549,7 @@ function ZachytDokladu({
   hotovyQr,
   zoSkenera,
   hnedSkenovat,
+  hotoveStrany,
 }: {
   druh: Zachyt;
   firma: Firma;
@@ -1550,10 +1562,16 @@ function ZachytDokladu({
   /** Sem sa vošlo z celoobrazovkového skenera — „späť" vedie naň. */
   zoSkenera?: boolean;
   /**
-   * Na telefóne hneď otvoriť systémový skener (spúšť alebo „Viacstranový" na
-   * skeneri). Na webe sa ignoruje — tam ostáva obrazovka s tlačidlom.
+   * Na telefóne hneď otvoriť fotenie (spúšť alebo „Viacstranový" na skeneri,
+   * keď kamera v stránke nejde). Na webe sa ignoruje — tam ostáva obrazovka
+   * s tlačidlom, lebo výber súboru prehliadač pustí len z ťuknutia.
    */
   hnedSkenovat?: boolean;
+  /**
+   * Strany už odfotené a upravené na skeneri („Upraviť doklad"). Spracujú
+   * sa hneď, rovnako ako predtým výsledok systémového skenera.
+   */
+  hotoveStrany?: string[] | null;
 }) {
   const { t } = usePreklad();
   /* Sadzby DPH a mena pri čítaní z fotky sa riadia krajinou firmy. */
@@ -1691,15 +1709,20 @@ function ZachytDokladu({
   }
 
   /**
-   * Odfotenie dokladu zo skenera. Na telefóne sa otvorí systémový skener
-   * dokumentov (orezanie podľa rohov, vyrovnanie, filtre), na webe fotoaparát
-   * alebo výber súboru. Vráti `false`, keď človek skenovanie zrušil.
-   *
-   * Viac naskenovaných strán je tu jeden doklad — spoja sa do PDF rovnako ako
-   * pri „Viacstranovom". Kto chce viac rôznych dokladov, má na to dávku.
+   * Odfotenie dokladu. Kamera dokladu (jedna v celej appke, s úpravou rohov
+   * a filtrami), kde nejde, fotoaparát alebo výber súboru. Vráti `false`,
+   * keď človek fotenie zrušil.
    */
   async function odfotDoklad(): Promise<boolean> {
-    const naskenovane = await zachytStrany();
+    return spracujStrany(await zachytStrany());
+  }
+
+  /**
+   * Odfotené strany do toku. Viac strán je tu jeden doklad — spoja sa do PDF
+   * rovnako ako pri „Viacstranovom". Kto chce viac rôznych dokladov, má na
+   * to dávku.
+   */
+  async function spracujStrany(naskenovane: string[] | null): Promise<boolean> {
     if (!naskenovane?.length) return false;
     if (naskenovane.length > 1) {
       await spojAOdosli(naskenovane);
@@ -1707,7 +1730,7 @@ function ZachytDokladu({
     }
     const [obrazok] = naskenovane;
     // QR sa hľadá v obrázku ešte v telefóne, takže ho fronta má aj bez signálu.
-    // Na orezanom skene je kód väčší a rovný, takže sa prečíta častejšie.
+    // Na vyrovnanej snímke je kód väčší a rovný, takže sa prečíta častejšie.
     const qr = await scanQrFromImage(obrazok);
     /*
       Kód bločku (eKasa, český EET) sa číta ďalej po starom cez Finančnú
@@ -1720,14 +1743,32 @@ function ZachytDokladu({
   }
 
   /*
-    Zo skenera sa na telefóne ide rovno do systémového skenera dokumentov —
-    medzikrok s tlačidlom „Odfotiť" by bol druhý, horší skener. Na webe
+    Strany odfotené už na skeneri. Spracujú sa raz — pri prekreslení by sa
+    inak nahrávali znova. Kým sa spracúvajú, svieti „Čítam doklad…", nie
+    obrazovka s tlačidlami.
+  */
+  const hotoveSpracovane = useRef(false);
+  const [skenerOtvoreny, setSkenerOtvoreny] = useState(!!hotoveStrany?.length);
+  useEffect(() => {
+    if (!hotoveStrany?.length || hotoveSpracovane.current) return;
+    hotoveSpracovane.current = true;
+    void (async () => {
+      try {
+        if (!(await spracujStrany(hotoveStrany))) onSpat();
+      } finally {
+        setSkenerOtvoreny(false);
+      }
+    })();
+    // eslint-disable-next-line
+  }, [hotoveStrany]);
+
+  /*
+    Zo skenera (keď kamera v stránke nejde) sa na telefóne ide rovno do
+    fotenia — medzikrok s tlačidlom „Odfotiť" by bol zbytočný. Na webe
     ostáva: prehliadač pustí fotoaparát aj výber súboru len z ťuknutia.
-    Zrušené skenovanie vráti človeka späť na skener, bez chyby.
+    Zrušené fotenie vráti človeka späť na skener, bez chyby.
   */
   const hnedSpustene = useRef(false);
-  /** Kým beží systémový skener, pod ním nemá svietiť obrazovka s tlačidlami. */
-  const [skenerOtvoreny, setSkenerOtvoreny] = useState(false);
   useEffect(() => {
     if (!hnedSkenovat || hnedSpustene.current) return;
     hnedSpustene.current = true;
@@ -1772,16 +1813,17 @@ function ZachytDokladu({
   async function dalsiDoklad(id: string) {
     const prvy = naRozpoznanie;
     if (!prvy) return;
-    // V dávke je každá naskenovaná strana samostatný doklad (pozri DavkaDokladov).
-    const dalsie = (await zachytStrany()) ?? [];
+    // V dávke je každá odfotená strana samostatný doklad (pozri DavkaDokladov).
+    const dalsie = (await zachytStrany({ davka: true })) ?? [];
     setDavka([{ subor: prvy, id }, ...dalsie.map((subor) => ({ subor }))]);
     setNaRozpoznanie(null);
   }
 
   /* --- Viacstranový doklad --- */
   /**
-   * Systémový skener vie naskenovať viac strán naraz, takže jedno ťuknutie
-   * môže pridať celý doklad. Ďalšie ťuknutie pridá ďalšie strany na koniec.
+   * Kamera dokladu vie odfotiť viac strán za sebou („Pridať stranu"), takže
+   * jedno ťuknutie môže pridať celý doklad. Ďalšie ťuknutie pridá ďalšie
+   * strany na koniec.
    */
   async function pridajStranu(): Promise<boolean> {
     const nove = await zachytStrany();

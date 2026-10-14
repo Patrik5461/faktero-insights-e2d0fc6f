@@ -1,7 +1,10 @@
 import { useOperacia } from "@/lib/mobile/server-most";
 import { useEffect, useState } from "react";
-import { ChevronDown, Files, FileText, Image as ImageIcon, Layers, Receipt } from "lucide-react";
+import { ChevronDown, Files, FileText, Image as ImageIcon, Layers, Receipt, X } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
+import { ObrysDokladu, useObrysDokladu, useSnimanie } from "./KameraDokladu";
+import { UpravaDokladu } from "./UpravaDokladu";
+import { potvrd } from "@/lib/potvrdenie";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
   KATEGORIE_VYDAVKOV,
@@ -33,6 +36,13 @@ export type NastavenieDokladu = {
  * (`RozpoznanyDoklad`). Samostatný vstup „Iný doklad" preto už nie je. Táto
  * obrazovka len rozhoduje, **čím** sa doklad zachytí a **s akým nastavením**
  * (úhrada, kategória) pôjde ďalej.
+ *
+ * Kamera je jedna, ako v Doklado: spúšť odfotí snímku priamo z videa, na
+ * ktoré sa človek pozerá, a otvorí „Upraviť doklad" (rohy, filtre,
+ * otočenie). Predtým spúšť otvorila ďalší, systémový skener so
+ * samozameraním — druhú kameru po tom, ako sa už raz mierilo. Hotové strany
+ * idú cez `onZachytene` do toho istého toku, kam predtým výsledok skenera.
+ * Keď kamera v stránke nejde, spúšť ide po starom (`onOdfotit`).
  */
 export function Skener({
   onQr,
@@ -41,12 +51,19 @@ export function Skener({
   onViacstranovy,
   onViacDokladov,
   onPrijateDoklady,
+  onZachytene,
   nastavenie,
   onNastavenie,
   companyId,
 }: {
   onQr: (raw: string) => void;
+  /** Náhradná cesta, keď kamera v stránke nejde (fotoaparát / výber súboru). */
   onOdfotit: () => void;
+  /**
+   * Strany odfotené a upravené priamo tu. Jedna strana je obrázok, viac strán
+   * je jeden viacstranový doklad.
+   */
+  onZachytene?: (strany: string[]) => void;
   onZGalerie: () => void;
   onViacstranovy: () => void;
   /**
@@ -59,7 +76,7 @@ export function Skener({
   onNastavenie: (n: NastavenieDokladu) => void;
   companyId?: string;
 }) {
-  const { t } = usePreklad();
+  const { t, mnozne } = usePreklad();
   const nacitajPredvolby = useOperacia<{
     zakazky: { id: string; nazov: string }[];
     predkontacie: { kod: string; popis: string }[];
@@ -109,7 +126,48 @@ export function Skener({
     };
   }, []);
 
-  const { videoRef, chyba } = useKameraQr({ onNajdene: onQr, aktivne: vpredu });
+  /*
+    Odfotené strany a otvorená „Upraviť doklad". Kým je otvorená, alebo kým
+    sú odfotené strany viacstranového dokladu, QR sa z videa nečíta — inak
+    by bloček v zábere uprostred práce odviedol človeka preč a strany by
+    sa stratili.
+  */
+  const sn = useSnimanie();
+  const [viacstranovy, setViacstranovy] = useState(false);
+  const { videoRef, chyba, bezi } = useKameraQr({
+    onNajdene: onQr,
+    aktivne: vpredu,
+    citajQr: !sn.snimka && sn.strany.length === 0,
+    naFotenie: true,
+  });
+  const fotimTu = bezi && !!onZachytene;
+  const obrys = useObrysDokladu(videoRef, bezi && vpredu && !sn.snimka);
+
+  function spust() {
+    if (fotimTu && sn.odfot(videoRef.current)) return;
+    if (viacstranovy) onViacstranovy();
+    else onOdfotit();
+  }
+
+  async function prepniViacstranovy() {
+    if (!fotimTu) return onViacstranovy();
+    if (viacstranovy && sn.strany.length) {
+      const ano = await potvrd(t("kamera.zahoditStrany", { pocet: sn.strany.length }), {
+        potvrdit: t("kamera.zahodit"),
+        zrusit: t("spolocne.zrusit"),
+        nebezpecne: true,
+      });
+      if (!ano) return;
+    }
+    sn.vynuluj();
+    setViacstranovy((v) => !v);
+  }
+
+  function odovzdaj(strany: string[]) {
+    sn.vynuluj();
+    setViacstranovy(false);
+    onZachytene?.(strany);
+  }
 
   function nastav(zmena: Partial<NastavenieDokladu>) {
     const nove = { ...nastavenie, ...zmena };
@@ -130,6 +188,7 @@ export function Skener({
         playsInline
         muted
       />
+      <ObrysDokladu obrys={obrys} />
 
       {/*
         Rozloženie je stĺpec, nie vrstvy nad sebou: hore prepínač, v strede
@@ -139,7 +198,40 @@ export function Skener({
         od okraja po okraj.
       */}
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <div className="shrink-0" style={{ paddingTop: "calc(var(--safe-top) + 0.5rem)" }} />
+        <div className="shrink-0" style={{ paddingTop: "calc(var(--safe-top) + 0.5rem)" }}>
+          {/* Viacstranový doklad: koľko strán je odfotených a ako skončiť. */}
+          {viacstranovy && fotimTu && (
+            <div
+              data-viacstranovy
+              className="mx-auto mt-1 flex w-fit max-w-[calc(100%-2rem)] items-center gap-1 rounded-full bg-black/65 py-1 pl-3 pr-1 text-[13px] text-white backdrop-blur"
+            >
+              <span className="truncate font-medium" title={t("kamera.viacstranovy")}>
+                {t("uprava.stranaCislo", { n: sn.strany.length + 1 })}
+              </span>
+              {sn.strany.length > 0 && (
+                <button
+                  onClick={() => odovzdaj(sn.strany)}
+                  className="min-h-[36px] shrink-0 rounded-full bg-white px-3 text-[13px] font-semibold text-black"
+                >
+                  {t("uprava.hotovo", {
+                    pocet: `${sn.strany.length} ${mnozne(sn.strany.length, {
+                      one: t("uprava.strana1"),
+                      few: t("uprava.strana2"),
+                      other: t("uprava.strana5"),
+                    })}`,
+                  })}
+                </button>
+              )}
+              <button
+                onClick={() => void prepniViacstranovy()}
+                aria-label={t("kamera.zrusit")}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/85"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
 
         {/*
           Zameriavač. Štyri rohy, nie celý rámik: rohy hovoria „sem to zmestite"
@@ -149,8 +241,11 @@ export function Skener({
           data-zameriavac
           className="pointer-events-none flex min-h-0 flex-1 items-center justify-center px-8 py-3"
         >
+          {/* Keď je doklad nájdený, kreslí sa jeho obrys — rohy zameriavača ustúpia. */}
           <div
-            className="relative h-full max-h-[42vh] w-[68%] max-w-[19rem]"
+            className={`relative h-full max-h-[42vh] w-[68%] max-w-[19rem] transition-opacity ${
+              obrys ? "opacity-30" : ""
+            }`}
           >
             {(
               [
@@ -319,8 +414,9 @@ export function Skener({
               </div>
               <div className="flex justify-center">
                 <button
-                  onClick={onOdfotit}
+                  onClick={spust}
                   aria-label={t("sken.odfotit")}
+                  data-spust
                   /* Biely prstenec okolo zelenej spúšte — na tmavom obraze je to
                      jediné, čo je vidieť za každých svetelných podmienok. */
                   className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white bg-app-zelena transition active:scale-95"
@@ -330,7 +426,8 @@ export function Skener({
                 <MalyKruh
                   icon={Files}
                   label={t("sken.viacstranovy")}
-                  onClick={onViacstranovy}
+                  onClick={() => void prepniViacstranovy()}
+                  stlacene={fotimTu ? viacstranovy : undefined}
                 />
               </div>
             </div>
@@ -345,6 +442,18 @@ export function Skener({
           </div>
         </div>
       </div>
+
+      {sn.snimka && (
+        <UpravaDokladu
+          snimka={sn.snimka}
+          strana={sn.strany.length + 1}
+          odfotenych={sn.strany.length}
+          viacStran={viacstranovy}
+          onZnova={sn.zahodSnimku}
+          onPridatStranu={sn.pridaj}
+          onUlozit={(s) => odovzdaj([...sn.strany, s])}
+        />
+      )}
     </div>
   );
 }
@@ -353,16 +462,22 @@ function MalyKruh({
   icon: Icon,
   label,
   onClick,
+  stlacene,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   onClick: () => void;
+  /** Prepínač (viacstranový režim) — `undefined` pri obyčajnom tlačidle. */
+  stlacene?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       aria-label={label}
-      className="grid h-12 w-12 place-items-center rounded-full bg-white/15 text-white transition active:scale-95"
+      aria-pressed={stlacene}
+      className={`grid h-12 w-12 place-items-center rounded-full text-white transition active:scale-95 ${
+        stlacene ? "bg-app-zelena ring-2 ring-white" : "bg-white/15"
+      }`}
     >
       <Icon className="h-5 w-5" />
     </button>

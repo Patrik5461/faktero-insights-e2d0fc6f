@@ -16,6 +16,7 @@ import { StavPushu } from "./StavPushu";
 import { PruhJazdy } from "./PrebiehaJazda";
 import { RozpoznanyDoklad } from "./RozpoznanyDoklad";
 import { DavkaDokladov } from "./DavkaDokladov";
+import { UpravaDokladu } from "./UpravaDokladu";
 
 /**
  * Že sa obrazovka vôbec vykreslí.
@@ -178,6 +179,35 @@ describe("skener a výber dokladov", () => {
     expect(html).toContain('aria-expanded="false"');
     // Panel nie je schovaný za tlačidlom „Nastavenie".
     expect(html).not.toContain(">Nastavenie dokladu<");
+  });
+
+  it("„Upraviť doklad“ má štyri rohy a všetky tlačidlá", () => {
+    const html = renderToString(
+      <UpravaDokladu snimka={{ sirka: 1920, vyska: 1080 }} onUlozit={nic} onZnova={nic} />,
+    );
+    expect(html).toContain('role="dialog"');
+    expect(html.match(/data-roh="/g)).toHaveLength(4);
+    for (const text of ["Upraviť doklad", "Filtre", "Otočiť", "Odfotiť znova", "Uložiť doklad"])
+      expect(html).toContain(text);
+    // Jedna strana — „Pridať stranu" tu nemá čo robiť.
+    expect(html).not.toContain("Pridať stranu");
+  });
+
+  it("„Upraviť doklad“ pri viacstranovom doklade pridáva strany", () => {
+    const html = renderToString(
+      <UpravaDokladu
+        snimka={{ sirka: 1000, vyska: 1400, rohy: null }}
+        viacStran
+        strana={3}
+        odfotenych={2}
+        onUlozit={nic}
+        onPridatStranu={nic}
+        onZnova={nic}
+      />,
+    );
+    expect(html).toContain("Pridať stranu");
+    expect(html).toContain("Hotovo (3 strany)");
+    expect(html).toContain("Strana 3");
   });
 
   it("lišta vybraných sčíta po menách a povie, čo pôjde do účtovníctva", () => {
