@@ -49,6 +49,15 @@ describe("nespracované doklady", () => {
     expect(chybajuce(null, u)).toEqual(["druh"]);
   });
 
+  it("spôsob platby z bločku", () => {
+    const zaklad = { supplier_name: "BILLA", amount_without_vat: 6.2, vat_amount: 1.18, amount_total: 7.38 };
+    expect(udajeZAi({ ...zaklad, payment_method: "karta" }, "2026-10-07").platba).toBe("karta");
+    expect(udajeZAi({ ...zaklad, payment_method: "Hotovost" }, "2026-10-07").platba).toBe("hotovost");
+    // Neznáma hodnota sa nepoužije — radšej sa človek opýta.
+    expect(udajeZAi({ ...zaklad, payment_method: "stravenky" }, "2026-10-07").platba).toBe("");
+    expect(chybajuce("blocek", udajeZAi({ ...zaklad, payment_method: "karta" }, "2026-10-07"))).toEqual([]);
+  });
+
   it("dobropis má záporné sumy, zálohová sa neodpočítava, bloček s rozpisom", () => {
     const u = udajeZAi({ supplier_name: "X", invoice_number: "D1", amount_without_vat: 10, vat_amount: 2.3, amount_total: 12.3 }, "2026-10-07");
     u.kody.predkontacia = "1Fp";

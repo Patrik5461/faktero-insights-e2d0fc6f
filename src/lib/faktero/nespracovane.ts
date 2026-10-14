@@ -289,6 +289,9 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
       ...(p.reverse_charge === true ? { pdp: true } : {}),
     }));
   u.prenesenie = jePrenesenieZAi(ai, u.polozky);
+  // Spôsob platby z bločku („KARTA“, „HOTOVOSŤ“) — bez neho sa bloček neuloží.
+  const platba = t(ai.payment_method, 10).toLowerCase();
+  if (platba === "hotovost" || platba === "karta" || platba === "prevod") u.platba = platba;
   u.ostatny = {
     druh: t(ai.other_kind, 30) || "ine",
     predmet: t(ai.other_subject, 500),

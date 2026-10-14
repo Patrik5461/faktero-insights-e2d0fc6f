@@ -132,6 +132,8 @@ Pri "faktura" vyplň aj "document_subtype": "zalohova" pre zálohovú, proforma 
 faktúru (nie je daňový doklad), "dobropis" pre dobropis či opravnú faktúru, "blocek" pre
 pokladničný doklad z registračnej pokladne (eKasa), účtenku či parkovací lístok, inak "ostra". Faktúra, ktorá len odpočítava zaplatenú zálohu,
 je "ostra". Do "document_title" daj nadpis dokladu tak, ako je vytlačený.
+Pri bločku pridaj "payment_method": "hotovost" (hotovosť, v hotovosti, cash), "karta" (karta,
+platobná karta, kartou, Visa, Mastercard) alebo "prevod"; keď na doklade nie je, null.
 Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď doklad
 položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.`;
