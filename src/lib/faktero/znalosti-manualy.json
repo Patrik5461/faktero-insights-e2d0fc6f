@@ -67,7 +67,7 @@
     },
     {
      "nadpis": "Odkiaľ ju vziať",
-     "text": "<>\nObe appky pre iPhone sú v App Store:\nFaktero\na samostatná\nKniha jázd\n.\nVerzia pre Android sa pripravuje. Dovtedy ju dostanete v testovaní na\npozvánku — napíšte na servis@faktero.sk (mailto:servis@faktero.sk).\nAppka sa neaktualizuje sama . Celé rozhranie je zabalené v nej, aby sa\notvorila aj bez signálu — cenou za to je, že každá oprava znamená nový build. Keď vyjde\nnovšia verzia, appka to sama zbadá a ponúkne ju; dovtedy pokojne používate tú svoju."
+     "text": "<>\nObe appky pre iPhone sú v App Store:\nFaktero\na samostatná\nKniha jázd\n.\nPre Android si obe appky stiahnete z webu na stránke\nFaktero pre Android (/android) — kým nebudú v Google Play, inštalujú sa ako\nAPK. Je tam aj návod, ako inštaláciu mimo obchodu povoliť.\nAppka sa neaktualizuje sama . Celé rozhranie je zabalené v nej, aby sa\notvorila aj bez signálu — cenou za to je, že každá oprava znamená nový build. Keď vyjde\nnovšia verzia, appka to sama zbadá a ponúkne ju; dovtedy pokojne používate tú svoju."
     },
     {
      "nadpis": "Čo sa dá v telefóne spraviť",
@@ -559,7 +559,7 @@
     },
     {
      "nadpis": "E-mailové šablóny",
-     "text": "<>\nNastavenia → E-mailové šablóny určujú, čo príde odberateľovi spolu s PDF —\nzvlášť pre faktúru, ponuku aj upomienku. Do textu sa dajú vložiť premenné (číslo dokladu,\nsuma, splatnosť), takže sa nič neprepisuje ručne.\nMeno odosielateľa a Odpovedať na (Reply-To) sa nastavujú\npri údajoch firmy. Odosiela sa z adresy Faktera, ale odpoveď príde vám — to je dôvod,\nprečo Reply-To netreba nechať prázdne.\nOdosielanie z vlastnej adresy. V Nastavenia → Firma nastavíte\nvlastný SMTP server (Gmail, Microsoft 365, WebSupport, Seznam či server vašej domény).\nFaktúry, upomienky, cenové ponuky, samofaktúry a podklady pre účtovníka potom prídu z\nvašej adresy, napr. faktury@vasafirma.sk. Nastaviť to môže majiteľ alebo admin firmy; po\nuložení príde skúšobný mail a zapne sa len vtedy, keď prejde. Heslo je uložené zašifrované\n— pri Gmaile a Microsoft 365 použite heslo aplikácie. Keby váš server niekedy zlyhal, mail\nodíde cez Faktero a chyba sa ukáže pri nastavení."
+     "text": "<>\nNastavenia → E-mailové šablóny určujú, čo príde odberateľovi spolu s PDF\n— zvlášť pre faktúru, ponuku aj upomienku. Do textu sa dajú vložiť premenné (číslo\ndokladu, suma, splatnosť), takže sa nič neprepisuje ručne.\nMeno odosielateľa a Odpovedať na (Reply-To) sa nastavujú\npri údajoch firmy. Odosiela sa z adresy Faktera, ale odpoveď príde vám — to je dôvod,\nprečo Reply-To netreba nechať prázdne.\nOdosielanie z vlastnej adresy. V Nastavenia → Firma nastavíte\nvlastný SMTP server (Gmail, Microsoft 365, WebSupport, Seznam či server vašej domény).\nFaktúry, upomienky, cenové ponuky, samofaktúry a podklady pre účtovníka potom prídu z\nvašej adresy, napr. faktury@vasafirma.sk. Nastaviť to môže majiteľ alebo admin firmy; po\nuložení príde skúšobný mail a zapne sa len vtedy, keď prejde. Heslo je uložené zašifrované\n— pri Gmaile a Microsoft 365 použite heslo aplikácie. Keby váš server niekedy zlyhal, mail\nodíde cez Faktero a chyba sa ukáže pri nastavení."
     },
     {
      "nadpis": "Shoptet a Zásielkovňa",
@@ -683,7 +683,7 @@
     },
     {
      "nadpis": "Čo použiť namiesto toho",
-     "text": "<>\n-\nQR platba priamo na faktúre. Na každom PDF je kód PAY by square —\nodberateľ ho naskenuje v mobilnej banke a má predvyplnenú sumu, IBAN aj variabilný\nsymbol. Netreba nič nastavovať.\n-\nPárovanie úhrad z banky. Keď platba príde na účet, Faktero ju priradí\nk faktúre a označí ju za uhradenú. Isté zhody spáruje samo, sporné predloží na\nrozhodnutie.\n-\nUpomienky po splatnosti. Tri úrovne s vlastnými textami — odosielajú sa\nlen tým, ktorí naozaj nezaplatili.\nPodrobne to popisuje návod na bankové účty (/pomoc/banka)."
+     "text": "<>\n-\nQR platba priamo na faktúre. Na každom PDF je kód PAY by square —\nodberateľ ho naskenuje v mobilnej banke a má predvyplnenú sumu, IBAN aj variabilný\nsymbol. Netreba nič nastavovať.\n-\nPárovanie úhrad z banky. Keď platba príde na účet, Faktero ju priradí k\nfaktúre a označí ju za uhradenú. Isté zhody spáruje samo, sporné predloží na\nrozhodnutie.\n-\nUpomienky po splatnosti. Tri úrovne s vlastnými textami — odosielajú sa\nlen tým, ktorí naozaj nezaplatili.\nPodrobne to popisuje návod na bankové účty (/pomoc/banka)."
     }
    ]
   },
@@ -901,7 +901,7 @@
    "sekcie": [
     {
      "nadpis": "Skúšobné obdobie",
-     "text": "<>\nPo registrácii dostáva každá firma 30 dní zadarmo na pláne Premium . Počas\nskúšobného obdobia môžete využívať všetky funkcie bez obmedzenia.\nSkúšobné obdobie sa nepredlžuje automaticky a nepýtame si platobné údaje vopred."
+     "text": "<>\nPo registrácii dostáva každá firma 30 dní zadarmo na pláne Premium . Počas\nskúšobného obdobia môžete využívať všetky funkcie bez obmedzenia.\nSkúšobné obdobie sa nepredlžuje automaticky a nepýtame si platobné údaje\nvopred."
     },
     {
      "nadpis": "Automatické obnovovanie",
@@ -913,7 +913,7 @@
     },
     {
      "nadpis": "Zmena plánu",
-     "text": "<>\nPlán môžete kedykoľvek zmeniť v sekcii Predplatné (/predplatne).\n-\nPrechod na vyšší plán sa aktivuje okamžite, rozdiel sa pripočíta pomerne.\n-\nPrechod na nižší plán sa aktivuje od ďalšieho fakturačného obdobia."
+     "text": "<>\nPlán môžete kedykoľvek zmeniť v sekcii Predplatné (/predplatne).\n-\nPrechod na vyšší plán sa aktivuje okamžite, rozdiel sa pripočíta\npomerne.\n-\nPrechod na nižší plán sa aktivuje od ďalšieho fakturačného obdobia."
     },
     {
      "nadpis": "Zrušenie predplatného",

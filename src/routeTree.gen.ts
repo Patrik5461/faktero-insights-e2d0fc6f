@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AktivovatRouteImport } from './routes/aktivovat'
+import { Route as AndroidRouteImport } from './routes/android'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AppJazdyRouteImport } from './routes/app-jazdy'
 import { Route as BlogRouteImport } from './routes/blog'
@@ -342,6 +343,11 @@ const AdminRoute = AdminRouteImport.update({
 const AktivovatRoute = AktivovatRouteImport.update({
   id: '/aktivovat',
   path: '/aktivovat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AndroidRoute = AndroidRouteImport.update({
+  id: '/android',
+  path: '/android',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -2042,6 +2048,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/aktivovat': typeof AktivovatRoute
+  '/android': typeof AndroidRoute
   '/app': typeof AppRoute
   '/app-jazdy': typeof AppJazdyRoute
   '/blog': typeof BlogRouteWithChildren
@@ -2357,6 +2364,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aktivovat': typeof AktivovatRoute
+  '/android': typeof AndroidRoute
   '/app': typeof AppRoute
   '/app-jazdy': typeof AppJazdyRoute
   '/cennik': typeof CennikRoute
@@ -2667,6 +2675,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/aktivovat': typeof AktivovatRoute
+  '/android': typeof AndroidRoute
   '/app': typeof AppRoute
   '/app-jazdy': typeof AppJazdyRoute
   '/blog': typeof BlogRouteWithChildren
@@ -2985,6 +2994,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/aktivovat'
+    | '/android'
     | '/app'
     | '/app-jazdy'
     | '/blog'
@@ -3300,6 +3310,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/aktivovat'
+    | '/android'
     | '/app'
     | '/app-jazdy'
     | '/cennik'
@@ -3609,6 +3620,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/admin'
     | '/aktivovat'
+    | '/android'
     | '/app'
     | '/app-jazdy'
     | '/blog'
@@ -3927,6 +3939,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
   AktivovatRoute: typeof AktivovatRoute
+  AndroidRoute: typeof AndroidRoute
   AppRoute: typeof AppRoute
   AppJazdyRoute: typeof AppJazdyRoute
   BlogRoute: typeof BlogRouteWithChildren
@@ -4085,6 +4098,13 @@ declare module '@tanstack/react-router' {
       path: '/aktivovat'
       fullPath: '/aktivovat'
       preLoaderRoute: typeof AktivovatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/android': {
+      id: '/android'
+      path: '/android'
+      fullPath: '/android'
+      preLoaderRoute: typeof AndroidRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -6893,6 +6913,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   AktivovatRoute: AktivovatRoute,
+  AndroidRoute: AndroidRoute,
   AppRoute: AppRoute,
   AppJazdyRoute: AppJazdyRoute,
   BlogRoute: BlogRouteWithChildren,

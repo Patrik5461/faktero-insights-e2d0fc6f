@@ -27,15 +27,22 @@ export const Route = createFileRoute("/api/public/mobil/verzia")({
   server: {
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: HLAVICKY }),
-      GET: async () =>
-        new Response(
+      GET: async ({ request }) => {
+        // Android má vlastný záznam: APK sa sťahuje z webu a vychádza inokedy
+        // ako verzia pre iPhone. Bez záznamu sa mu nič neponúkne.
+        const android = new URL(request.url).searchParams.get("platforma") === "android";
+        const v: { peciatka?: string; zverejnene?: boolean; odkaz?: string } = android
+          ? ((verzia as { android?: typeof v }).android ?? {})
+          : verzia;
+        return new Response(
           JSON.stringify({
-            peciatka: verzia.peciatka ?? "",
-            zverejnene: verzia.zverejnene === true,
-            odkaz: verzia.odkaz ?? "",
+            peciatka: v.peciatka ?? "",
+            zverejnene: v.zverejnene === true,
+            odkaz: v.odkaz ?? "",
           }),
           { status: 200, headers: HLAVICKY },
-        ),
+        );
+      },
     },
   },
 });

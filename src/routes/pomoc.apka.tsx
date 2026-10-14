@@ -54,8 +54,9 @@ const sections: HelpSection[] = [
           .
         </p>
         <p>
-          Verzia pre <strong>Android</strong> sa pripravuje. Dovtedy ju dostanete v testovaní na
-          pozvánku — napíšte na <a href="mailto:servis@faktero.sk">servis@faktero.sk</a>.
+          Pre <strong>Android</strong> si obe appky stiahnete z webu na stránke{" "}
+          <a href="/android">Faktero pre Android</a> — kým nebudú v Google Play, inštalujú sa ako
+          APK. Je tam aj návod, ako inštaláciu mimo obchodu povoliť.
         </p>
         <p>
           Appka sa <strong>neaktualizuje sama</strong>. Celé rozhranie je zabalené v nej, aby sa

@@ -2,5 +2,10 @@
   "_popis": "Ktorá verzia appky je v obchode. `peciatka` prepisuje `npm run build:mobile`; `zverejnene` prepnite na true až vtedy, keď je build naozaj v App Store — inak by appka posielala ľudí na aktualizáciu, ktorá tam ešte nie je.",
   "peciatka": "2026-09-22 00:00",
   "zverejnene": true,
-  "odkaz": "https://apps.apple.com/sk/app/faktero/id6802420128"
+  "odkaz": "https://apps.apple.com/sk/app/faktero/id6802420128",
+  "android": {
+    "peciatka": "2026-10-14 12:05",
+    "zverejnene": true,
+    "odkaz": "https://www.faktero.sk/android"
+  }
 }

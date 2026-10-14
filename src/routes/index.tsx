@@ -59,7 +59,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { track } from "@/lib/faktero/track";
-import { APP_STORE_FAKTERO, APP_STORE_KNIHA_JAZD, APP_STORE_ODZNAK } from "@/lib/faktero/obchody";
+import {
+  ANDROID_STRANKA,
+  APP_STORE_FAKTERO,
+  APP_STORE_KNIHA_JAZD,
+  APP_STORE_ODZNAK,
+} from "@/lib/faktero/obchody";
 import { PartneriPas } from "@/components/faktero/PartneriPas";
 import { zoznamPartnerovPublic } from "@/lib/partneri.functions";
 
@@ -1355,7 +1360,7 @@ function MobileAppSection() {
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              <Smartphone className="h-3 w-3" /> V App Store · Android pripravujeme
+              <Smartphone className="h-3 w-3" /> iPhone aj Android
             </div>
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl whitespace-pre-line">
               Faktero v mobile{"\n"}
@@ -1365,8 +1370,8 @@ function MobileAppSection() {
               {/* Pôvodne tu stálo „s offline režimom". Appka bez signálu naozaj zapíše
                   jazdu aj doklad, ale rozhranie sa načítava zo živého webu — pri
                   studenom štarte bez pripojenia sa neotvorí. Sľubujme len to, čo platí. */}
-              Appka pre iPhone so skenovaním dokladov a GPS knihou jázd — stiahnete si ju z App
-              Store, verzia pre Android sa pripravuje. Jazdu aj odfotený doklad zapíše aj bez
+              Appka pre iPhone aj Android so skenovaním dokladov a GPS knihou jázd — pre iPhone z
+              App Store, pre Android zatiaľ priamo z webu. Jazdu aj odfotený doklad zapíše aj bez
               signálu a odošle ich, len čo ste online.
             </p>
             <ul className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -1395,16 +1400,13 @@ function MobileAppSection() {
                   className="h-12 w-auto"
                 />
               </a>
-              <button
-                type="button"
-                disabled
-                className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold text-muted-foreground opacity-70"
+              {/* Kým appka nie je v Google Play, Android ju sťahuje z webu ako APK. */}
+              <Link
+                to={ANDROID_STRANKA}
+                className="inline-flex h-12 items-center gap-2 rounded-lg border border-border bg-card px-5 text-sm font-semibold transition hover:border-primary/40 hover:text-primary"
               >
-                <Smartphone className="h-4 w-4" /> Google Play
-                <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                  Čoskoro
-                </span>
-              </button>
+                <Smartphone className="h-4 w-4" /> Stiahnuť pre Android
+              </Link>
             </div>
             {/*
               Samostatná appka Kniha jázd — pre toho, kto potrebuje len jazdy,

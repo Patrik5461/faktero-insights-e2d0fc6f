@@ -10,6 +10,7 @@
  * zámerne: build vznikne skôr, než ho Apple schváli, a posielať ľudí na
  * aktualizáciu, ktorá v obchode ešte nie je, je horšie než nepovedať nič.
  */
+import { Capacitor } from "@capacitor/core";
 import { isOnline } from "./offline-queue";
 
 // Endpoint, nie statický súbor: appka beží na vlastnom pôvode a statické súbory
@@ -52,7 +53,10 @@ export async function zistiNovsiuVerziu(): Promise<NovsiaVerzia | null> {
   try {
     const riadenie = new AbortController();
     const strop = setTimeout(() => riadenie.abort(), 5000);
-    const odpoved = await fetch(`${ADRESA}?t=${Date.now()}`, {
+    // Android sa zatiaľ sťahuje z webu, nie z obchodu — odkaz aj vydaná verzia
+    // sú iné ako pri iPhone a odkaz na App Store by ho poslal nikam.
+    const platforma = Capacitor.getPlatform() === "android" ? "&platforma=android" : "";
+    const odpoved = await fetch(`${ADRESA}?t=${Date.now()}${platforma}`, {
       cache: "no-store",
       signal: riadenie.signal,
     });
