@@ -18,7 +18,18 @@ import {
  * Páruje sa podľa IČO. Keď firma u nich nie je, povie sa to rovno aj so
  * zoznamom toho, čo tam je — inak sa len háda, prečo sa nič nenašlo.
  */
-function SparovanieSPostakom({ companyId }: { companyId: string | null }) {
+function SparovanieSPostakom({
+  companyId,
+  profil,
+}: {
+  companyId: string | null;
+  /** Uložený profil — spárovanie musí byť vidieť aj po obnovení stránky. */
+  profil: {
+    epostak_firm_id?: string | null;
+    peppol_participant_id?: string | null;
+    enabled?: boolean | null;
+  } | null;
+}) {
   const sparuj = useServerFn(sparujEpostakFirmuFn);
   const qc = useQueryClient();
   const [stav, setStav] = useState<any>(null);
@@ -54,7 +65,8 @@ function SparovanieSPostakom({ companyId }: { companyId: string | null }) {
           disabled={bezi || !companyId}
           className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          <Link2 className="h-4 w-4" /> {bezi ? "Overujem…" : "Spárovať"}
+          <Link2 className="h-4 w-4" />{" "}
+          {bezi ? "Overujem…" : profil?.epostak_firm_id ? "Overiť znova" : "Spárovať"}
         </button>
       </div>
 
@@ -68,6 +80,22 @@ function SparovanieSPostakom({ companyId }: { companyId: string | null }) {
               {stav.peppolStatus})
             </>
           ) : null}
+        </div>
+      )}
+      {/* Po obnovení stránky výsledok kliknutia nie je — ukáže sa uložený stav. */}
+      {!stav && profil?.epostak_firm_id && (
+        <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+          Spárované s ePoštákom
+          {profil.peppol_participant_id ? (
+            <>
+              {" "}
+              · Peppol <span className="font-mono text-xs">{profil.peppol_participant_id}</span>
+            </>
+          ) : (
+            " · Peppol ID zatiaľ nepridelené"
+          )}
+          {" · "}
+          {profil.enabled ? "eFaktúra zapnutá" : "eFaktúra vypnutá"}
         </div>
       )}
       {stav && !stav.sparovane && (
@@ -208,7 +236,7 @@ function EFakturaPage() {
           ich API chce identifikátor firmy pri každom volaní. Preto je nad
           skóre pripravenosti, nie zapadnuté v nastaveniach.
         */}
-        <SparovanieSPostakom companyId={companyId} />
+        <SparovanieSPostakom companyId={companyId} profil={profil} />
         {readinessQuery.data && (
           <div className="mb-6 rounded-xl border border-border bg-card p-6">
             <div className="flex items-center justify-between gap-4">
