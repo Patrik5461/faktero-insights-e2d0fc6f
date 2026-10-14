@@ -886,6 +886,7 @@ export const sk = {
   "sken.qrKod": "QR kód",
   "sken.naskenujteDoklad": "Odfoťte akýkoľvek doklad",
   "sken.automaticky": "Bloček, faktúra, dobropis aj list z úradu — appka sama rozpozná, čo to je",
+  "sken.jedenSkener": "QR kód z bločku sa načíta sám — čokoľvek iné odfoťte, appka rozpozná, čo to je",
   "sken.namierteQr": "Namierte na QR kód",
   "sken.qrSaPrecita": "Kód sa prečíta sám, netreba nič stláčať",
   "sken.nastavenie": "Nastavenie dokladu",

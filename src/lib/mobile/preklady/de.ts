@@ -892,6 +892,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "sken.naskenujteDoklad": "Beliebigen Beleg fotografieren",
   "sken.automaticky":
     "Kassenbon, Rechnung, Gutschrift oder Behördenbrief — die App erkennt selbst, was es ist",
+  "sken.jedenSkener": "Der QR-Code eines Kassenbons wird automatisch gelesen — alles andere fotografieren, die App erkennt es",
   "sken.namierteQr": "Auf den QR-Code richten",
   "sken.qrSaPrecita": "Der Code wird von selbst gelesen, Sie müssen nichts drücken",
   "sken.nastavenie": "Beleg-Einstellungen",

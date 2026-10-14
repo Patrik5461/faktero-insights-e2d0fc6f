@@ -883,6 +883,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "sken.naskenujteDoklad": "Photograph any document",
   "sken.automaticky":
     "Receipt, invoice, credit note or official letter — the app recognises it by itself",
+  "sken.jedenSkener": "A receipt's QR code is read automatically — photograph anything else and the app recognises it",
   "sken.namierteQr": "Point at the QR code",
   "sken.qrSaPrecita": "The code is read on its own, no need to press anything",
   "sken.nastavenie": "Receipt settings",

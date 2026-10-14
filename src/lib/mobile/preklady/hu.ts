@@ -878,6 +878,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "sken.naskenujteDoklad": "Fényképezzen le bármilyen bizonylatot",
   "sken.automaticky":
     "Blokk, számla, jóváírás vagy hatósági levél — az alkalmazás magától felismeri",
+  "sken.jedenSkener": "A blokk QR-kódját az app magától beolvassa — bármi mást fotózzon le, felismeri, mi az",
   "sken.namierteQr": "Irányítsa a QR-kódra",
   "sken.qrSaPrecita": "A kódot magától beolvassa, nem kell megnyomnia semmit",
   "sken.nastavenie": "Bizonylat beállításai",

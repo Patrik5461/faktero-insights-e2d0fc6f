@@ -69,16 +69,11 @@ export function Skener({
     predkontacie: { kod: string; popis: string }[];
   } | null>(null);
   /*
-    Dva režimy jednej kamery. Kód sa číta v oboch — nájsť ho na fotke bločku
-    je výhoda, nie prekážka. Líšia sa tým, čo obrazovka ponúka: pri doklade
-    spúšť, pri kóde len zameriavač, aby nič neodvádzalo od toho, že stačí
-    namieriť. Panel s úhradou a kategóriou je v oboch — bloček z QR kódu sa
-    ukladá s tým istým nastavením ako odfotený.
-
-    Otvára sa na QR kóde. Ten je tu častejší a nepotrebuje nič ďalšie — stačí
-    namieriť. Doklad je o ťuknutie vedľa a aj tak si vyžiada spúšť.
+    Jeden skener, nie dva režimy. Kamera stále hľadá QR kód bločku — keď ho
+    nájde, bloček sa načíta sám. Spúšť je pritom vždy po ruke na čokoľvek
+    iné (faktúra, bloček bez kódu, list). Predtým bol prepínač „QR kód /
+    Doklad“ a ľudia ho museli pri každom doklade prepínať.
   */
-  const [rezim, setRezim] = useState<"doklad" | "qr">("qr");
   const [nastaveniaOtvorene, setNastaveniaOtvorene] = useState(false);
   // Zákazky a predkontácie sa načítajú až pri rozbalení „Ďalších položiek" — bez signálu ostanú skryté.
   useEffect(() => {
@@ -144,37 +139,7 @@ export function Skener({
         od okraja po okraj.
       */}
       <div className="relative flex min-h-0 flex-1 flex-col">
-        {/* Prepínač režimu. Hore, aby nezavadzal palcu pri spúšti. */}
-        <div
-          className="flex shrink-0 justify-center px-4 pb-2 pt-3"
-          style={{ paddingTop: "calc(var(--safe-top) + 0.5rem)" }}
-        >
-          <div
-            role="group"
-            aria-label={t("sken.rezim")}
-            className="flex gap-1 rounded-full bg-black/45 p-1 backdrop-blur"
-          >
-            {(
-              [
-                // QR kód je vľavo. Bloček sa skenuje raz za čas, kód aj
-                // niekoľkokrát denne — a v dvojici sa prstom mieri na prvé.
-                ["qr", t("sken.qrKod")],
-                ["doklad", t("sken.doklad")],
-              ] as const
-            ).map(([kod, popis]) => (
-              <button
-                key={kod}
-                onClick={() => setRezim(kod)}
-                aria-pressed={rezim === kod}
-                className={`min-h-[36px] rounded-full px-4 text-[14px] font-medium transition ${
-                  rezim === kod ? "bg-app-zelena text-white" : "text-white/85"
-                }`}
-              >
-                {popis}
-              </button>
-            ))}
-          </div>
-        </div>
+        <div className="shrink-0" style={{ paddingTop: "calc(var(--safe-top) + 0.5rem)" }} />
 
         {/*
           Zameriavač. Štyri rohy, nie celý rámik: rohy hovoria „sem to zmestite"
@@ -185,9 +150,7 @@ export function Skener({
           className="pointer-events-none flex min-h-0 flex-1 items-center justify-center px-8 py-3"
         >
           <div
-            className={`relative h-full ${
-              rezim === "qr" ? "aspect-square max-h-56" : "max-h-[42vh] w-[68%] max-w-[19rem]"
-            }`}
+            className="relative h-full max-h-[42vh] w-[68%] max-w-[19rem]"
           >
             {(
               [
@@ -342,14 +305,14 @@ export function Skener({
           </section>
 
           <p className="text-center text-[15px] font-medium text-white">
-            {rezim === "qr" ? t("sken.namierteQr") : t("sken.naskenujteDoklad")}
+            {t("sken.naskenujteDoklad")}
           </p>
           {/* Druhý riadok len na vyššom telefóne — na 375×667 by tlačil spúšť dole. */}
           <p className="mt-0.5 text-center text-[13px] text-white/70 [@media(max-height:700px)]:hidden">
-            {rezim === "qr" ? t("sken.qrSaPrecita") : t("sken.automaticky")}
+            {t("sken.jedenSkener")}
           </p>
 
-          {rezim === "doklad" && (
+          {(
             <div className="mt-3 grid grid-cols-3 items-center">
               <div className="flex justify-start">
                 <MalyKruh icon={ImageIcon} label={t("sken.zGalerie")} onClick={onZGalerie} />
@@ -375,7 +338,7 @@ export function Skener({
 
           <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/15 pt-2">
             <MalyOdkaz icon={FileText} label={t("sken.pdfSubor")} onClick={onZGalerie} />
-            {rezim === "doklad" && onViacDokladov && (
+            {onViacDokladov && (
               <MalyOdkaz icon={Layers} label={t("sken.viacDokladov")} onClick={onViacDokladov} />
             )}
             <MalyOdkaz icon={Receipt} label={t("pd.nazov")} onClick={onPrijateDoklady} />

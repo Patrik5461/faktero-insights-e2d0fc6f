@@ -872,6 +872,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "sken.qrKod": "QR kód",
   "sken.naskenujteDoklad": "Vyfoťte jakýkoli doklad",
   "sken.automaticky": "Účtenka, faktura, dobropis i dopis z úřadu — aplikace sama pozná, co to je",
+  "sken.jedenSkener": "QR kód z účtenky se načte sám — cokoli jiného vyfoťte, aplikace pozná, co to je",
   "sken.namierteQr": "Namiřte na QR kód",
   "sken.qrSaPrecita": "Kód se přečte sám, netřeba nic mačkat",
   "sken.nastavenie": "Nastavení dokladu",
