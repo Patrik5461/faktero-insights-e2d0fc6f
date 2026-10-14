@@ -1114,7 +1114,7 @@ function Panel({
     /* Rovnaký jazyk ako KPI karty: 1px rám v plnej farbe, `rounded-xl` a 16
        bodov vnútri. Predtým 24 — pri dvoch kartách vedľa seba to na notebooku
        ubralo z obsahu celý stĺpec. */
-    <div className={`rounded-xl border border-border bg-card p-4 ${className ?? ""}`}>
+    <div className={`min-w-0 rounded-xl border border-border bg-card p-4 ${className ?? ""}`}>
       <div className="mb-3 flex items-center gap-2">
         {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
         <h2 className="text-sm font-medium">{title}</h2>
