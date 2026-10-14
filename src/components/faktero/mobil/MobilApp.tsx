@@ -57,6 +57,8 @@ import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { odosliCakajuceJazdy } from "@/lib/mobile/auto-jazdy-sync";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { RozpoznanyDoklad } from "@/components/faktero/mobil/RozpoznanyDoklad";
+import { DavkaDokladov, type VstupDavky } from "@/components/faktero/mobil/DavkaDokladov";
+import { vyberSubory } from "@/lib/mobile/vyber-suborov";
 import { jeBlockovyQr } from "@/lib/mobile/sken-rozpoznanie";
 import { StavPushu } from "@/components/faktero/mobil/StavPushu";
 import { CislaDopredu } from "@/components/faktero/mobil/CislaDopredu";
@@ -209,7 +211,7 @@ export type Krok =
   | "banka"
   | "ucet"
   | "zmazanieUctu";
-type Zachyt = "blocek" | "pdf" | "strany";
+type Zachyt = "blocek" | "pdf" | "strany" | "davka";
 
 /** Obrazovky bez rozpísaných údajov — z nich smie rýchla akcia odskočiť na skener. */
 const KROKY_PRE_RYCHLU_AKCIU = new Set<Krok>([
@@ -997,6 +999,10 @@ function ObsahApky() {
             setQrZoSkenera(null);
             doZachytu("strany", "skener");
           }}
+          onViacDokladov={() => {
+            setQrZoSkenera(null);
+            doZachytu("davka", "skener");
+          }}
           onPrijateDoklady={() => setKrok("doklady")}
         />
         <TabBar aktivna="skener" onPrepni={prepniZalozku} />
@@ -1516,6 +1522,7 @@ const NAZVY: Record<Zachyt, Kluc> = {
   blocek: "app.blocekQr",
   pdf: "app.fakturaPdf",
   strany: "app.viacstranovyDoklad",
+  davka: "davka.nadpis",
 };
 
 function ZachytDokladu({
@@ -1559,6 +1566,12 @@ function ZachytDokladu({
   const [duplikat, setDuplikat] = useState<NajdenyDoklad | null>(null);
   /** Súbor odovzdaný na rozpoznanie (jeden skener na všetko). */
   const [naRozpoznanie, setNaRozpoznanie] = useState<string | null>(null);
+  /**
+   * Viac rôznych dokladov naraz — z galérie (viac súborov) alebo fotených za
+   * sebou. `null` = dávka nie je otvorená; vstup „Viac dokladov" zo skenera
+   * ju otvára prázdnu.
+   */
+  const [davka, setDavka] = useState<VstupDavky[] | null>(druh === "davka" ? [] : null);
 
   /** Doklad prečítaný — ďalej sa pýtame na úhradu a na fotku. */
   function prijmi(r: BlocekVysledok, prilozene?: string | null) {
@@ -1681,11 +1694,36 @@ function ZachytDokladu({
     await rozpoznajAleboPrecitaj(cap.dataUrl, qr?.raw);
   }
 
-  /* --- Súbor z telefónu: PDF alebo obrázok --- */
+  /*
+    --- Súbor z telefónu: PDF alebo obrázok, aj viac naraz ---
+
+    Jeden súbor ide po starom (aj bez signálu ako bloček). Viac súborov je viac
+    dokladov — každý sa rozpozná zvlášť v dávke. Dávka potrebuje sieť: fronta
+    bez signálu vie len bločky a desať faktúr by z nej vyšlo ako desať bločkov.
+  */
   async function vyberPdf() {
-    const dataUrl = await vyberSubor("application/pdf,image/*");
-    if (!dataUrl) return;
-    await rozpoznajAleboPrecitaj(dataUrl);
+    const subory = await vyberSubory("application/pdf,image/*", true);
+    if (subory.length === 0) return;
+    if (subory.length === 1) return rozpoznajAleboPrecitaj(subory[0].dataUrl);
+    const { isOnline } = await import("@/lib/mobile/offline-queue");
+    if (!(await isOnline())) {
+      toast.error(t("davka.bezSignalu"));
+      return;
+    }
+    setDavka(subory.map((s) => ({ subor: s.dataUrl, nazov: s.nazov })));
+  }
+
+  /*
+    „Odfotiť ďalší doklad" z obrazovky rozpoznaného dokladu. Ten je už
+    nahratý, takže ide do dávky s id a dočíta sa tam. Kamera sa otvára hneď v
+    tom istom ťuknutí — na webe by ju prehliadač mimo ťuknutia nepustil.
+  */
+  async function dalsiDoklad(id: string) {
+    const prvy = naRozpoznanie;
+    if (!prvy) return;
+    const cap = await captureReceipt();
+    setDavka([{ subor: prvy, id }, ...(cap ? [{ subor: cap.dataUrl }] : [])]);
+    setNaRozpoznanie(null);
   }
 
   /* --- Viacstranový doklad --- */
@@ -1796,6 +1834,19 @@ function ZachytDokladu({
   }
 
   if (skenujem) return <QrSkener onNajdene={precitajQr} onZrusit={() => setSkenujem(false)} />;
+  if (davka)
+    return (
+      <DavkaDokladov
+        firma={firma}
+        pociatocne={davka}
+        nastavenie={prednastavene}
+        onHotovo={onUlozene}
+        onSpat={() => {
+          setDavka(null);
+          if (zoSkenera || druh === "davka") onSpat();
+        }}
+      />
+    );
   if (naRozpoznanie)
     return (
       <RozpoznanyDoklad
@@ -1805,6 +1856,7 @@ function ZachytDokladu({
         onUlozene={onUlozene}
         // Doklad je v Nespracovaných — odchádza sa rovnako ako po uložení.
         onNechat={onUlozene}
+        onDalsi={(id) => void dalsiDoklad(id)}
         onSpat={() => {
           setNaRozpoznanie(null);
           setStrany([]);
@@ -1868,7 +1920,7 @@ function ZachytDokladu({
           <VelkeTlacidlo
             icon={FileText}
             label={t("app.vybratSubor")}
-            hint={t("app.pdfAleboObrazok")}
+            hint={t("app.pdfAleboObrazokViac")}
             variant="primary"
             onClick={vyberPdf}
           />
@@ -2112,22 +2164,4 @@ function Potvrdenie({
       </div>
     </MobilObrazovka>
   );
-}
-
-/** Výber súboru z telefónu; vráti data URL. */
-function vyberSubor(accept: string): Promise<string | null> {
-  return new Promise((resolve) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = accept;
-    input.onchange = () => {
-      const f = input.files?.[0];
-      if (!f) return resolve(null);
-      const r = new FileReader();
-      r.onload = () => resolve(String(r.result));
-      r.onerror = () => resolve(null);
-      r.readAsDataURL(f);
-    };
-    input.click();
-  });
 }

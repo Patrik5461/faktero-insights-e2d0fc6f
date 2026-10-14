@@ -44,6 +44,7 @@ import { Route as AuthenticatedExportyRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedFirmaRouteImport } from './routes/_authenticated/firma'
 import { Route as AuthenticatedFirmyRouteImport } from './routes/_authenticated/firmy'
 import { Route as AuthenticatedKosRouteImport } from './routes/_authenticated/kos'
+import { Route as AuthenticatedMojeUlohyRouteImport } from './routes/_authenticated/moje-ulohy'
 import { Route as AuthenticatedOdberateliaRouteImport } from './routes/_authenticated/odberatelia'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedPokladnaRouteImport } from './routes/_authenticated/pokladna'
@@ -502,6 +503,11 @@ const AuthenticatedFirmyRoute = AuthenticatedFirmyRouteImport.update({
 const AuthenticatedKosRoute = AuthenticatedKosRouteImport.update({
   id: '/kos',
   path: '/kos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMojeUlohyRoute = AuthenticatedMojeUlohyRouteImport.update({
+  id: '/moje-ulohy',
+  path: '/moje-ulohy',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedOdberateliaRoute =
@@ -2079,6 +2085,7 @@ export interface FileRoutesByFullPath {
   '/firma': typeof AuthenticatedFirmaRoute
   '/firmy': typeof AuthenticatedFirmyRoute
   '/kos': typeof AuthenticatedKosRoute
+  '/moje-ulohy': typeof AuthenticatedMojeUlohyRoute
   '/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pokladna': typeof AuthenticatedPokladnaRoute
@@ -2389,6 +2396,7 @@ export interface FileRoutesByTo {
   '/firma': typeof AuthenticatedFirmaRoute
   '/firmy': typeof AuthenticatedFirmyRoute
   '/kos': typeof AuthenticatedKosRoute
+  '/moje-ulohy': typeof AuthenticatedMojeUlohyRoute
   '/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/pokladna': typeof AuthenticatedPokladnaRoute
@@ -2706,6 +2714,7 @@ export interface FileRoutesById {
   '/_authenticated/firma': typeof AuthenticatedFirmaRoute
   '/_authenticated/firmy': typeof AuthenticatedFirmyRoute
   '/_authenticated/kos': typeof AuthenticatedKosRoute
+  '/_authenticated/moje-ulohy': typeof AuthenticatedMojeUlohyRoute
   '/_authenticated/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/pokladna': typeof AuthenticatedPokladnaRoute
@@ -3025,6 +3034,7 @@ export interface FileRouteTypes {
     | '/firma'
     | '/firmy'
     | '/kos'
+    | '/moje-ulohy'
     | '/odberatelia'
     | '/onboarding'
     | '/pokladna'
@@ -3335,6 +3345,7 @@ export interface FileRouteTypes {
     | '/firma'
     | '/firmy'
     | '/kos'
+    | '/moje-ulohy'
     | '/odberatelia'
     | '/onboarding'
     | '/pokladna'
@@ -3651,6 +3662,7 @@ export interface FileRouteTypes {
     | '/_authenticated/firma'
     | '/_authenticated/firmy'
     | '/_authenticated/kos'
+    | '/_authenticated/moje-ulohy'
     | '/_authenticated/odberatelia'
     | '/_authenticated/onboarding'
     | '/_authenticated/pokladna'
@@ -4315,6 +4327,13 @@ declare module '@tanstack/react-router' {
       path: '/kos'
       fullPath: '/kos'
       preLoaderRoute: typeof AuthenticatedKosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/moje-ulohy': {
+      id: '/_authenticated/moje-ulohy'
+      path: '/moje-ulohy'
+      fullPath: '/moje-ulohy'
+      preLoaderRoute: typeof AuthenticatedMojeUlohyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/odberatelia': {
@@ -6396,6 +6415,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFirmaRoute: typeof AuthenticatedFirmaRoute
   AuthenticatedFirmyRoute: typeof AuthenticatedFirmyRoute
   AuthenticatedKosRoute: typeof AuthenticatedKosRoute
+  AuthenticatedMojeUlohyRoute: typeof AuthenticatedMojeUlohyRoute
   AuthenticatedOdberateliaRoute: typeof AuthenticatedOdberateliaRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedPokladnaRoute: typeof AuthenticatedPokladnaRoute
@@ -6505,6 +6525,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFirmaRoute: AuthenticatedFirmaRoute,
   AuthenticatedFirmyRoute: AuthenticatedFirmyRoute,
   AuthenticatedKosRoute: AuthenticatedKosRoute,
+  AuthenticatedMojeUlohyRoute: AuthenticatedMojeUlohyRoute,
   AuthenticatedOdberateliaRoute: AuthenticatedOdberateliaRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedPokladnaRoute: AuthenticatedPokladnaRoute,

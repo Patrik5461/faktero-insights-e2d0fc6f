@@ -158,3 +158,28 @@ export function jeBlockovyQr(qr: string | null | undefined): boolean {
 /** Dokedy sa oplatí čakať na prečítanie, kým appka ponúkne odchod. */
 export const STROP_CITANIA_MS = 90_000;
 export const INTERVAL_CITANIA_MS = 2_000;
+
+/**
+ * Data URL → base64 a typ súboru, ako ich chce `sken-nahraj`.
+ *
+ * Názov súboru z galérie sa nechá (v Nespracovaných podľa neho človek doklad
+ * spozná); fotka z kamery žiadny nemá, dostane „doklad-z-appky".
+ */
+export function rozoberDataUrl(
+  dataUrl: string,
+  nazov?: string | null,
+): { mime: string; base64: string; nazov: string } {
+  const ciarka = dataUrl.indexOf(",");
+  const mime = dataUrl.slice(5, dataUrl.indexOf(";")) || "image/jpeg";
+  const pripona = mime.includes("pdf")
+    ? "pdf"
+    : mime.includes("png")
+      ? "png"
+      : mime.includes("webp")
+        ? "webp"
+        : mime.includes("heic")
+          ? "heic"
+          : "jpg";
+  const meno = nazov?.trim().slice(0, 200);
+  return { mime, base64: dataUrl.slice(ciarka + 1), nazov: meno || `doklad-z-appky.${pripona}` };
+}

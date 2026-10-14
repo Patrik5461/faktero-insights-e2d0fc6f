@@ -158,6 +158,14 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
             })
           )}
         </div>
+        {/* Schválenie, komentáre a nespracované doklady na jednej stránke. */}
+        <Link
+          to="/moje-ulohy"
+          onClick={() => setOpen(false)}
+          className="block border-t border-border px-3 py-2 text-center text-xs font-medium text-primary hover:bg-secondary"
+        >
+          Všetky moje úlohy →
+        </Link>
       </DropdownMenuContent>
     </DropdownMenu>
   );

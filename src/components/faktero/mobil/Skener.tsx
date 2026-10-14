@@ -1,6 +1,13 @@
 import { useOperacia } from "@/lib/mobile/server-most";
 import { useEffect, useState } from "react";
-import { Files, FileText, Image as ImageIcon, Receipt, SlidersHorizontal } from "lucide-react";
+import {
+  Files,
+  FileText,
+  Image as ImageIcon,
+  Layers,
+  Receipt,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useKameraQr } from "./KameraQr";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
@@ -39,6 +46,7 @@ export function Skener({
   onOdfotit,
   onZGalerie,
   onViacstranovy,
+  onViacDokladov,
   onPrijateDoklady,
   nastavenie,
   onNastavenie,
@@ -48,6 +56,11 @@ export function Skener({
   onOdfotit: () => void;
   onZGalerie: () => void;
   onViacstranovy: () => void;
+  /**
+   * Viac rôznych dokladov za sebou (dávka). Iné než viacstranový — ten spája
+   * strany JEDNÉHO dokladu do PDF.
+   */
+  onViacDokladov?: () => void;
   onPrijateDoklady: () => void;
   nastavenie: NastavenieDokladu;
   onNastavenie: (n: NastavenieDokladu) => void;
@@ -320,6 +333,9 @@ export function Skener({
 
         <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/15 pt-3">
           <MalyOdkaz icon={FileText} label={t("sken.pdfSubor")} onClick={onZGalerie} />
+          {rezim === "doklad" && onViacDokladov && (
+            <MalyOdkaz icon={Layers} label={t("sken.viacDokladov")} onClick={onViacDokladov} />
+          )}
           {rezim === "doklad" && (
             <MalyOdkaz
               icon={SlidersHorizontal}

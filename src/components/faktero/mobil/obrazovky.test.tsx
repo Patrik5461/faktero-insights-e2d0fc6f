@@ -13,6 +13,7 @@ import { MobilPanel } from "./MobilPanel";
 import { StavPushu } from "./StavPushu";
 import { PruhJazdy } from "./PrebiehaJazda";
 import { RozpoznanyDoklad } from "./RozpoznanyDoklad";
+import { DavkaDokladov } from "./DavkaDokladov";
 
 /**
  * Že sa obrazovka vôbec vykreslí.
@@ -86,6 +87,46 @@ describe("mobilné obrazovky sa vykreslia", () => {
       />,
     );
     expect(html).toContain("Nahrávam doklad");
+  });
+
+  it("rozpoznaný doklad z dávky (už nahratý) sa nenahráva znova", () => {
+    const html = renderToString(
+      <RozpoznanyDoklad
+        firma={firma}
+        subor="data:image/jpeg;base64,AAAA"
+        id="22222222-2222-2222-2222-222222222222"
+        onUlozene={nic}
+        onNechat={nic}
+        onSpat={nic}
+      />,
+    );
+    expect(html).not.toContain("Nahrávam doklad");
+    expect(html).toContain("Rozpoznaný doklad");
+  });
+
+  it("dávka viacerých dokladov — prázdna aj so súbormi", () => {
+    const prazdna = renderToString(
+      <DavkaDokladov firma={firma} onHotovo={nic} onSpat={nic} />,
+    );
+    expect(prazdna).toContain("Viac dokladov naraz");
+    expect(prazdna).toContain("Zatiaľ tu nie je žiadny doklad");
+
+    const html = renderToString(
+      <DavkaDokladov
+        firma={firma}
+        pociatocne={[
+          { subor: "data:image/jpeg;base64,AAAA" },
+          { subor: "data:application/pdf;base64,JVBERi0=", nazov: "faktura.pdf" },
+          { subor: "data:image/jpeg;base64,BBBB", id: "33333333-3333-3333-3333-333333333333" },
+        ]}
+        onHotovo={nic}
+        onSpat={nic}
+      />,
+    );
+    expect(html).toContain("Dokladov: 3");
+    expect(html).toContain("Čaká na nahratie");
+    expect(html).toContain("Čítam…");
+    expect(html).toContain("Uložiť všetky rozpoznané (0)");
   });
 
   it("stav pushu", () => {

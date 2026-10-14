@@ -71,6 +71,8 @@ import { FloatingAIButton } from "@/components/faktero/FloatingAIButton";
 import { NotificationBell } from "@/components/faktero/NotificationBell";
 import { NahlasitChybu } from "@/components/faktero/NahlasitChybu";
 import { getMyAdminRole } from "@/lib/faktero/admin.functions";
+import { pocetMojichUlohFn } from "@/lib/faktero/moje-ulohy.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { useIsNative } from "@/hooks/useIsNative";
 import { initNativePlatform } from "@/lib/mobile/native-init";
@@ -247,6 +249,30 @@ export function AppShell({
     };
   }, [pathname]);
 
+  /*
+    Počet pri „Moje úlohy": schválenie, komentáre na vyriešenie a nespracované
+    doklady — to isté, čo stránka vypíše. Obnovuje sa rovnako ako počet
+    nespracovaných.
+  */
+  const nacitajPocetUloh = useServerFn(pocetMojichUlohFn);
+  const [pocetUloh, setPocetUloh] = useState(0);
+  useEffect(() => {
+    let zrusene = false;
+    const nacitaj = async () => {
+      const cid = getActiveCompanyId();
+      if (!cid) return;
+      const r = await nacitajPocetUloh({ data: { company_id: cid } });
+      if (!zrusene) setPocetUloh(r.spolu);
+    };
+    void nacitaj().catch(() => {});
+    const t = setInterval(() => void nacitaj().catch(() => {}), 60_000);
+    return () => {
+      zrusene = true;
+      clearInterval(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   /* Okno na nahlásenie chyby má stav tu — otvára sa z ponuky pod avatarom. */
   const [nahlasenieOtvorene, setNahlasenieOtvorene] = useState(false);
 
@@ -257,6 +283,7 @@ export function AppShell({
     label: g.label,
     icon: g.icon,
     cesta: g.match[0],
+    pocet: g.key === "moje-ulohy" ? pocetUloh : undefined,
     polozky: g.children.map((c) => ({
       to: c.to,
       search: c.search,
@@ -350,6 +377,7 @@ export function AppShell({
               <SheetContent side="left" className="w-80 overflow-y-auto p-0">
                 <MobileNav
                   pocetNespracovanych={pocetNespracovanych}
+                  pocetUloh={pocetUloh}
                   pathname={pathname}
                   active={active}
                   companies={companies}
@@ -713,6 +741,7 @@ function MobileNav({
   onAddCompany,
   onClose,
   pocetNespracovanych,
+  pocetUloh,
 }: {
   pathname: string;
   active: Company | undefined;
@@ -727,6 +756,7 @@ function MobileNav({
   onAddCompany: () => void;
   onClose: () => void;
   pocetNespracovanych?: number;
+  pocetUloh?: number;
 }) {
   const [hladanie, setHladanie] = useState("");
   const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
@@ -735,6 +765,7 @@ function MobileNav({
     label: g.label,
     icon: g.icon,
     cesta: g.match[0],
+    pocet: g.key === "moje-ulohy" ? pocetUloh : undefined,
     polozky: g.children.map((c) => ({
       to: c.to,
       search: c.search,

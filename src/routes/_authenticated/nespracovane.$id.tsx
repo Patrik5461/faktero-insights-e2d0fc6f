@@ -339,6 +339,13 @@ function Detail() {
               </div>
             )}
             {d.chyba && <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{d.chyba}</div>}
+            {d.zdrojUdajov && (
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+                Údaje sú zo strojového záznamu faktúry (
+                {d.zdrojUdajov === "isdoc" ? "ISDOC" : d.zdrojUdajov === "zugferd" ? "ZUGFeRD / Factur-X" : "UBL"}
+                ), nie prečítané z obrázka — sumy a čísla sedia presne s dokladom.
+              </div>
+            )}
             {d.varovania.map((v) => (
               <div key={v} role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                 {v}

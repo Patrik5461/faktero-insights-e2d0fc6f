@@ -639,6 +639,7 @@ export const sk = {
   "app.qrNaFotke": "Bloček, faktúra aj iný doklad — rozpozná sa sám",
   "app.vybratSubor": "Vybrať súbor",
   "app.pdfAleboObrazok": "PDF alebo obrázok faktúry",
+  "app.pdfAleboObrazokViac": "PDF alebo obrázok — dá sa vybrať aj viac dokladov naraz",
   "app.stranySaSpoja": "Strany sa spoja do jedného PDF",
   "app.skontrolujteDoklad": "Skontrolujte doklad",
   "app.odfotitDoklad": "Odfotiť doklad",
@@ -992,6 +993,45 @@ export const sk = {
   "rd.mimoAppky":
     "Doklad vyžaduje aj: {polia}. To sa dá doplniť na webe v Nespracovaných dokladoch.",
   "rd.nahladAlt": "Náhľad dokladu",
+
+  /* Viac dokladov naraz (dávka). */
+  "sken.viacDokladov": "Viac dokladov",
+  "rd.odfotitDalsi": "Odfotiť ďalší doklad",
+  "davka.nadpis": "Viac dokladov naraz",
+  "davka.popis":
+    "Každá fotka a každý súbor je samostatný doklad. Appka ich nahrá a prečíta sama, vy len skontrolujete a uložíte.",
+  "davka.odfotit": "Odfotiť doklad",
+  "davka.odfotitDalsi": "Odfotiť ďalší doklad",
+  "davka.zGalerie": "Z galérie / súborov",
+  "davka.prazdna":
+    "Zatiaľ tu nie je žiadny doklad. Odfoťte prvý alebo vyberte z galérie viac súborov naraz.",
+  "davka.pocet": "Dokladov: {pocet}",
+  "davka.dokladN": "Doklad {n}",
+  "davka.stav.caka": "Čaká na nahratie",
+  "davka.stav.nahravam": "Nahrávam…",
+  "davka.stav.citam": "Čítam…",
+  "davka.stav.rozpoznane": "Rozpoznané",
+  "davka.stav.doplnit": "Treba doplniť: {polia}",
+  "davka.stav.duplicita": "Možná duplicita — ťuknite a rozhodnite",
+  "davka.stav.dlho": "Čítanie trvá dlho — ťuknite a počkajte",
+  "davka.stav.ulozene": "Uložené",
+  "davka.stav.chyba": "Chyba — ťuknite a skúste znova",
+  "davka.pole.druh": "druh dokladu",
+  "davka.pole.platba": "spôsob úhrady",
+  "davka.pole.polozky": "položky nesedia so sumou",
+  "davka.ulozitVsetky": "Uložiť všetky rozpoznané ({pocet})",
+  "davka.ulozeneHromadne": "Uložené doklady: {pocet}",
+  "davka.hotovo": "Hotovo",
+  "davka.hotovoHlaska": "Neuložené doklady ({pocet}) čakajú v Nespracovaných dokladoch.",
+  "davka.hotovoVsetko": "Všetky doklady sú uložené.",
+  "davka.nenahrane":
+    "Niektoré doklady sa ešte nenahrali ({pocet}). Keď dávku zavriete teraz, zahodia sa.",
+  "davka.zavrietAjTak": "Zavrieť aj tak",
+  "davka.bezSignalu":
+    "Viac dokladov naraz potrebuje signál. Bez neho odfoťte doklady po jednom — uložia sa ako bločky a odošlú sa, keď bude signál.",
+  "davka.prilisVela":
+    "V jednej dávke môže byť najviac {max} dokladov. Ďalšie pridajte v novej dávke.",
+  "davka.prilisVelky": "Súbor je väčší než 15 MB",
 } as const;
 
 export type Kluc = keyof typeof sk;

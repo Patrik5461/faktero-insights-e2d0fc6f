@@ -34,6 +34,8 @@ export type SekciaPanela = {
   /** Kam vedie samotná sekcia, keď nemá podpoložky. */
   cesta: string;
   polozky: PolozkaPanela[];
+  /** Počet pri samotnej sekcii bez podpoložiek (Moje úlohy). */
+  pocet?: number;
 };
 
 const KLUC = "faktero.bocny-panel-zbaleny";
@@ -103,11 +105,19 @@ export function SekcieNavigacie({
                 onClick={onPrejdi}
                 title={s.label}
                 aria-label={s.label}
-                className={`mx-auto grid h-11 w-11 place-items-center rounded-xl ${
+                className={`relative mx-auto grid h-11 w-11 place-items-center rounded-xl ${
                   aktivna ? "bg-primary/12 text-primary" : "text-foreground/70 hover:bg-secondary"
                 }`}
               >
                 <Ikona className="h-5 w-5" />
+                {s.pocet ? (
+                  <span
+                    className="absolute right-0.5 top-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-4 text-primary-foreground tabular-nums"
+                    aria-label={`${s.pocet} čaká`}
+                  >
+                    {s.pocet > 99 ? "99+" : s.pocet}
+                  </span>
+                ) : null}
               </Link>
             </li>
           );
@@ -129,7 +139,15 @@ export function SekcieNavigacie({
                 }`}
               >
                 <Ikona className="h-4 w-4 shrink-0" />
-                {!zbaleny && <span className="truncate">{s.label}</span>}
+                {!zbaleny && <span className="min-w-0 flex-1 truncate">{s.label}</span>}
+                {!zbaleny && s.pocet ? (
+                  <span
+                    className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums"
+                    aria-label={`${s.pocet} čaká`}
+                  >
+                    {s.pocet > 99 ? "99+" : s.pocet}
+                  </span>
+                ) : null}
               </Link>
             </li>
           );

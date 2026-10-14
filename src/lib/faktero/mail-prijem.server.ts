@@ -143,6 +143,18 @@ export async function precitajDoklad(
   base64: string,
   mimeType: string,
 ): Promise<Record<string, unknown> | null> {
+  /*
+    Faktúra so strojovými údajmi (ISDOC, ZUGFeRD / Factur-X, UBL — vložené v
+    PDF alebo ako samotné XML) sa nečíta z obrázka: údaje sú presné a AI by
+    sa mohla pomýliť. Keď XML nie je alebo mu nerozumieme, číta AI ako doteraz.
+  */
+  try {
+    const { dokladZPrilohy } = await import("./pdf-prilohy.server");
+    const zXml = await dokladZPrilohy(new Uint8Array(Buffer.from(base64, "base64")), mimeType);
+    if (zXml) return zXml;
+  } catch (e: any) {
+    console.warn("[mail-prijem] vložené XML sa nepodarilo prečítať:", e?.message ?? e);
+  }
   try {
     const { aiVision } = await import("./ai.server");
     const odpoved = await aiVision(base64, mimeType, PROMPT, { ucel: "doklad-z-posty" });
@@ -514,7 +526,15 @@ export async function spracujPrijatyMail(
     }
 
     const vsetky = await prilohyMailu(mail.email_id, apiKey);
-    const vsetkyDoklady = vsetky.filter((p) => jePrilohaDoklad(p.content_type, p.filename, p.size));
+    const lenObrazkyAPdf = vsetky.filter((p) => jePrilohaDoklad(p.content_type, p.filename, p.size));
+    /*
+      Faktúra poslaná len ako ISDOC (bez PDF) je tiež doklad — údaje v nej sú
+      presné. Keď PDF v maile je, ISDOC sa použije ako zdroj údajov k nemu
+      (`zXmlVedla`) a samostatný doklad z neho nevzniká, inak by bol dvakrát.
+    */
+    const vsetkyDoklady = lenObrazkyAPdf.some((p) => /pdf/i.test(p.content_type ?? "") || /\.pdf$/i.test(p.filename ?? ""))
+      ? lenObrazkyAPdf
+      : [...lenObrazkyAPdf, ...vsetky.filter((p) => /\.isdoc$/i.test(p.filename ?? ""))];
     // Pri rozdelenom maile sa o podpisoch a logách hovorí len raz, nie za každú firmu.
     const podpisy = smer?.lenPrilohy ? 0 : vsetky.length - vsetkyDoklady.length;
     const doklady = smer?.lenPrilohy
@@ -529,6 +549,25 @@ export async function spracujPrijatyMail(
     const dnes = new Date().toISOString().slice(0, 10);
     const vytvorene: string[] = [];
     const poznamky: string[] = [];
+
+    /*
+      Česká faktúra často príde ako PDF a vedľa neho ISDOC (alebo XML) s tým
+      istým menom. Údaje sa potom berú z XML — sú presné. Párujú sa podľa mena
+      bez prípony; keď je v maile jediné PDF a jediné XML, patria k sebe.
+    */
+    const kmen = (n?: string | null) => (n ?? "").toLowerCase().replace(/\.[^.]+$/, "");
+    const xmlPrilohy = vsetky.filter((p) => /\.(isdoc|xml)$/i.test(p.filename ?? "") && (p.size ?? 0) < 5_000_000);
+    const pdfPrilohy = doklady.filter((p) => /pdf/i.test(p.content_type ?? "") || /\.pdf$/i.test(p.filename ?? ""));
+    async function zXmlVedla(priloha: ResendPrilohaMeta): Promise<Record<string, unknown> | null> {
+      const par =
+        xmlPrilohy.find((x) => kmen(x.filename) === kmen(priloha.filename)) ??
+        (xmlPrilohy.length === 1 && pdfPrilohy.length === 1 && pdfPrilohy[0]!.id === priloha.id ? xmlPrilohy[0] : null);
+      if (!par) return null;
+      const s = await stiahniPrilohu(par);
+      if ("chyba" in s) return null;
+      const { dokladZXml } = await import("./doklad-xml");
+      return dokladZXml(s.bajty.toString("utf8"));
+    }
 
     for (const priloha of doklady.slice(0, MAX_PRILOH)) {
       if ((priloha.size ?? 0) > MAX_BAJTOV) {
@@ -555,7 +594,10 @@ export async function spracujPrijatyMail(
       const pripona = (priloha.filename?.split(".").pop() ?? "pdf").toLowerCase().slice(0, 5);
 
       // Čítanie ide pred uložením: od neho závisí, do ktorého kbelíka súbor patrí.
-      const ai = uz ? uz.ai : await precitajDoklad(bajty.toString("base64"), mime);
+      const ai = uz
+        ? uz.ai
+        : ((await zXmlVedla(priloha).catch(() => null)) ??
+          (await precitajDoklad(bajty.toString("base64"), mime)));
 
       /*
         Z prílohy, z ktorej sa nedá prečítať ani dodávateľ, ani číslo, ani

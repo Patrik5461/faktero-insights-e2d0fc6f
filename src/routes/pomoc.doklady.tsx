@@ -529,6 +529,14 @@ const sections: HelpSection[] = [
           dokladu. Do Pohody, do mesačného balíka a do príkazu na úhradu idú len schválené. Vrátený
           doklad sa po oprave vráti na schválenie odznova.
         </p>
+        <p>
+          <strong>Moje úlohy</strong> (v menu hneď pod Prehľadom, s počtom) zhrnú na jednej stránke
+          všetko, čo čaká práve na vás: doklady na vaše schválenie, komentáre, v ktorých vás kolega
+          označil, a nespracované doklady na kontrolu. Komentár po vybavení označte tlačidlom{" "}
+          <strong>Vyriešiť</strong> — zmizne z vašich úloh aj zo zvončeka. Keď komentár označil
+          viacerých kolegov, každý ho rieši za seba. Na stránku sa dostanete aj zo zvončeka cez{" "}
+          <Link to="/moje-ulohy">Všetky moje úlohy</Link>.
+        </p>
       </>
     ),
   },

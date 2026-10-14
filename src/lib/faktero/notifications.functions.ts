@@ -298,12 +298,13 @@ async function notifikacieKomentarov(companyId: string, userId: string): Promise
     .select("id, agenda, doklad_id, text, created_at, user_id")
     .eq("company_id", companyId)
     .contains("upozornit", [userId])
+    // Vyriešený komentár (Moje úlohy → Vyriešiť) už nie je čo hlásiť.
+    .not("vyriesili", "cs", `{${userId}}`)
     .neq("user_id", userId)
     .gte("created_at", od)
     .order("created_at", { ascending: false })
     .limit(30);
-  const cesta = (a: string, id: string) =>
-    a === "doklad" ? `/doklady/novy?id=${id}` : a === "prijata" ? `/prijate-faktury/${id}` : `/faktury/${id}`;
+  const { cestaNaDoklad: cesta } = await import("./moje-ulohy");
   return ((data ?? []) as any[]).map((k) => ({
     key: `komentar:${k.id}`,
     severity: "info" as const,

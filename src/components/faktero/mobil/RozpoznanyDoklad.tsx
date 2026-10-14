@@ -20,6 +20,7 @@ import {
   doplnZNastavenia,
   hodnotaPola,
   polaNaDoplnenie,
+  rozoberDataUrl as rozober,
   uplatniUpravy,
   INTERVAL_CITANIA_MS,
   STROP_CITANIA_MS,
@@ -41,7 +42,7 @@ type Detail = {
   varovania: string[];
 };
 
-const NAZOV_DRUHU: Record<DruhNespracovaneho, Kluc> = {
+export const NAZOV_DRUHU: Record<DruhNespracovaneho, Kluc> = {
   faktura: "rd.druh.faktura",
   zalohova: "rd.druh.zalohova",
   dobropis: "rd.druh.dobropis",
@@ -63,7 +64,7 @@ const ULOZENE_AKO: Record<DruhNespracovaneho, Kluc> = {
   blocek: "rd.ulozene.blocek",
   ostatny: "rd.ulozene.ostatny",
 };
-const NAZOV_POLA: Record<PoleNaDoplnenie, Kluc> = {
+export const NAZOV_POLA: Record<PoleNaDoplnenie, Kluc> = {
   dodavatel: "rd.dodavatel",
   cislo: "rd.cislo",
   datumVystavenia: "rd.vystavene",
@@ -71,22 +72,6 @@ const NAZOV_POLA: Record<PoleNaDoplnenie, Kluc> = {
   opravuje: "rd.opravuje",
   celkom: "rd.suma",
 };
-
-/** Data URL → base64 a typ súboru, ako ich chce `sken-nahraj`. */
-function rozober(dataUrl: string): { mime: string; base64: string; nazov: string } {
-  const ciarka = dataUrl.indexOf(",");
-  const mime = dataUrl.slice(5, dataUrl.indexOf(";")) || "image/jpeg";
-  const pripona = mime.includes("pdf")
-    ? "pdf"
-    : mime.includes("png")
-      ? "png"
-      : mime.includes("webp")
-        ? "webp"
-        : mime.includes("heic")
-          ? "heic"
-          : "jpg";
-  return { mime, base64: dataUrl.slice(ciarka + 1), nazov: `doklad-z-appky.${pripona}` };
-}
 
 /**
  * Jeden skener na všetko — výsledok rozpoznania.
@@ -102,21 +87,33 @@ function rozober(dataUrl: string): { mime: string; base64: string; nazov: string
 export function RozpoznanyDoklad({
   firma,
   subor,
+  id: uzNahrane,
   nastavenie,
   onUlozene,
   onNechat,
   onSpat,
+  onDalsi,
 }: {
   firma: { id: string; name: string };
   /** Fotka, obrázok z galérie alebo PDF (aj spojené strany) ako data URL. */
   subor: string;
+  /**
+   * Doklad je už nahratý (dávka viacerých dokladov) — nenahráva sa znova,
+   * len sa dočíta. `subor` vtedy slúži len na náhľad.
+   */
+  id?: string;
   /** Nastavenie zo skenera — úhrada, kategória, zákazka, predkontácia, komentár. */
   nastavenie?: NastavenieDokladu;
-  onUlozene: () => void;
+  onUlozene: (druh: DruhNespracovaneho) => void;
   /** Doklad ostáva v Nespracovaných — len sa odíde. */
   onNechat: () => void;
   /** Späť, kým sa doklad ešte nenahral — nikde nie je, dá sa nasnímať znova. */
   onSpat: () => void;
+  /**
+   * „Odfotiť ďalší doklad" — tento doklad (už nahratý) sa presunie do dávky
+   * a fotí sa ďalší. Bez neho sa tlačidlo neukáže (v dávke má vlastné).
+   */
+  onDalsi?: (id: string) => void;
 }) {
   const { t, locale: loc } = usePreklad();
   const nahraj = useOperacia<{ id: string }>("sken-nahraj");
@@ -124,10 +121,10 @@ export function RozpoznanyDoklad({
   const vytvor = useOperacia<{ agenda: string; id: string }>("sken-vytvor");
 
   const [faza, setFaza] = useState<"nahravam" | "chybaNahratia" | "citam" | "dlho" | "hotovo">(
-    "nahravam",
+    uzNahrane ? "citam" : "nahravam",
   );
   const [chybaNahratia, setChybaNahratia] = useState<string | null>(null);
-  const [id, setId] = useState<string | null>(null);
+  const [id, setId] = useState<string | null>(uzNahrane ?? null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [druh, setDruh] = useState<DruhNespracovaneho | null>(null);
   const [platba, setPlatba] = useState("");
@@ -167,7 +164,7 @@ export function RozpoznanyDoklad({
     }
   }
   useEffect(() => {
-    if (nahrane.current) return;
+    if (nahrane.current || uzNahrane) return;
     nahrane.current = true;
     void nahrajDoklad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,7 +204,8 @@ export function RozpoznanyDoklad({
       }
       casovac = setTimeout(pytaj, INTERVAL_CITANIA_MS);
     };
-    casovac = setTimeout(pytaj, INTERVAL_CITANIA_MS);
+    /* Z dávky prichádza doklad často už prečítaný — prvá otázka hneď. */
+    casovac = setTimeout(pytaj, uzNahrane && kolo === 0 ? 0 : INTERVAL_CITANIA_MS);
     return () => {
       koniec = true;
       if (casovac) clearTimeout(casovac);
@@ -248,7 +246,7 @@ export function RozpoznanyDoklad({
         data: { id, druh, udaje: finalne, ...(ajDuplicitu ? { ajDuplicitu: true } : {}) },
       });
       toast.success(t(ULOZENE_AKO[druh]));
-      onUlozene();
+      onUlozene(druh);
     } catch (e) {
       const sprava = e instanceof Error ? e.message : String(e ?? "");
       /* Ten istý doklad už v evidencii je — rozhodne človek, nie appka. */
@@ -302,12 +300,17 @@ export function RozpoznanyDoklad({
         subtitle={firma.name}
         onBack={nechat}
         footer={
-          <button
-            onClick={nechat}
-            className="w-full rounded-app-sm px-4 py-3 text-sm text-app-text-2"
-          >
-            {t("rd.nechat")}
-          </button>
+          <div className="space-y-1">
+            {onDalsi && id && (
+              <HlavneTlacidlo onClick={() => onDalsi(id)}>{t("rd.odfotitDalsi")}</HlavneTlacidlo>
+            )}
+            <button
+              onClick={nechat}
+              className="w-full rounded-app-sm px-4 py-3 text-sm text-app-text-2"
+            >
+              {t("rd.nechat")}
+            </button>
+          </div>
         }
       >
         <div className="flex flex-col items-center gap-3 py-10 text-center">
@@ -354,13 +357,28 @@ export function RozpoznanyDoklad({
           <HlavneTlacidlo onClick={() => void uloz()} disabled={!daSaUlozit}>
             {ukladam ? t("rd.ukladam") : druh ? t(ULOZIT_AKO[druh]) : t("rd.vyberteDruh")}
           </HlavneTlacidlo>
-          <button
-            onClick={nechat}
-            disabled={ukladam}
-            className="w-full rounded-app-sm px-4 py-2.5 text-sm text-app-text-2"
-          >
-            {t("rd.nechat")}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={nechat}
+              disabled={ukladam}
+              className="flex-1 rounded-app-sm px-4 py-2.5 text-sm text-app-text-2"
+            >
+              {t("rd.nechat")}
+            </button>
+            {/*
+              Ďalší doklad bez ukladania tohto: tento ide do dávky aj s tým,
+              čo sa z neho prečítalo, a uloží sa tam (aj hromadne).
+            */}
+            {onDalsi && id && (
+              <button
+                onClick={() => onDalsi(id)}
+                disabled={ukladam}
+                className="flex-1 rounded-app-sm border border-app-ramik px-4 py-2.5 text-sm"
+              >
+                {t("rd.odfotitDalsi")}
+              </button>
+            )}
+          </div>
         </div>
       }
     >

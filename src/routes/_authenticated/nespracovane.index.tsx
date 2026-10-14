@@ -166,7 +166,8 @@ function Stranka() {
           ref={input}
           type="file"
           multiple
-          accept="application/pdf,image/*"
+          // ISDOC / XML faktúry sa čítajú priamo, bez AI (pozri doklad-xml.ts).
+          accept="application/pdf,image/*,.isdoc,.xml,application/xml,text/xml"
           className="hidden"
           onChange={(e) => {
             if (e.target.files?.length) void pridaj(e.target.files);

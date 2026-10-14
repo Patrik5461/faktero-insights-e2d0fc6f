@@ -559,3 +559,48 @@ export function ostatnyZUdajov(u: UdajeNespracovaneho, dnes: string) {
     note: prazdne(u.poznamka),
   };
 }
+
+/**
+ * Riadok zoznamu Nespracovaných z `nespracovane_doklady` — to isté pre
+ * stránku Nespracované doklady aj Moje úlohy, aby sa suma či dodávateľ
+ * neukazovali na dvoch miestach inak.
+ */
+export function zhrnutieNespracovaneho(r: Record<string, any>) {
+  const u = r.udaje ?? {};
+  return {
+    id: r.id as string,
+    typ: "nespracovany" as const,
+    zdroj: r.zdroj as string,
+    stav: r.stav as string,
+    druh: (r.druh ?? null) as string | null,
+    dodavatel: (u.dodavatel?.nazov as string) || null,
+    cislo: (u.cislo as string) || null,
+    datum: (u.datumVystavenia as string) || null,
+    suma:
+      u.celkom != null
+        ? Number(u.celkom)
+        : Array.isArray(u.rozpis)
+          ? u.rozpis.reduce((a: number, x: any) => a + Number(x.zaklad || 0) + Number(x.dph || 0), 0)
+          : null,
+    mena: (u.mena as string) || "EUR",
+    subor: (r.file_name ?? null) as string | null,
+    chyba: (r.chyba ?? null) as string | null,
+    inboxMessageId: (r.inbox_message_id ?? null) as string | null,
+    vytvorene: r.created_at as string,
+  };
+}
+
+/** Bloček z appky či formulára (`expense_documents` so stavom `new`) v tvare riadka Nespracovaných. */
+export function zhrnutieBlocku(b: Record<string, any>) {
+  return {
+    id: b.id as string,
+    typ: "blocek" as const,
+    zdroj: b.source as string,
+    dodavatel: (b.supplier_name ?? null) as string | null,
+    cislo: (b.document_number ?? null) as string | null,
+    datum: (b.issue_date ?? null) as string | null,
+    suma: b.total_amount == null ? null : Number(b.total_amount),
+    mena: (b.currency as string) || "EUR",
+    vytvorene: b.created_at as string,
+  };
+}

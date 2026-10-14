@@ -30,39 +30,10 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
         .order("created_at", { ascending: false })
         .limit(300),
     ]);
+    const { zhrnutieNespracovaneho, zhrnutieBlocku } = await import("./nespracovane");
     return {
-      doklady: (rows ?? []).map((r: any) => ({
-        id: r.id as string,
-        typ: "nespracovany" as const,
-        zdroj: r.zdroj as string,
-        stav: r.stav as string,
-        druh: (r.druh ?? null) as string | null,
-        dodavatel: (r.udaje?.dodavatel?.nazov as string) || null,
-        cislo: (r.udaje?.cislo as string) || null,
-        datum: (r.udaje?.datumVystavenia as string) || null,
-        suma:
-          r.udaje?.celkom != null
-            ? Number(r.udaje.celkom)
-            : Array.isArray(r.udaje?.rozpis)
-              ? r.udaje.rozpis.reduce((a: number, x: any) => a + Number(x.zaklad || 0) + Number(x.dph || 0), 0)
-              : null,
-        mena: (r.udaje?.mena as string) || "EUR",
-        subor: r.file_name as string | null,
-        chyba: r.chyba as string | null,
-        inboxMessageId: (r.inbox_message_id ?? null) as string | null,
-        vytvorene: r.created_at as string,
-      })),
-      blocky: (blocky ?? []).map((b: any) => ({
-        id: b.id as string,
-        typ: "blocek" as const,
-        zdroj: b.source as string,
-        dodavatel: b.supplier_name as string | null,
-        cislo: b.document_number as string | null,
-        datum: b.issue_date as string | null,
-        suma: b.total_amount == null ? null : Number(b.total_amount),
-        mena: (b.currency as string) || "EUR",
-        vytvorene: b.created_at as string,
-      })),
+      doklady: (rows ?? []).map((r: any) => zhrnutieNespracovaneho(r)),
+      blocky: (blocky ?? []).map((b: any) => zhrnutieBlocku(b)),
     };
   });
 
@@ -140,6 +111,8 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       stav: r.stav as string,
       chyba: r.chyba as string | null,
       druh: (r.druh ?? null) as string | null,
+      /** Údaje z vloženého ISDOC / ZUGFeRD / UBL, nie z AI. */
+      zdrojUdajov: (r.ai?.zdroj_udajov ?? null) as "isdoc" | "zugferd" | "ubl" | null,
       inboxMessageId: (r.inbox_message_id ?? null) as string | null,
       subor: { url, nazov: r.file_name as string | null, mime: r.file_mime as string | null },
       udaje,

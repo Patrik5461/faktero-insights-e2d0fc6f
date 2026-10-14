@@ -8,6 +8,7 @@ import {
   IdCard,
   Landmark,
   LayoutDashboard,
+  ListChecks,
   Menu,
   Receipt,
   Route,
@@ -48,6 +49,16 @@ export type NavGroup = {
 
 export const NAV: NavGroup[] = [
   { key: "prehlad", label: "Prehľad", icon: LayoutDashboard, match: ["/dashboard"], children: [] },
+  /* Čo čaká práve na mňa: schválenie, označenie v komentári, nespracované
+     doklady. Hneď pod Prehľadom, s počtom — inak by sa o úlohe človek
+     dozvedel len zo zvončeka. */
+  {
+    key: "moje-ulohy",
+    label: "Moje úlohy",
+    icon: ListChecks,
+    match: ["/moje-ulohy"],
+    children: [],
+  },
   {
     key: "fakturacia",
     label: "Fakturácia",
@@ -337,6 +348,7 @@ export const QUICK_CREATE = [
  *  `filterNav` púšťa ďalej len to, čo je v jednej z týchto dvoch množín. */
 export const INVOICING_KEYS = new Set([
   "prehlad",
+  "moje-ulohy",
   "fakturacia",
   "efaktura",
   "doklady",
@@ -423,6 +435,8 @@ export const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/opakovane", to: "/pomoc/opakovane" },
   { prefix: "/prijate-faktury", to: "/pomoc/prijate-faktury" },
   { prefix: "/doklady", to: "/pomoc/doklady" },
+  // Moje úlohy sú opísané pri schvaľovaní v manuáli dokladov.
+  { prefix: "/moje-ulohy", to: "/pomoc/doklady" },
   { prefix: "/ostatne-doklady", to: "/pomoc/doklady" },
   { prefix: "/pokladna", to: "/pomoc/pokladna" },
   { prefix: "/efaktura", to: "/pomoc/efaktura" },

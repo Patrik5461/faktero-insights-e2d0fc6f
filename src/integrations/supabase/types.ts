@@ -8653,6 +8653,7 @@ export type Database = {
           user_id: string
           text: string
           upozornit: string[]
+          vyriesili: string[]
           created_at: string
         }
         Insert: {
@@ -8663,6 +8664,7 @@ export type Database = {
           user_id?: string
           text: string
           upozornit?: string[]
+          vyriesili?: string[]
           created_at?: string
         }
         Update: {
@@ -8673,6 +8675,7 @@ export type Database = {
           user_id?: string
           text?: string
           upozornit?: string[]
+          vyriesili?: string[]
           created_at?: string
         }
         Relationships: [
