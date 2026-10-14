@@ -1026,4 +1026,31 @@ export const en: Partial<Record<Kluc, string>> = {
     "Several documents at once need a connection. Without one, photograph documents one by one — they are saved as receipts and sent once you're back online.",
   "davka.prilisVela": "A batch can hold at most {max} documents. Add the rest in a new batch.",
   "davka.prilisVelky": "The file is larger than 15 MB",
+
+  /* skener — panel dokladu a výber v Prijatých dokladoch */
+  "sken.rezim": "Scanner mode",
+  "sken.bezKategorie": "No category",
+  "sken.dalsiePolozky": "More fields",
+  "sken.dalsiePolozkyPocet": "More fields ({pocet} filled in)",
+  "pd.vybrat": "Select",
+  "pd.koniecVyberu": "Done",
+  "pd.vybratVsetko": "Select all",
+  "pd.odznacitVsetko": "Clear selection",
+  "pd.vybranePocet": "Selected: {pocet}",
+  "pd.vyberteDoklady": "Tap documents to select them",
+  "pd.vybrane": "Selected: {pocet}",
+  "pd.naExport": "To export to accounting: {pocet}",
+  "pd.bezDphSuma": "{suma} excl. VAT",
+  "pd.zmenitKategoriu": "Change category…",
+  "pd.zmenitKategoriuOtazka":
+    "Change the category to “{kategoria}” for the selected documents ({pocet})?",
+  "pd.zmenit": "Change",
+  "pd.kategoriaZmenena": "Category changed for documents: {pocet}",
+  "pd.preskoceneOdovzdane": "Documents already handed over or locked are not changed ({pocet}).",
+  "pd.zmazatVybrane": "Delete",
+  "pd.zmazatVybraneOtazka":
+    "Move the selected documents ({pocet}) to the bin? They can be restored within 90 days.",
+  "pd.zmazaneHromadne": "Deleted documents: {pocet}",
+  "pd.hromadneZlyhalo": "Failed for documents: {pocet}. {chyba}",
+  "pd.pracujem": "Working…",
 };

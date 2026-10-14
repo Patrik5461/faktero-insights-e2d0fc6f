@@ -1023,4 +1023,31 @@ export const hu: Partial<Record<Kluc, string>> = {
   "davka.prilisVela":
     "Egy kötegben legfeljebb {max} bizonylat lehet. A többit új kötegben adja hozzá.",
   "davka.prilisVelky": "A fájl nagyobb mint 15 MB",
+
+  /* skener — panel dokladu a výber v Prijatých dokladoch */
+  "sken.rezim": "Szkenner módja",
+  "sken.bezKategorie": "Kategória nélkül",
+  "sken.dalsiePolozky": "További mezők",
+  "sken.dalsiePolozkyPocet": "További mezők ({pocet} kitöltve)",
+  "pd.vybrat": "Kijelölés",
+  "pd.koniecVyberu": "Kész",
+  "pd.vybratVsetko": "Összes kijelölése",
+  "pd.odznacitVsetko": "Kijelölés törlése",
+  "pd.vybranePocet": "Kijelölve: {pocet}",
+  "pd.vyberteDoklady": "Koppintson a bizonylatokra a kijelöléshez",
+  "pd.vybrane": "Kijelölve: {pocet}",
+  "pd.naExport": "Könyvelésbe exportálandó: {pocet}",
+  "pd.bezDphSuma": "{suma} ÁFA nélkül",
+  "pd.zmenitKategoriu": "Kategória módosítása…",
+  "pd.zmenitKategoriuOtazka":
+    "Módosítja a kijelölt bizonylatok ({pocet}) kategóriáját erre: „{kategoria}”?",
+  "pd.zmenit": "Módosítás",
+  "pd.kategoriaZmenena": "Kategória módosítva ennyi bizonylatnál: {pocet}",
+  "pd.preskoceneOdovzdane": "Az átadott vagy zárolt bizonylatok nem változnak ({pocet}).",
+  "pd.zmazatVybrane": "Törlés",
+  "pd.zmazatVybraneOtazka":
+    "Áthelyezi a kijelölt bizonylatokat ({pocet}) a kukába? 90 napig visszaállíthatók.",
+  "pd.zmazaneHromadne": "Törölt bizonylatok: {pocet}",
+  "pd.hromadneZlyhalo": "Nem sikerült ennyi bizonylatnál: {pocet}. {chyba}",
+  "pd.pracujem": "Folyamatban…",
 };

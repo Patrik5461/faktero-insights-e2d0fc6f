@@ -1,13 +1,6 @@
 import { useOperacia } from "@/lib/mobile/server-most";
 import { useEffect, useState } from "react";
-import {
-  Files,
-  FileText,
-  Image as ImageIcon,
-  Layers,
-  Receipt,
-  SlidersHorizontal,
-} from "lucide-react";
+import { ChevronDown, Files, FileText, Image as ImageIcon, Layers, Receipt } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
@@ -78,15 +71,16 @@ export function Skener({
   /*
     Dva režimy jednej kamery. Kód sa číta v oboch — nájsť ho na fotke bločku
     je výhoda, nie prekážka. Líšia sa tým, čo obrazovka ponúka: pri doklade
-    spúšť a nastavenie, pri kóde len zameriavač, aby nič neodvádzalo od toho,
-    že stačí namieriť.
+    spúšť, pri kóde len zameriavač, aby nič neodvádzalo od toho, že stačí
+    namieriť. Panel s úhradou a kategóriou je v oboch — bloček z QR kódu sa
+    ukladá s tým istým nastavením ako odfotený.
 
     Otvára sa na QR kóde. Ten je tu častejší a nepotrebuje nič ďalšie — stačí
     namieriť. Doklad je o ťuknutie vedľa a aj tak si vyžiada spúšť.
   */
   const [rezim, setRezim] = useState<"doklad" | "qr">("qr");
   const [nastaveniaOtvorene, setNastaveniaOtvorene] = useState(false);
-  // Zákazky a predkontácie sa načítajú až pri otvorení nastavení — bez signálu ostanú skryté.
+  // Zákazky a predkontácie sa načítajú až pri rozbalení „Ďalších položiek" — bez signálu ostanú skryté.
   useEffect(() => {
     if (!nastaveniaOtvorene || predvolby || !companyId) return;
     nacitajPredvolby({ data: { company_id: companyId } })
@@ -128,8 +122,13 @@ export function Skener({
     onNastavenie(nove);
   }
 
+  /** Koľko z „Ďalších položiek" je vyplnených — vidieť to aj na zbalenom paneli. */
+  const vyplneneDalsie = [nastavenie.zakazka, nastavenie.predkontacia, nastavenie.poznamka].filter(
+    (v) => v && String(v).trim(),
+  ).length;
+
   return (
-    <div className="relative flex-1 overflow-hidden bg-black">
+    <div className="relative flex flex-1 flex-col overflow-hidden bg-black">
       <video
         ref={videoRef}
         className="absolute inset-0 h-full w-full object-cover"
@@ -137,83 +136,104 @@ export function Skener({
         muted
       />
 
-      {/* Prepínač režimu. Hore, aby nezavadzal palcu pri spúšti. */}
-      <div
-        className="absolute inset-x-0 top-0 flex justify-center px-4 pb-2 pt-3"
-        style={{ paddingTop: "calc(var(--safe-top) + 0.5rem)" }}
-      >
-        <div
-          role="group"
-          aria-label={t("sken.nastavenie")}
-          className="flex gap-1 rounded-full bg-black/45 p-1 backdrop-blur"
-        >
-          {(
-            [
-              // QR kód je vľavo. Bloček sa skenuje raz za čas, kód aj
-              // niekoľkokrát denne — a v dvojici sa prstom mieri na prvé.
-              ["qr", t("sken.qrKod")],
-              ["doklad", t("sken.doklad")],
-            ] as const
-          ).map(([kod, popis]) => (
-            <button
-              key={kod}
-              onClick={() => setRezim(kod)}
-              aria-pressed={rezim === kod}
-              className={`min-h-[36px] rounded-full px-4 text-[14px] font-medium transition ${
-                rezim === kod ? "bg-app-zelena text-white" : "text-white/85"
-              }`}
-            >
-              {popis}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/*
-        Zameriavač. Štyri rohy, nie celý rámik: rohy hovoria „sem to zmestite"
-        a pritom nezakrývajú doklad, ktorý sa pod nimi rovná.
+        Rozloženie je stĺpec, nie vrstvy nad sebou: hore prepínač, v strede
+        zameriavač, dole panel a spúšť. Zameriavač dostane len to miesto, ktoré
+        ostane — na malom telefóne (375×667) sa zmenší, ale panel nikdy
+        nezakryje spúšť ani tlačidlá pod ňou. Obraz z kamery ide pod všetkým
+        od okraja po okraj.
       */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 grid place-items-center pt-[15vh]">
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {/* Prepínač režimu. Hore, aby nezavadzal palcu pri spúšti. */}
         <div
-          className={`relative ${
-            rezim === "qr" ? "h-56 w-56" : "h-[42vh] w-[68%] max-w-[19rem]"
-          }`}
+          className="flex shrink-0 justify-center px-4 pb-2 pt-3"
+          style={{ paddingTop: "calc(var(--safe-top) + 0.5rem)" }}
         >
-          {(
-            [
-              "left-0 top-0 border-l-2 border-t-2 rounded-tl-lg",
-              "right-0 top-0 border-r-2 border-t-2 rounded-tr-lg",
-              "left-0 bottom-0 border-b-2 border-l-2 rounded-bl-lg",
-              "right-0 bottom-0 border-b-2 border-r-2 rounded-br-lg",
-            ] as const
-          ).map((roh) => (
-            <span key={roh} className={`absolute h-8 w-8 border-white/90 ${roh}`} />
-          ))}
+          <div
+            role="group"
+            aria-label={t("sken.rezim")}
+            className="flex gap-1 rounded-full bg-black/45 p-1 backdrop-blur"
+          >
+            {(
+              [
+                // QR kód je vľavo. Bloček sa skenuje raz za čas, kód aj
+                // niekoľkokrát denne — a v dvojici sa prstom mieri na prvé.
+                ["qr", t("sken.qrKod")],
+                ["doklad", t("sken.doklad")],
+              ] as const
+            ).map(([kod, popis]) => (
+              <button
+                key={kod}
+                onClick={() => setRezim(kod)}
+                aria-pressed={rezim === kod}
+                className={`min-h-[36px] rounded-full px-4 text-[14px] font-medium transition ${
+                  rezim === kod ? "bg-app-zelena text-white" : "text-white/85"
+                }`}
+              >
+                {popis}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {chyba && (
-        <div className="absolute inset-x-4 top-[14vh] rounded-app bg-app-karta p-4 text-[13px] text-app-text shadow-lg">
-          <p>{chyba}</p>
-          <p className="mt-1 text-app-text-2">{t("sken.kameraNejde")}</p>
+        {/*
+          Zameriavač. Štyri rohy, nie celý rámik: rohy hovoria „sem to zmestite"
+          a pritom nezakrývajú doklad, ktorý sa pod nimi rovná.
+        */}
+        <div
+          data-zameriavac
+          className="pointer-events-none flex min-h-0 flex-1 items-center justify-center px-8 py-3"
+        >
+          <div
+            className={`relative h-full ${
+              rezim === "qr" ? "aspect-square max-h-56" : "max-h-[42vh] w-[68%] max-w-[19rem]"
+            }`}
+          >
+            {(
+              [
+                "left-0 top-0 border-l-2 border-t-2 rounded-tl-lg",
+                "right-0 top-0 border-r-2 border-t-2 rounded-tr-lg",
+                "left-0 bottom-0 border-b-2 border-l-2 rounded-bl-lg",
+                "right-0 bottom-0 border-b-2 border-r-2 rounded-br-lg",
+              ] as const
+            ).map((roh) => (
+              <span key={roh} className={`absolute h-8 w-8 border-white/90 ${roh}`} />
+            ))}
+          </div>
         </div>
-      )}
 
-      {/*
-        Spodok. Priehľadný prechod, nie panel: obraz z kamery má ísť až po
-        okraj, inak vyzerá skener ako okno v aplikácii, nie ako hľadáčik.
-      */}
-      <div
-        className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/60 to-transparent px-4 pt-10"
-        style={{ paddingBottom: "calc(var(--safe-bottom) + 0.75rem)" }}
-      >
-        {nastaveniaOtvorene && rezim === "doklad" && (
-          <div className="mb-4 grid grid-cols-2 gap-3 rounded-app bg-black/55 p-3 backdrop-blur">
-            <div>
-              <span className="mb-1 block text-[12px] font-medium text-white/70">
-                {t("sken.uhrada")}
-              </span>
-              <div className="flex overflow-hidden rounded-app-sm border border-white/25">
+        {chyba && (
+          <div className="absolute inset-x-4 top-[14vh] rounded-app bg-app-karta p-4 text-[13px] text-app-text shadow-lg">
+            <p>{chyba}</p>
+            <p className="mt-1 text-app-text-2">{t("sken.kameraNejde")}</p>
+          </div>
+        )}
+
+        {/*
+          Spodok. Priehľadný prechod, nie panel: obraz z kamery má ísť až po
+          okraj, inak vyzerá skener ako okno v aplikácii, nie ako hľadáčik.
+        */}
+        <div
+          className="shrink-0 bg-gradient-to-t from-black/85 via-black/65 to-transparent px-4 pt-6"
+          style={{ paddingBottom: "calc(var(--safe-bottom) + 0.75rem)" }}
+        >
+          {/*
+            Nastavenie dokladu je stále na očiach — úhrada a kategória sa menia
+            pri každom druhom bločku a schované za tlačidlom ich nikto nemenil.
+            Platí pre fotku aj pre QR kód; zákazka, predkontácia a komentár sú
+            pod „Ďalšie položky", lebo ich väčšina dokladov nepotrebuje.
+          */}
+          <section
+            aria-label={t("sken.nastavenie")}
+            data-panel-dokladu
+            className="mb-3 rounded-app bg-black/55 p-2.5 backdrop-blur"
+          >
+            <div className="grid grid-cols-2 gap-2">
+              <div
+                role="group"
+                aria-label={t("sken.uhrada")}
+                className="flex min-w-0 overflow-hidden rounded-app-sm border border-white/25"
+              >
                 {(
                   [
                     ["hotovost", t("pd.hotovost")],
@@ -224,7 +244,7 @@ export function Skener({
                     key={kod}
                     onClick={() => nastav({ uhrada: kod })}
                     aria-pressed={nastavenie.uhrada === kod}
-                    className={`min-h-[40px] flex-1 text-[14px] ${
+                    className={`min-h-[38px] min-w-0 flex-1 truncate px-1 text-[13px] ${
                       nastavenie.uhrada === kod
                         ? "bg-app-zelena font-semibold text-white"
                         : "text-white/75"
@@ -234,116 +254,132 @@ export function Skener({
                   </button>
                 ))}
               </div>
-            </div>
-            <label className="block">
-              <span className="mb-1 block text-[12px] font-medium text-white/70">
-                {t("sken.kategoria")}
-              </span>
               <select
+                aria-label={t("sken.kategoria")}
                 value={nastavenie.kategoria}
                 onChange={(e) => nastav({ kategoria: e.target.value })}
-                className="min-h-[40px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[15px] text-white"
+                className="min-h-[38px] w-full min-w-0 rounded-app-sm border border-white/25 bg-transparent px-2 text-[14px] text-white"
               >
-                <option value="">{t("sken.nezaradene")}</option>
+                <option value="">{t("sken.bezKategorie")}</option>
                 {KATEGORIE_VYDAVKOV.map((k) => (
                   <option key={k.kod} value={k.kod}>
                     {k.nazov}
                   </option>
                 ))}
               </select>
-            </label>
-            {predvolby?.zakazky.length ? (
-              <label className="block">
-                <span className="mb-1 block text-[12px] font-medium text-white/70">{t("sken.zakazka")}</span>
-                <select
-                  value={nastavenie.zakazka ?? ""}
-                  onChange={(e) => nastav({ zakazka: e.target.value || undefined })}
-                  className="min-h-[40px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[15px] text-white"
-                >
-                  <option value="">{t("sken.ziadna")}</option>
-                  {predvolby.zakazky.map((z) => (
-                    <option key={z.id} value={z.id}>
-                      {z.nazov}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            {predvolby?.predkontacie.length ? (
-              <label className="block">
-                <span className="mb-1 block text-[12px] font-medium text-white/70">{t("sken.predkontacia")}</span>
-                <select
-                  value={nastavenie.predkontacia ?? ""}
-                  onChange={(e) => nastav({ predkontacia: e.target.value || undefined })}
-                  className="min-h-[40px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[15px] text-white"
-                >
-                  <option value="">{t("sken.ziadna")}</option>
-                  {predvolby.predkontacie.map((p) => (
-                    <option key={p.kod} value={p.kod}>
-                      {p.kod}
-                      {p.popis ? ` — ${p.popis}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            <label className="block">
-              <span className="mb-1 block text-[12px] font-medium text-white/70">{t("sken.komentar")}</span>
-              <input
-                value={nastavenie.poznamka ?? ""}
-                maxLength={500}
-                placeholder={t("sken.komentarPopis")}
-                onChange={(e) => nastav({ poznamka: e.target.value || undefined })}
-                className="min-h-[40px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[15px] text-white placeholder:text-white/40"
-              />
-            </label>
-          </div>
-        )}
-
-        <p className="text-center text-[15px] font-medium text-white">
-          {rezim === "qr" ? t("sken.namierteQr") : t("sken.naskenujteDoklad")}
-        </p>
-        <p className="mt-0.5 text-center text-[13px] text-white/70">
-          {rezim === "qr" ? t("sken.qrSaPrecita") : t("sken.automaticky")}
-        </p>
-
-        {rezim === "doklad" && (
-          <div className="mt-4 grid grid-cols-3 items-center">
-            <div className="flex justify-start">
-              <MalyKruh icon={ImageIcon} label={t("sken.zGalerie")} onClick={onZGalerie} />
             </div>
-            <div className="flex justify-center">
-              <button
-                onClick={onOdfotit}
-                aria-label={t("sken.odfotit")}
-                /* Biely prstenec okolo zelenej spúšte — na tmavom obraze je to
-                   jediné, čo je vidieť za každých svetelných podmienok. */
-                className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white bg-app-zelena transition active:scale-95"
-              />
-            </div>
-            <div className="flex justify-end">
-              <MalyKruh
-                icon={Files}
-                label={t("sken.viacstranovy")}
-                onClick={onViacstranovy}
-              />
-            </div>
-          </div>
-        )}
 
-        <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/15 pt-3">
-          <MalyOdkaz icon={FileText} label={t("sken.pdfSubor")} onClick={onZGalerie} />
-          {rezim === "doklad" && onViacDokladov && (
-            <MalyOdkaz icon={Layers} label={t("sken.viacDokladov")} onClick={onViacDokladov} />
-          )}
-          {rezim === "doklad" && (
-            <MalyOdkaz
-              icon={SlidersHorizontal}
-              label={t("sken.nastavenie")}
+            <button
               onClick={() => setNastaveniaOtvorene((v) => !v)}
-            />
+              aria-expanded={nastaveniaOtvorene}
+              className="mt-1.5 flex min-h-[32px] w-full items-center justify-center gap-1 text-[12px] font-medium text-white/80"
+            >
+              {vyplneneDalsie
+                ? t("sken.dalsiePolozkyPocet", { pocet: vyplneneDalsie })
+                : t("sken.dalsiePolozky")}
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition ${nastaveniaOtvorene ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {nastaveniaOtvorene && (
+              /* Na malom telefóne sa rozbalené položky rolujú vo vnútri —
+                 panel nesmie vytlačiť spúšť z obrazovky. */
+              <div className="mt-1 grid max-h-[26vh] grid-cols-2 gap-2 overflow-y-auto">
+                {predvolby?.zakazky.length ? (
+                  <label className="block min-w-0">
+                    <span className="mb-1 block text-[11px] font-medium text-white/70">
+                      {t("sken.zakazka")}
+                    </span>
+                    <select
+                      value={nastavenie.zakazka ?? ""}
+                      onChange={(e) => nastav({ zakazka: e.target.value || undefined })}
+                      className="min-h-[38px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[14px] text-white"
+                    >
+                      <option value="">{t("sken.ziadna")}</option>
+                      {predvolby.zakazky.map((z) => (
+                        <option key={z.id} value={z.id}>
+                          {z.nazov}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                {predvolby?.predkontacie.length ? (
+                  <label className="block min-w-0">
+                    <span className="mb-1 block text-[11px] font-medium text-white/70">
+                      {t("sken.predkontacia")}
+                    </span>
+                    <select
+                      value={nastavenie.predkontacia ?? ""}
+                      onChange={(e) => nastav({ predkontacia: e.target.value || undefined })}
+                      className="min-h-[38px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[14px] text-white"
+                    >
+                      <option value="">{t("sken.ziadna")}</option>
+                      {predvolby.predkontacie.map((p) => (
+                        <option key={p.kod} value={p.kod}>
+                          {p.kod}
+                          {p.popis ? ` — ${p.popis}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                <label className="col-span-2 block">
+                  <span className="mb-1 block text-[11px] font-medium text-white/70">
+                    {t("sken.komentar")}
+                  </span>
+                  <input
+                    value={nastavenie.poznamka ?? ""}
+                    maxLength={500}
+                    placeholder={t("sken.komentarPopis")}
+                    onChange={(e) => nastav({ poznamka: e.target.value || undefined })}
+                    className="min-h-[38px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[15px] text-white placeholder:text-white/40"
+                  />
+                </label>
+              </div>
+            )}
+          </section>
+
+          <p className="text-center text-[15px] font-medium text-white">
+            {rezim === "qr" ? t("sken.namierteQr") : t("sken.naskenujteDoklad")}
+          </p>
+          {/* Druhý riadok len na vyššom telefóne — na 375×667 by tlačil spúšť dole. */}
+          <p className="mt-0.5 text-center text-[13px] text-white/70 [@media(max-height:700px)]:hidden">
+            {rezim === "qr" ? t("sken.qrSaPrecita") : t("sken.automaticky")}
+          </p>
+
+          {rezim === "doklad" && (
+            <div className="mt-3 grid grid-cols-3 items-center">
+              <div className="flex justify-start">
+                <MalyKruh icon={ImageIcon} label={t("sken.zGalerie")} onClick={onZGalerie} />
+              </div>
+              <div className="flex justify-center">
+                <button
+                  onClick={onOdfotit}
+                  aria-label={t("sken.odfotit")}
+                  /* Biely prstenec okolo zelenej spúšte — na tmavom obraze je to
+                     jediné, čo je vidieť za každých svetelných podmienok. */
+                  className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white bg-app-zelena transition active:scale-95"
+                />
+              </div>
+              <div className="flex justify-end">
+                <MalyKruh
+                  icon={Files}
+                  label={t("sken.viacstranovy")}
+                  onClick={onViacstranovy}
+                />
+              </div>
+            </div>
           )}
-          <MalyOdkaz icon={Receipt} label={t("pd.nazov")} onClick={onPrijateDoklady} />
+
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/15 pt-2">
+            <MalyOdkaz icon={FileText} label={t("sken.pdfSubor")} onClick={onZGalerie} />
+            {rezim === "doklad" && onViacDokladov && (
+              <MalyOdkaz icon={Layers} label={t("sken.viacDokladov")} onClick={onViacDokladov} />
+            )}
+            <MalyOdkaz icon={Receipt} label={t("pd.nazov")} onClick={onPrijateDoklady} />
+          </div>
         </div>
       </div>
     </div>

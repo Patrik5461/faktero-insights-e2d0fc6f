@@ -1037,4 +1037,32 @@ export const de: Partial<Record<Kluc, string>> = {
   "davka.prilisVela":
     "Ein Stapel kann höchstens {max} Belege enthalten. Weitere fügen Sie in einem neuen Stapel hinzu.",
   "davka.prilisVelky": "Die Datei ist größer als 15 MB",
+
+  /* skener — panel dokladu a výber v Prijatých dokladoch */
+  "sken.rezim": "Scannermodus",
+  "sken.bezKategorie": "Ohne Kategorie",
+  "sken.dalsiePolozky": "Weitere Felder",
+  "sken.dalsiePolozkyPocet": "Weitere Felder ({pocet} ausgefüllt)",
+  "pd.vybrat": "Auswählen",
+  "pd.koniecVyberu": "Fertig",
+  "pd.vybratVsetko": "Alle auswählen",
+  "pd.odznacitVsetko": "Auswahl aufheben",
+  "pd.vybranePocet": "Ausgewählt: {pocet}",
+  "pd.vyberteDoklady": "Belege antippen, um sie auszuwählen",
+  "pd.vybrane": "Ausgewählt: {pocet}",
+  "pd.naExport": "Für den Export in die Buchhaltung: {pocet}",
+  "pd.bezDphSuma": "{suma} ohne MwSt.",
+  "pd.zmenitKategoriu": "Kategorie ändern…",
+  "pd.zmenitKategoriuOtazka":
+    "Kategorie der ausgewählten Belege ({pocet}) auf „{kategoria}“ ändern?",
+  "pd.zmenit": "Ändern",
+  "pd.kategoriaZmenena": "Kategorie geändert bei Belegen: {pocet}",
+  "pd.preskoceneOdovzdane":
+    "Bereits übergebene oder gesperrte Belege werden nicht geändert ({pocet}).",
+  "pd.zmazatVybrane": "Löschen",
+  "pd.zmazatVybraneOtazka":
+    "Ausgewählte Belege ({pocet}) in den Papierkorb verschieben? Sie lassen sich 90 Tage lang wiederherstellen.",
+  "pd.zmazaneHromadne": "Gelöschte Belege: {pocet}",
+  "pd.hromadneZlyhalo": "Fehlgeschlagen bei Belegen: {pocet}. {chyba}",
+  "pd.pracujem": "Wird bearbeitet…",
 };

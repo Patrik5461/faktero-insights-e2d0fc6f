@@ -15,7 +15,7 @@ import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { sucty, type DruhNespracovaneho } from "@/lib/faktero/nespracovane";
-import { captureReceipt } from "@/lib/mobile/receipt-scanner";
+import { zachytStrany } from "@/lib/mobile/skener-dokumentov";
 import { vyberSubory } from "@/lib/mobile/vyber-suborov";
 import { INTERVAL_CITANIA_MS, polaNaDoplnenie } from "@/lib/mobile/sken-rozpoznanie";
 import {
@@ -184,9 +184,16 @@ export function DavkaDokladov({
       Každá fotka je samostatný doklad. QR z eKasy sa tu zvlášť nehľadá — AI
       bloček spozná aj bez neho; presnejšie čítanie z Finančnej správy ostáva
       pri jednom doklade zo skenera.
+
+      Systémový skener vie naskenovať viac strán za sebou. V dávke je každá
+      naskenovaná strana **samostatný doklad** — presne na to dávka je: kôpka
+      bločkov sa prejde jedným skenovaním bez vracania sa do appky. Kto má
+      jeden doklad o viacerých stranách, naskenuje ho cez „Viacstranový" na
+      skeneri; tam sa strany spoja do jedného PDF. Voľbu tu neponúkame: otázka
+      po každom skenovaní by zdržala práve to, kvôli čomu je dávka rýchla.
     */
-    const cap = await captureReceipt();
-    if (cap) pridaj([{ subor: cap.dataUrl }]);
+    const strany = await zachytStrany();
+    if (strany?.length) pridaj(strany.map((subor) => ({ subor })));
   }
 
   async function zGalerie() {

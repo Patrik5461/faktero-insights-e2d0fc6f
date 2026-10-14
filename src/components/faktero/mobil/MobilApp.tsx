@@ -52,7 +52,7 @@ import {
 } from "@/lib/faktero/active-company";
 import type { BlocekVysledok } from "@/lib/faktero/blocek.functions";
 import { dokladNaZaznam, nahrajPrilohu, stranyDoPdf } from "@/lib/faktero/mobil-doklad";
-import { captureReceipt } from "@/lib/mobile/receipt-scanner";
+import { zachytStrany } from "@/lib/mobile/skener-dokumentov";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { odosliCakajuceJazdy } from "@/lib/mobile/auto-jazdy-sync";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
@@ -333,6 +333,8 @@ function ObsahApky() {
     prezerať zoznam.
   */
   const [zachytZo, setZachytZo] = useState<Krok>("prehlad");
+  /** Spúšť na skeneri — na telefóne sa hneď otvorí systémový skener dokumentov. */
+  const [zachytHned, setZachytHned] = useState(false);
 
   /*
    * Povolenie na notifikácie sa pýta až tu: na domovskej obrazovke, teda po
@@ -859,9 +861,10 @@ function ObsahApky() {
   }
   const naNovuFakturu = () => setKrok("novaFaktura");
   /** Otvorí zachytávanie dokladu a zapamätá si, kam sa z neho vrátiť. */
-  const doZachytu = (druh: Zachyt, odkial: Krok) => {
+  const doZachytu = (druh: Zachyt, odkial: Krok, hnedSkenovat = false) => {
     setZachyt(druh);
     setZachytZo(odkial);
+    setZachytHned(hnedSkenovat);
     setKrok("zachyt");
   };
 
@@ -989,7 +992,7 @@ function ObsahApky() {
           }}
           onOdfotit={() => {
             setQrZoSkenera(null);
-            doZachytu("blocek", "skener");
+            doZachytu("blocek", "skener", true);
           }}
           onZGalerie={() => {
             setQrZoSkenera(null);
@@ -997,7 +1000,7 @@ function ObsahApky() {
           }}
           onViacstranovy={() => {
             setQrZoSkenera(null);
-            doZachytu("strany", "skener");
+            doZachytu("strany", "skener", true);
           }}
           onViacDokladov={() => {
             setQrZoSkenera(null);
@@ -1163,6 +1166,7 @@ function ObsahApky() {
         prednastavene={skenerPrvy ? nastavenieDokladu : undefined}
         hotovyQr={qrZoSkenera}
         zoSkenera={zachytZo === "skener"}
+        hnedSkenovat={zachytHned}
         onSpat={() => setKrok(navratZoZachytu(zachytZo, false))}
         /*
           Zo skenera sa po uložení vraciame na skener, aby sa dal hneď nasnímať
@@ -1533,6 +1537,7 @@ function ZachytDokladu({
   prednastavene,
   hotovyQr,
   zoSkenera,
+  hnedSkenovat,
 }: {
   druh: Zachyt;
   firma: Firma;
@@ -1544,6 +1549,11 @@ function ZachytDokladu({
   hotovyQr?: string | null;
   /** Sem sa vošlo z celoobrazovkového skenera — „späť" vedie naň. */
   zoSkenera?: boolean;
+  /**
+   * Na telefóne hneď otvoriť systémový skener (spúšť alebo „Viacstranový" na
+   * skeneri). Na webe sa ignoruje — tam ostáva obrazovka s tlačidlom.
+   */
+  hnedSkenovat?: boolean;
 }) {
   const { t } = usePreklad();
   /* Sadzby DPH a mena pri čítaní z fotky sa riadia krajinou firmy. */
@@ -1680,19 +1690,60 @@ function ZachytDokladu({
     setNaRozpoznanie(dataUrl);
   }
 
-  async function odfotDoklad() {
-    const cap = await captureReceipt();
-    if (!cap) return;
+  /**
+   * Odfotenie dokladu zo skenera. Na telefóne sa otvorí systémový skener
+   * dokumentov (orezanie podľa rohov, vyrovnanie, filtre), na webe fotoaparát
+   * alebo výber súboru. Vráti `false`, keď človek skenovanie zrušil.
+   *
+   * Viac naskenovaných strán je tu jeden doklad — spoja sa do PDF rovnako ako
+   * pri „Viacstranovom". Kto chce viac rôznych dokladov, má na to dávku.
+   */
+  async function odfotDoklad(): Promise<boolean> {
+    const naskenovane = await zachytStrany();
+    if (!naskenovane?.length) return false;
+    if (naskenovane.length > 1) {
+      await spojAOdosli(naskenovane);
+      return true;
+    }
+    const [obrazok] = naskenovane;
     // QR sa hľadá v obrázku ešte v telefóne, takže ho fronta má aj bez signálu.
-    const qr = await scanQrFromImage(cap.dataUrl);
+    // Na orezanom skene je kód väčší a rovný, takže sa prečíta častejšie.
+    const qr = await scanQrFromImage(obrazok);
     /*
       Kód bločku (eKasa, český EET) sa číta ďalej po starom cez Finančnú
       správu — je presnejší než AI. Platobný QR na faktúre bloček nerobí.
     */
     if (qr?.raw && jeBlockovyQr(qr.raw))
-      return precitaj({ qr: qr.raw, image_data_url: cap.dataUrl }, cap.dataUrl);
-    await rozpoznajAleboPrecitaj(cap.dataUrl, qr?.raw);
+      await precitaj({ qr: qr.raw, image_data_url: obrazok }, obrazok);
+    else await rozpoznajAleboPrecitaj(obrazok, qr?.raw);
+    return true;
   }
+
+  /*
+    Zo skenera sa na telefóne ide rovno do systémového skenera dokumentov —
+    medzikrok s tlačidlom „Odfotiť" by bol druhý, horší skener. Na webe
+    ostáva: prehliadač pustí fotoaparát aj výber súboru len z ťuknutia.
+    Zrušené skenovanie vráti človeka späť na skener, bez chyby.
+  */
+  const hnedSpustene = useRef(false);
+  /** Kým beží systémový skener, pod ním nemá svietiť obrazovka s tlačidlami. */
+  const [skenerOtvoreny, setSkenerOtvoreny] = useState(false);
+  useEffect(() => {
+    if (!hnedSkenovat || hnedSpustene.current) return;
+    hnedSpustene.current = true;
+    void (async () => {
+      const { Capacitor } = await import("@capacitor/core");
+      if (!Capacitor.isNativePlatform()) return;
+      setSkenerOtvoreny(true);
+      try {
+        const zachytene = druh === "strany" ? await pridajStranu() : await odfotDoklad();
+        if (!zachytene) onSpat();
+      } finally {
+        setSkenerOtvoreny(false);
+      }
+    })();
+    // eslint-disable-next-line
+  }, [hnedSkenovat]);
 
   /*
     --- Súbor z telefónu: PDF alebo obrázok, aj viac naraz ---
@@ -1721,24 +1772,32 @@ function ZachytDokladu({
   async function dalsiDoklad(id: string) {
     const prvy = naRozpoznanie;
     if (!prvy) return;
-    const cap = await captureReceipt();
-    setDavka([{ subor: prvy, id }, ...(cap ? [{ subor: cap.dataUrl }] : [])]);
+    // V dávke je každá naskenovaná strana samostatný doklad (pozri DavkaDokladov).
+    const dalsie = (await zachytStrany()) ?? [];
+    setDavka([{ subor: prvy, id }, ...dalsie.map((subor) => ({ subor }))]);
     setNaRozpoznanie(null);
   }
 
   /* --- Viacstranový doklad --- */
-  async function pridajStranu() {
-    const cap = await captureReceipt();
-    if (!cap) return;
-    setStrany((s) => [...s, cap.dataUrl]);
+  /**
+   * Systémový skener vie naskenovať viac strán naraz, takže jedno ťuknutie
+   * môže pridať celý doklad. Ďalšie ťuknutie pridá ďalšie strany na koniec.
+   */
+  async function pridajStranu(): Promise<boolean> {
+    const nove = await zachytStrany();
+    if (!nove?.length) return false;
+    setStrany((s) => [...s, ...nove]);
+    return true;
   }
 
-  async function dokonciStrany() {
-    if (strany.length === 0) return;
+  /** Strany jedného dokladu → jedno PDF → rozpoznanie. Jedna strana ostáva obrázkom. */
+  async function spojAOdosli(zoznam: string[]) {
+    if (zoznam.length === 0) return;
+    if (zoznam.length === 1) return rozpoznajAleboPrecitaj(zoznam[0]);
     setStav("citam");
     let pdf: string;
     try {
-      pdf = await stranyDoPdf(strany);
+      pdf = await stranyDoPdf(zoznam);
     } catch (e: any) {
       toast.error(e?.message ?? t("app.spojenieStranZlyhalo"));
       setStav("start");
@@ -1747,6 +1806,10 @@ function ZachytDokladu({
     // Všetky strany idú ako jedno PDF — AI číta celý doklad naraz.
     setStav("start");
     await rozpoznajAleboPrecitaj(pdf);
+  }
+
+  async function dokonciStrany() {
+    await spojAOdosli(strany);
   }
 
   /* --- Uloženie --- */
@@ -1864,7 +1927,8 @@ function ZachytDokladu({
         }}
       />
     );
-  if (stav === "citam") return <Pracujem text={t("app.citamDoklad")} />;
+  if (stav === "citam" || (skenerOtvoreny && stav === "start"))
+    return <Pracujem text={t("app.citamDoklad")} />;
 
   if (stav === "potvrdenie" && vysledok) {
     return (
@@ -1875,8 +1939,8 @@ function ZachytDokladu({
         setUhrada={setUhrada}
         foto={foto}
         onOdfotit={async () => {
-          const cap = await captureReceipt();
-          if (cap) setFoto(cap.dataUrl);
+          const [obrazok] = (await zachytStrany({ jednaStrana: true })) ?? [];
+          if (obrazok) setFoto(obrazok);
         }}
         onUloz={ulozDoklad}
         onSpat={() => {

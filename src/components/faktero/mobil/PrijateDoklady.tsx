@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import {
   BadgeCheck,
   Camera,
+  Check,
   CloudOff,
   FileText,
   QrCode,
@@ -17,7 +18,19 @@ import {
 import { fronta, zmazZFronty, type CakajuciDoklad } from "@/lib/mobile/doklady-fronta";
 import { odosliCakajuce } from "@/lib/mobile/doklady-odoslanie";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, formatujMenu } from "@/lib/faktero/mena";
+import { potvrd } from "@/lib/potvrdenie";
+import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
+import {
+  daSaUpravit,
+  orezVyber,
+  prepniVyber,
+  suhrnVyberu,
+  vsetkyVybrane,
+  vybratVsetko,
+  type SucetMeny,
+  type SuhrnVyberu,
+} from "@/lib/mobile/vyber-dokladov";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
@@ -50,6 +63,10 @@ type Doklad = {
   items: unknown;
   vat_breakdown: unknown;
   created_at: string;
+  /* Zoznam vracia celý riadok (`select *`) — tieto stĺpce potrebuje výber. */
+  category?: string | null;
+  exported_at?: string | null;
+  locked_at?: string | null;
 };
 
 type Uhrada = "hotovost" | "karta" | "prevod";
@@ -117,12 +134,32 @@ export function PrijateDoklady({
   const [otvoreny, setOtvoreny] = useState<Doklad | null>(null);
   /** Zoznam sa nepodarilo načítať, lebo nie je signál. */
   const [nedostupne, setNedostupne] = useState(false);
+  /*
+    Výber viacerých dokladov — dlhým podržaním riadku alebo tlačidlom
+    „Vybrať". Dole sa ukáže lišta so súčtami a hromadnými akciami.
+  */
+  const [vyberam, setVyberam] = useState(false);
+  const [vybrane, setVybrane] = useState<Set<string>>(() => new Set());
+  const [hromadne, setHromadne] = useState(false);
+  const upravFn = useOperacia("vydavok-uprav");
+  const zmazFn = useOperacia("vydavok-zmaz");
+  /** Dlhé podržanie: časovač a či už výber zapol (vtedy sa ťuknutie nepočíta). */
+  const podrzanie = useRef<{ casovac: ReturnType<typeof setTimeout> | null; zaplo: boolean }>({
+    casovac: null,
+    zaplo: false,
+  });
 
   async function obnov() {
     setCakajuce(await fronta(firma.id));
     try {
       const rows = (await nacitaj({ data: { company_id: firma.id } })) as Doklad[];
       setDoklady(rows);
+      setVybrane((v) =>
+        orezVyber(
+          v,
+          (rows ?? []).map((r) => r.id),
+        ),
+      );
       /*
         Úhrady a návrhy sú príjemné, nie nutné — keď zlyhajú, zoznam dokladov
         sa aj tak ukáže. Preto zvlášť a ticho.
@@ -205,6 +242,113 @@ export function PrijateDoklady({
     return [...mapa.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [najdene]);
 
+  const zobrazeneIds = useMemo(() => najdene.map((d) => d.id), [najdene]);
+  const suhrn = useMemo(() => suhrnVyberu(doklady ?? [], vybrane), [doklady, vybrane]);
+
+  function koniecVyberu() {
+    setVyberam(false);
+    setVybrane(new Set());
+  }
+
+  function zacniPodrzanie(id: string) {
+    zrusPodrzanie();
+    podrzanie.current.zaplo = false;
+    podrzanie.current.casovac = setTimeout(() => {
+      podrzanie.current.zaplo = true;
+      setVyberam(true);
+      setVybrane((v) => new Set(v).add(id));
+      try {
+        navigator.vibrate?.(15);
+      } catch {
+        /* vibrácia je len potvrdenie navyše */
+      }
+    }, 500);
+  }
+
+  function zrusPodrzanie() {
+    if (podrzanie.current.casovac) clearTimeout(podrzanie.current.casovac);
+    podrzanie.current.casovac = null;
+  }
+
+  function tukniNaRiadok(d: Doklad) {
+    // Ťuknutie, ktoré dokončilo dlhé podržanie, riadok už vybralo.
+    if (podrzanie.current.zaplo) {
+      podrzanie.current.zaplo = false;
+      return;
+    }
+    if (vyberam) setVybrane((v) => prepniVyber(v, d.id));
+    else setOtvoreny(d);
+  }
+
+  /*
+    Hromadné akcie idú po jednom cez tie isté operácie ako detail dokladu —
+    každý doklad prejde právami (RLS) aj kontrolami servera samostatne a
+    chyba jedného nezastaví ostatné.
+  */
+  async function hromadneKategoria(kod: string) {
+    const vyber = (doklady ?? []).filter((d) => vybrane.has(d.id));
+    const naZmenu = vyber.filter(daSaUpravit);
+    const preskocene = vyber.length - naZmenu.length;
+    if (!naZmenu.length) {
+      toast.error(t("pd.preskoceneOdovzdane", { pocet: preskocene }));
+      return;
+    }
+    const nazov = KATEGORIE_VYDAVKOV.find((k) => k.kod === kod)?.nazov ?? t("sken.bezKategorie");
+    if (
+      !(await potvrd(t("pd.zmenitKategoriuOtazka", { kategoria: nazov, pocet: naZmenu.length }), {
+        potvrdit: t("pd.zmenit"),
+        zrusit: t("spolocne.zrusit"),
+      }))
+    )
+      return;
+    setHromadne(true);
+    let ok = 0;
+    let chyba = "";
+    for (const d of naZmenu) {
+      try {
+        await upravFn({ data: { id: d.id, patch: { category: kod || null } } });
+        ok++;
+      } catch (e: any) {
+        chyba = e?.message ?? String(e ?? "");
+      }
+    }
+    setHromadne(false);
+    if (ok) toast.success(t("pd.kategoriaZmenena", { pocet: ok }));
+    if (preskocene) toast(t("pd.preskoceneOdovzdane", { pocet: preskocene }));
+    if (ok < naZmenu.length)
+      toast.error(t("pd.hromadneZlyhalo", { pocet: naZmenu.length - ok, chyba }));
+    await obnov();
+  }
+
+  async function hromadneZmaz() {
+    const ids = (doklady ?? []).filter((d) => vybrane.has(d.id)).map((d) => d.id);
+    if (!ids.length) return;
+    if (
+      !(await potvrd(t("pd.zmazatVybraneOtazka", { pocet: ids.length }), {
+        potvrdit: t("pd.zmazatKratke"),
+        zrusit: t("spolocne.zrusit"),
+        nebezpecne: true,
+      }))
+    )
+      return;
+    setHromadne(true);
+    let ok = 0;
+    let chyba = "";
+    for (const id of ids) {
+      try {
+        await zmazFn({ data: { id } });
+        ok++;
+      } catch (e: any) {
+        chyba = e?.message ?? String(e ?? "");
+      }
+    }
+    setHromadne(false);
+    if (ok) toast.success(t("pd.zmazaneHromadne", { pocet: ok }));
+    if (ok < ids.length) toast.error(t("pd.hromadneZlyhalo", { pocet: ids.length - ok, chyba }));
+    await obnov();
+    if (ok === ids.length) koniecVyberu();
+  }
+
   if (otvoreny) {
     return (
       <DetailDokladu
@@ -231,7 +375,32 @@ export function PrijateDoklady({
   if (doklady === null) return <Pracujem text={t("pd.nacitavam")} />;
 
   return (
-    <MobilObrazovka title={t("pd.nazov")} subtitle={firma.name} onBack={onSpat}>
+    <MobilObrazovka
+      title={t("pd.nazov")}
+      subtitle={firma.name}
+      onBack={vyberam ? koniecVyberu : onSpat}
+      akcia={
+        najdene.length > 0 || vyberam ? (
+          <button
+            onClick={() => (vyberam ? koniecVyberu() : setVyberam(true))}
+            className="rounded-app-sm px-3 py-2 text-[15px] font-medium text-app-zelena"
+          >
+            {vyberam ? t("pd.koniecVyberu") : t("pd.vybrat")}
+          </button>
+        ) : undefined
+      }
+      footer={
+        vyberam ? (
+          <ListaVybranych
+            suhrn={suhrn}
+            loc={loc}
+            pracujem={hromadne}
+            onKategoria={(kod) => void hromadneKategoria(kod)}
+            onZmaz={() => void hromadneZmaz()}
+          />
+        ) : undefined
+      }
+    >
       <div className="relative mb-4">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-2" />
         <input
@@ -377,6 +546,23 @@ export function PrijateDoklady({
         </div>
       ) : (
         <div className="space-y-5">
+          {vyberam && (
+            <div className="-mb-2 flex items-center justify-between px-1">
+              <span className="text-[13px] text-app-text-2">
+                {vybrane.size
+                  ? t("pd.vybranePocet", { pocet: vybrane.size })
+                  : t("pd.vyberteDoklady")}
+              </span>
+              <button
+                onClick={() => setVybrane((v) => vybratVsetko(v, zobrazeneIds))}
+                className="rounded-app-sm px-2 py-1.5 text-[14px] font-medium text-app-zelena"
+              >
+                {vsetkyVybrane(vybrane, zobrazeneIds)
+                  ? t("pd.odznacitVsetko")
+                  : t("pd.vybratVsetko")}
+              </button>
+            </div>
+          )}
           {mesiace.map(([kluc, riadky]) => {
             const spolu = riadky.reduce((s, d) => s + (cislo(d.total_amount) ?? 0), 0);
             return (
@@ -393,11 +579,31 @@ export function PrijateDoklady({
                   {riadky.map((d, i) => (
                     <button
                       key={d.id}
-                      onClick={() => setOtvoreny(d)}
-                      className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-app-pozadie ${
+                      onClick={() => tukniNaRiadok(d)}
+                      onPointerDown={() => zacniPodrzanie(d.id)}
+                      onPointerUp={zrusPodrzanie}
+                      onPointerLeave={zrusPodrzanie}
+                      onPointerCancel={zrusPodrzanie}
+                      // Android by na dlhé podržanie otvoril vlastnú ponuku.
+                      onContextMenu={(e) => e.preventDefault()}
+                      aria-pressed={vyberam ? vybrane.has(d.id) : undefined}
+                      data-vybrany={vybrane.has(d.id) || undefined}
+                      className={`flex w-full select-none items-center gap-3 px-4 py-3.5 text-left transition active:bg-app-pozadie ${
                         i > 0 ? "border-t border-app-ramik" : ""
-                      }`}
+                      } ${vybrane.has(d.id) ? "bg-app-zelena-jemna" : ""}`}
                     >
+                      {vyberam ? (
+                        <span
+                          aria-hidden
+                          className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 ${
+                            vybrane.has(d.id)
+                              ? "border-app-zelena bg-app-zelena text-white"
+                              : "border-app-ramik bg-app-karta"
+                          }`}
+                        >
+                          {vybrane.has(d.id) && <Check className="h-4 w-4" />}
+                        </span>
+                      ) : null}
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-app-sm bg-app-zelena-jemna text-app-zelena">
                         {d.source === "qr" ? (
                           <QrCode className="h-4 w-4" />
@@ -431,6 +637,109 @@ export function PrijateDoklady({
         </div>
       )}
     </MobilObrazovka>
+  );
+}
+
+/* ------------------------- Lišta vybraných ------------------------- */
+
+/** „12,30 € / 10,00 € bez DPH" za každú menu zvlášť — meny sa nesčítavajú. */
+function SumyMien({ sumy, loc }: { sumy: SucetMeny[]; loc: string }) {
+  const { t } = usePreklad();
+  if (!sumy.length) return null;
+  return (
+    <>
+      {sumy.map((s) => (
+        <span key={s.mena} className="block whitespace-nowrap tabular-nums">
+          <span className="font-semibold text-app-text">{formatujMenu(s.sDph, s.mena, loc)}</span>
+          {" / "}
+          {t("pd.bezDphSuma", { suma: formatujMenu(s.bezDph, s.mena, loc) })}
+        </span>
+      ))}
+    </>
+  );
+}
+
+/**
+ * Spodná lišta pri výbere: koľko je vybraných a za koľko, koľko z nich ešte
+ * pôjde do účtovníctva, a hromadné akcie. Exportované zvlášť, aby sa dala
+ * vykresliť aj bez servera (testy obrazoviek).
+ */
+export function ListaVybranych({
+  suhrn,
+  loc,
+  pracujem,
+  onKategoria,
+  onZmaz,
+}: {
+  suhrn: SuhrnVyberu;
+  loc: string;
+  pracujem: boolean;
+  onKategoria: (kod: string) => void;
+  onZmaz: () => void;
+}) {
+  const { t, mnozne } = usePreklad();
+  const doklady = (n: number) =>
+    `${n} ${mnozne(n, {
+      one: t("spolocne.doklad1"),
+      few: t("spolocne.doklad2"),
+      other: t("spolocne.doklad5"),
+    })}`;
+  const nic = suhrn.pocet === 0 || pracujem;
+  return (
+    <div data-lista-vyberu className="space-y-2 pb-1">
+      <div className="text-[13px] leading-snug text-app-text-2">
+        {/* Keď sa suma k popisu nezmestí, zalomí sa pod neho — nie po slovách. */}
+        <div className="flex flex-wrap items-start justify-between gap-x-3">
+          <span className="font-medium text-app-text">
+            {t("pd.vybrane", { pocet: doklady(suhrn.pocet) })}
+          </span>
+          <span className="ml-auto text-right">
+            <SumyMien sumy={suhrn.sumy} loc={loc} />
+          </span>
+        </div>
+        <div className="mt-1 flex flex-wrap items-start justify-between gap-x-3">
+          <span>{t("pd.naExport", { pocet: doklady(suhrn.naExport.pocet) })}</span>
+          <span className="ml-auto text-right">
+            <SumyMien sumy={suhrn.naExport.sumy} loc={loc} />
+          </span>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {/*
+          Natívny výber, nie vlastné okno — telefón ukáže svoj zoznam a po
+          výbere sa opýtame, či naozaj. Hodnota sa hneď vráti na prázdnu,
+          aby sa dala tá istá kategória vybrať aj druhýkrát.
+        */}
+        <select
+          aria-label={t("pd.zmenitKategoriu")}
+          value="__"
+          disabled={nic}
+          onChange={(e) => {
+            const kod = e.target.value;
+            if (kod !== "__") onKategoria(kod === "__nic" ? "" : kod);
+          }}
+          className="min-h-[44px] w-full min-w-0 rounded-app-sm border border-app-ramik bg-app-karta px-2 text-[14px] disabled:opacity-50"
+        >
+          <option value="__" disabled>
+            {t("pd.zmenitKategoriu")}
+          </option>
+          <option value="__nic">{t("sken.bezKategorie")}</option>
+          {KATEGORIE_VYDAVKOV.map((k) => (
+            <option key={k.kod} value={k.kod}>
+              {k.nazov}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={onZmaz}
+          disabled={nic}
+          className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-app-sm border border-app-chyba/40 px-3 text-[14px] font-medium text-app-chyba disabled:opacity-50"
+        >
+          <Trash2 className="h-4 w-4 shrink-0" />
+          {pracujem ? t("pd.pracujem") : t("pd.zmazatVybrane")}
+        </button>
+      </div>
+    </div>
   );
 }
 

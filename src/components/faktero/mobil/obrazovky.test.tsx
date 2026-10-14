@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
 import { MobilnaApka } from "./MobilApp";
 import { Diagnostika } from "./Diagnostika";
-import { PrijateDoklady } from "./PrijateDoklady";
+import { ListaVybranych, PrijateDoklady } from "./PrijateDoklady";
+import { Skener, vychodzieNastavenie } from "./Skener";
+import { suhrnVyberu } from "@/lib/mobile/vyber-dokladov";
 import { VystaveneFaktury } from "./VystaveneFaktury";
 import { NovaFaktura } from "./NovaFaktura";
 import { Ponuky, stavPonuky } from "./Ponuky";
@@ -151,6 +153,63 @@ describe("mobilné obrazovky sa vykreslia", () => {
     );
     expect(otvoreny).toContain("skuska@faktero.sk");
     expect(otvoreny).toContain("Zmazať účet");
+  });
+});
+
+describe("skener a výber dokladov", () => {
+  it("panel dokladu je na skeneri stále — úhrada, kategória a ďalšie položky", () => {
+    const html = renderToString(
+      <Skener
+        onQr={nic}
+        onOdfotit={nic}
+        onZGalerie={nic}
+        onViacstranovy={nic}
+        onPrijateDoklady={nic}
+        nastavenie={{ ...vychodzieNastavenie(), kategoria: "palivo", poznamka: "služobná cesta" }}
+        onNastavenie={nic}
+      />,
+    );
+    expect(html).toContain("data-panel-dokladu");
+    expect(html).toContain("Hotovosť");
+    expect(html).toContain("Karta");
+    expect(html).toContain("Nákup PHM");
+    // Zbalené, ale je vidieť, že niečo v nich je.
+    expect(html).toContain("Ďalšie položky (1 vyplnené)");
+    expect(html).toContain('aria-expanded="false"');
+    // Panel nie je schovaný za tlačidlom „Nastavenie".
+    expect(html).not.toContain(">Nastavenie dokladu<");
+  });
+
+  it("lišta vybraných sčíta po menách a povie, čo pôjde do účtovníctva", () => {
+    const doklady = [
+      { id: "a", total_amount: 12.3, net_amount: 10, vat_amount: 2.3, currency: "EUR", status: "processed" },
+      {
+        id: "b",
+        total_amount: 24.6,
+        net_amount: 20,
+        vat_amount: 4.6,
+        currency: "EUR",
+        status: "processed",
+        exported_at: "2026-10-01T08:00:00Z",
+      },
+      { id: "c", total_amount: 121, net_amount: 100, vat_amount: 21, currency: "CZK", status: "new" },
+    ];
+    const html = renderToString(
+      <ListaVybranych
+        suhrn={suhrnVyberu(doklady, new Set(["a", "b", "c"]))}
+        loc="sk-SK"
+        pracujem={false}
+        onKategoria={nic}
+        onZmaz={nic}
+      />,
+    ).replace(/\u00a0|&nbsp;/g, " ");
+    expect(html).toContain("Vybrané: 3 doklady");
+    expect(html).toContain("36,90 €");
+    expect(html).toContain("30,00 € bez DPH");
+    expect(html).toContain("121,00 CZK");
+    expect(html).toContain("Na export do účtovníctva: 1 doklad");
+    expect(html).toContain("Zmeniť kategóriu…");
+    expect(html).toContain("Zmazať");
   });
 });
 

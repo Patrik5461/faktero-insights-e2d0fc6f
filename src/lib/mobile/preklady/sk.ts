@@ -1032,6 +1032,33 @@ export const sk = {
   "davka.prilisVela":
     "V jednej dávke môže byť najviac {max} dokladov. Ďalšie pridajte v novej dávke.",
   "davka.prilisVelky": "Súbor je väčší než 15 MB",
+
+  /* skener — panel dokladu a výber v Prijatých dokladoch */
+  "sken.rezim": "Režim skenera",
+  "sken.bezKategorie": "Bez kategórie",
+  "sken.dalsiePolozky": "Ďalšie položky",
+  "sken.dalsiePolozkyPocet": "Ďalšie položky ({pocet} vyplnené)",
+  "pd.vybrat": "Vybrať",
+  "pd.koniecVyberu": "Hotovo",
+  "pd.vybratVsetko": "Vybrať všetko",
+  "pd.odznacitVsetko": "Zrušiť výber",
+  "pd.vybranePocet": "Vybrané: {pocet}",
+  "pd.vyberteDoklady": "Ťuknutím vyberte doklady",
+  "pd.vybrane": "Vybrané: {pocet}",
+  "pd.naExport": "Na export do účtovníctva: {pocet}",
+  "pd.bezDphSuma": "{suma} bez DPH",
+  "pd.zmenitKategoriu": "Zmeniť kategóriu…",
+  "pd.zmenitKategoriuOtazka":
+    "Zmeniť kategóriu na „{kategoria}“ pri vybraných dokladoch ({pocet})?",
+  "pd.zmenit": "Zmeniť",
+  "pd.kategoriaZmenena": "Kategória zmenená pri dokladoch: {pocet}",
+  "pd.preskoceneOdovzdane": "Odovzdané alebo zamknuté doklady sa nemenia ({pocet}).",
+  "pd.zmazatVybrane": "Zmazať",
+  "pd.zmazatVybraneOtazka":
+    "Presunúť vybrané doklady ({pocet}) do koša? Do 90 dní sa dajú obnoviť.",
+  "pd.zmazaneHromadne": "Zmazané doklady: {pocet}",
+  "pd.hromadneZlyhalo": "Nepodarilo sa pri dokladoch: {pocet}. {chyba}",
+  "pd.pracujem": "Pracujem…",
 } as const;
 
 export type Kluc = keyof typeof sk;
