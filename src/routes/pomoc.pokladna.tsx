@@ -111,7 +111,7 @@ const sections: HelpSection[] = [
         <p>
           Každý bloček z eKasy má QR kód a v ňom identifikátor dokladu. Faktero ten identifikátor
           prečíta a doklad si vypýta priamo z Finančnej správy — teda z toho istého miesta, kde si
-          doklad overuje aj ich vlastná aplikácia „Overenie pokladničného dokladu". Späť príde
+          doklad overuje aj ich vlastná aplikácia „Overenie pokladničného dokladu“. Späť príde
           predajca, IČO, dátum, sumy, sadzby DPH <strong>aj jednotlivé položky</strong>, presne tak,
           ako ich predajca odoslal. Nič sa nehádá z fotky.
         </p>
@@ -185,7 +185,7 @@ const sections: HelpSection[] = [
           centy) je vidieť v súčtoch.
         </p>
         <p>
-          Platba v hotovosti nad <strong>5 000 €</strong> je medzi podnikateľmi zakázaná (zákon č.
+          Platba v hotovosti nad <strong>5 000 €</strong> je medzi podnikateľmi zakázaná (zákon č.
           394/2012 Z. z.) — pri takej sume sa objaví upozornenie.
         </p>
       </>

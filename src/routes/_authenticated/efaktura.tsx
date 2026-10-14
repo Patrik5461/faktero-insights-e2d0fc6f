@@ -17,7 +17,7 @@ function EfakturaLayout() {
   return (
     <>
       <div className="border-b border-border bg-card/30">
-        <div className="flex flex-wrap gap-1 px-6 pt-3">
+        <div className="flex gap-1 overflow-x-auto px-4 pt-3 sm:px-6">
           {TABS.map((t) => {
             const active =
               t.to === "/efaktura" ? pathname === "/efaktura" : pathname.startsWith(t.to);
@@ -25,7 +25,7 @@ function EfakturaLayout() {
               <Link
                 key={t.to}
                 to={t.to}
-                className={`rounded-t-md border-b-2 px-3 py-2 text-sm transition-colors ${
+                className={`shrink-0 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-sm transition-colors ${
                   active
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -37,7 +37,7 @@ function EfakturaLayout() {
           })}
         </div>
       </div>
-      <EfakturaTestovaciRezim className="mx-6 mt-4" />
+      <EfakturaTestovaciRezim className="mx-4 mt-4 sm:mx-6" />
       <Outlet />
     </>
   );

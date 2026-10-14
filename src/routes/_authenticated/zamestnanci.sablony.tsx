@@ -96,7 +96,14 @@ function SablonyPage() {
               </div>
               <div>
                 <label className={popis} htmlFor="s-text">Text (riadok začínajúci „# “ je nadpis)</label>
-                <textarea id="s-text" rows={22} className={`${pole} font-mono text-xs`} value={text} onChange={(e) => setText(e.target.value)} />
+                {/* Výška podľa počtu riadkov — pri pevných 22 bol spodný riadok odrezaný. */}
+                <textarea
+                  id="s-text"
+                  rows={Math.max(22, text.split("\n").length + 2)}
+                  className={`${pole} min-h-[24rem] resize-y font-mono text-xs leading-5`}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                />
               </div>
               <div className="flex flex-wrap gap-2">
                 <button

@@ -110,13 +110,14 @@ export function VyberRadu({
       <select
         value={hodnota}
         onChange={(e) => onZmena(e.target.value)}
-        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        className="mt-1 w-full min-w-0 truncate rounded-md border border-input bg-background px-3 py-2 text-sm"
       >
         {rady.map((r) => (
-          /* Predvolený rad má prázdnu hodnotu — doklad sa tak neviaže na konkrétny rad zbytočne. */
+          /* Surovú masku („Q{YYYY}{NNNN}“) neukazujeme — číslo, ktoré doklad dostane, je pod výberom.
+             Predvolený rad má prázdnu hodnotu — doklad sa tak neviaže na konkrétny rad zbytočne. */
           <option key={r.id} value={r.is_default ? "" : r.id}>
             {r.name}
-            {r.is_default ? " (predvolený)" : ""} · {r.format}
+            {r.is_default ? " (predvolený)" : ""}
           </option>
         ))}
       </select>

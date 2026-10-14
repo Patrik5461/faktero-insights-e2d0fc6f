@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { CislovaniePoImporte } from "@/components/faktero/CislovaniePoImporte";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -95,7 +97,7 @@ function ImportPage() {
         body: file,
         headers: { "Content-Type": file.type || "application/octet-stream" },
       });
-      if (!uploadRes.ok) throw new Error(`Upload zlyhal (${uploadRes.status})`);
+      if (!uploadRes.ok) throw new Error(`Nahratie zlyhalo (${uploadRes.status})`);
       setPath(p);
       const r = await doPreview({ data: { companyId: cid, path: p, fileName: file.name } });
       setPreview(r.preview);
@@ -104,7 +106,7 @@ function ImportPage() {
       setDetection((r as any).detection ?? null);
       setStep(2);
     } catch (e: any) {
-      toast.error(e?.message ?? "Upload zlyhal.");
+      toast.error(e?.message ?? "Nahratie zlyhalo.");
     } finally {
       setBusy(false);
     }
@@ -230,7 +232,7 @@ function ImportPage() {
                 <Stat label="Riadky" value={preview.itemsCount} />
                 <Stat
                   label="Celková hodnota"
-                  value={`${preview.totalValue.toFixed(2)} ${preview.currency}`}
+                  value={formatujMenu(preview.totalValue, preview.currency)}
                 />
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
@@ -259,7 +261,7 @@ function ImportPage() {
                 </div>
               )}
               {preview.sampleInvoices?.length > 0 && (
-                <div className="mt-5 overflow-hidden rounded-lg border border-border">
+                <div className="mt-5 overflow-x-auto rounded-lg border border-border">
                   <table className="w-full text-sm">
                     <thead className="bg-secondary/40 text-xs text-muted-foreground">
                       <tr>
@@ -274,9 +276,11 @@ function ImportPage() {
                         <tr key={i} className="border-t border-border">
                           <td className="px-3 py-2">{s.invoice_number}</td>
                           <td className="px-3 py-2">{s.customer_name || "—"}</td>
-                          <td className="px-3 py-2">{s.issue_date ?? "—"}</td>
+                          <td className="whitespace-nowrap px-3 py-2">
+                            {s.issue_date ? datumNaDoklade(s.issue_date) : "—"}
+                          </td>
                           <td className="px-3 py-2 text-right tabular-nums">
-                            {Number(s.total).toFixed(2)}
+                            {formatujMenu(s.total, preview.currency)}
                           </td>
                         </tr>
                       ))}
@@ -438,21 +442,26 @@ function ImportPage() {
 }
 
 function Stepper({ step }: { step: number }) {
-  const labels = ["Upload", "Náhľad", "Mapovanie", "Validácia", "Hotovo"];
+  const labels = ["Nahratie", "Náhľad", "Mapovanie", "Validácia", "Hotovo"];
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
+    <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-card p-4">
       {labels.map((l, i) => {
         const n = i + 1,
           active = step === n,
           done = step > n;
         return (
-          <div key={l} className="flex flex-1 items-center gap-2">
+          <div
+            key={l}
+            className={`flex items-center gap-2 ${active ? "min-w-0 flex-1" : "shrink-0 sm:flex-1"}`}
+          >
             <div
-              className={`grid h-7 w-7 place-items-center rounded-full text-xs font-semibold ${done ? "bg-primary text-primary-foreground" : active ? "bg-primary/10 text-primary ring-2 ring-primary/30" : "bg-secondary text-muted-foreground"}`}
+              className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold ${done ? "bg-primary text-primary-foreground" : active ? "bg-primary/10 text-primary ring-2 ring-primary/30" : "bg-secondary text-muted-foreground"}`}
             >
               {n}
             </div>
-            <span className={`text-sm ${active ? "font-medium" : "text-muted-foreground"}`}>
+            <span
+              className={`truncate text-sm ${active ? "font-medium" : "hidden text-muted-foreground sm:inline"}`}
+            >
               {l}
             </span>
             {i < labels.length - 1 && (

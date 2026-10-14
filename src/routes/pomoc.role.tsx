@@ -150,24 +150,38 @@ const sections: HelpSection[] = [
           <Link to="/firma">Nastaveniach firmy</Link>, sekcia <em>Používatelia a pozvánky</em>.
         </p>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[34rem] border-collapse text-sm">
+          <table className="w-full border-collapse text-xs sm:min-w-[34rem] sm:text-sm">
             <thead>
               <tr className="border-b">
-                <th className="py-2 pr-3 text-left font-semibold">Čo</th>
-                <th className="px-2 py-2 text-center font-semibold">Majiteľ</th>
-                <th className="px-2 py-2 text-center font-semibold">Administrátor</th>
-                <th className="px-2 py-2 text-center font-semibold">Účtovník</th>
-                <th className="px-2 py-2 text-center font-semibold">Zamestnanec</th>
+                <th className="py-2 pr-2 text-left font-semibold sm:pr-3">Čo</th>
+                <th className="px-1 py-2 text-center font-semibold sm:px-2">Majiteľ</th>
+                <th className="px-1 py-2 text-center font-semibold sm:px-2">
+                  <span className="sm:hidden" title="Administrátor">
+                    Admin
+                  </span>
+                  <span className="hidden sm:inline">Administrátor</span>
+                </th>
+                <th className="px-1 py-2 text-center font-semibold sm:px-2">Účtovník</th>
+                <th className="px-1 py-2 text-center font-semibold sm:px-2">
+                  <span className="sm:hidden" title="Zamestnanec">
+                    Zamest.
+                  </span>
+                  <span className="hidden sm:inline">Zamestnanec</span>
+                </th>
               </tr>
             </thead>
             <tbody>
               {RIADKY.map((r) => (
                 <tr key={r.co} className="border-b last:border-0">
-                  <td className="py-2 pr-3">{r.co}</td>
-                  <td className="px-2 py-2 text-center">{r.owner ? <Ano /> : <Nie />}</td>
-                  <td className="px-2 py-2 text-center">{r.admin ? <Ano /> : <Nie />}</td>
-                  <td className="px-2 py-2 text-center">{r.uctovnik ? <Ano /> : <Nie />}</td>
-                  <td className="px-2 py-2 text-center">{r.zamestnanec ? <Ano /> : <Nie />}</td>
+                  <td className="py-2 pr-2 sm:pr-3">{r.co}</td>
+                  <td className="px-1 py-2 text-center sm:px-2">{r.owner ? <Ano /> : <Nie />}</td>
+                  <td className="px-1 py-2 text-center sm:px-2">{r.admin ? <Ano /> : <Nie />}</td>
+                  <td className="px-1 py-2 text-center sm:px-2">
+                    {r.uctovnik ? <Ano /> : <Nie />}
+                  </td>
+                  <td className="px-1 py-2 text-center sm:px-2">
+                    {r.zamestnanec ? <Ano /> : <Nie />}
+                  </td>
                 </tr>
               ))}
             </tbody>

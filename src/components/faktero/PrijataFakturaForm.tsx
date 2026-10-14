@@ -10,7 +10,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { prepocitajPrijatuFn } from "@/lib/faktero/kurzy.functions";
 import { najdiDuplicituPrijatejFn } from "@/lib/faktero/prijate-duplicity.functions";
 import { textDuplicity } from "@/lib/faktero/prijate-duplicity";
-import { ArrowLeft, Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
+import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
@@ -234,9 +235,9 @@ export function PrijataFakturaForm({
         issue_date: data.issue_date ?? today(),
         received_date: data.received_date ?? today(),
         due_date: data.due_date ?? today(),
-        amount_without_vat: data.amount_without_vat?.toString() ?? "",
-        vat_amount: data.vat_amount?.toString() ?? "",
-        amount_total: data.amount_total?.toString() ?? "",
+        amount_without_vat: data.amount_without_vat != null ? formatujCislo(data.amount_without_vat, 2, 2) : "",
+        vat_amount: data.vat_amount != null ? formatujCislo(data.vat_amount, 2, 2) : "",
+        amount_total: data.amount_total != null ? formatujCislo(data.amount_total, 2, 2) : "",
         currency: data.currency ?? "EUR",
         payment_method: data.payment_method ?? "prevod",
         note: data.note ?? "",
@@ -316,11 +317,11 @@ export function PrijataFakturaForm({
 
   // auto-compute amount_total when net/vat change
   useEffect(() => {
-    const net = parseFloat(form.amount_without_vat || "0");
-    const vat = parseFloat(form.vat_amount || "0");
+    const net = sumaZPola(form.amount_without_vat || "0");
+    const vat = sumaZPola(form.vat_amount || "0");
     if (!isNaN(net) || !isNaN(vat)) {
       const total = (isNaN(net) ? 0 : net) + (isNaN(vat) ? 0 : vat);
-      set("amount_total", total.toFixed(2));
+      set("amount_total", formatujCislo(total, 2, 2));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.amount_without_vat, form.vat_amount]);
@@ -352,7 +353,7 @@ export function PrijataFakturaForm({
           supplier_ico: form.supplier_ico.trim() || null,
           supplier_name: form.supplier_name.trim(),
           supplier_iban: form.supplier_iban.replace(/\s+/g, "") || null,
-          amount_total: parseFloat(form.amount_total || "0") || null,
+          amount_total: sumaZPola(form.amount_total || "0") || null,
           vylucit_id: id ?? null,
         },
       }).catch(() => null);
@@ -403,9 +404,9 @@ export function PrijataFakturaForm({
         issue_date: form.issue_date,
         received_date: form.received_date,
         due_date: form.due_date,
-        amount_without_vat: parseFloat(form.amount_without_vat || "0") || 0,
-        vat_amount: parseFloat(form.vat_amount || "0") || 0,
-        amount_total: parseFloat(form.amount_total || "0") || 0,
+        amount_without_vat: sumaZPola(form.amount_without_vat || "0") || 0,
+        vat_amount: sumaZPola(form.vat_amount || "0") || 0,
+        amount_total: sumaZPola(form.amount_total || "0") || 0,
         currency: form.currency,
         payment_method: form.payment_method || null,
         note: form.note || null,
@@ -501,14 +502,6 @@ export function PrijataFakturaForm({
             : upravujeme
               ? "Opravte údaje dokladu. Doklad z uzamknutého obdobia sa zmeniť nedá."
               : "Zaevidujte faktúru od dodávateľa (nákup / výdavok)."
-        }
-        action={
-          <Link
-            to={form.type === "proforma" ? "/prijate-zalohove" : "/prijate-faktury"}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
         }
       />
       <PageBody>
@@ -668,7 +661,7 @@ export function PrijataFakturaForm({
                     <option value="">— žiadnu —</option>
                     {zalohy.map((z) => (
                       <option key={z.id} value={z.id}>
-                        {z.invoice_number} · {z.amount_total.toFixed(2)} {z.currency}
+                        {z.invoice_number} · {formatujMenu(z.amount_total, z.currency)}
                       </option>
                     ))}
                   </select>
@@ -759,8 +752,8 @@ export function PrijataFakturaForm({
             <div className="grid gap-3 sm:grid-cols-4">
               <Field label="Bez DPH">
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={form.amount_without_vat}
                   onChange={(e) => set("amount_without_vat", e.target.value)}
                   className="input"
@@ -768,8 +761,8 @@ export function PrijataFakturaForm({
               </Field>
               <Field label="DPH">
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={form.vat_amount}
                   onChange={(e) => set("vat_amount", e.target.value)}
                   className="input"
@@ -777,8 +770,8 @@ export function PrijataFakturaForm({
               </Field>
               <Field label="Celkom">
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={form.amount_total}
                   onChange={(e) => set("amount_total", e.target.value)}
                   className="input font-semibold"
@@ -798,7 +791,7 @@ export function PrijataFakturaForm({
             </div>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5">
+          <section className="space-y-4 rounded-xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Príloha & poznámka
             </h3>
@@ -894,6 +887,11 @@ export function PrijataFakturaForm({
       </PageBody>
     </>
   );
+}
+
+/** Suma z poľa po slovensky — „1 234,50“ aj „1234.50“. */
+function sumaZPola(v: string): number {
+  return parseFloat(String(v).replace(/[\s\u00a0\u202f]/g, "").replace(",", "."));
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

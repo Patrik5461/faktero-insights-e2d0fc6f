@@ -24,6 +24,7 @@ type ProfileRow = {
   peppol_scheme?: string | null;
   peppol_provider?: string | null;
   default_document_format?: string | null;
+  epostak_firm_id?: string | null;
 } | null;
 
 type Stats = {
@@ -120,10 +121,23 @@ export function computeReadiness(args: {
     {
       key: "peppol.enabled",
       group: "peppol",
-      label: "eFaktúra zapnutá",
+      // Rovnaký názov ako v kontrole pripravenosti na stránke, inak to v zozname
+      // nesplneného vyzeralo, akoby eFaktúra zapnutá bola.
+      label: "eFaktúra režim aktivovaný",
       ok: !!profile?.enabled,
       severity: "warning",
       weight: 5,
+      fixUrl: "/efaktura",
+    },
+    {
+      // Bez spárovania s ePoštákom sa neodošle nič — predtým to skóre vôbec
+      // nevidelo a firma mala 95 %, hoci odoslať nemohla.
+      key: "peppol.epostak",
+      group: "peppol",
+      label: "Spárovanie s ePoštákom",
+      ok: !!profile?.epostak_firm_id,
+      severity: "blocker",
+      weight: 10,
       fixUrl: "/efaktura",
     },
     {

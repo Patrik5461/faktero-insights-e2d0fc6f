@@ -11,15 +11,18 @@ export function HubPage({ hub }: { hub: HubContent }) {
   return (
     <MarketingShell>
       <section className="border-b border-border/60 bg-gradient-to-b from-primary/5 to-transparent">
-        <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
+        {/* Úvod je vycentrovaný — text len vľavo nechával pravú polovicu prázdnu. */}
+        <div className="mx-auto max-w-6xl px-6 py-16 text-center md:py-20">
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">
             {hub.hubTitle}
           </p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight md:text-5xl">
-            {hub.hubDescription}
+          <h1 className="mx-auto mt-3 max-w-3xl text-balance text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+            {hub.hubHeadline ?? hub.hubDescription}
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{hub.hubLead}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-muted-foreground">
+            {hub.hubHeadline ? hub.hubDescription : hub.hubLead}
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               to="/registracia"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
@@ -37,19 +40,21 @@ export function HubPage({ hub }: { hub: HubContent }) {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-14">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Flex so zarovnaním na stred namiesto mriežky: karta, ktorá ostane
+            v poslednom riadku sama (5 alebo 7 položiek), nevisí vľavo. */}
+        <div className="flex flex-wrap justify-center gap-5">
           {hub.items.map((item) => (
             <a
               key={item.slug}
               href={`/${hub.hubSlug}/${item.slug}`}
-              className="group rounded-2xl border border-border bg-card p-6 transition hover:border-primary/40 hover:shadow-lg"
+              className="group flex w-full flex-col rounded-2xl border border-border bg-card p-6 transition hover:border-primary/40 hover:shadow-lg sm:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-2.5rem)/3)]"
             >
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <item.icon className="h-5 w-5" />
               </div>
               <h2 className="mt-4 text-lg font-semibold">{item.label}</h2>
               <p className="mt-1.5 text-sm text-muted-foreground">{item.summary}</p>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-80 group-hover:opacity-100">
+              <span className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-medium text-primary opacity-80 group-hover:opacity-100">
                 Zistiť viac <ChevronRight className="h-4 w-4" />
               </span>
             </a>

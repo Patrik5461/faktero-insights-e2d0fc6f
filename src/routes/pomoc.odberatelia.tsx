@@ -40,7 +40,7 @@ const sections: HelpSection[] = [
           rovnaké kontakty znamenajú rozdelenú históriu faktúr.
         </p>
         <p>
-          <strong>E-mail</strong> vyplňte vždy, keď chcete posielať faktúry a ponuky z Fakera — bez
+          <strong>E-mail</strong> vyplňte vždy, keď chcete posielať faktúry a ponuky z Faktera — bez
           neho sa odoslanie neponúkne.
         </p>
       </>

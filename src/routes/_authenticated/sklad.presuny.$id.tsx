@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getTransferDetail, completeTransfer, cancelTransfer } from "@/lib/faktero/stock.functions";
@@ -197,7 +198,7 @@ function TransferDetailPage() {
               <thead className="bg-muted/50 text-left">
                 <tr>
                   <th className="px-3 py-2">Položka</th>
-                  <th className="px-3 py-2">SKU</th>
+                  <th className="px-3 py-2">Kód</th>
                   <th className="px-3 py-2 text-right">Množstvo</th>
                   <th className="px-3 py-2 text-right">Jedn. cena</th>
                   <th className="px-3 py-2 text-right">Spolu</th>
@@ -215,10 +216,10 @@ function TransferDetailPage() {
                       <td className="px-3 py-2">{src?.sku ?? "—"}</td>
                       <td className="px-3 py-2 text-right">{Number(it.quantity)}</td>
                       <td className="px-3 py-2 text-right">
-                        {Number(it.unit_price).toFixed(2)} {mena.symbol}
+                        {formatujJednotkovuCenu(it.unit_price, mena.kod)}
                       </td>
                       <td className="px-3 py-2 text-right">
-                        {(Number(it.quantity) * Number(it.unit_price)).toFixed(2)} {mena.symbol}
+                        {formatujMenu(Number(it.quantity) * Number(it.unit_price), mena.kod)}
                       </td>
                       {transfer.target_company_id && (
                         <td className="px-3 py-2 text-muted-foreground">
@@ -238,9 +239,7 @@ function TransferDetailPage() {
                   <td className="px-3 py-2" colSpan={4}>
                     Spolu
                   </td>
-                  <td className="px-3 py-2 text-right">
-                    {total.toFixed(2)} {mena.symbol}
-                  </td>
+                  <td className="px-3 py-2 text-right">{formatujMenu(total, mena.kod)}</td>
                   {transfer.target_company_id && <td />}
                 </tr>
               </tfoot>

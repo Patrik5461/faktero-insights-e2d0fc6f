@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { formatujCislo } from "@/lib/faktero/mena";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -315,7 +316,7 @@ function TripsPage() {
             </div>
 
             {/* Desktop */}
-            <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
+            <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
@@ -381,7 +382,7 @@ function TripsPage() {
                         {r.customer_name ?? <span className="text-muted-foreground">—</span>}
                       </td>
                       <td className="p-3 text-right tabular-nums font-medium">
-                        {Number(r.distance_km).toFixed(1)}
+                        {formatujCislo(r.distance_km, 1)}
                       </td>
                       <td className="p-3 text-right tabular-nums">
                         {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
@@ -389,7 +390,7 @@ function TripsPage() {
                       {/* Najvyššiu rýchlosť merajú len appka a Commander —
                           pri ručne zapísanej jazde tam nemá čo stáť. */}
                       <td className="p-3 text-right tabular-nums">
-                        {r.max_speed_kmh ? `${Number(r.max_speed_kmh).toFixed(0)} km/h` : "—"}
+                        {r.max_speed_kmh ? `${formatujCislo(r.max_speed_kmh, 0)} km/h` : "—"}
                       </td>
                       <td className="p-3 text-right tabular-nums">
                         {formatDuration(r.duration_seconds)}
@@ -500,7 +501,7 @@ function TripsPage() {
                     </div>
                     <div className="shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="text-sm font-bold tabular-nums">
-                        {Number(r.distance_km).toFixed(1)} km
+                        {formatujCislo(r.distance_km, 1)} km
                       </div>
                       {(r.route || koncoveBody(r)) && (
                         <button
@@ -568,7 +569,7 @@ function TripsPage() {
             <DialogHeader>
               <DialogTitle>
                 Trasa jazdy
-                {trasa ? ` — ${trasa.trip_date}, ${Number(trasa.distance_km).toFixed(1)} km` : ""}
+                {trasa ? ` — ${trasa.trip_date}, ${formatujCislo(trasa.distance_km, 1)} km` : ""}
               </DialogTitle>
             </DialogHeader>
             {trasa &&

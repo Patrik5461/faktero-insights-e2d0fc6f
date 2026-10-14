@@ -84,7 +84,8 @@ function NewJob() {
     }
   }
 
-  const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
+  const pole =
+    "w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
   const popis = "mb-1 block text-xs font-medium text-muted-foreground";
 
   return (
@@ -107,12 +108,12 @@ function NewJob() {
               className={pole}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Napríklad Rekonštrukcia rozvodov — Hlavná 12"
+              placeholder="napr. Rekonštrukcia — Hlavná 12"
               autoFocus
             />
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
+              <div className="sm:col-span-2">
                 <label className={popis}>Odberateľ</label>
                 <select
                   className={pole}
@@ -127,7 +128,6 @@ function NewJob() {
                   ))}
                 </select>
               </div>
-              <div />
               <div>
                 <label className={popis}>Začiatok</label>
                 <input

@@ -48,7 +48,7 @@ export function PrepinacDizajnu({ velky = false }: { velky?: boolean }) {
               </div>
               <div className="mt-2 flex items-center justify-between text-sm font-medium">
                 {m.popis}
-                {aktivna ? <span className="text-xs text-primary">Zapnutý</span> : null}
+                {aktivna ? <span className="text-xs text-primary">Zapnuté</span> : null}
               </div>
             </button>
           );

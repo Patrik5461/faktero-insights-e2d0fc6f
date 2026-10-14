@@ -134,7 +134,7 @@ const sections: HelpSection[] = [
           </li>
           <li>
             <strong>Hromadný príkaz na úhradu</strong> — súbor SEPA XML, ktorý nahráte do
-            internetbankingu (býva to „Import príkazov" alebo „Hromadný príkaz") a zaplatíte všetky
+            internetbankingu (býva to „Import príkazov“ alebo „Hromadný príkaz“) a zaplatíte všetky
             vybrané faktúry naraz. Vyberiete účet, z ktorého sa platí, a dátum; faktúry môžu ísť aj
             každá až v deň splatnosti. Variabilný, špecifický a konštantný symbol sa prenesú tak,
             ako ich dodávateľ uvidí vo výpise. Symbol dlhší ako 10 číslic alebo s písmenami
@@ -243,7 +243,7 @@ const sections: HelpSection[] = [
         <ul>
           <li>
             <strong>Režim DPH</strong> — tuzemská faktúra od platiteľa ide do časti B.2 kontrolného
-            výkazu, samozdanenie podľa § 69 do B.1, nadobudnutie tovaru z EÚ do riadkov 05 až 08
+            výkazu, samozdanenie podľa § 69 do B.1, nadobudnutie tovaru z EÚ do riadkov 05 až 08
             priznania. Keď pole necháte prázdne, režim sa odhadne podľa IČ DPH dodávateľa.
           </li>
           <li>
@@ -294,7 +294,7 @@ const sections: HelpSection[] = [
         <p>
           <strong>Rozúčtovanie na viac predkontácií:</strong> v časti Zaúčtovanie kliknite na{" "}
           <em>Rozúčtovať na viac predkontácií</em>. Každý riadok má vlastnú predkontáciu, členenie
-          DPH, sadzbu, základ a DPH (napr. 80 € materiál 1Fp/PD a 20 € réžia 2Fp/PN). Súčty po
+          DPH, sadzbu, základ a DPH (napr. 80 € materiál 1Fp/PD a 20 € réžia 2Fp/PN). Súčty po
           sadzbách musia sedieť s faktúrou na cent — tlačidlo <em>= zvyšok</em> doplní rozdiel. Do
           Pohody ide faktúra s hlavičkou „Rozúčtovať“ a s položkami, z ktorých každá nesie svoje
           kódy. Rovnako sa dá rozúčtovať aj bloček (Doklady → otvoriť doklad → Zaúčtovanie).
@@ -323,7 +323,7 @@ const sections: HelpSection[] = [
         <p>
           Niekedy faktúru nepíše dodávateľ, ale odberateľ: výkupca dreva či kovov od drobných
           dodávateľov, firma, ktorá vypláca provízie obchodným zástupcom, vydavateľ autorom. Zákon o
-          DPH to dovoľuje (§ 72 ods. 4), ak sú splnené tri veci:
+          DPH to dovoľuje (§ 72 ods. 4), ak sú splnené tri veci:
         </p>
         <ul>
           <li>
@@ -355,10 +355,10 @@ const sections: HelpSection[] = [
           Samofaktúra vie všetko, čo bežná faktúra: text nad položkami, popis a zľavu na položke,
           konštantný a špecifický symbol, jazyk faktúry (aj pre zahraničného dodávateľa — veta o
           vyhotovení odberateľom sa preloží), cudziu menu s prepočtom dane kurzom ECB a osobitnú
-          úpravu podľa § 65 a § 66, zľavu na celú faktúru a zúčtovanie zaplatenej zálohy (prijatej
+          úpravu podľa § 65 a § 66, zľavu na celú faktúru a zúčtovanie zaplatenej zálohy (prijatej
           zálohovej faktúry od toho istého dodávateľa). Položky sa dajú vybrať z cenníka a skladu —
           pri skladovej karte sa ponúkne posledná nákupná cena. Pri <strong>prenesení daňovej povinnosti</strong> (kovový šrot
-          a odpad, stavebné práce podľa § 69 ods. 12, alebo dodávateľ z iného štátu EÚ) daň na
+          a odpad, stavebné práce podľa § 69 ods. 12, alebo dodávateľ z iného štátu EÚ) daň na
           faktúre nebude — samozdaníte ju vy a dodávateľovi platíte len základ. Pri dodávateľovi z
           iného štátu EÚ faktúra odkazuje na smernicu (čl. 138 pri tovare, čl. 196 pri službe).
         </p>
@@ -409,8 +409,8 @@ const sections: HelpSection[] = [
           pred úhradou.
         </p>
         <p>
-          Prečo na tom záleží: odberateľ ručí za DPH dodávateľa (§ 109 zákona o DPH), keď zaplatí
-          nespoľahlivému platcovi, alebo pri sume nad 540 000 Kč na účet, ktorý platca nezverejnil.
+          Prečo na tom záleží: odberateľ ručí za DPH dodávateľa (§ 109 zákona o DPH), keď zaplatí
+          nespoľahlivému platcovi, alebo pri sume nad 540 000 Kč na účet, ktorý platca nezverejnil.
           Overenie sa týka len firiem s krajinou Česko.
         </p>
       </>

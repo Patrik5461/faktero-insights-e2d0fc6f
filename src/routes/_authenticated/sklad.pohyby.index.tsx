@@ -16,6 +16,7 @@ import {
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
 import { toast } from "sonner";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/sklad/pohyby/")({
   head: () => ({ meta: [{ title: "Skladové pohyby — Faktero" }] }),
@@ -149,6 +150,13 @@ function MovementsPage() {
     })();
   }, [filter, stock_item_id, warehouseFilter, dateFrom, dateTo]);
 
+  /** Názov tovaru ku karte; bez názvu aspoň kód. */
+  function nazovPolozky(id: string): string | null {
+    const si = items[id];
+    if (!si) return null;
+    return (si.product_id ? products[si.product_id]?.name : null) ?? si.sku ?? null;
+  }
+
   const visibleRows = rows.filter((m) => {
     if (!productSearch) return true;
     const q = productSearch.toLowerCase();
@@ -280,11 +288,11 @@ function MovementsPage() {
         }
       />
       <PageBody>
-        <div className="mb-3 flex flex-wrap items-center gap-3">
+        <div className="mb-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-auto"
           >
             <option value="">Všetky typy</option>
             {Object.entries(TYPE_LABEL).map(([k, v]) => (
@@ -296,7 +304,7 @@ function MovementsPage() {
           <select
             value={warehouseFilter}
             onChange={(e) => setWarehouseFilter(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-auto"
           >
             <option value="">Všetky sklady</option>
             {allWarehouses.map((w) => (
@@ -305,33 +313,34 @@ function MovementsPage() {
               </option>
             ))}
           </select>
-          <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <label className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
             Od{" "}
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+              className="min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:flex-none"
             />
           </label>
-          <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <label className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
             Do{" "}
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+              className="min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:flex-none"
             />
           </label>
           <input
             value={productSearch}
             onChange={(e) => setProductSearch(e.target.value)}
-            placeholder="Hľadať produkt / SKU…"
-            className="w-56 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            placeholder="Hľadať názov alebo kód…"
+            className="col-span-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-56"
           />
           {stock_item_id && (
-            <div className="inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs">
-              Filter: skladová karta {stock_item_id.slice(0, 8)}…
+            <div className="col-span-2 inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs">
+              Filter: skladová karta{" "}
+              {nazovPolozky(stock_item_id) ?? `${stock_item_id.slice(0, 8)}…`}
               <Link to="/sklad/pohyby" className="text-primary hover:underline">
                 × zrušiť
               </Link>
@@ -339,7 +348,7 @@ function MovementsPage() {
           )}
         </div>
         {/* Desktop table */}
-        <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card">
+        <div className="hidden md:block overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -379,7 +388,15 @@ function MovementsPage() {
                   </td>
                   <td className="p-3 font-medium">{TYPE_LABEL[m.type] ?? m.type}</td>
                   <td className="p-3">
-                    {items[m.stock_item_id]?.sku ?? m.stock_item_id.slice(0, 8)}
+                    <div className="font-medium">
+                      {nazovPolozky(m.stock_item_id) ?? m.stock_item_id.slice(0, 8)}
+                    </div>
+                    {items[m.stock_item_id]?.sku &&
+                      nazovPolozky(m.stock_item_id) !== items[m.stock_item_id]?.sku && (
+                        <div className="whitespace-nowrap text-xs text-muted-foreground">
+                          {items[m.stock_item_id].sku}
+                        </div>
+                      )}
                   </td>
                   <td className="p-3 text-muted-foreground">{warehouses[m.warehouse_id] ?? "—"}</td>
                   <td
@@ -387,11 +404,11 @@ function MovementsPage() {
                   >
                     {pohybText(m.type, m.quantity)}
                   </td>
-                  <td className="p-3 text-right tabular-nums">
-                    {m.unit_cost != null ? Number(m.unit_cost).toFixed(4) : "—"}
+                  <td className="p-3 text-right tabular-nums whitespace-nowrap">
+                    {m.unit_cost != null ? formatujJednotkovuCenu(m.unit_cost, mena.kod) : "—"}
                   </td>
-                  <td className="p-3 text-right tabular-nums">
-                    {hodnotaPohybu(m).toFixed(2)} {mena.symbol}
+                  <td className="p-3 text-right tabular-nums whitespace-nowrap">
+                    {formatujMenu(hodnotaPohybu(m), mena.kod)}
                   </td>
                   <td className="p-3 text-xs" onClick={(e) => e.stopPropagation()}>
                     {(m.source_document_type === "invoice" || m.reference_type === "invoice") &&
@@ -423,10 +440,10 @@ function MovementsPage() {
                           } as Record<string, string>
                         )[m.source_document_type] ?? m.source_document_type}
                       </span>
-                    ) : (
+                    ) : m.note ? null : (
                       <span className="text-muted-foreground">—</span>
                     )}
-                    {m.note && <div className="mt-1 text-muted-foreground truncate">{m.note}</div>}
+                    {m.note && <div className="text-muted-foreground truncate">{m.note}</div>}
                   </td>
                 </tr>
               ))}
@@ -460,8 +477,14 @@ function MovementsPage() {
                 </span>
               </div>
               <div className="mt-2 flex items-center justify-between">
-                <div className="font-medium">
-                  {items[m.stock_item_id]?.sku ?? m.stock_item_id.slice(0, 8)}
+                <div className="min-w-0 font-medium">
+                  {nazovPolozky(m.stock_item_id) ?? m.stock_item_id.slice(0, 8)}
+                  {items[m.stock_item_id]?.sku &&
+                    nazovPolozky(m.stock_item_id) !== items[m.stock_item_id]?.sku && (
+                      <span className="ml-1 whitespace-nowrap text-xs font-normal text-muted-foreground">
+                        {items[m.stock_item_id].sku}
+                      </span>
+                    )}
                 </div>
                 <div
                   className={
@@ -475,8 +498,8 @@ function MovementsPage() {
               </div>
               <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                 <span>{warehouses[m.warehouse_id] ?? "—"}</span>
-                <span>
-                  {hodnotaPohybu(m).toFixed(2)} {mena.symbol}
+                <span className="whitespace-nowrap">
+                  {formatujMenu(hodnotaPohybu(m), mena.kod)}
                 </span>
               </div>
               {m.note && <div className="mt-1 text-xs text-muted-foreground">{m.note}</div>}

@@ -161,7 +161,7 @@ function CompanyPage() {
             >
               {MENY.map((m) => (
                 <option key={m.code} value={m.code}>
-                  {m.flag} {m.code} {m.symbol} — {m.name}
+                  {m.code} {m.symbol} — {m.name}
                 </option>
               ))}
             </select>
@@ -260,7 +260,7 @@ function CompanyPage() {
           <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="font-medium">Email šablóny</div>
+                <div className="font-medium">E-mailové šablóny</div>
                 <div className="text-xs text-muted-foreground">
                   Editor pre odoslanie faktúry, upomienky a žiadosti o schválenie.
                 </div>
@@ -501,7 +501,7 @@ function TeamSection({ companyId }: { companyId: string }) {
       <VysvetlenieRoli />
 
       {clenovia && clenovia.length > 0 && (
-        <div className="mt-5 overflow-hidden rounded-md border border-border">
+        <div className="mt-5 overflow-x-auto rounded-md border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -665,7 +665,7 @@ function TeamSection({ companyId }: { companyId: string }) {
       )}
 
       {invs.length > 0 && (
-        <div className="mt-6 overflow-hidden rounded-md border border-border">
+        <div className="mt-6 overflow-x-auto rounded-md border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>

@@ -5,7 +5,6 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getPeriodLock, setPeriodLock } from "@/lib/faktero/uzavierka.functions";
 import {
-  formatujDatum,
   jeOdomknutie,
   koniecPredoslehoMesiaca,
   koniecPredoslehoRoka,
@@ -13,6 +12,10 @@ import {
 } from "@/lib/faktero/uzavierka";
 import { Lock, Unlock, ShieldCheck } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+
+/** Dátum pre človeka po slovensky („30. 9. 2026“), prázdny ako „—“. */
+const formatujDatum = (d: unknown) => datumNaDoklade(d);
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/uzavierka")({
   head: () => ({ meta: [{ title: "Uzávierka — Faktero" }] }),

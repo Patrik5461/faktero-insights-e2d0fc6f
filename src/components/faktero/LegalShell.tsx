@@ -51,7 +51,9 @@ export function LegalShell({
           <p className="mt-2 text-sm text-muted-foreground">
             Posledná aktualizácia: {updated} · Verzia {version}
           </p>
-          <div className="prose prose-slate mt-8 max-w-none text-foreground prose-headings:text-foreground prose-headings:font-semibold prose-h2:mt-10 prose-h2:text-xl prose-h3:mt-6 prose-h3:text-base prose-p:text-foreground/90 prose-li:text-foreground/90 prose-strong:text-foreground prose-a:text-emerald-700">
+          {/* Plugin @tailwindcss/typography v projekte nie je, triedy `prose` by
+              nerobili nič — typografiu právnych textov preto píšeme priamo. */}
+          <div className="mt-8 max-w-none text-[15px] leading-relaxed text-foreground/90 [&_a]:text-emerald-700 [&_a]:underline [&_a]:underline-offset-2 dark:[&_a]:text-emerald-300 [&_h2]:mb-3 [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_h2:first-child]:mt-0 [&_h3]:mb-2 [&_h3]:mt-6 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-foreground [&_li]:mt-1.5 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-3 [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:marker:text-muted-foreground">
             {children}
           </div>
         </article>
@@ -69,10 +71,11 @@ export const LEGAL_COMPANY = {
   icDph: "SK2122358579",
   address: "Športová 707/43, 919 26 Zavar, Slovenská republika",
   email: "info@faktero.sk",
-  /* Jedno miesto pravdy pre kontaktné číslo — bez medzier, aby sedelo
-     zobrazenie aj odkaz `tel:` a dalo sa kopírovať jedným ťuknutím. */
-  phone: "+421902101967",
+  /* Jedno miesto pravdy pre kontaktné číslo. Zobrazuje sa s medzerami,
+     do odkazu `tel:` ide cez `LEGAL_PHONE_TEL` bez nich. */
+  phone: "+421 902 101 967",
   web: "https://www.faktero.sk",
   statutar: "Patrik Henček",
   incorporated: "31. októbra 2024",
 };
+export const LEGAL_PHONE_TEL = LEGAL_COMPANY.phone.replace(/\s/g, "");

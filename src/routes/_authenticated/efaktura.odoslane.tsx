@@ -16,6 +16,9 @@ import {
 import {
   deriveEfakturaUiStatus,
   EfakturaStatusBadge,
+  kratkyCas,
+  stavDorucenia,
+  typDokladuEfaktury,
 } from "@/components/faktero/EfakturaStatusBadge";
 import { potvrd } from "@/lib/potvrdenie";
 
@@ -69,7 +72,7 @@ function SentPage() {
     setOdosielam(invoiceId);
     try {
       const r: any = await posli({ data: { company_id: companyId, invoice_id: invoiceId } });
-      toast.success(`Odoslané — stav ${r.status}.`);
+      toast.success(`Odoslané — stav: ${stavDorucenia(r.status).toLowerCase()}.`);
       q.refetch();
       qd.refetch();
     } catch (e) {
@@ -102,6 +105,86 @@ function SentPage() {
     }
   }
 
+  function dorucenieBunka(row: any) {
+    const d = dorucenia.get(row.id);
+    if (!d) return <span className="text-xs text-muted-foreground">Neodoslaná</span>;
+    return (
+      <span
+        className={`text-xs ${d.status === "failed" || d.status === "rejected" ? "text-destructive" : "text-primary"}`}
+        title={d.error_message ?? undefined}
+      >
+        {stavDorucenia(d.status)}
+        {d.sent_at && (
+          <span className="block whitespace-nowrap text-muted-foreground">
+            {kratkyCas(d.sent_at)}
+          </span>
+        )}
+      </span>
+    );
+  }
+
+  function validaciaBunka(row: any) {
+    const errs = Array.isArray(row.validation_errors) ? row.validation_errors : [];
+    return (
+      <>
+        {errs.length === 0 ? (
+          <span className="text-xs text-primary">OK</span>
+        ) : (
+          <button
+            onClick={() => setOpenErrors(openErrors === row.id ? null : row.id)}
+            className="text-xs text-destructive underline"
+          >
+            {errs.length} chýb
+          </button>
+        )}
+        {openErrors === row.id && (
+          <ul className="mt-2 space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs">
+            {errs.map((e: any, i: number) => (
+              <li key={i}>
+                <span className="font-mono">{e.code}</span> — {e.message}
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
+    );
+  }
+
+  function akcieBunka(row: any, className = "") {
+    const btn =
+      "inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50";
+    return (
+      <div className={`flex flex-wrap gap-1 ${className}`}>
+        {row.invoice_id && (
+          <a href={`/faktury/${row.invoice_id}`} className={btn}>
+            <Eye className="h-3.5 w-3.5" /> Detail
+          </a>
+        )}
+        <button onClick={() => row.invoice_id && handleRevalidate(row.invoice_id)} className={btn}>
+          <RefreshCw className="h-3.5 w-3.5" /> Validovať
+        </button>
+        {/* Odoslanie je nevratné, tak je až za validáciou a pýta sa. */}
+        <button
+          disabled={odosielam === row.invoice_id}
+          onClick={() =>
+            row.invoice_id && odosli(row.invoice_id, row.document_number ?? row.invoice_id)
+          }
+          className={btn}
+        >
+          <Send className="h-3.5 w-3.5" /> {odosielam === row.invoice_id ? "Odosielam…" : "Odoslať"}
+        </button>
+        <button
+          onClick={() => row.invoice_id && handleDownload(row.invoice_id)}
+          className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90"
+        >
+          <Download className="h-3.5 w-3.5" /> XML
+        </button>
+      </div>
+    );
+  }
+
+  const cislo = (row: any) => row.document_number ?? row.invoices?.invoice_number ?? "—";
+
   return (
     <>
       <PageHeader
@@ -109,7 +192,45 @@ function SentPage() {
         description="XML dokumenty vygenerované z vašich faktúr."
       />
       <PageBody>
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        {/* Mobil: karty namiesto širokej tabuľky. */}
+        <div className="space-y-3 md:hidden">
+          {q.isLoading && (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+              Načítavam…
+            </div>
+          )}
+          {q.data && q.data.length === 0 && (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+              Zatiaľ žiadne vygenerované eFaktúry.
+            </div>
+          )}
+          {q.data?.map((row: any) => (
+            <div key={row.id} className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-medium">{cislo(row)}</div>
+                  <div className="truncate text-sm text-muted-foreground">
+                    {row.invoices?.customer_name ?? "—"}
+                  </div>
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {typDokladuEfaktury(row.invoices?.type)}
+                </span>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <EfakturaStatusBadge status={deriveEfakturaUiStatus(row)} />
+                <div>{validaciaBunka(row)}</div>
+                {dorucenieBunka(row)}
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground">
+                Vytvorené {kratkyCas(row.created_at)}
+              </div>
+              {akcieBunka(row, "mt-3")}
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -138,100 +259,27 @@ function SentPage() {
                   </td>
                 </tr>
               )}
-              {q.data?.map((row: any) => {
-                const errs = Array.isArray(row.validation_errors) ? row.validation_errors : [];
-                const ui = deriveEfakturaUiStatus(row);
-                return (
-                  <tr key={row.id}>
-                    <td className="p-3 font-medium">
-                      {row.document_number ?? row.invoices?.invoice_number ?? "—"}
-                    </td>
-                    <td className="p-3">{row.invoices?.customer_name ?? "—"}</td>
-                    <td className="p-3 text-xs uppercase text-muted-foreground">
-                      {row.invoices?.type ?? "regular"}
-                    </td>
-                    <td className="p-3">
-                      <EfakturaStatusBadge status={ui} />
-                    </td>
-                    <td className="p-3">
-                      {errs.length === 0 ? (
-                        <span className="text-xs text-primary">OK</span>
-                      ) : (
-                        <button
-                          onClick={() => setOpenErrors(openErrors === row.id ? null : row.id)}
-                          className="text-xs text-destructive underline"
-                        >
-                          {errs.length} chýb
-                        </button>
-                      )}
-                      {openErrors === row.id && (
-                        <ul className="mt-2 space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs">
-                          {errs.map((e: any, i: number) => (
-                            <li key={i}>
-                              <span className="font-mono">{e.code}</span> — {e.message}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      {(() => {
-                        const d = dorucenia.get(row.id);
-                        if (!d)
-                          return <span className="text-xs text-muted-foreground">neodoslané</span>;
-                        return (
-                          <span
-                            className={`text-xs ${d.status === "failed" ? "text-destructive" : "text-primary"}`}
-                            title={d.error_message ?? undefined}
-                          >
-                            {d.status}
-                            {d.sent_at ? ` · ${new Date(d.sent_at).toLocaleString("sk-SK")}` : ""}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                    <td className="p-3 text-xs text-muted-foreground">
-                      {new Date(row.created_at).toLocaleString("sk-SK")}
-                    </td>
-                    <td className="p-3">
-                      <div className="flex justify-end gap-1">
-                        {row.invoice_id && (
-                          <a
-                            href={`/faktury/${row.invoice_id}`}
-                            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
-                          >
-                            <Eye className="h-3.5 w-3.5" /> Detail
-                          </a>
-                        )}
-                        <button
-                          onClick={() => row.invoice_id && handleRevalidate(row.invoice_id)}
-                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
-                        >
-                          <RefreshCw className="h-3.5 w-3.5" /> Validovať
-                        </button>
-                        {/* Odoslanie je nevratné, tak je až za validáciou a pýta sa. */}
-                        <button
-                          disabled={odosielam === row.invoice_id}
-                          onClick={() =>
-                            row.invoice_id &&
-                            odosli(row.invoice_id, row.document_number ?? row.invoice_id)
-                          }
-                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
-                        >
-                          <Send className="h-3.5 w-3.5" />{" "}
-                          {odosielam === row.invoice_id ? "Odosielam…" : "Odoslať"}
-                        </button>
-                        <button
-                          onClick={() => row.invoice_id && handleDownload(row.invoice_id)}
-                          className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90"
-                        >
-                          <Download className="h-3.5 w-3.5" /> XML
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {q.data?.map((row: any) => (
+                <tr key={row.id} className="align-top">
+                  <td className="whitespace-nowrap p-3 font-medium">{cislo(row)}</td>
+                  <td className="p-3">{row.invoices?.customer_name ?? "—"}</td>
+                  <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
+                    {typDokladuEfaktury(row.invoices?.type)}
+                  </td>
+                  <td className="p-3">
+                    <EfakturaStatusBadge status={deriveEfakturaUiStatus(row)} />
+                  </td>
+                  <td className="p-3">{validaciaBunka(row)}</td>
+                  <td className="p-3">{dorucenieBunka(row)}</td>
+                  <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
+                    {kratkyCas(row.created_at)}
+                  </td>
+                  <td className="p-3">
+                    {/* Tlačidlá sa zalomia do dvoch riadkov, aby stĺpec neutiekol za okraj. */}
+                    {akcieBunka(row, "ml-auto max-w-[190px] justify-end")}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

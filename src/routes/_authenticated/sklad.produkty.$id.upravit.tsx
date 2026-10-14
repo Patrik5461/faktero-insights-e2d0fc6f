@@ -1,4 +1,4 @@
-import { KROK_CENY } from "@/lib/faktero/mena";
+import { KROK_CENY, formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -310,7 +310,7 @@ function EditStockProduct() {
                     className="input"
                   />
                 </Field>
-                <Field label="SKU">
+                <Field label="Skladový kód (SKU)">
                   <input
                     value={form.sku}
                     onChange={(e) => set("sku", e.target.value)}
@@ -390,11 +390,9 @@ function EditStockProduct() {
             </div>
             {form.sale_price > 0 && (
               <p className="mt-2 text-xs text-muted-foreground">
-                S DPH: {(form.sale_price * (1 + form.vat_rate / 100)).toFixed(2)} {mena.symbol} · Marža:{" "}
+                S DPH: {formatujJednotkovuCenu(form.sale_price * (1 + form.vat_rate / 100), mena.kod)} · Marža:{" "}
                 {form.purchase_price > 0
-                  ? (((form.sale_price - form.purchase_price) / form.purchase_price) * 100).toFixed(
-                      1,
-                    )
+                  ? formatujCislo(((form.sale_price - form.purchase_price) / form.purchase_price) * 100, 1)
                   : "—"}{" "}
                 %
               </p>
@@ -582,7 +580,7 @@ function EditStockProduct() {
           </div>
         </form>
 
-        <style>{`.input { width: 100%; border-radius: 0.375rem; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); padding: 0.5rem 0.75rem; font-size: 0.875rem; } .input:focus { outline: 2px solid hsl(var(--ring)); outline-offset: 1px; }`}</style>
+        <style>{`.input { width: 100%; border-radius: 0.375rem; border: 1px solid var(--border); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; } .input:focus { outline: 2px solid var(--ring); outline-offset: 1px; }`}</style>
       </PageBody>
     </>
   );

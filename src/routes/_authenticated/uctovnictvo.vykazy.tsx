@@ -10,6 +10,7 @@ import { verziaPriznania } from "@/lib/faktero/dph-vykazy";
 import { AlertTriangle, Download, Loader2, CheckCircle2 } from "lucide-react";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { CzVykazyDph } from "@/components/faktero/CzVykazyDph";
+import { pocetSlovom } from "@/lib/faktero/sklonovanie";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/vykazy")({
   head: () => ({
@@ -418,8 +419,10 @@ function VykazyPage() {
         {data && (
           <>
             <p className="mb-4 text-sm text-muted-foreground">
-              V období je {data.pocty.vystavene} vystavených faktúr, {data.pocty.prijate} prijatých
-              a {data.pocty.doklady} dokladov s DPH.
+              V období:{" "}
+              {pocetSlovom(data.pocty.vystavene, "vystavená faktúra", "vystavené faktúry", "vystavených faktúr")},{" "}
+              {pocetSlovom(data.pocty.prijate, "prijatá", "prijaté", "prijatých")} a{" "}
+              {pocetSlovom(data.pocty.doklady, "doklad s DPH", "doklady s DPH", "dokladov s DPH")}.
             </p>
 
             {data.vytky.length > 0 && (

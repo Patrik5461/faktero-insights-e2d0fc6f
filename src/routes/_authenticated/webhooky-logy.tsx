@@ -12,7 +12,7 @@ import { usePagedLogs } from "@/hooks/usePagedLogs";
 import { EmptyState, ListFooter, LogsToolbar } from "@/components/faktero/ListControls";
 
 export const Route = createFileRoute("/_authenticated/webhooky-logy")({
-  head: () => ({ meta: [{ title: "Webhook delivery logy — Faktero" }] }),
+  head: () => ({ meta: [{ title: "Záznamy doručení webhookov — Faktero" }] }),
   component: WebhookLogsPage,
 });
 
@@ -98,7 +98,7 @@ function WebhookLogsPage() {
   return (
     <>
       <PageHeader
-        title="Webhook delivery logy"
+        title="Záznamy doručení webhookov"
         description="História doručovania webhookov, opakovanie a detaily odpovedí."
         action={
           <Link
@@ -130,7 +130,7 @@ function WebhookLogsPage() {
           <LogsToolbar
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Hľadať podľa eventu…"
+            searchPlaceholder="Hľadať podľa udalosti…"
             selects={[
               {
                 label: "Stav",
@@ -165,90 +165,100 @@ function WebhookLogsPage() {
           />
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2.5">Stav</th>
-                  <th className="px-3 py-2.5">Event</th>
-                  <th className="px-3 py-2.5">Cieľová URL</th>
-                  <th className="px-3 py-2.5 text-right">HTTP</th>
-                  <th className="px-3 py-2.5 text-right">Trvanie</th>
-                  <th className="px-3 py-2.5">Vytvorené</th>
-                  <th className="px-3 py-2.5 text-right">Akcie</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {loading ? (
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          {/* Prázdny stav mimo tabuľky — v širokej tabuľke sa na mobile text
+              centroval za okraj obrazovky a bol useknutý. */}
+          {!loading && logs.length === 0 ? (
+            <EmptyState
+              icon={Webhook}
+              title="Žiadne záznamy"
+              description="Skúste zmeniť filtre alebo počkajte na ďalšie doručenia."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
-                      Načítavam…
-                    </td>
+                    <th className="px-3 py-2.5">Stav</th>
+                    <th className="px-3 py-2.5">Udalosť</th>
+                    <th className="px-3 py-2.5">Cieľová URL</th>
+                    <th className="px-3 py-2.5 text-right">HTTP</th>
+                    <th className="px-3 py-2.5 text-right">Trvanie</th>
+                    <th className="px-3 py-2.5">Vytvorené</th>
+                    <th className="px-3 py-2.5 text-right">Akcie</th>
                   </tr>
-                ) : logs.length === 0 ? (
-                  <tr>
-                    <td colSpan={7}>
-                      <EmptyState
-                        icon={Webhook}
-                        title="Žiadne záznamy"
-                        description="Skúste zmeniť filtre alebo počkajte na ďalšie doručenia."
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  logs.map((l) => (
-                    <tr key={l.id} className="hover:bg-muted/30">
-                      <td className="px-3 py-2.5">
-                        <StatusBadge status={l.status} />
-                      </td>
-                      <td className="px-3 py-2.5 font-mono text-xs">{l.event_type}</td>
-                      <td
-                        className="px-3 py-2.5 max-w-[280px] truncate text-xs text-muted-foreground"
-                        title={hooks[l.webhook_id]?.url}
-                      >
-                        {hooks[l.webhook_id]?.url ?? "—"}
-                      </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">
-                        {l.response_status ?? <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
-                        {l.duration_ms != null ? `${l.duration_ms} ms` : "—"}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-muted-foreground">
-                        {new Date(l.created_at).toLocaleString("sk-SK")}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-center justify-end gap-1">
-                          <IconBtn
-                            title="Zobraziť payload"
-                            onClick={() => setViewing({ kind: "payload", log: l })}
-                          >
-                            <FileJson className="h-3.5 w-3.5" />
-                          </IconBtn>
-                          <IconBtn
-                            title="Zobraziť odpoveď"
-                            onClick={() => setViewing({ kind: "response", log: l })}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </IconBtn>
-                          <IconBtn
-                            title="Opakovať doručenie"
-                            onClick={() => onRetry(l.id)}
-                            disabled={retryingId === l.id}
-                          >
-                            <RefreshCw
-                              className={`h-3.5 w-3.5 ${retryingId === l.id ? "animate-spin" : ""}`}
-                            />
-                          </IconBtn>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
+                        Načítavam…
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : logs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7}>
+                        <EmptyState
+                          icon={Webhook}
+                          title="Žiadne záznamy"
+                          description="Skúste zmeniť filtre alebo počkajte na ďalšie doručenia."
+                        />
+                      </td>
+                    </tr>
+                  ) : (
+                    logs.map((l) => (
+                      <tr key={l.id} className="hover:bg-muted/30">
+                        <td className="px-3 py-2.5">
+                          <StatusBadge status={l.status} />
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs">{l.event_type}</td>
+                        <td
+                          className="px-3 py-2.5 max-w-[280px] truncate text-xs text-muted-foreground"
+                          title={hooks[l.webhook_id]?.url}
+                        >
+                          {hooks[l.webhook_id]?.url ?? "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">
+                          {l.response_status ?? <span className="text-muted-foreground">—</span>}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
+                          {l.duration_ms != null ? `${l.duration_ms} ms` : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-xs text-muted-foreground">
+                          {new Date(l.created_at).toLocaleString("sk-SK")}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center justify-end gap-1">
+                            <IconBtn
+                              title="Zobraziť payload"
+                              onClick={() => setViewing({ kind: "payload", log: l })}
+                            >
+                              <FileJson className="h-3.5 w-3.5" />
+                            </IconBtn>
+                            <IconBtn
+                              title="Zobraziť odpoveď"
+                              onClick={() => setViewing({ kind: "response", log: l })}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </IconBtn>
+                            <IconBtn
+                              title="Opakovať doručenie"
+                              onClick={() => onRetry(l.id)}
+                              disabled={retryingId === l.id}
+                            >
+                              <RefreshCw
+                                className={`h-3.5 w-3.5 ${retryingId === l.id ? "animate-spin" : ""}`}
+                              />
+                            </IconBtn>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
           <ListFooter
             page={page}
             pageSize={pageSize}

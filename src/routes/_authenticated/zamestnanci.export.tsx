@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ArrowLeft, Download } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { formatujCislo } from "@/lib/faktero/mena";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { exportDochadzky } from "@/lib/faktero/zamestnanci.functions";
 import { DRUH_NEPRITOMNOSTI, type DruhNepritomnosti, type SuhrnZamestnanca } from "@/lib/faktero/zamestnanci";
@@ -61,6 +62,12 @@ function ExportPage() {
           <ChybaModulu sprava={chyba} />
         ) : (
           <div className="max-w-4xl space-y-4">
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <p className="mb-4 text-sm text-muted-foreground">
+              Vyberte mesiac a pripravte súhrn. Pre každého zamestnanca obsahuje počet odpracovaných
+              dní a hodín a neprítomnosti podľa druhu (dovolenka, PN, OČR…). Stiahnete ho ako CSV
+              pre mzdový program alebo ako PDF na odovzdanie.
+            </p>
             <div className="flex flex-wrap items-end gap-2">
               <div>
                 <label className={popis} htmlFor="e-mesiac">Mesiac</label>
@@ -79,6 +86,7 @@ function ExportPage() {
               <button type="button" className={tlacidlo} onClick={pripravit} disabled={pracuje}>
                 {pracuje ? "Pripravujem…" : "Pripraviť súhrn"}
               </button>
+            </div>
             </div>
 
             {vysledok && (
@@ -117,8 +125,8 @@ function ExportPage() {
                           <tr key={s.employee_id}>
                             <td className="p-3 font-medium">{s.meno}</td>
                             <td className="p-3 text-right">{s.odpracovaneDni}</td>
-                            <td className="p-3 text-right">{String(s.hodiny).replace(".", ",")}</td>
-                            {druhy.map((k) => <td key={k} className="p-3 text-right">{String(s.nepritomnosti[k]).replace(".", ",")}</td>)}
+                            <td className="p-3 text-right">{formatujCislo(s.hodiny, 0, 2)}</td>
+                            {druhy.map((k) => <td key={k} className="p-3 text-right">{formatujCislo(s.nepritomnosti[k], 0, 2)}</td>)}
                           </tr>
                         ))}
                       </tbody>

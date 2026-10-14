@@ -13,7 +13,7 @@ import {
 } from "@/lib/faktero/purchase-orders.functions";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { PackageCheck, Send, Trash2, X } from "lucide-react";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
@@ -244,13 +244,13 @@ function PurchaseOrderDetail() {
                       )}
                     </td>
                     <td className="p-3 text-right tabular-nums">
-                      {Number(it.quantity).toFixed(2)} {it.unit ?? ""}
+                      {formatujCislo(it.quantity, 0, 2)} {it.unit ?? ""}
                     </td>
                     <td className="p-3 text-right tabular-nums">
-                      {Number(it.received_quantity).toFixed(2)}
+                      {formatujCislo(it.received_quantity, 0, 2)}
                     </td>
                     <td className="p-3 text-right tabular-nums font-medium">
-                      {it.zostava.toFixed(2)}
+                      {formatujCislo(it.zostava, 0, 2)}
                     </td>
                     <td className="p-3 text-right tabular-nums">
                       {suma(Number(it.unit_price), o.currency)}

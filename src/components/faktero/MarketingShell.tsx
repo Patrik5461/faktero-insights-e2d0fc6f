@@ -66,7 +66,8 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
 
           <div className="border-t border-border/60 pt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <span>
-              © {new Date().getFullYear()} {LEGAL_COMPANY.name}. Všetky práva vyhradené.
+              © {new Date().getFullYear()} {LEGAL_COMPANY.name.replace(/\.$/, "")}. Všetky práva
+              vyhradené.
             </span>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               <Link to="/cennik" className="hover:text-foreground">
@@ -117,6 +118,9 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
             </Link>
             <Link to="/pravne/cookies" className="hover:text-foreground">
               Cookies
+            </Link>
+            <Link to="/pravne/spracovanie-udajov" className="hover:text-foreground">
+              Spracúvanie údajov (čl. 28)
             </Link>
             <Link to="/pravne/tesla-podmienky" className="hover:text-foreground">
               Tesla Fleet API

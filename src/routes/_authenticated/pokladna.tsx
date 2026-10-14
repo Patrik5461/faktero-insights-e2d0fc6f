@@ -21,6 +21,12 @@ function suma(n: number) {
   return formatovacMeny("EUR", "sk-SK")(n || 0);
 }
 
+/** Príjem s „+“, výdaj záporný — rovnaké znamienko ako pri zostatku (formatujMenu). */
+function sumaSoZnamienkom(r: { typ: string; suma: number }) {
+  const n = Math.abs(Number(r.suma) || 0);
+  return r.typ === "prijem" ? `+${suma(n)}` : suma(-n);
+}
+
 function tentoMesiac() {
   return new Date().toISOString().slice(0, 7);
 }
@@ -275,70 +281,132 @@ function PokladnaPage() {
             </p>
           </div>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full min-w-[760px] text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="p-3">Dátum</th>
-                  <th className="p-3">Číslo</th>
-                  <th className="p-3">Popis</th>
-                  <th className="p-3">Zdroj</th>
-                  <th className="p-3 text-right">Suma</th>
-                  <th className="p-3 text-right">Zostatok</th>
-                  <th className="p-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {(data?.riadky ?? []).map((r: any) => (
-                  <tr key={`${r.zdroj}-${r.id}`} className="hover:bg-muted/30">
-                    <td className="p-3 text-muted-foreground">{formatujDatum(r.datum)}</td>
-                    <td className="p-3">{r.cislo || "—"}</td>
-                    <td className="p-3">
-                      <span className="inline-flex items-center gap-1.5">
-                        {r.typ === "prijem" ? (
-                          <ArrowDownCircle className="h-4 w-4 text-emerald-600" />
+          <>
+            <div className="mt-4 hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="p-3">Dátum</th>
+                    <th className="p-3">Číslo</th>
+                    <th className="p-3">Popis</th>
+                    <th className="p-3">Zdroj</th>
+                    <th className="p-3 text-right">Suma</th>
+                    <th className="p-3 text-right">Zostatok</th>
+                    <th className="p-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {(data?.riadky ?? []).map((r: any) => (
+                    <tr key={`${r.zdroj}-${r.id}`} className="hover:bg-muted/30">
+                      <td className="p-3 text-muted-foreground">{formatujDatum(r.datum)}</td>
+                      <td className="p-3">{r.cislo || "—"}</td>
+                      <td className="p-3">
+                        <span className="inline-flex items-center gap-1.5">
+                          {r.typ === "prijem" ? (
+                            <ArrowDownCircle className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          {r.popis}
+                        </span>
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground">
+                        {r.zdroj === "doklad" ? (
+                          <Link to="/doklady" className="hover:underline">
+                            Doklad v hotovosti
+                          </Link>
                         ) : (
-                          <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
+                          "Pokladničný doklad"
                         )}
-                        {r.popis}
-                      </span>
-                    </td>
-                    <td className="p-3 text-xs text-muted-foreground">
-                      {r.zdroj === "doklad" ? (
-                        <Link to="/doklady" className="hover:underline">
-                          Doklad v hotovosti
-                        </Link>
+                      </td>
+                      <td
+                        className={`p-3 text-right tabular-nums ${
+                          r.typ === "prijem" ? "text-emerald-600" : ""
+                        }`}
+                      >
+                        {sumaSoZnamienkom(r)}
+                      </td>
+                      <td className="p-3 text-right font-medium tabular-nums">
+                        {suma(r.zostatok)}
+                      </td>
+                      <td className="p-3 text-right">
+                        {r.zdroj === "pokladnicny" && (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => zmaz(r.id)}
+                            className="text-destructive hover:underline disabled:opacity-50"
+                            title="Zmazať doklad"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Na mobile karty — tabuľka by Zdroj, Sumu a Zostatok orezala. */}
+            <div className="mt-4 space-y-2 md:hidden">
+              {(data?.riadky ?? []).map((r: any) => (
+                <div
+                  key={`${r.zdroj}-${r.id}`}
+                  className="rounded-xl border border-border bg-card p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="inline-flex min-w-0 items-center gap-1.5 font-medium">
+                      {r.typ === "prijem" ? (
+                        <ArrowDownCircle className="h-4 w-4 shrink-0 text-emerald-600" />
                       ) : (
-                        "Pokladničný doklad"
+                        <ArrowUpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
                       )}
-                    </td>
-                    <td
-                      className={`p-3 text-right tabular-nums ${
+                      <span className="min-w-0 break-words">{r.popis}</span>
+                    </span>
+                    <span
+                      className={`shrink-0 whitespace-nowrap font-semibold tabular-nums ${
                         r.typ === "prijem" ? "text-emerald-600" : ""
                       }`}
                     >
-                      {r.typ === "prijem" ? "+" : "−"}
-                      {suma(r.suma)}
-                    </td>
-                    <td className="p-3 text-right font-medium tabular-nums">{suma(r.zostatok)}</td>
-                    <td className="p-3 text-right">
-                      {r.zdroj === "pokladnicny" && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => zmaz(r.id)}
-                          className="text-destructive hover:underline disabled:opacity-50"
-                          title="Zmazať doklad"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {sumaSoZnamienkom(r)}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span>
+                      {formatujDatum(r.datum)}
+                      {r.cislo ? ` · ${r.cislo}` : ""}
+                    </span>
+                    <span className="whitespace-nowrap">
+                      Zostatok:{" "}
+                      <strong className="text-foreground tabular-nums">{suma(r.zostatok)}</strong>
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    {r.zdroj === "doklad" ? (
+                      <Link to="/doklady" className="hover:underline">
+                        Doklad v hotovosti
+                      </Link>
+                    ) : (
+                      <span>Pokladničný doklad</span>
+                    )}
+                    {r.zdroj === "pokladnicny" && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => zmaz(r.id)}
+                        className="p-1 text-destructive disabled:opacity-50"
+                        aria-label="Zmazať doklad"
+                        title="Zmazať doklad"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {data?.locked_until && (

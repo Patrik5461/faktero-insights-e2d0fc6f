@@ -363,7 +363,7 @@ export const getStockDashboard = createServerFn({ method: "POST" })
       supabase
         .from("stock_items")
         .select(
-          "id, sku, min_stock, optimal_stock, track_stock, sale_price, purchase_price, avg_purchase_price",
+          "id, sku, unit, min_stock, optimal_stock, track_stock, sale_price, purchase_price, avg_purchase_price, products(name)",
         )
         .eq("company_id", data.company_id),
       supabase
@@ -372,7 +372,7 @@ export const getStockDashboard = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id),
       supabase
         .from("stock_movements")
-        .select("id, type, quantity, total_value, stock_item_id, created_at, note")
+        .select("id, type, quantity, total_value, unit_cost, stock_item_id, created_at, note")
         .eq("company_id", data.company_id)
         .order("created_at", { ascending: false })
         .limit(10),
@@ -401,10 +401,21 @@ export const getStockDashboard = createServerFn({ method: "POST" })
       below_min_items: belowMin.slice(0, 10).map((it) => ({
         id: it.id,
         sku: it.sku,
+        name: (it as any).products?.name ?? null,
+        unit: it.unit,
         min: Number(it.min_stock),
         current: levelMap.get(it.id) ?? 0,
       })),
-      recent_movements: movements ?? [],
+      // Názov a kód karty k pohybu — bez nich sa nedá povedať, čoho sa týka.
+      recent_movements: (movements ?? []).map((m) => {
+        const it = (items ?? []).find((i) => i.id === m.stock_item_id);
+        return {
+          ...m,
+          sku: it?.sku ?? null,
+          name: (it as any)?.products?.name ?? null,
+          unit: it?.unit ?? null,
+        };
+      }),
     };
   });
 

@@ -1,3 +1,4 @@
+import { popisRoly } from "@/lib/faktero/rola-popis";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,6 +78,44 @@ function CompanyManagementPage() {
     window.location.assign("/dashboard");
   }
 
+  const akcie = (r: Row) => (
+    <div className="inline-flex flex-wrap justify-end gap-2">
+      {r.id !== activeId && (
+        <button
+          onClick={() => switchTo(r.id)}
+          className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
+        >
+          Prepnúť
+        </button>
+      )}
+      <a
+        href="/firma"
+        className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
+      >
+        Upraviť
+      </a>
+      {/* Pozvánky žijú v nastaveniach firmy — tu bolo roky
+          zašednuté tlačidlo s poznámkou „Onedlho". */}
+      <Link
+        to="/firma"
+        className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
+      >
+        Pozvať
+      </Link>
+      {/* Skúšobná firma sa dala doteraz len založiť. Mazať smie
+          majiteľ a len keď mu ostane iná — poslednú firmu rieši
+          zrušenie účtu, ktoré má odklad. */}
+      {r.role === "owner" && (rows?.length ?? 0) > 1 && (
+        <button
+          onClick={() => setMazem(r)}
+          className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-3.5 w-3.5" /> Zmazať
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <>
       <PageHeader
@@ -92,7 +131,37 @@ function CompanyManagementPage() {
         }
       />
       <PageBody>
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        {/* Mobil: karty — stĺpec Akcie bol mimo obrazovky. */}
+        <div className="space-y-2 md:hidden">
+          {rows === null && (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+              Načítavam…
+            </div>
+          )}
+          {rows?.length === 0 && (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+              Žiadne firmy.
+            </div>
+          )}
+          {rows?.map((r) => (
+            <div key={r.id} className="rounded-xl border border-border bg-card p-4 text-sm">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 break-words font-medium">{r.name}</span>
+                {r.id === activeId && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                    <Check className="h-3 w-3" /> Aktívna
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {popisRoly(r.role)} · vytvorené {new Date(r.created_at).toLocaleDateString("sk-SK")}
+              </div>
+              <div className="mt-3 flex justify-start [&>div]:justify-start">{akcie(r)}</div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -130,47 +199,11 @@ function CompanyManagementPage() {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.role}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{popisRoly(r.role)}</td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {new Date(r.created_at).toLocaleDateString("sk-SK")}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="inline-flex gap-2">
-                      {r.id !== activeId && (
-                        <button
-                          onClick={() => switchTo(r.id)}
-                          className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
-                        >
-                          Prepnúť
-                        </button>
-                      )}
-                      <a
-                        href="/firma"
-                        className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
-                      >
-                        Upraviť
-                      </a>
-                      {/* Pozvánky žijú v nastaveniach firmy — tu bolo roky
-                          zašednuté tlačidlo s poznámkou „Onedlho". */}
-                      <Link
-                        to="/firma"
-                        className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
-                      >
-                        Pozvať
-                      </Link>
-                      {/* Skúšobná firma sa dala doteraz len založiť. Mazať smie
-                          majiteľ a len keď mu ostane iná — poslednú firmu rieši
-                          zrušenie účtu, ktoré má odklad. */}
-                      {r.role === "owner" && (rows?.length ?? 0) > 1 && (
-                        <button
-                          onClick={() => setMazem(r)}
-                          className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Zmazať
-                        </button>
-                      )}
-                    </div>
-                  </td>
+                  <td className="px-4 py-3 text-right">{akcie(r)}</td>
                 </tr>
               ))}
             </tbody>

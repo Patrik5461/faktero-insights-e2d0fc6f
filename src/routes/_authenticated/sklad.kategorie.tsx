@@ -11,7 +11,7 @@ import {
   deleteStockCategory,
 } from "@/lib/faktero/stock.functions";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Tags } from "lucide-react";
+import { Plus, Pencil, Trash2, Tags, Ban } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/sklad/kategorie")({
@@ -136,7 +136,7 @@ function CategoriesPage() {
       />
       <PageBody>
         <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-          <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -158,7 +158,7 @@ function CategoriesPage() {
                   <tr>
                     <td colSpan={4} className="p-8 text-center text-muted-foreground">
                       <Tags className="mx-auto mb-2 h-6 w-6 opacity-40" />
-                      Žiadne kategórie. Vytvorte prvú vpravo.
+                      Žiadne kategórie. Vytvorte prvú vo formulári.
                     </td>
                   </tr>
                 )}
@@ -212,11 +212,16 @@ function CategoriesPage() {
             />
             <label className="mt-3 block text-xs font-medium text-muted-foreground">Farba</label>
             <div className="mt-1 flex flex-wrap gap-1.5">
+              {/* Bez farby — prečiarknutý krúžok, inak vyzeral ako biela farba. */}
               <button
                 onClick={() => setColor("")}
-                className={`h-7 w-7 rounded-full border ${color === "" ? "ring-2 ring-primary" : "border-border"}`}
+                className={`grid h-7 w-7 place-items-center rounded-full border border-dashed border-muted-foreground/60 text-muted-foreground ${color === "" ? "ring-2 ring-primary" : ""}`}
                 title="Bez farby"
-              />
+                aria-label="Bez farby"
+                aria-pressed={color === ""}
+              >
+                <Ban className="h-4 w-4" />
+              </button>
               {PALETTE.map((f) => (
                 <button
                   key={f.kod}

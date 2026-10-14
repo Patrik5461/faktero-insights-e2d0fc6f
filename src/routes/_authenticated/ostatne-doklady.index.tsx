@@ -280,12 +280,12 @@ function OstatneDokladyPage() {
               </div>
             </div>
           )}
-          <div>
+          <div className="w-full sm:w-auto">
             <label className="mb-1 block text-xs text-muted-foreground">Druh</label>
             <select
               value={druh}
               onChange={(e) => setDruh(e.target.value as DruhOstatneho | "")}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm sm:w-auto"
             >
               <option value="">Všetky druhy</option>
               {DRUHY_OSTATNYCH.map((d) => (
@@ -295,13 +295,13 @@ function OstatneDokladyPage() {
               ))}
             </select>
           </div>
-          <div>
+          <div className="w-full sm:w-auto">
             <label className="mb-1 block text-xs text-muted-foreground">Priečinok</label>
             <select
               aria-label="Priečinok"
               value={priecinok}
               onChange={(e) => setPriecinok(e.target.value)}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm sm:w-auto"
             >
               <option value="">Všetky priečinky</option>
               {priecinky.map((p) => (

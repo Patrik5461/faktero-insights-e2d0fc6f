@@ -232,6 +232,48 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
     }
   }
 
+  /** Ikony Upraviť / Zmazať / Obnoviť — rovnaké v tabuľke aj v mobilných kartách. */
+  const akcie = (c: (typeof list.rows)[number]) => (
+    <>
+      {!list.showDeleted && (
+        <button
+          aria-label="Upraviť"
+          title="Upraviť"
+          onClick={() => setEditing(c)}
+          className="rounded p-1.5 hover:bg-muted"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      )}
+      {list.showDeleted ? (
+        <button
+          aria-label="Obnoviť"
+          title="Obnoviť"
+          onClick={async () => {
+            try {
+              await list.restore([c.id]);
+              toast.success("Obnovené");
+            } catch (e: any) {
+              toast.error(e?.message ?? "Chyba");
+            }
+          }}
+          className="rounded p-1.5 text-primary hover:bg-primary/10"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </button>
+      ) : (
+        <button
+          aria-label="Zmazať"
+          title="Zmazať"
+          onClick={() => setRowDelete(c)}
+          className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
+    </>
+  );
+
   return (
     <>
       <PageHeader
@@ -291,112 +333,117 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
           }}
           onClear={list.clearSelection}
         />
-        <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="w-10 p-3">
-                  <input
-                    type="checkbox"
-                    checked={list.allOnPageSelected}
-                    onChange={(e) => list.toggleAllOnPage(e.target.checked)}
-                  />
-                </th>
-                <th className="p-3">Názov</th>
-                <th className="p-3">IČO</th>
-                <th className="p-3">DIČ</th>
-                <th className="p-3">Email</th>
-                <th className="p-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {list.loading && (
+        <div className="mt-3 rounded-xl border border-border bg-card">
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                    Načítavam…
-                  </td>
-                </tr>
-              )}
-              {!list.loading && list.rows.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                    {list.showDeleted ? T.ziadniVymazani : T.ziadni}
-                  </td>
-                </tr>
-              )}
-              {list.rows.map((c) => (
-                <tr key={c.id} className="hover:bg-muted/30">
-                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                  <th className="w-10 p-3">
                     <input
                       type="checkbox"
-                      checked={!!list.selected[c.id]}
-                      onChange={(e) => list.toggleSelect(c.id, e.target.checked)}
+                      checked={list.allOnPageSelected}
+                      onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                     />
-                  </td>
-                  {/*
+                  </th>
+                  <th className="p-3">Názov</th>
+                  <th className="p-3">IČO</th>
+                  <th className="p-3">DIČ</th>
+                  <th className="p-3">Email</th>
+                  <th className="p-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {list.loading && (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                      Načítavam…
+                    </td>
+                  </tr>
+                )}
+                {!list.loading && list.rows.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                      {list.showDeleted ? T.ziadniVymazani : T.ziadni}
+                    </td>
+                  </tr>
+                )}
+                {list.rows.map((c) => (
+                  <tr key={c.id} className="hover:bg-muted/30">
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={!!list.selected[c.id]}
+                        onChange={(e) => list.toggleSelect(c.id, e.target.checked)}
+                      />
+                    </td>
+                    {/*
                     Otvoriť kartu sa dalo len ceruzkou na opačnom konci riadka.
                     Meno je to, na čo človek ťukne — v zozname faktúr to tak je
                     tiež.
                   */}
-                  <td className="p-3 font-medium">
-                    <button
-                      onClick={() => setEditing(c)}
-                      className="text-left hover:underline"
-                      title={T.karta}
-                    >
-                      {c.name}
-                    </button>
-                    {jeFyzicka(c) && (
-                      <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                        fyzická osoba
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3">{c.ico ?? "—"}</td>
-                  <td className="p-3">{c.dic ?? "—"}</td>
-                  <td className="p-3">{c.email ?? "—"}</td>
-                  <td className="p-3 text-right">
-                    {!list.showDeleted && (
+                    <td className="p-3 font-medium">
                       <button
-                        aria-label="Upraviť"
-                        title="Upraviť"
                         onClick={() => setEditing(c)}
-                        className="rounded p-1.5 hover:bg-muted"
+                        className="text-left hover:underline"
+                        title={T.karta}
                       >
-                        <Pencil className="h-4 w-4" />
+                        {c.name}
                       </button>
-                    )}
-                    {list.showDeleted ? (
-                      <button
-                        aria-label="Obnoviť"
-                        title="Obnoviť"
-                        onClick={async () => {
-                          try {
-                            await list.restore([c.id]);
-                            toast.success("Obnovené");
-                          } catch (e: any) {
-                            toast.error(e?.message ?? "Chyba");
-                          }
-                        }}
-                        className="rounded p-1.5 text-primary hover:bg-primary/10"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </button>
-                    ) : (
-                      <button
-                        aria-label="Zmazať"
-                        title="Zmazať"
-                        onClick={() => setRowDelete(c)}
-                        className="rounded p-1.5 text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      {jeFyzicka(c) && (
+                        <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                          fyzická osoba
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3">{c.ico ?? "—"}</td>
+                    <td className="p-3">{c.dic ?? "—"}</td>
+                    <td className="p-3">{c.email ?? "—"}</td>
+                    <td className="p-3 text-right">{akcie(c)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Na mobile karty — v tabuľke by ikony Upraviť/Zmazať ostali mimo obrazovky. */}
+          <ul className="divide-y divide-border md:hidden">
+            {list.loading && <li className="p-6 text-center text-muted-foreground">Načítavam…</li>}
+            {!list.loading && list.rows.length === 0 && (
+              <li className="p-6 text-center text-muted-foreground">
+                {list.showDeleted ? T.ziadniVymazani : T.ziadni}
+              </li>
+            )}
+            {list.rows.map((c) => (
+              <li key={c.id} className="flex items-start gap-3 p-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  aria-label={`Vybrať ${c.name}`}
+                  checked={!!list.selected[c.id]}
+                  onChange={(e) => list.toggleSelect(c.id, e.target.checked)}
+                />
+                <div className="min-w-0 flex-1">
+                  <button
+                    onClick={() => setEditing(c)}
+                    className="break-words text-left font-medium hover:underline"
+                    title={T.karta}
+                  >
+                    {c.name}
+                  </button>
+                  {jeFyzicka(c) && (
+                    <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                      fyzická osoba
+                    </span>
+                  )}
+                  <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                    {c.ico && <span>IČO {c.ico}</span>}
+                    {c.dic && <span>DIČ {c.dic}</span>}
+                    {c.email && <span className="min-w-0 break-all">{c.email}</span>}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center">{akcie(c)}</div>
+              </li>
+            ))}
+          </ul>
           <Pagination
             page={list.page}
             pageSize={list.pageSize}

@@ -33,7 +33,7 @@ const INVOICING_PLANS = [
       "Neobmedzené firmy",
       "API + Webhooky",
       "Prechod z iného systému",
-      "Audit log",
+      "Záznam zmien",
       "Prioritná podpora",
     ],
     featured: true,
@@ -47,7 +47,7 @@ const INVOICING_PLANS = [
       "eFaktúra zadarmo (Peppol)",
       "Všetko z Premium",
       "SLA zmluva",
-      "Dedikovaný account manager",
+      "Vlastný kontaktný človek",
       "Vlastný onboarding",
     ],
     featured: false,
@@ -75,7 +75,7 @@ const LOGBOOK_PLANS = [
     period: "/ mesiac",
     tagline: "Pre firmy s flotilou a GPS integráciami.",
     features: [
-      "Neobmedzene vozidiel",
+      "Neobmedzený počet vozidiel",
       "Commander GPS integrácia",
       "Tesla Fleet API",
       "Automatické importy jázd",
@@ -134,7 +134,7 @@ function PlanCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-6 ${
+      className={`flex flex-col rounded-2xl border p-6 ${
         p.featured
           ? "border-primary bg-primary/5 shadow-lg ring-1 ring-primary/30"
           : "border-border bg-card"
@@ -152,17 +152,19 @@ function PlanCard({
         <span className="text-4xl font-bold tracking-tight">{p.price}</span>
         <span className="text-sm text-muted-foreground">{p.period}</span>
       </div>
-      {p.price !== "Individuálne" && (
+      {p.price !== "Individuálne" ? (
         <p className="mt-1 text-xs text-muted-foreground">
-          Ceny sú uvedené bez DPH. S DPH 23%:{" "}
+          Ceny sú uvedené bez DPH. S DPH 23 %:{" "}
           <span className="font-medium text-foreground">
             {(parseFloat(p.price.replace(/[^\d.]/g, "")) * 1.23).toFixed(2).replace(".", ",")} €
           </span>
         </p>
+      ) : (
+        <p className="mt-1 text-xs text-muted-foreground">Cena podľa rozsahu, bez DPH.</p>
       )}
       <p className="mt-2 text-sm text-muted-foreground">{p.tagline}</p>
 
-      <ul className="mt-5 space-y-2 text-sm">
+      <ul className="mb-6 mt-5 space-y-2 text-sm">
         {p.features.map((f) => (
           <li key={f} className="flex gap-2">
             <Check className="h-4 w-4 text-primary mt-0.5" />
@@ -172,7 +174,7 @@ function PlanCard({
       </ul>
       <Link
         to={naVyziadanie ? "/kontakt" : "/registracia"}
-        className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold ${
+        className={`mt-auto inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold ${
           p.featured
             ? "bg-primary text-primary-foreground hover:opacity-90"
             : "border border-border bg-background hover:bg-secondary"

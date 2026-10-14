@@ -347,9 +347,9 @@ export function FormularZmluvy({
               value={dayCount}
               onChange={(e) => setDayCount(e.target.value as "ACT/365")}
             >
-              <option value="ACT/365">Zo skutočných dní (ACT/365)</option>
-              <option value="ACT/360">Zo skutočných dní (ACT/360)</option>
-              <option value="30E/360">Každý mesiac 30 dní (30E/360)</option>
+              <option value="ACT/365">ACT/365 – skutočné dni</option>
+              <option value="ACT/360">ACT/360 – skutočné dni</option>
+              <option value="30E/360">30E/360 – mesiac 30 dní</option>
             </select>
             <p className="mt-1 text-xs text-muted-foreground">
               Slovenské banky bežne používajú ACT/365 — dlhší mesiac stojí viac na úroku.

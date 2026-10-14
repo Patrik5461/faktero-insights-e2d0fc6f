@@ -66,7 +66,7 @@ export function KosDokladovOkno({
 
   const obal = (obsah: ReactNode) =>
     vlozene ? (
-      <div className="max-w-3xl rounded-xl border border-border bg-card p-5">{obsah}</div>
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-5">{obsah}</div>
     ) : (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
         <div
@@ -83,17 +83,22 @@ export function KosDokladovOkno({
 
   return obal(
     <>
-        <h2 className="text-lg font-semibold">Kôš dokladov</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Zmazané doklady sa dajú obnoviť aj s párovaním na pohyb v banke. Po 90 dňoch sa kôš
-          vysype sám aj so skenmi.
-        </p>
+        {/* Vložený kôš má nadpis aj vysvetlenie v hlavičke stránky. */}
+        {!vlozene && (
+          <>
+            <h2 className="text-lg font-semibold">Kôš dokladov</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Zmazané doklady sa dajú obnoviť aj s párovaním na pohyb v banke. Po 90 dňoch sa kôš
+              vysype sám aj so skenmi.
+            </p>
+          </>
+        )}
         {polozky === null ? (
-          <p className="mt-4 text-sm text-muted-foreground">Načítavam…</p>
+          <p className={`${vlozene ? "" : "mt-4"} text-sm text-muted-foreground`}>Načítavam…</p>
         ) : polozky.length === 0 ? (
-          <p className="mt-6 text-center text-sm text-muted-foreground">Kôš je prázdny.</p>
+          <p className={`${vlozene ? "py-4" : "mt-6"} text-center text-sm text-muted-foreground`}>Kôš je prázdny.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-border">
+          <ul className={`${vlozene ? "-my-2" : "mt-4"} divide-y divide-border`}>
             {polozky.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
                 <div className="min-w-0 flex-1">

@@ -1,3 +1,4 @@
+import { formatujMenu } from "@/lib/faktero/mena";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -186,10 +187,8 @@ function QuotesPage() {
                   <td className="p-3 font-medium">{q.quote_number}</td>
                   <td className="p-3">{q.customer_name ?? "—"}</td>
                   <td className="p-3">{datumNaDoklade(q.issue_date)}</td>
-                  <td className="p-3">{q.valid_until}</td>
-                  <td className="p-3 text-right">
-                    {Number(q.total).toFixed(2)} {q.currency}
-                  </td>
+                  <td className="p-3">{q.valid_until ? datumNaDoklade(q.valid_until) : "—"}</td>
+                  <td className="p-3 text-right">{formatujMenu(q.total, q.currency)}</td>
                   <td className="p-3">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-xs ${STATUS_CLS[q.status] ?? "bg-muted"}`}
@@ -227,12 +226,15 @@ function QuotesPage() {
               ))}
             </tbody>
           </table>
-          <Pagination
-            page={list.page}
-            pageSize={list.pageSize}
-            total={list.total}
-            onPageChange={list.setPage}
-          />
+          {/* Prázdny zoznam už má hlášku v tabuľke — „Žiadne výsledky“ zo stránkovania by ju len zopakovalo. */}
+          {list.total > 0 && (
+            <Pagination
+              page={list.page}
+              pageSize={list.pageSize}
+              total={list.total}
+              onPageChange={list.setPage}
+            />
+          )}
         </div>
       </PageBody>
       <ConfirmDialog

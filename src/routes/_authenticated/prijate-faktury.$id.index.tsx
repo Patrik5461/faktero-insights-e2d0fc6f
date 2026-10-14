@@ -38,11 +38,20 @@ import {
   Lock,
   LockOpen,
   Undo2,
+  MoreHorizontal,
+  Paperclip,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
@@ -378,38 +387,12 @@ function PurchaseInvoiceDetail() {
             {(row as any).type === "regular" && !navrh && (
               <TlacidloZauctovat zauctovane={Boolean(row.zauctovane_at)} />
             )}
-            {row.file_path && !row.exported_at && !samo && (
-              <button
-                type="button"
-                onClick={() => setPresunPrilohy(true)}
-                title="Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha"
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-              >
-                Presunúť ako prílohu
-              </button>
-            )}
-            {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
-              <button
-                onClick={() => setStatus("received")}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-              >
-                Označiť ako prijaté
-              </button>
-            )}
             {!navrh && row.status !== "paid" && row.status !== "cancelled" && (
               <button
                 onClick={markPaid}
                 className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
               >
                 <CheckCircle2 className="h-4 w-4" /> Označiť ako zaplatené
-              </button>
-            )}
-            {row.status !== "cancelled" && (
-              <button
-                onClick={() => setStatus("cancelled")}
-                className="inline-flex items-center gap-1.5 rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50"
-              >
-                <Ban className="h-4 w-4" /> Storno
               </button>
             )}
             {row.file_path && (
@@ -420,33 +403,64 @@ function PurchaseInvoiceDetail() {
                 <Download className="h-4 w-4" /> Stiahnuť PDF
               </button>
             )}
-            {!row.exported_at && !samo && (
-              <button
-                type="button"
-                onClick={prepniZamok}
-                title={(row as any).locked_at ? "Odomknúť úpravy dokladu" : "Zamknúť doklad proti úpravám"}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-              >
-                {(row as any).locked_at ? <LockOpen className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                {(row as any).locked_at ? "Odomknúť" : "Zamknúť"}
-              </button>
-            )}
-            {!row.exported_at && !(row as any).locked_at && !samo && (
-              <button
-                type="button"
-                onClick={vratitDoNespracovanych}
-                title="Zle zaradená faktúra — spracuje sa znova v Nespracovaných dokladoch"
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-              >
-                <Undo2 className="h-4 w-4" /> Vrátiť do Nespracovaných
-              </button>
-            )}
-            <button
-              onClick={del}
-              className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-4 w-4" /> Vymazať
-            </button>
+            {/* Menej časté akcie sú v ponuke — jedenásť tlačidiel lámalo nadpis do troch riadkov. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background hover:bg-secondary"
+                  aria-label="Ďalšie akcie"
+                  title="Ďalšie akcie"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
+                  <DropdownMenuItem onClick={() => setStatus("received")}>
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> Označiť ako prijaté
+                  </DropdownMenuItem>
+                )}
+                {row.file_path && !row.exported_at && !samo && (
+                  <DropdownMenuItem
+                    onClick={() => setPresunPrilohy(true)}
+                    title="Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha"
+                  >
+                    <Paperclip className="mr-2 h-4 w-4" /> Presunúť ako prílohu
+                  </DropdownMenuItem>
+                )}
+                {!row.exported_at && !samo && (
+                  <DropdownMenuItem onClick={prepniZamok}>
+                    {(row as any).locked_at ? (
+                      <LockOpen className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Lock className="mr-2 h-4 w-4" />
+                    )}
+                    {(row as any).locked_at ? "Odomknúť úpravy" : "Zamknúť proti úpravám"}
+                  </DropdownMenuItem>
+                )}
+                {!row.exported_at && !(row as any).locked_at && !samo && (
+                  <DropdownMenuItem
+                    onClick={vratitDoNespracovanych}
+                    title="Zle zaradená faktúra — spracuje sa znova v Nespracovaných dokladoch"
+                  >
+                    <Undo2 className="mr-2 h-4 w-4" /> Vrátiť do Nespracovaných
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                {row.status !== "cancelled" && (
+                  <DropdownMenuItem
+                    onClick={() => setStatus("cancelled")}
+                    className="text-rose-700 focus:text-rose-700"
+                  >
+                    <Ban className="mr-2 h-4 w-4" /> Storno
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={del} className="text-destructive focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Vymazať
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         }
       />
@@ -461,8 +475,9 @@ function PurchaseInvoiceDetail() {
             />
           </div>
         )}
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="space-y-6">
+        {/* `grid-cols-1` + `min-w-0`: bez nich stĺpec na mobile rástol podľa najširšej tabuľky a stránka sa orezávala. */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0 space-y-6">
             {samo && <SamofakturaPanel row={row} onZmena={load} />}
             <RegistrPlatcuDph
               companyId={row.company_id}
@@ -470,8 +485,8 @@ function PurchaseInvoiceDetail() {
               icDph={row.supplier_ic_dph}
               iban={row.supplier_iban}
             />
-            <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
-              <div>
+            <div className="grid min-w-0 gap-6 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 sm:p-6">
+              <div className="min-w-0 break-words">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
                   Dodávateľ
                 </div>
@@ -498,20 +513,24 @@ function PurchaseInvoiceDetail() {
               </div>
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Dátumy</div>
-                <Row label="Vystavenie" value={row.issue_date} />
+                <Row label="Vystavenie" value={datumNaDoklade(row.issue_date)} />
                 <Row
                   label="Dodanie (daňové plnenie)"
-                  value={row.delivery_date || `${datumNaDoklade(row.issue_date)} (ako vystavenie)`}
+                  value={
+                    row.delivery_date
+                      ? datumNaDoklade(row.delivery_date)
+                      : `${datumNaDoklade(row.issue_date)} (ako vystavenie)`
+                  }
                 />
-                <Row label="Prijatie" value={row.received_date} />
+                <Row label="Prijatie" value={datumNaDoklade(row.received_date)} />
                 <Row label="Splatnosť" value={popisSplatnosti(row)} />
-                {row.payment_date && <Row label="Úhrada" value={row.payment_date} />}
+                {row.payment_date && <Row label="Úhrada" value={datumNaDoklade(row.payment_date)} />}
                 {uhrada && (
                   <div className="mt-1 flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs">
                     <span className="min-w-0">
                       <span className="block font-medium">Zaplatené z účtu</span>
                       <span className="block truncate text-muted-foreground">
-                        {uhrada.datum}
+                        {datumNaDoklade(uhrada.datum)}
                         {uhrada.protistrana ? ` · ${uhrada.protistrana}` : ""}
                       </span>
                     </span>
@@ -577,7 +596,7 @@ function PurchaseInvoiceDetail() {
             )}
           </div>
 
-          <aside className="space-y-4">
+          <aside className="min-w-0 space-y-4">
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Sumár</div>
               <div className="mt-3 space-y-1 text-sm">
@@ -591,7 +610,8 @@ function PurchaseInvoiceDetail() {
 
             {/* Zákazku sa oplatí dať dodatočne aj na starší nákup — vtedy sa
                 náklad prejaví vo vyhodnotení hneď po uložení. */}
-            <div className="rounded-xl border border-border bg-card p-5">
+            {/* `empty:hidden` — bez zákaziek JobPicker nevykreslí nič a ostávala prázdna biela karta. */}
+            <div className="rounded-xl border border-border bg-card p-5 empty:hidden">
               <JobPicker
                 value={row.job_id ?? ""}
                 onChange={(v) => nastavZakazku(v)}
@@ -613,7 +633,7 @@ function PurchaseInvoiceDetail() {
               <div className="mt-2">
                 <PredlzitSplatnost druh="prijata" faktura={row} onZmena={load} />
               </div>
-              {row.payment_date && <div>Uhradené: {row.payment_date}</div>}
+              {row.payment_date && <div>Uhradené: {datumNaDoklade(row.payment_date)}</div>}
             </div>
 
             {accounts.length > 0 && row.status !== "cancelled" && !navrh && (
@@ -731,9 +751,9 @@ function PurchaseInvoiceDetail() {
 
 function Row({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="tabular-nums">{value}</span>
+    <div className="flex items-start justify-between gap-3 text-sm">
+      <span className="min-w-0 text-muted-foreground">{label}</span>
+      <span className="min-w-0 text-right tabular-nums">{value}</span>
     </div>
   );
 }
@@ -816,7 +836,7 @@ function PolozkyDokladu({
               <tr key={i}>
                 <td className="p-3">{p?.name ?? "—"}</td>
                 <td className="p-3 text-right tabular-nums">
-                  {p?.quantity != null ? `${p.quantity}${p?.unit ? ` ${p.unit}` : ""}` : "—"}
+                  {p?.quantity != null ? `${formatujCislo(p.quantity, 0, 4)}${p?.unit ? ` ${p.unit}` : ""}` : "—"}
                 </td>
                 <td className="p-3 text-right tabular-nums">{cena(p?.unit_price)}</td>
                 <td className="p-3 text-right tabular-nums">

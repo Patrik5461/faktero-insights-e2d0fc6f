@@ -67,10 +67,13 @@ export function PoliaZauctovania({
   kvAuto?: string;
   hromadne?: boolean;
 }) {
-  const vstup = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
+  const vstup =
+    "mt-1 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm";
   const zKategorie = navrhy?.podlaKategorie?.[hodnoty.kategoria];
   return (
-    <div className={`grid gap-3 ${hodnoty.kv !== undefined ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
+    <div
+      className={`grid grid-cols-1 gap-3 [&>*]:min-w-0 ${hodnoty.kv !== undefined ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
+    >
       <label className="block">
         <span className="text-xs text-muted-foreground">Predkontácia (Pohoda)</span>
         <KodPohody

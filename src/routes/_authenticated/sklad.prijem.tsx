@@ -16,15 +16,15 @@ function PrijemPage() {
   const { polozka } = Route.useSearch();
   return (
     <>
-      <div className="mx-auto mt-4 flex max-w-xl justify-end px-4">
-        <Link
-          to="/sklad/dodaci-list"
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"
-        >
-          <ScanLine className="h-4 w-4" /> 📷 Naskenovať dodací list
-        </Link>
-      </div>
       <MovementForm
+        action={
+          <Link
+            to="/sklad/dodaci-list"
+            className="inline-flex items-center gap-2 whitespace-nowrap rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-secondary"
+          >
+            <ScanLine className="h-4 w-4" /> Naskenovať dodací list
+          </Link>
+        }
         type="prijem"
         title="Príjem na sklad"
         polozkaId={polozka}

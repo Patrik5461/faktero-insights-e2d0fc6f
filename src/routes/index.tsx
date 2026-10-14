@@ -103,7 +103,7 @@ export const Route = createFileRoute("/")({
 
 const trustMetrics = [
   { label: "eFaktúra Ready", icon: ShieldCheck },
-  { label: "FinStat Integrácia", icon: Database },
+  { label: "FinStat integrácia", icon: Database },
   { label: "Prepojenie s Pohodou", icon: Plug },
   { label: "API First", icon: Code2 },
   { label: "Webhooky", icon: Webhook },
@@ -160,7 +160,7 @@ const features = [
   },
   {
     icon: Send,
-    title: "Email šablóny",
+    title: "E-mailové šablóny",
     text: "Vlastné texty emailov pre faktúry, upomienky aj schvaľovanie. Slovenčina aj angličtina.",
   },
   {
@@ -357,7 +357,7 @@ const plans = [
       "Opakované faktúry",
       "REST API + webhooky",
       "Prechod z iného systému",
-      "Audit log a prioritná podpora",
+      "Záznam zmien a prioritná podpora",
     ],
     cta: "Vyskúšať zdarma",
     ctaTo: "/registracia",
@@ -406,7 +406,7 @@ Content-Type: application/json
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased">
+    <div className="min-h-screen overflow-x-clip bg-background text-foreground antialiased">
       <MarketingNav />
 
       <main>
@@ -455,9 +455,9 @@ function Hero() {
             "linear-gradient(90deg, transparent, oklch(0.68 0.16 162 / 0.5), transparent)",
         }}
       />
-      <div className="mx-auto max-w-7xl px-6 pb-20 pt-16 md:pb-28 md:pt-24">
-        <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-          <div>
+      <div className="mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 md:pb-28 md:pt-24">
+        <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 [&>*]:min-w-0">
+          <div className="min-w-0">
             <div className="mb-6 flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3 py-1 text-xs font-medium text-primary backdrop-blur">
                 <Sparkles className="h-3 w-3" />
@@ -508,7 +508,7 @@ function Hero() {
               ))}
             </ul>
           </div>
-          <div className="relative w-full lg:justify-self-end">
+          <div className="relative w-full min-w-0 max-w-full lg:justify-self-end">
             <DashboardMockup />
           </div>
         </div>
@@ -523,11 +523,11 @@ function Hero() {
 
 function DashboardMockup() {
   return (
-    <div className="relative">
-      {/* Decorative ambient glows */}
+    <div className="relative min-w-0 max-w-full">
+      {/* Decorative ambient glows — na mobile bez presahu, inak rozširuje stránku */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] opacity-70 blur-3xl"
+        className="pointer-events-none absolute inset-0 -z-10 sm:-inset-6 rounded-[2rem] opacity-70 blur-3xl"
         style={{ background: "var(--brand-gradient)" }}
       />
       <div className="relative rounded-[1.5rem] border border-border/70 bg-card/95 p-2 shadow-[var(--shadow-elegant)] backdrop-blur">
@@ -544,9 +544,9 @@ function DashboardMockup() {
           </span>
         </div>
 
-        <div className="space-y-3 rounded-[1.1rem] bg-background p-4">
+        <div className="space-y-3 rounded-[1.1rem] bg-background p-3 sm:p-4">
           {/* Top KPI strip */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 [&>*]:min-w-0">
             <KpiCard
               icon={<Banknote className="h-3.5 w-3.5" />}
               label="Neuhradené faktúry"
@@ -582,7 +582,7 @@ function DashboardMockup() {
           </div>
 
           {/* Bottom row: eFaktúra + API */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 [&>*]:min-w-0">
             <MiniEFakturaCard />
             <MiniApiStatusCard />
           </div>
@@ -600,8 +600,8 @@ function DashboardMockup() {
                 Acme s.r.o. <span className="text-muted-foreground font-normal">· FA2026-0042</span>
               </div>
             </div>
-            <div className="ml-auto text-right">
-              <div className="text-sm font-bold tabular-nums">+1 698,60 €</div>
+            <div className="ml-auto shrink-0 text-right">
+              <div className="whitespace-nowrap text-sm font-bold tabular-nums">+1 698,60 €</div>
               <div className="text-[10px] text-muted-foreground">pred 4 min · bankový prevod</div>
             </div>
           </div>
@@ -609,7 +609,7 @@ function DashboardMockup() {
       </div>
 
       {/* Floating side card */}
-      <div className="absolute -bottom-6 -left-6 hidden w-56 rotate-[-3deg] rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-elegant)] md:block">
+      <div className="absolute -bottom-4 -left-4 hidden w-60 rotate-[-3deg] rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-elegant)] md:block">
         <div className="flex items-center gap-2">
           <div className="grid h-7 w-7 place-items-center rounded-md bg-primary/15 text-primary">
             <FileText className="h-3.5 w-3.5" />
@@ -620,7 +620,7 @@ function DashboardMockup() {
               Acme s.r.o. · 1 698,60 €
             </div>
           </div>
-          <span className="ml-auto rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+          <span className="ml-auto shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
             Uhradená
           </span>
         </div>
@@ -645,13 +645,13 @@ function KpiCard({
   trendPositive?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-border/70 bg-card p-3.5">
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
-        <span className="text-primary">{icon}</span>
-        {label}
+    <div className="min-w-0 rounded-xl border border-border/70 bg-card p-3.5">
+      <div className="flex min-w-0 items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+        <span className="shrink-0 text-primary">{icon}</span>
+        <span className="truncate">{label}</span>
       </div>
-      <div className="mt-2 flex items-baseline justify-between gap-2">
-        <div className="text-lg font-bold tracking-tight">{value}</div>
+      <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+        <div className="whitespace-nowrap text-lg font-bold tracking-tight">{value}</div>
         <span
           className={
             "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold " +
@@ -677,7 +677,9 @@ function MiniBarChart() {
         const h = Math.round((v / max) * 100);
         const isLast = i === bars.length - 1;
         return (
-          <div key={i} className="flex flex-1 flex-col items-center justify-end">
+          /* h-full: bez neho má obal výšku 0 a percentuálna výška stĺpca
+             sa nemá z čoho počítať — graf ostal prázdny biely box. */
+          <div key={i} className="flex h-full flex-1 flex-col items-center justify-end">
             <div
               className="w-full rounded-sm"
               style={{
@@ -748,7 +750,7 @@ function MiniApiStatusCard() {
         <span className="text-xl font-bold tracking-tight">142</span>
         <span className="text-[10px] text-muted-foreground">ms · p95</span>
       </div>
-      <div className="mt-2 grid grid-cols-12 gap-[3px]">
+      <div className="mt-2 grid h-8 grid-cols-12 items-end gap-[3px]">
         {Array.from({ length: 24 }).map((_, i) => {
           const h = 35 + Math.round(Math.sin(i * 0.7) * 18 + Math.random() * 12);
           return (
@@ -786,11 +788,14 @@ function TrustRow() {
       <div className="mx-auto max-w-7xl px-6 py-8 md:py-10">
         <div className="grid grid-cols-2 items-center gap-x-4 gap-y-8 sm:grid-cols-3 lg:flex lg:justify-between">
           {trustMetrics.map(({ label, icon: Icon }) => (
-            <div key={label} className="group flex items-center justify-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+            <div
+              key={label}
+              className="group flex min-w-0 items-center justify-start gap-2.5 sm:gap-3"
+            >
+              <div className="flex h-9 w-9 shrink-0 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon className="h-5 w-5" />
               </div>
-              <span className="whitespace-nowrap text-[15px] font-medium text-foreground">
+              <span className="min-w-0 text-sm font-medium leading-snug text-foreground sm:text-[15px] lg:whitespace-nowrap">
                 {label}
               </span>
             </div>
@@ -1280,7 +1285,7 @@ function ComparisonSection() {
           title="Prečo si firmy vyberajú Faktero"
           subtitle="Neutrálne porovnanie funkcií, ktoré sú dnes dôležité pre moderné slovenské firmy."
         />
-        <div className="mt-12 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+        <div className="mt-12 overflow-x-auto rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
@@ -1555,7 +1560,7 @@ function SiteFooter() {
             links: [
               ["REST API", "/vyvojari/rest"],
               ["Webhooky", "/vyvojari/webhooky"],
-              ["Playground", "/vyvojari/playground"],
+              ["Skúšobné prostredie", "/vyvojari/playground"],
             ],
           },
           {
@@ -1599,7 +1604,7 @@ function SiteFooter() {
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-5 py-5 text-xs text-muted-foreground sm:items-center sm:px-6 sm:py-6 md:flex-row">
           <div className="order-2 md:order-1">
             © 2026 Tobify s. r. o. — Športová 707/43, 919 26 Zavar · IČO: 56607016 · DIČ: 2122358579
-            · info@faktero.sk · +421902101967
+            · info@faktero.sk · +421 902 101 967
           </div>
           <div className="order-1 flex flex-wrap items-center gap-x-4 gap-y-2 md:order-2 md:gap-x-5">
             <a href="/pravne/obchodne-podmienky" className="hover:text-foreground">
@@ -1607,6 +1612,9 @@ function SiteFooter() {
             </a>
             <a href="/pravne/gdpr" className="hover:text-foreground">
               GDPR
+            </a>
+            <a href="/pravne/spracovanie-udajov" className="hover:text-foreground">
+              Spracúvanie údajov (čl. 28)
             </a>
             <a href="/pravne/tesla-podmienky" className="hover:text-foreground">
               Tesla Fleet API
@@ -1709,7 +1717,7 @@ function ScreenshotShowcase() {
     },
     {
       key: "efaktura",
-      title: "eFaktúra readiness",
+      title: "Pripravenosť na eFaktúru",
       desc: "Pripravenosť na povinný XML formát 1.1.2027.",
       node: <ShotEfaktura />,
     },
@@ -1741,7 +1749,7 @@ function ScreenshotShowcase() {
             </button>
           ))}
         </div>
-        <div className="mt-8 grid items-center gap-8 lg:grid-cols-[1fr_1.4fr]">
+        <div className="mt-8 grid items-center gap-8 lg:grid-cols-[1fr_1.4fr] [&>*]:min-w-0">
           <div>
             <h3 className="text-2xl font-semibold tracking-tight">{current.title}</h3>
             <p className="mt-3 text-muted-foreground">{current.desc}</p>
@@ -1756,7 +1764,7 @@ function ScreenshotShowcase() {
           <div className="relative">
             <div
               aria-hidden
-              className="pointer-events-none absolute -inset-4 -z-10 rounded-[2rem] opacity-50 blur-3xl"
+              className="pointer-events-none absolute inset-0 -z-10 rounded-[2rem] opacity-50 blur-3xl sm:-inset-4"
               style={{ background: "var(--brand-gradient)" }}
             />
             <div className="rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-elegant)]">
@@ -1768,7 +1776,7 @@ function ScreenshotShowcase() {
                   app.faktero.sk
                 </span>
               </div>
-              <div className="rounded-xl bg-background p-4">{current.node}</div>
+              <div className="rounded-xl bg-background p-3 sm:p-4">{current.node}</div>
             </div>
           </div>
         </div>
@@ -1780,15 +1788,19 @@ function ScreenshotShowcase() {
 function ShotDashboard() {
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
           { l: "Neuhradené", v: "4 218 €" },
           { l: "Cashflow 30 d", v: "+14 920 €" },
           { l: "Po splatnosti", v: "612 €" },
         ].map((k) => (
-          <div key={k.l} className="rounded-lg border border-border bg-card p-3">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.l}</div>
-            <div className="mt-1 text-base font-bold tabular-nums">{k.v}</div>
+          <div key={k.l} className="min-w-0 rounded-lg border border-border bg-card p-2 sm:p-3">
+            <div className="truncate text-[9px] uppercase tracking-normal text-muted-foreground sm:text-[10px] sm:tracking-wider">
+              {k.l}
+            </div>
+            <div className="mt-1 whitespace-nowrap text-xs font-bold tabular-nums sm:text-base">
+              {k.v}
+            </div>
           </div>
         ))}
       </div>

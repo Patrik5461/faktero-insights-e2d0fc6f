@@ -1,4 +1,4 @@
-import { KROK_CENY, formatujJednotkovuCenu } from "@/lib/faktero/mena";
+import { KROK_CENY, formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -215,7 +215,7 @@ function ProductsPage() {
           }}
           onClear={list.clearSelection}
         />
-        <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+        <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -227,10 +227,12 @@ function ProductsPage() {
                   />
                 </th>
                 <th className="p-3">Názov</th>
-                <th className="p-3">Kód</th>
-                <th className="p-3">MJ</th>
+                {/* Na mobile sú kód, MJ a DPH pod názvom — inak sa riadok
+                    lámal po písmenách a ikony úprav ostali mimo obrazovky. */}
+                <th className="hidden p-3 sm:table-cell">Kód</th>
+                <th className="hidden p-3 sm:table-cell">MJ</th>
                 <th className="p-3 text-right">Cena</th>
-                <th className="p-3 text-right">DPH</th>
+                <th className="hidden p-3 text-right sm:table-cell">DPH</th>
                 <th></th>
               </tr>
             </thead>
@@ -258,14 +260,25 @@ function ProductsPage() {
                       onChange={(e) => list.toggleSelect(p.id, e.target.checked)}
                     />
                   </td>
-                  <td className="p-3 font-medium">{p.name}</td>
-                  <td className="p-3 text-muted-foreground">{p.code ?? "—"}</td>
-                  <td className="p-3">{p.unit}</td>
-                  <td className="p-3 text-right">
-                    {formatujJednotkovuCenu(p.unit_price)} {mena.symbol}
+                  <td className="p-3 font-medium">
+                    {p.name}
+                    <div className="mt-0.5 text-xs font-normal text-muted-foreground sm:hidden">
+                      {[p.code, p.unit, `DPH ${formatujCislo(p.vat_rate, 0, 2)} %`]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
                   </td>
-                  <td className="p-3 text-right">{p.vat_rate} %</td>
-                  <td className="p-3 text-right">
+                  <td className="hidden whitespace-nowrap p-3 text-muted-foreground sm:table-cell">
+                    {p.code ?? "—"}
+                  </td>
+                  <td className="hidden p-3 sm:table-cell">{p.unit}</td>
+                  <td className="whitespace-nowrap p-3 text-right tabular-nums">
+                    {formatujJednotkovuCenu(p.unit_price, mena.kod)}
+                  </td>
+                  <td className="hidden whitespace-nowrap p-3 text-right sm:table-cell">
+                    {formatujCislo(p.vat_rate, 0, 2)} %
+                  </td>
+                  <td className="whitespace-nowrap p-3 text-right">
                     {!list.showDeleted && (
                       <button
                         aria-label="Upraviť"

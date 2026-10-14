@@ -129,8 +129,9 @@ export function VyberPravidla({
           <Plus className="h-3.5 w-3.5" /> Vytvoriť pravidlo pre {partner || `IČO ${ico}`}
         </Link>
       ) : (
+        /* Samotné „pravidlá“ viselo osamote bez súvislosti — povedz, kam odkaz vedie. */
         <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
-          pravidlá
+          Pravidlá účtovania →
         </Link>
       )}
     </div>

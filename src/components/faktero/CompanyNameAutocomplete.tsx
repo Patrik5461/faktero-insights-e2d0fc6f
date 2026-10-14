@@ -40,6 +40,9 @@ export function CompanyNameAutocomplete({
   const lookup = useServerFn(lookupCompanyByIcoFn);
   const wrapRef = useRef<HTMLDivElement>(null);
   const lastQueryRef = useRef<string>("");
+  // Hľadá sa až po tom, čo človek do poľa naozaj píše. Hodnota naplnená
+  // z databázy (úprava firmy) inak otvorila zoznam návrhov hneď pri načítaní.
+  const pisalRef = useRef(false);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showSuccess(msg: string) {
@@ -64,7 +67,7 @@ export function CompanyNameAutocomplete({
 
   // Debounced name search
   useEffect(() => {
-    if (!enabled || nameSearchDisabled) return;
+    if (!enabled || nameSearchDisabled || !pisalRef.current) return;
     const q = (value ?? "").trim();
     if (q.length < 3) {
       setItems([]);
@@ -157,6 +160,7 @@ export function CompanyNameAutocomplete({
         autoFocus={autoFocus}
         value={value}
         onChange={(e) => {
+          pisalRef.current = true;
           onChange(e.target.value);
           setOpen(true);
         }}
@@ -170,7 +174,7 @@ export function CompanyNameAutocomplete({
         }
         autoComplete="off"
       />
-      {enabled && open && (value ?? "").trim().length >= 3 && (
+      {enabled && open && pisalRef.current && (value ?? "").trim().length >= 3 && (
         <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-md border border-border bg-popover shadow-lg">
           {loading && (
             <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
@@ -195,8 +199,8 @@ export function CompanyNameAutocomplete({
               >
                 <Search className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium text-foreground">{s.name}</div>
-                  <div className="truncate text-[11px] text-muted-foreground">
+                  <div className="break-words font-medium text-foreground">{s.name}</div>
+                  <div className="break-words text-[11px] text-muted-foreground">
                     IČO {s.ico}
                     {s.city ? ` · ${s.city}` : ""}
                   </div>

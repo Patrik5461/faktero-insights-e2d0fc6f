@@ -137,7 +137,7 @@ function Page() {
         <strong>
           Údaje vystavených faktúr, odberateľov a sklad vložené používateľom patria firme
           používateľa.
-        </strong>
+        </strong>{" "}
         Prevádzkovateľ tieto údaje spracúva výlučne ako spracovateľ v mene používateľa za účelom
         prevádzky Služby.
       </p>

@@ -7,6 +7,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Car, Route as RouteIcon, Fuel, Wallet, Gauge, Briefcase, User } from "lucide-react";
 import { vsetkoAkoData } from "@/lib/faktero/strankovanie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/jazdy/prehlad")({
   head: () => ({ meta: [{ title: "Prehľad jázd — Faktero" }] }),
@@ -112,7 +113,8 @@ function OverviewPage() {
     return m;
   }, [trips, fuel]);
 
-  // Monthly
+  // Mesačne — pole, nie objekt: kľúče „10“–„12“ sú pre JS celé čísla a
+  // v objekte by predbehli „01“–„09“, takže tabuľka išla 10, 11, 12, 01…
   const byMonth = useMemo(() => {
     const m: Record<string, { km: number; trips: number; cost: number; liters: number }> = {};
     for (let i = 1; i <= 12; i++) {
@@ -133,7 +135,9 @@ function OverviewPage() {
         m[k].liters += Number(f.liters);
       }
     });
-    return m;
+    return Object.keys(m)
+      .sort()
+      .map((k) => [k, m[k]] as const);
   }, [trips, fuel]);
 
   return (
@@ -178,25 +182,25 @@ function OverviewPage() {
         }
       />
       <PageBody>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat icon={RouteIcon} label={`Celkové km ${year}`} value={`${kmYear.toFixed(1)} km`} />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <Stat icon={RouteIcon} label={`Celkové km ${year}`} value={`${formatujCislo(kmYear, 1)} km`} />
           <Stat icon={Car} label="Počet jázd" value={`${tripCount}`} />
           <Stat
             icon={Gauge}
             label="Priemerná rýchlosť"
-            value={avgSpeed > 0 ? `${avgSpeed.toFixed(0)} km/h` : "—"}
+            value={avgSpeed > 0 ? `${formatujCislo(avgSpeed, 0)} km/h` : "—"}
           />
-          <Stat icon={RouteIcon} label="Km tento mesiac" value={`${kmMonth.toFixed(1)} km`} />
-          <Stat icon={Briefcase} label="Služobné km" value={`${bizKm.toFixed(1)} km`} />
-          <Stat icon={User} label="Súkromné km" value={`${privKm.toFixed(1)} km`} />
-          <Stat icon={Fuel} label={`Spotreba ${year}`} value={`${fuelLiters.toFixed(1)} l`} />
-          <Stat icon={Wallet} label={`Náklady PHM ${year}`} value={`${fuelCost.toFixed(2)} ${mena.symbol}`} />
+          <Stat icon={RouteIcon} label="Km tento mesiac" value={`${formatujCislo(kmMonth, 1)} km`} />
+          <Stat icon={Briefcase} label="Služobné km" value={`${formatujCislo(bizKm, 1)} km`} />
+          <Stat icon={User} label="Súkromné km" value={`${formatujCislo(privKm, 1)} km`} />
+          <Stat icon={Fuel} label={`Spotreba ${year}`} value={`${formatujCislo(fuelLiters, 1)} l`} />
+          <Stat icon={Wallet} label={`Náklady PHM ${year}`} value={formatujMenu(fuelCost, mena.kod)} />
         </div>
 
         <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">
           Mesačný report {year}
         </h2>
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -208,15 +212,15 @@ function OverviewPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {Object.entries(byMonth).map(([m, v]) => (
+              {byMonth.map(([m, v]) => (
                 <tr key={m}>
                   <td className="p-3">
                     {m}/{year}
                   </td>
                   <td className="p-3 text-right tabular-nums">{v.trips}</td>
-                  <td className="p-3 text-right tabular-nums">{v.km.toFixed(1)}</td>
-                  <td className="p-3 text-right tabular-nums">{v.liters.toFixed(1)}</td>
-                  <td className="p-3 text-right tabular-nums">{v.cost.toFixed(2)}</td>
+                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.km, 1)}</td>
+                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.liters, 1)}</td>
+                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.cost, 2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -224,7 +228,7 @@ function OverviewPage() {
         </div>
 
         <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">Podľa vozidla</h2>
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -245,9 +249,9 @@ function OverviewPage() {
                     </span>
                   </td>
                   <td className="p-3 text-right tabular-nums">{v.trips}</td>
-                  <td className="p-3 text-right tabular-nums">{v.km.toFixed(1)}</td>
-                  <td className="p-3 text-right tabular-nums">{v.liters.toFixed(1)}</td>
-                  <td className="p-3 text-right tabular-nums">{v.cost.toFixed(2)}</td>
+                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.km, 1)}</td>
+                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.liters, 1)}</td>
+                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.cost, 2)}</td>
                 </tr>
               ))}
               {Object.keys(byVehicle).length === 0 && (
@@ -269,10 +273,10 @@ function Stat({ icon: Icon, label, value }: { icon: any; label: string; value: s
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
+        <span className="min-w-0 text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
         <Icon className="h-4 w-4 text-primary" />
       </div>
-      <div className="mt-2 text-2xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-2 text-xl font-semibold tabular-nums sm:text-2xl">{value}</div>
     </div>
   );
 }

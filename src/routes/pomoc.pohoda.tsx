@@ -100,12 +100,12 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Predkontácia môže mať <strong>účtovanie pomerom</strong> — napríklad 80/20 alebo auto s
-          odpočtom DPH 50 % od roku 2026. Doklad s takou predkontáciou sa do Pohody rozúčtuje sám a
+          odpočtom DPH 50 % od roku 2026. Doklad s takou predkontáciou sa do Pohody rozúčtuje sám a
           výkazy k DPH odpočítajú len príslušnú časť dane. Pomer ide na{" "}
           <strong>celý doklad</strong> (predkontácia v hlavičke) aj na <strong>položku</strong>: pri
           bločku z čerpačky dáte predkontáciu s pomerom len k nafte a bageta ostane s predkontáciou
-          dokladu — v tabuľke položiek je pri každej sadzba DPH a výber predkontácie. Predkontácia s agendou
-          <em> Ostatné záväzky</em> pošle faktúru do tejto agendy.
+          dokladu — v tabuľke položiek je pri každej sadzba DPH a výber predkontácie. Predkontácia s agendou{" "}
+          <em>Ostatné záväzky</em> pošle faktúru do tejto agendy.
         </p>
         <p>
           Účtovná kancelária nastaví jednu firmu a ostatným ju skopíruje: tlačidlo{" "}
@@ -393,7 +393,7 @@ const sections: HelpSection[] = [
           </li>
           <li>
             <strong>Mollie</strong> — Reports → Settlements → konkrétne vyúčtovanie → CSV. Zadržané
-            poplatky („Withheld fees") sú výdaj a celé vyúčtovanie jeden výber na účet.
+            poplatky („Withheld fees“) sú výdaj a celé vyúčtovanie jeden výber na účet.
           </li>
           <li>
             <strong>Packeta</strong> — Faktúry → formát CSV v7 (účet v angličtine). Vybraná dobierka je
@@ -427,8 +427,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           <Link to="/uctovnictvo/pravidla">Účtovníctvo → Pravidlá účtovania</Link>: napríklad „keď
-          dodávateľ obsahuje <em>Slovnaft</em>, doplň kategóriu Palivo a predkontáciu PHM" alebo
-          „platené kartou v reštaurácii → bez odpočtu DPH".
+          dodávateľ obsahuje <em>Slovnaft</em>, doplň kategóriu Palivo a predkontáciu PHM“ alebo
+          „platené kartou v reštaurácii → bez odpočtu DPH“.
         </p>
         <ul>
           <li>
@@ -439,7 +439,7 @@ const sections: HelpSection[] = [
           <li>
             Poznámka môže obsahovať premenné podľa dátumu dokladu: <code>#MM#</code>,{" "}
             <code>#YYYY#</code>, <code>#MM/YYYY#</code>, <code>#MMYYYY#</code> a{" "}
-            <code>#MM-1/YYYY#</code> (predchádzajúci mesiac) — napr. „Telefón #MM-1/YYYY#".
+            <code>#MM-1/YYYY#</code> (predchádzajúci mesiac) — napr. „Telefón #MM-1/YYYY#“.
           </li>
           <li>
             Pravidlo platí pre to, čo zvolíte v poli <strong>Platí pre</strong>: bločky, prijaté
@@ -522,7 +522,7 @@ const sections: HelpSection[] = [
         <p>
           Prijatá faktúra nesie do Pohody aj konštantný a špecifický symbol a číslo objednávky.
           Prenesenie daňovej povinnosti na položkách ide s členením „Prijatá faktúra — prenesenie
-          daňovej povinnosti" a kontrolným výkazom B.1. Daňový doklad k prijatej platbe ide medzi
+          daňovej povinnosti“ a kontrolným výkazom B.1. Daňový doklad k prijatej platbe ide medzi
           interné doklady. Z Pohody sa okrem predkontácií načítajú aj <strong>zákazky</strong>{" "}
           (založia sa aj vo Fakteri s rovnakým číslom) a <strong>bankové účty</strong>.
         </p>
@@ -570,7 +570,7 @@ const sections: HelpSection[] = [
           príjemiek. Manko z inventúry odíde ako výdajka, prebytok ako príjemka.
         </p>
         <p>
-          <strong>Príjemka sa nezaúčtuje</strong> — nesie príznak „neúčtovať". Náklad je totiž už na
+          <strong>Príjemka sa nezaúčtuje</strong> — nesie príznak „neúčtovať“. Náklad je totiž už na
           prijatom doklade a pri sklade vedenom spôsobom A by ho príjemka zaúčtovala druhýkrát.
           Výdajka taký príznak nemá a nepotrebuje ho: úbytok zásob proti výnosu na faktúre nič
           nezdvojí.
@@ -594,7 +594,7 @@ const sections: HelpSection[] = [
         </p>
         <p>
           <strong>Dobropis.</strong> Pri jeho vystavení sa dá vybrať, ktorú faktúru opravuje
-          (tlačidlo „Ktorú faktúru opravuje" pri položkách). V Pohode potom vznikne ako opravný
+          (tlačidlo „Ktorú faktúru opravuje“ pri položkách). V Pohode potom vznikne ako opravný
           doklad naviazaný na pôvodnú faktúru, takže sa spárujú a sedí aj kontrolný výkaz. Bez
           výberu odíde ako saminý doklad, ako doteraz.
         </p>

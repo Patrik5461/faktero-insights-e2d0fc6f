@@ -315,15 +315,25 @@ export function PrijemMailom({
                       {stav.spravy.map((s) => {
                         const st = STAVY[s.status] ?? { text: s.status, trieda: "" };
                         return (
-                          <li key={s.id} className="flex flex-wrap items-baseline gap-x-2 text-sm">
-                            <span className="text-muted-foreground">
-                              {new Date(s.received_at).toLocaleString("sk-SK")}
-                            </span>
-                            <span className="font-medium">{s.from_email ?? "neznámy"}</span>
-                            <span className="truncate text-muted-foreground">
-                              {s.subject ?? ""}
-                            </span>
-                            <span className={`ml-auto ${st.trieda}`}>{st.text}</span>
+                          /*
+                            Každý riadok má rovnakú stavbu: hore dátum, odosielateľ a stav
+                            (vpravo), pod tým predmet a v treťom riadku odkazy. Predtým bolo
+                            všetko v jednom zalamovanom rade a na mobile sa rozpadlo náhodne.
+                          */
+                          <li key={s.id} className="border-b border-border/60 pb-1.5 text-sm last:border-0">
+                            <div className="flex items-baseline gap-2">
+                              <span className="min-w-0 flex-1 truncate">
+                                <span className="text-muted-foreground">
+                                  {new Date(s.received_at).toLocaleString("sk-SK")}
+                                </span>{" "}
+                                <span className="font-medium">{s.from_email ?? "neznámy"}</span>
+                              </span>
+                              <span className={`shrink-0 whitespace-nowrap ${st.trieda}`}>{st.text}</span>
+                            </div>
+                            {s.subject ? (
+                              <div className="truncate text-muted-foreground">{s.subject}</div>
+                            ) : null}
+                            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-xs">
                             {(s.created_nespracovane_ids?.length ?? 0) > 0 && (
                               <Link
                                 to="/nespracovane/$id"
@@ -371,13 +381,12 @@ export function PrijemMailom({
                             >
                               {zdroj[s.id] !== undefined ? "skryť e-mail" : "zobraziť e-mail"}
                             </button>
+                            </div>
                             {s.detail && (
-                              <span className="w-full text-xs text-muted-foreground">
-                                {s.detail}
-                              </span>
+                              <div className="text-xs text-muted-foreground">{s.detail}</div>
                             )}
                             {zdroj[s.id] !== undefined && (
-                              <pre className="mt-1 w-full max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-xs">
+                              <pre className="mt-1 max-h-64 w-full overflow-auto whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-xs">
                                 {zdroj[s.id]}
                               </pre>
                             )}

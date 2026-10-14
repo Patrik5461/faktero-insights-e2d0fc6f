@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { formatujCislo } from "@/lib/faktero/mena";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -227,7 +228,7 @@ function InventoryPage() {
                     onScan(scan);
                   }
                 }}
-                placeholder="Naskenujte alebo napíšte čiarový kód / SKU a stlačte Enter…"
+                placeholder="Naskenujte alebo napíšte čiarový kód alebo kód a stlačte Enter…"
                 className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
               <button
@@ -237,7 +238,7 @@ function InventoryPage() {
                 +1
               </button>
             </div>
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
@@ -257,7 +258,7 @@ function InventoryPage() {
                       <tr key={it.id}>
                         <td className="p-3 font-medium">{skuMap[it.stock_item_id] ?? "—"}</td>
                         <td className="p-3 text-right">
-                          {Number(it.expected_quantity).toFixed(2)}
+                          {formatujCislo(it.expected_quantity, 0, 2)}
                         </td>
                         <td className="p-3 text-right">
                           <input
@@ -271,7 +272,7 @@ function InventoryPage() {
                         <td
                           className={`p-3 text-right ${diff != null && diff !== 0 ? (diff > 0 ? "text-emerald-600" : "text-destructive") : "text-muted-foreground"}`}
                         >
-                          {diff == null ? "—" : (diff > 0 ? "+" : "") + diff.toFixed(2)}
+                          {diff == null ? "—" : (diff > 0 ? "+" : "") + formatujCislo(diff, 0, 2)}
                         </td>
                       </tr>
                     );

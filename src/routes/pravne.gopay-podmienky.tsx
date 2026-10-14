@@ -44,9 +44,8 @@ function Page() {
 
       <h2>2. Peniaze nikdy nejdú cez Faktero</h2>
       <p>
-        <strong>Peniaze nikdy nejdú cez Faktero.</strong> Platba zákazníka putuje priamo od
-        zákazníka cez platobnú bránu GoPay na bankový alebo GoPay účet obchodníka (používateľa
-        Faktera).
+        Platba zákazníka putuje priamo od zákazníka cez platobnú bránu GoPay na bankový alebo GoPay
+        účet obchodníka (používateľa Faktera).
       </p>
 
       <h2>3. Každá firma používa vlastný GoPay účet</h2>

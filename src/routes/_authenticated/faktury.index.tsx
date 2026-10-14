@@ -46,6 +46,7 @@ import {
   DeletedToggle,
 } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { formatujMenu } from "@/lib/faktero/mena";
 import { supabase } from "@/integrations/supabase/client";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
@@ -545,7 +546,7 @@ function InvoicesPage() {
       confirmLabel: "Označiť ako zaplatené",
     },
     email: {
-      title: `Odoslať emailom ${emailableCount} faktúr?`,
+      title: `Odoslať e-mailom ${emailableCount} faktúr?`,
       message: "Odosielajú sa iba vystavené/odoslané faktúry s emailom odberateľa.",
       confirmLabel: "Odoslať",
     },
@@ -618,7 +619,9 @@ function InvoicesPage() {
                       : "Všetky vystavené faktúry, koncepty aj stornované."
         }
         action={
-          <div className="flex flex-wrap gap-2">
+          /* Hlavné tlačidlo je posledné a vpravo; Číselné rady a Účtovné exporty sú
+             v riadku s filtrami, aby sa hlavička nezalamovala. */
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {(type || status || poSplatnosti || neuhradene || q) && (
               <Link
                 to="/faktury"
@@ -664,13 +667,6 @@ function InvoicesPage() {
                 )}
               </Link>
             )}
-            <OdkazNaRady />
-            <Link
-              to="/exporty"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
-            >
-              <FileCode2 className="h-4 w-4" /> Účtovné exporty
-            </Link>
             {/*
               Samofaktúra sa eviduje medzi prijatými (pre nás je to nákup), ale
               vystavujeme ju my — preto aj tu, kde ju človek hľadá.
@@ -744,6 +740,13 @@ function InvoicesPage() {
               trashCount={list.showDeleted ? list.rows.length : 0}
             />
             <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
+            <OdkazNaRady />
+            <Link
+              to="/exporty"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            >
+              <FileCode2 className="h-4 w-4" /> Účtovné exporty
+            </Link>
           </div>
         </div>
         <BulkBar
@@ -772,7 +775,7 @@ function InvoicesPage() {
                 onClick={() => setBulkAction("email")}
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
               >
-                <Mail className="h-3.5 w-3.5" /> Odoslať emailom{" "}
+                <Mail className="h-3.5 w-3.5" /> Odoslať e-mailom{" "}
                 {emailableCount > 0 ? `(${emailableCount})` : ""}
               </button>
               <button
@@ -818,6 +821,11 @@ function InvoicesPage() {
                 <span className="inline-flex items-center gap-2">
                   {i.invoice_number}
                   <OdovzdaneIkona kedy={i.exported_at} />
+                  {i.type === "credit_note" || i.type === "debit_note" ? (
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {i.type === "credit_note" ? "Dobropis" : "Ťarchopis"}
+                    </span>
+                  ) : null}
                   {reminderMap[i.id] ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200">
                       <Bell className="h-3 w-3" /> Upomienka #{reminderMap[i.id]}
@@ -828,7 +836,7 @@ function InvoicesPage() {
               subtitle={i.customer_name ?? "—"}
               status={<StatusBadge status={i.status} />}
               meta={`${datumNaDoklade(i.issue_date)} · splat. ${datumNaDoklade(i.due_date)}`}
-              amount={`${Number(i.total).toFixed(2)} ${i.currency}`}
+              amount={formatujMenu(i.total, i.currency)}
               actions={
                 list.showDeleted ? (
                   <button
@@ -866,7 +874,7 @@ function InvoicesPage() {
             />
           )}
           desktop={
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
@@ -950,7 +958,7 @@ function InvoicesPage() {
                         )}
                       </td>
                       <td className="p-3 text-right">
-                        {Number(i.total).toFixed(2)} {i.currency}
+                        {formatujMenu(i.total, i.currency)}
                       </td>
                       <td className="p-3">
                         <StatusBadge status={i.status} />

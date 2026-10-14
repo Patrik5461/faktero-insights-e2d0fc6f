@@ -64,8 +64,8 @@ const sections: HelpSection[] = [
           </li>
           <li>
             Kliknite na <strong>Vytvoriť</strong> — doklad sa presunie medzi prijaté faktúry,
-            doklady alebo iné doklady (s vyplneným zaúčtovaním) a otvorí sa ďalší nespracovaný.
-            <strong> Uložiť zmeny</strong> ho nechá rozpracovaný na neskôr.
+            doklady alebo iné doklady (s vyplneným zaúčtovaním) a otvorí sa ďalší nespracovaný.{" "}
+            <strong>Uložiť zmeny</strong> ho nechá rozpracovaný na neskôr.
           </li>
         </ol>
         <p>
@@ -333,8 +333,8 @@ const sections: HelpSection[] = [
           detaile dokladu len na prezretie, do skladu ani do účtovníctva nevstupujú.
         </p>
         <p>
-          <strong>Zdrojový e-mail.</strong> Text mailu, s ktorým doklad prišiel („to je za september",
-          „zákazka Novák"), sa uloží. Ukážete ho ikonou obálky v Nespracovaných alebo tlačidlom{" "}
+          <strong>Zdrojový e-mail.</strong> Text mailu, s ktorým doklad prišiel („to je za september“,
+          „zákazka Novák“), sa uloží. Ukážete ho ikonou obálky v Nespracovaných alebo tlačidlom{" "}
           <em>Zdrojový e-mail</em> pri doklade — aj po tom, čo z neho vznikla prijatá faktúra, bloček
           či iný doklad.
         </p>
@@ -363,7 +363,7 @@ const sections: HelpSection[] = [
           </li>
         </ul>
         <p>
-          Adresa sa dá <strong>zmeniť na vlastnú</strong> — tlačidlom „Zvoliť vlastnú" si namiesto
+          Adresa sa dá <strong>zmeniť na vlastnú</strong> — tlačidlom „Zvoliť vlastnú“ si namiesto
           náhodného konca zadáte svoje slovo a číslo, napríklad{" "}
           <code>doklady-2026@doklady.faktero.sk</code>. Diakritiku, medzery a veľké písmená si
           Faktero opraví samo a hneď ukáže, ako bude adresa naozaj vyzerať.
@@ -489,7 +489,7 @@ const sections: HelpSection[] = [
       <>
         <p>
           Bloček je zjednodušená faktúra — do kontrolného výkazu ide do časti <strong>B.3</strong>,
-          nie medzi bežné prijaté faktúry. Do 3 000 € odpočítanej dane za obdobie sa vykazuje
+          nie medzi bežné prijaté faktúry. Do 3 000 € odpočítanej dane za obdobie sa vykazuje
           sumárne, nad túto hranicu sa rozpisuje po dodávateľoch (vtedy je potrebné IČ DPH
           dodávateľa).
         </p>
@@ -551,7 +551,7 @@ const sections: HelpSection[] = [
             <em>Vyúčtovanie</em> — vytvoríte nové alebo pridáte do existujúceho.
           </li>
           <li>
-            Výsledok („Firma doplatí zamestnancovi 166,50 EUR") a <strong>PDF na podpis</strong>{" "}
+            Výsledok („Firma doplatí zamestnancovi 166,50 EUR“) a <strong>PDF na podpis</strong>{" "}
             zamestnanca a schvaľujúceho.
           </li>
           <li>

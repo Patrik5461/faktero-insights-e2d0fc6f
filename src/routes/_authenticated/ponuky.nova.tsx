@@ -12,7 +12,7 @@ import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
-import { MENY, KROK_CENY } from "@/lib/faktero/mena";
+import { MENY, KROK_CENY, formatujMenu } from "@/lib/faktero/mena";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
 import {
   koeficientZlavy,
@@ -22,7 +22,7 @@ import {
   type TypZlavy,
 } from "@/lib/faktero/zlavy";
 
-import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
@@ -48,7 +48,6 @@ type Item = {
 const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 23 };
 
 function NewQuote() {
-  const mena = useMenaFirmy();
   const navigate = useNavigate();
   /* Sadzby DPH podľa krajiny registrácie firmy. */
   const rezim = useRezimDph();
@@ -299,7 +298,7 @@ function NewQuote() {
       <PageBody>
         <PoznamkaRezimuDph />
         <form onSubmit={submit} className="space-y-6">
-          <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-3">
+          <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-3 [&>*]:min-w-0">
             <label className="block sm:col-span-3">
               <span className="text-sm font-medium">Odberateľ *</span>
               <div className="mt-1 flex gap-2">
@@ -353,7 +352,7 @@ function NewQuote() {
               >
                 {MENY.map((m) => (
                   <option key={m.code} value={m.code}>
-                    {m.flag} {m.code} {m.symbol} — {m.name}
+                    {m.code} {m.symbol} — {m.name}
                   </option>
                 ))}
               </select>
@@ -366,21 +365,21 @@ function NewQuote() {
             />
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-semibold">Položky</h3>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 {produkty.length > 0 && (
                   <select
                     value=""
                     onChange={(e) => {
                       if (e.target.value) zKatalogu(e.target.value);
                     }}
-                    className="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+                    className="min-w-0 max-w-full flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm sm:max-w-xs"
                   >
                     <option value="">Z katalógu…</option>
                     {produkty.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} — {Number(p.unit_price).toFixed(2)} {mena.symbol}
+                        {p.name} — {formatujMenu(p.unit_price, form.currency)}
                       </option>
                     ))}
                   </select>
@@ -388,7 +387,7 @@ function NewQuote() {
                 <button
                   type="button"
                   onClick={() => setItems([...items, novaPolozka()])}
-                  className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                  className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                 >
                   <Plus className="h-3.5 w-3.5" /> Pridať
                 </button>
@@ -435,11 +434,11 @@ function NewQuote() {
                     onChange={(v) => setItem(idx, { vat_rate: Number(v) })}
                   />
                   <div className="text-right text-sm font-medium">
-                    {(
+                    {formatujMenu(
                       zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
-                      (1 + it.vat_rate / 100)
-                    ).toFixed(2)}{" "}
-                    {form.currency}
+                        (1 + it.vat_rate / 100),
+                      form.currency,
+                    )}
                   </div>
                   <button
                     type="button"
@@ -486,27 +485,23 @@ function NewQuote() {
               {totals.zlava > 0 && (
                 <>
                   <div className="text-muted-foreground">
-                    Medzisúčet: {totals.medzisucet.toFixed(2)} {form.currency}
+                    Medzisúčet: {formatujMenu(totals.medzisucet, form.currency)}
                   </div>
                   <div className="text-muted-foreground">
-                    Zľava: −{totals.zlava.toFixed(2)} {form.currency}
+                    Zľava: −{formatujMenu(totals.zlava, form.currency)}
                   </div>
                 </>
               )}
               <div>
                 Bez DPH:{" "}
-                <span className="font-medium">
-                  {totals.subtotal.toFixed(2)} {form.currency}
-                </span>
+                <span className="font-medium">{formatujMenu(totals.subtotal, form.currency)}</span>
               </div>
               <div>
                 DPH:{" "}
-                <span className="font-medium">
-                  {totals.vat_total.toFixed(2)} {form.currency}
-                </span>
+                <span className="font-medium">{formatujMenu(totals.vat_total, form.currency)}</span>
               </div>
               <div className="text-lg font-semibold">
-                Spolu: {totals.total.toFixed(2)} {form.currency}
+                Spolu: {formatujMenu(totals.total, form.currency)}
               </div>
             </div>
           </div>

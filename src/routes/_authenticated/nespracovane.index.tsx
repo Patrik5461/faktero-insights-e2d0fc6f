@@ -8,6 +8,8 @@ import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { blocekDoNespracovanychFn, nahrajNespracovaneFn, nespracovaneFn } from "@/lib/faktero/nespracovane.functions";
 import { DRUHY_NESPRACOVANYCH } from "@/lib/faktero/nespracovane";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/")({
   head: () => ({ meta: [{ title: "Nespracované doklady — Faktero" }] }),
@@ -102,6 +104,47 @@ function Stranka() {
     ...(data?.blocky ?? []).map((b: any) => ({ ...b, kluc: `b-${b.id}`, stav: "vytazene", druh: null, chyba: null, subor: "zo skenu" })),
   ].sort((a, b) => String(b.vytvorene).localeCompare(String(a.vytvorene)));
 
+  async function otvor(r: any) {
+    if (r.typ !== "blocek") return navigate({ to: "/nespracovane/$id", params: { id: r.id } });
+    // Bloček zo skenu sa presunie medzi nespracované, aby sa dal zaradiť ako faktúra.
+    try {
+      const v = await doNespracovanych({ data: { id: r.id } });
+      if (v.id) navigate({ to: "/nespracovane/$id", params: { id: v.id } });
+      else navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Doklad sa nepodarilo otvoriť");
+    }
+  }
+
+  const druhText = (r: any) =>
+    r.druh ? (
+      DRUHY_NESPRACOVANYCH.find((d) => d.kluc === r.druh)?.nazov
+    ) : (
+      <span className="text-muted-foreground">Neurčený</span>
+    );
+  const sumaText = (r: any) => (r.suma != null ? formatujMenu(r.suma, r.mena) : "—");
+  const datumText = (r: any) => (r.datum ? datumNaDoklade(r.datum) : "—");
+  const zdrojText = (r: any) => (
+    <span className="inline-flex items-center gap-1">
+      {ZDROJ[r.zdroj] ?? r.zdroj}
+      {r.typ === "nespracovany" ? (
+        <ZdrojovyMailTlacidlo druh="nespracovany" id={r.id} inboxMessageId={r.inboxMessageId} ikona />
+      ) : null}
+    </span>
+  );
+  const stavText = (r: any) =>
+    r.stav === "cita" ? (
+      <span className="inline-flex items-center gap-1 text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Číta sa…
+      </span>
+    ) : r.stav === "chyba" ? (
+      <span className="inline-flex items-center gap-1 text-amber-700" title={r.chyba ?? undefined}>
+        <AlertTriangle className="h-3.5 w-3.5" /> Doplniť ručne
+      </span>
+    ) : (
+      <span className="text-emerald-700">Vyťažené</span>
+    );
+
   return (
     <>
       <PageHeader
@@ -147,7 +190,7 @@ function Stranka() {
           naraz. Faktero ich prečíta a počkajú tu na zaradenie.
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -180,57 +223,66 @@ function Stranka() {
                 <tr
                   key={r.kluc}
                   className="cursor-pointer hover:bg-muted/30"
-                  onClick={async () => {
-                    if (r.typ !== "blocek") return navigate({ to: "/nespracovane/$id", params: { id: r.id } });
-                    // Bloček zo skenu sa presunie medzi nespracované, aby sa dal zaradiť ako faktúra.
-                    try {
-                      const v = await doNespracovanych({ data: { id: r.id } });
-                      if (v.id) navigate({ to: "/nespracovane/$id", params: { id: v.id } });
-                      else navigate({ to: "/doklady/novy", search: { id: r.id } as any });
-                    } catch (e: any) {
-                      toast.error(e?.message ?? "Doklad sa nepodarilo otvoriť");
-                    }
-                  }}
+                  onClick={() => void otvor(r)}
                 >
                   <td className="p-3">
-                    {r.druh ? (
-                      DRUHY_NESPRACOVANYCH.find((d) => d.kluc === r.druh)?.nazov
-                    ) : (
-                      <span className="text-muted-foreground">neurčený</span>
-                    )}
+                    {druhText(r)}
                     {r.subor ? <div className="max-w-[16rem] truncate text-xs text-muted-foreground">{r.subor}</div> : null}
                   </td>
                   <td className="p-3">{r.dodavatel ?? <span className="text-muted-foreground">—</span>}</td>
                   <td className="p-3">{r.cislo ?? "—"}</td>
-                  <td className="p-3 whitespace-nowrap">{r.datum ?? "—"}</td>
-                  <td className="p-3 text-right tabular-nums">
-                    {r.suma != null ? `${Number(r.suma).toFixed(2)} ${r.mena}` : "—"}
-                  </td>
-                  <td className="p-3 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      {ZDROJ[r.zdroj] ?? r.zdroj}
-                      {r.typ === "nespracovany" ? (
-                        <ZdrojovyMailTlacidlo druh="nespracovany" id={r.id} inboxMessageId={r.inboxMessageId} ikona />
-                      ) : null}
-                    </span>
-                  </td>
-                  <td className="p-3 text-xs">
-                    {r.stav === "cita" ? (
-                      <span className="inline-flex items-center gap-1 text-muted-foreground">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Číta sa…
-                      </span>
-                    ) : r.stav === "chyba" ? (
-                      <span className="inline-flex items-center gap-1 text-amber-700" title={r.chyba ?? undefined}>
-                        <AlertTriangle className="h-3.5 w-3.5" /> Doplniť ručne
-                      </span>
-                    ) : (
-                      <span className="text-emerald-700">Vyťažené</span>
-                    )}
-                  </td>
+                  <td className="p-3 whitespace-nowrap">{datumText(r)}</td>
+                  <td className="p-3 text-right tabular-nums whitespace-nowrap">{sumaText(r)}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{zdrojText(r)}</td>
+                  <td className="p-3 text-xs">{stavText(r)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Na mobile karty — tabuľka by ukázala len prvé tri stĺpce. */}
+        <div className="space-y-2 md:hidden">
+          {!data && (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">Načítavam…</div>
+          )}
+          {data && riadky.length === 0 && (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
+              <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
+              Všetko je spracované.
+            </div>
+          )}
+          {riadky.map((r) => (
+            <div
+              key={r.kluc}
+              role="button"
+              tabIndex={0}
+              onClick={() => void otvor(r)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void otvor(r);
+              }}
+              className="block cursor-pointer rounded-xl border border-border bg-card p-3 hover:bg-muted/30"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-medium">{druhText(r)}</div>
+                  {r.subor ? <div className="truncate text-xs text-muted-foreground">{r.subor}</div> : null}
+                </div>
+                <div className="shrink-0 whitespace-nowrap font-semibold tabular-nums">{sumaText(r)}</div>
+              </div>
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
+                <span className="min-w-0 truncate">{r.dodavatel ?? <span className="text-muted-foreground">—</span>}</span>
+                <span className="whitespace-nowrap text-muted-foreground">
+                  {r.cislo ? `${r.cislo} · ` : ""}
+                  {datumText(r)}
+                </span>
+              </div>
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                {zdrojText(r)}
+                {stavText(r)}
+              </div>
+            </div>
+          ))}
         </div>
       </PageBody>
     </>

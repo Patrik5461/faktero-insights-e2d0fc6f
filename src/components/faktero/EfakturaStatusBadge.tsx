@@ -52,3 +52,50 @@ export function EfakturaStatusBadge({ status }: { status: EfakturaUiStatus }) {
     </span>
   );
 }
+
+/* Surové hodnoty z databázy (enumy) po slovensky pre zoznamy eFaktúr. */
+const STAV_DORUCENIA: Record<string, string> = {
+  pending: "Čaká",
+  sent: "Odoslaná",
+  accepted: "Prijatá",
+  delivered: "Doručená",
+  failed: "Zlyhala",
+  rejected: "Odmietnutá",
+};
+export function stavDorucenia(v: unknown): string {
+  const s = String(v ?? "").toLowerCase();
+  return STAV_DORUCENIA[s] ?? (s || "—");
+}
+
+const KANAL_DORUCENIA: Record<string, string> = {
+  peppol: "Peppol",
+  digitalny_postar: "Digitálny poštár",
+  email: "E-mail",
+  manual: "Ručne",
+};
+export function kanalDorucenia(v: unknown): string {
+  const s = String(v ?? "").toLowerCase();
+  return KANAL_DORUCENIA[s] ?? (s || "—");
+}
+
+const TYP_DOKLADU: Record<string, string> = {
+  regular: "Faktúra",
+  proforma: "Zálohová",
+  advance_payment: "Zálohová",
+  credit_note: "Dobropis",
+  debit_note: "Ťarchopis",
+};
+export function typDokladuEfaktury(v: unknown): string {
+  const s = String(v ?? "regular").toLowerCase();
+  return TYP_DOKLADU[s] ?? s;
+}
+
+/** Krátky dátum a čas „14. 10. 2026 9:05“ — do tabuliek, aby sa nelámal. */
+export function kratkyCas(v: unknown): string {
+  if (!v) return "—";
+  const d = new Date(String(v));
+  if (Number.isNaN(d.getTime())) return "—";
+  const hh = d.getHours();
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()} ${hh}:${mm}`;
+}

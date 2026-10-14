@@ -852,7 +852,7 @@ function InvoiceDetail() {
               disabled={inv.status === "cancelled"}
               className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
             >
-              <Mail className="h-4 w-4" /> Odoslať emailom
+              <Mail className="h-4 w-4" /> Odoslať e-mailom
             </button>
             {/*
               eFaktúra hneď vedľa e-mailu — v ponuke „Ďalšie akcie“ ju ľudia
@@ -1246,7 +1246,7 @@ function InvoiceDetail() {
               </div>
             )}
 
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>

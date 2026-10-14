@@ -36,6 +36,22 @@ function fmt(ts?: string | null) {
   return ts ? new Date(ts).toLocaleString("sk-SK") : "—";
 }
 
+/** Stav synchronizácie z databázy (ok/error/…) po slovensky. */
+function popisStavuSync(s?: string | null) {
+  const t = (s ?? "").trim();
+  if (!t || t === "-" || t === "–") return "—";
+  const m: Record<string, string> = {
+    ok: "V poriadku",
+    error: "Chyba",
+    pending: "Čaká",
+    partial: "Čiastočne",
+    connected: "Pripojené",
+    running: "Prebieha",
+    idle: "Nečinné",
+  };
+  return m[t] ?? t;
+}
+
 function CommanderPage() {
   const cid = getActiveCompanyId();
   const _get = useServerFn(getCommanderStatus);
@@ -286,7 +302,7 @@ function CommanderPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-medium" htmlFor="commander-username">
-                    Commander username
+                    Prihlasovacie meno do Commandera
                   </label>
                   <input
                     id="commander-username"
@@ -298,7 +314,7 @@ function CommanderPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium">Commander password</label>
+                  <label className="mb-1 block text-xs font-medium">Heslo do Commandera</label>
                   <input
                     type="password"
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -368,7 +384,7 @@ function CommanderPage() {
 
             {/* Vehicle links */}
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="font-medium">Prepojené vozidlá</div>
                   <div className="text-xs text-muted-foreground">
@@ -380,7 +396,7 @@ function CommanderPage() {
                 <button
                   disabled={!conn || !!busy}
                   onClick={onSyncVehicles}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-md sm:w-auto border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
                 >
                   <RefreshCcw className="h-4 w-4" /> Synchronizovať vozidlá
                 </button>
@@ -504,8 +520,8 @@ function CommanderPage() {
                   <dd>{fmt(conn?.last_sync_at)}</dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Status</dt>
-                  <dd>{conn?.sync_status ?? "—"}</dd>
+                  <dt className="text-muted-foreground">Stav synchronizácie</dt>
+                  <dd className="text-right">{popisStavuSync(conn?.sync_status)}</dd>
                 </div>
                 {conn?.error_message && (
                   <div>
@@ -532,7 +548,7 @@ function CommanderPage() {
                         <span
                           className={l.status === "ok" ? "text-emerald-600" : "text-destructive"}
                         >
-                          {l.status}
+                          {popisStavuSync(l.status)}
                         </span>
                       </div>
                       <div className="mt-1 text-muted-foreground">{fmt(l.created_at)}</div>

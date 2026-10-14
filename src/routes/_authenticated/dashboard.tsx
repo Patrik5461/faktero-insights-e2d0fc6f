@@ -114,10 +114,10 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_COLOR: Record<string, string> = {
   draft: "oklch(0.80 0.02 250)",
-  issued: "oklch(0.78 0.14 162)",
+  issued: "oklch(0.70 0.12 240)",
   sent: "oklch(0.85 0.13 85)",
   paid: "oklch(0.68 0.16 162)",
-  overdue: "hsl(var(--destructive))",
+  overdue: "var(--destructive)",
   cancelled: "oklch(0.60 0.02 250)",
 };
 
@@ -337,7 +337,7 @@ function Dashboard() {
         supabase
           .from("purchase_invoices")
           .select(
-            "id, amount_total, currency, amount_without_vat_eur, vat_amount_eur, status, due_date, supplier_name, invoice_number, type, advance_invoice_id",
+            "id, amount_total, currency, amount_without_vat, amount_without_vat_eur, vat_amount, vat_amount_eur, odpocet, status, issue_date, delivery_date, due_date, supplier_name, invoice_number, type, advance_invoice_id",
           )
           .eq("company_id", cid)
           .is("deleted_at", null)
@@ -379,8 +379,8 @@ function Dashboard() {
     [purchaseInvoices, krajina],
   );
   const metrics = useMemo(
-    () => computeMetrics(invDomace, payments, customers),
-    [invDomace, payments, customers],
+    () => computeMetrics(invDomace, payments, customers, purchaseInvoices),
+    [invDomace, payments, customers, purchaseInvoices],
   );
   const chartData = useMemo(() => buildRevenueChart(invDomace), [invDomace]);
   const statusData = useMemo(() => buildStatusDistribution(invDomace), [invDomace]);
@@ -425,13 +425,13 @@ function Dashboard() {
             {/* CRM: Aging + DSO + Forecast */}
             <div className="grid gap-6 lg:grid-cols-2">
               <AgingPanel
-                title="Aging pohľadávok"
+                title="Vek pohľadávok"
                 icon={HandCoins}
                 buckets={agingReceivables}
                 loading={loading}
               />
               <AgingPanel
-                title="Aging záväzkov"
+                title="Vek záväzkov"
                 icon={TrendingDown}
                 buckets={agingPayables}
                 loading={loading}
@@ -457,32 +457,32 @@ function Dashboard() {
                 <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="gIssued" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gPaid" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="hsl(160 70% 45%)" stopOpacity={0.5} />
                       <stop offset="100%" stopColor="hsl(160 70% 45%)" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gOverdue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
+                      <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
+                    stroke="var(--border)"
                     vertical={false}
                   />
                   <XAxis
                     dataKey="month"
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="var(--muted-foreground)"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="var(--muted-foreground)"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
@@ -490,8 +490,8 @@ function Dashboard() {
                   />
                   <Tooltip
                     contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
                       borderRadius: 8,
                       fontSize: 12,
                     }}
@@ -502,7 +502,7 @@ function Dashboard() {
                     type="monotone"
                     dataKey="issued"
                     name="Vystavené"
-                    stroke="hsl(var(--primary))"
+                    stroke="var(--primary)"
                     fill="url(#gIssued)"
                     strokeWidth={2}
                   />
@@ -518,7 +518,7 @@ function Dashboard() {
                     type="monotone"
                     dataKey="overdue"
                     name="Po splatnosti"
-                    stroke="hsl(var(--destructive))"
+                    stroke="var(--destructive)"
                     fill="url(#gOverdue)"
                     strokeWidth={2}
                   />
@@ -547,8 +547,8 @@ function Dashboard() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
                       borderRadius: 8,
                       fontSize: 12,
                     }}
@@ -575,7 +575,10 @@ function Dashboard() {
           <Panel title="Pohľadávky" icon={HandCoins}>
             <Row label="Celkové pohľadávky" value={fmt(metrics.receivables)} strong />
             <Row label="Po splatnosti" value={fmt(metrics.overdueAmount)} tone="destructive" />
-            <Row label="Priemerná doba úhrady" value={`${metrics.avgPayDays.toFixed(0)} dní`} />
+            <Row
+              label="Priemerná doba úhrady"
+              value={metrics.avgPayDays === null ? "—" : `${Math.round(metrics.avgPayDays)} dní`}
+            />
             <div className="mt-3 border-t border-border pt-3">
               <div className="mb-1.5 text-[12px] text-muted-foreground">Najväčší dlžníci</div>
               {topDebtors.length === 0 ? (
@@ -595,7 +598,7 @@ function Dashboard() {
 
           <Panel title="DPH prehľad" icon={Receipt}>
             <Row label="DPH na odvod" value={fmt(metrics.vatOut)} />
-            <Row label="DPH na odpočet" value={fmt(metrics.vatIn)} />
+            <Row label="DPH na odpočet (prijaté faktúry)" value={fmt(metrics.vatIn)} />
             <Row
               label="Rozdiel"
               value={fmt(metrics.vatOut - metrics.vatIn)}
@@ -609,7 +612,7 @@ function Dashboard() {
 
           <Panel title="Daňový odhad" icon={Calculator}>
             <Row label="Príjmy (rok)" value={fmt(metrics.yearIncome)} />
-            <Row label="Výdavky (odhad)" value={fmt(metrics.yearExpenses)} />
+            <Row label="Výdavky (prijaté faktúry)" value={fmt(metrics.yearExpenses)} />
             <Row
               label="Odhad základu dane"
               value={fmt(Math.max(0, metrics.yearIncome - metrics.yearExpenses))}
@@ -688,13 +691,13 @@ function Dashboard() {
             </div>
           )}
 
-          <Panel title="API & integrácie" icon={KeyRound}>
+          <Panel title="API a integrácie" icon={KeyRound}>
             <div className="grid grid-cols-2 gap-3">
-              <MiniStat label="API calls dnes" value={String(apiStats.today)} icon={Activity} />
-              <MiniStat label="API calls / mesiac" value={String(apiStats.month)} icon={Activity} />
+              <MiniStat label="Volania API dnes" value={String(apiStats.today)} icon={Activity} />
+              <MiniStat label="Volania API za mesiac" value={String(apiStats.month)} icon={Activity} />
               <MiniStat
                 label="Úspešnosť"
-                value={`${apiStats.successRate.toFixed(1)}%`}
+                value={`${apiStats.successRate.toFixed(1).replace(".", ",")} %`}
                 icon={CheckCircle2}
               />
               <MiniStat label="Aktívne kľúče" value={String(apiKeysCount)} icon={KeyRound} />
@@ -763,7 +766,7 @@ function Dashboard() {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <div className="text-2xl font-bold tabular-nums">
-                    {(tripStats?.km_month ?? 0).toFixed(1)}
+                    {(tripStats?.km_month ?? 0).toFixed(1).replace(".", ",")}
                   </div>
                   <div className="text-[12px] text-muted-foreground">km tento mesiac</div>
                 </div>
@@ -945,7 +948,7 @@ function Delta({ pct }: { pct: number | null }) {
       }`}
     >
       {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-      {Math.abs(pct).toFixed(1)} %
+      {Math.abs(pct) >= 1000 ? "> 999" : Math.abs(pct).toFixed(1).replace(".", ",")} %
     </span>
   );
 }
@@ -1181,7 +1184,7 @@ export function StatusBadge({ status }: { status: string }) {
 
 /* ---------- Pure data helpers ---------- */
 
-function computeMetrics(invoices: any[], payments: any[], customers: any[]) {
+function computeMetrics(invoices: any[], payments: any[], customers: any[], prijate: any[]) {
   const now = new Date();
   const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const pmStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -1234,15 +1237,32 @@ function computeMetrics(invoices: any[], payments: any[], customers: any[]) {
         (a, i) => a + (new Date(i.paid_at).getTime() - new Date(i.issue_date).getTime()) / 86400000,
         0,
       ) / paid.length
-    : 0;
+    : null;
 
   // VAT — YTD
   const ytd = invoices.filter((i) => new Date(i.issue_date) >= yStart && i.status !== "cancelled");
-  const vatOut = ytd.reduce((a, i) => a + Number(i.vat_total ?? 0), 0);
-  const vatIn = vatOut * 0.35; // heuristic estimate (no expenses table)
+  const vatOut = sucetDokladov(ytd, "vat_total");
+  /*
+    Odpočet a výdavky sú z prijatých faktúr tohto roka — predtým tu bolo
+    35 % z DPH na odvod a 40 % z príjmov, čísla bez vzťahu k dokladom.
+    Záloha nie je náklad (zúčtuje ju ostrá faktúra), faktúra bez nároku na
+    odpočet (`odpocet = false`) do odpočtu nejde. `*_eur` je domáca mena.
+  */
+  const prijateRok = prijate.filter(
+    (p) =>
+      p.type !== "proforma" &&
+      p.status !== "cancelled" &&
+      new Date(p.delivery_date ?? p.issue_date ?? 0) >= yStart,
+  );
+  const vatIn = prijateRok
+    .filter((p) => p.odpocet !== false)
+    .reduce((a, p) => a + Number(p.vat_amount_eur ?? p.vat_amount ?? 0), 0);
 
-  const yearIncome = ytd.reduce((a, i) => a + Number(i.subtotal ?? i.total ?? 0), 0);
-  const yearExpenses = yearIncome * 0.4; // flat-rate estimate for SK
+  const yearIncome = sucetDokladov(ytd, "subtotal");
+  const yearExpenses = prijateRok.reduce(
+    (a, p) => a + Number(p.amount_without_vat_eur ?? p.amount_without_vat ?? 0),
+    0,
+  );
 
   void customers;
   return {
@@ -1313,7 +1333,7 @@ function buildStatusDistribution(invoices: any[]) {
   return Object.entries(counts).map(([k, v]) => ({
     name: STATUS_LABEL[k] ?? k,
     value: v,
-    color: STATUS_COLOR[k] ?? "hsl(var(--muted-foreground))",
+    color: STATUS_COLOR[k] ?? "var(--muted-foreground)",
   }));
 }
 
@@ -1701,7 +1721,7 @@ function DsoCard({
         : "text-destructive";
   const badge = dso.days < 30 ? "Vynikajúce" : dso.days <= 60 ? "Priemerné" : "Kritické";
   return (
-    <Panel title="DSO" icon={Clock}>
+    <Panel title="Doba inkasa (DSO)" icon={Clock}>
       {loading ? (
         <div className="space-y-3">
           <div className="h-12 w-32 animate-pulse rounded-md bg-muted/50" />
@@ -1709,7 +1729,7 @@ function DsoCard({
         </div>
       ) : (
         <>
-          <div className={`text-4xl font-bold tabular-nums ${tone}`}>{dso.days.toFixed(1)}</div>
+          <div className={`text-4xl font-bold tabular-nums ${tone}`}>{dso.days.toFixed(1).replace(".", ",")}</div>
           <div className="mt-1 text-xs text-muted-foreground">Priemerná doba inkasa (dní)</div>
           {hasPaid && (
             <div
@@ -1745,7 +1765,7 @@ function ForecastPanel({
   className?: string;
 }) {
   return (
-    <Panel title="Cash flow forecast (4 týždne)" icon={Wallet} className={className}>
+    <Panel title="Výhľad peňažných tokov (4 týždne)" icon={Wallet} className={className}>
       {loading ? (
         <div className="space-y-2">
           {[0, 1, 2, 3].map((i) => (
@@ -1754,7 +1774,7 @@ function ForecastPanel({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[26rem] text-sm">
             <thead>
               <tr className="text-left text-[12px] text-muted-foreground">
                 <th className="py-1.5 font-medium">Obdobie</th>
@@ -1791,7 +1811,8 @@ function ForecastPanel({
                   {fmt(rows.reduce((a, r) => a + r.income, 0))}
                 </td>
                 <td className="pt-2 text-right text-xs tabular-nums text-destructive">
-                  −{fmt(rows.reduce((a, r) => a + r.expense, 0))}
+                  {rows.some((r) => r.expense > 0) ? "−" : ""}
+                  {fmt(rows.reduce((a, r) => a + r.expense, 0))}
                 </td>
                 <td
                   className={`pt-2 text-right font-bold tabular-nums ${rows.reduce((a, r) => a + r.balance, 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}

@@ -46,9 +46,9 @@ const sections: HelpSection[] = [
       <>
         <p>
           Na detaile ponuky vygenerujete <strong>PDF</strong> a pošlete ho odberateľovi priamo z
-          Fakera. Vzhľad dokumentu sa nastavuje v{" "}
+          Faktera. Vzhľad dokumentu sa nastavuje v{" "}
           <Link to="/nastavenia/vzhlad-faktury">Vzhľad faktúry</Link>, text e-mailu v{" "}
-          <Link to="/nastavenia/email-sablony">Email šablónach</Link>.
+          <Link to="/nastavenia/email-sablony">E-mailových šablónach</Link>.
         </p>
         <p>Odberateľ musí mať vyplnený e-mail, inak sa odoslanie neponúkne.</p>
       </>
@@ -135,7 +135,7 @@ const sections: HelpSection[] = [
           Nemusí sa nikde prihlasovať — stačí kliknúť.
         </p>
         <p>
-          Stav ponuky sa prepne sám na „Akceptovaná" alebo „Zamietnutá", zapíše sa čas a pri
+          Stav ponuky sa prepne sám na „Akceptovaná“ alebo „Zamietnutá“, zapíše sa čas a pri
           zamietnutí aj dôvod, ak ho odberateľ napíše. Vám príde e-mail a upozornenie do zvončeka; v
           detaile ponuky potom vidno, kedy a ako odpovedal.
         </p>

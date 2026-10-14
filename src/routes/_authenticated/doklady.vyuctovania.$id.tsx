@@ -10,6 +10,8 @@ import { KodPohody } from "@/components/faktero/KodPohody";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { potvrd } from "@/lib/potvrdenie";
 import {
@@ -411,7 +413,9 @@ function Detail() {
                         .sort((a, b) => String(a.datum ?? "").localeCompare(String(b.datum ?? "")))
                         .map((p) => (
                           <tr key={p.druh + p.id} className="border-t border-border">
-                            <td className="py-1.5 pr-2 whitespace-nowrap">{p.datum ?? "—"}</td>
+                            <td className="py-1.5 pr-2 whitespace-nowrap">
+                              {datumNaDoklade(p.datum)}
+                            </td>
                             <td className="py-1.5 pr-2">{p.dodavatel ?? "—"}</td>
                             <td className="py-1.5 pr-2">
                               {p.druh === "prijata" ? (
@@ -436,7 +440,7 @@ function Detail() {
                               </span>
                             </td>
                             <td className="py-1.5 pr-2 text-right tabular-nums">
-                              {p.spolu.toFixed(2)} {p.mena}
+                              {formatujMenu(p.spolu, p.mena)}
                             </td>
                             <td className="py-1.5 text-right">
                               <button
@@ -516,22 +520,16 @@ function Detail() {
               <dl className="mt-3 space-y-1 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Doklady spolu</dt>
-                  <dd className="tabular-nums">
-                    {s.spolu.toFixed(2)} {f.mena}
-                  </dd>
+                  <dd className="tabular-nums">{formatujMenu(s.spolu, f.mena)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">z toho DPH</dt>
-                  <dd className="tabular-nums">
-                    {s.dph.toFixed(2)} {f.mena}
-                  </dd>
+                  <dd className="tabular-nums">{formatujMenu(s.dph, f.mena)}</dd>
                 </div>
                 {f.typ === "zaloha" && (
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Záloha</dt>
-                    <dd className="tabular-nums">
-                      −{s.zaloha.toFixed(2)} {f.mena}
-                    </dd>
+                    <dd className="tabular-nums">−{formatujMenu(s.zaloha, f.mena)}</dd>
                   </div>
                 )}
               </dl>
@@ -712,8 +710,8 @@ function VyberDokladov({
                         })
                       }
                     />
-                    <span className="w-24 shrink-0 tabular-nums text-muted-foreground">
-                      {k.datum ?? "—"}
+                    <span className="w-20 shrink-0 tabular-nums text-muted-foreground">
+                      {datumNaDoklade(k.datum)}
                     </span>
                     <span className="min-w-0 flex-1 truncate">
                       {k.dodavatel ?? "—"}{" "}
@@ -721,9 +719,7 @@ function VyberDokladov({
                         · {k.druh === "prijata" ? "faktúra" : "bloček"} {k.cislo ?? ""}
                       </span>
                     </span>
-                    <span className="tabular-nums">
-                      {k.spolu.toFixed(2)} {k.mena}
-                    </span>
+                    <span className="tabular-nums">{formatujMenu(k.spolu, k.mena)}</span>
                   </label>
                 </li>
               ))}

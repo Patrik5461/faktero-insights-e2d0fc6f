@@ -9,7 +9,7 @@ import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { sadzbyDoVyberu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
-import { MENY, KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
+import { MENY, KROK_CENY, cenaZoSumySDph, formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/opakovane/nova")({
   head: () => ({ meta: [{ title: "Nová opakovaná faktúra — Faktero" }] }),
@@ -218,7 +218,7 @@ function NewRecurring() {
                   >
                     {MENY.map((m) => (
                       <option key={m.code} value={m.code}>
-                        {m.flag} {m.code} {m.symbol} — {m.name}
+                        {m.code} {m.symbol} — {m.name}
                       </option>
                     ))}
                   </select>
@@ -452,8 +452,10 @@ function NewRecurring() {
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
                     <span className="font-medium tabular-nums">
-                      {(it.quantity * it.unit_price * (1 + it.vat_rate / 100)).toFixed(2)}{" "}
-                      {form.currency}
+                      {formatujMenu(
+                        it.quantity * it.unit_price * (1 + it.vat_rate / 100),
+                        form.currency,
+                      )}
                     </span>
                     <button
                       type="button"
@@ -482,20 +484,18 @@ function NewRecurring() {
             <div className="ml-auto max-w-sm space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Bez DPH</span>
-                <span className="tabular-nums">
-                  {totals.subtotal.toFixed(2)} {form.currency}
-                </span>
+                <span className="tabular-nums">{formatujMenu(totals.subtotal, form.currency)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">DPH</span>
                 <span className="tabular-nums">
-                  {totals.vat_total.toFixed(2)} {form.currency}
+                  {formatujMenu(totals.vat_total, form.currency)}
                 </span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
                 <span>Každá faktúra</span>
                 <span className="tabular-nums text-primary">
-                  {totals.total.toFixed(2)} {form.currency}
+                  {formatujMenu(totals.total, form.currency)}
                 </span>
               </div>
             </div>
@@ -512,7 +512,11 @@ function NewRecurring() {
             />
           </section>
 
-          <div className="sticky bottom-0 z-10 -mx-4 border-t border-border bg-background/95 px-4 py-3 pr-20 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border sm:px-5">
+          {/*
+            Lišta s tlačidlami je obyčajný posledný blok formulára. Ako `sticky`
+            plávala v strede stránky medzi kartami a zakrývala obsah pod sebou.
+          */}
+          <div className="rounded-2xl border border-border bg-card px-4 py-3 sm:px-5">
             <div className="flex flex-wrap items-center justify-end gap-2">
               <Link
                 to="/opakovane"
@@ -567,7 +571,7 @@ function SadzbaSelect({
       onChange={(e) => onZmena(Number(e.target.value))}
       className={
         className ??
-        "rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
+        "w-20 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
       }
     >
       {v.platne.map((r) => (

@@ -1,4 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Logo } from "@/components/faktero/Logo";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,20 @@ export const Route = createFileRoute("/pridat-pouzivatela")({
   component: AcceptInvitationPage,
   validateSearch: (s: Record<string, unknown>) => ({ token: (s.token as string) ?? "" }),
 });
+
+/** Logo nad každým stavom stránky — predtým bola chybová hláška sama na prázdnej ploche. */
+function Obal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className="min-h-screen bg-background px-4 py-10">
+      <div className="mx-auto mb-8 flex max-w-md justify-center">
+        <Link to="/" aria-label="Faktero">
+          <Logo className="h-9 w-[144px]" />
+        </Link>
+      </div>
+      <div className={`mx-auto max-w-md ${className}`}>{children}</div>
+    </div>
+  );
+}
 
 function AcceptInvitationPage() {
   const { token } = Route.useSearch();
@@ -120,7 +135,7 @@ function AcceptInvitationPage() {
 
   if (cakaNaPotvrdenie)
     return (
-      <div className="mx-auto max-w-md p-8">
+      <Obal>
         <h1 className="text-2xl font-bold">Potvrďte e-mail</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Na adresu <strong className="text-foreground">{inv?.email}</strong> sme poslali odkaz na
@@ -130,28 +145,41 @@ function AcceptInvitationPage() {
         <p className="mt-3 text-sm text-muted-foreground">
           E-mail neprišiel? Pozrite aj priečinok nevyžiadanej pošty.
         </p>
-      </div>
+      </Obal>
     );
 
   if (loading)
-    return (
-      <div className="mx-auto max-w-md p-8 text-center text-sm text-muted-foreground">
-        Načítavam pozvánku…
-      </div>
-    );
+    return <Obal className="text-center text-sm text-muted-foreground">Načítavam pozvánku…</Obal>;
 
   if (!token || !inv || !inv.valid) {
     return (
-      <div className="mx-auto max-w-md p-8 text-center">
+      <Obal className="text-center">
         <h1 className="text-2xl font-bold">Neplatná pozvánka</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {inv?.reason === "expired"
-            ? "Pozvánka expirovala."
+            ? "Platnosť pozvánky vypršala."
             : inv?.reason === "already_accepted"
               ? "Pozvánka už bola využitá."
               : "Odkaz je neplatný."}
         </p>
-      </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Ak už účet máte, prihláste sa. O novú pozvánku požiadajte toho, kto vás do firmy pozval.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link
+            to="/prihlasenie"
+            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            Prihlásiť sa
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary"
+          >
+            Na úvodnú stránku
+          </Link>
+        </div>
+      </Obal>
     );
   }
 
@@ -159,7 +187,7 @@ function AcceptInvitationPage() {
   const emailMismatch = alreadySignedIn && userEmail?.toLowerCase() !== inv.email.toLowerCase();
 
   return (
-    <div className="mx-auto max-w-md p-8">
+    <Obal>
       <h1 className="text-2xl font-bold">Pozvánka do firmy</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Firma <strong>{inv.company_name}</strong> vás pozvala ako{" "}
@@ -170,7 +198,7 @@ function AcceptInvitationPage() {
         className="mt-6 space-y-4 rounded-xl border border-border bg-card p-6"
       >
         <label className="block">
-          <span className="text-sm font-medium">Email</span>
+          <span className="text-sm font-medium">E-mail</span>
           <input
             value={inv.email}
             disabled
@@ -209,6 +237,6 @@ function AcceptInvitationPage() {
               : "Vytvoriť účet a pripojiť sa"}
         </button>
       </form>
-    </div>
+    </Obal>
   );
 }

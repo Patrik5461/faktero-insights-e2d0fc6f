@@ -6,6 +6,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { ossPrehladFn } from "@/lib/faktero/oss.functions";
 import { PRAH_OSS } from "@/lib/faktero/sadzby-eu";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { pocetSlovom } from "@/lib/faktero/sklonovanie";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/oss")({
   head: () => ({
@@ -143,13 +145,14 @@ function OssPage() {
                   {data.obdobie.stvrtrok}. štvrťrok {data.obdobie.rok}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {data.pocet} faktúr v režime OSS ({data.obdobie.od} – {data.obdobie.do})
+                  {pocetSlovom(data.pocet, "faktúra", "faktúry", "faktúr")} v režime OSS (
+                  {datumNaDoklade(data.obdobie.od)} – {datumNaDoklade(data.obdobie.do)})
                 </div>
               </div>
               {data.prehlad.riadky.length === 0 ? (
                 <p className="px-4 py-6 text-sm text-muted-foreground">
                   V tomto štvrťroku nie je žiadny predaj spotrebiteľom v EÚ. Faktúru doň zaradíte
-                  zaškrtnutím „Predaj spotrebiteľovi v EÚ (OSS)" pri jej vystavení.
+                  zaškrtnutím „Predaj spotrebiteľovi v EÚ (OSS)“ pri jej vystavení.
                 </p>
               ) : (
                 <table className="w-full text-sm">

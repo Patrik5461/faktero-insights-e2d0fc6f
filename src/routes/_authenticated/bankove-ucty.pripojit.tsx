@@ -363,7 +363,7 @@ function WisePripojenie() {
             onChange={(e) => setToken(e.target.value)}
             placeholder="Token z Wise"
             autoComplete="off"
-            className="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
           />
           <button
             disabled={busy !== null || token.trim().length < 20}
@@ -738,7 +738,7 @@ function RevolutPripojenie() {
             2. V Revolut Business otvorte <em>Settings → APIs → Business API</em>, nahrajte
             certifikát a ako návratovú adresu zadajte presne túto:
           </li>
-          <li className="break-all rounded-md bg-secondary px-2 py-1 font-mono text-xs">
+          <li className="rounded-md bg-secondary px-2 py-1 font-mono text-xs break-words">
             {navratova || "…"}
           </li>
           <li>3. Portál vám ukáže client ID — vložte ho sem a potvrďte prístup.</li>

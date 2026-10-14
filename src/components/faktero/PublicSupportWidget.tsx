@@ -58,7 +58,7 @@ export function PublicSupportWidget() {
             role: "assistant",
             content:
               data?.message ??
-              "Napíšte nám na podpora@faktero.sk alebo zavolajte na +421902101967 a ozveme sa vám.",
+              "Napíšte nám na podpora@faktero.sk alebo zavolajte na +421 902 101 967 a ozveme sa vám.",
           },
         ]);
         setEscalate(true);
@@ -74,7 +74,7 @@ export function PublicSupportWidget() {
         {
           role: "assistant",
           content:
-            "Napíšte nám na podpora@faktero.sk alebo zavolajte na +421902101967 a ozveme sa vám.",
+            "Napíšte nám na podpora@faktero.sk alebo zavolajte na +421 902 101 967 a ozveme sa vám.",
         },
       ]);
       setEscalate(true);
@@ -198,7 +198,7 @@ export function PublicSupportWidget() {
                     href="tel:+421902101967"
                     className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-primary/50"
                   >
-                    <Phone className="h-3.5 w-3.5" /> +421902101967
+                    <Phone className="h-3.5 w-3.5" /> +421 902 101 967
                   </a>
                 </div>
               </div>
@@ -246,10 +246,10 @@ export function PublicSupportWidget() {
         onClick={() => setOpen((v) => !v)}
         aria-label="Opýtajte sa Faktero AI"
         title="Opýtajte sa Faktero AI"
-        className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-transform hover:scale-105"
+        className="inline-flex items-center gap-2 rounded-full bg-primary p-3 text-sm sm:px-4 font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-transform hover:scale-105"
       >
         {open ? <X className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
-        <span>{open ? "Zavrieť" : "Pomoc"}</span>
+        <span className="sr-only sm:not-sr-only">{open ? "Zavrieť" : "Pomoc"}</span>
       </button>
     </div>
   );

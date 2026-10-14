@@ -210,19 +210,22 @@ function Predvolene({
         alebo človek pri zaúčtovaní. Prázdne pole = Pohoda doklad nechá nezaúčtovaný.
       </p>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[560px] text-sm">
-          <thead>
+      <div className="mt-4 md:overflow-x-auto">
+        <table className="block w-full text-sm md:table md:min-w-[560px]">
+          <thead className="hidden md:table-header-group">
             <tr className="text-left text-xs text-muted-foreground">
               <th className="py-1 pr-3 font-medium">Doklad</th>
               <th className="py-1 pr-3 font-medium">Predkontácia</th>
               <th className="py-1 font-medium">Členenie DPH</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="block md:table-row-group">
             {PREDVOLENE.map((p) => (
-              <tr key={p.kluc} className="border-t border-border align-top">
-                <td className="py-2 pr-3">
+              <tr
+                key={p.kluc}
+                className="block border-t border-border py-2 align-top md:table-row md:py-0"
+              >
+                <td className="block py-1 font-medium md:table-cell md:py-2 md:pr-3 md:font-normal">
                   {p.nazov}
                   {pocetNaVyber(p.kluc, "predkontacia") + pocetNaVyber(p.kluc, "clenenie_dph") >
                   0 ? (
@@ -237,7 +240,8 @@ function Predvolene({
                     </span>
                   ) : null}
                 </td>
-                <td className="py-2 pr-3">
+                <td className="block py-1 md:table-cell md:py-2 md:pr-3">
+                  <span className="block text-xs text-muted-foreground md:hidden">Predkontácia</span>
                   {p.predkontacia ? (
                     <KodPohody
                       ariaLabel={`Predkontácia — ${p.nazov}`}
@@ -254,7 +258,8 @@ function Predvolene({
                     <span className="text-xs text-muted-foreground">{p.smer === "vstup" ? "ako prijatá faktúra" : "ako vydaná faktúra"}</span>
                   )}
                 </td>
-                <td className="py-2">
+                <td className="block py-1 md:table-cell md:py-2">
+                  <span className="block text-xs text-muted-foreground md:hidden">Členenie DPH</span>
                   {p.clenenie ? (
                     <KodPohody
                       ariaLabel={`Členenie DPH — ${p.nazov}`}
@@ -288,7 +293,7 @@ function Predvolene({
             className="mt-1"
           />
           <span>
-            Podľa spôsobu platby (ako Doklado)
+            Podľa spôsobu platby
             <span className="block text-xs text-muted-foreground">
               Hotovosť ako výdavkový pokladničný doklad, karta ako interný doklad, prevod ako
               prijatá faktúra.
@@ -296,17 +301,19 @@ function Predvolene({
           </span>
         </label>
         {blockyAgenda === "podla_platby" && (
-          <label className="ml-6 mt-2 block max-w-xs">
+          <label className="ml-6 mt-2 block">
             <span className="text-xs text-muted-foreground">Skratka pokladne v Pohode</span>
-            <input
-              value={pokladna}
-              onChange={(e) => setPokladna(e.target.value)}
-              placeholder="napr. HP"
-              aria-label="Skratka pokladne v Pohode"
-              className={vstup}
-            />
+            <span className="block max-w-xs">
+              <input
+                value={pokladna}
+                onChange={(e) => setPokladna(e.target.value)}
+                placeholder="napr. HP"
+                aria-label="Skratka pokladne v Pohode"
+                className={vstup}
+              />
+            </span>
             {!pokladna.trim() && (
-              <span className="mt-1 block text-xs text-amber-700">
+              <span className="mt-1 block max-w-prose text-xs text-amber-700">
                 Bez skratky pokladne Pohoda pokladničný doklad nezaloží — hotovostné bločky pôjdu
                 zatiaľ ako prijaté faktúry.
               </span>
@@ -792,7 +799,10 @@ function Ciselnik({
   return (
     <section className="rounded-xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-1 rounded-md bg-muted p-1 text-sm" role="tablist">
+        <div
+          className="flex max-w-full gap-1 overflow-x-auto rounded-md bg-muted p-1 text-sm"
+          role="tablist"
+        >
           {DRUHY_CISELNIKA.map(({ kod: k, nazov: n }) => (
             <button
               key={k}
@@ -803,7 +813,7 @@ function Ciselnik({
                 setAgenda("");
                 setForm(null);
               }}
-              className={`rounded px-3 py-1 ${druh === k ? "bg-background font-medium shadow-sm" : "text-muted-foreground"}`}
+              className={`shrink-0 whitespace-nowrap rounded px-3 py-1 ${druh === k ? "bg-background font-medium shadow-sm" : "text-muted-foreground"}`}
             >
               {n} <span className="text-xs text-muted-foreground">({pocty[k]})</span>
             </button>

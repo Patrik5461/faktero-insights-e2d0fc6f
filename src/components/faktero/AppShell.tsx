@@ -1,3 +1,4 @@
+import { popisRoly } from "@/lib/faktero/rola-popis";
 import { Link, useRouter, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useDizajn } from "@/hooks/useDizajn";
 import { PrepinacDizajnu } from "./PrepinacDizajnu";
@@ -487,7 +488,7 @@ export function AppShell({
                             </span>
                           )}
                         </span>
-                        <span className="ml-auto pl-2 text-xs text-muted-foreground">{c.role}</span>
+                        <span className="ml-auto pl-2 text-xs text-muted-foreground">{popisRoly(c.role)}</span>
                       </DropdownMenuItem>
                     ))}
                   </div>
@@ -917,9 +918,10 @@ export function PageHeader({
               target="_blank"
               rel="noreferrer"
               title="Otvoriť manuál v novom okne"
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+              className="inline-flex shrink-0 items-center gap-1 self-start rounded-full border border-border px-1.5 py-1 text-[11px] sm:mt-1.5 sm:px-2 sm:py-0.5 font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
             >
-              <BookOpen className="h-3 w-3" /> Manuál
+              <BookOpen className="h-3 w-3" />
+              <span className="sr-only sm:not-sr-only">Manuál</span>
             </a>
           )}
         </div>
@@ -939,7 +941,7 @@ export function PageBody({ children }: { children: ReactNode }) {
     Medzery medzi sekciami rieši `space-y-6` — 24 bodov, ako všade inde.
   */
   return (
-    <div className="mx-auto w-full max-w-[1440px] flex-1 space-y-6 px-4 py-6 sm:px-6 lg:px-6">
+    <div className="mx-auto w-full max-w-[1440px] flex-1 space-y-6 px-4 pt-6 pb-24 sm:px-6 lg:px-6">
       {children}
     </div>
   );

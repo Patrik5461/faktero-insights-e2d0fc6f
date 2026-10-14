@@ -66,7 +66,7 @@ function AiAssistantPage() {
         title="Faktero AI"
         description="Inteligentný asistent pre faktúry, odberateľov, eFaktúru a administratívu."
         action={
-          <div className="hidden gap-1 rounded-lg border border-border bg-card p-1 md:flex">
+          <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
             {(
               [
                 ["chat", "Chat", MessageSquare],
@@ -78,7 +78,7 @@ function AiAssistantPage() {
               <button
                 key={k}
                 onClick={() => setTab(k)}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition ${
                   tab === k
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-secondary"
@@ -182,6 +182,36 @@ function ChatView({ companyId }: { companyId: string }) {
 
   const msgs = messages.data ?? [];
 
+  const zoznamKonverzacii = (
+    <>
+      {(conversations.data ?? []).map((c: any) => (
+        <div
+          key={c.id}
+          className={`group flex items-center gap-2 rounded-md px-2 py-2 text-sm ${
+            activeId === c.id ? "bg-primary/10 text-primary" : "hover:bg-secondary"
+          }`}
+        >
+          <button onClick={() => setActiveId(c.id)} className="min-w-0 flex-1 truncate text-left">
+            {c.title}
+          </button>
+          <button
+            onClick={async () => {
+              if (await potvrd("Vymazať konverzáciu?")) delConv.mutate(c.id);
+            }}
+            aria-label="Vymazať konverzáciu"
+            className="text-muted-foreground transition hover:text-destructive lg:opacity-0 lg:group-hover:opacity-100"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ))}
+      {(conversations.data ?? []).length === 0 && (
+        <div className="px-2 py-4 text-xs text-muted-foreground">Žiadne konverzácie.</div>
+      )}
+    </>
+  );
+  const aktivnaKonverzacia = (conversations.data ?? []).find((c: any) => c.id === activeId);
+
   return (
     <div className="grid h-[calc(100vh-220px)] min-h-[520px] grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
       {/* Sidebar */}
@@ -194,35 +224,33 @@ function ChatView({ companyId }: { companyId: string }) {
             <Plus className="h-4 w-4" /> Nová konverzácia
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-2">
-          {(conversations.data ?? []).map((c: any) => (
-            <div
-              key={c.id}
-              className={`group flex items-center gap-2 rounded-md px-2 py-2 text-sm ${
-                activeId === c.id ? "bg-primary/10 text-primary" : "hover:bg-secondary"
-              }`}
-            >
-              <button onClick={() => setActiveId(c.id)} className="flex-1 truncate text-left">
-                {c.title}
-              </button>
-              <button
-                onClick={async () => {
-                  if (await potvrd("Vymazať konverzáciu?")) delConv.mutate(c.id);
-                }}
-                className="opacity-0 transition group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
-          {(conversations.data ?? []).length === 0 && (
-            <div className="px-2 py-4 text-xs text-muted-foreground">Žiadne konverzácie.</div>
-          )}
-        </div>
+        <div className="flex-1 overflow-y-auto p-2">{zoznamKonverzacii}</div>
       </aside>
 
       {/* Chat */}
       <section className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
+        {/* Na mobile je bočný zoznam skrytý — konverzácie sú v rozbaľovacom paneli nad chatom. */}
+        <details className="group/konv border-b border-border lg:hidden">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm">
+            <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate">
+              {aktivnaKonverzacia?.title ?? "Konverzácie"}
+            </span>
+            <span className="text-xs text-muted-foreground group-open/konv:hidden">Zobraziť</span>
+            <span className="hidden text-xs text-muted-foreground group-open/konv:inline">
+              Skryť
+            </span>
+          </summary>
+          <div className="border-t border-border p-2">
+            <button
+              onClick={() => newConv.mutate()}
+              className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Nová konverzácia
+            </button>
+            <div className="max-h-56 overflow-y-auto">{zoznamKonverzacii}</div>
+          </div>
+        </details>
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-6">
           {msgs.length === 0 && !sendMut.isPending ? (
             <EmptyState onPick={send} />

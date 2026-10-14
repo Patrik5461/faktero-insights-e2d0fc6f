@@ -7,7 +7,8 @@ export const Route = createFileRoute("/pomoc/api")({
       { title: "Pomoc — API — Faktero" },
       {
         name: "description",
-        content: "Ako používať Faktero API: kľúče, test/live režim, vytvorenie faktúry, webhooky.",
+        content:
+          "Ako používať Faktero API: kľúče, testovací a ostrý režim, vytvorenie faktúry, webhooky.",
       },
       { property: "og:title", content: "Pomoc — API — Faktero" },
       { property: "og:description", content: "Návod pre vývojárov na prácu s Faktero API." },
@@ -45,7 +46,7 @@ const sections: HelpSection[] = [
           </li>
           <li>
             Kliknite na <strong>Vytvoriť nový kľúč</strong> a pomenujte ho (napr. „Eshop
-            produkcia").
+            produkcia“).
           </li>
           <li>
             Kľúč sa zobrazí <em>iba raz</em> — uložte ho na bezpečnom mieste.
@@ -59,7 +60,7 @@ const sections: HelpSection[] = [
   },
   {
     id: "test-live",
-    title: "Test a live režim",
+    title: "Testovací a ostrý režim",
     body: (
       <>
         <p>Pri vytváraní kľúča vyberáte režim:</p>

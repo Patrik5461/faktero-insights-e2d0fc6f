@@ -216,7 +216,7 @@ function Stranka() {
               Posielať skladové pohyby
               <span className="mt-0.5 block text-xs text-muted-foreground">
                 Príjemky a výdajky, aby v Pohode sedeli <strong>stavy</strong> skladu, nielen karty.
-                Príjemka ide s príznakom „neúčtovať", aby sa náklad nezdvojil s prijatým dokladom.
+                Príjemka ide s príznakom „neúčtovať“, aby sa náklad nezdvojil s prijatým dokladom.
                 Potrebuje zapnuté skladové karty.
               </span>
             </span>

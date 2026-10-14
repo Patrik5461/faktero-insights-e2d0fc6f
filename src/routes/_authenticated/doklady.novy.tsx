@@ -39,7 +39,7 @@ import { Camera, CheckCircle2, Loader2, Lock, LockOpen, QrCode, Save, Upload as 
 import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
-import { MENY } from "@/lib/faktero/mena";
+import { MENY, formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
@@ -649,7 +649,7 @@ function NovyDokladPage() {
                 {duplikat.supplier_name ?? "Doklad"}
                 {duplikat.document_number ? ` č. ${duplikat.document_number}` : ""}
                 {duplikat.issue_date ? ` z ${datumNaDoklade(duplikat.issue_date)}` : ""}
-                {duplikat.total_amount != null ? ` na ${Number(duplikat.total_amount).toFixed(2)} ${duplikat.currency ?? "EUR"}` : ""}{" "}
+                {duplikat.total_amount != null ? ` na ${formatujMenu(duplikat.total_amount, duplikat.currency ?? "EUR")}` : ""}{" "}
                 je už {duplikat.kde === "nespracovane" ? "v Nespracovaných dokladoch" : "medzi bločkami"}.{" "}
                 <Link
                   to={duplikat.kde === "nespracovane" ? "/nespracovane/$id" : "/doklady/novy"}
@@ -717,7 +717,7 @@ function NovyDokladPage() {
                   : "border-border bg-card/50 text-muted-foreground"
               }`}
             >
-              Presuňte sem fotku alebo PDF dokladu (drag &amp; drop).
+              Potiahnite sem fotku alebo PDF dokladu.
             </div>
           )}
 
@@ -839,7 +839,7 @@ function NovyDokladPage() {
                   {rozpisDph
                     .map(
                       (s) =>
-                        `${s.sadzba} % — základ ${s.zaklad.toFixed(2)}, daň ${s.dph.toFixed(2)}`,
+                        `${s.sadzba} % — základ ${formatujCislo(s.zaklad)}, daň ${formatujCislo(s.dph)}`,
                     )
                     .join(" · ")}
                 </div>
@@ -937,7 +937,7 @@ function NovyDokladPage() {
                 >
                   {MENY.map((m) => (
                     <option key={m.code} value={m.code}>
-                      {m.flag} {m.code} {m.symbol} — {m.name}
+                      {m.code} {m.symbol} — {m.name}
                     </option>
                   ))}
                 </select>
@@ -1027,6 +1027,7 @@ function NovyDokladPage() {
                   </div>
                 )}
                 {cid ? (
+                  <div className="mb-3">
                   <VyberPravidla
                     companyId={cid}
                     doklad={{ ...form, pravidlo_id: ulozeny?.pravidlo_id ?? null }}
@@ -1043,6 +1044,7 @@ function NovyDokladPage() {
                       if (p.kv_clenenie) updateForm("kv_clenenie", p.kv_clenenie);
                     }}
                   />
+                  </div>
                 ) : null}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="block">

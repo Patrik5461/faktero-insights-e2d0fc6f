@@ -1,4 +1,4 @@
-import { KROK_CENY, formatujJednotkovuCenu } from "@/lib/faktero/mena";
+import { KROK_CENY, formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
@@ -705,7 +705,7 @@ function StockItemsPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Hľadať SKU, čiarový kód…"
+              placeholder="Hľadať názov, kód, čiarový kód…"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
             />
             <select
@@ -798,10 +798,13 @@ function StockItemsPage() {
           </div>
         )}
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <p className="mb-2 text-xs text-muted-foreground md:hidden">
+          Tabuľka má viac stĺpcov — posuňte ju prstom do strany.
+        </p>
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
+              <tr className="whitespace-nowrap">
                 <th className="p-3 w-10">
                   <input
                     type="checkbox"
@@ -810,7 +813,7 @@ function StockItemsPage() {
                     aria-label="Vybrať všetky"
                   />
                 </th>
-                <th className="p-3">SKU</th>
+                <th className="p-3">Kód</th>
                 <th className="p-3">Produkt</th>
                 <th className="p-3 text-right">Na sklade</th>
                 <th className="p-3 text-right">Rezerv.</th>
@@ -860,9 +863,9 @@ function StockItemsPage() {
                         aria-label={`Vybrať ${s.sku ?? ""}`}
                       />
                     </td>
-                    <td className="p-3 font-medium">{s.sku ?? "—"}</td>
+                    <td className="p-3 whitespace-nowrap font-medium">{s.sku ?? "—"}</td>
                     <td
-                      className="p-3 text-muted-foreground"
+                      className="min-w-[10rem] p-3 text-muted-foreground"
                       onDoubleClick={() => {
                         if (isArchived) return;
                         setEditingNameId(s.id);
@@ -895,27 +898,31 @@ function StockItemsPage() {
                         displayName
                       )}
                     </td>
-                    <td className="p-3 text-right tabular-nums">{qty.toFixed(2)}</td>
-                    <td className="p-3 text-right tabular-nums text-muted-foreground">
-                      {reserved > 0 ? reserved.toFixed(2) : "—"}
+                    <td className="p-3 text-right tabular-nums whitespace-nowrap">
+                      {formatujCislo(qty, 0, 2)}
+                    </td>
+                    <td className="p-3 text-right tabular-nums whitespace-nowrap text-muted-foreground">
+                      {reserved > 0 ? formatujCislo(reserved, 0, 2) : "—"}
                     </td>
                     <td
-                      className={`p-3 text-right tabular-nums ${belowAvail ? "font-semibold text-amber-600" : ""}`}
+                      className={`p-3 text-right tabular-nums whitespace-nowrap ${belowAvail ? "font-semibold text-amber-600" : ""}`}
                     >
                       {belowAvail && <AlertTriangle className="mr-1 inline h-3 w-3" />}
-                      {available.toFixed(2)}
+                      {formatujCislo(available, 0, 2)}
                     </td>
-                    <td className="p-3 text-right">{Number(s.min_stock).toFixed(2)}</td>
-                    <td className="p-3 text-right tabular-nums">
-                      {formatujJednotkovuCenu(s.purchase_price)} {mena.symbol}
+                    <td className="p-3 text-right tabular-nums whitespace-nowrap">
+                      {formatujCislo(s.min_stock, 0, 2)}
                     </td>
-                    <td className="p-3 text-right tabular-nums text-muted-foreground">
+                    <td className="p-3 text-right tabular-nums whitespace-nowrap">
+                      {formatujJednotkovuCenu(s.purchase_price, mena.kod)}
+                    </td>
+                    <td className="p-3 text-right tabular-nums whitespace-nowrap text-muted-foreground">
                       {s.avg_purchase_price != null
-                        ? `${formatujJednotkovuCenu(s.avg_purchase_price)} ${mena.symbol}`
+                        ? formatujJednotkovuCenu(s.avg_purchase_price, mena.kod)
                         : "—"}
                     </td>
-                    <td className="p-3 text-right tabular-nums">
-                      {formatujJednotkovuCenu(s.sale_price)} {mena.symbol}
+                    <td className="p-3 text-right tabular-nums whitespace-nowrap">
+                      {formatujJednotkovuCenu(s.sale_price, mena.kod)}
                     </td>
                     <td className="p-3 text-right">
                       <div className="inline-flex items-center gap-1">
@@ -1047,7 +1054,7 @@ function StockItemsPage() {
                 </select>
               </label>
               <In
-                label="SKU"
+                label="Skladový kód (SKU)"
                 value={editing.sku ?? ""}
                 onChange={(v) => setEditing({ ...editing, sku: v })}
               />
@@ -1232,7 +1239,7 @@ function StockItemsPage() {
                 />
               </label>
               <In
-                label="SKU"
+                label="Skladový kód (SKU)"
                 value={creating.sku}
                 onChange={(v) => setCreating({ ...creating, sku: v })}
               />

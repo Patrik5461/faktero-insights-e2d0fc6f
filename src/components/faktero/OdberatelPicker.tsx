@@ -15,11 +15,14 @@ export function CustomerSearch({
   value,
   onChange,
   onCreated,
+  kto = "odberateľa",
 }: {
   customers: any[];
   value: string;
   onChange: (id: string) => void;
   onCreated: (c: any) => void;
+  /** Koho sa hľadá (akuzatív) — samofaktúra vyberá dodávateľa, nie odberateľa. */
+  kto?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -52,7 +55,7 @@ export function CustomerSearch({
       >
         <User className="h-4 w-4 text-muted-foreground" />
         <span className={selected ? "" : "text-muted-foreground"}>
-          {selected ? selected.name : "Vyhľadať odberateľa…"}
+          {selected ? selected.name : `Vyhľadať ${kto}…`}
         </span>
       </button>
       {open && (
@@ -70,7 +73,7 @@ export function CustomerSearch({
           <ul className="max-h-64 overflow-auto py-1">
             {filtered.length === 0 && (
               <li className="px-3 py-3">
-                <div className="text-sm text-muted-foreground mb-2">Nenašli ste odberateľa?</div>
+                <div className="text-sm text-muted-foreground mb-2">Nenašli ste {kto}?</div>
                 <button
                   type="button"
                   onClick={() => {
@@ -79,7 +82,7 @@ export function CustomerSearch({
                   }}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                 >
-                  <UserPlus className="h-4 w-4" /> Vytvoriť nového odberateľa
+                  <UserPlus className="h-4 w-4" /> Vytvoriť nového {kto}
                 </button>
               </li>
             )}
@@ -112,7 +115,7 @@ export function CustomerSearch({
                 }}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm hover:bg-secondary"
               >
-                <UserPlus className="h-4 w-4" /> Vytvoriť nového odberateľa
+                <UserPlus className="h-4 w-4" /> Vytvoriť nového {kto}
               </button>
             </div>
           )}

@@ -432,7 +432,7 @@ function OstatnyDokladPage() {
                   <input
                     value={form.sender}
                     onChange={(e) => nastav("sender", e.target.value)}
-                    placeholder="napr. Exekútorský úrad, Allianz, Daňový úrad Bratislava"
+                    placeholder="napr. exekútor, poisťovňa, daňový úrad"
                     className={pole}
                   />
                 </label>
@@ -441,7 +441,7 @@ function OstatnyDokladPage() {
                   <input
                     value={form.subject}
                     onChange={(e) => nastav("subject", e.target.value)}
-                    placeholder="napr. Exekučný príkaz — zrážky zo mzdy, predpis poistného na rok 2027"
+                    placeholder="napr. exekučný príkaz, predpis poistného"
                     className={pole}
                   />
                 </label>
@@ -527,31 +527,6 @@ function OstatnyDokladPage() {
                     className={pole}
                   />
                 </label>
-              </div>
-              <div className="mt-5 flex flex-wrap justify-end gap-2">
-                <button
-                  onClick={() => navigate({ to: "/ostatne-doklady" })}
-                  className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
-                >
-                  Zrušiť
-                </button>
-                {(novy || stav === "new") && (
-                  <button
-                    onClick={() => uloz(true)}
-                    disabled={ukladam}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600/10 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
-                  >
-                    <CheckCircle2 className="h-4 w-4" /> Uložiť a spracovať
-                  </button>
-                )}
-                <button
-                  onClick={() => uloz(false)}
-                  disabled={ukladam}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                >
-                  {ukladam ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Uložiť
-                </button>
               </div>
             </div>
 
@@ -671,6 +646,34 @@ function OstatnyDokladPage() {
                   ))}
                 </ul>
               )}
+            </div>
+
+            {/* Tlačidlá až za prílohami — na mobile je karta Prílohy pod formulárom a patrí pred uloženie.
+                Na mobile pod sebou na celú šírku, hlavné tlačidlo hore. */}
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end lg:col-span-2">
+              <button
+                onClick={() => navigate({ to: "/ostatne-doklady" })}
+                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+              >
+                Zrušiť
+              </button>
+              {(novy || stav === "new") && (
+                <button
+                  onClick={() => uloz(true)}
+                  disabled={ukladam}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600/10 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
+                >
+                  <CheckCircle2 className="h-4 w-4" /> Uložiť a spracovať
+                </button>
+              )}
+              <button
+                onClick={() => uloz(false)}
+                disabled={ukladam}
+                className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {ukladam ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Uložiť
+              </button>
             </div>
           </div>
         )}

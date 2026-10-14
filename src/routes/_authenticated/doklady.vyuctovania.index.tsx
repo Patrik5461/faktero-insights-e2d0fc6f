@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { formatujMenu } from "@/lib/faktero/mena";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Plus } from "lucide-react";
@@ -104,7 +105,7 @@ function Zoznam() {
                     <td className="p-3 text-xs">{nazovTypu(r.typ).replace("Vyúčtovanie ", "")}</td>
                     <td className="p-3 text-right tabular-nums">{r.suhrn.pocet}</td>
                     <td className="p-3 text-right tabular-nums">
-                      {r.suhrn.spolu.toFixed(2)} {r.mena}
+                      {formatujMenu(r.suhrn.spolu, r.mena)}
                     </td>
                     <td className="p-3 text-xs">{r.suhrn.vysledok}</td>
                     <td className="p-3 text-xs">

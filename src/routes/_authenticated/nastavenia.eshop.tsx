@@ -139,11 +139,14 @@ function ShoptetPanel({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-6">
+    <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
       <div className="flex items-start gap-3">
-        <ShoppingBag className="mt-0.5 h-5 w-5 text-primary" />
+        <ShoppingBag className="mt-0.5 hidden h-5 w-5 shrink-0 text-primary sm:block" />
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-semibold">Shoptet</h2>
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <ShoppingBag className="h-5 w-5 text-primary sm:hidden" />
+            Shoptet
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Z objednávok e-shopu vystavíte faktúry jedným klikom — s položkami, dopravou a zľavami
             presne tak, ako ich zákazník zaplatil. Tá istá objednávka nedostane faktúru dvakrát.
@@ -360,11 +363,14 @@ function ZasielkovnaPanel({
     }
   }
   return (
-    <section className="rounded-xl border border-border bg-card p-6">
+    <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
       <div className="flex items-start gap-3">
-        <Package className="mt-0.5 h-5 w-5 text-primary" />
+        <Package className="mt-0.5 hidden h-5 w-5 shrink-0 text-primary sm:block" />
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-semibold">Zásielkovňa</h2>
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Package className="h-5 w-5 text-primary sm:hidden" />
+            Zásielkovňa
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Na detaile faktúry vytvoríte zásielku na výdajné miesto alebo na adresu, aj s dobierkou
             vo výške faktúry, a vytlačíte štítok. Vybrané dobierky potom nahráte ako výpis z brány

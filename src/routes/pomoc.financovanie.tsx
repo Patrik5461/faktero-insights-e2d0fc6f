@@ -24,7 +24,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Že vám každý mesiac odišlo 399,99 €, viete aj z výpisu. Účtovníčka ale potrebuje vedieť,{" "}
+          Že vám každý mesiac odišlo 399,99 €, viete aj z výpisu. Účtovníčka ale potrebuje vedieť,{" "}
           <strong>koľko z tej sumy bola istina, koľko úrok a koľko DPH</strong> — a aký zostatok
           dlhu ostal na konci roka. To z výpisu nevyčítate.
         </p>
@@ -65,7 +65,7 @@ const sections: HelpSection[] = [
         </ul>
         <p>
           Nepovinné je <strong>akontácia</strong>, <strong>zostatková cena</strong>,{" "}
-          <strong>DPH v splátke</strong> (pri leasingu obvykle 23 %) a{" "}
+          <strong>DPH v splátke</strong> (pri leasingu obvykle 23 %) a{" "}
           <strong>splátka zo zmluvy</strong> — tú vyplňte vtedy, keď chcete, aby kalendár sedel na
           cent s papierom; inak si ju Faktero dopočíta.
         </p>

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -15,6 +15,7 @@ import { trasaDoPolyline } from "@/lib/faktero/polyline";
 import { Play, Square } from "lucide-react";
 import { toast } from "sonner";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/jazdy/gps")({
   head: () => ({ meta: [{ title: "GPS jazda — Faktero" }] }),
@@ -28,6 +29,7 @@ function GpsTripPage() {
   const [distance, setDistance] = useState(0);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [vehicleId, setVehicleId] = useState("");
+  const [vozidlaNacitane, setVozidlaNacitane] = useState(false);
   const [purpose, setPurpose] = useState("");
   const [jobId, setJobId] = useState("");
   // Cena z posledného tankovania; bez nej by GPS jazda nemala náklad.
@@ -44,6 +46,7 @@ function GpsTripPage() {
       .order("name")
       .then(({ data }) => {
         setVehicles(data ?? []);
+        setVozidlaNacitane(true);
         if (data?.[0]) setVehicleId(data[0].id);
       });
   }, []);
@@ -102,7 +105,7 @@ function GpsTripPage() {
       .select()
       .single();
     if (error) return toast.error(error.message);
-    toast.success(`Jazda uložená (${result.distance_km} km)`);
+    toast.success(`Jazda uložená (${formatujCislo(result.distance_km, 1, 2)} km)`);
     if (data) navigate({ to: "/jazdy" });
   }
 
@@ -120,6 +123,11 @@ function GpsTripPage() {
                 onChange={(e) => setVehicleId(e.target.value)}
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-60"
               >
+                <option value="">
+                  {vozidlaNacitane && vehicles.length === 0
+                    ? "— žiadne vozidlo —"
+                    : "— vyberte vozidlo —"}
+                </option>
                 {vehicles.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.name} {v.license_plate ? `(${v.license_plate})` : ""}
@@ -127,6 +135,15 @@ function GpsTripPage() {
                 ))}
               </select>
             </label>
+            {vozidlaNacitane && vehicles.length === 0 && (
+              <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+                Zatiaľ nemáte žiadne aktívne vozidlo.{" "}
+                <Link to="/jazdy/vozidla" className="font-medium text-primary hover:underline">
+                  Pridajte vozidlo
+                </Link>{" "}
+                a potom môžete spustiť GPS jazdu.
+              </div>
+            )}
             <label className="block text-sm">
               Účel cesty
               <input
@@ -138,14 +155,15 @@ function GpsTripPage() {
             <JobPicker value={jobId} onChange={setJobId} disabled={tracking} />
             {fuelPrice != null && (
               <div className="text-xs text-muted-foreground">
-                Cena PHM {fuelPrice.toFixed(3)} {mena.symbol}/l z posledného tankovania.
+                Cena PHM {formatujJednotkovuCenu(fuelPrice, mena.kod)}/l z posledného tankovania.
               </div>
             )}
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 text-center">
             <div className="text-5xl font-bold tabular-nums">
-              {distance.toFixed(2)} <span className="text-2xl text-muted-foreground">km</span>
+              {formatujCislo(distance, 2)}{" "}
+              <span className="text-2xl text-muted-foreground">km</span>
             </div>
             <div className="mt-2 text-sm text-muted-foreground">
               {tracking ? "Nahrávam…" : "Pripravené"}

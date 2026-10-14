@@ -5,7 +5,7 @@ import { Check, Copy, KeyRound, PlayCircle, LifeBuoy, UserPlus } from "lucide-re
 function CodeBlock({ code, lang }: { code: string; lang?: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="group relative">
+    <div className="group relative min-w-0 max-w-full">
       {lang && (
         <span className="absolute left-3 top-2 rounded bg-background/80 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
           {lang}
@@ -18,12 +18,14 @@ function CodeBlock({ code, lang }: { code: string; lang?: string }) {
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
         }}
-        className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border border-border/40 bg-background/80 px-2 py-1 text-[11px] text-muted-foreground opacity-0 backdrop-blur transition-opacity hover:text-foreground group-hover:opacity-100"
+        className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border border-border/40 bg-background/80 px-2 py-1 text-[11px] text-muted-foreground backdrop-blur transition-opacity hover:text-foreground group-hover:opacity-100 sm:opacity-0"
       >
         {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
         {copied ? "Skopírované" : "Kopírovať"}
       </button>
-      <pre className="overflow-x-auto rounded-lg border border-border bg-sidebar p-4 pt-8 text-xs leading-relaxed text-sidebar-foreground">
+      {/* Na úzkom displeji sa riadky zalamujú — posuvník v <pre> mobil neukáže
+          a ukážka vyzerala useknutá. */}
+      <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-sidebar p-4 pt-8 text-xs leading-relaxed text-sidebar-foreground sm:whitespace-pre sm:break-normal">
         <code>{code}</code>
       </pre>
     </div>
@@ -58,7 +60,7 @@ function Endpoint({
   return (
     <li className="flex flex-wrap items-baseline gap-3 py-1.5">
       <Method m={method} />
-      <code className="font-mono text-sm">{path}</code>
+      <code className="break-all font-mono text-sm">{path}</code>
       <span className="text-sm text-muted-foreground">— {desc}</span>
     </li>
   );
@@ -67,7 +69,7 @@ function Endpoint({
 const SECTIONS = [
   { id: "uvod", label: "1. Úvod" },
   { id: "autentifikacia", label: "2. Autentifikácia" },
-  { id: "test-live", label: "3. Test a live režim" },
+  { id: "test-live", label: "3. Testovací a ostrý režim" },
   { id: "chyby", label: "4. Chyby" },
   { id: "customers", label: "5. Odberatelia" },
   { id: "invoices", label: "6. Faktúry" },
@@ -77,7 +79,7 @@ const SECTIONS = [
   { id: "webhooks", label: "10. Webhooky" },
   { id: "examples", label: "11. Príklady kódu" },
   { id: "status-codes", label: "12. Stavové kódy" },
-  { id: "rate-limits", label: "13. Rate limity" },
+  { id: "rate-limits", label: "13. Limity požiadaviek" },
   { id: "cta", label: "14. Pre vývojárov" },
 ];
 
@@ -151,7 +153,8 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
       <article className="min-w-0 space-y-14">
         <section id="uvod" className="scroll-mt-20">
           <h1 className="text-3xl font-bold tracking-tight">Faktero API dokumentácia</h1>
-          <p className="mt-3 text-base text-muted-foreground">
+          <h2 className="mt-6 text-2xl font-semibold">1. Úvod</h2>
+          <p className="mt-2 text-base text-muted-foreground">
             Faktero REST API umožňuje plne automatizovať fakturáciu — vytvárať odberateľov,
             vystavovať faktúry, sťahovať PDF, posielať e-maily a prijímať webhooky o udalostiach.
             Všetky odpovede sú v JSON formáte (UTF-8).
@@ -188,14 +191,14 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
         </section>
 
         <section id="test-live" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">3. Test a live režim</h2>
+          <h2 className="text-2xl font-semibold">3. Testovací a ostrý režim</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Faktero rozlišuje dva typy kľúčov podľa prefixu:
           </p>
           <ul className="mt-3 space-y-2 text-sm">
             <li>
               <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_test_…</code> —
-              testovací režim. Faktúry sa neodosielajú reálne, e-maily idú do sandboxu.
+              testovací režim. Faktúry sa neodosielajú naostro, e-maily idú do testovacej schránky.
             </li>
             <li>
               <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_live_…</code> —
@@ -239,8 +242,12 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
             <Endpoint method="POST" path="/api/v1/invoices" desc="Vystavenie faktúry" />
             <Endpoint method="GET" path="/api/v1/invoices" desc="Zoznam faktúr" />
             <Endpoint method="GET" path="/api/v1/invoices/{id}" desc="Detail faktúry" />
-            <Endpoint method="PUT" path="/api/v1/invoices/{id}" desc="Úprava (len drafty)" />
-            <Endpoint method="GET" path="/api/v1/invoices/{id}/pdf" desc="Signed URL na PDF" />
+            <Endpoint method="PUT" path="/api/v1/invoices/{id}" desc="Úprava (len koncepty)" />
+            <Endpoint
+              method="GET"
+              path="/api/v1/invoices/{id}/pdf"
+              desc="Dočasný podpísaný odkaz na PDF"
+            />
             <Endpoint method="POST" path="/api/v1/invoices/{id}/send" desc="Odoslanie e-mailom" />
             <Endpoint
               method="POST"
@@ -283,7 +290,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
             (predkontácia, členenie DPH, KV), zmeny od posledného stiahnutia a označenie odovzdaných
             — rovnako ako to robí konektor Pohody.
           </p>
-          <div className="mt-3 space-y-2">
+          <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card px-4">
             <Endpoint method="GET" path="/api/v1/purchase-invoices" desc="Prijaté faktúry" />
             <Endpoint
               method="GET"
@@ -321,7 +328,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
               path="/api/v1/bank-transactions"
               desc="Pohyby na bankových účtoch"
             />
-          </div>
+          </ul>
           <h3 className="mt-5 font-semibold">Filtre zoznamu</h3>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             <li>
@@ -562,7 +569,7 @@ http_response_code(200);`}
 
         <section id="status-codes" className="scroll-mt-20">
           <h2 className="text-2xl font-semibold">12. Stavové kódy</h2>
-          <div className="mt-3 overflow-hidden rounded-lg border border-border">
+          <div className="mt-3 overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                 <tr>
@@ -593,10 +600,11 @@ http_response_code(200);`}
         </section>
 
         <section id="rate-limits" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">13. Rate limity</h2>
+          <h2 className="text-2xl font-semibold">13. Limity požiadaviek</h2>
           <div className="mt-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-sm text-muted-foreground">
-            Rate limiting bude doplnený pred verejným spustením API. Pre stable použitie v produkcii
-            odporúčame implementovať exponenciálny backoff pri 429 odpovediach.
+            Limity počtu požiadaviek doplníme pred verejným spustením API. Pre spoľahlivé použitie v
+            produkcii odporúčame pri odpovedi 429 opakovať požiadavku s postupne predlžovaným
+            odstupom (exponenciálny backoff).
           </div>
         </section>
 
@@ -615,7 +623,7 @@ http_response_code(200);`}
                   to="/api-playground"
                   className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-secondary"
                 >
-                  <PlayCircle className="h-4 w-4" /> Otvoriť API Playground
+                  <PlayCircle className="h-4 w-4" /> Otvoriť skúšobné prostredie API
                 </Link>
               </>
             ) : (
@@ -631,7 +639,7 @@ http_response_code(200);`}
                   params={{ slug: "playground" }}
                   className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-secondary"
                 >
-                  <PlayCircle className="h-4 w-4" /> API Playground
+                  <PlayCircle className="h-4 w-4" /> Skúšobné prostredie API
                 </Link>
               </>
             )}

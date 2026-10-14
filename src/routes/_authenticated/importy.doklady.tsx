@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createImportUploadUrl } from "@/lib/faktero/import-superfaktura.functions";
 import {
@@ -9,7 +10,7 @@ import {
   spustiImportPrijatychFn,
   stavImportuPrijatychFn,
 } from "@/lib/faktero/import-prijatych.functions";
-import { CheckCircle2, FileArchive, Loader2, Upload, X } from "lucide-react";
+import { CheckCircle2, FileArchive, History, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/importy/doklady")({
@@ -149,8 +150,11 @@ function ImportDokladovPage() {
         title="Import prijatých dokladov"
         description="Prechod z Doklado alebo inej aplikácie: prijaté faktúry, bločky a skeny dokladov."
         action={
-          <Link to="/importy" className="text-sm text-primary hover:underline">
-            História importov
+          <Link
+            to="/importy"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+          >
+            <History className="h-4 w-4" /> História importov
           </Link>
         }
       />
@@ -201,7 +205,7 @@ function ImportDokladovPage() {
                     <li key={`${f.name}-${i}`} className="flex items-center gap-2">
                       <span className="min-w-0 flex-1 truncate">{f.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {(f.size / 1024 / 1024).toFixed(1)} MB
+                        {formatujCislo(f.size / 1024 / 1024, 1)} MB
                       </span>
                       {!nahrate.length && (
                         <button
@@ -275,7 +279,7 @@ function ImportDokladovPage() {
                             <td className="px-3 py-1.5">{r.dodavatel ?? "—"}</td>
                             <td className="px-3 py-1.5 whitespace-nowrap">{r.vystavenie ?? "—"}</td>
                             <td className="px-3 py-1.5 text-right tabular-nums whitespace-nowrap">
-                              {r.spolu != null ? `${r.spolu.toFixed(2)} ${r.mena}` : "—"}
+                              {r.spolu != null ? formatujMenu(r.spolu, r.mena) : "—"}
                             </td>
                             <td className="max-w-[10rem] truncate px-3 py-1.5 text-xs text-muted-foreground">
                               {r.sken ?? "—"}

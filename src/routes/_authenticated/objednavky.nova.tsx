@@ -349,7 +349,7 @@ function NewOrder() {
               <div className="text-sm font-medium">Položky</div>
               {products.length > 0 && (
                 <select
-                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                  className="min-w-0 max-w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
                   value=""
                   onChange={(e) => {
                     if (e.target.value) pridajProdukt(e.target.value);
@@ -365,7 +365,95 @@ function NewOrder() {
               )}
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Na mobile sa šesť stĺpcov nezmestí — položky sú karty s popiskami polí pod sebou. */}
+            <div className="space-y-3 md:hidden">
+              {polozky.map((p, i) => (
+                <div key={i} className="space-y-2 rounded-md border border-border p-3">
+                  <div className="flex items-start gap-2">
+                    <label className="min-w-0 flex-1 text-xs text-muted-foreground">
+                      Názov
+                      <input
+                        className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+                        value={p.name}
+                        onChange={(e) => nastavPolozku(i, { name: e.target.value })}
+                        placeholder="Názov položky"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      aria-label="Odobrať položku"
+                      onClick={() => setPolozky(polozky.filter((_, j) => j !== i))}
+                      className="mt-5 shrink-0 rounded p-1.5 text-muted-foreground hover:bg-muted"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="min-w-0 text-xs text-muted-foreground">
+                      Množstvo
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        inputMode="decimal"
+                        className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm text-foreground"
+                        value={p.quantity}
+                        onChange={(e) => nastavPolozku(i, { quantity: e.target.value })}
+                      />
+                    </label>
+                    <label className="min-w-0 text-xs text-muted-foreground">
+                      MJ
+                      <input
+                        className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+                        value={p.unit}
+                        onChange={(e) => nastavPolozku(i, { unit: e.target.value })}
+                      />
+                    </label>
+                    <label className="min-w-0 text-xs text-muted-foreground">
+                      Cena bez DPH
+                      <input
+                        type="number"
+                        step={KROK_CENY}
+                        min="0"
+                        inputMode="decimal"
+                        className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm text-foreground"
+                        value={p.unit_price}
+                        onChange={(e) =>
+                          nastavPolozku(i, { unit_price: e.target.value, _cena_rucne: true })
+                        }
+                      />
+                      {p._dovod && (
+                        <span className="mt-0.5 block text-[10px] leading-tight text-emerald-600">
+                          {p._dovod}
+                        </span>
+                      )}
+                    </label>
+                    <label className="min-w-0 text-xs text-muted-foreground">
+                      DPH
+                      <select
+                        className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+                        value={p.vat_rate}
+                        onChange={(e) => nastavPolozku(i, { vat_rate: Number(e.target.value) })}
+                      >
+                        {sadzbyRezimu(rezim).map((r) => (
+                          <option key={r} value={r}>
+                            {r} %
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Spolu</span>
+                    <span className="font-medium tabular-nums">
+                      {suma(Number(p.quantity) * Number(p.unit_price))}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead className="text-xs text-muted-foreground">
                   <tr className="border-b border-border">
@@ -464,7 +552,7 @@ function NewOrder() {
             </button>
 
             <div className="mt-4 flex justify-end">
-              <div className="w-64 space-y-1 text-sm">
+              <div className="w-full space-y-1 text-sm sm:w-64">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Základ</span>
                   <span className="tabular-nums">{suma(sucty.subtotal)}</span>

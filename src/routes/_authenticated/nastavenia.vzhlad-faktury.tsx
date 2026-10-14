@@ -5,6 +5,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { ImageUp, Loader2, Save, Trash2 } from "lucide-react";
+import { krajinaDane, zakladnaSadzba } from "@/lib/faktero/vat-rates";
+import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/nastavenia/vzhlad-faktury")({
   head: () => ({
@@ -100,6 +102,11 @@ function InvoiceAppearancePage() {
   if (!companyId) return <PageBody>Chýba aktívna firma.</PageBody>;
   if (!c) return <PageBody>Načítavam…</PageBody>;
 
+  // Náhľad počíta so základnou sadzbou krajiny firmy, nie s pevným číslom.
+  const krajinaNahladu = krajinaDane(c.country);
+  const sadzbaNahladu = zakladnaSadzba(krajinaNahladu);
+  const menaNahladu = krajinaNahladu === "CZ" ? "CZK" : "EUR";
+
   const accent: string = c.invoice_accent_color ?? "#0F7A4D";
 
   async function onUpload(file: File, druh: Obrazok) {
@@ -171,7 +178,7 @@ function InvoiceAppearancePage() {
         description="Logo, pečiatka, farba akcentu a pätička na PDF faktúrach a cenových ponukách."
       />
       <PageBody>
-        <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,320px)]">
+        <div className="grid items-start gap-6 lg:grid-cols-[1fr_minmax(0,320px)]">
           <div className="grid gap-6">
             {/* Logo */}
             <section className="rounded-xl border border-border bg-card p-6">
@@ -398,16 +405,22 @@ function InvoiceAppearancePage() {
                   Položka
                 </div>
                 <div className="border-b border-border px-2 py-1">
-                  Konzultácia · 1 ks · 120,00 €
+                  Konzultácia · 1 ks · {formatujMenu(120, menaNahladu)}
                 </div>
-                <div className="px-2 py-1">Vývoj · 4 h · 400,00 €</div>
+                <div className="px-2 py-1">Vývoj · 4 h · {formatujMenu(400, menaNahladu)}</div>
+              </div>
+              <div className="mt-2 flex justify-between px-2 text-muted-foreground">
+                <span>DPH {formatujCislo(sadzbaNahladu, 0, 0)} %</span>
+                <span>{formatujMenu(520 * (sadzbaNahladu / 100), menaNahladu)}</span>
               </div>
               <div
                 className="mt-3 flex items-center justify-between rounded px-2 py-1.5 text-white"
                 style={{ backgroundColor: accent }}
               >
                 <span className="font-semibold">SPOLU K ÚHRADE</span>
-                <span className="font-bold">624,00 €</span>
+                <span className="font-bold">
+                  {formatujMenu(520 * (1 + sadzbaNahladu / 100), menaNahladu)}
+                </span>
               </div>
               {(c.invoice_show_stamp ?? true) && stampPreview && (
                 <div className="mt-3">

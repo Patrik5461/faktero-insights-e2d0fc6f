@@ -91,7 +91,7 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
   }
 
   return (
-    <div className="mt-4 rounded-md border border-border p-4">
+    <div>
       <h4 className="text-sm font-semibold">Priame prepojenie s Pohodou</h4>
       <p className="mt-1 text-xs text-muted-foreground">
         Namiesto posielania súborov mailom si Pohoda vezme doklady sama — raz denne v noci a späť

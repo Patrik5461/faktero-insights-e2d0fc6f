@@ -128,17 +128,16 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
   const [riadky, setRiadky] = useState<Riadok[]>(() => [prazdnyRiadok(zakladnaSadzba("SK", dnes()))]);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
 
+  /*
+    Cenník a skladové karty sa načítavajú zvlášť a formulár na ne nečaká —
+    predtým išli za sebou pred zobrazením formulára a na pomalšom pripojení
+    stránka ostala visieť na „Načítavam…“.
+  */
   useEffect(() => {
     const cid = getActiveCompanyId();
     if (!cid) return;
+    let zrusene = false;
     (async () => {
-      const { data: k } = await supabase
-        .from("customers")
-        .select("*")
-        .eq("company_id", cid)
-        .is("deleted_at", null)
-        .order("name");
-      setKontakty(k ?? []);
       /*
         Pri výkupe je cena nákupná: skladová karta má poslednú nákupnú cenu,
         tovar mimo skladu len predajnú z cenníka (človek ju prepíše).
@@ -162,6 +161,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
       const kartaPodlaProduktu = new Map<string, any>(
         (karty ?? []).filter((x: any) => x.product_id).map((x: any) => [x.product_id, x]),
       );
+      if (zrusene) return;
       setKatalog(
         (produkty ?? []).map((pr: any) => {
           const karta = kartaPodlaProduktu.get(pr.id);
@@ -176,6 +176,28 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           };
         }),
       );
+    })().catch(() => {});
+    return () => {
+      zrusene = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) {
+      setNacitavam(false);
+      return;
+    }
+    let zrusene = false;
+    (async () => {
+      const { data: k } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("company_id", cid)
+        .is("deleted_at", null)
+        .order("name");
+      if (zrusene) return;
+      setKontakty(k ?? []);
       const zdrojId = id ?? opravuje;
       if (zdrojId) {
         const { data: sf } = await (supabase as any)
@@ -183,6 +205,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           .select("*")
           .eq("id", zdrojId)
           .maybeSingle();
+        if (zrusene) return;
         if (!sf?.samofakturacia) {
           toast.error("Samofaktúra sa nenašla.");
           navigate({ to: "/prijate-faktury" });
@@ -234,8 +257,15 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
         const pol = Array.isArray(sf.items) ? sf.items : [];
         if (pol.length) setRiadky(pol.map((p: any) => riadokZUlozeneho(p, dobropis)));
       }
-      setNacitavam(false);
-    })();
+    })()
+      .catch((e: any) => toast.error(e?.message ?? "Načítanie zlyhalo"))
+      .finally(() => {
+        // Aj pri chybe — inak stránka ostane navždy na „Načítavam…“.
+        if (!zrusene) setNacitavam(false);
+      });
+    return () => {
+      zrusene = true;
+    };
   }, [id, opravuje, navigate]);
 
   const kontakt = kontakty.find((k) => k.id === f.customer_id) ?? null;
@@ -470,6 +500,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
             </p>
             <div className="max-w-md">
               <CustomerSearch
+                kto="dodávateľa"
                 customers={kontakty}
                 value={f.customer_id}
                 onChange={vyberDodavatela}

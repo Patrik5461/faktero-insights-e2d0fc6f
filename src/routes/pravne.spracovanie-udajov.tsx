@@ -139,24 +139,36 @@ function Page() {
         tejto stránke a e-mailom; do uplynutia tejto lehoty môžete voči zmene namietať a zmluvu
         ukončiť.
       </p>
-      <table>
-        <thead>
-          <tr>
-            <th>Subdodávateľ</th>
-            <th>Účel</th>
-            <th>Miesto spracúvania</th>
-          </tr>
-        </thead>
-        <tbody>
-          {SUBDODAVATELIA.map((s) => (
-            <tr key={s.nazov}>
-              <td>{s.nazov}</td>
-              <td>{s.ucel}</td>
-              <td>{s.kde}</td>
+      {/* Na mobile karty, od sm tabuľka — tri stĺpce sa do 390 px nezmestia. */}
+      <ul className="list-none! space-y-3 pl-0! sm:hidden">
+        {SUBDODAVATELIA.map((s) => (
+          <li key={s.nazov} className="rounded-lg border border-border bg-card p-3">
+            <div className="font-semibold text-foreground">{s.nazov}</div>
+            <div className="mt-1 text-sm">{s.ucel}</div>
+            <div className="mt-1 text-xs text-muted-foreground">{s.kde}</div>
+          </li>
+        ))}
+      </ul>
+      <div className="my-4 hidden overflow-x-auto sm:block">
+        <table className="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="py-2 pr-4 text-left font-semibold text-foreground">Subdodávateľ</th>
+              <th className="py-2 pr-4 text-left font-semibold text-foreground">Účel</th>
+              <th className="py-2 text-left font-semibold text-foreground">Miesto spracúvania</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {SUBDODAVATELIA.map((s) => (
+              <tr key={s.nazov} className="border-b border-border/60 align-top">
+                <td className="py-2 pr-4 font-medium text-foreground">{s.nazov}</td>
+                <td className="py-2 pr-4">{s.ucel}</td>
+                <td className="py-2">{s.kde}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <h2>7. Pomoc pri právach dotknutých osôb</h2>
       <p>

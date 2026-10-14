@@ -99,15 +99,21 @@ function ImportVypisuPage() {
       <PageBody>
         <div className="mx-auto max-w-2xl space-y-4">
           <div className="rounded-xl border border-border bg-card p-4">
-            <label className="block">
-              <span className="text-sm font-medium">Súbor s výpisom</span>
-              <input
-                type="file"
-                accept=".xml,text/xml,application/xml,.csv,text/csv"
-                onChange={(e) => vyberSubor(e.target.files?.[0] ?? null)}
-                className="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground"
-              />
-            </label>
+            <span className="block text-sm font-medium">Súbor s výpisom</span>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-within:ring-2 focus-within:ring-ring">
+                <Upload className="h-4 w-4" /> Vybrať súbor
+                <input
+                  type="file"
+                  accept=".xml,text/xml,application/xml,.csv,text/csv"
+                  onChange={(e) => vyberSubor(e.target.files?.[0] ?? null)}
+                  className="sr-only"
+                />
+              </label>
+              <span className="min-w-0 break-words text-sm text-muted-foreground">
+                {nazovSuboru || "Nie je vybraný žiadny súbor"}
+              </span>
+            </div>
             <p className="mt-2 text-xs text-muted-foreground">
               XML vo formáte camt.053 — v internetbankingu býva ako „SEPA XML“, „XML výpis“ alebo
               „ISO 20022“. Z PDF sa suma ani symboly spoľahlivo prečítať nedajú.

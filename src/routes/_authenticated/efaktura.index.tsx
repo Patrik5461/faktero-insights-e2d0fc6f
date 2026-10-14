@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -20,6 +20,7 @@ import {
  */
 function SparovanieSPostakom({ companyId }: { companyId: string | null }) {
   const sparuj = useServerFn(sparujEpostakFirmuFn);
+  const qc = useQueryClient();
   const [stav, setStav] = useState<any>(null);
   const [bezi, setBezi] = useState(false);
 
@@ -29,6 +30,7 @@ function SparovanieSPostakom({ companyId }: { companyId: string | null }) {
     try {
       const r: any = await sparuj({ data: { company_id: companyId } });
       setStav(r);
+      void qc.invalidateQueries({ queryKey: ["efaktura-readiness"] });
       if (r.sparovane) toast.success(`Spárované s ${r.name}.`);
       else toast.error("Vaša firma u ePoštáka nie je — treba ju tam najprv zaregistrovať.");
     } catch (e) {
@@ -213,7 +215,7 @@ function EFakturaPage() {
               <div>
                 <h2 className="text-lg font-semibold">Skóre pripravenosti</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Komplexné vyhodnotenie firemných údajov, DPH, Peppol a XML pipeliny.
+                  Vyhodnotenie firemných údajov, DPH, napojenia na Peppol a tvorby XML.
                 </p>
               </div>
               <div className="text-right">
@@ -265,7 +267,7 @@ function EFakturaPage() {
             )}
             {readinessQuery.data.missing.filter((m) => m.severity === "warning").length > 0 && (
               <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3">
-                <div className="text-sm font-medium">Upozornenia</div>
+                <div className="text-sm font-medium">Upozornenia — zatiaľ nesplnené</div>
                 <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                   {readinessQuery.data.missing
                     .filter((m) => m.severity === "warning")
@@ -287,9 +289,9 @@ function EFakturaPage() {
         )}
         <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6">
           <div className="flex items-start gap-3">
-            <Info className="mt-0.5 h-5 w-5 text-primary" />
-            <div>
-              <h2 className="text-lg font-semibold">Čo je eFaktúra?</h2>
+            <Info className="mt-1 h-5 w-5 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold leading-7">Čo je eFaktúra?</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 eFaktúra nie je PDF ani sken faktúry. Ide o štruktúrovaný XML formát, ktorému
                 rozumejú účtovné a podnikové systémy.
@@ -300,7 +302,7 @@ function EFakturaPage() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
-            <h2 className="font-semibold">Checklist pripravenosti</h2>
+            <h2 className="font-semibold">Kontrola pripravenosti</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Skontrolujeme, či máte vyplnené všetko potrebné na prechod na eFaktúru.
             </p>

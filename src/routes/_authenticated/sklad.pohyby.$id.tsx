@@ -5,8 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getMovementDetail } from "@/lib/faktero/stock.functions";
-import { ArrowLeft } from "lucide-react";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/sklad/pohyby/$id")({
   head: () => ({ meta: [{ title: "Detail pohybu — Faktero" }] }),
@@ -20,6 +20,15 @@ const TYPE_LABEL: Record<string, string> = {
   inventura: "Inventúra",
   faktura: "Faktúra",
   dobropis: "Dobropis",
+};
+/** Nadpis stránky podľa typu pohybu — „Pohyb Príjem“ nie je veta. */
+const NADPIS: Record<string, string> = {
+  prijem: "Príjem na sklad",
+  vydaj: "Výdaj zo skladu",
+  oprava: "Oprava stavu skladu",
+  inventura: "Inventúrny rozdiel",
+  faktura: "Výdaj faktúrou",
+  dobropis: "Vrátenie na sklad dobropisom",
 };
 const SHOW_STOCK_DEBUG =
   import.meta.env.DEV ||
@@ -85,16 +94,8 @@ function MovementDetail() {
   return (
     <>
       <PageHeader
-        title={`Pohyb ${TYPE_LABEL[m.type] ?? m.type}`}
+        title={NADPIS[m.type] ?? `Skladový pohyb — ${TYPE_LABEL[m.type] ?? m.type}`}
         description={new Date(m.created_at).toLocaleString("sk-SK")}
-        action={
-          <Link
-            to="/sklad/pohyby"
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť na pohyby
-          </Link>
-        }
       />
       <PageBody>
         <div className="grid gap-4 md:grid-cols-2">
@@ -110,12 +111,9 @@ function MovementDetail() {
               />
               <Pair
                 label="Jednotková cena"
-                value={`${Number(m.unit_price).toFixed(4)} ${mena.symbol}`}
+                value={formatujJednotkovuCenu(m.unit_price, mena.kod)}
               />
-              <Pair
-                label="Celková hodnota"
-                value={`${Number(m.total_value).toFixed(2)} ${mena.symbol}`}
-              />
+              <Pair label="Celková hodnota" value={formatujMenu(m.total_value, mena.kod)} />
               <Pair label="Sklad" value={data.warehouse?.name ?? "—"} />
               <Pair
                 label="Skladová karta"

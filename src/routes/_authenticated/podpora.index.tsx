@@ -94,7 +94,7 @@ function PodporaPage() {
     <>
       <PageHeader
         title="Pomoc a podpora"
-        description="Nájdite odpoveď v manuáloch, opýtajte sa Faktero AI alebo napíšte nám — odpoveď uvidíte tu aj v e-maile."
+        description="Nájdite odpoveď v manuáloch, opýtajte sa Faktero AI alebo napíšte nám — odpoveď uvidíte tu aj v e‑maile."
         help="/pomoc/podpora"
       />
       <PageBody>
@@ -268,7 +268,7 @@ function PodporaPage() {
               href="tel:+421902101967"
               className="inline-flex items-center gap-1.5 hover:text-foreground"
             >
-              <Phone className="h-4 w-4" /> +421902101967
+              <Phone className="h-4 w-4" /> +421 902 101 967
             </a>
           </div>
         </div>
@@ -319,7 +319,7 @@ function NovaPoziadavka({
         },
       });
       toast.success(
-        `Požiadavka ${cisloPoziadavky(r.cislo)} je založená. Odpoveď príde aj e-mailom.`,
+        `Požiadavka ${cisloPoziadavky(r.cislo)} je založená. Odpoveď príde aj e‑mailom.`,
       );
       onZalozena();
     } catch (e) {

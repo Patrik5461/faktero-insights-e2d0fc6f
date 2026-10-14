@@ -64,51 +64,91 @@ function DeliveryNoteHistoryPage() {
             Zatiaľ žiadne AI importy dodacích listov.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-border bg-card">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-xs text-muted-foreground">
-                <tr>
-                  <th className="p-2 text-left">Dátum</th>
-                  <th className="p-2 text-left">Dodávateľ</th>
-                  <th className="p-2 text-left">Číslo DL</th>
-                  <th className="p-2 text-right">Položiek</th>
-                  <th className="p-2 text-right">Pohybov</th>
-                  <th className="p-2 text-left">Dokument</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {rows.map((r) => {
-                  const m = r.metadata ?? {};
-                  const c = m.counts ?? {};
-                  const items = Array.isArray(m.items) ? m.items.length : 0;
-                  return (
-                    <tr key={r.id}>
-                      <td className="p-2 whitespace-nowrap">
-                        {new Date(r.created_at).toLocaleString("sk-SK")}
-                      </td>
-                      <td className="p-2">{m.supplier ?? "—"}</td>
-                      <td className="p-2">{m.delivery_number ?? "—"}</td>
-                      <td className="p-2 text-right">{items}</td>
-                      <td className="p-2 text-right">{c.movements ?? "—"}</td>
-                      <td className="p-2">
-                        {m.storage_path ? (
-                          <button
-                            onClick={() => openDoc(m.storage_path)}
-                            className="inline-flex items-center gap-1 text-primary hover:underline"
-                          >
-                            <FileText className="h-3.5 w-3.5" /> {m.source_filename ?? "otvoriť"}{" "}
-                            <ExternalLink className="h-3 w-3" />
-                          </button>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Mobil: karty — šesť stĺpcov sa na úzky displej nezmestí. */}
+            <div className="space-y-2 md:hidden">
+              {rows.map((r) => {
+                const m = r.metadata ?? {};
+                const c = m.counts ?? {};
+                const items = Array.isArray(m.items) ? m.items.length : 0;
+                return (
+                  <div key={r.id} className="rounded-xl border border-border bg-card p-3 text-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-medium break-words">{m.supplier ?? "—"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(r.created_at).toLocaleString("sk-SK")}
+                        </div>
+                      </div>
+                      <span className="whitespace-nowrap text-xs font-medium">
+                        {m.delivery_number ?? "—"}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span>
+                        Položiek {items} · pohybov {c.movements ?? "—"}
+                      </span>
+                      {m.storage_path && (
+                        <button
+                          onClick={() => openDoc(m.storage_path)}
+                          className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline"
+                        >
+                          <FileText className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{m.source_filename ?? "otvoriť"}</span>
+                          <ExternalLink className="h-3 w-3 shrink-0" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="p-2 text-left">Dátum</th>
+                    <th className="p-2 text-left">Dodávateľ</th>
+                    <th className="p-2 text-left">Číslo DL</th>
+                    <th className="p-2 text-right">Položiek</th>
+                    <th className="p-2 text-right">Pohybov</th>
+                    <th className="p-2 text-left">Dokument</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {rows.map((r) => {
+                    const m = r.metadata ?? {};
+                    const c = m.counts ?? {};
+                    const items = Array.isArray(m.items) ? m.items.length : 0;
+                    return (
+                      <tr key={r.id}>
+                        <td className="p-2 whitespace-nowrap">
+                          {new Date(r.created_at).toLocaleString("sk-SK")}
+                        </td>
+                        <td className="p-2">{m.supplier ?? "—"}</td>
+                        <td className="p-2 whitespace-nowrap">{m.delivery_number ?? "—"}</td>
+                        <td className="p-2 text-right">{items}</td>
+                        <td className="p-2 text-right">{c.movements ?? "—"}</td>
+                        <td className="p-2">
+                          {m.storage_path ? (
+                            <button
+                              onClick={() => openDoc(m.storage_path)}
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <FileText className="h-3.5 w-3.5" /> {m.source_filename ?? "otvoriť"}{" "}
+                              <ExternalLink className="h-3 w-3" />
+                            </button>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </PageBody>
     </>

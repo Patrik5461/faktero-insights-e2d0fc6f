@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
 import { UpozornenieNespracovane } from "@/components/faktero/UpozornenieNespracovane";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -501,9 +501,15 @@ function PurchaseInvoicesPage() {
     }
   }
 
+  /* Poradie dotazov — pomalšia staršia odpoveď (iný filter) nesmie prepísať novšiu. */
+  const poslednyDotaz = useRef(0);
   async function load() {
     const cid = getActiveCompanyId();
-    if (!cid) return;
+    if (!cid) {
+      setLoading(false);
+      return;
+    }
+    const cislo = ++poslednyDotaz.current;
     setLoading(true);
     let q = supabase
       .from("purchase_invoices")
@@ -523,7 +529,9 @@ function PurchaseInvoicesPage() {
       q = q.gte("issue_date", from).lt("issue_date", to);
     }
     if (supplier.trim()) q = q.ilike("supplier_name", `%${supplier.trim()}%`);
-    const { data } = await q;
+    const { data, error } = await q;
+    if (cislo !== poslednyDotaz.current) return;
+    if (error) toast.error(error.message);
     setRows(data ?? []);
     setLoading(false);
 
@@ -835,7 +843,7 @@ function PurchaseInvoicesPage() {
             Zobrazuje sa 500 najnovších prijatých faktúr. Staršie nájdete výberom mesiaca alebo hľadaním.
           </p>
         )}
-        <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
+        <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>

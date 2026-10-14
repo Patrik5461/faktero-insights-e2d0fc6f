@@ -111,11 +111,11 @@ export function ZrusenieUctu({
   /* --- žiadosť už beží --- */
   if (stav.zrusiSa) {
     return (
-      <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-5">
+      <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
           <div className="min-w-0">
-            <h3 className="text-[15px] font-semibold">{t("zrus.naplanovane")}</h3>
+            <h3 className="text-[15px] font-semibold sm:text-base">{t("zrus.naplanovane")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {t("zrus.naplanovanePopis", {
                 termin: terminSlovom(stav.zrusiSa, locale(jazyk)),
@@ -137,11 +137,11 @@ export function ZrusenieUctu({
   /* --- druhý krok: čo presne sa stane --- */
   if (potvrdzujem) {
     return (
-      <div className="rounded-xl border border-destructive/40 bg-card p-5">
+      <div className="rounded-xl border border-destructive/40 bg-card p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
           <div className="min-w-0">
-            <h3 className="text-[15px] font-semibold">{t("zrus.naozaj")}</h3>
+            <h3 className="text-[15px] font-semibold sm:text-base">{t("zrus.naozaj")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {/* Odklad je pevný (14 dní), takže tvar „dní“ sedí v každom z jazykov. */}
               {t("zrus.naozajPopis", { email: stav.email ?? "—", dni: stav.odkladDni })}
@@ -216,8 +216,8 @@ export function ZrusenieUctu({
 
   /* --- prvý krok --- */
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <h3 className="text-[15px] font-semibold">{t("zrus.nadpis")}</h3>
+    <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+      <h3 className="text-[15px] font-semibold sm:text-base">{t("zrus.nadpis")}</h3>
       <p className="mt-1 text-sm text-muted-foreground">
         {t("zrus.popis", { dni: stav.odkladDni })}
       </p>

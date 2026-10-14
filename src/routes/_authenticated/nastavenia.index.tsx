@@ -63,7 +63,7 @@ function SettingsPage() {
       <PageBody>
         <form
           onSubmit={save}
-          className="max-w-lg space-y-4 rounded-xl border border-border bg-card p-6"
+          className="max-w-3xl space-y-4 rounded-xl border border-border bg-card p-6"
         >
           <label className="block">
             <span className="text-sm font-medium">Email</span>

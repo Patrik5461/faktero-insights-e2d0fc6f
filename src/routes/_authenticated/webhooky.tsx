@@ -95,7 +95,7 @@ function WebhooksPage() {
     <>
       <PageHeader
         title="Webhooky"
-        description="HTTPS endpointy, ktoré zavoláme pri udalostiach."
+        description="Koncové body (HTTPS adresy), ktoré zavoláme pri udalostiach."
         action={
           <button
             onClick={() =>
@@ -109,12 +109,12 @@ function WebhooksPage() {
       />
       <PageBody>
         <div className="space-y-6">
-          <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="p-3">URL</th>
-                  <th className="p-3">Eventy</th>
+                  <th className="p-3">Udalosti</th>
                   <th className="p-3">Aktívny</th>
                   <th className="p-3 text-right">Akcie</th>
                 </tr>
@@ -154,12 +154,12 @@ function WebhooksPage() {
 
           <div>
             <h3 className="mb-2 text-sm font-semibold">Posledné doručenia</h3>
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="p-3">Čas</th>
-                    <th className="p-3">Event</th>
+                    <th className="p-3">Udalosť</th>
                     <th className="p-3">Stav</th>
                     <th className="p-3">HTTP</th>
                     <th className="p-3">Pokusy</th>
@@ -215,7 +215,7 @@ function WebhooksPage() {
                 />
               </label>
               <div className="text-sm">
-                <span className="font-medium">Eventy</span>
+                <span className="font-medium">Udalosti</span>
                 <div className="mt-1 grid grid-cols-2 gap-1">
                   {EVENTS.map((ev) => {
                     const checked = editing.events?.includes(ev) || editing.events?.includes("*");

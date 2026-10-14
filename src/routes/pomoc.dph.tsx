@@ -8,7 +8,7 @@ export const Route = createFileRoute("/pomoc/dph")({
       {
         name: "description",
         content:
-          "Prehľad DPH vo Faktere: sadzby 23, 19, 5 a 0 %, daň na výstupe a vstupe, prenesenie daňovej povinnosti a podklady pre priznanie.",
+          "Prehľad DPH vo Faktere: sadzby 23, 19, 5 a 0 %, daň na výstupe a vstupe, prenesenie daňovej povinnosti a podklady pre priznanie.",
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/dph" },
     ],
@@ -41,39 +41,39 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Ponuka sadzieb sa riadi <strong>krajinou firmy</strong> z{" "}
-          <Link to="/firma">Nastavení firmy</Link> a dátumom dokladu — pri staršom doklade teda
+          Ponuka sadzieb sa riadi <strong>krajinou firmy</strong> v{" "}
+          <Link to="/firma">Nastaveniach firmy</Link> a dátumom dokladu — pri staršom doklade teda
           dostanete sadzby, ktoré vtedy platili, nie tie dnešné.
         </p>
         <p>Slovenská firma:</p>
         <ul>
           <li>
-            <strong>23 %</strong> — základná,
+            <strong>23 %</strong> — základná,
           </li>
           <li>
-            <strong>19 %</strong> — znížená,
+            <strong>19 %</strong> — znížená,
           </li>
           <li>
-            <strong>5 %</strong> — znížená (napríklad vybrané potraviny a bývanie),
+            <strong>5 %</strong> — znížená (napríklad vybrané potraviny a bývanie),
           </li>
           <li>
-            <strong>0 %</strong> — oslobodené plnenia.
+            <strong>0 %</strong> — oslobodené plnenia.
           </li>
         </ul>
         <p>
-          Takto to platí od 1. januára 2025. Na dokladoch do konca roka 2024 Faktero ponúkne 20 % a
-          10 %.
+          Takto to platí od 1. januára 2025. Na dokladoch do konca roka 2024 Faktero ponúkne 20 % a
+          10 %.
         </p>
         <p>Česká firma:</p>
         <ul>
           <li>
-            <strong>21 %</strong> — základná,
+            <strong>21 %</strong> — základná,
           </li>
           <li>
-            <strong>12 %</strong> — znížená (od 1. januára 2024, keď sa obe znížené zlúčili),
+            <strong>12 %</strong> — znížená (od 1. januára 2024, keď sa obe znížené zlúčili),
           </li>
           <li>
-            <strong>0 %</strong> — oslobodené plnenia.
+            <strong>0 %</strong> — oslobodené plnenia.
           </li>
         </ul>
         <p>
@@ -90,13 +90,13 @@ const sections: HelpSection[] = [
       <>
         <p>
           V <Link to="/firma">Nastaveniach firmy</Link> nechajte zaškrtávacie pole{" "}
-          <strong>Firma je platiteľ DPH</strong> prázdne a vyberte „Neplatiteľ DPH". Faktúry potom
+          <strong>Firma je platiteľ DPH</strong> prázdne a vyberte „Neplatiteľ DPH“. Faktúry potom
           vychádzajú bez dane, sadzby sa neponúkajú a na doklade je veta, že dodávateľ nie je
           platiteľom.
         </p>
         <p>
-          Samotné IČ DPH o platiteľstve nerozhoduje — registrácia podľa § 7 alebo § 7a ho má tiež.
-          Prehľad DPH v tomto prípade nepotrebujete, súhrnný výkaz pri § 7a áno.
+          Samotné IČ DPH o platiteľstve nerozhoduje — registrácia podľa § 7 alebo § 7a ho má tiež.
+          Prehľad DPH v tomto prípade nepotrebujete, súhrnný výkaz pri § 7a áno.
         </p>
       </>
     ),
@@ -143,16 +143,16 @@ const sections: HelpSection[] = [
         <p>
           V <Link to="/firma">Nastaveniach firmy</Link> sa zaškrtáva, či je firma platiteľ DPH, a
           vyberá sa typ registrácie. Nestačí totiž vyplnené IČ DPH: osoba registrovaná podľa{" "}
-          <strong>§ 7</strong> (nadobudnutie tovaru z EÚ) alebo <strong>§ 7a</strong> (služby v
+          <strong>§ 7</strong> (nadobudnutie tovaru z EÚ) alebo <strong>§ 7a</strong> (služby v
           rámci EÚ) IČ DPH má, ale platiteľom nie je — faktúry vystavuje bez dane.
         </p>
         <ul>
           <li>
-            <strong>Platiteľ:</strong> § 4 (bežná registrácia), § 4b (skupinová), § 5 (zahraničná
+            <strong>Platiteľ:</strong> § 4 (bežná registrácia), § 4b (skupinová), § 5 (zahraničná
             osoba).
           </li>
           <li>
-            <strong>Bez postavenia platiteľa:</strong> § 7, § 7a alebo neregistrovaná osoba.
+            <strong>Bez postavenia platiteľa:</strong> § 7, § 7a alebo neregistrovaná osoba.
           </li>
           <li>Pre českú firmu: plátce, identifikovaná osoba, neplátce.</li>
         </ul>
@@ -171,7 +171,7 @@ const sections: HelpSection[] = [
         <p>
           Pri faktúre v inej mene než euro sa daň prepočíta{" "}
           <strong>kurzom ECB zo dňa predchádzajúceho dňu dodania</strong> a na doklade pribudne
-          riadok s daňou v eurách, kurzom a dňom, z ktorého je (§ 26 ods. 1 zákona o DPH). Robí sa
+          riadok s daňou v eurách, kurzom a dňom, z ktorého je (§ 26 ods. 1 zákona o DPH). Robí sa
           to samo pri vystavení; kurz si faktúra zapamätá, takže sa spätne nemení.
         </p>
         <p>
@@ -181,7 +181,7 @@ const sections: HelpSection[] = [
         <p>
           <strong>Česká firma</strong> má domácu menu korunu: faktúry vystavuje predvolene v CZK a
           pri inej mene (napríklad v eurách) sa daň prepočíta na koruny{" "}
-          <strong>kurzom ČNB platným v deň uskutočnenia plnenia</strong> (§ 4 zákona o DPH). Na
+          <strong>kurzom ČNB platným v deň uskutočnenia plnenia</strong> (§ 4 zákona o DPH). Na
           doklade je potom riadok „DPH v přepočtu“ s kurzom ČNB.
         </p>
       </>

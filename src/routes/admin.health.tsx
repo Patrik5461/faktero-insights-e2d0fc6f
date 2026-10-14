@@ -130,7 +130,7 @@ function AdminHealthPage() {
                   <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                     {g.title}
                   </h2>
-                  <div className="overflow-hidden rounded-lg border border-border bg-card">
+                  <div className="overflow-x-auto rounded-lg border border-border bg-card">
                     <table className="w-full text-sm">
                       <tbody>
                         {items.map((c) => {

@@ -16,6 +16,7 @@ import {
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/zalohove/")({
   head: () => ({ meta: [{ title: "Zálohové faktúry — Faktero" }] }),
@@ -147,7 +148,7 @@ function ProformaListPage() {
                 subtitle={i.customer_name ?? "—"}
                 status={<ProformaStatus value={s} settled={settledMap[i.id]} />}
                 meta={`${datumNaDoklade(i.issue_date)} · splat. ${datumNaDoklade(i.due_date)}`}
-                amount={`${Number(i.total).toFixed(2)} ${i.currency}`}
+                amount={formatujMenu(i.total, i.currency)}
                 actions={
                   list.showDeleted ? (
                     <button
@@ -178,7 +179,7 @@ function ProformaListPage() {
             );
           }}
           desktop={
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
@@ -228,9 +229,7 @@ function ProformaListPage() {
                         <td className="p-3">{i.customer_name ?? "—"}</td>
                         <td className="p-3">{datumNaDoklade(i.issue_date)}</td>
                         <td className="p-3">{datumNaDoklade(i.due_date)}</td>
-                        <td className="p-3 text-right">
-                          {Number(i.total).toFixed(2)} {i.currency}
-                        </td>
+                        <td className="p-3 text-right">{formatujMenu(i.total, i.currency)}</td>
                         <td className="p-3">
                           <ProformaStatus value={s} settled={link} />
                         </td>

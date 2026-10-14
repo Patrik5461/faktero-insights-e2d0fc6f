@@ -14,7 +14,7 @@ import { RotateCcw, Save, Send, Loader2 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/nastavenia/email-sablony")({
-  head: () => ({ meta: [{ title: "Email šablóny — Faktero" }] }),
+  head: () => ({ meta: [{ title: "E-mailové šablóny — Faktero" }] }),
   component: EmailTemplatesPage,
 });
 
@@ -128,8 +128,8 @@ function EmailTemplatesPage() {
   return (
     <>
       <PageHeader
-        title="Email šablóny"
-        description="Predmet a text emailov, ktoré Faktero posiela odberateľom."
+        title="E-mailové šablóny"
+        description="Predmet a text e-mailov, ktoré Faktero posiela odberateľom."
         action={
           <Link
             to="/firma"
@@ -142,7 +142,7 @@ function EmailTemplatesPage() {
       <PageBody>
         <div className="mb-4 rounded-xl border border-border bg-card p-4">
           <div className="flex flex-wrap items-center gap-3">
-            <label className="flex-1 min-w-[240px]">
+            <label className="min-w-0 flex-1 basis-60">
               <span className="text-sm font-medium">E-mail pre testovacie odoslanie</span>
               <input
                 type="email"
@@ -152,15 +152,18 @@ function EmailTemplatesPage() {
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </label>
-            <div className="text-xs text-muted-foreground">
-              Dostupné premenné: <code className="rounded bg-muted px-1">{VARS.join("  ")}</code>
+            <div className="min-w-0 break-words text-xs text-muted-foreground">
+              Dostupné premenné: <code className="rounded bg-muted px-1">{VARS.join(" ")}</code>
             </div>
           </div>
         </div>
 
         <div className="space-y-4">
           {rows.map((r) => (
-            <div key={r.template_type} className="rounded-xl border border-border bg-card p-5">
+            <div
+              key={r.template_type}
+              className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5"
+            >
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 className="text-base font-semibold">{r.label}</h3>
@@ -173,6 +176,7 @@ function EmailTemplatesPage() {
               <label className="block">
                 <span className="text-sm font-medium">Predmet</span>
                 <input
+                  title={r.subject}
                   value={r.subject}
                   onChange={(e) => update(r.template_type, { subject: e.target.value })}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -180,7 +184,7 @@ function EmailTemplatesPage() {
               </label>
 
               <label className="mt-3 block">
-                <span className="text-sm font-medium">Telo emailu</span>
+                <span className="text-sm font-medium">Telo e-mailu</span>
                 <textarea
                   rows={8}
                   value={r.body}

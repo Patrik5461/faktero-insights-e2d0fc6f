@@ -180,8 +180,9 @@ function CiselneRadyPage() {
               const zoznam = podlaDruhu.get(druh) ?? [];
               return (
                 <section key={druh} className="rounded-2xl border border-border bg-card p-5">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-[13px] font-semibold uppercase tracking-wide text-foreground">
+                  {/* Bez flex-wrap: dlhý názov druhu sa zalomí v nadpise a tlačidlo ostane vpravo ako všade. */}
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h3 className="min-w-0 text-[13px] font-semibold uppercase tracking-wide text-foreground">
                       {NAZVY_DRUHOV[druh]}
                     </h3>
                     <button
@@ -195,7 +196,7 @@ function CiselneRadyPage() {
                           active: true,
                         })
                       }
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                     >
                       <Plus className="h-3.5 w-3.5" /> Pridať rad
                     </button>

@@ -67,10 +67,10 @@ export function FloatingAIButton() {
         onClick={() => setOpen((v) => !v)}
         aria-label="Faktero AI asistent"
         title="Faktero AI asistent"
-        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary/80 px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-primary/30 transition-transform hover:scale-105"
+        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary/80 p-3 text-sm sm:px-4 font-semibold text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-primary/30 transition-transform hover:scale-105"
       >
         {open ? <X className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-        <span>{open ? "Zavrieť" : "AI"}</span>
+        <span className="sr-only sm:not-sr-only">{open ? "Zavrieť" : "AI"}</span>
       </button>
     </div>
   );

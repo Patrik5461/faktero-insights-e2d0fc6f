@@ -3,7 +3,8 @@
  */
 import { IdCard } from "lucide-react";
 
-export const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
+export const pole =
+  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 export const popis = "mb-1 block text-xs font-medium text-muted-foreground";
 export const tlacidlo =
   "inline-flex items-center justify-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60";

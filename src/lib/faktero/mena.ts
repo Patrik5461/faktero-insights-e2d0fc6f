@@ -41,6 +41,19 @@ export function formatujMenu(hodnota: unknown, mena: unknown, locale = "sk-SK"):
 }
 
 /**
+ * Číslo bez meny po slovensky — desatinná čiarka a medzera medzi tisícami
+ * („1 234,50“), nie `toFixed` s bodkou. `max` > `min` zahodí nuly na konci
+ * („50 ks“ namiesto „50,00 ks“).
+ */
+export function formatujCislo(hodnota: unknown, min = 2, max = min, locale = "sk-SK"): string {
+  const n = Number(hodnota);
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: min,
+    maximumFractionDigits: max,
+  }).format(Number.isFinite(n) ? n : 0);
+}
+
+/**
  * Formátovač pre jednu menu — náhrada za `new Intl.NumberFormat(...).format`.
  *
  * Zámerne má rovnaký tvar volania ako pôvodný kód, aby sa dali všetky miesta

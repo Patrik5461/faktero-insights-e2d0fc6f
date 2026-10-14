@@ -33,7 +33,7 @@ PRAVIDLÁ:
 - Neposkytuj právne ani daňové poradenstvo. Ak sa pýtajú, povedz: "Nie som právny ani daňový poradca, poraďte sa prosím s vaším účtovníkom."
 - Nemáš prístup k žiadnym používateľským údajom, faktúram, odberateľom ani API kľúčom.
 - Nevykonávaj žiadne akcie na účte — len odpovedaj na otázky.
-- Ak otázka nesúvisí s Fakterom alebo informáciu nemáš v Knowledge Base, povedz: "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk alebo zavolajte na +421902101967 a ozveme sa vám." Pre otázky o existujúcich moduloch z Knowledge Base však VŽDY odpovedz potvrdzujúco.
+- Ak otázka nesúvisí s Fakterom alebo informáciu nemáš v Knowledge Base, povedz: "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk alebo zavolajte na +421 902 101 967 a ozveme sa vám." Pre otázky o existujúcich moduloch z Knowledge Base však VŽDY odpovedz potvrdzujúco.
 - Telefónne číslo píš vždy presne v tvare +421902101967, bez medzier a bez iného členenia — ľudia si ho z odpovede kopírujú.
 - Na manuál odkazuj vždy celou cestou /pomoc/... (napr. /pomoc/sklad). Cesty ako /sklad alebo /faktury sú obrazovky aplikácie, kam sa neprihlásený človek nedostane — ako „viac informácií" ich neponúkaj.
 - Pri otázkach o cenách smeruj na /cennik.
@@ -134,7 +134,7 @@ export const Route = createFileRoute("/api/public/support-chat")({
 
           const content =
             odpoved ||
-            "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk alebo zavolajte na +421902101967 a ozveme sa vám.";
+            "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk alebo zavolajte na +421 902 101 967 a ozveme sa vám.";
           return new Response(JSON.stringify({ content }), {
             status: 200,
             headers: { "Content-Type": "application/json" },

@@ -26,7 +26,7 @@ const sections: HelpSection[] = [
         <p>
           Bez cenníka má produkt jedinú cenu a zľavu prepisujete ručne na každom riadku každej
           faktúry. Cenník tú istú vec povie raz:{" "}
-          <em>stavebníci majú −15 %, Novák má tehlu za 0,38 € a cez august beží akcia na tmely</em>.
+          <em>stavebníci majú −15 %, Novák má tehlu za 0,38 € a cez august beží akcia na tmely</em>.
           Doklad si potom cenu doplní sám.
         </p>
         <p>
@@ -51,8 +51,8 @@ const sections: HelpSection[] = [
           </li>
           <li>
             <strong>Zľava v percentách</strong> zo základnej ceny. Zľava odberateľa prebíja zľavu
-            skupiny — <strong>nesčítavajú sa</strong>. Kto má vlastných 10 % a je v skupine s 5 %,
-            dostane 10 %, nie 15 %.
+            skupiny — <strong>nesčítavajú sa</strong>. Kto má vlastných 10 % a je v skupine s 5 %,
+            dostane 10 %, nie 15 %.
           </li>
           <li>
             <strong>Základná cena</strong> z katalógu produktov.
@@ -60,7 +60,7 @@ const sections: HelpSection[] = [
         </ol>
         <p>
           Dohodnutá cena <strong>vypína percentuálnu zľavu</strong>. Keď má odberateľ na tehlu
-          dohodnutých 0,38 €, jeho všeobecná zľava sa na ňu už neuplatní.
+          dohodnutých 0,38 €, jeho všeobecná zľava sa na ňu už neuplatní.
         </p>
       </>
     ),
@@ -92,7 +92,7 @@ const sections: HelpSection[] = [
           platí vždy.
         </p>
         <p>
-          Pre ten istý produkt sa dá zadať viac prahov: 0 → 10 €, od 10 ks → 9 €, od 100 ks → 8 €.
+          Pre ten istý produkt sa dá zadať viac prahov: 0 → 10 €, od 10 ks → 9 €, od 100 ks → 8 €.
           Faktero na riadku dokladu použije ten najvyšší prah, ktorý zadané množstvo dosiahne.
         </p>
         <p>
@@ -128,7 +128,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Akcia je časovo ohraničená zľava. Má názov, obdobie <em>od–do</em> (prázdne „do" znamená
+          Akcia je časovo ohraničená zľava. Má názov, obdobie <em>od–do</em> (prázdne „do“ znamená
           bez konca) a buď percentuálnu zľavu, alebo pevnú akciovú cenu na konkrétne produkty.
         </p>
         <p>
@@ -156,8 +156,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           Keď na faktúru, ponuku alebo objednávku pridáte produkt, cena sa doplní podľa cenníka a
-          pod ňou sa zobrazí zeleným, prečo je taká — <em>Zľava odberateľa 10 %</em>,{" "}
-          <em>Cena cenovej skupiny</em>, <em>Akcia Letný výpredaj −30 %</em>. Ak sa cena líši od
+          pod ňou sa zobrazí zeleným, prečo je taká — <em>Zľava odberateľa 10 %</em>,{" "}
+          <em>Cena cenovej skupiny</em>, <em>Akcia Letný výpredaj −30 %</em>. Ak sa cena líši od
           základnej, je vedľa nej preškrtnutá pôvodná.
         </p>
         <p>
@@ -174,15 +174,15 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Jednotková cena znesie <strong>päť desatinných miest</strong> — 0,12345 €. Používa sa to
+          Jednotková cena znesie <strong>päť desatinných miest</strong> — 0,12345 €. Používa sa to
           pri tovare, ktorý sa predáva po tisícoch kusov (spojovací materiál, drobné diely) alebo
           keď je cena prepočítaná na minútu či gram; zaokrúhlenie na centy by na veľkom množstve
           urobilo rozdiel v desiatkach eur.
         </p>
         <p>
           Platí to rovnako v katalógu, na skladovej karte, v dohodnutých cenách aj priamo v riadku
-          faktúry či ponuky. Na doklade sa vytlačia len tie miesta, ktoré cena naozaj má — 12,50 €
-          ostane 12,50 €. <strong>Súčty sa naďalej zaokrúhľujú na centy</strong>, zaokrúhľuje sa až
+          faktúry či ponuky. Na doklade sa vytlačia len tie miesta, ktoré cena naozaj má — 12,50 €
+          ostane 12,50 €. <strong>Súčty sa naďalej zaokrúhľujú na centy</strong>, zaokrúhľuje sa až
           celý riadok, nie cena za kus.
         </p>
       </>

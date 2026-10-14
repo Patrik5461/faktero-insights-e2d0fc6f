@@ -250,7 +250,12 @@ function NewPurchaseOrder() {
                 placeholder="napr. dodať na stavbu"
               />
             </label>
-            <VyberRadu druh="purchase_order" hodnota={seriesId} onZmena={setSeriesId} />
+            <VyberRadu
+              druh="purchase_order"
+              hodnota={seriesId}
+              onZmena={setSeriesId}
+              className="min-w-0 sm:col-span-2"
+            />
             {/* Zákazka je tu informatívna: naskladnenie ešte nie je náklad,
                 ten vznikne až výdajom tovaru na stavbu. */}
             <JobPicker value={jobId} onChange={setJobId} label="Zákazka" />
@@ -277,70 +282,107 @@ function NewPurchaseOrder() {
             </datalist>
 
             <div className="space-y-2">
+              <div className="hidden gap-2 text-xs text-muted-foreground sm:grid sm:grid-cols-[1fr_80px_90px_100px_90px_36px]">
+                <span>Položka</span>
+                <span>MJ</span>
+                <span className="text-right">Množstvo</span>
+                <span className="text-right">Cena/MJ bez DPH</span>
+                <span>DPH</span>
+                <span />
+              </div>
               {items.map((it, i) => (
-                <div key={i} className="grid gap-2 sm:grid-cols-[1fr_80px_90px_100px_90px_36px]">
-                  <input
-                    value={it.name}
-                    list="faktero-zasoby"
-                    onChange={(e) => {
-                      const hodnota = e.target.value;
-                      const z = zasobaPodlaPopisu.get(hodnota);
-                      uprav(
-                        i,
-                        z
-                          ? {
-                              name: hodnota,
-                              stock_item_id: z.id,
-                              unit: z.unit,
-                              unit_price: z.purchase_price,
-                              vat_rate: z.vat_rate,
-                            }
-                          : { name: hodnota, stock_item_id: null },
-                      );
-                    }}
-                    className="input"
-                    placeholder="Začnite písať názov zásoby…"
-                  />
-                  <input
-                    value={it.unit}
-                    onChange={(e) => uprav(i, { unit: e.target.value })}
-                    className="input"
-                    placeholder="ks"
-                  />
-                  <input
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    value={it.quantity}
-                    onChange={(e) => uprav(i, { quantity: Number(e.target.value) })}
-                    className="input text-right"
-                  />
-                  <input
-                    type="number"
-                    step={KROK_CENY}
-                    min="0"
-                    value={it.unit_price}
-                    onChange={(e) => uprav(i, { unit_price: Number(e.target.value) })}
-                    className="input text-right"
-                  />
-                  <select
-                    value={it.vat_rate}
-                    onChange={(e) =>
-                      uprav(i, { vat_rate: Number(e.target.value), _dph_rucne: true })
-                    }
-                    className="input"
-                  >
-                    {vatRateOptions(krajina, it.vat_rate).map((r) => (
-                      <option key={r} value={r}>
-                        {r}%
-                      </option>
-                    ))}
-                  </select>
+                <div
+                  key={i}
+                  className="grid grid-cols-2 gap-2 rounded-md border border-border p-2 sm:rounded-none sm:border-0 sm:p-0 sm:grid-cols-[1fr_80px_90px_100px_90px_36px]"
+                >
+                  <label className="col-span-2 block min-w-0 sm:col-span-1">
+                    <span className="mb-1 block text-xs text-muted-foreground sm:hidden">
+                      Položka
+                    </span>
+                    <input
+                      value={it.name}
+                      list="faktero-zasoby"
+                      onChange={(e) => {
+                        const hodnota = e.target.value;
+                        const z = zasobaPodlaPopisu.get(hodnota);
+                        uprav(
+                          i,
+                          z
+                            ? {
+                                name: hodnota,
+                                stock_item_id: z.id,
+                                unit: z.unit,
+                                unit_price: z.purchase_price,
+                                vat_rate: z.vat_rate,
+                              }
+                            : { name: hodnota, stock_item_id: null },
+                        );
+                      }}
+                      className="input w-full"
+                      placeholder="Začnite písať názov zásoby…"
+                    />
+                  </label>
+                  <label className="block min-w-0">
+                    <span className="mb-1 block text-xs text-muted-foreground sm:hidden">MJ</span>
+                    <input
+                      value={it.unit}
+                      onChange={(e) => uprav(i, { unit: e.target.value })}
+                      className="input w-full"
+                      placeholder="ks"
+                      aria-label="Merná jednotka"
+                    />
+                  </label>
+                  <label className="block min-w-0">
+                    <span className="mb-1 block text-xs text-muted-foreground sm:hidden">
+                      Množstvo
+                    </span>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={it.quantity}
+                      onChange={(e) => uprav(i, { quantity: Number(e.target.value) })}
+                      className="input w-full text-right"
+                      aria-label="Množstvo"
+                    />
+                  </label>
+                  <label className="block min-w-0">
+                    <span className="mb-1 block text-xs text-muted-foreground sm:hidden">
+                      Cena/MJ bez DPH
+                    </span>
+                    <input
+                      type="number"
+                      step={KROK_CENY}
+                      min="0"
+                      value={it.unit_price}
+                      onChange={(e) => uprav(i, { unit_price: Number(e.target.value) })}
+                      className="input w-full text-right"
+                      aria-label="Cena za MJ bez DPH"
+                    />
+                  </label>
+                  <label className="block min-w-0">
+                    <span className="mb-1 block text-xs text-muted-foreground sm:hidden">DPH</span>
+                    <select
+                      value={it.vat_rate}
+                      onChange={(e) =>
+                        uprav(i, { vat_rate: Number(e.target.value), _dph_rucne: true })
+                      }
+                      className="input w-full"
+                      aria-label="Sadzba DPH"
+                    >
+                      {vatRateOptions(krajina, it.vat_rate).map((r) => (
+                        <option key={r} value={r}>
+                          {r} %
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <button
                     type="button"
                     onClick={() => setItems((arr) => arr.filter((_, idx) => idx !== i))}
-                    className="grid place-items-center rounded-md border border-border text-destructive hover:bg-destructive/10"
+                    className="col-span-2 grid h-9 w-9 place-items-center justify-self-end rounded-md border border-border text-destructive hover:bg-destructive/10 sm:col-span-1 sm:h-auto sm:w-auto sm:justify-self-stretch"
                     aria-label="Odstrániť položku"
+                    title="Odstrániť položku"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -356,15 +398,17 @@ function NewPurchaseOrder() {
               <Plus className="h-3 w-3" /> Pridať riadok
             </button>
 
-            <div className="mt-4 flex justify-end gap-6 border-t border-border pt-3 text-sm">
-              <div className="text-muted-foreground">
-                Základ <span className="ml-2 tabular-nums">{suma(sucty.subtotal)}</span>
-              </div>
-              <div className="text-muted-foreground">
-                DPH <span className="ml-2 tabular-nums">{suma(sucty.vat_total)}</span>
-              </div>
-              <div className="font-semibold">
-                Spolu <span className="ml-2 tabular-nums">{suma(sucty.total)}</span>
+            <div className="mt-4 border-t border-border pt-3">
+              <div className="ml-auto grid max-w-xs gap-1 text-sm sm:flex sm:max-w-none sm:justify-end sm:gap-6">
+                <div className="flex justify-between gap-4 text-muted-foreground">
+                  Základ <span className="tabular-nums">{suma(sucty.subtotal)}</span>
+                </div>
+                <div className="flex justify-between gap-4 text-muted-foreground">
+                  DPH <span className="tabular-nums">{suma(sucty.vat_total)}</span>
+                </div>
+                <div className="flex justify-between gap-4 font-semibold">
+                  Spolu <span className="tabular-nums">{suma(sucty.total)}</span>
+                </div>
               </div>
             </div>
           </div>

@@ -346,13 +346,13 @@ export function LogsToolbar({
       {selects.map((s) => (
         <label
           key={s.label}
-          className="flex flex-col text-[11px] font-medium text-muted-foreground"
+          className="flex min-w-[140px] flex-1 flex-col text-[11px] font-medium text-muted-foreground sm:flex-none"
         >
           <span className="mb-1 uppercase tracking-wider">{s.label}</span>
           <select
             value={s.value}
             onChange={(e) => s.onChange(e.target.value)}
-            className="h-9 min-w-[140px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
+            className="h-9 w-full min-w-[140px] rounded-md border border-input bg-background px-2 text-sm text-foreground"
           >
             {s.options.map((o) => (
               <option key={o.value} value={o.value}>
@@ -377,7 +377,9 @@ export function LogsToolbar({
             />
           </label>
           <label className="flex flex-col text-[11px] font-medium text-muted-foreground">
-            <span className="mb-1 uppercase tracking-wider">Do</span>
+            <span className="mb-1 inline-flex items-center gap-1 uppercase tracking-wider">
+              <CalendarRange className="h-3 w-3" /> Do
+            </span>
             <input
               type="date"
               value={dateTo ?? ""}

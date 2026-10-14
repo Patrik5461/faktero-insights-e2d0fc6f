@@ -91,12 +91,12 @@ const sections: HelpSection[] = [
   },
   {
     id: "email",
-    title: "Ako odoslať faktúru emailom",
+    title: "Ako odoslať faktúru e-mailom",
     body: (
       <>
         <ol>
           <li>
-            Na detaile faktúry kliknite na <strong>Odoslať emailom</strong>.
+            Na detaile faktúry kliknite na <strong>Odoslať e-mailom</strong>.
           </li>
           <li>Upravte predmet a sprievodnú správu (môžete použiť šablónu z nastavení firmy).</li>
           <li>Faktero priloží PDF a odošle správu cez Resend.</li>
@@ -266,7 +266,7 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Na PDF je nadpis Ťarchopis a číslo opravovanej faktúry. Do priznania k DPH ide do r. 24 a 25
-          so znamienkom plus, do kontrolného výkazu do časti C.1, do Pohody ako „vydaný ťarchopis"
+          so znamienkom plus, do kontrolného výkazu do časti C.1, do Pohody ako „vydaný ťarchopis“
           spárovaný s pôvodnou faktúrou a do eFaktúry ako doklad 383. Sklad sa ním nehýbe. Ťarchopis
           sa platí ako bežná faktúra.
         </p>
@@ -342,7 +342,7 @@ const sections: HelpSection[] = [
       <>
         <p>
           Vo výbere sadzby je pod platnými sadzbami skupina <strong>Historické sadzby</strong> —
-          posledné tri, ktoré už neplatia, aj s rokom, do ktorého platili (na Slovensku 20 % a 10 %
+          posledné tri, ktoré už neplatia, aj s rokom, do ktorého platili (na Slovensku 20 % a 10 %
           do roku 2024).
         </p>
         <p>
@@ -376,7 +376,7 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Lehoty DPH sa počítajú od <strong>pôvodnej</strong> splatnosti dohodnutej pri vzniku
-          záväzku — 150 dní na opravu podľa § 25a aj 101 dní na povinnú opravu odpočtu podľa § 53b.
+          záväzku — 150 dní na opravu podľa § 25a aj 101 dní na povinnú opravu odpočtu podľa § 53b.
           Pôvodnú splatnosť chráni aj zámok uzavretého obdobia; predĺžiť ju môžete aj na faktúre zo
           zamknutého obdobia.
         </p>
@@ -427,7 +427,7 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Aby sa to dalo odvodiť, musí mať číslo na konci{" "}
-          <strong>poradie aspoň o dvoch čísliciach</strong>. Z čísla ako „oprava-final2" sa rad
+          <strong>poradie aspoň o dvoch čísliciach</strong>. Z čísla ako „oprava-final2“ sa rad
           spraviť nedá — doklad sa uloží, ale číslovanie ostane pôvodné a Faktero to povie. Tvar aj
           poradie sa vždy dajú nastaviť ručne v <strong>Nastavenia → Číselné rady</strong>, kde je
           aj pole <em>Začať od poradia</em> — hodí sa pri prechode z iného programu.
@@ -453,11 +453,11 @@ const sections: HelpSection[] = [
         <p>
           <strong>Zľava na položke</strong> sa zadáva do stĺpca <em>Zľava %</em> v riadku. Znižuje
           základ toho riadku, jednotková cena ostáva pôvodná — na PDF je pod názvom položky vidieť
-          „Zľava 10 %“, takže odberateľ vie, z čoho ste zľavovali.
+          „Zľava 10 %“, takže odberateľ vie, z čoho ste zľavovali.
         </p>
         <p>
           <strong>Zľava na doklad</strong> je pri súčtoch. Prepínačom vedľa poľa si vyberiete{" "}
-          <em>%</em> alebo menu dokladu, takže sa dá zadať aj pevná suma („dám to o 20 € lacnejšie“
+          <em>%</em> alebo menu dokladu, takže sa dá zadať aj pevná suma („dám to o 20 € lacnejšie“
           ). Rozpočíta sa pomerne medzi sadzby DPH, takže daň vyjde tak, ako keby ste sa na nižšej
           cene dohodli od začiatku. Na PDF sa ukáže medzisúčet, zľava a základ dane.
         </p>
@@ -526,7 +526,7 @@ const sections: HelpSection[] = [
         <ul>
           <li>Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.</li>
           <li>
-            Vygenerovaná faktúra môže byť automaticky odoslaná emailom, ak je zapnuté{" "}
+            Vygenerovaná faktúra môže byť automaticky odoslaná e-mailom, ak je zapnuté{" "}
             <em>Auto-send</em>.
           </li>
           <li>
@@ -631,9 +631,9 @@ const sections: HelpSection[] = [
           ukladá.
         </p>
         <p>
-          Nad <strong>5 000 €</strong> sa objaví upozornenie: taká platba v hotovosti je medzi
+          Nad <strong>5 000 €</strong> sa objaví upozornenie: taká platba v hotovosti je medzi
           podnikateľmi zakázaná (zákon č. 394/2012 Z. z.). Medzi fyzickými osobami mimo podnikania
-          je strop 15 000 €.
+          je strop 15 000 €.
         </p>
       </>
     ),
@@ -651,12 +651,12 @@ const sections: HelpSection[] = [
             odberateľovo IČ DPH sa dá overiť vo VIES priamo z faktúry.
           </li>
           <li>
-            <strong>Spotrebiteľovi v EÚ</strong> — zaškrtne sa „Predaj spotrebiteľovi v EÚ (OSS)" a
+            <strong>Spotrebiteľovi v EÚ</strong> — zaškrtne sa „Predaj spotrebiteľovi v EÚ (OSS)“ a
             vyberie štát; sadzby položiek sa prepnú na sadzby jeho štátu. Viac v{" "}
             <Link to="/pomoc/oss">manuáli k OSS</Link>.
           </li>
           <li>
-            <strong>Mimo EÚ</strong> — vývoz oslobodený podľa § 47.
+            <strong>Mimo EÚ</strong> — vývoz oslobodený podľa § 47.
           </li>
         </ul>
       </>

@@ -40,7 +40,7 @@ import { aiParseInvoiceFn } from "@/lib/faktero/ai-invoice.functions";
 import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
-import { MENY, KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
+import { MENY, KROK_CENY, cenaZoSumySDph, formatujMenu } from "@/lib/faktero/mena";
 import { druhPodlaTypuFaktury } from "@/lib/faktero/ciselne-rady";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
 import {
@@ -152,8 +152,22 @@ type StockMeta = {
   sku: string | null;
 };
 
+/**
+ * Predpona klávesových skratiek — „⌘“ na Macu/iPade, inde „Ctrl+“.
+ * Zisťuje sa až v prehliadači, aby sa vykreslenie zo servera nelíšilo od klienta.
+ */
+function useModKlaves(): string {
+  const [mod, setMod] = useState("Ctrl+");
+  useEffect(() => {
+    const p = navigator.platform || navigator.userAgent || "";
+    if (/Mac|iPhone|iPad|iPod/i.test(p)) setMod("⌘");
+  }, []);
+  return mod;
+}
+
 function NewInvoice() {
   const mena = useMenaFirmy();
+  const mod = useModKlaves();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const triggerEvt = useServerFn(triggerEventFn);
@@ -1113,7 +1127,7 @@ function NewInvoice() {
           >
             <Sparkles className="h-4 w-4" /> AI vytvorenie
             <kbd className="ml-1 hidden rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono sm:inline">
-              ⌘K
+              {mod}K
             </kbd>
           </button>
         }
@@ -1362,7 +1376,7 @@ function NewInvoice() {
                 >
                   {MENY.map((c) => (
                     <option key={c.code} value={c.code}>
-                      {c.flag} {c.code} {c.symbol} — {c.name}
+                      {c.code} {c.symbol} — {c.name}
                     </option>
                   ))}
                 </select>
@@ -1411,7 +1425,7 @@ function NewInvoice() {
                       <li key={z.id} className="flex flex-wrap items-center gap-2">
                         <span className="tabular-nums">
                           <strong>{z.invoice_number}</strong> · {datumNaDoklade(z.issue_date)} ·{" "}
-                          {z.total.toFixed(2)} {z.currency}
+                          {formatujMenu(z.total, z.currency)}
                         </span>
                         {z.doklad_k_platbe && (
                           <span className="text-xs opacity-80">
@@ -1446,7 +1460,7 @@ function NewInvoice() {
                   {odpocty.map((z) => (
                     <span key={z.id} className="mr-2 inline-flex items-center gap-1">
                       <strong>
-                        {z.cislo} · {z.suma.toFixed(2)} {form.currency}
+                        {z.cislo} · {formatujMenu(z.suma, form.currency)}
                       </strong>
                       <button
                         type="button"
@@ -1459,7 +1473,7 @@ function NewInvoice() {
                   ))}
                   {odpocty.length > 1 && (
                     <strong className="ml-1">
-                      Spolu {totals.advance.toFixed(2)} {form.currency}
+                      Spolu {formatujMenu(totals.advance, form.currency)}
                     </strong>
                   )}
                 </span>
@@ -1478,7 +1492,8 @@ function NewInvoice() {
                 <input
                   value={form.variable_symbol}
                   onChange={(e) => setForm({ ...form, variable_symbol: e.target.value })}
-                  placeholder="Automaticky podľa čísla faktúry"
+                  placeholder="Podľa čísla faktúry"
+                  title="Prázdne pole = variabilný symbol sa vezme z čísla faktúry"
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </div>
@@ -1886,7 +1901,7 @@ function NewInvoice() {
                           <div className="pr-2 text-right text-[10px] leading-tight text-emerald-600">
                             {it._zakladna != null && it._zakladna !== it.unit_price && (
                               <span className="mr-1 text-muted-foreground line-through">
-                                {it._zakladna.toFixed(2)} {mena.symbol}
+                                {formatujMenu(it._zakladna, mena.kod)}
                               </span>
                             )}
                             {it._dovod}
@@ -1978,32 +1993,53 @@ function NewInvoice() {
                     placeholder="Názov položky"
                     className="mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
-                  <PoznamkaPolozky mobil value={it.description} onChange={(v) => setItem(idx, { description: v })} />
-                  <ColneUdajePolozky mobil value={it} onChange={(v) => setItem(idx, v)} />
+                  {/* Dva odkazy vedľa seba s medzerou — inak sa zliali do „+ Poznámka k položke+ Colný kód“. */}
+                  <div className="flex flex-wrap items-start gap-x-4">
+                    <PoznamkaPolozky mobil value={it.description} onChange={(v) => setItem(idx, { description: v })} />
+                    <ColneUdajePolozky mobil value={it} onChange={(v) => setItem(idx, v)} />
+                  </div>
                   <StockHint item={it} warehouseName={warehouseName} />
-                  <div className="grid grid-cols-5 gap-2">
-                    <CellNum value={it.quantity} onChange={(v) => setItem(idx, { quantity: v })} />
-                    <input
-                      value={it.unit}
-                      onChange={(e) => setItem(idx, { unit: e.target.value })}
-                      className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
-                    />
-                    <CellNum
-                      value={it.unit_price}
-                      onChange={(v) => setItem(idx, { unit_price: v, _cena_rucne: true })}
-                      step={KROK_CENY}
-                    />
-                    <CellNum
-                      value={it.discount_percent ?? 0}
-                      onChange={(v) => setItem(idx, { discount_percent: percentoZlavy(v) })}
-                      title="Zľava v %"
-                    />
+                  {/* Päť polí v jednom riadku sa na telefóne nezmestilo (DPH ostala „2…“) — dva stĺpce s popiskami. */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="min-w-0 text-xs text-muted-foreground">
+                      Množstvo
+                      <CellNum w="mt-1 w-full border-input! bg-background! text-foreground" value={it.quantity} onChange={(v) => setItem(idx, { quantity: v })} />
+                    </label>
+                    <label className="min-w-0 text-xs text-muted-foreground">
+                      MJ
+                      <input
+                        value={it.unit}
+                        onChange={(e) => setItem(idx, { unit: e.target.value })}
+                        className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+                      />
+                    </label>
+                    <label className="min-w-0 text-xs text-muted-foreground">
+                      Cena bez DPH
+                      <CellNum
+                        w="mt-1 w-full border-input! bg-background! text-foreground"
+                        value={it.unit_price}
+                        onChange={(v) => setItem(idx, { unit_price: v, _cena_rucne: true })}
+                        step={KROK_CENY}
+                      />
+                    </label>
+                    <label className="min-w-0 text-xs text-muted-foreground">
+                      Zľava %
+                      <CellNum
+                        w="mt-1 w-full border-input! bg-background! text-foreground"
+                        value={it.discount_percent ?? 0}
+                        onChange={(v) => setItem(idx, { discount_percent: percentoZlavy(v) })}
+                        title="Zľava v %"
+                      />
+                    </label>
+                    <div className="col-span-2 min-w-0 text-xs text-muted-foreground">
+                      DPH
                     {form.reverse_charge ? (
-                      <span className="inline-flex items-center justify-center rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900 dark:text-amber-100">
+                      <span className="mt-1 flex items-center justify-center rounded bg-amber-100 px-2 py-1.5 text-[10px] font-semibold text-amber-900 dark:text-amber-100">
                         PDP
                       </span>
                     ) : (
                       <select
+                        aria-label="Sadzba DPH"
                         value={it.prenesenie ? "pdp" : it.vat_rate}
                         onChange={(e) =>
                           e.target.value === "pdp"
@@ -2014,7 +2050,7 @@ function NewInvoice() {
                                 _dph_rucne: true,
                               })
                         }
-                        className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                        className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
                       >
                         {sadzbyPolozky.map((r) => (
                           <option key={r} value={r}>
@@ -2034,6 +2070,7 @@ function NewInvoice() {
                         )}
                       </select>
                     )}
+                    </div>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
@@ -2071,7 +2108,7 @@ function NewInvoice() {
             >
               <Plus className="h-3.5 w-3.5" /> Pridať položku
               <kbd className="ml-1 hidden rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono sm:inline">
-                ⌘I
+                {mod}I
               </kbd>
             </button>
           </section>
@@ -2121,13 +2158,13 @@ function NewInvoice() {
                   <div className="flex justify-between text-muted-foreground">
                     <span>Medzisúčet</span>
                     <span className="tabular-nums">
-                      {totals.medzisucet.toFixed(2)} {form.currency}
+                      {formatujMenu(totals.medzisucet, form.currency)}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Zľava</span>
                     <span className="tabular-nums">
-                      −{totals.zlava.toFixed(2)} {form.currency}
+                      −{formatujMenu(totals.zlava, form.currency)}
                     </span>
                   </div>
                 </>
@@ -2135,19 +2172,19 @@ function NewInvoice() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Bez DPH</span>
                 <span className="tabular-nums">
-                  {totals.subtotal.toFixed(2)} {form.currency}
+                  {formatujMenu(totals.subtotal, form.currency)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">DPH</span>
                 <span className="tabular-nums">
-                  {totals.vat_total.toFixed(2)} {form.currency}
+                  {formatujMenu(totals.vat_total, form.currency)}
                 </span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
                 <span>Celkom</span>
                 <span className="tabular-nums">
-                  {totals.total.toFixed(2)} {form.currency}
+                  {formatujMenu(totals.total, form.currency)}
                 </span>
               </div>
               {totals.advance > 0 && (
@@ -2155,13 +2192,13 @@ function NewInvoice() {
                   <div className="flex justify-between text-muted-foreground">
                     <span>Odpočet zálohy</span>
                     <span className="tabular-nums">
-                      −{totals.advance.toFixed(2)} {form.currency}
+                      −{formatujMenu(totals.advance, form.currency)}
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
                     <span>K úhrade</span>
                     <span className="tabular-nums text-primary">
-                      {totals.payable.toFixed(2)} {form.currency}
+                      {formatujMenu(totals.payable, form.currency)}
                     </span>
                   </div>
                 </>
@@ -2170,7 +2207,7 @@ function NewInvoice() {
                 <div className="flex justify-between text-lg font-bold">
                   <span>K úhrade</span>
                   <span className="tabular-nums text-primary">
-                    {totals.total.toFixed(2)} {form.currency}
+                    {formatujMenu(totals.total, form.currency)}
                   </span>
                 </div>
               )}
@@ -2214,9 +2251,10 @@ function NewInvoice() {
               Lišta si preto vpravo nechá miesto.
             */
             className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-2xl border border-border bg-card/95 p-4 pr-20 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xs text-muted-foreground">
-              <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">⌘↵</kbd> uložiť ·
-              <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono">⌘K</kbd> AI
+            {/* Na telefóne klávesnicu nikto nemá — nápoveda by lištu len zvýšila a zakryla viac obsahu. */}
+            <div className="hidden text-xs text-muted-foreground sm:block">
+              <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">{mod}↵</kbd> uložiť ·
+              <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono">{mod}K</kbd> AI
             </div>
             <div className="flex gap-2">
               <button
@@ -2478,7 +2516,7 @@ function ProductSearch({
                     )}
                   </span>
                   <span className="text-xs text-muted-foreground tabular-nums">
-                    {Number(p.unit_price).toFixed(2)} {mena.symbol}
+                    {formatujMenu(Number(p.unit_price), mena.kod)}
                   </span>
                 </button>
               </li>
@@ -2703,7 +2741,7 @@ function InvoicePickerModal({
                   </div>
                 </div>
                 <div className="tabular-nums font-medium">
-                  {Number(inv.total).toFixed(2)} {inv.currency}
+                  {formatujMenu(Number(inv.total), inv.currency)}
                 </div>
               </button>
             </li>

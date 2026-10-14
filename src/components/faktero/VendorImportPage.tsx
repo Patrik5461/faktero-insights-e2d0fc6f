@@ -18,6 +18,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createImportUploadUrl } from "@/lib/faktero/import-superfaktura.functions";
 import { previewVendorImport, executeVendorImport } from "@/lib/faktero/import-vendors.functions";
 import { potvrd } from "@/lib/potvrdenie";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export type VendorId = "money-s3" | "omega" | "idoklad" | "kros" | "pohoda";
 
@@ -133,7 +135,9 @@ export function VendorImportPage(props: {
                   <span className="font-medium">
                     {file ? file.name : "Vyberte alebo presuňte súbor"}
                   </span>
-                  <span className="text-xs text-muted-foreground">{props.accept}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {props.accept.split(",").join(" · ")}
+                  </span>
                   <input
                     type="file"
                     accept={props.accept}
@@ -166,13 +170,10 @@ export function VendorImportPage(props: {
                 <Stat label="Faktúry" value={preview.invoicesCount} />
                 <Stat label="Odberatelia" value={preview.customersCount} />
                 <Stat label="Riadky" value={preview.itemsCount} />
-                <Stat
-                  label="Hodnota"
-                  value={`${Number(preview.totalValue).toFixed(2)} ${preview.currency}`}
-                />
+                <Stat label="Hodnota" value={formatujMenu(preview.totalValue, preview.currency)} />
               </div>
               {preview.sampleInvoices?.length > 0 && (
-                <div className="mt-5 overflow-hidden rounded-lg border border-border">
+                <div className="mt-5 overflow-x-auto rounded-lg border border-border">
                   <table className="w-full text-sm">
                     <thead className="bg-secondary/40 text-xs text-muted-foreground">
                       <tr>
@@ -187,9 +188,11 @@ export function VendorImportPage(props: {
                         <tr key={i} className="border-t border-border">
                           <td className="px-3 py-2">{s.invoice_number}</td>
                           <td className="px-3 py-2">{s.customer_name || "—"}</td>
-                          <td className="px-3 py-2">{s.issue_date || "—"}</td>
+                          <td className="whitespace-nowrap px-3 py-2">
+                            {s.issue_date ? datumNaDoklade(s.issue_date) : "—"}
+                          </td>
                           <td className="px-3 py-2 text-right tabular-nums">
-                            {Number(s.total).toFixed(2)}
+                            {formatujMenu(s.total, preview.currency)}
                           </td>
                         </tr>
                       ))}

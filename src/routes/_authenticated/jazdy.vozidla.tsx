@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { formatujCislo, formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
+import { formatujDatum } from "@/lib/faktero/uzavierka";
 
 export const Route = createFileRoute("/_authenticated/jazdy/vozidla")({
   head: () => ({ meta: [{ title: "Vozidlá — Faktero" }] }),
@@ -135,7 +137,18 @@ function VehiclesPage() {
       <PageBody>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {vehicles.length === 0 && (
-            <div className="text-sm text-muted-foreground">Žiadne vozidlá.</div>
+            <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center sm:col-span-2 lg:col-span-3">
+              <div className="text-sm font-medium">Zatiaľ nemáte žiadne vozidlo</div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                Pridajte prvé vozidlo a môžete zapisovať jazdy aj tankovania.
+              </div>
+              <button
+                onClick={() => setEditing(EMPTY)}
+                className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                <Plus className="h-4 w-4" /> Pridať vozidlo
+              </button>
+            </div>
           )}
           {vehicles.map((v) => (
             <div
@@ -179,11 +192,15 @@ function VehiclesPage() {
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Spotreba</dt>
-                  <dd>{v.consumption_l_100km ? `${v.consumption_l_100km} l/100km` : "—"}</dd>
+                  <dd>
+                    {v.consumption_l_100km
+                      ? `${formatujCislo(v.consumption_l_100km, 1, 2)} l/100 km`
+                      : "—"}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Počiatočný stav</dt>
-                  <dd className="tabular-nums">{Number(v.initial_odometer ?? 0).toFixed(0)} km</dd>
+                  <dd className="tabular-nums">{formatujCislo(v.initial_odometer ?? 0, 0)} km</dd>
                 </div>
               </dl>
             </div>
@@ -193,7 +210,46 @@ function VehiclesPage() {
         <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">
           Posledné tankovania
         </h2>
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        {/* Mobil: karty — osem stĺpcov sa na 390 px nezmestí. */}
+        <div className="space-y-2 md:hidden">
+          {fuel.length === 0 && (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+              Žiadne záznamy.
+            </div>
+          )}
+          {fuel.map((f: any) => (
+            <div key={f.id} className="rounded-xl border border-border bg-card p-3 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-medium">{f.vehicles?.name ?? "—"}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatujDatum(f.fuel_date)}
+                    {f.station_name ? ` · ${f.station_name}` : ""}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="whitespace-nowrap font-semibold tabular-nums">
+                    {formatujMenu(f.total_amount, mena.kod)}
+                  </span>
+                  <button
+                    onClick={() => zmazTankovanie(f)}
+                    title="Zmazať tankovanie"
+                    aria-label="Zmazať tankovanie"
+                    className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground tabular-nums">
+                {formatujCislo(f.liters, 2)} l ×{" "}
+                {formatujJednotkovuCenu(f.price_per_liter, mena.kod)}
+                {f.receipt_number ? ` · doklad ${f.receipt_number}` : ""}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -202,7 +258,7 @@ function VehiclesPage() {
                 <th className="p-3 text-right">Litre</th>
                 <th className="p-3 text-right">{mena.symbol}/l</th>
                 <th className="p-3 text-right">Spolu</th>
-                <th className="p-3">Stanica</th>
+                <th className="p-3 pl-6">Stanica</th>
                 <th className="p-3">Doklad</th>
                 <th className="p-3"></th>
               </tr>
@@ -217,16 +273,16 @@ function VehiclesPage() {
               )}
               {fuel.map((f: any) => (
                 <tr key={f.id}>
-                  <td className="p-3 whitespace-nowrap">{f.fuel_date}</td>
+                  <td className="p-3 whitespace-nowrap">{formatujDatum(f.fuel_date)}</td>
                   <td className="p-3">{f.vehicles?.name ?? "—"}</td>
-                  <td className="p-3 text-right tabular-nums">{Number(f.liters).toFixed(2)}</td>
+                  <td className="p-3 text-right tabular-nums">{formatujCislo(f.liters, 2)}</td>
                   <td className="p-3 text-right tabular-nums">
-                    {Number(f.price_per_liter).toFixed(3)}
+                    {formatujJednotkovuCenu(f.price_per_liter)}
                   </td>
-                  <td className="p-3 text-right tabular-nums font-medium">
-                    {Number(f.total_amount).toFixed(2)} {mena.symbol}
+                  <td className="p-3 text-right tabular-nums font-medium whitespace-nowrap">
+                    {formatujMenu(f.total_amount, mena.kod)}
                   </td>
-                  <td className="p-3">{f.station_name ?? "—"}</td>
+                  <td className="p-3 pl-6">{f.station_name ?? "—"}</td>
                   <td className="p-3">{f.receipt_number ?? "—"}</td>
                   <td className="p-3 text-right">
                     <button
@@ -449,10 +505,7 @@ function FuelDialog({
             />
           </div>
           <div className="rounded-md bg-muted/40 px-3 py-2 text-sm">
-            Spolu:{" "}
-            <strong className="tabular-nums">
-              {total} {mena.symbol}
-            </strong>
+            Spolu: <strong className="tabular-nums">{formatujMenu(total, mena.kod)}</strong>
           </div>
           <In
             label="Čerpacia stanica"

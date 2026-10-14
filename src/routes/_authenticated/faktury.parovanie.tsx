@@ -20,6 +20,7 @@ import {
   sparujAutomaticky,
 } from "@/lib/faktero/parovanie.functions";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/faktury/parovanie")({
   head: () => ({ meta: [{ title: "Párovanie platieb — Faktero" }] }),
@@ -216,7 +217,7 @@ function ParovaniePage() {
               />
             ) : (
               <>
-                <div className="overflow-hidden rounded-xl border border-border bg-card">
+                <div className="overflow-x-auto rounded-xl border border-border bg-card">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
@@ -240,7 +241,7 @@ function ParovaniePage() {
                           <td className="px-3 py-3">
                             <div className="font-medium">{z.transakcia?.counterparty ?? "—"}</div>
                             <div className="text-xs text-muted-foreground">
-                              {z.transakcia?.booking_date} · VS{" "}
+                              {datumNaDoklade(z.transakcia?.booking_date)} · VS{" "}
                               {z.transakcia?.variable_symbol ?? "—"} ·{" "}
                               {fmt(z.transakcia?.amount ?? 0, z.transakcia?.currency)}
                             </div>
@@ -310,8 +311,9 @@ function ParovaniePage() {
               </>
             )}
 
-            <p className="mt-6 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <HelpCircle className="h-3.5 w-3.5" />
+            {/* Obyčajný odsek, nie flex — flex by text a odkaz rozdelil do stĺpcov a „.“ odtrhol. */}
+            <p className="mt-6 text-xs text-muted-foreground">
+              <HelpCircle className="mr-1.5 inline h-3.5 w-3.5 align-[-2px]" />
               Ako párovanie rozhoduje a čo robiť s platbami bez variabilného symbolu, je v{" "}
               <a href="/pomoc/banka" target="_blank" className="underline">
                 manuáli k banke

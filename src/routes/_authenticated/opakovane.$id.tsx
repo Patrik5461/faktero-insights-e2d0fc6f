@@ -250,7 +250,7 @@ function RecurringDetail() {
               >
                 {MENY.map((m) => (
                   <option key={m.code} value={m.code}>
-                    {m.flag} {m.code} {m.symbol} — {m.name}
+                    {m.code} {m.symbol} — {m.name}
                   </option>
                 ))}
               </select>

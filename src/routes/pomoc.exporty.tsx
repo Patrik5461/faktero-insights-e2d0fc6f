@@ -8,7 +8,7 @@ export const Route = createFileRoute("/pomoc/exporty")({
       {
         name: "description",
         content:
-          "Účtovné exporty pre účtovníčku — Pohoda, KROS Omega, Money S3, ISDOC, ABRA Flexi aj súpiska CSV — a prenos dát zo SuperFaktúry, iDokladu a KROSu do Fakera.",
+          "Účtovné exporty pre účtovníčku — Pohoda, KROS Omega, Money S3, ISDOC, ABRA Flexi aj súpiska CSV — a prenos dát zo SuperFaktúry, iDokladu a KROSu do Faktera.",
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/exporty" },
     ],
@@ -199,7 +199,7 @@ const sections: HelpSection[] = [
           faktúr, odberateľov a položiek sa naimportuje a za akú sumu.
         </p>
         <p>
-          <strong>Stav faktúry</strong> sa prekladá — „Uhradená", „Zaplacena" aj číselný stav zo
+          <strong>Stav faktúry</strong> sa prekladá — „Uhradená“, „Zaplacena“ aj číselný stav zo
           SuperFaktúry skončia ako uhradená faktúra. Keď je stav nejasný, doklad ostane vystavený;
           označiť cudziu faktúru za zaplatenú omylom by bolo horšie.
         </p>
@@ -239,8 +239,8 @@ const sections: HelpSection[] = [
             celé je to v <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
           </li>
           <li>
-            <strong>KROS Omega (TXT)</strong> — textový súbor R00/R01/R02 v kódovaní Windows-1250.
-            <strong> Ten istý súbor číta aj ALFA plus</strong>, jej import sa volá{" "}
+            <strong>KROS Omega (TXT)</strong> — textový súbor R00/R01/R02 v kódovaní Windows-1250.{" "}
+            <strong>Ten istý súbor číta aj ALFA plus</strong>, jej import sa volá{" "}
             <em>Evidencie → Pohľadávky → Import faktúr z Omegy</em>. Faktúra v cudzej mene má súčty
             v eurách a kurz podľa špecifikácie KROS, odpočet zálohy ide ako záporná položka.
           </li>

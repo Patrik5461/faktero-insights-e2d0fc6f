@@ -88,8 +88,8 @@ const sections: HelpSection[] = [
         </p>
         <p>
           <strong>Nie je to účtovník.</strong> Odpoveď je návod, kde sa pozrieť a čo urobiť, nie
-          daňové stanovisko. Čísla si vždy overte na doklade — v účtovníctve platí to, čo je v
-          <Link to="/uctovnictvo/dph"> DPH prehľade</Link> a v exportoch, nie to, čo napíše chat.
+          daňové stanovisko. Čísla si vždy overte na doklade — v účtovníctve platí to, čo je v{" "}
+          <Link to="/uctovnictvo/dph">DPH prehľade</Link> a v exportoch, nie to, čo napíše chat.
         </p>
         <p>
           <strong>Vidí len to, čo je vo Faktere.</strong> Na otázku o doklade, ktorý ste ešte

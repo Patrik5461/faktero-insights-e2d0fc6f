@@ -180,7 +180,9 @@ export function SekcieNavigacie({
                             : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                         }`}
                       >
-                        <span className="min-w-0 flex-1 truncate">{p.label}</span>
+                        <span className="min-w-0 flex-1 leading-snug" title={p.label}>
+                          {p.label}
+                        </span>
                         {p.pocet ? (
                           <span
                             className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums"

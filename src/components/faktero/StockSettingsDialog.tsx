@@ -192,7 +192,7 @@ function CategoriesTab({ onChanged }: { onChanged?: () => void }) {
 
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_18rem]">
-      <div className="overflow-hidden rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -361,7 +361,7 @@ function WarehousesTab({ onChanged }: { onChanged?: () => void }) {
           <Plus className="h-3.5 w-3.5" /> Nový sklad
         </button>
       </div>
-      <div className="overflow-hidden rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>

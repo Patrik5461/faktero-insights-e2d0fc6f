@@ -183,8 +183,8 @@ function CennikPage() {
 
             {/* Cenové skupiny */}
             <section className="rounded-xl border border-border bg-card">
-              <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                <div>
+              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <div className="min-w-0">
                   <h2 className="text-sm font-semibold">Cenové skupiny</h2>
                   <p className="text-xs text-muted-foreground">
                     Spoločná zľava pre skupinu odberateľov — veľkoobchod, stáli zákazníci.
@@ -193,7 +193,7 @@ function CennikPage() {
                 <button
                   type="button"
                   onClick={() => setSkupinaForm({ name: "", discount_percent: 0 })}
-                  className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted"
+                  className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted"
                 >
                   <Plus className="h-3.5 w-3.5" /> Nová skupina
                 </button>

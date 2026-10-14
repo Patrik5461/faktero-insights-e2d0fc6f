@@ -201,15 +201,15 @@ const sections: HelpSection[] = [
       <>
         <p>
           <Link to="/bankove-ucty/transakcie">Bankové transakcie</Link> ukazujú pohyby na účte.
-          Párovanie sa spúšťa tlačidlom <strong>Spárovať platby</strong> v prehľade faktúr (alebo
-          <strong> Spárovať s faktúrami</strong> nad transakciami). Nerobí sa samo od seba — úhrada
+          Párovanie sa spúšťa tlačidlom <strong>Spárovať platby</strong> v prehľade faktúr (alebo{" "}
+          <strong>Spárovať s faktúrami</strong> nad transakciami). Nerobí sa samo od seba — úhrada
           mení stav faktúry, a to nemá prebehnúť bez toho, aby o tom niekto vedel.
         </p>
         <p>Faktero rozdeľuje nájdené dvojice na dve kôpky:</p>
         <ul>
           <li>
             <strong>Isté</strong> — sedí variabilný symbol aj suma do haliera a žiadna iná faktúra
-            neprichádza do úvahy. Tie sa dajú zapísať naraz tlačidlom „Spárovať isté".
+            neprichádza do úvahy. Tie sa dajú zapísať naraz tlačidlom „Spárovať isté“.
           </li>
           <li>
             <strong>Na rozhodnutie</strong> — čiastočná platba, chýbajúci variabilný symbol, alebo
@@ -260,7 +260,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Pri podporovaných bankách sa dá platba odoslať priamo z Fakera. Vyžaduje si to samostatný
+          Pri podporovaných bankách sa dá platba odoslať priamo z Faktera. Vyžaduje si to samostatný
           súhlas — súhlas na čítanie účtu na platby nestačí.
         </p>
       </>

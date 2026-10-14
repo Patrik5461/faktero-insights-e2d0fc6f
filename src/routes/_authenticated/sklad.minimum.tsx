@@ -5,6 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getLowStockReport } from "@/lib/faktero/stock.functions";
 import { AlertTriangle, Plus } from "lucide-react";
+import { formatujCislo } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/sklad/minimum")({
   head: () => ({ meta: [{ title: "Pod minimom — Faktero" }] }),
@@ -31,7 +32,11 @@ function LowStockPage() {
     <>
       <PageHeader
         title="Pod minimálnym stavom"
-        description="Stĺpec Objednať dopĺňa zásobu na optimum. Rezervovaný tovar sa počíta ako chýbajúci, tovar objednaný u dodávateľa naopak ako už zabezpečený."
+        description={
+          rows.length > 0
+            ? "Stĺpec Objednať dopĺňa zásobu na optimum. Rezervovaný tovar sa počíta ako chýbajúci, tovar objednaný u dodávateľa naopak ako už zabezpečený."
+            : "Položky, ktorých stav klesol pod nastavené minimum."
+        }
         action={
           rows.length > 0 ? (
             <Link
@@ -51,12 +56,12 @@ function LowStockPage() {
             Všetky sledované položky majú dostatočný stav.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="p-3">Produkt</th>
-                  <th className="p-3">SKU</th>
+                  <th className="p-3">Kód</th>
                   <th className="p-3 text-right">Stav</th>
                   <th className="p-3 text-right">Rezervované</th>
                   <th className="p-3 text-right">Na ceste</th>
@@ -83,27 +88,27 @@ function LowStockPage() {
                         r.name
                       )}
                     </td>
-                    <td className="p-3 text-muted-foreground">{r.sku ?? "—"}</td>
+                    <td className="p-3 whitespace-nowrap text-muted-foreground">{r.sku ?? "—"}</td>
                     <td className="p-3 text-right tabular-nums text-amber-600">
                       <AlertTriangle className="mr-1 inline h-3 w-3" />
-                      {r.current.toFixed(2)}
+                      {formatujCislo(r.current, 0, 2)}
                     </td>
                     <td className="p-3 text-right tabular-nums text-muted-foreground">
-                      {r.reserved > 0 ? r.reserved.toFixed(2) : "—"}
+                      {r.reserved > 0 ? formatujCislo(r.reserved, 0, 2) : "—"}
                     </td>
                     <td className="p-3 text-right tabular-nums text-muted-foreground">
-                      {r.incoming > 0 ? r.incoming.toFixed(2) : "—"}
+                      {r.incoming > 0 ? formatujCislo(r.incoming, 0, 2) : "—"}
                     </td>
-                    <td className="p-3 text-right tabular-nums">{r.min.toFixed(2)}</td>
+                    <td className="p-3 text-right tabular-nums">{formatujCislo(r.min, 0, 2)}</td>
                     <td className="p-3 text-right tabular-nums text-muted-foreground">
-                      {r.optimal > 0 ? r.optimal.toFixed(2) : "—"}
+                      {r.optimal > 0 ? formatujCislo(r.optimal, 0, 2) : "—"}
                     </td>
                     <td className="p-3 text-right tabular-nums font-semibold">
-                      {r.order_qty.toFixed(2)} {r.unit ?? ""}
+                      {formatujCislo(r.order_qty, 0, 2)} {r.unit ?? ""}
                     </td>
                     <td className="p-3 text-xs text-muted-foreground">
                       {r.per_warehouse
-                        .map((w: any) => `${w.warehouse_name}: ${w.quantity.toFixed(2)}`)
+                        .map((w: any) => `${w.warehouse_name}: ${formatujCislo(w.quantity, 0, 2)}`)
                         .join(" · ") || "—"}
                     </td>
                     <td className="p-3 text-right">

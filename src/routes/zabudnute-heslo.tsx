@@ -66,7 +66,7 @@ function ZabudnuteHesloPage() {
             </p>
             <form onSubmit={odosli} className="mt-5 space-y-3">
               <label className="block">
-                <span className="text-sm font-medium">Email</span>
+                <span className="text-sm font-medium">E-mail</span>
                 <input
                   type="email"
                   autoComplete="username"

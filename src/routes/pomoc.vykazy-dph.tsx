@@ -30,8 +30,8 @@ const sections: HelpSection[] = [
         <ul>
           <li>
             <strong>Priznanie k DPH</strong> — za obdobia od júla 2025 na novom tlačive (vzor
-            DPH2025), kde má každá sadzba vlastný riadok: 19 % v r. 01 a 02, 5 % v r. 01a a 02a,
-            23 % v r. 03 a 04, a rovnako pri samozdanení (r. 09 až 10b) aj odpočte (r. 18, 18a, 19).
+            DPH2025), kde má každá sadzba vlastný riadok: 19 % v r. 01 a 02, 5 % v r. 01a a 02a,
+            23 % v r. 03 a 04, a rovnako pri samozdanení (r. 09 až 10b) aj odpočte (r. 18, 18a, 19).
             Za staršie obdobia (napríklad dodatočné priznanie) Faktero použije pôvodné tlačivo DPHv21,
           </li>
           <li>
@@ -64,7 +64,7 @@ const sections: HelpSection[] = [
           </li>
           <li>
             <strong>Režim DPH na prijatej faktúre</strong> — tuzemská faktúra od platiteľa ide do
-            časti B.2, samozdanenie podľa § 69 do B.1, nadobudnutie tovaru z EÚ do riadkov 05 až 08
+            časti B.2, samozdanenie podľa § 69 do B.1, nadobudnutie tovaru z EÚ do riadkov 05 až 08
             priznania. Keď pole necháte prázdne, Faktero režim odhadne podľa IČ DPH dodávateľa.
           </li>
           <li>
@@ -95,11 +95,11 @@ const sections: HelpSection[] = [
   },
   {
     id: "nezaplatene",
-    title: "Nezaplatené faktúry — § 25a a § 53b",
+    title: "Nezaplatené faktúry — § 25a a § 53b",
     body: (
       <>
         <p>
-          <strong>Vy dlžíte (§ 53b, povinné).</strong> Keď prijatú faktúru od platiteľa
+          <strong>Vy dlžíte (§ 53b, povinné).</strong> Keď prijatú faktúru od platiteľa
           nezaplatíte ani na 101. deň po splatnosti, musíte štátu vrátiť odpočítanú daň. Faktero to
           urobí samo: v období, v ktorom 101. deň nastal, pridá opravu do r. 29 priznania a do časti
           C.2 kontrolného výkazu (číslo dokladu „0“, záporné sumy, označenie nevymožiteľnej
@@ -108,16 +108,16 @@ const sections: HelpSection[] = [
           dátum úhrady na prijatej faktúre, preto ju označujte ako zaplatenú s dátumom.
         </p>
         <p>
-          <strong>Vám dlžia (§ 25a, môžete).</strong> Keď odberateľ nezaplatí ani 150 dní po
-          splatnosti, môžete si daň z nezaplatenej časti vrátiť. Do 1 000 € s DPH stačí doložiť
-          úkon na vymoženie — napríklad upomienku odoslanú z Faktera; nad 1 000 € musí byť podaná
+          <strong>Vám dlžia (§ 25a, môžete).</strong> Keď odberateľ nezaplatí ani 150 dní po
+          splatnosti, môžete si daň z nezaplatenej časti vrátiť. Do 1 000 € s DPH stačí doložiť
+          úkon na vymoženie — napríklad upomienku odoslanú z Faktera; nad 1 000 € musí byť podaná
           žaloba alebo vedená exekúcia. Na detaile faktúry sa vtedy objaví{" "}
-          <em>Vystaviť opravný doklad (§ 25a)</em>: vznikne doklad s textom „oprava základu dane
-          podľa § 25a“, ktorý musíte odberateľovi odoslať (e-mailom alebo cez eFaktúru ako dobropis
+          <em>Vystaviť opravný doklad (§ 25a)</em>: vznikne doklad s textom „oprava základu dane
+          podľa § 25a“, ktorý musíte odberateľovi odoslať (e-mailom alebo cez eFaktúru ako dobropis
           s číslom pôvodnej faktúry) do lehoty na podanie priznania. Vo výkazoch ide do r. 26 a 27
           a do C.1. Keď odberateľ neskôr zaplatí, opravu treba vrátiť — Faktero na to upozorní a
           doklad o vrátení vystaví jedným klikom. Pri uplatňovaní dane na základe prijatia platby
-          (§ 68d) a pri prenesení daňovej povinnosti sa nič z toho neuplatní.
+          (§ 68d) a pri prenesení daňovej povinnosti sa nič z toho neuplatní.
         </p>
       </>
     ),
@@ -167,11 +167,11 @@ const sections: HelpSection[] = [
         <p>
           Raz treba vyplniť <strong>kód finančního úřadu</strong> (napr. 451 pre Prahu), prípadne
           územné pracovisko, CZ-NACE hlavnej činnosti a kto podáva — pri ďalšom mesiaci sa doplnia
-          samy. Ak firma fakturuje v prenesení daňovej povinnosti (§ 92a), vyberie sa{" "}
+          samy. Ak firma fakturuje v prenesení daňovej povinnosti (§ 92a), vyberie sa{" "}
           <strong>kód předmětu plnění</strong> (napr. 4 – stavební a montážní práce).
         </p>
         <p>
-          Doklady nad 10 000 Kč vrátane dane idú do kontrolného hlásenia jednotlivo (A.4, B.2),
+          Doklady nad 10 000 Kč vrátane dane idú do kontrolného hlásenia jednotlivo (A.4, B.2),
           menšie súhrnne (A.5, B.3). Kontrolné hlásenie podáva právnická osoba vždy za mesiac — pri
           štvrťročnom priznaní sa zostaví za každý mesiac zvlášť. Oba výstupy sú overené proti
           oficiálnym schémam Finančnej správy ČR.

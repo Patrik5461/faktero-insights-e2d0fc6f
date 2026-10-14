@@ -54,6 +54,8 @@ import { KosDokladovOkno } from "@/components/faktero/KosDokladovOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: () => ({ meta: [{ title: "Doklady — Faktero" }] }),
@@ -83,7 +85,7 @@ function sumyDokladov(riadky: any[]): string {
     const m = String(r.currency ?? "EUR");
     po.set(m, (po.get(m) ?? 0) + Number(r.total_amount ?? 0));
   }
-  return [...po.entries()].map(([m, v]) => `${v.toFixed(2)} ${m}`).join(" + ");
+  return [...po.entries()].map(([m, v]) => formatujMenu(v, m)).join(" + ");
 }
 
 const STLPCE_DOKLADOV: StlpecZoznamu[] = [
@@ -440,7 +442,7 @@ function DokladyPage() {
         title="Bločky"
         description="Spracované bločky a výdavkové doklady. Nové najprv skontrolujete v Nespracovaných dokladoch."
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setKos(true)}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
@@ -449,13 +451,13 @@ function DokladyPage() {
             </button>
             <Link
               to="/importy/doklady"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
             >
               <UploadIcon className="h-4 w-4" /> Import z Doklado
             </Link>
             <Link
               to="/doklady/novy"
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               <Plus className="h-4 w-4" /> Nový doklad
             </Link>
@@ -577,13 +579,13 @@ function DokladyPage() {
               <Download className="h-4 w-4" /> Export pre {program.nazov} ({selected.size})
             </button>
           )}
-          <div>
+          <div className="w-full sm:w-auto">
             <label className="mb-1 block text-xs text-muted-foreground">Hľadať</label>
             <input
               value={hladaj}
               onChange={(e) => setHladaj(e.target.value)}
               placeholder="Dodávateľ, IČO, číslo…"
-              className="w-48 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm sm:w-48"
             />
           </div>
           <div>
@@ -591,7 +593,7 @@ function DokladyPage() {
             <select
               value={platba}
               onChange={(e) => setPlatba(e.target.value)}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              className="h-9 rounded-md border border-border bg-background px-2 text-sm"
             >
               <option value="">Všetky</option>
               <option value="hotovost">Hotovosť</option>
@@ -599,6 +601,8 @@ function DokladyPage() {
               <option value="prevod">Prevod</option>
             </select>
           </div>
+          {/* Excel a nastavenia zoznamu idú spolu v jednom rade, nech sa nerozhádžu medzi filtre. */}
+          <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => {
@@ -648,7 +652,7 @@ function DokladyPage() {
                 },
               ]);
             }}
-            className="inline-flex h-9 items-center gap-1.5 self-end rounded-md border border-border px-3 text-sm hover:bg-secondary"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
           >
             <Download className="h-4 w-4" /> Excel
           </button>
@@ -664,6 +668,7 @@ function DokladyPage() {
               setPlatba(h.platba ?? "");
             }}
           />
+          </div>
           {volbyExportu ? (
             <VolbyExportuOkno
               pocet={selected.size || rows.length}
@@ -672,7 +677,7 @@ function DokladyPage() {
               onExport={(v) => handleExport(v.oznacit, v)}
             />
           ) : null}
-          <div className="ml-auto flex gap-2">
+          <div className="flex flex-wrap gap-2 sm:ml-auto">
             <button
               onClick={() => handleExport(false)}
               disabled={exporting || !rows.length}
@@ -748,12 +753,12 @@ function DokladyPage() {
                     {z.doklad?.supplier_name ?? "Doklad"}{" "}
                     <span className="tabular-nums">
                       {z.doklad?.total_amount != null
-                        ? `${Number(z.doklad.total_amount).toFixed(2)} ${z.doklad.currency ?? "EUR"}`
+                        ? formatujMenu(z.doklad.total_amount, z.doklad.currency ?? "EUR")
                         : ""}
                     </span>
                   </span>
                   <span className="block text-xs text-muted-foreground">
-                    {z.pohyb?.booking_date} · {z.dovody.join(" · ")}
+                    {datumNaDoklade(z.pohyb?.booking_date)} · {z.dovody.join(" · ")}
                   </span>
                 </span>
                 <button
@@ -862,7 +867,7 @@ function DokladyPage() {
                       />
                     </td>
                     {je("datum") && (
-                      <td className="px-3 py-2 whitespace-nowrap">{r.issue_date ?? "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{datumNaDoklade(r.issue_date)}</td>
                     )}
                     <td className="px-3 py-2">
                       <button
@@ -918,19 +923,17 @@ function DokladyPage() {
                     )}
                     {je("zaklad") && (
                       <td className="px-3 py-2 text-right tabular-nums">
-                        {r.net_amount != null ? Number(r.net_amount).toFixed(2) : "—"}
+                        {r.net_amount != null ? formatujCislo(r.net_amount) : "—"}
                       </td>
                     )}
                     {je("dph") && (
                       <td className="px-3 py-2 text-right tabular-nums">
-                        {r.vat_amount != null ? Number(r.vat_amount).toFixed(2) : "—"}
+                        {r.vat_amount != null ? formatujCislo(r.vat_amount) : "—"}
                       </td>
                     )}
                     {je("celkom") && (
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {r.total_amount != null
-                          ? `${Number(r.total_amount).toFixed(2)} ${r.currency}`
-                          : "—"}
+                      <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
+                        {r.total_amount != null ? formatujMenu(r.total_amount, r.currency) : "—"}
                       </td>
                     )}
                     {je("platba") && (
@@ -1119,10 +1122,11 @@ function SummaryCard({
   const mena = useMenaFirmy();
   return (
     <div
-      className={`rounded-xl border border-border p-4 ${highlight ? "bg-primary/5" : "bg-card"}`}
+      className={`min-w-0 rounded-xl border border-border p-3 sm:p-4 ${highlight ? "bg-primary/5" : "bg-card"}`}
     >
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-xl font-semibold tabular-nums">{value.toFixed(2)} {mena.symbol}</div>
+      {/* whitespace-nowrap: „€“ sa na úzkej karte inak zalomí na nový riadok. */}
+      <div className="mt-1 whitespace-nowrap text-base font-semibold tabular-nums sm:text-xl">{formatujMenu(value, mena.kod)}</div>
     </div>
   );
 }

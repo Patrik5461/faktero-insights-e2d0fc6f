@@ -6,6 +6,14 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listEfakturaDeliveriesFn } from "@/lib/faktero/efaktura/efaktura.functions";
 import { Send } from "lucide-react";
+import { kanalDorucenia, kratkyCas, stavDorucenia } from "@/components/faktero/EfakturaStatusBadge";
+
+function prijemca(d: {
+  recipient_participant_id?: string | null;
+  recipient_endpoint?: string | null;
+}) {
+  return d.recipient_participant_id ?? d.recipient_endpoint ?? "—";
+}
 
 export const Route = createFileRoute("/_authenticated/efaktura/dorucenia")({
   head: () => ({ meta: [{ title: "Doručenia eFaktúr — Faktero" }] }),
@@ -29,7 +37,7 @@ function DeliveriesPage() {
         description="História pokusov o doručenie eFaktúr cez Peppol / digitálneho poštára / e-mail."
       />
       <PageBody>
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -66,18 +74,32 @@ function DeliveriesPage() {
               )}
               {q.data?.map((d) => (
                 <tr key={d.id}>
-                  <td className="p-3 text-xs uppercase">{d.channel}</td>
-                  <td className="p-3">
-                    {d.recipient_participant_id ?? d.recipient_endpoint ?? "—"}
+                  <td className="whitespace-nowrap p-3 text-xs">{kanalDorucenia(d.channel)}</td>
+                  <td className="max-w-[220px] truncate p-3 font-mono text-xs" title={prijemca(d)}>
+                    {prijemca(d)}
                   </td>
                   <td className="p-3">
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{d.status}</span>
+                    <span
+                      className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${d.status === "failed" || d.status === "rejected" ? "bg-destructive/10 text-destructive" : "bg-muted"}`}
+                    >
+                      {stavDorucenia(d.status)}
+                    </span>
                   </td>
-                  <td className="p-3">{d.attempt_count}</td>
-                  <td className="p-3 text-xs text-muted-foreground">
-                    {d.sent_at ? new Date(d.sent_at).toLocaleString("sk-SK") : "—"}
+                  <td className="p-3 tabular-nums">{d.attempt_count}</td>
+                  <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
+                    {kratkyCas(d.sent_at)}
                   </td>
-                  <td className="p-3 text-xs text-destructive">{d.error_message ?? "—"}</td>
+                  {/* Dlhá chyba v jednom riadku (celá v title), aby riadky s chybou
+                      neboli vyššie než ostatné. Pomlčka bez chyby je vždy šedá. */}
+                  <td className="max-w-[320px] p-3 text-xs">
+                    {d.error_message ? (
+                      <span className="block truncate text-destructive" title={d.error_message}>
+                        {d.error_message}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

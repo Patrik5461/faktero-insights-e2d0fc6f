@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
-import { BookOpen, Calendar, Clock } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 import { postsByDate } from "@/lib/faktero/blog-content";
 import { BlogCover } from "@/components/faktero/BlogCover";
 
@@ -35,7 +35,7 @@ function BlogPage() {
           </p>
         </div>
       </section>
-      <section className="mx-auto max-w-5xl px-6 py-14">
+      <section className="mx-auto max-w-6xl px-6 py-14">
         <ul className="grid gap-5 md:grid-cols-2">
           {postsByDate().map((p) => (
             <li key={p.slug}>
@@ -46,8 +46,7 @@ function BlogPage() {
               >
                 <BlogCover icon={p.ikona} odtien={p.odtien} />
                 <div className="p-6">
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <BookOpen className="h-3.5 w-3.5" />
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />
                       {new Date(p.date).toLocaleDateString("sk-SK", {

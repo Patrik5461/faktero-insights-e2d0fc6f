@@ -78,7 +78,7 @@ function ImportHistoryPage() {
               to="/importy/doklady"
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              <UploadIcon className="h-4 w-4" /> Prijaté doklady (Doklado…)
+              <UploadIcon className="h-4 w-4" /> Prijaté doklady
             </Link>
             <Link
               to="/importy/novy"
@@ -153,7 +153,7 @@ function ImportHistoryPage() {
             </div>
           )}
           {jobs.length > 0 && (
-            <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="overflow-x-auto rounded-2xl border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="bg-secondary/40 text-xs text-muted-foreground">
                   <tr>

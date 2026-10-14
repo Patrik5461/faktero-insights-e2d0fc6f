@@ -22,6 +22,7 @@ import { NastaveniaProgramu } from "@/components/faktero/NastaveniaProgramu";
 import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight, Mail } from "lucide-react";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/exporty")({
   head: () => ({ meta: [{ title: "Účtovné exporty — Faktero" }] }),
@@ -201,15 +202,15 @@ function ExportsPage() {
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-lg border border-border">
+              <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
                       <th className="w-10 p-3"></th>
                       <th className="p-3">Číslo</th>
                       <th className="p-3">Odberateľ</th>
-                      <th className="p-3">Vystavená</th>
-                      <th className="p-3 text-right">Suma</th>
+                      <th className="hidden p-3 md:table-cell">Vystavená</th>
+                      <th className="hidden p-3 text-right md:table-cell">Suma</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -229,11 +230,18 @@ function ExportsPage() {
                             onChange={(e) => setPicked({ ...picked, [i.id]: e.target.checked })}
                           />
                         </td>
-                        <td className="p-3 font-medium">{i.invoice_number}</td>
+                        <td className="p-3 font-medium">
+                          <span className="whitespace-nowrap">{i.invoice_number}</span>
+                          <span className="block whitespace-nowrap text-xs font-normal text-muted-foreground md:hidden">
+                            {datumNaDoklade(i.issue_date)} · {formatujMenu(i.total, i.currency)}
+                          </span>
+                        </td>
                         <td className="p-3">{i.customer_name ?? "—"}</td>
-                        <td className="p-3">{datumNaDoklade(i.issue_date)}</td>
-                        <td className="p-3 text-right tabular-nums">
-                          {Number(i.total).toFixed(2)} {i.currency}
+                        <td className="hidden whitespace-nowrap p-3 md:table-cell">
+                          {datumNaDoklade(i.issue_date)}
+                        </td>
+                        <td className="hidden whitespace-nowrap p-3 text-right tabular-nums md:table-cell">
+                          {formatujMenu(i.total, i.currency)}
                         </td>
                       </tr>
                     ))}
@@ -728,13 +736,13 @@ function ZauctovaneDoProgramu() {
             zákazkou — tak, ako ste ich zaúčtovali vo Fakteri.
           </p>
         </div>
-        <label className="text-sm">
+        <label className="min-w-0 max-w-full text-sm">
           <span className="block text-xs text-muted-foreground">Účtovný program</span>
           <select
             aria-label="Účtovný program"
             value={program}
             onChange={(e) => void zmenProgram(e.target.value)}
-            className="mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="mt-1 w-full max-w-full rounded-md border border-border bg-background px-3 py-2 text-sm sm:w-auto"
           >
             {PROGRAMY_UCTOVANIA.map((p) => (
               <option key={p.program} value={p.program}>
@@ -835,8 +843,8 @@ function ZauctovaneDoProgramu() {
                   </th>
                   <th className="p-2">Číslo</th>
                   <th className="p-2">{agenda === "vystavena" ? "Odberateľ" : "Dodávateľ"}</th>
-                  <th className="p-2">Dátum</th>
-                  <th className="p-2 text-right">Suma</th>
+                  <th className="hidden p-2 md:table-cell">Dátum</th>
+                  <th className="hidden p-2 text-right md:table-cell">Suma</th>
                   <th className="p-2">Stav</th>
                 </tr>
               </thead>
@@ -857,11 +865,16 @@ function ZauctovaneDoProgramu() {
                         onChange={(e) => setVyber({ ...vyber, [r.id]: e.target.checked })}
                       />
                     </td>
-                    <td className="p-2 font-medium">{r.cislo}</td>
+                    <td className="p-2 font-medium">
+                      <span className="whitespace-nowrap">{r.cislo}</span>
+                      <span className="block whitespace-nowrap text-xs font-normal text-muted-foreground md:hidden">
+                        {datumNaDoklade(r.datum)} · {formatujMenu(r.suma ?? 0, r.mena)}
+                      </span>
+                    </td>
                     <td className="p-2">{r.partner ?? "—"}</td>
-                    <td className="p-2">{r.datum}</td>
-                    <td className="p-2 text-right tabular-nums">
-                      {Number(r.suma ?? 0).toFixed(2)} {r.mena}
+                    <td className="hidden whitespace-nowrap p-2 md:table-cell">{datumNaDoklade(r.datum)}</td>
+                    <td className="hidden whitespace-nowrap p-2 text-right tabular-nums md:table-cell">
+                      {formatujMenu(r.suma ?? 0, r.mena)}
                     </td>
                     <td className="p-2 text-xs">
                       {r.odovzdany ? (

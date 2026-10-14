@@ -7,7 +7,8 @@ export const Route = createFileRoute("/pomoc/predplatne")({
       { title: "Pomoc — Predplatné — Faktero" },
       {
         name: "description",
-        content: "Trial, obnovovanie, GoPay platba, zmena plánu a zrušenie predplatného Faktero.",
+        content:
+          "Skúšobné obdobie, obnovovanie, GoPay platba, zmena plánu a zrušenie predplatného Faktero.",
       },
       { property: "og:title", content: "Pomoc — Predplatné — Faktero" },
       { property: "og:description", content: "Ako funguje predplatné a fakturácia Faktera." },
@@ -21,15 +22,16 @@ export const Route = createFileRoute("/pomoc/predplatne")({
 const sections: HelpSection[] = [
   {
     id: "trial",
-    title: "Skúšobné obdobie (trial)",
+    title: "Skúšobné obdobie",
     body: (
       <>
         <p>
           Po registrácii dostáva každá firma <strong>30 dní zadarmo na pláne Premium</strong>. Počas
-          trialu môžete využívať všetky funkcie bez obmedzenia.
+          skúšobného obdobia môžete využívať všetky funkcie bez obmedzenia.
         </p>
         <p>
-          Trial sa <strong>nepredlžuje automaticky</strong> a nepýtame si platobné údaje vopred.
+          Skúšobné obdobie sa <strong>nepredlžuje automaticky</strong> a nepýtame si platobné údaje
+          vopred.
         </p>
       </>
     ),
@@ -43,7 +45,7 @@ const sections: HelpSection[] = [
           Po aktivácii plateného plánu sa predplatné obnovuje <strong>každý mesiac</strong> v deň
           aktivácie. Karta sa strhne automaticky cez GoPay.
         </p>
-        <p>3 dni pred obnovou vám pošleme pripomienku emailom.</p>
+        <p>3 dni pred obnovou vám pošleme pripomienku e-mailom.</p>
       </>
     ),
   },
@@ -72,10 +74,11 @@ const sections: HelpSection[] = [
         </p>
         <ul>
           <li>
-            <strong>Upgrade</strong> sa aktivuje okamžite, rozdiel sa pripočíta pomerne.
+            <strong>Prechod na vyšší plán</strong> sa aktivuje okamžite, rozdiel sa pripočíta
+            pomerne.
           </li>
           <li>
-            <strong>Downgrade</strong> sa aktivuje od ďalšieho fakturačného obdobia.
+            <strong>Prechod na nižší plán</strong> sa aktivuje od ďalšieho fakturačného obdobia.
           </li>
         </ul>
       </>
@@ -88,7 +91,7 @@ const sections: HelpSection[] = [
       <>
         <p>
           V Nastaveniach predplatného kliknite na <strong>Zrušiť predplatné</strong>. Zostáva vám
-          aktívne do konca už zaplateného obdobia, potom prejde do <em>read-only</em> režimu.
+          aktívne do konca už zaplateného obdobia, potom prejde do režimu <em>len na čítanie</em>.
         </p>
         <p>
           Vaše dáta sa <strong>neodstránia</strong> — kedykoľvek sa môžete vrátiť a obnoviť plán.
@@ -98,7 +101,7 @@ const sections: HelpSection[] = [
   },
   {
     id: "trial-koniec",
-    title: "Čo sa stane po skončení trialu",
+    title: "Čo sa stane po skončení skúšobného obdobia",
     body: (
       <>
         <p>Ak si nevyberiete platený plán do uplynutia 30 dní:</p>
@@ -111,7 +114,7 @@ const sections: HelpSection[] = [
             Prémiové funkcie (API, webhooky, import zo SuperFaktúry, audit log) sa vypnú, kým si
             nezvolíte Premium.
           </li>
-          <li>3 dni pred koncom trialu vám pošleme pripomienku emailom.</li>
+          <li>3 dni pred koncom skúšobného obdobia vám pošleme pripomienku e-mailom.</li>
           <li>
             Kedykoľvek si môžete aktivovať vyšší plán a všetko pokračuje tam, kde ste skončili.
           </li>
@@ -126,7 +129,7 @@ function Page() {
     <HelpArticle
       category="Pomoc · Predplatné"
       title="Predplatné a fakturácia Faktera"
-      intro={<p>Ako funguje trial, obnova, zmena plánu a zrušenie predplatného.</p>}
+      intro={<p>Ako funguje skúšobné obdobie, obnova, zmena plánu a zrušenie predplatného.</p>}
       sections={sections}
     />
   );

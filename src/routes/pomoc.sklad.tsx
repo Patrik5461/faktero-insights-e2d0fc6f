@@ -144,8 +144,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Faktero oceňuje sklad <strong>váženým priemerom</strong>. Keď kúpite 10 kusov po 4 € a
-          neskôr 10 kusov po 6 €, karta má 20 kusov v priemernej cene 5 €. Každý ďalší výdaj berie
+          Faktero oceňuje sklad <strong>váženým priemerom</strong>. Keď kúpite 10 kusov po 4 € a
+          neskôr 10 kusov po 6 €, karta má 20 kusov v priemernej cene 5 €. Každý ďalší výdaj berie
           túto priemernú cenu.
         </p>
         <p>
@@ -306,7 +306,7 @@ const sections: HelpSection[] = [
       <>
         <ul>
           <li>
-            <strong>Karta bez sledovania stavu</strong> sa nikdy neodpíše. Ak vám stav „nič nerobí",
+            <strong>Karta bez sledovania stavu</strong> sa nikdy neodpíše. Ak vám stav „nič nerobí“,
             skontrolujte najprv tento prepínač.
           </li>
           <li>

@@ -330,7 +330,7 @@ function DphPage() {
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>DPH prehľad ${period.label}</title>
 <style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:20px;margin:0 0 4px}h2{font-size:14px;margin:20px 0 6px}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}th,td{padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}th{background:#f5f5f5}.tot td{font-weight:bold;background:#fafafa}.note{background:#fef3c7;border:1px solid #f59e0b;padding:10px;border-radius:6px;font-size:12px;margin:12px 0}</style></head><body>
 <h1>DPH prehľad — ${period.label}</h1>
-<div>Obdobie: ${period.from} — ${period.to}</div>
+<div>Obdobie: ${datumNaDoklade(period.from)} – ${datumNaDoklade(period.to)}</div>
 <div class="note"><b>Upozornenie:</b> Toto je informatívny prehľad. Pre podanie DPH priznania použite certifikovaný účtovný softvér alebo kontaktujte účtovníka.</div>
 <h2>DPH na výstupe (vystavené faktúry)</h2>
 <table><thead><tr><th>Sadzba DPH</th><th style="text-align:right">Základ dane</th><th style="text-align:right">Suma DPH</th><th style="text-align:right">Počet faktúr</th></tr></thead>
@@ -447,7 +447,7 @@ function DphPage() {
               </Select>
             </div>
             <div className="text-sm text-muted-foreground ml-auto">
-              {period.from} — {period.to}
+              {datumNaDoklade(period.from)} – {datumNaDoklade(period.to)}
               {loading && <Loader2 className="inline h-4 w-4 ml-2 animate-spin" />}
             </div>
             <div className="flex gap-2">
@@ -546,7 +546,19 @@ function DphPage() {
             <CardTitle>Vystavené faktúry ({invoices.length})</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
-            <Table>
+            <MobilnyZoznam
+              prazdne="Žiadne faktúry v období"
+              riadky={invoices.map((i) => ({
+                id: i.id,
+                cislo: i.invoice_number,
+                datum: datumNaDoklade(i.issue_date),
+                meno: `${i.customer_name ?? ""}${i.reverse_charge ? " (PDP)" : ""}${i.type === "credit_note" ? " (dobropis)" : i.type === "debit_note" ? " (ťarchopis)" : ""}`,
+                zaklad: fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR"),
+                dph: fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR"),
+                spolu: fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR"),
+              }))}
+            />
+            <Table className="hidden md:table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Číslo</TableHead>
@@ -561,7 +573,7 @@ function DphPage() {
                 {invoices.map((i) => (
                   <TableRow key={i.id}>
                     <TableCell className="font-medium">{i.invoice_number}</TableCell>
-                    <TableCell>{datumNaDoklade(i.issue_date)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{datumNaDoklade(i.issue_date)}</TableCell>
                     <TableCell>
                       {i.customer_name}
                       {i.reverse_charge ? " (PDP)" : ""}
@@ -598,7 +610,19 @@ function DphPage() {
             <CardTitle>Prijaté faktúry ({purchases.length})</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
-            <Table>
+            <MobilnyZoznam
+              prazdne="Žiadne prijaté faktúry v období"
+              riadky={purchases.map((p) => ({
+                id: p.id,
+                cislo: p.invoice_number,
+                datum: datumNaDoklade(p.issue_date),
+                meno: p.supplier_name ?? "",
+                zaklad: fmt(Number(p.amount_without_vat || 0), p.currency || "EUR"),
+                dph: fmt(Number(p.vat_amount || 0), p.currency || "EUR"),
+                spolu: fmt(Number(p.amount_total || 0), p.currency || "EUR"),
+              }))}
+            />
+            <Table className="hidden md:table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Číslo</TableHead>
@@ -613,7 +637,7 @@ function DphPage() {
                 {purchases.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.invoice_number}</TableCell>
-                    <TableCell>{datumNaDoklade(p.issue_date)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{datumNaDoklade(p.issue_date)}</TableCell>
                     <TableCell>{p.supplier_name}</TableCell>
                     <TableCell className="text-right">
                       {fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}
@@ -639,5 +663,46 @@ function DphPage() {
         </Card>
       </PageBody>
     </>
+  );
+}
+
+/** Na mobile tabuľka so šiestimi stĺpcami ukáže len tri — doklady preto ako karty. */
+function MobilnyZoznam({
+  riadky,
+  prazdne,
+}: {
+  riadky: {
+    id: string;
+    cislo: string | null;
+    datum: string;
+    meno: string;
+    zaklad: string;
+    dph: string;
+    spolu: string;
+  }[];
+  prazdne: string;
+}) {
+  if (riadky.length === 0) {
+    return <p className="py-4 text-center text-sm text-muted-foreground md:hidden">{prazdne}</p>;
+  }
+  return (
+    <ul className="divide-y divide-border md:hidden">
+      {riadky.map((r) => (
+        <li key={r.id} className="py-3 text-sm">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="min-w-0 truncate font-medium">{r.cislo}</span>
+            <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+              {r.datum}
+            </span>
+          </div>
+          <div className="mt-0.5 truncate text-muted-foreground">{r.meno}</div>
+          <div className="mt-1 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-xs">
+            <span className="whitespace-nowrap">Základ {r.zaklad}</span>
+            <span className="whitespace-nowrap">DPH {r.dph}</span>
+            <span className="whitespace-nowrap font-semibold">Spolu {r.spolu}</span>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

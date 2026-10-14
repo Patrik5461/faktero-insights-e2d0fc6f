@@ -5,7 +5,7 @@ import { HelpArticle, type HelpSection } from "@/components/faktero/HelpArticle"
  * Manuál k nastaveniam firmy.
  *
  * Chýbal — obrazovky Firma, Vzhľad faktúry a E-mailové šablóny sú pritom prvé,
- * čo nová firma otvára, a odkaz „Manuál" nad nimi nemal kam viesť. Popisuje
+ * čo nová firma otvára, a odkaz „Manuál“ nad nimi nemal kam viesť. Popisuje
  * len to, čo na tých troch obrazovkách naozaj je.
  */
 export const Route = createFileRoute("/pomoc/nastavenia")({
@@ -57,8 +57,8 @@ const SEKCIE: HelpSection[] = [
           </li>
         </ul>
         <p className="mt-3">
-          Sadzby DPH sa nenastavujú — Faktero ich ponúka podľa krajiny firmy (SR 23 / 19 / 5 / 0 %,
-          ČR 21 / 12 / 0 %).
+          Sadzby DPH sa nenastavujú — Faktero ich ponúka podľa krajiny firmy (SR 23 / 19 / 5 / 0 %,
+          ČR 21 / 12 / 0 %).
         </p>
       </>
     ),
@@ -88,7 +88,7 @@ const SEKCIE: HelpSection[] = [
         <p className="mt-3">
           Tvar čísla sa vyberá zo <strong>zoznamu vzorov</strong>, kde je pri každom rovno vidieť
           výsledné číslo — 20260001, 202609001 (mesačný reset), 2026/001 a podobne. Predpona sa
-          prispôsobí druhu dokladu, takže zálohová faktúra ponúka ZF…, pokladňa PD….
+          prispôsobí druhu dokladu, takže zálohová faktúra ponúka „ZF…“ a pokladňa „PD…“.
         </p>
         <p className="mt-3">
           Keď vám žiadny vzor nesedí, vyberte <strong>Vlastná šablóna…</strong> a napíšte si číslo
@@ -154,9 +154,9 @@ const SEKCIE: HelpSection[] = [
     body: (
       <>
         <p>
-          <strong>Nastavenia → Email šablóny</strong> určujú, čo príde odberateľovi spolu s PDF —
-          zvlášť pre faktúru, ponuku aj upomienku. Do textu sa dajú vložiť premenné (číslo dokladu,
-          suma, splatnosť), takže sa nič neprepisuje ručne.
+          <strong>Nastavenia → E-mailové šablóny</strong> určujú, čo príde odberateľovi spolu s PDF
+          — zvlášť pre faktúru, ponuku aj upomienku. Do textu sa dajú vložiť premenné (číslo
+          dokladu, suma, splatnosť), takže sa nič neprepisuje ručne.
         </p>
         <p className="mt-3">
           <strong>Meno odosielateľa</strong> a <strong>Odpovedať na (Reply-To)</strong> sa nastavujú
@@ -250,7 +250,7 @@ const SEKCIE: HelpSection[] = [
       <>
         <p>
           V údajoch firmy sa zaškrtáva <strong>Firma je platiteľ DPH</strong> a vyberá typ
-          registrácie — § 4, § 4b alebo § 5 pre platiteľa, § 7, § 7a alebo bez registrácie pre
+          registrácie — § 4, § 4b alebo § 5 pre platiteľa, § 7, § 7a alebo bez registrácie pre
           ostatných. Z registra sa ťahá len IČ DPH, paragraf v ňom nie je.
         </p>
         <p>

@@ -73,7 +73,7 @@ const PLANS = [
       "Neobmedzené firmy",
       "API + Webhooky",
       "Prechod z iného systému",
-      "Audit log",
+      "Záznam zmien",
       "Prioritná podpora",
     ],
     featured: true,
@@ -146,7 +146,7 @@ function ObjednavkaPage() {
             return (
               <Card
                 key={p.slug}
-                className={`cursor-pointer transition-all ${
+                className={`flex cursor-pointer flex-col transition-all ${
                   isSelected
                     ? "border-primary ring-1 ring-primary/30 shadow-lg"
                     : "border-border bg-card hover:border-primary/30"
@@ -176,7 +176,7 @@ function ObjednavkaPage() {
                   </p>
                   <p className="mt-2 text-sm text-muted-foreground">{p.tagline}</p>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-1 flex-col">
                   <ul className="space-y-2 text-sm">
                     {p.features.map((f) => (
                       <li key={f} className="flex gap-2">
@@ -185,7 +185,8 @@ function ObjednavkaPage() {
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-5">
+                  {/* mt-auto: tlačidlá oboch kariet stoja na rovnakej výške */}
+                  <div className="mt-auto pt-5">
                     <Button
                       variant={isSelected ? "default" : "outline"}
                       className="w-full"

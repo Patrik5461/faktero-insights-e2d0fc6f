@@ -1,4 +1,4 @@
-import { KROK_CENY } from "@/lib/faktero/mena";
+import { KROK_CENY, formatujCislo } from "@/lib/faktero/mena";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -119,12 +119,12 @@ function DeliveryNoteScanPage() {
 
     if (isPdf && file.size > MAX_PDF) {
       return toast.error(
-        `PDF je príliš veľké (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`,
+        `PDF je príliš veľké (${formatujCislo(file.size / 1024 / 1024, 1)} MB). Max 10 MB.`,
       );
     }
     if (isImage && file.size > MAX_IMAGE) {
       return toast.error(
-        `Obrázok je príliš veľký (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 5 MB.`,
+        `Obrázok je príliš veľký (${formatujCislo(file.size / 1024 / 1024, 1)} MB). Max 5 MB.`,
       );
     }
 

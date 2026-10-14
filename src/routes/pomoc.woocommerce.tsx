@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Download } from "lucide-react";
 import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
 
 export const Route = createFileRoute("/pomoc/woocommerce")({
@@ -102,7 +103,7 @@ const sections: HelpSection[] = [
             odkaz na PDF v e-maile z obchodu, prípadne aj samostatný e-mail s faktúrou z Faktera.
           </li>
           <li>
-            <strong>Poznámka na faktúre</strong> — predvolene „Objednávka č. {"{cislo}"}". Číslo
+            <strong>Poznámka na faktúre</strong> — predvolene „Objednávka č. {"{cislo}"}“. Číslo
             objednávky sa navyše ukladá do faktúry samostatne a ide aj do eFaktúry.
           </li>
         </ul>
@@ -120,7 +121,7 @@ const sections: HelpSection[] = [
             zaplatenie.
           </li>
           <li>
-            <strong>Dobierka</strong> — na faktúre je hotovosť a veta „Úhrada na dobierku". Za
+            <strong>Dobierka</strong> — na faktúre je hotovosť a veta „Úhrada na dobierku“. Za
             uhradenú sa označí, až keď objednávku nastavíte ako vybavenú — vtedy už kuriér peniaze
             vybral.
           </li>
@@ -172,12 +173,16 @@ function Page() {
       category="Pomoc · WooCommerce"
       title="Faktúry z e-shopu na WooCommerce"
       intro={
-        <p>
-          Doplnok pre WordPress, s ktorým sa faktúry z objednávok vystavujú vo Fakteri samy.{" "}
-          <a href="/doplnky/faktero-woocommerce.zip" download>
-            Stiahnuť doplnok (ZIP)
+        <>
+          <p>Doplnok pre WordPress, s ktorým sa faktúry z objednávok vystavujú vo Fakteri samy.</p>
+          <a
+            href="/doplnky/faktero-woocommerce.zip"
+            download
+            className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          >
+            <Download className="h-4 w-4" /> Stiahnuť doplnok (ZIP)
           </a>
-        </p>
+        </>
       }
       sections={sections}
     />

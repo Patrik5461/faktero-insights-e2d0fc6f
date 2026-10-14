@@ -62,8 +62,15 @@ function AuthedLayout() {
   const [zrusiSa, setZrusiSa] = useState<string | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
+  /* Stránky Knihy jázd ukazujú jej menu, aj keď sa na ne prišlo z Fakturácie
+     odkazom — inak svieti „Fakturácia“ a v menu nie je nič z toho, kde človek je.
+     Voľba sa neukladá, odchodom z /jazdy sa vráti tá zvolená. */
+  const zCesty: ActiveProduct | null =
+    productMode === "both" && (pathname === "/jazdy" || pathname.startsWith("/jazdy/"))
+      ? "logbook"
+      : null;
   const requestedProduct: ActiveProduct =
-    activeProduct ?? (productMode === "logbook" ? "logbook" : "invoicing");
+    zCesty ?? activeProduct ?? (productMode === "logbook" ? "logbook" : "invoicing");
   const effectiveMode: ProductMode | null = productMode
     ? productMode === "both"
       ? "both"
@@ -143,8 +150,9 @@ function AuthedLayout() {
 
   useEffect(() => {
     if (!profileLoaded || !productMode) return;
+    if (zCesty) return;
     if (activeProduct !== shellActiveProduct) setActiveProduct(shellActiveProduct);
-  }, [activeProduct, productMode, profileLoaded, shellActiveProduct]);
+  }, [activeProduct, productMode, profileLoaded, shellActiveProduct, zCesty]);
 
   useEffect(() => {
     if (!needsUpgrade) return;

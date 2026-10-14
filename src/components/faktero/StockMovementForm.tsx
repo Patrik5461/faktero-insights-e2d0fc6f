@@ -1,4 +1,4 @@
-import { KROK_CENY } from "@/lib/faktero/mena";
+import { KROK_CENY, formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -26,11 +26,14 @@ export function MovementForm({
     rozbaľovacom zozname je zbytočný krok, pri stovkách kariet aj otrava.
   */
   polozkaId,
+  /** Tlačidlo do hlavičky stránky (napr. sken dodacieho listu pri príjme). */
+  action,
 }: {
   type: MovementType;
   title: string;
   onDone?: () => void;
   polozkaId?: string;
+  action?: React.ReactNode;
 }) {
   const mena = useMenaFirmy();
   const createMovement = useServerFn(createStockMovementDebug);
@@ -146,7 +149,7 @@ export function MovementForm({
     if (!Number.isFinite(qty) || qty <= 0) return toast.error("Množstvo musí byť kladné.");
     if (type === "vydaj" && availability && qty > availability.available) {
       const ok = (await potvrd(
-        `Vydávate ${qty} ks, ale k dispozícii je len ${availability.available.toFixed(2)} (na sklade ${availability.on_hand.toFixed(2)}, rezervované ${availability.reserved.toFixed(2)}). Pokračovať a porušiť rezervácie?`,
+        `Vydávate ${formatujCislo(qty, 0, 3)} ks, ale k dispozícii je len ${formatujCislo(availability.available, 0, 2)} (na sklade ${formatujCislo(availability.on_hand, 0, 2)}, rezervované ${formatujCislo(availability.reserved, 0, 2)}). Pokračovať a porušiť rezervácie?`,
       ));
       if (!ok) return;
     }
@@ -221,7 +224,7 @@ export function MovementForm({
 
   return (
     <>
-      <PageHeader title={title} description="Manuálny skladový pohyb." />
+      <PageHeader title={title} description="Manuálny skladový pohyb." action={action} />
       <PageBody>
         {!loading && items.length === 0 ? (
           <div className="mx-auto max-w-xl rounded-xl border border-border bg-card p-8 text-center">
@@ -277,9 +280,9 @@ export function MovementForm({
               <div
                 className={`rounded-md border px-3 py-2 text-xs tabular-nums ${Number(quantity) > availability.available ? "border-amber-300 bg-amber-50 text-amber-900" : "border-stone-200 bg-stone-50 text-muted-foreground"}`}
               >
-                Na sklade <b>{availability.on_hand.toFixed(2)}</b> · Rezervované{" "}
-                <b>{availability.reserved.toFixed(2)}</b> · K dispozícii{" "}
-                <b>{availability.available.toFixed(2)}</b>
+                Na sklade <b>{formatujCislo(availability.on_hand, 0, 2)}</b> · Rezervované{" "}
+                <b>{formatujCislo(availability.reserved, 0, 2)}</b> · K dispozícii{" "}
+                <b>{formatujCislo(availability.available, 0, 2)}</b>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
@@ -331,9 +334,8 @@ export function MovementForm({
                       const q = Number(quantity) || 0;
                       const p = Number(price) || 0;
                       const s = Number(sideCosts) || 0;
-                      return (p + (q > 0 ? s / q : 0)).toFixed(4);
-                    })()}{" "}
-                    {mena.symbol}
+                      return formatujJednotkovuCenu(p + (q > 0 ? s / q : 0), mena.kod);
+                    })()}
                   </div>
                 </div>
               </>

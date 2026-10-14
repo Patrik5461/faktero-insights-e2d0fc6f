@@ -29,7 +29,7 @@ const sections: HelpSection[] = [
           čakáte.
         </p>
         <p>
-          Vďaka nej viete, že tovar je „na ceste" — a nemusíte ho objednávať druhýkrát len preto, že
+          Vďaka nej viete, že tovar je „na ceste“ — a nemusíte ho objednávať druhýkrát len preto, že
           na sklade nie je.
         </p>
       </>

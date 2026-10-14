@@ -412,7 +412,7 @@ function VypisDoPohodyPage() {
       ) : (
         <PageHeader
           title="Bankový výpis do Pohody"
-          description="Z výpisu z banky (XML aj PDF) vyrobí XML, ktoré POHODA načíta ako bankové doklady."
+          description="Z výpisu z banky (XML aj PDF) vyrobí XML, ktoré Pohoda načíta ako bankové doklady."
         />
       )}
       <PageBody>
@@ -548,7 +548,7 @@ function VypisDoPohodyPage() {
                 </label>
                 <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-4">
                   Skratka účtu hovorí, do ktorého bankového účtu v Pohode doklady patria; bez nej
-                  ich POHODA priradí sama a účtovník ich prepisuje ručne.
+                  ich Pohoda priradí sama a účtovník ich prepisuje ručne.
                   {ucet ? ` Výpis je k účtu ${ucet}.` : ""}
                   {mena && mena !== "EUR" ? ` Pozor, výpis je v mene ${mena}.` : ""}
                 </p>

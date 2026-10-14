@@ -4,8 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getStockDashboard } from "@/lib/faktero/stock.functions";
-import { Warehouse, AlertTriangle, Package, TrendingUp, ArrowRight } from "lucide-react";
+import { Warehouse, AlertTriangle, Package, TrendingUp, ArrowRight, ScanLine } from "lucide-react";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
+import { hodnotaPohybu, pohybNazov, pohybText } from "@/lib/faktero/stock-pohyb";
 
 export const Route = createFileRoute("/_authenticated/sklad/")({
   head: () => ({ meta: [{ title: "Sklad — Faktero" }] }),
@@ -60,7 +62,7 @@ function SkladDashboard() {
               <Stat
                 icon={TrendingUp}
                 label="Hodnota skladu"
-                value={`${Number(data.total_value).toFixed(2)} ${mena.symbol}`}
+                value={formatujMenu(data.total_value, mena.kod)}
                 accent="text-emerald-600"
               />
               <Stat
@@ -76,7 +78,28 @@ function SkladDashboard() {
                   <p className="text-sm text-muted-foreground">
                     Všetky položky majú dostatočný stav.
                   </p>
-                ) : null}
+                ) : (
+                  <ul className="divide-y divide-border text-sm">
+                    {data.below_min_items.map((it: any) => (
+                      <li key={it.id} className="flex items-center justify-between gap-3 py-2">
+                        <Link
+                          to="/sklad/produkty/$id"
+                          params={{ id: it.id }}
+                          className="min-w-0 truncate hover:text-primary hover:underline"
+                        >
+                          {it.name ?? it.sku ?? "—"}
+                          {it.name && it.sku && (
+                            <span className="ml-1 text-xs text-muted-foreground">{it.sku}</span>
+                          )}
+                        </Link>
+                        <span className="whitespace-nowrap tabular-nums text-amber-600">
+                          {formatujCislo(it.current, 0, 2)} / {formatujCislo(it.min, 0, 2)}{" "}
+                          {it.unit ?? ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <Link
                   to="/sklad/produkty"
                   className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
@@ -87,7 +110,35 @@ function SkladDashboard() {
               <Card title="Posledné pohyby">
                 {data.recent_movements.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Zatiaľ žiadne pohyby.</p>
-                ) : null}
+                ) : (
+                  <ul className="divide-y divide-border text-sm">
+                    {data.recent_movements.map((m: any) => (
+                      <li key={m.id} className="flex items-center justify-between gap-3 py-2">
+                        <Link
+                          to="/sklad/pohyby/$id"
+                          params={{ id: m.id }}
+                          className="min-w-0 hover:text-primary"
+                        >
+                          <div className="truncate font-medium hover:underline">
+                            {m.name ?? m.sku ?? "—"}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {pohybNazov(m.type)} ·{" "}
+                            {new Date(m.created_at).toLocaleDateString("sk-SK")}
+                          </div>
+                        </Link>
+                        <div className="text-right">
+                          <div className="whitespace-nowrap tabular-nums">
+                            {pohybText(m.type, m.quantity)} {m.unit ?? ""}
+                          </div>
+                          <div className="whitespace-nowrap text-xs text-muted-foreground tabular-nums">
+                            {formatujMenu(hodnotaPohybu(m), mena.kod)}
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <Link
                   to="/sklad/pohyby"
                   className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
@@ -100,11 +151,11 @@ function SkladDashboard() {
               <QuickLink to="/sklad/prijem" label="Príjem na sklad" />
               <QuickLink to="/sklad/vydaj" label="Výdaj zo skladu" />
               <QuickLink to="/sklad/presuny" label="Presuny" />
-              <QuickLink to="/sklad/dodaci-list" label="📷 Naskenovať dodací list" />
+              <QuickLink to="/sklad/dodaci-list" label="Naskenovať dodací list" icon={ScanLine} />
               <QuickLink to="/sklad/inventura" label="Inventúra" />
               <QuickLink to="/sklad/hodnota" label="Hodnota skladu" />
               <QuickLink to="/sklad/minimum" label="Pod minimom" />
-              <QuickLink to="/sklad/import" label="Import CSV" />
+              <QuickLink to="/sklad/import" label="Import (CSV, XLSX)" />
               <QuickLink to="/sklad/dodacie-listy" label="História skenov DL" />
             </div>
           </>
@@ -148,13 +199,17 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function QuickLink({ to, label }: { to: string; label: string }) {
+function QuickLink({ to, label, icon: Icon }: { to: string; label: string; icon?: any }) {
   return (
     <Link
       to={to as any}
       className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium shadow-sm hover:border-primary/40 hover:bg-secondary/40"
     >
-      {label} <ArrowRight className="h-4 w-4 text-muted-foreground" />
+      <span className="inline-flex items-center gap-2">
+        {Icon && <Icon className="h-4 w-4 text-primary" />}
+        {label}
+      </span>
+      <ArrowRight className="h-4 w-4 text-muted-foreground" />
     </Link>
   );
 }

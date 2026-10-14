@@ -50,6 +50,8 @@ export type DetailItem = {
 export type HubContent = {
   hubSlug: string;
   hubTitle: string;
+  /** Krátky nadpis úvodu; ak chýba, nadpisom je `hubDescription`. */
+  hubHeadline?: string;
   hubDescription: string;
   hubLead: string;
   items: DetailItem[];
@@ -62,6 +64,7 @@ export type HubContent = {
 export const funkcie: HubContent = {
   hubSlug: "funkcie",
   hubTitle: "Funkcie Faktero",
+  hubHeadline: "Fakturácia a chod firmy v jednom systéme",
   hubDescription:
     "Faktúry, ponuky, skener bločkov z eKasy, párovanie platieb z banky, faktúry z e-shopu na WooCommerce, hromadný príkaz na úhradu, cenník a zľavy, zákazky, sklad, pokladňa, DPH, kniha jázd a aplikácia do telefónu — v jednom systéme.",
   hubLead:
@@ -192,7 +195,7 @@ export const funkcie: HubContent = {
     },
     {
       slug: "multi-company",
-      label: "Multi-company",
+      label: "Viac firiem",
       summary: "Spravujte viacero firiem z jedného účtu.",
       icon: Building2,
       blocks: [
@@ -758,14 +761,14 @@ export const vyvojari: HubContent = {
   hubSlug: "vyvojari",
   hubTitle: "API a pre vývojárov",
   hubDescription:
-    "REST API, webhooky, dokumentácia a playground — automatizujte fakturáciu vašej platformy.",
+    "REST API, webhooky, dokumentácia a skúšobné prostredie — automatizujte fakturáciu vašej platformy.",
   hubLead:
     "Faktero je API-first. Vystavujte faktúry, párujte platby a spravujte odberateľov priamo z vašej aplikácie.",
   items: [
     {
       slug: "rest",
       label: "REST API",
-      summary: "JSON REST API s test / live režimom a idempotenciou cez external_id.",
+      summary: "JSON REST API s testovacím a ostrým režimom a idempotenciou cez external_id.",
       icon: Code2,
       blocks: [
         {
@@ -791,17 +794,17 @@ export const vyvojari: HubContent = {
     {
       slug: "webhooky",
       label: "Webhooky",
-      summary: "Real-time eventy o faktúrach, platbách a chybách.",
+      summary: "Udalosti v reálnom čase o faktúrach, platbách a chybách.",
       icon: Webhook,
       blocks: [
-        { type: "lead", text: "Reagujte na zmeny v reálnom čase — bez polling-u." },
+        { type: "lead", text: "Reagujte na zmeny v reálnom čase — bez neustáleho dopytovania." },
         {
           type: "bullets",
           items: [
-            "Eventy: invoice.created, invoice.paid, invoice.overdue, quote.accepted",
+            "Udalosti: invoice.created, invoice.paid, invoice.overdue, quote.accepted",
             "HMAC-SHA256 podpis pre overenie pôvodu",
             "Automatické opakované doručenie pri zlyhaní",
-            "Log doručení s payloadom a odpoveďou",
+            "Záznam doručení s obsahom udalosti a odpoveďou",
           ],
         },
       ],
@@ -848,7 +851,7 @@ export const vyvojari: HubContent = {
     },
     {
       slug: "playground",
-      label: "Playground",
+      label: "Skúšobné prostredie",
       summary: "Interaktívne vyskúšanie API priamo z prehliadača.",
       icon: TerminalSquare,
       blocks: [
@@ -857,9 +860,9 @@ export const vyvojari: HubContent = {
           type: "bullets",
           items: [
             "Predvyplnené príklady pre každý endpoint",
-            "Test režim s realistickými dátami",
+            "Testovací režim s realistickými dátami",
             "Generovanie ukážkového kódu",
-            "Histórie volaní a odpovedí",
+            "História volaní a odpovedí",
           ],
         },
       ],
@@ -909,7 +912,7 @@ export const efakturacia: HubContent = {
             "Dobropis ako CreditNote 381 s číslom pôvodnej faktúry (BT-25), samofaktúra cez Peppol",
             "PDF už nebude stačiť na uplatnenie nákladu a odpočtu DPH",
             "Automatické párovanie s objednávkou a skladom",
-            "Real-time reporting do Finančnej správy",
+            "Hlásenie v reálnom čase do Finančnej správy",
           ],
         },
         {
@@ -924,7 +927,7 @@ export const efakturacia: HubContent = {
         },
         {
           type: "callout",
-          title: "Faktero je ready včas",
+          title: "Faktero je pripravené včas",
           body: "Pracujeme na podpore Peppol BIS 3.0 a integrácii s Digitálnym poštárom tak, aby ste boli pripravení mesiace pred legislatívnym termínom. Vaše dáta migrujeme automaticky — nemusíte riešiť nič.",
         },
       ],
@@ -986,7 +989,7 @@ export const efakturacia: HubContent = {
         {
           type: "section",
           title: "Čo je Digitálny poštár?",
-          body: "Ide o štátom prevádzkovanú platformu, ktorá funguje ako centrálny hub pre slovenské eFaktúry. Každá vystavená faktúra prechádza cez Digitálneho poštára, ktorý ju validuje, archivuje a doručí príjemcovi. Finančná správa zároveň získava dáta pre svoj real-time monitoring DPH bez potreby samostatného Kontrolného výkazu.",
+          body: "Ide o štátom prevádzkovanú platformu, ktorá funguje ako centrálny hub pre slovenské eFaktúry. Každá vystavená faktúra prechádza cez Digitálneho poštára, ktorý ju validuje, archivuje a doručí príjemcovi. Finančná správa zároveň získava dáta pre svoje priebežné sledovanie DPH v reálnom čase bez potreby samostatného Kontrolného výkazu.",
         },
         {
           type: "section",
@@ -1001,7 +1004,7 @@ export const efakturacia: HubContent = {
             "Bezplatné základné použitie pre platiteľov DPH",
             "Štátna archivácia 10 rokov v zákonom požadovanom formáte",
             "Validácia XML voči slovenskému CIUS pred doručením",
-            "Náhrada Kontrolného výkazu DPH (real-time reporting)",
+            "Náhrada Kontrolného výkazu DPH (hlásenie v reálnom čase)",
             "API pre účtovné systémy ako Faktero",
           ],
         },
@@ -1029,6 +1032,7 @@ export const efakturacia: HubContent = {
 export const uctovnici: HubContent = {
   hubSlug: "uctovnici",
   hubTitle: "Pre účtovníkov",
+  hubHeadline: "Účtovné podklady jedným klikom",
   hubDescription:
     "Pohoda export aj konektor, šesť formátov exportu, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.",
   hubLead:

@@ -129,7 +129,7 @@ function DetailPoziadavky() {
                   <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">
                       {s.od_podpory ? "Podpora Faktera" : "Vy"}
-                      {s.cez_email && <span className="font-normal text-muted-foreground"> · e-mailom</span>}
+                      {s.cez_email && <span className="font-normal text-muted-foreground"> · e‑mailom</span>}
                     </span>
                     <span>{new Date(s.created_at).toLocaleString("sk-SK")}</span>
                   </div>

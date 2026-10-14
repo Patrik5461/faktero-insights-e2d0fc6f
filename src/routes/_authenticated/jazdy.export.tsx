@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { formatujCislo } from "@/lib/faktero/mena";
 import { escHtml, bezVzorca } from "@/lib/bezpecny-text";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -235,7 +236,7 @@ function ExportPage() {
       const tr = rows
         .map(
           (r: any) =>
-            `<tr><td>${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)}</td><td>${escHtml(r.trip_date)}</td><td>${escHtml(r.start_location)}</td><td>${escHtml(r.end_location)}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${Number(r.distance_km).toFixed(1)}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${escHtml(r.driver_name)}</td><td>${escHtml(r.purpose)}</td><td>${charakterJazdy(r.classification)}</td><td>${sourceLabel(r.external_source)}</td></tr>`,
+            `<tr><td>${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)}</td><td>${escHtml(r.trip_date)}</td><td>${escHtml(r.start_location)}</td><td>${escHtml(r.end_location)}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${formatujCislo(r.distance_km, 1)}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${escHtml(r.driver_name)}</td><td>${escHtml(r.purpose)}</td><td>${charakterJazdy(r.classification)}</td><td>${sourceLabel(r.external_source)}</td></tr>`,
         )
         .join("");
 
@@ -247,14 +248,14 @@ function ExportPage() {
           }${mapy
             .map(
               ({ r, obrazok }) =>
-                `<div class="trasa"><div class="trasa-hlavicka">${escHtml(r.trip_date)} · ${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)} · ${Number(r.distance_km).toFixed(1)} km · ${charakterJazdy(r.classification)}</div><img src="${obrazok}" alt="Trasa jazdy"></div>`,
+                `<div class="trasa"><div class="trasa-hlavicka">${escHtml(r.trip_date)} · ${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)} · ${formatujCislo(r.distance_km, 1)} km · ${charakterJazdy(r.classification)}</div><img src="${obrazok}" alt="Trasa jazdy"></div>`,
             )
             .join("")}`
         : "";
 
       w.document.open();
       w.document.write(
-        `<!doctype html><html><head><meta charset="utf-8"><title>Kniha jázd ${escHtml(from)} – ${escHtml(to)}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}.trasy-nadpis{page-break-before:always;margin:0 0 8px}.poznamka{font-size:11px;color:#555;margin-bottom:8px}.trasa{page-break-inside:avoid;margin-bottom:14px}.trasa-hlavicka{font-size:11px;font-weight:600;margin-bottom:4px}.trasa img{width:100%;max-width:640px;border:1px solid #ddd}</style></head><body><h1>Kniha jázd</h1><div>Obdobie: ${escHtml(from)} – ${escHtml(to)}</div><table><thead><tr><th>Vozidlo</th><th>Dátum</th><th>Od</th><th>Do</th><th>Trvanie</th><th style="text-align:right">Km</th><th style="text-align:right">Priemer</th><th>Vodič</th><th>Typ</th><th>Charakter</th><th>Zdroj</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">Spolu</td><td style="text-align:right">${total.toFixed(1)} km</td><td colspan="5"></td></tr></tfoot></table>${trasyHtml}<script>window.onload=()=>window.print()</script></body></html>`,
+        `<!doctype html><html><head><meta charset="utf-8"><title>Kniha jázd ${escHtml(from)} – ${escHtml(to)}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}.trasy-nadpis{page-break-before:always;margin:0 0 8px}.poznamka{font-size:11px;color:#555;margin-bottom:8px}.trasa{page-break-inside:avoid;margin-bottom:14px}.trasa-hlavicka{font-size:11px;font-weight:600;margin-bottom:4px}.trasa img{width:100%;max-width:640px;border:1px solid #ddd}</style></head><body><h1>Kniha jázd</h1><div>Obdobie: ${escHtml(from)} – ${escHtml(to)}</div><table><thead><tr><th>Vozidlo</th><th>Dátum</th><th>Od</th><th>Do</th><th>Trvanie</th><th style="text-align:right">Km</th><th style="text-align:right">Priemer</th><th>Vodič</th><th>Typ</th><th>Charakter</th><th>Zdroj</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">Spolu</td><td style="text-align:right">${formatujCislo(total, 1)} km</td><td colspan="5"></td></tr></tfoot></table>${trasyHtml}<script>window.onload=()=>window.print()</script></body></html>`,
       );
       w.document.close();
     } catch (e: any) {
@@ -269,7 +270,7 @@ function ExportPage() {
     <>
       <PageHeader title="Export jázd" description="Exportujte záznamy pre účtovníctvo." />
       <PageBody>
-        <div className="grid max-w-2xl gap-4">
+        <div className="mx-auto grid max-w-2xl gap-4 rounded-xl border border-border bg-card p-5 shadow-sm">
           <label className="block">
             <span className="text-sm font-medium">Vozidlo</span>
             <select
@@ -343,11 +344,11 @@ function ExportPage() {
               onClick={exportXlsx}
               className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary disabled:opacity-60"
             >
-              <Download className="h-4 w-4" /> XLSX
+              <Download className="h-4 w-4" /> Excel (.xls)
             </button>
           </div>
           <p className="text-xs text-muted-foreground">
-            PDF sa generuje cez tlač prehliadača. XLSX je vo formáte SpreadsheetML 2003 (.xls) —
+            PDF sa pripraví cez tlač prehliadača. Súbor pre Excel sa stiahne vo formáte .xls —
             otvoria ho Excel aj LibreOffice.
           </p>
         </div>

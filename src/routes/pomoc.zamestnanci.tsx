@@ -44,7 +44,7 @@ const sections: HelpSection[] = [
         <p>
           <strong>Rodné číslo a číslo dokladu sú šifrované</strong> aj v databáze a ich zobrazenie
           sa zaznamenáva. Kto ich uvidí, určuje rola alebo{" "}
-          <Link to="/pomoc/role">vlastný prístup</Link> — oblasť „Zamestnanci" sa dá zapnúť
+          <Link to="/pomoc/role">vlastný prístup</Link> — oblasť „Zamestnanci“ sa dá zapnúť
           samostatne.
         </p>
       </>

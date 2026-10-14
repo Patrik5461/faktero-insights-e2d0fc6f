@@ -207,7 +207,7 @@ function NewTransferPage() {
                 ))}
               </select>
             </div>
-            <div className="pb-3 text-muted-foreground">
+            <div className="hidden pb-3 text-muted-foreground sm:block">
               <ArrowRightLeft className="h-5 w-5" />
             </div>
             {mode === "warehouse" ? (
@@ -322,15 +322,21 @@ function NewTransferPage() {
                 <Plus className="h-4 w-4" /> Pridať položku
               </button>
             </div>
+            <div className="hidden gap-2 border-b px-3 py-1.5 text-xs text-muted-foreground sm:grid sm:grid-cols-[1fr_120px_120px_32px]">
+              <span>Položka</span>
+              <span>Množstvo</span>
+              <span>Cena/MJ</span>
+              <span />
+            </div>
             <div className="divide-y">
               {items.map((it, idx) => {
                 const m = matches[it.source_stock_item_id];
                 return (
                   <div
                     key={idx}
-                    className="grid gap-2 p-3 sm:grid-cols-[1fr_120px_120px_auto] items-center"
+                    className="grid grid-cols-[1fr_1fr_auto] items-end gap-2 p-3 sm:grid-cols-[1fr_120px_120px_32px] sm:items-center"
                   >
-                    <div>
+                    <div className="col-span-3 min-w-0 sm:col-span-1">
                       <select
                         className="w-full rounded-md border px-2 py-1.5 text-sm"
                         value={it.source_stock_item_id}
@@ -360,7 +366,7 @@ function NewTransferPage() {
                           {m.matched_target_id ? (
                             <span className="text-emerald-700 dark:text-emerald-300">
                               ✓ Nájdená v cieľovej firme (
-                              {m.matched_by === "sku" ? "podľa SKU" : "podľa čiarového kódu"})
+                              {m.matched_by === "sku" ? "podľa kódu" : "podľa čiarového kódu"})
                             </span>
                           ) : (
                             <span className="text-amber-700 dark:text-amber-300">
@@ -370,28 +376,42 @@ function NewTransferPage() {
                         </div>
                       )}
                     </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="Množstvo"
-                      className="w-full rounded-md border px-2 py-1.5 text-sm"
-                      value={it.quantity}
-                      onChange={(e) => updateItem(idx, { quantity: e.target.value })}
-                    />
-                    <input
-                      type="number"
-                      step={KROK_CENY}
-                      min="0"
-                      placeholder="Cena"
-                      className="w-full rounded-md border px-2 py-1.5 text-sm"
-                      value={it.unit_price}
-                      onChange={(e) => updateItem(idx, { unit_price: e.target.value })}
-                    />
+                    <label className="block min-w-0">
+                      <span className="mb-1 block text-xs text-muted-foreground sm:hidden">
+                        Množstvo
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Množstvo"
+                        aria-label="Množstvo"
+                        className="w-full rounded-md border px-2 py-1.5 text-sm"
+                        value={it.quantity}
+                        onChange={(e) => updateItem(idx, { quantity: e.target.value })}
+                      />
+                    </label>
+                    <label className="block min-w-0">
+                      <span className="mb-1 block text-xs text-muted-foreground sm:hidden">
+                        Cena/MJ
+                      </span>
+                      <input
+                        type="number"
+                        step={KROK_CENY}
+                        min="0"
+                        placeholder="Cena"
+                        aria-label="Cena za MJ"
+                        className="w-full rounded-md border px-2 py-1.5 text-sm"
+                        value={it.unit_price}
+                        onChange={(e) => updateItem(idx, { unit_price: e.target.value })}
+                      />
+                    </label>
                     <button
                       type="button"
                       onClick={() => setItems((p) => p.filter((_, i) => i !== idx))}
                       disabled={items.length === 1}
+                      aria-label="Odstrániť položku"
+                      title="Odstrániť položku"
                       className="rounded p-1.5 text-muted-foreground hover:text-destructive disabled:opacity-40"
                     >
                       <Trash2 className="h-4 w-4" />

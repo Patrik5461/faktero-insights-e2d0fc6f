@@ -1,6 +1,6 @@
-import { formatujJednotkovuCenu } from "@/lib/faktero/mena";
+import { formatujCislo, formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
+import { hodnotaPohybu, pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -24,6 +24,16 @@ const TYPE_LABEL: Record<string, string> = {
   inventura: "Inventúra",
   faktura: "Faktúra",
   dobropis: "Dobropis",
+};
+
+const STAV_FAKTURY: Record<string, string> = {
+  draft: "Koncept",
+  issued: "Vystavená",
+  sent: "Odoslaná",
+  paid: "Uhradená",
+  partially_paid: "Čiastočne uhradená",
+  overdue: "Po splatnosti",
+  cancelled: "Stornovaná",
 };
 
 function ProductStockDetail() {
@@ -110,7 +120,7 @@ function ProductStockDetail() {
     <>
       <PageHeader
         title={p.name}
-        description={`SKU ${si?.sku ?? p.code ?? "—"}`}
+        description={`Kód ${si?.sku ?? p.code ?? "—"}`}
         action={
           <div className="flex flex-wrap gap-2">
             {canManage && (
@@ -132,32 +142,39 @@ function ProductStockDetail() {
         }
       />
       <PageBody>
-        <div className="grid gap-4 md:grid-cols-4">
-          <Stat label="Na sklade" value={`${data.totalQuantity} ${si?.unit ?? ""}`} />
-          <Stat label="Rezervované" value={`${data.reservedQuantity ?? 0} ${si?.unit ?? ""}`} />
+        {/* Deväť kariet: 3 × 3 na desktope, po dvoch na mobile. */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          <Stat label="Na sklade" value={`${formatujCislo(data.totalQuantity, 0, 2)} ${si?.unit ?? ""}`} />
+          <Stat
+            label="Rezervované"
+            value={`${formatujCislo(data.reservedQuantity ?? 0, 0, 2)} ${si?.unit ?? ""}`}
+          />
           <Stat
             label="K dispozícii"
-            value={`${(Number(data.totalQuantity) - Number(data.reservedQuantity ?? 0)).toFixed(2)} ${si?.unit ?? ""}`}
+            value={`${formatujCislo(Number(data.totalQuantity) - Number(data.reservedQuantity ?? 0), 0, 2)} ${si?.unit ?? ""}`}
           />
-          <Stat label="Hodnota skladu" value={`${stockValue.toFixed(2)} ${mena.symbol}`} />
+          <Stat label="Hodnota skladu" value={formatujMenu(stockValue, mena.kod)} />
           <Stat
             label="Minimálny stav"
-            value={si ? `${Number(si.min_stock).toFixed(2)} ${si.unit}` : "—"}
+            value={si ? `${formatujCislo(si.min_stock, 0, 2)} ${si.unit}` : "—"}
           />
           <Stat
             label="Nákupná cena"
-            value={si ? `${formatujJednotkovuCenu(si.purchase_price)} ${mena.symbol}` : "—"}
+            value={si ? formatujJednotkovuCenu(si.purchase_price, mena.kod) : "—"}
           />
-          <Stat label="Predajná cena" value={si ? `${formatujJednotkovuCenu(si.sale_price)} ${mena.symbol}` : "—"} />
+          <Stat
+            label="Predajná cena"
+            value={si ? formatujJednotkovuCenu(si.sale_price, mena.kod) : "—"}
+          />
           <Stat
             label="Priemerná nákupná cena"
-            value={si ? `${formatujJednotkovuCenu(si.avg_purchase_price ?? 0)} ${mena.symbol}` : "—"}
+            value={si ? formatujJednotkovuCenu(si.avg_purchase_price ?? 0, mena.kod) : "—"}
           />
           <Stat
             label="Posledná nákupná cena"
             value={
               si?.last_purchase_price != null
-                ? `${formatujJednotkovuCenu(si.last_purchase_price)} ${mena.symbol}`
+                ? formatujJednotkovuCenu(si.last_purchase_price, mena.kod)
                 : "—"
             }
           />
@@ -187,7 +204,7 @@ function ProductStockDetail() {
                 className="aspect-square w-full rounded-md object-cover"
               />
             ) : (
-              <div className="flex aspect-square w-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+              <div className="flex h-24 w-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground md:h-auto md:aspect-square">
                 Bez fotografie
               </div>
             )}
@@ -200,10 +217,10 @@ function ProductStockDetail() {
               <Pair label="Názov (SK)" value={p.name} />
               <Pair label="Názov (EN)" value={si?.name_en ?? "—"} />
               <Pair label="Kód" value={p.code ?? "—"} />
-              <Pair label="SKU" value={si?.sku ?? "—"} />
+              <Pair label="Skladový kód (SKU)" value={si?.sku ?? "—"} />
               <Pair label="Čiarový kód / EAN" value={si?.barcode ?? "—"} />
               <Pair label="Jednotka" value={si?.unit ?? p.unit} />
-              <Pair label="DPH %" value={`${si?.vat_rate ?? p.vat_rate}`} />
+              <Pair label="DPH" value={`${formatujCislo(si?.vat_rate ?? p.vat_rate, 0, 2)} %`} />
               <Pair label="Kategória" value={data.category?.name ?? "—"} />
               <Pair label="Dodávateľ" value={data.supplier?.name ?? "—"} />
               <Pair label="Lokácia (regál/pozícia)" value={si?.location ?? "—"} />
@@ -237,6 +254,7 @@ function ProductStockDetail() {
           {data.levels.length === 0 ? (
             <div className="text-sm text-muted-foreground">Žiadne zaznamenané stavy.</div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -249,14 +267,17 @@ function ProductStockDetail() {
                 {data.levels.map((l: any) => (
                   <tr key={l.warehouse_id}>
                     <td className="p-2">{l.warehouses?.name ?? l.warehouse_id.slice(0, 8)}</td>
-                    <td className="p-2 text-right tabular-nums">{Number(l.quantity).toFixed(2)}</td>
+                    <td className="p-2 text-right tabular-nums">
+                      {formatujCislo(l.quantity, 0, 2)} {si?.unit ?? ""}
+                    </td>
                     <td className="p-2 text-right tabular-nums text-muted-foreground">
-                      {Number(l.reserved_quantity ?? 0).toFixed(2)}
+                      {formatujCislo(l.reserved_quantity ?? 0, 0, 2)} {si?.unit ?? ""}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
@@ -284,6 +305,7 @@ function ProductStockDetail() {
           {data.movements.length === 0 ? (
             <div className="text-sm text-muted-foreground">Žiadne pohyby.</div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -299,7 +321,7 @@ function ProductStockDetail() {
               <tbody className="divide-y divide-border">
                 {data.movements.map((m: any) => (
                   <tr key={m.id}>
-                    <td className="p-2 text-muted-foreground">
+                    <td className="p-2 whitespace-nowrap text-muted-foreground">
                       {new Date(m.created_at).toLocaleString("sk-SK")}
                     </td>
                     <td className="p-2">{TYPE_LABEL[m.type] ?? m.type}</td>
@@ -308,11 +330,11 @@ function ProductStockDetail() {
                     >
                       {pohybText(m.type, m.quantity)}
                     </td>
-                    <td className="p-2 text-right tabular-nums">
-                      {m.unit_cost != null ? formatujJednotkovuCenu(m.unit_cost) : "—"}
+                    <td className="p-2 text-right tabular-nums whitespace-nowrap">
+                      {m.unit_cost != null ? formatujJednotkovuCenu(m.unit_cost, mena.kod) : "—"}
                     </td>
-                    <td className="p-2 text-right tabular-nums">
-                      {Number(m.total_value).toFixed(2)} {mena.symbol}
+                    <td className="p-2 text-right tabular-nums whitespace-nowrap">
+                      {formatujMenu(hodnotaPohybu(m), mena.kod)}
                     </td>
                     <td className="p-2">
                       <SourceBadge type={m.source_document_type} id={m.source_document_id} />
@@ -330,6 +352,7 @@ function ProductStockDetail() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
@@ -347,7 +370,7 @@ function ProductStockDetail() {
                     {inv.invoice_number}
                   </Link>
                   <span className="text-xs text-muted-foreground">
-                    {inv.status} · {Number(inv.total ?? 0).toFixed(2)} {mena.symbol}
+                    {STAV_FAKTURY[inv.status] ?? inv.status} · {formatujMenu(inv.total ?? 0, mena.kod)}
                   </span>
                 </li>
               ))}
@@ -363,7 +386,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-1 break-words text-lg font-semibold tabular-nums sm:text-xl">{value}</div>
     </div>
   );
 }

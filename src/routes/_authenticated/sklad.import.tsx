@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Upload } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sklad/import")({
-  head: () => ({ meta: [{ title: "Import skladu CSV — Faktero" }] }),
+  head: () => ({ meta: [{ title: "Import skladu (CSV, XLSX) — Faktero" }] }),
   component: ImportStockPage,
 });
 
@@ -105,7 +105,7 @@ function ImportStockPage() {
   return (
     <>
       <PageHeader
-        title="Import skladu CSV"
+        title="Import skladu (CSV, XLSX)"
         description="Nahrajte CSV alebo XLSX so skladovými kartami."
       />
       <PageBody>
@@ -123,8 +123,8 @@ function ImportStockPage() {
             />
           </label>
           <p className="mt-2 text-xs text-muted-foreground">
-            Podporované stĺpce: SKU, Názov, Čiarový kód, Jednotka, Nákupná cena, Predajná cena, DPH,
-            Minimálny stav, Počiatočný stav, Sklad.
+            Podporované stĺpce: SKU (kód položky), Názov, Čiarový kód, Jednotka, Nákupná cena,
+            Predajná cena, DPH, Minimálny stav, Počiatočný stav, Sklad.
           </p>
         </div>
 

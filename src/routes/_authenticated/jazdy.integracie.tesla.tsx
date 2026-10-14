@@ -34,6 +34,22 @@ function fmt(ts?: string | null) {
   return ts ? new Date(ts).toLocaleString("sk-SK") : "—";
 }
 
+/** Stav synchronizácie z databázy (ok/error/…) po slovensky. */
+function popisStavuSync(s?: string | null) {
+  const t = (s ?? "").trim();
+  if (!t || t === "-" || t === "–") return "—";
+  const m: Record<string, string> = {
+    ok: "V poriadku",
+    error: "Chyba",
+    pending: "Čaká",
+    partial: "Čiastočne",
+    connected: "Pripojené",
+    running: "Prebieha",
+    idle: "Nečinné",
+  };
+  return m[t] ?? t;
+}
+
 function TeslaPage() {
   const cid = getActiveCompanyId();
   const _get = useServerFn(getTeslaStatus);
@@ -259,14 +275,14 @@ function TeslaPage() {
                 <div>
                   Tesla Fleet API neposkytuje hotový zoznam jázd ako Commander. Faktero vie
                   synchronizovať vozidlá, stav tachometra a polohu. Automatická tvorba jázd bude
-                  fungovať na základe pravidelných odometrových a polohových záznamov.
+                  vychádzať z pravidelne zaznamenaného stavu tachometra a polohy.
                 </div>
               </div>
             </div>
 
             {/* Vehicle links */}
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="font-medium">Tesla vozidlá</div>
                   <div className="text-xs text-muted-foreground">
@@ -278,7 +294,7 @@ function TeslaPage() {
                 <button
                   disabled={!isConnected || !!busy}
                   onClick={onSyncVehicles}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-md sm:w-auto border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
                 >
                   <RefreshCcw className="h-4 w-4" /> Synchronizovať vozidlá
                 </button>
@@ -399,8 +415,8 @@ function TeslaPage() {
                   <dd>{fmt(conn?.last_sync_at)}</dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Status</dt>
-                  <dd>{conn?.sync_status ?? "—"}</dd>
+                  <dt className="text-muted-foreground">Stav synchronizácie</dt>
+                  <dd className="text-right">{popisStavuSync(conn?.sync_status)}</dd>
                 </div>
                 {conn?.error_message && (
                   <div>
@@ -427,7 +443,7 @@ function TeslaPage() {
                         <span
                           className={l.status === "ok" ? "text-emerald-600" : "text-destructive"}
                         >
-                          {l.status}
+                          {popisStavuSync(l.status)}
                         </span>
                       </div>
                       <div className="mt-1 text-muted-foreground">{fmt(l.created_at)}</div>
@@ -438,15 +454,14 @@ function TeslaPage() {
               )}
             </div>
             <div className="rounded-xl border border-border bg-muted/30 p-4 text-xs text-muted-foreground">
-              <div className="mb-1 font-medium text-foreground">Commander vs Tesla</div>
+              <div className="mb-1 font-medium text-foreground">Čo z Tesly dostanete</div>
               <p className="mb-2">
-                <strong>Commander:</strong> poskytuje hotové jazdy — importujú sa priamo do knihy
-                jázd.
+                Faktero z vášho vozidla Tesla načíta stav tachometra a polohu. Z nich si potom ľahko
+                doplníte jazdy do knihy jázd.
               </p>
               <p>
-                <strong>Tesla:</strong> poskytuje stav vozidla, tachometer a polohu. Vytváranie jázd
-                vyžaduje snímky/telemetriu. V1 sa zameriavame na synchronizáciu vozidiel a snímky
-                tachometra/polohy.
+                Ak chcete, aby sa hotové jazdy zapisovali do knihy samy, použite GPS jednotku
+                Commander.
               </p>
             </div>
           </div>

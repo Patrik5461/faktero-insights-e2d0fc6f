@@ -26,6 +26,22 @@ export const Route = createFileRoute("/_authenticated/bankove-ucty/transakcie")(
   component: TxPage,
 });
 
+const NAZVY_BANK: Record<string, string> = {
+  tatrabanka: "Tatra banky",
+  fio: "Fio banky",
+  wise: "Wise",
+  revolut: "Revolutu",
+  wallester: "Wallesteru",
+};
+
+/** Podnadpis podľa toho, čo je naozaj pripojené — nie natvrdo Tatra banka. */
+function popisZdroja(providers: string[] | null): string {
+  if (providers === null) return "Pohyby z pripojených bankových účtov.";
+  if (providers.length === 0) return "Zatiaľ nie je pripojená žiadna banka.";
+  const mena = [...new Set(providers)].map((p) => NAZVY_BANK[p] ?? p);
+  return `Pohyby z ${mena.join(", ")}.`;
+}
+
 function fmtMoney(n: number, c = "EUR") {
   return formatovacMeny(c, "sk-SK")(n);
 }
@@ -46,6 +62,7 @@ function TxPage() {
   const nacitajSumy = useServerFn(sumyTransakcii);
   const zrus = useServerFn(zrusParovanie);
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [providers, setProviders] = useState<string[] | null>(null);
   const [selected, setSelected] = useState<string | undefined>(search.account);
   const [busy, setBusy] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
@@ -98,7 +115,10 @@ function TxPage() {
     // Žiadny účet sa nepredvolí. Firma ich má v jednom pripojení aj osem
     // (TB sprístupňuje aj účty v iných bankách) a predvolený prvý účet
     // vyzeral, akoby polovica platieb chýbala.
-    fetchData({ data: { company_id: cid } }).then((d) => setAccounts(d.accounts));
+    fetchData({ data: { company_id: cid } }).then((d) => {
+      setAccounts(d.accounts);
+      setProviders(d.connections.map((c: { provider: string }) => c.provider));
+    });
   }, []);
 
   /*
@@ -189,10 +209,7 @@ function TxPage() {
 
   return (
     <>
-      <PageHeader
-        title="Bankové transakcie"
-        description="Posledných 90 dní z Tatra banky."
-      />
+      <PageHeader title="Bankové transakcie" description={popisZdroja(providers)} />
       <PageBody>
         <LogsToolbar
           search={q}
@@ -230,17 +247,17 @@ function TxPage() {
             setSmer("");
           }}
           right={
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Link
                 to="/faktury/parovanie"
-                className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-3 text-sm hover:bg-secondary"
               >
                 <Link2 className="h-4 w-4" /> Spárovať s faktúrami
               </Link>
               <button
                 onClick={onSync}
                 disabled={accounts.length === 0 || busy}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               >
                 <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Synchronizovať
               </button>
@@ -289,7 +306,7 @@ function TxPage() {
           </div>
         )}
 
-        <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
+        <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -349,19 +366,15 @@ function TxPage() {
                   </td>
                 </tr>
               ))}
-              {!loading && txs.length === 0 && (
-                <tr>
-                  <td colSpan={selected ? 6 : 7}>
-                    <EmptyState
-                      icon={Landmark}
-                      title="Žiadne transakcie"
-                      description="Pre vybraté obdobie a filtre nemáme žiadne výsledky."
-                    />
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+          {!loading && txs.length === 0 && (
+            <EmptyState
+              icon={Landmark}
+              title="Žiadne transakcie"
+              description="Pre vybraté obdobie a filtre nemáme žiadne výsledky."
+            />
+          )}
           <ListFooter
             page={page}
             pageSize={pageSize}

@@ -314,7 +314,7 @@ function PravidlaPage() {
         ) : pravidla.length === 0 ? (
           <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             Zatiaľ žiadne pravidlo. Typický začiatok: „dodávateľ obsahuje <em>Slovnaft</em> →
-            kategória Palivo, predkontácia PHM".
+            kategória Palivo, predkontácia PHM“.
           </div>
         ) : (
           <>
@@ -442,7 +442,7 @@ function PravidlaPage() {
       <ConfirmDialog
         open={!!mazane}
         title="Zmazať pravidlo?"
-        message={`Pravidlo „${mazane?.nazov ?? ""}" sa prestane uplatňovať na nové doklady. Doklady, ktoré už doplnilo, ostávajú, ako sú.`}
+        message={`Pravidlo „${mazane?.nazov ?? ""}“ sa prestane uplatňovať na nové doklady. Doklady, ktoré už doplnilo, ostávajú, ako sú.`}
         confirmLabel="Zmazať"
         onCancel={() => setMazane(null)}
         onConfirm={() => void zmaz()}

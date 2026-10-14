@@ -8,7 +8,7 @@ export const Route = createFileRoute("/pomoc/oss")({
       {
         name: "description",
         content:
-          "Predaj tovaru a digitálnych služieb spotrebiteľom v EÚ: hranica 10 000 €, sadzba štátu zákazníka a podklady pre priznanie OSS.",
+          "Predaj tovaru a digitálnych služieb spotrebiteľom v EÚ: hranica 10 000 €, sadzba štátu zákazníka a podklady pre priznanie OSS.",
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/oss" },
     ],
@@ -26,7 +26,7 @@ const sections: HelpSection[] = [
         <p>
           Keď predávate tovar alebo digitálne služby <strong>spotrebiteľom</strong> (nie firmám s IČ
           DPH) do iných členských štátov EÚ, platí hranica{" "}
-          <strong>10 000 € za kalendárny rok</strong>.
+          <strong>10 000 € za kalendárny rok</strong>.
         </p>
         <ul>
           <li>
@@ -51,8 +51,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           Pri vystavovaní zaškrtnite <strong>Predaj spotrebiteľovi v EÚ (OSS)</strong> a vyberte
-          štát spotreby. Sadzby položiek sa prepnú na sadzby toho štátu — napríklad Nemecko 19 %,
-          Maďarsko 27 %, Luxembursko 17 %.
+          štát spotreby. Sadzby položiek sa prepnú na sadzby toho štátu — napríklad Nemecko 19 %,
+          Maďarsko 27 %, Luxembursko 17 %.
         </p>
         <p>
           Znížené sadzby sa v každom štáte vzťahujú na iné tovary, takže ktorú použiť, ostáva na
@@ -68,7 +68,7 @@ const sections: HelpSection[] = [
       <>
         <p>
           <Link to="/uctovnictvo/oss">Účtovníctvo → OSS</Link> ukáže za štvrťrok rozpis podľa štátov
-          a sadzieb — základ dane a daň — a sleduje, koľko z hranice 10 000 € je vyčerpané.
+          a sadzieb — základ dane a daň — a sleduje, koľko z hranice 10 000 € je vyčerpané.
         </p>
         <p>
           Priznanie OSS sa podáva do konca mesiaca nasledujúceho po štvrťroku cez portál finančnej
@@ -103,7 +103,7 @@ function Page() {
       title="OSS — predaj spotrebiteľom v EÚ"
       intro={
         <p>
-          Hranica 10 000 €, sadzba štátu zákazníka a štvrťročné podklady pre priznanie k jednému
+          Hranica 10 000 €, sadzba štátu zákazníka a štvrťročné podklady pre priznanie k jednému
           kontaktnému miestu.
         </p>
       }

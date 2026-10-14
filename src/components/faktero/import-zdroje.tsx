@@ -31,11 +31,11 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
     label: "Pohoda a mPohoda",
     title: "Import z Pohody a mPohody",
     description:
-      "Naimportujte faktúry a odberateľov z XML exportu programu POHODA, zo súboru ISDOC alebo z údajov mPohody.",
+      "Naimportujte faktúry a odberateľov z XML exportu programu Pohoda, zo súboru ISDOC alebo z údajov mPohody.",
     accept: ".xml,.isdoc,.json",
     guide: (
       <>
-        <p className="mb-2 font-medium">POHODA</p>
+        <p className="mb-2 font-medium">Pohoda</p>
         <ol className="ml-4 list-decimal space-y-1">
           <li>
             Otvorte agendu <strong>Fakturácia → Vydané faktúry</strong> a označte doklady.

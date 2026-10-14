@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { formatujCislo } from "@/lib/faktero/mena";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -460,7 +461,7 @@ function NewTripPage() {
               </Field>
               <Field label="Vzdialenosť (auto)">
                 <div className="input bg-muted/40 tabular-nums">
-                  {Number.isFinite(distance) ? distance.toFixed(1) : "—"} km
+                  {Number.isFinite(distance) ? formatujCislo(distance, 1) : "—"} km
                 </div>
               </Field>
               {/*
