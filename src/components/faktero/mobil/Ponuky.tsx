@@ -182,7 +182,7 @@ export function Ponuky({
         <button
           onClick={onNova}
           aria-label={t("ponuky.nova")}
-          className="grid h-9 w-9 place-items-center rounded-app-sm bg-app-zelena text-white active:scale-95"
+          className="grid h-9 w-9 place-items-center rounded-app-sm bg-app-zelena-plocha text-white active:scale-95"
         >
           <Plus className="h-5 w-5" />
         </button>
@@ -204,7 +204,7 @@ export function Ponuky({
           </p>
           <button
             onClick={onNova}
-            className="mt-4 rounded-app-sm bg-app-zelena px-4 py-2.5 text-sm font-medium text-white active:scale-95"
+            className="mt-4 rounded-app-sm bg-app-zelena-plocha px-4 py-2.5 text-sm font-medium text-white active:scale-95"
           >
             {t("ponuky.vytvorit")}
           </button>

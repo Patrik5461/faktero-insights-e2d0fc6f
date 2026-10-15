@@ -501,7 +501,7 @@ export function HistoriaJazd({
                                         }}
                                         className={`min-h-[36px] rounded-lg px-3 text-[13px] disabled:opacity-60 ${
                                           je
-                                            ? "bg-app-zelena text-white font-medium"
+                                            ? "bg-app-zelena-plocha text-white font-medium"
                                             : "text-app-text-2"
                                         }`}
                                       >

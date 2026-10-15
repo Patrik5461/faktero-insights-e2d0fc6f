@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ponuky/$id")({
   head: () => ({ meta: [{ title: "Detail ponuky — Faktero" }] }),
@@ -163,7 +164,7 @@ function QuoteDetail() {
     setEmailForm({
       recipient_email: q.customer_email,
       subject: `Cenová ponuka ${q.quote_number}`,
-      message: `Dobrý deň,\n\nv prílohe Vám posielame cenovú ponuku ${q.quote_number} platnú do ${q.valid_until}.\n\nS pozdravom,\n${company?.name ?? ""}`,
+      message: `Dobrý deň,\n\nv prílohe Vám posielame cenovú ponuku ${q.quote_number} platnú do ${datumNaDoklade(q.valid_until)}.\n\nS pozdravom,\n${company?.name ?? ""}`,
     });
     setEmailOpen(true);
   }
@@ -377,9 +378,9 @@ function QuoteDetail() {
                       </td>
                       <td className="p-3 text-right">{Number(it.quantity)}</td>
                       <td className="p-3">{it.unit}</td>
-                      <td className="p-3 text-right">{Number(it.unit_price).toFixed(2)}</td>
+                      <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
                       <td className="p-3 text-right">{it.vat_rate}%</td>
-                      <td className="p-3 text-right font-medium">{Number(it.total).toFixed(2)}</td>
+                      <td className="p-3 text-right font-medium">{formatujCislo(it.total, 2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -465,7 +466,7 @@ function QuoteDetail() {
                 Číslo: <span className="font-mono">{q.quote_number}</span>
               </div>
               <div>Mena: {q.currency}</div>
-              <div>Platnosť do: {q.valid_until}</div>
+              <div>Platnosť do: {datumNaDoklade(q.valid_until)}</div>
             </div>
           </aside>
         </div>

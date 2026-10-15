@@ -32,6 +32,7 @@ import {
 } from "@/lib/faktero/ai-assistant.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ai-asistent")({
   head: () => ({ meta: [{ title: "Faktero AI — Faktero" }] }),
@@ -400,7 +401,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             color: "text-amber-600",
             title: "Faktúry po splatnosti",
             value: data.overdueCount,
-            hint: `${data.unpaidTotal.toFixed(2)} ${mena.symbol} nezaplatených`,
+            hint: `${formatujMenu(data.unpaidTotal, mena.kod)} nezaplatených`,
             to: "/faktury",
             search: { poSplatnosti: true as const },
           },
@@ -446,7 +447,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               color: "text-amber-600",
               title: "Faktúry po splatnosti",
               value: data.overdueCount,
-              hint: `${data.unpaidTotal.toFixed(2)} ${mena.symbol} nezaplatených`,
+              hint: `${formatujMenu(data.unpaidTotal, mena.kod)} nezaplatených`,
               to: "/faktury",
               search: { poSplatnosti: true as const },
             },

@@ -48,7 +48,7 @@ export function PruhJazdy({
   const obsah = (
     <>
       <span className="relative mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-app-zelena/40" />
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-app-zelena-plocha/40" />
         <Car className="relative h-4 w-4 text-app-zelena" />
       </span>
       <span className="min-w-0 text-left text-[13px]">

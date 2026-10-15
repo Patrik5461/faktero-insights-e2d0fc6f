@@ -7,6 +7,7 @@
  * druhý beh len prípadne pošle email znova nespustí.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 /** Fixné identifikačné údaje predávajúceho (Tobify s.r.o.). */
 export const TOBIFY_SELLER = {
@@ -31,7 +32,7 @@ function centsFromGrossInclVat(gross: number, vatRate = 23) {
 }
 
 function fmtCents(cents: number, currency = "EUR") {
-  return `${(cents / 100).toFixed(2)} ${currency}`;
+  return formatujMenu(cents / 100, currency);
 }
 
 function publicBaseUrl(): string {

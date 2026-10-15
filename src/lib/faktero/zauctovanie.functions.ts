@@ -181,7 +181,9 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
     const { zapocitatelna } = await import("./samofakturacia");
     const { data: riadky, error } = await supabase
       .from("purchase_invoices")
-      .select("id, invoice_number, status, exported_at, deleted_at, samofakturacia, samofakturacia_stav, type")
+      .select(
+        "id, invoice_number, status, exported_at, deleted_at, samofakturacia, samofakturacia_stav, type, supplier_ico, supplier_ic_dph, supplier_name, amount_total, opravuje_cislo",
+      )
       .eq("company_id", data.company_id)
       .in("id", data.ids);
     if (error) throw new Error(error.message);
@@ -231,6 +233,35 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
       if (!data.lenUlozit) {
         // „Prijatá“ sa zaúčtovaním stáva „zaúčtovanou“; zaplatená ostáva zaplatená.
         await supabase.from("purchase_invoices").update({ status: "booked" }).in("id", ok).eq("status", "received");
+      }
+      /*
+        Učenie z opráv: zaúčtovanie jednej faktúry je voľba človeka pre
+        dodávateľa — nahradí voľbu z vytvorenia toho istého dokladu.
+        Hromadné zaúčtovanie sa neučí (päťdesiat faktúr naraz by prebilo
+        všetko ostatné jedným klikom).
+      */
+      if (data.ids.length === 1 && ok.length === 1) {
+        const r = (riadky ?? []).find((x: any) => x.id === ok[0]);
+        if (r) {
+          const { zaznamenajVolby } = await import("./ucenie-z-oprav.server");
+          const { druhPrijatej } = await import("./ucenie-z-oprav");
+          const volby: Record<string, string | undefined> = {
+            predkontacia: data.predkontacia === undefined ? undefined : (data.predkontacia ?? ""),
+            clenenie: data.clenenie === undefined ? undefined : (data.clenenie ?? ""),
+            kategoria: data.kategoria === undefined ? undefined : (data.kategoria ?? ""),
+            kv: data.kv === undefined ? undefined : (data.kv ?? ""),
+            stredisko: data.stredisko === undefined ? undefined : (data.stredisko ?? ""),
+            cinnost: data.cinnost === undefined ? undefined : (data.cinnost ?? ""),
+          };
+          await zaznamenajVolby(supabase, {
+            companyId: data.company_id,
+            druh: druhPrijatej(r),
+            dodavatel: { ico: r.supplier_ico, icDph: r.supplier_ic_dph, nazov: r.supplier_name },
+            volby,
+            dokladId: r.id,
+            userId: context.userId,
+          });
+        }
       }
     }
     return { zauctovanych: data.lenUlozit ? 0 : ok.length, ulozenych: ok.length, preskocene };
@@ -298,7 +329,7 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
 
     const { data: riadky, error } = await supabase
       .from("expense_documents")
-      .select("id, exported_at")
+      .select("id, exported_at, supplier_ico, supplier_ic_dph, supplier_name")
       .eq("company_id", data.company_id)
       .in("id", data.ids);
     if (error) throw new Error(error.message);
@@ -310,6 +341,27 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id)
         .in("id", ok);
       if (e2) throw new Error(e2.message);
+      // Učenie z opráv — len pri jednom bločku, ako pri prijatých faktúrach.
+      if (data.ids.length === 1 && ok.length === 1) {
+        const r = (riadky ?? [])[0];
+        const { zaznamenajVolby } = await import("./ucenie-z-oprav.server");
+        const volby: Record<string, string> = {};
+        if (zmena.pohoda_predkontacia) volby.predkontacia = String(zmena.pohoda_predkontacia);
+        if (zmena.pohoda_clenenie_dph) volby.clenenie = String(zmena.pohoda_clenenie_dph);
+        if (zmena.category) volby.kategoria = String(zmena.category);
+        if ("kv_clenenie" in zmena) volby.kv = String(zmena.kv_clenenie ?? "");
+        if (zmena.stredisko) volby.stredisko = String(zmena.stredisko);
+        if (zmena.cinnost) volby.cinnost = String(zmena.cinnost);
+        if (r && Object.keys(volby).length)
+          await zaznamenajVolby(supabase, {
+            companyId: data.company_id,
+            druh: "blocek",
+            dodavatel: { ico: r.supplier_ico, icDph: r.supplier_ic_dph, nazov: r.supplier_name },
+            volby,
+            dokladId: r.id,
+            userId: context.userId,
+          });
+      }
     }
     return { zmenenych: ok.length, preskocenych: (riadky ?? []).length - ok.length };
   });

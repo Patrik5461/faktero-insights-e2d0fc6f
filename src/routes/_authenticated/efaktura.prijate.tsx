@@ -14,6 +14,7 @@ import {
   stiahniPrijateEfakturyFn,
   zaevidujPrijatuEfakturuFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/efaktura/prijate")({
   head: () => ({ meta: [{ title: "Prijaté eFaktúry — Faktero" }] }),
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/efaktura/prijate")({
 function suma(hodnota: unknown, mena: string | null): string {
   const n = Number(hodnota);
   if (!Number.isFinite(n)) return "—";
-  return `${n.toFixed(2)} ${mena ?? "EUR"}`;
+  return formatujMenu(n, mena ?? "EUR");
 }
 
 /** Stav rozobratia dokladu — nie stav úhrady. */

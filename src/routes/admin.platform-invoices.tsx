@@ -6,6 +6,7 @@ import { AlertTriangle, ExternalLink, Trash2 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import { toast } from "sonner";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/admin/platform-invoices")({
   ssr: false,
@@ -26,7 +27,7 @@ type Row = {
 };
 
 function fmtEur(cents: number, currency = "EUR") {
-  return `${(cents / 100).toFixed(2)} ${currency}`;
+  return formatujMenu(cents / 100, currency);
 }
 
 function PlatformInvoicesAdmin() {

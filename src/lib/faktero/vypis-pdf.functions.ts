@@ -12,6 +12,7 @@ import {
   type Vypis,
   type VypisPohyb,
 } from "./vypis-pohyby";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 /**
  * Prečítanie bankového výpisu z PDF.
@@ -266,7 +267,7 @@ async function precitajVypis(data: {
     */
     const kontrola = skontrolujZostatky(vypis.pohyby);
     const varovanie = kontrola.medzier
-      ? `Zostatky na výpise nesedia na ${kontrola.medzier} ${kontrola.medzier === 1 ? "mieste" : "miestach"} (spolu ${kontrola.spolu.toFixed(2)} €). Pravdepodobne sa nejaký pohyb nenačítal — porovnajte riadky s výpisom, prosím.`
+      ? `Zostatky na výpise nesedia na ${kontrola.medzier} ${kontrola.medzier === 1 ? "mieste" : "miestach"} (spolu ${formatujMenu(kontrola.spolu, "EUR")}). Pravdepodobne sa nejaký pohyb nenačítal — porovnajte riadky s výpisom, prosím.`
       : undefined;
 
     return { ...vypis, zdroj: maTextovuVrstvu ? "text" : "sken", stran, varovanie };

@@ -79,6 +79,7 @@ import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { formatujMenu, formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 /** Ako sa doklad volá — rovnako v hlavičke stránky aj v PDF. */
 const NAZOV_TYPU: Record<string, string> = {
   proforma: "Zálohová faktúra",
@@ -777,8 +778,8 @@ function InvoiceDetail() {
       ),
       message: (company?.email_default_message ?? "V prílohe posielame faktúru {invoice_number}.")
         .replaceAll("{invoice_number}", inv.invoice_number)
-        .replaceAll("{due_date}", inv.due_date)
-        .replaceAll("{total}", `${Number(inv.total).toFixed(2)} ${inv.currency}`)
+        .replaceAll("{due_date}", datumNaDoklade(inv.due_date))
+        .replaceAll("{total}", formatujMenu(inv.total, inv.currency))
         .replaceAll("{company_name}", company?.name ?? ""),
     });
     setEmailOpen(true);
@@ -1274,7 +1275,7 @@ function InvoiceDetail() {
                       </td>
                       <td className="p-3 text-right">{Number(it.quantity)}</td>
                       <td className="p-3">{it.unit}</td>
-                      <td className="p-3 text-right">{Number(it.unit_price).toFixed(2)}</td>
+                      <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
                       <td className="p-3 text-right">
                         {inv.reverse_charge || (it as any).prenesenie ? (
                           <span title="Prenesenie daňovej povinnosti — daň priznáva odberateľ">PDP</span>
@@ -1282,7 +1283,7 @@ function InvoiceDetail() {
                           `${it.vat_rate}%`
                         )}
                       </td>
-                      <td className="p-3 text-right font-medium">{Number(it.total).toFixed(2)}</td>
+                      <td className="p-3 text-right font-medium">{formatujCislo(it.total, 2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1330,22 +1331,22 @@ function InvoiceDetail() {
                   <>
                     <Row
                       label="Medzisúčet"
-                      value={`${(Number(inv.subtotal) + Number(inv.discount_total)).toFixed(2)} ${inv.currency}`}
+                      value={formatujMenu((Number(inv.subtotal) + Number(inv.discount_total)), inv.currency)}
                     />
                     <Row
                       label="Zľava"
-                      value={`−${Number(inv.discount_total).toFixed(2)} ${inv.currency}`}
+                      value={`−${formatujMenu(inv.discount_total, inv.currency)}`}
                     />
                   </>
                 )}
-                <Row label="Bez DPH" value={`${Number(inv.subtotal).toFixed(2)} ${inv.currency}`} />
-                <Row label="DPH" value={`${Number(inv.vat_total).toFixed(2)} ${inv.currency}`} />
+                <Row label="Bez DPH" value={formatujMenu(inv.subtotal, inv.currency)} />
+                <Row label="DPH" value={formatujMenu(inv.vat_total, inv.currency)} />
                 {maZuctovanuZalohu(inv.advance_amount) && (
                   <>
-                    <Row label="Spolu" value={`${Number(inv.total).toFixed(2)} ${inv.currency}`} />
+                    <Row label="Spolu" value={formatujMenu(inv.total, inv.currency)} />
                     <Row
                       label="Zúčtovaná záloha"
-                      value={`−${Number(inv.advance_amount).toFixed(2)} ${inv.currency}`}
+                      value={`−${formatujMenu(inv.advance_amount, inv.currency)}`}
                     />
                   </>
                 )}
@@ -1355,7 +1356,7 @@ function InvoiceDetail() {
                   {inv.status === "paid" ? "Uhradené" : "Spolu k úhrade"}
                 </div>
                 <div className="text-lg font-semibold tabular-nums">
-                  {zostavaUhradit(inv.total, inv.advance_amount).toFixed(2)} {inv.currency}
+                  {formatujMenu(zostavaUhradit(inv.total, inv.advance_amount), inv.currency)}
                 </div>
               </div>
             </div>
@@ -1463,8 +1464,7 @@ function InvoiceDetail() {
                       </Link>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {datumNaDoklade(settledIn.issue_date)} · {Number(settledIn.total).toFixed(2)}{" "}
-                      {settledIn.currency}
+                      {datumNaDoklade(settledIn.issue_date)} · {formatujMenu(settledIn.total, settledIn.currency)}
                     </div>
                   </div>
                 ) : (
@@ -1493,8 +1493,7 @@ function InvoiceDetail() {
                         {dokladKPlatbe.invoice_number}
                       </Link>
                       <div className="text-xs text-muted-foreground">
-                        {datumNaDoklade(dokladKPlatbe.issue_date)} · {Number(dokladKPlatbe.total).toFixed(2)}{" "}
-                        {dokladKPlatbe.currency} · daň sa priznáva v tomto období
+                        {datumNaDoklade(dokladKPlatbe.issue_date)} · {formatujMenu(dokladKPlatbe.total, dokladKPlatbe.currency)} · daň sa priznáva v tomto období
                       </div>
                     </div>
                   ) : inv.status === "paid" ? (
@@ -1537,8 +1536,8 @@ function InvoiceDetail() {
                         {o.zaloha?.invoice_number ?? "zálohová faktúra"}
                       </Link>
                       <span className="text-xs text-muted-foreground">
-                        {o.zaloha?.issue_date ?? ""} · odpočítané {Number(o.amount).toFixed(2)}{" "}
-                        {o.zaloha?.currency ?? inv.currency}
+                        {o.zaloha?.issue_date ? datumNaDoklade(o.zaloha.issue_date) : ""} · odpočítané{" "}
+                        {formatujMenu(o.amount, o.zaloha?.currency ?? inv.currency)}
                       </span>
                     </li>
                   ))}
@@ -1547,10 +1546,10 @@ function InvoiceDetail() {
                   <div className="mt-2 text-xs text-muted-foreground">
                     Spolu odpočítané{" "}
                     <strong>
-                      {odpocitaneZalohy
-                        .reduce((a: number, o: any) => a + Number(o.amount), 0)
-                        .toFixed(2)}{" "}
-                      {inv.currency}
+                      {formatujMenu(
+                        odpocitaneZalohy.reduce((a: number, o: any) => a + Number(o.amount), 0),
+                        inv.currency,
+                      )}
                     </strong>
                   </div>
                 )}
@@ -1574,7 +1573,7 @@ function InvoiceDetail() {
                   </div>
                   {inv.advance_amount != null && (
                     <div className="text-xs text-muted-foreground">
-                      Odpočítaná suma: {Number(inv.advance_amount).toFixed(2)} {inv.currency}
+                      Odpočítaná suma: {formatujMenu(inv.advance_amount, inv.currency)}
                     </div>
                   )}
                 </div>

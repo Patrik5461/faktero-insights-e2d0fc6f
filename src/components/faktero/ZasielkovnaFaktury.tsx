@@ -10,6 +10,7 @@ import {
   vytvorZasielkuFn,
 } from "@/lib/faktero/eshop-napojenia.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 declare global {
   interface Window {
@@ -302,7 +303,7 @@ function OknoZasielky({
               checked={dobierka}
               onChange={(e) => setDobierka(e.target.checked)}
             />
-            Dobierka {Math.abs(Number(inv.total)).toFixed(2)} {inv.currency}
+            Dobierka {formatujMenu(Math.abs(Number(inv.total)), inv.currency)}
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">

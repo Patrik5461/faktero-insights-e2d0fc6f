@@ -15,6 +15,8 @@ import {
   BulkBar,
   DeletedToggle,
 } from "@/components/faktero/ListControls";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/opakovane/")({
   head: () => ({ meta: [{ title: "Opakované faktúry — Faktero" }] }),
@@ -214,10 +216,8 @@ function RecurringList() {
                     </td>
                     <td className="p-3">{r.customer_name ?? "—"}</td>
                     <td className="p-3">{FREQ_LABEL[r.frequency] ?? r.frequency}</td>
-                    <td className="p-3">{r.next_run}</td>
-                    <td className="p-3 text-right">
-                      {Number(r.total).toFixed(2)} {r.currency}
-                    </td>
+                    <td className="p-3">{datumNaDoklade(r.next_run)}</td>
+                    <td className="p-3 text-right">{formatujMenu(r.total, r.currency)}</td>
                     <td className="p-3">
                       <span
                         className={`inline-block rounded-full px-2 py-0.5 text-xs ${r.active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}

@@ -17,6 +17,8 @@ import { PruhJazdy } from "./PrebiehaJazda";
 import { RozpoznanyDoklad } from "./RozpoznanyDoklad";
 import { DavkaDokladov } from "./DavkaDokladov";
 import { UpravaDokladu } from "./UpravaDokladu";
+import { TabBar, ZALOZKY_VO_VIAC, type Zalozka } from "./TabBar";
+import { Prehlad } from "./Prehlad";
 
 /**
  * Že sa obrazovka vôbec vykreslí.
@@ -155,6 +157,92 @@ describe("mobilné obrazovky sa vykreslia", () => {
   });
 });
 
+/**
+ * Spodná lišta podľa smeru „A": päť miest, skener vyvýšený v strede.
+ *
+ * Banka a Kniha jázd v lište nie sú — nesmú sa tým ale stratiť. Každá záložka
+ * musí byť dosiahnuteľná buď z lišty, alebo cez „Viac" (bočný panel), a obe
+ * presunuté sú navyše rýchlymi akciami na Prehľade.
+ */
+describe("spodná lišta a „Viac“", () => {
+  const lista = (aktivna: Zalozka) =>
+    renderToString(<TabBar aktivna={aktivna} onPrepni={nic} onViac={nic} />);
+
+  it("má päť miest: Prehľad, Faktúry, skener, Doklady, Viac", () => {
+    const html = lista("prehlad");
+    expect(html.match(/<button/g)).toHaveLength(5);
+    for (const text of ["Prehľad", "Faktúry", "Doklady", "Viac"]) expect(html).toContain(text);
+    expect(html).toContain('aria-label="Skener"');
+    expect(html).toContain("data-skener-v-liste");
+    // Banka a jazdy v lište nie sú.
+    expect(html).not.toContain("Banka");
+    expect(html).not.toContain(">Jazdy<");
+  });
+
+  it("banka a jazdy rozsvietia „Viac“, ostatné svoje miesto", () => {
+    expect(ZALOZKY_VO_VIAC).toEqual(["banka", "jazda"]);
+    for (const z of ZALOZKY_VO_VIAC) {
+      const html = lista(z);
+      expect(html).not.toContain('aria-current="page"');
+      expect(html).toMatch(/data-viac=""[^>]*text-app-zelena/);
+    }
+    expect(lista("faktury")).toMatch(/aria-current="page"[^>]*text-app-zelena[^>]*>.*Faktúry/);
+    expect(lista("skener")).toMatch(/aria-label="Skener" aria-current="page"/);
+  });
+
+  it("každá záložka je dosiahnuteľná: lišta, alebo „Viac“ s bankou a jazdami", () => {
+    const vListe: Zalozka[] = ["prehlad", "faktury", "doklady", "skener"];
+    const vsetky: Zalozka[] = ["prehlad", "faktury", "doklady", "skener", "banka", "jazda"];
+    expect(vsetky.filter((z) => !vListe.includes(z))).toEqual([...ZALOZKY_VO_VIAC]);
+
+    const panel = renderToString(
+      <MobilPanel
+        otvoreny
+        onZavri={nic}
+        email="skuska@faktero.sk"
+        firma={firma}
+        viacFiriem={false}
+        onZmenitFirmu={nic}
+        onDoklady={nic}
+        onFaktury={nic}
+        onPonuky={nic}
+        onBanka={nic}
+        onJazda={nic}
+        onUcet={nic}
+        onZmazatUcet={nic}
+        onOdhlasit={nic}
+      />,
+    );
+    expect(panel).toContain("Banka");
+    expect(panel).toContain("Kniha jázd");
+    expect(panel).toContain("Cenové ponuky");
+  });
+
+  it("Prehľad ponúka banku aj jazdu ako rýchle akcie", () => {
+    const html = renderToString(
+      <Prehlad
+        firma={firma}
+        onNovaFaktura={nic}
+        onSkener={nic}
+        onJazda={nic}
+        onBanka={nic}
+        onFaktury={nic}
+        onDoklady={nic}
+      />,
+    );
+    for (const text of [
+      "Faktúra",
+      "Skenovať",
+      "Jazda",
+      "Banka",
+      "Neuhradené faktúry",
+      "Čaká na vás",
+    ])
+      expect(html).toContain(text);
+    expect(html).toContain("data-hlavna-karta");
+  });
+});
+
 describe("skener a výber dokladov", () => {
   it("skener je prázdny: nastavenie je jeden čip, panel sa vysunie až na ťuknutie", () => {
     const html = renderToString(
@@ -177,6 +265,27 @@ describe("skener a výber dokladov", () => {
     expect(html).not.toContain("data-panel-dokladu");
     expect(html).not.toContain("PDF súbor");
     expect(html).toContain("data-spust");
+    // Rozloženie „A": biely panel, úhrada ako dve tlačidlá vedľa kategórie.
+    expect(html).toContain("data-spodny-panel");
+    expect(html).toMatch(/aria-pressed="false"[^>]*>Hotovosť/);
+    expect(html).toMatch(/aria-pressed="true"[^>]*>Karta/);
+  });
+
+  it("skener sa dá zavrieť krížikom, keď nemá spodnú lištu", () => {
+    const html = renderToString(
+      <Skener
+        onQr={nic}
+        onOdfotit={nic}
+        onZGalerie={nic}
+        onViacstranovy={nic}
+        onPrijateDoklady={nic}
+        nastavenie={vychodzieNastavenie()}
+        onNastavenie={nic}
+        onZavriet={nic}
+      />,
+    );
+    expect(html).toContain("data-zavriet-skener");
+    expect(html).toContain("Kategória");
   });
 
   it("„Upraviť doklad“ má štyri rohy a všetky tlačidlá", () => {

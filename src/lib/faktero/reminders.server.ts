@@ -3,6 +3,7 @@ import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { podpisHtml, podpisText } from "./email-podpis";
 import { sUctomFaktury } from "./platobny-ucet";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export type ReminderNumber = 1 | 2 | 3;
 
@@ -29,7 +30,7 @@ export function defaultReminderMessage(n: ReminderNumber) {
 }
 
 function applyVars(s: string, inv: any, company: any) {
-  const total = `${Number(inv.total ?? 0).toFixed(2)} ${inv.currency ?? "EUR"}`;
+  const total = formatujMenu(inv.total ?? 0, inv.currency ?? "EUR");
   const pairs: Array<[string, string]> = [
     ["invoice_number", inv.invoice_number ?? ""],
     ["due_date", inv.due_date ?? ""],
@@ -87,7 +88,7 @@ export function buildReminderContent({
     invoice?.variable_symbol
       ? `VS: ${invoice.variable_symbol}`
       : `VS: ${invoice.invoice_number ?? ""}`,
-    `Suma: ${Number(invoice.total ?? 0).toFixed(2)} ${invoice.currency ?? "EUR"}`,
+    `Suma: ${formatujMenu(invoice.total ?? 0, invoice.currency ?? "EUR")}`,
     invoice?.due_date ? `Pôvodná splatnosť: ${invoice.due_date}` : null,
   ]
     .filter(Boolean)

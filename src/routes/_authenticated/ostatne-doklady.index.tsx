@@ -29,6 +29,7 @@ import { CheckCircle2, Download, FolderOpen, Paperclip, Plus, Trash2, Undo2 } fr
 import { toast } from "sonner";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
   head: () => ({ meta: [{ title: "Iné doklady — Faktero" }] }),
@@ -418,7 +419,7 @@ function OstatneDokladyPage() {
                             onChange={() => toggle(r.id)}
                           />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap">{r.received_date}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">{datumNaDoklade(r.received_date)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           {nazovDruhu(r.kind)}
                           {r.priecinok ? (
@@ -468,7 +469,7 @@ function OstatneDokladyPage() {
                           )}
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
-                          {r.amount != null ? `${Number(r.amount).toFixed(2)} ${r.currency}` : "—"}
+                          {r.amount != null ? formatujMenu(r.amount, r.currency) : "—"}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           {r.due_date ? (

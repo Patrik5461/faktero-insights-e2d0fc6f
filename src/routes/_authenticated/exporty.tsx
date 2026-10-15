@@ -303,7 +303,7 @@ function ExportsPage() {
                         <div className="mt-0.5 text-xs text-muted-foreground">
                           {j.invoice_count} faktúr ·{" "}
                           {new Date(j.created_at).toLocaleString("sk-SK")}
-                          {j.date_from && j.date_to ? ` · ${j.date_from} → ${j.date_to}` : ""}
+                          {j.date_from && j.date_to ? ` · ${datumNaDoklade(j.date_from)} → ${datumNaDoklade(j.date_to)}` : ""}
                         </div>
                       </div>
                       <button

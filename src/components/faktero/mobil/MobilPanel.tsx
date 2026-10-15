@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import {
   Building2,
   BookOpen,
+  Car,
+  Landmark,
   ChevronRight,
   FileText,
   Fingerprint,
@@ -56,6 +58,8 @@ export function MobilPanel({
   onDoklady,
   onFaktury,
   onPonuky,
+  onBanka,
+  onJazda,
   onUcet,
   onZmazatUcet,
   onOdhlasit,
@@ -73,6 +77,13 @@ export function MobilPanel({
   onFaktury?: () => void;
   /** Cenové ponuky. Nie sú v spodnej lište — tá má päť agend a je plná. */
   onPonuky?: () => void;
+  /**
+   * Banka a Kniha jázd. Od smeru „A" nemajú miesto v spodnej lište — otvára
+   * sa k nim tento panel cez „Viac". Kniha jázd ich neposiela (jazdy má
+   * v lište, banku vôbec).
+   */
+  onBanka?: () => void;
+  onJazda?: () => void;
   onUcet: () => void;
   /** Samostatná obrazovka so zmazaním účtu — kvôli pravidlu App Store 5.1.1(v). */
   onZmazatUcet: () => void;
@@ -159,7 +170,11 @@ export function MobilPanel({
           if (posun < -60) onZavri();
           else setPosun(0);
         }}
-        className="fixed inset-y-0 left-0 z-50 flex w-[84%] max-w-sm flex-col bg-app-karta shadow-2xl"
+        /* Tieň len otvorenému: zatvorený panel stojí tesne za ľavým okrajom
+           a jeho tieň by presvital ako sivý pruh po celej výške obrazovky. */
+        className={`fixed inset-y-0 left-0 z-50 flex w-[84%] max-w-sm flex-col rounded-r-app-lg bg-app-karta text-app-text ${
+          otvoreny ? "shadow-2xl" : ""
+        }`}
         style={{
           transform: otvoreny ? `translateX(${posun}px)` : `translateX(-100%)`,
           transition: pusta ? "transform 220ms cubic-bezier(0.32, 0.72, 0, 1)" : undefined,
@@ -228,6 +243,26 @@ export function MobilPanel({
               onClick={() => {
                 onZavri();
                 onDoklady();
+              }}
+            />
+          )}
+          {onBanka && (
+            <Polozka
+              icon={Landmark}
+              label={t("tab.banka")}
+              onClick={() => {
+                onZavri();
+                onBanka();
+              }}
+            />
+          )}
+          {onJazda && (
+            <Polozka
+              icon={Car}
+              label={t("tab.jazda")}
+              onClick={() => {
+                onZavri();
+                onJazda();
               }}
             />
           )}
@@ -484,13 +519,13 @@ function Polozka({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-app-sm px-3 py-3 text-left active:bg-secondary"
+      className="flex w-full items-center gap-3 rounded-app-sm px-3 py-3 text-left active:bg-app-pozadie"
     >
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-app-sm bg-app-zelena-jemna text-app-zelena">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-app-zelena-jemna text-app-zelena">
         <Icon className="h-[18px] w-[18px]" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-medium">{label}</span>
+        <span className="block text-[15px] font-semibold">{label}</span>
         {hint && <span className="block text-[13px] text-app-text-2">{hint}</span>}
       </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-app-text-2" />

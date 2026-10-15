@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export type TemplateType =
   "invoice_send" | "reminder_1" | "reminder_2" | "reminder_3" | "approval_request";
@@ -47,7 +48,7 @@ export const DEFAULT_TEMPLATES: Record<TemplateType, { subject: string; body: st
 export function applyTemplateVars(s: string, ctx: { invoice?: any; company?: any }): string {
   const inv = ctx.invoice ?? {};
   const co = ctx.company ?? {};
-  const total = inv.total != null ? `${Number(inv.total).toFixed(2)} ${inv.currency ?? "EUR"}` : "";
+  const total = inv.total != null ? formatujMenu(inv.total, inv.currency ?? "EUR") : "";
   const map: Record<string, string> = {
     "{{invoice_number}}": inv.invoice_number ?? "",
     "{{total}}": total,

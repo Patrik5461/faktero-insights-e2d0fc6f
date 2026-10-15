@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { NahladPdf } from "./NahladPdf";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
+import { NauceneZDodavatela } from "./NauceneZDodavatela";
 import {
   DRUHY_NESPRACOVANYCH,
   NAZVY_POLI,
@@ -417,6 +418,7 @@ export function NespracovanyKompaktny({
                   })
                 }
               />
+              <NauceneZDodavatela u={u} />
               <p className="text-xs text-muted-foreground">
                 Prázdne = predvolené z{" "}
                 <Link to="/uctovnictvo/predkontacie" className="underline">

@@ -15,6 +15,7 @@ import { KodPohody } from "./KodPohody";
 import { VyberPravidla } from "./VyberPravidla";
 import type { Navrhy } from "./ZauctovaniePanel";
 import { potvrd } from "@/lib/potvrdenie";
+import { formatujCislo } from "@/lib/faktero/mena";
 
 const KV_VYDANE = KV_CLENENIA.filter((k) => ["A1", "A2", "C1", "D1", "D2", "X"].includes(k.kod));
 const kedy = (iso: string | null | undefined) =>
@@ -349,7 +350,7 @@ export function ZauctovanieVystavenejPanel({
                           </span>
                         </td>
                         <td className="py-1.5 pr-2 text-right tabular-nums">
-                          {p.subtotal.toFixed(2)}
+                          {formatujCislo(p.subtotal, 2)}
                         </td>
                         <td className="py-1.5 pr-2 w-36">
                           <KodPohody

@@ -15,6 +15,7 @@ import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodava
 import { PackageCheck, Send, Trash2, X } from "lucide-react";
 import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
   head: () => ({ meta: [{ title: "Objednávka — Faktero" }] }),
@@ -135,7 +136,7 @@ function PurchaseOrderDetail() {
           <div className="grid gap-3 rounded-xl border border-border bg-card p-4 text-sm sm:grid-cols-4">
             <div>
               <div className="text-xs text-muted-foreground">Vystavená</div>
-              <div>{o.order_date}</div>
+              <div>{datumNaDoklade(o.order_date)}</div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Očakávané dodanie</div>

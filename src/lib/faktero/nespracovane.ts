@@ -86,6 +86,12 @@ export type UdajeNespracovaneho = {
    * len podľa súčtov a rozpisu DPH (ako vypnuté vyťažovanie položiek v Doklado).
    */
   polozkyVypnute?: boolean;
+  /**
+   * Polia doplnené učením z opráv (pole → doplnená hodnota), pozri
+   * `ucenie-z-oprav.ts`. Kým sa hodnota v poli rovná tejto, web pri ňom
+   * ukazuje „naučené"; po zmene ju človek prevzal za svoju.
+   */
+  naucene?: Record<string, string>;
 };
 
 const r2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;

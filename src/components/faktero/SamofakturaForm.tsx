@@ -18,7 +18,7 @@ import {
   zlavaDokladuSuma,
 } from "@/lib/faktero/samofakturacia";
 import { krajinaDane, sadzbyKrajiny, zakladnaSadzba } from "@/lib/faktero/vat-rates";
-import { MENY, formatovacMeny } from "@/lib/faktero/mena";
+import { MENY, formatovacMeny, formatujMenu, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { UPRAVY_NA_VYBER } from "@/lib/faktero/faktura-nalezitosti";
 import { JAZYKY_DOKLADU } from "@/lib/faktero/faktura-jazyk";
 
@@ -978,7 +978,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                     <option value="">— žiadnu —</option>
                     {zalohy.map((z) => (
                       <option key={z.id} value={z.id}>
-                        {z.invoice_number} · {z.amount_total.toFixed(2)} {z.currency}
+                        {z.invoice_number} · {formatujMenu(z.amount_total, z.currency)}
                       </option>
                     ))}
                   </select>
@@ -1117,7 +1117,7 @@ function Katalog({
                     <span className="truncate">{p.name}</span>
                   </span>
                   <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {p.cena.toFixed(2)} / {p.unit}
+                    {formatujJednotkovuCenu(p.cena)} / {p.unit}
                   </span>
                 </button>
               </li>

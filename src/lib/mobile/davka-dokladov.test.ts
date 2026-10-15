@@ -3,6 +3,7 @@ import { prazdneUdaje, type UdajeNespracovaneho } from "@/lib/faktero/nespracova
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
 import {
   MAX_SUCASNE,
+  dalsiNaOtvorenie,
   MAX_VELKOST_B,
   naCitanie,
   naHromadneUlozenie,
@@ -236,5 +237,27 @@ describe("ťuknutie a súhrn", () => {
     expect(v.vNespracovanych).toBe(2);
     expect(v.nenahrane).toBe(3);
     expect(v.pracuje).toBe(true);
+  });
+});
+
+describe("„Uložiť a ďalší“ v dávke", () => {
+  const sId = (stavy: DokladVDavke["stav"][]) =>
+    davka(stavy).map((d, i) => ({ ...d, id: `u-${i}` }));
+
+  it("ide dopredu a preskočí uložené aj rozpracované", () => {
+    const d = sId(["rozpoznane", "ulozene", "nahravam", "doplnit", "duplicita"]);
+    expect(dalsiNaOtvorenie(d, "k0")?.kluc).toBe("k3");
+    expect(dalsiNaOtvorenie(d, "k3")?.kluc).toBe("k4");
+  });
+
+  it("za posledným pokračuje od začiatku, nie na ten istý", () => {
+    const d = sId(["doplnit", "ulozene", "rozpoznane"]);
+    expect(dalsiNaOtvorenie(d, "k2")?.kluc).toBe("k0");
+    expect(dalsiNaOtvorenie(sId(["rozpoznane"]), "k0")).toBeNull();
+  });
+
+  it("nenahratý doklad sa otvoriť nedá", () => {
+    const d = davka(["rozpoznane", "caka"]).map((x, i) => (i === 0 ? { ...x, id: "u-0" } : x));
+    expect(dalsiNaOtvorenie(d, "k0")).toBeNull();
   });
 });

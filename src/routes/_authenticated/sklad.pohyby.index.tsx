@@ -417,7 +417,7 @@ function MovementsPage() {
                       <Link
                         to="/faktury/$id"
                         params={{ id: invoices[m.source_document_id ?? m.reference_id].id }}
-                        className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-700 hover:underline"
+                        className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground hover:underline"
                       >
                         Faktúra {invoices[m.source_document_id ?? m.reference_id].number}
                       </Link>
@@ -425,12 +425,12 @@ function MovementsPage() {
                       <Link
                         to="/prijate-faktury/$id"
                         params={{ id: m.source_document_id }}
-                        className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-700 hover:underline"
+                        className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground hover:underline"
                       >
                         Samofaktúra
                       </Link>
                     ) : m.source_document_type ? (
-                      <span className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-700">
+                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
                         {(
                           {
                             receipt_note: "Príjemka",

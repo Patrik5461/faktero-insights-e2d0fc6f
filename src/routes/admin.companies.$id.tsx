@@ -6,6 +6,7 @@ import { ArrowLeft, PauseCircle, PlayCircle, UserCog } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveDialog } from "@/components/faktero/ResponsiveDialog";
 import { getAdminCompany, suspendCompany, reactivateCompany } from "@/lib/faktero/admin.functions";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/admin/companies/$id")({
   head: () => ({ meta: [{ title: "Admin · Detail firmy — Faktero" }] }),
@@ -238,7 +239,7 @@ function AdminCompanyDetailPage() {
                   label="Mesačná cena"
                   value={
                     data.subscription.monthly_price_cents != null
-                      ? `${(data.subscription.monthly_price_cents / 100).toFixed(2)} €`
+                      ? formatujMenu(data.subscription.monthly_price_cents / 100, "EUR")
                       : "—"
                   }
                 />

@@ -278,7 +278,7 @@ export function MovementForm({
             </label>
             {type === "vydaj" && stockItem && availability && (
               <div
-                className={`rounded-md border px-3 py-2 text-xs tabular-nums ${Number(quantity) > availability.available ? "border-amber-300 bg-amber-50 text-amber-900" : "border-stone-200 bg-stone-50 text-muted-foreground"}`}
+                className={`rounded-md border px-3 py-2 text-xs tabular-nums ${Number(quantity) > availability.available ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100" : "border-border bg-muted text-muted-foreground"}`}
               >
                 Na sklade <b>{formatujCislo(availability.on_hand, 0, 2)}</b> · Rezervované{" "}
                 <b>{formatujCislo(availability.reserved, 0, 2)}</b> · K dispozícii{" "}
@@ -325,7 +325,7 @@ export function MovementForm({
                     Alokujú sa do obstarávacej ceny.
                   </span>
                 </label>
-                <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm">
+                <div className="rounded-md border border-border bg-muted px-3 py-2 text-sm">
                   <span className="text-xs uppercase tracking-wide text-muted-foreground">
                     Obstarávacia cena / MJ
                   </span>

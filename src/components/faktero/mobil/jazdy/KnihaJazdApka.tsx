@@ -306,7 +306,7 @@ function ObsahJazd() {
                 setDlho(false);
                 void zisti();
               }}
-              className="rounded-app bg-app-zelena px-4 py-3 text-[15px] font-medium text-white"
+              className="rounded-app bg-app-zelena-plocha px-4 py-3 text-[15px] font-medium text-white"
             >
               {t("app.skusitZnova")}
             </button>

@@ -76,6 +76,7 @@
   --color-app-ramik: var(--app-ramik);
   --color-app-zelena: var(--app-zelena);
   --color-app-zelena-jemna: var(--app-zelena-jemna);
+  --color-app-zelena-plocha: var(--app-zelena-plocha);
   --color-app-text: var(--app-text);
   --color-app-text-2: var(--app-text-2);
   --color-app-text-3: var(--app-text-3);
@@ -83,8 +84,11 @@
   --color-app-chyba-jemna: var(--app-chyba-jemna);
   --color-app-pozor: var(--app-pozor);
   --color-app-pozor-jemna: var(--app-pozor-jemna);
+  --color-app-obrys: var(--app-obrys);
+  --color-app-linka: var(--app-linka);
   --radius-app: var(--app-radius);
   --radius-app-sm: var(--app-radius-sm);
+  --radius-app-lg: var(--app-radius-lg);
   --shadow-app: var(--app-tien);
 }
 
@@ -172,17 +176,40 @@
   --app-ramik: #eceeec;
   --app-zelena: var(--primary);
   --app-zelena-jemna: #e8f5ee;
+  /*
+    Zelená ako plocha pod bielym textom (tlačidlo, hlavná karta, skener
+    v lište). Vo svetle je to tá istá značková zelená; v tme sa `--app-zelena`
+    rozsvieti kvôli zelenému textu a biely text na nej by bol nečitateľný —
+    plocha preto ostáva tmavšia.
+  */
+  --app-zelena-plocha: var(--primary);
   --app-text: #101513;
-  --app-text-2: #6b7280;
-  --app-text-3: #9ca3af;
-  --app-chyba: #dc2626;
+  /*
+    Sekundárny text tmavší než predtým (#6b7280): na pozadí #f5f6f5 vychádzal
+    kontrast tesne nad 4.5:1 a malé popisky sa na slnku strácali. #5d6670 má
+    s rezervou nad 5:1, tretí stupeň ostáva nad 4.5:1 na bielej karte.
+  */
+  --app-text-2: #5d6670;
+  --app-text-3: #6f7780;
+  --app-chyba: #b42318;
   --app-chyba-jemna: #fdeaea;
   /* Pozor, nie chyba: appka na niečo upozorní, ale dovolí pokračovať. */
   --app-pozor: #b45309;
   --app-pozor-jemna: #fef4e6;
-  --app-radius: 16px;
-  --app-radius-sm: 12px;
-  /* Tieň skoro žiadny — karty oddeľuje rámik, nie vrstvenie. */
+  /*
+    Smer „A · Svetlý a pokojný": biele karty bez rámika na sivozelenom
+    pozadí, zaoblenie kariet 18 px, veľkých plôch (hlavná karta, vysúvací
+    panel) 24 px, tlačidiel 14 px. Rámik karty (`--app-obrys`) je vo svetle
+    priehľadný — kartu oddeľuje farba, nie čiara; v tme sa vráti, lebo tam
+    rozdiel dvoch tmavých odtieňov nestačí.
+  */
+  --app-obrys: transparent;
+  /* Obrys ovládacích prvkov (tlačidlo s rámikom, pole) — o stupeň výraznejší než deliaca čiara. */
+  --app-linka: #dfe3df;
+  --app-radius: 18px;
+  --app-radius-sm: 14px;
+  --app-radius-lg: 24px;
+  /* Tieň skoro žiadny — len tam, kde prvok naozaj leží nad iným. */
   --app-tien: 0 1px 2px rgb(16 21 19 / 0.04);
 }
 
@@ -289,8 +316,11 @@ html[data-dizajn="kompaktny"] div:has(> label:first-child + :is(input:not([type=
   --app-pozadie: oklch(0.155 0.012 160);
   --app-karta: oklch(0.205 0.014 160);
   --app-ramik: oklch(1 0 0 / 10%);
+  --app-obrys: oklch(1 0 0 / 7%);
+  --app-linka: oklch(1 0 0 / 16%);
   --app-zelena: oklch(0.72 0.15 158);
   --app-zelena-jemna: oklch(0.28 0.04 160);
+  --app-zelena-plocha: oklch(0.52 0.13 155);
   --app-text: oklch(0.97 0.004 160);
   --app-text-2: oklch(0.72 0.02 160);
   --app-text-3: oklch(0.6 0.02 160);

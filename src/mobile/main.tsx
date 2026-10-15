@@ -16,6 +16,8 @@ import { PotvrdzovacieOkno } from "@/components/faktero/PotvrdzovacieOkno";
 import { ODSADENIE_TOASTOV } from "@/components/ui/sonner";
 import { MobilnaApka } from "@/components/faktero/mobil/MobilApp";
 import "@/styles.css";
+/* Písmo Manrope — len Faktero, Kniha jázd ho nemá (viď faktero.css). */
+import "./faktero.css";
 
 const koren = document.getElementById("root");
 if (!koren) throw new Error("Chýba #root");

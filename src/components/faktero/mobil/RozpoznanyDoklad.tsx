@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, FileText, Loader2, RotateCcw } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, FileText, Loader2, RotateCcw } from "lucide-react";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
@@ -93,6 +93,7 @@ export function RozpoznanyDoklad({
   onNechat,
   onSpat,
   onDalsi,
+  davka,
 }: {
   firma: { id: string; name: string };
   /** Fotka, obrázok z galérie alebo PDF (aj spojené strany) ako data URL. */
@@ -114,8 +115,15 @@ export function RozpoznanyDoklad({
    * a fotí sa ďalší. Bez neho sa tlačidlo neukáže (v dávke má vlastné).
    */
   onDalsi?: (id: string) => void;
+  /**
+   * Doklad otvorený z dávky (`DavkaDokladov`). Keď v nej čaká ďalší neuložený
+   * doklad, hlavné tlačidlo je „Uložiť a ďalší" (dávka po uložení rovno otvorí
+   * ďalší) a pribudne „Preskočiť" — na ďalší bez uloženia tohto.
+   */
+  davka?: { poradie: number; spolu: number; maDalsi: boolean; onPreskocit: () => void };
 }) {
   const { t, locale: loc } = usePreklad();
+  const nadpis = davka ? t("rd.dokladZ", { n: davka.poradie, spolu: davka.spolu }) : t("rd.nadpis");
   const nahraj = useOperacia<{ id: string }>("sken-nahraj");
   const stavDokladu = useOperacia<Detail>("sken-stav");
   const vytvor = useOperacia<{ agenda: string; id: string }>("sken-vytvor");
@@ -273,7 +281,7 @@ export function RozpoznanyDoklad({
 
   if (faza === "chybaNahratia")
     return (
-      <MobilObrazovka title={t("rd.nadpis")} subtitle={firma.name} onBack={onSpat}>
+      <MobilObrazovka title={nadpis} subtitle={firma.name} onBack={onSpat}>
         <div
           role="alert"
           className="rounded-app border border-app-pozor/40 bg-app-pozor-jemna p-4 text-[14px]"
@@ -296,11 +304,19 @@ export function RozpoznanyDoklad({
   if (faza === "citam" || faza === "dlho")
     return (
       <MobilObrazovka
-        title={t("rd.nadpis")}
+        title={nadpis}
         subtitle={firma.name}
         onBack={nechat}
         footer={
           <div className="space-y-1">
+            {davka?.maDalsi && (
+              <button
+                onClick={davka.onPreskocit}
+                className="w-full rounded-app-sm border border-app-linka px-4 py-3 text-sm font-semibold"
+              >
+                {t("rd.preskocit")}
+              </button>
+            )}
             {onDalsi && id && (
               <HlavneTlacidlo onClick={() => onDalsi(id)}>{t("rd.odfotitDalsi")}</HlavneTlacidlo>
             )}
@@ -347,24 +363,42 @@ export function RozpoznanyDoklad({
   const jeFaktura = druh === "faktura" || druh === "zalohova" || druh === "dobropis";
   const rozpoznany = (detail.druh as DruhNespracovaneho | null) ?? null;
 
+  const zakladDph = s.zaklad || s.dph;
   return (
     <MobilObrazovka
-      title={t("rd.nadpis")}
+      title={nadpis}
       subtitle={firma.name}
       onBack={nechat}
       footer={
         <div className="space-y-1">
           <HlavneTlacidlo onClick={() => void uloz()} disabled={!daSaUlozit}>
-            {ukladam ? t("rd.ukladam") : druh ? t(ULOZIT_AKO[druh]) : t("rd.vyberteDruh")}
+            {ukladam
+              ? t("rd.ukladam")
+              : !druh
+                ? t("rd.vyberteDruh")
+                : davka?.maDalsi
+                  ? t("rd.ulozitADalsi")
+                  : t(ULOZIT_AKO[druh])}
           </HlavneTlacidlo>
           <div className="flex gap-2">
             <button
               onClick={nechat}
               disabled={ukladam}
-              className="flex-1 rounded-app-sm px-4 py-2.5 text-sm text-app-text-2"
+              className="min-h-[44px] flex-1 rounded-app-sm px-3 py-2.5 text-[14px] font-semibold text-app-text-2"
             >
               {t("rd.nechat")}
             </button>
+            {/* Ďalší doklad dávky bez uloženia tohto — ostane v Nespracovaných. */}
+            {davka?.maDalsi && (
+              <button
+                onClick={davka.onPreskocit}
+                disabled={ukladam}
+                data-preskocit
+                className="min-h-[44px] flex-1 rounded-app-sm border border-app-linka px-3 py-2.5 text-[14px] font-semibold"
+              >
+                {t("rd.preskocit")}
+              </button>
+            )}
             {/*
               Ďalší doklad bez ukladania tohto: tento ide do dávky aj s tým,
               čo sa z neho prečítalo, a uloží sa tam (aj hromadne).
@@ -373,7 +407,7 @@ export function RozpoznanyDoklad({
               <button
                 onClick={() => onDalsi(id)}
                 disabled={ukladam}
-                className="flex-1 rounded-app-sm border border-app-ramik px-4 py-2.5 text-sm"
+                className="min-h-[44px] flex-1 rounded-app-sm border border-app-linka px-3 py-2.5 text-[14px] font-semibold"
               >
                 {t("rd.odfotitDalsi")}
               </button>
@@ -383,6 +417,34 @@ export function RozpoznanyDoklad({
       }
     >
       <div className="space-y-4">
+        {/*
+          Zhrnutie ako v návrhu „A": náhľad, čo appka rozpoznala, veľká suma
+          a dodávateľ s dátumom — podľa toho človek doklad spozná.
+        */}
+        <div className="flex items-center gap-3.5">
+          <Miniatura subor={subor} mime={mime} />
+          <div className="min-w-0 flex-1">
+            {rozpoznany && (
+              <span
+                data-rozpoznane
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-app-zelena-jemna px-2.5 py-1 text-[12px] font-bold text-app-zelena"
+              >
+                <Check className="h-3 w-3 shrink-0" strokeWidth={3} />
+                <span className="truncate">
+                  {t("rd.rozpoznaneDruh", { druh: t(NAZOV_DRUHU[rozpoznany]) })}
+                </span>
+              </span>
+            )}
+            <div className="mt-1 truncate text-[34px] font-extrabold leading-tight tracking-tight tabular-nums">
+              {s.celkom ? formatujMenu(s.celkom, u.mena || "EUR", loc) : "—"}
+            </div>
+            <div className="truncate text-[15px] text-app-text-2">
+              {u.dodavatel.nazov || t("app.neznamyPredajca")}
+              {u.datumVystavenia ? ` · ${datum(u.datumVystavenia, loc)}` : ""}
+            </div>
+          </div>
+        </div>
+
         {detail.stav === "chyba" && (
           <div
             role="status"
@@ -396,130 +458,116 @@ export function RozpoznanyDoklad({
           <div
             key={v}
             role="status"
-            className="rounded-app border border-app-pozor/40 bg-app-pozor-jemna p-3 text-[13px] text-app-text-2"
+            className="rounded-app border border-app-pozor/40 bg-app-pozor-jemna p-3 text-[13px] text-app-text"
           >
             {v}
           </div>
         ))}
 
-        <div>
-          <div className="mb-2 text-sm font-medium">{t("rd.coToJe")}</div>
-          <div role="radiogroup" aria-label={t("rd.coToJe")} className="flex flex-wrap gap-2">
-            {DRUHY_NESPRACOVANYCH.map(({ kluc }) => (
-              <button
-                key={kluc}
-                role="radio"
-                aria-checked={druh === kluc}
-                onClick={() => setDruh(kluc)}
-                className={`min-h-[40px] rounded-full border px-3.5 text-[14px] transition ${
-                  druh === kluc
-                    ? "border-primary bg-primary/10 font-semibold text-app-zelena"
-                    : "border-app-ramik bg-app-karta text-foreground"
-                }`}
-              >
-                {t(NAZOV_DRUHU[kluc])}
-                {rozpoznany === kluc && (
-                  <span className="ml-1.5 text-[11px] font-normal text-app-text-2">
-                    · {t("rd.rozpoznane")}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Zhrnutie — to, podľa čoho človek doklad spozná. */}
-        <div className="rounded-app border border-app-ramik bg-app-karta p-4 shadow-[var(--shadow-card)]">
-          <div className="text-[30px] font-semibold leading-none tabular-nums">
-            {s.celkom ? formatujMenu(s.celkom, u.mena || "EUR", loc) : "—"}
-          </div>
-          <div className="mt-2 text-[14px] text-app-text-2">
-            {u.dodavatel.nazov || t("app.neznamyPredajca")}
-          </div>
-          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-[13px]">
-            {u.cislo && (
-              <>
-                <dt className="text-app-text-2">{t("rd.cislo")}</dt>
-                <dd className="min-w-0 truncate text-right">{u.cislo}</dd>
-              </>
-            )}
-            {u.datumVystavenia && (
-              <>
-                <dt className="text-app-text-2">{t("rd.vystavene")}</dt>
-                <dd className="text-right">{datum(u.datumVystavenia, loc)}</dd>
-              </>
-            )}
-            {jeFaktura && u.splatnost && (
-              <>
-                <dt className="text-app-text-2">{t("rd.splatnost")}</dt>
-                <dd className="text-right">{datum(u.splatnost, loc)}</dd>
-              </>
-            )}
-            {druh === "ostatny" && u.ostatny.predmet && (
-              <>
-                <dt className="text-app-text-2">{t("rd.predmet")}</dt>
-                <dd className="min-w-0 text-right">{u.ostatny.predmet}</dd>
-              </>
-            )}
-          </dl>
-        </div>
-
-        {druh === "blocek" && (
-          <div>
-            <div className="mb-2 text-sm font-medium">{t("rd.uhrada")}</div>
-            <div role="radiogroup" aria-label={t("rd.uhrada")} className="grid grid-cols-3 gap-2">
-              {(
-                [
-                  ["hotovost", t("pd.hotovost")],
-                  ["karta", t("pd.kartou")],
-                  ["prevod", t("pd.prevodom")],
-                ] as const
-              ).map(([kod, label]) => (
-                <button
-                  key={kod}
-                  role="radio"
-                  aria-checked={platba === kod}
-                  onClick={() => setPlatba(kod)}
-                  className={`rounded-app border py-3 text-[14px] transition active:scale-[0.98] ${
-                    platba === kod
-                      ? "border-primary bg-primary/10 font-semibold text-app-zelena"
-                      : platba
-                        ? "border-app-ramik bg-app-karta"
-                        : "border-primary/40 bg-app-karta font-medium"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {druh && druh !== "ostatny" && (
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">{t("sken.kategoria")}</span>
-            <select
-              value={kategoria}
-              onChange={(e) => setKategoria(e.target.value)}
-              className="min-h-[44px] w-full rounded-app-sm border border-app-ramik bg-app-karta px-3 text-[15px]"
+        <div role="radiogroup" aria-label={t("rd.coToJe")} className="flex flex-wrap gap-2">
+          {DRUHY_NESPRACOVANYCH.map(({ kluc }) => (
+            <button
+              key={kluc}
+              role="radio"
+              aria-checked={druh === kluc}
+              onClick={() => setDruh(kluc)}
+              className={`h-9 rounded-full px-3.5 text-[14px] transition active:scale-95 ${
+                druh === kluc
+                  ? "bg-app-text font-bold text-app-karta"
+                  : "border border-app-linka bg-app-karta text-app-text"
+              }`}
             >
-              <option value="">{t("sken.nezaradene")}</option>
-              {KATEGORIE_VYDAVKOV.map((k) => (
-                <option key={k.kod} value={k.kod}>
-                  {k.nazov}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+              {t(NAZOV_DRUHU[kluc])}
+            </button>
+          ))}
+        </div>
+
+        {/* Údaje dokladu — jedna karta, riadok pod riadkom. */}
+        <div
+          data-udaje-dokladu
+          className="overflow-hidden rounded-app border border-app-obrys bg-app-karta [&>*+*]:relative [&>*+*]:before:absolute [&>*+*]:before:inset-x-4 [&>*+*]:before:top-0 [&>*+*]:before:h-px [&>*+*]:before:bg-app-ramik [&>*+*]:before:content-['']"
+        >
+          {u.cislo && <RiadokUdaju nazov={t("rd.cislo")} hodnota={u.cislo} />}
+          {u.datumVystavenia && (
+            <RiadokUdaju nazov={t("rd.vystavene")} hodnota={datum(u.datumVystavenia, loc)} />
+          )}
+          {jeFaktura && u.splatnost && (
+            <RiadokUdaju nazov={t("rd.splatnost")} hodnota={datum(u.splatnost, loc)} />
+          )}
+          {druh === "ostatny" && u.ostatny.predmet && (
+            <RiadokUdaju nazov={t("rd.predmet")} hodnota={u.ostatny.predmet} />
+          )}
+          {zakladDph ? (
+            <RiadokUdaju
+              nazov={t("rd.zakladDph")}
+              hodnota={`${formatujMenu(s.zaklad, u.mena || "EUR", loc)} / ${formatujMenu(s.dph, u.mena || "EUR", loc)}`}
+            />
+          ) : null}
+
+          {druh === "blocek" && (
+            <div className="px-4 py-3.5">
+              <div className="text-[15px] text-app-text-2">{t("rd.uhrada")}</div>
+              <div
+                role="radiogroup"
+                aria-label={t("rd.uhrada")}
+                className="mt-2 grid grid-cols-3 gap-2"
+              >
+                {(
+                  [
+                    ["hotovost", t("pd.hotovost")],
+                    ["karta", t("pd.kartou")],
+                    ["prevod", t("pd.prevodom")],
+                  ] as const
+                ).map(([kod, label]) => (
+                  <button
+                    key={kod}
+                    role="radio"
+                    aria-checked={platba === kod}
+                    onClick={() => setPlatba(kod)}
+                    className={`h-10 min-w-0 truncate rounded-[12px] px-1 text-[14px] transition active:scale-[0.98] ${
+                      platba === kod
+                        ? "bg-app-zelena-jemna font-bold text-app-zelena"
+                        : platba
+                          ? "border border-app-linka"
+                          : "border border-app-zelena/50 font-semibold"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {druh && druh !== "ostatny" && (
+            <label className="relative flex min-h-[50px] items-center justify-between gap-3 px-4 py-2">
+              <span className="shrink-0 text-[15px] text-app-text-2">{t("sken.kategoria")}</span>
+              <span className="relative flex min-w-0 items-center gap-1">
+                <select
+                  value={kategoria}
+                  onChange={(e) => setKategoria(e.target.value)}
+                  className="min-h-[40px] w-full min-w-0 appearance-none truncate bg-transparent pr-5 text-right text-[15px] font-semibold text-app-text"
+                >
+                  <option value="">{t("sken.nezaradene")}</option>
+                  {KATEGORIE_VYDAVKOV.map((k) => (
+                    <option key={k.kod} value={k.kod}>
+                      {k.nazov}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-0 h-4 w-4 text-app-text-3" />
+              </span>
+            </label>
+          )}
+        </div>
 
         {polia &&
           (polia.upravitelne.length > 0 || polia.vyrovnat || polia.mimoAppky.length > 0) && (
-            <div className="space-y-3 rounded-app border border-primary/40 bg-primary/5 p-3">
-              <div className="text-sm font-medium">{t("rd.doplnte")}</div>
+            <div className="space-y-3 rounded-app border border-app-zelena/40 bg-app-zelena-jemna p-4">
+              <div className="text-[15px] font-bold">{t("rd.doplnte")}</div>
               {polia.upravitelne.map((p) => (
                 <label key={p} className="block">
-                  <span className="mb-1 block text-[12px] font-medium text-app-text-2">
+                  <span className="mb-1 block text-[12px] font-semibold text-app-text-2">
                     {t(NAZOV_POLA[p])}
                   </span>
                   <input
@@ -527,7 +575,7 @@ export function RozpoznanyDoklad({
                     inputMode={TYP_POLA[p] === "number" ? "decimal" : undefined}
                     value={upravy[p] ?? (zaklad ? hodnotaPola(zaklad, p) : "")}
                     onChange={(e) => setUpravy((x) => ({ ...x, [p]: e.target.value }))}
-                    className="min-h-[44px] w-full rounded-app-sm border border-app-ramik bg-app-karta px-3 text-[15px]"
+                    className="min-h-[44px] w-full rounded-app-sm border border-app-linka bg-app-karta px-3 text-[15px]"
                   />
                 </label>
               ))}
@@ -538,7 +586,7 @@ export function RozpoznanyDoklad({
                     onClick={() => setVyrovnane(true)}
                     disabled={vyrovnane}
                     aria-pressed={vyrovnane}
-                    className="mt-2 w-full rounded-app-sm border border-app-ramik bg-app-karta px-4 py-2.5 text-sm disabled:opacity-60"
+                    className="mt-2 w-full rounded-app-sm border border-app-linka bg-app-karta px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
                   >
                     {vyrovnane ? t("rd.vyrovnane") : t("rd.vyrovnat")}
                   </button>
@@ -555,6 +603,32 @@ export function RozpoznanyDoklad({
         <Nahlad subor={subor} mime={mime} />
       </div>
     </MobilObrazovka>
+  );
+}
+
+/** Riadok karty údajov — popis vľavo, hodnota vpravo. Deliace čiary kreslí karta. */
+function RiadokUdaju({ nazov, hodnota }: { nazov: string; hodnota: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 px-4 py-3.5 text-[15px]">
+      <span className="shrink-0 text-app-text-2">{nazov}</span>
+      <span className="min-w-0 truncate text-right font-semibold">{hodnota}</span>
+    </div>
+  );
+}
+
+/** Malý náhľad vedľa sumy — fotka dokladu alebo ikona PDF. */
+function Miniatura({ subor, mime }: { subor: string; mime: string }) {
+  return (
+    <span
+      aria-hidden
+      className="grid h-24 w-[72px] shrink-0 place-items-center overflow-hidden rounded-[10px] border border-app-ramik bg-app-karta"
+    >
+      {mime.includes("pdf") ? (
+        <FileText className="h-7 w-7 text-app-text-2" />
+      ) : (
+        <img src={subor} alt="" className="h-full w-full object-cover" />
+      )}
+    </span>
   );
 }
 

@@ -7,7 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, formatujMenu } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
@@ -178,7 +178,7 @@ function PrijateZalohovePage() {
                           <td className="p-3">{datumNaDoklade(r.issue_date)}</td>
                           <td className="p-3">{datumNaDoklade(r.due_date)}</td>
                           <td className="p-3 text-right tabular-nums">
-                            {Number(r.amount_total).toFixed(2)} {r.currency}
+                            {formatujMenu(r.amount_total, r.currency)}
                           </td>
                           <td className="p-3">
                             <StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />
@@ -208,7 +208,7 @@ function PrijateZalohovePage() {
                   onClick={() => navigate({ to: "/prijate-faktury/$id", params: { id: r.id } })}
                   title={r.invoice_number}
                   subtitle={r.supplier_name}
-                  amount={`${Number(r.amount_total).toFixed(2)} ${r.currency}`}
+                  amount={formatujMenu(r.amount_total, r.currency)}
                   status={<StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />}
                   meta={`splatná ${datumNaDoklade(r.due_date)}`}
                 />

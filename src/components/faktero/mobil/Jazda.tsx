@@ -658,7 +658,7 @@ export function Jazda({
                     setUkoncujem(false);
                   }
                 }}
-                className="rounded-app-sm bg-app-zelena px-3 py-2.5 text-sm font-medium text-white active:scale-95 disabled:opacity-60"
+                className="rounded-app-sm bg-app-zelena-plocha px-3 py-2.5 text-sm font-medium text-white active:scale-95 disabled:opacity-60"
               >
                 {ukoncujem ? t("jz.ukoncujem") : t("jz.ukoncitJazdu")}
               </button>
@@ -770,7 +770,7 @@ export function Jazda({
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => vybav(j, j.classification!)}
-                        className="rounded-lg bg-app-zelena px-3 py-2 text-[14px] font-medium text-white disabled:opacity-60"
+                        className="rounded-lg bg-app-zelena-plocha px-3 py-2 text-[14px] font-medium text-white disabled:opacity-60"
                       >
                         {t("spolocne.ulozit")}
                       </button>
@@ -787,7 +787,7 @@ export function Jazda({
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => vybav(j, "business")}
-                        className="rounded-lg bg-app-zelena px-3 py-2 text-[14px] font-medium text-white disabled:opacity-60"
+                        className="rounded-lg bg-app-zelena-plocha px-3 py-2 text-[14px] font-medium text-white disabled:opacity-60"
                       >
                         {t("jazdy.sluzobna")}
                       </button>

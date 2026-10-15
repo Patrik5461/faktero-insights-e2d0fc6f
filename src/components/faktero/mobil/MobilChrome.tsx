@@ -186,7 +186,7 @@ export function AppHeader({
           <div className="min-w-0 flex-1 px-1">{hlavicka}</div>
         ) : (
           <div className="min-w-0 flex-1 px-2">
-            <h1 className="truncate text-[17px] font-semibold leading-tight tracking-tight">
+            <h1 className="truncate text-[18px] font-bold leading-tight tracking-tight">
               {title}
             </h1>
           {/*
@@ -325,12 +325,12 @@ export function VelkeTlacidlo({
       disabled={disabled}
       className={`flex w-full items-center gap-3.5 rounded-app p-4 text-left transition active:scale-[0.985] disabled:opacity-50 ${
         variant === "primary"
-          ? "bg-app-zelena text-white"
-          : "border border-app-ramik bg-app-karta shadow-app active:bg-app-pozadie"
+          ? "bg-app-zelena-plocha text-white"
+          : "border border-app-obrys bg-app-karta active:bg-app-pozadie"
       }`}
     >
       <span
-        className={`grid h-12 w-12 shrink-0 place-items-center rounded-app-sm ${
+        className={`grid h-12 w-12 shrink-0 place-items-center rounded-[12px] ${
           variant === "primary" ? "bg-white/20" : "bg-app-zelena-jemna text-app-zelena"
         }`}
       >
@@ -377,8 +377,8 @@ export function HlavneTlacidlo({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`w-full rounded-app px-4 py-3.5 text-[15px] font-semibold transition active:scale-[0.99] ${
-        disabled ? "bg-app-ramik text-app-text-3" : "bg-app-zelena text-white"
+      className={`min-h-[54px] w-full rounded-[16px] px-4 py-3.5 text-[16px] font-bold transition active:scale-[0.99] ${
+        disabled ? "bg-app-ramik text-app-text-3" : "bg-app-zelena-plocha text-white"
       }`}
     >
       {children}

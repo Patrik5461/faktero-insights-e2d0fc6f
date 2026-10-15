@@ -20,6 +20,7 @@ import { vyberSubory } from "@/lib/mobile/vyber-suborov";
 import { INTERVAL_CITANIA_MS, polaNaDoplnenie } from "@/lib/mobile/sken-rozpoznanie";
 import {
   MAX_V_DAVKE,
+  dalsiNaOtvorenie,
   naCitanie,
   naHromadneUlozenie,
   naNahratie,
@@ -254,11 +255,19 @@ export function DavkaDokladov({
   const otvorenyDoklad = otvoreny ? davka.find((d) => d.kluc === otvoreny) : undefined;
   if (otvorenyDoklad?.id) {
     const kluc = otvorenyDoklad.kluc;
+    /* Po dlhom čítaní sa začne doptávať odznova — človek práve počkal. */
+    const odlozit = () =>
+      setDavka((p) => zmen(p, kluc, { stav: "citam", zaciatokCitania: Date.now() }, "dlho"));
     const spat = () => {
       setOtvoreny(null);
-      /* Po dlhom čítaní sa začne doptávať odznova — človek práve počkal. */
-      setDavka((p) => zmen(p, kluc, { stav: "citam", zaciatokCitania: Date.now() }, "dlho"));
+      odlozit();
     };
+    /*
+      „Uložiť a ďalší" a „Preskočiť" (návrh „C"): dávka sa prejde doklad po
+      doklade bez vracania sa do zoznamu. Keď ďalší nie je, vráti sa do zoznamu.
+    */
+    const dalsi = dalsiNaOtvorenie(davka, kluc);
+    const poradie = davka.findIndex((d) => d.kluc === kluc) + 1;
     return (
       <RozpoznanyDoklad
         key={kluc}
@@ -266,9 +275,18 @@ export function DavkaDokladov({
         subor={otvorenyDoklad.subor}
         id={otvorenyDoklad.id}
         nastavenie={nastavenie}
+        davka={{
+          poradie,
+          spolu: davka.length,
+          maDalsi: !!dalsi,
+          onPreskocit: () => {
+            odlozit();
+            setOtvoreny(dalsiNaOtvorenie(davkaRef.current, kluc)?.kluc ?? null);
+          },
+        }}
         onUlozene={(druh: DruhNespracovaneho) => {
           setDavka((p) => zmen(p, kluc, { stav: "ulozene", druh, chyba: null }));
-          setOtvoreny(null);
+          setOtvoreny(dalsiNaOtvorenie(davkaRef.current, kluc)?.kluc ?? null);
         }}
         onNechat={spat}
         onSpat={spat}
@@ -306,7 +324,7 @@ export function DavkaDokladov({
           <button
             onClick={() => void odfot()}
             disabled={davka.length >= MAX_V_DAVKE}
-            className="flex min-h-[48px] items-center justify-center gap-2 rounded-app-sm bg-app-zelena px-3 py-2 text-[14px] font-medium text-white disabled:opacity-50"
+            className="flex min-h-[48px] items-center justify-center gap-2 rounded-app-sm bg-app-zelena-plocha px-3 py-2 text-[14px] font-medium text-white disabled:opacity-50"
           >
             <Camera className="h-4 w-4 shrink-0" />
             <span className="min-w-0 text-center leading-tight">

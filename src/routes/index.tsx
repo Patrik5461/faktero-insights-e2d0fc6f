@@ -1440,7 +1440,7 @@ function MobileAppSection() {
           <div className="relative mx-auto w-full max-w-sm">
             <div
               aria-hidden
-              className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] opacity-60 blur-3xl"
+              className="pointer-events-none absolute -inset-4 -z-10 sm:-inset-8 rounded-[3rem] opacity-60 blur-3xl"
               style={{ background: "var(--brand-gradient)" }}
             />
             <div className="relative rounded-[2.5rem] border-[10px] border-foreground/90 bg-background p-4 shadow-[var(--shadow-elegant)]">

@@ -12,6 +12,7 @@ import {
   listReservationsForItem,
 } from "@/lib/faktero/reservations.functions";
 import { potvrd } from "@/lib/potvrdenie";
+import { formatujCislo } from "@/lib/faktero/mena";
 
 const SRC_LABEL: Record<string, string> = {
   quote: "Ponuka",
@@ -110,7 +111,7 @@ export function ReservationsPanel({
                   )}
                 </td>
                 <td className="p-2 text-right tabular-nums">
-                  {Number(r.quantity).toFixed(2)} {unit ?? ""}
+                  {formatujCislo(r.quantity, 0, 3)} {unit ?? ""}
                 </td>
                 <td className="p-2 text-xs">{STATUS_LABEL[r.status] ?? r.status}</td>
                 <td className="p-2 text-xs text-muted-foreground">

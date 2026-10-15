@@ -49,6 +49,14 @@ const TON_TEXT: Record<Ton, string> = {
   cervena: "text-app-chyba",
 };
 
+/** Pozadie a farba ikony v štvorčeku pred riadkom — „pozor" je oranžová (na kontrolu). */
+const TON_IKONY: Record<Ton | "pozor", string> = {
+  neutral: "bg-app-pozadie text-app-text-2",
+  zelena: "bg-app-zelena-jemna text-app-zelena",
+  cervena: "bg-app-chyba-jemna text-app-chyba",
+  pozor: "bg-app-pozor-jemna text-app-pozor",
+};
+
 /* ------------------------- hlavička obrazovky ------------------------- */
 
 /**
@@ -69,7 +77,7 @@ export function ScreenHeader({
   return (
     <div className="flex items-start justify-between gap-3 pb-4 pt-1">
       <div className="min-w-0">
-        <h1 className="truncate text-[28px] font-bold leading-tight tracking-tight text-app-text">
+        <h1 className="truncate text-[26px] font-bold leading-tight tracking-tight text-app-text">
           {title}
         </h1>
         {subtitle && <p className="mt-0.5 text-[13px] text-app-text-2">{subtitle}</p>}
@@ -79,14 +87,18 @@ export function ScreenHeader({
   );
 }
 
-/** Nadpis sekcie v zozname — vľavo názov, vpravo prípadný súhrn. */
+/**
+ * Nadpis sekcie v zozname — vľavo názov, vpravo prípadný súhrn.
+ *
+ * Plným písmom, nie sivými kapitálkami: v smere „A" sú sekcie (Čaká na vás,
+ * Posledná aktivita) samostatné bloky a nadpis je to prvé, čo sa z nich číta.
+ * Sivé kapitálky v 12 px boli na hranici čitateľnosti.
+ */
 export function SectionHeader({ title, right }: { title: string; right?: ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 px-1 pb-1.5 pt-1">
-      <span className="text-[12px] font-semibold uppercase tracking-wide text-app-text-3">
-        {title}
-      </span>
-      {right && <span className="text-[12px] tabular-nums text-app-text-3">{right}</span>}
+    <div className="flex items-baseline justify-between gap-3 px-1 pb-2 pt-1">
+      <h2 className="text-[17px] font-bold leading-tight tracking-tight text-app-text">{title}</h2>
+      {right && <span className="text-[13px] tabular-nums text-app-text-2">{right}</span>}
     </div>
   );
 }
@@ -107,7 +119,9 @@ export function Card({
   /** Karta, ktorá niečo zapína (filter), nie karta, ktorá niekam vedie. */
   ariaPressed?: boolean;
 }) {
-  const styl = `rounded-app border border-app-ramik bg-app-karta shadow-app ${className}`;
+  /* Bez tieňa: biela karta na sivom pozadí sa oddelí sama. Rámik je vo svetle
+     priehľadný a v tme jemne viditeľný (`--app-obrys`). */
+  const styl = `rounded-app border border-app-obrys bg-app-karta ${className}`;
   if (!onClick) return <div className={styl}>{children}</div>;
   return (
     <button
@@ -165,7 +179,7 @@ export function StatCard({
         {onClick && !prepinac && <ChevronRight className="h-4 w-4 shrink-0 text-app-text-3" />}
       </div>
       <div
-        className={`mt-1.5 font-bold tabular-nums leading-none ${velka ? "text-[30px]" : "text-[26px]"} ${TON_TEXT[ton]}`}
+        className={`mt-1.5 font-extrabold tabular-nums leading-none tracking-tight ${velka ? "text-[30px]" : "text-[26px]"} ${TON_TEXT[ton]}`}
       >
         {value}
       </div>
@@ -195,7 +209,7 @@ export function ListRow({
   onClick,
 }: {
   icon?: ComponentType<{ className?: string }>;
-  ikonaTon?: Ton;
+  ikonaTon?: Ton | "pozor";
   title: ReactNode;
   subtitle?: ReactNode;
   right?: ReactNode;
@@ -208,11 +222,7 @@ export function ListRow({
     <>
       {Icon && (
         <span
-          className={`grid h-9 w-9 shrink-0 place-items-center rounded-app-sm ${
-            ikonaTon === "cervena"
-              ? "bg-app-chyba-jemna text-app-chyba"
-              : "bg-app-zelena-jemna text-app-zelena"
-          }`}
+          className={`grid h-9 w-9 shrink-0 place-items-center rounded-[10px] ${TON_IKONY[ikonaTon]}`}
         >
           <Icon className="h-[18px] w-[18px]" />
         </span>
@@ -231,7 +241,7 @@ export function ListRow({
         <span className="shrink-0 text-right">
           {right && (
             <span
-              className={`block text-[15px] font-semibold tabular-nums leading-tight ${TON_TEXT[rightTon]}`}
+              className={`block text-[15px] font-bold tabular-nums leading-tight ${TON_TEXT[rightTon]}`}
             >
               {right}
             </span>
@@ -243,7 +253,7 @@ export function ListRow({
     </>
   );
 
-  const styl = "flex min-h-[44px] w-full items-center gap-3 px-4 py-3 text-left";
+  const styl = "flex min-h-[44px] w-full items-center gap-3 px-4 py-3.5 text-left";
   if (!onClick) return <div className={styl}>{obsah}</div>;
   return (
     <button type="button" onClick={onClick} className={`${styl} transition active:bg-app-pozadie`}>
@@ -255,7 +265,12 @@ export function ListRow({
 /** Zoznam riadkov v jednej karte — deliace čiary kreslí obal, nie riadok. */
 export function ListCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <Card className={`divide-y divide-app-ramik overflow-hidden ${className}`}>{children}</Card>
+    /* Deliaca čiara neide od okraja po okraj — začína a končí s textom, ako v návrhu. */
+    <Card
+      className={`overflow-hidden [&>*+*]:relative [&>*+*]:before:absolute [&>*+*]:before:inset-x-4 [&>*+*]:before:top-0 [&>*+*]:before:h-px [&>*+*]:before:bg-app-ramik [&>*+*]:before:content-[''] ${className}`}
+    >
+      {children}
+    </Card>
   );
 }
 
@@ -310,8 +325,8 @@ export function FilterChips<T extends string>({
             onClick={() => onZmen(kod)}
             className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-medium transition active:scale-95 ${
               je
-                ? "bg-app-zelena text-white"
-                : "border border-app-ramik bg-app-karta text-app-text-2"
+                ? "bg-app-zelena-plocha font-semibold text-white"
+                : "border border-app-linka bg-app-karta text-app-text"
             }`}
           >
             {popis}
@@ -347,7 +362,7 @@ export function StepIndicator({
           <li key={popis} className="flex min-w-0 flex-1 items-center gap-1.5">
             <span
               className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold ${
-                je || hotovy ? "bg-app-zelena text-white" : "bg-app-ramik text-app-text-3"
+                je || hotovy ? "bg-app-zelena-plocha text-white" : "bg-app-ramik text-app-text-3"
               }`}
             >
               {cislo}
@@ -383,8 +398,8 @@ export function PrimaryCta({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`w-full rounded-app px-4 py-3.5 text-[15px] font-semibold transition active:scale-[0.99] ${
-        disabled ? "bg-app-pozadie text-app-text-3" : "bg-app-zelena text-white"
+      className={`min-h-[54px] w-full rounded-[16px] px-4 py-3.5 text-[16px] font-bold transition active:scale-[0.99] ${
+        disabled ? "bg-app-ramik text-app-text-3" : "bg-app-zelena-plocha text-white"
       }`}
     >
       {children}
@@ -393,10 +408,10 @@ export function PrimaryCta({
 }
 
 /**
- * Dlaždica rýchlej akcie — ikona v zelenom krúžku a popiska pod ňou.
+ * Dlaždica rýchlej akcie — ikona v zelenom štvorčeku a popiska pod ňou.
  *
- * Tri vedľa seba v rovnakej šírke: sú to rovnocenné akcie, takže žiadna
- * z nich nesmie byť väčšia než ostatné.
+ * Vedľa seba v rovnakej šírke (mriežka, nie flex): sú to rovnocenné akcie,
+ * takže žiadna z nich nesmie byť väčšia než ostatné.
  */
 export function QuickAction({
   icon: Icon,
@@ -411,12 +426,14 @@ export function QuickAction({
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-1 flex-col items-center gap-2 rounded-app border border-app-ramik bg-app-karta px-2 py-4 shadow-app transition active:scale-[0.98] active:bg-app-pozadie"
+      className="flex min-w-0 flex-1 flex-col items-center gap-2 rounded-app border border-app-obrys bg-app-karta px-1.5 py-3.5 transition active:scale-[0.98] active:bg-app-pozadie"
     >
-      <span className="grid h-11 w-11 place-items-center rounded-full bg-app-zelena-jemna text-app-zelena">
+      <span className="grid h-10 w-10 place-items-center rounded-[12px] bg-app-zelena-jemna text-app-zelena">
         <Icon className="h-5 w-5" />
       </span>
-      <span className="text-[13px] font-medium leading-tight text-app-text">{label}</span>
+      <span className="w-full truncate text-center text-[13px] font-semibold leading-tight text-app-text">
+        {label}
+      </span>
     </button>
   );
 }

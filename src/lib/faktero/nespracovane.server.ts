@@ -52,8 +52,20 @@ export async function zalozNespracovany(
   if (up.error) throw new Error(`Súbor sa nepodarilo uložiť: ${up.error.message}`);
   const dnes = new Date().toISOString().slice(0, 10);
   const vytazene = args.ai !== undefined;
-  const udaje = vytazene ? udajeZAi(args.ai, dnes) : null;
+  let udaje = vytazene ? udajeZAi(args.ai, dnes) : null;
   if (udaje && args.poznamka) udaje.poznamka = [udaje.poznamka, args.poznamka].filter(Boolean).join("\n");
+  const druh = args.druh ?? (vytazene ? navrhDruhu(args.ai, args.nazov) : null);
+  // Čo človek pri tomto dodávateľovi volil naposledy — len do prázdnych polí.
+  if (udaje && args.ai) {
+    const { doplnUcenim } = await import("./ucenie-z-oprav.server");
+    udaje = await doplnUcenim(supabase, {
+      companyId: args.companyId,
+      druh,
+      udaje,
+      createdBy: args.userId,
+      inboxMessageId: args.inboxMessageId,
+    });
+  }
   const { error } = await supabase.from("nespracovane_doklady").insert({
     id,
     company_id: args.companyId,
@@ -61,7 +73,7 @@ export async function zalozNespracovany(
     zdroj: args.zdroj,
     stav: vytazene ? (args.ai ? "vytazene" : "chyba") : "cita",
     chyba: vytazene && !args.ai ? "Z dokladu sa nič nedalo prečítať — doplňte údaje ručne." : null,
-    druh: args.druh ?? (vytazene ? navrhDruhu(args.ai, args.nazov) : null),
+    druh,
     file_path: cesta,
     file_name: args.nazov,
     file_mime: args.mime,
@@ -82,7 +94,7 @@ export async function vytazNespracovany(id: string): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: r } = await supabaseAdmin
     .from("nespracovane_doklady")
-    .select("id, file_path, file_mime, file_name, druh, udaje, ai")
+    .select("id, company_id, created_by, inbox_message_id, file_path, file_mime, file_name, druh, udaje, ai")
     .eq("id", id)
     .maybeSingle();
   if (!r?.file_path) return;
@@ -94,17 +106,31 @@ export async function vytazNespracovany(id: string): Promise<void> {
     const ai = await precitajDoklad(bajty.toString("base64"), r.file_mime ?? "application/pdf");
     const dnes = new Date().toISOString().slice(0, 10);
     const povodne = nacitajUdaje(r.udaje);
+    const druh = r.druh ?? navrhDruhu(ai, r.file_name);
     // Čo už človek vyplnil (napr. druh z appky), sa neprepisuje.
+    let udaje = povodne.dodavatel.nazov || povodne.cislo ? doplnUdaje(povodne, udajeZAi(ai, dnes)) : udajeZAi(ai, dnes);
+    /*
+      Naučené z predchádzajúcich dokladov dodávateľa — len do prázdnych polí.
+      Firma je z riadka dokladu, nie z požiadavky (beží cez supabaseAdmin).
+    */
+    if (r.company_id) {
+      const { doplnUcenim } = await import("./ucenie-z-oprav.server");
+      udaje = await doplnUcenim(supabaseAdmin, {
+        companyId: r.company_id,
+        druh,
+        udaje,
+        createdBy: r.created_by ?? null,
+        inboxMessageId: r.inbox_message_id ?? null,
+      });
+    }
     await supabaseAdmin
       .from("nespracovane_doklady")
       .update({
         ai: (ai ?? r.ai ?? null) as any,
         stav: ai || r.ai || povodne.cislo || povodne.dodavatel.nazov ? "vytazene" : "chyba",
         chyba: ai || r.ai || povodne.cislo || povodne.dodavatel.nazov ? null : "Z dokladu sa nič nedalo prečítať — doplňte údaje ručne.",
-        druh: r.druh ?? navrhDruhu(ai, r.file_name),
-        udaje: (povodne.dodavatel.nazov || povodne.cislo
-          ? doplnUdaje(povodne, udajeZAi(ai, dnes))
-          : udajeZAi(ai, dnes)) as any,
+        druh,
+        udaje: udaje as any,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -159,6 +185,17 @@ export async function vytvorDoklad(
     predmetMailu = m?.subject ?? null;
   }
   const autor = r.created_by ?? userId;
+
+  /*
+    Učenie z opráv: naučené hodnoty, ktoré človek nechal tak, v poliach
+    ručného pravidla sa vyprázdnia — spúšťač `faktero_uplatni_pravidlo`
+    dopĺňa len prázdne polia a pravidlo má mať prednosť.
+  */
+  const ucenie = await import("./ucenie-z-oprav.server");
+  const { jeDruhUcenia, volbyZUdajov, hodnotaPola } = await import("./ucenie-z-oprav");
+  const povodneU = u;
+  if (jeDruhUcenia(druh))
+    u = await ucenie.pripravNaZapis(supabase, { companyId: r.company_id, druh, udaje: u, createdBy: autor, predmetMailu });
 
   let vysledok: { agenda: "prijata" | "doklad" | "ostatny"; id: string };
   if (druh === "faktura" || druh === "zalohova" || druh === "dobropis") {
@@ -279,6 +316,22 @@ export async function vytvorDoklad(
         });
     }
     vysledok = { agenda: "ostatny", id: idDokladu };
+  }
+
+  // Čo človek pri dodávateľovi zvolil — návrh pre ďalší doklad.
+  if (jeDruhUcenia(druh)) {
+    const volby = volbyZUdajov(u, druh);
+    // Naučené pole vyprázdnené kvôli pravidlu nie je voľba človeka.
+    for (const k of Object.keys(volby) as (keyof typeof volby)[])
+      if (!hodnotaPola(u, k) && hodnotaPola(povodneU, k)) delete volby[k];
+    await ucenie.zaznamenajVolby(supabase, {
+      companyId: r.company_id,
+      druh,
+      dodavatel: u.dodavatel,
+      volby,
+      dokladId: vysledok.id,
+      userId,
+    });
   }
 
   await supabase.from("nespracovane_doklady").delete().eq("id", r.id);

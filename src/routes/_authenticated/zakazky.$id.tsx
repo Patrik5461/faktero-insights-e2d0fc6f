@@ -13,6 +13,7 @@ import { Lock, Unlock, Pencil, Trash2 } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/zakazky/$id")({
   head: () => ({ meta: [{ title: "Zákazka — Faktero" }] }),
@@ -175,8 +176,8 @@ function JobDetail() {
         title={`${j.job_number} — ${j.name}`}
         description={[
           j.customer_name,
-          j.start_date && `od ${j.start_date}`,
-          j.end_date && `do ${j.end_date}`,
+          j.start_date && `od ${datumNaDoklade(j.start_date)}`,
+          j.end_date && `do ${datumNaDoklade(j.end_date)}`,
         ]
           .filter(Boolean)
           .join(" · ")}

@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { kandidatiPrilohyFn, presunAkoPrilohuFn } from "@/lib/faktero/priloha-presun.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { potvrd } from "@/lib/potvrdenie";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 type Druh = "purchase_invoice" | "expense" | "invoice";
 const DRUHY: [Druh, string][] = [
@@ -125,7 +127,7 @@ export function PresunAkoPrilohuOkno({
                 >
                   <span className="min-w-0 truncate">{x.popis}</span>
                   <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                    {x.datum} · {Number(x.suma ?? 0).toFixed(2)} {x.mena}
+                    {datumNaDoklade(x.datum)} · {formatujMenu(x.suma ?? 0, x.mena)}
                   </span>
                 </button>
               </li>

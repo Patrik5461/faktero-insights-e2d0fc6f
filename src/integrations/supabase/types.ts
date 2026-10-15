@@ -1873,6 +1873,39 @@ export type Database = {
           },
         ]
       }
+      denny_suhrn_odoslane: {
+        Row: {
+          created_at: string
+          den: string
+          firmy: string[]
+          odoslane_at: string | null
+          pocty: Json
+          resend_id: string | null
+          stav: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          den: string
+          firmy?: string[]
+          odoslane_at?: string | null
+          pocty?: Json
+          resend_id?: string | null
+          stav?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          den?: string
+          firmy?: string[]
+          odoslane_at?: string | null
+          pocty?: Json
+          resend_id?: string | null
+          stav?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       delivery_parse_jobs: {
         Row: {
           company_id: string
@@ -1913,6 +1946,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "delivery_parse_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doklad_navyky: {
+        Row: {
+          company_id: string
+          created_at: string
+          druh: string
+          kluc_dodavatela: string
+          naposledy: string
+          nazov_dodavatela: string | null
+          pocet: number
+          polia: Json
+          updated_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          druh: string
+          kluc_dodavatela: string
+          naposledy?: string
+          nazov_dodavatela?: string | null
+          pocet?: number
+          polia?: Json
+          updated_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          druh?: string
+          kluc_dodavatela?: string
+          naposledy?: string
+          nazov_dodavatela?: string | null
+          pocet?: number
+          polia?: Json
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doklad_navyky_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -5667,6 +5744,7 @@ export type Database = {
           created_at: string
           deletion_requested_at: string | null
           deletion_scheduled_for: string | null
+          denny_suhrn: boolean
           email: string | null
           full_name: string | null
           id: string
@@ -5681,6 +5759,7 @@ export type Database = {
           created_at?: string
           deletion_requested_at?: string | null
           deletion_scheduled_for?: string | null
+          denny_suhrn?: boolean
           email?: string | null
           full_name?: string | null
           id: string
@@ -5695,6 +5774,7 @@ export type Database = {
           created_at?: string
           deletion_requested_at?: string | null
           deletion_scheduled_for?: string | null
+          denny_suhrn?: boolean
           email?: string | null
           full_name?: string | null
           id?: string

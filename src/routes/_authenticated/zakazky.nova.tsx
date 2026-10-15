@@ -6,7 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createJob } from "@/lib/faktero/jobs.functions";
 import { ArrowLeft } from "lucide-react";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatujMenu } from "@/lib/faktero/mena";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/zakazky/nova")({
@@ -183,7 +183,7 @@ function NewJob() {
                     planovanyZisk < 0 ? "text-destructive" : "text-emerald-600"
                   }`}
                 >
-                  {formatovacMeny("EUR", "sk-SK")(planovanyZisk)}
+                  {formatujMenu(planovanyZisk, mena.kod)}
                 </span>
               </div>
             )}

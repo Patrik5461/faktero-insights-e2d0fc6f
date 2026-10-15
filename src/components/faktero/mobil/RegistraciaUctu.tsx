@@ -187,7 +187,7 @@ export function RegistraciaUctu({
             onClick={() => skusPrihlasit(false)}
             disabled={overujem}
             
-            className="mt-6 w-full rounded-app bg-app-zelena px-4 py-3 text-base font-medium text-white disabled:bg-app-pozadie disabled:text-app-text-2"
+            className="mt-6 w-full rounded-app bg-app-zelena-plocha px-4 py-3 text-base font-medium text-white disabled:bg-app-pozadie disabled:text-app-text-2"
           >
             {overujem ? t("reg.overujem") : t("reg.uzSomPotvrdil")}
           </button>
@@ -270,7 +270,7 @@ export function RegistraciaUctu({
           onClick={registruj}
           disabled={busy}
           
-          className="mt-5 w-full rounded-app bg-app-zelena px-4 py-3 text-base font-medium text-white disabled:bg-app-pozadie disabled:text-app-text-2"
+          className="mt-5 w-full rounded-app bg-app-zelena-plocha px-4 py-3 text-base font-medium text-white disabled:bg-app-pozadie disabled:text-app-text-2"
         >
           {busy ? t("reg.vytvaram") : t("reg.vytvoritUcet")}
         </button>

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { menoOdosielatela } from "@/lib/bezpecny-text";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 function escapeHtml(s: string) {
   return String(s).replace(
@@ -51,7 +52,7 @@ export async function sendApprovalRequestEmail(params: {
   const link = `${baseUrl()}/schvalit/${token}`;
   const senderName = menoOdosielatela(company?.email_sender_name || company?.name);
   const from = `${senderName} <${process.env.RESEND_FROM_NOREPLY || "noreply@faktero.sk"}>`;
-  const total = `${Number(invoice.total).toFixed(2)} ${invoice.currency}`;
+  const total = formatujMenu(invoice.total, invoice.currency);
 
   // Load editable DB template (falls back to hardcoded default)
   const { getEmailTemplate, applyTemplateVars, DEFAULT_TEMPLATES } =
@@ -108,7 +109,7 @@ export async function sendApprovalResultEmail(params: {
   const { invoice, company, approved, note, supplierEmail } = params;
   const status = approved ? "schválená" : "zamietnutá";
   const subject = `Faktúra ${invoice.invoice_number} bola ${status}`;
-  const total = `${Number(invoice.total).toFixed(2)} ${invoice.currency}`;
+  const total = formatujMenu(invoice.total, invoice.currency);
   const text = `Faktúra ${invoice.invoice_number} pre odberateľa ${invoice.customer_name ?? ""} v sume ${total} bola ${status}.
 ${!approved && note ? `\nDôvod zamietnutia:\n${note}\n` : ""}
 Otvoriť faktúru: ${baseUrl()}/faktury/${invoice.id}`;

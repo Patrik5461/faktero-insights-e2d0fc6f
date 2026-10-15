@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -12,7 +12,11 @@ import {
   PartyPopper,
 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import {
+  fetchMyCompanies,
+  getActiveCompanyId,
+  setActiveCompanyId,
+} from "@/lib/faktero/active-company";
 import { cakajuNaMnaFn } from "@/lib/faktero/schvalovanie.functions";
 import { NAZVY_AGEND, NAZVY_STAVOV, type AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
 import { mojeUlohyFn, vyriesKomentarFn } from "@/lib/faktero/moje-ulohy.functions";
@@ -27,6 +31,16 @@ import { DRUHY_NESPRACOVANYCH } from "@/lib/faktero/nespracovane";
  * Predtým to bolo na troch miestach a človek o úlohe vedel len zo zvončeka.
  */
 export const Route = createFileRoute("/_authenticated/moje-ulohy")({
+  /*
+    Odkaz z denného e-mailového súhrnu nesie firmu (`?firma=`) — človek
+    s viacerými firmami má v e-maile sekciu za každú a klik musí otvoriť
+    úlohy tej firmy, nie tej, ktorá je práve vybraná. `dalej=po-splatnosti`
+    po prepnutí pokračuje na faktúry po splatnosti.
+  */
+  validateSearch: (s: Record<string, unknown>): { firma?: string; dalej?: "po-splatnosti" } => ({
+    firma: typeof s.firma === "string" && /^[0-9a-f-]{36}$/i.test(s.firma) ? s.firma : undefined,
+    dalej: s.dalej === "po-splatnosti" ? "po-splatnosti" : undefined,
+  }),
   head: () => ({ meta: [{ title: "Moje úlohy — Faktero" }] }),
   component: Stranka,
 });
@@ -38,7 +52,37 @@ type Schvalenie = Awaited<ReturnType<typeof cakajuNaMnaFn>>;
 type Ulohy = Awaited<ReturnType<typeof mojeUlohyFn>>;
 
 function Stranka() {
-  const companyId = getActiveCompanyId();
+  const { firma, dalej } = Route.useSearch();
+  const navigate = useNavigate();
+  const prepnut = Boolean(firma && firma !== getActiveCompanyId());
+  const [prepinam, setPrepinam] = useState(prepnut);
+  const companyId = prepinam ? null : getActiveCompanyId();
+
+  // Firma z odkazu v e-maile: prepnúť (len ak je človek jej členom) a stránku načítať nanovo.
+  useEffect(() => {
+    if (!firma) return;
+    if (!prepnut) {
+      if (dalej === "po-splatnosti")
+        void navigate({ to: "/faktury", search: { poSplatnosti: true }, replace: true });
+      else void navigate({ to: "/moje-ulohy", search: {}, replace: true });
+      return;
+    }
+    fetchMyCompanies()
+      .then((firmy) => {
+        if (firmy.some((f: any) => f.id === firma)) {
+          setActiveCompanyId(firma);
+          window.location.replace(
+            dalej === "po-splatnosti" ? "/faktury?poSplatnosti=true" : "/moje-ulohy",
+          );
+        } else {
+          toast.error("K firme z odkazu nemáte prístup — ukazujem úlohy vybranej firmy.");
+          setPrepinam(false);
+          void navigate({ to: "/moje-ulohy", search: {}, replace: true });
+        }
+      })
+      .catch(() => setPrepinam(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const nacitajSchvalenie = useServerFn(cakajuNaMnaFn);
   const nacitajUlohy = useServerFn(mojeUlohyFn);
   const vyries = useServerFn(vyriesKomentarFn);
@@ -102,7 +146,11 @@ function Stranka() {
         description="Doklady na vaše schválenie, komentáre, v ktorých vás kolega označil, a doklady čakajúce na kontrolu."
       />
       <PageBody>
-        {!companyId ? (
+        {prepinam ? (
+          <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Prepínam firmu…
+          </p>
+        ) : !companyId ? (
           <p className="text-sm text-muted-foreground">Vyberte firmu.</p>
         ) : !nacitane ? (
           <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">

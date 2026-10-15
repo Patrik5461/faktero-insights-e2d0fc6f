@@ -288,7 +288,7 @@ function KameraNaCeluObrazovku({
             onClick={() => sn.odfot(videoRef.current)}
             aria-label={t("sken.odfotit")}
             disabled={!bezi}
-            className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white bg-app-zelena transition active:scale-95 disabled:opacity-50"
+            className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white bg-app-zelena-plocha transition active:scale-95 disabled:opacity-50"
           />
         </div>
         <div className="flex justify-end">

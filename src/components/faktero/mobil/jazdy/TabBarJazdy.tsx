@@ -91,7 +91,7 @@ function Polozka({
       <span className="relative">
         <Icon className="h-5 w-5 shrink-0" />
         {bodka && (
-          <span className="absolute -right-1 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-app-zelena" />
+          <span className="absolute -right-1 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-app-zelena-plocha" />
         )}
       </span>
       <span

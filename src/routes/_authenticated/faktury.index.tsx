@@ -952,7 +952,7 @@ function InvoicesPage() {
                       <td className="p-3">
                         {datumNaDoklade(i.due_date)}
                         {i.povodna_splatnost && i.povodna_splatnost !== i.due_date && (
-                          <span className="block text-xs text-muted-foreground" title={`Pôvodne ${i.povodna_splatnost}`}>
+                          <span className="block text-xs text-muted-foreground" title={`Pôvodne ${datumNaDoklade(i.povodna_splatnost)}`}>
                             predĺžená
                           </span>
                         )}

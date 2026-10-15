@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, Scale } from "lucide-react";
 import { stav25aFn, vystavOpravu25aFn, type Stav25a } from "@/lib/faktero/oprava-25a.functions";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 /**
  * Nezaplatená faktúra po splatnosti — oprava DPH podľa § 25a.
@@ -70,7 +72,7 @@ export function Oprava25aPanel({ invoice }: { invoice: any }) {
                 <Link to="/faktury/$id" params={{ id: z.id }} className="font-medium underline">
                   {z.cislo}
                 </Link>{" "}
-                ({z.datum})
+                ({datumNaDoklade(z.datum)})
               </span>
             ))}
             .
@@ -78,7 +80,7 @@ export function Oprava25aPanel({ invoice }: { invoice: any }) {
           {stav.naVratenie > 0 && (
             <>
               <p className="text-amber-900 dark:text-amber-200">
-                Odberateľ po oprave zaplatil {stav.naVratenie.toFixed(2)} {mena}. Opravu treba v
+                Odberateľ po oprave zaplatil {formatujMenu(stav.naVratenie, mena)}. Opravu treba v
                 období úhrady vrátiť dokladom podľa § 25a ods. 10 — je to povinnosť.
               </p>
               <button
@@ -95,7 +97,7 @@ export function Oprava25aPanel({ invoice }: { invoice: any }) {
       ) : stav.narok ? (
         <div className="mt-2 space-y-2">
           <p>
-            Pohľadávka {stav.nezaplatene.toFixed(2)} {mena} je 150 dní po splatnosti. Daň z nej si
+            Pohľadávka {formatujMenu(stav.nezaplatene, mena)} je 150 dní po splatnosti. Daň z nej si
             môžete od štátu vrátiť opravným dokladom — vo výkaze ide do r. 26 a 27 a do časti C.1.
             Doklad musíte odberateľovi aj odoslať do lehoty na podanie priznania.
           </p>

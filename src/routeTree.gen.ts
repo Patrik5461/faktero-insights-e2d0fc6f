@@ -74,6 +74,7 @@ import { Route as AuthPotvrdenieRouteImport } from './routes/auth.potvrdenie'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as DanovyDokladTokenRouteImport } from './routes/danovy-doklad.$token'
+import { Route as DennySuhrnOdhlasenieRouteImport } from './routes/denny-suhrn.odhlasenie'
 import { Route as DocsApiRouteImport } from './routes/docs.api'
 import { Route as EfakturaciaIndexRouteImport } from './routes/efakturacia.index'
 import { Route as EfakturaciaSlugRouteImport } from './routes/efakturacia.$slug'
@@ -271,6 +272,7 @@ import { Route as AuthenticatedSkladPresunyNovaRouteImport } from './routes/_aut
 import { Route as AuthenticatedSkladProduktyIndexRouteImport } from './routes/_authenticated/sklad.produkty.index'
 import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
 import { Route as ApiBankoveUctyTatrabankaWebhookRouteImport } from './routes/api/bankove-ucty/tatrabanka/webhook'
+import { Route as ApiPublicDennySuhrnOdhlasitRouteImport } from './routes/api/public/denny-suhrn/odhlasit'
 import { Route as ApiPublicDokladTokenRouteImport } from './routes/api/public/doklad.$token'
 import { Route as ApiPublicEfakturaEpostakRouteImport } from './routes/api/public/efaktura/epostak'
 import { Route as ApiPublicEfakturaPdsRouteImport } from './routes/api/public/efaktura/pds'
@@ -279,6 +281,7 @@ import { Route as ApiPublicHooksBankStatementsRouteImport } from './routes/api/p
 import { Route as ApiPublicHooksBankStatementsRestoreRouteImport } from './routes/api/public/hooks/bank-statements-restore'
 import { Route as ApiPublicHooksBankSyncRouteImport } from './routes/api/public/hooks/bank-sync'
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
+import { Route as ApiPublicHooksDennySuhrnRouteImport } from './routes/api/public/hooks/denny-suhrn'
 import { Route as ApiPublicHooksEfakturaRegistracieRouteImport } from './routes/api/public/hooks/efaktura-registracie'
 import { Route as ApiPublicHooksEfakturaSyncRouteImport } from './routes/api/public/hooks/efaktura-sync'
 import { Route as ApiPublicHooksJazdyDoplnenieRouteImport } from './routes/api/public/hooks/jazdy-doplnenie'
@@ -656,6 +659,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
 const DanovyDokladTokenRoute = DanovyDokladTokenRouteImport.update({
   id: '/danovy-doklad/$token',
   path: '/danovy-doklad/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DennySuhrnOdhlasenieRoute = DennySuhrnOdhlasenieRouteImport.update({
+  id: '/denny-suhrn/odhlasenie',
+  path: '/denny-suhrn/odhlasenie',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsApiRoute = DocsApiRouteImport.update({
@@ -1748,6 +1756,12 @@ const ApiBankoveUctyTatrabankaWebhookRoute =
     path: '/api/bankove-ucty/tatrabanka/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicDennySuhrnOdhlasitRoute =
+  ApiPublicDennySuhrnOdhlasitRouteImport.update({
+    id: '/api/public/denny-suhrn/odhlasit',
+    path: '/api/public/denny-suhrn/odhlasit',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicDokladTokenRoute = ApiPublicDokladTokenRouteImport.update({
   id: '/api/public/doklad/$token',
   path: '/api/public/doklad/$token',
@@ -1790,6 +1804,12 @@ const ApiPublicHooksCommanderSyncRoute =
   ApiPublicHooksCommanderSyncRouteImport.update({
     id: '/api/public/hooks/commander-sync',
     path: '/api/public/hooks/commander-sync',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksDennySuhrnRoute =
+  ApiPublicHooksDennySuhrnRouteImport.update({
+    id: '/api/public/hooks/denny-suhrn',
+    path: '/api/public/hooks/denny-suhrn',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksEfakturaRegistracieRoute =
@@ -2113,6 +2133,7 @@ export interface FileRoutesByFullPath {
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
+  '/denny-suhrn/odhlasenie': typeof DennySuhrnOdhlasenieRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/faktura/$token': typeof FakturaTokenRoute
@@ -2304,6 +2325,7 @@ export interface FileRoutesByFullPath {
   '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/denny-suhrn/odhlasit': typeof ApiPublicDennySuhrnOdhlasitRoute
   '/api/public/doklad/$token': typeof ApiPublicDokladTokenRoute
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
@@ -2312,6 +2334,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/denny-suhrn': typeof ApiPublicHooksDennySuhrnRoute
   '/api/public/hooks/efaktura-registracie': typeof ApiPublicHooksEfakturaRegistracieRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
@@ -2423,6 +2446,7 @@ export interface FileRoutesByTo {
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
+  '/denny-suhrn/odhlasenie': typeof DennySuhrnOdhlasenieRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/faktura/$token': typeof FakturaTokenRoute
@@ -2613,6 +2637,7 @@ export interface FileRoutesByTo {
   '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/denny-suhrn/odhlasit': typeof ApiPublicDennySuhrnOdhlasitRoute
   '/api/public/doklad/$token': typeof ApiPublicDokladTokenRoute
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
@@ -2621,6 +2646,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/denny-suhrn': typeof ApiPublicHooksDennySuhrnRoute
   '/api/public/hooks/efaktura-registracie': typeof ApiPublicHooksEfakturaRegistracieRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
@@ -2742,6 +2768,7 @@ export interface FileRoutesById {
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
+  '/denny-suhrn/odhlasenie': typeof DennySuhrnOdhlasenieRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/faktura/$token': typeof FakturaTokenRoute
@@ -2933,6 +2960,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/denny-suhrn/odhlasit': typeof ApiPublicDennySuhrnOdhlasitRoute
   '/api/public/doklad/$token': typeof ApiPublicDokladTokenRoute
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
@@ -2941,6 +2969,7 @@ export interface FileRoutesById {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/denny-suhrn': typeof ApiPublicHooksDennySuhrnRoute
   '/api/public/hooks/efaktura-registracie': typeof ApiPublicHooksEfakturaRegistracieRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
@@ -3062,6 +3091,7 @@ export interface FileRouteTypes {
     | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
+    | '/denny-suhrn/odhlasenie'
     | '/docs/api'
     | '/efakturacia/$slug'
     | '/faktura/$token'
@@ -3253,6 +3283,7 @@ export interface FileRouteTypes {
     | '/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/denny-suhrn/odhlasit'
     | '/api/public/doklad/$token'
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
@@ -3261,6 +3292,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/denny-suhrn'
     | '/api/public/hooks/efaktura-registracie'
     | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/jazdy-doplnenie'
@@ -3372,6 +3404,7 @@ export interface FileRouteTypes {
     | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
+    | '/denny-suhrn/odhlasenie'
     | '/docs/api'
     | '/efakturacia/$slug'
     | '/faktura/$token'
@@ -3562,6 +3595,7 @@ export interface FileRouteTypes {
     | '/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/denny-suhrn/odhlasit'
     | '/api/public/doklad/$token'
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
@@ -3570,6 +3604,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/denny-suhrn'
     | '/api/public/hooks/efaktura-registracie'
     | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/jazdy-doplnenie'
@@ -3690,6 +3725,7 @@ export interface FileRouteTypes {
     | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
+    | '/denny-suhrn/odhlasenie'
     | '/docs/api'
     | '/efakturacia/$slug'
     | '/faktura/$token'
@@ -3881,6 +3917,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/denny-suhrn/odhlasit'
     | '/api/public/doklad/$token'
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
@@ -3889,6 +3926,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/denny-suhrn'
     | '/api/public/hooks/efaktura-registracie'
     | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/jazdy-doplnenie'
@@ -3972,6 +4010,7 @@ export interface RootRouteChildren {
   ZabudnuteHesloRoute: typeof ZabudnuteHesloRoute
   AuthPotvrdenieRoute: typeof AuthPotvrdenieRoute
   DanovyDokladTokenRoute: typeof DanovyDokladTokenRoute
+  DennySuhrnOdhlasenieRoute: typeof DennySuhrnOdhlasenieRoute
   DocsApiRoute: typeof DocsApiRoute
   FakturaTokenRoute: typeof FakturaTokenRoute
   PayTokenRoute: typeof PayTokenRoute
@@ -4043,6 +4082,7 @@ export interface RootRouteChildren {
   PomocOnlinePlatbyGopayRoute: typeof PomocOnlinePlatbyGopayRoute
   ApiAdminSeoCallbackRoute: typeof ApiAdminSeoCallbackRoute
   ApiBankoveUctyTatrabankaWebhookRoute: typeof ApiBankoveUctyTatrabankaWebhookRoute
+  ApiPublicDennySuhrnOdhlasitRoute: typeof ApiPublicDennySuhrnOdhlasitRoute
   ApiPublicDokladTokenRoute: typeof ApiPublicDokladTokenRoute
   ApiPublicEfakturaEpostakRoute: typeof ApiPublicEfakturaEpostakRoute
   ApiPublicEfakturaPdsRoute: typeof ApiPublicEfakturaPdsRoute
@@ -4051,6 +4091,7 @@ export interface RootRouteChildren {
   ApiPublicHooksBankStatementsRestoreRoute: typeof ApiPublicHooksBankStatementsRestoreRoute
   ApiPublicHooksBankSyncRoute: typeof ApiPublicHooksBankSyncRoute
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
+  ApiPublicHooksDennySuhrnRoute: typeof ApiPublicHooksDennySuhrnRoute
   ApiPublicHooksEfakturaRegistracieRoute: typeof ApiPublicHooksEfakturaRegistracieRoute
   ApiPublicHooksEfakturaSyncRoute: typeof ApiPublicHooksEfakturaSyncRoute
   ApiPublicHooksJazdyDoplnenieRoute: typeof ApiPublicHooksJazdyDoplnenieRoute
@@ -4537,6 +4578,13 @@ declare module '@tanstack/react-router' {
       path: '/danovy-doklad/$token'
       fullPath: '/danovy-doklad/$token'
       preLoaderRoute: typeof DanovyDokladTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/denny-suhrn/odhlasenie': {
+      id: '/denny-suhrn/odhlasenie'
+      path: '/denny-suhrn/odhlasenie'
+      fullPath: '/denny-suhrn/odhlasenie'
+      preLoaderRoute: typeof DennySuhrnOdhlasenieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/api': {
@@ -5918,6 +5966,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBankoveUctyTatrabankaWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/denny-suhrn/odhlasit': {
+      id: '/api/public/denny-suhrn/odhlasit'
+      path: '/api/public/denny-suhrn/odhlasit'
+      fullPath: '/api/public/denny-suhrn/odhlasit'
+      preLoaderRoute: typeof ApiPublicDennySuhrnOdhlasitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/doklad/$token': {
       id: '/api/public/doklad/$token'
       path: '/api/public/doklad/$token'
@@ -5972,6 +6027,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/commander-sync'
       fullPath: '/api/public/hooks/commander-sync'
       preLoaderRoute: typeof ApiPublicHooksCommanderSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/denny-suhrn': {
+      id: '/api/public/hooks/denny-suhrn'
+      path: '/api/public/hooks/denny-suhrn'
+      fullPath: '/api/public/hooks/denny-suhrn'
+      preLoaderRoute: typeof ApiPublicHooksDennySuhrnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/efaktura-registracie': {
@@ -6955,6 +7017,7 @@ const rootRouteChildren: RootRouteChildren = {
   ZabudnuteHesloRoute: ZabudnuteHesloRoute,
   AuthPotvrdenieRoute: AuthPotvrdenieRoute,
   DanovyDokladTokenRoute: DanovyDokladTokenRoute,
+  DennySuhrnOdhlasenieRoute: DennySuhrnOdhlasenieRoute,
   DocsApiRoute: DocsApiRoute,
   FakturaTokenRoute: FakturaTokenRoute,
   PayTokenRoute: PayTokenRoute,
@@ -7026,6 +7089,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocOnlinePlatbyGopayRoute: PomocOnlinePlatbyGopayRoute,
   ApiAdminSeoCallbackRoute: ApiAdminSeoCallbackRoute,
   ApiBankoveUctyTatrabankaWebhookRoute: ApiBankoveUctyTatrabankaWebhookRoute,
+  ApiPublicDennySuhrnOdhlasitRoute: ApiPublicDennySuhrnOdhlasitRoute,
   ApiPublicDokladTokenRoute: ApiPublicDokladTokenRoute,
   ApiPublicEfakturaEpostakRoute: ApiPublicEfakturaEpostakRoute,
   ApiPublicEfakturaPdsRoute: ApiPublicEfakturaPdsRoute,
@@ -7035,6 +7099,7 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicHooksBankStatementsRestoreRoute,
   ApiPublicHooksBankSyncRoute: ApiPublicHooksBankSyncRoute,
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
+  ApiPublicHooksDennySuhrnRoute: ApiPublicHooksDennySuhrnRoute,
   ApiPublicHooksEfakturaRegistracieRoute:
     ApiPublicHooksEfakturaRegistracieRoute,
   ApiPublicHooksEfakturaSyncRoute: ApiPublicHooksEfakturaSyncRoute,

@@ -55,6 +55,7 @@ export function Skener({
   nastavenie,
   onNastavenie,
   companyId,
+  onZavriet,
 }: {
   onQr: (raw: string) => void;
   /** Náhradná cesta, keď kamera v stránke nejde (fotoaparát / výber súboru). */
@@ -75,6 +76,8 @@ export function Skener({
   nastavenie: NastavenieDokladu;
   onNastavenie: (n: NastavenieDokladu) => void;
   companyId?: string;
+  /** Krížik vľavo hore — skener je celá obrazovka bez spodnej lišty. */
+  onZavriet?: () => void;
 }) {
   const { t, mnozne } = usePreklad();
   const nacitajPredvolby = useOperacia<{
@@ -240,26 +243,46 @@ export function Skener({
       */}
       <div className="relative flex min-h-0 flex-1 flex-col">
         <div className="shrink-0" style={{ paddingTop: "calc(var(--safe-top) + 0.5rem)" }}>
-          {/* Jediná nápoveda: QR sa netreba fotiť. Pri viacstranovom ju nahradí počítadlo strán. */}
-          {!(viacstranovy && fotimTu) && !chyba && (
-            <div className="relative flex items-center justify-center px-16">
-              <p className="w-fit max-w-full rounded-full bg-black/45 px-3 py-1 text-center text-[12px] text-white/90 backdrop-blur">
+          {/*
+            Horný rad ako v návrhu „A": vľavo zavrieť, v strede jediná
+            nápoveda (QR sa netreba fotiť / „Držte, fotím…"), vpravo Auto.
+            Pri viacstranovom nápovedu nahradí počítadlo strán pod radom.
+          */}
+          <div className="flex min-h-[44px] items-center justify-between gap-2 px-4">
+            {onZavriet ? (
+              <button
+                onClick={onZavriet}
+                aria-label={t("panel.zavriet")}
+                data-zavriet-skener
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-black/45 text-white backdrop-blur active:scale-95"
+              >
+                <X className="h-5 w-5" strokeWidth={2.2} />
+              </button>
+            ) : (
+              <span className="w-11 shrink-0" />
+            )}
+            {!(viacstranovy && fotimTu) && !chyba ? (
+              <p className="min-w-0 truncate rounded-full bg-black/50 px-3.5 py-2 text-center text-[13px] font-semibold text-white backdrop-blur">
                 {auto && fotimTu && ustalene >= 2 ? t("sken.drzte") : t("sken.qrSam")}
               </p>
-              {fotimTu && (
-                <button
-                  onClick={prepniAuto}
-                  aria-pressed={auto}
-                  aria-label={t("sken.autoPopis")}
-                  className={`absolute right-4 min-h-[32px] rounded-full px-3 text-[12px] font-semibold backdrop-blur ${
-                    auto ? "bg-app-zelena text-white" : "bg-black/45 text-white/70"
-                  }`}
-                >
-                  {t("sken.auto")}
-                </button>
-              )}
-            </div>
-          )}
+            ) : (
+              <span className="min-w-0 flex-1" />
+            )}
+            {fotimTu ? (
+              <button
+                onClick={prepniAuto}
+                aria-pressed={auto}
+                aria-label={t("sken.autoPopis")}
+                className={`h-9 shrink-0 rounded-full px-3.5 text-[13px] font-bold backdrop-blur ${
+                  auto ? "bg-app-zelena-plocha text-white" : "bg-black/45 text-white/75"
+                }`}
+              >
+                {t("sken.auto")}
+              </button>
+            ) : (
+              <span className="w-11 shrink-0" />
+            )}
+          </div>
           {/* Viacstranový doklad: koľko strán je odfotených a ako skončiť. */}
           {viacstranovy && fotimTu && (
             <div
@@ -329,56 +352,80 @@ export function Skener({
         )}
 
         {/*
-          Spodok je zámerne prázdny: kamera, jeden čip s nastavením a jeden
-          riadok tlačidiel. Predtým tu bol rozbalený panel, dva riadky textu,
-          tri tlačidlá a ďalší riadok odkazov — na hľadáčik nebolo vidieť.
-          „Prijaté doklady“ sú v spodnej lište (Doklady), PDF ide cez to isté
-          tlačidlo ako galéria.
+          Biely panel dole (smer „A"): úhrada dvomi tlačidlami a kategória,
+          pod nimi galéria · spúšť · viac strán. Kategória otvára celé
+          nastavenie dokladu (zákazka, predkontácia, komentár, viac dokladov).
+          Predtým tu bol rozbalený panel, dva riadky textu, tri tlačidlá a
+          riadok odkazov — na hľadáčik nebolo vidieť. „Prijaté doklady" sú
+          v spodnej lište (Doklady), PDF ide cez to isté tlačidlo ako galéria.
         */}
         <div
-          className="shrink-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-4 pt-8"
-          style={{ paddingBottom: "calc(var(--safe-bottom) + 0.75rem)" }}
+          data-spodny-panel
+          className="shrink-0 rounded-t-app-lg bg-app-karta px-5 pt-3.5 text-app-text"
+          style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}
         >
-          <div className="flex justify-center">
+          <div aria-hidden className="mx-auto mb-3.5 h-1 w-10 rounded-full bg-app-linka" />
+          <div className="flex gap-2">
+            <div role="group" aria-label={t("sken.uhrada")} className="flex flex-[2] gap-2">
+              {(
+                [
+                  ["hotovost", t("pd.hotovost")],
+                  ["karta", t("sken.karta")],
+                ] as const
+              ).map(([kod, label]) => {
+                const je = nastavenie.uhrada === kod;
+                return (
+                  <button
+                    key={kod}
+                    onClick={() => nastav({ uhrada: kod })}
+                    aria-pressed={je}
+                    className={`h-11 min-w-0 flex-1 truncate rounded-[12px] px-1 text-[15px] transition active:scale-[0.98] ${
+                      je
+                        ? "bg-app-zelena-jemna font-bold text-app-zelena"
+                        : "border border-app-linka font-semibold"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
             <button
               onClick={() => setNastaveniaOtvorene(true)}
               data-cip-nastavenia
               aria-label={t("sken.nastavenie")}
-              className="inline-flex min-h-[36px] max-w-full items-center gap-1.5 rounded-full bg-black/55 px-3.5 text-[13px] text-white backdrop-blur"
+              aria-haspopup="dialog"
+              className="flex h-11 min-w-0 flex-[1.3] items-center justify-center gap-1 rounded-[12px] border border-app-linka px-2 text-[14px] font-semibold transition active:scale-[0.98]"
             >
-              <span className="font-semibold">
-                {nastavenie.uhrada === "hotovost" ? t("pd.hotovost") : t("sken.karta")}
-              </span>
-              <span className="text-white/50">·</span>
               <span className="min-w-0 truncate">
                 {KATEGORIE_VYDAVKOV.find((k) => k.kod === nastavenie.kategoria)?.nazov ??
-                  t("sken.bezKategorie")}
+                  t("sken.kategoriaTlacidlo")}
               </span>
               {vyplneneDalsie > 0 && (
-                <span className="rounded-full bg-white/20 px-1.5 text-[11px]">
+                <span className="shrink-0 rounded-full bg-app-zelena-jemna px-1.5 text-[11px] font-bold text-app-zelena">
                   +{vyplneneDalsie}
                 </span>
               )}
-              <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+              <ChevronDown className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
             </button>
           </div>
 
           <div className="mt-4 grid grid-cols-3 items-center">
             <div className="flex justify-start">
-              <MalyKruh icon={ImageIcon} label={t("sken.zoSuborov")} onClick={onZGalerie} />
+              <MalyStvorec icon={ImageIcon} label={t("sken.zoSuborov")} onClick={onZGalerie} />
             </div>
             <div className="flex justify-center">
               <button
                 onClick={spust}
                 aria-label={t("sken.odfotit")}
                 data-spust
-                /* Biely prstenec okolo zelenej spúšte — na tmavom obraze je to
-                   jediné, čo je vidieť za každých svetelných podmienok. */
-                className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white bg-app-zelena transition active:scale-95"
+                /* Svetlozelený prstenec okolo zelenej spúšte — na bielom paneli
+                   je to najväčšia a jediná plná vec, netreba ju hľadať. */
+                className="h-[76px] w-[76px] rounded-full border-4 border-app-zelena-jemna bg-app-zelena-plocha transition active:scale-95"
               />
             </div>
             <div className="flex justify-end">
-              <MalyKruh
+              <MalyStvorec
                 icon={Files}
                 label={t("sken.viacstranovy")}
                 onClick={() => void prepniViacstranovy()}
@@ -401,11 +448,11 @@ export function Skener({
             aria-label={t("sken.nastavenie")}
             data-panel-dokladu
             onClick={(e) => e.stopPropagation()}
-            className="rounded-t-2xl bg-app-karta px-4 pt-3 text-app-text"
+            className="rounded-t-app-lg bg-app-karta px-5 pt-3.5 text-app-text"
             style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-app-ramik" />
-            <h2 className="mb-3 text-[16px] font-semibold">{t("sken.nastavenie")}</h2>
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-app-linka" />
+            <h2 className="mb-3 text-[17px] font-bold">{t("sken.nastavenie")}</h2>
             <div className="max-h-[60vh] space-y-3 overflow-y-auto">
               <div role="group" aria-label={t("sken.uhrada")} className="grid grid-cols-2 gap-2">
                 {(
@@ -420,7 +467,7 @@ export function Skener({
                     aria-pressed={nastavenie.uhrada === kod}
                     className={`min-h-[44px] rounded-app-sm border text-[15px] ${
                       nastavenie.uhrada === kod
-                        ? "border-app-zelena bg-app-zelena font-semibold text-white"
+                        ? "border-app-zelena bg-app-zelena-plocha font-semibold text-white"
                         : "border-app-ramik"
                     }`}
                   >
@@ -510,7 +557,7 @@ export function Skener({
             </div>
             <button
               onClick={() => setNastaveniaOtvorene(false)}
-              className="mt-4 min-h-[48px] w-full rounded-app bg-app-zelena text-[15px] font-semibold text-white"
+              className="mt-4 min-h-[54px] w-full rounded-[16px] bg-app-zelena-plocha text-[16px] font-bold text-white"
             >
               {t("nf.hotovo")}
             </button>
@@ -533,7 +580,7 @@ export function Skener({
   );
 }
 
-function MalyKruh({
+function MalyStvorec({
   icon: Icon,
   label,
   onClick,
@@ -550,11 +597,11 @@ function MalyKruh({
       onClick={onClick}
       aria-label={label}
       aria-pressed={stlacene}
-      className={`grid h-12 w-12 place-items-center rounded-full text-white transition active:scale-95 ${
-        stlacene ? "bg-app-zelena ring-2 ring-white" : "bg-white/15"
+      className={`grid h-12 w-12 place-items-center rounded-[14px] transition active:scale-95 ${
+        stlacene ? "bg-app-zelena-plocha text-white" : "bg-app-pozadie text-app-text"
       }`}
     >
-      <Icon className="h-5 w-5" />
+      <Icon className="h-[22px] w-[22px]" />
     </button>
   );
 }

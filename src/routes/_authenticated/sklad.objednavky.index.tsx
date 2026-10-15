@@ -8,6 +8,7 @@ import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodava
 import { Plus, Truck } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/")({
   head: () => ({ meta: [{ title: "Objednávky u dodávateľov — Faktero" }] }),
@@ -128,7 +129,7 @@ function PurchaseOrdersPage() {
                       </Link>
                     </td>
                     <td className="p-3">{o.supplier_name ?? "—"}</td>
-                    <td className="p-3 text-muted-foreground">{o.order_date}</td>
+                    <td className="p-3 text-muted-foreground">{datumNaDoklade(o.order_date)}</td>
                     <td className="p-3 text-muted-foreground">{o.expected_date ?? "—"}</td>
                     <td className="p-3 text-right tabular-nums">{o.items_count}</td>
                     <td className="p-3 text-right tabular-nums">{suma(o.total, o.currency)}</td>

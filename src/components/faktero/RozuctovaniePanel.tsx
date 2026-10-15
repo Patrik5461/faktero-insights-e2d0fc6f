@@ -16,8 +16,9 @@ import {
 import { KodPohody } from "./KodPohody";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import type { Navrhy } from "./ZauctovaniePanel";
+import { formatujCislo } from "@/lib/faktero/mena";
 
-const f2 = (n: number) => (Number(n) || 0).toFixed(2);
+const f2 = (n: number) => formatujCislo(n, 2);
 
 /**
  * Rozúčtovanie dokladu na viac riadkov — každý s vlastnou predkontáciou,

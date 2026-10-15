@@ -1,6 +1,7 @@
 import { sUctomFaktury } from "./platobny-ucet";
 import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export type SendInvoiceEmailInput = {
   company_id: string;
@@ -13,7 +14,7 @@ export type SendInvoiceEmailInput = {
 };
 
 function applyVars(s: string, inv: any, company: any) {
-  const total = `${Number(inv.total).toFixed(2)} ${inv.currency}`;
+  const total = formatujMenu(inv.total, inv.currency);
   const pairs: Array<[string, string]> = [
     ["invoice_number", inv.invoice_number ?? ""],
     ["due_date", inv.due_date ?? ""],

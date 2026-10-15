@@ -17,6 +17,7 @@ import {
 } from "@/lib/faktero/admin.functions";
 import { toast } from "sonner";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/admin/subscriptions")({
   head: () => ({ meta: [{ title: "Admin · Predplatné — Faktero" }] }),
@@ -33,7 +34,7 @@ function fmtDate(s: string | null | undefined) {
 }
 function fmtPrice(cents: number | null | undefined) {
   if (cents == null) return "—";
-  return `${(cents / 100).toFixed(2)} €`;
+  return formatujMenu(cents / 100, "EUR");
 }
 
 function AdminSubscriptionsPage() {

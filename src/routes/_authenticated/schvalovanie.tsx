@@ -7,6 +7,8 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { cakajuNaMnaFn, rozhodnutieFn } from "@/lib/faktero/schvalovanie.functions";
 import { NAZVY_AGEND, NAZVY_STAVOV, type AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 /** Doklady, ktoré čakajú na moje schválenie — jednotlivo aj hromadne. */
 export const Route = createFileRoute("/_authenticated/schvalovanie")({
@@ -158,9 +160,9 @@ function Stranka() {
                           <span className="block text-xs text-muted-foreground">{NAZVY_AGEND[p.agenda as AgendaSchvalovania]}</span>
                         </td>
                         <td className="py-1.5 pr-3">{p.partner ?? "—"}</td>
-                        <td className="py-1.5 pr-3">{p.datum ?? "—"}</td>
+                        <td className="py-1.5 pr-3">{datumNaDoklade(p.datum)}</td>
                         <td className="py-1.5 pr-3 text-right tabular-nums">
-                          {p.suma.toFixed(2)} {p.mena}
+                          {formatujMenu(p.suma, p.mena)}
                         </td>
                         <td className="py-1.5 text-xs">
                           {NAZVY_STAVOV[p.stav as keyof typeof NAZVY_STAVOV]} · {p.odznak}

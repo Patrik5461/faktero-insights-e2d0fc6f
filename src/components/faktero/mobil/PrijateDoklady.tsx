@@ -512,7 +512,7 @@ export function PrijateDoklady({
                       setParujem(null);
                     }
                   }}
-                  className="flex-1 rounded-app-sm bg-app-zelena/15 px-3 py-2 text-[13px] font-medium text-app-zelena disabled:opacity-60"
+                  className="flex-1 rounded-app-sm bg-app-zelena-plocha/15 px-3 py-2 text-[13px] font-medium text-app-zelena disabled:opacity-60"
                 >
                   {z.istota === "auto" ? t("pd.sparovat") : t("pd.anoPatriKSebe")}
                 </button>
@@ -597,7 +597,7 @@ export function PrijateDoklady({
                           aria-hidden
                           className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 ${
                             vybrane.has(d.id)
-                              ? "border-app-zelena bg-app-zelena text-white"
+                              ? "border-app-zelena bg-app-zelena-plocha text-white"
                               : "border-app-ramik bg-app-karta"
                           }`}
                         >

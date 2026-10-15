@@ -18,6 +18,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { trasaMedziBodmi } from "@/lib/faktero/trasa.server";
 import { BulkBar, ConfirmDialog } from "@/components/faktero/ListControls";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/jazdy/")({
   head: () => ({ meta: [{ title: "Kniha jázd — Faktero" }] }),
@@ -360,13 +361,13 @@ function TripsPage() {
                       <td className="p-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
-                          aria-label={`Označiť jazdu z ${r.trip_date}`}
+                          aria-label={`Označiť jazdu z ${datumNaDoklade(r.trip_date)}`}
                           checked={!!vybrane[r.id]}
                           onChange={(e) => prepniJazdu(r.id, e.target.checked)}
                           className="h-4 w-4 cursor-pointer accent-primary"
                         />
                       </td>
-                      <td className="p-3 whitespace-nowrap">{r.trip_date}</td>
+                      <td className="p-3 whitespace-nowrap">{datumNaDoklade(r.trip_date)}</td>
                       <td className="p-3">
                         {vehicles[r.vehicle_id]?.name ?? "—"}{" "}
                         <span className="text-xs text-muted-foreground">
@@ -472,7 +473,7 @@ function TripsPage() {
                     <div className="flex min-w-0 gap-2">
                       <input
                         type="checkbox"
-                        aria-label={`Označiť jazdu z ${r.trip_date}`}
+                        aria-label={`Označiť jazdu z ${datumNaDoklade(r.trip_date)}`}
                         checked={!!vybrane[r.id]}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => prepniJazdu(r.id, e.target.checked)}
@@ -480,7 +481,7 @@ function TripsPage() {
                       />
                       <div className="min-w-0">
                         <div className="text-sm font-semibold">
-                          {r.trip_date} · {vehicles[r.vehicle_id]?.name ?? "—"}
+                          {datumNaDoklade(r.trip_date)} · {vehicles[r.vehicle_id]?.name ?? "—"}
                         </div>
                         <div className="mt-0.5 text-xs text-muted-foreground truncate">
                           {r.start_location ?? "—"} → {r.end_location ?? "—"}
@@ -569,7 +570,9 @@ function TripsPage() {
             <DialogHeader>
               <DialogTitle>
                 Trasa jazdy
-                {trasa ? ` — ${trasa.trip_date}, ${formatujCislo(trasa.distance_km, 1)} km` : ""}
+                {trasa
+                  ? ` — ${datumNaDoklade(trasa.trip_date)}, ${formatujCislo(trasa.distance_km, 1)} km`
+                  : ""}
               </DialogTitle>
             </DialogHeader>
             {trasa &&

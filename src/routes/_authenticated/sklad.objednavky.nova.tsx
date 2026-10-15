@@ -17,9 +17,9 @@ import { VyberRadu } from "@/components/faktero/VyberRadu";
 import { vatRateOptions, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { Plus, Sparkles, Trash2 } from "lucide-react";
-import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
+import { formatujMenu, KROK_CENY } from "@/lib/faktero/mena";
 
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useKrajinaDane, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/nova")({
   head: () => ({ meta: [{ title: "Nová objednávka — Faktero" }] }),
   component: NewPurchaseOrder,
@@ -45,10 +45,6 @@ const PRAZDNY: Riadok = {
   vat_rate: 23,
 };
 
-function suma(n: number) {
-  return formatovacMeny("EUR", "sk-SK")(n || 0);
-}
-
 function NewPurchaseOrder() {
   const nav = useNavigate();
   const fetchSuppliers = useServerFn(listSuppliers);
@@ -60,6 +56,9 @@ function NewPurchaseOrder() {
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
 
   const krajina = useKrajinaDane();
+  /* Objednávka sa vedie v domácej mene firmy — česká firma v korunách. */
+  const mena = useMenaFirmy();
+  const suma = (n: number) => formatujMenu(n || 0, mena.kod);
 
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);

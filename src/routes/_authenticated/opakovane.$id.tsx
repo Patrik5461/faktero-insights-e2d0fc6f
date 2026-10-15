@@ -9,7 +9,8 @@ import { toast } from "sonner";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
-import { MENY, KROK_CENY } from "@/lib/faktero/mena";
+import { MENY, KROK_CENY, formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 export const Route = createFileRoute("/_authenticated/opakovane/$id")({
   head: () => ({ meta: [{ title: "Opakovaná faktúra — Faktero" }] }),
   component: RecurringDetail,
@@ -160,7 +161,7 @@ function RecurringDetail() {
     <>
       <PageHeader
         title={rec.name}
-        description={`${FREQ_LABEL[rec.frequency]} · Odberateľ: ${rec.customer_name ?? "—"} · Ďalší beh ${rec.next_run}`}
+        description={`${FREQ_LABEL[rec.frequency]} · Odberateľ: ${rec.customer_name ?? "—"} · Ďalší beh ${datumNaDoklade(rec.next_run)}`}
         action={
           <div className="flex flex-wrap gap-2">
             <span
@@ -329,8 +330,10 @@ function RecurringDetail() {
                     onChange={(v) => setItem(idx, { vat_rate: Number(v) })}
                   />
                   <div className="text-right text-sm font-medium">
-                    {(it.quantity * it.unit_price * (1 + it.vat_rate / 100)).toFixed(2)}{" "}
-                    {rec.currency}
+                    {formatujMenu(
+                      it.quantity * it.unit_price * (1 + it.vat_rate / 100),
+                      rec.currency,
+                    )}
                   </div>
                   <button
                     type="button"
@@ -345,18 +348,14 @@ function RecurringDetail() {
             <div className="mt-4 space-y-1 text-right text-sm">
               <div>
                 Bez DPH:{" "}
-                <span className="font-medium">
-                  {totals.subtotal.toFixed(2)} {rec.currency}
-                </span>
+                <span className="font-medium">{formatujMenu(totals.subtotal, rec.currency)}</span>
               </div>
               <div>
                 DPH:{" "}
-                <span className="font-medium">
-                  {totals.vat_total.toFixed(2)} {rec.currency}
-                </span>
+                <span className="font-medium">{formatujMenu(totals.vat_total, rec.currency)}</span>
               </div>
               <div className="text-lg font-semibold">
-                Spolu: {totals.total.toFixed(2)} {rec.currency}
+                Spolu: {formatujMenu(totals.total, rec.currency)}
               </div>
             </div>
           </div>

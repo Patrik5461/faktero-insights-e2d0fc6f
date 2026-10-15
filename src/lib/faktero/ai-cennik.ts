@@ -137,6 +137,7 @@ export const NAZOV_UCELU: Record<string, string> = {
   "import-dokladov": "Import dokladov",
   asistent: "AI asistent",
   "faktura-z-textu": "Faktúra z textu",
+  "vyber-z-dokladu": "Výber z náhľadu dokladu",
   podpora: "Podpora na webe",
   neznáme: "Neurčené",
 };

@@ -5,6 +5,8 @@ import { Loader2, RotateCcw, Trash2 } from "lucide-react";
 import { kosDokladovFn, obnovZKosaFn, zmazZKosaFn } from "@/lib/faktero/expenses.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { potvrd } from "@/lib/potvrdenie";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 type Polozka = {
   id: string;
@@ -104,8 +106,8 @@ export function KosDokladovOkno({
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{p.popis}</div>
                   <div className="text-xs text-muted-foreground">
-                    {p.datum ?? "bez dátumu"}
-                    {p.suma != null ? ` · ${p.suma.toFixed(2)} ${p.mena}` : ""} · zmazané{" "}
+                    {p.datum ? datumNaDoklade(p.datum) : "bez dátumu"}
+                    {p.suma != null ? ` · ${formatujMenu(p.suma, p.mena)}` : ""} · zmazané{" "}
                     {new Date(p.zmazaneAt).toLocaleString("sk-SK", { dateStyle: "medium", timeStyle: "short" })}
                   </div>
                 </div>

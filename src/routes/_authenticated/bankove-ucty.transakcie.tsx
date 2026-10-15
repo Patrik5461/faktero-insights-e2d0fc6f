@@ -17,6 +17,7 @@ import { usePagedLogs } from "@/hooks/usePagedLogs";
 import { EmptyState, ListFooter, LogsToolbar } from "@/components/faktero/ListControls";
 import { Landmark } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/transakcie")({
   head: () => ({ meta: [{ title: "Bankové transakcie — Faktero" }] }),
@@ -322,7 +323,7 @@ function TxPage() {
             <tbody>
               {txs.map((t) => (
                 <tr key={t.id} className="border-t border-border">
-                  <td className="px-3 py-2 tabular-nums">{t.booking_date}</td>
+                  <td className="px-3 py-2 tabular-nums">{datumNaDoklade(t.booking_date)}</td>
                   {!selected && (
                     <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
                       {(() => {

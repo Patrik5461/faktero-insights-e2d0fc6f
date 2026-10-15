@@ -22,6 +22,7 @@ import {
   Eraser,
 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/admin/gopay")({
   head: () => ({ meta: [{ title: "GoPay (predplatné) — Admin" }] }),
@@ -490,7 +491,7 @@ function AdminGopayPage() {
                             </td>
                             <td className="px-2 py-2">{p.status ?? "—"}</td>
                             <td className="px-2 py-2 text-right font-mono">
-                              {(Number(p.amountCents ?? 0) / 100).toFixed(2)} {p.currency ?? ""}
+                              {formatujMenu(Number(p.amountCents ?? 0) / 100, p.currency ?? "")}
                             </td>
                           </tr>
                         ))
@@ -523,7 +524,7 @@ function AdminGopayPage() {
                   </div>
                   <div className="flex justify-between border-t border-border pt-2">
                     <dt className="font-medium">Príjem</dt>
-                    <dd className="font-mono">{(stats.totalPaidCents / 100).toFixed(2)} €</dd>
+                    <dd className="font-mono">{formatujMenu(stats.totalPaidCents / 100, "EUR")}</dd>
                   </div>
                 </dl>
               </div>

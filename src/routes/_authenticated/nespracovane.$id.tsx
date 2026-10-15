@@ -2,14 +2,16 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
+import { NauceneZDodavatela } from "@/components/faktero/NauceneZDodavatela";
 import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, ExternalLink, RefreshCw } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
-import { NahladPdf } from "@/components/faktero/NahladPdf";
+import { NahladSVyberom, poleZPrvku, zablikajPole } from "@/components/faktero/NahladSVyberom";
+import { poliaPreDruh, zapisDoUdajov, type KlucPola } from "@/lib/faktero/vyber-z-dokladu";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import {
   detailNespracovanehoFn,
@@ -60,6 +62,9 @@ function Detail() {
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
   const [busy, setBusy] = useState(false);
   const [nenajdene, setNenajdene] = useState<string | null>(null);
+  // Oprava poľa kliknutím do náhľadu — pole, pre ktoré sa práve vyberá.
+  const [vyberPole, setVyberPole] = useState<KlucPola | null>(null);
+  const udajeRef = useRef<HTMLDivElement>(null);
   const { vzhlad, zmen: zmenVzhlad } = useVzhladNespracovanych();
 
   async function obnov() {
@@ -312,11 +317,19 @@ function Detail() {
           <div className="min-w-0 rounded-xl border border-border bg-card p-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-auto">
             {d.subor.url ? (
               <>
-                {String(d.subor.mime ?? "").includes("pdf") ? (
-                  <NahladPdf url={d.subor.url} />
-                ) : (
-                  <img src={d.subor.url} alt={d.subor.nazov ?? "Doklad"} className="w-full rounded-md" />
-                )}
+                <NahladSVyberom
+                  dokladId={d.id}
+                  subor={d.subor}
+                  pole={vyberPole}
+                  polia={poliaPreDruh(druh)}
+                  onVyberPola={setVyberPole}
+                  onZrus={() => setVyberPole(null)}
+                  onHodnota={(kluc, h) => {
+                    setU((p) => (p ? zapisDoUdajov(p, kluc, h) : p));
+                    setVyberPole(null);
+                    zablikajPole(udajeRef.current, kluc);
+                  }}
+                />
                 <a
                   href={d.subor.url}
                   target="_blank"
@@ -331,8 +344,8 @@ function Detail() {
             )}
           </div>
 
-          {/* Údaje */}
-          <div className="min-w-0 space-y-4">
+          {/* Údaje — kliknutie do poľa zapne výber z náhľadu */}
+          <div ref={udajeRef} onFocusCapture={(e) => setVyberPole(poleZPrvku(e.target))} className="min-w-0 space-y-4">
             {d.stav === "cita" && (
               <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" /> Čítam doklad — údaje sa doplnia samy.
@@ -606,6 +619,7 @@ function Detail() {
                       })
                     }
                   />
+                  <NauceneZDodavatela u={u} />
                   <p className="mt-2 text-xs text-muted-foreground">
                     Prázdne pole = predvolené z{" "}
                     <Link to="/uctovnictvo/predkontacie" className="underline">

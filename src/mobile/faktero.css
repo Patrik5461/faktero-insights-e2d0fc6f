@@ -1,0 +1,22 @@
+/*
+ * Písmo mobilného Faktera.
+ *
+ * Manrope je súčasť balíčka appky, nie odkaz na Google Fonts: appka sa otvára
+ * aj bez signálu a písmo zo siete by sa v tej chvíli nenačítalo — rozhranie by
+ * pri každom štarte bez pripojenia preskočilo na systémové a späť.
+ *
+ * Importuje ho len `main.tsx` (Faktero). Kniha jázd (`main-jazdy.tsx`) ani web
+ * ho nedostanú — Kniha jázd má vlastný vzhľad a web vlastné písmo.
+ */
+@import "@fontsource-variable/manrope";
+
+html {
+  font-family:
+    "Manrope Variable",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}

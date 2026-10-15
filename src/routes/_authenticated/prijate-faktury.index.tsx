@@ -41,7 +41,7 @@ import {
 } from "@/lib/faktero/prijata-parovanie.functions";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { toast } from "sonner";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, formatujMenu } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
 import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
@@ -809,12 +809,12 @@ function PurchaseInvoicesPage() {
                     <span className="text-muted-foreground">{z.faktura?.invoice_number}</span>{" "}
                     <span className="tabular-nums">
                       {z.faktura?.amount_total != null
-                        ? `${Number(z.faktura.amount_total).toFixed(2)} ${z.faktura.currency ?? "EUR"}`
+                        ? formatujMenu(z.faktura.amount_total, z.faktura.currency ?? "EUR")
                         : ""}
                     </span>
                   </span>
                   <span className="block text-xs text-muted-foreground">
-                    {z.pohyb?.booking_date} · {z.dovody.join(" · ")}
+                    {z.pohyb?.booking_date ? datumNaDoklade(z.pohyb.booking_date) : ""} · {z.dovody.join(" · ")}
                   </span>
                 </span>
                 <button
@@ -880,8 +880,12 @@ function PurchaseInvoicesPage() {
               {!loading && rows.length === 0 && (
                 <tr>
                   <td colSpan={pocetStlpcov} className="p-8 text-center text-muted-foreground">
-                    <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                    Žiadne prijaté faktúry. Pridajte prvú cez „Nová prijatá faktúra".
+                    {/* Tabuľka je na mobile širšia ako displej — text drží pri
+                        ľavom okraji v šírke obrazovky, inak by bol odrezaný. */}
+                    <div className="sticky left-8 max-w-[calc(100vw-6rem)] md:max-w-none">
+                      <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                      Žiadne prijaté faktúry. Pridajte prvú cez „Nová prijatá faktúra".
+                    </div>
                   </td>
                 </tr>
               )}

@@ -127,7 +127,7 @@ export function Prihlasenie({
           <button
             onClick={prihlas}
             disabled={busy}
-            className="w-full rounded-app bg-app-zelena px-4 py-3 text-base font-medium text-white disabled:opacity-50"
+            className="w-full rounded-app bg-app-zelena-plocha px-4 py-3 text-base font-medium text-white disabled:opacity-50"
           >
             {busy ? t("app.prihlasujem") : t("app.prihlasitSa")}
           </button>
@@ -202,7 +202,7 @@ export function Zamok({
       <button
         onClick={odomkni}
         disabled={busy}
-        className="w-full max-w-xs rounded-app bg-app-zelena px-4 py-3.5 text-[15px] font-semibold text-white disabled:opacity-60"
+        className="w-full max-w-xs rounded-app bg-app-zelena-plocha px-4 py-3.5 text-[15px] font-semibold text-white disabled:opacity-60"
       >
         {busy ? t("app.odomykam") : t("app.odomknut")}
       </button>
@@ -343,7 +343,7 @@ export function OverenieKodu({ onHotovo, onOdhlasit }: { onHotovo: () => void; o
         <button
           onClick={over}
           disabled={busy}
-          className="mt-4 w-full rounded-app bg-app-zelena py-3 text-[15px] font-semibold text-white disabled:opacity-60"
+          className="mt-4 w-full rounded-app bg-app-zelena-plocha py-3 text-[15px] font-semibold text-white disabled:opacity-60"
         >
           {busy ? t("app.overujem") : t("app.overit")}
         </button>

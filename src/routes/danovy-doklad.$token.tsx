@@ -2,6 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 const Input = z.object({ token: z.string().min(16).max(128) });
 
@@ -67,7 +68,7 @@ export const Route = createFileRoute("/danovy-doklad/$token")({
 });
 
 function money(cents: number, currency: string) {
-  return `${(cents / 100).toFixed(2)} ${currency}`;
+  return formatujMenu(cents / 100, currency);
 }
 
 function PlatformInvoicePage() {
@@ -137,7 +138,7 @@ function PlatformInvoicePage() {
               Dátum vystavenia: <b>{datumNaDoklade(inv.issue_date)}</b>
             </div>
             <div>
-              Dátum dodania: <b>{inv.taxable_date}</b>
+              Dátum dodania: <b>{datumNaDoklade(inv.taxable_date)}</b>
             </div>
             <div>
               Dátum splatnosti: <b>{datumNaDoklade(inv.due_date)}</b>

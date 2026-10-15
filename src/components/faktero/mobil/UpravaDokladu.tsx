@@ -273,7 +273,7 @@ export function UpravaDokladu({
                   top: `${(b.y / rozmer.vyska) * 100}%`,
                 }}
               >
-                <span className="h-6 w-6 rounded-full border-[3px] border-white bg-app-zelena/70 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]" />
+                <span className="h-6 w-6 rounded-full border-[3px] border-white bg-app-zelena-plocha/70 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]" />
               </div>
             ))}
           </div>
@@ -304,7 +304,7 @@ export function UpravaDokladu({
                   aria-pressed={filter === kod}
                   className={`min-h-[40px] min-w-0 truncate rounded-app-sm px-1 text-[13px] ${
                     filter === kod
-                      ? "bg-app-zelena font-semibold text-white"
+                      ? "bg-app-zelena-plocha font-semibold text-white"
                       : "bg-white/10 text-white/80"
                   }`}
                 >
@@ -360,7 +360,7 @@ export function UpravaDokladu({
             onClick={() => void uloz(false)}
             disabled={pracujem}
             data-ulozit-doklad
-            className="min-h-[52px] min-w-0 truncate rounded-app bg-app-zelena px-2 text-[15px] font-semibold text-white disabled:opacity-60"
+            className="min-h-[52px] min-w-0 truncate rounded-app bg-app-zelena-plocha px-2 text-[15px] font-semibold text-white disabled:opacity-60"
           >
             {hlavny}
           </button>

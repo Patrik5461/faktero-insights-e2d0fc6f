@@ -1,16 +1,30 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   Camera,
   Car,
+  ChevronDown,
   FilePlus2,
   FileText,
+  Landmark,
   Receipt,
   TriangleAlert,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { beziacaJazda } from "@/lib/mobile/auto-jazdy-sync";
+import { jeOtvorena, jePoSplatnosti, sucetDokladov } from "@/lib/faktero/faktury-sumy";
+import { domacaMena } from "@/lib/faktero/kurzy";
+import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
+import {
+  hraniceMesiaca,
+  spocitajMesiac,
+  type BlocekMesiaca,
+  type CislaMesiaca,
+  type FakturaMesiaca,
+  type PrijataMesiaca,
+} from "@/lib/mobile/cisla-mesiaca";
 import {
   Card,
   ListCard,
@@ -18,24 +32,23 @@ import {
   PrazdnyStav,
   QuickAction,
   SectionHeader,
-  ScreenHeader,
-  StatCard,
   suma,
   type Ton,
 } from "./ui";
 import { PrebiehaJazda } from "./PrebiehaJazda";
 
 /**
- * Úvodná obrazovka appky.
+ * Úvodná obrazovka appky (smer „A · Svetlý a pokojný").
  *
- * Odpovedá na tri otázky v poradí, v akom si ich človek kladie: koľko mi
- * dlhujú, čo mám urobiť, a čo sa naposledy stalo. Až pod tým sú agendy —
- * tie sú v spodnej lište a netreba na ne dlaždice.
+ * Odpovedá na otázky v poradí, v akom si ich človek kladie: koľko mi dlhujú
+ * (veľká zelená karta), ako stojí mesiac (riadok čísel), čo chcem spraviť
+ * (dlaždice), čo mám vybaviť a čo sa naposledy stalo.
  *
- * Nič sa tu nepočíta na serveri navyše: sumy aj počty vznikajú zo zoznamu
- * faktúr a dokladov, ktoré si appka aj tak ťahá. Keď zlyhá sieť, obrazovka
- * ostane prázdna a nepovie nepravdu — nula neuhradených a „nič nečaká"
- * vyzerajú rovnako a to je horšie než prázdno.
+ * Sumy aj počty v karte a v zoznamoch vznikajú zo zoznamu faktúr a dokladov,
+ * ktoré si appka aj tak ťahá. Čísla za mesiac idú priamo z databázy tými
+ * istými pravidlami ako nástenka na webe (`cisla-mesiaca`). Keď zlyhá sieť,
+ * obrazovka ostane prázdna a nepovie nepravdu — nula neuhradených a „nič
+ * nečaká" vyzerajú rovnako a to je horšie než prázdno.
  */
 
 type Faktura = {
@@ -48,6 +61,7 @@ type Faktura = {
   due_date: string;
   status: string;
   type: string;
+  paid_at?: string | null;
 };
 
 type Doklad = {
@@ -70,23 +84,29 @@ type Riadok = {
 
 const DNES = () => new Date().toISOString().slice(0, 10);
 
-/** Zálohová faktúra nie je pohľadávka — je to výzva na platbu. */
-function jeRiadnaPohladavka(f: Faktura): boolean {
-  return f.type !== "proforma" && f.status !== "cancelled" && f.status !== "draft";
-}
-
 export function Prehlad({
   firma,
+  viacFiriem = false,
+  onZmenitFirmu,
+  oznamy,
   onNovaFaktura,
   onSkener,
   onJazda,
+  onBanka,
   onFaktury,
   onDoklady,
 }: {
   firma: { id: string; name: string };
+  /** Pri viacerých firmách sa dá názov firmy ťuknutím prepnúť. */
+  viacFiriem?: boolean;
+  onZmenitFirmu?: () => void;
+  /** Pásy nad obsahom — nová verzia, naplánované zrušenie účtu. */
+  oznamy?: ReactNode;
   onNovaFaktura: () => void;
   onSkener: () => void;
   onJazda: () => void;
+  /** Banka nemá miesto v spodnej lište — preto je tu ako rýchla akcia. */
+  onBanka?: () => void;
   onFaktury: () => void;
   onDoklady: () => void;
 }) {
@@ -95,14 +115,15 @@ export function Prehlad({
   const nacitajDoklady = useOperacia("vydavky-zoznam");
   const [faktury, setFaktury] = useState<Faktura[] | null>(null);
   const [doklady, setDoklady] = useState<Doklad[] | null>(null);
+  const [mesiac, setMesiac] = useState<CislaMesiaca | null>(null);
   const [jazdaBezi, setJazdaBezi] = useState(false);
 
   useEffect(() => {
     let zrusene = false;
     /*
-      Obe volania naraz a každé si nesie vlastný pád. Keby boli v jednom
-      `try`, chyba pri dokladoch by zmazala aj faktúry — a práve tie sú
-      dôvod, prečo sem človek ide.
+      Volania naraz a každé si nesie vlastný pád. Keby boli v jednom `try`,
+      chyba pri dokladoch by zmazala aj faktúry — a práve tie sú dôvod,
+      prečo sem človek ide.
     */
     void (async () => {
       try {
@@ -120,6 +141,12 @@ export function Prehlad({
         if (!zrusene) setDoklady([]);
       }
     })();
+    setMesiac(null);
+    void nacitajCislaMesiaca(firma.id)
+      .then((c) => !zrusene && setMesiac(c))
+      .catch(() => {
+        /* bez signálu riadok čísel jednoducho chýba */
+      });
     void beziacaJazda()
       .then((j) => !zrusene && setJazdaBezi(!!j))
       .catch(() => {});
@@ -129,25 +156,22 @@ export function Prehlad({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firma.id]);
 
-  const mena = faktury?.[0]?.currency ?? "EUR";
+  const mena = mesiac?.mena ?? faktury?.[0]?.currency ?? "EUR";
 
+  /*
+    Neuhradené a po splatnosti tými istými pravidlami ako web: koncept,
+    zrušená, zálohová a dobropis nie sú pohľadávka; po splatnosti sa počíta
+    z dátumu, lebo stav `overdue` nikto nezapisuje.
+  */
   const neuhradene = useMemo(() => {
-    const zoznam = (faktury ?? []).filter((f) => jeRiadnaPohladavka(f) && f.status !== "paid");
-    return {
-      pocet: zoznam.length,
-      spolu: zoznam.reduce((s, f) => s + Number(f.total || 0), 0),
-    };
+    const zoznam = (faktury ?? []).filter((f) => jeOtvorena(f));
+    return { pocet: zoznam.length, spolu: sucetDokladov(zoznam, "total") };
   }, [faktury]);
 
   const poSplatnosti = useMemo(() => {
     const den = DNES();
-    const zoznam = (faktury ?? []).filter(
-      (f) => jeRiadnaPohladavka(f) && f.status !== "paid" && f.due_date < den,
-    );
-    return {
-      pocet: zoznam.length,
-      spolu: zoznam.reduce((s, f) => s + Number(f.total || 0), 0),
-    };
+    const zoznam = (faktury ?? []).filter((f) => jePoSplatnosti(f, den));
+    return { pocet: zoznam.length, spolu: sucetDokladov(zoznam, "total") };
   }, [faktury]);
 
   /* Doklad bez dodávateľa alebo bez sumy sa neprečítal celý — patrí na oči. */
@@ -193,38 +217,112 @@ export function Prehlad({
   const nacitava = faktury === null || doklady === null;
   const maCoVybavit = poSplatnosti.pocet > 0 || naKontrolu > 0 || jazdaBezi;
 
+  /* Len čísla, ktoré sa dali spočítať — chýbajúce sa vynechajú, nehádajú. */
+  const stlpce = mesiac
+    ? (
+        [
+          ["ph.mesiac.trzby", mesiac.trzby, false],
+          ["ph.mesiac.naklady", mesiac.naklady, false],
+          ["ph.mesiac.dph", mesiac.dph, false],
+          ["ph.mesiac.neuhradene", mesiac.neuhradene, true],
+        ] as const
+      ).filter(([, v]) => v !== null)
+    : [];
+
   return (
     <div className="flex flex-1 flex-col bg-app-pozadie">
-      <div className="px-4">
-        <ScreenHeader title={t("ph.nazov")} subtitle={dnesSlovom(loc)} />
-      </div>
+      <header
+        className="flex items-center justify-between gap-3 px-5 pb-1"
+        style={{ paddingTop: "calc(var(--safe-top) + 0.75rem)" }}
+      >
+        <div className="min-w-0">
+          <p className="text-[13px] text-app-text-2">{dnesSlovom(loc)}</p>
+          {/*
+            Za koho sa pracuje — doklad uložený do zlej firmy sa hľadá ťažko,
+            takže to musí byť vidieť stále. Pri viacerých firmách sa dá
+            odtiaľto rovno prepnúť.
+          */}
+          <button
+            type="button"
+            onClick={viacFiriem ? onZmenitFirmu : undefined}
+            aria-label={viacFiriem ? t("panel.zmenitFirmu") : undefined}
+            data-prepnut-firmu={viacFiriem ? "" : undefined}
+            className={`-mx-1 flex min-h-[40px] max-w-full items-center gap-1.5 rounded-app-sm px-1 text-left ${
+              viacFiriem ? "active:bg-app-ramik" : "cursor-default"
+            }`}
+          >
+            <h1 className="min-w-0 truncate text-[22px] font-extrabold leading-tight tracking-tight text-app-text">
+              {firma.name}
+            </h1>
+            {viacFiriem && <ChevronDown className="h-4 w-4 shrink-0 text-app-text" strokeWidth={2.5} />}
+          </button>
+        </div>
+      </header>
 
-      <main className="flex-1 space-y-6 px-4 pb-6">
+      {oznamy && <div className="space-y-2 px-4 pt-2">{oznamy}</div>}
+
+      <main className="flex-1 space-y-5 px-4 pb-6 pt-3">
         <PrebiehaJazda onOtvor={onJazda} />
 
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label={t("ph.neuhradene")}
-            value={nacitava ? "—" : suma(neuhradene.spolu, mena, loc)}
-            hint={nacitava ? undefined : pocetFaktur(neuhradene.pocet)}
-            ton="zelena"
-            onClick={onFaktury}
-          />
-          <StatCard
-            label={t("ph.poSplatnosti")}
-            value={nacitava ? "—" : suma(poSplatnosti.spolu, mena, loc)}
-            hint={nacitava ? undefined : pocetFaktur(poSplatnosti.pocet)}
-            ton={poSplatnosti.pocet > 0 ? "cervena" : "neutral"}
-            onClick={onFaktury}
-          />
-        </div>
+        {/* Hlavná karta — jediná veľká plocha na obrazovke, preto zelená. */}
+        <button
+          type="button"
+          onClick={onFaktury}
+          data-hlavna-karta
+          className="flex w-full flex-col gap-3.5 rounded-app-lg bg-app-zelena-plocha p-[22px] text-left text-white transition active:scale-[0.99]"
+        >
+          <span className="text-[13px] text-white/85">{t("ph.neuhradeneFaktury")}</span>
+          <span className="text-[38px] font-extrabold leading-none tracking-tight tabular-nums">
+            {nacitava ? "—" : suma(neuhradene.spolu, mena, loc)}
+          </span>
+          {!nacitava && (
+            <span className="flex flex-wrap gap-2">
+              <span className="rounded-full bg-white/20 px-3 py-1.5 text-[13px] font-semibold">
+                {pocetFaktur(neuhradene.pocet)}
+              </span>
+              {poSplatnosti.pocet > 0 && (
+                <span className="rounded-full bg-white px-3 py-1.5 text-[13px] font-bold text-[#b42318]">
+                  {t("ph.fakturyPoSplatnosti", { pocet: poSplatnosti.pocet })}
+                </span>
+              )}
+            </span>
+          )}
+        </button>
 
-        <section>
-          <SectionHeader title={t("ph.rychleAkcie")} />
-          <div className="flex gap-3">
+        {/* Čísla za mesiac — kompaktne, štyri vedľa seba ako v návrhu „C". */}
+        {stlpce.length > 0 && mesiac && (
+          <Card className="px-4 py-3" >
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-[13px] font-semibold text-app-text">{mesiacSlovom(loc)}</span>
+              <span className="truncate text-[12px] text-app-text-2">{t("ph.mesiac.poznamka", { mena: mesiac.mena })}</span>
+            </div>
+            <dl
+              data-cisla-mesiaca
+              className="mt-2 grid gap-2"
+              style={{ gridTemplateColumns: `repeat(${stlpce.length}, minmax(0, 1fr))` }}
+            >
+              {stlpce.map(([kluc, hodnota, cervena]) => (
+                <div key={kluc} className="min-w-0">
+                  <dt className="truncate text-[12px] text-app-text-2">{t(kluc)}</dt>
+                  <dd
+                    className={`truncate text-[15px] font-extrabold tabular-nums tracking-tight ${
+                      cervena && (hodnota ?? 0) > 0 ? "text-app-chyba" : "text-app-text"
+                    }`}
+                  >
+                    {kratkaSuma(hodnota ?? 0, loc)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
+        )}
+
+        <section aria-label={t("ph.rychleAkcie")}>
+          <div className={`grid gap-2.5 ${onBanka ? "grid-cols-4" : "grid-cols-3"}`}>
             <QuickAction icon={FilePlus2} label={t("ph.faktura")} onClick={onNovaFaktura} />
             <QuickAction icon={Camera} label={t("ph.skenovat")} onClick={onSkener} />
-            <QuickAction icon={Car} label={t("ph.zacatJazdu")} onClick={onJazda} />
+            <QuickAction icon={Car} label={t("ph.jazda")} onClick={onJazda} />
+            {onBanka && <QuickAction icon={Landmark} label={t("tab.banka")} onClick={onBanka} />}
           </div>
         </section>
 
@@ -237,6 +335,8 @@ export function Prehlad({
                   icon={TriangleAlert}
                   ikonaTon="cervena"
                   title={t("ph.fakturyPoSplatnosti", { pocet: poSplatnosti.pocet })}
+                  subtitle={pocetFaktur(poSplatnosti.pocet)}
+                  right={suma(poSplatnosti.spolu, mena, loc)}
                   chevron
                   onClick={onFaktury}
                 />
@@ -244,7 +344,9 @@ export function Prehlad({
               {naKontrolu > 0 && (
                 <ListRow
                   icon={Receipt}
+                  ikonaTon="pozor"
                   title={t("ph.dokladyNaKontrolu", { pocet: naKontrolu })}
+                  subtitle={t("tab.doklady")}
                   chevron
                   onClick={onDoklady}
                 />
@@ -272,7 +374,7 @@ export function Prehlad({
                   subtitle={r.popis}
                   right={r.suma}
                   rightTon={r.ton}
-                  rightSub={<span className="text-[12px] text-app-text-3">{r.cas}</span>}
+                  rightSub={<span className="text-[12px] text-app-text-2">{r.cas}</span>}
                   onClick={r.id.startsWith("f:") ? onFaktury : onDoklady}
                 />
               ))}
@@ -287,7 +389,7 @@ export function Prehlad({
         </section>
 
         {!nacitava && faktury?.length === 0 && doklady?.length === 0 && (
-          <p className="flex items-center justify-center gap-2 text-[12px] text-app-text-3">
+          <p className="flex items-center justify-center gap-2 text-[12px] text-app-text-2">
             <AlertTriangle className="h-3.5 w-3.5" />
             {firma.name}
           </p>
@@ -297,11 +399,83 @@ export function Prehlad({
   );
 }
 
-/** „Streda, 27. augusta" — dátum do podnadpisu, nie do tabuľky. */
+/**
+ * Doklady tohto mesiaca na riadok čísel.
+ *
+ * Priamo zo Supabase (RLS), rovnako ako nástenka na webe — žiadna nová
+ * serverová operácia. Po stránkach, lebo PostgREST vráti najviac 1 000
+ * riadkov a firma s väčším obratom by inak mala polovičné tržby.
+ */
+async function nacitajCislaMesiaca(companyId: string): Promise<CislaMesiaca> {
+  const { od, do: doDna } = hraniceMesiaca();
+  const [firma, faktury, prijate, blocky] = await Promise.all([
+    supabase.from("companies").select("vat_payer, country").eq("id", companyId).maybeSingle(),
+    vsetkyRiadky<FakturaMesiaca>((z, k) =>
+      supabase
+        .from("invoices")
+        .select(
+          "id, type, status, currency, total, subtotal, vat_total, total_eur, subtotal_eur, vat_total_eur, paid_at, deleted_at",
+        )
+        .eq("company_id", companyId)
+        .is("deleted_at", null)
+        .gte("issue_date", od)
+        .lt("issue_date", doDna)
+        .order("id")
+        .range(z, k) as any,
+    ),
+    /* Prijatá faktúra patrí do mesiaca dodania, bez neho do mesiaca vystavenia — ako na webe. */
+    vsetkyRiadky<PrijataMesiaca>((z, k) =>
+      supabase
+        .from("purchase_invoices")
+        .select("id, type, status, currency, amount_without_vat, amount_without_vat_eur, deleted_at")
+        .eq("company_id", companyId)
+        .is("deleted_at", null)
+        .or(
+          `and(delivery_date.gte.${od},delivery_date.lt.${doDna}),and(delivery_date.is.null,issue_date.gte.${od},issue_date.lt.${doDna})`,
+        )
+        .order("id")
+        .range(z, k) as any,
+    ),
+    vsetkyRiadky<BlocekMesiaca>((z, k) =>
+      supabase
+        .from("expense_documents")
+        .select("id, currency, net_amount, total_amount, vat_amount")
+        .eq("company_id", companyId)
+        .gte("issue_date", od)
+        .lt("issue_date", doDna)
+        .order("id")
+        .range(z, k) as any,
+    ),
+  ]);
+  if (firma.error) throw new Error(firma.error.message);
+  return spocitajMesiac({
+    faktury,
+    prijate,
+    blocky,
+    domaca: domacaMena((firma.data as { country?: string | null } | null)?.country),
+    platitelDph: !!(firma.data as { vat_payer?: boolean } | null)?.vat_payer,
+  });
+}
+
+/** „Streda 15. októbra" — dátum do hlavičky, nie do tabuľky. */
 function dnesSlovom(loc: string): string {
   const d = new Date();
   const veta = d.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
   return veta.charAt(0).toUpperCase() + veta.slice(1);
+}
+
+/** „Október 2026" — nad riadkom čísel. */
+function mesiacSlovom(loc: string): string {
+  const veta = new Date().toLocaleDateString(loc, { month: "long", year: "numeric" });
+  return veta.charAt(0).toUpperCase() + veta.slice(1);
+}
+
+/**
+ * Suma bez centov a bez meny — do štyroch stĺpcov na 375 px sa „12 480,00 €"
+ * nezmestí. Mena je v hlavnej karte; zaokrúhľuje sa, nič sa neskracuje na „tis.".
+ */
+function kratkaSuma(v: number, loc: string): string {
+  return new Intl.NumberFormat(loc, { maximumFractionDigits: 0 }).format(v);
 }
 
 /** Dnes, včera, inak dátum — v zozname aktivity nikto nečíta celý dátum. */
@@ -314,4 +488,3 @@ function kedySlovom(den: string, loc: string, t: (k: "ph.dnes" | "ph.vcera") => 
   const d = new Date(den);
   return Number.isNaN(d.getTime()) ? den : d.toLocaleDateString(loc, { day: "numeric", month: "numeric" });
 }
-

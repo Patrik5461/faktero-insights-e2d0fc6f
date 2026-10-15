@@ -229,6 +229,19 @@ export function poTuknuti(d: DokladVDavke): "detail" | "znova" | null {
   return null;
 }
 
+/**
+ * Ďalší doklad dávky na „Uložiť a ďalší" / „Preskočiť".
+ *
+ * Hľadá sa za práve otvoreným (a potom od začiatku), aby sa človek dávkou
+ * posúval dopredu a nevracal sa na doklad, ktorý práve preskočil. Berie sa
+ * len to, čo sa dá otvoriť (`poTuknuti` = `detail`) a ešte nie je uložené.
+ */
+export function dalsiNaOtvorenie(davka: DokladVDavke[], kluc: string): DokladVDavke | null {
+  const i = davka.findIndex((d) => d.kluc === kluc);
+  const poradie = [...davka.slice(i + 1), ...davka.slice(0, Math.max(0, i))];
+  return poradie.find((d) => d.kluc !== kluc && !!d.id && poTuknuti(d) === "detail") ?? null;
+}
+
 /** Súhrn dávky — pre tlačidlá a hlášku pri zatvorení. */
 export function suhrn(davka: DokladVDavke[]): {
   spolu: number;

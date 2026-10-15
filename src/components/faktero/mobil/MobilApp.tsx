@@ -24,7 +24,6 @@ import {
   Building2,
   Camera,
   Menu,
-  ChevronDown,
   Check,
   FileText,
   Files,
@@ -227,6 +226,9 @@ const KROKY_PRE_RYCHLU_AKCIU = new Set<Krok>([
   "ucet",
 ]);
 
+/** Obrazovky, na ktoré sa smie skener po zavretí vrátiť. */
+const NAVRAT_ZO_SKENERA = new Set<Krok>(["prehlad", "faktury", "doklady", "banka", "jazda", "ponuky"]);
+
 /** Doklad, ktorý vo firme už je — toľko z neho stačí, aby sa dal spoznať. */
 type NajdenyDoklad = {
   id: string;
@@ -284,6 +286,12 @@ function ObsahApky() {
      v tej chvíli už zastaraný. */
   const krokRef = useRef<Krok>("nacitavam");
   krokRef.current = krok;
+  /*
+    Agenda, z ktorej sa išlo na skener — krížik na skeneri vráti sem. Skener
+    nemá spodnú lištu, takže inak by viedol vždy na Prehľad.
+  */
+  const predSkenerom = useRef<Krok>("prehlad");
+  if (NAVRAT_ZO_SKENERA.has(krok)) predSkenerom.current = krok;
   /** Ktorá faktúra sa práve opravuje — obrazovku vlastní appka, nie zoznam. */
   const [upravovana, setUpravovana] = useState<{ id: string; invoice_number: string } | null>(null);
   const [firmy, setFirmy] = useState<Firma[]>([]);
@@ -794,7 +802,7 @@ function ObsahApky() {
                 setDlho(false);
                 zisti();
               }}
-              className="rounded-app bg-app-zelena px-4 py-3 text-[15px] font-medium text-white"
+              className="rounded-app bg-app-zelena-plocha px-4 py-3 text-[15px] font-medium text-white"
             >
               {t("app.skusitZnova")}
             </button>
@@ -874,103 +882,96 @@ function ObsahApky() {
     setKrok("zachyt");
   };
 
+  /*
+    Bočný panel pre všetky agendy so spodnou lištou. Otvára ho „Viac" v lište
+    — sú v ňom Banka a Kniha jázd (od smeru „A" bez vlastného miesta v lište),
+    ponuky, prepnutie firmy a nastavenia.
+  */
+  const bocnyPanel = firma ? (
+    <MobilPanel
+      otvoreny={panel}
+      onZavri={() => setPanel(false)}
+      email={email}
+      firma={firma}
+      viacFiriem={firmy.length > 1}
+      onZmenitFirmu={() => setKrok("firma")}
+      onPrehlad={() => setKrok(DOMOV)}
+      onDoklady={() => setKrok("doklady")}
+      onFaktury={() => setKrok("faktury")}
+      onPonuky={() => setKrok("ponuky")}
+      onBanka={() => setKrok("banka")}
+      onJazda={() => setKrok("jazda")}
+      onUcet={() => {
+        setPanel(false);
+        setKrok("ucet");
+      }}
+      onZmazatUcet={() => {
+        setPanel(false);
+        setKrok("zmazanieUctu");
+      }}
+      onOdhlasit={odhlas}
+    />
+  ) : null;
+  const listaProps = { onPrepni: prepniZalozku, onViac: () => setPanel(true), panel: bocnyPanel };
+
   if (krok === "prehlad" && firma)
     return (
-      <SoSpodnouListou aktivna="prehlad" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="prehlad" {...listaProps}>
         <Obrazovka onSpat={() => setPanel(true)}>
           <div className="flex min-h-[calc(100dvh-var(--spodna-lista,0px))] flex-col bg-app-pozadie">
-            <AppHeader
-              variant="root"
-              title={firma.name}
+            <Prehlad
+              firma={firma}
               /*
-                V lište nie je názov obrazovky, ale za koho sa pracuje. Doklad
+                V hlavičke nie je názov obrazovky, ale za koho sa pracuje. Doklad
                 uložený do zlej firmy sa hľadá ťažko, takže to musí byť vidieť
                 stále — a keď je firiem viac, dá sa to odtiaľto rovno prepnúť.
               */
-              hlavicka={
-                <button
-                  onClick={firmy.length > 1 ? () => setKrok("firma") : undefined}
-                  aria-label={firmy.length > 1 ? t("panel.zmenitFirmu") : undefined}
-                  className={`flex min-h-[44px] w-full items-center gap-1 rounded-app-sm px-2 text-left ${
-                    firmy.length > 1 ? "active:bg-app-ramik" : "cursor-default"
-                  }`}
-                >
-                  <span className="min-w-0 truncate text-[17px] font-semibold tracking-tight">
-                    {firma.name}
-                  </span>
-                  {firmy.length > 1 && <ChevronDown className="h-4 w-4 shrink-0 text-app-text-2" />}
-                </button>
+              viacFiriem={firmy.length > 1}
+              onZmenitFirmu={() => setKrok("firma")}
+              oznamy={
+                novsia || zrusiSa ? (
+                  <>
+                    {novsia && (
+                      <button
+                        onClick={() => window.open(novsia.odkaz, "_blank")}
+                        className="w-full rounded-app bg-app-zelena-jemna px-4 py-3 text-left text-[13px] font-semibold text-app-zelena"
+                      >
+                        {t("app.novaVerzia")}
+                      </button>
+                    )}
+                    {zrusiSa && (
+                      <button
+                        onClick={() => setKrok("ucet")}
+                        className="flex w-full items-start gap-2 rounded-app border border-app-chyba/40 bg-app-chyba-jemna px-4 py-3 text-left"
+                      >
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-app-chyba" />
+                        <span className="min-w-0 text-[13px] text-app-text">
+                          {t("app.zrusenieNaplanovane", {
+                            termin: terminSlovom(zrusiSa, locale),
+                            dni: `${dniDoZrusenia(zrusiSa)} ${mnozne(dniDoZrusenia(zrusiSa), {
+                              one: t("spolocne.den1"),
+                              few: t("spolocne.den2"),
+                              other: t("spolocne.den5"),
+                            })}`,
+                          })}
+                          <span className="block font-medium text-app-zelena">
+                            {t("app.odvolatZiadost")}
+                          </span>
+                        </span>
+                      </button>
+                    )}
+                  </>
+                ) : undefined
               }
-              right={
-                <button
-                  onClick={() => setPanel(true)}
-                  aria-label={t("panel.nastavenia")}
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-app-sm text-app-text active:bg-app-ramik"
-                >
-                  <Menu className="h-5 w-5" />
-                </button>
-              }
-            />
-            {novsia && (
-              <button
-                onClick={() => window.open(novsia.odkaz, "_blank")}
-                className="mx-4 mb-2 rounded-app bg-app-zelena-jemna px-3 py-2 text-left text-[13px] text-app-zelena"
-              >
-                {t("app.novaVerzia")}
-              </button>
-            )}
-            {zrusiSa && (
-              <button
-                onClick={() => setKrok("ucet")}
-                className="mx-4 mb-2 flex items-start gap-2 rounded-app border border-app-chyba/40 bg-app-chyba-jemna px-4 py-3 text-left"
-              >
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-app-chyba" />
-                <span className="min-w-0 text-[13px] text-app-text">
-                  {t("app.zrusenieNaplanovane", {
-                    termin: terminSlovom(zrusiSa, locale),
-                    dni: `${dniDoZrusenia(zrusiSa)} ${mnozne(dniDoZrusenia(zrusiSa), {
-                      one: t("spolocne.den1"),
-                      few: t("spolocne.den2"),
-                      other: t("spolocne.den5"),
-                    })}`,
-                  })}
-                  <span className="block font-medium text-app-zelena">
-                    {t("app.odvolatZiadost")}
-                  </span>
-                </span>
-              </button>
-            )}
-            <Prehlad
-              firma={firma}
               onNovaFaktura={naNovuFakturu}
               onSkener={() => setKrok("skener")}
               onJazda={() => setKrok("jazda")}
+              onBanka={() => setKrok("banka")}
               onFaktury={() => setKrok("faktury")}
               onDoklady={() => setKrok("doklady")}
             />
           </div>
         </Obrazovka>
-        <MobilPanel
-          otvoreny={panel}
-          onZavri={() => setPanel(false)}
-          email={email}
-          firma={firma}
-          viacFiriem={firmy.length > 1}
-          onZmenitFirmu={() => setKrok("firma")}
-          onPrehlad={() => setKrok(DOMOV)}
-          onDoklady={() => setKrok("doklady")}
-          onFaktury={() => setKrok("faktury")}
-          onPonuky={() => setKrok("ponuky")}
-          onUcet={() => {
-            setPanel(false);
-            setKrok("ucet");
-          }}
-          onZmazatUcet={() => {
-            setPanel(false);
-            setKrok("zmazanieUctu");
-          }}
-          onOdhlasit={odhlas}
-        />
       </SoSpodnouListou>
     );
 
@@ -983,9 +984,8 @@ function ObsahApky() {
     return (
       <div className="flex h-[100dvh] flex-col bg-black">
         {/*
-          Skener nemá hornú lištu. Hľadáčik má ísť od okraja po okraj — svetlý
-          pruh nad ním by z neho spravil okno v aplikácii. Bočný panel sa
-          otvára z Prehľadu, kam vedie prvá záložka.
+          Skener nemá hornú ani spodnú lištu. Hľadáčik má ísť od okraja po
+          okraj — svetlý pruh nad ním by z neho spravil okno v aplikácii.
         */}
         <div aria-hidden style={{ paddingTop: "var(--safe-top)" }} className="bg-black" />
         <Skener
@@ -1017,35 +1017,19 @@ function ObsahApky() {
             doZachytu("davka", "skener");
           }}
           onPrijateDoklady={() => setKrok("doklady")}
-        />
-        <TabBar aktivna="skener" onPrepni={prepniZalozku} />
-        <MobilPanel
-          otvoreny={panel}
-          onZavri={() => setPanel(false)}
-          firma={firma}
-          email={email}
-          viacFiriem={firmy.length > 1}
-          onZmenitFirmu={() => setKrok("firma")}
-          onPrehlad={() => setKrok(DOMOV)}
-          onDoklady={() => setKrok("doklady")}
-          onFaktury={() => setKrok("faktury")}
-          onPonuky={() => setKrok("ponuky")}
-          onUcet={() => {
-            setPanel(false);
-            setKrok("ucet");
-          }}
-          onZmazatUcet={() => {
-            setPanel(false);
-            setKrok("zmazanieUctu");
-          }}
-          onOdhlasit={odhlas}
+          /*
+            Skener je od smeru „A" celá obrazovka bez spodnej lišty — biely
+            panel s ovládaním je dole namiesto nej. Krížik vráti tam, odkiaľ
+            človek na skener prišiel.
+          */
+          onZavriet={() => setKrok(predSkenerom.current)}
         />
       </div>
     );
 
   if (krok === "doklady" && firma)
     return (
-      <SoSpodnouListou aktivna="doklady" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="doklady" {...listaProps}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <PrijateDoklady firma={firma} onSpat={() => setKrok(DOMOV)} />
         </Obrazovka>
@@ -1053,7 +1037,7 @@ function ObsahApky() {
     );
   if (krok === "novaFaktura" && firma)
     return (
-      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="faktury" {...listaProps}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <NovaFaktura
             firma={firma}
@@ -1079,7 +1063,7 @@ function ObsahApky() {
     );
   if (krok === "jazda" && firma)
     return (
-      <SoSpodnouListou aktivna="jazda" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="jazda" {...listaProps}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <Jazda firma={firma} onSpat={() => setKrok(DOMOV)} />
         </Obrazovka>
@@ -1087,7 +1071,7 @@ function ObsahApky() {
     );
   if (krok === "banka" && firma)
     return (
-      <SoSpodnouListou aktivna="banka" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="banka" {...listaProps}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <Banka firma={firma} onSpat={() => setKrok(DOMOV)} />
         </Obrazovka>
@@ -1130,7 +1114,7 @@ function ObsahApky() {
     );
   if (krok === "faktury" && firma)
     return (
-      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="faktury" {...listaProps}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <VystaveneFaktury
             firma={firma}
@@ -1146,7 +1130,7 @@ function ObsahApky() {
     );
   if (krok === "ponuky" && firma)
     return (
-      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="faktury" {...listaProps}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <Ponuky
             firma={firma}
@@ -1270,10 +1254,16 @@ function useNaZaciatokPriPrepnuti(aktivna: string) {
 function SoSpodnouListou({
   aktivna,
   onPrepni,
+  onViac,
+  panel,
   children,
 }: {
   aktivna: Zalozka;
   onPrepni: (z: Zalozka) => void;
+  /** „Viac" v lište — otvorí bočný panel. */
+  onViac: () => void;
+  /** Bočný panel; patrí k lište, lebo bez neho by „Viac" nemalo čo otvoriť. */
+  panel: React.ReactNode;
   children: React.ReactNode;
 }) {
   useNaZaciatokPriPrepnuti(aktivna);
@@ -1293,7 +1283,8 @@ function SoSpodnouListou({
       {/* Povolenia pre knihu jázd — pýtajú sa hneď, rovnako ako v Knihe jázd. */}
       <PovoleniaJazd />
       <BehNaPozadiOkno />
-      <TabBar aktivna={aktivna} onPrepni={onPrepni} />
+      <TabBar aktivna={aktivna} onPrepni={onPrepni} onViac={onViac} />
+      {panel}
     </div>
   );
 }
@@ -2199,7 +2190,7 @@ function Potvrdenie({
           <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
             Ako ste platili?
             {!uhrada && (
-              <span className="rounded-full bg-app-zelena px-2 py-0.5 text-[11px] font-semibold text-white">
+              <span className="rounded-full bg-app-zelena-plocha px-2 py-0.5 text-[11px] font-semibold text-white">
                 {t("app.povinne")}
               </span>
             )}

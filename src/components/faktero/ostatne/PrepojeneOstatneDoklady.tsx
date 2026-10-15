@@ -5,6 +5,8 @@ import { Plus } from "lucide-react";
 import { zoznamOstatnychFn } from "@/lib/faktero/ostatne-doklady.functions";
 import { nazovDruhu, stavLehoty, type DruhOstatneho } from "@/lib/faktero/ostatne-doklady";
 import { STAV_DOKLADU_NAZOV } from "@/lib/faktero/doklad-stav";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 /**
  * Iné doklady priradené k zamestnancovi (exekúcie) alebo k zmluve
@@ -93,14 +95,14 @@ export function PrepojeneOstatneDoklady({
                     onClick={() => navigate({ to: "/ostatne-doklady/novy", search: { id: r.id } })}
                     className="cursor-pointer border-t border-border hover:bg-secondary/30"
                   >
-                    <td className="px-3 py-2 whitespace-nowrap">{r.received_date}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{datumNaDoklade(r.received_date)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{nazovDruhu(r.kind)}</td>
                     <td className="px-3 py-2">
                       <div>{r.sender || "—"}</div>
                       {r.subject && <div className="text-xs text-muted-foreground">{r.subject}</div>}
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
-                      {r.amount != null ? `${Number(r.amount).toFixed(2)} ${r.currency}` : "—"}
+                      {r.amount != null ? formatujMenu(r.amount, r.currency) : "—"}
                     </td>
                     <td
                       className={`px-3 py-2 whitespace-nowrap ${

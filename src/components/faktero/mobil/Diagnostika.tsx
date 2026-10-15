@@ -531,7 +531,7 @@ export function Diagnostika({ onSpat }: { onSpat: () => void }) {
             setOdosielam(false);
           }
         }}
-        className="mt-6 w-full rounded-app-sm bg-app-zelena px-4 py-3 text-[15px] font-medium text-white disabled:opacity-50"
+        className="mt-6 w-full rounded-app-sm bg-app-zelena-plocha px-4 py-3 text-[15px] font-medium text-white disabled:opacity-50"
       >
         {odoslane ? "Odoslané, ďakujeme" : odosielam ? "Odosielam…" : "Poslať diagnostiku podpore"}
       </button>

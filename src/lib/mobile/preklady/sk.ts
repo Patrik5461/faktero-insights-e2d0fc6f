@@ -859,7 +859,7 @@ export const sk = {
   "ph.faktura": "Faktúra",
   "ph.skenovat": "Skenovať",
   "ph.zacatJazdu": "Začať jazdu",
-  "ph.naVybavenie": "Na vybavenie",
+  "ph.naVybavenie": "Čaká na vás",
   "ph.poslednaAktivita": "Posledná aktivita",
   "ph.fakturyPoSplatnosti": "{pocet} po splatnosti",
   "ph.dokladyNaKontrolu": "{pocet} čaká na kontrolu",
@@ -1095,6 +1095,22 @@ export const sk = {
   "pd.zmazaneHromadne": "Zmazané doklady: {pocet}",
   "pd.hromadneZlyhalo": "Nepodarilo sa pri dokladoch: {pocet}. {chyba}",
   "pd.pracujem": "Pracujem…",
+
+  /* redizajn „A“ — lišta, Prehľad, skener a dávka dokladov */
+  "tab.viac": "Viac",
+  "ph.neuhradeneFaktury": "Neuhradené faktúry",
+  "ph.jazda": "Jazda",
+  "ph.mesiac.trzby": "Tržby",
+  "ph.mesiac.naklady": "Náklady",
+  "ph.mesiac.dph": "DPH",
+  "ph.mesiac.neuhradene": "Neuhradené",
+  "ph.mesiac.poznamka": "Tržby a náklady bez DPH · {mena}",
+  "rd.rozpoznaneDruh": "Rozpoznané: {druh}",
+  "rd.zakladDph": "Základ / DPH",
+  "rd.ulozitADalsi": "Uložiť a ďalší",
+  "rd.preskocit": "Preskočiť",
+  "rd.dokladZ": "Doklad {n} z {spolu}",
+  "sken.kategoriaTlacidlo": "Kategória",
 } as const;
 
 export type Kluc = keyof typeof sk;

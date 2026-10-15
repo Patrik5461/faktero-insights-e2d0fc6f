@@ -56,6 +56,7 @@ import {
   Cell,
 } from "recharts";
 import { vsetkoAkoData } from "@/lib/faktero/strankovanie";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Prehľad — Faktero" }] }),
@@ -758,7 +759,7 @@ function Dashboard() {
                   <div className="text-sm font-semibold">Kniha jázd</div>
                   <div className="text-xs text-muted-foreground">
                     {tripStats?.last
-                      ? `Posledná jazda ${tripStats.last.trip_date} · ${tripStats.last.start_location ?? "—"} → ${tripStats.last.end_location ?? "—"}`
+                      ? `Posledná jazda ${datumNaDoklade(tripStats.last.trip_date)} · ${tripStats.last.start_location ?? "—"} → ${tripStats.last.end_location ?? "—"}`
                       : "Zatiaľ žiadne jazdy."}
                   </div>
                 </div>
@@ -818,7 +819,7 @@ function Dashboard() {
                           {r.name}
                         </Link>
                         <div className="truncate text-xs text-muted-foreground">
-                          {r.customer_name ?? "—"} · ďalší beh {r.next_run}
+                          {r.customer_name ?? "—"} · ďalší beh {datumNaDoklade(r.next_run)}
                         </div>
                       </div>
                       <div className="shrink-0 font-medium tabular-nums">
@@ -856,7 +857,7 @@ function Dashboard() {
                           {q.quote_number}
                         </Link>
                         <div className="truncate text-xs text-muted-foreground">
-                          {q.customer_name ?? "—"} · platná do {q.valid_until}
+                          {q.customer_name ?? "—"} · platná do {datumNaDoklade(q.valid_until)}
                         </div>
                       </div>
                       <div className="shrink-0 font-medium tabular-nums">

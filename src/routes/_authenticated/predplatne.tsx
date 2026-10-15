@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveProduct } from "@/lib/faktero/active-product";
 import { potvrd } from "@/lib/potvrdenie";
 import { mozePrenesenieDph } from "@/lib/faktero/predplatne-cena";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 type ProductMode = "invoicing" | "logbook" | "both";
 type ProductTab = "invoicing" | "logbook";
@@ -86,7 +87,7 @@ export const Route = createFileRoute("/_authenticated/predplatne")({
 
 function fmtEur(cents: number | null | undefined) {
   if (cents == null) return "—";
-  return `${(cents / 100).toFixed(2)} €`;
+  return formatujMenu(cents / 100, "EUR");
 }
 function fmtDate(s: string | null | undefined) {
   if (!s) return "—";
