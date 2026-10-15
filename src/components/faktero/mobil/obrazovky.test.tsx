@@ -108,9 +108,7 @@ describe("mobilné obrazovky sa vykreslia", () => {
   });
 
   it("dávka viacerých dokladov — prázdna aj so súbormi", () => {
-    const prazdna = renderToString(
-      <DavkaDokladov firma={firma} onHotovo={nic} onSpat={nic} />,
-    );
+    const prazdna = renderToString(<DavkaDokladov firma={firma} onHotovo={nic} onSpat={nic} />);
     expect(prazdna).toContain("Viac dokladov naraz");
     expect(prazdna).toContain("Zatiaľ tu nie je žiadny doklad");
 
@@ -158,7 +156,7 @@ describe("mobilné obrazovky sa vykreslia", () => {
 });
 
 describe("skener a výber dokladov", () => {
-  it("panel dokladu je na skeneri stále — úhrada, kategória a ďalšie položky", () => {
+  it("skener je prázdny: nastavenie je jeden čip, panel sa vysunie až na ťuknutie", () => {
     const html = renderToString(
       <Skener
         onQr={nic}
@@ -170,15 +168,15 @@ describe("skener a výber dokladov", () => {
         onNastavenie={nic}
       />,
     );
-    expect(html).toContain("data-panel-dokladu");
-    expect(html).toContain("Hotovosť");
+    // Čip ukazuje, čo je nastavené — úhradu, kategóriu a počet ďalších položiek.
+    expect(html).toContain("data-cip-nastavenia");
     expect(html).toContain("Karta");
     expect(html).toContain("Nákup PHM");
-    // Zbalené, ale je vidieť, že niečo v nich je.
-    expect(html).toContain("Ďalšie položky (1 vyplnené)");
-    expect(html).toContain('aria-expanded="false"');
-    // Panel nie je schovaný za tlačidlom „Nastavenie".
-    expect(html).not.toContain(">Nastavenie dokladu<");
+    expect(html).toMatch(/\+(<!-- -->)?1</);
+    // Panel nie je otvorený nad kamerou a riadok odkazov je preč.
+    expect(html).not.toContain("data-panel-dokladu");
+    expect(html).not.toContain("PDF súbor");
+    expect(html).toContain("data-spust");
   });
 
   it("„Upraviť doklad“ má štyri rohy a všetky tlačidlá", () => {
@@ -212,7 +210,14 @@ describe("skener a výber dokladov", () => {
 
   it("lišta vybraných sčíta po menách a povie, čo pôjde do účtovníctva", () => {
     const doklady = [
-      { id: "a", total_amount: 12.3, net_amount: 10, vat_amount: 2.3, currency: "EUR", status: "processed" },
+      {
+        id: "a",
+        total_amount: 12.3,
+        net_amount: 10,
+        vat_amount: 2.3,
+        currency: "EUR",
+        status: "processed",
+      },
       {
         id: "b",
         total_amount: 24.6,
@@ -222,7 +227,14 @@ describe("skener a výber dokladov", () => {
         status: "processed",
         exported_at: "2026-10-01T08:00:00Z",
       },
-      { id: "c", total_amount: 121, net_amount: 100, vat_amount: 21, currency: "CZK", status: "new" },
+      {
+        id: "c",
+        total_amount: 121,
+        net_amount: 100,
+        vat_amount: 21,
+        currency: "CZK",
+        status: "new",
+      },
     ];
     const html = renderToString(
       <ListaVybranych
@@ -310,7 +322,9 @@ describe("stav cenovej ponuky", () => {
   });
 
   it("prepadnutú platnosť pozná z dátumu", () => {
-    expect(stavPonuky({ ...zaklad, valid_until: "2020-01-01" }).kluc).toBe("ponuky.stav.poPlatnosti");
+    expect(stavPonuky({ ...zaklad, valid_until: "2020-01-01" }).kluc).toBe(
+      "ponuky.stav.poPlatnosti",
+    );
     expect(stavPonuky({ ...zaklad, valid_until: "2099-01-01" }).kluc).toBe("ponuky.stav.navrh");
   });
 

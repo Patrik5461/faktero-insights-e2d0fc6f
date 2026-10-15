@@ -1,9 +1,10 @@
 import { useOperacia } from "@/lib/mobile/server-most";
-import { useEffect, useState } from "react";
-import { ChevronDown, Files, FileText, Image as ImageIcon, Layers, Receipt, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Files, Image as ImageIcon, Layers, X } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
 import { ObrysDokladu, useObrysDokladu, useSnimanie } from "./KameraDokladu";
 import { UpravaDokladu } from "./UpravaDokladu";
+import { POTREBNYCH_VZORIEK, ustalenych, type Vzorka } from "@/lib/mobile/auto-fotenie";
 import { potvrd } from "@/lib/potvrdenie";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
@@ -50,7 +51,6 @@ export function Skener({
   onZGalerie,
   onViacstranovy,
   onViacDokladov,
-  onPrijateDoklady,
   onZachytene,
   nastavenie,
   onNastavenie,
@@ -149,6 +149,47 @@ export function Skener({
     else onOdfotit();
   }
 
+  /*
+    Automatické odfotenie: keď je doklad v zábere a obrys sa ~1 s nehýbe,
+    odfotí sa sám (ako pri skenovaní dokladov v bankových appkách). Dá sa
+    vypnúť čipom „Auto“; voľba sa pamätá v zariadení.
+  */
+  const [auto, setAuto] = useState(() => {
+    try {
+      return localStorage.getItem("faktero.sken.auto") !== "0";
+    } catch {
+      return true;
+    }
+  });
+  function prepniAuto() {
+    setAuto((v) => {
+      try {
+        localStorage.setItem("faktero.sken.auto", v ? "0" : "1");
+      } catch {
+        /* súkromné okno — voľba platí len teraz */
+      }
+      return !v;
+    });
+  }
+  const vzorky = useRef<(Vzorka | null)[]>([]);
+  const [ustalene, setUstalene] = useState(0);
+  useEffect(() => {
+    if (!auto || !fotimTu || sn.snimka) {
+      vzorky.current = [];
+      setUstalene(0);
+      return;
+    }
+    vzorky.current = [...vzorky.current.slice(-POTREBNYCH_VZORIEK), obrys];
+    const n = ustalenych(vzorky.current);
+    setUstalene(n);
+    if (n >= POTREBNYCH_VZORIEK) {
+      vzorky.current = [];
+      setUstalene(0);
+      spust();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [obrys, auto, fotimTu, sn.snimka]);
+
   async function prepniViacstranovy() {
     if (!fotimTu) return onViacstranovy();
     if (viacstranovy && sn.strany.length) {
@@ -199,6 +240,26 @@ export function Skener({
       */}
       <div className="relative flex min-h-0 flex-1 flex-col">
         <div className="shrink-0" style={{ paddingTop: "calc(var(--safe-top) + 0.5rem)" }}>
+          {/* Jediná nápoveda: QR sa netreba fotiť. Pri viacstranovom ju nahradí počítadlo strán. */}
+          {!(viacstranovy && fotimTu) && !chyba && (
+            <div className="relative flex items-center justify-center px-16">
+              <p className="w-fit max-w-full rounded-full bg-black/45 px-3 py-1 text-center text-[12px] text-white/90 backdrop-blur">
+                {auto && fotimTu && ustalene >= 2 ? t("sken.drzte") : t("sken.qrSam")}
+              </p>
+              {fotimTu && (
+                <button
+                  onClick={prepniAuto}
+                  aria-pressed={auto}
+                  aria-label={t("sken.autoPopis")}
+                  className={`absolute right-4 min-h-[32px] rounded-full px-3 text-[12px] font-semibold backdrop-blur ${
+                    auto ? "bg-app-zelena text-white" : "bg-black/45 text-white/70"
+                  }`}
+                >
+                  {t("sken.auto")}
+                </button>
+              )}
+            </div>
+          )}
           {/* Viacstranový doklad: koľko strán je odfotených a ako skončiť. */}
           {viacstranovy && fotimTu && (
             <div
@@ -268,30 +329,85 @@ export function Skener({
         )}
 
         {/*
-          Spodok. Priehľadný prechod, nie panel: obraz z kamery má ísť až po
-          okraj, inak vyzerá skener ako okno v aplikácii, nie ako hľadáčik.
+          Spodok je zámerne prázdny: kamera, jeden čip s nastavením a jeden
+          riadok tlačidiel. Predtým tu bol rozbalený panel, dva riadky textu,
+          tri tlačidlá a ďalší riadok odkazov — na hľadáčik nebolo vidieť.
+          „Prijaté doklady“ sú v spodnej lište (Doklady), PDF ide cez to isté
+          tlačidlo ako galéria.
         */}
         <div
-          className="shrink-0 bg-gradient-to-t from-black/85 via-black/65 to-transparent px-4 pt-6"
+          className="shrink-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-4 pt-8"
           style={{ paddingBottom: "calc(var(--safe-bottom) + 0.75rem)" }}
         >
-          {/*
-            Nastavenie dokladu je stále na očiach — úhrada a kategória sa menia
-            pri každom druhom bločku a schované za tlačidlom ich nikto nemenil.
-            Platí pre fotku aj pre QR kód; zákazka, predkontácia a komentár sú
-            pod „Ďalšie položky", lebo ich väčšina dokladov nepotrebuje.
-          */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => setNastaveniaOtvorene(true)}
+              data-cip-nastavenia
+              aria-label={t("sken.nastavenie")}
+              className="inline-flex min-h-[36px] max-w-full items-center gap-1.5 rounded-full bg-black/55 px-3.5 text-[13px] text-white backdrop-blur"
+            >
+              <span className="font-semibold">
+                {nastavenie.uhrada === "hotovost" ? t("pd.hotovost") : t("sken.karta")}
+              </span>
+              <span className="text-white/50">·</span>
+              <span className="min-w-0 truncate">
+                {KATEGORIE_VYDAVKOV.find((k) => k.kod === nastavenie.kategoria)?.nazov ??
+                  t("sken.bezKategorie")}
+              </span>
+              {vyplneneDalsie > 0 && (
+                <span className="rounded-full bg-white/20 px-1.5 text-[11px]">
+                  +{vyplneneDalsie}
+                </span>
+              )}
+              <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 items-center">
+            <div className="flex justify-start">
+              <MalyKruh icon={ImageIcon} label={t("sken.zoSuborov")} onClick={onZGalerie} />
+            </div>
+            <div className="flex justify-center">
+              <button
+                onClick={spust}
+                aria-label={t("sken.odfotit")}
+                data-spust
+                /* Biely prstenec okolo zelenej spúšte — na tmavom obraze je to
+                   jediné, čo je vidieť za každých svetelných podmienok. */
+                className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white bg-app-zelena transition active:scale-95"
+              />
+            </div>
+            <div className="flex justify-end">
+              <MalyKruh
+                icon={Files}
+                label={t("sken.viacstranovy")}
+                onClick={() => void prepniViacstranovy()}
+                stlacene={fotimTu ? viacstranovy : undefined}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nastavenie dokladu — vysúvací panel, nie stále otvorený nad kamerou. */}
+      {nastaveniaOtvorene && (
+        <div
+          className="absolute inset-0 z-20 flex flex-col justify-end bg-black/50"
+          onClick={() => setNastaveniaOtvorene(false)}
+        >
           <section
+            role="dialog"
+            aria-modal="true"
             aria-label={t("sken.nastavenie")}
             data-panel-dokladu
-            className="mb-3 rounded-app bg-black/55 p-2.5 backdrop-blur"
+            onClick={(e) => e.stopPropagation()}
+            className="rounded-t-2xl bg-app-karta px-4 pt-3 text-app-text"
+            style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}
           >
-            <div className="grid grid-cols-2 gap-2">
-              <div
-                role="group"
-                aria-label={t("sken.uhrada")}
-                className="flex min-w-0 overflow-hidden rounded-app-sm border border-white/25"
-              >
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-app-ramik" />
+            <h2 className="mb-3 text-[16px] font-semibold">{t("sken.nastavenie")}</h2>
+            <div className="max-h-[60vh] space-y-3 overflow-y-auto">
+              <div role="group" aria-label={t("sken.uhrada")} className="grid grid-cols-2 gap-2">
                 {(
                   [
                     ["hotovost", t("pd.hotovost")],
@@ -302,146 +418,105 @@ export function Skener({
                     key={kod}
                     onClick={() => nastav({ uhrada: kod })}
                     aria-pressed={nastavenie.uhrada === kod}
-                    className={`min-h-[38px] min-w-0 flex-1 truncate px-1 text-[13px] ${
+                    className={`min-h-[44px] rounded-app-sm border text-[15px] ${
                       nastavenie.uhrada === kod
-                        ? "bg-app-zelena font-semibold text-white"
-                        : "text-white/75"
+                        ? "border-app-zelena bg-app-zelena font-semibold text-white"
+                        : "border-app-ramik"
                     }`}
                   >
                     {label}
                   </button>
                 ))}
               </div>
-              <select
-                aria-label={t("sken.kategoria")}
-                value={nastavenie.kategoria}
-                onChange={(e) => nastav({ kategoria: e.target.value })}
-                className="min-h-[38px] w-full min-w-0 rounded-app-sm border border-white/25 bg-transparent px-2 text-[14px] text-white"
-              >
-                <option value="">{t("sken.bezKategorie")}</option>
-                {KATEGORIE_VYDAVKOV.map((k) => (
-                  <option key={k.kod} value={k.kod}>
-                    {k.nazov}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              onClick={() => setNastaveniaOtvorene((v) => !v)}
-              aria-expanded={nastaveniaOtvorene}
-              className="mt-1.5 flex min-h-[32px] w-full items-center justify-center gap-1 text-[12px] font-medium text-white/80"
-            >
-              {vyplneneDalsie
-                ? t("sken.dalsiePolozkyPocet", { pocet: vyplneneDalsie })
-                : t("sken.dalsiePolozky")}
-              <ChevronDown
-                className={`h-3.5 w-3.5 transition ${nastaveniaOtvorene ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {nastaveniaOtvorene && (
-              /* Na malom telefóne sa rozbalené položky rolujú vo vnútri —
-                 panel nesmie vytlačiť spúšť z obrazovky. */
-              <div className="mt-1 grid max-h-[26vh] grid-cols-2 gap-2 overflow-y-auto">
-                {predvolby?.zakazky.length ? (
-                  <label className="block min-w-0">
-                    <span className="mb-1 block text-[11px] font-medium text-white/70">
-                      {t("sken.zakazka")}
-                    </span>
-                    <select
-                      value={nastavenie.zakazka ?? ""}
-                      onChange={(e) => nastav({ zakazka: e.target.value || undefined })}
-                      className="min-h-[38px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[14px] text-white"
-                    >
-                      <option value="">{t("sken.ziadna")}</option>
-                      {predvolby.zakazky.map((z) => (
-                        <option key={z.id} value={z.id}>
-                          {z.nazov}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
-                {predvolby?.predkontacie.length ? (
-                  <label className="block min-w-0">
-                    <span className="mb-1 block text-[11px] font-medium text-white/70">
-                      {t("sken.predkontacia")}
-                    </span>
-                    <select
-                      value={nastavenie.predkontacia ?? ""}
-                      onChange={(e) => nastav({ predkontacia: e.target.value || undefined })}
-                      className="min-h-[38px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[14px] text-white"
-                    >
-                      <option value="">{t("sken.ziadna")}</option>
-                      {predvolby.predkontacie.map((p) => (
-                        <option key={p.kod} value={p.kod}>
-                          {p.kod}
-                          {p.popis ? ` — ${p.popis}` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
-                <label className="col-span-2 block">
-                  <span className="mb-1 block text-[11px] font-medium text-white/70">
-                    {t("sken.komentar")}
+              <label className="block">
+                <span className="mb-1 block text-[12px] font-medium text-app-text-2">
+                  {t("sken.kategoria")}
+                </span>
+                <select
+                  value={nastavenie.kategoria}
+                  onChange={(e) => nastav({ kategoria: e.target.value })}
+                  className="min-h-[44px] w-full rounded-app-sm border border-app-ramik bg-transparent px-3 text-[15px]"
+                >
+                  <option value="">{t("sken.bezKategorie")}</option>
+                  {KATEGORIE_VYDAVKOV.map((k) => (
+                    <option key={k.kod} value={k.kod}>
+                      {k.nazov}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {predvolby?.zakazky.length ? (
+                <label className="block">
+                  <span className="mb-1 block text-[12px] font-medium text-app-text-2">
+                    {t("sken.zakazka")}
                   </span>
-                  <input
-                    value={nastavenie.poznamka ?? ""}
-                    maxLength={500}
-                    placeholder={t("sken.komentarPopis")}
-                    onChange={(e) => nastav({ poznamka: e.target.value || undefined })}
-                    className="min-h-[38px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[15px] text-white placeholder:text-white/40"
-                  />
+                  <select
+                    value={nastavenie.zakazka ?? ""}
+                    onChange={(e) => nastav({ zakazka: e.target.value || undefined })}
+                    className="min-h-[44px] w-full rounded-app-sm border border-app-ramik bg-transparent px-3 text-[15px]"
+                  >
+                    <option value="">{t("sken.ziadna")}</option>
+                    {predvolby.zakazky.map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.nazov}
+                      </option>
+                    ))}
+                  </select>
                 </label>
-              </div>
-            )}
-          </section>
-
-          <p className="text-center text-[15px] font-medium text-white">
-            {t("sken.naskenujteDoklad")}
-          </p>
-          {/* Druhý riadok len na vyššom telefóne — na 375×667 by tlačil spúšť dole. */}
-          <p className="mt-0.5 text-center text-[13px] text-white/70 [@media(max-height:700px)]:hidden">
-            {t("sken.jedenSkener")}
-          </p>
-
-          {(
-            <div className="mt-3 grid grid-cols-3 items-center">
-              <div className="flex justify-start">
-                <MalyKruh icon={ImageIcon} label={t("sken.zGalerie")} onClick={onZGalerie} />
-              </div>
-              <div className="flex justify-center">
+              ) : null}
+              {predvolby?.predkontacie.length ? (
+                <label className="block">
+                  <span className="mb-1 block text-[12px] font-medium text-app-text-2">
+                    {t("sken.predkontacia")}
+                  </span>
+                  <select
+                    value={nastavenie.predkontacia ?? ""}
+                    onChange={(e) => nastav({ predkontacia: e.target.value || undefined })}
+                    className="min-h-[44px] w-full rounded-app-sm border border-app-ramik bg-transparent px-3 text-[15px]"
+                  >
+                    <option value="">{t("sken.ziadna")}</option>
+                    {predvolby.predkontacie.map((p) => (
+                      <option key={p.kod} value={p.kod}>
+                        {p.kod}
+                        {p.popis ? ` — ${p.popis}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              <label className="block">
+                <span className="mb-1 block text-[12px] font-medium text-app-text-2">
+                  {t("sken.komentar")}
+                </span>
+                <input
+                  value={nastavenie.poznamka ?? ""}
+                  maxLength={500}
+                  placeholder={t("sken.komentarPopis")}
+                  onChange={(e) => nastav({ poznamka: e.target.value || undefined })}
+                  className="min-h-[44px] w-full rounded-app-sm border border-app-ramik bg-transparent px-3 text-[15px]"
+                />
+              </label>
+              {onViacDokladov && (
                 <button
-                  onClick={spust}
-                  aria-label={t("sken.odfotit")}
-                  data-spust
-                  /* Biely prstenec okolo zelenej spúšte — na tmavom obraze je to
-                     jediné, čo je vidieť za každých svetelných podmienok. */
-                  className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white bg-app-zelena transition active:scale-95"
-                />
-              </div>
-              <div className="flex justify-end">
-                <MalyKruh
-                  icon={Files}
-                  label={t("sken.viacstranovy")}
-                  onClick={() => void prepniViacstranovy()}
-                  stlacene={fotimTu ? viacstranovy : undefined}
-                />
-              </div>
+                  onClick={() => {
+                    setNastaveniaOtvorene(false);
+                    onViacDokladov();
+                  }}
+                  className="flex min-h-[44px] w-full items-center gap-2 rounded-app-sm border border-app-ramik px-3 text-[15px]"
+                >
+                  <Layers className="h-4 w-4" /> {t("sken.viacDokladov")}
+                </button>
+              )}
             </div>
-          )}
-
-          <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/15 pt-2">
-            <MalyOdkaz icon={FileText} label={t("sken.pdfSubor")} onClick={onZGalerie} />
-            {onViacDokladov && (
-              <MalyOdkaz icon={Layers} label={t("sken.viacDokladov")} onClick={onViacDokladov} />
-            )}
-            <MalyOdkaz icon={Receipt} label={t("pd.nazov")} onClick={onPrijateDoklady} />
-          </div>
+            <button
+              onClick={() => setNastaveniaOtvorene(false)}
+              className="mt-4 min-h-[48px] w-full rounded-app bg-app-zelena text-[15px] font-semibold text-white"
+            >
+              {t("nf.hotovo")}
+            </button>
+          </section>
         </div>
-      </div>
+      )}
 
       {sn.snimka && (
         <UpravaDokladu
@@ -480,26 +555,6 @@ function MalyKruh({
       }`}
     >
       <Icon className="h-5 w-5" />
-    </button>
-  );
-}
-
-function MalyOdkaz({
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-1 rounded-app-sm text-[12px] text-white/80 active:bg-white/10"
-    >
-      <Icon className="h-[18px] w-[18px]" />
-      <span className="truncate">{label}</span>
     </button>
   );
 }
