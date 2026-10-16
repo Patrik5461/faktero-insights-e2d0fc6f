@@ -8,7 +8,7 @@ export const Route = createFileRoute("/pomoc/financovanie")({
       {
         name: "description",
         content:
-          "Leasingy a úvery vo Faktere: splátkový kalendár s rozpadom na istinu, úrok a DPH, načítanie zmluvy z PDF a párovanie splátok s platbami z banky.",
+          "Leasingy, úvery a kontokorent vo Faktere: splátkový kalendár s rozpadom na istinu, úrok a DPH, načítanie zmluvy z PDF, párovanie splátok s platbami z banky a úroky z kontokorentu.",
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/financovanie" },
     ],
@@ -201,6 +201,55 @@ const sections: HelpSection[] = [
         <p>
           Na zozname zmlúv je hore súčet <strong>zostáva splatiť</strong> za všetky aktívne zmluvy —
           to je vaša záväzková situácia z leasingov a úverov jedným číslom.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "kontokorent",
+    title: "Kontokorentný úver",
+    body: (
+      <>
+        <p>
+          Kontokorent (povolené prečerpanie, úverový rámec k bežnému účtu) je iný než leasing a
+          úver: <strong>nemá splátkový kalendár</strong>. Banka vám na bežnom účte povolí ísť do
+          mínusu do výšky limitu, raz za mesiac alebo štvrťrok z účtu strhne{" "}
+          <strong>úrok z vyčerpanej sumy</strong> a prípadne <strong>poplatok za rámec</strong>.
+          Istinu „splácajú“ samotné príjmy na účet.
+        </p>
+        <p>
+          Pri novej zmluve zvoľte druh <strong>Kontokorentný úver</strong>. Polia splátkového
+          kalendára sa skryjú a vyplníte <strong>úverový rámec</strong>, <strong>účet</strong>, na
+          ktorom rámec je, <strong>úrok % p. a.</strong>, <strong>poplatok za rámec ročne</strong>,
+          dokedy rámec platí a ako často banka úrok strhne. Pri pohyblivej sadzbe (napr. 3M EURIBOR
+          + marža) zadajte aktuálnu výslednú sadzbu a zloženie si poznačte do poznámky.
+        </p>
+        <p>
+          Nahratú zmluvu o kontokorente Faktero spozná samo — aj keď ju banka nazve „úver“: úver bez
+          splátkového kalendára s rámcom k bežnému účtu je kontokorent. Vyčíta limit, sadzbu (aj
+          referenčnú sadzbu a maržu), poplatok, platnosť a IBAN účtu a podľa IBAN zmluvu priradí k
+          napojenému účtu.
+        </p>
+        <p>
+          Na detaile kontokorentu vidíte <strong>limit</strong>, <strong>čerpanie</strong> (mínus na
+          napojenom účte podľa posledného zostatku z banky), <strong>voľný rámec</strong> a zoznam{" "}
+          <strong>úrokov a poplatkov, ktoré banka strhla</strong>. Ak účet nie je napojený, čerpanie
+          Faktero nepozná a napíše „zostatok účtu nie je známy“.
+        </p>
+        <p>
+          Úroky a poplatky sa k zmluve párujú samy po stiahnutí pohybov z banky — ale len z{" "}
+          <strong>účtu, na ktorom je rámec</strong>, a len keď text pohybu o kontokorente výslovne
+          hovorí („úrok z kontokorentu“, „debetný úrok“, „úrok z povoleného prečerpania“, „poplatok
+          za úverový rámec“…). Holé „Úroky“ na tom účte uvidíte ako návrh na potvrdenie. Poplatok za
+          vedenie účtu a splátky bežného úveru či leasingu (tie majú vlastný kalendár a variabilný
+          symbol) sa ku kontokorentu nepriradia nikdy.
+        </p>
+        <p>
+          Do účtovníctva: úrok je finančný náklad (562), poplatok za rámec ostatný finančný náklad
+          (568). Pri prevode výpisu do Pohody ich Faktero označí ako <em>Úrok</em> a{" "}
+          <em>Bankový poplatok</em> a dostanú predkontáciu, ktorú pre tieto označenia nastavíte.
+          Čerpaný kontokorent je krátkodobý bankový úver (231) — to je stav účtu, nie platba, takže
+          sa ako splátka nevyváža.
         </p>
       </>
     ),

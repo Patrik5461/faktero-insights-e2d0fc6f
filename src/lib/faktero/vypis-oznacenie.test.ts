@@ -82,3 +82,19 @@ describe("označenie platby", () => {
     expect(ucelCamt(null, "vydaj")).toBeNull();
   });
 });
+
+describe("kontokorent na výpise", () => {
+  // Úrok a poplatok z kontokorentu idú do Pohody s predkontáciou úroku a
+  // poplatku (562 / 568), nie ako splátka úveru — istina kontokorentu je stav
+  // účtu, žiadna platba.
+  it.each([
+    ["Úrok z kontokorentu", "urok"],
+    ["Debetné úroky", "urok"],
+    ["Úrok z povoleného prečerpania", "urok"],
+    ["Debetní úrok", "urok"],
+    ["Poplatok za úverový rámec", "poplatok"],
+    ["Záväzková provízia", "poplatok"],
+  ])("„%s“ je %s", (popis, kod) => {
+    expect(odhadniOznacenie({ popis, smer: "vydaj" })).toBe(kod);
+  });
+});

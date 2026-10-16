@@ -396,6 +396,26 @@ export async function syncPripojenie(
           e?.message ?? e,
         );
       }
+
+      /*
+        Úroky a poplatky z kontokorentu. Až po splátkach: čo si vzala splátka
+        úveru, sem už neprejde. Párujú sa len pohyby z účtu, na ktorom rámec
+        je, a len tie, ktoré o kontokorente výslovne hovoria.
+      */
+      try {
+        const { sparujKontokorentyFirmyAutomaticky } = await import("./kontokorent.server");
+        const { zapisanych } = await sparujKontokorentyFirmyAutomaticky(conn.company_id);
+        if (zapisanych > 0) {
+          console.log(
+            `[bank-sync] firma ${conn.company_id}: spárovaných úrokov a poplatkov z kontokorentu ${zapisanych}`,
+          );
+        }
+      } catch (e: any) {
+        console.error(
+          `[bank-sync] párovanie kontokorentu firmy ${conn.company_id} zlyhalo:`,
+          e?.message ?? e,
+        );
+      }
     }
 
     return {

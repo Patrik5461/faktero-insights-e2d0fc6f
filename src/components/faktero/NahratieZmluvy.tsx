@@ -136,12 +136,21 @@ export function NahratieZmluvy({
           down_payment: r.down_payment ?? 0,
           residual_value: r.residual_value ?? 0,
           interest_from: r.interest_from,
+          // Kontokorent — rámec na účte; účet sa vo formulári priradí podľa IBAN.
+          credit_limit: r.credit_limit ?? "",
+          account_iban: r.account_iban,
+          limit_fee_yearly: r.limit_fee_yearly ?? "",
+          valid_until: r.valid_until,
+          interest_period: r.interest_period,
+          note: r.note,
         },
       });
       toast.success(
-        r.splatky.length
-          ? `Prečítané, kalendár má ${r.splatky.length} splátok. Skontrolujte údaje a uložte.`
-          : "Údaje sú prečítané. Kalendár v dokumente nebol — Faktero ho dopočíta.",
+        r.kind === "kontokorent"
+          ? "Prečítané — je to kontokorentný úver (rámec na účte, bez splátkového kalendára). Skontrolujte údaje a uložte."
+          : r.splatky.length
+            ? `Prečítané, kalendár má ${r.splatky.length} splátok. Skontrolujte údaje a uložte.`
+            : "Údaje sú prečítané. Kalendár v dokumente nebol — Faktero ho dopočíta.",
       );
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Dokument sa nepodarilo prečítať.");
@@ -159,7 +168,7 @@ export function NahratieZmluvy({
           <p className="mt-1 text-sm text-muted-foreground">
             Nahrajte zmluvu aj splátkový kalendár — pokojne naraz, aj keď sú to dva súbory. Faktero
             z nich vyčíta údaje a kalendár prevezme riadok po riadku, presne tak, ako ho predpísala
-            banka.
+            banka. Zmluvu o kontokorente spozná samo — tá kalendár nemá.
           </p>
         </div>
         <button

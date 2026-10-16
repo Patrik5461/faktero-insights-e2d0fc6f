@@ -12,7 +12,7 @@ export const DRUHY_PRE_AI = `"exekucia" (exekučný príkaz, upovedomenie o zač
 "danovy_urad" (list, výzva, rozhodnutie alebo platobný výmer od daňového/finančného úradu),
 "socialna_zdravotna" (Sociálna poisťovňa, zdravotná poisťovňa — výkaz nedoplatkov, rozhodnutie, výzva),
 "zmluva" (akákoľvek zmluva alebo dodatok),
-"leasing_uver" (leasingová alebo úverová zmluva, splátkový kalendár, oznámenie banky o úvere),
+"leasing_uver" (leasingová alebo úverová zmluva, splátkový kalendár, oznámenie banky o úvere; aj zmluva o kontokorentnom úvere / povolenom prečerpaní / úverovom rámci k bežnému účtu, dodatok k nej, oznámenie o zmene sadzby či predĺžení rámca),
 "uradny_list" (iný úradný list — súd, obec, register, ministerstvo),
 "ine" (nič z uvedeného)`;
 
@@ -28,6 +28,7 @@ ${DRUHY_PRE_AI}
 - currency — kód meny (EUR, CZK…).
 - due_date — lehota alebo splatnosť (YYYY-MM-DD), ak je v dokumente.
 - summary — 1 až 3 vety pre účtovníka: čo z dokumentu vyplýva a čo treba urobiť.
+- Pri druhu "leasing_uver" napíš do summary aj číslo zmluvy a pri kontokorente aj IBAN účtu, ku ktorému je rámec — podľa nich sa doklad priradí k zmluve.
 
 Čo v dokumente nie je, daj null. Nič si nevymýšľaj.
 Vráť VÝHRADNE JSON:

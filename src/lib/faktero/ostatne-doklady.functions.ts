@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { DRUHY_KLUCE, bezpecneMeno, jeCestaDokladu, jeRozpoznaniePouzitelne } from "./ostatne-doklady";
+import { nazovDruhuFinancovania } from "./kontokorent";
 
 /*
   Iné doklady. Všetko ide cez používateľského klienta, takže o tom, kto čo
@@ -390,7 +391,7 @@ export const ulozOstatnyZAppkyFn = createServerFn({ method: "POST" })
 
 /**
  * Na výber vo formulári: zamestnanci (len pri zapnutej personalistike) a
- * zmluvy o leasingu či úvere. Zo zamestnanca sa berie len meno — citlivé
+ * zmluvy o leasingu, úvere či kontokorente. Zo zamestnanca sa berie len meno — citlivé
  * údaje z karty sem nepatria.
  */
 export const vazbyOstatnychFn = createServerFn({ method: "POST" })
@@ -402,7 +403,7 @@ export const vazbyOstatnychFn = createServerFn({ method: "POST" })
       supabase.from("companies").select("module_employees").eq("id", data.company_id).maybeSingle(),
       supabase
         .from("financing_contracts")
-        .select("id, kind, name, provider_name, contract_number, status")
+        .select("id, kind, name, provider_name, contract_number, account_iban, status")
         .eq("company_id", data.company_id)
         .order("created_at", { ascending: false }),
     ]);
@@ -425,8 +426,9 @@ export const vazbyOstatnychFn = createServerFn({ method: "POST" })
       zmluvy: (zmluvy ?? []).map((z: any) => ({
         id: z.id,
         contract_number: z.contract_number,
+        account_iban: z.account_iban ?? null,
         nazov: [
-          z.kind === "leasing" ? "Leasing" : "Úver",
+          nazovDruhuFinancovania(z.kind),
           z.name || z.provider_name,
           z.contract_number ? `č. ${z.contract_number}` : null,
         ]

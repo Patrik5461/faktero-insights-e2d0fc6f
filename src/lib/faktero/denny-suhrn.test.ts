@@ -236,3 +236,13 @@ describe("token na odhlásenie", () => {
     await expect(tokenOdhlasenia("nie-uuid", KLUC)).rejects.toThrow();
   });
 });
+
+describe("postupné zapínanie (DENNY_SUHRN_LEN)", () => {
+  it("prázdny zoznam = všetkým, inak len vymenovaným", async () => {
+    const { jeVZozname } = await import("./denny-suhrn.server");
+    expect(jeVZozname("a@b.sk", "")).toBe(true);
+    expect(jeVZozname("Info@Paliera.sk", " info@paliera.sk , info@tobify.sk")).toBe(true);
+    expect(jeVZozname("zakaznik@firma.sk", "info@paliera.sk,info@tobify.sk")).toBe(false);
+    expect(jeVZozname(null, "info@paliera.sk")).toBe(false);
+  });
+});

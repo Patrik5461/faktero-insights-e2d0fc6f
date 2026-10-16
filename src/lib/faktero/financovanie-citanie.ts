@@ -18,7 +18,7 @@ export type PrecitanaSplatka = {
 };
 
 export type PrecitanaZmluva = {
-  kind: "leasing" | "uver" | null;
+  kind: "leasing" | "uver" | "kontokorent" | null;
   provider_name: string | null;
   contract_number: string | null;
   variable_symbol: string | null;
@@ -32,6 +32,18 @@ export type PrecitanaZmluva = {
   vat_rate: number | null;
   down_payment: number | null;
   residual_value: number | null;
+  /*
+   * Kontokorent — úverový rámec na účte. Pri leasingu a úvere ostávajú null.
+   */
+  credit_limit: number | null;
+  /** Poplatok za rámec za rok (mesačný sa prepočíta ×12). */
+  limit_fee_yearly: number | null;
+  valid_until: string | null;
+  interest_period: "mesacne" | "stvrtrocne" | null;
+  /** IBAN účtu, ku ktorému je rámec — podľa neho sa priradí napojený účet. */
+  account_iban: string | null;
+  /** Popis, ktorý patrí do poznámky zmluvy — napr. pohyblivá sadzba. */
+  note: string | null;
   splatky: PrecitanaSplatka[];
   /** Čo v dokumente nesedelo — ukáže sa človeku, nie je to chyba. */
   vyhrady: string[];
@@ -156,6 +168,130 @@ export function vyhradyKuKalendaru(z: {
   return vyhrady;
 }
 
+/* ------------------------------------------------------------------ *
+ * Kontokorent
+ * ------------------------------------------------------------------ */
+
+function holy(v: unknown): string {
+  return String(v ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * Pomenovania kontokorentu v slovenských a českých zmluvách. Holé „úver"
+ * nestačí — kontokorent je úver tiež; rozhoduje rámec na bežnom účte.
+ */
+const KONTOKORENT =
+  /kontokorent|povolen\w* precerpan|precerpanie uctu|povolen\w* debet|revolving\w* uver k (beznemu )?uct|uverov\w* ramec k (beznemu )?uct|ramec k (beznemu )?uct|\boverdraft\b/;
+
+/**
+ * Druh zmluvy. Model dostane tri možnosti, ale kontokorent si občas pomýli
+ * s úverom — veď to aj je úver. Preto sa pozerá aj na názov produktu a na to,
+ * čo v dokumente je: **úver bez splátkového kalendára s úverovým rámcom je
+ * kontokorent.** Leasing kontokorentom nebýva nikdy, ten sa neprepisuje.
+ */
+export function rozpoznajDruh(parsed: any): PrecitanaZmluva["kind"] {
+  const kind = typeof parsed?.kind === "string" ? parsed.kind.trim() : "";
+  const nazov = holy(`${kind} ${parsed?.product_name ?? ""}`);
+  if (kind === "kontokorent" || KONTOKORENT.test(nazov)) return "kontokorent";
+  if (kind === "leasing") return "leasing";
+
+  const maRamec = (cislo(parsed?.credit_limit) ?? 0) > 0;
+  const maKalendar =
+    (Array.isArray(parsed?.splatky) && normalizujSplatky(parsed.splatky).length > 0) ||
+    !!cislo(parsed?.term_months) ||
+    !!datum(parsed?.first_due_date);
+  if ((kind === "uver" || !kind) && maRamec && !maKalendar) return "kontokorent";
+  return kind === "uver" ? "uver" : null;
+}
+
+function iban(v: unknown): string | null {
+  const s = String(v ?? "")
+    .replace(/\s/g, "")
+    .toUpperCase();
+  return /^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(s) ? s : null;
+}
+
+const VYHRADA_POHYBLIVA = "Sadzba je pohyblivá";
+
+function obdobie(v: unknown): "mesacne" | "stvrtrocne" | null {
+  const s = holy(v);
+  if (/mesac|month|mesic/.test(s)) return "mesacne";
+  if (/stvrt|quarter|ctvrt/.test(s)) return "stvrtrocne";
+  return null;
+}
+
+function percento(n: number): string {
+  return `${String(n).replace(".", ",")} %`;
+}
+
+/**
+ * Údaje kontokorentu z odpovede modelu. Sadzba býva pohyblivá („3M EURIBOR +
+ * 2,5 %") — keď výsledná v zmluve nie je, uloží sa súčet referenčnej a marže,
+ * a keď nie je ani hodnota referenčnej, aspoň marža. Popis ide do poznámky,
+ * nech je jasné, čo to číslo znamená.
+ */
+function udajeKontokorentu(parsed: any): {
+  credit_limit: number | null;
+  interest_rate: number | null;
+  limit_fee_yearly: number | null;
+  note: string | null;
+  vyhrady: string[];
+} {
+  const vyhrady: string[] = [];
+  const limit = cislo(parsed?.credit_limit) ?? cislo(parsed?.principal);
+  const marza = cislo(parsed?.interest_margin);
+  const refNazov = text(parsed?.reference_rate_name, 60);
+  const refHodnota = cislo(parsed?.reference_rate_value);
+  let sadzba = cislo(parsed?.interest_rate);
+  const poznamky: string[] = [];
+
+  if (refNazov || marza !== null) {
+    poznamky.push(
+      `Pohyblivá sadzba: ${[
+        refNazov ?? "referenčná sadzba",
+        marza !== null ? `marža ${percento(marza)}` : null,
+      ]
+        .filter(Boolean)
+        .join(" + ")} p. a.`,
+    );
+  }
+  if (sadzba === null && marza !== null) {
+    if (refHodnota !== null) {
+      sadzba = centy(refHodnota + marza);
+    } else {
+      sadzba = marza;
+      vyhrady.push(
+        `${VYHRADA_POHYBLIVA} a hodnota referenčnej sadzby v dokumente nie je — uložená je len marža ${percento(marza)}. Doplňte výslednú sadzbu.`,
+      );
+    }
+  }
+
+  let poplatok: number | null = null;
+  const fee = cislo(parsed?.limit_fee);
+  const feePct = cislo(parsed?.limit_fee_percent);
+  if (fee !== null) {
+    const p = holy(parsed?.limit_fee_period);
+    poplatok = centy(
+      /mesac|month|mesic/.test(p) ? fee * 12 : /stvrt|quarter|ctvrt/.test(p) ? fee * 4 : fee,
+    );
+  } else if (feePct !== null && limit) {
+    poplatok = centy((limit * feePct) / 100);
+    poznamky.push(`Poplatok za rámec ${percento(feePct)} z limitu ročne.`);
+  }
+
+  return {
+    credit_limit: limit ? centy(limit) : null,
+    interest_rate: sadzba,
+    limit_fee_yearly: poplatok,
+    note: poznamky.length ? poznamky.join(" ") : null,
+    vyhrady,
+  };
+}
+
 /**
  * Zmluva a splátkový kalendár chodia často ako dva samostatné PDF — v zmluve
  * je úrok a akontácia, v kalendári riadky. Nahrať sa dajú naraz a tu sa spoja
@@ -178,6 +314,32 @@ export function spojPrecitane(dokumenty: PrecitanaZmluva[]): PrecitanaZmluva {
     [],
   );
 
+  // Keď čo len jeden dokument hovorí o kontokorente, je to kontokorent — a ten
+  // splátkový kalendár nemá, takže druhý dokument mu ho nepridá.
+  const kontokorent = dokumenty.some((d) => d.kind === "kontokorent");
+  if (kontokorent) {
+    const k: PrecitanaZmluva = {
+      ...prazdnyKalendar(dokumenty.find((d) => d.kind === "kontokorent")!),
+      provider_name: skalar("provider_name"),
+      contract_number: skalar("contract_number"),
+      currency: skalar("currency") ?? "EUR",
+      interest_rate: skalar("interest_rate"),
+      credit_limit: skalar("credit_limit"),
+      limit_fee_yearly: skalar("limit_fee_yearly"),
+      valid_until: skalar("valid_until"),
+      interest_period: skalar("interest_period"),
+      account_iban: skalar("account_iban"),
+      note: skalar("note"),
+    };
+    // Chýbajúce údaje sa počítajú nanovo zo spojeného — druhý dokument ich
+    // mohol doplniť. Výhrada o pohyblivej sadzbe sa z dokumentov prenáša.
+    const pohyblive = dokumenty.flatMap((d) =>
+      d.vyhrady.filter((v) => v.startsWith(VYHRADA_POHYBLIVA)),
+    );
+    k.vyhrady = [...new Set(pohyblive), ...vyhradyKontokorentu(k)];
+    return k;
+  }
+
   const spojena: PrecitanaZmluva = {
     kind: skalar("kind"),
     provider_name: skalar("provider_name"),
@@ -193,6 +355,12 @@ export function spojPrecitane(dokumenty: PrecitanaZmluva[]): PrecitanaZmluva {
     vat_rate: skalar("vat_rate"),
     down_payment: skalar("down_payment"),
     residual_value: skalar("residual_value"),
+    credit_limit: null,
+    limit_fee_yearly: null,
+    valid_until: null,
+    interest_period: null,
+    account_iban: skalar("account_iban"),
+    note: skalar("note"),
     splatky: riadky,
     vyhrady: [],
   };
@@ -210,13 +378,73 @@ export function spojPrecitane(dokumenty: PrecitanaZmluva[]): PrecitanaZmluva {
   return spojena;
 }
 
+/** Kontokorent nemá kalendár — všetko, čo k nemu patrí, je prázdne. */
+function prazdnyKalendar(z: PrecitanaZmluva): PrecitanaZmluva {
+  return {
+    ...z,
+    kind: "kontokorent",
+    principal: null,
+    term_months: null,
+    first_due_date: null,
+    interest_from: null,
+    payment_amount: null,
+    vat_rate: 0,
+    down_payment: null,
+    residual_value: null,
+    variable_symbol: null,
+    splatky: [],
+  };
+}
+
+function vyhradyKontokorentu(z: PrecitanaZmluva): string[] {
+  const v: string[] = [];
+  if (!z.credit_limit) v.push("Úverový rámec (limit) sa v dokumente nenašiel — doplňte ho.");
+  if (!z.account_iban) {
+    v.push("Číslo účtu, ku ktorému je rámec, sa v dokumente nenašlo — vyberte účet ručne.");
+  }
+  if (z.interest_rate === null) v.push("Úroková sadzba sa v dokumente nenašla — doplňte ju.");
+  return v;
+}
+
 export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
+  const kind = rozpoznajDruh(parsed);
+
+  if (kind === "kontokorent") {
+    const k = udajeKontokorentu(parsed);
+    const zmluva = prazdnyKalendar({
+      kind,
+      provider_name: text(parsed?.provider_name),
+      contract_number: text(parsed?.contract_number, 100),
+      variable_symbol: null,
+      currency: text(parsed?.currency, 3) ?? "EUR",
+      principal: null,
+      interest_rate: k.interest_rate,
+      term_months: null,
+      first_due_date: null,
+      interest_from: null,
+      payment_amount: null,
+      vat_rate: 0,
+      down_payment: null,
+      residual_value: null,
+      credit_limit: k.credit_limit,
+      limit_fee_yearly: k.limit_fee_yearly,
+      valid_until: datum(parsed?.valid_until),
+      interest_period: obdobie(parsed?.interest_period),
+      account_iban: iban(parsed?.account_iban),
+      note: k.note,
+      splatky: [],
+      vyhrady: [],
+    });
+    zmluva.vyhrady = [...k.vyhrady, ...vyhradyKontokorentu(zmluva)];
+    return zmluva;
+  }
+
   const riadky = normalizujSplatky(parsed?.splatky);
   const principal = cislo(parsed?.principal);
   const term = cislo(parsed?.term_months);
 
   const zmluva: PrecitanaZmluva = {
-    kind: parsed?.kind === "uver" || parsed?.kind === "leasing" ? parsed.kind : null,
+    kind,
     provider_name: text(parsed?.provider_name),
     contract_number: text(parsed?.contract_number, 100),
     variable_symbol: text(parsed?.variable_symbol, 30),
@@ -231,6 +459,14 @@ export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
     vat_rate: cislo(parsed?.vat_rate),
     down_payment: cislo(parsed?.down_payment),
     residual_value: cislo(parsed?.residual_value),
+    credit_limit: null,
+    limit_fee_yearly: null,
+    valid_until: null,
+    interest_period: null,
+    // Pri úvere sa nepoužije, ale pri spájaní dokumentov môže doplniť účet
+    // kontokorentu, keď je IBAN len v druhom súbore.
+    account_iban: iban(parsed?.account_iban),
+    note: null,
     splatky: riadky,
     vyhrady: [],
   };
@@ -248,5 +484,5 @@ export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
 
 /** Prázdna odpoveď vyzerá ako úspech, ale nie je. */
 export function jePouzitelna(z: PrecitanaZmluva): boolean {
-  return !!z.principal || z.splatky.length > 0 || !!z.provider_name;
+  return !!z.principal || !!z.credit_limit || z.splatky.length > 0 || !!z.provider_name;
 }

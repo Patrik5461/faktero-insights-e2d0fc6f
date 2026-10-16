@@ -6,7 +6,8 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { zoznamZmluvFn } from "@/lib/faktero/financovanie.functions";
 import { formatujSumu } from "@/lib/faktero/zostatky";
-import { Banknote, Car, Plus, TriangleAlert } from "lucide-react";
+import { nazovDruhuFinancovania, type StavRamca } from "@/lib/faktero/kontokorent";
+import { Banknote, Car, Landmark, Plus, TriangleAlert } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/financovanie/")({
   head: () => ({ meta: [{ title: "Leasingy a úvery — Faktero" }] }),
@@ -15,11 +16,14 @@ export const Route = createFileRoute("/_authenticated/financovanie/")({
 
 type Zmluva = {
   id: string;
-  kind: "leasing" | "uver";
+  kind: "leasing" | "uver" | "kontokorent";
   name: string;
   provider_name: string | null;
   currency: string;
-  principal: number;
+  principal: number | null;
+  credit_limit: number | null;
+  valid_until: string | null;
+  ramec: StavRamca | null;
   status: string;
   splatok: number;
   zaplatenych: number;
@@ -47,14 +51,17 @@ function Stranka() {
 
   const aktivne = (zmluvy ?? []).filter((z) => z.status === "active");
   const zavrete = (zmluvy ?? []).filter((z) => z.status !== "active");
-  const dlhSpolu = aktivne.reduce((s, z) => s + z.zostavaSuma, 0);
+  // Kontokorent sa do „zostáva splatiť" nepočíta — nemá predpis, len čerpanie.
+  const dlhSpolu = aktivne
+    .filter((z) => z.kind !== "kontokorent")
+    .reduce((s, z) => s + z.zostavaSuma, 0);
   const mena = aktivne[0]?.currency ?? "EUR";
 
   return (
     <>
       <PageHeader
         title="Leasingy a úvery"
-        description="Splátkový kalendár s rozpadom na istinu, úrok a DPH. Odchádzajúce platby z banky sa k splátkam páruju samy."
+        description="Splátkový kalendár s rozpadom na istinu, úrok a DPH, aj kontokorentné úvery. Platby z banky sa k splátkam a úroky ku kontokorentu párujú samy."
         action={
           <Link
             to="/financovanie/nova"
@@ -117,6 +124,8 @@ function Stranka() {
                         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-secondary">
                           {z.kind === "leasing" ? (
                             <Car className="h-5 w-5 text-muted-foreground" />
+                          ) : z.kind === "kontokorent" ? (
+                            <Landmark className="h-5 w-5 text-muted-foreground" />
                           ) : (
                             <Banknote className="h-5 w-5 text-muted-foreground" />
                           )}
@@ -124,6 +133,9 @@ function Stranka() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="truncate font-medium">{z.name}</span>
+                            <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
+                              {nazovDruhuFinancovania(z.kind)}
+                            </span>
                             {z.poSplatnosti > 0 && (
                               <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
                                 <TriangleAlert className="h-3 w-3" />
@@ -133,16 +145,38 @@ function Stranka() {
                           </div>
                           <div className="truncate text-sm text-muted-foreground">
                             {z.provider_name ? `${z.provider_name} · ` : ""}
-                            splatené {z.zaplatenych} z {z.splatok}
-                            {z.dalsiaSplatka ? ` · ďalšia ${datum(z.dalsiaSplatka.due_date)}` : ""}
+                            {z.kind === "kontokorent" ? (
+                              <>
+                                rámec {formatujSumu(Number(z.credit_limit) || 0, z.currency)}
+                                {z.valid_until ? ` · platí do ${datum(z.valid_until)}` : ""}
+                              </>
+                            ) : (
+                              <>
+                                splatené {z.zaplatenych} z {z.splatok}
+                                {z.dalsiaSplatka
+                                  ? ` · ďalšia ${datum(z.dalsiaSplatka.due_date)}`
+                                  : ""}
+                              </>
+                            )}
                           </div>
                         </div>
-                        <div className="shrink-0 text-right">
-                          <div className="font-medium tabular-nums">
-                            {formatujSumu(z.zostavaSuma, z.currency)}
+                        {z.kind === "kontokorent" ? (
+                          <div className="shrink-0 text-right">
+                            <div className="font-medium tabular-nums">
+                              {z.ramec?.znamy ? formatujSumu(z.ramec.cerpanie, z.currency) : "—"}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {z.ramec?.znamy ? "čerpané" : "zostatok nie je známy"}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground">zostáva</div>
-                        </div>
+                        ) : (
+                          <div className="shrink-0 text-right">
+                            <div className="font-medium tabular-nums">
+                              {formatujSumu(z.zostavaSuma, z.currency)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">zostáva</div>
+                          </div>
+                        )}
                       </Link>
                     ))}
                   </div>

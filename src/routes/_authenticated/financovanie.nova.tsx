@@ -20,7 +20,7 @@ function Stranka() {
     <>
       <PageHeader
         title="Nová zmluva o financovaní"
-        description="Nahrajte zmluvu, alebo zapíšte údaje ručne. Splátkový kalendár uvidíte hneď."
+        description="Leasing, úver alebo kontokorent. Nahrajte zmluvu, alebo zapíšte údaje ručne."
       />
       <PageBody>
         {cid ? (
@@ -47,7 +47,11 @@ function Stranka() {
                   : null
               }
               onUlozene={(id, splatok) => {
-                toast.success(`Zmluva uložená, kalendár má ${splatok} splátok.`);
+                toast.success(
+                  splatok > 0
+                    ? `Zmluva uložená, kalendár má ${splatok} splátok.`
+                    : "Zmluva uložená.",
+                );
                 navigate({ to: "/financovanie/$id", params: { id } });
               }}
             />

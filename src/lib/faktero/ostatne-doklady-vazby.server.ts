@@ -2,7 +2,7 @@ import { navrhniZamestnanca, navrhniZmluvu, type RozpoznanyOstatny } from "./ost
 
 /**
  * Návrh väzieb pre doklad, ktorý prečítala AI: exekúcia k zamestnancovi,
- * leasing či úver k zmluve. Hľadá sa v predmete, zhrnutí aj odosielateľovi.
+ * leasing, úver či kontokorent k zmluve. Hľadá sa v predmete, zhrnutí aj odosielateľovi.
  * Keď si nie je istý (žiadna alebo viac zhôd), nenavrhne nič.
  */
 export async function navrhniVazby(
@@ -30,7 +30,7 @@ export async function navrhniVazby(
   if (r.kind === "leasing_uver" || r.kind === "poistovna") {
     const { data: zmluvy } = await klient
       .from("financing_contracts")
-      .select("id, contract_number")
+      .select("id, contract_number, account_iban")
       .eq("company_id", companyId);
     const id = navrhniZmluvu(text, zmluvy ?? []);
     if (id) vysledok.financing_contract_id = id;

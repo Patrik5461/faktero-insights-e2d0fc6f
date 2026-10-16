@@ -38,48 +38,79 @@ function cislo(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-const Zmluva_ = z.object({
-  id: z.string().uuid().optional().nullable(),
-  company_id: z.string().uuid(),
-  kind: z.enum(["leasing", "uver"]),
-  name: z.string().trim().min(1).max(200),
-  provider_name: z.string().trim().max(200).optional().nullable(),
-  contract_number: z.string().trim().max(100).optional().nullable(),
-  variable_symbol: z.string().trim().max(30).optional().nullable(),
-  counterparty_hint: z.string().trim().max(200).optional().nullable(),
-  currency: z.string().length(3).default("EUR"),
-  principal: z.number().positive().max(100_000_000),
-  interest_rate: z.number().min(0).max(100).default(0),
-  term_months: z.number().int().min(1).max(600),
-  first_due_date: z.string().regex(DATUM),
-  payment_amount: z.number().positive().max(10_000_000).optional().nullable(),
-  vat_rate: z.number().min(0).max(100).default(0),
-  down_payment: z.number().min(0).max(100_000_000).default(0),
-  residual_value: z.number().min(0).max(100_000_000).default(0),
-  day_count: z.enum(["ACT/365", "ACT/360", "30E/360"]).default("ACT/365"),
-  interest_from: z.string().regex(DATUM).optional().nullable(),
-  vehicle_id: z.string().uuid().optional().nullable(),
-  document_path: z.string().max(500).optional().nullable(),
-  note: z.string().max(2000).optional().nullable(),
-  /**
-   * Kalendár prečítaný z nahratého dokumentu. Keď príde, je záväzný a nič sa
-   * nedopočítava — sú to sumy, ktoré banka naozaj stiahne.
-   */
-  splatky: z
-    .array(
-      z.object({
-        number: z.number().int().min(1).max(600),
-        due_date: z.string().regex(DATUM),
-        amount: z.number().min(0).max(10_000_000),
-        principal_part: z.number().min(0).max(10_000_000),
-        interest_part: z.number().min(0).max(10_000_000),
-        vat_amount: z.number().min(0).max(10_000_000),
-        remaining_principal: z.number().min(0).max(100_000_000),
-      }),
-    )
-    .max(600)
-    .optional(),
-});
+const Zmluva_ = z
+  .object({
+    id: z.string().uuid().optional().nullable(),
+    company_id: z.string().uuid(),
+    kind: z.enum(["leasing", "uver", "kontokorent"]),
+    name: z.string().trim().min(1).max(200),
+    provider_name: z.string().trim().max(200).optional().nullable(),
+    contract_number: z.string().trim().max(100).optional().nullable(),
+    variable_symbol: z.string().trim().max(30).optional().nullable(),
+    counterparty_hint: z.string().trim().max(200).optional().nullable(),
+    currency: z.string().length(3).default("EUR"),
+    // Pri kontokorente istina, počet splátok ani prvá splátka nie sú — kontroluje
+    // to `superRefine` nižšie.
+    principal: z.number().positive().max(100_000_000).optional().nullable(),
+    interest_rate: z.number().min(0).max(100).default(0),
+    term_months: z.number().int().min(1).max(600).optional().nullable(),
+    first_due_date: z.string().regex(DATUM).optional().nullable(),
+    payment_amount: z.number().positive().max(10_000_000).optional().nullable(),
+    vat_rate: z.number().min(0).max(100).default(0),
+    down_payment: z.number().min(0).max(100_000_000).default(0),
+    residual_value: z.number().min(0).max(100_000_000).default(0),
+    day_count: z.enum(["ACT/365", "ACT/360", "30E/360"]).default("ACT/365"),
+    interest_from: z.string().regex(DATUM).optional().nullable(),
+    vehicle_id: z.string().uuid().optional().nullable(),
+    document_path: z.string().max(500).optional().nullable(),
+    note: z.string().max(2000).optional().nullable(),
+    /* Kontokorent — úverový rámec na účte. */
+    credit_limit: z.number().positive().max(100_000_000).optional().nullable(),
+    bank_account_id: z.string().uuid().optional().nullable(),
+    account_iban: z.string().trim().max(40).optional().nullable(),
+    limit_fee_yearly: z.number().min(0).max(10_000_000).optional().nullable(),
+    valid_until: z.string().regex(DATUM).optional().nullable(),
+    interest_period: z.enum(["mesacne", "stvrtrocne"]).optional().nullable(),
+    /**
+     * Kalendár prečítaný z nahratého dokumentu. Keď príde, je záväzný a nič sa
+     * nedopočítava — sú to sumy, ktoré banka naozaj stiahne.
+     */
+    splatky: z
+      .array(
+        z.object({
+          number: z.number().int().min(1).max(600),
+          due_date: z.string().regex(DATUM),
+          amount: z.number().min(0).max(10_000_000),
+          principal_part: z.number().min(0).max(10_000_000),
+          interest_part: z.number().min(0).max(10_000_000),
+          vat_amount: z.number().min(0).max(10_000_000),
+          remaining_principal: z.number().min(0).max(100_000_000),
+        }),
+      )
+      .max(600)
+      .optional(),
+  })
+  .superRefine((d, ctx) => {
+    if (d.kind === "kontokorent") {
+      if (!d.credit_limit) {
+        ctx.addIssue({ code: "custom", path: ["credit_limit"], message: "Zadajte úverový rámec." });
+      }
+      return;
+    }
+    if (!d.principal) {
+      ctx.addIssue({ code: "custom", path: ["principal"], message: "Zadajte financovanú sumu." });
+    }
+    if (!d.term_months) {
+      ctx.addIssue({ code: "custom", path: ["term_months"], message: "Zadajte počet splátok." });
+    }
+    if (!d.first_due_date) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["first_due_date"],
+        message: "Doplňte splatnosť prvej splátky.",
+      });
+    }
+  });
 
 /**
  * Uloží zmluvu a prepočíta kalendár.
@@ -94,6 +125,11 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await overClena(context, data.company_id);
+
+    if (data.kind === "kontokorent") {
+      const { ulozKontokorent } = await import("./kontokorent.server");
+      return await ulozKontokorent(supabase, userId, data);
+    }
 
     /*
      * Odkiaľ je kalendár. Nové riadky z dokumentu prebíjajú všetko; keď
@@ -120,10 +156,10 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
       variable_symbol: data.variable_symbol || null,
       counterparty_hint: data.counterparty_hint || null,
       currency: data.currency,
-      principal: data.principal,
+      principal: data.principal!,
       interest_rate: data.interest_rate,
-      term_months: data.term_months,
-      first_due_date: data.first_due_date,
+      term_months: data.term_months!,
+      first_due_date: data.first_due_date!,
       payment_amount: data.payment_amount ?? null,
       vat_rate: data.vat_rate,
       down_payment: data.down_payment,
@@ -134,6 +170,12 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
       document_path: data.document_path || null,
       note: data.note || null,
       schedule_source: zdrojKalendara,
+      // Zmluva, ktorá bola kontokorentom a stala sa úverom, si rámec nenesie.
+      credit_limit: null,
+      bank_account_id: null,
+      limit_fee_yearly: null,
+      valid_until: null,
+      interest_period: null,
     };
 
     let zmluvaId = data.id ?? null;
@@ -301,6 +343,25 @@ export const zoznamZmluvFn = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id),
     ]);
 
+    // Kontokorent nemá splátky — ukazuje sa limit a čerpanie podľa zostatku účtu.
+    const uctyKontokorentov = [
+      ...new Set(
+        ((zmluvy ?? []) as any[])
+          .filter((z) => z.kind === "kontokorent" && z.bank_account_id)
+          .map((z) => z.bank_account_id as string),
+      ),
+    ];
+    const zostatky = new Map<string, { balance: unknown; booked_balance: unknown }>();
+    if (uctyKontokorentov.length) {
+      const { data: ucty } = await supabase
+        .from("bank_accounts")
+        .select("id, balance, booked_balance")
+        .eq("company_id", data.company_id)
+        .in("id", uctyKontokorentov);
+      for (const u of (ucty ?? []) as any[]) zostatky.set(u.id, u);
+    }
+    const { stavRamca } = await import("./kontokorent");
+
     const podlaZmluvy = new Map<string, any[]>();
     for (const s of (splatky ?? []) as any[]) {
       if (!podlaZmluvy.has(s.contract_id)) podlaZmluvy.set(s.contract_id, []);
@@ -325,6 +386,13 @@ export const zoznamZmluvFn = createServerFn({ method: "POST" })
           dalsiaSplatka: dalsia
             ? { due_date: dalsia.due_date, amount: cislo(dalsia.amount) }
             : null,
+          ramec:
+            z.kind === "kontokorent"
+              ? stavRamca(
+                  cislo(z.credit_limit),
+                  z.bank_account_id ? (zostatky.get(z.bank_account_id) ?? null) : null,
+                )
+              : null,
         };
       }),
     };

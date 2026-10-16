@@ -12,7 +12,7 @@ export const DRUHY_OSTATNYCH = [
   { kluc: "danovy_urad", nazov: "Daňový úrad" },
   { kluc: "socialna_zdravotna", nazov: "Sociálna / zdravotná poisťovňa" },
   { kluc: "zmluva", nazov: "Zmluva" },
-  { kluc: "leasing_uver", nazov: "Leasing a úver" },
+  { kluc: "leasing_uver", nazov: "Leasing, úver a kontokorent" },
   { kluc: "uradny_list", nazov: "Úradný list" },
   { kluc: "ine", nazov: "Iné" },
 ] as const;
@@ -188,17 +188,21 @@ export function navrhniZamestnanca(
 }
 
 /**
- * Zmluva o leasingu či úvere, ktorej sa doklad týka — podľa čísla zmluvy
- * v texte. Krátke čísla (menej ako 4 znaky) sa nehľadajú, našli by sa všade.
+ * Zmluva o leasingu, úvere či kontokorente, ktorej sa doklad týka — podľa
+ * čísla zmluvy v texte. Krátke čísla (menej ako 4 znaky) sa nehľadajú, našli
+ * by sa všade. Kontokorent sa spozná aj podľa IBAN účtu, na ktorom je rámec —
+ * listy banky o rámci (zmena sadzby, predĺženie) číslo zmluvy často nemajú.
  */
 export function navrhniZmluvu(
   text: string,
-  zmluvy: { id: string; contract_number: string | null }[],
+  zmluvy: { id: string; contract_number: string | null; account_iban?: string | null }[],
 ): string | null {
   const t = naPorovnanie(text).replace(/ /g, "");
   const zhody = zmluvy.filter((z) => {
     const c = naPorovnanie(z.contract_number).replace(/ /g, "");
-    return c.length >= 4 && t.includes(c);
+    if (c.length >= 4 && t.includes(c)) return true;
+    const iban = naPorovnanie(z.account_iban).replace(/ /g, "");
+    return iban.length >= 15 && t.includes(iban);
   });
   return zhody.length === 1 ? zhody[0]!.id : null;
 }

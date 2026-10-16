@@ -266,3 +266,157 @@ describe("spojPrecitane", () => {
     expect(spojPrecitane([zKalendara])).toBe(zKalendara);
   });
 });
+
+describe("kontokorent", () => {
+  // Kontokorent je úver tiež — model ho rád vráti ako "uver". Rozhoduje to,
+  // že nemá splátkový kalendár a má úverový rámec k bežnému účtu.
+  const kontokorent = {
+    kind: "kontokorent",
+    product_name: "Kontokorentný úver",
+    provider_name: "Slovenská sporiteľňa, a.s.",
+    contract_number: "KTK/2026/0042",
+    credit_limit: "20 000,00",
+    interest_rate: 7.5,
+    limit_fee: 100,
+    limit_fee_period: "ročne",
+    valid_until: "2027-09-30",
+    interest_period: "mesačne",
+    account_iban: "SK31 1200 0000 1987 4263 7541",
+    splatky: [],
+  };
+
+  it("vyčíta limit, sadzbu, poplatok, platnosť a účet", () => {
+    const z = normalizujOdpoved(kontokorent);
+    expect(z.kind).toBe("kontokorent");
+    expect(z.credit_limit).toBe(20000);
+    expect(z.interest_rate).toBe(7.5);
+    expect(z.limit_fee_yearly).toBe(100);
+    expect(z.valid_until).toBe("2027-09-30");
+    expect(z.interest_period).toBe("mesacne");
+    expect(z.account_iban).toBe("SK3112000000198742637541");
+    expect(z.vyhrady).toEqual([]);
+  });
+
+  it("nemá kalendár ani istinu — ani keď model nejaké riadky pošle", () => {
+    const z = normalizujOdpoved({
+      ...kontokorent,
+      principal: 20000,
+      term_months: 12,
+      first_due_date: "2026-10-31",
+      splatky: [{ number: 1, due_date: "2026-10-31", amount: 125 }],
+    });
+    expect(z.kind).toBe("kontokorent");
+    expect(z.splatky).toEqual([]);
+    expect(z.principal).toBeNull();
+    expect(z.term_months).toBeNull();
+    expect(z.first_due_date).toBeNull();
+    expect(z.vyhrady.join(" ")).not.toMatch(/Splatnosť prvej splátky|splátkový kalendár/);
+  });
+
+  it.each([
+    ["uver", "Kontokorentný úver k podnikateľskému účtu"],
+    ["uver", "Povolené prečerpanie bežného účtu"],
+    ["uver", "Kontokorentní úvěr"],
+    [null, "Revolvingový úver k bežnému účtu"],
+    ["uver", "Úverový rámec k bežnému účtu"],
+  ])("druh %s s produktom „%s“ je kontokorent", (kind, product_name) => {
+    const z = normalizujOdpoved({ kind, product_name, credit_limit: 5000 });
+    expect(z.kind).toBe("kontokorent");
+  });
+
+  it("úver bez kalendára s rámcom je kontokorent, aj keď ho model nazve úverom", () => {
+    const z = normalizujOdpoved({
+      kind: "uver",
+      credit_limit: 15000,
+      account_iban: "SK2075000000004034449488",
+      interest_rate: 6,
+      splatky: [],
+    });
+    expect(z.kind).toBe("kontokorent");
+    expect(z.credit_limit).toBe(15000);
+  });
+
+  it("úver so splátkovým kalendárom ostáva úverom", () => {
+    const z = normalizujOdpoved({
+      kind: "uver",
+      product_name: "Podnikateľský úver",
+      principal: 200,
+      splatky: [
+        { number: 1, due_date: "2025-02-20", amount: 110, principal_part: 100, interest_part: 10 },
+        { number: 2, due_date: "2025-03-20", amount: 110, principal_part: 100, interest_part: 10 },
+      ],
+    });
+    expect(z.kind).toBe("uver");
+    expect(z.splatky).toHaveLength(2);
+    expect(z.credit_limit).toBeNull();
+  });
+
+  it("úver s počtom splátok, ale bez rámca, ostáva úverom", () => {
+    const z = normalizujOdpoved({ kind: "uver", principal: 23500, term_months: 72, splatky: [] });
+    expect(z.kind).toBe("uver");
+  });
+
+  it("leasing sa na kontokorent neprepíše ani s rámcom", () => {
+    const z = normalizujOdpoved({ kind: "leasing", principal: 30000, credit_limit: 30000 });
+    expect(z.kind).toBe("leasing");
+  });
+
+  it("pohyblivú sadzbu sčíta z referenčnej a marže a popis dá do poznámky", () => {
+    const z = normalizujOdpoved({
+      ...kontokorent,
+      interest_rate: null,
+      reference_rate_name: "3M EURIBOR",
+      reference_rate_value: 2.05,
+      interest_margin: 2.5,
+    });
+    expect(z.interest_rate).toBe(4.55);
+    expect(z.note).toMatch(/3M EURIBOR \+ marža 2,5 %/);
+  });
+
+  it("bez hodnoty referenčnej uloží maržu a povie to", () => {
+    const z = normalizujOdpoved({
+      ...kontokorent,
+      interest_rate: null,
+      reference_rate_name: "1M EURIBOR",
+      interest_margin: 3,
+    });
+    expect(z.interest_rate).toBe(3);
+    expect(z.vyhrady.join(" ")).toMatch(/len marža 3 %/);
+  });
+
+  it("mesačný poplatok prepočíta na rok, percento z limitu tiež", () => {
+    expect(
+      normalizujOdpoved({ ...kontokorent, limit_fee: 10, limit_fee_period: "mesačne" })
+        .limit_fee_yearly,
+    ).toBe(120);
+    expect(
+      normalizujOdpoved({ ...kontokorent, limit_fee: null, limit_fee_percent: 0.5 })
+        .limit_fee_yearly,
+    ).toBe(100);
+  });
+
+  it("povie, čo chýba — limit a účet", () => {
+    const z = normalizujOdpoved({ kind: "kontokorent", interest_rate: 8 });
+    expect(z.vyhrady.join(" ")).toMatch(/Úverový rámec/);
+    expect(z.vyhrady.join(" ")).toMatch(/Číslo účtu/);
+    expect(jePouzitelna(z)).toBe(false);
+    expect(jePouzitelna(normalizujOdpoved({ kind: "kontokorent", credit_limit: 1000 }))).toBe(true);
+  });
+
+  it("zmluva o kontokorente a sadzobník sa spoja bez kalendára", () => {
+    const zmluva = normalizujOdpoved({ ...kontokorent, account_iban: null, interest_rate: null });
+    const sadzobnik = normalizujOdpoved({
+      kind: "uver",
+      interest_rate: 7.5,
+      account_iban: "SK3112000000198742637541",
+      splatky: [],
+    });
+    const z = spojPrecitane([sadzobnik, zmluva]);
+    expect(z.kind).toBe("kontokorent");
+    expect(z.splatky).toEqual([]);
+    expect(z.credit_limit).toBe(20000);
+    expect(z.interest_rate).toBe(7.5);
+    expect(z.account_iban).toBe("SK3112000000198742637541");
+    expect(z.vyhrady).toEqual([]);
+  });
+});

@@ -188,3 +188,21 @@ describe("väzby iných dokladov", () => {
     expect(r.map((x) => [x.id, x.po])).toEqual([["2", true], ["5", false]]);
   });
 });
+
+describe("väzba dokladu na kontokorent", () => {
+  const zmluvy = [
+    { id: "kk", contract_number: null, account_iban: "SK3112000000198742637541" },
+    { id: "uv", contract_number: "UZF/24/81047", account_iban: null },
+  ];
+  it("list banky o rámci bez čísla zmluvy spozná podľa IBAN účtu", () => {
+    expect(
+      navrhniZmluvu(
+        "Oznámenie o zmene úrokovej sadzby kontokorentu k účtu SK31 1200 0000 1987 4263 7541",
+        zmluvy,
+      ),
+    ).toBe("kk");
+  });
+  it("číslo zmluvy úveru vedie na úver, nie na kontokorent", () => {
+    expect(navrhniZmluvu("Splátkový kalendár k zmluve UZF/24/81047", zmluvy)).toBe("uv");
+  });
+});

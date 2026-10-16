@@ -1,5 +1,5 @@
 /**
- * Vyčítanie zmluvy o leasingu alebo úvere z nahratého dokumentu.
+ * Vyčítanie zmluvy o leasingu, úvere alebo kontokorente z nahratého dokumentu.
  *
  * Zmluva a splátkový kalendár chodia ako PDF od banky. Čítať sa dá oboje:
  * hlavička (financovaná suma, úrok, počet splátok…) aj samotné riadky
@@ -16,8 +16,15 @@ import { jePouzitelna, normalizujOdpoved, type PrecitanaZmluva } from "./financo
 
 export type { PrecitanaSplatka, PrecitanaZmluva } from "./financovanie-citanie";
 
-const PROMPT = `Si asistent pre slovenské a české zmluvy o leasingu a o úvere. Z dokumentu prečítaj údaje o financovaní.
+const PROMPT = `Si asistent pre slovenské a české zmluvy o leasingu, o úvere a o kontokorentnom úvere. Z dokumentu prečítaj údaje o financovaní.
 Dokument môže byť samotná zmluva, samotný splátkový kalendár, alebo oboje spolu — pozbieraj, čo tam je.
+
+Najprv urči druh (kind):
+- "leasing" — leasingová zmluva (finančný alebo operatívny leasing).
+- "uver" — úver alebo pôžička so splátkovým kalendárom: požičaná suma sa spláca pravidelnými splátkami.
+- "kontokorent" — kontokorentný úver, povolené prečerpanie (debet) bežného účtu, úverový rámec k bežnému účtu, revolvingový úver k účtu, české „kontokorentní úvěr". Nemá splátkový kalendár ani pevné splátky: firma čerpá do výšky limitu na účte a banka strhne úrok z vyčerpanej sumy.
+Kontokorent spoznáš podľa toho, že zmluva hovorí o limite/rámci na konkrétnom bežnom účte a nie o splátkach.
+product_name = názov produktu tak, ako je v zmluve (napr. "Kontokorentný úver", "Podnikateľský úver", "Finančný leasing").
 
 Pravidlá:
 - Dátumy vracaj vo formáte YYYY-MM-DD.
@@ -30,12 +37,21 @@ Pravidlá:
 - interest_from = deň čerpania / poskytnutia úveru, teda odkedy banka počíta úrok.
 - first_due_date = splatnosť prvej splátky z kalendára.
 - term_months = počet riadkov splátkového kalendára.
-- kind = "leasing" pri leasingovej zmluve, "uver" pri úvere alebo pôžičke.
 - Splátkový kalendár prepíš CELÝ, riadok po riadku, aj keď má 60 riadkov. Neskracuj ho a nedopĺňaj riadky, ktoré v dokumente nie sú.
 - Keď údaj v dokumente nie je, daj null. Nič si nevymýšľaj a nič nedopočítavaj.
 
+Iba pri kontokorente (inak null):
+- credit_limit = úverový rámec / limit kontokorentu. principal nechaj null, splatky [].
+- account_iban = IBAN bežného účtu, ku ktorému je rámec zriadený.
+- interest_rate = výsledná ročná úroková sadzba v %, ak je v zmluve uvedená. Ak je sadzba pohyblivá („referenčná sadzba + marža“),
+  daj do reference_rate_name názov referenčnej sadzby (napr. "3M EURIBOR", "PRIBOR"), do reference_rate_value jej hodnotu, ak je uvedená, a do interest_margin maržu v %.
+- limit_fee = poplatok za úverový rámec / za nevyčerpaný limit / záväzková provízia ako suma, limit_fee_period = "mesacne"|"stvrtrocne"|"rocne".
+  Ak je poplatok uvedený ako percento z limitu, daj ho do limit_fee_percent (ročne) a limit_fee nechaj null.
+- valid_until = do kedy rámec platí (dátum splatnosti / ukončenia rámca). Pri dobe neurčitej null.
+- interest_period = "mesacne" alebo "stvrtrocne" — ako často banka úrok strhne.
+
 Vráť VÝHRADNE JSON bez sprievodného textu:
-{"kind":"leasing"|"uver"|null,"provider_name":string|null,"contract_number":string|null,"variable_symbol":string|null,"currency":"EUR","principal":number|null,"interest_rate":number|null,"term_months":number|null,"first_due_date":"YYYY-MM-DD"|null,"interest_from":"YYYY-MM-DD"|null,"payment_amount":number|null,"vat_rate":number|null,"down_payment":number|null,"residual_value":number|null,"splatky":[{"number":number,"due_date":"YYYY-MM-DD","amount":number,"principal_part":number,"interest_part":number,"vat_amount":number,"remaining_principal":number}]}`;
+{"kind":"leasing"|"uver"|"kontokorent"|null,"product_name":string|null,"provider_name":string|null,"contract_number":string|null,"variable_symbol":string|null,"currency":"EUR","principal":number|null,"interest_rate":number|null,"term_months":number|null,"first_due_date":"YYYY-MM-DD"|null,"interest_from":"YYYY-MM-DD"|null,"payment_amount":number|null,"vat_rate":number|null,"down_payment":number|null,"residual_value":number|null,"credit_limit":number|null,"account_iban":string|null,"reference_rate_name":string|null,"reference_rate_value":number|null,"interest_margin":number|null,"limit_fee":number|null,"limit_fee_period":"mesacne"|"stvrtrocne"|"rocne"|null,"limit_fee_percent":number|null,"valid_until":"YYYY-MM-DD"|null,"interest_period":"mesacne"|"stvrtrocne"|null,"splatky":[{"number":number,"due_date":"YYYY-MM-DD","amount":number,"principal_part":number,"interest_part":number,"vat_amount":number,"remaining_principal":number}]}`;
 
 export async function precitajZmluvu(base64: string, mimeType: string): Promise<PrecitanaZmluva> {
   const { aiVision } = await import("./ai.server");

@@ -45,6 +45,23 @@ const db = supabaseAdmin as any;
 const web = () => (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
 
 /** Kľúč na podpis odkazu na odhlásenie — ten istý zdroj ako pri Tesla OAuth. */
+/*
+  Postupné zapínanie: kým je `DENNY_SUHRN_LEN` vyplnené (adresy oddelené
+  čiarkou), súhrn ide len na tieto adresy. Prázdne = všetkým. Najprv ho
+  dostáva len majiteľ, aby sa overil naostro skôr, než pôjde zákazníkom.
+*/
+export function jeVZozname(
+  email: string | null | undefined,
+  zoznam = process.env.DENNY_SUHRN_LEN,
+): boolean {
+  const povolene = (zoznam ?? "")
+    .split(",")
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+  if (!povolene.length) return true;
+  return !!email && povolene.includes(email.trim().toLowerCase());
+}
+
 export function klucSuhrnu(): string {
   const k = process.env.PAYMENT_SECRETS_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!k) throw new Error("Chýba kľúč na podpis.");
@@ -250,7 +267,11 @@ export async function spustiDennySuhrn(
     profily
       .filter(
         (p) =>
-          p.denny_suhrn !== false && p.email && !p.deletion_requested_at && !zakazani.has(p.id),
+          p.denny_suhrn !== false &&
+          p.email &&
+          !p.deletion_requested_at &&
+          !zakazani.has(p.id) &&
+          jeVZozname(p.email),
       )
       .map((p) => [p.id, p]),
   );
