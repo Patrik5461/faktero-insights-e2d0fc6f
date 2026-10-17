@@ -1,19 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/efaktura")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — eFaktúra — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — eFaktúra — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Ako si vo Fakteri zapnúť eFaktúru cez Portál finančnej správy, ako ju odoslať a ako spracovať prijaté eFaktúry.",
+        ),
       },
-      { property: "og:title", content: "Pomoc — eFaktúra — Faktero" },
+      { property: "og:title", content: preloz(match.context.jazyk, "Pomoc — eFaktúra — Faktero") },
       {
         property: "og:description",
-        content: "eFaktúra vo Fakteri — zapnutie, odoslanie a príjem cez sieť Peppol.",
+        content: preloz(
+          match.context.jazyk,
+          "eFaktúra vo Fakteri — zapnutie, odoslanie a príjem cez sieť Peppol.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/efaktura" },
     ],
@@ -139,8 +146,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Dobropis odchádza ako samostatný doklad <strong>CreditNote (typ 381)</strong> a nesie číslo
-          pôvodnej faktúry (pole BT-25) — finančná správa to vyžaduje. Bez vyplnenej pôvodnej
+          Dobropis odchádza ako samostatný doklad <strong>CreditNote (typ 381)</strong> a nesie
+          číslo pôvodnej faktúry (pole BT-25) — finančná správa to vyžaduje. Bez vyplnenej pôvodnej
           faktúry ho Faktero neodošle. Opravný doklad s kladnou sumou (napríklad vrátenie opravy
           podľa § 25a) ide ako ťarchopis (typ 383).
         </p>
@@ -174,7 +181,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · eFaktúra"
       title="Elektronická fakturácia (eFaktúra)"
       intro={

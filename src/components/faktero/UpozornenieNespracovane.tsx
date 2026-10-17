@@ -3,9 +3,11 @@ import { Link } from "@tanstack/react-router";
 import { Inbox } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { useT } from "@/lib/i18n/useT";
 
 /** Pruh nad zoznamom: koľko dokladov čaká v Nespracovaných na zaradenie. */
 export function UpozornenieNespracovane() {
+  const { t } = useT();
   const [pocet, setPocet] = useState(0);
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -23,8 +25,14 @@ export function UpozornenieNespracovane() {
       className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100"
     >
       <Inbox className="h-4 w-4" />
-      {pocet === 1 ? "1 doklad čaká" : pocet < 5 ? `${pocet} doklady čakajú` : `${pocet} dokladov čaká`} v
-      Nespracovaných — otvoriť a zaradiť
+      {t(
+        pocet === 1
+          ? "1 doklad čaká v Nespracovaných — otvoriť a zaradiť"
+          : pocet < 5
+            ? "{n} doklady čakajú v Nespracovaných — otvoriť a zaradiť"
+            : "{n} dokladov čaká v Nespracovaných — otvoriť a zaradiť",
+        { n: pocet },
+      )}
     </Link>
   );
 }

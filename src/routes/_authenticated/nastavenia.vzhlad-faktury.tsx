@@ -7,25 +7,32 @@ import { toast } from "sonner";
 import { ImageUp, Loader2, Save, Trash2 } from "lucide-react";
 import { krajinaDane, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/nastavenia/vzhlad-faktury")({
-  head: () => ({
+  head: ({ match }) => {
+    const j = match.context.jazyk ?? "sk";
+    return {
     meta: [
-      { title: "Vzhľad faktúry — Faktero" },
+      { title: preloz(j, "Vzhľad faktúry — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          j,
           "Nastavte logo, pečiatku, farbu akcentu a pätičku, ktoré sa použijú na PDF faktúrach a cenových ponukách.",
+        ),
       },
-      { property: "og:title", content: "Vzhľad faktúry — Faktero" },
+      { property: "og:title", content: preloz(j, "Vzhľad faktúry — Faktero") },
       {
         property: "og:description",
-        content: "Logo, farba a pätička na faktúrach vašej firmy.",
+        content: preloz(j, "Logo, farba a pätička na faktúrach vašej firmy."),
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
-  }),
+    };
+  },
   component: InvoiceAppearancePage,
 });
 
@@ -62,6 +69,7 @@ const PRESETS = [
 ];
 
 function InvoiceAppearancePage() {
+  const { t } = useT();
   const [companyId] = useState<string | null>(() => getActiveCompanyId());
   const [c, setC] = useState<any>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -99,8 +107,8 @@ function InvoiceAppearancePage() {
       .then(({ data }) => setStampPreview(data?.signedUrl ?? null));
   }, [c?.stamp_url]);
 
-  if (!companyId) return <PageBody>Chýba aktívna firma.</PageBody>;
-  if (!c) return <PageBody>Načítavam…</PageBody>;
+  if (!companyId) return <PageBody>{t("Chýba aktívna firma.")}</PageBody>;
+  if (!c) return <PageBody>{t("Načítavam…")}</PageBody>;
 
   // Náhľad počíta so základnou sadzbou krajiny firmy, nie s pevným číslom.
   const krajinaNahladu = krajinaDane(c.country);
@@ -112,11 +120,11 @@ function InvoiceAppearancePage() {
   async function onUpload(file: File, druh: Obrazok) {
     const o = OBRAZKY[druh];
     if (!/^image\/(png|jpeg)$/.test(file.type)) {
-      toast.error("Podporované sú len PNG alebo JPG obrázky.");
+      toast.error(t("Podporované sú len PNG alebo JPG obrázky."));
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      toast.error(`${o.nazov} môže mať najviac 2 MB.`);
+      toast.error(t(druh === "logo" ? "Logo môže mať najviac 2 MB." : "Pečiatka môže mať najviac 2 MB."));
       return;
     }
     setUploading(druh);
@@ -139,7 +147,7 @@ function InvoiceAppearancePage() {
     if (upErr) return toast.error(upErr.message);
     if (old && old !== path) await supabase.storage.from("company-logos").remove([old]);
     setC({ ...c, [o.stlpec]: path });
-    toast.success(o.nahrate);
+    toast.success(t(o.nahrate));
   }
 
   async function removeImage(druh: Obrazok) {
@@ -152,7 +160,7 @@ function InvoiceAppearancePage() {
     if (error) return toast.error(error.message);
     if (old) await supabase.storage.from("company-logos").remove([old]);
     setC({ ...c, [o.stlpec]: null });
-    toast.success(o.odstranene);
+    toast.success(t(o.odstranene));
   }
 
   async function save() {
@@ -168,34 +176,34 @@ function InvoiceAppearancePage() {
       .eq("id", companyId!);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Uložené — nové PDF sa vygenerujú s týmto vzhľadom.");
+    toast.success(t("Uložené — nové PDF sa vygenerujú s týmto vzhľadom."));
   }
 
   return (
     <>
       <PageHeader
-        title="Vzhľad faktúry"
-        description="Logo, pečiatka, farba akcentu a pätička na PDF faktúrach a cenových ponukách."
+        title={t("Vzhľad faktúry")}
+        description={t("Logo, pečiatka, farba akcentu a pätička na PDF faktúrach a cenových ponukách.")}
       />
       <PageBody>
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_minmax(0,320px)]">
           <div className="grid gap-6">
             {/* Logo */}
             <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-sm font-semibold">Logo firmy</h2>
+              <h2 className="text-sm font-semibold">{t("Logo firmy")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                PNG alebo JPG, max. 2 MB. Zobrazí sa v ľavom hornom rohu dokladu.
+                {t("PNG alebo JPG, max. 2 MB. Zobrazí sa v ľavom hornom rohu dokladu.")}
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-4">
                 <div className="flex h-20 w-40 items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 p-2">
                   {logoPreview ? (
                     <img
                       src={logoPreview}
-                      alt="Logo firmy na faktúre"
+                      alt={t("Logo firmy na faktúre")}
                       className="max-h-full max-w-full object-contain"
                     />
                   ) : (
-                    <span className="text-xs text-muted-foreground">Bez loga</span>
+                    <span className="text-xs text-muted-foreground">{t("Bez loga")}</span>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -220,14 +228,14 @@ function InvoiceAppearancePage() {
                     ) : (
                       <ImageUp className="h-4 w-4" />
                     )}
-                    Nahrať logo
+                    {t("Nahrať logo")}
                   </button>
                   {c.logo_url && (
                     <button
                       onClick={() => removeImage("logo")}
                       className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-secondary px-3 text-sm"
                     >
-                      <Trash2 className="h-4 w-4" /> Odstrániť
+                      <Trash2 className="h-4 w-4" /> {t("Odstrániť")}
                     </button>
                   )}
                 </div>
@@ -239,27 +247,28 @@ function InvoiceAppearancePage() {
                   onChange={(e) => setC({ ...c, invoice_show_logo: e.target.checked })}
                   className="h-4 w-4 rounded border-input"
                 />
-                Zobrazovať logo na dokladoch
+                {t("Zobrazovať logo na dokladoch")}
               </label>
             </section>
 
             {/* Pečiatka */}
             <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-sm font-semibold">Pečiatka a podpis</h2>
+              <h2 className="text-sm font-semibold">{t("Pečiatka a podpis")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Najlepšie PNG s priehľadným pozadím, max. 2 MB. Zobrazí sa na faktúre a cenovej
-                ponuke vedľa súm, kde sa doklad podpisuje.
+                {t(
+                  "Najlepšie PNG s priehľadným pozadím, max. 2 MB. Zobrazí sa na faktúre a cenovej ponuke vedľa súm, kde sa doklad podpisuje.",
+                )}
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-4">
                 <div className="flex h-24 w-40 items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 p-2">
                   {stampPreview ? (
                     <img
                       src={stampPreview}
-                      alt="Pečiatka firmy na faktúre"
+                      alt={t("Pečiatka firmy na faktúre")}
                       className="max-h-full max-w-full object-contain"
                     />
                   ) : (
-                    <span className="text-xs text-muted-foreground">Bez pečiatky</span>
+                    <span className="text-xs text-muted-foreground">{t("Bez pečiatky")}</span>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -284,14 +293,14 @@ function InvoiceAppearancePage() {
                     ) : (
                       <ImageUp className="h-4 w-4" />
                     )}
-                    Nahrať pečiatku
+                    {t("Nahrať pečiatku")}
                   </button>
                   {c.stamp_url && (
                     <button
                       onClick={() => removeImage("stamp")}
                       className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-secondary px-3 text-sm"
                     >
-                      <Trash2 className="h-4 w-4" /> Odstrániť
+                      <Trash2 className="h-4 w-4" /> {t("Odstrániť")}
                     </button>
                   )}
                 </div>
@@ -303,15 +312,15 @@ function InvoiceAppearancePage() {
                   onChange={(e) => setC({ ...c, invoice_show_stamp: e.target.checked })}
                   className="h-4 w-4 rounded border-input"
                 />
-                Zobrazovať pečiatku na dokladoch
+                {t("Zobrazovať pečiatku na dokladoch")}
               </label>
             </section>
 
             {/* Farba */}
             <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-sm font-semibold">Farba akcentu</h2>
+              <h2 className="text-sm font-semibold">{t("Farba akcentu")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Používa sa na linky, hlavičku tabuľky a sumu k úhrade.
+                {t("Používa sa na linky, hlavičku tabuľky a sumu k úhrade.")}
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <input
@@ -319,7 +328,7 @@ function InvoiceAppearancePage() {
                   value={accent}
                   onChange={(e) => setC({ ...c, invoice_accent_color: e.target.value })}
                   className="h-9 w-14 cursor-pointer rounded-md border border-input bg-background p-1"
-                  aria-label="Farba akcentu"
+                  aria-label={t("Farba akcentu")}
                 />
                 <input
                   value={accent}
@@ -339,7 +348,7 @@ function InvoiceAppearancePage() {
                       style={{ backgroundColor: p.value }}
                       aria-hidden
                     />
-                    {p.label}
+                    {t(p.label)}
                   </button>
                 ))}
               </div>
@@ -347,9 +356,9 @@ function InvoiceAppearancePage() {
 
             {/* Pätička */}
             <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-sm font-semibold">Pätička dokladu</h2>
+              <h2 className="text-sm font-semibold">{t("Pätička dokladu")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Napr. zápis v OR SR, poznámka o prenose daňovej povinnosti, ďakovná veta.
+                {t("Napr. zápis v OR SR, poznámka o prenose daňovej povinnosti, ďakovná veta.")}
               </p>
               <textarea
                 value={c.invoice_footer ?? ""}
@@ -370,11 +379,12 @@ function InvoiceAppearancePage() {
                 ) : (
                   <Save className="h-4 w-4" />
                 )}
-                Uložiť vzhľad
+                {t("Uložiť vzhľad")}
               </button>
               <p className="mt-2 text-xs text-muted-foreground">
-                Už vygenerované PDF sa prepíšu pri ďalšom otvorení alebo cez „Pregenerovať PDF“ v
-                detaile faktúry.
+                {t(
+                  "Už vygenerované PDF sa prepíšu pri ďalšom otvorení alebo cez „Pregenerovať PDF“ v detaile faktúry.",
+                )}
               </p>
             </div>
           </div>
@@ -382,13 +392,13 @@ function InvoiceAppearancePage() {
           {/* Live náhľad */}
           <aside className="rounded-xl border border-border bg-card p-4">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Náhľad
+              {t("Náhľad")}
             </div>
             <div className="mt-3 rounded-lg border border-border bg-background p-4 text-[10px] leading-relaxed">
               <div className="h-[3px] w-12 rounded-full" style={{ backgroundColor: accent }} />
               <div className="mt-3 flex items-start justify-between gap-3">
                 {(c.invoice_show_logo ?? true) && logoPreview ? (
-                  <img src={logoPreview} alt="Náhľad loga" className="h-8 object-contain" />
+                  <img src={logoPreview} alt={t("Náhľad loga")} className="h-8 object-contain" />
                 ) : (
                   <span className="text-[11px] font-semibold">{c.name}</span>
                 )}
@@ -424,7 +434,7 @@ function InvoiceAppearancePage() {
               </div>
               {(c.invoice_show_stamp ?? true) && stampPreview && (
                 <div className="mt-3">
-                  <img src={stampPreview} alt="Náhľad pečiatky" className="h-12 object-contain" />
+                  <img src={stampPreview} alt={t("Náhľad pečiatky")} className="h-12 object-contain" />
                 </div>
               )}
               {c.invoice_footer && (

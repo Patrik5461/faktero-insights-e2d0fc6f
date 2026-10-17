@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { useT } from "@/lib/i18n/useT";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import {
   naplanuj,
@@ -33,6 +34,7 @@ export function ImportOdberatelovOkno({
   onClose: () => void;
   onHotovo: () => void;
 }) {
+  const { t } = useT();
   useZatvorNaEscape(onClose);
   const [subor, setSubor] = useState<File | null>(null);
   const [vysledok, setVysledok] = useState<Vysledok | null>(null);
@@ -53,7 +55,11 @@ export function ImportOdberatelovOkno({
         .range(od, po),
     )
       .then(setExistujuci)
-      .catch((e) => toast.error(`Existujúcich odberateľov sa nepodarilo načítať: ${e.message}`));
+      .catch((e) =>
+        toast.error(
+          t("Existujúcich odberateľov sa nepodarilo načítať: {chyba}", { chyba: e.message }),
+        ),
+      );
   }, [companyId]);
 
   async function nacitaj(f: File) {
@@ -65,7 +71,7 @@ export function ImportOdberatelovOkno({
       if (r.druh === "tabulka") setMapovanie(r.mapovanie);
     } catch (e) {
       setVysledok(null);
-      toast.error(`Súbor sa nepodarilo prečítať: ${(e as Error).message}`);
+      toast.error(t("Súbor sa nepodarilo prečítať: {chyba}", { chyba: (e as Error).message }));
     } finally {
       setCitam(false);
     }
@@ -80,8 +86,7 @@ export function ImportOdberatelovOkno({
     () => (existujuci ? naplanuj(odberatelia, existujuci, doplnit, rola) : null),
     [odberatelia, existujuci, doplnit, rola],
   );
-  const kto = rola === "dodavatel" ? "dodávateľov" : "odberateľov";
-  const komu = rola === "dodavatel" ? "dodávateľom" : "odberateľom";
+  const dod = rola === "dodavatel";
 
   /*
     Dodávatelia z prijatých faktúr: kto chodí s faktúrami, toho netreba písať
@@ -123,7 +128,9 @@ export function ImportOdberatelovOkno({
         .filter((x): x is Odberatel => Boolean(x));
       setVysledok({ druh: "xml", zdroj: "Prijaté faktúry vo Fakteri", odberatelia: zoznam });
     } catch (e) {
-      toast.error(`Prijaté faktúry sa nepodarilo načítať: ${(e as Error).message}`);
+      toast.error(
+        t("Prijaté faktúry sa nepodarilo načítať: {chyba}", { chyba: (e as Error).message }),
+      );
     } finally {
       setCitam(false);
     }
@@ -159,17 +166,31 @@ export function ImportOdberatelovOkno({
         doplnenych += 1;
       }
       toast.success(
-        `Import hotový: ${zalozenych} nových ${kto}` +
-          (doplnenych ? `, doplnené údaje u ${doplnenych}` : "") +
-          ".",
+        doplnenych
+          ? t(
+              dod
+                ? "Import hotový: {n} nových dodávateľov, doplnené údaje u {d}."
+                : "Import hotový: {n} nových odberateľov, doplnené údaje u {d}.",
+              { n: zalozenych, d: doplnenych },
+            )
+          : t(
+              dod
+                ? "Import hotový: {n} nových dodávateľov."
+                : "Import hotový: {n} nových odberateľov.",
+              { n: zalozenych },
+            ),
       );
       onHotovo();
       onClose();
     } catch (e) {
       toast.error(
-        `Import sa zastavil: ${(e as Error).message}` +
+        t("Import sa zastavil: {chyba}", { chyba: (e as Error).message }) +
           (zalozenych || doplnenych
-            ? ` Dovtedy sa založilo ${zalozenych} a doplnilo ${doplnenych} — opätovný import ich už nezaloží druhýkrát.`
+            ? " " +
+              t(
+                "Dovtedy sa založilo {z} a doplnilo {d} — opätovný import ich už nezaloží druhýkrát.",
+                { z: zalozenych, d: doplnenych },
+              )
             : ""),
         { duration: 12000 },
       );
@@ -187,15 +208,17 @@ export function ImportOdberatelovOkno({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={`Import ${kto}`}
+        aria-label={t(dod ? "Import dodávateľov" : "Import odberateľov")}
         className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-border p-4">
-          <h2 className="flex-1 text-lg font-semibold">Import {kto}</h2>
+          <h2 className="flex-1 text-lg font-semibold">
+            {t(dod ? "Import dodávateľov" : "Import odberateľov")}
+          </h2>
           <button
             onClick={onClose}
-            aria-label="Zavrieť"
+            aria-label={t("Zavrieť")}
             className="rounded-md p-1 hover:bg-secondary"
           >
             <X className="h-4 w-4" />
@@ -205,7 +228,7 @@ export function ImportOdberatelovOkno({
         <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4 text-sm">
           <div>
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90">
-              <Upload className="h-4 w-4" /> {subor ? "Vybrať iný súbor" : "Vybrať súbor"}
+              <Upload className="h-4 w-4" /> {subor ? t("Vybrať iný súbor") : t("Vybrať súbor")}
               <input
                 type="file"
                 accept=".xml,.csv,.txt,.tsv,.xlsx,.xls,.ods"
@@ -223,37 +246,43 @@ export function ImportOdberatelovOkno({
                 onClick={zPrijatychFaktur}
                 className="ml-2 inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 hover:bg-secondary"
               >
-                Načítať z prijatých faktúr
+                {t("Načítať z prijatých faktúr")}
               </button>
             )}
             {subor && <span className="ml-3 text-muted-foreground">{subor.name}</span>}
             <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
               <li>
-                <strong>Pohoda:</strong> adresár cez Súbor → Dátová komunikácia → XML export
-                (Adresár), alebo XML export faktúr —{" "}
-                {kto === "dodávateľov" ? "dodávatelia" : "odberatelia"} sa vyberú z nich. Funguje aj
-                tabuľka adresára uložená do Excelu.
+                <strong>Pohoda:</strong>{" "}
+                {t(
+                  dod
+                    ? "adresár cez Súbor → Dátová komunikácia → XML export (Adresár), alebo XML export faktúr — dodávatelia sa vyberú z nich. Funguje aj tabuľka adresára uložená do Excelu."
+                    : "adresár cez Súbor → Dátová komunikácia → XML export (Adresár), alebo XML export faktúr — odberatelia sa vyberú z nich. Funguje aj tabuľka adresára uložená do Excelu.",
+                )}
               </li>
               <li>
-                <strong>Money S3:</strong> XML export adresára.
+                <strong>Money S3:</strong> {t("XML export adresára.")}
               </li>
               <li>
-                <strong>SuperFaktúra, iDoklad, Fakturoid, KROS, Omega a ďalšie:</strong> export
-                klientov do CSV alebo Excelu. Stĺpce sa rozpoznajú podľa hlavičky a dajú sa upraviť.
+                <strong>{t("SuperFaktúra, iDoklad, Fakturoid, KROS, Omega a ďalšie:")}</strong>{" "}
+                {t(
+                  "export klientov do CSV alebo Excelu. Stĺpce sa rozpoznajú podľa hlavičky a dajú sa upraviť.",
+                )}
               </li>
             </ul>
           </div>
 
-          {citam && <p className="text-muted-foreground">Čítam súbor…</p>}
+          {citam && <p className="text-muted-foreground">{t("Čítam súbor…")}</p>}
 
           {vysledok?.druh === "tabulka" && (
             <div className="rounded-lg border border-border p-3">
-              <div className="mb-2 font-medium">Stĺpce ({vysledok.zdroj})</div>
+              <div className="mb-2 font-medium">
+                {t("Stĺpce ({zdroj})", { zdroj: vysledok.zdroj })}
+              </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 {vysledok.hlavicka.map((h, i) => (
                   <label key={i} className="flex min-w-0 items-center gap-2">
                     <span className="w-1/2 truncate text-muted-foreground" title={h}>
-                      {h || `Stĺpec ${i + 1}`}
+                      {h || t("Stĺpec {n}", { n: i + 1 })}
                     </span>
                     <select
                       value={mapovanie[i] ?? ""}
@@ -268,10 +297,10 @@ export function ImportOdberatelovOkno({
                       }}
                       className="min-w-0 flex-1 rounded border border-input bg-background px-2 py-1"
                     >
-                      <option value="">— neimportovať —</option>
+                      <option value="">{t("— neimportovať —")}</option>
                       {POLIA.map((p) => (
                         <option key={p.pole} value={p.pole}>
-                          {p.nazov}
+                          {t(p.nazov)}
                         </option>
                       ))}
                     </select>
@@ -279,17 +308,22 @@ export function ImportOdberatelovOkno({
                 ))}
               </div>
               {chybaNazov && (
-                <p className="mt-2 text-xs text-destructive">Vyberte stĺpec s názvom.</p>
+                <p className="mt-2 text-xs text-destructive">{t("Vyberte stĺpec s názvom.")}</p>
               )}
             </div>
           )}
 
           {vysledok && !citam && odberatelia.length === 0 && !chybaNazov && (
             <p className="rounded-lg border border-dashed border-border p-4 text-center text-muted-foreground">
-              V súbore sme nenašli žiadnych {kto}
-              {vysledok.druh === "xml"
-                ? " — je to export adresára alebo faktúr z Pohody či Money S3?"
-                : "."}
+              {t(
+                dod
+                  ? vysledok.druh === "xml"
+                    ? "V súbore sme nenašli žiadnych dodávateľov — je to export adresára alebo faktúr z Pohody či Money S3?"
+                    : "V súbore sme nenašli žiadnych dodávateľov."
+                  : vysledok.druh === "xml"
+                    ? "V súbore sme nenašli žiadnych odberateľov — je to export adresára alebo faktúr z Pohody či Money S3?"
+                    : "V súbore sme nenašli žiadnych odberateľov.",
+              )}
             </p>
           )}
 
@@ -297,17 +331,28 @@ export function ImportOdberatelovOkno({
             <>
               <div className="rounded-lg bg-muted/40 p-3">
                 <div>
-                  Zdroj: <strong>{vysledok?.zdroj}</strong> · v súbore {odberatelia.length}
-                  {plan.duplicityVSubore ? ` (z toho ${plan.duplicityVSubore} opakovaní)` : ""}
+                  {t("Zdroj:")} <strong>{t(vysledok?.zdroj ?? "")}</strong> ·{" "}
+                  {t("v súbore {n}", { n: odberatelia.length })}
+                  {plan.duplicityVSubore
+                    ? " " + t("(z toho {n} opakovaní)", { n: plan.duplicityVSubore })
+                    : ""}
                 </div>
                 <div className="mt-1">
-                  Založí sa <strong>{plan.novi.length}</strong> nových. Už ich máte{" "}
-                  <strong>{plan.existujuci}</strong>
+                  {t("Založí sa {n} nových. Už ich máte {e}", {
+                    n: plan.novi.length,
+                    e: plan.existujuci,
+                  })}
                   {doplnit
-                    ? ` — údaje sa doplnia u ${plan.doplnit.length}`
+                    ? " — " + t("údaje sa doplnia u {n}", { n: plan.doplnit.length })
                     : plan.pridanaRola
-                      ? ` — ${plan.pridanaRola} z nich sú zatiaľ len ${rola === "dodavatel" ? "odberatelia, označia sa aj ako dodávatelia" : "dodávatelia, označia sa aj ako odberatelia"}`
-                      : " — tých sa import nedotkne"}
+                      ? " — " +
+                        t(
+                          dod
+                            ? "{n} z nich sú zatiaľ len odberatelia, označia sa aj ako dodávatelia"
+                            : "{n} z nich sú zatiaľ len dodávatelia, označia sa aj ako odberatelia",
+                          { n: plan.pridanaRola },
+                        )
+                      : " — " + t("tých sa import nedotkne")}
                   .
                 </div>
                 <label className="mt-2 flex items-start gap-2">
@@ -318,9 +363,15 @@ export function ImportOdberatelovOkno({
                     onChange={(e) => setDoplnit(e.target.checked)}
                   />
                   <span>
-                    Existujúcim {komu} doplniť chýbajúce údaje
+                    {t(
+                      dod
+                        ? "Existujúcim dodávateľom doplniť chýbajúce údaje"
+                        : "Existujúcim odberateľom doplniť chýbajúce údaje",
+                    )}
                     <span className="block text-xs text-muted-foreground">
-                      Vyplnené údaje sa neprepíšu, doplnia sa len prázdne (napr. e-mail, IČ DPH).
+                      {t(
+                        "Vyplnené údaje sa neprepíšu, doplnia sa len prázdne (napr. e-mail, IČ DPH).",
+                      )}
                     </span>
                   </span>
                 </label>
@@ -331,11 +382,11 @@ export function ImportOdberatelovOkno({
                   <table className="w-full min-w-[36rem] text-xs">
                     <thead className="bg-muted/40 text-left uppercase tracking-wide text-muted-foreground">
                       <tr>
-                        <th className="p-2">Názov</th>
-                        <th className="p-2">IČO</th>
-                        <th className="p-2">IČ DPH</th>
-                        <th className="p-2">Adresa</th>
-                        <th className="p-2">E-mail</th>
+                        <th className="p-2">{t("Názov")}</th>
+                        <th className="p-2">{t("IČO")}</th>
+                        <th className="p-2">{t("IČ DPH")}</th>
+                        <th className="p-2">{t("Adresa")}</th>
+                        <th className="p-2">{t("E-mail")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -356,7 +407,7 @@ export function ImportOdberatelovOkno({
                   </table>
                   {plan.novi.length > 50 && (
                     <p className="p-2 text-xs text-muted-foreground">
-                      … a ďalších {plan.novi.length - 50}.
+                      {t("… a ďalších {n}.", { n: plan.novi.length - 50 })}
                     </p>
                   )}
                 </div>
@@ -370,7 +421,7 @@ export function ImportOdberatelovOkno({
             onClick={onClose}
             className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
           >
-            Zrušiť
+            {t("Zrušiť")}
           </button>
           <button
             onClick={importuj}
@@ -383,10 +434,15 @@ export function ImportOdberatelovOkno({
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {importujem
-              ? "Importujem…"
+              ? t("Importujem…")
               : plan && (plan.novi.length || plan.doplnit.length)
-                ? `Importovať (${plan.novi.length} nových${plan.doplnit.length ? `, ${plan.doplnit.length} doplniť` : ""})`
-                : "Importovať"}
+                ? plan.doplnit.length
+                  ? t("Importovať ({n} nových, {d} doplniť)", {
+                      n: plan.novi.length,
+                      d: plan.doplnit.length,
+                    })
+                  : t("Importovať ({n} nových)", { n: plan.novi.length })
+                : t("Importovať")}
           </button>
         </div>
       </div>

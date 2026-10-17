@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +14,7 @@ import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/prijate-zalohove/")({
-  head: () => ({ meta: [{ title: "Prijaté zálohové faktúry — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté zálohové faktúry — Faktero") }] }),
   component: PrijateZalohovePage,
 });
 
@@ -37,6 +39,7 @@ type Riadok = {
  * nezaplatila dvakrát.
  */
 function PrijateZalohovePage() {
+  const { t } = useT();
   const navigate = useNavigate();
   const [rows, setRows] = useState<Riadok[]>([]);
   const [zuctovane, setZuctovane] = useState<Record<string, string>>({});
@@ -102,7 +105,7 @@ function PrijateZalohovePage() {
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", mazane.id);
     if (error) return toast.error(error.message);
-    toast.success("Zálohová faktúra vymazaná");
+    toast.success(t("Zálohová faktúra vymazaná"));
     setMazane(null);
     await load();
   }
@@ -110,57 +113,56 @@ function PrijateZalohovePage() {
   return (
     <>
       <PageHeader
-        title="Prijaté zálohové faktúry"
-        description="Zálohy, ktoré vám vystavili dodávatelia. Platia sa, daň prinesie až ostrá faktúra."
+        title={t("Prijaté zálohové faktúry")}
+        description={t("Zálohy, ktoré vám vystavili dodávatelia. Platia sa, daň prinesie až ostrá faktúra.")}
         action={
           <div className="flex flex-wrap gap-2">
-            <NahratDoklad druh="proforma" label="Nahrať zálohovú faktúru" />
+            <NahratDoklad druh="proforma" label={t("Nahrať zálohovú faktúru")} />
             <Link
               to="/prijate-faktury/nova"
               search={{ typ: "proforma" } as never}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Nová prijatá zálohová faktúra
+              <Plus className="h-4 w-4" /> {t("Nová prijatá zálohová faktúra")}
             </Link>
           </div>
         }
       />
       <PageBody>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Statistika label="Počet záloh" hodnota={String(rows.length)} />
-          <Statistika label="Celková suma" hodnota={fmt(sucty.spolu)} />
-          <Statistika label="Nezaplatené" hodnota={fmt(sucty.nezaplatene)} />
+          <Statistika label={t("Počet záloh")} hodnota={String(rows.length)} />
+          <Statistika label={t("Celková suma")} hodnota={fmt(sucty.spolu)} />
+          <Statistika label={t("Nezaplatené")} hodnota={fmt(sucty.nezaplatene)} />
         </div>
 
         <div className="mt-6">
           {loading ? (
             <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-              Načítavam…
+              {t("Načítavam…")}
             </div>
           ) : rows.length === 0 ? (
             <div className="rounded-xl border border-border bg-card p-10 text-center">
-              <div className="font-medium">Zatiaľ žiadna prijatá záloha</div>
+              <div className="font-medium">{t("Zatiaľ žiadna prijatá záloha")}</div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Zálohovú faktúru od dodávateľa zaevidujete rovnako ako bežnú — pri druhu dokladu
-                vyberiete „Prijatá zálohová faktúra“.
+                {t("Zálohovú faktúru od dodávateľa zaevidujete rovnako ako bežnú — pri druhu dokladu vyberiete „Prijatá zálohová faktúra“.")}
               </p>
             </div>
           ) : (
             <ResponsiveTable
               items={rows}
               loading={loading}
-              emptyText="Zatiaľ žiadna prijatá záloha."
+              emptyText={t("Zatiaľ žiadna prijatá záloha.")}
               desktop={
                 <div className="overflow-x-auto rounded-xl border border-border bg-card">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-foreground">
-                        <th className="p-3">Číslo</th>
-                        <th className="p-3">Dodávateľ</th>
-                        <th className="p-3">Vystavená</th>
-                        <th className="p-3">Splatnosť</th>
-                        <th className="p-3 text-right">Suma</th>
-                        <th className="p-3">Stav</th>
+                        <th className="p-3">{t("Číslo")}</th>
+                        <th className="p-3">{t("Dodávateľ")}</th>
+                        <th className="p-3">{t("Vystavená")}</th>
+                        <th className="p-3">{t("Splatnosť")}</th>
+                        <th className="p-3 text-right">{t("Suma")}</th>
+                        <th className="p-3">{t("Stav")}</th>
                         <th className="p-3" />
                       </tr>
                     </thead>
@@ -191,7 +193,7 @@ function PrijateZalohovePage() {
                                 setMazane(r);
                               }}
                               className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                              title="Vymazať"
+                              title={t("Vymazať")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -210,7 +212,7 @@ function PrijateZalohovePage() {
                   subtitle={r.supplier_name}
                   amount={formatujMenu(r.amount_total, r.currency)}
                   status={<StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />}
-                  meta={`splatná ${datumNaDoklade(r.due_date)}`}
+                  meta={t("splatná {datum}", { datum: datumNaDoklade(r.due_date) })}
                 />
               )}
             />
@@ -219,13 +221,16 @@ function PrijateZalohovePage() {
 
         <ConfirmDialog
           open={!!mazane}
-          title="Vymazať zálohovú faktúru?"
+          title={t("Vymazať zálohovú faktúru?")}
           message={
             mazane
-              ? `${mazane.invoice_number} od ${mazane.supplier_name} sa skryje zo zoznamu.`
+              ? t("{cislo} od {dodavatel} sa skryje zo zoznamu.", {
+                  cislo: mazane.invoice_number,
+                  dodavatel: mazane.supplier_name,
+                })
               : ""
           }
-          confirmLabel="Vymazať"
+          confirmLabel={t("Vymazať")}
           onConfirm={zmaz}
           onCancel={() => setMazane(null)}
         />
@@ -235,23 +240,24 @@ function PrijateZalohovePage() {
 }
 
 function StavZalohy({ riadok, zuctovanaNa }: { riadok: Riadok; zuctovanaNa?: string }) {
+  const { t } = useT();
   if (zuctovanaNa) {
     return (
       <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600">
-        Zúčtovaná — {zuctovanaNa}
+        {t("Zúčtovaná — {cislo}", { cislo: zuctovanaNa })}
       </span>
     );
   }
   if (riadok.payment_date) {
     return (
       <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">
-        Zaplatená
+        {t("Zaplatená")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600">
-      Čaká na úhradu
+      {t("Čaká na úhradu")}
     </span>
   );
 }

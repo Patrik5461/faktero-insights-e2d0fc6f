@@ -16,6 +16,7 @@ import {
   zmazPrilohuFn,
 } from "@/lib/faktero/faktura-prilohy.functions";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
 
 export type Priloha = {
   id: string;
@@ -59,6 +60,7 @@ export function PrilohyFaktury({
   mozeMenit: boolean;
   onZmena?: (pocet: number) => void;
 }) {
+  const { t } = useT();
   const nacitaj = useServerFn(prilohyFakturyFn);
   const nahraj = useServerFn(nahrajPrilohuFn);
   const odkaz = useServerFn(odkazNaPrilohuFn);
@@ -91,7 +93,7 @@ export function PrilohyFaktury({
       for (const subor of Array.from(subory)) {
         const chyba = chybaPrilohy(subor, pribudlo);
         if (chyba) {
-          toast.error(chyba);
+          toast.error(t(chyba));
           continue;
         }
         await nahraj({
@@ -107,7 +109,7 @@ export function PrilohyFaktury({
       }
       await obnov();
     } catch (e) {
-      toast.error(hlaska(e, "Prílohu sa nepodarilo nahrať."));
+      toast.error(t(hlaska(e, "Prílohu sa nepodarilo nahrať.")));
       await obnov();
     } finally {
       setPracujem(false);
@@ -119,18 +121,18 @@ export function PrilohyFaktury({
       const r = await odkaz({ data: { id: p.id, druh } });
       window.open(r.url, "_blank", "noopener");
     } catch (e) {
-      toast.error(hlaska(e, "Prílohu sa nepodarilo otvoriť."));
+      toast.error(t(hlaska(e, "Prílohu sa nepodarilo otvoriť.")));
     }
   }
 
   async function odstran(p: Priloha) {
-    if (!(await potvrd(`Zmazať prílohu ${p.name}?`))) return;
+    if (!(await potvrd(t("Zmazať prílohu {nazov}?", { nazov: p.name })))) return;
     try {
       await zmaz({ data: { id: p.id, druh } });
-      toast.success("Príloha zmazaná.");
+      toast.success(t("Príloha zmazaná."));
       await obnov();
     } catch (e) {
-      toast.error(hlaska(e, "Prílohu sa nepodarilo zmazať."));
+      toast.error(t(hlaska(e, "Prílohu sa nepodarilo zmazať.")));
     }
   }
 
@@ -138,7 +140,7 @@ export function PrilohyFaktury({
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-          <Paperclip className="h-3.5 w-3.5" /> Prílohy
+          <Paperclip className="h-3.5 w-3.5" /> {t("Prílohy")}
           {prilohy.length > 0 && <span className="normal-case">({prilohy.length})</span>}
         </div>
         {mozeMenit && (
@@ -153,7 +155,7 @@ export function PrilohyFaktury({
             ) : (
               <Upload className="h-3.5 w-3.5" />
             )}
-            Pridať prílohu
+            {t("Pridať prílohu")}
           </button>
         )}
       </div>
@@ -187,16 +189,18 @@ export function PrilohyFaktury({
               nadSchrankou ? "border-primary bg-primary/5" : "border-border"
             }`}
           >
-            {druh === "invoice"
-              ? "Pretiahnite sem dodací list, zmluvu alebo výkaz — alebo ich vyberte tlačidlom."
-              : druh === "quote"
-                ? "Pretiahnite sem výkres, špecifikáciu alebo fotky — alebo ich vyberte tlačidlom."
-                : druh === "purchase_invoice" || druh === "expense"
-                  ? "Pretiahnite sem dodací list, druhú stranu alebo výkaz — alebo ich vyberte tlačidlom."
-                  : "Pretiahnite sem objednávku zákazníka alebo podklady — alebo ich vyberte tlačidlom."}
+            {t(
+              druh === "invoice"
+                ? "Pretiahnite sem dodací list, zmluvu alebo výkaz — alebo ich vyberte tlačidlom."
+                : druh === "quote"
+                  ? "Pretiahnite sem výkres, špecifikáciu alebo fotky — alebo ich vyberte tlačidlom."
+                  : druh === "purchase_invoice" || druh === "expense"
+                    ? "Pretiahnite sem dodací list, druhú stranu alebo výkaz — alebo ich vyberte tlačidlom."
+                    : "Pretiahnite sem objednávku zákazníka alebo podklady — alebo ich vyberte tlačidlom.",
+            )}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-muted-foreground">Doklad nemá prílohy.</p>
+          <p className="mt-3 text-sm text-muted-foreground">{t("Doklad nemá prílohy.")}</p>
         )
       ) : (
         <ul className="mt-3 divide-y divide-border/60">
@@ -216,7 +220,7 @@ export function PrilohyFaktury({
               <button
                 type="button"
                 onClick={() => void stiahni(p)}
-                aria-label={`Stiahnuť ${p.name}`}
+                aria-label={t("Stiahnuť {nazov}", { nazov: p.name })}
                 className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
               >
                 <Download className="h-4 w-4" />
@@ -225,7 +229,7 @@ export function PrilohyFaktury({
                 <button
                   type="button"
                   onClick={() => void odstran(p)}
-                  aria-label={`Zmazať ${p.name}`}
+                  aria-label={t("Zmazať {nazov}", { nazov: p.name })}
                   className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />

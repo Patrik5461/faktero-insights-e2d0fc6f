@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,11 +92,12 @@ const NAZOV_TYPU: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/_authenticated/faktury/$id/")({
-  head: () => ({ meta: [{ title: "Detail faktúry — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Detail faktúry — Faktero") }] }),
   component: InvoiceDetail,
 });
 
 function InvoiceDetail() {
+  const { t } = useT();
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [inv, setInv] = useState<any>(null);
@@ -158,19 +161,19 @@ function InvoiceDetail() {
   async function handleRequestApproval() {
     if (!inv) return;
     const suggested = inv.customer_email ?? "";
-    const email = await zadaj("E-mail zákazníka pre schválenie faktúry", {
+    const email = await zadaj(t("E-mail zákazníka pre schválenie faktúry"), {
       predvolene: suggested,
       typ: "email",
       placeholder: "zakaznik@firma.sk",
-    }, { potvrdit: "Poslať žiadosť" });
+    }, { potvrdit: t("Poslať žiadosť") });
     if (!email) return;
     setApprovalBusy(true);
     try {
       await requestApprovalFn({ data: { invoiceId: inv.id, recipientEmail: email.trim() } });
-      toast.success("Žiadosť o schválenie bola odoslaná.");
+      toast.success(t("Žiadosť o schválenie bola odoslaná."));
       load();
     } catch (e: any) {
-      toast.error(friendlyError(e, "Nepodarilo sa odoslať žiadosť."));
+      toast.error(t(friendlyError(e, "Nepodarilo sa odoslať žiadosť.")));
     } finally {
       setApprovalBusy(false);
     }
@@ -191,12 +194,12 @@ function InvoiceDetail() {
       }
       toast.success(
         r.reused
-          ? "Platobný odkaz skopírovaný."
-          : "Platobný odkaz bol vytvorený. PDF bude pri ďalšom stiahnutí pregenerované.",
+          ? t("Platobný odkaz skopírovaný.")
+          : t("Platobný odkaz bol vytvorený. PDF bude pri ďalšom stiahnutí pregenerované."),
       );
       load();
     } catch (e: any) {
-      toast.error(friendlyError(e) ?? e.message);
+      toast.error(t(friendlyError(e) ?? e.message));
     } finally {
       setPayBusy(false);
     }
@@ -207,11 +210,11 @@ function InvoiceDetail() {
     setSyncBusy(true);
     try {
       const r = await syncPayFn({ data: { companyId: inv.company_id, invoiceId: id } });
-      if (r.paid) toast.success("Platba prebehla. Faktúra označená ako uhradená.");
-      else toast.success(`Stav platby: ${r.state || "neznámy"}`);
+      if (r.paid) toast.success(t("Platba prebehla. Faktúra označená ako uhradená."));
+      else toast.success(t("Stav platby: {stav}", { stav: r.state || t("neznámy") }));
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Synchronizácia zlyhala.");
+      toast.error(e?.message ?? t("Synchronizácia zlyhala."));
     } finally {
       setSyncBusy(false);
     }
@@ -232,18 +235,18 @@ function InvoiceDetail() {
     /* V testovacom režime doklad do siete Peppol nejde — potvrdenie aj hláška
        to musia povedať, inak človek verí, že odberateľ faktúru dostal. */
     const otazka = efakturaTest
-      ? `eFaktúra beží v TESTOVACOM režime.\n\nFaktúra ${inv.invoice_number ?? ""} odíde len do skúšobného prostredia — odberateľovi nepríde nič. Pošlite mu ju aj e-mailom.\n\nPokračovať v skúšobnom odoslaní?`
-      : `Odoslať faktúru ${inv.invoice_number ?? ""} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.`;
+      ? t("eFaktúra beží v TESTOVACOM režime.\n\nFaktúra {cislo} odíde len do skúšobného prostredia — odberateľovi nepríde nič. Pošlite mu ju aj e-mailom.\n\nPokračovať v skúšobnom odoslaní?", { cislo: inv.invoice_number ?? "" })
+      : t("Odoslať faktúru {cislo} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.", { cislo: inv.invoice_number ?? "" });
     if (!(await potvrd(otazka))) return;
     setEfakturaBusy(true);
     try {
       const r: any = await posliEfakturu({ data: { company_id: inv.company_id, invoice_id: id } });
       if (efakturaTest) {
-        toast.warning("Odoslané len do testovacieho prostredia — odberateľovi nepríde.", {
+        toast.warning(t("Odoslané len do testovacieho prostredia — odberateľovi nepríde."), {
           duration: 10000,
         });
       } else {
-        toast.success(`Odoslané cez eFaktúru — stav ${r.status}.`);
+        toast.success(t("Odoslané cez eFaktúru — stav {stav}.", { stav: r.status }));
       }
       efakturaQuery.refetch();
       dorucenieQuery.refetch();
@@ -289,8 +292,8 @@ function InvoiceDetail() {
     setXmlBusy(true);
     try {
       const r = await genXml({ data: { companyId: inv.company_id, invoiceId: id } });
-      if (r.valid) toast.success("eFaktúra XML vygenerovaná a validovaná.");
-      else toast.error(`XML vygenerovaná, ale s ${r.validationErrors.length} chybami validácie.`);
+      if (r.valid) toast.success(t("eFaktúra XML vygenerovaná a validovaná."));
+      else toast.error(t("XML vygenerovaná, ale s chybami validácie: {n}.", { n: r.validationErrors.length }));
       efakturaQuery.refetch();
     } catch (e) {
       toast.error((e as Error).message);
@@ -355,10 +358,10 @@ function InvoiceDetail() {
           datum_platby: (inv.paid_at ?? "").slice(0, 10) || new Date().toISOString().slice(0, 10),
         },
       });
-      toast.success(`Vystavený doklad ${doklad.invoice_number}`);
+      toast.success(t("Vystavený doklad {cislo}", { cislo: doklad.invoice_number }));
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Doklad sa nepodarilo vystaviť.");
+      toast.error(e?.message ?? t("Doklad sa nepodarilo vystaviť."));
     } finally {
       setVystavujemDoklad(false);
     }
@@ -502,7 +505,7 @@ function InvoiceDetail() {
       });
       setReminderOpen(true);
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa načítať upomienku");
+      toast.error(e?.message ?? t("Nepodarilo sa načítať upomienku"));
     }
   }
 
@@ -518,11 +521,11 @@ function InvoiceDetail() {
           message: reminderForm.message,
         },
       });
-      toast.success("Upomienka odoslaná");
+      toast.success(t("Upomienka odoslaná"));
       setReminderOpen(false);
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Odoslanie upomienky zlyhalo");
+      toast.error(e?.message ?? t("Odoslanie upomienky zlyhalo"));
     } finally {
       setReminderBusy(false);
     }
@@ -540,10 +543,10 @@ function InvoiceDetail() {
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
-      toast.success("Faktúra vymazaná");
+      toast.success(t("Faktúra vymazaná"));
       navigate({ to: "/faktury" });
     } catch (e: any) {
-      toast.error(friendlyError(e, "Chyba pri mazaní"));
+      toast.error(t(friendlyError(e, "Chyba pri mazaní")));
     } finally {
       setDeleteBusy(false);
       setDeleteOpen(false);
@@ -553,20 +556,20 @@ function InvoiceDetail() {
   async function setStatus(status: string) {
     // Production-readiness checks
     if (status === "paid" && inv?.status === "cancelled")
-      return toast.error("Stornovanú faktúru nemožno označiť ako uhradenú.");
+      return toast.error(t("Stornovanú faktúru nemožno označiť ako uhradenú."));
     if (status === "cancelled" && inv?.status === "paid") {
-      if (!(await potvrd("Faktúra je uhradená. Naozaj ju chcete stornovať?"))) return;
+      if (!(await potvrd(t("Faktúra je uhradená. Naozaj ju chcete stornovať?")))) return;
     }
     const patch: any = { status };
     if (status === "paid") patch.paid_at = new Date().toISOString();
     if (status === "cancelled") patch.cancelled_at = new Date().toISOString();
     if (status === "sent") patch.sent_at = new Date().toISOString();
     const { error } = await supabase.from("invoices").update(patch).eq("id", id);
-    if (error) return toast.error(friendlyError(error, error.message));
+    if (error) return toast.error(t(friendlyError(error, error.message)));
     toast.success(
       status === "issued"
-        ? `Faktúra ${inv?.invoice_number ?? ""} je vystavená.`
-        : "Stav aktualizovaný",
+        ? t("Faktúra {cislo} je vystavená.", { cislo: inv?.invoice_number ?? "" })
+        : t("Stav aktualizovaný"),
     );
     // Trigger webhook
     const event =
@@ -631,16 +634,16 @@ function InvoiceDetail() {
     try {
       const r = await genPdf({ data: { invoiceId: id } });
       if (!r?.signedUrl) {
-        toast.error("PDF sa nepodarilo vygenerovať.");
+        toast.error(t("PDF sa nepodarilo vygenerovať."));
         return;
       }
-      toast.success("PDF vygenerované.");
+      toast.success(t("PDF vygenerované."));
       const ok = triggerBrowserDownload(r.signedUrl, `${inv.invoice_number ?? "faktura"}.pdf`);
-      if (!ok) toast.error("PDF sa nepodarilo stiahnuť.");
+      if (!ok) toast.error(t("PDF sa nepodarilo stiahnuť."));
       load();
     } catch (e: any) {
       console.error("generateInvoicePdf failed", e);
-      toast.error(e?.message ?? "PDF sa nepodarilo vygenerovať.");
+      toast.error(e?.message ?? t("PDF sa nepodarilo vygenerovať."));
     } finally {
       setPdfBusy(false);
     }
@@ -667,10 +670,10 @@ function InvoiceDetail() {
     setPdfBusy(true);
     try {
       const url = await odkazNaPdf();
-      if (!url) return toast.error("PDF sa nepodarilo pripraviť.");
+      if (!url) return toast.error(t("PDF sa nepodarilo pripraviť."));
       setNahladUrl(url);
     } catch (e: any) {
-      toast.error(e?.message ?? "PDF sa nepodarilo pripraviť.");
+      toast.error(e?.message ?? t("PDF sa nepodarilo pripraviť."));
     } finally {
       setPdfBusy(false);
     }
@@ -681,14 +684,14 @@ function InvoiceDetail() {
     try {
       const signedUrl = await odkazNaPdf();
       if (!signedUrl) {
-        toast.error("PDF zatiaľ neexistuje.");
+        toast.error(t("PDF zatiaľ neexistuje."));
         return;
       }
       const ok = triggerBrowserDownload(signedUrl, `${inv.invoice_number ?? "faktura"}.pdf`);
-      if (!ok) toast.error("PDF sa nepodarilo stiahnuť.");
+      if (!ok) toast.error(t("PDF sa nepodarilo stiahnuť."));
     } catch (e: any) {
       console.error("downloadInvoicePdf failed", e);
-      toast.error(e?.message ?? "PDF sa nepodarilo stiahnuť.");
+      toast.error(e?.message ?? t("PDF sa nepodarilo stiahnuť."));
     } finally {
       setPdfBusy(false);
     }
@@ -710,9 +713,9 @@ function InvoiceDetail() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Pohoda XML stiahnuté");
+      toast.success(t("Pohoda XML stiahnuté"));
     } catch (e: any) {
-      toast.error(e?.message ?? "Export zlyhal");
+      toast.error(e?.message ?? t("Export zlyhal"));
     } finally {
       setExportBusy(false);
     }
@@ -722,10 +725,10 @@ function InvoiceDetail() {
     setCloneBusy(true);
     try {
       const r = await cloneFn({ data: { invoiceId: id } });
-      toast.success("Faktúra bola skopírovaná");
+      toast.success(t("Faktúra bola skopírovaná"));
       navigate({ to: "/faktury/$id/upravit", params: { id: r.id } });
     } catch (e: any) {
-      toast.error(friendlyError(e, e?.message ?? "Klonovanie zlyhalo"));
+      toast.error(t(friendlyError(e, e?.message ?? "Klonovanie zlyhalo")));
     } finally {
       setCloneBusy(false);
     }
@@ -735,17 +738,17 @@ function InvoiceDetail() {
     return (
       <PageBody>
         <div className="rounded-xl border border-border bg-card p-8 text-center text-sm">
-          <p>Táto faktúra v aktívnej firme neexistuje.</p>
+          <p>{t("Táto faktúra v aktívnej firme neexistuje.")}</p>
           <p className="mt-1 text-muted-foreground">
-            Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.
+            {t("Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.")}
           </p>
           <Link to="/faktury" className="mt-4 inline-block text-primary underline">
-            Späť na faktúry
+            {t("Späť na faktúry")}
           </Link>
         </div>
       </PageBody>
     );
-  if (!inv) return <PageBody>Načítavam…</PageBody>;
+  if (!inv) return <PageBody>{t("Načítavam…")}</PageBody>;
 
   const isOverdue =
     inv.status !== "paid" &&
@@ -772,11 +775,11 @@ function InvoiceDetail() {
     }
     setEmailForm({
       recipient_email: adresa ?? "",
-      subject: (company?.email_default_subject ?? "Faktúra {invoice_number}").replaceAll(
+      subject: (company?.email_default_subject ?? t("Faktúra {invoice_number}")).replaceAll(
         "{invoice_number}",
         inv.invoice_number,
       ),
-      message: (company?.email_default_message ?? "V prílohe posielame faktúru {invoice_number}.")
+      message: (company?.email_default_message ?? t("V prílohe posielame faktúru {invoice_number}."))
         .replaceAll("{invoice_number}", inv.invoice_number)
         .replaceAll("{due_date}", datumNaDoklade(inv.due_date))
         .replaceAll("{total}", formatujMenu(inv.total, inv.currency))
@@ -786,7 +789,7 @@ function InvoiceDetail() {
   }
   async function submitEmail() {
     if (!emailForm.recipient_email.trim()) {
-      toast.error("Zadajte adresu príjemcu.");
+      toast.error(t("Zadajte adresu príjemcu."));
       return;
     }
     setEmailBusy(true);
@@ -800,17 +803,17 @@ function InvoiceDetail() {
           s_prilohami: pocetPriloh > 0 && posielatPrilohy,
         },
       });
-      toast.success("E-mail odoslaný");
+      toast.success(t("E-mail odoslaný"));
       if (odoslane?.vynechane?.length) {
         /* Mail odišiel, ale nie celý — to sa musí povedať nahlas. */
-        toast.warning(`Do mailu sa nezmestili: ${odoslane.vynechane.join(", ")}`, {
+        toast.warning(t("Do mailu sa nezmestili: {subory}", { subory: odoslane.vynechane.join(", ") }), {
           duration: 12000,
         });
       }
       setEmailOpen(false);
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Odoslanie zlyhalo");
+      toast.error(e?.message ?? t("Odoslanie zlyhalo"));
     } finally {
       setEmailBusy(false);
     }
@@ -826,24 +829,24 @@ function InvoiceDetail() {
         />
       )}
       <PageHeader
-        title={`${inv.oprava_25a ? "Opravný doklad (§ 25a)" : (NAZOV_TYPU[inv.type as string] ?? "Faktúra")} ${inv.invoice_number}`}
-        description={`Vystavená ${datumNaDoklade(inv.issue_date)} · splatná ${popisSplatnosti(inv)}${predlzena(inv) && inv.predlzenie_poznamka ? ` — ${inv.predlzenie_poznamka}` : ""}`}
+        title={`${inv.oprava_25a ? t("Opravný doklad (§ 25a)") : t(NAZOV_TYPU[inv.type as string] ?? "Faktúra")} ${inv.invoice_number}`}
+        description={`${t("Vystavená {datum} · splatná {splatnost}", { datum: datumNaDoklade(inv.issue_date), splatnost: popisSplatnosti(inv) })}${predlzena(inv) && inv.predlzenie_poznamka ? ` — ${inv.predlzenie_poznamka}` : ""}`}
         action={
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={inv.status} />
             {inv.approval_status === "pending" && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
-                <ClockIcon className="h-3 w-3" /> Čaká na schválenie
+                <ClockIcon className="h-3 w-3" /> {t("Čaká na schválenie")}
               </span>
             )}
             {inv.approval_status === "approved" && (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400">
-                <CheckCircle2 className="h-3 w-3" /> Schválené
+                <CheckCircle2 className="h-3 w-3" /> {t("Schválené")}
               </span>
             )}
             {inv.approval_status === "rejected" && (
               <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800 dark:bg-red-500/15 dark:text-red-400">
-                <XCircle className="h-3 w-3" /> Zamietnuté
+                <XCircle className="h-3 w-3" /> {t("Zamietnuté")}
               </span>
             )}
 
@@ -853,7 +856,7 @@ function InvoiceDetail() {
               disabled={inv.status === "cancelled"}
               className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
             >
-              <Mail className="h-4 w-4" /> Odoslať e-mailom
+              <Mail className="h-4 w-4" /> {t("Odoslať e-mailom")}
             </button>
             {/*
               eFaktúra hneď vedľa e-mailu — v ponuke „Ďalšie akcie“ ju ľudia
@@ -869,17 +872,17 @@ function InvoiceDetail() {
                   className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600/10 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400"
                   title={
                     dorucenie?.delivered_at
-                      ? `Doručená ${new Date(dorucenie.delivered_at).toLocaleString("sk-SK")}`
+                      ? t("Doručená {kedy}", { kedy: new Date(dorucenie.delivered_at).toLocaleString("sk-SK") })
                       : dorucenie?.sent_at
-                        ? `Odoslaná ${new Date(dorucenie.sent_at).toLocaleString("sk-SK")}`
+                        ? t("Odoslaná {kedy}", { kedy: new Date(dorucenie.sent_at).toLocaleString("sk-SK") })
                         : undefined
                   }
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   {dorucenie?.delivered_at || dorucenie?.status === "delivered"
-                    ? "eFaktúra doručená"
-                    : "eFaktúra odoslaná"}
-                  {efakturaTest ? " (test)" : ""}
+                    ? t("eFaktúra doručená")
+                    : t("eFaktúra odoslaná")}
+                  {efakturaTest ? ` (${t("test")})` : ""}
                 </span>
               ) : (
                 <button
@@ -889,10 +892,10 @@ function InvoiceDetail() {
                 >
                   <Send className="h-4 w-4" />
                   {efakturaBusy
-                    ? "Odosielam…"
+                    ? t("Odosielam…")
                     : efakturaTest
-                      ? "Odoslať eFaktúru (test)"
-                      : "Odoslať eFaktúru"}
+                      ? t("Odoslať eFaktúru (test)")
+                      : t("Odoslať eFaktúru")}
                 </button>
               ))}
             <button
@@ -900,7 +903,7 @@ function InvoiceDetail() {
               disabled={pdfBusy}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
             >
-              <Eye className="h-4 w-4" /> Náhľad
+              <Eye className="h-4 w-4" /> {t("Náhľad")}
             </button>
             <button
               onClick={inv.pdf_url ? handleDownload : handleGenerate}
@@ -908,7 +911,7 @@ function InvoiceDetail() {
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
             >
               {inv.pdf_url ? <Download className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-              {pdfBusy ? "…" : inv.pdf_url ? "Stiahnuť PDF" : "Vygenerovať PDF"}
+              {pdfBusy ? "…" : inv.pdf_url ? t("Stiahnuť PDF") : t("Vygenerovať PDF")}
             </button>
             {/*
               Upraviť sa dá aj vystavená a odoslaná faktúra — formulár to vždy
@@ -922,7 +925,7 @@ function InvoiceDetail() {
                 className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
               >
                 <Pencil className="h-4 w-4" />
-                {inv.status === "draft" ? "Upraviť" : "Opraviť faktúru"}
+                {inv.status === "draft" ? t("Upraviť") : t("Opraviť faktúru")}
               </Link>
             )}
             {inv.status !== "cancelled" && (
@@ -937,7 +940,7 @@ function InvoiceDetail() {
                 className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
               >
                 <Undo2 className="h-4 w-4" />
-                Vystaviť dobropis
+                {t("Vystaviť dobropis")}
               </Link>
             )}
             {/* Ťarchopis — dodatočné zvýšenie ceny k tej istej faktúre (§ 25). */}
@@ -945,11 +948,11 @@ function InvoiceDetail() {
               <Link
                 to="/faktury/nova"
                 search={{ type: "debit_note", opravuje: id } as any}
-                title="Dodatočné zvýšenie ceny k tejto faktúre — opravná faktúra so zvýšením základu dane"
+                title={t("Dodatočné zvýšenie ceny k tejto faktúre — opravná faktúra so zvýšením základu dane")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
               >
                 <Plus className="h-4 w-4" />
-                Vystaviť ťarchopis
+                {t("Vystaviť ťarchopis")}
               </Link>
             )}
 
@@ -958,36 +961,36 @@ function InvoiceDetail() {
               <DropdownMenuTrigger asChild>
                 <button
                   className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-sm hover:bg-secondary"
-                  aria-label="Ďalšie akcie"
-                  title="Ďalšie akcie"
+                  aria-label={t("Ďalšie akcie")}
+                  title={t("Ďalšie akcie")}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel>Stav faktúry</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("Stav faktúry")}</DropdownMenuLabel>
                 {inv.status !== "sent" && inv.status !== "paid" && (
                   <DropdownMenuItem
                     onClick={() => setStatus("sent")}
-                    title="Použite, ak ste faktúru odoslali mimo Faktera (poštou, osobne). Po odoslaní emailom sa stav nastaví automaticky."
+                    title={t("Použite, ak ste faktúru odoslali mimo Faktera (poštou, osobne). Po odoslaní emailom sa stav nastaví automaticky.")}
                   >
-                    <Send className="mr-2 h-4 w-4" /> Odoslané iným spôsobom
+                    <Send className="mr-2 h-4 w-4" /> {t("Odoslané iným spôsobom")}
                   </DropdownMenuItem>
                 )}
                 {inv.status !== "paid" && (
                   <DropdownMenuItem onClick={() => setStatus("paid")}>
-                    <CheckCircle2 className="mr-2 h-4 w-4" /> Označiť ako uhradenú
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> {t("Označiť ako uhradenú")}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={handleGenerate} disabled={pdfBusy}>
-                  <RefreshCw className="mr-2 h-4 w-4" /> Pregenerovať PDF
+                  <RefreshCw className="mr-2 h-4 w-4" /> {t("Pregenerovať PDF")}
                 </DropdownMenuItem>
                 {inv.status !== "cancelled" && (
                   <DropdownMenuItem
                     onClick={() => setStatus("cancelled")}
                     className="text-destructive focus:text-destructive"
                   >
-                    <Ban className="mr-2 h-4 w-4" /> Stornovať
+                    <Ban className="mr-2 h-4 w-4" /> {t("Stornovať")}
                   </DropdownMenuItem>
                 )}
 
@@ -995,12 +998,12 @@ function InvoiceDetail() {
                   inv.approval_status !== "approved" && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuLabel>Schvaľovanie</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t("Schvaľovanie")}</DropdownMenuLabel>
                       <DropdownMenuItem onClick={handleRequestApproval} disabled={approvalBusy}>
                         <Send className="mr-2 h-4 w-4" />
                         {inv.approval_status === "pending"
-                          ? "Poslať znova na schválenie"
-                          : "Poslať na schválenie"}
+                          ? t("Poslať znova na schválenie")
+                          : t("Poslať na schválenie")}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -1008,9 +1011,9 @@ function InvoiceDetail() {
                 {isOverdue && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Upomienky</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t("Upomienky")}</DropdownMenuLabel>
                     <DropdownMenuItem onClick={openReminder}>
-                      <Mail className="mr-2 h-4 w-4" /> Poslať upomienku
+                      <Mail className="mr-2 h-4 w-4" /> {t("Poslať upomienku")}
                     </DropdownMenuItem>
                   </>
                 )}
@@ -1020,36 +1023,36 @@ function InvoiceDetail() {
                   inv.status !== "cancelled" && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuLabel>Online platba</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t("Online platba")}</DropdownMenuLabel>
                       <DropdownMenuItem onClick={handleCreatePayLink} disabled={payBusy}>
-                        <CreditCard className="mr-2 h-4 w-4" /> Vytvoriť platobný odkaz
+                        <CreditCard className="mr-2 h-4 w-4" /> {t("Vytvoriť platobný odkaz")}
                       </DropdownMenuItem>
                       {hasPayLink && (
                         <DropdownMenuItem onClick={handleSyncPayment} disabled={syncBusy}>
-                          <RotateCw className="mr-2 h-4 w-4" /> Synchronizovať platbu
+                          <RotateCw className="mr-2 h-4 w-4" /> {t("Synchronizovať platbu")}
                         </DropdownMenuItem>
                       )}
                     </>
                   )}
 
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel>Export</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("Export")}</DropdownMenuLabel>
                 <DropdownMenuItem onClick={handlePohodaExport} disabled={exportBusy}>
-                  <FileCode2 className="mr-2 h-4 w-4" /> Export do Pohody XML
+                  <FileCode2 className="mr-2 h-4 w-4" /> {t("Export do Pohody XML")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleGenerateXml} disabled={xmlBusy}>
                   <FileCheck2 className="mr-2 h-4 w-4" />
-                  {efakturaDoc ? "Pregenerovať eFaktúru XML" : "Vygenerovať eFaktúru XML"}
+                  {efakturaDoc ? t("Pregenerovať eFaktúru XML") : t("Vygenerovať eFaktúru XML")}
                 </DropdownMenuItem>
                 {efakturaDoc && (
                   <DropdownMenuItem onClick={handleDownloadXml} disabled={xmlBusy}>
-                    <Download className="mr-2 h-4 w-4" /> Stiahnuť eFaktúru XML
+                    <Download className="mr-2 h-4 w-4" /> {t("Stiahnuť eFaktúru XML")}
                   </DropdownMenuItem>
                 )}
                 {krajina === "CZ" && (
                   <DropdownMenuItem onClick={handleIsdoc} disabled={isdocBusy}>
                     <Download className="mr-2 h-4 w-4" />
-                    {isdocBusy ? "Pripravujem…" : "Stiahnuť ISDOC"}
+                    {isdocBusy ? t("Pripravujem…") : t("Stiahnuť ISDOC")}
                   </DropdownMenuItem>
                 )}
                 {/*
@@ -1062,28 +1065,28 @@ function InvoiceDetail() {
                   disabled={efakturaBusy || inv.type === "proforma"}
                   title={
                     inv.type === "proforma"
-                      ? "Zálohová faktúra nie je daňový doklad — pošlite ju e-mailom."
+                      ? t("Zálohová faktúra nie je daňový doklad — pošlite ju e-mailom.")
                       : undefined
                   }
                 >
                   <Send className="mr-2 h-4 w-4" />
                   {efakturaBusy
-                    ? "Odosielam…"
+                    ? t("Odosielam…")
                     : efakturaTest
-                      ? "Odoslať cez eFaktúru (test)"
-                      : "Odoslať cez eFaktúru"}
+                      ? t("Odoslať cez eFaktúru (test)")
+                      : t("Odoslať cez eFaktúru")}
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel>Ostatné</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("Ostatné")}</DropdownMenuLabel>
                 <DropdownMenuItem onClick={handleClone} disabled={cloneBusy}>
-                  <Copy className="mr-2 h-4 w-4" /> Klonovať
+                  <Copy className="mr-2 h-4 w-4" /> {t("Klonovať")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setDeleteOpen(true)}
                   className="text-destructive focus:text-destructive"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" /> Vymazať
+                  <Trash2 className="mr-2 h-4 w-4" /> {t("Vymazať")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1100,7 +1103,7 @@ function InvoiceDetail() {
           */
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
             <span>
-              <strong>Toto je koncept.</strong> Odberateľ ho nemá a do prehľadov sa nepočíta.
+              <strong>{t("Toto je koncept.")}</strong> {t("Odberateľ ho nemá a do prehľadov sa nepočíta.")}
             </span>
             <span className="flex flex-wrap gap-2">
               <Link
@@ -1108,13 +1111,13 @@ function InvoiceDetail() {
                 params={{ id }}
                 className="rounded-md border border-border bg-background px-3 py-1.5 font-medium hover:bg-secondary"
               >
-                Upraviť
+                {t("Upraviť")}
               </Link>
               <button
                 onClick={() => {
                   // Bez textu nad položkami faktúra nevznikne — ten sa doplní v úprave.
                   if (!String(inv.intro_note ?? "").trim()) {
-                    toast.info("Doplňte text nad položkami a vystavte faktúru z úpravy.");
+                    toast.info(t("Doplňte text nad položkami a vystavte faktúru z úpravy."));
                     navigate({ to: "/faktury/$id/upravit", params: { id } });
                     return;
                   }
@@ -1122,17 +1125,17 @@ function InvoiceDetail() {
                 }}
                 className="rounded-md bg-primary px-3 py-1.5 font-semibold text-primary-foreground hover:opacity-90"
               >
-                Vystaviť faktúru
+                {t("Vystaviť faktúru")}
               </button>
             </span>
           </div>
         )}
         <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-muted-foreground">eFaktúra:</span>
+          <span className="text-muted-foreground">{t("eFaktúra:")}</span>
           <EfakturaStatusBadge status={efakturaUi} />
           {efakturaTest && (
             <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-amber-800 dark:text-amber-300">
-              testovací režim — odberateľovi nič nepríde
+              {t("testovací režim — odberateľovi nič nepríde")}
             </span>
           )}
           {payLink && (
@@ -1143,14 +1146,14 @@ function InvoiceDetail() {
               className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 hover:bg-secondary"
               title={payLink}
             >
-              <Copy className="h-3 w-3" /> Otvoriť platobný odkaz
+              <Copy className="h-3 w-3" /> {t("Otvoriť platobný odkaz")}
             </a>
           )}
         </div>
         {inv.approval_status === "rejected" && inv.approval_note && (
           <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
-              <XCircle className="h-4 w-4" /> Faktúra bola zamietnutá zákazníkom
+              <XCircle className="h-4 w-4" /> {t("Faktúra bola zamietnutá zákazníkom")}
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
               {inv.approval_responded_at
@@ -1158,7 +1161,7 @@ function InvoiceDetail() {
                 : ""}
             </div>
             <div className="mt-2 whitespace-pre-wrap text-sm text-foreground">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">Dôvod: </span>
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">{t("Dôvod:")} </span>
               {inv.approval_note}
             </div>
           </div>
@@ -1166,11 +1169,10 @@ function InvoiceDetail() {
         {inv.approval_status === "pending" && inv.approval_requested_at && (
           <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
             <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
-              <ClockIcon className="h-4 w-4" /> Čaká sa na schválenie zákazníkom
+              <ClockIcon className="h-4 w-4" /> {t("Čaká sa na schválenie zákazníkom")}
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-              Odoslané {new Date(inv.approval_requested_at).toLocaleString("sk-SK")} · odkaz platí 7
-              dní
+              {t("Odoslané {kedy} · odkaz platí 7 dní", { kedy: new Date(inv.approval_requested_at).toLocaleString("sk-SK") })}
             </div>
           </div>
         )}
@@ -1182,12 +1184,12 @@ function InvoiceDetail() {
         {company && !sUctomFaktury(company, inv).iban && (
           <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
             <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
-              <AlertTriangle className="h-4 w-4" /> Faktúra nemá platobné údaje
+              <AlertTriangle className="h-4 w-4" /> {t("Faktúra nemá platobné údaje")}
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-              Firma nemá vyplnený IBAN, takže na doklade nebude číslo účtu ani QR platba.{" "}
+              {t("Firma nemá vyplnený IBAN, takže na doklade nebude číslo účtu ani QR platba.")}{" "}
               <Link to="/firma" className="font-medium text-primary hover:underline">
-                Doplniť v nastaveniach firmy
+                {t("Doplniť v nastaveniach firmy")}
               </Link>
             </div>
           </div>
@@ -1197,7 +1199,7 @@ function InvoiceDetail() {
             <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Dodávateľ
+                  {t("Dodávateľ")}
                 </div>
                 <div className="mt-1 font-medium">{company?.name}</div>
                 <div className="text-sm text-muted-foreground">
@@ -1206,20 +1208,20 @@ function InvoiceDetail() {
                   {company?.zip} {company?.city}, {company?.country}
                 </div>
                 <div className="mt-2 text-sm">
-                  IČO: {company?.ico ?? "—"} · DIČ: {company?.dic ?? "—"}
+                  {t("IČO")}: {company?.ico ?? "—"} · {t("DIČ")}: {company?.dic ?? "—"}
                 </div>
-                {company?.ic_dph && <div className="text-sm">IČ DPH: {company.ic_dph}</div>}
+                {company?.ic_dph && <div className="text-sm">{t("IČ DPH")}: {company.ic_dph}</div>}
               </div>
               <div>
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                  Odberateľ
+                  {t("Odberateľ")}
                   {inv.status !== "cancelled" && (
                     <Link
                       to="/faktury/$id/upravit"
                       params={{ id }}
                       className="normal-case tracking-normal text-primary hover:underline print:hidden"
                     >
-                      Zmeniť
+                      {t("Zmeniť")}
                     </Link>
                   )}
                 </div>
@@ -1236,7 +1238,7 @@ function InvoiceDetail() {
                   ))}
                 </div>
                 <div className="mt-2 text-sm">
-                  IČO: {inv.customer_ico ?? "—"} · DIČ: {inv.customer_dic ?? "—"}
+                  {t("IČO")}: {inv.customer_ico ?? "—"} · {t("DIČ")}: {inv.customer_dic ?? "—"}
                 </div>
               </div>
             </div>
@@ -1251,12 +1253,12 @@ function InvoiceDetail() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="p-3">Položka</th>
-                    <th className="p-3 text-right">Mn.</th>
-                    <th className="p-3">MJ</th>
-                    <th className="p-3 text-right">Cena</th>
-                    <th className="p-3 text-right">DPH</th>
-                    <th className="p-3 text-right">Spolu</th>
+                    <th className="p-3">{t("Položka")}</th>
+                    <th className="p-3 text-right">{t("Mn.")}</th>
+                    <th className="p-3">{t("MJ")}</th>
+                    <th className="p-3 text-right">{t("Cena")}</th>
+                    <th className="p-3 text-right">{t("DPH")}</th>
+                    <th className="p-3 text-right">{t("Spolu")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -1269,7 +1271,7 @@ function InvoiceDetail() {
                         )}
                         {Number((it as any).discount_percent ?? 0) > 0 && (
                           <div className="text-xs text-emerald-600">
-                            Zľava {Number((it as any).discount_percent)} %
+                            {t("Zľava {n} %", { n: Number((it as any).discount_percent) })}
                           </div>
                         )}
                       </td>
@@ -1278,7 +1280,7 @@ function InvoiceDetail() {
                       <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
                       <td className="p-3 text-right">
                         {inv.reverse_charge || (it as any).prenesenie ? (
-                          <span title="Prenesenie daňovej povinnosti — daň priznáva odberateľ">PDP</span>
+                          <span title={t("Prenesenie daňovej povinnosti — daň priznáva odberateľ")}>{t("PDP")}</span>
                         ) : (
                           `${it.vat_rate}%`
                         )}
@@ -1314,7 +1316,7 @@ function InvoiceDetail() {
             <ZasielkovnaFaktury inv={inv} onZmena={() => void load()} />
             {zakazka && (
               <div className="rounded-xl border border-border bg-card p-5">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Zákazka</div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Zákazka")}</div>
                 <Link
                   to="/zakazky/$id"
                   params={{ id: zakazka.id }}
@@ -1325,27 +1327,27 @@ function InvoiceDetail() {
               </div>
             )}
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Sumár</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
               <div className="mt-3 space-y-1 text-sm">
                 {Number(inv.discount_total ?? 0) > 0 && (
                   <>
                     <Row
-                      label="Medzisúčet"
+                      label={t("Medzisúčet")}
                       value={formatujMenu((Number(inv.subtotal) + Number(inv.discount_total)), inv.currency)}
                     />
                     <Row
-                      label="Zľava"
+                      label={t("Zľava")}
                       value={`−${formatujMenu(inv.discount_total, inv.currency)}`}
                     />
                   </>
                 )}
-                <Row label="Bez DPH" value={formatujMenu(inv.subtotal, inv.currency)} />
-                <Row label="DPH" value={formatujMenu(inv.vat_total, inv.currency)} />
+                <Row label={t("Bez DPH")} value={formatujMenu(inv.subtotal, inv.currency)} />
+                <Row label={t("DPH")} value={formatujMenu(inv.vat_total, inv.currency)} />
                 {maZuctovanuZalohu(inv.advance_amount) && (
                   <>
-                    <Row label="Spolu" value={formatujMenu(inv.total, inv.currency)} />
+                    <Row label={t("Spolu")} value={formatujMenu(inv.total, inv.currency)} />
                     <Row
-                      label="Zúčtovaná záloha"
+                      label={t("Zúčtovaná záloha")}
                       value={`−${formatujMenu(inv.advance_amount, inv.currency)}`}
                     />
                   </>
@@ -1353,7 +1355,7 @@ function InvoiceDetail() {
               </div>
               <div className="mt-3 border-t border-border pt-3">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {inv.status === "paid" ? "Uhradené" : "Spolu k úhrade"}
+                  {inv.status === "paid" ? t("Uhradené") : t("Spolu k úhrade")}
                 </div>
                 <div className="text-lg font-semibold tabular-nums">
                   {formatujMenu(zostavaUhradit(inv.total, inv.advance_amount), inv.currency)}
@@ -1368,21 +1370,21 @@ function InvoiceDetail() {
             {inv.status === "paid" ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100 dark:border-emerald-900/40">
                 <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                  Uhradené
+                  {t("Uhradené")}
                 </div>
                 <div className="mt-2">
-                  Dátum úhrady: {inv.paid_at ? String(inv.paid_at).slice(0, 10) : "—"}
+                  {t("Dátum úhrady:")} {inv.paid_at ? String(inv.paid_at).slice(0, 10) : "—"}
                 </div>
-                <div>Forma úhrady: {paymentMethodLabel(inv.payment_method)}</div>
+                <div>{t("Forma úhrady:")} {t(paymentMethodLabel(inv.payment_method))}</div>
                 <div className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">
-                  Platobné údaje sa nezobrazujú — faktúra je zaplatená.
+                  {t("Platobné údaje sa nezobrazujú — faktúra je zaplatená.")}
                 </div>
               </div>
             ) : (
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Platba</div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Platba")}</div>
                 <div className="mt-2">
-                  IBAN:{" "}
+                  {t("IBAN:")}{" "}
                   <span className="font-mono">
                     {sUctomFaktury(company ?? {}, inv).iban
                       ? formatujIban(sUctomFaktury(company ?? {}, inv).iban)
@@ -1403,25 +1405,25 @@ function InvoiceDetail() {
                         .update({ payment_account_id: id })
                         .eq("id", inv.id);
                       if (error) return toast.error(error.message);
-                      toast.success("Účet na úhradu zmenený.");
+                      toast.success(t("Účet na úhradu zmenený."));
                       void load();
                     }}
                   />
                 )}
                 <div>
-                  Variabilný symbol: <span className="font-mono">{inv.variable_symbol}</span>
+                  {t("Variabilný symbol:")} <span className="font-mono">{inv.variable_symbol}</span>
                 </div>
-                <div>Splatnosť: {popisSplatnosti(inv)}</div>
+                <div>{t("Splatnosť:")} {popisSplatnosti(inv)}</div>
                 {predlzena(inv) && (
                   <div className="text-xs text-muted-foreground">
-                    Lehoty DPH (§ 25a) sa počítajú od pôvodnej splatnosti.
-                    {inv.predlzenie_poznamka ? ` Dohoda: ${inv.predlzenie_poznamka}` : ""}
+                    {t("Lehoty DPH (§ 25a) sa počítajú od pôvodnej splatnosti.")}
+                    {inv.predlzenie_poznamka ? ` ${t("Dohoda:")} ${inv.predlzenie_poznamka}` : ""}
                   </div>
                 )}
                 <div className="my-2">
                   <PredlzitSplatnost druh="vydana" faktura={inv} onZmena={() => void load()} />
                 </div>
-                <div>Forma úhrady: {paymentMethodLabel(inv.payment_method)}</div>
+                <div>{t("Forma úhrady:")} {t(paymentMethodLabel(inv.payment_method))}</div>
                 {/*
                   Bez IBAN-u nemá odberateľ kam zaplatiť a na doklade nie je ani
                   QR kód. Pri novej firme sa toto pole preskočí ľahko — register
@@ -1429,15 +1431,15 @@ function InvoiceDetail() {
                 */}
                 {!sUctomFaktury(company ?? {}, inv).iban && (
                   <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
-                    <div className="font-medium text-foreground">Chýba IBAN</div>
+                    <div className="font-medium text-foreground">{t("Chýba IBAN")}</div>
                     <p className="mt-0.5 text-muted-foreground">
-                      Odberateľ nemá kam zaplatiť a na doklade nebude QR kód.
+                      {t("Odberateľ nemá kam zaplatiť a na doklade nebude QR kód.")}
                     </p>
                     <Link
                       to="/firma"
                       className="mt-1 inline-block font-medium text-primary hover:underline"
                     >
-                      Doplniť v údajoch firmy
+                      {t("Doplniť v údajoch firmy")}
                     </Link>
                   </div>
                 )}
@@ -1446,15 +1448,15 @@ function InvoiceDetail() {
             {inv.type === "proforma" && (
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Zálohová faktúra
+                  {t("Zálohová faktúra")}
                 </div>
                 {settledIn ? (
                   <div className="mt-2 space-y-1">
                     <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
-                      Zúčtovaná
+                      {t("Zúčtovaná")}
                     </div>
                     <div>
-                      Zúčtovaná vo faktúre:{" "}
+                      {t("Zúčtovaná vo faktúre:")}{" "}
                       <Link
                         to="/faktury/$id"
                         params={{ id: settledIn.id }}
@@ -1469,8 +1471,7 @@ function InvoiceDetail() {
                   </div>
                 ) : (
                   <div className="mt-2 text-muted-foreground">
-                    Zatiaľ nezúčtovaná. Zálohu môžete použiť pri vytváraní novej faktúry cez „Pridať
-                    zálohovú faktúru".
+                    {t("Zatiaľ nezúčtovaná. Zálohu môžete použiť pri vytváraní novej faktúry cez „Pridať zálohovú faktúru\".")}
                   </div>
                 )}
 
@@ -1481,7 +1482,7 @@ function InvoiceDetail() {
                 */}
                 <div className="mt-4 border-t border-border pt-3">
                   <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Daňový doklad k prijatej platbe
+                    {t("Daňový doklad k prijatej platbe")}
                   </div>
                   {dokladKPlatbe ? (
                     <div className="mt-2 space-y-1">
@@ -1493,15 +1494,13 @@ function InvoiceDetail() {
                         {dokladKPlatbe.invoice_number}
                       </Link>
                       <div className="text-xs text-muted-foreground">
-                        {datumNaDoklade(dokladKPlatbe.issue_date)} · {formatujMenu(dokladKPlatbe.total, dokladKPlatbe.currency)} · daň sa priznáva v tomto období
+                        {datumNaDoklade(dokladKPlatbe.issue_date)} · {formatujMenu(dokladKPlatbe.total, dokladKPlatbe.currency)} · {t("daň sa priznáva v tomto období")}
                       </div>
                     </div>
                   ) : inv.status === "paid" ? (
                     <div className="mt-2 space-y-2">
                       <p className="text-muted-foreground">
-                        Záloha je uhradená — ako platiteľ DPH musíte do 15 dní od prijatia platby
-                        vystaviť daňový doklad. Daň sa prizná v období platby a na vyúčtovacej
-                        faktúre sa už znovu nepočíta.
+                        {t("Záloha je uhradená — ako platiteľ DPH musíte do 15 dní od prijatia platby vystaviť daňový doklad. Daň sa prizná v období platby a na vyúčtovacej faktúre sa už znovu nepočíta.")}
                       </p>
                       <button
                         type="button"
@@ -1509,12 +1508,12 @@ function InvoiceDetail() {
                         onClick={vystavDoklad}
                         className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
                       >
-                        {vystavujemDoklad ? "Vystavujem…" : "Vystaviť daňový doklad"}
+                        {vystavujemDoklad ? t("Vystavujem…") : t("Vystaviť daňový doklad")}
                       </button>
                     </div>
                   ) : (
                     <p className="mt-2 text-muted-foreground">
-                      Vystaví sa až po úhrade zálohy — daňová povinnosť vzniká prijatím platby.
+                      {t("Vystaví sa až po úhrade zálohy — daňová povinnosť vzniká prijatím platby.")}
                     </p>
                   )}
                 </div>
@@ -1523,7 +1522,7 @@ function InvoiceDetail() {
             {odpocitaneZalohy.length > 0 && (
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {odpocitaneZalohy.length === 1 ? "Zúčtovaná záloha" : "Zúčtované zálohy"}
+                  {odpocitaneZalohy.length === 1 ? t("Zúčtovaná záloha") : t("Zúčtované zálohy")}
                 </div>
                 <ul className="mt-2 space-y-1">
                   {odpocitaneZalohy.map((o) => (
@@ -1533,10 +1532,10 @@ function InvoiceDetail() {
                         params={{ id: o.advance_invoice_id }}
                         className="font-medium text-primary hover:underline"
                       >
-                        {o.zaloha?.invoice_number ?? "zálohová faktúra"}
+                        {o.zaloha?.invoice_number ?? t("zálohová faktúra")}
                       </Link>
                       <span className="text-xs text-muted-foreground">
-                        {o.zaloha?.issue_date ? datumNaDoklade(o.zaloha.issue_date) : ""} · odpočítané{" "}
+                        {o.zaloha?.issue_date ? datumNaDoklade(o.zaloha.issue_date) : ""} · {t("odpočítané")}{" "}
                         {formatujMenu(o.amount, o.zaloha?.currency ?? inv.currency)}
                       </span>
                     </li>
@@ -1544,7 +1543,7 @@ function InvoiceDetail() {
                 </ul>
                 {odpocitaneZalohy.length > 1 && (
                   <div className="mt-2 text-xs text-muted-foreground">
-                    Spolu odpočítané{" "}
+                    {t("Spolu odpočítané")}{" "}
                     <strong>
                       {formatujMenu(
                         odpocitaneZalohy.reduce((a: number, o: any) => a + Number(o.amount), 0),
@@ -1558,11 +1557,11 @@ function InvoiceDetail() {
             {advanceProforma && (
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Zúčtovaná záloha
+                  {t("Zúčtovaná záloha")}
                 </div>
                 <div className="mt-2 space-y-1">
                   <div>
-                    Zálohová faktúra:{" "}
+                    {t("Zálohová faktúra:")}{" "}
                     <Link
                       to="/faktury/$id"
                       params={{ id: advanceProforma.id }}
@@ -1573,7 +1572,7 @@ function InvoiceDetail() {
                   </div>
                   {inv.advance_amount != null && (
                     <div className="text-xs text-muted-foreground">
-                      Odpočítaná suma: {formatujMenu(inv.advance_amount, inv.currency)}
+                      {t("Odpočítaná suma:")} {formatujMenu(inv.advance_amount, inv.currency)}
                     </div>
                   )}
                 </div>
@@ -1581,7 +1580,7 @@ function InvoiceDetail() {
             )}
             {stockMoves.length > 0 && (
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Sklad</div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sklad")}</div>
                 <div className="mt-2 space-y-2">
                   {stockMoves.map((m) => {
                     const reversed = m.type === "dobropis";
@@ -1592,7 +1591,7 @@ function InvoiceDetail() {
                       >
                         <div>
                           <div className="font-medium">
-                            {reversed ? "Sklad vrátený" : "Sklad odpočítaný"}
+                            {reversed ? t("Sklad vrátený") : t("Sklad odpočítaný")}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {stockSkus[m.stock_item_id] ?? "—"} ·{" "}
@@ -1615,7 +1614,7 @@ function InvoiceDetail() {
                     to="/sklad/pohyby"
                     className="block pt-1 text-xs text-primary hover:underline"
                   >
-                    Pozrieť všetky pohyby →
+                    {t("Pozrieť všetky pohyby →")}
                   </Link>
                 </div>
               </div>
@@ -1631,13 +1630,13 @@ function InvoiceDetail() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Odoslať faktúru e-mailom"
+            aria-label={t("Odoslať faktúru e-mailom")}
             className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold">Odoslať faktúru e-mailom</h3>
+            <h3 className="text-lg font-semibold">{t("Odoslať faktúru e-mailom")}</h3>
             <label className="block text-sm">
-              <span className="font-medium">Príjemca</span>
+              <span className="font-medium">{t("Príjemca")}</span>
               <input
                 type="email"
                 value={emailForm.recipient_email}
@@ -1647,12 +1646,12 @@ function InvoiceDetail() {
               />
               {!emailForm.recipient_email && (
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  Odberateľ nemá uloženú adresu — napíšte ju sem, alebo ju doplňte v jeho karte.
+                  {t("Odberateľ nemá uloženú adresu — napíšte ju sem, alebo ju doplňte v jeho karte.")}
                 </span>
               )}
             </label>
             <label className="block text-sm">
-              <span className="font-medium">Predmet</span>
+              <span className="font-medium">{t("Predmet")}</span>
               <input
                 value={emailForm.subject}
                 onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
@@ -1660,7 +1659,7 @@ function InvoiceDetail() {
               />
             </label>
             <label className="block text-sm">
-              <span className="font-medium">Správa</span>
+              <span className="font-medium">{t("Správa")}</span>
               <textarea
                 rows={6}
                 value={emailForm.message}
@@ -1677,32 +1676,32 @@ function InvoiceDetail() {
                   className="mt-0.5"
                 />
                 <span>
-                  <span className="font-medium">Odoslať aj prílohy dokladu</span>
+                  <span className="font-medium">{t("Odoslať aj prílohy dokladu")}</span>
                   <span className="block text-xs text-muted-foreground">
                     {pocetPriloh === 1
-                      ? "K dokladu visí 1 príloha"
-                      : `K dokladu visia prílohy: ${pocetPriloh}`}
-                    . Pôjdu v tom istom maile ako faktúra.
+                      ? t("K dokladu visí 1 príloha")
+                      : t("K dokladu visia prílohy: {n}", { n: pocetPriloh })}
+                    {t(". Pôjdu v tom istom maile ako faktúra.")}
                   </span>
                 </span>
               </label>
             )}
             <p className="text-xs text-muted-foreground">
-              PDF faktúry sa pripojí automaticky. Ak ešte neexistuje, vygeneruje sa pred odoslaním.
+              {t("PDF faktúry sa pripojí automaticky. Ak ešte neexistuje, vygeneruje sa pred odoslaním.")}
             </p>
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setEmailOpen(false)}
                 className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
               >
-                Zrušiť
+                {t("Zrušiť")}
               </button>
               <button
                 onClick={submitEmail}
                 disabled={emailBusy}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                {emailBusy ? "Odosielam…" : "Odoslať"}
+                {emailBusy ? t("Odosielam…") : t("Odoslať")}
               </button>
             </div>
           </div>
@@ -1716,15 +1715,15 @@ function InvoiceDetail() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Poslať upomienku"
+            aria-label={t("Poslať upomienku")}
             className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold">
-              Poslať upomienku ({reminderForm.reminderNumber}.)
+              {t("Poslať upomienku ({n}.)", { n: reminderForm.reminderNumber })}
             </h3>
             <label className="block text-sm">
-              <span className="font-medium">Príjemca</span>
+              <span className="font-medium">{t("Príjemca")}</span>
               <input
                 value={reminderForm.recipient_email}
                 onChange={(e) =>
@@ -1734,7 +1733,7 @@ function InvoiceDetail() {
               />
             </label>
             <label className="block text-sm">
-              <span className="font-medium">Predmet</span>
+              <span className="font-medium">{t("Predmet")}</span>
               <input
                 value={reminderForm.subject}
                 onChange={(e) => setReminderForm({ ...reminderForm, subject: e.target.value })}
@@ -1742,7 +1741,7 @@ function InvoiceDetail() {
               />
             </label>
             <label className="block text-sm">
-              <span className="font-medium">Správa</span>
+              <span className="font-medium">{t("Správa")}</span>
               <textarea
                 rows={10}
                 value={reminderForm.message}
@@ -1752,7 +1751,7 @@ function InvoiceDetail() {
             </label>
             {reminders.length > 0 && (
               <div className="text-xs text-muted-foreground">
-                Predchádzajúce upomienky:{" "}
+                {t("Predchádzajúce upomienky:")}{" "}
                 {reminders
                   .map(
                     (r) =>
@@ -1766,14 +1765,14 @@ function InvoiceDetail() {
                 onClick={() => setReminderOpen(false)}
                 className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
               >
-                Zrušiť
+                {t("Zrušiť")}
               </button>
               <button
                 onClick={submitReminder}
                 disabled={reminderBusy}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                {reminderBusy ? "Odosielam…" : "Odoslať upomienku"}
+                {reminderBusy ? t("Odosielam…") : t("Odoslať upomienku")}
               </button>
             </div>
           </div>
@@ -1782,11 +1781,11 @@ function InvoiceDetail() {
 
       <ConfirmDialog
         open={deleteOpen}
-        title="Naozaj chcete vymazať túto faktúru?"
-        message={`Faktúra ${inv.invoice_number} bude skrytá z rozhrania. Môžete ju neskôr obnoviť v zozname vymazaných.`}
+        title={t("Naozaj chcete vymazať túto faktúru?")}
+        message={t("Faktúra {cislo} bude skrytá z rozhrania. Môžete ju neskôr obnoviť v zozname vymazaných.", { cislo: inv.invoice_number })}
         warning={
           inv.status === "paid" || inv.status === "sent"
-            ? "Táto faktúra je už odoslaná alebo zaplatená. Mazanie môže narušiť účtovnú stopu."
+            ? t("Táto faktúra je už odoslaná alebo zaplatená. Mazanie môže narušiť účtovnú stopu.")
             : undefined
         }
         busy={deleteBusy}

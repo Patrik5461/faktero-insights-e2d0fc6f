@@ -9,15 +9,20 @@ import { listSablon, obnovSablonu, ulozSablonu } from "@/lib/faktero/zamestnanci
 import { TOKENY, type KlucSablony } from "@/lib/faktero/zamestnanci";
 import { ChybaModulu, pole, popis, tlacidlo, tlacidloObrys } from "@/components/faktero/zamestnanci/ui";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/sablony")({
-  head: () => ({ meta: [{ title: "Šablóny dokumentov — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Šablóny dokumentov — Faktero") }],
+  }),
   component: SablonyPage,
 });
 
 type Sablona = { key: KlucSablony; title: string; body: string; upravena: boolean };
 
 function SablonyPage() {
+  const { t } = useT();
   const nacitajSablony = useServerFn(listSablon);
   const uloz = useServerFn(ulozSablonu);
   const obnov = useServerFn(obnovSablonu);
@@ -40,7 +45,7 @@ function SablonyPage() {
             setText(s.body);
           }
         })
-        .catch((e: any) => setChyba(e?.message ?? "Šablóny sa nepodarilo načítať."));
+        .catch((e: any) => setChyba(e?.message ?? t("Šablóny sa nepodarilo načítať.")));
     },
     [nacitajSablony, cid, vybrana],
   );
@@ -60,11 +65,13 @@ function SablonyPage() {
   return (
     <>
       <PageHeader
-        title="Šablóny dokumentov"
-        description="Texty zmlúv a potvrdení pre vašu firmu. Tokeny v dvojitých zátvorkách sa pri výrobe PDF nahradia údajmi."
+        title={t("Šablóny dokumentov")}
+        description={t(
+          "Texty zmlúv a potvrdení pre vašu firmu. Tokeny v dvojitých zátvorkách sa pri výrobe PDF nahradia údajmi.",
+        )}
         action={
           <Link to="/zamestnanci" className={tlacidloObrys}>
-            <ArrowLeft className="h-4 w-4" /> Zamestnanci
+            <ArrowLeft className="h-4 w-4" /> {t("Zamestnanci")}
           </Link>
         }
       />
@@ -91,11 +98,15 @@ function SablonyPage() {
                 ))}
               </div>
               <div>
-                <label className={popis} htmlFor="s-nazov">Názov</label>
+                <label className={popis} htmlFor="s-nazov">
+                  {t("Názov")}
+                </label>
                 <input id="s-nazov" className={pole} value={nazov} onChange={(e) => setNazov(e.target.value)} />
               </div>
               <div>
-                <label className={popis} htmlFor="s-text">Text (riadok začínajúci „# “ je nadpis)</label>
+                <label className={popis} htmlFor="s-text">
+                  {t("Text (riadok začínajúci „# “ je nadpis)")}
+                </label>
                 {/* Výška podľa počtu riadkov — pri pevných 22 bol spodný riadok odrezaný. */}
                 <textarea
                   id="s-text"
@@ -113,52 +124,55 @@ function SablonyPage() {
                     if (!cid) return;
                     try {
                       await uloz({ data: { company_id: cid, key: vybrana, title: nazov, body: text } });
-                      toast.success("Šablóna je uložená pre vašu firmu.");
+                      toast.success(t("Šablóna je uložená pre vašu firmu."));
                       nacitaj(vybrana);
                     } catch (err: any) {
-                      toast.error(err?.message ?? "Šablónu sa nepodarilo uložiť.");
+                      toast.error(err?.message ?? t("Šablónu sa nepodarilo uložiť."));
                     }
                   }}
                 >
-                  Uložiť šablónu
+                  {t("Uložiť šablónu")}
                 </button>
                 {aktualna?.upravena && (
                   <button
                     type="button"
                     className={tlacidloObrys}
                     onClick={async () => {
-                      if (!cid || !(await potvrd("Vrátiť predvolený text? Vaše úpravy sa stratia."))) return;
+                      if (!cid || !(await potvrd(t("Vrátiť predvolený text? Vaše úpravy sa stratia."))))
+                        return;
                       try {
                         await obnov({ data: { company_id: cid, key: vybrana } });
-                        toast.success("Obnovený predvolený text.");
+                        toast.success(t("Obnovený predvolený text."));
                         nacitaj(vybrana);
                       } catch (err: any) {
-                        toast.error(err?.message ?? "Nepodarilo sa obnoviť.");
+                        toast.error(err?.message ?? t("Nepodarilo sa obnoviť."));
                       }
                     }}
                   >
-                    Vrátiť predvolený text
+                    {t("Vrátiť predvolený text")}
                   </button>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Predvolené texty sú vzory, nie právna rada. Pred prvým použitím si ich dajte skontrolovať.
+                {t(
+                  "Predvolené texty sú vzory, nie právna rada. Pred prvým použitím si ich dajte skontrolovať.",
+                )}
               </p>
             </div>
             <aside className="rounded-xl border border-border bg-card p-4 text-xs">
-              <div className="mb-2 text-sm font-semibold">Tokeny</div>
+              <div className="mb-2 text-sm font-semibold">{t("Tokeny")}</div>
               <ul className="space-y-1.5">
-                {TOKENY.map((t) => (
-                  <li key={t.token}>
+                {TOKENY.map((tok) => (
+                  <li key={tok.token}>
                     <button
                       type="button"
                       className="font-mono text-primary hover:underline"
-                      title="Vložiť na koniec textu"
-                      onClick={() => setText((x) => `${x}{{${t.token}}}`)}
+                      title={t("Vložiť na koniec textu")}
+                      onClick={() => setText((x) => `${x}{{${tok.token}}}`)}
                     >
-                      {`{{${t.token}}}`}
+                      {`{{${tok.token}}}`}
                     </button>
-                    <div className="text-muted-foreground">{t.popis}</div>
+                    <div className="text-muted-foreground">{t(tok.popis)}</div>
                   </li>
                 ))}
               </ul>

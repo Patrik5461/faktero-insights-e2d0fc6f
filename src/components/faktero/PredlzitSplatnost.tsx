@@ -5,6 +5,7 @@ import { CalendarClock, Loader2 } from "lucide-react";
 import { predlzSplatnostFn } from "@/lib/faktero/splatnost.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Tlačidlo a okno „Predĺžiť splatnosť“ pre vydanú aj prijatú faktúru.
@@ -19,6 +20,7 @@ export function PredlzitSplatnost({
   faktura: any;
   onZmena: () => void;
 }) {
+  const { t } = useT();
   const predlz = useServerFn(predlzSplatnostFn);
   const [otvorene, setOtvorene] = useState(false);
   const [nova, setNova] = useState("");
@@ -27,7 +29,12 @@ export function PredlzitSplatnost({
   const [busy, setBusy] = useState(false);
   useZatvorNaEscape(otvorene ? () => setOtvorene(false) : null);
 
-  if (!faktura || faktura.status === "draft" || faktura.status === "paid" || faktura.status === "cancelled") {
+  if (
+    !faktura ||
+    faktura.status === "draft" ||
+    faktura.status === "paid" ||
+    faktura.status === "cancelled"
+  ) {
     return null;
   }
 
@@ -35,19 +42,27 @@ export function PredlzitSplatnost({
     setBusy(true);
     try {
       const r = await predlz({
-        data: { druh, id: faktura.id, nova, poznamka: poznamka || undefined, oznamit: druh === "vydana" && oznamit },
+        data: {
+          druh,
+          id: faktura.id,
+          nova,
+          poznamka: poznamka || undefined,
+          oznamit: druh === "vydana" && oznamit,
+        },
       });
       toast.success(
         r.oznamene
-          ? "Splatnosť je predĺžená a odberateľ dostal e-mail s potvrdením."
+          ? t("Splatnosť je predĺžená a odberateľ dostal e-mail s potvrdením.")
           : r.efaktura
-            ? "Splatnosť je predĺžená. Faktúra odišla cez eFaktúru — tam sa nezmení, odberateľovi to oznámte."
-            : "Splatnosť je predĺžená.",
+            ? t(
+                "Splatnosť je predĺžená. Faktúra odišla cez eFaktúru — tam sa nezmení, odberateľovi to oznámte.",
+              )
+            : t("Splatnosť je predĺžená."),
       );
       setOtvorene(false);
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -63,7 +78,7 @@ export function PredlzitSplatnost({
         }}
         className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
       >
-        <CalendarClock className="h-4 w-4" /> Predĺžiť splatnosť
+        <CalendarClock className="h-4 w-4" /> {t("Predĺžiť splatnosť")}
       </button>
       {otvorene && (
         <div
@@ -73,20 +88,23 @@ export function PredlzitSplatnost({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Predĺžiť splatnosť"
+            aria-label={t("Predĺžiť splatnosť")}
             className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold">Predĺžiť splatnosť</h2>
+            <h2 className="text-lg font-semibold">{t("Predĺžiť splatnosť")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Faktúra {faktura.invoice_number}, doteraz splatná {datumNaDoklade(faktura.due_date)}
+              {t("Faktúra {cislo}, doteraz splatná {datum}", {
+                cislo: faktura.invoice_number,
+                datum: datumNaDoklade(faktura.due_date),
+              })}
               {faktura.povodna_splatnost && faktura.povodna_splatnost !== faktura.due_date
-                ? ` (pôvodne ${faktura.povodna_splatnost})`
+                ? ` ${t("(pôvodne {datum})", { datum: faktura.povodna_splatnost })}`
                 : ""}
               .
             </p>
             <label className="mt-4 block">
-              <span className="text-sm font-medium">Nová splatnosť</span>
+              <span className="text-sm font-medium">{t("Nová splatnosť")}</span>
               <input
                 type="date"
                 value={nova}
@@ -96,10 +114,10 @@ export function PredlzitSplatnost({
               />
             </label>
             <label className="mt-3 block">
-              <span className="text-sm font-medium">Dohoda (nepovinné)</span>
+              <span className="text-sm font-medium">{t("Dohoda (nepovinné)")}</span>
               <input
                 value={poznamka}
-                placeholder="napr. e-mail zo 6. 10. 2026, splátkový kalendár"
+                placeholder={t("napr. e-mail zo 6. 10. 2026, splátkový kalendár")}
                 onChange={(e) => setPoznamka(e.target.value)}
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
@@ -114,15 +132,17 @@ export function PredlzitSplatnost({
                   className="mt-0.5"
                 />
                 <span>
-                  Poslať odberateľovi e-mail s potvrdením novej splatnosti
-                  {faktura.customer_email ? ` (${faktura.customer_email})` : " — odberateľ nemá e-mail"}
+                  {t("Poslať odberateľovi e-mail s potvrdením novej splatnosti")}
+                  {faktura.customer_email
+                    ? ` (${faktura.customer_email})`
+                    : ` ${t("— odberateľ nemá e-mail")}`}
                 </span>
               </label>
             )}
             <p className="mt-3 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
-              Odoslaná eFaktúra sa v Peppole nezmení — predĺženie je dohoda, nie oprava faktúry. Lehoty
-              DPH (§ 53b 101 dní, § 25a 150 dní) sa počítajú od pôvodnej splatnosti; upomienky a „po
-              splatnosti“ sa riadia novou.
+              {t(
+                "Odoslaná eFaktúra sa v Peppole nezmení — predĺženie je dohoda, nie oprava faktúry. Lehoty DPH (§ 53b 101 dní, § 25a 150 dní) sa počítajú od pôvodnej splatnosti; upomienky a „po splatnosti“ sa riadia novou.",
+              )}
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -130,7 +150,7 @@ export function PredlzitSplatnost({
                 onClick={() => setOtvorene(false)}
                 className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
               >
-                Zrušiť
+                {t("Zrušiť")}
               </button>
               <button
                 type="button"
@@ -139,7 +159,7 @@ export function PredlzitSplatnost({
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-                Uložiť
+                {t("Uložiť")}
               </button>
             </div>
           </div>

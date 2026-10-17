@@ -11,9 +11,11 @@ import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/pokladna")({
-  head: () => ({ meta: [{ title: "Pokladňa — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Pokladňa — Faktero") }] }),
   component: PokladnaPage,
 });
 
@@ -32,6 +34,7 @@ function tentoMesiac() {
 }
 
 function PokladnaPage() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const fetchBook = useServerFn(getCashBook);
   const doCreate = useServerFn(createCashEntry);
@@ -63,9 +66,9 @@ function PokladnaPage() {
     setLoading(true);
     fetchBook({ data: { company_id: cid, month: mesiac } })
       .then((d: any) => setData(d))
-      .catch((e: any) => setChyba(e?.message ?? "Pokladňu sa nepodarilo načítať"))
+      .catch((e: any) => setChyba(e?.message ?? t("Pokladňu sa nepodarilo načítať")))
       .finally(() => setLoading(false));
-  }, [cid, fetchBook, mesiac]);
+  }, [cid, fetchBook, mesiac, t]);
 
   useEffect(nacitaj, [nacitaj]);
 
@@ -90,21 +93,21 @@ function PokladnaPage() {
       setOtvoreny(false);
       nacitaj();
     } catch (err: any) {
-      setChyba(err?.message ?? "Doklad sa nepodarilo uložiť");
+      setChyba(err?.message ?? t("Doklad sa nepodarilo uložiť"));
     } finally {
       setBusy(false);
     }
   }
 
   async function zmaz(id: string) {
-    if (!cid || !(await potvrd("Naozaj zmazať tento pokladničný doklad?"))) return;
+    if (!cid || !(await potvrd(t("Naozaj zmazať tento pokladničný doklad?")))) return;
     setBusy(true);
     setChyba(null);
     try {
       await doDelete({ data: { company_id: cid, id } });
       nacitaj();
     } catch (err: any) {
-      setChyba(err?.message ?? "Doklad sa nepodarilo zmazať");
+      setChyba(err?.message ?? t("Doklad sa nepodarilo zmazať"));
     } finally {
       setBusy(false);
     }
@@ -116,8 +119,8 @@ function PokladnaPage() {
   return (
     <>
       <PageHeader
-        title="Pokladňa"
-        description="Stav hotovosti z pokladničných dokladov a z dokladov zaplatených v hotovosti."
+        title={t("Pokladňa")}
+        description={t("Stav hotovosti z pokladničných dokladov a z dokladov zaplatených v hotovosti.")}
         action={
           <div className="flex flex-wrap gap-2">
             <OdkazNaRady />
@@ -126,7 +129,7 @@ function PokladnaPage() {
               onClick={() => setOtvoreny((v) => !v)}
               className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Nový pokladničný doklad
+              <Plus className="h-4 w-4" /> {t("Nový pokladničný doklad")}
             </button>
           </div>
         }
@@ -141,7 +144,7 @@ function PokladnaPage() {
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-              <Wallet className="h-4 w-4" /> Stav pokladne
+              <Wallet className="h-4 w-4" /> {t("Stav pokladne")}
             </div>
             <div
               className={`mt-1 text-2xl font-semibold tabular-nums ${
@@ -152,14 +155,13 @@ function PokladnaPage() {
             </div>
             {stav?.zaporny && (
               <div className="mt-1 text-xs text-destructive">
-                Záporná pokladňa znamená chýbajúci príjem alebo vklad — v hotovosti sa do mínusu ísť
-                nedá.
+                {t("Záporná pokladňa znamená chýbajúci príjem alebo vklad — v hotovosti sa do mínusu ísť nedá.")}
               </div>
             )}
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              Príjmy spolu
+              {t("Príjmy spolu")}
             </div>
             <div className="mt-1 text-xl font-semibold tabular-nums text-emerald-600">
               {suma(stav?.prijmy ?? 0)}
@@ -167,7 +169,7 @@ function PokladnaPage() {
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              Výdavky spolu
+              {t("Výdavky spolu")}
             </div>
             <div className="mt-1 text-xl font-semibold tabular-nums">
               {suma(stav?.vydavky ?? 0)}
@@ -181,18 +183,18 @@ function PokladnaPage() {
             className="mt-4 grid max-w-3xl gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2"
           >
             <label className="block">
-              <span className="mb-1 block text-xs text-muted-foreground">Druh</span>
+              <span className="mb-1 block text-xs text-muted-foreground">{t("Druh")}</span>
               <select
                 className={pole}
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as "prijem" | "vydaj" })}
               >
-                <option value="prijem">Príjem do pokladne</option>
-                <option value="vydaj">Výdaj z pokladne</option>
+                <option value="prijem">{t("Príjem do pokladne")}</option>
+                <option value="vydaj">{t("Výdaj z pokladne")}</option>
               </select>
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs text-muted-foreground">Dátum</span>
+              <span className="mb-1 block text-xs text-muted-foreground">{t("Dátum")}</span>
               <input
                 type="date"
                 required
@@ -202,17 +204,19 @@ function PokladnaPage() {
               />
             </label>
             <label className="block sm:col-span-2">
-              <span className="mb-1 block text-xs text-muted-foreground">Popis</span>
+              <span className="mb-1 block text-xs text-muted-foreground">{t("Popis")}</span>
               <input
                 required
                 className={pole}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="napr. Vklad do pokladne, Tržba v hotovosti"
+                placeholder={t("napr. Vklad do pokladne, Tržba v hotovosti")}
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs text-muted-foreground">Suma ({mena.symbol})</span>
+              <span className="mb-1 block text-xs text-muted-foreground">
+                {t("Suma ({mena})", { mena: mena.symbol })}
+              </span>
               <input
                 type="number"
                 step="0.01"
@@ -224,7 +228,7 @@ function PokladnaPage() {
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs text-muted-foreground">Kategória</span>
+              <span className="mb-1 block text-xs text-muted-foreground">{t("Kategória")}</span>
               <input
                 className={pole}
                 value={form.category}
@@ -243,7 +247,7 @@ function PokladnaPage() {
                 disabled={busy}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                {busy ? "Ukladám…" : "Uložiť doklad"}
+                {busy ? t("Ukladám…") : t("Uložiť doklad")}
               </button>
             </div>
           </form>
@@ -251,7 +255,7 @@ function PokladnaPage() {
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Obdobie</span>
+            <span className="text-muted-foreground">{t("Obdobie")}</span>
             <input
               type="month"
               value={mesiac}
@@ -260,24 +264,26 @@ function PokladnaPage() {
             />
           </label>
           <span className="text-sm text-muted-foreground">
-            Zostatok na začiatku obdobia: {suma(data?.pociatocny_stav_obdobia ?? 0)}
+            {t("Zostatok na začiatku obdobia: {suma}", {
+              suma: suma(data?.pociatocny_stav_obdobia ?? 0),
+            })}
           </span>
         </div>
 
         {loading ? (
-          <div className="mt-4 text-sm text-muted-foreground">Načítavam…</div>
+          <div className="mt-4 text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : (data?.riadky ?? []).length === 0 ? (
           <div className="mt-4 rounded-xl border border-border bg-card p-8 text-center">
             <Wallet className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
             <div className="text-sm text-muted-foreground">
-              V tomto období nie je v pokladni žiadny pohyb.
+              {t("V tomto období nie je v pokladni žiadny pohyb.")}
             </div>
             <p className="mx-auto mt-2 max-w-lg text-xs text-muted-foreground">
-              Do pokladne vstupujú pokladničné doklady a{" "}
+              {t("Do pokladne vstupujú pokladničné doklady a")}{" "}
               <Link to="/doklady" className="text-primary hover:underline">
-                doklady zaplatené v hotovosti
+                {t("doklady zaplatené v hotovosti")}
               </Link>
-              . Doklad zaplatený kartou alebo prevodom hotovosť neuberá.
+              {t(". Doklad zaplatený kartou alebo prevodom hotovosť neuberá.")}
             </p>
           </div>
         ) : (
@@ -286,12 +292,12 @@ function PokladnaPage() {
               <table className="w-full min-w-[760px] text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="p-3">Dátum</th>
-                    <th className="p-3">Číslo</th>
-                    <th className="p-3">Popis</th>
-                    <th className="p-3">Zdroj</th>
-                    <th className="p-3 text-right">Suma</th>
-                    <th className="p-3 text-right">Zostatok</th>
+                    <th className="p-3">{t("Dátum")}</th>
+                    <th className="p-3">{t("Číslo")}</th>
+                    <th className="p-3">{t("Popis")}</th>
+                    <th className="p-3">{t("Zdroj")}</th>
+                    <th className="p-3 text-right">{t("Suma")}</th>
+                    <th className="p-3 text-right">{t("Zostatok")}</th>
                     <th className="p-3"></th>
                   </tr>
                 </thead>
@@ -313,10 +319,10 @@ function PokladnaPage() {
                       <td className="p-3 text-xs text-muted-foreground">
                         {r.zdroj === "doklad" ? (
                           <Link to="/doklady" className="hover:underline">
-                            Doklad v hotovosti
+                            {t("Doklad v hotovosti")}
                           </Link>
                         ) : (
-                          "Pokladničný doklad"
+                          t("Pokladničný doklad")
                         )}
                       </td>
                       <td
@@ -336,7 +342,7 @@ function PokladnaPage() {
                             disabled={busy}
                             onClick={() => zmaz(r.id)}
                             className="text-destructive hover:underline disabled:opacity-50"
-                            title="Zmazať doklad"
+                            title={t("Zmazať doklad")}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -378,17 +384,17 @@ function PokladnaPage() {
                       {r.cislo ? ` · ${r.cislo}` : ""}
                     </span>
                     <span className="whitespace-nowrap">
-                      Zostatok:{" "}
+                      {t("Zostatok:")}{" "}
                       <strong className="text-foreground tabular-nums">{suma(r.zostatok)}</strong>
                     </span>
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     {r.zdroj === "doklad" ? (
                       <Link to="/doklady" className="hover:underline">
-                        Doklad v hotovosti
+                        {t("Doklad v hotovosti")}
                       </Link>
                     ) : (
-                      <span>Pokladničný doklad</span>
+                      <span>{t("Pokladničný doklad")}</span>
                     )}
                     {r.zdroj === "pokladnicny" && (
                       <button
@@ -396,8 +402,8 @@ function PokladnaPage() {
                         disabled={busy}
                         onClick={() => zmaz(r.id)}
                         className="p-1 text-destructive disabled:opacity-50"
-                        aria-label="Zmazať doklad"
-                        title="Zmazať doklad"
+                        aria-label={t("Zmazať doklad")}
+                        title={t("Zmazať doklad")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -411,8 +417,10 @@ function PokladnaPage() {
 
         {data?.locked_until && (
           <p className="mt-3 text-xs text-muted-foreground">
-            Obdobie je uzamknuté do {formatujDatum(data.locked_until)} — doklady s tým a starším
-            dátumom sa už nedajú pridať ani zmazať.
+            {t(
+              "Obdobie je uzamknuté do {datum} — doklady s tým a starším dátumom sa už nedajú pridať ani zmazať.",
+              { datum: formatujDatum(data.locked_until) },
+            )}
           </p>
         )}
       </PageBody>

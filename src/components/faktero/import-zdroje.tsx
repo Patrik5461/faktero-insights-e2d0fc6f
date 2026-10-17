@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
+import { useT } from "@/lib/i18n/useT";
 import type { VendorId } from "@/components/faktero/VendorImportPage";
 
 /**
@@ -25,6 +26,206 @@ export type ImportZdroj = {
   guide: ReactNode;
 };
 
+/**
+ * Preložený text s vloženými prvkami: `{x}` v kľúči sa nahradí `casti.x`.
+ * Kľúčom ostáva celá veta, aby sa v nemčine dal zmeniť slovosled.
+ */
+function Veta({ k, casti = {} }: { k: string; casti?: Record<string, ReactNode> }) {
+  const { t } = useT();
+  const kusy = t(k).split(/\{(\w+)\}/);
+  return (
+    <>
+      {kusy.map((kus, i) =>
+        i % 2 ? <Fragment key={i}>{casti[kus] ?? `{${kus}}`}</Fragment> : kus,
+      )}
+    </>
+  );
+}
+
+// Cesty v menu cudzích programov sa neprekladajú — program ich ukazuje po slovensky.
+const S = ({ k }: { k: string }) => <strong>{k}</strong>;
+const E = ({ k }: { k: string }) => <em>{k}</em>;
+
+function NavodPohoda() {
+  return (
+    <>
+      <p className="mb-2 font-medium">Pohoda</p>
+      <ol className="ml-4 list-decimal space-y-1">
+        <li>
+          <Veta
+            k="Otvorte agendu {cesta} a označte doklady."
+            casti={{ cesta: <S k="Fakturácia → Vydané faktúry" /> }}
+          />
+        </li>
+        <li>
+          <Veta
+            k="V menu zvoľte {cesta}."
+            casti={{ cesta: <S k="Súbor → Dátová komunikácia → XML import/export" /> }}
+          />
+        </li>
+        <li>
+          <Veta k="Vyberte export do súboru a potvrďte." />
+        </li>
+        <li>
+          <Veta
+            k="Súbor {xml} nahrajte nižšie. Rovnako zvládneme aj export do {isdoc}."
+            casti={{ xml: <code>.xml</code>, isdoc: <strong>ISDOC</strong> }}
+          />
+        </li>
+      </ol>
+      <p className="mb-2 mt-4 font-medium">mPohoda</p>
+      <p className="text-muted-foreground">
+        <Veta
+          k="mPohoda dáta nevydáva ako XML, ale cez svoje rozhranie vo formáte {json}. Súbor so zoznamom faktúr z rozhrania mPohody nahrajte rovnako nižšie — formát rozpoznáme sami."
+          casti={{ json: <strong>JSON</strong> }}
+        />
+      </p>
+    </>
+  );
+}
+
+function NavodSuperfaktura() {
+  return (
+    <ol className="ml-4 list-decimal space-y-1">
+      <li>
+        <Veta
+          k="Vo SuperFaktúre otvorte {cesta}."
+          casti={{ cesta: <S k="Nástroje → Export agendy" /> }}
+        />
+      </li>
+      <li>
+        <Veta k="Vyberte obdobie a stiahnite export." />
+      </li>
+      <li>
+        <Veta
+          k="Dostanete {zip}, v ktorom je každá faktúra ako {isdoc}. Nahrajte ho celý — rozbaľovať ho netreba."
+          casti={{ zip: <strong>ZIP</strong>, isdoc: <code>.isdoc</code> }}
+        />
+      </li>
+    </ol>
+  );
+}
+
+function NavodIdoklad() {
+  return (
+    <ol className="ml-4 list-decimal space-y-1">
+      <li>
+        <Veta
+          k="Prihláste sa do iDoklad a otvorte {cesta}."
+          casti={{ cesta: <S k="Faktúry → Vydané faktúry" /> }}
+        />
+      </li>
+      <li>
+        <Veta
+          k="Kliknite na {cesta} a zvoľte obdobie."
+          casti={{ cesta: <S k="Export → CSV" /> }}
+        />
+      </li>
+      <li>
+        <Veta k="Stiahnutý súbor {csv} nahrajte nižšie." casti={{ csv: <code>.csv</code> }} />
+      </li>
+      <li>
+        <Veta
+          k="Alternatívne môžete exportovať aj odberateľov cez {cesta}."
+          casti={{ cesta: <S k="Kontakty → Export" /> }}
+        />
+      </li>
+    </ol>
+  );
+}
+
+function NavodMoney() {
+  return (
+    <ol className="ml-4 list-decimal space-y-1">
+      <li>
+        <Veta
+          k="V Money S3 otvorte agendu {agenda}."
+          casti={{ agenda: <S k="Faktúry vydané" /> }}
+        />
+      </li>
+      <li>
+        <Veta
+          k="Spustite {cesta} a vyberte typ dokladu {typ}."
+          casti={{ cesta: <S k="XML prenosy → Export" />, typ: <E k="Faktúry vydané" /> }}
+        />
+      </li>
+      <li>
+        <Veta
+          k="Zvoľte obdobie a potvrďte export do súboru {xml} (dátový balík {balik})."
+          casti={{ xml: <code>.xml</code>, balik: <code>MoneyData</code> }}
+        />
+      </li>
+      <li>
+        <Veta
+          k="Súbor nahrajte nižšie. Rovnako sa dajú naimportovať aj {prijate}."
+          casti={{ prijate: <E k="Faktúry prijaté" /> }}
+        />
+      </li>
+    </ol>
+  );
+}
+
+function NavodOmega() {
+  return (
+    <ol className="ml-4 list-decimal space-y-1">
+      <li>
+        <Veta
+          k="V Omega otvorte {cesta} (alebo Kniha odoslaných FA)."
+          casti={{ cesta: <S k="Evidencia → Vydané faktúry" /> }}
+        />
+      </li>
+      <li>
+        <Veta
+          k="Zvoľte {csv} (odporúčané) alebo {xml}."
+          casti={{ csv: <S k="Súbor → Export → CSV" />, xml: <strong>XML</strong> }}
+        />
+      </li>
+      <li>
+        <Veta
+          k="Nastavte kódovanie na {a} alebo {b} — obe zvládneme."
+          casti={{ a: <strong>Windows-1250</strong>, b: <strong>UTF-8</strong> }}
+        />
+      </li>
+      <li>
+        <Veta k="Súbor nahrajte nižšie." />
+      </li>
+    </ol>
+  );
+}
+
+function NavodKros() {
+  return (
+    <ol className="ml-4 list-decimal space-y-1">
+      <li>
+        <Veta
+          k="V KROS Alfa/Omega otvorte {agenda}."
+          casti={{ agenda: <S k="Vydané faktúry" /> }}
+        />
+      </li>
+      <li>
+        <Veta
+          k="Zvoľte {xml} (odporúčané pre kompletné dáta) alebo {csv}."
+          casti={{ xml: <S k="Export → XML" />, csv: <strong>CSV</strong> }}
+        />
+      </li>
+      <li>
+        <Veta k="Nastavte rozsah období a potvrďte." />
+      </li>
+      <li>
+        <Veta k="Súbor nahrajte nižšie — automaticky rozpoznáme štruktúru." />
+      </li>
+    </ol>
+  );
+}
+
+function NavodDoklady() {
+  return (
+    <p>
+      <Veta k="Prijaté doklady majú vlastnú stránku, lebo berú viac súborov naraz: XML alebo tabuľku s údajmi a k nej ZIP so skenmi. Keď máte len PDF, prečíta ich AI." />
+    </p>
+  );
+}
+
 export const IMPORT_ZDROJE: ImportZdroj[] = [
   {
     id: "pohoda",
@@ -33,30 +234,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
     description:
       "Naimportujte faktúry a odberateľov z XML exportu programu Pohoda, zo súboru ISDOC alebo z údajov mPohody.",
     accept: ".xml,.isdoc,.json",
-    guide: (
-      <>
-        <p className="mb-2 font-medium">Pohoda</p>
-        <ol className="ml-4 list-decimal space-y-1">
-          <li>
-            Otvorte agendu <strong>Fakturácia → Vydané faktúry</strong> a označte doklady.
-          </li>
-          <li>
-            V menu zvoľte <strong>Súbor → Dátová komunikácia → XML import/export</strong>.
-          </li>
-          <li>Vyberte export do súboru a potvrďte.</li>
-          <li>
-            Súbor <code>.xml</code> nahrajte nižšie. Rovnako zvládneme aj export do{" "}
-            <strong>ISDOC</strong>.
-          </li>
-        </ol>
-        <p className="mb-2 mt-4 font-medium">mPohoda</p>
-        <p className="text-muted-foreground">
-          mPohoda dáta nevydáva ako XML, ale cez svoje rozhranie vo formáte <strong>JSON</strong>.
-          Súbor so zoznamom faktúr z rozhrania mPohody nahrajte rovnako nižšie — formát rozpoznáme
-          sami.
-        </p>
-      </>
-    ),
+    guide: <NavodPohoda />,
   },
   {
     id: "superfaktura",
@@ -64,18 +242,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
     title: "Import zo SuperFaktúry",
     description: "Naimportujte faktúry a odberateľov z exportu agendy zo SuperFaktúry.",
     cesta: "/importy/superfaktura",
-    guide: (
-      <ol className="ml-4 list-decimal space-y-1">
-        <li>
-          Vo SuperFaktúre otvorte <strong>Nástroje → Export agendy</strong>.
-        </li>
-        <li>Vyberte obdobie a stiahnite export.</li>
-        <li>
-          Dostanete <strong>ZIP</strong>, v ktorom je každá faktúra ako <code>.isdoc</code>.
-          Nahrajte ho celý — rozbaľovať ho netreba.
-        </li>
-      </ol>
-    ),
+    guide: <NavodSuperfaktura />,
   },
   {
     id: "idoklad",
@@ -83,22 +250,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
     title: "Import z iDoklad",
     description: "Naimportujte faktúry a odberateľov z CSV exportu z iDoklad.",
     accept: ".csv",
-    guide: (
-      <ol className="ml-4 list-decimal space-y-1">
-        <li>
-          Prihláste sa do iDoklad a otvorte <strong>Faktúry → Vydané faktúry</strong>.
-        </li>
-        <li>
-          Kliknite na <strong>Export → CSV</strong> a zvoľte obdobie.
-        </li>
-        <li>
-          Stiahnutý súbor <code>.csv</code> nahrajte nižšie.
-        </li>
-        <li>
-          Alternatívne môžete exportovať aj odberateľov cez <strong>Kontakty → Export</strong>.
-        </li>
-      </ol>
-    ),
+    guide: <NavodIdoklad />,
   },
   {
     id: "money-s3",
@@ -106,24 +258,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
     title: "Import z Money S3",
     description: "Naimportujte faktúry a odberateľov z XML exportu Money S3 (Seyfor).",
     accept: ".xml",
-    guide: (
-      <ol className="ml-4 list-decimal space-y-1">
-        <li>
-          V Money S3 otvorte agendu <strong>Faktúry vydané</strong>.
-        </li>
-        <li>
-          Spustite <strong>XML prenosy → Export</strong> a vyberte typ dokladu{" "}
-          <em>Faktúry vydané</em>.
-        </li>
-        <li>
-          Zvoľte obdobie a potvrďte export do súboru <code>.xml</code> (dátový balík{" "}
-          <code>MoneyData</code>).
-        </li>
-        <li>
-          Súbor nahrajte nižšie. Rovnako sa dajú naimportovať aj <em>Faktúry prijaté</em>.
-        </li>
-      </ol>
-    ),
+    guide: <NavodMoney />,
   },
   {
     id: "omega",
@@ -131,21 +266,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
     title: "Import z Omega (KROS)",
     description: "Naimportujte faktúry a odberateľov z CSV alebo XML exportu z KROS Omega.",
     accept: ".csv,.xml",
-    guide: (
-      <ol className="ml-4 list-decimal space-y-1">
-        <li>
-          V Omega otvorte <strong>Evidencia → Vydané faktúry</strong> (alebo Kniha odoslaných FA).
-        </li>
-        <li>
-          Zvoľte <strong>Súbor → Export → CSV</strong> (odporúčané) alebo <strong>XML</strong>.
-        </li>
-        <li>
-          Nastavte kódovanie na <strong>Windows-1250</strong> alebo <strong>UTF-8</strong> — obe
-          zvládneme.
-        </li>
-        <li>Súbor nahrajte nižšie.</li>
-      </ol>
-    ),
+    guide: <NavodOmega />,
   },
   {
     id: "kros",
@@ -153,19 +274,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
     title: "Import z KROS (Alfa plus / Omega)",
     description: "Naimportujte faktúry a odberateľov z XML alebo CSV exportu z KROS.",
     accept: ".xml,.csv",
-    guide: (
-      <ol className="ml-4 list-decimal space-y-1">
-        <li>
-          V KROS Alfa/Omega otvorte <strong>Vydané faktúry</strong>.
-        </li>
-        <li>
-          Zvoľte <strong>Export → XML</strong> (odporúčané pre kompletné dáta) alebo{" "}
-          <strong>CSV</strong>.
-        </li>
-        <li>Nastavte rozsah období a potvrďte.</li>
-        <li>Súbor nahrajte nižšie — automaticky rozpoznáme štruktúru.</li>
-      </ol>
-    ),
+    guide: <NavodKros />,
   },
   {
     id: "doklady",
@@ -174,12 +283,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
     description:
       "Prechod z Doklado alebo inej aplikácie: prijaté faktúry, bločky a skeny dokladov.",
     cesta: "/importy/doklady",
-    guide: (
-      <p>
-        Prijaté doklady majú vlastnú stránku, lebo berú viac súborov naraz: XML alebo tabuľku s
-        údajmi a k nej ZIP so skenmi. Keď máte len PDF, prečíta ich AI.
-      </p>
-    ),
+    guide: <NavodDoklady />,
   },
 ];
 

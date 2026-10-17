@@ -7,6 +7,7 @@ import { nazovDruhu, stavLehoty, type DruhOstatneho } from "@/lib/faktero/ostatn
 import { STAV_DOKLADU_NAZOV } from "@/lib/faktero/doklad-stav";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Iné doklady priradené k zamestnancovi (exekúcie) alebo k zmluve
@@ -29,6 +30,7 @@ export function PrepojeneOstatneDoklady({
   popisPrazdny: string;
   tlacidlo: string;
 }) {
+  const { t } = useT();
   const navigate = useNavigate();
   const zoznamFn = useServerFn(zoznamOstatnychFn);
   const [rows, setRows] = useState<any[] | null>(null);
@@ -52,7 +54,7 @@ export function PrepojeneOstatneDoklady({
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">{popisPrazdny}</p>
+        <p className="text-sm text-muted-foreground">{t(popisPrazdny)}</p>
         <Link
           to="/ostatne-doklady/novy"
           search={{
@@ -62,28 +64,28 @@ export function PrepojeneOstatneDoklady({
           }}
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
         >
-          <Plus className="h-4 w-4" /> {tlacidlo}
+          <Plus className="h-4 w-4" /> {t(tlacidlo)}
         </Link>
       </div>
       {chyba ? (
-        <p className="text-sm text-destructive">{chyba}</p>
+        <p className="text-sm text-destructive">{t(chyba)}</p>
       ) : rows === null ? (
-        <p className="text-sm text-muted-foreground">Načítavam…</p>
+        <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
       ) : rows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Zatiaľ žiadne priradené doklady.
+          {t("Zatiaľ žiadne priradené doklady.")}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-sm">
             <thead className="bg-secondary/40 text-xs text-muted-foreground">
               <tr>
-                <th className="px-3 py-2 text-left">Doručené</th>
-                <th className="px-3 py-2 text-left">Druh</th>
-                <th className="px-3 py-2 text-left">Odosielateľ a predmet</th>
-                <th className="px-3 py-2 text-right">Suma</th>
-                <th className="px-3 py-2 text-left">Lehota</th>
-                <th className="px-3 py-2 text-left">Stav</th>
+                <th className="px-3 py-2 text-left">{t("Doručené")}</th>
+                <th className="px-3 py-2 text-left">{t("Druh")}</th>
+                <th className="px-3 py-2 text-left">{t("Odosielateľ a predmet")}</th>
+                <th className="px-3 py-2 text-right">{t("Suma")}</th>
+                <th className="px-3 py-2 text-left">{t("Lehota")}</th>
+                <th className="px-3 py-2 text-left">{t("Stav")}</th>
               </tr>
             </thead>
             <tbody>
@@ -95,11 +97,15 @@ export function PrepojeneOstatneDoklady({
                     onClick={() => navigate({ to: "/ostatne-doklady/novy", search: { id: r.id } })}
                     className="cursor-pointer border-t border-border hover:bg-secondary/30"
                   >
-                    <td className="px-3 py-2 whitespace-nowrap">{datumNaDoklade(r.received_date)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{nazovDruhu(r.kind)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {datumNaDoklade(r.received_date)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">{t(nazovDruhu(r.kind))}</td>
                     <td className="px-3 py-2">
                       <div>{r.sender || "—"}</div>
-                      {r.subject && <div className="text-xs text-muted-foreground">{r.subject}</div>}
+                      {r.subject && (
+                        <div className="text-xs text-muted-foreground">{r.subject}</div>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
                       {r.amount != null ? formatujMenu(r.amount, r.currency) : "—"}
@@ -116,7 +122,9 @@ export function PrepojeneOstatneDoklady({
                       {r.due_date ?? "—"}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      {STAV_DOKLADU_NAZOV[r.status as keyof typeof STAV_DOKLADU_NAZOV] ?? r.status}
+                      {t(
+                        STAV_DOKLADU_NAZOV[r.status as keyof typeof STAV_DOKLADU_NAZOV] ?? r.status,
+                      )}
                     </td>
                   </tr>
                 );

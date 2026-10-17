@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { overIcDphFn } from "@/lib/faktero/vies.functions";
 import { jeCerstve, jeEuIcDph, jeTuzemske, type VysledokVies } from "@/lib/faktero/vies";
 import { BadgeCheck, Loader2, ShieldAlert, ShieldQuestion } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Overenie IČ DPH v registri VIES.
@@ -25,6 +26,7 @@ export function OverenieVies({
   posledne?: { platne: boolean | null; kedy: string | null };
   onOverene?: (v: VysledokVies) => void;
 }) {
+  const { t, jazyk } = useT();
   const over = useServerFn(overIcDphFn);
   const [bezi, setBezi] = useState(false);
   const [vysledok, setVysledok] = useState<VysledokVies | null>(null);
@@ -35,7 +37,7 @@ export function OverenieVies({
   if (!jeEuIcDph(ic)) {
     return (
       <p className="mt-1 text-xs text-muted-foreground">
-        IČ DPH nie je z členského štátu EÚ — vo VIES sa overiť nedá.
+        {t("IČ DPH nie je z členského štátu EÚ — vo VIES sa overiť nedá.")}
       </p>
     );
   }
@@ -74,7 +76,7 @@ export function OverenieVies({
         ) : (
           <ShieldQuestion className="h-3.5 w-3.5" />
         )}
-        Overiť vo VIES
+        {t("Overiť vo VIES")}
       </button>
       {stav && (
         <span
@@ -87,11 +89,11 @@ export function OverenieVies({
           ) : (
             <ShieldAlert className="h-3.5 w-3.5" />
           )}
-          {stav.platne ? "Platné" : "Neplatné"}
+          {stav.platne ? t("Platné") : t("Neplatné")}
           {stav.overene && (
             <span className="text-muted-foreground">
-              · {new Date(stav.overene).toLocaleDateString("sk-SK")}
-              {!cerstve && " (staršie než 30 dní)"}
+              · {new Date(stav.overene).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK")}
+              {!cerstve && ` ${t("(staršie než 30 dní)")}`}
             </span>
           )}
         </span>
@@ -100,7 +102,7 @@ export function OverenieVies({
         <span className="ml-2 text-xs text-muted-foreground">{vysledok.nazov}</span>
       )}
       {vysledok?.chyba && !vysledok.platne && (
-        <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{vysledok.chyba}</p>
+        <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{t(vysledok.chyba)}</p>
       )}
     </div>
   );

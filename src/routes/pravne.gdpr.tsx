@@ -4,17 +4,23 @@ import {
   LEGAL_VERSION,
   LEGAL_UPDATED,
   LEGAL_COMPANY,
+  DeUpozornenie,
 } from "@/components/faktero/LegalShell";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/pravne/gdpr")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Ochrana osobných údajov (GDPR) — Faktero" },
+      { title: preloz(match.context.jazyk, "Ochrana osobných údajov (GDPR) — Faktero") },
       {
         name: "description",
-        content: "Informácie o spracúvaní osobných údajov v službe Faktero v zmysle GDPR.",
+        content: preloz(
+          match.context.jazyk,
+          "Informácie o spracúvaní osobných údajov v službe Faktero v zmysle GDPR.",
+        ),
       },
-      { property: "og:title", content: "GDPR — Faktero" },
+      { property: "og:title", content: preloz(match.context.jazyk, "GDPR — Faktero") },
       { property: "og:url", content: "https://faktero.sk/pravne/gdpr" },
     ],
     links: [{ rel: "canonical", href: "https://faktero.sk/pravne/gdpr" }],
@@ -23,12 +29,21 @@ export const Route = createFileRoute("/pravne/gdpr")({
 });
 
 function Page() {
+  const { jazyk, t } = useT();
   return (
     <LegalShell
-      title="Ochrana osobných údajov (GDPR)"
+      title={t("Ochrana osobných údajov (GDPR)")}
       updated={LEGAL_UPDATED}
       version={LEGAL_VERSION}
     >
+      {jazyk === "de" ? <De /> : <Sk />}
+    </LegalShell>
+  );
+}
+
+function Sk() {
+  return (
+    <>
       <h2>1. Prevádzkovateľ</h2>
       <p>
         <strong>{LEGAL_COMPANY.name}</strong>, sídlo {LEGAL_COMPANY.address}, IČO:{" "}
@@ -175,6 +190,174 @@ function Page() {
         <br />
         E-mail: <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>
       </p>
-    </LegalShell>
+    </>
+  );
+}
+
+function De() {
+  return (
+    <>
+      <DeUpozornenie />
+      <h2>1. Verantwortlicher</h2>
+      <p>
+        <strong>{LEGAL_COMPANY.name}</strong>, Sitz {LEGAL_COMPANY.address}, Firmen-ID (IČO):{" "}
+        {LEGAL_COMPANY.ico}, Steuernummer (DIČ): {LEGAL_COMPANY.dic}, USt-IdNr.:{" "}
+        {LEGAL_COMPANY.icDph}.
+      </p>
+
+      <h2>2. Kontaktdaten</h2>
+      <p>
+        Bei Fragen zur Verarbeitung personenbezogener Daten kontaktieren Sie uns unter{" "}
+        <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a> oder{" "}
+        {LEGAL_COMPANY.phone}.
+      </p>
+      <p>
+        Wir sind nicht verpflichtet, einen Datenschutzbeauftragten (DPO) zu benennen; in
+        Datenschutzangelegenheiten wenden Sie sich an{" "}
+        <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>.
+      </p>
+
+      <p>
+        Wenn Sie Faktero zur Führung Ihrer Geschäftsunterlagen nutzen, verarbeiten wir die Daten
+        Ihrer Kunden und Mitarbeiter als <strong>Auftragsverarbeiter</strong> gemäß Art. 28 DSGVO —
+        die Bedingungen finden Sie im{" "}
+        <a href="/pravne/spracovanie-udajov">
+          Vertrag über die Verarbeitung personenbezogener Daten
+        </a>
+        , wo auch die Liste der Unterauftragsverarbeiter aufgeführt ist.
+      </p>
+
+      <h2>3. Welche Daten wir verarbeiten</h2>
+      <ul>
+        <li>Identifikationsdaten: Vorname, Nachname, E-Mail, Telefon.</li>
+        <li>
+          Unternehmensdaten: Firmenname, Firmen-ID (IČO), Steuernummer (DIČ), USt-IdNr.,
+          Sitzadresse.
+        </li>
+        <li>Buchhaltungsdaten: Ausgangsrechnungen, Kunden, Lager, Zahlungen.</li>
+        <li>Technische Daten: IP-Adresse, Browser, Cookies, Zugriffsprotokolle.</li>
+        <li>
+          Zahlungsdaten: Informationen über Zahlungen für das Abonnement (die Daten der
+          Zahlungskarte selbst verarbeitet der Anbieter des Zahlungsgateways).
+        </li>
+      </ul>
+
+      <h2>4. Zweck der Verarbeitung</h2>
+      <ul>
+        <li>Bereitstellung und Betrieb des Dienstes Faktero.</li>
+        <li>Erfüllung vertraglicher Pflichten und Abrechnung des Abonnements.</li>
+        <li>Kommunikation mit dem Nutzer und Kundensupport.</li>
+        <li>Erfüllung gesetzlicher Pflichten (Buchhaltung, Steuern, Archivierung).</li>
+        <li>Sicherheit und Verhinderung von Missbrauch des Dienstes.</li>
+      </ul>
+
+      <h2>5. Rechtsgrundlage</h2>
+      <ul>
+        <li>Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO).</li>
+        <li>Erfüllung gesetzlicher Pflichten (Art. 6 Abs. 1 lit. c DSGVO).</li>
+        <li>Berechtigtes Interesse des Verantwortlichen (Art. 6 Abs. 1 lit. f DSGVO).</li>
+        <li>
+          Einwilligung der betroffenen Person (Art. 6 Abs. 1 lit. a DSGVO), sofern erforderlich.
+        </li>
+      </ul>
+
+      <h2>6. Speicherdauer</h2>
+      <p>
+        Personenbezogene Daten speichern wir für die Dauer des Vertragsverhältnisses und danach für
+        die von den Rechtsvorschriften geforderte Dauer (in der Regel 10 Jahre gemäß dem Gesetz über
+        die Buchführung (zákon o účtovníctve)). Nach Ablauf dieser Frist werden die Daten gelöscht
+        oder anonymisiert.
+      </p>
+
+      <h2>7. Übermittlung von Daten an Dritte</h2>
+      <p>
+        Wir teilen Daten ausschließlich mit Auftragsverarbeitern, die für den Betrieb des Dienstes
+        erforderlich sind:
+      </p>
+      <ul>
+        <li>
+          <strong>Supabase</strong> (Datenbank, Anmeldung und Dateispeicher) — Supabase Inc., Server
+          in der EU (Frankfurt).
+        </li>
+        <li>
+          <strong>Hetzner Online</strong> (Server, auf dem die Anwendung läuft) — Hetzner Online
+          GmbH, Deutschland.
+        </li>
+        <li>
+          <strong>Resend</strong> (Versand und Empfang von E-Mails, Rechnungen und Belege per Post)
+          — Resend Inc., USA, Standardvertragsklauseln.
+        </li>
+        <li>
+          <strong>Google (Gemini API)</strong> und <strong>OpenAI</strong> (Erkennung von Daten aus
+          hochgeladenen Belegen und Assistent) — Google Ireland Ltd. und OpenAI Ireland Ltd.,
+          Standardvertragsklauseln. Die Belege werden nicht zum Training von Modellen
+          bereitgestellt.
+        </li>
+        <li>
+          <strong>GoPay</strong> (Zahlungsgateway für das Faktero-Abonnement) — GOPAY s.r.o.,
+          Tschechische Republik. Kartenzahlungen für die Kunden Ihres Unternehmens bietet Faktero
+          nicht an.
+        </li>
+        <li>
+          <strong>Apple / Google</strong> (Vertrieb der mobilen Anwendung und Zustellung von
+          Benachrichtigungen) — Apple Inc. und Google Ireland Ltd.
+        </li>
+        <li>
+          <strong>Google Analytics</strong> (falls aktiviert) — Google Ireland Ltd., Irland. Die
+          Daten werden anonymisiert.
+        </li>
+      </ul>
+      <p>
+        Mit allen Auftragsverarbeitern haben wir einen Vertrag über die Verarbeitung
+        personenbezogener Daten gemäß Art. 28 DSGVO geschlossen.
+      </p>
+
+      <h2>8. Daten im Eigentum des Nutzers</h2>
+      <p>
+        <strong>
+          Die vom Nutzer eingegebenen Daten zu Ausgangsrechnungen, Kunden und Lager gehören dem
+          Unternehmen des Nutzers.
+        </strong>{" "}
+        Der Betreiber verarbeitet diese Daten ausschließlich als Auftragsverarbeiter im Namen des
+        Nutzers zum Zweck des Betriebs des Dienstes.
+      </p>
+
+      <h2>9. Rechte der betroffenen Person</h2>
+      <ul>
+        <li>Recht auf Auskunft über personenbezogene Daten.</li>
+        <li>Recht auf Berichtigung unrichtiger Daten.</li>
+        <li>Recht auf Löschung („Recht auf Vergessenwerden“).</li>
+        <li>Recht auf Einschränkung der Verarbeitung.</li>
+        <li>Recht auf Datenübertragbarkeit.</li>
+        <li>Recht auf Widerspruch gegen die Verarbeitung.</li>
+        <li>
+          Recht auf Beschwerde bei der Aufsichtsbehörde (Amt für den Schutz personenbezogener Daten
+          der Slowakischen Republik, Úrad na ochranu osobných údajov SR).
+        </li>
+      </ul>
+
+      <h2>10. Löschung von Daten</h2>
+      <p>
+        Die Löschung des Kontos und der personenbezogenen Daten können Sie per E-Mail an{" "}
+        <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a> beantragen. Daten, die
+        wir gesetzlich aufbewahren müssen (z. B. Ausgangsrechnungen), werden nach Ablauf der
+        gesetzlichen Frist gelöscht.
+      </p>
+
+      <h2>11. Datenübertragbarkeit</h2>
+      <p>
+        Auf Anfrage stellen wir Ihnen einen Export Ihrer Daten in einem strukturierten, gängigen und
+        maschinenlesbaren Format (CSV, JSON, XML) zur Verfügung.
+      </p>
+
+      <h2>12. Kontakt für DSGVO</h2>
+      <p>
+        {LEGAL_COMPANY.name}
+        <br />
+        {LEGAL_COMPANY.address}
+        <br />
+        E-Mail: <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>
+      </p>
+    </>
   );
 }

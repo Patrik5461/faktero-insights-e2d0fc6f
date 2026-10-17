@@ -14,6 +14,7 @@ import {
   getMessagesFn,
   sendChatFn,
 } from "@/lib/faktero/ai-assistant.functions";
+import { useT } from "@/lib/i18n/useT";
 
 const SUGGESTED_PROMPTS = [
   "Ktoré faktúry sú po splatnosti?",
@@ -24,6 +25,7 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose?: () => void }) {
+  const { t } = useT();
   const qc = useQueryClient();
   const listFn = useServerFn(listConversationsFn);
   const createFn = useServerFn(createConversationFn);
@@ -67,7 +69,7 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
       qc.invalidateQueries({ queryKey: ["ai-msgs", activeId] });
       qc.invalidateQueries({ queryKey: ["ai-conv", companyId] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Chyba"),
+    onError: (e: any) => toast.error(e.message ?? t("Chyba")),
   });
 
   const newConv = useMutation({
@@ -108,8 +110,10 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold">Faktero AI asistent</h3>
-            <p className="text-xs text-muted-foreground">Inteligentný pomocník pre vašu firmu</p>
+            <h3 className="text-sm font-semibold">{t("Faktero AI asistent")}</h3>
+            <p className="text-xs text-muted-foreground">
+              {t("Inteligentný pomocník pre vašu firmu")}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -117,7 +121,7 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
             onClick={() => newConv.mutate()}
             className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-secondary"
           >
-            <Plus className="h-3.5 w-3.5" /> Nová
+            <Plus className="h-3.5 w-3.5" /> {t("Nová")}
           </button>
           {onClose && (
             <button
@@ -146,7 +150,7 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
                 </button>
                 <button
                   onClick={async () => {
-                    if (await potvrd("Vymazať konverzáciu?")) delConv.mutate(c.id);
+                    if (await potvrd(t("Vymazať konverzáciu?"))) delConv.mutate(c.id);
                   }}
                   className="opacity-0 transition group-hover:opacity-100 text-muted-foreground hover:text-destructive"
                 >
@@ -155,7 +159,9 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
               </div>
             ))}
             {(conversations.data ?? []).length === 0 && (
-              <div className="px-2 py-3 text-xs text-muted-foreground">Žiadne konverzácie.</div>
+              <div className="px-2 py-3 text-xs text-muted-foreground">
+                {t("Žiadne konverzácie.")}
+              </div>
             )}
           </div>
         </aside>
@@ -172,7 +178,8 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
                 ))}
                 {sendMut.isPending && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" /> Faktero AI premýšľa…
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />{" "}
+                    {t("Faktero AI premýšľa…")}
                   </div>
                 )}
               </div>
@@ -197,7 +204,7 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
                     send(input);
                   }
                 }}
-                placeholder="Napíšte správu pre Faktero AI…"
+                placeholder={t("Napíšte správu pre Faktero AI…")}
                 rows={1}
                 autoFocus
                 className="min-h-[44px] max-h-32 flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -218,23 +225,24 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
 }
 
 function EmptyState({ onPick }: { onPick: (s: string) => void }) {
+  const { t } = useT();
   return (
     <div className="mx-auto flex h-full max-w-lg flex-col items-center justify-center py-6 text-center">
       <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-primary to-primary/70 shadow-md">
         <Sparkles className="h-6 w-6 text-primary-foreground" />
       </div>
-      <h2 className="mt-3 text-base font-semibold">Vitajte vo Faktero AI</h2>
+      <h2 className="mt-3 text-base font-semibold">{t("Vitajte vo Faktero AI")}</h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        Asistent pre faktúry, odberateľov a administratívu vašej firmy.
+        {t("Asistent pre faktúry, odberateľov a administratívu vašej firmy.")}
       </p>
       <div className="mt-4 grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
         {SUGGESTED_PROMPTS.map((s) => (
           <button
             key={s}
-            onClick={() => onPick(s)}
+            onClick={() => onPick(t(s))}
             className="rounded-lg border border-border bg-background px-3 py-2 text-left text-xs hover:border-primary/40 hover:bg-primary/5"
           >
-            {s}
+            {t(s)}
           </button>
         ))}
       </div>
@@ -243,6 +251,7 @@ function EmptyState({ onPick }: { onPick: (s: string) => void }) {
 }
 
 function MessageBubble({ role, content }: { role: string; content: string }) {
+  const { t } = useT();
   const [copied, setCopied] = useState(false);
   const isUser = role === "user";
 
@@ -276,11 +285,11 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
           >
             {copied ? (
               <>
-                <Check className="h-3 w-3" /> Skopírované
+                <Check className="h-3 w-3" /> {t("Skopírované")}
               </>
             ) : (
               <>
-                <Copy className="h-3 w-3" /> Kopírovať
+                <Copy className="h-3 w-3" /> {t("Kopírovať")}
               </>
             )}
           </button>

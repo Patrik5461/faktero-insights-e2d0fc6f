@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/dph")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — DPH — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — DPH — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Prehľad DPH vo Faktere: sadzby 23, 19, 5 a 0 %, daň na výstupe a vstupe, prenesenie daňovej povinnosti a podklady pre priznanie.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/dph" },
     ],
@@ -209,7 +213,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Účtovníctvo"
       title="DPH vo Faktere"
       intro={

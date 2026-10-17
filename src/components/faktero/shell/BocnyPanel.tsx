@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Logo } from "@/components/faktero/Logo";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Bočná navigácia.
@@ -88,6 +89,7 @@ export function SekcieNavigacie({
   /** Zavretie zásuvky po prechode. Na počítači sa nepoužíva. */
   onPrejdi?: () => void;
 }) {
+  const { t } = useT();
   return (
     <ul className="space-y-0.5">
       {sekcie.map((s) => {
@@ -103,8 +105,8 @@ export function SekcieNavigacie({
                 to={(prva?.to ?? s.cesta) as any}
                 search={prva?.search as any}
                 onClick={onPrejdi}
-                title={s.label}
-                aria-label={s.label}
+                title={t(s.label)}
+                aria-label={t(s.label)}
                 className={`relative mx-auto grid h-11 w-11 place-items-center rounded-xl ${
                   aktivna ? "bg-primary/12 text-primary" : "text-foreground/70 hover:bg-secondary"
                 }`}
@@ -113,7 +115,7 @@ export function SekcieNavigacie({
                 {s.pocet ? (
                   <span
                     className="absolute right-0.5 top-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-4 text-primary-foreground tabular-nums"
-                    aria-label={`${s.pocet} čaká`}
+                    aria-label={t("{n} čaká", { n: s.pocet })}
                   >
                     {s.pocet > 99 ? "99+" : s.pocet}
                   </span>
@@ -129,7 +131,7 @@ export function SekcieNavigacie({
               <Link
                 to={s.cesta as any}
                 onClick={onPrejdi}
-                title={zbaleny ? s.label : undefined}
+                title={zbaleny ? t(s.label) : undefined}
                 className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] ${
                   zbaleny ? "justify-center" : ""
                 } ${
@@ -139,11 +141,11 @@ export function SekcieNavigacie({
                 }`}
               >
                 <Ikona className="h-4 w-4 shrink-0" />
-                {!zbaleny && <span className="min-w-0 flex-1 truncate">{s.label}</span>}
+                {!zbaleny && <span className="min-w-0 flex-1 truncate">{t(s.label)}</span>}
                 {!zbaleny && s.pocet ? (
                   <span
                     className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums"
-                    aria-label={`${s.pocet} čaká`}
+                    aria-label={t("{n} čaká", { n: s.pocet })}
                   >
                     {s.pocet > 99 ? "99+" : s.pocet}
                   </span>
@@ -158,7 +160,7 @@ export function SekcieNavigacie({
             <button
               onClick={() => onPrepni(s.key)}
               aria-expanded={rozbalena}
-              title={zbaleny ? s.label : undefined}
+              title={zbaleny ? t(s.label) : undefined}
               className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] ${
                 zbaleny ? "justify-center" : ""
               } ${
@@ -170,7 +172,7 @@ export function SekcieNavigacie({
               <Ikona className="h-4 w-4 shrink-0" />
               {!zbaleny && (
                 <>
-                  <span className="min-w-0 flex-1 truncate">{s.label}</span>
+                  <span className="min-w-0 flex-1 truncate">{t(s.label)}</span>
                   <ChevronDown
                     className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform ${
                       rozbalena ? "rotate-180" : ""
@@ -198,13 +200,13 @@ export function SekcieNavigacie({
                             : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                         }`}
                       >
-                        <span className="min-w-0 flex-1 leading-snug" title={p.label}>
-                          {p.label}
+                        <span className="min-w-0 flex-1 leading-snug" title={t(p.label)}>
+                          {t(p.label)}
                         </span>
                         {p.pocet ? (
                           <span
                             className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums"
-                            aria-label={`${p.pocet} čaká`}
+                            aria-label={t("{n} čaká", { n: p.pocet })}
                           >
                             {p.pocet > 99 ? "99+" : p.pocet}
                           </span>
@@ -268,6 +270,7 @@ export function BocnyPanel({
   /** Kompaktné rozloženie — vždy úzky pás ikon bez rozbaľovania. */
   pas?: boolean;
 }) {
+  const { t } = useT();
   const zbaleny = pas || zbalenyVstup;
   const { otvorene, prepni: prepniOtvorene, setOtvorene } = useRozbalene(aktivnaSekcia);
 
@@ -298,8 +301,8 @@ export function BocnyPanel({
         {!zbaleny && !pas && (
           <button
             onClick={() => onZbal(true)}
-            aria-label="Zbaliť panel"
-            title="Zbaliť panel"
+            aria-label={t("Zbaliť panel")}
+            title={t("Zbaliť panel")}
             className="ml-auto grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-secondary"
           >
             <PanelLeftClose className="h-4 w-4" />
@@ -324,8 +327,8 @@ export function BocnyPanel({
         {zbaleny && !pas && (
           <button
             onClick={() => onZbal(false)}
-            aria-label="Rozbaliť panel"
-            title="Rozbaliť panel"
+            aria-label={t("Rozbaliť panel")}
+            title={t("Rozbaliť panel")}
             className="mt-1 grid h-8 w-full place-items-center rounded-md text-muted-foreground hover:bg-secondary"
           >
             <PanelLeftOpen className="h-4 w-4" />

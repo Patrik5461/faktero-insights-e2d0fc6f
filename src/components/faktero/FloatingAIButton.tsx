@@ -15,6 +15,7 @@ import {
   sendChatFn,
 } from "@/lib/faktero/ai-assistant.functions";
 import { getAiAvailabilityFn } from "@/lib/faktero/ai-availability.functions";
+import { useT } from "@/lib/i18n/useT";
 
 const SUGGESTED = [
   "Ktoré faktúry sú po splatnosti?",
@@ -26,6 +27,7 @@ const SUGGESTED = [
 ];
 
 export function FloatingAIButton() {
+  const { t } = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const oknoOtvorene = useOtvoreneOkno();
   const [open, setOpen] = useState(false);
@@ -65,18 +67,20 @@ export function FloatingAIButton() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Faktero AI asistent"
-        title="Faktero AI asistent"
+        data-ai-prepinac=""
+        aria-label={t("Faktero AI asistent")}
+        title={t("Faktero AI asistent")}
         className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary/80 p-3 text-sm sm:px-4 font-semibold text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-primary/30 transition-transform hover:scale-105"
       >
         {open ? <X className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-        <span className="sr-only sm:not-sr-only">{open ? "Zavrieť" : "AI"}</span>
+        <span className="sr-only sm:not-sr-only">{open ? t("Zavrieť") : "AI"}</span>
       </button>
     </div>
   );
 }
 
 function CompactChat({ companyId, onClose }: { companyId: string | null; onClose: () => void }) {
+  const { t } = useT();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -85,7 +89,7 @@ function CompactChat({ companyId, onClose }: { companyId: string | null; onClose
       const target = e.target as Node;
       if (!ref.current.contains(target)) {
         // Don't close when clicking the toggle button itself (parent handles toggle)
-        const btn = (target as HTMLElement).closest?.("[aria-label='Faktero AI asistent']");
+        const btn = (target as HTMLElement).closest?.("[data-ai-prepinac]");
         if (!btn) onClose();
       }
     };
@@ -105,7 +109,7 @@ function CompactChat({ companyId, onClose }: { companyId: string | null; onClose
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
           <Sparkles className="h-8 w-8 text-muted-foreground/60" />
-          <p>Vyberte aktívnu firmu, aby ste mohli používať Faktero AI.</p>
+          <p>{t("Vyberte aktívnu firmu, aby ste mohli používať Faktero AI.")}</p>
         </div>
       )}
     </div>
@@ -113,6 +117,7 @@ function CompactChat({ companyId, onClose }: { companyId: string | null; onClose
 }
 
 function Header({ onClose }: { onClose: () => void }) {
+  const { t } = useT();
   return (
     <div className="flex items-center justify-between gap-2 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3">
       <div className="flex items-center gap-2">
@@ -120,14 +125,14 @@ function Header({ onClose }: { onClose: () => void }) {
           <Sparkles className="h-4 w-4" />
         </div>
         <div className="leading-tight">
-          <div className="text-sm font-semibold">Faktero AI asistent</div>
-          <div className="text-[11px] text-muted-foreground">Pomocník pre vašu firmu</div>
+          <div className="text-sm font-semibold">{t("Faktero AI asistent")}</div>
+          <div className="text-[11px] text-muted-foreground">{t("Pomocník pre vašu firmu")}</div>
         </div>
       </div>
       <div className="flex items-center gap-1">
         <button
           type="button"
-          aria-label="Minimalizovať"
+          aria-label={t("Minimalizovať")}
           onClick={onClose}
           className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
@@ -135,7 +140,7 @@ function Header({ onClose }: { onClose: () => void }) {
         </button>
         <button
           type="button"
-          aria-label="Zatvoriť"
+          aria-label={t("Zatvoriť")}
           onClick={onClose}
           className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
@@ -147,6 +152,7 @@ function Header({ onClose }: { onClose: () => void }) {
 }
 
 function ChatBody({ companyId }: { companyId: string }) {
+  const { t } = useT();
   const qc = useQueryClient();
   const listFn = useServerFn(listConversationsFn);
   const createFn = useServerFn(createConversationFn);
@@ -214,21 +220,21 @@ function ChatBody({ companyId }: { companyId: string }) {
         {msgs.length === 0 && !sendMut.isPending && (
           <div className="space-y-2">
             <div className="rounded-2xl bg-muted px-3 py-2 text-sm leading-relaxed text-foreground">
-              Ahoj! 👋 Som <strong>Faktero AI asistent</strong>. Pomôžem vám s faktúrami,
-              odberateľmi, eFaktúrou a vašou administratívou.
+              {t("Ahoj! 👋 Som")} <strong>{t("Faktero AI asistent")}</strong>
+              {t(". Pomôžem vám s faktúrami, odberateľmi, eFaktúrou a vašou administratívou.")}
             </div>
             <div className="px-1 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-              Časté otázky
+              {t("Časté otázky")}
             </div>
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTED.map((q) => (
                 <button
                   key={q}
                   type="button"
-                  onClick={() => send(q)}
+                  onClick={() => send(t(q))}
                   className="rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground hover:border-primary/50 hover:bg-primary/5"
                 >
-                  {q}
+                  {t(q)}
                 </button>
               ))}
             </div>
@@ -265,7 +271,7 @@ function ChatBody({ companyId }: { companyId: string }) {
 
         {sendMut.isError && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-            {(sendMut.error as Error)?.message ?? "Chyba pri odosielaní"}
+            {(sendMut.error as Error)?.message ?? t("Chyba pri odosielaní")}
           </div>
         )}
       </div>
@@ -280,8 +286,8 @@ function ChatBody({ companyId }: { companyId: string }) {
         <button
           type="button"
           onClick={newChat}
-          title="Nová konverzácia"
-          aria-label="Nová konverzácia"
+          title={t("Nová konverzácia")}
+          aria-label={t("Nová konverzácia")}
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <Plus className="h-4 w-4" />
@@ -295,7 +301,7 @@ function ChatBody({ companyId }: { companyId: string }) {
               send(input);
             }
           }}
-          placeholder="Napíšte správu pre Faktero AI…"
+          placeholder={t("Napíšte správu pre Faktero AI…")}
           rows={1}
           className="max-h-24 flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
@@ -303,13 +309,13 @@ function ChatBody({ companyId }: { companyId: string }) {
           type="submit"
           disabled={sendMut.isPending || !input.trim()}
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
-          aria-label="Odoslať"
+          aria-label={t("Odoslať")}
         >
           <Send className="h-4 w-4" />
         </button>
       </form>
       <div className="border-t border-border bg-muted/30 px-3 py-1.5 text-center text-[10px] text-muted-foreground">
-        Faktero AI · firemné dáta · neposkytuje právne ani daňové poradenstvo
+        {t("Faktero AI · firemné dáta · neposkytuje právne ani daňové poradenstvo")}
       </div>
     </>
   );

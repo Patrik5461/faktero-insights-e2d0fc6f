@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { jePlatnyColnyKod } from "@/lib/faktero/colny-kod";
+import { useT } from "@/lib/i18n/useT";
 import { VyberColnehoKodu } from "@/components/faktero/VyberColnehoKodu";
 
 /*
@@ -25,6 +26,7 @@ export function ColneUdajePolozky({
   disabled?: boolean;
   mobil?: boolean;
 }) {
+  const { t } = useT();
   const vyplnene = Boolean(value.colny_kod || value.krajina_povodu || value.hmotnost_kg);
   const [otvorene, setOtvorene] = useState(false);
   if (!vyplnene && !otvorene) {
@@ -35,7 +37,7 @@ export function ColneUdajePolozky({
         onClick={() => setOtvorene(true)}
         className={`text-xs text-primary hover:underline ${mobil ? "mb-2" : "ml-2 mt-0.5"}`}
       >
-        + Colný kód
+        + {t("Colný kód")}
       </button>
     );
   }
@@ -45,7 +47,7 @@ export function ColneUdajePolozky({
   return (
     <div className={`flex flex-wrap items-start gap-2 ${mobil ? "mb-2" : "mt-1"}`}>
       <label className="flex items-start gap-1 text-xs text-muted-foreground">
-        <span className="pt-1">KN</span>
+        <span className="pt-1">{t("KN")}</span>
         <div className="w-56">
           <VyberColnehoKodu
             value={value.colny_kod}
@@ -57,32 +59,32 @@ export function ColneUdajePolozky({
         </div>
       </label>
       <label className="flex items-center gap-1 text-xs text-muted-foreground">
-        pôvod
+        {t("pôvod")}
         <input
-          aria-label="Krajina pôvodu"
+          aria-label={t("Krajina pôvodu")}
           value={value.krajina_povodu ?? ""}
           disabled={disabled}
           maxLength={2}
           onChange={(e) => onChange({ ...value, krajina_povodu: e.target.value.toUpperCase() })}
           placeholder="SK"
-          title="Krajina pôvodu tovaru — dvojpísmenový kód (SK, CN, DE…)"
+          title={t("Krajina pôvodu tovaru — dvojpísmenový kód (SK, CN, DE…)")}
           className={`${pole} w-12 border-input uppercase`}
         />
       </label>
       <label className="flex items-center gap-1 text-xs text-muted-foreground">
         kg
         <input
-          aria-label="Hmotnosť v kg"
+          aria-label={t("Hmotnosť v kg")}
           value={value.hmotnost_kg ?? ""}
           disabled={disabled}
           inputMode="decimal"
           onChange={(e) => onChange({ ...value, hmotnost_kg: e.target.value })}
           placeholder="0,5"
-          title="Čistá hmotnosť položky spolu v kilogramoch"
+          title={t("Čistá hmotnosť položky spolu v kilogramoch")}
           className={`${pole} w-16 border-input`}
         />
       </label>
-      {zlyKod && <span className="text-xs text-destructive">Kód má 6–10 číslic.</span>}
+      {zlyKod && <span className="text-xs text-destructive">{t("Kód má 6–10 číslic.")}</span>}
     </div>
   );
 }

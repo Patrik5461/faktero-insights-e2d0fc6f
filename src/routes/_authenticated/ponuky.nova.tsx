@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -26,7 +28,7 @@ import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
-  head: () => ({ meta: [{ title: "Nová cenová ponuka — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová cenová ponuka — Faktero") }] }),
   component: NewQuote,
 });
 
@@ -48,6 +50,7 @@ type Item = {
 const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 23 };
 
 function NewQuote() {
+  const { t } = useT();
   const navigate = useNavigate();
   /* Sadzby DPH podľa krajiny registrácie firmy. */
   const rezim = useRezimDph();
@@ -215,7 +218,7 @@ function NewQuote() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     const cust = customers.find((c) => c.id === form.customer_id);
-    if (!cust) return toast.error("Vyberte odberateľa");
+    if (!cust) return toast.error(t("Vyberte odberateľa"));
     const { quote_number, number_series_id } = await dalsieCislo({
       data: { company_id: cid, number_series_id: form.number_series_id || null },
     });
@@ -253,7 +256,7 @@ function NewQuote() {
       .single();
     if (error || !q) {
       const { friendlyError } = await import("@/lib/faktero/plan-error");
-      return toast.error(friendlyError(error));
+      return toast.error(t(friendlyError(error)));
     }
 
     const rows = items.map((it, i) => {
@@ -280,27 +283,27 @@ function NewQuote() {
     if (reserveStock) {
       try {
         const r = await reserveFn({ data: { company_id: cid, quote_id: q.id } });
-        if ((r as any).created > 0) toast.success(`Rezervovaných ${(r as any).created} položiek.`);
+        if ((r as any).created > 0) toast.success(t("Rezervovaných {n} položiek.", { n: (r as any).created }));
         else if ((r as any).reason === "no_warehouse")
-          toast.warning("Chýba aktívny sklad — rezervácie neboli vytvorené.");
-        else toast.info("Rezervácia: žiadne položky nebolo možné napárovať na sklad.");
+          toast.warning(t("Chýba aktívny sklad — rezervácie neboli vytvorené."));
+        else toast.info(t("Rezervácia: žiadne položky nebolo možné napárovať na sklad."));
       } catch (err: any) {
-        toast.error(`Rezervácia zlyhala: ${err?.message ?? err}`);
+        toast.error(t("Rezervácia zlyhala: {chyba}", { chyba: err?.message ?? err }));
       }
     }
-    toast.success("Ponuka vytvorená");
+    toast.success(t("Ponuka vytvorená"));
     navigate({ to: "/ponuky/$id", params: { id: q.id } });
   }
 
   return (
     <>
-      <PageHeader title="Nová cenová ponuka" description="Vyplňte údaje a pridajte položky." />
+      <PageHeader title={t("Nová cenová ponuka")} description={t("Vyplňte údaje a pridajte položky.")} />
       <PageBody>
         <PoznamkaRezimuDph />
         <form onSubmit={submit} className="space-y-6">
           <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-3 [&>*]:min-w-0">
             <label className="block sm:col-span-3">
-              <span className="text-sm font-medium">Odberateľ *</span>
+              <span className="text-sm font-medium">{t("Odberateľ *")}</span>
               <div className="mt-1 flex gap-2">
                 <select
                   required
@@ -308,7 +311,7 @@ function NewQuote() {
                   onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">Vyberte odberateľa…</option>
+                  <option value="">{t("Vyberte odberateľa…")}</option>
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -320,19 +323,19 @@ function NewQuote() {
                   onClick={() => setNewCustOpen(true)}
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
                 >
-                  <UserPlus className="h-4 w-4" /> Nový
+                  <UserPlus className="h-4 w-4" /> {t("Nový")}
                 </button>
               </div>
             </label>
             <In
-              label="Dátum vystavenia"
+              label={t("Dátum vystavenia")}
               type="date"
               required
               value={form.issue_date}
               onChange={(v) => setForm({ ...form, issue_date: v })}
             />
             <In
-              label="Platnosť do"
+              label={t("Platnosť do")}
               type="date"
               required
               value={form.valid_until}
@@ -344,7 +347,7 @@ function NewQuote() {
               kde sa taká ponuka objavila. Rovnaký výber ako na faktúre.
             */}
             <div>
-              <label className="text-[13px] font-semibold text-foreground">Mena</label>
+              <label className="text-[13px] font-semibold text-foreground">{t("Mena")}</label>
               <select
                 value={form.currency}
                 onChange={(e) => setForm({ ...form, currency: e.target.value })}
@@ -366,7 +369,7 @@ function NewQuote() {
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-semibold">Položky</h3>
+              <h3 className="font-semibold">{t("Položky")}</h3>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 {produkty.length > 0 && (
                   <select
@@ -376,7 +379,7 @@ function NewQuote() {
                     }}
                     className="min-w-0 max-w-full flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm sm:max-w-xs"
                   >
-                    <option value="">Z katalógu…</option>
+                    <option value="">{t("Z katalógu…")}</option>
                     {produkty.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name} — {formatujMenu(p.unit_price, form.currency)}
@@ -389,7 +392,7 @@ function NewQuote() {
                   onClick={() => setItems([...items, novaPolozka()])}
                   className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Pridať
+                  <Plus className="h-3.5 w-3.5" /> {t("Pridať")}
                 </button>
               </div>
             </div>
@@ -399,17 +402,17 @@ function NewQuote() {
                   key={idx}
                   className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-[2fr_70px_70px_100px_80px_80px_120px_auto] sm:items-end"
                 >
-                  <In label="Názov" value={it.name} onChange={(v) => setItem(idx, { name: v })} />
+                  <In label={t("Názov")} value={it.name} onChange={(v) => setItem(idx, { name: v })} />
                   <In
-                    label="Mn."
+                    label={t("Mn.")}
                     type="number"
                     value={String(it.quantity)}
                     onChange={(v) => setItem(idx, { quantity: Number(v) })}
                   />
-                  <In label="MJ" value={it.unit} onChange={(v) => setItem(idx, { unit: v })} />
+                  <In label={t("MJ")} value={it.unit} onChange={(v) => setItem(idx, { unit: v })} />
                   <div>
                     <In
-                      label="Cena"
+                      label={t("Cena")}
                       type="number"
                       step={KROK_CENY}
                       value={String(it.unit_price)}
@@ -422,13 +425,13 @@ function NewQuote() {
                     )}
                   </div>
                   <In
-                    label="Zľava %"
+                    label={t("Zľava %")}
                     type="number"
                     value={String(it.discount_percent ?? 0)}
                     onChange={(v) => setItem(idx, { discount_percent: percentoZlavy(v) })}
                   />
                   <In
-                    label="DPH %"
+                    label={t("DPH %")}
                     type="number"
                     value={String(it.vat_rate)}
                     onChange={(v) => setItem(idx, { vat_rate: Number(v) })}
@@ -453,7 +456,7 @@ function NewQuote() {
             <div className="mt-4 space-y-1 text-right text-sm">
               {/* Zľava na celú ponuku — rozpočíta sa pomerne medzi sadzby DPH. */}
               <div className="flex items-center justify-end gap-2 pb-1">
-                <span className="text-[13px] font-semibold text-foreground">Zľava na ponuku</span>
+                <span className="text-[13px] font-semibold text-foreground">{t("Zľava na ponuku")}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -485,23 +488,23 @@ function NewQuote() {
               {totals.zlava > 0 && (
                 <>
                   <div className="text-muted-foreground">
-                    Medzisúčet: {formatujMenu(totals.medzisucet, form.currency)}
+                    {t("Medzisúčet:")} {formatujMenu(totals.medzisucet, form.currency)}
                   </div>
                   <div className="text-muted-foreground">
-                    Zľava: −{formatujMenu(totals.zlava, form.currency)}
+                    {t("Zľava:")} −{formatujMenu(totals.zlava, form.currency)}
                   </div>
                 </>
               )}
               <div>
-                Bez DPH:{" "}
+                {t("Bez DPH:")}{" "}
                 <span className="font-medium">{formatujMenu(totals.subtotal, form.currency)}</span>
               </div>
               <div>
-                DPH:{" "}
+                {t("DPH:")}{" "}
                 <span className="font-medium">{formatujMenu(totals.vat_total, form.currency)}</span>
               </div>
               <div className="text-lg font-semibold">
-                Spolu: {formatujMenu(totals.total, form.currency)}
+                {t("Spolu:")} {formatujMenu(totals.total, form.currency)}
               </div>
             </div>
           </div>
@@ -510,10 +513,10 @@ function NewQuote() {
             value={form.job_id}
             onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
             customerId={form.customer_id || null}
-            label="Zákazka (prenesie sa na faktúru pri premene ponuky)"
+            label={t("Zákazka (prenesie sa na faktúru pri premene ponuky)")}
           />
           <label className="block rounded-xl border border-border bg-card p-5">
-            <span className="text-sm font-medium">Poznámka</span>
+            <span className="text-sm font-medium">{t("Poznámka")}</span>
             <textarea
               rows={3}
               value={form.notes}
@@ -529,10 +532,9 @@ function NewQuote() {
               className="mt-0.5 h-4 w-4"
             />
             <span className="text-sm">
-              <div className="font-medium">Rezervovať tovar na sklade</div>
+              <div className="font-medium">{t("Rezervovať tovar na sklade")}</div>
               <div className="text-xs text-muted-foreground">
-                Vytvorí aktívne rezervácie pre napárované položky. Platnosť sa nastaví podľa dátumu
-                „Platnosť do“.
+                {t("Vytvorí aktívne rezervácie pre napárované položky. Platnosť sa nastaví podľa dátumu „Platnosť do“.")}
               </div>
             </span>
           </label>
@@ -541,7 +543,7 @@ function NewQuote() {
               type="submit"
               className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              Vytvoriť ponuku
+              {t("Vytvoriť ponuku")}
             </button>
           </div>
         </form>

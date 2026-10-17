@@ -4,18 +4,21 @@ import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { BlogBlock } from "@/components/faktero/MarketingSectionPage";
 import { getPost, postsByDate } from "@/lib/faktero/blog-content";
 import { BlogCover } from "@/components/faktero/BlogCover";
+import { preloz, type Jazyk } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 
 export const Route = createFileRoute("/blog/$slug")({
-  head: ({ params }) => {
+  head: ({ match, params }) => {
+    const j = match.context.jazyk;
     const p = getPost(params.slug);
-    if (!p) return { meta: [{ title: "Článok — Faktero" }] };
+    if (!p) return { meta: [{ title: preloz(j, "Článok — Faktero") }] };
     return {
       meta: [
-        { title: `${p.title} — Faktero` },
-        { name: "description", content: p.excerpt },
+        { title: `${preloz(j, p.title)} — Faktero` },
+        { name: "description", content: preloz(j, p.excerpt) },
         { property: "og:type", content: "article" },
-        { property: "og:title", content: p.title },
-        { property: "og:description", content: p.excerpt },
+        { property: "og:title", content: preloz(j, p.title) },
+        { property: "og:description", content: preloz(j, p.excerpt) },
         { property: "article:published_time", content: p.date },
       ],
     };
@@ -26,8 +29,8 @@ export const Route = createFileRoute("/blog/$slug")({
   component: ClanokPage,
 });
 
-function datum(iso: string): string {
-  return new Date(iso).toLocaleDateString("sk-SK", {
+function datum(iso: string, jazyk: Jazyk): string {
+  return new Date(iso).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -35,6 +38,7 @@ function datum(iso: string): string {
 }
 
 function ClanokPage() {
+  const { t, jazyk } = useT();
   const { slug } = Route.useParams();
   const clanok = getPost(slug);
   if (!clanok) return null;
@@ -52,13 +56,13 @@ function ClanokPage() {
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Blog
           </Link>
-          <h1 className="mt-5 text-3xl font-bold tracking-tight md:text-4xl">{clanok.title}</h1>
+          <h1 className="mt-5 text-3xl font-bold tracking-tight md:text-4xl">{t(clanok.title)}</h1>
           <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" /> {datum(clanok.date)}
+              <Calendar className="h-3.5 w-3.5" /> {datum(clanok.date, jazyk)}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" /> {clanok.minuty} min čítania
+              <Clock className="h-3.5 w-3.5" /> {t("{n} min čítania", { n: clanok.minuty })}
             </span>
           </div>
         </div>
@@ -82,20 +86,20 @@ function ClanokPage() {
             to="/registracia"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
-            Vyskúšať Faktero zdarma <ArrowRight className="h-4 w-4" />
+            {t("Vyskúšať Faktero zdarma")} <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             to="/blog"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-secondary"
           >
-            Ďalšie články
+            {t("Ďalšie články")}
           </Link>
         </div>
 
         {dalsie.length > 0 && (
           <div className="mt-12">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Čítajte ďalej
+              {t("Čítajte ďalej")}
             </h2>
             <ul className="mt-4 grid gap-4 md:grid-cols-2">
               {dalsie.map((p) => (
@@ -107,9 +111,9 @@ function ClanokPage() {
                   >
                     <BlogCover icon={p.ikona} odtien={p.odtien} />
                     <div className="p-5">
-                      <div className="text-xs text-muted-foreground">{datum(p.date)}</div>
-                      <div className="mt-2 font-semibold">{p.title}</div>
-                      <p className="mt-1.5 text-sm text-muted-foreground">{p.excerpt}</p>
+                      <div className="text-xs text-muted-foreground">{datum(p.date, jazyk)}</div>
+                      <div className="mt-2 font-semibold">{t(p.title)}</div>
+                      <p className="mt-1.5 text-sm text-muted-foreground">{t(p.excerpt)}</p>
                     </div>
                   </Link>
                 </li>

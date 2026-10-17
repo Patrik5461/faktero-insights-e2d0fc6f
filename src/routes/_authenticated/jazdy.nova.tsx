@@ -14,6 +14,8 @@ import { Map as MapIcon } from "lucide-react";
 import { PoleAdresy } from "@/components/faktero/PoleAdresy";
 import { PoleOdberatela, adresaOdberatela } from "@/components/faktero/PoleOdberatela";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 /**
  * Tá istá stránka zakladá aj upravuje. Kniha jázd je účtovný záznam a preklep v
@@ -24,11 +26,12 @@ import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/jazdy/nova")({
   validateSearch: (s: Record<string, unknown>): { id?: string } =>
     typeof s.id === "string" && s.id ? { id: s.id } : {},
-  head: () => ({ meta: [{ title: "Jazda — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Jazda — Faktero") }] }),
   component: NewTripPage,
 });
 
 function NewTripPage() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const navigate = useNavigate();
   const { id } = Route.useSearch();
@@ -105,7 +108,7 @@ function NewTripPage() {
       .then(({ data, error }) => {
         setNacitavam(false);
         if (error || !data) {
-          toast.error("Jazda sa nenašla.");
+          toast.error(t("Jazda sa nenašla."));
           return navigate({ to: "/jazdy" });
         }
         setCenaDoplnena(false);
@@ -167,17 +170,17 @@ function NewTripPage() {
 
   async function navrhniTrasuPreFormular() {
     if (!form.start_location.trim() || !form.end_location.trim()) {
-      return toast.error("Vyplňte Odkiaľ aj Kam.");
+      return toast.error(t("Vyplňte Odkiaľ aj Kam."));
     }
     setHladamTrasu(true);
     try {
-      const t = await navrhni({
+      const navrh = await navrhni({
         data: { odkial: form.start_location.trim(), kam: form.end_location.trim() },
       });
-      setTrasa(t);
+      setTrasa(navrh);
     } catch (e: any) {
       setTrasa(null);
-      toast.error(e?.message ?? "Trasu sa nepodarilo navrhnúť.");
+      toast.error(e?.message ?? t("Trasu sa nepodarilo navrhnúť."));
     } finally {
       setHladamTrasu(false);
     }
@@ -191,7 +194,9 @@ function NewTripPage() {
       ...f,
       end_odometer: (zaciatok + trasa.vzdialenost_km).toFixed(1),
     }));
-    toast.success(`Doplnených ${trasa.vzdialenost_km} km — skontrolujte podľa tachometra.`);
+    toast.success(
+      t("Doplnených {km} km — skontrolujte podľa tachometra.", { km: trasa.vzdialenost_km }),
+    );
   }
 
   /** Trvanie v minútach zo vzdialenosti a priemeru; prázdne, keď sa nedá. */
@@ -242,8 +247,8 @@ function NewTripPage() {
     e.preventDefault();
     const cid = getActiveCompanyId();
     if (!cid) return;
-    if (!form.vehicle_id) return toast.error("Vyberte vozidlo");
-    if (end < start) return toast.error("Stav tachometra na konci musí byť ≥ stavu na začiatku");
+    if (!form.vehicle_id) return toast.error(t("Vyberte vozidlo"));
+    if (end < start) return toast.error(t("Stav tachometra na konci musí byť ≥ stavu na začiatku"));
     setSaving(true);
     const vehicle = vehicles.find((v) => v.id === form.vehicle_id);
     const consumption = vehicle?.consumption_l_100km
@@ -277,28 +282,28 @@ function NewTripPage() {
       : await supabase.from("trips").insert({ company_id: cid, ...riadok });
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(id ? "Jazda upravená" : "Jazda uložená");
+    toast.success(id ? t("Jazda upravená") : t("Jazda uložená"));
     navigate({ to: "/jazdy" });
   }
 
   return (
     <>
       <PageHeader
-        title={upravujem ? "Upraviť jazdu" : "Nová jazda"}
+        title={upravujem ? t("Upraviť jazdu") : t("Nová jazda")}
         description={
           upravujem
-            ? "Oprava zapísanej jazdy — trasa a väzba na zdroj ostávajú zachované."
-            : "Pridajte záznam o služobnej ceste."
+            ? t("Oprava zapísanej jazdy — trasa a väzba na zdroj ostávajú zachované.")
+            : t("Pridajte záznam o služobnej ceste.")
         }
       />
       <PageBody>
         {nacitavam ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : vehicles.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-6 text-sm">
-            Najskôr pridajte vozidlo v sekcii{" "}
+            {t("Najskôr pridajte vozidlo v sekcii")}{" "}
             <a href="/jazdy/vozidla" className="text-primary hover:underline">
-              Vozidlá
+              {t("Vozidlá")}
             </a>
             .
           </div>
@@ -350,8 +355,8 @@ function NewTripPage() {
                   onChange={(e) => setForm({ ...form, classification: e.target.value })}
                   className="input"
                 >
-                  <option value="business">Služobná</option>
-                  <option value="private">Súkromná</option>
+                  <option value="business">{t("Služobná")}</option>
+                  <option value="private">{t("Súkromná")}</option>
                 </select>
               </Field>
               {/*
@@ -365,14 +370,14 @@ function NewTripPage() {
                   <PoleAdresy
                     hodnota={form.start_location}
                     onZmena={(v) => setForm({ ...form, start_location: v })}
-                    placeholder="napr. Trnava, Hlavná 12"
+                    placeholder={t("napr. Trnava, Hlavná 12")}
                   />
                 </Field>
                 <Field label="Kam">
                   <PoleAdresy
                     hodnota={form.end_location}
                     onZmena={(v) => setForm({ ...form, end_location: v })}
-                    placeholder="napr. Bratislava, Einsteinova 5"
+                    placeholder={t("napr. Bratislava, Einsteinova 5")}
                   />
                 </Field>
               </div>
@@ -396,7 +401,7 @@ function NewTripPage() {
                   className="input"
                 />
               </Field>
-              <Field label={`Cena PHM (${mena.symbol}/l)`}>
+              <Field label={t("Cena PHM ({mena}/l)", { mena: mena.symbol })}>
                 <input
                   type="number"
                   step="0.001"
@@ -409,8 +414,8 @@ function NewTripPage() {
                 />
                 <span className="mt-1 block text-xs text-muted-foreground">
                   {cenaDoplnena
-                    ? "Doplnené z posledného tankovania."
-                    : "Bez ceny nemá jazda náklad a vo vyhodnotení zákazky vyjde doprava nula."}
+                    ? t("Doplnené z posledného tankovania.")
+                    : t("Bez ceny nemá jazda náklad a vo vyhodnotení zákazky vyjde doprava nula.")}
                 </span>
               </Field>
               {/* Spotreba vozidla je druhá polovica výpočtu. Bez nej sa do jazdy
@@ -418,9 +423,9 @@ function NewTripPage() {
               <Field label="">
                 {vozidloBezSpotreby && (
                   <div className="rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-200">
-                    Vozidlo nemá zadanú spotrebu, takže jazda nebude mať náklad.{" "}
+                    {t("Vozidlo nemá zadanú spotrebu, takže jazda nebude mať náklad.")}{" "}
                     <a href="/jazdy/vozidla" className="underline">
-                      Doplniť spotrebu
+                      {t("Doplniť spotrebu")}
                     </a>
                   </div>
                 )}
@@ -440,8 +445,9 @@ function NewTripPage() {
                   className="input"
                 />
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  Z nej sa dopočíta trvanie. Prepíšte ju, ak ste išli prevažne po diaľnici alebo po
-                  meste.
+                  {t(
+                    "Z nej sa dopočíta trvanie. Prepíšte ju, ak ste išli prevažne po diaľnici alebo po meste.",
+                  )}
                 </span>
               </Field>
               <Field label="Trvanie jazdy (min)">
@@ -455,8 +461,11 @@ function NewTripPage() {
                 />
                 <span className="mt-1 block text-xs text-muted-foreground">
                   {form.duration_min && Number(form.duration_min) >= 60
-                    ? `${Math.floor(Number(form.duration_min) / 60)} h ${Number(form.duration_min) % 60} min — úpravou sa prepočíta priemer.`
-                    : "Úpravou sa prepočíta priemerná rýchlosť."}
+                    ? t("{h} h {m} min — úpravou sa prepočíta priemer.", {
+                        h: Math.floor(Number(form.duration_min) / 60),
+                        m: Number(form.duration_min) % 60,
+                      })
+                    : t("Úpravou sa prepočíta priemerná rýchlosť.")}
                 </span>
               </Field>
               <Field label="Vzdialenosť (auto)">
@@ -471,7 +480,7 @@ function NewTripPage() {
             */}
               <PoleOdberatela
                 value={form.customer_id}
-                napoveda={'Doplní sa aj do poľa „Kam", keď je prázdne.'}
+                napoveda={t('Doplní sa aj do poľa „Kam", keď je prázdne.')}
                 onChange={(id, odberatel) =>
                   setForm((p) => ({
                     ...p,
@@ -491,7 +500,7 @@ function NewTripPage() {
                 onChange={(v) => setForm((p) => ({ ...p, job_id: v }))}
               />
               <label className="sm:col-span-2 block">
-                <span className="text-sm font-medium">Poznámka</span>
+                <span className="text-sm font-medium">{t("Poznámka")}</span>
                 <textarea
                   rows={2}
                   value={form.note}
@@ -505,14 +514,14 @@ function NewTripPage() {
                   onClick={() => navigate({ to: "/jazdy" })}
                   className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
                 >
-                  Zrušiť
+                  {t("Zrušiť")}
                 </button>
                 <button
                   disabled={saving}
                   type="submit"
                   className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
                 >
-                  {saving ? "Ukladám…" : "Uložiť jazdu"}
+                  {saving ? t("Ukladám…") : t("Uložiť jazdu")}
                 </button>
               </div>
             </form>
@@ -526,7 +535,7 @@ function NewTripPage() {
             <aside className="lg:sticky lg:top-4 lg:self-start">
               <div className="rounded-xl border border-border bg-card p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm font-medium">Trasa na mape</h2>
+                  <h2 className="text-sm font-medium">{t("Trasa na mape")}</h2>
                   {/*
                   Trasa sa počíta až na požiadanie. Automaticky pri písaní by sa
                   dopyt spustil z každej nedokončenej adresy a míňal by kvótu na
@@ -539,7 +548,11 @@ function NewTripPage() {
                     className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-60"
                   >
                     <MapIcon className="h-3.5 w-3.5" />
-                    {hladamTrasu ? "Hľadám…" : zobrazenaTrasa ? "Prepočítať" : "Navrhnúť trasu"}
+                    {hladamTrasu
+                      ? t("Hľadám…")
+                      : zobrazenaTrasa
+                        ? t("Prepočítať")
+                        : t("Navrhnúť trasu")}
                   </button>
                 </div>
 
@@ -548,7 +561,7 @@ function NewTripPage() {
                     <span className="font-medium">{trasa.vzdialenost_km} km</span>
                     <span className="text-muted-foreground">
                       {" "}
-                      · približne {trasa.trvanie_min} min
+                      · {t("približne {n} min", { n: trasa.trvanie_min })}
                     </span>
                     <div className="mt-0.5 text-xs text-muted-foreground">
                       {trasa.odkial.nazov} → {trasa.kam.nazov}
@@ -563,8 +576,10 @@ function NewTripPage() {
                 ) : (
                   <p className="mt-3 rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
                     {upravujem
-                      ? "Táto jazda nemá zapísanú trasu. Doplňte odkiaľ a kam a dajte Navrhnúť trasu."
-                      : "Vyplňte odkiaľ a kam a dajte Navrhnúť trasu."}
+                      ? t(
+                          "Táto jazda nemá zapísanú trasu. Doplňte odkiaľ a kam a dajte Navrhnúť trasu.",
+                        )
+                      : t("Vyplňte odkiaľ a kam a dajte Navrhnúť trasu.")}
                   </p>
                 )}
 
@@ -575,13 +590,14 @@ function NewTripPage() {
                       onClick={pouziKilometre}
                       className="mt-3 w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
                     >
-                      Doplniť {trasa.vzdialenost_km} km do tachometra
+                      {t("Doplniť {km} km do tachometra", { km: trasa.vzdialenost_km })}
                     </button>
                     {/* Kilometre z mapy sú najkratšia cesta po cestách, nie to,
                       čo auto naozaj prešlo. Pred úradom platí tachometer. */}
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Je to najkratšia cesta po cestách — obchádzky ani hľadanie parkovania v nej
-                      nie sú. Pre knihu jázd je rozhodujúci tachometer.
+                      {t(
+                        "Je to najkratšia cesta po cestách — obchádzky ani hľadanie parkovania v nej nie sú. Pre knihu jázd je rozhodujúci tachometer.",
+                      )}
                     </p>
                   </>
                 )}
@@ -595,9 +611,10 @@ function NewTripPage() {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const { t } = useT();
   return (
     <label className="block">
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium">{t(label)}</span>
       <div className="mt-1">{children}</div>
     </label>
   );

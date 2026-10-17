@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +23,7 @@ import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
 export const Route = createFileRoute("/_authenticated/ceny/")({
-  head: () => ({ meta: [{ title: "Cenník — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenník — Faktero") }] }),
   component: CennikPage,
 });
 
@@ -33,6 +35,7 @@ const pole = "w-full rounded-md border border-border bg-background px-3 py-2 tex
 const popis = "mb-1 block text-xs font-medium text-muted-foreground";
 
 function CennikPage() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const nacitajSkupiny = useServerFn(listPriceGroups);
   const nacitajCeny = useServerFn(listProductPrices);
@@ -101,9 +104,9 @@ function CennikPage() {
       });
       setSkupinaForm(null);
       nacitaj();
-      toast.success("Cenová skupina uložená");
+      toast.success(t("Cenová skupina uložená"));
     } catch (err: any) {
-      toast.error(err?.message ?? "Skupinu sa nepodarilo uložiť");
+      toast.error(err?.message ?? t("Skupinu sa nepodarilo uložiť"));
     }
   }
 
@@ -125,9 +128,9 @@ function CennikPage() {
       });
       setCenaForm(null);
       nacitaj();
-      toast.success("Cena uložená");
+      toast.success(t("Cena uložená"));
     } catch (err: any) {
-      toast.error(err?.message ?? "Cenu sa nepodarilo uložiť");
+      toast.error(err?.message ?? t("Cenu sa nepodarilo uložiť"));
     }
   }
 
@@ -136,15 +139,15 @@ function CennikPage() {
   return (
     <>
       <PageHeader
-        title="Cenník"
-        description="Dohodnuté ceny a zľavy pre odberateľov. Doklad ich doplní sám podľa toho, komu ho vystavujete."
+        title={t("Cenník")}
+        description={t("Dohodnuté ceny a zľavy pre odberateľov. Doklad ich doplní sám podľa toho, komu ho vystavujete.")}
         action={
           <div className="flex gap-2">
             <Link
               to="/ceny/akcie"
               className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
             >
-              <Percent className="h-4 w-4" /> Cenové akcie
+              <Percent className="h-4 w-4" /> {t("Cenové akcie")}
             </Link>
             <button
               type="button"
@@ -161,21 +164,21 @@ function CennikPage() {
               }
               className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
-              <Plus className="h-4 w-4" /> Nová cena
+              <Plus className="h-4 w-4" /> {t("Nová cena")}
             </button>
           </div>
         }
       />
       <PageBody>
         {loading ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : (
           <div className="space-y-6">
             {!maProdukty && (
               <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-                Cenník pracuje s produktmi z katalógu. Najprv založte aspoň jeden{" "}
+                {t("Cenník pracuje s produktmi z katalógu. Najprv založte aspoň jeden")}{" "}
                 <Link to="/produkty" className="text-primary underline">
-                  produkt alebo službu
+                  {t("produkt alebo službu")}
                 </Link>
                 .
               </div>
@@ -185,9 +188,9 @@ function CennikPage() {
             <section className="rounded-xl border border-border bg-card">
               <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
                 <div className="min-w-0">
-                  <h2 className="text-sm font-semibold">Cenové skupiny</h2>
+                  <h2 className="text-sm font-semibold">{t("Cenové skupiny")}</h2>
                   <p className="text-xs text-muted-foreground">
-                    Spoločná zľava pre skupinu odberateľov — veľkoobchod, stáli zákazníci.
+                    {t("Spoločná zľava pre skupinu odberateľov — veľkoobchod, stáli zákazníci.")}
                   </p>
                 </div>
                 <button
@@ -195,21 +198,21 @@ function CennikPage() {
                   onClick={() => setSkupinaForm({ name: "", discount_percent: 0 })}
                   className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Nová skupina
+                  <Plus className="h-3.5 w-3.5" /> {t("Nová skupina")}
                 </button>
               </div>
               {skupiny.length === 0 ? (
                 <p className="px-4 py-6 text-sm text-muted-foreground">
-                  Zatiaľ žiadna cenová skupina.
+                  {t("Zatiaľ žiadna cenová skupina.")}
                 </p>
               ) : (
                 <table className="w-full text-sm">
                   <thead className="text-xs text-muted-foreground">
                     <tr className="border-b border-border">
-                      <th className="px-4 py-2 text-left font-medium">Názov</th>
-                      <th className="px-4 py-2 text-right font-medium">Zľava</th>
-                      <th className="px-4 py-2 text-right font-medium">Odberateľov</th>
-                      <th className="px-4 py-2 text-right font-medium">Dohodnutých cien</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("Názov")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("Zľava")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("Odberateľov")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("Dohodnutých cien")}</th>
                       <th className="px-4 py-2" />
                     </tr>
                   </thead>
@@ -225,7 +228,7 @@ function CennikPage() {
                         <td className="px-4 py-2 text-right">
                           <button
                             type="button"
-                            aria-label="Upraviť skupinu"
+                            aria-label={t("Upraviť skupinu")}
                             onClick={() => setSkupinaForm({ ...s })}
                             className="rounded p-1.5 text-muted-foreground hover:bg-muted"
                           >
@@ -233,11 +236,11 @@ function CennikPage() {
                           </button>
                           <button
                             type="button"
-                            aria-label="Zmazať skupinu"
+                            aria-label={t("Zmazať skupinu")}
                             onClick={async () => {
                               if (
                                 !(await potvrd(
-                                  `Zmazať skupinu „${s.name}"? Odberatelia v nej stratia zľavu, dohodnuté ceny ostanú.`,
+                                  t("Zmazať skupinu „{nazov}\"? Odberatelia v nej stratia zľavu, dohodnuté ceny ostanú.", { nazov: s.name }),
                                 ))
                               )
                                 return;
@@ -259,25 +262,25 @@ function CennikPage() {
             {/* Dohodnuté ceny */}
             <section className="rounded-xl border border-border bg-card">
               <div className="border-b border-border px-4 py-3">
-                <h2 className="text-sm font-semibold">Dohodnuté ceny</h2>
+                <h2 className="text-sm font-semibold">{t("Dohodnuté ceny")}</h2>
                 <p className="text-xs text-muted-foreground">
-                  Konkrétna cena produktu pre odberateľa alebo skupinu. Prebíja percentuálnu zľavu.
+                  {t("Konkrétna cena produktu pre odberateľa alebo skupinu. Prebíja percentuálnu zľavu.")}
                 </p>
               </div>
               {ceny.length === 0 ? (
                 <p className="px-4 py-6 text-sm text-muted-foreground">
-                  Zatiaľ žiadna dohodnutá cena. Bez nej sa fakturuje základná cena z katalógu.
+                  {t("Zatiaľ žiadna dohodnutá cena. Bez nej sa fakturuje základná cena z katalógu.")}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="text-xs text-muted-foreground">
                       <tr className="border-b border-border">
-                        <th className="px-4 py-2 text-left font-medium">Produkt</th>
-                        <th className="px-4 py-2 text-left font-medium">Pre koho</th>
-                        <th className="px-4 py-2 text-right font-medium">Od množstva</th>
-                        <th className="px-4 py-2 text-right font-medium">Základná</th>
-                        <th className="px-4 py-2 text-right font-medium">Dohodnutá</th>
+                        <th className="px-4 py-2 text-left font-medium">{t("Produkt")}</th>
+                        <th className="px-4 py-2 text-left font-medium">{t("Pre koho")}</th>
+                        <th className="px-4 py-2 text-right font-medium">{t("Od množstva")}</th>
+                        <th className="px-4 py-2 text-right font-medium">{t("Základná")}</th>
+                        <th className="px-4 py-2 text-right font-medium">{t("Dohodnutá")}</th>
                         <th className="px-4 py-2" />
                       </tr>
                     </thead>
@@ -297,7 +300,7 @@ function CennikPage() {
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 text-muted-foreground">
-                                  skupina {c.price_groups?.name ?? "—"}
+                                  {t("skupina {nazov}", { nazov: c.price_groups?.name ?? "—" })}
                                 </span>
                               )}
                             </td>
@@ -321,7 +324,7 @@ function CennikPage() {
                             <td className="px-4 py-2 text-right whitespace-nowrap">
                               <button
                                 type="button"
-                                aria-label="Upraviť cenu"
+                                aria-label={t("Upraviť cenu")}
                                 onClick={() =>
                                   setCenaForm({
                                     ...c,
@@ -334,9 +337,9 @@ function CennikPage() {
                               </button>
                               <button
                                 type="button"
-                                aria-label="Zmazať cenu"
+                                aria-label={t("Zmazať cenu")}
                                 onClick={async () => {
-                                  if (!(await potvrd("Zmazať dohodnutú cenu?"))) return;
+                                  if (!(await potvrd(t("Zmazať dohodnutú cenu?")))) return;
                                   await zmazCenu({ data: { company_id: cid!, id: c.id } });
                                   nacitaj();
                                 }}
@@ -360,22 +363,22 @@ function CennikPage() {
       {skupinaForm && (
         <Overlay onClose={() => setSkupinaForm(null)}>
           <h2 className="text-lg font-semibold">
-            {skupinaForm.id ? "Upraviť cenovú skupinu" : "Nová cenová skupina"}
+            {skupinaForm.id ? t("Upraviť cenovú skupinu") : t("Nová cenová skupina")}
           </h2>
           <form onSubmit={ulozSkupinuKlik} className="mt-4 space-y-4">
             <div>
-              <label className={popis}>Názov</label>
+              <label className={popis}>{t("Názov")}</label>
               <input
                 className={pole}
                 value={skupinaForm.name ?? ""}
                 onChange={(e) => setSkupinaForm({ ...skupinaForm, name: e.target.value })}
-                placeholder="Napríklad Veľkoobchod"
+                placeholder={t("Napríklad Veľkoobchod")}
                 required
                 autoFocus
               />
             </div>
             <div>
-              <label className={popis}>Zľava (%)</label>
+              <label className={popis}>{t("Zľava (%)")}</label>
               <input
                 type="number"
                 step="0.01"
@@ -388,7 +391,7 @@ function CennikPage() {
                 }
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Platí na produkty, pre ktoré skupina nemá dohodnutú konkrétnu cenu.
+                {t("Platí na produkty, pre ktoré skupina nemá dohodnutú konkrétnu cenu.")}
               </p>
             </div>
             <Tlacidla onClose={() => setSkupinaForm(null)} />
@@ -399,11 +402,11 @@ function CennikPage() {
       {cenaForm && (
         <Overlay onClose={() => setCenaForm(null)}>
           <h2 className="text-lg font-semibold">
-            {cenaForm.id ? "Upraviť dohodnutú cenu" : "Nová dohodnutá cena"}
+            {cenaForm.id ? t("Upraviť dohodnutú cenu") : t("Nová dohodnutá cena")}
           </h2>
           <form onSubmit={ulozCenuKlik} className="mt-4 space-y-4">
             <div>
-              <label className={popis}>Produkt</label>
+              <label className={popis}>{t("Produkt")}</label>
               <select
                 className={pole}
                 value={cenaForm.product_id ?? ""}
@@ -418,21 +421,21 @@ function CennikPage() {
               </select>
             </div>
             <div>
-              <label className={popis}>Cena platí pre</label>
+              <label className={popis}>{t("Cena platí pre")}</label>
               <select
                 className={pole}
                 value={cenaForm.adresat}
                 onChange={(e) => setCenaForm({ ...cenaForm, adresat: e.target.value })}
               >
-                <option value="skupina">cenovú skupinu</option>
-                <option value="odberatel">konkrétneho odberateľa</option>
+                <option value="skupina">{t("cenovú skupinu")}</option>
+                <option value="odberatel">{t("konkrétneho odberateľa")}</option>
               </select>
             </div>
             {cenaForm.adresat === "skupina" ? (
               <div>
-                <label className={popis}>Cenová skupina</label>
+                <label className={popis}>{t("Cenová skupina")}</label>
                 {skupiny.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Najprv založte cenovú skupinu.</p>
+                  <p className="text-sm text-muted-foreground">{t("Najprv založte cenovú skupinu.")}</p>
                 ) : (
                   <select
                     className={pole}
@@ -450,7 +453,7 @@ function CennikPage() {
               </div>
             ) : (
               <div>
-                <label className={popis}>Odberateľ</label>
+                <label className={popis}>{t("Odberateľ")}</label>
                 <select
                   className={pole}
                   value={cenaForm.customer_id ?? ""}
@@ -467,7 +470,7 @@ function CennikPage() {
             )}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={popis}>Cena bez DPH ({mena.symbol})</label>
+                <label className={popis}>{t("Cena bez DPH ({mena})", { mena: mena.symbol })}</label>
                 <input
                   type="number"
                   step={KROK_CENY}
@@ -479,7 +482,7 @@ function CennikPage() {
                 />
               </div>
               <div>
-                <label className={popis}>Od množstva</label>
+                <label className={popis}>{t("Od množstva")}</label>
                 <input
                   type="number"
                   step="0.001"
@@ -489,7 +492,7 @@ function CennikPage() {
                   onChange={(e) => setCenaForm({ ...cenaForm, min_quantity: e.target.value })}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Nula znamená, že cena platí vždy.
+                  {t("Nula znamená, že cena platí vždy.")}
                 </p>
               </div>
             </div>
@@ -518,6 +521,7 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
 }
 
 function Tlacidla({ onClose }: { onClose: () => void }) {
+  const { t } = useT();
   return (
     <div className="flex justify-end gap-2 pt-2">
       <button
@@ -525,13 +529,13 @@ function Tlacidla({ onClose }: { onClose: () => void }) {
         onClick={onClose}
         className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
       >
-        Zrušiť
+        {t("Zrušiť")}
       </button>
       <button
         type="submit"
         className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
       >
-        Uložiť
+        {t("Uložiť")}
       </button>
     </div>
   );

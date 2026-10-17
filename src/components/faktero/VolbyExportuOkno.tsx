@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { useT } from "@/lib/i18n/useT";
 
 export type VolbyExportu = {
   /** Dátum zaúčtovania pre doklady z uzavretého obdobia; prázdny = dátum dokladu. */
@@ -28,8 +29,13 @@ export function VolbyExportuOkno({
   onClose: () => void;
   onExport: (v: VolbyExportu) => Promise<void>;
 }) {
+  const { t } = useT();
   useZatvorNaEscape(onClose);
-  const [v, setV] = useState<VolbyExportu>({ datumZauctovania: null, ajOdovzdane: false, oznacit: true });
+  const [v, setV] = useState<VolbyExportu>({
+    datumZauctovania: null,
+    ajOdovzdane: false,
+    oznacit: true,
+  });
   const [busy, setBusy] = useState(false);
 
   async function spusti() {
@@ -43,20 +49,25 @@ export function VolbyExportuOkno({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Export do účtovníctva"
+        aria-label={t("Export do účtovníctva")}
         className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">Exportovať ({pocet})</h2>
+        <h2 className="text-lg font-semibold">{t("Exportovať ({pocet})", { pocet })}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{nazov}</p>
 
         <div className="mt-4 space-y-4 text-sm">
           <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Dátum zaúčtovania</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("Dátum zaúčtovania")}
+            </span>
             <input
               type="date"
               value={v.datumZauctovania ?? ""}
@@ -64,8 +75,9 @@ export function VolbyExportuOkno({
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2"
             />
             <span className="mt-1 block text-xs text-muted-foreground">
-              Pre doklady z už uzavretého obdobia. Prázdne = dátum dokladu (doklady z uzávierky dostanú prvý
-              deň po nej samy).
+              {t(
+                "Pre doklady z už uzavretého obdobia. Prázdne = dátum dokladu (doklady z uzávierky dostanú prvý deň po nej samy).",
+              )}
             </span>
           </label>
 
@@ -77,9 +89,9 @@ export function VolbyExportuOkno({
               onChange={(e) => setV({ ...v, ajOdovzdane: e.target.checked })}
             />
             <span>
-              Exportovať aj už odovzdané doklady
+              {t("Exportovať aj už odovzdané doklady")}
               <span className="block text-xs text-muted-foreground">
-                Len keď ste ich v účtovnom programe zmazali — inak by tam boli dvakrát.
+                {t("Len keď ste ich v účtovnom programe zmazali — inak by tam boli dvakrát.")}
               </span>
             </span>
           </label>
@@ -93,22 +105,28 @@ export function VolbyExportuOkno({
                 onChange={(e) => setV({ ...v, oznacit: e.target.checked })}
               />
               <span>
-                Označiť ako odovzdané
+                {t("Označiť ako odovzdané")}
                 <span className="block text-xs text-muted-foreground">
-                  Doklady sa zamknú a konektor ich už nepošle.
+                  {t("Doklady sa zamknú a konektor ich už nepošle.")}
                 </span>
               </span>
             </label>
           ) : null}
 
           <p className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
-            Doklady z dvoch rokov sa rozdelia do samostatných súborov — každý naimportujte do svojho roka.
+            {t(
+              "Doklady z dvoch rokov sa rozdelia do samostatných súborov — každý naimportujte do svojho roka.",
+            )}
           </p>
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">
-            Zrušiť
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+          >
+            {t("Zrušiť")}
           </button>
           <button
             type="button"
@@ -116,7 +134,7 @@ export function VolbyExportuOkno({
             onClick={() => void spusti()}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Exportovať
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("Exportovať")}
           </button>
         </div>
       </div>

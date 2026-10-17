@@ -4,18 +4,26 @@ import {
   LEGAL_VERSION,
   LEGAL_UPDATED,
   LEGAL_COMPANY,
+  DeUpozornenie,
 } from "@/components/faktero/LegalShell";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/pravne/spracovanie-udajov")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Zmluva o spracúvaní osobných údajov — Faktero" },
+      { title: preloz(match.context.jazyk, "Zmluva o spracúvaní osobných údajov — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Zmluvné podmienky spracúvania osobných údajov podľa čl. 28 GDPR medzi Faktero ako sprostredkovateľom a zákazníkom ako prevádzkovateľom, vrátane zoznamu subdodávateľov.",
+        ),
       },
-      { property: "og:title", content: "Spracúvanie osobných údajov — Faktero" },
+      {
+        property: "og:title",
+        content: preloz(match.context.jazyk, "Spracúvanie osobných údajov — Faktero"),
+      },
       { property: "og:url", content: "https://faktero.sk/pravne/spracovanie-udajov" },
     ],
     links: [{ rel: "canonical", href: "https://faktero.sk/pravne/spracovanie-udajov" }],
@@ -67,12 +75,21 @@ const SUBDODAVATELIA = [
 ] as const;
 
 function Page() {
+  const { jazyk, t } = useT();
   return (
     <LegalShell
-      title="Zmluva o spracúvaní osobných údajov"
+      title={t("Zmluva o spracúvaní osobných údajov")}
       updated={LEGAL_UPDATED}
       version={LEGAL_VERSION}
     >
+      {jazyk === "de" ? <De /> : <Sk />}
+    </LegalShell>
+  );
+}
+
+function Sk() {
+  return (
+    <>
       <p>
         Tieto podmienky sú zmluvou o spracúvaní osobných údajov podľa čl. 28 nariadenia (EÚ)
         2016/679 (GDPR). Uzatvárajú sa medzi vami ako <strong>prevádzkovateľom</strong> a
@@ -196,6 +213,186 @@ function Page() {
         GDPR a umožníme audit dohodnutý vopred, v rozsahu, ktorý neohrozí bezpečnosť údajov
         ostatných zákazníkov.
       </p>
-    </LegalShell>
+    </>
+  );
+}
+
+const SUBDODAVATELIA_DE = [
+  {
+    nazov: "Supabase, Inc.",
+    ucel: "Datenbank, Anmeldung und Dateispeicher",
+    kde: "Europäische Union (Frankfurt, Deutschland)",
+  },
+  {
+    nazov: "Hetzner Online GmbH",
+    ucel: "Server, auf dem die Anwendung läuft",
+    kde: "Europäische Union (Deutschland)",
+  },
+  {
+    nazov: "Resend, Inc.",
+    ucel: "Versand und Empfang von E-Mails (Rechnungen, Mahnungen, Belege per Post)",
+    kde: "USA — Standardvertragsklauseln",
+  },
+  {
+    nazov: "Google Ireland Ltd. (Gemini API)",
+    ucel: "Erkennung von Daten aus hochgeladenen Belegen",
+    kde: "Europäische Union / USA — Standardvertragsklauseln",
+  },
+  {
+    nazov: "OpenAI Ireland Ltd.",
+    ucel: "Belegerkennung und Assistent, wenn der erste Anbieter nicht verfügbar ist",
+    kde: "Europäische Union / USA — Standardvertragsklauseln",
+  },
+  {
+    nazov: "GOPAY s.r.o.",
+    ucel: "Zahlungen für das Abonnement",
+    kde: "Tschechische Republik",
+  },
+  {
+    nazov: "Apple Inc. / Google Ireland Ltd.",
+    ucel: "Vertrieb der mobilen Anwendung und Zustellung von Benachrichtigungen",
+    kde: "USA / Europäische Union — Standardvertragsklauseln",
+  },
+] as const;
+
+function De() {
+  return (
+    <>
+      <DeUpozornenie />
+      <p>
+        Diese Bedingungen sind ein Vertrag über die Verarbeitung personenbezogener Daten gemäß Art.
+        28 der Verordnung (EU) 2016/679 (DSGVO). Er wird zwischen Ihnen als{" "}
+        <strong>Verantwortlichem</strong> und der Gesellschaft <strong>{LEGAL_COMPANY.name}</strong>{" "}
+        ({LEGAL_COMPANY.address}, Firmen-ID (IČO) {LEGAL_COMPANY.ico}) als{" "}
+        <strong>Auftragsverarbeiter</strong> geschlossen, und zwar in dem Moment, in dem Sie
+        beginnen, den Dienst Faktero zu nutzen. Eine gesonderte Unterschrift ist nicht erforderlich;
+        auf Anfrage senden wir Ihnen eine unterzeichnete Ausfertigung an{" "}
+        <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>.
+      </p>
+
+      <h2>1. Gegenstand und Dauer</h2>
+      <p>
+        Der Auftragsverarbeiter verarbeitet personenbezogene Daten ausschließlich zum Zweck der
+        Bereitstellung des Dienstes Faktero — also damit Sie Belege ausstellen,
+        Buchhaltungsunterlagen führen, mit Kunden kommunizieren und weitere Funktionen nutzen
+        können, die Sie aktivieren. Die Verarbeitung dauert für die Laufzeit des Vertrags über die
+        Nutzung des Dienstes an.
+      </p>
+
+      <h2>2. Art und Zweck der Verarbeitung</h2>
+      <p>
+        Speicherung, Ordnung, Sicherung, Bereitstellung für berechtigte Nutzer Ihres Unternehmens,
+        Versand von Belegen und Benachrichtigungen, Erkennung von Daten aus hochgeladenen Dokumenten
+        und betriebliche Absicherung des Dienstes.
+      </p>
+
+      <h2>3. Kategorien betroffener Personen und Daten</h2>
+      <ul>
+        <li>
+          <strong>Betroffene Personen:</strong> Ihre Kunden und Lieferanten (auch natürliche
+          Personen), Mitarbeiter, Nutzer, die Sie in das Unternehmen einladen, ggf. Fahrer und
+          weitere in Ihren Belegen genannte Personen.
+        </li>
+        <li>
+          <strong>Daten:</strong> Identifikations- und Kontaktdaten, Rechnungs- und Zahlungsdaten,
+          Inhalt von Belegen und Anhängen, Daten aus dem Fahrtenbuch und — sofern Sie das Modul
+          nutzen — Lohn- und Personaldaten einschließlich besonderer Kategorien (Geburtsnummer,
+          Ausweisnummer), die verschlüsselt gespeichert werden.
+        </li>
+      </ul>
+
+      <h2>4. Weisungen des Verantwortlichen</h2>
+      <p>
+        Der Auftragsverarbeiter verarbeitet Daten nur auf Grundlage Ihrer Weisungen — also dessen,
+        was Sie in der Anwendung tun oder schriftlich anfordern. Sollte eine Weisung gegen
+        Rechtsvorschriften verstoßen, weist er Sie darauf hin. Sollte ihm die Verarbeitung durch
+        eine Rechtsvorschrift auferlegt werden, teilt er Ihnen dies mit, sofern die Vorschrift dies
+        nicht verbietet.
+      </p>
+
+      <h2>5. Vertraulichkeit und Sicherheit</h2>
+      <ul>
+        <li>Zur Verarbeitung der Daten befugte Personen sind zur Verschwiegenheit verpflichtet.</li>
+        <li>
+          Übertragung und Speicherung sind verschlüsselt; Zugriff auf die Daten des Unternehmens hat
+          nur, wen Sie in das Unternehmen einladen, und zwar im Umfang der Rolle oder des
+          individuellen Zugriffs, den Sie ihm einrichten.
+        </li>
+        <li>
+          Eine Zwei-Faktor-Authentifizierung steht zur Verfügung; Daten besonderer Kategorien sind
+          auch in der Datenbank verschlüsselt.
+        </li>
+        <li>Sicherungen werden täglich erstellt und in der Europäischen Union aufbewahrt.</li>
+      </ul>
+
+      <h2>6. Weitere Auftragsverarbeiter</h2>
+      <p>
+        Zur Bereitstellung des Dienstes setzen wir Unterauftragsverarbeiter ein. Eine Änderung wird
+        mindestens 30 Tage im Voraus auf dieser Seite und per E-Mail mitgeteilt; bis zum Ablauf
+        dieser Frist können Sie der Änderung widersprechen und den Vertrag beenden.
+      </p>
+      <ul className="list-none! space-y-3 pl-0! sm:hidden">
+        {SUBDODAVATELIA_DE.map((s) => (
+          <li key={s.nazov} className="rounded-lg border border-border bg-card p-3">
+            <div className="font-semibold text-foreground">{s.nazov}</div>
+            <div className="mt-1 text-sm">{s.ucel}</div>
+            <div className="mt-1 text-xs text-muted-foreground">{s.kde}</div>
+          </li>
+        ))}
+      </ul>
+      <div className="my-4 hidden overflow-x-auto sm:block">
+        <table className="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="py-2 pr-4 text-left font-semibold text-foreground">
+                Unterauftragsverarbeiter
+              </th>
+              <th className="py-2 pr-4 text-left font-semibold text-foreground">Zweck</th>
+              <th className="py-2 text-left font-semibold text-foreground">Ort der Verarbeitung</th>
+            </tr>
+          </thead>
+          <tbody>
+            {SUBDODAVATELIA_DE.map((s) => (
+              <tr key={s.nazov} className="border-b border-border/60 align-top">
+                <td className="py-2 pr-4 font-medium text-foreground">{s.nazov}</td>
+                <td className="py-2 pr-4">{s.ucel}</td>
+                <td className="py-2">{s.kde}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h2>7. Unterstützung bei den Rechten betroffener Personen</h2>
+      <p>
+        Werkzeuge zur Ausübung der Rechte haben Sie direkt in der Anwendung: Daten von Kunden und
+        Belegen können Sie bearbeiten und auch löschen, und das Konto einschließlich der Daten
+        auflösen. Erfordert ein Antrag unsere Mitwirkung, leisten wir sie unverzüglich, spätestens
+        innerhalb von 10 Arbeitstagen.
+      </p>
+
+      <h2>8. Verletzung des Schutzes personenbezogener Daten</h2>
+      <p>
+        Über eine Verletzung des Schutzes personenbezogener Daten benachrichtigen wir Sie
+        unverzüglich, nachdem wir davon erfahren haben, und stellen Ihnen die Informationen zur
+        Verfügung, die Sie für Ihre Meldung an die Aufsichtsbehörde benötigen.
+      </p>
+
+      <h2>9. Nach Vertragsende</h2>
+      <p>
+        Nach Auflösung des Kontos werden die Daten innerhalb der in den Geschäftsbedingungen
+        angegebenen Frist gelöscht. Laden Sie die Daten vor der Löschung herunter — die{" "}
+        <strong>Pflicht, Buchhaltungsbelege zehn Jahre aufzubewahren</strong> (§ 76 des
+        Mehrwertsteuergesetzes (zákon o DPH), § 35 des Gesetzes über die Buchführung (zákon o
+        účtovníctve)) verbleibt bei Ihnen und erlischt nicht mit der Löschung des Kontos.
+      </p>
+
+      <h2>10. Kontrolle und Audit</h2>
+      <p>
+        Auf Anfrage stellen wir die Informationen zur Verfügung, die zum Nachweis der Erfüllung der
+        Pflichten gemäß Art. 28 DSGVO erforderlich sind, und ermöglichen ein im Voraus vereinbartes
+        Audit in einem Umfang, der die Sicherheit der Daten anderer Kunden nicht gefährdet.
+      </p>
+    </>
   );
 }

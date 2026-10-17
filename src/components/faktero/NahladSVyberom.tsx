@@ -28,6 +28,9 @@ import {
   type Obdlznik,
   type SlovoNahladu,
 } from "@/lib/faktero/vyber-z-dokladu";
+import { POLIA_VYBERU } from "@/lib/faktero/vyber-z-dokladu";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Náhľad nespracovaného dokladu, z ktorého sa dá vybrať hodnota do poľa
@@ -95,16 +98,40 @@ export function popisPola(el: Element | null): string | null {
   );
 }
 
+/**
+ * Pole podľa popisu — aj keď je formulár preložený do nemčiny. Popisy polí
+ * v `POLIA_VYBERU` sú slovenské; nemecký popis sa preto najprv vráti na
+ * slovenský (dlhší preklad má prednosť) a až potom sa porovná.
+ */
+function poleZPopisu(popis: string | null): KlucPola | null {
+  const priamo = polePodlaPopisu(popis);
+  if (priamo || !popis) return priamo;
+  const text = popis.trim().toLowerCase();
+  let najlepsie: { sk: string; de: string } | null = null;
+  for (const p of POLIA_VYBERU)
+    for (const sk of p.popisy) {
+      const de = preloz("de", sk);
+      if (de === sk) continue;
+      const z = de.toLowerCase();
+      if (
+        (text === z || (text.startsWith(z) && !/[\p{L}\d]/u.test(text[z.length] ?? ""))) &&
+        (!najlepsie || de.length > najlepsie.de.length)
+      )
+        najlepsie = { sk, de };
+    }
+  return najlepsie ? polePodlaPopisu(najlepsie.sk + popis.trim().slice(najlepsie.de.length)) : null;
+}
+
 /** Ktoré pole výberu je to, do ktorého človek klikol (null = žiadne). */
 export function poleZPrvku(el: EventTarget | null): KlucPola | null {
-  return polePodlaPopisu(popisPola(el as Element | null));
+  return poleZPopisu(popisPola(el as Element | null));
 }
 
 /** Krátko zvýrazní pole formulára, do ktorého sa práve zapísalo. */
 export function zablikajPole(kontajner: HTMLElement | null, kluc: KlucPola) {
   if (!kontajner) return;
   const el = [...kontajner.querySelectorAll("input, textarea")].find(
-    (x) => polePodlaPopisu(popisPola(x)) === kluc,
+    (x) => poleZPopisu(popisPola(x)) === kluc,
   ) as HTMLElement | undefined;
   el?.animate?.(
     [{ boxShadow: "0 0 0 3px rgb(34 197 94 / 0.7)" }, { boxShadow: "0 0 0 0 rgb(34 197 94 / 0)" }],
@@ -162,15 +189,17 @@ async function vyrezObrazka(bitmapa: ImageBitmap, r: Obdlznik): Promise<string> 
 /* ------------------------------------------------------- komponent */
 
 export function NahladSVyberom(props: Props) {
+  const { t } = useT();
   const desktop = useJeDesktop();
   const { subor } = props;
   const jePdf = String(subor.mime ?? "").includes("pdf");
-  if (!subor.url) return <p className="p-6 text-sm text-muted-foreground">Doklad nemá súbor.</p>;
+  if (!subor.url)
+    return <p className="p-6 text-sm text-muted-foreground">{t("Doklad nemá súbor.")}</p>;
   if (!desktop)
     return jePdf ? (
       <NahladPdf url={subor.url} />
     ) : (
-      <img src={subor.url} alt={subor.nazov ?? "Doklad"} className="w-full rounded-md" />
+      <img src={subor.url} alt={subor.nazov ?? t("Doklad")} className="w-full rounded-md" />
     );
   return <Vyber {...props} url={subor.url} jePdf={jePdf} />;
 }
@@ -199,6 +228,7 @@ function Vyber({
   onZrus,
   onHodnota,
 }: Props & { url: string; jePdf: boolean }) {
+  const { t } = useT();
   const precitajVyrez = useServerFn(precitajVyrezFn);
   const [strany, setStrany] = useState<Strana[]>([]);
   const [stav, setStav] = useState<"citam" | "hotovo" | "zlyhalo">("citam");
@@ -243,7 +273,7 @@ function Vyber({
           platno.height = Math.floor(viewport.height);
           platno.className = "block h-full w-full";
           const kontext = platno.getContext("2d");
-          if (!kontext) throw new Error("Plátno sa nedá pripraviť.");
+          if (!kontext) throw new Error(t("Plátno sa nedá pripraviť."));
           await strana.render({ canvas: platno, canvasContext: kontext, viewport }).promise;
           if (zrusene) return;
 
@@ -333,7 +363,8 @@ function Vyber({
     if (!bitmapa.current)
       bitmapa.current = fetch(url)
         .then((o) => {
-          if (!o.ok) throw new Error(`Súbor sa nepodarilo načítať (${o.status}).`);
+          if (!o.ok)
+            throw new Error(t("Súbor sa nepodarilo načítať ({status}).", { status: o.status }));
           return o.blob();
         })
         .then((b) => createImageBitmap(b));
@@ -369,15 +400,18 @@ function Vyber({
     if (h == null) {
       toast.error(
         zdroj.trim()
-          ? `V texte „${zdroj.trim().slice(0, 60)}" som nenašiel ${NAZOV_TYPU[p.typ]}.`
-          : "V označenej oblasti nie je žiadny text.",
+          ? t('V texte „{text}" som nenašiel {typ}.', {
+              text: zdroj.trim().slice(0, 60),
+              typ: t(NAZOV_TYPU[p.typ]),
+            })
+          : t("V označenej oblasti nie je žiadny text."),
       );
       return;
     }
     onHodnota(kluc, h);
     setPoslednyVyber(kde);
     setTimeout(() => setPoslednyVyber((x) => (x === kde ? null : x)), 1400);
-    toast.success(`${p.nazov}: ${hodnotaNaUkazku(p.typ, h)}`, { duration: 2500 });
+    toast.success(`${t(p.nazov)}: ${hodnotaNaUkazku(p.typ, h)}`, { duration: 2500 });
   }
 
   async function dokonciOblast(strana: number, r: Obdlznik) {
@@ -386,7 +420,7 @@ function Vyber({
         const text = await textOblasti(strana, r);
         zapis(pole, normalizuj(poleVyberu(pole).typ, text), text, { strana, r });
       } catch (e: any) {
-        toast.error(e?.message ?? "Oblasť sa nepodarilo prečítať.");
+        toast.error(t(e?.message ?? "Oblasť sa nepodarilo prečítať."));
       }
       return;
     }
@@ -404,7 +438,7 @@ function Vyber({
       zapis(cielOznaceneho, normalizuj(poleVyberu(cielOznaceneho).typ, text), text, { strana, r });
       setOznacene(null);
     } catch (e: any) {
-      toast.error(e?.message ?? "Oblasť sa nepodarilo prečítať.");
+      toast.error(t(e?.message ?? "Oblasť sa nepodarilo prečítať."));
     }
   }
 
@@ -439,23 +473,23 @@ function Vyber({
 
   function hore(_e: ReactPointerEvent<HTMLDivElement>, strana: number) {
     if (!tah || tah.strana !== strana) return;
-    const t = tah;
+    const ta = tah;
     setTah(null);
-    if (t.tahane) {
-      const r = obdlznikZBodov(t.ax, t.ay, t.bx, t.by);
+    if (ta.tahane) {
+      const r = obdlznikZBodov(ta.ax, ta.ay, ta.bx, ta.by);
       if (r.w > 0.003 && r.h > 0.003) void dokonciOblast(strana, r);
       return;
     }
     // Kliknutie — len keď sa vyberá pre pole.
     if (!pole) return;
     const slova = strany[strana]?.slova ?? [];
-    const i = slovoNaBode(slova, t.ax, t.ay);
+    const i = slovoNaBode(slova, ta.ax, ta.ay);
     if (i < 0) {
       if (!slova.length)
         toast.info(
           jePdf
-            ? "Tento doklad je sken bez textu — označte oblasť ťahaním myši, prečíta ju AI."
-            : "Na obrázku označte oblasť s hodnotou ťahaním myši — prečíta ju AI.",
+            ? t("Tento doklad je sken bez textu — označte oblasť ťahaním myši, prečíta ju AI.")
+            : t("Na obrázku označte oblasť s hodnotou ťahaním myši — prečíta ju AI."),
         );
       return;
     }
@@ -466,7 +500,7 @@ function Vyber({
     });
   }
 
-  const nazovPola = pole ? poleVyberu(pole).nazov : null;
+  const nazovPola = pole ? t(poleVyberu(pole).nazov) : null;
   const moznosti = useMemo(() => polia.map((k) => poleVyberu(k)), [polia]);
 
   const obdlznik = (r: Obdlznik, trieda: string) => (
@@ -492,36 +526,36 @@ function Vyber({
         >
           <Crosshair className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
           <span className="min-w-0 flex-1">
-            Vyberte text pre pole <strong>{nazovPola}</strong> —{" "}
+            {t("Vyberte text pre pole")} <strong>{nazovPola}</strong> —{" "}
             {maText
-              ? "kliknite na text v doklade alebo označte oblasť ťahaním."
-              : "označte oblasť ťahaním, prečíta ju AI."}
+              ? t("kliknite na text v doklade alebo označte oblasť ťahaním.")
+              : t("označte oblasť ťahaním, prečíta ju AI.")}
           </span>
           {citamVyrez && (
-            <Loader2 className="h-4 w-4 animate-spin" aria-label="Čítam označenú oblasť" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-label={t("Čítam označenú oblasť")} />
           )}
           <button
             type="button"
             onClick={onZrus}
-            aria-label="Zrušiť výber z dokladu (Esc)"
+            aria-label={t("Zrušiť výber z dokladu (Esc)")}
             className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-secondary"
           >
-            <X className="h-3.5 w-3.5" /> Zrušiť (Esc)
+            <X className="h-3.5 w-3.5" /> {t("Zrušiť (Esc)")}
           </button>
         </div>
       ) : (
         <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>Opraviť pole z dokladu:</span>
+          <span>{t("Opraviť pole z dokladu:")}</span>
           <select
-            aria-label="Pole, ktoré sa vyberie z dokladu"
+            aria-label={t("Pole, ktoré sa vyberie z dokladu")}
             value={volbaPola}
             onChange={(e) => setVolbaPola(e.target.value as KlucPola)}
             className="rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
           >
-            <option value="">— pole —</option>
+            <option value="">{t("— pole —")}</option>
             {moznosti.map((p) => (
               <option key={p.kluc} value={p.kluc}>
-                {p.nazov}
+                {t(p.nazov)}
               </option>
             ))}
           </select>
@@ -529,30 +563,32 @@ function Vyber({
             type="button"
             disabled={!volbaPola}
             onClick={() => volbaPola && onVyberPola(volbaPola)}
-            aria-label="Vybrať hodnotu poľa z dokladu"
+            aria-label={t("Vybrať hodnotu poľa z dokladu")}
             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-secondary disabled:opacity-50"
           >
-            <Crosshair className="h-3.5 w-3.5" /> Vybrať z dokladu
+            <Crosshair className="h-3.5 w-3.5" /> {t("Vybrať z dokladu")}
           </button>
           <span className="basis-full">
-            alebo kliknite do poľa vo formulári a potom na text v doklade.
+            {t("alebo kliknite do poľa vo formulári a potom na text v doklade.")}
           </span>
         </div>
       )}
 
       {stav === "citam" && jePdf && strany.length === 0 && (
-        <div className="p-8 text-center text-sm text-muted-foreground">Načítavam náhľad…</div>
+        <div className="p-8 text-center text-sm text-muted-foreground">
+          {t("Načítavam náhľad…")}
+        </div>
       )}
       {stav === "zlyhalo" && (
         <div className="p-8 text-center text-sm text-muted-foreground">
-          Náhľad sa nepodarilo vykresliť.{" "}
+          {t("Náhľad sa nepodarilo vykresliť.")}{" "}
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary underline"
           >
-            Otvoriť doklad
+            {t("Otvoriť doklad")}
           </a>
         </div>
       )}
@@ -603,7 +639,7 @@ function Vyber({
           >
             <img
               src={url}
-              alt={subor.nazov ?? "Doklad"}
+              alt={subor.nazov ?? t("Doklad")}
               draggable={false}
               className="block w-full select-none rounded-md"
               onLoad={(e) => {
@@ -621,7 +657,7 @@ function Vyber({
 
       {stav === "hotovo" && pocetStran > MAX_STRAN && (
         <div className="border-t border-border px-4 py-2 text-center text-xs text-muted-foreground">
-          Náhľad ukazuje prvých {MAX_STRAN} strán z {pocetStran}.
+          {t("Náhľad ukazuje prvých {max} strán z {stran}.", { max: MAX_STRAN, stran: pocetStran })}
         </div>
       )}
 
@@ -629,31 +665,31 @@ function Vyber({
       {oznacene && (
         <div
           role="dialog"
-          aria-label="Použiť označený text do poľa"
+          aria-label={t("Použiť označený text do poľa")}
           className="sticky bottom-0 mt-2 space-y-2 rounded-md border border-border bg-card p-3 text-sm shadow-lg"
         >
           <div className="text-xs text-muted-foreground">
             {oznacene.text ? (
               <>
-                Označené:{" "}
+                {t("Označené:")}{" "}
                 <span className="whitespace-pre-wrap font-medium text-foreground">
                   {oznacene.text.slice(0, 200)}
                 </span>
               </>
             ) : (
-              "V oblasti nie je text z PDF — prečíta ju AI."
+              t("V oblasti nie je text z PDF — prečíta ju AI.")
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
-              aria-label="Pole, do ktorého sa označený text zapíše"
+              aria-label={t("Pole, do ktorého sa označený text zapíše")}
               value={cielOznaceneho}
               onChange={(e) => setCielOznaceneho(e.target.value as KlucPola)}
               className="rounded-md border border-input bg-background px-2 py-1 text-sm"
             >
               {moznosti.map((p) => (
                 <option key={p.kluc} value={p.kluc}>
-                  {p.nazov}
+                  {t(p.nazov)}
                 </option>
               ))}
             </select>
@@ -664,15 +700,15 @@ function Vyber({
               className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
               {citamVyrez ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              Použiť do poľa {cielOznaceneho ? poleVyberu(cielOznaceneho).nazov : ""}
+              {t("Použiť do poľa")} {cielOznaceneho ? t(poleVyberu(cielOznaceneho).nazov) : ""}
             </button>
             <button
               type="button"
               onClick={() => setOznacene(null)}
-              aria-label="Zrušiť označenie (Esc)"
+              aria-label={t("Zrušiť označenie (Esc)")}
               className="rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
             >
-              Zrušiť
+              {t("Zrušiť")}
             </button>
           </div>
         </div>

@@ -11,9 +11,11 @@ import { ReservationsPanel } from "@/components/faktero/ReservationsPanel";
 import { Download, FileText, Package, Pencil, Warehouse, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/")({
-  head: () => ({ meta: [{ title: "Skladová karta — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Skladová karta — Faktero") }] }),
   component: ProductStockDetail,
 });
 
@@ -37,6 +39,7 @@ const STAV_FAKTURY: Record<string, string> = {
 };
 
 function ProductStockDetail() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const { id } = Route.useParams();
   const fetchDetail = useServerFn(getProductStockDetail);
@@ -64,11 +67,11 @@ function ProductStockDetail() {
     setRecomputing(true);
     try {
       await recompute({ data: { company_id: cid, stock_item_id: data.stockItem.id } });
-      toast.success("Priemerná nákupná cena prepočítaná.");
+      toast.success(t("Priemerná nákupná cena prepočítaná."));
       const d = await fetchDetail({ data: { company_id: cid, product_id: id } });
       setData(d);
     } catch (e: any) {
-      toast.error(e?.message ?? "Prepočet zlyhal.");
+      toast.error(e?.message ?? t("Prepočet zlyhal."));
     } finally {
       setRecomputing(false);
     }
@@ -76,13 +79,13 @@ function ProductStockDetail() {
 
   function exportMovementsCsv() {
     if (!data?.movements) return;
-    const headers = ["Dátum", "Typ", "Množstvo", "Jedn. cena", "Hodnota", "Poznámka"];
+    const headers = ["Dátum", "Typ", "Množstvo", "Jedn. cena", "Hodnota", "Poznámka"].map((h) => t(h));
     const lines = [headers.join(";")];
     for (const m of data.movements) {
       lines.push(
         [
           new Date(m.created_at).toLocaleString("sk-SK"),
-          TYPE_LABEL[m.type] ?? m.type,
+          t(TYPE_LABEL[m.type] ?? m.type),
           String(m.quantity),
           Number(m.unit_price).toFixed(5),
           Number(m.total_value).toFixed(2),
@@ -102,13 +105,13 @@ function ProductStockDetail() {
   if (loading)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Načítavam…</div>
+        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
       </PageBody>
     );
   if (!data?.product)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Produkt sa nenašiel.</div>
+        <div className="text-sm text-muted-foreground">{t("Produkt sa nenašiel.")}</div>
       </PageBody>
     );
 
@@ -120,7 +123,7 @@ function ProductStockDetail() {
     <>
       <PageHeader
         title={p.name}
-        description={`Kód ${si?.sku ?? p.code ?? "—"}`}
+        description={t("Kód {kod}", { kod: si?.sku ?? p.code ?? "—" })}
         action={
           <div className="flex flex-wrap gap-2">
             {canManage && (
@@ -129,14 +132,14 @@ function ProductStockDetail() {
                 params={{ id }}
                 className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                <Pencil className="h-4 w-4" /> Upraviť kartu
+                <Pencil className="h-4 w-4" /> {t("Upraviť kartu")}
               </Link>
             )}
             <button
               onClick={exportMovementsCsv}
               className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
             >
-              <Download className="h-4 w-4" /> Export pohybov CSV
+              <Download className="h-4 w-4" /> {t("Export pohybov CSV")}
             </button>
           </div>
         }
@@ -187,7 +190,7 @@ function ProductStockDetail() {
               className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${recomputing ? "animate-spin" : ""}`} />
-              {recomputing ? "Prepočítavam…" : "Prepočítať priemernú cenu"}
+              {recomputing ? t("Prepočítavam…") : t("Prepočítať priemernú cenu")}
             </button>
           </div>
         )}
@@ -195,7 +198,7 @@ function ProductStockDetail() {
         <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
           <div className="rounded-xl border border-border bg-card p-3">
             <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
-              Fotografia
+              {t("Fotografia")}
             </div>
             {data.photoSignedUrl ? (
               <img
@@ -205,13 +208,13 @@ function ProductStockDetail() {
               />
             ) : (
               <div className="flex h-24 w-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground md:h-auto md:aspect-square">
-                Bez fotografie
+                {t("Bez fotografie")}
               </div>
             )}
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <Package className="h-4 w-4 text-primary" /> Detaily produktu
+              <Package className="h-4 w-4 text-primary" /> {t("Detaily produktu")}
             </div>
             <dl className="grid gap-3 sm:grid-cols-2 text-sm">
               <Pair label="Názov (SK)" value={p.name} />
@@ -224,12 +227,12 @@ function ProductStockDetail() {
               <Pair label="Kategória" value={data.category?.name ?? "—"} />
               <Pair label="Dodávateľ" value={data.supplier?.name ?? "—"} />
               <Pair label="Lokácia (regál/pozícia)" value={si?.location ?? "—"} />
-              <Pair label="Sledovať zásoby" value={si?.track_stock ? "Áno" : "Nie"} />
+              <Pair label="Sledovať zásoby" value={si?.track_stock ? t("Áno") : t("Nie")} />
             </dl>
             {(si?.description || p.description) && (
               <div className="mt-3 border-t border-border pt-3 text-sm">
                 <div className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
-                  Popis
+                  {t("Popis")}
                 </div>
                 <p className="whitespace-pre-wrap text-muted-foreground">
                   {si?.description ?? p.description}
@@ -249,18 +252,18 @@ function ProductStockDetail() {
 
         <div className="mt-4 rounded-xl border border-border bg-card p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-            <Warehouse className="h-4 w-4 text-primary" /> Stav v skladoch
+            <Warehouse className="h-4 w-4 text-primary" /> {t("Stav v skladoch")}
           </div>
           {data.levels.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Žiadne zaznamenané stavy.</div>
+            <div className="text-sm text-muted-foreground">{t("Žiadne zaznamenané stavy.")}</div>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="p-2">Sklad</th>
-                  <th className="p-2 text-right">Množstvo</th>
-                  <th className="p-2 text-right">Rezervované</th>
+                  <th className="p-2">{t("Sklad")}</th>
+                  <th className="p-2 text-right">{t("Množstvo")}</th>
+                  <th className="p-2 text-right">{t("Rezervované")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -287,34 +290,34 @@ function ProductStockDetail() {
               to="/sklad/prijem"
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              Príjem
+              {t("Príjem")}
             </Link>
             <Link
               to="/sklad/vydaj"
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
             >
-              Výdaj
+              {t("Výdaj")}
             </Link>
           </div>
         )}
 
         <div className="mt-4 rounded-xl border border-border bg-card p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-            <FileText className="h-4 w-4 text-primary" /> Posledných 20 pohybov
+            <FileText className="h-4 w-4 text-primary" /> {t("Posledných 20 pohybov")}
           </div>
           {data.movements.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Žiadne pohyby.</div>
+            <div className="text-sm text-muted-foreground">{t("Žiadne pohyby.")}</div>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="p-2">Dátum</th>
-                  <th className="p-2">Typ</th>
-                  <th className="p-2 text-right">Množstvo</th>
-                  <th className="p-2 text-right">Cena/MJ</th>
-                  <th className="p-2 text-right">Hodnota</th>
-                  <th className="p-2">Zdroj</th>
+                  <th className="p-2">{t("Dátum")}</th>
+                  <th className="p-2">{t("Typ")}</th>
+                  <th className="p-2 text-right">{t("Množstvo")}</th>
+                  <th className="p-2 text-right">{t("Cena/MJ")}</th>
+                  <th className="p-2 text-right">{t("Hodnota")}</th>
+                  <th className="p-2">{t("Zdroj")}</th>
                   <th className="p-2"></th>
                 </tr>
               </thead>
@@ -324,7 +327,7 @@ function ProductStockDetail() {
                     <td className="p-2 whitespace-nowrap text-muted-foreground">
                       {new Date(m.created_at).toLocaleString("sk-SK")}
                     </td>
-                    <td className="p-2">{TYPE_LABEL[m.type] ?? m.type}</td>
+                    <td className="p-2">{t(TYPE_LABEL[m.type] ?? m.type)}</td>
                     <td
                       className={`p-2 text-right tabular-nums ${pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}
                     >
@@ -345,7 +348,7 @@ function ProductStockDetail() {
                         params={{ id: m.id }}
                         className="text-xs text-primary hover:underline"
                       >
-                        Detail
+                        {t("Detail")}
                       </Link>
                     </td>
                   </tr>
@@ -358,7 +361,7 @@ function ProductStockDetail() {
 
         {data.invoiceRefs.length > 0 && (
           <div className="mt-4 rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">Súvisiace faktúry</div>
+            <div className="mb-3 text-sm font-semibold">{t("Súvisiace faktúry")}</div>
             <ul className="divide-y divide-border text-sm">
               {data.invoiceRefs.map((inv: any) => (
                 <li key={inv.id} className="flex items-center justify-between py-2">
@@ -370,7 +373,7 @@ function ProductStockDetail() {
                     {inv.invoice_number}
                   </Link>
                   <span className="text-xs text-muted-foreground">
-                    {STAV_FAKTURY[inv.status] ?? inv.status} · {formatujMenu(inv.total ?? 0, mena.kod)}
+                    {t(STAV_FAKTURY[inv.status] ?? inv.status)} · {formatujMenu(inv.total ?? 0, mena.kod)}
                   </span>
                 </li>
               ))}
@@ -383,14 +386,16 @@ function ProductStockDetail() {
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
+  const { t } = useT();
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{t(label)}</div>
       <div className="mt-1 break-words text-lg font-semibold tabular-nums sm:text-xl">{value}</div>
     </div>
   );
 }
 function SourceBadge({ type, id }: { type: string | null; id: string | null }) {
+  const { t } = useT();
   if (!type) return <span className="text-xs text-muted-foreground">—</span>;
   const label: Record<string, string> = {
     invoice: "Faktúra",
@@ -405,23 +410,24 @@ function SourceBadge({ type, id }: { type: string | null; id: string | null }) {
   if (type === "invoice" && id) {
     return (
       <Link to="/faktury/$id" params={{ id }} className={cls + " hover:underline"}>
-        {label[type]}
+        {t(label[type])}
       </Link>
     );
   }
   if (type === "self_billing" && id) {
     return (
       <Link to="/prijate-faktury/$id" params={{ id }} className={cls + " hover:underline"}>
-        {label[type]}
+        {t(label[type])}
       </Link>
     );
   }
-  return <span className={cls}>{label[type] ?? type}</span>;
+  return <span className={cls}>{t(label[type] ?? type)}</span>;
 }
 function Pair({ label, value }: { label: string; value: string }) {
+  const { t } = useT();
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{t(label)}</dt>
       <dd className="mt-0.5">{value}</dd>
     </div>
   );

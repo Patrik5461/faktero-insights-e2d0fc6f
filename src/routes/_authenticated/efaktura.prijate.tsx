@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -17,7 +19,7 @@ import {
 import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/efaktura/prijate")({
-  head: () => ({ meta: [{ title: "Prijaté eFaktúry — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté eFaktúry — Faktero") }] }),
   component: ReceivedPage,
 });
 
@@ -40,6 +42,7 @@ function StavDokladu({ stav }: { stav: string | null }) {
 type Nahlad = { url: string; nazov: string; prilozene: boolean };
 
 function ReceivedPage() {
+  const { t } = useT();
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [stahujem, setStahujem] = useState(false);
   useEffect(() => setCompanyId(getActiveCompanyId()), []);
@@ -82,10 +85,10 @@ function ReceivedPage() {
       const r: any = await zaeviduj({ data: { company_id: companyId, received_id: receivedId } });
       toast.success(
         r.pripojena
-          ? "Táto faktúra už medzi prijatými bola (prišla inou cestou) — eFaktúra je pripojená k nej, druhá sa nezakladá."
+          ? t("Táto faktúra už medzi prijatými bola (prišla inou cestou) — eFaktúra je pripojená k nej, druhá sa nezakladá.")
           : r.uzExistovala
-            ? "Táto eFaktúra už zaevidovaná je — otváram ju."
-            : "Zaevidované ako prijatá faktúra. Skontrolujte sumy a dátumy.",
+            ? t("Táto eFaktúra už zaevidovaná je — otváram ju.")
+            : t("Zaevidované ako prijatá faktúra. Skontrolujte sumy a dátumy."),
       );
       q.refetch();
       window.open(`/prijate-faktury/${r.invoiceId}`, "_blank", "noopener,noreferrer");
@@ -107,16 +110,23 @@ function ReceivedPage() {
     setStahujem(true);
     try {
       const r: any = await stiahni({ data: { company_id: companyId } });
-      const kus = r.novych === 1 ? "faktúra" : "faktúry";
+      const n = r.novych;
+      const kusy = t(
+        n === 1 ? "{n} faktúra" : n > 1 && n < 5 ? "{n} faktúry" : "{n} faktúr",
+        { n },
+      );
       toast.success(
-        r.novych
-          ? `Stiahnuté: ${r.novych} ${kus}.${r.preskocenych ? ` Už uložené: ${r.preskocenych}.` : ""}`
-          : "Nič nové — všetko doručené už máte.",
+        n
+          ? t("Stiahnuté: {kusy}.", { kusy }) +
+              (r.preskocenych ? " " + t("Už uložené: {n}.", { n: r.preskocenych }) : "")
+          : t("Nič nové — všetko doručené už máte."),
       );
       // Problémy sa nezamlčia: doklad, ktorý sa nepodarilo stiahnuť, by inak
       // ticho chýbal a nikto by nevedel, že vôbec bol.
       if (r.problemy?.length)
-        toast.error(`Nepodarilo sa: ${r.problemy.join(" · ")}`, { duration: 12000 });
+        toast.error(t("Nepodarilo sa: {zoznam}", { zoznam: r.problemy.join(" · ") }), {
+          duration: 12000,
+        });
       q.refetch();
     } catch (e) {
       toast.error((e as Error).message);
@@ -130,8 +140,8 @@ function ReceivedPage() {
   return (
     <>
       <PageHeader
-        title="Prijaté eFaktúry"
-        description="eFaktúry doručené od vašich dodávateľov cez sieť Peppol."
+        title={t("Prijaté eFaktúry")}
+        description={t("eFaktúry doručené od vašich dodávateľov cez sieť Peppol.")}
         action={
           <button
             onClick={stiahniNove}
@@ -139,7 +149,7 @@ function ReceivedPage() {
             className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${stahujem ? "animate-spin" : ""}`} />{" "}
-            {stahujem ? "Sťahujem…" : "Stiahnuť nové"}
+            {stahujem ? t("Sťahujem…") : t("Stiahnuť nové")}
           </button>
         }
       />
@@ -149,10 +159,9 @@ function ReceivedPage() {
             <div className="rounded-full bg-primary/10 p-4">
               <Inbox className="h-8 w-8 text-primary" />
             </div>
-            <h2 className="text-lg font-semibold">Zatiaľ tu nič nie je</h2>
+            <h2 className="text-lg font-semibold">{t("Zatiaľ tu nič nie je")}</h2>
             <p className="max-w-md text-sm text-muted-foreground">
-              Doručené eFaktúry sa sem stiahnu tlačidlom hore. Firma musí byť spárovaná s ePoštákom
-              — spraví sa to na prehľade eFaktúry.
+              {t("Doručené eFaktúry sa sem stiahnu tlačidlom hore. Firma musí byť spárovaná s ePoštákom — spraví sa to na prehľade eFaktúry.")}
             </p>
           </div>
         ) : (
@@ -160,21 +169,21 @@ function ReceivedPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="p-3">Doručené</th>
-                  <th className="p-3">Dodávateľ</th>
-                  <th className="p-3">Doklad</th>
-                  <th className="p-3">Vystavená</th>
-                  <th className="p-3">Splatnosť</th>
-                  <th className="p-3 text-right">Suma</th>
-                  <th className="p-3">Stav</th>
-                  <th className="p-3 text-right">Akcie</th>
+                  <th className="p-3">{t("Doručené")}</th>
+                  <th className="p-3">{t("Dodávateľ")}</th>
+                  <th className="p-3">{t("Doklad")}</th>
+                  <th className="p-3">{t("Vystavená")}</th>
+                  <th className="p-3">{t("Splatnosť")}</th>
+                  <th className="p-3 text-right">{t("Suma")}</th>
+                  <th className="p-3">{t("Stav")}</th>
+                  <th className="p-3 text-right">{t("Akcie")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {q.isLoading && (
                   <tr>
                     <td colSpan={8} className="p-6 text-center text-muted-foreground">
-                      Načítavam…
+                      {t("Načítavam…")}
                     </td>
                   </tr>
                 )}
@@ -210,14 +219,14 @@ function ReceivedPage() {
                           className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
                         >
                           <Eye className="h-3.5 w-3.5" />{" "}
-                          {nacitavamNahlad === r.id ? "Načítavam…" : "Náhľad"}
+                          {nacitavamNahlad === r.id ? t("Načítavam…") : t("Náhľad")}
                         </button>
                         {r.matched_supplier_invoice_id ? (
                           <a
                             href={`/prijate-faktury/${r.matched_supplier_invoice_id}`}
                             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
                           >
-                            <ExternalLink className="h-3.5 w-3.5" /> Otvoriť doklad
+                            <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť doklad")}
                           </a>
                         ) : (
                           <button
@@ -226,7 +235,7 @@ function ReceivedPage() {
                             className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
                           >
                             <FileInput className="h-3.5 w-3.5" />{" "}
-                            {evidujem === r.id ? "Evidujem…" : "Zaevidovať"}
+                            {evidujem === r.id ? t("Evidujem…") : t("Zaevidovať")}
                           </button>
                         )}
                       </div>
@@ -245,7 +254,7 @@ function ReceivedPage() {
           poznamka={
             nahlad.prilozene
               ? null
-              : "Dodávateľ k eFaktúre PDF nepriložil — náhľad je vykreslený z údajov eFaktúry."
+              : t("Dodávateľ k eFaktúre PDF nepriložil — náhľad je vykreslený z údajov eFaktúry.")
           }
           onClose={zavriNahlad}
         />

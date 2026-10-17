@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { exportFirmyFn } from "@/lib/faktero/export-firmy.functions";
 import { Download, Loader2 } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Stiahnutie všetkých dát firmy.
@@ -20,6 +21,7 @@ function velkostSlovom(bajtov: number): string {
 }
 
 export function StiahnutieDat() {
+  const { t } = useT();
   const exportuj = useServerFn(exportFirmyFn);
   const [sPdf, setSPdf] = useState(true);
   const [sSkenmi, setSSkenmi] = useState(false);
@@ -36,12 +38,19 @@ export function StiahnutieDat() {
     setVysledok(null);
     try {
       const v = await exportuj({
-        data: { company_id: companyId, s_pdf: sPdf, s_skenmi: sSkenmi, od: od || null, do: doDna || null, podla },
+        data: {
+          company_id: companyId,
+          s_pdf: sPdf,
+          s_skenmi: sSkenmi,
+          od: od || null,
+          do: doDna || null,
+          podla,
+        },
       });
       setVysledok(v);
       if (v.url) window.open(v.url, "_blank", "noopener");
     } catch (e: any) {
-      toast.error(e?.message ?? "Balík sa nepodarilo pripraviť.");
+      toast.error(t(e?.message ?? "Balík sa nepodarilo pripraviť."));
     } finally {
       setBezi(false);
     }
@@ -49,11 +58,11 @@ export function StiahnutieDat() {
 
   return (
     <div className="rounded-xl border border-border bg-card p-6">
-      <h2 className="text-base font-semibold">Stiahnuť všetky dáta</h2>
+      <h2 className="text-base font-semibold">{t("Stiahnuť všetky dáta")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Balík ZIP s tabuľkami všetkých agend — faktúry a ich položky, prijaté faktúry, doklady,
-        odberatelia, cenník, pokladňa, banka, jazdy a zákazky. Tabuľky sú v CSV, ktoré otvorí Excel
-        aj o desať rokov.
+        {t(
+          "Balík ZIP s tabuľkami všetkých agend — faktúry a ich položky, prijaté faktúry, doklady, odberatelia, cenník, pokladňa, banka, jazdy a zákazky. Tabuľky sú v CSV, ktoré otvorí Excel aj o desať rokov.",
+        )}
       </p>
 
       <label className="mt-3 flex items-start gap-2 text-sm">
@@ -64,9 +73,9 @@ export function StiahnutieDat() {
           className="mt-0.5 h-4 w-4 rounded border-input"
         />
         <span>
-          Priložiť aj PDF vystavených faktúr
+          {t("Priložiť aj PDF vystavených faktúr")}
           <span className="block text-xs text-muted-foreground">
-            Balík bude väčší a príprava chvíľu potrvá.
+            {t("Balík bude väčší a príprava chvíľu potrvá.")}
           </span>
         </span>
       </label>
@@ -79,29 +88,47 @@ export function StiahnutieDat() {
           className="mt-0.5 h-4 w-4 rounded border-input"
         />
         <span>
-          Priložiť aj skeny prijatých faktúr a bločkov
-          <span className="block text-xs text-muted-foreground">Digitálny archív originálov — najviac 200 naraz.</span>
+          {t("Priložiť aj skeny prijatých faktúr a bločkov")}
+          <span className="block text-xs text-muted-foreground">
+            {t("Digitálny archív originálov — najviac 200 naraz.")}
+          </span>
         </span>
       </label>
 
       <div className="mt-3 flex flex-wrap items-end gap-3 text-sm">
         <label className="block">
-          <span className="text-xs text-muted-foreground">Doklady od</span>
-          <input type="date" value={od} onChange={(e) => setOd(e.target.value)} className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5" />
+          <span className="text-xs text-muted-foreground">{t("Doklady od")}</span>
+          <input
+            type="date"
+            value={od}
+            onChange={(e) => setOd(e.target.value)}
+            className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5"
+          />
         </label>
         <label className="block">
-          <span className="text-xs text-muted-foreground">do</span>
-          <input type="date" value={doDna} onChange={(e) => setDoDna(e.target.value)} className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5" />
+          <span className="text-xs text-muted-foreground">{t("do")}</span>
+          <input
+            type="date"
+            value={doDna}
+            onChange={(e) => setDoDna(e.target.value)}
+            className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5"
+          />
         </label>
         <label className="block">
-          <span className="text-xs text-muted-foreground">podľa dátumu</span>
-          <select value={podla} onChange={(e) => setPodla(e.target.value as any)} className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5">
-            <option value="vystavenia">vystavenia</option>
-            <option value="dodania">dodania</option>
-            <option value="vytvorenia">vytvorenia vo Fakteri</option>
+          <span className="text-xs text-muted-foreground">{t("podľa dátumu")}</span>
+          <select
+            value={podla}
+            onChange={(e) => setPodla(e.target.value as any)}
+            className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5"
+          >
+            <option value="vystavenia">{t("vystavenia")}</option>
+            <option value="dodania">{t("dodania")}</option>
+            <option value="vytvorenia">{t("vytvorenia vo Fakteri")}</option>
           </select>
         </label>
-        <span className="pb-2 text-xs text-muted-foreground">Bez dátumov sa stiahne všetko.</span>
+        <span className="pb-2 text-xs text-muted-foreground">
+          {t("Bez dátumov sa stiahne všetko.")}
+        </span>
       </div>
 
       <button
@@ -110,33 +137,33 @@ export function StiahnutieDat() {
         className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
       >
         {bezi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        {bezi ? "Pripravujem balík…" : "Pripraviť a stiahnuť"}
+        {bezi ? t("Pripravujem balík…") : t("Pripraviť a stiahnuť")}
       </button>
 
       {vysledok && (
         <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-sm">
           <div className="font-medium">
-            Balík je hotový ({velkostSlovom(vysledok.velkost)})
-            {vysledok.pdfka > 0 && `, z toho ${vysledok.pdfka} PDF faktúr`}
-            {vysledok.skenov > 0 && `, ${vysledok.skenov} skenov`}
+            {t("Balík je hotový ({velkost})", { velkost: velkostSlovom(vysledok.velkost) })}
+            {vysledok.pdfka > 0 && t(", z toho {n} PDF faktúr", { n: vysledok.pdfka })}
+            {vysledok.skenov > 0 && t(", {n} skenov", { n: vysledok.skenov })}
           </div>
           <ul className="mt-1 text-xs text-muted-foreground">
             {Object.entries(vysledok.pocty)
               .filter(([, n]) => n > 0)
               .map(([co, n]) => (
                 <li key={co}>
-                  {co}: {n}
+                  {t(co)}: {n}
                 </li>
               ))}
           </ul>
           {vysledok.orezaneSkeny && (
             <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-              Skenov je priložených prvých 200 — zúžte obdobie a stiahnite zvyšok.
+              {t("Skenov je priložených prvých 200 — zúžte obdobie a stiahnite zvyšok.")}
             </p>
           )}
           {vysledok.orezanePdf && (
             <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-              PDF je priložených prvých 300 — zvyšok stiahnite zo zoznamu faktúr.
+              {t("PDF je priložených prvých 300 — zvyšok stiahnite zo zoznamu faktúr.")}
             </p>
           )}
           {vysledok.url && (
@@ -146,16 +173,16 @@ export function StiahnutieDat() {
               target="_blank"
               rel="noreferrer"
             >
-              Stiahnuť znova (odkaz platí sedem dní)
+              {t("Stiahnuť znova (odkaz platí sedem dní)")}
             </a>
           )}
         </div>
       )}
 
       <p className="mt-4 text-xs text-muted-foreground">
-        Účtovné doklady je potrebné uchovávať desať rokov (§ 76 zákona o DPH, § 35 zákona o
-        účtovníctve). Táto povinnosť trvá aj po zrušení účtu — stiahnite si balík skôr, než účet
-        zrušíte.
+        {t(
+          "Účtovné doklady je potrebné uchovávať desať rokov (§ 76 zákona o DPH, § 35 zákona o účtovníctve). Táto povinnosť trvá aj po zrušení účtu — stiahnite si balík skôr, než účet zrušíte.",
+        )}
       </p>
     </div>
   );

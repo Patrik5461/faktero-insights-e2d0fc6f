@@ -36,6 +36,8 @@ import { getActiveProduct } from "@/lib/faktero/active-product";
 import { potvrd } from "@/lib/potvrdenie";
 import { mozePrenesenieDph } from "@/lib/faktero/predplatne-cena";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { preloz, type Jazyk } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 
 type ProductMode = "invoicing" | "logbook" | "both";
 type ProductTab = "invoicing" | "logbook";
@@ -73,15 +75,15 @@ const LOGBOOK_PLANS = [
 ];
 
 export const Route = createFileRoute("/_authenticated/predplatne")({
-  head: () => ({ meta: [{ title: "Predplatné — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Predplatné — Faktero") }],
+  }),
   /** `?plan=` nesie voľbu z objednávkovej stránky — zvýrazníme ten plán. */
   validateSearch: (s: Record<string, unknown>): { plan?: string } => ({
     plan: typeof s.plan === "string" && s.plan ? s.plan : undefined,
   }),
-  errorComponent: ({ error }) => (
-    <div className="p-6 text-sm text-destructive">Chyba: {error.message}</div>
-  ),
-  notFoundComponent: () => <div className="p-6 text-sm">Nenájdené</div>,
+  errorComponent: ChybaPredplatneho,
+  notFoundComponent: NenajdenePredplatne,
   component: PredplatnePage,
 });
 
@@ -89,10 +91,24 @@ function fmtEur(cents: number | null | undefined) {
   if (cents == null) return "—";
   return formatujMenu(cents / 100, "EUR");
 }
-function fmtDate(s: string | null | undefined) {
+function ChybaPredplatneho({ error }: { error: Error }) {
+  const { t } = useT();
+  return (
+    <div className="p-6 text-sm text-destructive">
+      {t("Chyba: {sprava}", { sprava: error.message })}
+    </div>
+  );
+}
+
+function NenajdenePredplatne() {
+  const { t } = useT();
+  return <div className="p-6 text-sm">{t("Nenájdené")}</div>;
+}
+
+function fmtDate(s: string | null | undefined, jazyk: Jazyk = "sk") {
   if (!s) return "—";
   try {
-    return new Date(s).toLocaleDateString("sk-SK");
+    return new Date(s).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK");
   } catch {
     return "—";
   }
@@ -107,6 +123,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function PredplatnePage() {
+  const { t, jazyk } = useT();
   const fetchBilling = useServerFn(getMyBilling);
   const fetchPlans = useServerFn(listPlans);
   const fetchHistory = useServerFn(getPaymentHistory);
@@ -132,7 +149,7 @@ function PredplatnePage() {
     const params = new URLSearchParams(window.location.search);
     const p = params.get("payment");
     if (p === "return") {
-      toast.info("Spracúvame výsledok platby. Stav sa aktualizuje po potvrdení z GoPay.");
+      toast.info(t("Spracúvame výsledok platby. Stav sa aktualizuje po potvrdení z GoPay."));
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
@@ -197,7 +214,7 @@ function PredplatnePage() {
           setHistory(h as any[]);
         }
       } catch (e: any) {
-        toast.error(e?.message ?? "Nepodarilo sa načítať predplatné");
+        toast.error(e?.message ?? t("Nepodarilo sa načítať predplatné"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -228,7 +245,7 @@ function PredplatnePage() {
       const res = await checkoutFn({ data: { companyId, planSlug: slug as any } });
       window.location.href = (res as any).gw_url;
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa spustiť platbu");
+      toast.error(e?.message ?? t("Nepodarilo sa spustiť platbu"));
     } finally {
       setBusySlug(null);
     }
@@ -236,23 +253,23 @@ function PredplatnePage() {
 
   async function doCancel() {
     if (!companyId) return;
-    if (!(await potvrd("Naozaj zrušiť predplatné na konci aktuálneho obdobia?"))) return;
+    if (!(await potvrd(t("Naozaj zrušiť predplatné na konci aktuálneho obdobia?")))) return;
     try {
       await cancelFn({ data: { companyId } });
-      toast.success("Predplatné bude zrušené na konci obdobia");
+      toast.success(t("Predplatné bude zrušené na konci obdobia"));
       await refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     }
   }
   async function doReactivate() {
     if (!companyId) return;
     try {
       await reactivateFn({ data: { companyId } });
-      toast.success("Predplatné obnovené");
+      toast.success(t("Predplatné obnovené"));
       await refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     }
   }
   const [syncing, setSyncing] = useState(false);
@@ -261,14 +278,14 @@ function PredplatnePage() {
     setSyncing(true);
     try {
       const r: any = await syncFn({ data: { companyId } });
-      if (r?.reason === "no_payment") toast.info("Žiadna platba na synchronizáciu.");
+      if (r?.reason === "no_payment") toast.info(t("Žiadna platba na synchronizáciu."));
       else if (r?.reason === "missing_payment_id")
-        toast.error(r.error ?? "Posledná platba nemá GoPay ID.");
-      else toast.success(`Stav platby: ${r?.state ?? "—"}`);
+        toast.error(r.error ?? t("Posledná platba nemá GoPay ID."));
+      else toast.success(t("Stav platby: {stav}", { stav: r?.state ?? "—" }));
       await refresh();
       queryClient.invalidateQueries({ queryKey: ["plan-gate-billing"] });
     } catch (e: any) {
-      toast.error(e?.message ?? "Synchronizácia zlyhala");
+      toast.error(e?.message ?? t("Synchronizácia zlyhala"));
     } finally {
       setSyncing(false);
     }
@@ -303,31 +320,33 @@ function PredplatnePage() {
     <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
       <header className="space-y-1">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Predplatné</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("Predplatné")}</h1>
           {/* Vlastná hlavička znamená, že odkaz na manuál, ktorý `PageHeader`
               pridáva sám, tu chýbal — hoci mapovanie ho sľubuje. */}
           <a
             href="/pomoc/predplatne"
             target="_blank"
             rel="noreferrer"
-            title="Otvoriť manuál v novom okne"
+            title={t("Otvoriť manuál v novom okne")}
             className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
           >
-            <BookOpen className="h-3 w-3" /> Manuál
+            <BookOpen className="h-3 w-3" /> {t("Manuál")}
           </a>
         </div>
-        <p className="text-sm text-muted-foreground">Spravujte plán a fakturáciu vašej firmy.</p>
+        <p className="text-sm text-muted-foreground">
+          {t("Spravujte plán a fakturáciu vašej firmy.")}
+        </p>
       </header>
 
       {/* Current plan card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
           <div>
-            <CardTitle className="text-base">Aktuálny plán</CardTitle>
+            <CardTitle className="text-base">{t("Aktuálny plán")}</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
               {plan?.plan_name ?? "—"} ·{" "}
               <Badge variant={plan?.is_active ? "default" : "destructive"} className="ml-1">
-                {STATUS_LABEL[plan?.status ?? ""] ?? plan?.status ?? "—"}
+                {t(STATUS_LABEL[plan?.status ?? ""] ?? plan?.status ?? "—")}
               </Badge>
             </p>
           </div>
@@ -337,19 +356,29 @@ function PredplatnePage() {
                 ? "—"
                 : fmtEur(planPriceFromSlug(plans, plan?.plan_slug))}
             </div>
-            <div className="text-xs text-muted-foreground">/ mesiac</div>
+            <div className="text-xs text-muted-foreground">{t("/ mesiac")}</div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {plan?.is_trialing && plan.trial_days_left != null && (
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
-              <strong>Skúšobná verzia končí</strong> o {plan.trial_days_left}{" "}
-              {plDni(plan.trial_days_left)} · {fmtDate(plan.trial_ends_at)}
+              <strong>{t("Skúšobná verzia končí")}</strong>{" "}
+              {t(
+                plDni(plan.trial_days_left) === "deň"
+                  ? "o {n} deň"
+                  : plDni(plan.trial_days_left) === "dni"
+                    ? "o {n} dni"
+                    : "o {n} dní",
+                { n: plan.trial_days_left },
+              )}{" "}
+              · {fmtDate(plan.trial_ends_at, jazyk)}
             </div>
           )}
           {!plan?.is_active && (
             <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-              Predplatné je neaktívne. Aplikácia je v režime len na čítanie. Aktivujte plán nižšie.
+              {t(
+                "Predplatné je neaktívne. Aplikácia je v režime len na čítanie. Aktivujte plán nižšie.",
+              )}
             </div>
           )}
 
@@ -366,32 +395,38 @@ function PredplatnePage() {
                   /* Pridelený plán sa neúčtuje — veta o mesačnej obnove by tu
                      len strašila. */
                   <p>
-                    Tento plán máte pridelený <strong>zadarmo a natrvalo</strong>. Nič sa
-                    neúčtuje a nič netreba obnovovať.
+                    {t("Tento plán máte pridelený")} <strong>{t("zadarmo a natrvalo")}</strong>.{" "}
+                    {t("Nič sa neúčtuje a nič netreba obnovovať.")}
                   </p>
                 ) : plan.cancel_at_period_end ? (
                   <p>
-                    Predplatné je zrušené k{" "}
-                    <strong>{fmtDate(plan.current_period_end ?? plan.next_billing_at)}</strong>.
-                    Do toho dňa funguje všetko ako doteraz a nič sa už nestrhne.
+                    {t("Predplatné je zrušené k")}{" "}
+                    <strong>
+                      {fmtDate(plan.current_period_end ?? plan.next_billing_at, jazyk)}
+                    </strong>
+                    . {t("Do toho dňa funguje všetko ako doteraz a nič sa už nestrhne.")}
                   </p>
                 ) : plan.next_billing_at && plan.ma_ulozenu_kartu ? (
                   <p>
-                    Najbližšia platba <strong>{fmtDate(plan.next_billing_at)}</strong> —{" "}
-                    <strong>{fmtEurSDph(planPriceFromSlug(plans, plan?.plan_slug))}</strong> s DPH
-                    z uloženej karty cez GoPay. Upozornenie pošleme 7 dní vopred, zrušiť môžete
-                    kedykoľvek.
+                    {t("Najbližšia platba")} <strong>{fmtDate(plan.next_billing_at, jazyk)}</strong>{" "}
+                    — <strong>{fmtEurSDph(planPriceFromSlug(plans, plan?.plan_slug))}</strong>{" "}
+                    {t(
+                      "s DPH z uloženej karty cez GoPay. Upozornenie pošleme 7 dní vopred, zrušiť môžete kedykoľvek.",
+                    )}
                   </p>
                 ) : (
                   <p>
-                    Predplatné sa obnovuje každý mesiac. Platba je spracovaná cez GoPay
-                    (Visa/Mastercard). Zrušiť môžete kedykoľvek kliknutím na „Zrušiť predplatné“.
+                    {t(
+                      "Predplatné sa obnovuje každý mesiac. Platba je spracovaná cez GoPay (Visa/Mastercard). Zrušiť môžete kedykoľvek kliknutím na „Zrušiť predplatné“.",
+                    )}
                   </p>
                 )}
                 {(plan.renewal_attempts ?? 0) > 0 && (
                   <p className="text-destructive">
-                    Posledné strhnutie neprešlo ({plan.renewal_attempts}.&nbsp;pokus). Skúsime to
-                    znovu zajtra — ak kartu medzitým vymeníte, zaplatiť sa dá aj hneď nižšie.
+                    {t(
+                      "Posledné strhnutie neprešlo ({n}.\u00a0pokus). Skúsime to znovu zajtra — ak kartu medzitým vymeníte, zaplatiť sa dá aj hneď nižšie.",
+                      { n: plan.renewal_attempts },
+                    )}
                   </p>
                 )}
               </div>
@@ -400,13 +435,13 @@ function PredplatnePage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <UsageRow
-              label="Faktúry tento mesiac"
+              label={t("Faktúry tento mesiac")}
               used={planUsageInvoices.used}
               limit={planUsageInvoices.limit}
               pct={planUsageInvoices.pct}
             />
             <UsageRow
-              label="Používatelia"
+              label={t("Používatelia")}
               used={planUsageUsers.used}
               limit={planUsageUsers.limit}
               pct={planUsageUsers.pct}
@@ -415,29 +450,29 @@ function PredplatnePage() {
 
           <div className="flex flex-wrap items-center gap-2 pt-2 text-xs">
             <FeaturePill enabled={plan?.api_enabled} label="API" />
-            <FeaturePill enabled={plan?.webhooks_enabled} label="Webhooky" />
-            <FeaturePill enabled={plan?.recurring_enabled} label="Opakované faktúry" />
-            <FeaturePill enabled={plan?.efaktura_enabled} label="eFaktúra" />
-            <FeaturePill enabled={plan?.bank_matching_enabled} label="Bankové párovanie" />
+            <FeaturePill enabled={plan?.webhooks_enabled} label={t("Webhooky")} />
+            <FeaturePill enabled={plan?.recurring_enabled} label={t("Opakované faktúry")} />
+            <FeaturePill enabled={plan?.efaktura_enabled} label={t("eFaktúra")} />
+            <FeaturePill enabled={plan?.bank_matching_enabled} label={t("Bankové párovanie")} />
           </div>
 
           {isAdminLike && plan?.status === "active" && !plan?.zdarma && (
             <div className="flex flex-wrap gap-2 pt-3">
               <Button variant="outline" size="sm" onClick={doCancel}>
-                Zrušiť predplatné
+                {t("Zrušiť predplatné")}
               </Button>
             </div>
           )}
           {isAdminLike && plan?.status === "cancelled" && (
             <Button variant="outline" size="sm" onClick={doReactivate}>
-              Obnoviť predplatné
+              {t("Obnoviť predplatné")}
             </Button>
           )}
           {isAdminLike && (
             <div className="flex flex-wrap gap-2 pt-3">
               <Button variant="secondary" size="sm" onClick={doSync} disabled={syncing}>
                 {syncing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
-                Synchronizovať stav platby
+                {t("Synchronizovať stav platby")}
               </Button>
             </div>
           )}
@@ -447,7 +482,7 @@ function PredplatnePage() {
       {/* Plans grid */}
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">Zmeniť plán</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{t("Zmeniť plán")}</h2>
           {productMode === "both" && (
             <div className="inline-flex rounded-lg border border-border bg-muted p-1 text-sm">
               <button
@@ -455,14 +490,14 @@ function PredplatnePage() {
                 onClick={() => setTab("invoicing")}
                 className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${tab === "invoicing" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <FileText className="h-3.5 w-3.5" /> Fakturačný systém
+                <FileText className="h-3.5 w-3.5" /> {t("Fakturačný systém")}
               </button>
               <button
                 type="button"
                 onClick={() => setTab("logbook")}
                 className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${tab === "logbook" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <Car className="h-3.5 w-3.5" /> Kniha jázd
+                <Car className="h-3.5 w-3.5" /> {t("Kniha jázd")}
               </button>
             </div>
           )}
@@ -489,7 +524,7 @@ function PredplatnePage() {
 
         {!isAdminLike && (
           <p className="text-xs text-muted-foreground">
-            Plán môže meniť iba majiteľ alebo administrátor firmy.
+            {t("Plán môže meniť iba majiteľ alebo administrátor firmy.")}
           </p>
         )}
       </section>
@@ -497,27 +532,27 @@ function PredplatnePage() {
       {/* Payment history */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">História platieb</CardTitle>
+          <CardTitle className="text-base">{t("História platieb")}</CardTitle>
         </CardHeader>
         <CardContent>
           {history.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Zatiaľ žiadne platby.</p>
+            <p className="text-sm text-muted-foreground">{t("Zatiaľ žiadne platby.")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="px-3 py-2">Dátum</th>
-                    <th className="px-3 py-2">Plán</th>
-                    <th className="px-3 py-2">Suma</th>
-                    <th className="px-3 py-2">Stav</th>
+                    <th className="px-3 py-2">{t("Dátum")}</th>
+                    <th className="px-3 py-2">{t("Plán")}</th>
+                    <th className="px-3 py-2">{t("Suma")}</th>
+                    <th className="px-3 py-2">{t("Stav")}</th>
                     <th className="px-3 py-2">GoPay ID</th>
                   </tr>
                 </thead>
                 <tbody>
                   {history.map((h) => (
                     <tr key={h.id} className="border-t border-border">
-                      <td className="px-3 py-2">{fmtDate(h.paid_at ?? h.created_at)}</td>
+                      <td className="px-3 py-2">{fmtDate(h.paid_at ?? h.created_at, jazyk)}</td>
                       <td className="px-3 py-2">{h.plan_slug ?? "—"}</td>
                       <td className="px-3 py-2">{fmtEur(h.amount_cents)}</td>
                       <td className="px-3 py-2">
@@ -537,44 +572,47 @@ function PredplatnePage() {
 
       <div className="rounded-xl border border-border bg-card p-4 text-xs text-muted-foreground space-y-1.5">
         <p>
-          <strong className="text-foreground">Ceny a DPH:</strong> Uvedené ceny sú bez DPH.
-          Prevádzkovateľ je platca DPH; k cene sa uplatňuje sadzba <strong>23 %</strong> (Starter 9
-          € → 11,07 € s DPH; Premium 19 € → 23,37 € s DPH).
+          <strong className="text-foreground">{t("Ceny a DPH:")}</strong>{" "}
+          {t("Uvedené ceny sú bez DPH. Prevádzkovateľ je platca DPH; k cene sa uplatňuje sadzba")}{" "}
+          <strong>23 %</strong> {t("(Starter 9 € → 11,07 € s DPH; Premium 19 € → 23,37 € s DPH).")}
         </p>
         {bezDph && (
           <p>
-            <strong className="text-foreground">Platiteľ DPH z inej krajiny EÚ:</strong> vaša firma
-            má zahraničné IČ DPH, takže predplatné sa fakturuje bez DPH s prenesením daňovej
-            povinnosti — daň priznáte vy. IČ DPH sa pri platbe overí v registri VIES; ak by nebolo
-            platné, účtuje sa s DPH 23 %.
+            <strong className="text-foreground">{t("Platiteľ DPH z inej krajiny EÚ:")}</strong>{" "}
+            {t(
+              "vaša firma má zahraničné IČ DPH, takže predplatné sa fakturuje bez DPH s prenesením daňovej povinnosti — daň priznáte vy. IČ DPH sa pri platbe overí v registri VIES; ak by nebolo platné, účtuje sa s DPH 23 %.",
+            )}
           </p>
         )}
         <p>
-          <strong className="text-foreground">Automatické obnovenie:</strong> Predplatné sa po
-          skončení obdobia automaticky obnovuje, kým ho nezrušíte. Zrušiť môžete kedykoľvek —
-          prístup ostáva do konca zaplateného obdobia.
+          <strong className="text-foreground">{t("Automatické obnovenie:")}</strong>{" "}
+          {t(
+            "Predplatné sa po skončení obdobia automaticky obnovuje, kým ho nezrušíte. Zrušiť môžete kedykoľvek — prístup ostáva do konca zaplateného obdobia.",
+          )}
         </p>
         <p>
-          <strong className="text-foreground">Platba:</strong> Bezpečne cez GoPay (Visa, Mastercard,
-          3-D Secure, bankový prevod). Údaje karty spracúva výhradne GoPay.
+          <strong className="text-foreground">{t("Platba:")}</strong>{" "}
+          {t(
+            "Bezpečne cez GoPay (Visa, Mastercard, 3-D Secure, bankový prevod). Údaje karty spracúva výhradne GoPay.",
+          )}
         </p>
         <p>
-          Kliknutím na „Aktivovať plán“ potvrdzujete súhlas s{" "}
+          {t("Kliknutím na „Aktivovať plán“ potvrdzujete súhlas s")}{" "}
           <a href="/pravne/obchodne-podmienky" target="_blank" rel="noopener" className="underline">
-            Obchodnými podmienkami
+            {t("Obchodnými podmienkami")}
           </a>{" "}
-          a{" "}
+          {t("a")}{" "}
           <a href="/pravne/gopay-podmienky" target="_blank" rel="noopener" className="underline">
-            GoPay podmienkami
+            {t("GoPay podmienkami")}
           </a>
           .
         </p>
       </div>
 
       <p className="pt-2 text-center text-xs text-muted-foreground">
-        Platby spracováva GoPay.{" "}
+        {t("Platby spracováva GoPay.")}{" "}
         <Link to={"/" as any} className="underline">
-          Späť na úvod
+          {t("Späť na úvod")}
         </Link>
       </p>
     </div>
@@ -602,6 +640,7 @@ function UsageRow({
   limit: number | null;
   pct: number;
 }) {
+  const { t } = useT();
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between text-sm">
@@ -609,7 +648,7 @@ function UsageRow({
         <span className="font-medium">
           {used}
           {limit != null && <span className="text-muted-foreground"> / {limit}</span>}
-          {limit == null && <span className="text-muted-foreground"> · neobmedzené</span>}
+          {limit == null && <span className="text-muted-foreground"> · {t("neobmedzené")}</span>}
         </span>
       </div>
       {limit != null && <Progress value={pct} className="h-1.5" />}
@@ -651,6 +690,7 @@ function PlanCard({
   disabled: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useT();
   const icon =
     p.slug === "premium" ? (
       <Crown className="h-4 w-4" />
@@ -663,16 +703,19 @@ function PlanCard({
     );
 
   const features: string[] = [];
-  if (p.invoice_limit == null) features.push("Neobmedzené faktúry");
-  else features.push(`${p.invoice_limit} faktúr / mesiac`);
-  if (p.user_limit == null) features.push("Neobmedzene používateľov");
-  else features.push(`${p.user_limit} používateľ${p.user_limit === 1 ? "" : "ia"}`);
+  if (p.invoice_limit == null) features.push(t("Neobmedzené faktúry"));
+  else features.push(t("{n} faktúr / mesiac", { n: p.invoice_limit }));
+  if (p.user_limit == null) features.push(t("Neobmedzene používateľov"));
+  else
+    features.push(
+      t(p.user_limit === 1 ? "{n} používateľ" : "{n} používateľia", { n: p.user_limit }),
+    );
   if (p.api_enabled) features.push("API");
-  if (p.webhooks_enabled) features.push("Webhooky");
-  if (p.recurring_enabled) features.push("Opakované faktúry");
-  if (p.efaktura_enabled) features.push("eFaktúra");
-  if (p.bank_matching_enabled) features.push("Bankové párovanie");
-  if (p.priority_support) features.push("Prioritná podpora");
+  if (p.webhooks_enabled) features.push(t("Webhooky"));
+  if (p.recurring_enabled) features.push(t("Opakované faktúry"));
+  if (p.efaktura_enabled) features.push(t("eFaktúra"));
+  if (p.bank_matching_enabled) features.push(t("Bankové párovanie"));
+  if (p.priority_support) features.push(t("Prioritná podpora"));
 
   return (
     <Card
@@ -690,28 +733,28 @@ function PlanCard({
           {icon} {p.name}
           {wanted && !current && (
             <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
-              Vami vybraný
+              {t("Vami vybraný")}
             </span>
           )}
         </div>
         <div className="pt-2">
           {p.price_monthly_cents == null ? (
-            <div className="text-2xl font-semibold">Individuálne</div>
+            <div className="text-2xl font-semibold">{t("Individuálne")}</div>
           ) : (
             <>
               <span className="text-3xl font-semibold">{fmtEur(p.price_monthly_cents)}</span>
-              <span className="text-sm text-muted-foreground"> / mes.</span>
+              <span className="text-sm text-muted-foreground"> {t("/ mes.")}</span>
             </>
           )}
         </div>
         {p.price_monthly_cents != null &&
           (bezDph ? (
             <p className="text-xs text-muted-foreground">
-              bez DPH — prenesenie daňovej povinnosti (reverse charge)
+              {t("bez DPH — prenesenie daňovej povinnosti (reverse charge)")}
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              s DPH 23 %:{" "}
+              {t("s DPH 23 %:")}{" "}
               <span className="font-medium text-foreground">
                 {((p.price_monthly_cents * 1.23) / 100).toFixed(2).replace(".", ",")} €
               </span>
@@ -736,11 +779,11 @@ function PlanCard({
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : current ? (
-            "Aktuálny plán"
+            t("Aktuálny plán")
           ) : p.slug === "enterprise" ? (
-            "Kontaktovať obchod"
+            t("Kontaktovať obchod")
           ) : (
-            "Aktivovať plán"
+            t("Aktivovať plán")
           )}
         </Button>
       </CardContent>
@@ -749,13 +792,14 @@ function PlanCard({
 }
 
 function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
+  const { t } = useT();
   return (
     <div className="space-y-4">
       <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
         <p>
-          Predplatné pre <strong>Knihu jázd</strong> je zatiaľ dostupné na vyžiadanie. Napíšte nám a
-          aktivujeme vám vybraný plán.
+          {t("Predplatné pre")} <strong>{t("Knihu jázd")}</strong>{" "}
+          {t("je zatiaľ dostupné na vyžiadanie. Napíšte nám a aktivujeme vám vybraný plán.")}
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -763,20 +807,20 @@ function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
           <Card key={p.slug} className={p.featured ? "border-primary ring-1 ring-primary/30" : ""}>
             <CardHeader>
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Car className="h-4 w-4" /> {p.name}
+                <Car className="h-4 w-4" /> {t(p.name)}
               </div>
               <div className="pt-2">
                 <span className="text-3xl font-semibold">{p.price}</span>
-                <span className="text-sm text-muted-foreground"> / mes.</span>
+                <span className="text-sm text-muted-foreground"> {t("/ mes.")}</span>
               </div>
-              <p className="pt-1 text-xs text-muted-foreground">{p.tagline}</p>
+              <p className="pt-1 text-xs text-muted-foreground">{t(p.tagline)}</p>
             </CardHeader>
             <CardContent className="space-y-3">
               <ul className="space-y-1.5 text-sm">
                 {p.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">
                     <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
-                    <span>{f}</span>
+                    <span>{t(f)}</span>
                   </li>
                 ))}
               </ul>
@@ -787,7 +831,7 @@ function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
                 disabled={!isAdminLike}
               >
                 <a href={`mailto:info@faktero.sk?subject=Aktivácia plánu ${p.name}`}>
-                  Kontaktovať pre aktiváciu
+                  {t("Kontaktovať pre aktiváciu")}
                 </a>
               </Button>
             </CardContent>

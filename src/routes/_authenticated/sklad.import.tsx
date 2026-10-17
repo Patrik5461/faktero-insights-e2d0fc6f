@@ -6,23 +6,40 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { importStockCsv } from "@/lib/faktero/stock.functions";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/import")({
-  head: () => ({ meta: [{ title: "Import skladu (CSV, XLSX) — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Import skladu (CSV, XLSX) — Faktero") }],
+  }),
   component: ImportStockPage,
 });
 
 const ALIASES: Record<string, string[]> = {
-  sku: ["sku", "kód", "kod", "code"],
-  name: ["názov", "nazov", "name", "produkt", "product"],
+  sku: ["sku", "kód", "kod", "code", "artikelnummer"],
+  name: ["názov", "nazov", "name", "produkt", "product", "bezeichnung"],
   barcode: ["čiarový kód", "ciarovy kod", "barcode", "ean"],
-  unit: ["jednotka", "mj", "unit"],
-  purchase_price: ["nákupná cena", "nakupna cena", "purchase_price", "purchase price"],
-  sale_price: ["predajná cena", "predajna cena", "sale_price", "sale price", "cena"],
-  vat_rate: ["dph", "vat", "vat_rate"],
+  unit: ["jednotka", "mj", "unit", "einheit"],
+  purchase_price: [
+    "nákupná cena",
+    "nakupna cena",
+    "purchase_price",
+    "purchase price",
+    "einkaufspreis",
+  ],
+  sale_price: [
+    "predajná cena",
+    "predajna cena",
+    "sale_price",
+    "sale price",
+    "cena",
+    "verkaufspreis",
+  ],
+  vat_rate: ["dph", "vat", "vat_rate", "mwst"],
   min_stock: ["minimálny stav", "minimalny stav", "min stock", "min_stock", "minimum"],
   initial_stock: ["počiatočný stav", "pociatocny stav", "initial stock", "initial_stock", "stav"],
-  warehouse_name: ["sklad", "warehouse", "warehouse_name"],
+  warehouse_name: ["sklad", "warehouse", "warehouse_name", "lager"],
 };
 
 function detectField(header: string): string | null {
@@ -34,6 +51,7 @@ function detectField(header: string): string | null {
 }
 
 function ImportStockPage() {
+  const { t } = useT();
   const fetchImport = useServerFn(importStockCsv);
   const [rows, setRows] = useState<any[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -47,7 +65,7 @@ function ImportStockPage() {
     const wb = XLSX.read(buf, { type: "array" });
     const ws = wb.Sheets[wb.SheetNames[0]];
     const json = XLSX.utils.sheet_to_json<any>(ws, { header: 1, raw: false, defval: "" });
-    if (!json.length) return toast.error("Súbor je prázdny.");
+    if (!json.length) return toast.error(t("Súbor je prázdny."));
     const hdr = (json[0] as string[]).map((h) => String(h ?? "").trim());
     setHeaders(hdr);
     const auto: Record<string, string> = {};
@@ -83,18 +101,21 @@ function ImportStockPage() {
 
   async function runImport() {
     const cid = getActiveCompanyId();
-    if (!cid) return toast.error("Vyberte firmu.");
+    if (!cid) return toast.error(t("Vyberte firmu."));
     const payload = buildRows();
-    if (!payload.length) return toast.error("Žiadne riadky s názvom produktu.");
+    if (!payload.length) return toast.error(t("Žiadne riadky s názvom produktu."));
     setBusy(true);
     try {
       const res = await fetchImport({ data: { company_id: cid, rows: payload as any } });
       setResult(res);
       toast.success(
-        `Import dokončený. Vytvorené ${res.createdItems}, aktualizované ${res.updatedItems}.`,
+        t("Import dokončený. Vytvorené {n}, aktualizované {u}.", {
+          n: res.createdItems,
+          u: res.updatedItems,
+        }),
       );
     } catch (e: any) {
-      toast.error(e?.message ?? "Import zlyhal.");
+      toast.error(e?.message ?? t("Import zlyhal."));
     } finally {
       setBusy(false);
     }
@@ -105,13 +126,13 @@ function ImportStockPage() {
   return (
     <>
       <PageHeader
-        title="Import skladu (CSV, XLSX)"
-        description="Nahrajte CSV alebo XLSX so skladovými kartami."
+        title={t("Import skladu (CSV, XLSX)")}
+        description={t("Nahrajte CSV alebo XLSX so skladovými kartami.")}
       />
       <PageBody>
         <div className="rounded-xl border border-border bg-card p-4">
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-            <Upload className="h-4 w-4" /> Vybrať CSV / XLSX
+            <Upload className="h-4 w-4" /> {t("Vybrať CSV / XLSX")}
             <input
               type="file"
               accept=".csv,.xlsx,.xls"
@@ -123,14 +144,15 @@ function ImportStockPage() {
             />
           </label>
           <p className="mt-2 text-xs text-muted-foreground">
-            Podporované stĺpce: SKU (kód položky), Názov, Čiarový kód, Jednotka, Nákupná cena,
-            Predajná cena, DPH, Minimálny stav, Počiatočný stav, Sklad.
+            {t(
+              "Podporované stĺpce: SKU (kód položky), Názov, Čiarový kód, Jednotka, Nákupná cena, Predajná cena, DPH, Minimálny stav, Počiatočný stav, Sklad.",
+            )}
           </p>
         </div>
 
         {headers.length > 0 && (
           <div className="mt-4 rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">Mapovanie stĺpcov</div>
+            <div className="mb-3 text-sm font-semibold">{t("Mapovanie stĺpcov")}</div>
             <div className="grid gap-2 sm:grid-cols-2">
               {headers.map((h) => (
                 <label key={h} className="flex items-center gap-2 text-sm">
@@ -140,7 +162,7 @@ function ImportStockPage() {
                     onChange={(e) => setMapping({ ...mapping, [h]: e.target.value })}
                     className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                   >
-                    <option value="">— ignorovať —</option>
+                    <option value="">{t("— ignorovať —")}</option>
                     {Object.keys(ALIASES).map((f) => (
                       <option key={f} value={f}>
                         {f}
@@ -156,7 +178,7 @@ function ImportStockPage() {
         {preview.length > 0 && (
           <div className="mt-4 rounded-xl border border-border bg-card p-4">
             <div className="mb-3 text-sm font-semibold">
-              Náhľad ({rows.length} riadkov, zobrazujem 10)
+              {t("Náhľad ({n} riadkov, zobrazujem 10)", { n: rows.length })}
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -187,45 +209,45 @@ function ImportStockPage() {
               onClick={runImport}
               className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {busy ? "Importujem…" : `Potvrdiť import (${rows.length} riadkov)`}
+              {busy ? t("Importujem…") : t("Potvrdiť import ({n} riadkov)", { n: rows.length })}
             </button>
           </div>
         )}
 
         {result && (
           <div className="mt-4 rounded-xl border border-border bg-card p-4 text-sm">
-            <div className="mb-2 font-semibold">Výsledok importu</div>
+            <div className="mb-2 font-semibold">{t("Výsledok importu")}</div>
             <ul className="space-y-1">
               <li>
-                Nové produkty: <strong>{result.createdProducts}</strong>
+                {t("Nové produkty:")} <strong>{result.createdProducts}</strong>
               </li>
               <li>
-                Aktualizované produkty: <strong>{result.updatedProducts}</strong>
+                {t("Aktualizované produkty:")} <strong>{result.updatedProducts}</strong>
               </li>
               <li>
-                Nové skladové karty: <strong>{result.createdItems}</strong>
+                {t("Nové skladové karty:")} <strong>{result.createdItems}</strong>
               </li>
               <li>
-                Aktualizované skladové karty: <strong>{result.updatedItems}</strong>
+                {t("Aktualizované skladové karty:")} <strong>{result.updatedItems}</strong>
               </li>
               <li>
-                Počiatočné pohyby: <strong>{result.initialMovements}</strong>
+                {t("Počiatočné pohyby:")} <strong>{result.initialMovements}</strong>
               </li>
               {result.errors > 0 && (
                 <li className="text-destructive">
-                  Chyby: <strong>{result.errors}</strong>
+                  {t("Chyby:")} <strong>{result.errors}</strong>
                 </li>
               )}
             </ul>
             {result.errorList?.length > 0 && (
               <details className="mt-3">
                 <summary className="cursor-pointer text-xs text-muted-foreground">
-                  Detaily chýb
+                  {t("Detaily chýb")}
                 </summary>
                 <ul className="mt-2 space-y-1 text-xs">
                   {result.errorList.map((e: any, i: number) => (
                     <li key={i}>
-                      Riadok {e.row}: {e.reason}
+                      {t("Riadok {n}:", { n: e.row })} {e.reason}
                     </li>
                   ))}
                 </ul>

@@ -16,6 +16,8 @@ import {
 import { dekoduj } from "@/lib/faktero/polyline";
 import { obrazokTrasy } from "@/lib/faktero/mapa-obrazok";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 /**
  * Koľko máp sa najviac priloží. Každá je pár desiatok dlaždíc z verejného
@@ -25,7 +27,7 @@ import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 const MAX_MAP = 20;
 
 export const Route = createFileRoute("/_authenticated/jazdy/export")({
-  head: () => ({ meta: [{ title: "Export jázd — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Export jázd — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>): { vehicle_id?: string } => ({
     vehicle_id: typeof s.vehicle_id === "string" && s.vehicle_id ? s.vehicle_id : undefined,
   }),
@@ -48,6 +50,7 @@ function esc(s: any) {
 }
 
 function ExportPage() {
+  const { t } = useT();
   const { vehicle_id } = Route.useSearch();
   const navigate = useNavigate({ from: "/jazdy/export" });
   const today = new Date().toISOString().slice(0, 10);
@@ -74,7 +77,7 @@ function ExportPage() {
 
   async function fetchRows() {
     const cid = getActiveCompanyId();
-    if (!cid) throw new Error("Žiadna firma");
+    if (!cid) throw new Error(t("Žiadna firma"));
     // Po stránkach — Supabase vráti najviac 1 000 riadkov a ročná kniha jázd
     // rušného vozového parku by inak ticho skončila na tisícke.
     return vsetkyRiadky<any>((zac, kon) => {
@@ -109,7 +112,7 @@ function ExportPage() {
         "Charakter",
         "Zdroj",
         "Poznámka",
-      ];
+      ].map((h) => t(h));
       const lines = [header.join(";")];
       rows.forEach((r: any) => {
         const speedTxt = formatSpeed(
@@ -129,8 +132,8 @@ function ExportPage() {
             speedTxt,
             r.driver_name,
             r.purpose,
-            charakterJazdy(r.classification),
-            sourceLabel(r.external_source),
+            t(charakterJazdy(r.classification)),
+            t(sourceLabel(r.external_source)),
             r.note,
           ]
             .map(esc)
@@ -168,7 +171,7 @@ function ExportPage() {
         "Charakter",
         "Zdroj",
         "Poznámka",
-      ];
+      ].map((h) => t(h));
       const xmlEsc = (s: any) =>
         String(s ?? "")
           .replaceAll("&", "&amp;")
@@ -191,13 +194,13 @@ function ExportPage() {
             cell(speedTxt),
             cell(r.driver_name ?? ""),
             cell(r.purpose ?? ""),
-            cell(charakterJazdy(r.classification)),
-            cell(sourceLabel(r.external_source)),
+            cell(t(charakterJazdy(r.classification))),
+            cell(t(sourceLabel(r.external_source))),
             cell(r.note ?? ""),
           ].join("")}</Row>`;
         })
         .join("");
-      const xml = `<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Kniha jazd"><Table>${headerRow}${bodyRows}</Table></Worksheet></Workbook>`;
+      const xml = `<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="${xmlEsc(t("Kniha jázd"))}"><Table>${headerRow}${bodyRows}</Table></Worksheet></Workbook>`;
       download(`kniha-jazd-${from}-${to}.xls`, xml, "application/vnd.ms-excel");
     } catch (e: any) {
       toast.error(e.message);
@@ -211,11 +214,11 @@ function ExportPage() {
     // a mapy by ho prehliadač zablokoval ako vyskakovacie.
     const w = window.open("", "_blank");
     if (!w) {
-      toast.error("Prehliadač zablokoval nové okno. Povoľte ho a skúste znova.");
+      toast.error(t("Prehliadač zablokoval nové okno. Povoľte ho a skúste znova."));
       return;
     }
     w.document.write(
-      "<!doctype html><meta charset='utf-8'><title>Kniha jázd</title><p style='font-family:system-ui;padding:24px'>Pripravujem…</p>",
+      `<!doctype html><meta charset='utf-8'><title>${escHtml(t("Kniha jázd"))}</title><p style='font-family:system-ui;padding:24px'>${escHtml(t("Pripravujem…"))}</p>`,
     );
 
     setBusy(true);
@@ -236,26 +239,26 @@ function ExportPage() {
       const tr = rows
         .map(
           (r: any) =>
-            `<tr><td>${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)}</td><td>${escHtml(r.trip_date)}</td><td>${escHtml(r.start_location)}</td><td>${escHtml(r.end_location)}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${formatujCislo(r.distance_km, 1)}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${escHtml(r.driver_name)}</td><td>${escHtml(r.purpose)}</td><td>${charakterJazdy(r.classification)}</td><td>${sourceLabel(r.external_source)}</td></tr>`,
+            `<tr><td>${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)}</td><td>${escHtml(r.trip_date)}</td><td>${escHtml(r.start_location)}</td><td>${escHtml(r.end_location)}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${formatujCislo(r.distance_km, 1)}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${escHtml(r.driver_name)}</td><td>${escHtml(r.purpose)}</td><td>${escHtml(t(charakterJazdy(r.classification)))}</td><td>${escHtml(t(sourceLabel(r.external_source)))}</td></tr>`,
         )
         .join("");
 
       const trasyHtml = mapy.length
-        ? `<h2 class="trasy-nadpis">Trasy</h2>${
+        ? `<h2 class="trasy-nadpis">${escHtml(t("Trasy"))}</h2>${
             sTrasou.length > mapy.length
-              ? `<div class="poznamka">Priložených ${mapy.length} máp z ${sTrasou.length} jázd s uloženou trasou.</div>`
+              ? `<div class="poznamka">${escHtml(t("Priložených {n} máp z {spolu} jázd s uloženou trasou.", { n: mapy.length, spolu: sTrasou.length }))}</div>`
               : ""
           }${mapy
             .map(
               ({ r, obrazok }) =>
-                `<div class="trasa"><div class="trasa-hlavicka">${escHtml(r.trip_date)} · ${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)} · ${formatujCislo(r.distance_km, 1)} km · ${charakterJazdy(r.classification)}</div><img src="${obrazok}" alt="Trasa jazdy"></div>`,
+                `<div class="trasa"><div class="trasa-hlavicka">${escHtml(r.trip_date)} · ${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)} · ${formatujCislo(r.distance_km, 1)} km · ${escHtml(t(charakterJazdy(r.classification)))}</div><img src="${obrazok}" alt="${escHtml(t("Trasa jazdy"))}"></div>`,
             )
             .join("")}`
         : "";
 
       w.document.open();
       w.document.write(
-        `<!doctype html><html><head><meta charset="utf-8"><title>Kniha jázd ${escHtml(from)} – ${escHtml(to)}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}.trasy-nadpis{page-break-before:always;margin:0 0 8px}.poznamka{font-size:11px;color:#555;margin-bottom:8px}.trasa{page-break-inside:avoid;margin-bottom:14px}.trasa-hlavicka{font-size:11px;font-weight:600;margin-bottom:4px}.trasa img{width:100%;max-width:640px;border:1px solid #ddd}</style></head><body><h1>Kniha jázd</h1><div>Obdobie: ${escHtml(from)} – ${escHtml(to)}</div><table><thead><tr><th>Vozidlo</th><th>Dátum</th><th>Od</th><th>Do</th><th>Trvanie</th><th style="text-align:right">Km</th><th style="text-align:right">Priemer</th><th>Vodič</th><th>Typ</th><th>Charakter</th><th>Zdroj</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">Spolu</td><td style="text-align:right">${formatujCislo(total, 1)} km</td><td colspan="5"></td></tr></tfoot></table>${trasyHtml}<script>window.onload=()=>window.print()</script></body></html>`,
+        `<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(t("Kniha jázd"))} ${escHtml(from)} – ${escHtml(to)}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}.trasy-nadpis{page-break-before:always;margin:0 0 8px}.poznamka{font-size:11px;color:#555;margin-bottom:8px}.trasa{page-break-inside:avoid;margin-bottom:14px}.trasa-hlavicka{font-size:11px;font-weight:600;margin-bottom:4px}.trasa img{width:100%;max-width:640px;border:1px solid #ddd}</style></head><body><h1>${escHtml(t("Kniha jázd"))}</h1><div>${escHtml(t("Obdobie: {od} – {do}", { od: from, do: to }))}</div><table><thead><tr><th>${t("Vozidlo")}</th><th>${t("Dátum")}</th><th>${t("Od")}</th><th>${t("Do")}</th><th>${t("Trvanie")}</th><th style="text-align:right">${t("Km")}</th><th style="text-align:right">${t("Priemer")}</th><th>${t("Vodič")}</th><th>${t("Typ")}</th><th>${t("Charakter")}</th><th>${t("Zdroj")}</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">${t("Spolu")}</td><td style="text-align:right">${formatujCislo(total, 1)} km</td><td colspan="5"></td></tr></tfoot></table>${trasyHtml}<script>window.onload=()=>window.print()</script></body></html>`,
       );
       w.document.close();
     } catch (e: any) {
@@ -268,11 +271,11 @@ function ExportPage() {
 
   return (
     <>
-      <PageHeader title="Export jázd" description="Exportujte záznamy pre účtovníctvo." />
+      <PageHeader title={t("Export jázd")} description={t("Exportujte záznamy pre účtovníctvo.")} />
       <PageBody>
         <div className="mx-auto grid max-w-2xl gap-4 rounded-xl border border-border bg-card p-5 shadow-sm">
           <label className="block">
-            <span className="text-sm font-medium">Vozidlo</span>
+            <span className="text-sm font-medium">{t("Vozidlo")}</span>
             <select
               value={vehicle_id ?? ""}
               onChange={(e) =>
@@ -280,7 +283,7 @@ function ExportPage() {
               }
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="">Všetky vozidlá</option>
+              <option value="">{t("Všetky vozidlá")}</option>
               {vehicles.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.name}
@@ -291,7 +294,7 @@ function ExportPage() {
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="text-sm font-medium">Od</span>
+              <span className="text-sm font-medium">{t("Od")}</span>
               <input
                 type="date"
                 value={from}
@@ -300,7 +303,7 @@ function ExportPage() {
               />
             </label>
             <label className="block">
-              <span className="text-sm font-medium">Do</span>
+              <span className="text-sm font-medium">{t("Do")}</span>
               <input
                 type="date"
                 value={to}
@@ -317,10 +320,12 @@ function ExportPage() {
               className="mt-0.5 h-4 w-4"
             />
             <span>
-              Priložiť do PDF mapy trás
+              {t("Priložiť do PDF mapy trás")}
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                Len jazdy, ktoré majú uloženú trasu, najviac {MAX_MAP} máp. Príprava chvíľu trvá —
-                podklad sa sťahuje z OpenStreetMap.
+                {t(
+                  "Len jazdy, ktoré majú uloženú trasu, najviac {n} máp. Príprava chvíľu trvá — podklad sa sťahuje z OpenStreetMap.",
+                  { n: MAX_MAP },
+                )}
               </span>
             </span>
           </label>
@@ -348,8 +353,9 @@ function ExportPage() {
             </button>
           </div>
           <p className="text-xs text-muted-foreground">
-            PDF sa pripraví cez tlač prehliadača. Súbor pre Excel sa stiahne vo formáte .xls —
-            otvoria ho Excel aj LibreOffice.
+            {t(
+              "PDF sa pripraví cez tlač prehliadača. Súbor pre Excel sa stiahne vo formáte .xls — otvoria ho Excel aj LibreOffice.",
+            )}
           </p>
         </div>
       </PageBody>

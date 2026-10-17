@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
+import { useT } from "@/lib/i18n/useT";
 
 type Zaznam = { id: string; pole: string; pred: unknown; po: unknown; kto: string | null; kedy: string };
 
@@ -40,16 +41,18 @@ const POLIA: Record<string, string> = {
   stitky: "Štítky",
 };
 
-function hodnota(pole: string, v: unknown): string {
+function hodnota(pole: string, v: unknown, t: (s: string) => string, loc: string): string {
   if (v == null || v === "") return "—";
   if (Array.isArray(v)) return v.length ? v.join(", ") : "—";
-  if (pole.endsWith("_at")) return new Date(String(v)).toLocaleString("sk-SK", { dateStyle: "short", timeStyle: "short" });
-  if (pole === "job_id") return "zmenená";
+  if (pole.endsWith("_at")) return new Date(String(v)).toLocaleString(loc, { dateStyle: "short", timeStyle: "short" });
+  if (pole === "job_id") return t("zmenená");
   return String(v);
 }
 
 /** Kto, kedy a čo na doklade zmenil — zapisuje spúšťač v databáze. */
 export function HistoriaDokladu({ companyId, agenda, id }: { companyId: string; agenda: "prijata" | "doklad"; id: string }) {
+  const { t, jazyk } = useT();
+  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
   const nacitajMena = useServerFn(menaClenovFirmy);
   const [zaznamy, setZaznamy] = useState<Zaznam[] | null>(null);
   const [mena, setMena] = useState<Record<string, string>>({});
@@ -75,21 +78,21 @@ export function HistoriaDokladu({ companyId, agenda, id }: { companyId: string; 
   return (
     <div className="rounded-xl border border-border bg-card p-5 text-sm">
       <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-        <History className="h-3.5 w-3.5" /> História zmien
+        <History className="h-3.5 w-3.5" /> {t("História zmien")}
       </div>
       <ul className="mt-3 space-y-2">
         {zobraz.map((z) => (
           <li key={z.id} className="text-xs">
             <div className="text-muted-foreground">
-              {new Date(z.kedy).toLocaleString("sk-SK", { dateStyle: "short", timeStyle: "short" })} ·{" "}
-              {z.kto ? (mena[z.kto] ?? "kolega") : "systém"}
+              {new Date(z.kedy).toLocaleString(loc, { dateStyle: "short", timeStyle: "short" })} ·{" "}
+              {z.kto ? (mena[z.kto] ?? t("kolega")) : t("systém")}
             </div>
             <div>
-              <span className="font-medium">{POLIA[z.pole] ?? z.pole}</span>
+              <span className="font-medium">{POLIA[z.pole] ? t(POLIA[z.pole]) : z.pole}</span>
               {z.pole !== "_vytvoreny" ? (
                 <>
-                  : <span className="text-muted-foreground line-through">{hodnota(z.pole, z.pred)}</span> →{" "}
-                  {hodnota(z.pole, z.po)}
+                  : <span className="text-muted-foreground line-through">{hodnota(z.pole, z.pred, t, loc)}</span> →{" "}
+                  {hodnota(z.pole, z.po, t, loc)}
                 </>
               ) : null}
             </div>
@@ -98,7 +101,7 @@ export function HistoriaDokladu({ companyId, agenda, id }: { companyId: string; 
       </ul>
       {zaznamy.length > 8 ? (
         <button type="button" onClick={() => setVsetko(!vsetko)} className="mt-2 text-xs text-primary hover:underline">
-          {vsetko ? "Skryť staršie" : `Zobraziť všetko (${zaznamy.length})`}
+          {vsetko ? t("Skryť staršie") : t("Zobraziť všetko ({n})", { n: zaznamy.length })}
         </button>
       ) : null}
     </div>

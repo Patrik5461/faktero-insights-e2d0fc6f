@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -14,7 +16,7 @@ import { cisloPoziadavky, nazovKategorie } from "@/lib/faktero/podpora";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
 
 export const Route = createFileRoute("/_authenticated/podpora/$id")({
-  head: () => ({ meta: [{ title: "Požiadavka — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Požiadavka — Faktero") }] }),
   component: DetailPoziadavky,
 });
 
@@ -27,6 +29,7 @@ type Sprava = {
 };
 
 function DetailPoziadavky() {
+  const { t } = useT();
   const { id } = Route.useParams();
   const odpovedz = useServerFn(odpovedzNaPoziadavkuFn);
   const uzavri = useServerFn(uzavriPoziadavkuFn);
@@ -64,7 +67,7 @@ function DetailPoziadavky() {
       await odpovedz({ data: { id, text: text.trim() } });
       setText("");
       await nacitaj();
-      toast.success("Odoslané. Podpora dostane upozornenie.");
+      toast.success(t("Odoslané. Podpora dostane upozornenie."));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -77,7 +80,7 @@ function DetailPoziadavky() {
     try {
       await uzavri({ data: { id } });
       await nacitaj();
-      toast.success("Označené ako vyriešené. Keď napíšete znova, požiadavka sa otvorí.");
+      toast.success(t("Označené ako vyriešené. Keď napíšete znova, požiadavka sa otvorí."));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -90,9 +93,9 @@ function DetailPoziadavky() {
     return (
       <PageBody>
         <div className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-8 text-center">
-          <p className="font-medium">Požiadavka sa nenašla.</p>
+          <p className="font-medium">{t("Požiadavka sa nenašla.")}</p>
           <Link to="/podpora" className="mt-4 inline-block text-sm text-primary hover:underline">
-            Späť na Pomoc a podpora
+            {t("Späť na Pomoc a podpora")}
           </Link>
         </div>
       </PageBody>
@@ -102,20 +105,20 @@ function DetailPoziadavky() {
   return (
     <>
       <PageHeader
-        title={p ? `${cisloPoziadavky(p.cislo)} · ${p.predmet}` : "Požiadavka"}
+        title={p ? `${cisloPoziadavky(p.cislo)} · ${p.predmet}` : t("Požiadavka")}
         help="/pomoc/podpora"
       />
       <PageBody>
         {p === undefined ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Načítavam…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
           </div>
         ) : (
           <div className="mx-auto max-w-3xl space-y-4">
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <PodporaStav stav={p.stav} />
-              <span>{nazovKategorie(p.kategoria)}</span>
-              <span>Založená {new Date(p.created_at).toLocaleString("sk-SK")}</span>
+              <span>{t(nazovKategorie(p.kategoria))}</span>
+              <span>{t("Založená {datum}", { datum: new Date(p.created_at).toLocaleString("sk-SK") })}</span>
             </div>
 
             <ol className="space-y-3">
@@ -128,8 +131,8 @@ function DetailPoziadavky() {
                 >
                   <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">
-                      {s.od_podpory ? "Podpora Faktera" : "Vy"}
-                      {s.cez_email && <span className="font-normal text-muted-foreground"> · e‑mailom</span>}
+                      {s.od_podpory ? t("Podpora Faktera") : t("Vy")}
+                      {s.cez_email && <span className="font-normal text-muted-foreground"> · {t("e‑mailom")}</span>}
                     </span>
                     <span>{new Date(s.created_at).toLocaleString("sk-SK")}</span>
                   </div>
@@ -144,11 +147,11 @@ function DetailPoziadavky() {
                 onChange={(e) => setText(e.target.value)}
                 rows={4}
                 maxLength={10000}
-                aria-label="Odpoveď"
+                aria-label={t("Odpoveď")}
                 placeholder={
                   p.stav === "vyriesena"
-                    ? "Napíšte, ak to vyriešené nie je — požiadavka sa znova otvorí."
-                    : "Doplniť alebo odpovedať…"
+                    ? t("Napíšte, ak to vyriešené nie je — požiadavka sa znova otvorí.")
+                    : t("Doplniť alebo odpovedať…")
                 }
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
@@ -159,7 +162,7 @@ function DetailPoziadavky() {
                     disabled={busy}
                     className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
                   >
-                    <CheckCircle2 className="h-4 w-4" /> Už je to vyriešené
+                    <CheckCircle2 className="h-4 w-4" /> {t("Už je to vyriešené")}
                   </button>
                 ) : (
                   <span />
@@ -174,7 +177,7 @@ function DetailPoziadavky() {
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  Odoslať
+                  {t("Odoslať")}
                 </button>
               </div>
             </div>

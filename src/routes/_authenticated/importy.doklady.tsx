@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -12,9 +13,12 @@ import {
 } from "@/lib/faktero/import-prijatych.functions";
 import { CheckCircle2, FileArchive, History, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
 
 export const Route = createFileRoute("/_authenticated/importy/doklady")({
-  head: () => ({ meta: [{ title: "Import prijatých dokladov — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Import prijatých dokladov — Faktero") }],
+  }),
   component: ImportDokladovPage,
 });
 
@@ -45,6 +49,7 @@ type Nahlad = {
 const cakaj = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function ImportDokladovPage() {
+  const { t } = useT();
   const uploadFn = useServerFn(createImportUploadUrl);
   const nahladFn = useServerFn(nahladImportuPrijatychFn);
   const spustiFn = useServerFn(spustiImportPrijatychFn);
@@ -71,7 +76,9 @@ function ImportDokladovPage() {
   function pridaj(zoznam: FileList | File[]) {
     const ok = Array.from(zoznam).filter((f) => {
       if (f.size > MAX_SUBOR) {
-        toast.error(`${f.name}: najviac 200 MB na súbor. Väčší archív rozdeľte.`);
+        toast.error(
+          t("{subor}: najviac 200 MB na súbor. Väčší archív rozdeľte.", { subor: f.name }),
+        );
         return false;
       }
       return true;
@@ -83,7 +90,7 @@ function ImportDokladovPage() {
 
   async function nahrajAPozri() {
     if (!cid || !subory.length) return;
-    setPracujem("Nahrávam súbory…");
+    setPracujem(t("Nahrávam súbory…"));
     try {
       const cesty: { path: string; meno: string }[] = [];
       for (const f of subory) {
@@ -93,14 +100,17 @@ function ImportDokladovPage() {
           body: f,
           headers: { "Content-Type": f.type || "application/octet-stream" },
         });
-        if (!r.ok) throw new Error(`${f.name}: nahratie zlyhalo (${r.status})`);
+        if (!r.ok)
+          throw new Error(
+            t("{subor}: nahratie zlyhalo ({status})", { subor: f.name, status: r.status }),
+          );
         cesty.push({ path, meno: f.name });
       }
       setNahrate(cesty);
-      setPracujem("Čítam doklady…");
+      setPracujem(t("Čítam doklady…"));
       setNahlad((await nahladFn({ data: { companyId: cid, subory: cesty } })) as Nahlad);
     } catch (e: any) {
-      toast.error(e?.message ?? "Súbory sa nepodarilo prečítať.");
+      toast.error(e?.message ?? t("Súbory sa nepodarilo prečítať."));
     } finally {
       setPracujem(null);
     }
@@ -108,7 +118,7 @@ function ImportDokladovPage() {
 
   async function spusti() {
     if (!cid || !nahrate.length) return;
-    setPracujem("Spúšťam import…");
+    setPracujem(t("Spúšťam import…"));
     try {
       const { jobId, celkom } = await spustiFn({
         data: {
@@ -136,7 +146,7 @@ function ImportDokladovPage() {
         if (j.status !== "running") break;
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Import sa nepodarilo spustiť.");
+      toast.error(e?.message ?? t("Import sa nepodarilo spustiť."));
       setPracujem(null);
     }
   }
@@ -147,14 +157,16 @@ function ImportDokladovPage() {
   return (
     <>
       <PageHeader
-        title="Import prijatých dokladov"
-        description="Prechod z Doklado alebo inej aplikácie: prijaté faktúry, bločky a skeny dokladov."
+        title={t("Import prijatých dokladov")}
+        description={t(
+          "Prechod z Doklado alebo inej aplikácie: prijaté faktúry, bločky a skeny dokladov.",
+        )}
         action={
           <Link
             to="/importy"
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
           >
-            <History className="h-4 w-4" /> História importov
+            <History className="h-4 w-4" /> {t("História importov")}
           </Link>
         }
       />
@@ -163,11 +175,11 @@ function ImportDokladovPage() {
           <div className="min-w-0 space-y-6">
             {/* 1. Súbory */}
             <section className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="text-sm font-semibold">1. Nahrajte export</h2>
+              <h2 className="text-sm font-semibold">{t("1. Nahrajte export")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                XML pre Pohodu, CSV/XLSX alebo ZIP so skenmi (PDF, fotky) — aj viac súborov naraz.
-                Najlepšie je nahrať XML a k nemu ZIP s PDF: údaje sa vezmú presne z XML a skeny sa
-                priradia k dokladom.
+                {t(
+                  "XML pre Pohodu, CSV/XLSX alebo ZIP so skenmi (PDF, fotky) — aj viac súborov naraz. Najlepšie je nahrať XML a k nemu ZIP s PDF: údaje sa vezmú presne z XML a skeny sa priradia k dokladom.",
+                )}
               </p>
               <div
                 onDragOver={(e) => e.preventDefault()}
@@ -178,14 +190,14 @@ function ImportDokladovPage() {
                 className="mt-4 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center text-sm"
               >
                 <FileArchive className="mb-2 h-7 w-7 text-muted-foreground" />
-                Pretiahnite súbory sem alebo
+                {t("Pretiahnite súbory sem alebo")}
                 <button
                   type="button"
                   onClick={() => inputRef.current?.click()}
                   disabled={Boolean(pracujem) || bezi}
                   className="mt-2 rounded-md border border-border bg-secondary px-3 py-1.5 text-sm hover:bg-secondary/70 disabled:opacity-50"
                 >
-                  Vybrať súbory
+                  {t("Vybrať súbory")}
                 </button>
                 <input
                   ref={inputRef}
@@ -210,7 +222,7 @@ function ImportDokladovPage() {
                       {!nahrate.length && (
                         <button
                           onClick={() => setSubory((s) => s.filter((_, j) => j !== i))}
-                          aria-label={`Odobrať ${f.name}`}
+                          aria-label={t("Odobrať {subor}", { subor: f.name })}
                           className="rounded p-1 hover:bg-secondary"
                         >
                           <X className="h-4 w-4" />
@@ -231,7 +243,7 @@ function ImportDokladovPage() {
                   ) : (
                     <Upload className="h-4 w-4" />
                   )}
-                  {pracujem ?? "Nahrať a pozrieť"}
+                  {pracujem ?? t("Nahrať a pozrieť")}
                 </button>
               )}
             </section>
@@ -239,17 +251,19 @@ function ImportDokladovPage() {
             {/* 2. Náhľad a voľby */}
             {nahlad && (
               <section className="rounded-2xl border border-border bg-card p-5">
-                <h2 className="text-sm font-semibold">2. Čo sa naimportuje</h2>
+                <h2 className="text-sm font-semibold">{t("2. Čo sa naimportuje")}</h2>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <Cislo popis="Prijaté faktúry" hodnota={nahlad.faktury} />
-                  <Cislo popis="Bločky" hodnota={nahlad.blocky} />
-                  <Cislo popis="Skeny priradené" hodnota={nahlad.skenyPriradene} />
-                  <Cislo popis="Skeny na prečítanie AI" hodnota={nahlad.skenyBezParu} />
+                  <Cislo popis={t("Prijaté faktúry")} hodnota={nahlad.faktury} />
+                  <Cislo popis={t("Bločky")} hodnota={nahlad.blocky} />
+                  <Cislo popis={t("Skeny priradené")} hodnota={nahlad.skenyPriradene} />
+                  <Cislo popis={t("Skeny na prečítanie AI")} hodnota={nahlad.skenyBezParu} />
                 </div>
                 {nahlad.duplicity > 0 && (
                   <p className="mt-3 text-sm text-muted-foreground">
-                    {nahlad.duplicity} dokladov už vo Fakteri je — preskočia sa, import sa dá pustiť
-                    aj opakovane.
+                    {t(
+                      "{n} dokladov už vo Fakteri je — preskočia sa, import sa dá pustiť aj opakovane.",
+                      { n: nahlad.duplicity },
+                    )}
                   </p>
                 )}
                 {nahlad.ukazka.length > 0 && (
@@ -257,12 +271,12 @@ function ImportDokladovPage() {
                     <table className="w-full text-sm">
                       <thead className="bg-secondary/40 text-xs text-muted-foreground">
                         <tr>
-                          <th className="px-3 py-2 text-left">Typ</th>
-                          <th className="px-3 py-2 text-left">Číslo</th>
-                          <th className="px-3 py-2 text-left">Dodávateľ</th>
-                          <th className="px-3 py-2 text-left">Dátum</th>
-                          <th className="px-3 py-2 text-right">Suma</th>
-                          <th className="px-3 py-2 text-left">Sken</th>
+                          <th className="px-3 py-2 text-left">{t("Typ")}</th>
+                          <th className="px-3 py-2 text-left">{t("Číslo")}</th>
+                          <th className="px-3 py-2 text-left">{t("Dodávateľ")}</th>
+                          <th className="px-3 py-2 text-left">{t("Dátum")}</th>
+                          <th className="px-3 py-2 text-right">{t("Suma")}</th>
+                          <th className="px-3 py-2 text-left">{t("Sken")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -272,8 +286,8 @@ function ImportDokladovPage() {
                             className={`border-t border-border ${r.duplicita ? "opacity-50" : ""}`}
                           >
                             <td className="px-3 py-1.5 whitespace-nowrap">
-                              {r.typ === "faktura" ? "Faktúra" : "Bloček"}
-                              {r.duplicita && " (už je)"}
+                              {r.typ === "faktura" ? t("Faktúra") : t("Bloček")}
+                              {r.duplicita && ` ${t("(už je)")}`}
                             </td>
                             <td className="px-3 py-1.5">{r.cislo ?? "—"}</td>
                             <td className="px-3 py-1.5">{r.dodavatel ?? "—"}</td>
@@ -301,7 +315,7 @@ function ImportDokladovPage() {
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <label className="block text-sm">
                     <span className="mb-1 block text-xs text-muted-foreground">
-                      Odkiaľ doklady sú
+                      {t("Odkiaľ doklady sú")}
                     </span>
                     <select
                       value={zdroj}
@@ -309,22 +323,24 @@ function ImportDokladovPage() {
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                     >
                       {ZDROJE.map((z) => (
-                        <option key={z}>{z}</option>
+                        <option key={z} value={z}>
+                          {t(z)}
+                        </option>
                       ))}
                     </select>
                   </label>
                   <label className="block text-sm">
                     <span className="mb-1 block text-xs text-muted-foreground">
-                      Stav po importe
+                      {t("Stav po importe")}
                     </span>
                     <select
                       value={stav}
                       onChange={(e) => setStav(e.target.value as typeof stav)}
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                     >
-                      <option value="exported">Odovzdané účtovníkovi (už zaúčtované)</option>
-                      <option value="processed">Spracované</option>
-                      <option value="new">Nespracované — účtovník ich ešte prejde</option>
+                      <option value="exported">{t("Odovzdané účtovníkovi (už zaúčtované)")}</option>
+                      <option value="processed">{t("Spracované")}</option>
+                      <option value="new">{t("Nespracované — účtovník ich ešte prejde")}</option>
                     </select>
                   </label>
                 </div>
@@ -336,10 +352,11 @@ function ImportDokladovPage() {
                     className="mt-0.5 h-4 w-4"
                   />
                   <span>
-                    Skeny bez páru prečítať cez AI a založiť z nich doklady
+                    {t("Skeny bez páru prečítať cez AI a založiť z nich doklady")}
                     <span className="block text-xs text-muted-foreground">
-                      Najprv sa skúsia priradiť k dokladom z XML podľa sumy, dátumu a dodávateľa.
-                      Listy, predpisy a exekúcie pôjdu do Iných dokladov.
+                      {t(
+                        "Najprv sa skúsia priradiť k dokladom z XML podľa sumy, dátumu a dodávateľa. Listy, predpisy a exekúcie pôjdu do Iných dokladov.",
+                      )}
                     </span>
                   </span>
                 </label>
@@ -351,10 +368,11 @@ function ImportDokladovPage() {
                     className="mt-0.5 h-4 w-4"
                   />
                   <span>
-                    Hotovostné bločky započítať do pokladne
+                    {t("Hotovostné bločky započítať do pokladne")}
                     <span className="block text-xs text-muted-foreground">
-                      Pri presune starých dokladov nechajte vypnuté — inak by pokladňa za minulé
-                      mesiace nesedela.
+                      {t(
+                        "Pri presune starých dokladov nechajte vypnuté — inak by pokladňa za minulé mesiace nesedela.",
+                      )}
                     </span>
                   </span>
                 </label>
@@ -369,7 +387,7 @@ function ImportDokladovPage() {
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
-                    {pracujem ?? "Spustiť import"}
+                    {pracujem ?? t("Spustiť import")}
                   </button>
                 )}
               </section>
@@ -378,7 +396,9 @@ function ImportDokladovPage() {
             {/* 3. Priebeh a výsledok */}
             {priebeh && (
               <section className="rounded-2xl border border-border bg-card p-5" role="status">
-                <h2 className="text-sm font-semibold">3. {bezi ? "Importujem…" : "Hotovo"}</h2>
+                <h2 className="text-sm font-semibold">
+                  3. {bezi ? t("Importujem…") : t("Hotovo")}
+                </h2>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
                   <div
                     className="h-full bg-primary transition-all"
@@ -388,23 +408,29 @@ function ImportDokladovPage() {
                   />
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {priebeh.hotovo} z {priebeh.celkom}
-                  {bezi && " — môžete odísť, import dobehne aj bez tejto stránky."}
+                  {t("{hotovo} z {celkom}", { hotovo: priebeh.hotovo, celkom: priebeh.celkom })}
+                  {bezi && ` — ${t("môžete odísť, import dobehne aj bez tejto stránky.")}`}
                 </p>
                 {priebeh.vysledok && (
                   <ul className="mt-3 space-y-1 text-sm">
-                    <li>Prijaté faktúry: {priebeh.vysledok.faktury}</li>
-                    <li>Bločky: {priebeh.vysledok.blocky}</li>
-                    <li>Iné doklady: {priebeh.vysledok.ostatne}</li>
-                    <li>Priradené skeny: {priebeh.vysledok.skenyPriradene}</li>
-                    <li>Preskočené (už boli vo Fakteri): {priebeh.vysledok.preskocene}</li>
+                    <li>{t("Prijaté faktúry: {n}", { n: priebeh.vysledok.faktury })}</li>
+                    <li>{t("Bločky: {n}", { n: priebeh.vysledok.blocky })}</li>
+                    <li>{t("Iné doklady: {n}", { n: priebeh.vysledok.ostatne })}</li>
+                    <li>{t("Priradené skeny: {n}", { n: priebeh.vysledok.skenyPriradene })}</li>
+                    <li>
+                      {t("Preskočené (už boli vo Fakteri): {n}", {
+                        n: priebeh.vysledok.preskocene,
+                      })}
+                    </li>
                   </ul>
                 )}
                 {priebeh.chyba && <p className="mt-2 text-sm text-destructive">{priebeh.chyba}</p>}
                 {priebeh.vysledok?.chyby?.length > 0 && (
                   <details className="mt-3 text-sm">
                     <summary className="cursor-pointer text-amber-700 dark:text-amber-400">
-                      {priebeh.vysledok.chyby.length} dokladov sa nepodarilo naimportovať
+                      {t("{n} dokladov sa nepodarilo naimportovať", {
+                        n: priebeh.vysledok.chyby.length,
+                      })}
                     </summary>
                     <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
                       {priebeh.vysledok.chyby.map((c: string, i: number) => (
@@ -419,21 +445,21 @@ function ImportDokladovPage() {
                       to="/prijate-faktury"
                       className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
                     >
-                      Prijaté faktúry
+                      {t("Prijaté faktúry")}
                     </Link>
                     <Link
                       to="/doklady"
                       search={{ stav: "vsetky" }}
                       className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
                     >
-                      Doklady
+                      {t("Doklady")}
                     </Link>
                     <Link
                       to="/ostatne-doklady"
                       search={{ stav: "vsetky" }}
                       className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
                     >
-                      Iné doklady
+                      {t("Iné doklady")}
                     </Link>
                   </div>
                 )}
@@ -442,24 +468,27 @@ function ImportDokladovPage() {
           </div>
 
           <aside className="min-w-0 rounded-2xl border border-border bg-card p-5 text-sm">
-            <h2 className="font-semibold">Ako vyviezť doklady z Doklado</h2>
+            <h2 className="font-semibold">{t("Ako vyviezť doklady z Doklado")}</h2>
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-muted-foreground">
               <li>
-                V Doklado označte doklady (prijaté faktúry, bločky) a zvoľte <strong>Export</strong>
-                .
+                {t("V Doklado označte doklady (prijaté faktúry, bločky) a zvoľte")}{" "}
+                <strong>{t("Export")}</strong>.
               </li>
               <li>
-                Vyberte formát <strong>XML (Pohoda) SK</strong> — údaje v ňom sú najpresnejšie. Ide
-                aj <strong>CSV / XLSX detailný</strong>.
+                {t("Vyberte formát")} <strong>XML (Pohoda) SK</strong> —{" "}
+                {t("údaje v ňom sú najpresnejšie. Ide aj")}{" "}
+                <strong>{t("CSV / XLSX detailný")}</strong>.
               </li>
               <li>
-                Zvlášť vyexportujte <strong>PDF</strong> (ZIP so skenom každého dokladu).
+                {t("Zvlášť vyexportujte")} <strong>PDF</strong>{" "}
+                {t("(ZIP so skenom každého dokladu).")}
               </li>
-              <li>Oba súbory nahrajte sem naraz.</li>
+              <li>{t("Oba súbory nahrajte sem naraz.")}</li>
             </ol>
             <p className="mt-4 text-muted-foreground">
-              Máte len PDF? Nahrajte ZIP a AI každý doklad prečíta sama. Rovnako poslúži export z
-              Pohody alebo tabuľka od účtovníčky.
+              {t(
+                "Máte len PDF? Nahrajte ZIP a AI každý doklad prečíta sama. Rovnako poslúži export z Pohody alebo tabuľka od účtovníčky.",
+              )}
             </p>
           </aside>
         </div>

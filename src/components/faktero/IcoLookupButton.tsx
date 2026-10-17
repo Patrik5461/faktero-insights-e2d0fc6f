@@ -7,6 +7,7 @@ import {
   companyLookupConfiguredFn,
 } from "@/lib/faktero/company-lookup.functions";
 import type { NormalizedCompany } from "@/lib/faktero/company-registry.server";
+import { useT } from "@/lib/i18n/useT";
 
 type Props = {
   ico: string;
@@ -20,6 +21,7 @@ type Props = {
 export function IcoLookupButton({ ico, onResult, className, autoLookup = true }: Props) {
   // Optimistic default: show the button immediately. Server config check
   // only downgrades to `false` if FinStat is confirmed missing.
+  const { t } = useT();
   const [enabled, setEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [missing, setMissing] = useState<null | { dic: boolean; ic_dph: boolean }>(null);
@@ -52,9 +54,9 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
 
   async function run(auto = false) {
     const v = (ico ?? "").trim().replace(/\s+/g, "");
-    if (!v) return toast.error("Zadajte IČO");
-    if (!/^\d+$/.test(v)) return toast.error("IČO môže obsahovať len číslice");
-    if (v.length < 6 || v.length > 8) return toast.error("Neplatné IČO");
+    if (!v) return toast.error(t("Zadajte IČO"));
+    if (!/^\d+$/.test(v)) return toast.error(t("IČO môže obsahovať len číslice"));
+    if (v.length < 6 || v.length > 8) return toast.error(t("Neplatné IČO"));
     setLoading(true);
     setMissing(null);
     // Clear any previous success/error before issuing a new lookup.
@@ -70,25 +72,25 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
         // Data populated successfully — guarantee no error state remains visible.
         setError(null);
         const msg = res.cached
-          ? "Údaje boli načítané z FinStat (cache)."
-          : "Údaje boli načítané z FinStat.";
+          ? t("Údaje boli načítané z FinStat (cache).")
+          : t("Údaje boli načítané z FinStat.");
         showSuccess(msg);
         if (!auto) toast.success(msg);
       } else if (res.status === "not_found") {
         if (!auto) {
-          setError("Firma nebola nájdená.");
-          toast.error("Firma nebola nájdená.");
+          setError(t("Firma nebola nájdená."));
+          toast.error(t("Firma nebola nájdená."));
         }
       } else {
         const m = String(res.message ?? "");
-        let label = `FinStat: ${m}`;
+        let label = t("FinStat: {sprava}", { sprava: m });
         if (m.startsWith("auth_") || m.startsWith("Autorizácia FinStat")) {
           label =
-            "Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.";
+            t("Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.");
         } else if (m === "FinStat API nie je nakonfigurované." || m === "not_configured") {
-          label = "FinStat API nie je nakonfigurované.";
+          label = t("FinStat API nie je nakonfigurované.");
         } else if (m === "network" || m.startsWith("http_") || m === "invalid_response") {
-          label = "FinStat momentálne neodpovedá.";
+          label = t("FinStat momentálne neodpovedá.");
         }
         if (!auto) {
           setError(label);
@@ -97,7 +99,7 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
       }
     } catch (e: any) {
       if (!auto) {
-        const label = e?.message ?? "Nepodarilo sa načítať údaje.";
+        const label = e?.message ?? t("Nepodarilo sa načítať údaje.");
         setError(label);
         toast.error(label);
       }
@@ -125,7 +127,7 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
         type="button"
         onClick={() => run(false)}
         disabled={loading || !enabled}
-        title={!enabled ? "FinStat API nie je nakonfigurované na serveri." : undefined}
+        title={!enabled ? t("FinStat API nie je nakonfigurované na serveri.") : undefined}
         className={
           className ??
           "relative h-10 inline-flex shrink-0 items-center gap-2 rounded-r-md border border-input bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary/80 focus:z-20 focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
@@ -137,16 +139,16 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
           <Download className="h-4 w-4 text-muted-foreground" />
         )}
         <span className="leading-tight text-left">
-          {loading ? "Vyhľadávam..." : "Načítať"}
+          {loading ? t("Vyhľadávam...") : t("Načítať")}
           {!loading && (
-            <span className="block text-[10px] uppercase tracking-wider opacity-60">podľa IČO</span>
+            <span className="block text-[10px] uppercase tracking-wider opacity-60">{t("podľa IČO")}</span>
           )}
         </span>
       </button>
       {!enabled && (
         <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-          FinStat API nie je nakonfigurované.
+          {t("FinStat API nie je nakonfigurované.")}
         </p>
       )}
       {success && !error && (
@@ -164,9 +166,13 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
       {missing && !error && (
         <p className="flex items-start gap-1 text-[11px] text-amber-600 dark:text-amber-400">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-          FinStat nevrátil{" "}
-          {missing.dic && missing.ic_dph ? "DIČ ani IČ DPH" : missing.dic ? "DIČ" : "IČ DPH"} pre
-          túto firmu.
+          {t(
+            missing.dic && missing.ic_dph
+              ? "FinStat nevrátil DIČ ani IČ DPH pre túto firmu."
+              : missing.dic
+                ? "FinStat nevrátil DIČ pre túto firmu."
+                : "FinStat nevrátil IČ DPH pre túto firmu.",
+          )}
         </p>
       )}
     </div>

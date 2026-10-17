@@ -10,7 +10,7 @@ import {
   type DeliveryNoteItem,
 } from "@/lib/faktero/ai-delivery-note.functions";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
-import { NOVE_PRODUKTY, POHYBY, POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
+import { mnozne } from "@/lib/faktero/mnozne";
 import {
   Camera,
   Upload,
@@ -29,9 +29,13 @@ import {
 import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/dodaci-list")({
-  head: () => ({ meta: [{ title: "Naskenovať dodací list — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Naskenovať dodací list — Faktero") }],
+  }),
   component: DeliveryNoteScanPage,
 });
 
@@ -39,6 +43,7 @@ type Row = DeliveryNoteItem & { existing_product_id?: string | null };
 type ProductOption = { id: string; name: string; code: string | null };
 
 function DeliveryNoteScanPage() {
+  const { t } = useT();
   const nav = useNavigate();
   const importFn = useServerFn(importDeliveryNoteFn);
 
@@ -110,7 +115,8 @@ function DeliveryNoteScanPage() {
     setScanSuccess(false);
     setScanStep(0);
     const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-    if (!allowed.includes(file.type)) return toast.error("Podporujeme JPG, PNG, WebP alebo PDF.");
+    if (!allowed.includes(file.type))
+      return toast.error(t("Podporujeme JPG, PNG, WebP alebo PDF."));
 
     const MAX_IMAGE = 5 * 1024 * 1024;
     const MAX_PDF = 10 * 1024 * 1024;
@@ -119,12 +125,16 @@ function DeliveryNoteScanPage() {
 
     if (isPdf && file.size > MAX_PDF) {
       return toast.error(
-        `PDF je príliš veľké (${formatujCislo(file.size / 1024 / 1024, 1)} MB). Max 10 MB.`,
+        t("PDF je príliš veľké ({mb} MB). Max 10 MB.", {
+          mb: formatujCislo(file.size / 1024 / 1024, 1),
+        }),
       );
     }
     if (isImage && file.size > MAX_IMAGE) {
       return toast.error(
-        `Obrázok je príliš veľký (${formatujCislo(file.size / 1024 / 1024, 1)} MB). Max 5 MB.`,
+        t("Obrázok je príliš veľký ({mb} MB). Max 5 MB.", {
+          mb: formatujCislo(file.size / 1024 / 1024, 1),
+        }),
       );
     }
 
@@ -144,7 +154,7 @@ function DeliveryNoteScanPage() {
     const dataUrl: string = await new Promise((res, rej) => {
       const r = new FileReader();
       r.onload = () => res(String(r.result));
-      r.onerror = () => rej(new Error("Nepodarilo sa načítať súbor"));
+      r.onerror = () => rej(new Error(t("Nepodarilo sa načítať súbor")));
       r.readAsDataURL(processed);
     });
     setFileMeta({ name: file.name, mime: processedMime, dataUrl });
@@ -154,7 +164,7 @@ function DeliveryNoteScanPage() {
     // Upload to storage first – server needs a path, not base64.
     const cid = getActiveCompanyId();
     if (!cid) {
-      toast.error("Vyberte firmu.");
+      toast.error(t("Vyberte firmu."));
       return;
     }
     let uploadedPath: string | null = null;
@@ -167,14 +177,14 @@ function DeliveryNoteScanPage() {
         .upload(path, processed, { contentType: processedMime, upsert: false });
       if (upErr) {
         console.error("[dodaci-list] storage upload failed:", upErr.message);
-        toast.error(`Nahrávanie zlyhalo: ${upErr.message}`);
+        toast.error(t("Nahrávanie zlyhalo: {chyba}", { chyba: upErr.message }));
         return;
       }
       uploadedPath = path;
       setStoragePath(path);
     } catch (e: any) {
       console.error("[dodaci-list] storage upload exception:", e);
-      toast.error(`Nahrávanie zlyhalo: ${e?.message ?? "neznáma chyba"}`);
+      toast.error(t("Nahrávanie zlyhalo: {chyba}", { chyba: e?.message ?? t("neznáma chyba") }));
       return;
     }
 
@@ -184,7 +194,7 @@ function DeliveryNoteScanPage() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error("Chýba prihlásenie.");
+      if (!accessToken) throw new Error(t("Chýba prihlásenie."));
 
       const postRes = await fetch("/api/v1/sklad/parse-delivery-note", {
         method: "POST",
@@ -199,7 +209,10 @@ function DeliveryNoteScanPage() {
       if (!postRes.ok) {
         const text = await postRes.text();
         throw new Error(
-          `Nepodarilo sa spustiť spracovanie (${postRes.status}): ${text.slice(0, 200)}`,
+          t("Nepodarilo sa spustiť spracovanie ({kod}): {text}", {
+            kod: postRes.status,
+            text: text.slice(0, 200),
+          }),
         );
       }
       const { job_id } = await postRes.json();
@@ -216,7 +229,7 @@ function DeliveryNoteScanPage() {
         await new Promise((r) => setTimeout(r, 2000));
         if (signal.aborted) throw new DOMException("Aborted", "AbortError");
         if (Date.now() - started > maxMs)
-          throw new Error("Spracovanie trvá príliš dlho (timeout).");
+          throw new Error(t("Spracovanie trvá príliš dlho (timeout)."));
 
         const pollRes = await fetch(`/api/v1/sklad/parse-delivery-note/${job_id}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -224,7 +237,12 @@ function DeliveryNoteScanPage() {
         });
         if (!pollRes.ok) {
           const text = await pollRes.text();
-          throw new Error(`Chyba pri načítaní stavu (${pollRes.status}): ${text.slice(0, 200)}`);
+          throw new Error(
+            t("Chyba pri načítaní stavu ({kod}): {text}", {
+              kod: pollRes.status,
+              text: text.slice(0, 200),
+            }),
+          );
         }
         const j = await pollRes.json();
         if (j.status === "done") {
@@ -234,7 +252,7 @@ function DeliveryNoteScanPage() {
           break;
         }
         if (j.status === "error") {
-          throw new Error(j.error_message || "AI spracovanie zlyhalo.");
+          throw new Error(j.error_message || t("AI spracovanie zlyhalo."));
         }
       }
 
@@ -247,8 +265,18 @@ function DeliveryNoteScanPage() {
       );
       setScanStep(4);
       setScanSuccess(true);
-      if (!finalItems.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
-      else toast.success(`AI prečítalo ${sPoctom(finalItems.length, POLOZKY)}.`);
+      if (!finalItems.length) toast.warning(t("AI nenašlo žiadne položky, doplňte manuálne."));
+      else
+        toast.success(
+          t(
+            mnozne(finalItems.length, [
+              "AI prečítalo {n} položku.",
+              "AI prečítalo {n} položky.",
+              "AI prečítalo {n} položiek.",
+            ]),
+            { n: finalItems.length },
+          ),
+        );
       // Brief success flash, then auto-close so preview is visible.
       await new Promise((r) => setTimeout(r, 700));
       if (cancelledRef.current || signal.aborted) return;
@@ -261,8 +289,8 @@ function DeliveryNoteScanPage() {
         return;
       }
       console.error("[dodaci-list] parse error:", e);
-      setScanError(e?.message ?? "AI spracovanie zlyhalo.");
-      toast.error(e?.message ?? "AI spracovanie zlyhalo.");
+      setScanError(e?.message ?? t("AI spracovanie zlyhalo."));
+      toast.error(e?.message ?? t("AI spracovanie zlyhalo."));
       setParsing(false);
       setScanSuccess(false);
     }
@@ -351,18 +379,18 @@ function DeliveryNoteScanPage() {
       const w: any = await zalozZakladnySklad({ data: { company_id: cid } });
       setWarehouses([{ id: w.id, name: w.name }]);
       setWarehouseId(w.id);
-      toast.success("Firma má teraz Hlavný sklad.");
+      toast.success(t("Firma má teraz Hlavný sklad."));
     } catch (e: any) {
-      toast.error(e?.message ?? "Sklad sa nepodarilo založiť.");
+      toast.error(e?.message ?? t("Sklad sa nepodarilo založiť."));
     }
   }
 
   async function doImport(ajDuplicitu = false) {
     const cid = getActiveCompanyId();
-    if (!cid) return toast.error("Vyberte firmu.");
-    if (!warehouseId) return toast.error("Vyberte sklad.");
+    if (!cid) return toast.error(t("Vyberte firmu."));
+    if (!warehouseId) return toast.error(t("Vyberte sklad."));
     const valid = rows.filter((r) => r.name.trim() && r.quantity > 0);
-    if (!valid.length) return toast.error("Žiadne platné položky.");
+    if (!valid.length) return toast.error(t("Žiadne platné položky."));
     setImporting(true);
     try {
       const res = await importFn({
@@ -385,13 +413,27 @@ function DeliveryNoteScanPage() {
         },
       });
       toast.success(
-        `Naskladnené: ${sPoctom(res.movements, POHYBY)}, ${sPoctom(res.createdProducts, NOVE_PRODUKTY)}.`,
+        t("Naskladnené: {pohyby}, {produkty}.", {
+          pohyby: t(mnozne(res.movements, ["{n} pohyb", "{n} pohyby", "{n} pohybov"]), {
+            n: res.movements,
+          }),
+          produkty: t(
+            mnozne(res.createdProducts, [
+              "{n} nový produkt",
+              "{n} nové produkty",
+              "{n} nových produktov",
+            ]),
+            { n: res.createdProducts },
+          ),
+        }),
       );
       /* Riadok, ktorý sa nenaskladnil, sa musí povedať nahlas — inak by sklad
          ticho nesedel s dodacím listom. */
       if (res.errors > 0) {
         toast.error(
-          `Nenaskladnené riadky: ${res.errorList.map((e) => `${e.row} (${e.reason})`).join(", ")}`,
+          t("Nenaskladnené riadky: {riadky}", {
+            riadky: res.errorList.map((e) => `${e.row} (${e.reason})`).join(", "),
+          }),
           { duration: 15000 },
         );
       }
@@ -399,7 +441,9 @@ function DeliveryNoteScanPage() {
          inak by faktúra produkt predvyplnila nulou. */
       if (res.bezPredajnejCeny?.length) {
         toast.warning(
-          `Doplňte predajnú cenu nových produktov: ${res.bezPredajnejCeny.join(", ")}.`,
+          t("Doplňte predajnú cenu nových produktov: {zoznam}.", {
+            zoznam: res.bezPredajnejCeny.join(", "),
+          }),
           { duration: 15000 },
         );
       }
@@ -409,14 +453,14 @@ function DeliveryNoteScanPage() {
       if (sprava.startsWith(PREDPONA_DUPLICITY)) {
         setImporting(false);
         const ano = await potvrd(sprava.slice(PREDPONA_DUPLICITY.length), {
-          potvrdit: "Naskladniť aj tak",
-          zrusit: "Nenaskladňovať",
+          potvrdit: t("Naskladniť aj tak"),
+          zrusit: t("Nenaskladňovať"),
           nebezpecne: true,
         });
         if (ano) return doImport(true);
         return;
       }
-      toast.error(sprava || "Import zlyhal.");
+      toast.error(sprava || t("Import zlyhal."));
     } finally {
       setImporting(false);
     }
@@ -425,14 +469,14 @@ function DeliveryNoteScanPage() {
   return (
     <>
       <PageHeader
-        title="Naskenovať dodací list"
-        description="AI automaticky extrahuje položky z fotografie alebo PDF."
+        title={t("Naskenovať dodací list")}
+        description={t("AI automaticky extrahuje položky z fotografie alebo PDF.")}
         action={
           <Link
             to="/sklad/dodacie-listy"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
           >
-            <History className="h-4 w-4" /> História
+            <History className="h-4 w-4" /> {t("História")}
           </Link>
         }
       />
@@ -464,9 +508,9 @@ function DeliveryNoteScanPage() {
           >
             <FileText className="h-10 w-10 text-muted-foreground" />
             <div>
-              <div className="text-base font-medium">Nahrajte alebo odfoťte dodací list</div>
+              <div className="text-base font-medium">{t("Nahrajte alebo odfoťte dodací list")}</div>
               <div className="mt-1 text-xs text-muted-foreground">
-                JPG, PNG, WebP alebo PDF (max 15 MB)
+                {t("JPG, PNG, WebP alebo PDF (max 15 MB)")}
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -474,10 +518,10 @@ function DeliveryNoteScanPage() {
                 onClick={shootPhoto}
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                <Camera className="h-4 w-4" /> Odfotiť
+                <Camera className="h-4 w-4" /> {t("Odfotiť")}
               </button>
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-secondary">
-                <Upload className="h-4 w-4" /> Vybrať súbor
+                <Upload className="h-4 w-4" /> {t("Vybrať súbor")}
                 <input
                   type="file"
                   accept="image/*,application/pdf"
@@ -489,7 +533,9 @@ function DeliveryNoteScanPage() {
                 />
               </label>
             </div>
-            <p className="text-xs text-muted-foreground">Môžete tiež pretiahnuť súbor sem.</p>
+            <p className="text-xs text-muted-foreground">
+              {t("Môžete tiež pretiahnuť súbor sem.")}
+            </p>
           </div>
         )}
 
@@ -500,7 +546,7 @@ function DeliveryNoteScanPage() {
                 {fileMeta.mime.startsWith("image/") ? (
                   <img
                     src={fileMeta.dataUrl}
-                    alt="náhľad"
+                    alt={t("náhľad")}
                     className="max-h-64 w-full object-contain"
                   />
                 ) : (
@@ -518,7 +564,7 @@ function DeliveryNoteScanPage() {
                 }}
                 className="w-full rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-secondary"
               >
-                Nahrať iný súbor
+                {t("Nahrať iný súbor")}
               </button>
             </div>
 
@@ -527,7 +573,7 @@ function DeliveryNoteScanPage() {
                 <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
                   <AlertCircle className="mt-0.5 h-5 w-5 flex-none text-destructive" />
                   <div className="flex-1">
-                    <div className="font-semibold text-destructive">Skenovanie zlyhalo</div>
+                    <div className="font-semibold text-destructive">{t("Skenovanie zlyhalo")}</div>
                     <div className="mt-0.5 text-muted-foreground">{scanError}</div>
                   </div>
                   <button
@@ -536,14 +582,14 @@ function DeliveryNoteScanPage() {
                     }}
                     className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:opacity-90"
                   >
-                    <RefreshCw className="h-3.5 w-3.5" /> Skúsiť znova
+                    <RefreshCw className="h-3.5 w-3.5" /> {t("Skúsiť znova")}
                   </button>
                 </div>
               )}
 
               <div className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3">
                 <label className="block">
-                  <span className="text-xs font-medium text-muted-foreground">Sklad</span>
+                  <span className="text-xs font-medium text-muted-foreground">{t("Sklad")}</span>
                   <select
                     value={warehouseId}
                     onChange={(e) => setWarehouseId(e.target.value)}
@@ -557,19 +603,21 @@ function DeliveryNoteScanPage() {
                   </select>
                   {warehouses.length === 0 && (
                     <span className="mt-2 block rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
-                      Firma zatiaľ nemá sklad, tovar by nemal kam prísť.
+                      {t("Firma zatiaľ nemá sklad, tovar by nemal kam prísť.")}
                       <button
                         type="button"
                         onClick={zalozSkladFirme}
                         className="ml-1 font-medium underline"
                       >
-                        Založiť Hlavný sklad
+                        {t("Založiť Hlavný sklad")}
                       </button>
                     </span>
                   )}
                 </label>
                 <label className="block">
-                  <span className="text-xs font-medium text-muted-foreground">Dodávateľ</span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {t("Dodávateľ")}
+                  </span>
                   <input
                     value={supplier}
                     onChange={(e) => setSupplier(e.target.value)}
@@ -578,7 +626,7 @@ function DeliveryNoteScanPage() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-medium text-muted-foreground">Číslo DL</span>
+                  <span className="text-xs font-medium text-muted-foreground">{t("Číslo DL")}</span>
                   <input
                     value={deliveryNumber}
                     onChange={(e) => setDeliveryNumber(e.target.value)}
@@ -590,30 +638,32 @@ function DeliveryNoteScanPage() {
 
               <div className="rounded-xl border border-border bg-card">
                 <div className="flex items-center justify-between border-b border-border p-3">
-                  <div className="text-sm font-semibold">Položky ({rows.length})</div>
+                  <div className="text-sm font-semibold">
+                    {t("Položky ({n})", { n: rows.length })}
+                  </div>
                   <button
                     onClick={addRow}
                     className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Pridať riadok
+                    <Plus className="h-3.5 w-3.5" /> {t("Pridať riadok")}
                   </button>
                 </div>
                 {rows.length === 0 ? (
                   <div className="p-6 text-center text-sm text-muted-foreground">
                     {parsing
-                      ? "Čakám na AI…"
-                      : "Žiadne položky. Pridajte manuálne alebo nahrajte iný súbor."}
+                      ? t("Čakám na AI…")
+                      : t("Žiadne položky. Pridajte manuálne alebo nahrajte iný súbor.")}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50 text-xs text-muted-foreground">
                         <tr>
-                          <th className="p-2 text-left">Názov / produkt v sklade</th>
-                          <th className="p-2 text-left">Kód</th>
-                          <th className="p-2 text-right">Množstvo</th>
-                          <th className="p-2 text-left">MJ</th>
-                          <th className="p-2 text-right">Cena/ks</th>
+                          <th className="p-2 text-left">{t("Názov / produkt v sklade")}</th>
+                          <th className="p-2 text-left">{t("Kód")}</th>
+                          <th className="p-2 text-right">{t("Množstvo")}</th>
+                          <th className="p-2 text-left">{t("MJ")}</th>
+                          <th className="p-2 text-right">{t("Cena/ks")}</th>
                           <th className="p-2"></th>
                         </tr>
                       </thead>
@@ -633,7 +683,7 @@ function DeliveryNoteScanPage() {
                                 }
                                 className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
                               >
-                                <option value="">— vytvoriť nový / auto-priradiť —</option>
+                                <option value="">{t("— vytvoriť nový / auto-priradiť —")}</option>
                                 {products.map((p) => (
                                   <option key={p.id} value={p.id}>
                                     {p.name}
@@ -679,6 +729,8 @@ function DeliveryNoteScanPage() {
                             <td className="p-1.5 text-right">
                               <button
                                 onClick={() => removeRow(i)}
+                                aria-label={t("Odstrániť riadok")}
+                                title={t("Odstrániť riadok")}
                                 className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -698,7 +750,9 @@ function DeliveryNoteScanPage() {
                   onClick={() => doImport()}
                   className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
                 >
-                  {importing ? "Importujem…" : `Importovať do skladu (${rows.length})`}
+                  {importing
+                    ? t("Importujem…")
+                    : t("Importovať do skladu ({n})", { n: rows.length })}
                 </button>
               </div>
             </div>
@@ -724,6 +778,7 @@ function AiScanOverlay({
   onClose: () => void;
   onRetry: () => void;
 }) {
+  const { t } = useT();
   // Escape to close.
   useEffect(() => {
     if (!open) return;
@@ -745,19 +800,19 @@ function AiScanOverlay({
       setStuck(false);
       return;
     }
-    const t = window.setTimeout(() => setStuck(true), 15000);
-    return () => window.clearTimeout(t);
+    const casovac = window.setTimeout(() => setStuck(true), 15000);
+    return () => window.clearTimeout(casovac);
   }, [open, success]);
 
   if (!open) return null;
   const steps = [
-    "Dokument nahraný",
-    "AI analyzuje obsah…",
-    "Extrahovanie položiek",
-    "Príprava náhľadu",
+    t("Dokument nahraný"),
+    t("AI analyzuje obsah…"),
+    t("Extrahovanie položiek"),
+    t("Príprava náhľadu"),
   ];
   const showError = !!error || stuck;
-  const errorMessage = error ?? (stuck ? "Načítanie výsledkov trvá príliš dlho." : null);
+  const errorMessage = error ?? (stuck ? t("Načítanie výsledkov trvá príliš dlho.") : null);
   const allDone = !showError && (success || step >= 4);
 
   return (
@@ -773,7 +828,7 @@ function AiScanOverlay({
       >
         <button
           onClick={onClose}
-          aria-label="Zavrieť"
+          aria-label={t("Zavrieť")}
           className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <X className="h-4 w-4" />
@@ -817,10 +872,18 @@ function AiScanOverlay({
           </div>
           <div>
             <div className="text-base font-semibold">
-              {showError ? "Skenovanie zlyhalo" : allDone ? "Hotovo!" : "Skenujem dodací list"}
+              {showError
+                ? t("Skenovanie zlyhalo")
+                : allDone
+                  ? t("Hotovo!")
+                  : t("Skenujem dodací list")}
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-              {showError ? errorMessage : allDone ? "Načítavam výsledky…" : "Zvyčajne 20–40 sekúnd"}
+              {showError
+                ? errorMessage
+                : allDone
+                  ? t("Načítavam výsledky…")
+                  : t("Zvyčajne 20–40 sekúnd")}
             </div>
           </div>
         </div>
@@ -873,7 +936,7 @@ function AiScanOverlay({
               onClick={onClose}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
             >
-              Zavrieť
+              {t("Zavrieť")}
             </button>
             <button
               onClick={() => {
@@ -882,7 +945,7 @@ function AiScanOverlay({
               }}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <RefreshCw className="h-3.5 w-3.5" /> Skúsiť znova
+              <RefreshCw className="h-3.5 w-3.5" /> {t("Skúsiť znova")}
             </button>
           </div>
         )}

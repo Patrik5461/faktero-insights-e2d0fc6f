@@ -13,6 +13,7 @@ import {
 } from "@/lib/faktero/reservations.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
 
 const SRC_LABEL: Record<string, string> = {
   quote: "Ponuka",
@@ -35,6 +36,7 @@ export function ReservationsPanel({
   stockItemId: string;
   unit?: string | null;
 }) {
+  const { t, jazyk } = useT();
   const listFn = useServerFn(listReservationsForItem);
   const cancelFn = useServerFn(cancelReservation);
   const [rows, setRows] = useState<any[]>([]);
@@ -47,7 +49,7 @@ export function ReservationsPanel({
       const r = await listFn({ data: { company_id: companyId, stock_item_id: stockItemId } });
       setRows(r as any[]);
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba načítania rezervácií.");
+      toast.error(t(e?.message ?? "Chyba načítania rezervácií."));
     } finally {
       setLoading(false);
     }
@@ -57,40 +59,40 @@ export function ReservationsPanel({
   }, [stockItemId]);
 
   async function doCancel(id: string) {
-    if (!(await potvrd("Zrušiť rezerváciu?"))) return;
+    if (!(await potvrd(t("Zrušiť rezerváciu?")))) return;
     try {
       await cancelFn({ data: { company_id: companyId, id } });
-      toast.success("Rezervácia zrušená.");
+      toast.success(t("Rezervácia zrušená."));
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba.");
+      toast.error(t(e?.message ?? "Chyba."));
     }
   }
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
-        <div className="text-sm font-semibold">Rezervácie</div>
+        <div className="text-sm font-semibold">{t("Rezervácie")}</div>
         <button
           onClick={() => setOpen(true)}
           className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
         >
-          <Plus className="h-3.5 w-3.5" /> Rezervovať ručne
+          <Plus className="h-3.5 w-3.5" /> {t("Rezervovať ručne")}
         </button>
       </div>
       {loading ? (
-        <div className="text-sm text-muted-foreground">Načítavam…</div>
+        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
       ) : rows.length === 0 ? (
-        <div className="text-sm text-muted-foreground">Žiadne rezervácie.</div>
+        <div className="text-sm text-muted-foreground">{t("Žiadne rezervácie.")}</div>
       ) : (
         <table className="w-full text-sm">
           <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="p-2">Zdroj</th>
-              <th className="p-2 text-right">Množstvo</th>
-              <th className="p-2">Stav</th>
-              <th className="p-2">Expiruje</th>
-              <th className="p-2">Poznámka</th>
+              <th className="p-2">{t("Zdroj")}</th>
+              <th className="p-2 text-right">{t("Množstvo")}</th>
+              <th className="p-2">{t("Stav")}</th>
+              <th className="p-2">{t("Expiruje")}</th>
+              <th className="p-2">{t("Poznámka")}</th>
               <th className="p-2"></th>
             </tr>
           </thead>
@@ -104,18 +106,20 @@ export function ReservationsPanel({
                       params={{ id: r.source_document_id }}
                       className="text-primary hover:underline"
                     >
-                      {SRC_LABEL[r.source_document_type]}
+                      {t(SRC_LABEL[r.source_document_type])}
                     </Link>
                   ) : (
-                    (SRC_LABEL[r.source_document_type] ?? r.source_document_type)
+                    t(SRC_LABEL[r.source_document_type] ?? r.source_document_type)
                   )}
                 </td>
                 <td className="p-2 text-right tabular-nums">
                   {formatujCislo(r.quantity, 0, 3)} {unit ?? ""}
                 </td>
-                <td className="p-2 text-xs">{STATUS_LABEL[r.status] ?? r.status}</td>
+                <td className="p-2 text-xs">{t(STATUS_LABEL[r.status] ?? r.status)}</td>
                 <td className="p-2 text-xs text-muted-foreground">
-                  {r.expires_at ? new Date(r.expires_at).toLocaleDateString("sk-SK") : "—"}
+                  {r.expires_at
+                    ? new Date(r.expires_at).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK")
+                    : "—"}
                 </td>
                 <td className="p-2 text-xs text-muted-foreground">{r.note ?? "—"}</td>
                 <td className="p-2 text-right">
@@ -123,7 +127,7 @@ export function ReservationsPanel({
                     <button
                       onClick={() => doCancel(r.id)}
                       className="inline-flex items-center gap-1 rounded p-1 text-destructive hover:bg-destructive/10"
-                      title="Zrušiť"
+                      title={t("Zrušiť")}
                     >
                       <XCircle className="h-4 w-4" />
                     </button>
@@ -163,6 +167,7 @@ function ManualReservationDialog({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const { t } = useT();
   const createFn = useServerFn(createManualReservation);
   useZatvorNaEscape(onClose);
   const [warehouses, setWarehouses] = useState<any[]>([]);
@@ -188,7 +193,7 @@ function ManualReservationDialog({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const q = Number(qty);
-    if (!warehouse || !(q > 0)) return toast.error("Vyplňte sklad a množstvo.");
+    if (!warehouse || !(q > 0)) return toast.error(t("Vyplňte sklad a množstvo."));
     setBusy(true);
     try {
       await createFn({
@@ -201,10 +206,10 @@ function ManualReservationDialog({
           note: note || null,
         },
       });
-      toast.success("Rezervácia vytvorená.");
+      toast.success(t("Rezervácia vytvorená."));
       onCreated();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba.");
+      toast.error(t(e?.message ?? "Chyba."));
     } finally {
       setBusy(false);
     }
@@ -218,14 +223,14 @@ function ManualReservationDialog({
       <form
         role="dialog"
         aria-modal="true"
-        aria-label="Ručná rezervácia"
+        aria-label={t("Ručná rezervácia")}
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md space-y-3 rounded-xl border border-border bg-card p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
-        <div className="text-base font-semibold">Ručná rezervácia</div>
+        <div className="text-base font-semibold">{t("Ručná rezervácia")}</div>
         <label className="block">
-          <span className="text-sm font-medium">Sklad</span>
+          <span className="text-sm font-medium">{t("Sklad")}</span>
           <select
             value={warehouse}
             onChange={(e) => setWarehouse(e.target.value)}
@@ -239,7 +244,9 @@ function ManualReservationDialog({
           </select>
         </label>
         <label className="block">
-          <span className="text-sm font-medium">Množstvo {unit ? `(${unit})` : ""}</span>
+          <span className="text-sm font-medium">
+            {t("Množstvo")} {unit ? `(${unit})` : ""}
+          </span>
           <input
             type="number"
             step="0.001"
@@ -250,7 +257,7 @@ function ManualReservationDialog({
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium">Platnosť do (voliteľné)</span>
+          <span className="text-sm font-medium">{t("Platnosť do (voliteľné)")}</span>
           <input
             type="date"
             value={expires}
@@ -259,7 +266,7 @@ function ManualReservationDialog({
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium">Poznámka</span>
+          <span className="text-sm font-medium">{t("Poznámka")}</span>
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -272,13 +279,13 @@ function ManualReservationDialog({
             onClick={onClose}
             className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
           >
-            Zrušiť
+            {t("Zrušiť")}
           </button>
           <button
             disabled={busy}
             className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
           >
-            {busy ? "Ukladám…" : "Rezervovať"}
+            {busy ? t("Ukladám…") : t("Rezervovať")}
           </button>
         </div>
       </form>

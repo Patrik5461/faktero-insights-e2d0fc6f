@@ -11,6 +11,7 @@ import {
 } from "@/lib/faktero/eshop-napojenia.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
 
 declare global {
   interface Window {
@@ -41,6 +42,7 @@ function nacitajWidget(): Promise<void> {
  * dobierka), štítok a stav. Bez pripojenej Zásielkovne sa neukáže.
  */
 export function ZasielkovnaFaktury({ inv, onZmena }: { inv: any; onZmena: () => void }) {
+  const { t } = useT();
   const stavNapojeni = useServerFn(stavNapojeniFn);
   const stitok = useServerFn(stitokZasielkyFn);
   const stav = useServerFn(stavZasielkyFn);
@@ -66,7 +68,7 @@ export function ZasielkovnaFaktury({ inv, onZmena }: { inv: any; onZmena: () => 
       a.download = r.nazov;
       a.click();
     } catch (e: any) {
-      toast.error(e?.message ?? "Štítok sa nepodarilo stiahnuť");
+      toast.error(t(e?.message ?? "Štítok sa nepodarilo stiahnuť"));
     } finally {
       setBusy(false);
     }
@@ -76,10 +78,14 @@ export function ZasielkovnaFaktury({ inv, onZmena }: { inv: any; onZmena: () => 
     setBusy(true);
     try {
       const r = await stav({ data: { company_id: inv.company_id, invoice_id: inv.id } });
-      toast.success(`Stav zásielky: ${r.stav}${r.ulozenaDo ? ` (uložená do ${r.ulozenaDo})` : ""}`);
+      toast.success(
+        r.ulozenaDo
+          ? t("Stav zásielky: {stav} (uložená do {datum})", { stav: r.stav, datum: r.ulozenaDo })
+          : t("Stav zásielky: {stav}", { stav: r.stav }),
+      );
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Stav sa nepodarilo zistiť");
+      toast.error(t(e?.message ?? "Stav sa nepodarilo zistiť"));
     } finally {
       setBusy(false);
     }
@@ -88,12 +94,12 @@ export function ZasielkovnaFaktury({ inv, onZmena }: { inv: any; onZmena: () => 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center gap-2 text-sm font-semibold">
-        <Package className="h-4 w-4 text-primary" /> Zásielkovňa
+        <Package className="h-4 w-4 text-primary" /> {t("Zásielkovňa")}
       </div>
       {inv.zasielkovna_id ? (
         <div className="mt-2 space-y-2 text-sm">
           <div>
-            Zásielka{" "}
+            {t("Zásielka")}{" "}
             <a
               href={`https://tracking.packeta.com/sk/?id=${encodeURIComponent(inv.zasielkovna_cislo ?? inv.zasielkovna_id)}`}
               target="_blank"
@@ -112,14 +118,14 @@ export function ZasielkovnaFaktury({ inv, onZmena }: { inv: any; onZmena: () => 
               disabled={busy}
               className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              Štítok (PDF)
+              {t("Štítok (PDF)")}
             </button>
             <button
               onClick={() => void obnovStav()}
               disabled={busy}
               className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              <RefreshCw className="h-3.5 w-3.5" /> Stav
+              <RefreshCw className="h-3.5 w-3.5" /> {t("Stav")}
             </button>
           </div>
         </div>
@@ -128,7 +134,7 @@ export function ZasielkovnaFaktury({ inv, onZmena }: { inv: any; onZmena: () => 
           onClick={() => setOkno(true)}
           className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
         >
-          Poslať cez Zásielkovňu
+          {t("Poslať cez Zásielkovňu")}
         </button>
       )}
       {okno && (
@@ -143,9 +149,9 @@ export function ZasielkovnaFaktury({ inv, onZmena }: { inv: any; onZmena: () => 
         />
       )}
       <p className="mt-2 text-xs text-muted-foreground">
-        Nastavenie v{" "}
+        {t("Nastavenie v")}{" "}
         <Link to="/nastavenia/eshop" className="underline">
-          E-shop a doprava
+          {t("E-shop a doprava")}
         </Link>
         .
       </p>
@@ -164,6 +170,7 @@ function OknoZasielky({
   onClose: () => void;
   onHotovo: () => void;
 }) {
+  const { t, jazyk } = useT();
   useZatvorNaEscape(onClose);
   const vytvor = useServerFn(vytvorZasielkuFn);
   const [miesto, setMiesto] = useState<{ id: string; nazov: string } | null>(null);
@@ -185,10 +192,10 @@ function OknoZasielky({
           if (p)
             setMiesto({ id: String(p.id), nazov: [p.name, p.city].filter(Boolean).join(", ") });
         },
-        { country: krajina, language: "sk" },
+        { country: krajina, language: jazyk === "de" ? "de" : "sk" },
       );
     } catch (e: any) {
-      toast.error(e?.message ?? "Mapa sa nenačítala");
+      toast.error(t(e?.message ?? "Mapa sa nenačítala"));
     }
   }
 
@@ -208,10 +215,10 @@ function OknoZasielky({
           email,
         },
       });
-      toast.success(`Zásielka vytvorená: ${r.cislo ?? r.id}`);
+      toast.success(t("Zásielka vytvorená: {cislo}", { cislo: r.cislo ?? r.id }));
       onHotovo();
     } catch (e: any) {
-      toast.error(e?.message ?? "Zásielku sa nepodarilo vytvoriť", { duration: 12000 });
+      toast.error(t(e?.message ?? "Zásielku sa nepodarilo vytvoriť"), { duration: 12000 });
     } finally {
       setBusy(false);
     }
@@ -222,13 +229,13 @@ function OknoZasielky({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Poslať cez Zásielkovňu"
+        aria-label={t("Poslať cez Zásielkovňu")}
         className="w-full max-w-md rounded-xl border border-border bg-card p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold">Poslať cez Zásielkovňu</h3>
+        <h3 className="text-lg font-semibold">{t("Poslať cez Zásielkovňu")}</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          {inv.customer_name} · faktúra {inv.invoice_number}
+          {inv.customer_name} · {t("faktúra {cislo}", { cislo: inv.invoice_number })}
         </p>
         <div className="mt-4 space-y-3 text-sm">
           <label className="flex items-center gap-2">
@@ -237,7 +244,7 @@ function OknoZasielky({
               checked={naAdresu}
               onChange={(e) => setNaAdresu(e.target.checked)}
             />
-            Doručiť na adresu z faktúry (zadajte id dopravcu)
+            {t("Doručiť na adresu z faktúry (zadajte id dopravcu)")}
           </label>
           {!naAdresu ? (
             <div>
@@ -247,11 +254,11 @@ function OknoZasielky({
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
               >
                 <MapPin className="h-4 w-4" />{" "}
-                {miesto ? "Zmeniť výdajné miesto" : "Vybrať výdajné miesto na mape"}
+                {miesto ? t("Zmeniť výdajné miesto") : t("Vybrať výdajné miesto na mape")}
               </button>
               {miesto ? (
                 <div className="mt-1 text-xs">
-                  {miesto.nazov} (id {miesto.id})
+                  {miesto.nazov} ({t("id {id}", { id: miesto.id })})
                 </div>
               ) : null}
             </div>
@@ -260,8 +267,8 @@ function OknoZasielky({
             <label className="block">
               <span className="text-xs text-muted-foreground">
                 {naAdresu
-                  ? "Id dopravcu (napr. doručenie na adresu SK)"
-                  : "alebo id výdajného miesta"}
+                  ? t("Id dopravcu (napr. doručenie na adresu SK)")
+                  : t("alebo id výdajného miesta")}
               </span>
               <input
                 inputMode="numeric"
@@ -273,7 +280,7 @@ function OknoZasielky({
           ) : null}
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
-              <span className="text-xs text-muted-foreground">Hmotnosť (kg)</span>
+              <span className="text-xs text-muted-foreground">{t("Hmotnosť (kg)")}</span>
               <input
                 inputMode="decimal"
                 value={hmotnost}
@@ -282,7 +289,7 @@ function OknoZasielky({
               />
             </label>
             <label className="block">
-              <span className="text-xs text-muted-foreground">Telefón príjemcu</span>
+              <span className="text-xs text-muted-foreground">{t("Telefón príjemcu")}</span>
               <input
                 value={telefon}
                 onChange={(e) => setTelefon(e.target.value)}
@@ -293,7 +300,7 @@ function OknoZasielky({
           </div>
           <label className="block">
             <span className="text-xs text-muted-foreground">
-              E-mail príjemcu (oznámenie o zásielke)
+              {t("E-mail príjemcu (oznámenie o zásielke)")}
             </span>
             <input value={email} onChange={(e) => setEmail(e.target.value)} className={vstup} />
           </label>
@@ -303,7 +310,9 @@ function OknoZasielky({
               checked={dobierka}
               onChange={(e) => setDobierka(e.target.checked)}
             />
-            Dobierka {formatujMenu(Math.abs(Number(inv.total)), inv.currency)}
+            {t("Dobierka {suma}", {
+              suma: formatujMenu(Math.abs(Number(inv.total)), inv.currency),
+            })}
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
@@ -311,14 +320,14 @@ function OknoZasielky({
             onClick={onClose}
             className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
           >
-            Zrušiť
+            {t("Zrušiť")}
           </button>
           <button
             onClick={() => void poslat()}
             disabled={busy || !(miestoId > 0) || !(Number(hmotnost.replace(",", ".")) > 0)}
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
-            {busy && <Loader2 className="h-4 w-4 animate-spin" />} Vytvoriť zásielku
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Vytvoriť zásielku")}
           </button>
         </div>
       </div>

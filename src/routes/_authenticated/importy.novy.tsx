@@ -1,11 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
 import { History, ArrowRight } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { VendorImportPage, type VendorId } from "@/components/faktero/VendorImportPage";
 import { IMPORT_ZDROJE, PREDVOLENY_ZDROJ, zdrojPodlaId } from "@/components/faktero/import-zdroje";
 
 export const Route = createFileRoute("/_authenticated/importy/novy")({
-  head: () => ({ meta: [{ title: "Účtovné importy — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Účtovné importy — Faktero") }],
+  }),
   /** Zdroj drží adresa, nie stav — dá sa naň odkázať aj ho obnoviť. */
   validateSearch: (s: Record<string, unknown>): { zdroj?: string } => ({
     zdroj: typeof s.zdroj === "string" ? s.zdroj : undefined,
@@ -14,13 +18,14 @@ export const Route = createFileRoute("/_authenticated/importy/novy")({
 });
 
 function VyberZdroja({ id, onZmena }: { id: string; onZmena: (v: string) => void }) {
+  const { t } = useT();
   return (
     <section className="rounded-2xl border border-border bg-card p-6">
       <label htmlFor="zdroj-importu" className="text-sm font-semibold text-foreground">
-        Odkiaľ importujete
+        {t("Odkiaľ importujete")}
       </label>
       <p className="mt-1 text-sm text-muted-foreground">
-        Vyberte program, z ktorého máte export. Návod aj prípony súborov sa prispôsobia.
+        {t("Vyberte program, z ktorého máte export. Návod aj prípony súborov sa prispôsobia.")}
       </p>
       <select
         id="zdroj-importu"
@@ -39,6 +44,7 @@ function VyberZdroja({ id, onZmena }: { id: string; onZmena: (v: string) => void
 }
 
 function Page() {
+  const { t } = useT();
   const { zdroj } = Route.useSearch();
   const navigate = useNavigate();
   const z = zdrojPodlaId(zdroj ?? PREDVOLENY_ZDROJ);
@@ -50,14 +56,14 @@ function Page() {
     return (
       <>
         <PageHeader
-          title="Účtovné importy"
-          description="Prechod do Faktera z iného fakturačného alebo účtovného programu."
+          title={t("Účtovné importy")}
+          description={t("Prechod do Faktera z iného fakturačného alebo účtovného programu.")}
           action={
             <Link
               to="/importy"
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              <History className="h-4 w-4" /> História importov
+              <History className="h-4 w-4" /> {t("História importov")}
             </Link>
           }
         />
@@ -72,7 +78,7 @@ function Page() {
                   to={z.cesta}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
-                  Otvoriť import <ArrowRight className="h-4 w-4" />
+                  {t("Otvoriť import")} <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             </section>
@@ -88,8 +94,8 @@ function Page() {
          súbor a náhľad z predchádzajúceho programu. */
       key={z.id}
       source={z.id as VendorId}
-      title="Účtovné importy"
-      description="Prechod do Faktera z iného fakturačného alebo účtovného programu."
+      title={t("Účtovné importy")}
+      description={t("Prechod do Faktera z iného fakturačného alebo účtovného programu.")}
       accept={z.accept!}
       selector={<VyberZdroja id={z.id} onZmena={zmen} />}
       guide={z.guide}

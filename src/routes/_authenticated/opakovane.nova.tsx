@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -12,7 +14,7 @@ import { sadzbyDoVyberu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { MENY, KROK_CENY, cenaZoSumySDph, formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/opakovane/nova")({
-  head: () => ({ meta: [{ title: "Nová opakovaná faktúra — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová opakovaná faktúra — Faktero") }] }),
   component: NewRecurring,
 });
 
@@ -40,6 +42,7 @@ const PAYMENT_METHODS = [
  * založiť aj paušál; jediné navyše je, ako často a odkedy sa má vystavovať.
  */
 function NewRecurring() {
+  const { t } = useT();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<any[]>([]);
   const [form, setForm] = useState({
@@ -120,13 +123,13 @@ function NewRecurring() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     const cust = customers.find((c) => c.id === form.customer_id);
-    if (!cust) return toast.error("Vyberte odberateľa");
-    if (!form.name.trim()) return toast.error("Zadajte názov šablóny");
+    if (!cust) return toast.error(t("Vyberte odberateľa"));
+    if (!form.name.trim()) return toast.error(t("Zadajte názov šablóny"));
     if (!form.intro_note.trim()) {
-      return toast.error("Vyplňte text nad položkami — hovorí, čo sa fakturuje.");
+      return toast.error(t("Vyplňte text nad položkami — hovorí, čo sa fakturuje."));
     }
     const bezNazvu = riadkyDokladu.find((it) => !it.name.trim());
-    if (bezNazvu) return toast.error("Položka so sumou musí mať názov.");
+    if (bezNazvu) return toast.error(t("Položka so sumou musí mať názov."));
 
     setUkladam(true);
     const { data, error } = await supabase
@@ -163,27 +166,27 @@ function NewRecurring() {
     setUkladam(false);
     if (error || !data) {
       const { friendlyError } = await import("@/lib/faktero/plan-error");
-      return toast.error(friendlyError(error));
+      return toast.error(t(friendlyError(error)));
     }
-    toast.success("Šablóna vytvorená");
+    toast.success(t("Šablóna vytvorená"));
     navigate({ to: "/opakovane/$id", params: { id: data.id } });
   }
 
   return (
     <>
       <PageHeader
-        title="Nová opakovaná faktúra"
-        description="Šablóna, podľa ktorej bude Faktero pravidelne vystavovať faktúry."
+        title={t("Nová opakovaná faktúra")}
+        description={t("Šablóna, podľa ktorej bude Faktero pravidelne vystavovať faktúry.")}
       />
       <PageBody>
         <form onSubmit={submit} className="mx-auto max-w-6xl space-y-6">
           {/* Základné údaje a opakovanie vedľa seba — rovnako ako na faktúre. */}
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="rounded-2xl border border-border bg-card p-5">
-              <SectionHeader icon={FileText} title="Základné údaje" />
+              <SectionHeader icon={FileText} title={t("Základné údaje")} />
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-                  <label className="text-[13px] font-semibold text-foreground">Odberateľ *</label>
+                  <label className="text-[13px] font-semibold text-foreground">{t("Odberateľ *")}</label>
                   <CustomerSearch
                     customers={customers}
                     value={form.customer_id}
@@ -196,21 +199,21 @@ function NewRecurring() {
                 </div>
                 <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
                   <label className="text-[13px] font-semibold text-foreground">
-                    Názov šablóny *
+                    {t("Názov šablóny *")}
                   </label>
                   <input
                     required
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="napr. Mesačný paušál ACME"
+                    placeholder={t("napr. Mesačný paušál ACME")}
                     className={vstup}
                   />
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    Vidíte ho len vy v zozname šablón — na faktúre nie je.
+                    {t("Vidíte ho len vy v zozname šablón — na faktúre nie je.")}
                   </span>
                 </div>
                 <div>
-                  <label className="text-[13px] font-semibold text-foreground">Mena</label>
+                  <label className="text-[13px] font-semibold text-foreground">{t("Mena")}</label>
                   <select
                     value={form.currency}
                     onChange={(e) => setForm({ ...form, currency: e.target.value })}
@@ -227,12 +230,12 @@ function NewRecurring() {
                   druh="invoice"
                   hodnota={form.number_series_id}
                   onZmena={(id) => setForm({ ...form, number_series_id: id })}
-                  label="Číselný rad faktúr"
+                  label={t("Číselný rad faktúr")}
                   bezNahladu
                   className="sm:col-span-2 lg:col-span-1 xl:col-span-2"
                 />
                 <div>
-                  <label className="text-[13px] font-semibold text-foreground">Spôsob platby</label>
+                  <label className="text-[13px] font-semibold text-foreground">{t("Spôsob platby")}</label>
                   <select
                     value={form.payment_method}
                     onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
@@ -240,7 +243,7 @@ function NewRecurring() {
                   >
                     {PAYMENT_METHODS.map((m) => (
                       <option key={m.value} value={m.value}>
-                        {m.label}
+                        {t(m.label)}
                       </option>
                     ))}
                   </select>
@@ -249,24 +252,24 @@ function NewRecurring() {
             </section>
 
             <section className="rounded-2xl border border-border bg-card p-5">
-              <SectionHeader icon={Repeat} title="Opakovanie" />
+              <SectionHeader icon={Repeat} title={t("Opakovanie")} />
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 <div>
-                  <label className="text-[13px] font-semibold text-foreground">Ako často</label>
+                  <label className="text-[13px] font-semibold text-foreground">{t("Ako často")}</label>
                   <select
                     value={form.frequency}
                     onChange={(e) => setForm({ ...form, frequency: e.target.value as any })}
                     className={vstup}
                   >
-                    <option value="weekly">Týždenne</option>
-                    <option value="monthly">Mesačne</option>
-                    <option value="quarterly">Štvrťročne</option>
-                    <option value="yearly">Ročne</option>
+                    <option value="weekly">{t("Týždenne")}</option>
+                    <option value="monthly">{t("Mesačne")}</option>
+                    <option value="quarterly">{t("Štvrťročne")}</option>
+                    <option value="yearly">{t("Ročne")}</option>
                   </select>
                 </div>
                 <div>
                   <label className="text-[13px] font-semibold text-foreground">
-                    Prvé vystavenie
+                    {t("Prvé vystavenie")}
                   </label>
                   <input
                     type="date"
@@ -278,7 +281,7 @@ function NewRecurring() {
                 </div>
                 <div>
                   <label className="text-[13px] font-semibold text-foreground">
-                    Splatnosť (dni)
+                    {t("Splatnosť (dni)")}
                   </label>
                   <input
                     type="number"
@@ -288,7 +291,7 @@ function NewRecurring() {
                     className={vstup}
                   />
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    Počíta sa od dňa vystavenia každej faktúry.
+                    {t("Počíta sa od dňa vystavenia každej faktúry.")}
                   </span>
                 </div>
                 <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
@@ -300,9 +303,9 @@ function NewRecurring() {
                       className="mt-0.5 h-4 w-4 rounded border-input"
                     />
                     <span>
-                      <strong>Aktívna</strong>
+                      <strong>{t("Aktívna")}</strong>
                       <span className="mt-0.5 block text-xs text-muted-foreground">
-                        Vypnutá šablóna ostáva uložená, ale faktúry z nej nevznikajú.
+                        {t("Vypnutá šablóna ostáva uložená, ale faktúry z nej nevznikajú.")}
                       </span>
                     </span>
                   </label>
@@ -314,34 +317,34 @@ function NewRecurring() {
           <section className="rounded-2xl border border-border bg-card p-5">
             <label className="block">
               <span className="text-[13px] font-semibold text-foreground">
-                Text nad položkami <span className="text-destructive">*</span>
+                {t("Text nad položkami")} <span className="text-destructive">*</span>
               </span>
               <textarea
                 rows={2}
                 required
                 value={form.intro_note}
                 onChange={(e) => setForm({ ...form, intro_note: e.target.value })}
-                placeholder="Napríklad: Fakturujeme vám mesačný paušál za správu serverov."
+                placeholder={t("Napríklad: Fakturujeme vám mesačný paušál za správu serverov.")}
                 className={vstup}
               />
               <span className="mt-1 block text-xs text-muted-foreground">
-                Dostane ho každá faktúra z tejto šablóny. Položky pod ním sú nepovinné.
+                {t("Dostane ho každá faktúra z tejto šablóny. Položky pod ním sú nepovinné.")}
               </span>
             </label>
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5">
-            <SectionHeader icon={Package} title="Položky" />
+            <SectionHeader icon={Package} title={t("Položky")} />
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-foreground">
-                    <th className="py-2 font-medium">Názov</th>
-                    <th className="py-2 pl-3 font-medium">Mn.</th>
-                    <th className="py-2 pl-3 font-medium">MJ</th>
-                    <th className="py-2 pl-3 font-medium text-right">Cena</th>
-                    <th className="py-2 pl-3 font-medium">DPH</th>
-                    <th className="py-2 pl-3 font-medium text-right">Spolu s DPH</th>
+                    <th className="py-2 font-medium">{t("Názov")}</th>
+                    <th className="py-2 pl-3 font-medium">{t("Mn.")}</th>
+                    <th className="py-2 pl-3 font-medium">{t("MJ")}</th>
+                    <th className="py-2 pl-3 font-medium text-right">{t("Cena")}</th>
+                    <th className="py-2 pl-3 font-medium">{t("DPH")}</th>
+                    <th className="py-2 pl-3 font-medium text-right">{t("Spolu s DPH")}</th>
                     <th />
                   </tr>
                 </thead>
@@ -352,7 +355,7 @@ function NewRecurring() {
                         <input
                           value={it.name}
                           onChange={(e) => setItem(idx, { name: e.target.value })}
-                          placeholder="Názov položky"
+                          placeholder={t("Názov položky")}
                           className={bunka}
                         />
                       </td>
@@ -392,7 +395,7 @@ function NewRecurring() {
                         <input
                           type="number"
                           step="0.01"
-                          title="Suma s DPH — cena bez dane sa dopočíta"
+                          title={t("Suma s DPH — cena bez dane sa dopočíta")}
                           value={(it.quantity * it.unit_price * (1 + it.vat_rate / 100)).toFixed(2)}
                           onChange={(e) => nastavSpolu(idx, Number(e.target.value))}
                           className={`${bunka} w-28 text-right font-medium tabular-nums`}
@@ -420,7 +423,7 @@ function NewRecurring() {
                   <input
                     value={it.name}
                     onChange={(e) => setItem(idx, { name: e.target.value })}
-                    placeholder="Názov položky"
+                    placeholder={t("Názov položky")}
                     className="mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                   <div className="grid grid-cols-4 gap-2">
@@ -476,24 +479,24 @@ function NewRecurring() {
               }
               className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground"
             >
-              <Plus className="h-3.5 w-3.5" /> Pridať položku
+              <Plus className="h-3.5 w-3.5" /> {t("Pridať položku")}
             </button>
           </section>
 
           <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-primary/[0.03] p-5">
             <div className="ml-auto max-w-sm space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Bez DPH</span>
+                <span className="text-muted-foreground">{t("Bez DPH")}</span>
                 <span className="tabular-nums">{formatujMenu(totals.subtotal, form.currency)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">DPH</span>
+                <span className="text-muted-foreground">{t("DPH")}</span>
                 <span className="tabular-nums">
                   {formatujMenu(totals.vat_total, form.currency)}
                 </span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
-                <span>Každá faktúra</span>
+                <span>{t("Každá faktúra")}</span>
                 <span className="tabular-nums text-primary">
                   {formatujMenu(totals.total, form.currency)}
                 </span>
@@ -502,12 +505,12 @@ function NewRecurring() {
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5">
-            <SectionHeader icon={CreditCard} title="Poznámka pod položkami" />
+            <SectionHeader icon={CreditCard} title={t("Poznámka pod položkami")} />
             <textarea
               rows={3}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder="Text, ktorý sa vytlačí pod tabuľkou položiek"
+              placeholder={t("Text, ktorý sa vytlačí pod tabuľkou položiek")}
               className={vstup}
             />
           </section>
@@ -522,14 +525,14 @@ function NewRecurring() {
                 to="/opakovane"
                 className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
               >
-                Zrušiť
+                {t("Zrušiť")}
               </Link>
               <button
                 type="submit"
                 disabled={ukladam}
                 className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
-                {ukladam ? "Ukladám…" : "Vytvoriť šablónu"}
+                {ukladam ? t("Ukladám…") : t("Vytvoriť šablónu")}
               </button>
             </div>
           </div>
@@ -564,6 +567,7 @@ function SadzbaSelect({
   rezim: ReturnType<typeof useRezimDph>;
   className?: string;
 }) {
+  const { t } = useT();
   const v = sadzbyDoVyberu(rezim, hodnota);
   return (
     <select
@@ -580,10 +584,10 @@ function SadzbaSelect({
         </option>
       ))}
       {v.historicke.length > 0 && (
-        <optgroup label="Historické sadzby">
+        <optgroup label={t("Historické sadzby")}>
           {v.historicke.map((h) => (
             <option key={h.sadzba} value={h.sadzba}>
-              {h.sadzba}% (do {h.doRoku})
+              {t("{sadzba}% (do {rok})", { sadzba: h.sadzba, rok: h.doRoku })}
             </option>
           ))}
         </optgroup>

@@ -1,17 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/api")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — API — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — API — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Ako používať Faktero API: kľúče, testovací a ostrý režim, vytvorenie faktúry, webhooky.",
+        ),
       },
-      { property: "og:title", content: "Pomoc — API — Faktero" },
-      { property: "og:description", content: "Návod pre vývojárov na prácu s Faktero API." },
+      { property: "og:title", content: preloz(match.context.jazyk, "Pomoc — API — Faktero") },
+      {
+        property: "og:description",
+        content: preloz(match.context.jazyk, "Návod pre vývojárov na prácu s Faktero API."),
+      },
       { property: "og:url", content: "https://faktero.sk/pomoc/api" },
     ],
     links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/api" }],
@@ -166,7 +173,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · API"
       title="Faktero API pre vývojárov"
       intro={<p>REST API na automatizáciu vystavovania faktúr a integráciu s vašou aplikáciou.</p>}

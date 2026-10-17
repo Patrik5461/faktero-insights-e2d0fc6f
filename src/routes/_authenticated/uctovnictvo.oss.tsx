@@ -6,17 +6,21 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { ossPrehladFn } from "@/lib/faktero/oss.functions";
 import { PRAH_OSS } from "@/lib/faktero/sadzby-eu";
 import { AlertTriangle, Loader2 } from "lucide-react";
-import { pocetSlovom } from "@/lib/faktero/sklonovanie";
+import { slovoPodlaPoctu } from "@/lib/faktero/sklonovanie";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/oss")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "OSS — predaj do EÚ — Faktero" },
+      { title: preloz(match.context.jazyk, "OSS — predaj do EÚ — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Podklady pre priznanie k jednému kontaktnému miestu: predaj spotrebiteľom v EÚ podľa štátov a sadzieb, vrátane sledovania hranice 10 000 €.",
+        ),
       },
     ],
   }),
@@ -30,6 +34,7 @@ function eur(n: number): string {
 }
 
 function OssPage() {
+  const { t } = useT();
   const nacitajPrehlad = useServerFn(ossPrehladFn);
   const dnes = new Date();
   const [rok, setRok] = useState(dnes.getFullYear());
@@ -46,11 +51,11 @@ function OssPage() {
     try {
       setData(await nacitajPrehlad({ data: { company_id: companyId, rok, stvrtrok } }));
     } catch (e: any) {
-      setChyba(e?.message ?? "Prehľad sa nepodarilo zostaviť.");
+      setChyba(e?.message ?? t("Prehľad sa nepodarilo zostaviť."));
     } finally {
       setNacitavam(false);
     }
-  }, [nacitajPrehlad, rok, stvrtrok]);
+  }, [nacitajPrehlad, rok, stvrtrok, t]);
 
   useEffect(() => {
     nacitaj();
@@ -59,13 +64,13 @@ function OssPage() {
   return (
     <>
       <PageHeader
-        title="OSS — predaj spotrebiteľom v EÚ"
-        description="Podklady pre priznanie k jednému kontaktnému miestu za štvrťrok."
+        title={t("OSS — predaj spotrebiteľom v EÚ")}
+        description={t("Podklady pre priznanie k jednému kontaktnému miestu za štvrťrok.")}
       />
       <PageBody>
         <div className="mb-4 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3">
           <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Rok</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Rok")}</span>
             <input
               type="number"
               value={rok}
@@ -74,7 +79,7 @@ function OssPage() {
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Štvrťrok</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Štvrťrok")}</span>
             <select
               value={stvrtrok}
               onChange={(e) => setStvrtrok(Number(e.target.value))}
@@ -82,7 +87,7 @@ function OssPage() {
             >
               {[1, 2, 3, 4].map((q) => (
                 <option key={q} value={q}>
-                  {q}. štvrťrok
+                  {t("{q}. štvrťrok", { q })}
                 </option>
               ))}
             </select>
@@ -96,7 +101,7 @@ function OssPage() {
         )}
         {nacitavam && (
           <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Počítam…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("Počítam…")}
           </div>
         )}
 
@@ -105,10 +110,10 @@ function OssPage() {
             <div className="mb-6 rounded-xl border border-border bg-card p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div className="font-medium">
-                  Hranica {eur(PRAH_OSS)} € za rok {rok}
+                  {t("Hranica {suma} € za rok {rok}", { suma: eur(PRAH_OSS), rok })}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Predaj do EÚ zatiaľ {eur(data.zaRok)} €
+                  {t("Predaj do EÚ zatiaľ {suma} €", { suma: eur(data.zaRok) })}
                 </div>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -119,20 +124,25 @@ function OssPage() {
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
                 {data.prah.prekroceny
-                  ? "Hranica je prekročená — predaj spotrebiteľom v EÚ sa zdaňuje sadzbou štátu zákazníka a daň sa odvádza cez OSS."
-                  : `Do hranice zostáva ${eur(data.prah.zostava)} €. Dovtedy sa dá zdaňovať doma, ak sa nerozhodnete pre OSS dobrovoľne.`}
+                  ? t(
+                      "Hranica je prekročená — predaj spotrebiteľom v EÚ sa zdaňuje sadzbou štátu zákazníka a daň sa odvádza cez OSS.",
+                    )
+                  : t(
+                      "Do hranice zostáva {suma} €. Dovtedy sa dá zdaňovať doma, ak sa nerozhodnete pre OSS dobrovoľne.",
+                      { suma: eur(data.prah.zostava) },
+                    )}
               </p>
             </div>
 
             {data.prehlad.vytky.length > 0 && (
               <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
                 <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400">
-                  <AlertTriangle className="h-4 w-4" /> Pred podaním treba doplniť
+                  <AlertTriangle className="h-4 w-4" /> {t("Pred podaním treba doplniť")}
                 </div>
                 <ul className="mt-2 space-y-1 text-sm text-amber-700 dark:text-amber-400">
                   {data.prehlad.vytky.map((v, i) => (
                     <li key={i}>
-                      <span className="font-medium">{v.doklad}</span>: {v.text}
+                      <span className="font-medium">{v.doklad}</span>: {t(v.text)}
                     </li>
                   ))}
                 </ul>
@@ -142,26 +152,38 @@ function OssPage() {
             <div className="rounded-xl border border-border bg-card">
               <div className="border-b border-border px-4 py-3">
                 <div className="font-medium">
-                  {data.obdobie.stvrtrok}. štvrťrok {data.obdobie.rok}
+                  {t("{q}. štvrťrok {rok}", { q: data.obdobie.stvrtrok, rok: data.obdobie.rok })}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {pocetSlovom(data.pocet, "faktúra", "faktúry", "faktúr")} v režime OSS (
-                  {datumNaDoklade(data.obdobie.od)} – {datumNaDoklade(data.obdobie.do)})
+                  {t(
+                    slovoPodlaPoctu(
+                      data.pocet,
+                      "{n} faktúra v režime OSS ({od} – {do})",
+                      "{n} faktúry v režime OSS ({od} – {do})",
+                      "{n} faktúr v režime OSS ({od} – {do})",
+                    ),
+                    {
+                      n: data.pocet,
+                      od: datumNaDoklade(data.obdobie.od),
+                      do: datumNaDoklade(data.obdobie.do),
+                    },
+                  )}
                 </div>
               </div>
               {data.prehlad.riadky.length === 0 ? (
                 <p className="px-4 py-6 text-sm text-muted-foreground">
-                  V tomto štvrťroku nie je žiadny predaj spotrebiteľom v EÚ. Faktúru doň zaradíte
-                  zaškrtnutím „Predaj spotrebiteľovi v EÚ (OSS)“ pri jej vystavení.
+                  {t(
+                    "V tomto štvrťroku nie je žiadny predaj spotrebiteľom v EÚ. Faktúru doň zaradíte zaškrtnutím „Predaj spotrebiteľovi v EÚ (OSS)“ pri jej vystavení.",
+                  )}
                 </p>
               ) : (
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-2 font-medium">Štát spotreby</th>
-                      <th className="px-4 py-2 text-right font-medium">Sadzba</th>
-                      <th className="px-4 py-2 text-right font-medium">Základ dane</th>
-                      <th className="px-4 py-2 text-right font-medium">Daň</th>
+                      <th className="px-4 py-2 font-medium">{t("Štát spotreby")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("Sadzba")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("Základ dane")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("Daň")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -179,7 +201,7 @@ function OssPage() {
                     ))}
                     <tr className="border-t-2 border-border font-medium">
                       <td className="px-4 py-2" colSpan={2}>
-                        Spolu
+                        {t("Spolu")}
                       </td>
                       <td className="px-4 py-2 text-right tabular-nums">
                         {eur(data.prehlad.zakladSpolu)} €
@@ -194,11 +216,11 @@ function OssPage() {
             </div>
 
             <p className="mt-6 text-xs text-muted-foreground">
-              Priznanie OSS sa podáva do konca mesiaca po skončení štvrťroka cez portál finančnej
-              správy; údaje z tejto tabuľky sa doň prepíšu podľa štátov a sadzieb. Predaj v režime
-              OSS nevstupuje do{" "}
+              {t(
+                "Priznanie OSS sa podáva do konca mesiaca po skončení štvrťroka cez portál finančnej správy; údaje z tejto tabuľky sa doň prepíšu podľa štátov a sadzieb. Predaj v režime OSS nevstupuje do",
+              )}{" "}
               <Link to="/uctovnictvo/vykazy" className="underline">
-                priznania k DPH ani do kontrolného výkazu
+                {t("priznania k DPH ani do kontrolného výkazu")}
               </Link>
               .
             </p>

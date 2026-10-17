@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { Landmark, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { useT } from "@/lib/i18n/useT";
 import { zostatkyPodlaMien, formatujSumu } from "@/lib/faktero/zostatky";
 
 export function BankWidget() {
+  const { t, jazyk } = useT();
   const [accounts, setAccounts] = useState<any[] | null>(null);
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -30,25 +32,25 @@ export function BankWidget() {
     <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-card p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-          <Landmark className="h-3.5 w-3.5" /> Bankový účet
+          <Landmark className="h-3.5 w-3.5" /> {t("Bankový účet")}
         </div>
         <Link
           to="/bankove-ucty"
           className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 hover:underline"
         >
-          Detail <ArrowRight className="h-3 w-3" />
+          {t("Detail")} <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
       {accounts === null ? (
         <div className="mt-3 h-6 w-32 animate-pulse rounded bg-emerald-100" />
       ) : accounts.length === 0 ? (
         <div className="mt-3 text-sm text-muted-foreground">
-          Žiadny bankový účet.{" "}
+          {t("Žiadny bankový účet.")}{" "}
           <Link
             to="/bankove-ucty/pripojit"
             className="text-emerald-700 dark:text-emerald-300 hover:underline"
           >
-            Pripojiť banku
+            {t("Pripojiť banku")}
           </Link>
         </div>
       ) : (
@@ -62,11 +64,12 @@ export function BankWidget() {
             </div>
           ))}
           <div className="text-xs text-muted-foreground">
-            Aktuálny zostatok · {accounts.length} účtov
+            {t("Aktuálny zostatok")} ·{" "}
+            {t(accounts.length === 1 ? "{n} účet" : accounts.length < 5 ? "{n} účty" : "{n} účtov", { n: accounts.length })}
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            Posledná synchronizácia:{" "}
-            {lastSync ? new Date(lastSync).toLocaleString("sk-SK") : "nikdy"}
+            {t("Posledná synchronizácia:")}{" "}
+            {lastSync ? new Date(lastSync).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK") : t("nikdy")}
           </div>
         </>
       )}

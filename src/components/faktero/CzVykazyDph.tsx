@@ -12,6 +12,7 @@ import {
   type FormaCz,
   type HlavickaCz,
 } from "@/lib/faktero/cz-dph-xml";
+import { useT } from "@/lib/i18n/useT";
 import { KODY_PREDMETU_PLNENI, kontrolniRadkyC, type KontrolniHlaseni } from "@/lib/faktero/cz-dph";
 
 /*
@@ -87,6 +88,7 @@ function stiahni(nazov: string, obsah: string) {
 }
 
 export function CzVykazyDph() {
+  const { t } = useT();
   const zostav = useServerFn(zostavCzVykazyFn);
   const uloz = useServerFn(ulozVykazFn);
 
@@ -139,11 +141,11 @@ export function CzVykazyDph() {
         kodPredmetu: x.kodPredmetu || res.hlavicka.kodPredmetu,
       }));
     } catch (e: any) {
-      setChyba(e?.message ?? "Výkazy se nepodařilo sestavit.");
+      setChyba(e?.message ?? t("Výkazy se nepodařilo sestavit."));
     } finally {
       setNacitavam(false);
     }
-  }, [zostav, rok, rezim, mesiac, stvrtrok, h.kodPredmetu]);
+  }, [zostav, rok, rezim, mesiac, stvrtrok, h.kodPredmetu, t]);
 
   useEffect(() => {
     nacitaj();
@@ -174,11 +176,11 @@ export function CzVykazyDph() {
 
   function overHlavicku(): boolean {
     if (!/^\d{3}$/.test(h.cUfo)) {
-      toast.error("Vyplňte kód finančního úřadu (3 číslice, např. 451 pro Prahu).");
+      toast.error(t("Vyplňte kód finančního úřadu (3 číslice, např. 451 pro Prahu)."));
       return false;
     }
     if (!hlavicka?.dic) {
-      toast.error("Firma nemá DIČ — doplňte ho v Nastavení firmy.");
+      toast.error(t("Firma nemá DIČ — doplňte ho v Nastavení firmy."));
       return false;
     }
     return true;
@@ -205,9 +207,9 @@ export function CzVykazyDph() {
           podane: true,
         },
       });
-      toast.success("Zapsáno jako podané.");
+      toast.success(t("Zapsáno jako podané."));
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodařilo se uložit.");
+      toast.error(e?.message ?? t("Nepodařilo se uložit."));
     }
   }
 
@@ -217,13 +219,15 @@ export function CzVykazyDph() {
   return (
     <>
       <PageHeader
-        title="Výkazy k DPH"
-        description="Přiznání k DPH a kontrolní hlášení sestavené z dokladů, v XML pro portál MOJE daně."
+        title={t("Výkazy k DPH")}
+        description={t(
+          "Přiznání k DPH a kontrolní hlášení sestavené z dokladů, v XML pro portál MOJE daně.",
+        )}
       />
       <PageBody>
         <div className="mb-4 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 lg:grid-cols-6">
           <label className="block">
-            <span className={popis}>Rok</span>
+            <span className={popis}>{t("Rok")}</span>
             <input
               type="number"
               value={rok}
@@ -232,18 +236,18 @@ export function CzVykazyDph() {
             />
           </label>
           <label className="block">
-            <span className={popis}>Zdaňovací období</span>
+            <span className={popis}>{t("Zdaňovací období")}</span>
             <select
               value={rezim}
               onChange={(e) => setRezim(e.target.value as "mesiac" | "stvrtrok")}
               className={pole}
             >
-              <option value="mesiac">Měsíc</option>
-              <option value="stvrtrok">Čtvrtletí</option>
+              <option value="mesiac">{t("Měsíc")}</option>
+              <option value="stvrtrok">{t("Čtvrtletí")}</option>
             </select>
           </label>
           <label className="block">
-            <span className={popis}>Období</span>
+            <span className={popis}>{t("Období")}</span>
             {rezim === "mesiac" ? (
               <select
                 value={mesiac}
@@ -252,7 +256,7 @@ export function CzVykazyDph() {
               >
                 {MESICE.map((m, i) => (
                   <option key={m} value={i + 1}>
-                    {m}
+                    {t(m)}
                   </option>
                 ))}
               </select>
@@ -264,43 +268,43 @@ export function CzVykazyDph() {
               >
                 {[1, 2, 3, 4].map((q) => (
                   <option key={q} value={q}>
-                    {q}. čtvrtletí
+                    {t("{q}. čtvrtletí", { q })}
                   </option>
                 ))}
               </select>
             )}
           </label>
           <label className="block">
-            <span className={popis}>Finanční úřad (kód)</span>
+            <span className={popis}>{t("Finanční úřad (kód)")}</span>
             <input
               value={h.cUfo}
               onChange={(e) => setH({ ...h, cUfo: e.target.value.replace(/\D/g, "").slice(0, 3) })}
-              placeholder="např. 451"
+              placeholder={t("např. {x}", { x: "451" })}
               className={pole}
             />
           </label>
           <label className="block">
-            <span className={popis}>Územní pracoviště (kód)</span>
+            <span className={popis}>{t("Územní pracoviště (kód)")}</span>
             <input
               value={h.cPracufo}
               onChange={(e) =>
                 setH({ ...h, cPracufo: e.target.value.replace(/\D/g, "").slice(0, 4) })
               }
-              placeholder="např. 2001"
+              placeholder={t("např. {x}", { x: "2001" })}
               className={pole}
             />
           </label>
           <label className="block">
-            <span className={popis}>CZ-NACE (hlavní činnost)</span>
+            <span className={popis}>{t("CZ-NACE (hlavní činnost)")}</span>
             <input
               value={h.okec}
               onChange={(e) => setH({ ...h, okec: e.target.value.replace(/\D/g, "").slice(0, 6) })}
-              placeholder="např. 620100"
+              placeholder={t("např. {x}", { x: "620100" })}
               className={pole}
             />
           </label>
           <label className="block">
-            <span className={popis}>Podává — jméno</span>
+            <span className={popis}>{t("Podává — jméno")}</span>
             <input
               value={h.oprJmeno}
               onChange={(e) => setH({ ...h, oprJmeno: e.target.value })}
@@ -308,7 +312,7 @@ export function CzVykazyDph() {
             />
           </label>
           <label className="block">
-            <span className={popis}>Podává — příjmení</span>
+            <span className={popis}>{t("Podává — příjmení")}</span>
             <input
               value={h.oprPrijmeni}
               onChange={(e) => setH({ ...h, oprPrijmeni: e.target.value })}
@@ -316,7 +320,7 @@ export function CzVykazyDph() {
             />
           </label>
           <label className="block">
-            <span className={popis}>Vztah k firmě</span>
+            <span className={popis}>{t("Vztah k firmě")}</span>
             <input
               value={h.oprPostaveni}
               onChange={(e) => setH({ ...h, oprPostaveni: e.target.value })}
@@ -324,13 +328,15 @@ export function CzVykazyDph() {
             />
           </label>
           <label className="block sm:col-span-3">
-            <span className={popis}>Kód předmětu plnění (přenesení daňové povinnosti § 92a)</span>
+            <span className={popis}>
+              {t("Kód předmětu plnění (přenesení daňové povinnosti § 92a)")}
+            </span>
             <select
               value={h.kodPredmetu}
               onChange={(e) => setH({ ...h, kodPredmetu: e.target.value })}
               className={pole}
             >
-              <option value="">— nevybráno —</option>
+              <option value="">{t("— nevybráno —")}</option>
               {KODY_PREDMETU_PLNENI.map((k) => (
                 <option key={k.kod} value={k.kod}>
                   {k.kod} – {k.nazov}
@@ -341,9 +347,9 @@ export function CzVykazyDph() {
         </div>
 
         <p className="mb-4 text-xs text-muted-foreground">
-          Kódy finančních úřadů a pracovišť najdete v číselnících na portálu MOJE daně (např. 451 =
-          Finanční úřad pro hlavní město Prahu). Kontrolní hlášení podává právnická osoba vždy za
-          měsíc — u čtvrtletního přiznání se sestaví za každý měsíc zvlášť.
+          {t(
+            "Kódy finančních úřadů a pracovišť najdete v číselnících na portálu MOJE daně (např. 451 = Finanční úřad pro hlavní město Prahu). Kontrolní hlášení podává právnická osoba vždy za měsíc — u čtvrtletního přiznání se sestaví za každý měsíc zvlášť.",
+          )}
         </p>
 
         {chyba && (
@@ -353,22 +359,28 @@ export function CzVykazyDph() {
         )}
         {nacitavam && (
           <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Sestavuji z dokladů…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("Sestavuji z dokladů…")}
           </div>
         )}
 
         {data && (
           <>
             <p className="mb-4 text-sm text-muted-foreground">
-              V období je {data.pocty.vystavene} vydaných faktur, {data.pocty.prijate} přijatých a{" "}
-              {data.pocty.doklady} dokladů s DPH.
+              {t(
+                "V období je {vystavene} vydaných faktur, {prijate} přijatých a {doklady} dokladů s DPH.",
+                {
+                  vystavene: data.pocty.vystavene,
+                  prijate: data.pocty.prijate,
+                  doklady: data.pocty.doklady,
+                },
+              )}
             </p>
 
             {data.vytky.length > 0 && (
               <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
                 <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="h-4 w-4" />
-                  Před podáním doplňte ({data.vytky.length})
+                  {t("Před podáním doplňte ({n})", { n: data.vytky.length })}
                 </div>
                 <ul className="mt-2 space-y-1 text-sm text-amber-700 dark:text-amber-400">
                   {data.vytky.slice(0, 20).map((v, i) => (
@@ -384,9 +396,9 @@ export function CzVykazyDph() {
             <section className="mb-6 rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">Přiznání k DPH</div>
+                  <div className="font-medium">{t("Přiznání k DPH")}</div>
                   <div className="text-xs text-muted-foreground">
-                    DPHDP3 · částky v celých korunách
+                    {t("DPHDP3 · částky v celých korunách")}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -395,10 +407,10 @@ export function CzVykazyDph() {
                     onChange={(e) => setFormaDp(e.target.value as any)}
                     className="input w-auto"
                   >
-                    <option value="B">Řádné</option>
-                    <option value="O">Řádné opravné</option>
-                    <option value="D">Dodatečné</option>
-                    <option value="E">Dodatečné opravné</option>
+                    <option value="B">{t("Řádné")}</option>
+                    <option value="O">{t("Řádné opravné")}</option>
+                    <option value="D">{t("Dodatečné")}</option>
+                    <option value="E">{t("Dodatečné opravné")}</option>
                   </select>
                   <button
                     onClick={() =>
@@ -417,7 +429,7 @@ export function CzVykazyDph() {
                     onClick={() => oznacPodane("cz_dp3", formaDp, data.priznani)}
                     className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
                   >
-                    <CheckCircle2 className="h-4 w-4" /> Podané
+                    <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                   </button>
                 </div>
               </div>
@@ -426,8 +438,10 @@ export function CzVykazyDph() {
                   <tbody>
                     {RIADKY.filter((x) => data.priznani[x.k] !== undefined).map((x) => (
                       <tr key={x.k} className="border-b border-border last:border-0">
-                        <td className="w-14 px-4 py-2 text-muted-foreground">ř. {x.r}</td>
-                        <td className="px-4 py-2">{x.popis}</td>
+                        <td className="w-14 px-4 py-2 text-muted-foreground">
+                          {t("ř. {r}", { r: x.r })}
+                        </td>
+                        <td className="px-4 py-2">{t(x.popis)}</td>
                         <td className="px-4 py-2 text-right tabular-nums">
                           {kc(data.priznani[x.k])} Kč
                         </td>
@@ -442,9 +456,9 @@ export function CzVykazyDph() {
             <section className="mb-6 rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">Souhrnné hlášení</div>
+                  <div className="font-medium">{t("Souhrnné hlášení")}</div>
                   <div className="text-xs text-muted-foreground">
-                    DPHSHV · dodání zboží a služeb do EU · v celých korunách
+                    {t("DPHSHV · dodání zboží a služeb do EU · v celých korunách")}
                   </div>
                 </div>
                 {data.souhrnne.length > 0 && (
@@ -454,8 +468,8 @@ export function CzVykazyDph() {
                       onChange={(e) => setFormaSh(e.target.value as "R" | "N")}
                       className="input w-auto"
                     >
-                      <option value="R">Řádné</option>
-                      <option value="N">Následné</option>
+                      <option value="R">{t("Řádné")}</option>
+                      <option value="N">{t("Následné")}</option>
                     </select>
                     <button
                       onClick={() =>
@@ -476,24 +490,24 @@ export function CzVykazyDph() {
                       onClick={() => oznacPodane("cz_sh", formaSh, { riadky: data.souhrnne })}
                       className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
                     >
-                      <CheckCircle2 className="h-4 w-4" /> Podané
+                      <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                     </button>
                   </div>
                 )}
               </div>
               {data.souhrnne.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">
-                  V období nejsou žádné dodávky do EU — souhrnné hlášení se nepodává.
+                  {t("V období nejsou žádné dodávky do EU — souhrnné hlášení se nepodává.")}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                        <th className="px-4 py-2">Odběratel (VAT ID)</th>
-                        <th className="px-4 py-2">Kód plnění</th>
-                        <th className="px-4 py-2 text-right">Počet</th>
-                        <th className="px-4 py-2 text-right">Hodnota</th>
+                        <th className="px-4 py-2">{t("Odběratel (VAT ID)")}</th>
+                        <th className="px-4 py-2">{t("Kód plnění")}</th>
+                        <th className="px-4 py-2 text-right">{t("Počet")}</th>
+                        <th className="px-4 py-2 text-right">{t("Hodnota")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -508,10 +522,10 @@ export function CzVykazyDph() {
                           </td>
                           <td className="px-4 py-2">
                             {r.kod === 0
-                              ? "0 – dodání zboží"
+                              ? t("0 – dodání zboží")
                               : r.kod === 2
-                                ? "2 – třístranný obchod"
-                                : "3 – služba"}
+                                ? t("2 – třístranný obchod")
+                                : t("3 – služba")}
                           </td>
                           <td className="px-4 py-2 text-right tabular-nums">{r.pocet}</td>
                           <td className="px-4 py-2 text-right tabular-nums">{kc(r.hodnota)} Kč</td>
@@ -525,8 +539,9 @@ export function CzVykazyDph() {
                 rezim === "stvrtrok" &&
                 data.souhrnne.some((r) => r.kod !== 3) && (
                   <p className="border-t border-border px-4 py-2 text-xs text-amber-700 dark:text-amber-400">
-                    Při dodání zboží se souhrnné hlášení podává za každý měsíc — přepněte období na
-                    měsíc.
+                    {t(
+                      "Při dodání zboží se souhrnné hlášení podává za každý měsíc — přepněte období na měsíc.",
+                    )}
                   </p>
                 )}
             </section>
@@ -542,7 +557,7 @@ export function CzVykazyDph() {
                 onXml={() =>
                   hlavicka &&
                   overHlavicku() &&
-                  bezChybajucehoDic(kh as KontrolniHlaseni) &&
+                  bezChybajucehoDic(kh as KontrolniHlaseni, t) &&
                   (!(kh.a1.length || kh.b1.length) || h.kodPredmetu
                     ? stiahni(
                         `dphkh1-${rok}-${String(m).padStart(2, "0")}.xml`,
@@ -553,7 +568,9 @@ export function CzVykazyDph() {
                           { forma: formaKh, kodPredmetu: h.kodPredmetu },
                         ),
                       )
-                    : toast.error("Vyberte kód předmětu plnění pro přenesení daňové povinnosti."))
+                    : toast.error(
+                        t("Vyberte kód předmětu plnění pro přenesení daňové povinnosti."),
+                      ))
                 }
                 onPodane={() => oznacPodane("cz_kh", formaKh, kh as any, m)}
               />
@@ -569,11 +586,19 @@ export function CzVykazyDph() {
  * Riadky A.1 a B.1 bez DIČ by podateľňa odmietla (DIČ je povinné) — súbor sa
  * nestiahne, kým sa v dokladoch nedoplní, a povie sa, v ktorých.
  */
-function bezChybajucehoDic(kh: KontrolniHlaseni): boolean {
+function bezChybajucehoDic(
+  kh: KontrolniHlaseni,
+  t: (text: string, p?: Record<string, string | number>) => string,
+): boolean {
   const bez = [...kh.a1, ...kh.b1].filter((r) => !r.dic).map((r) => r.doklad);
   if (!bez.length) return true;
   toast.error(
-    `Doplňte DIČ ${bez.length === 1 ? "u dokladu" : "u dokladů"} ${bez.slice(0, 5).join(", ")} — v přenesení daňové povinnosti je povinné.`,
+    t(
+      bez.length === 1
+        ? "Doplňte DIČ u dokladu {doklady} — v přenesení daňové povinnosti je povinné."
+        : "Doplňte DIČ u dokladů {doklady} — v přenesení daňové povinnosti je povinné.",
+      { doklady: bez.slice(0, 5).join(", ") },
+    ),
   );
   return false;
 }
@@ -593,6 +618,7 @@ function KontrolniHlaseniKarta({
   onXml: () => void;
   onPodane: () => void;
 }) {
+  const { t } = useT();
   const c = kontrolniRadkyC(kh);
   const oddiely: { nazov: string; pocet: number; zaklad: number }[] = [
     {
@@ -631,8 +657,10 @@ function KontrolniHlaseniKarta({
     <section className="mb-6 rounded-xl border border-border bg-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div>
-          <div className="font-medium">Kontrolní hlášení — {MESICE[mesiac - 1]}</div>
-          <div className="text-xs text-muted-foreground">DPHKH1 · částky na haléře</div>
+          <div className="font-medium">
+            {t("Kontrolní hlášení — {mesic}", { mesic: t(MESICE[mesiac - 1]) })}
+          </div>
+          <div className="text-xs text-muted-foreground">{t("DPHKH1 · částky na haléře")}</div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
@@ -640,10 +668,10 @@ function KontrolniHlaseniKarta({
             onChange={(e) => setForma(e.target.value as any)}
             className="input w-auto"
           >
-            <option value="B">Řádné</option>
-            <option value="O">Řádné opravné</option>
-            <option value="N">Následné</option>
-            <option value="E">Následné opravné</option>
+            <option value="B">{t("Řádné")}</option>
+            <option value="O">{t("Řádné opravné")}</option>
+            <option value="N">{t("Následné")}</option>
+            <option value="E">{t("Následné opravné")}</option>
           </select>
           <button
             onClick={onXml}
@@ -655,7 +683,7 @@ function KontrolniHlaseniKarta({
             onClick={onPodane}
             className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
           >
-            <CheckCircle2 className="h-4 w-4" /> Podané
+            <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
           </button>
         </div>
       </div>
@@ -663,7 +691,7 @@ function KontrolniHlaseniKarta({
         <tbody>
           {oddiely.map((o) => (
             <tr key={o.nazov} className="border-b border-border last:border-0">
-              <td className="px-4 py-2">{o.nazov}</td>
+              <td className="px-4 py-2">{t(o.nazov)}</td>
               <td className="px-4 py-2 text-right text-muted-foreground">
                 {o.pocet ? `${o.pocet}×` : "—"}
               </td>

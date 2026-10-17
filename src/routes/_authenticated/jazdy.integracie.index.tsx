@@ -1,18 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Satellite, ChevronRight, Car } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/jazdy/integracie/")({
-  head: () => ({ meta: [{ title: "Integrácie — Kniha jázd — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Integrácie — Kniha jázd — Faktero") }],
+  }),
   component: IntegrationsPage,
 });
 
 function IntegrationsPage() {
+  const { t } = useT();
   return (
     <>
       <PageHeader
-        title="Integrácie"
-        description="Prepojte externé GPS systémy a automaticky importujte jazdy do knihy jázd."
+        title={t("Integrácie")}
+        description={t(
+          "Prepojte externé GPS systémy a automaticky importujte jazdy do knihy jázd.",
+        )}
       />
       <PageBody>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -27,7 +34,7 @@ function IntegrationsPage() {
               <div>
                 <div className="font-medium">Commander GPS</div>
                 <div className="text-sm text-muted-foreground">
-                  Automatický import jázd z Commander GPS cez REST API v1.
+                  {t("Automatický import jázd z Commander GPS cez REST API v1.")}
                 </div>
               </div>
             </div>
@@ -44,8 +51,9 @@ function IntegrationsPage() {
               <div>
                 <div className="font-medium">Tesla Fleet API</div>
                 <div className="text-sm text-muted-foreground">
-                  Synchronizácia Tesla vozidiel, tachometra a polohy cez oficiálne Tesla Fleet API
-                  (OAuth).
+                  {t(
+                    "Synchronizácia Tesla vozidiel, tachometra a polohy cez oficiálne Tesla Fleet API (OAuth).",
+                  )}
                 </div>
               </div>
             </div>

@@ -1,17 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/sklad")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Sklad — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Sklad — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Skladové karty, príjem a výdaj, vážená nákupná cena, rezervácie, prevody medzi skladmi, dodacie listy, inventúra, minimálne zásoby a automatický odpočet pri faktúre.",
+        ),
       },
-      { property: "og:title", content: "Pomoc — Sklad — Faktero" },
-      { property: "og:description", content: "Kompletný manuál k skladu vo Faktere." },
+      { property: "og:title", content: preloz(match.context.jazyk, "Pomoc — Sklad — Faktero") },
+      {
+        property: "og:description",
+        content: preloz(match.context.jazyk, "Kompletný manuál k skladu vo Faktere."),
+      },
       { property: "og:url", content: "https://faktero.sk/pomoc/sklad" },
     ],
     links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/sklad" }],
@@ -84,10 +91,9 @@ const sections: HelpSection[] = [
           nerobia druhou cenou na karte, ale v <Link to="/pomoc/ceny">cenníku a zľavách</Link>.
         </p>
         <p>
-          Tovar sa dá založiť z oboch strán: v katalógu zaškrtnutím{" "}
-          <strong>Sledovať sklad</strong> (karta vznikne sama), alebo v Skladových položkách
-          tlačidlom <strong>Pridať tovar</strong>, ktoré vytvorí naraz produkt aj kartu a vie hneď
-          zapísať počiatočný stav.
+          Tovar sa dá založiť z oboch strán: v katalógu zaškrtnutím <strong>Sledovať sklad</strong>{" "}
+          (karta vznikne sama), alebo v Skladových položkách tlačidlom <strong>Pridať tovar</strong>
+          , ktoré vytvorí naraz produkt aj kartu a vie hneď zapísať počiatočný stav.
         </p>
         <p>
           Kartu, ktorú už nepoužívate, <strong>archivujte</strong>, nemažte. Mazanie by odstrihlo
@@ -112,7 +118,8 @@ const sections: HelpSection[] = [
           <strong>Stav na sklade sa nikde nezadáva ako číslo.</strong> Je to súčet pohybov — inak by
           sa rozišiel s hodnotou skladu a chýbal by riadok, ktorý ho zmenil. Prvý stav zapíšete pri
           zakladaní tovaru (pole <strong>Počiatočný stav</strong>), potom ho meníte príjmom a
-          výdajom a rozdiel oproti skutočnosti zrovnáte <Link to="/sklad/inventura">inventúrou</Link>.
+          výdajom a rozdiel oproti skutočnosti zrovnáte{" "}
+          <Link to="/sklad/inventura">inventúrou</Link>.
         </p>
         <ul>
           <li>
@@ -350,7 +357,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Sklad"
       title="Sklad vo Faktere"
       intro={

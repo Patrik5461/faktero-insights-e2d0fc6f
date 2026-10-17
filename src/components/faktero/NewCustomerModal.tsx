@@ -10,6 +10,7 @@ import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocom
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
 import { useServerFn } from "@tanstack/react-start";
+import { useT } from "@/lib/i18n/useT";
 
 type Props = {
   defaultName?: string;
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
+  const { t } = useT();
   useZatvorNaEscape(onClose);
   const [saving, setSaving] = useState(false);
   const [dup, setDup] = useState<null | {
@@ -65,11 +67,11 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
 
   async function save() {
     if (!f.name.trim())
-      return toast.error(fyzicka ? "Zadajte meno a priezvisko" : "Zadajte názov firmy");
+      return toast.error(fyzicka ? t("Zadajte meno a priezvisko") : t("Zadajte názov firmy"));
     const cid = getActiveCompanyId();
-    if (!cid) return toast.error("Nie je vybraná firma");
+    if (!cid) return toast.error(t("Nie je vybraná firma"));
     if (dup) {
-      toast.error(`Odberateľ s týmto IČO už existuje: ${dup.name}`);
+      toast.error(t("Odberateľ s týmto IČO už existuje: {nazov}", { nazov: dup.name }));
       return;
     }
     setSaving(true);
@@ -94,8 +96,9 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
       .select("id, name, ico, dic, ic_dph, street, city, zip, country, email")
       .single();
     setSaving(false);
-    if (error || !data) return toast.error(error?.message ?? "Nepodarilo sa vytvoriť odberateľa");
-    toast.success("Odberateľ bol vytvorený.");
+    if (error || !data)
+      return toast.error(error?.message ?? t("Nepodarilo sa vytvoriť odberateľa"));
+    toast.success(t("Odberateľ bol vytvorený."));
     onCreated(data);
   }
 
@@ -108,30 +111,35 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Nový odberateľ"
+        aria-label={t("Nový odberateľ")}
         className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <div className="flex items-center gap-2">
             <UserPlus className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">Nový odberateľ</h3>
+            <h3 className="text-sm font-semibold">{t("Nový odberateľ")}</h3>
           </div>
-          <button type="button" onClick={onClose} className="rounded-md p-1 hover:bg-muted">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("Zavrieť")}
+            className="rounded-md p-1 hover:bg-muted"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
         <div className="space-y-4 p-5">
           {dup && (
             <div className="rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
-              Odberateľ s týmto IČO už existuje: <strong>{dup.name}</strong>. Použite existujúceho
-              odberateľa namiesto vytvárania duplikátu.
+              {t("Odberateľ s týmto IČO už existuje:")} <strong>{dup.name}</strong>.{" "}
+              {t("Použite existujúceho odberateľa namiesto vytvárania duplikátu.")}
               <button
                 type="button"
                 onClick={() => onCreated(dup)}
                 className="ml-2 underline hover:no-underline"
               >
-                Použiť existujúceho
+                {t("Použiť existujúceho")}
               </button>
             </div>
           )}
@@ -139,18 +147,18 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
             {[
               { kod: "firma", popis: "Firma alebo živnostník" },
               { kod: "fyzicka", popis: "Fyzická osoba (nepodnikateľ)" },
-            ].map((t) => (
+            ].map((volba) => (
               <button
-                key={t.kod}
+                key={volba.kod}
                 type="button"
-                onClick={() => setF((p) => ({ ...p, typ: t.kod }))}
+                onClick={() => setF((p) => ({ ...p, typ: volba.kod }))}
                 className={`rounded-md border px-3 py-1.5 text-sm ${
-                  f.typ === t.kod
+                  f.typ === volba.kod
                     ? "border-primary bg-primary/10 font-medium text-primary"
                     : "border-border hover:bg-secondary"
                 }`}
               >
-                {t.popis}
+                {t(volba.popis)}
               </button>
             ))}
           </div>
@@ -161,7 +169,7 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
                   autoFocus
                   value={f.name}
                   onChange={(e) => setF((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="Ján Novák"
+                  placeholder={t("Ján Novák")}
                   className={input}
                 />
               ) : (
@@ -265,7 +273,7 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
               onClick={onClose}
               className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
             >
-              Zrušiť
+              {t("Zrušiť")}
             </button>
             <button
               type="button"
@@ -278,7 +286,7 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
               ) : (
                 <UserPlus className="h-4 w-4" />
               )}
-              Vytvoriť odberateľa
+              {t("Vytvoriť odberateľa")}
             </button>
           </div>
         </div>
@@ -300,9 +308,10 @@ function Field({
   children: React.ReactNode;
   className?: string;
 }) {
+  const { t } = useT();
   return (
     <div className={className}>
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <label className="text-xs font-medium text-muted-foreground">{t(label)}</label>
       <div className="mt-1">{children}</div>
     </div>
   );

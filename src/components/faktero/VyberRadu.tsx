@@ -5,6 +5,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
 import { ciselneRadyFn } from "@/lib/faktero/ciselne-rady.functions";
 import { type CiselnyRad, type DruhRadu } from "@/lib/faktero/ciselne-rady";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Výber číselného radu pri vystavovaní dokladu.
@@ -36,6 +37,7 @@ export function VyberRadu({
   /** Opakovaná faktúra číslo dostane až pri vystavení — tam náhľad nedáva zmysel. */
   bezNahladu?: boolean;
 }) {
+  const { t } = useT();
   const nacitaj = useServerFn(ciselneRadyFn);
   const [rady, setRady] = useState<CiselnyRad[]>([]);
 
@@ -69,9 +71,15 @@ export function VyberRadu({
     const cid = getActiveCompanyId();
     if (!cid || bezNahladu) return;
     let zrusene = false;
-    const t = setTimeout(async () => {
+    const casovac = setTimeout(async () => {
       const den = datum && /^\d{4}-\d{2}-\d{2}$/.test(datum) ? datum : null;
-      const faktura = ["invoice", "proforma", "advance_payment", "credit_note", "debit_note"].includes(druh);
+      const faktura = [
+        "invoice",
+        "proforma",
+        "advance_payment",
+        "credit_note",
+        "debit_note",
+      ].includes(druh);
       const { data, error } = faktura
         ? await supabase.rpc("faktero_next_invoice_number", {
             _company_id: cid,
@@ -91,14 +99,14 @@ export function VyberRadu({
     }, 250);
     return () => {
       zrusene = true;
-      clearTimeout(t);
+      clearTimeout(casovac);
     };
   }, [druh, hodnota, datum, bezNahladu, rady.length]);
 
   const cisloRiadok = nahlad ? (
     <span className="mt-1 block text-sm">
-      Číslo dokladu: <strong className="font-mono">{nahlad}</strong>
-      <span className="text-xs text-muted-foreground"> — pridelí sa pri uložení</span>
+      {t("Číslo dokladu:")} <strong className="font-mono">{nahlad}</strong>
+      <span className="text-xs text-muted-foreground"> {t("— pridelí sa pri uložení")}</span>
     </span>
   ) : null;
 
@@ -106,7 +114,7 @@ export function VyberRadu({
 
   return (
     <div className={className}>
-      <label className="text-[13px] font-semibold text-foreground">{label}</label>
+      <label className="text-[13px] font-semibold text-foreground">{t(label)}</label>
       <select
         value={hodnota}
         onChange={(e) => onZmena(e.target.value)}
@@ -117,15 +125,15 @@ export function VyberRadu({
              Predvolený rad má prázdnu hodnotu — doklad sa tak neviaže na konkrétny rad zbytočne. */
           <option key={r.id} value={r.is_default ? "" : r.id}>
             {r.name}
-            {r.is_default ? " (predvolený)" : ""}
+            {r.is_default ? ` ${t("(predvolený)")}` : ""}
           </option>
         ))}
       </select>
       {cisloRiadok}
       <span className="mt-1 block text-xs text-muted-foreground">
-        Spravujú sa v{" "}
+        {t("Spravujú sa v")}{" "}
         <Link to="/ciselne-rady" className="text-primary hover:underline">
-          Číselných radoch
+          {t("Číselných radoch")}
         </Link>
         .
       </span>

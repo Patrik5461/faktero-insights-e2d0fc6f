@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Check, Copy, KeyRound, PlayCircle, LifeBuoy, UserPlus } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 function CodeBlock({ code, lang }: { code: string; lang?: string }) {
+  const { t } = useT();
   const [copied, setCopied] = useState(false);
   return (
     <div className="group relative min-w-0 max-w-full">
@@ -21,7 +23,7 @@ function CodeBlock({ code, lang }: { code: string; lang?: string }) {
         className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border border-border/40 bg-background/80 px-2 py-1 text-[11px] text-muted-foreground backdrop-blur transition-opacity hover:text-foreground group-hover:opacity-100 sm:opacity-0"
       >
         {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
-        {copied ? "Skopírované" : "Kopírovať"}
+        {copied ? t("Skopírované") : t("Kopírovať")}
       </button>
       {/* Na úzkom displeji sa riadky zalamujú — posuvník v <pre> mobil neukáže
           a ukážka vyzerala useknutá. */}
@@ -57,11 +59,12 @@ function Endpoint({
   path: string;
   desc: string;
 }) {
+  const { t } = useT();
   return (
     <li className="flex flex-wrap items-baseline gap-3 py-1.5">
       <Method m={method} />
       <code className="break-all font-mono text-sm">{path}</code>
-      <span className="text-sm text-muted-foreground">— {desc}</span>
+      <span className="text-sm text-muted-foreground">— {t(desc)}</span>
     </li>
   );
 }
@@ -84,6 +87,7 @@ const SECTIONS = [
 ];
 
 export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
+  const { t } = useT();
   const [active, setActive] = useState<string>(SECTIONS[0].id);
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -107,7 +111,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
       {/* Mobile: collapsible section picker */}
       <div className="lg:hidden">
         <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Obsah dokumentácie
+          {t("Obsah dokumentácie")}
         </label>
         <select
           value={active}
@@ -120,7 +124,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
         >
           {SECTIONS.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.label}
+              {t(s.label)}
             </option>
           ))}
         </select>
@@ -129,7 +133,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
       <aside className="hidden lg:sticky lg:top-6 lg:block lg:self-start">
         <div className="rounded-xl border border-border bg-card/40 p-3">
           <div className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Obsah
+            {t("Obsah")}
           </div>
           <nav className="flex flex-col">
             {SECTIONS.map((s) => (
@@ -142,7 +146,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
-                {s.label}
+                {t(s.label)}
               </a>
             ))}
           </nav>
@@ -152,31 +156,31 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
       {/* Main content */}
       <article className="min-w-0 space-y-14">
         <section id="uvod" className="scroll-mt-20">
-          <h1 className="text-3xl font-bold tracking-tight">Faktero API dokumentácia</h1>
-          <h2 className="mt-6 text-2xl font-semibold">1. Úvod</h2>
+          <h1 className="text-3xl font-bold tracking-tight">{t("Faktero API dokumentácia")}</h1>
+          <h2 className="mt-6 text-2xl font-semibold">{t("1. Úvod")}</h2>
           <p className="mt-2 text-base text-muted-foreground">
-            Faktero REST API umožňuje plne automatizovať fakturáciu — vytvárať odberateľov,
-            vystavovať faktúry, sťahovať PDF, posielať e-maily a prijímať webhooky o udalostiach.
-            Všetky odpovede sú v JSON formáte (UTF-8).
+            {t(
+              "Faktero REST API umožňuje plne automatizovať fakturáciu — vytvárať odberateľov, vystavovať faktúry, sťahovať PDF, posielať e-maily a prijímať webhooky o udalostiach. Všetky odpovede sú v JSON formáte (UTF-8).",
+            )}
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-border bg-card p-4">
-              <div className="text-xs uppercase text-muted-foreground">Base URL</div>
+              <div className="text-xs uppercase text-muted-foreground">{t("Base URL")}</div>
               <code className="mt-1 block font-mono text-sm">https://faktero.sk/api/v1</code>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
-              <div className="text-xs uppercase text-muted-foreground">API verzia</div>
+              <div className="text-xs uppercase text-muted-foreground">{t("API verzia")}</div>
               <code className="mt-1 block font-mono text-sm">v1</code>
             </div>
           </div>
         </section>
 
         <section id="autentifikacia" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">2. Autentifikácia</h2>
+          <h2 className="text-2xl font-semibold">{t("2. Autentifikácia")}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Každú požiadavku autentifikujte hlavičkou{" "}
-            <code className="font-mono">Authorization</code> s Bearer API kľúčom. Kľúče sú viazané
-            na konkrétnu firmu a oprávnenia.
+            {t("Každú požiadavku autentifikujte hlavičkou")}{" "}
+            <code className="font-mono">Authorization</code>{" "}
+            {t("s Bearer API kľúčom. Kľúče sú viazané na konkrétnu firmu a oprávnenia.")}
           </p>
           <div className="mt-4">
             <CodeBlock
@@ -185,32 +189,37 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
             />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Kľúč nikdy nezdieľajte ani neukladajte do verejných repozitárov. Stratený kľúč okamžite
-            revokujte v sekcii API kľúče.
+            {t(
+              "Kľúč nikdy nezdieľajte ani neukladajte do verejných repozitárov. Stratený kľúč okamžite revokujte v sekcii API kľúče.",
+            )}
           </p>
         </section>
 
         <section id="test-live" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">3. Testovací a ostrý režim</h2>
+          <h2 className="text-2xl font-semibold">{t("3. Testovací a ostrý režim")}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Faktero rozlišuje dva typy kľúčov podľa prefixu:
+            {t("Faktero rozlišuje dva typy kľúčov podľa prefixu:")}
           </p>
           <ul className="mt-3 space-y-2 text-sm">
             <li>
-              <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_test_…</code> —
-              testovací režim. Faktúry sa neodosielajú naostro, e-maily idú do testovacej schránky.
+              <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_test_…</code> —{" "}
+              {t(
+                "testovací režim. Faktúry sa neodosielajú naostro, e-maily idú do testovacej schránky.",
+              )}
             </li>
             <li>
-              <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_live_…</code> —
-              produkčný režim. Akcie sú reálne a fakturačné údaje sa zapisujú do ostrých dokumentov.
+              <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_live_…</code> —{" "}
+              {t(
+                "produkčný režim. Akcie sú reálne a fakturačné údaje sa zapisujú do ostrých dokumentov.",
+              )}
             </li>
           </ul>
         </section>
 
         <section id="chyby" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">4. Chyby</h2>
+          <h2 className="text-2xl font-semibold">{t("4. Chyby")}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Všetky chybové odpovede majú jednotný formát:
+            {t("Všetky chybové odpovede majú jednotný formát:")}
           </p>
           <div className="mt-3">
             <CodeBlock
@@ -227,7 +236,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
         </section>
 
         <section id="customers" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">5. Odberatelia</h2>
+          <h2 className="text-2xl font-semibold">{t("5. Odberatelia")}</h2>
           <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card px-4">
             <Endpoint method="POST" path="/api/v1/customers" desc="Vytvorenie odberateľa" />
             <Endpoint method="GET" path="/api/v1/customers" desc="Zoznam odberateľov" />
@@ -237,7 +246,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
         </section>
 
         <section id="invoices" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">6. Faktúry</h2>
+          <h2 className="text-2xl font-semibold">{t("6. Faktúry")}</h2>
           <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card px-4">
             <Endpoint method="POST" path="/api/v1/invoices" desc="Vystavenie faktúry" />
             <Endpoint method="GET" path="/api/v1/invoices" desc="Zoznam faktúr" />
@@ -259,7 +268,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
         </section>
 
         <section id="quotes" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">7. Cenové ponuky</h2>
+          <h2 className="text-2xl font-semibold">{t("7. Cenové ponuky")}</h2>
           <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card px-4">
             <Endpoint method="POST" path="/api/v1/quotes" desc="Vytvorenie ponuky" />
             <Endpoint method="GET" path="/api/v1/quotes" desc="Zoznam ponúk" />
@@ -274,7 +283,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
         </section>
 
         <section id="recurring" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">8. Opakované faktúry</h2>
+          <h2 className="text-2xl font-semibold">{t("8. Opakované faktúry")}</h2>
           <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card px-4">
             <Endpoint method="POST" path="/api/v1/recurring-invoices" desc="Vytvorenie šablóny" />
             <Endpoint method="GET" path="/api/v1/recurring-invoices" desc="Zoznam šablón" />
@@ -284,11 +293,11 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
         </section>
 
         <section id="expenses" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">9. Prijaté doklady a banka</h2>
+          <h2 className="text-2xl font-semibold">{t("9. Prijaté doklady a banka")}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Pre účtovný program alebo kanceláriu: prijaté faktúry a bločky so zaúčtovaním
-            (predkontácia, členenie DPH, KV), zmeny od posledného stiahnutia a označenie odovzdaných
-            — rovnako ako to robí konektor Pohody.
+            {t(
+              "Pre účtovný program alebo kanceláriu: prijaté faktúry a bločky so zaúčtovaním (predkontácia, členenie DPH, KV), zmeny od posledného stiahnutia a označenie odovzdaných — rovnako ako to robí konektor Pohody.",
+            )}
           </p>
           <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card px-4">
             <Endpoint method="GET" path="/api/v1/purchase-invoices" desc="Prijaté faktúry" />
@@ -329,34 +338,36 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
               desc="Pohyby na bankových účtoch"
             />
           </ul>
-          <h3 className="mt-5 font-semibold">Filtre zoznamu</h3>
+          <h3 className="mt-5 font-semibold">{t("Filtre zoznamu")}</h3>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             <li>
-              <code className="font-mono">updated_since</code> — len zmenené od (ISO 8601); zoznam
-              je zoradený podľa <code className="font-mono">updated_at</code>, takže sa dá
-              pokračovať od posledného.
+              <code className="font-mono">updated_since</code> —{" "}
+              {t("len zmenené od (ISO 8601); zoznam je zoradený podľa")}{" "}
+              <code className="font-mono">updated_at</code>
+              {t(", takže sa dá pokračovať od posledného.")}
             </li>
             <li>
               <code className="font-mono">issued_from</code>,{" "}
-              <code className="font-mono">issued_to</code> — dátum vystavenia (RRRR-MM-DD).
+              <code className="font-mono">issued_to</code> — {t("dátum vystavenia (RRRR-MM-DD).")}
             </li>
             <li>
-              <code className="font-mono">exported=false</code> — ešte neodovzdané;{" "}
-              <code className="font-mono">booked=true</code> — len zaúčtované (prijaté faktúry).
+              <code className="font-mono">exported=false</code> — {t("ešte neodovzdané;")}{" "}
+              <code className="font-mono">booked=true</code> —{" "}
+              {t("len zaúčtované (prijaté faktúry).")}
             </li>
             <li>
-              <code className="font-mono">limit</code> (najviac 200) a{" "}
-              <code className="font-mono">offset</code>; odpoveď má{" "}
-              <code className="font-mono">has_more</code> a{" "}
+              <code className="font-mono">limit</code> {t("(najviac 200) a")}{" "}
+              <code className="font-mono">offset</code>; {t("odpoveď má")}{" "}
+              <code className="font-mono">has_more</code> {t("a")}{" "}
               <code className="font-mono">next_offset</code>.
             </li>
             <li>
-              Banka: <code className="font-mono">date_from</code>,{" "}
+              {t("Banka:")} <code className="font-mono">date_from</code>,{" "}
               <code className="font-mono">date_to</code>,{" "}
-              <code className="font-mono">bank_account_id</code>, limit najviac 500.
+              <code className="font-mono">bank_account_id</code>, {t("limit najviac 500.")}
             </li>
           </ul>
-          <h3 className="mt-5 font-semibold">Označenie odovzdaného</h3>
+          <h3 className="mt-5 font-semibold">{t("Označenie odovzdaného")}</h3>
           <CodeBlock
             lang="bash"
             code={`curl -X POST https://faktero.sk/api/v1/purchase-invoices/{id}/exported \\
@@ -365,10 +376,10 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
   -d '{ "exported": true, "accounting_number": "FP2026/0154" }'`}
           />
           <p className="mt-2 text-sm text-muted-foreground">
-            <code className="font-mono">{`"exported": false`}</code> označenie zruší (doklad sa dá
-            znova upraviť).
+            <code className="font-mono">{`"exported": false`}</code>{" "}
+            {t("označenie zruší (doklad sa dá znova upraviť).")}
           </p>
-          <h3 className="mt-5 font-semibold">Nahratie dokladu</h3>
+          <h3 className="mt-5 font-semibold">{t("Nahratie dokladu")}</h3>
           <CodeBlock
             lang="bash"
             code={`curl -X POST https://faktero.sk/api/v1/unprocessed-documents \\
@@ -378,20 +389,22 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
         "content_base64": "JVBERi0xLjQK...", "note": "zákazka Novák" }'`}
           />
           <p className="mt-2 text-sm text-muted-foreground">
-            PDF, JPEG, PNG, WEBP, HEIC alebo XML do 14 MB. Doklad sa prečíta na pozadí (desiatky
-            sekúnd) a čaká v Nespracovaných na kontrolu; stav (
+            {t(
+              "PDF, JPEG, PNG, WEBP, HEIC alebo XML do 14 MB. Doklad sa prečíta na pozadí (desiatky sekúnd) a čaká v Nespracovaných na kontrolu; stav (",
+            )}
             <code className="font-mono">cita</code>, <code className="font-mono">vytazene</code>,{" "}
-            <code className="font-mono">chyba</code>) vráti GET.
+            <code className="font-mono">chyba</code>) {t("vráti GET.")}
           </p>
         </section>
 
         <section id="webhooks" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">10. Webhooky</h2>
+          <h2 className="text-2xl font-semibold">{t("10. Webhooky")}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Webhooky vás v reálnom čase informujú o udalostiach vo Faktero. Endpoint nastavíte v
-            sekcii Webhooky vo vašom účte, kde získate aj signing secret.
+            {t(
+              "Webhooky vás v reálnom čase informujú o udalostiach vo Faktero. Endpoint nastavíte v sekcii Webhooky vo vašom účte, kde získate aj signing secret.",
+            )}
           </p>
-          <h3 className="mt-5 font-semibold">Udalosti</h3>
+          <h3 className="mt-5 font-semibold">{t("Udalosti")}</h3>
           <ul className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
             {[
               "invoice.created",
@@ -412,10 +425,11 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
             ))}
           </ul>
 
-          <h3 className="mt-6 font-semibold">Overovanie podpisu</h3>
+          <h3 className="mt-6 font-semibold">{t("Overovanie podpisu")}</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            Každá požiadavka má hlavičku <code className="font-mono">X-Faktero-Signature</code>{" "}
-            obsahujúcu HMAC SHA-256 podpis tela požiadavky vytvorený pomocou vášho{" "}
+            {t("Každá požiadavka má hlavičku")}{" "}
+            <code className="font-mono">X-Faktero-Signature</code>{" "}
+            {t("obsahujúcu HMAC SHA-256 podpis tela požiadavky vytvorený pomocou vášho")}{" "}
             <em>signing secret</em>.
           </p>
           <div className="mt-3">
@@ -436,18 +450,18 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
             />
           </div>
 
-          <h3 className="mt-6 font-semibold">Opakovanie pri zlyhaní</h3>
+          <h3 className="mt-6 font-semibold">{t("Opakovanie pri zlyhaní")}</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            Ak váš endpoint nevráti 2xx do 10 sekúnd, Faktero pokus zopakuje s exponenciálnym
-            odstupom (1 min, 5 min, 30 min, 2 h, 12 h) — celkovo max. 5 pokusov. Všetky pokusy a ich
-            stavy nájdete v sekcii Webhooky → Logy.
+            {t(
+              "Ak váš endpoint nevráti 2xx do 10 sekúnd, Faktero pokus zopakuje s exponenciálnym odstupom (1 min, 5 min, 30 min, 2 h, 12 h) — celkovo max. 5 pokusov. Všetky pokusy a ich stavy nájdete v sekcii Webhooky → Logy.",
+            )}
           </p>
         </section>
 
         <section id="examples" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">11. Príklady kódu</h2>
+          <h2 className="text-2xl font-semibold">{t("11. Príklady kódu")}</h2>
 
-          <h3 className="mt-5 font-semibold">Vytvorenie odberateľa</h3>
+          <h3 className="mt-5 font-semibold">{t("Vytvorenie odberateľa")}</h3>
           <div className="mt-2 space-y-3">
             <CodeBlock
               lang="cURL"
@@ -502,7 +516,7 @@ $customer = json_decode(curl_exec($ch), true);`}
             />
           </div>
 
-          <h3 className="mt-6 font-semibold">Vystavenie faktúry</h3>
+          <h3 className="mt-6 font-semibold">{t("Vystavenie faktúry")}</h3>
           <CodeBlock
             lang="cURL"
             code={`curl -X POST https://faktero.sk/api/v1/invoices \\
@@ -520,7 +534,7 @@ $customer = json_decode(curl_exec($ch), true);`}
   }'`}
           />
 
-          <h3 className="mt-6 font-semibold">Stiahnutie PDF</h3>
+          <h3 className="mt-6 font-semibold">{t("Stiahnutie PDF")}</h3>
           <CodeBlock
             lang="JavaScript"
             code={`const res = await fetch(
@@ -531,7 +545,7 @@ const { signed_url } = await res.json();
 // signed_url platí 5 minút — stiahnite alebo presmerujte používateľa`}
           />
 
-          <h3 className="mt-6 font-semibold">Odoslanie faktúry e-mailom</h3>
+          <h3 className="mt-6 font-semibold">{t("Odoslanie faktúry e-mailom")}</h3>
           <CodeBlock
             lang="cURL"
             code={`curl -X POST https://faktero.sk/api/v1/invoices/inv_123/send \\
@@ -540,14 +554,14 @@ const { signed_url } = await res.json();
   -d '{ "recipient_email": "klient@example.com" }'`}
           />
 
-          <h3 className="mt-6 font-semibold">Označiť faktúru ako uhradenú</h3>
+          <h3 className="mt-6 font-semibold">{t("Označiť faktúru ako uhradenú")}</h3>
           <CodeBlock
             lang="cURL"
             code={`curl -X POST https://faktero.sk/api/v1/invoices/inv_123/mark-paid \\
   -H "Authorization: Bearer fk_live_xxx"`}
           />
 
-          <h3 className="mt-6 font-semibold">Prijatie webhooku (PHP)</h3>
+          <h3 className="mt-6 font-semibold">{t("Prijatie webhooku (PHP)")}</h3>
           <CodeBlock
             lang="PHP"
             code={`<?php
@@ -568,13 +582,13 @@ http_response_code(200);`}
         </section>
 
         <section id="status-codes" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">12. Stavové kódy</h2>
+          <h2 className="text-2xl font-semibold">{t("12. Stavové kódy")}</h2>
           <div className="mt-3 overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="p-3">Kód</th>
-                  <th className="p-3">Význam</th>
+                  <th className="p-3">{t("Kód")}</th>
+                  <th className="p-3">{t("Význam")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
@@ -591,7 +605,7 @@ http_response_code(200);`}
                 ].map(([k, v]) => (
                   <tr key={k}>
                     <td className="p-3 font-mono">{k}</td>
-                    <td className="p-3 text-muted-foreground">{v}</td>
+                    <td className="p-3 text-muted-foreground">{t(v)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -600,16 +614,16 @@ http_response_code(200);`}
         </section>
 
         <section id="rate-limits" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">13. Limity požiadaviek</h2>
+          <h2 className="text-2xl font-semibold">{t("13. Limity požiadaviek")}</h2>
           <div className="mt-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-sm text-muted-foreground">
-            Limity počtu požiadaviek doplníme pred verejným spustením API. Pre spoľahlivé použitie v
-            produkcii odporúčame pri odpovedi 429 opakovať požiadavku s postupne predlžovaným
-            odstupom (exponenciálny backoff).
+            {t(
+              "Limity počtu požiadaviek doplníme pred verejným spustením API. Pre spoľahlivé použitie v produkcii odporúčame pri odpovedi 429 opakovať požiadavku s postupne predlžovaným odstupom (exponenciálny backoff).",
+            )}
           </div>
         </section>
 
         <section id="cta" className="scroll-mt-20">
-          <h2 className="text-2xl font-semibold">14. Pre vývojárov</h2>
+          <h2 className="text-2xl font-semibold">{t("14. Pre vývojárov")}</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {loggedIn ? (
               <>
@@ -617,13 +631,13 @@ http_response_code(200);`}
                   to="/api-kluce"
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
-                  <KeyRound className="h-4 w-4" /> Vytvoriť API kľúč
+                  <KeyRound className="h-4 w-4" /> {t("Vytvoriť API kľúč")}
                 </Link>
                 <Link
                   to="/api-playground"
                   className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-secondary"
                 >
-                  <PlayCircle className="h-4 w-4" /> Otvoriť skúšobné prostredie API
+                  <PlayCircle className="h-4 w-4" /> {t("Otvoriť skúšobné prostredie API")}
                 </Link>
               </>
             ) : (
@@ -632,14 +646,14 @@ http_response_code(200);`}
                   to="/registracia"
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
-                  <UserPlus className="h-4 w-4" /> Vytvoriť účet zdarma
+                  <UserPlus className="h-4 w-4" /> {t("Vytvoriť účet zdarma")}
                 </Link>
                 <Link
                   to="/vyvojari/$slug"
                   params={{ slug: "playground" }}
                   className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-secondary"
                 >
-                  <PlayCircle className="h-4 w-4" /> Skúšobné prostredie API
+                  <PlayCircle className="h-4 w-4" /> {t("Skúšobné prostredie API")}
                 </Link>
               </>
             )}
@@ -647,7 +661,7 @@ http_response_code(200);`}
               href="mailto:podpora@faktero.sk"
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-secondary"
             >
-              <LifeBuoy className="h-4 w-4" /> Kontaktovať podporu
+              <LifeBuoy className="h-4 w-4" /> {t("Kontaktovať podporu")}
             </a>
           </div>
         </section>

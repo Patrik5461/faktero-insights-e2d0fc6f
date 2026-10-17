@@ -1,6 +1,7 @@
 import { Logo } from "@/components/faktero/Logo";
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n/useT";
 import {
   LayoutDashboard,
   Building2,
@@ -49,6 +50,7 @@ function isActive(pathname: string, to: string, exact?: boolean) {
 }
 
 export function AdminShell({ children }: { children: ReactNode }) {
+  const { t } = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
@@ -79,7 +81,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                     }`}
                   >
                     <Icon className="h-4 w-4" />
-                    <span>{n.label}</span>
+                    <span>{t(n.label)}</span>
                   </Link>
                 </li>
               );
@@ -92,7 +94,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             className="flex items-center gap-2 rounded-md px-2 py-2 text-xs text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
           >
             <ArrowLeftToLine className="h-3.5 w-3.5" />
-            Späť do aplikácie
+            {t("Späť do aplikácie")}
           </Link>
         </div>
       </aside>
@@ -107,7 +109,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <div className="text-xs font-semibold uppercase tracking-wider text-primary">Admin</div>
           </Link>
           <Link to="/dashboard" className="text-xs text-muted-foreground hover:text-foreground">
-            Späť do app
+            {t("Späť do app")}
           </Link>
         </header>
         {/* Mobile nav strip */}
@@ -124,7 +126,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                     : "bg-secondary text-secondary-foreground"
                 }`}
               >
-                {n.label}
+                {t(n.label)}
               </Link>
             );
           })}
@@ -145,11 +147,12 @@ export function AdminPageHeader({
   description?: string;
   action?: ReactNode;
 }) {
+  const { t } = useT();
   return (
     <div className="flex flex-col gap-3 border-b border-border bg-card/40 px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-4 lg:px-8">
       <div className="min-w-0">
-        <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+        <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{t(title)}</h1>
+        {description && <p className="mt-1 text-sm text-muted-foreground">{t(description)}</p>}
       </div>
       {action && <div className="flex w-full flex-wrap gap-2 lg:w-auto">{action}</div>}
     </div>

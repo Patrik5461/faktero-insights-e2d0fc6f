@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatColnyKod, upravColnyKod } from "@/lib/faktero/colny-kod";
+import { useT } from "@/lib/i18n/useT";
 
 /*
   Výber colného kódu z číselníka kombinovanej nomenklatúry (CN 2026, ~9 800
@@ -28,6 +29,7 @@ export function VyberColnehoKodu({
   ariaLabel?: string;
   autoFocus?: boolean;
 }) {
+  const { t } = useT();
   const [text, setText] = useState(formatColnyKod(value) || String(value ?? ""));
   const [navrhy, setNavrhy] = useState<Navrh[]>([]);
   const [otvorene, setOtvorene] = useState(false);
@@ -120,7 +122,7 @@ export function VyberColnehoKodu({
     <div ref={koren} className="relative">
       <input
         ref={pole}
-        aria-label={ariaLabel}
+        aria-label={t(ariaLabel)}
         value={text}
         disabled={disabled}
         autoFocus={autoFocus}
@@ -133,8 +135,8 @@ export function VyberColnehoKodu({
             vyber(navrhy[0]);
           }
         }}
-        placeholder={placeholder}
-        title={popis ?? "Kód kombinovanej nomenklatúry — 8 číslic (prvých 6 je HS kód)"}
+        placeholder={t(placeholder)}
+        title={popis ?? t("Kód kombinovanej nomenklatúry — 8 číslic (prvých 6 je HS kód)")}
         className={className}
         autoComplete="off"
       />
@@ -168,7 +170,7 @@ export function VyberColnehoKodu({
           style={poloha ? { position: "fixed", top: poloha.top, left: poloha.left } : undefined}
           className="z-50 w-64 rounded-md border border-border bg-popover p-2 text-xs text-muted-foreground shadow-lg"
         >
-          Nič sa nenašlo — skúste iné slovo alebo začiatok čísla.
+          {t("Nič sa nenašlo — skúste iné slovo alebo začiatok čísla.")}
         </div>
       )}
       {popis && (

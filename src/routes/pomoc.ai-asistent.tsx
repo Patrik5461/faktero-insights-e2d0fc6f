@@ -1,19 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/ai-asistent")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Faktero AI — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Faktero AI — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Faktero AI odpovedá na otázky nad vašimi faktúrami: kto dlží, čo je po splatnosti, čo poslať účtovníčke. Číta, nemení.",
+        ),
       },
-      { property: "og:title", content: "Pomoc — Faktero AI — Faktero" },
+      {
+        property: "og:title",
+        content: preloz(match.context.jazyk, "Pomoc — Faktero AI — Faktero"),
+      },
       {
         property: "og:description",
-        content: "Otázky nad vlastnými dátami — a čo asistent nevie a nesmie.",
+        content: preloz(
+          match.context.jazyk,
+          "Otázky nad vlastnými dátami — a čo asistent nevie a nesmie.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/ai-asistent" },
     ],
@@ -119,7 +129,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Faktero AI"
       title="Faktero AI"
       intro={

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { ProgramUctovania } from "@/lib/faktero/uctovanie-programy";
+import { useT } from "@/lib/i18n/useT";
 
 type Pole = { kluc: string; nazov: string; napoveda?: string; placeholder?: string };
 type Skupina = { nazov: string; polia: Pole[] };
@@ -179,6 +180,7 @@ export function NastaveniaProgramu({
   hodnoty: Record<string, unknown>;
   onUlozit: (h: Record<string, unknown>) => Promise<void>;
 }) {
+  const { t } = useT();
   const [h, setH] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   useEffect(() => setH(zPloche(hodnoty)), [hodnoty]);
@@ -186,19 +188,19 @@ export function NastaveniaProgramu({
 
   return (
     <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4 text-sm">
-      <p className="text-muted-foreground">{NAPOVEDA[program]}</p>
+      <p className="text-muted-foreground">{t(NAPOVEDA[program])}</p>
       {skupiny.map((s) => (
         <div key={s.nazov} className="mt-4">
           <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {s.nazov}
+            {t(s.nazov)}
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {s.polia.map((p) => (
               <label key={p.kluc} className="block">
-                <span className="text-xs text-muted-foreground">{p.nazov}</span>
+                <span className="text-xs text-muted-foreground">{t(p.nazov)}</span>
                 <input
                   value={h[p.kluc] ?? ""}
-                  placeholder={p.placeholder}
+                  placeholder={p.placeholder ? t(p.placeholder) : undefined}
                   onChange={(e) => setH({ ...h, [p.kluc]: e.target.value })}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
@@ -216,14 +218,14 @@ export function NastaveniaProgramu({
             try {
               await onUlozit(doStromu(h));
             } catch (e: any) {
-              toast.error(e?.message ?? "Nepodarilo sa uložiť");
+              toast.error(t(e?.message ?? "Nepodarilo sa uložiť"));
             } finally {
               setBusy(false);
             }
           }}
           className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          Uložiť nastavenia
+          {t("Uložiť nastavenia")}
         </button>
       )}
     </div>

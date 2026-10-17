@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { kopirujNastaveniaFn } from "@/lib/faktero/predkontacie.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { useT } from "@/lib/i18n/useT";
 
 /** Okno: skopírovať číselník predkontácií a predvolené kódy do ďalších firiem. */
 export function KopirovatNastaveniaOkno({
@@ -13,6 +14,7 @@ export function KopirovatNastaveniaOkno({
   companyId: string;
   onClose: () => void;
 }) {
+  const { t } = useT();
   useZatvorNaEscape(onClose);
   const kopiruj = useServerFn(kopirujNastaveniaFn);
   const [firmy, setFirmy] = useState<{ id: string; name: string }[]>([]);
@@ -50,13 +52,13 @@ export function KopirovatNastaveniaOkno({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Kopírovať nastavenia do iných firiem"
+        aria-label={t("Kopírovať nastavenia do iných firiem")}
         className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">Kopírovať nastavenia do iných firiem</h2>
+        <h2 className="text-lg font-semibold">{t("Kopírovať nastavenia do iných firiem")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Rovnaký kód v cieľovej firme sa prepíše, nič sa nemaže. Najviac 10 firiem naraz.
+          {t("Rovnaký kód v cieľovej firme sa prepíše, nič sa nemaže. Najviac 10 firiem naraz.")}
         </p>
         <div className="mt-4 space-y-2 text-sm">
           <label className="flex items-center gap-2">
@@ -65,8 +67,9 @@ export function KopirovatNastaveniaOkno({
               checked={ciselnik}
               onChange={(e) => setCiselnik(e.target.checked)}
             />
-            Číselník — predkontácie s účtami a pomermi, členenia, strediská, činnosti, rady,
-            pokladne
+            {t(
+              "Číselník — predkontácie s účtami a pomermi, členenia, strediská, činnosti, rady, pokladne",
+            )}
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -74,13 +77,13 @@ export function KopirovatNastaveniaOkno({
               checked={predvolene}
               onChange={(e) => setPredvolene(e.target.checked)}
             />
-            Predvolené kódy podľa druhu dokladu a účtovný program
+            {t("Predvolené kódy podľa druhu dokladu a účtovný program")}
           </label>
         </div>
         <div className="mt-4 max-h-64 space-y-1 overflow-auto rounded-md border border-border p-2 text-sm">
           {firmy.length === 0 ? (
             <p className="p-2 text-muted-foreground">
-              Nemáte inú firmu, do ktorej by sa dalo kopírovať.
+              {t("Nemáte inú firmu, do ktorej by sa dalo kopírovať.")}
             </p>
           ) : (
             firmy.map((f) => (
@@ -105,7 +108,7 @@ export function KopirovatNastaveniaOkno({
             onClick={onClose}
             className="rounded-md border border-border px-3 py-2 text-sm"
           >
-            Zavrieť
+            {t("Zavrieť")}
           </button>
           <button
             type="button"
@@ -120,23 +123,25 @@ export function KopirovatNastaveniaOkno({
                 const meno = (id: string) => firmy.find((f) => f.id === id)?.name ?? id;
                 if (zle.length)
                   toast.error(
-                    `Nepodarilo sa: ${zle.map((v) => `${meno(v.firma)} (${v.chyba})`).join(", ")}`,
+                    t("Nepodarilo sa: {zoznam}", {
+                      zoznam: zle.map((v) => `${meno(v.firma)} (${v.chyba})`).join(", "),
+                    }),
                     {
                       duration: 10000,
                     },
                   );
                 const ok = r.vysledok.length - zle.length;
-                if (ok) toast.success(`Skopírované do ${ok} ${ok === 1 ? "firmy" : "firiem"}`);
+                if (ok) toast.success(t(ok === 1 ? "Skopírované do {n} firmy" : "Skopírované do {n} firiem", { n: ok }));
                 if (!zle.length) onClose();
               } catch (e: any) {
-                toast.error(e?.message ?? "Nepodarilo sa");
+                toast.error(e?.message ?? t("Nepodarilo sa"));
               } finally {
                 setBusy(false);
               }
             }}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
-            Kopírovať ({ciele.length})
+            {t("Kopírovať ({n})", { n: ciele.length })}
           </button>
         </div>
       </div>

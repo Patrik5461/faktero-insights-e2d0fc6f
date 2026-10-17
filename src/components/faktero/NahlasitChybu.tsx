@@ -3,6 +3,7 @@ import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import { Bug, Lightbulb, X } from "lucide-react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * O koľko klávesnica prekrýva okno.
@@ -59,6 +60,7 @@ function useKlavesnica(aktivne: boolean): number {
  * (rovnaký prístup ako pri ostatných vlastných oknách).
  */
 export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavri: () => void }) {
+  const { t } = useT();
   const [druh, setDruh] = useState<"chyba" | "napad">("chyba");
   const [text, setText] = useState("");
   const [posielam, setPosielam] = useState(false);
@@ -75,10 +77,10 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
     const naEscape = (e: KeyboardEvent) => e.key === "Escape" && onZavri();
     window.addEventListener("keydown", naEscape);
     // Kurzor rovno v poli — človek prišiel písať, nie klikať.
-    const t = setTimeout(() => poleRef.current?.focus(), 50);
+    const casovac = setTimeout(() => poleRef.current?.focus(), 50);
     return () => {
       window.removeEventListener("keydown", naEscape);
-      clearTimeout(t);
+      clearTimeout(casovac);
     };
   }, [otvorene, onZavri]);
 
@@ -87,7 +89,7 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
   async function odosli() {
     const sprava = text.trim();
     if (sprava.length < 5) {
-      toast.error("Napíšte aspoň vetu, nech vieme, čo hľadať.");
+      toast.error(t("Napíšte aspoň vetu, nech vieme, čo hľadať."));
       return;
     }
     setPosielam(true);
@@ -109,11 +111,20 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
       const naWebe = typeof window !== "undefined" && !window.location.pathname.startsWith("/app");
       if (r?.cislo) {
         toast.success(
-          `Požiadavka P-${r.cislo} je založená, ďakujeme. Odpoveď príde e-mailom${naWebe ? " a uvidíte ju v Pomoc a podpora" : ""}.`,
+          naWebe
+            ? t(
+                "Požiadavka P-{cislo} je založená, ďakujeme. Odpoveď príde e-mailom a uvidíte ju v Pomoc a podpora.",
+                {
+                  cislo: r.cislo,
+                },
+              )
+            : t("Požiadavka P-{cislo} je založená, ďakujeme. Odpoveď príde e-mailom.", {
+                cislo: r.cislo,
+              }),
           naWebe && r.poziadavkaId
             ? {
                 action: {
-                  label: "Zobraziť",
+                  label: t("Zobraziť"),
                   onClick: () => window.location.assign(`/podpora/${r.poziadavkaId}`),
                 },
               }
@@ -121,13 +132,13 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
         );
       } else {
         toast.success(
-          druh === "chyba" ? "Chyba nahlásená, ďakujeme." : "Návrh odoslaný, ďakujeme.",
+          druh === "chyba" ? t("Chyba nahlásená, ďakujeme.") : t("Návrh odoslaný, ďakujeme."),
         );
       }
       setText("");
       onZavri();
     } catch (e: any) {
-      toast.error(e?.message ?? "Odoslať sa to nepodarilo.");
+      toast.error(t(e?.message ?? "Odoslať sa to nepodarilo."));
     } finally {
       setPosielam(false);
     }
@@ -149,7 +160,7 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Nahlásiť chybu alebo návrh"
+        aria-label={t("Nahlásiť chybu alebo návrh")}
         onClick={(e) => e.stopPropagation()}
         /*
           Na nízkej obrazovke (alebo s otvorenou klávesnicou) sa obsah nezmestí
@@ -159,14 +170,14 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold">Nahlásiť chybu alebo návrh</h2>
+            <h2 className="text-base font-semibold">{t("Nahlásiť chybu alebo návrh")}</h2>
             <p className="mt-1 text-[13px] text-muted-foreground">
-              Píšeme si k tomu stránku, na ktorej ste, aj prehliadač — nemusíte ich hľadať.
+              {t("Píšeme si k tomu stránku, na ktorej ste, aj prehliadač — nemusíte ich hľadať.")}
             </p>
           </div>
           <button
             onClick={onZavri}
-            aria-label="Zavrieť"
+            aria-label={t("Zavrieť")}
             className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
           >
             <X className="h-4 w-4" />
@@ -194,7 +205,7 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
                     : "border-border hover:bg-secondary"
                 }`}
               >
-                <Icon className="h-4 w-4" /> {v.label}
+                <Icon className="h-4 w-4" /> {t(v.label)}
               </button>
             );
           })}
@@ -208,22 +219,24 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
           maxLength={4000}
           placeholder={
             druh === "chyba"
-              ? "Čo ste robili a čo sa stalo? Napríklad: pri ukladaní faktúry sa tlačidlo točí a nič sa neuloží."
-              : "Čo by vám pomohlo? Napríklad: pri faktúrach filter na konkrétneho odberateľa."
+              ? t(
+                  "Čo ste robili a čo sa stalo? Napríklad: pri ukladaní faktúry sa tlačidlo točí a nič sa neuloží.",
+                )
+              : t("Čo by vám pomohlo? Napríklad: pri faktúrach filter na konkrétneho odberateľa.")
           }
           className="mt-3 w-full rounded-xl border border-input bg-background p-3 text-sm"
         />
 
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className="text-[12px] text-muted-foreground">
-            Odpovedáme na e-mail vášho účtu.
+            {t("Odpovedáme na e-mail vášho účtu.")}
           </span>
           <button
             onClick={odosli}
             disabled={posielam}
             className="rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
-            {posielam ? "Odosielam…" : "Odoslať"}
+            {posielam ? t("Odosielam…") : t("Odoslať")}
           </button>
         </div>
       </div>

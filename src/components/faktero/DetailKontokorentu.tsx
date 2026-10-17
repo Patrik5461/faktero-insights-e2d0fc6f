@@ -10,6 +10,7 @@ import {
 } from "@/lib/faktero/kontokorent.functions";
 import { formatujSumu } from "@/lib/faktero/zostatky";
 import { OBDOBIA_UROCENIA, type StavRamca } from "@/lib/faktero/kontokorent";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Detail kontokorentného úveru.
@@ -77,6 +78,7 @@ export function DetailKontokorentu({
     note: string | null;
   };
 }) {
+  const { t } = useT();
   const nacitaj = useServerFn(detailKontokorentuFn);
   const sparuj = useServerFn(sparujKontokorentTerazFn);
   const potvrd = useServerFn(potvrdPoplatokFn);
@@ -89,7 +91,7 @@ export function DetailKontokorentu({
     try {
       setD((await nacitaj({ data: { company_id: cid, id: zmluva.id } })) as unknown as Detail);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Kontokorent sa nepodarilo načítať.");
+      toast.error(e instanceof Error ? e.message : t("Kontokorent sa nepodarilo načítať."));
     }
   }, [cid, zmluva.id, nacitaj]);
 
@@ -101,10 +103,10 @@ export function DetailKontokorentu({
     setBusy(true);
     try {
       await praca();
-      toast.success(hlaska);
+      toast.success(t(hlaska));
       await obnov();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Nepodarilo sa to.");
+      toast.error(e instanceof Error ? e.message : t("Nepodarilo sa to."));
     } finally {
       setBusy(false);
     }
@@ -127,7 +129,7 @@ export function DetailKontokorentu({
           ],
         ].map(([popis, hodnota]) => (
           <div key={popis} className="rounded-xl border bg-card p-4">
-            <div className="text-xs text-muted-foreground">{popis}</div>
+            <div className="text-xs text-muted-foreground">{t(popis)}</div>
             <div className="mt-1 text-xl font-semibold tabular-nums">{hodnota}</div>
           </div>
         ))}
@@ -136,44 +138,44 @@ export function DetailKontokorentu({
       <div className="rounded-xl border bg-card p-5 text-sm">
         <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
           <div className="flex min-w-0 justify-between gap-3">
-            <dt className="text-muted-foreground">Účet</dt>
+            <dt className="text-muted-foreground">{t("Účet")}</dt>
             <dd className="min-w-0 truncate text-right">
               {d?.ucet
                 ? [d.ucet.account_name, d.ucet.iban].filter(Boolean).join(" · ")
                 : zmluva.account_iban
-                  ? `${zmluva.account_iban} (nenapojený)`
-                  : "nevybraný"}
+                  ? t("{iban} (nenapojený)", { iban: zmluva.account_iban })
+                  : t("nevybraný")}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Zostatok účtu</dt>
+            <dt className="text-muted-foreground">{t("Zostatok účtu")}</dt>
             <dd className="text-right tabular-nums">
-              {stav?.znamy ? formatujSumu(stav.zostatok, mena) : "zostatok účtu nie je známy"}
+              {stav?.znamy ? formatujSumu(stav.zostatok, mena) : t("zostatok účtu nie je známy")}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Úrok</dt>
+            <dt className="text-muted-foreground">{t("Úrok")}</dt>
             <dd className="tabular-nums">
               {zmluva.interest_rate !== null && zmluva.interest_rate !== ""
-                ? `${String(zmluva.interest_rate).replace(".", ",")} % p. a.`
+                ? t("{sadzba} % p. a.", { sadzba: String(zmluva.interest_rate).replace(".", ",") })
                 : "—"}
-              {obdobie ? `, strháva sa ${obdobie}` : ""}
+              {obdobie ? t(", strháva sa {obdobie}", { obdobie: t(obdobie) }) : ""}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Poplatok za rámec</dt>
+            <dt className="text-muted-foreground">{t("Poplatok za rámec")}</dt>
             <dd className="tabular-nums">
               {Number(zmluva.limit_fee_yearly) > 0
-                ? `${formatujSumu(Number(zmluva.limit_fee_yearly), mena)} ročne`
+                ? t("{suma} ročne", { suma: formatujSumu(Number(zmluva.limit_fee_yearly), mena) })
                 : "—"}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Rámec platí do</dt>
-            <dd>{zmluva.valid_until ? datum(zmluva.valid_until) : "doba neurčitá"}</dd>
+            <dt className="text-muted-foreground">{t("Rámec platí do")}</dt>
+            <dd>{zmluva.valid_until ? datum(zmluva.valid_until) : t("doba neurčitá")}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Úroky / poplatky</dt>
+            <dt className="text-muted-foreground">{t("Úroky / poplatky")}</dt>
             <dd className="tabular-nums">
               {d
                 ? `${formatujSumu(d.sucty.uroky, mena)} / ${formatujSumu(d.sucty.poplatky, mena)}`
@@ -183,14 +185,16 @@ export function DetailKontokorentu({
         </dl>
         {stav?.znamy && stav.zdroj === "disponibilny" && (
           <p className="mt-3 text-xs text-muted-foreground">
-            Banka neposlala zaúčtovaný zostatok, čerpanie je z disponibilného. Ten niektoré banky
-            uvádzajú aj s nevyčerpaným rámcom — porovnajte ho s internetbankingom.
+            {t(
+              "Banka neposlala zaúčtovaný zostatok, čerpanie je z disponibilného. Ten niektoré banky uvádzajú aj s nevyčerpaným rámcom — porovnajte ho s internetbankingom.",
+            )}
           </p>
         )}
         {!zmluva.bank_account_id && (
           <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">
-            Zmluva nemá vybraný napojený účet — čerpanie sa nedá zistiť a úroky sa samy nespárujú.
-            Vyberte účet v úprave zmluvy.
+            {t(
+              "Zmluva nemá vybraný napojený účet — čerpanie sa nedá zistiť a úroky sa samy nespárujú. Vyberte účet v úprave zmluvy.",
+            )}
           </p>
         )}
       </div>
@@ -198,11 +202,12 @@ export function DetailKontokorentu({
       {(d?.navrhy.length ?? 0) > 0 && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-5">
           <h2 className="mb-1 flex items-center gap-2 text-sm font-medium">
-            <Link2 className="h-4 w-4" /> Pohyby, ktoré sem asi patria
+            <Link2 className="h-4 w-4" /> {t("Pohyby, ktoré sem asi patria")}
           </h2>
           <p className="mb-3 text-xs text-muted-foreground">
-            Sami sa nespárovali — text pohybu kontokorent výslovne nespomína, alebo je na účte viac
-            rámcov.
+            {t(
+              "Sami sa nespárovali — text pohybu kontokorent výslovne nespomína, alebo je na účte viac rámcov.",
+            )}
           </p>
           <div className="space-y-2">
             {d!.navrhy.map((n) => (
@@ -212,7 +217,7 @@ export function DetailKontokorentu({
               >
                 <div className="min-w-0">
                   <div className="font-medium">
-                    {datum(n.datum)} · {formatujSumu(n.suma, mena)} · {NAZOV_DRUHU[n.druh]}
+                    {datum(n.datum)} · {formatujSumu(n.suma, mena)} · {t(NAZOV_DRUHU[n.druh])}
                   </div>
                   <div className="truncate text-xs text-muted-foreground">
                     {[n.popis, ...n.dovody].filter(Boolean).join(" · ")}
@@ -241,7 +246,7 @@ export function DetailKontokorentu({
                         druh === n.druh ? "bg-primary text-primary-foreground" : "border"
                       }`}
                     >
-                      {druh === "urok" ? "Je to úrok" : "Je to poplatok"}
+                      {druh === "urok" ? t("Je to úrok") : t("Je to poplatok")}
                     </button>
                   ))}
                 </div>
@@ -253,7 +258,7 @@ export function DetailKontokorentu({
 
       <div className="rounded-xl border bg-card">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
-          <h2 className="text-sm font-medium">Úroky a poplatky strhnuté bankou</h2>
+          <h2 className="text-sm font-medium">{t("Úroky a poplatky strhnuté bankou")}</h2>
           <button
             onClick={() =>
               void urobit(async () => {
@@ -261,8 +266,11 @@ export function DetailKontokorentu({
                 if (r.zapisanych === 0 && r.navrhov === 0) {
                   throw new Error(
                     r.pohybov === 0
-                      ? "Na účte s rámcom nie sú žiadne nespárované odchádzajúce pohyby."
-                      : `Prezrelo sa ${r.pohybov} pohybov a ani jeden nie je úrokom ani poplatkom z kontokorentu.`,
+                      ? t("Na účte s rámcom nie sú žiadne nespárované odchádzajúce pohyby.")
+                      : t(
+                          "Prezrelo sa {n} pohybov a ani jeden nie je úrokom ani poplatkom z kontokorentu.",
+                          { n: r.pohybov },
+                        ),
                   );
                 }
               }, "Párovanie s bankou prebehlo.")
@@ -270,25 +278,27 @@ export function DetailKontokorentu({
             disabled={busy}
             className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm"
           >
-            <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Spárovať s bankou
+            <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />{" "}
+            {t("Spárovať s bankou")}
           </button>
         </div>
         {!d ? (
-          <p className="p-4 text-sm text-muted-foreground">Načítavam…</p>
+          <p className="p-4 text-sm text-muted-foreground">{t("Načítavam…")}</p>
         ) : d.poplatky.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">
-            Zatiaľ nič. Úroky a poplatky z účtu s rámcom sa sem priradia samy pri sťahovaní pohybov
-            z banky.
+            {t(
+              "Zatiaľ nič. Úroky a poplatky z účtu s rámcom sa sem priradia samy pri sťahovaní pohybov z banky.",
+            )}
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem] text-sm">
               <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
                 <tr>
-                  <th className="p-3 text-left font-medium">Dátum</th>
-                  <th className="p-3 text-left font-medium">Druh</th>
-                  <th className="p-3 text-left font-medium">Pohyb</th>
-                  <th className="p-3 text-right font-medium">Suma</th>
+                  <th className="p-3 text-left font-medium">{t("Dátum")}</th>
+                  <th className="p-3 text-left font-medium">{t("Druh")}</th>
+                  <th className="p-3 text-left font-medium">{t("Pohyb")}</th>
+                  <th className="p-3 text-right font-medium">{t("Suma")}</th>
                   <th className="p-3" />
                 </tr>
               </thead>
@@ -296,17 +306,17 @@ export function DetailKontokorentu({
                 {d.poplatky.map((r) => (
                   <tr key={r.id} className="border-b last:border-0">
                     <td className="p-3">{datum(r.charged_on)}</td>
-                    <td className="p-3">{NAZOV_DRUHU[r.kind]}</td>
+                    <td className="p-3">{t(NAZOV_DRUHU[r.kind])}</td>
                     <td className="max-w-[18rem] truncate p-3 text-muted-foreground">
                       {r.popis ?? "—"}
-                      {r.source === "rucne" ? " (priradené ručne)" : ""}
+                      {r.source === "rucne" ? " " + t("(priradené ručne)") : ""}
                     </td>
                     <td className="p-3 text-right font-medium tabular-nums">
                       {formatujSumu(r.amount, r.currency)}
                     </td>
                     <td className="p-3 text-right">
                       <button
-                        title="Zrušiť priradenie"
+                        title={t("Zrušiť priradenie")}
                         onClick={() =>
                           void urobit(
                             () => zrus({ data: { company_id: cid, id: r.id } }),
@@ -328,9 +338,9 @@ export function DetailKontokorentu({
       </div>
 
       <p className="px-1 text-xs text-muted-foreground">
-        Do účtovníctva: úrok je finančný náklad (562), poplatok za rámec ostatný finančný náklad
-        (568). Čerpaný kontokorent je krátkodobý bankový úver (231) — to je stav účtu, nie platba,
-        takže sa nevyváža ako splátka.
+        {t(
+          "Do účtovníctva: úrok je finančný náklad (562), poplatok za rámec ostatný finančný náklad (568). Čerpaný kontokorent je krátkodobý bankový úver (231) — to je stav účtu, nie platba, takže sa nevyváža ako splátka.",
+        )}
       </p>
     </div>
   );

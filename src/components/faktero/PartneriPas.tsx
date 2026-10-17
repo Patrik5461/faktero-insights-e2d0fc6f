@@ -12,6 +12,7 @@
  * aj keď od neho logo ešte nemáme.
  */
 import type { Partner } from "@/lib/partneri.functions";
+import { useT } from "@/lib/i18n/useT";
 
 /** Koľko sekúnd trvá jeden prechod na jedného partnera. */
 const SEKUND_NA_PARTNERA = 5;
@@ -50,6 +51,7 @@ function Polozka({ partner }: { partner: Partner }) {
 }
 
 export function PartneriPas({ partneri }: { partneri: Partner[] }) {
+  const { t } = useT();
   // Prázdny pás je horší než žiadny — sekcia sa vtedy nevykreslí vôbec.
   if (!partneri.length) return null;
 
@@ -66,7 +68,7 @@ export function PartneriPas({ partneri }: { partneri: Partner[] }) {
     <section id="partneri" className="border-y border-border/60 bg-card/40 backdrop-blur">
       <div className="mx-auto max-w-7xl px-6 py-10 md:py-12">
         <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          Partneri
+          {t("Partneri")}
         </p>
 
         <div

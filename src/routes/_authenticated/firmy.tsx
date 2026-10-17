@@ -10,15 +10,21 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { zmazFirmuFn } from "@/lib/faktero/firma-zmazanie.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 
 export const Route = createFileRoute("/_authenticated/firmy")({
-  head: () => ({ meta: [{ title: "Správa firiem — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Správa firiem — Faktero") }],
+  }),
   component: CompanyManagementPage,
 });
 
 type Row = { id: string; name: string; role: string; created_at: string };
 
 function CompanyManagementPage() {
+  const { t, jazyk } = useT();
+  const datum = (d: string) => new Date(d).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK");
   const [rows, setRows] = useState<Row[] | null>(null);
   const [activeId, setAid] = useState<string | null>(getActiveCompanyId());
   const [open, setOpen] = useState(false);
@@ -59,7 +65,7 @@ function CompanyManagementPage() {
    */
   async function poZmazani(zmazana: Row) {
     setMazem(null);
-    toast.success(`Firma ${zmazana.name} je zmazaná.`);
+    toast.success(t("Firma {nazov} je zmazaná.", { nazov: zmazana.name }));
     if (zmazana.id === activeId) {
       const ina = (rows ?? []).find((r) => r.id !== zmazana.id);
       if (ina) {
@@ -74,7 +80,7 @@ function CompanyManagementPage() {
   function switchTo(id: string) {
     setActiveCompanyId(id);
     setAid(id);
-    toast.success("Firma prepnutá");
+    toast.success(t("Firma prepnutá"));
     window.location.assign("/dashboard");
   }
 
@@ -85,14 +91,14 @@ function CompanyManagementPage() {
           onClick={() => switchTo(r.id)}
           className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
         >
-          Prepnúť
+          {t("Prepnúť")}
         </button>
       )}
       <a
         href="/firma"
         className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
       >
-        Upraviť
+        {t("Upraviť")}
       </a>
       {/* Pozvánky žijú v nastaveniach firmy — tu bolo roky
           zašednuté tlačidlo s poznámkou „Onedlho". */}
@@ -100,7 +106,7 @@ function CompanyManagementPage() {
         to="/firma"
         className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
       >
-        Pozvať
+        {t("Pozvať")}
       </Link>
       {/* Skúšobná firma sa dala doteraz len založiť. Mazať smie
           majiteľ a len keď mu ostane iná — poslednú firmu rieši
@@ -110,7 +116,7 @@ function CompanyManagementPage() {
           onClick={() => setMazem(r)}
           className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10"
         >
-          <Trash2 className="h-3.5 w-3.5" /> Zmazať
+          <Trash2 className="h-3.5 w-3.5" /> {t("Zmazať")}
         </button>
       )}
     </div>
@@ -119,14 +125,14 @@ function CompanyManagementPage() {
   return (
     <>
       <PageHeader
-        title="Správa firiem"
-        description="Firmy, ku ktorým máte prístup."
+        title={t("Správa firiem")}
+        description={t("Firmy, ku ktorým máte prístup.")}
         action={
           <button
             onClick={() => setOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Pridať firmu
+            <Plus className="h-4 w-4" /> {t("Pridať firmu")}
           </button>
         }
       />
@@ -135,12 +141,12 @@ function CompanyManagementPage() {
         <div className="space-y-2 md:hidden">
           {rows === null && (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-              Načítavam…
+              {t("Načítavam…")}
             </div>
           )}
           {rows?.length === 0 && (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-              Žiadne firmy.
+              {t("Žiadne firmy.")}
             </div>
           )}
           {rows?.map((r) => (
@@ -150,12 +156,12 @@ function CompanyManagementPage() {
                 <span className="min-w-0 break-words font-medium">{r.name}</span>
                 {r.id === activeId && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                    <Check className="h-3 w-3" /> Aktívna
+                    <Check className="h-3 w-3" /> {t("Aktívna")}
                   </span>
                 )}
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
-                {popisRoly(r.role)} · vytvorené {new Date(r.created_at).toLocaleDateString("sk-SK")}
+                {t(popisRoly(r.role))} · {t("vytvorené")} {datum(r.created_at)}
               </div>
               <div className="mt-3 flex justify-start [&>div]:justify-start">{akcie(r)}</div>
             </div>
@@ -165,24 +171,24 @@ function CompanyManagementPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-4 py-3">Firma</th>
-                <th className="px-4 py-3">Rola</th>
-                <th className="px-4 py-3">Vytvorené</th>
-                <th className="px-4 py-3 text-right">Akcie</th>
+                <th className="px-4 py-3">{t("Firma")}</th>
+                <th className="px-4 py-3">{t("Rola")}</th>
+                <th className="px-4 py-3">{t("Vytvorené")}</th>
+                <th className="px-4 py-3 text-right">{t("Akcie")}</th>
               </tr>
             </thead>
             <tbody>
               {rows === null && (
                 <tr>
                   <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                    Načítavam…
+                    {t("Načítavam…")}
                   </td>
                 </tr>
               )}
               {rows?.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                    Žiadne firmy.
+                    {t("Žiadne firmy.")}
                   </td>
                 </tr>
               )}
@@ -194,15 +200,13 @@ function CompanyManagementPage() {
                       <span className="font-medium">{r.name}</span>
                       {r.id === activeId && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                          <Check className="h-3 w-3" /> Aktívna
+                          <Check className="h-3 w-3" /> {t("Aktívna")}
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{popisRoly(r.role)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(r.created_at).toLocaleDateString("sk-SK")}
-                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{t(popisRoly(r.role))}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{datum(r.created_at)}</td>
                   <td className="px-4 py-3 text-right">{akcie(r)}</td>
                 </tr>
               ))}
@@ -238,6 +242,7 @@ function ZmazanieFirmyDialog({
   onClose: () => void;
   onZmazat: (potvrdenie: string) => Promise<void>;
 }) {
+  const { t } = useT();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   useZatvorNaEscape(onClose);
@@ -247,17 +252,20 @@ function ZmazanieFirmyDialog({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={`Zmazať firmu ${firma.name}`}
+        aria-label={t("Zmazať firmu {nazov}", { nazov: firma.name })}
         className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-base font-semibold">Zmazať firmu {firma.name}?</h2>
+        <h2 className="text-base font-semibold">
+          {t("Zmazať firmu {nazov}?", { nazov: firma.name })}
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Zmažú sa všetky doklady, sklad, jazdy aj prílohy tejto firmy. Vrátiť sa to nedá. Ak si to
-          chcete nechať, firmu len prestaňte používať.
+          {t(
+            "Zmažú sa všetky doklady, sklad, jazdy aj prílohy tejto firmy. Vrátiť sa to nedá. Ak si to chcete nechať, firmu len prestaňte používať.",
+          )}
         </p>
         <label className="mt-4 block text-xs font-medium text-muted-foreground">
-          Prepíšte názov firmy
+          {t("Prepíšte názov firmy")}
         </label>
         <input
           autoFocus
@@ -271,7 +279,7 @@ function ZmazanieFirmyDialog({
             onClick={onClose}
             className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
           >
-            Späť
+            {t("Späť")}
           </button>
           <button
             disabled={busy || text.trim() !== firma.name.trim()}
@@ -280,14 +288,14 @@ function ZmazanieFirmyDialog({
               try {
                 await onZmazat(text);
               } catch (e: any) {
-                toast.error(e?.message ?? "Firmu sa nepodarilo zmazať.");
+                toast.error(e?.message ?? t("Firmu sa nepodarilo zmazať."));
               } finally {
                 setBusy(false);
               }
             }}
             className="rounded-md bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90 disabled:opacity-50"
           >
-            {busy ? "Mažem…" : "Zmazať natrvalo"}
+            {busy ? t("Mažem…") : t("Zmazať natrvalo")}
           </button>
         </div>
       </div>

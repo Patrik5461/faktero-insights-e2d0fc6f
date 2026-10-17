@@ -9,9 +9,13 @@ import { Plus, Truck } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/")({
-  head: () => ({ meta: [{ title: "Objednávky u dodávateľov — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Objednávky u dodávateľov — Faktero") }],
+  }),
   component: PurchaseOrdersPage,
 });
 
@@ -28,6 +32,7 @@ function suma(n: number, mena: string) {
 }
 
 function PurchaseOrdersPage() {
+  const { t } = useT();
   const fetchOrders = useServerFn(listPurchaseOrders);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,8 +55,10 @@ function PurchaseOrdersPage() {
   return (
     <>
       <PageHeader
-        title="Objednávky u dodávateľov"
-        description="Čo je objednané a ešte neprišlo. Otvorené objednávky sa odpočítavajú od návrhu doobjednania."
+        title={t("Objednávky u dodávateľov")}
+        description={t(
+          "Čo je objednané a ešte neprišlo. Otvorené objednávky sa odpočítavajú od návrhu doobjednania.",
+        )}
         action={
           <div className="flex flex-wrap gap-2">
             <OdkazNaRady />
@@ -59,7 +66,7 @@ function PurchaseOrdersPage() {
               to="/sklad/objednavky/nova"
               className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Nová objednávka
+              <Plus className="h-4 w-4" /> {t("Nová objednávka")}
             </Link>
           </div>
         }
@@ -80,26 +87,26 @@ function PurchaseOrdersPage() {
                 filter === k ? "bg-secondary font-medium" : "text-muted-foreground"
               }`}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center">
             <Truck className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
             <div className="text-sm text-muted-foreground">
               {filter === "otvorene"
-                ? "Žiadna otvorená objednávka."
-                : "Zatiaľ ste nevystavili žiadnu objednávku."}
+                ? t("Žiadna otvorená objednávka.")
+                : t("Zatiaľ ste nevystavili žiadnu objednávku.")}
             </div>
             <Link
               to="/sklad/minimum"
               className="mt-3 inline-block text-sm text-primary hover:underline"
             >
-              Pozrieť, čo je pod minimom →
+              {t("Pozrieť, čo je pod minimom →")}
             </Link>
           </div>
         ) : (
@@ -107,13 +114,13 @@ function PurchaseOrdersPage() {
             <table className="w-full min-w-[720px] text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="p-3">Číslo</th>
-                  <th className="p-3">Dodávateľ</th>
-                  <th className="p-3">Vystavená</th>
-                  <th className="p-3">Očakávaná</th>
-                  <th className="p-3 text-right">Položiek</th>
-                  <th className="p-3 text-right">Spolu</th>
-                  <th className="p-3">Stav</th>
+                  <th className="p-3">{t("Číslo")}</th>
+                  <th className="p-3">{t("Dodávateľ")}</th>
+                  <th className="p-3">{t("Vystavená")}</th>
+                  <th className="p-3">{t("Očakávaná")}</th>
+                  <th className="p-3 text-right">{t("Položiek")}</th>
+                  <th className="p-3 text-right">{t("Spolu")}</th>
+                  <th className="p-3">{t("Stav")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -139,7 +146,7 @@ function PurchaseOrdersPage() {
                           FARBA_STAVU[o.status as StavObjednavky] ?? ""
                         }`}
                       >
-                        {STAV_POPIS[o.status as StavObjednavky] ?? o.status}
+                        {t(STAV_POPIS[o.status as StavObjednavky] ?? o.status)}
                       </span>
                     </td>
                   </tr>

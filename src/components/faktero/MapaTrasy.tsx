@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dekoduj } from "@/lib/faktero/polyline";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Prejdená trasa na mape.
@@ -19,6 +20,7 @@ export function MapaTrasy({
   route: string | null | undefined;
   vyska?: number;
 }) {
+  const { t } = useT();
   const kam = useRef<HTMLDivElement>(null);
   const [chyba, setChyba] = useState(false);
   const body = useMemo(() => dekoduj(route), [route]);
@@ -44,7 +46,7 @@ export function MapaTrasy({
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
           attribution:
-            '© <a href="https://www.openstreetmap.org/copyright">prispievatelia OpenStreetMap</a>',
+            `© <a href="https://www.openstreetmap.org/copyright">${t("prispievatelia OpenStreetMap")}</a>`,
         }).addTo(m);
 
         const suradnice = body.map((b) => [b.lat, b.lng] as [number, number]);
@@ -58,7 +60,7 @@ export function MapaTrasy({
           fillOpacity: 1,
         })
           .addTo(m)
-          .bindTooltip("Štart");
+          .bindTooltip(t("Štart"));
 
         L.circleMarker(suradnice[suradnice.length - 1]!, {
           radius: 6,
@@ -68,7 +70,7 @@ export function MapaTrasy({
           fillOpacity: 1,
         })
           .addTo(m)
-          .bindTooltip("Cieľ");
+          .bindTooltip(t("Cieľ"));
 
         m.fitBounds(ciara.getBounds(), { padding: [24, 24] });
       } catch {
@@ -80,7 +82,7 @@ export function MapaTrasy({
       zrusene = true;
       mapa?.remove();
     };
-  }, [body]);
+  }, [body, t]);
 
   if (body.length < 2) {
     return (
@@ -88,8 +90,9 @@ export function MapaTrasy({
         className="grid place-items-center rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground"
         style={{ minHeight: 120 }}
       >
-        Táto jazda trasu nemá — bola zapísaná ručne alebo vznikla ešte predtým, ako sa trasy začali
-        ukladať.
+        {t(
+          "Táto jazda trasu nemá — bola zapísaná ručne alebo vznikla ešte predtým, ako sa trasy začali ukladať.",
+        )}
       </div>
     );
   }
@@ -100,7 +103,7 @@ export function MapaTrasy({
         className="grid place-items-center rounded-xl border border-border p-6 text-center text-sm text-muted-foreground"
         style={{ minHeight: 120 }}
       >
-        Mapu sa nepodarilo načítať. Trasa je uložená, skúste to znova s pripojením na internet.
+        {t("Mapu sa nepodarilo načítať. Trasa je uložená, skúste to znova s pripojením na internet.")}
       </div>
     );
   }

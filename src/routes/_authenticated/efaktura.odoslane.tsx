@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -23,11 +25,14 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/efaktura/odoslane")({
-  head: () => ({ meta: [{ title: "Odoslané eFaktúry — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Odoslané eFaktúry — Faktero") }] }),
   component: SentPage,
 });
 
 function SentPage() {
+  const { t } = useT();
+  const chyb = (n: number) =>
+    t(n === 1 ? "{n} chyba" : n > 1 && n < 5 ? "{n} chyby" : "{n} chýb", { n });
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [openErrors, setOpenErrors] = useState<string | null>(null);
   useEffect(() => setCompanyId(getActiveCompanyId()), []);
@@ -65,14 +70,17 @@ function SentPage() {
     if (!companyId) return;
     if (
       !(await potvrd(
-        `Odoslať faktúru ${cislo} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.`,
+        t(
+          "Odoslať faktúru {cislo} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.",
+          { cislo },
+        ),
       ))
     )
       return;
     setOdosielam(invoiceId);
     try {
       const r: any = await posli({ data: { company_id: companyId, invoice_id: invoiceId } });
-      toast.success(`Odoslané — stav: ${stavDorucenia(r.status).toLowerCase()}.`);
+      toast.success(t("Odoslané — stav: {stav}.", { stav: t(stavDorucenia(r.status)).toLowerCase() }));
       q.refetch();
       qd.refetch();
     } catch (e) {
@@ -96,8 +104,8 @@ function SentPage() {
       const r = await regen({ data: { companyId: companyId!, invoiceId } });
       toast[r.valid ? "success" : "error"](
         r.valid
-          ? "XML znovu validované — bez chýb."
-          : `Validácia zlyhala (${r.validationErrors.length} chýb).`,
+          ? t("XML znovu validované — bez chýb.")
+          : t("Validácia zlyhala ({chyby}).", { chyby: chyb(r.validationErrors.length) }),
       );
       q.refetch();
     } catch (e) {
@@ -107,13 +115,13 @@ function SentPage() {
 
   function dorucenieBunka(row: any) {
     const d = dorucenia.get(row.id);
-    if (!d) return <span className="text-xs text-muted-foreground">Neodoslaná</span>;
+    if (!d) return <span className="text-xs text-muted-foreground">{t("Neodoslaná")}</span>;
     return (
       <span
         className={`text-xs ${d.status === "failed" || d.status === "rejected" ? "text-destructive" : "text-primary"}`}
         title={d.error_message ?? undefined}
       >
-        {stavDorucenia(d.status)}
+        {t(stavDorucenia(d.status))}
         {d.sent_at && (
           <span className="block whitespace-nowrap text-muted-foreground">
             {kratkyCas(d.sent_at)}
@@ -134,7 +142,7 @@ function SentPage() {
             onClick={() => setOpenErrors(openErrors === row.id ? null : row.id)}
             className="text-xs text-destructive underline"
           >
-            {errs.length} chýb
+            {chyb(errs.length)}
           </button>
         )}
         {openErrors === row.id && (
@@ -157,11 +165,11 @@ function SentPage() {
       <div className={`flex flex-wrap gap-1 ${className}`}>
         {row.invoice_id && (
           <a href={`/faktury/${row.invoice_id}`} className={btn}>
-            <Eye className="h-3.5 w-3.5" /> Detail
+            <Eye className="h-3.5 w-3.5" /> {t("Detail")}
           </a>
         )}
         <button onClick={() => row.invoice_id && handleRevalidate(row.invoice_id)} className={btn}>
-          <RefreshCw className="h-3.5 w-3.5" /> Validovať
+          <RefreshCw className="h-3.5 w-3.5" /> {t("Validovať")}
         </button>
         {/* Odoslanie je nevratné, tak je až za validáciou a pýta sa. */}
         <button
@@ -171,7 +179,7 @@ function SentPage() {
           }
           className={btn}
         >
-          <Send className="h-3.5 w-3.5" /> {odosielam === row.invoice_id ? "Odosielam…" : "Odoslať"}
+          <Send className="h-3.5 w-3.5" /> {odosielam === row.invoice_id ? t("Odosielam…") : t("Odoslať")}
         </button>
         <button
           onClick={() => row.invoice_id && handleDownload(row.invoice_id)}
@@ -188,20 +196,20 @@ function SentPage() {
   return (
     <>
       <PageHeader
-        title="Odoslané eFaktúry"
-        description="XML dokumenty vygenerované z vašich faktúr."
+        title={t("Odoslané eFaktúry")}
+        description={t("XML dokumenty vygenerované z vašich faktúr.")}
       />
       <PageBody>
         {/* Mobil: karty namiesto širokej tabuľky. */}
         <div className="space-y-3 md:hidden">
           {q.isLoading && (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-              Načítavam…
+              {t("Načítavam…")}
             </div>
           )}
           {q.data && q.data.length === 0 && (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-              Zatiaľ žiadne vygenerované eFaktúry.
+              {t("Zatiaľ žiadne vygenerované eFaktúry.")}
             </div>
           )}
           {q.data?.map((row: any) => (
@@ -214,7 +222,7 @@ function SentPage() {
                   </div>
                 </div>
                 <span className="shrink-0 text-xs text-muted-foreground">
-                  {typDokladuEfaktury(row.invoices?.type)}
+                  {t(typDokladuEfaktury(row.invoices?.type))}
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -223,7 +231,7 @@ function SentPage() {
                 {dorucenieBunka(row)}
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
-                Vytvorené {kratkyCas(row.created_at)}
+                {t("Vytvorené {cas}", { cas: kratkyCas(row.created_at) })}
               </div>
               {akcieBunka(row, "mt-3")}
             </div>
@@ -234,28 +242,28 @@ function SentPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="p-3">Faktúra</th>
-                <th className="p-3">Odberateľ</th>
-                <th className="p-3">Typ</th>
-                <th className="p-3">Stav XML</th>
-                <th className="p-3">Validácia</th>
-                <th className="p-3">Doručenie</th>
-                <th className="p-3">Vytvorené</th>
-                <th className="p-3 text-right">Akcie</th>
+                <th className="p-3">{t("Faktúra")}</th>
+                <th className="p-3">{t("Odberateľ")}</th>
+                <th className="p-3">{t("Typ")}</th>
+                <th className="p-3">{t("Stav XML")}</th>
+                <th className="p-3">{t("Validácia")}</th>
+                <th className="p-3">{t("Doručenie")}</th>
+                <th className="p-3">{t("Vytvorené")}</th>
+                <th className="p-3 text-right">{t("Akcie")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {q.isLoading && (
                 <tr>
                   <td colSpan={8} className="p-6 text-center text-muted-foreground">
-                    Načítavam…
+                    {t("Načítavam…")}
                   </td>
                 </tr>
               )}
               {q.data && q.data.length === 0 && (
                 <tr>
                   <td colSpan={8} className="p-6 text-center text-muted-foreground">
-                    Zatiaľ žiadne vygenerované eFaktúry.
+                    {t("Zatiaľ žiadne vygenerované eFaktúry.")}
                   </td>
                 </tr>
               )}
@@ -264,7 +272,7 @@ function SentPage() {
                   <td className="whitespace-nowrap p-3 font-medium">{cislo(row)}</td>
                   <td className="p-3">{row.invoices?.customer_name ?? "—"}</td>
                   <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
-                    {typDokladuEfaktury(row.invoices?.type)}
+                    {t(typDokladuEfaktury(row.invoices?.type))}
                   </td>
                   <td className="p-3">
                     <EfakturaStatusBadge status={deriveEfakturaUiStatus(row)} />

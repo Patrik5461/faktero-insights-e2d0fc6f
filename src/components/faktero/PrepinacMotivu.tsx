@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { nacitajMotiv, nasadMotiv, sledujSystem, ulozMotiv, type Motiv } from "@/lib/faktero/motiv";
+import { useT } from "@/lib/i18n/useT";
 
 const MOZNOSTI: { hodnota: Motiv; popis: string; ikona: typeof Sun }[] = [
   { hodnota: "svetly", popis: "Svetlý", ikona: Sun },
@@ -19,6 +20,7 @@ const MOZNOSTI: { hodnota: Motiv; popis: string; ikona: typeof Sun }[] = [
  * a React by to zahlásil ako nesúlad.
  */
 export function PrepinacMotivu() {
+  const { t } = useT();
   const [volba, setVolba] = useState<Motiv | null>(null);
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export function PrepinacMotivu() {
   return (
     <div
       role="group"
-      aria-label="Vzhľad"
+      aria-label={t("Vzhľad")}
       className="flex gap-1 rounded-md border border-border p-0.5"
     >
       {MOZNOSTI.map(({ hodnota, popis, ikona: Ikona }) => {
@@ -43,7 +45,7 @@ export function PrepinacMotivu() {
             key={hodnota}
             type="button"
             aria-pressed={aktivna}
-            title={popis}
+            title={t(popis)}
             onClick={() => {
               setVolba(hodnota);
               ulozMotiv(hodnota);
@@ -55,7 +57,7 @@ export function PrepinacMotivu() {
             }`}
           >
             <Ikona className="h-3.5 w-3.5" />
-            {popis}
+            {t(popis)}
           </button>
         );
       })}

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { CislovaniePoImporte } from "@/components/faktero/CislovaniePoImporte";
@@ -25,9 +26,12 @@ import {
   executeImport,
 } from "@/lib/faktero/import-superfaktura.functions";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
 
 export const Route = createFileRoute("/_authenticated/importy/superfaktura")({
-  head: () => ({ meta: [{ title: "Import zo SuperFaktúry — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Import zo SuperFaktúry — Faktero") }],
+  }),
   component: ImportPage,
 });
 
@@ -64,6 +68,7 @@ const FIELDS: Array<{ key: string; label: string; group: string }> = [
 ];
 
 function ImportPage() {
+  const { t } = useT();
   const createUrl = useServerFn(createImportUploadUrl);
   const doPreview = useServerFn(previewImport);
   const doImport = useServerFn(executeImport);
@@ -84,9 +89,9 @@ function ImportPage() {
 
   async function handleUpload() {
     const cid = getActiveCompanyId();
-    if (!cid) return toast.error("Nie je vybraná firma.");
-    if (!file) return toast.error("Vyberte súbor.");
-    if (file.size > 20 * 1024 * 1024) return toast.error("Súbor je príliš veľký (max 20 MB).");
+    if (!cid) return toast.error(t("Nie je vybraná firma."));
+    if (!file) return toast.error(t("Vyberte súbor."));
+    if (file.size > 20 * 1024 * 1024) return toast.error(t("Súbor je príliš veľký (max 20 MB)."));
     setBusy(true);
     try {
       const { signedUrl, path: p } = await createUrl({
@@ -97,7 +102,8 @@ function ImportPage() {
         body: file,
         headers: { "Content-Type": file.type || "application/octet-stream" },
       });
-      if (!uploadRes.ok) throw new Error(`Nahratie zlyhalo (${uploadRes.status})`);
+      if (!uploadRes.ok)
+        throw new Error(t("Nahratie zlyhalo ({status})", { status: uploadRes.status }));
       setPath(p);
       const r = await doPreview({ data: { companyId: cid, path: p, fileName: file.name } });
       setPreview(r.preview);
@@ -106,7 +112,7 @@ function ImportPage() {
       setDetection((r as any).detection ?? null);
       setStep(2);
     } catch (e: any) {
-      toast.error(e?.message ?? "Nahratie zlyhalo.");
+      toast.error(e?.message ?? t("Nahratie zlyhalo."));
     } finally {
       setBusy(false);
     }
@@ -127,7 +133,7 @@ function ImportPage() {
   async function handleRunImport() {
     const cid = getActiveCompanyId();
     if (!cid || !path || !file) return;
-    if (!(await potvrd("Importom sa vytvoria nové záznamy vo vašej firme. Pokračovať?"))) return;
+    if (!(await potvrd(t("Importom sa vytvoria nové záznamy vo vašej firme. Pokračovať?")))) return;
     setBusy(true);
     try {
       const r = await doImport({
@@ -136,10 +142,13 @@ function ImportPage() {
       setResult(r);
       setStep(5);
       toast.success(
-        `Importovaných ${r.imported_invoices} faktúr a ${r.imported_customers} odberateľov.`,
+        t("Importovaných {faktury} faktúr a {odberatelia} odberateľov.", {
+          faktury: r.imported_invoices,
+          odberatelia: r.imported_customers,
+        }),
       );
     } catch (e: any) {
-      toast.error(e?.message ?? "Import zlyhal.");
+      toast.error(e?.message ?? t("Import zlyhal."));
     } finally {
       setBusy(false);
     }
@@ -148,14 +157,16 @@ function ImportPage() {
   return (
     <>
       <PageHeader
-        title="Import zo SuperFaktúry"
-        description="Nahrajte ZIP z Export agendy alebo Excel/CSV. Faktero rozpozná stĺpce samo, ručné mapovanie je len záloha."
+        title={t("Import zo SuperFaktúry")}
+        description={t(
+          "Nahrajte ZIP z Export agendy alebo Excel/CSV. Faktero rozpozná stĺpce samo, ručné mapovanie je len záloha.",
+        )}
         action={
           <Link
             to="/importy"
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
           >
-            <History className="h-4 w-4" /> História importov
+            <History className="h-4 w-4" /> {t("História importov")}
           </Link>
         }
       />
@@ -165,23 +176,25 @@ function ImportPage() {
 
           {step === 1 && (
             <section className="rounded-2xl border border-border bg-card p-6">
-              <h2 className="text-base font-semibold">1. Nahrajte export súbor</h2>
+              <h2 className="text-base font-semibold">{t("1. Nahrajte export súbor")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Podporujeme ZIP a súbory .isdoc z <strong>Export agendy</strong> vo SuperFaktúre,
-                ďalej Excel (.xlsx), CSV a XML. Maximálne 20 MB.
+                {t("Podporujeme ZIP a súbory .isdoc z")} <strong>{t("Export agendy")}</strong>{" "}
+                {t("vo SuperFaktúre, ďalej Excel (.xlsx), CSV a XML. Maximálne 20 MB.")}
               </p>
               <div className="mt-3 rounded-lg border border-border bg-secondary/30 p-3 text-xs text-muted-foreground">
-                <p className="font-medium text-foreground">Kde export nájdete</p>
+                <p className="font-medium text-foreground">{t("Kde export nájdete")}</p>
                 <p className="mt-1">
-                  Vo SuperFaktúre otvorte <strong>Nástroje → Export agendy</strong>, vyberte obdobie
-                  a stiahnite export. Dostanete ZIP, v ktorom je každá faktúra ako samostatný súbor{" "}
-                  <code>.isdoc</code> — nahrajte ho sem celý, rozbaľovať ho netreba.
+                  {t("Vo SuperFaktúre otvorte")} <strong>{t("Nástroje → Export agendy")}</strong>,{" "}
+                  {t(
+                    "vyberte obdobie a stiahnite export. Dostanete ZIP, v ktorom je každá faktúra ako samostatný súbor",
+                  )}{" "}
+                  <code>.isdoc</code> — {t("nahrajte ho sem celý, rozbaľovať ho netreba.")}
                 </p>
               </div>
               <label className="mt-5 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-6 py-12 text-sm hover:border-primary/50">
                 <Upload className="h-8 w-8 text-primary" />
                 <span className="font-medium">
-                  {file ? file.name : "Vyberte alebo presuňte súbor"}
+                  {file ? file.name : t("Vyberte alebo presuňte súbor")}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   .zip · .isdoc · .xlsx · .csv · .xml
@@ -204,7 +217,7 @@ function ImportPage() {
                   ) : (
                     <ArrowRight className="h-4 w-4" />
                   )}
-                  Načítať a pokračovať
+                  {t("Načítať a pokračovať")}
                 </button>
               </div>
             </section>
@@ -214,12 +227,12 @@ function ImportPage() {
             <section className="rounded-2xl border border-border bg-card p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-semibold">2. Automatická detekcia</h2>
+                  <h2 className="text-base font-semibold">{t("2. Automatická detekcia")}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {detection?.detectedSource === "superfaktura"
-                      ? "Rozpoznaný export SuperFaktúry."
-                      : "Rozpoznaný všeobecný export."}{" "}
-                    Detekovaných polí: {detection?.detectedColumns?.length ?? 0}.
+                      ? t("Rozpoznaný export SuperFaktúry.")
+                      : t("Rozpoznaný všeobecný export.")}{" "}
+                    {t("Detekovaných polí: {n}.", { n: detection?.detectedColumns?.length ?? 0 })}
                   </p>
                 </div>
                 {detection && (
@@ -227,21 +240,24 @@ function ImportPage() {
                 )}
               </div>
               <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <Stat label="Faktúry" value={preview.invoicesCount} />
-                <Stat label="Odberatelia" value={preview.customersCount} />
-                <Stat label="Riadky" value={preview.itemsCount} />
+                <Stat label={t("Faktúry")} value={preview.invoicesCount} />
+                <Stat label={t("Odberatelia")} value={preview.customersCount} />
+                <Stat label={t("Riadky")} value={preview.itemsCount} />
                 <Stat
-                  label="Celková hodnota"
+                  label={t("Celková hodnota")}
                   value={formatujMenu(preview.totalValue, preview.currency)}
                 />
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
-                Obdobie: {preview.dateFrom ?? "—"} až {preview.dateTo ?? "—"}
+                {t("Obdobie: {od} až {do}", {
+                  od: preview.dateFrom ?? "—",
+                  do: preview.dateTo ?? "—",
+                })}
               </div>
               {detection?.perField && (
                 <div className="mt-4 rounded-lg border border-border bg-background p-3">
                   <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Detekované stĺpce
+                    {t("Detekované stĺpce")}
                   </div>
                   <div className="grid gap-1 sm:grid-cols-2">
                     {Object.entries(detection.perField).map(([f, v]: any) => (
@@ -250,7 +266,7 @@ function ImportPage() {
                         className="flex items-center justify-between rounded border border-border/50 bg-secondary/30 px-2 py-1 text-xs"
                       >
                         <span className="text-muted-foreground">
-                          {FIELDS.find((x) => x.key === f)?.label ?? f}
+                          {t(FIELDS.find((x) => x.key === f)?.label ?? f)}
                         </span>
                         <span className="font-medium">
                           {v.header} · {Math.round(v.score * 100)}%
@@ -265,10 +281,10 @@ function ImportPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-secondary/40 text-xs text-muted-foreground">
                       <tr>
-                        <th className="px-3 py-2 text-left">Číslo</th>
-                        <th className="px-3 py-2 text-left">Odberateľ</th>
-                        <th className="px-3 py-2 text-left">Dátum</th>
-                        <th className="px-3 py-2 text-right">Suma</th>
+                        <th className="px-3 py-2 text-left">{t("Číslo")}</th>
+                        <th className="px-3 py-2 text-left">{t("Odberateľ")}</th>
+                        <th className="px-3 py-2 text-left">{t("Dátum")}</th>
+                        <th className="px-3 py-2 text-right">{t("Suma")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -293,14 +309,14 @@ function ImportPage() {
                   onClick={() => setStep(1)}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
                 >
-                  <ArrowLeft className="h-4 w-4" /> Späť
+                  <ArrowLeft className="h-4 w-4" /> {t("Späť")}
                 </button>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setStep(3)}
                     className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
                   >
-                    <Sliders className="h-4 w-4" /> Upraviť mapovanie
+                    <Sliders className="h-4 w-4" /> {t("Upraviť mapovanie")}
                   </button>
                   <button
                     onClick={() => setStep(4)}
@@ -308,17 +324,17 @@ function ImportPage() {
                     className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                     title={
                       detection?.confidenceLabel === "low"
-                        ? "Nízka zhoda — upravte mapovanie najprv"
+                        ? t("Nízka zhoda — upravte mapovanie najprv")
                         : undefined
                     }
                   >
-                    <Sparkles className="h-4 w-4" /> Importovať automaticky
+                    <Sparkles className="h-4 w-4" /> {t("Importovať automaticky")}
                   </button>
                 </div>
               </div>
               {detection?.confidenceLabel === "low" && (
                 <p className="mt-3 text-xs text-amber-600">
-                  Nízka zhoda detekcie. Skontrolujte a doplňte mapovanie pred importom.
+                  {t("Nízka zhoda detekcie. Skontrolujte a doplňte mapovanie pred importom.")}
                 </p>
               )}
             </section>
@@ -326,14 +342,14 @@ function ImportPage() {
 
           {step === 3 && (
             <section className="rounded-2xl border border-border bg-card p-6">
-              <h2 className="text-base font-semibold">3. Mapovanie polí</h2>
+              <h2 className="text-base font-semibold">{t("3. Mapovanie polí")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Spárujte stĺpce z vášho súboru s poľami Faktera. Nevyplnené sa preskočia.
+                {t("Spárujte stĺpce z vášho súboru s poľami Faktera. Nevyplnené sa preskočia.")}
               </p>
               {(["Faktúra", "Odberateľ", "Položka"] as const).map((group) => (
                 <div key={group} className="mt-5">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {group}
+                    {t(group)}
                   </h3>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     {FIELDS.filter((f) => f.group === group).map((f) => (
@@ -341,13 +357,13 @@ function ImportPage() {
                         key={f.key}
                         className="grid grid-cols-2 items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5"
                       >
-                        <label className="text-sm">{f.label}</label>
+                        <label className="text-sm">{t(f.label)}</label>
                         <select
                           value={mapping[f.key] ?? ""}
                           onChange={(e) => setMapping({ ...mapping, [f.key]: e.target.value })}
                           className="rounded-md border border-input bg-background px-2 py-1 text-sm"
                         >
-                          <option value="">— ignorovať —</option>
+                          <option value="">{t("— ignorovať —")}</option>
                           {headers.map((h) => (
                             <option key={h} value={h}>
                               {h}
@@ -365,24 +381,24 @@ function ImportPage() {
                   await recomputePreview();
                   setStep(4);
                 }}
-                nextLabel="Validovať"
+                nextLabel={t("Validovať")}
               />
             </section>
           )}
 
           {step === 4 && preview && (
             <section className="rounded-2xl border border-border bg-card p-6 space-y-5">
-              <h2 className="text-base font-semibold">4. Validácia a možnosti</h2>
+              <h2 className="text-base font-semibold">{t("4. Validácia a možnosti")}</h2>
               <div className="grid gap-3 sm:grid-cols-3">
                 <ValidationCard
                   kind="ok"
-                  label="Faktúry pripravené"
+                  label={t("Faktúry pripravené")}
                   value={preview.invoicesCount}
                 />
-                <ValidationCard kind="ok" label="Odberatelia" value={preview.customersCount} />
+                <ValidationCard kind="ok" label={t("Odberatelia")} value={preview.customersCount} />
                 <ValidationCard
                   kind="warn"
-                  label="Riadky bez čísla faktúry"
+                  label={t("Riadky bez čísla faktúry")}
                   value={!mapping.invoice_number ? preview.itemsCount : 0}
                 />
               </div>
@@ -390,10 +406,11 @@ function ImportPage() {
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
                   <div>
-                    <p className="font-medium">Upozornenie</p>
+                    <p className="font-medium">{t("Upozornenie")}</p>
                     <p className="text-muted-foreground">
-                      Import zapíše dáta do vašej firmy. Operácia sa nedá automaticky vrátiť.
-                      Skontrolujte mapovanie pred potvrdením.
+                      {t(
+                        "Import zapíše dáta do vašej firmy. Operácia sa nedá automaticky vrátiť. Skontrolujte mapovanie pred potvrdením.",
+                      )}
                     </p>
                   </div>
                 </div>
@@ -402,7 +419,7 @@ function ImportPage() {
               <Footer
                 onBack={() => setStep(3)}
                 onNext={handleRunImport}
-                nextLabel={busy ? "Importujem…" : "Potvrdiť a importovať"}
+                nextLabel={busy ? t("Importujem…") : t("Potvrdiť a importovať")}
                 disabled={busy}
               />
             </section>
@@ -411,12 +428,12 @@ function ImportPage() {
           {step === 5 && result && (
             <section className="rounded-2xl border border-border bg-card p-6 text-center">
               <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
-              <h2 className="mt-3 text-lg font-semibold">Import dokončený</h2>
+              <h2 className="mt-3 text-lg font-semibold">{t("Import dokončený")}</h2>
               <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <Stat label="Faktúry" value={result.imported_invoices} />
-                <Stat label="Odberatelia" value={result.imported_customers} />
-                <Stat label="Duplikáty" value={result.duplicates} />
-                <Stat label="Chyby" value={result.failed_rows} />
+                <Stat label={t("Faktúry")} value={result.imported_invoices} />
+                <Stat label={t("Odberatelia")} value={result.imported_customers} />
+                <Stat label={t("Duplikáty")} value={result.duplicates} />
+                <Stat label={t("Chyby")} value={result.failed_rows} />
               </div>
               <CislovaniePoImporte rady={(result as any).ciselneRady} />
               <div className="mt-6 flex justify-center gap-2">
@@ -424,13 +441,13 @@ function ImportPage() {
                   to="/faktury"
                   className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
-                  Prejsť na faktúry
+                  {t("Prejsť na faktúry")}
                 </Link>
                 <Link
                   to="/importy"
                   className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
                 >
-                  História importov
+                  {t("História importov")}
                 </Link>
               </div>
             </section>
@@ -442,6 +459,7 @@ function ImportPage() {
 }
 
 function Stepper({ step }: { step: number }) {
+  const { t } = useT();
   const labels = ["Nahratie", "Náhľad", "Mapovanie", "Validácia", "Hotovo"];
   return (
     <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-card p-4">
@@ -462,7 +480,7 @@ function Stepper({ step }: { step: number }) {
             <span
               className={`truncate text-sm ${active ? "font-medium" : "hidden text-muted-foreground sm:inline"}`}
             >
-              {l}
+              {t(l)}
             </span>
             {i < labels.length - 1 && (
               <div
@@ -486,6 +504,7 @@ function Stat({ label, value }: { label: string; value: any }) {
 }
 
 function ConfidenceBadge({ label, value }: { label: "high" | "medium" | "low"; value: number }) {
+  const { t } = useT();
   const map = {
     high: { text: "Vysoká zhoda", cls: "border-primary/40 bg-primary/10 text-primary" },
     medium: { text: "Stredná zhoda", cls: "border-amber-500/40 bg-amber-500/10 text-amber-700" },
@@ -496,7 +515,7 @@ function ConfidenceBadge({ label, value }: { label: "high" | "medium" | "low"; v
     <div
       className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${v.cls}`}
     >
-      <Sparkles className="h-3.5 w-3.5" /> {v.text} · {Math.round((value ?? 0) * 100)}%
+      <Sparkles className="h-3.5 w-3.5" /> {t(v.text)} · {Math.round((value ?? 0) * 100)}%
     </div>
   );
 }
@@ -535,20 +554,21 @@ function Footer({
   nextLabel?: string;
   disabled?: boolean;
 }) {
+  const { t } = useT();
   return (
     <div className="mt-5 flex justify-between">
       <button
         onClick={onBack}
         className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
       >
-        <ArrowLeft className="h-4 w-4" /> Späť
+        <ArrowLeft className="h-4 w-4" /> {t("Späť")}
       </button>
       <button
         onClick={onNext}
         disabled={disabled}
         className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {nextLabel} <ArrowRight className="h-4 w-4" />
+        {t(nextLabel)} <ArrowRight className="h-4 w-4" />
       </button>
     </div>
   );

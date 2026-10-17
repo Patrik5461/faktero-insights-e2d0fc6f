@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { useT } from "@/lib/i18n/useT";
 
 export function PageSizeSelect({
   value,
@@ -20,9 +21,10 @@ export function PageSizeSelect({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const { t } = useT();
   return (
     <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-      Zobraziť na stranu:
+      {t("Zobraziť na stranu:")}
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
@@ -49,6 +51,7 @@ export function Pagination({
   total: number;
   onPageChange: (p: number) => void;
 }) {
+  const { t } = useT();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
@@ -69,7 +72,9 @@ export function Pagination({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm">
       <span className="text-muted-foreground">
-        {total === 0 ? "Žiadne výsledky" : `Zobrazuje sa ${from}–${to} z ${total}`}
+        {total === 0
+          ? t("Žiadne výsledky")
+          : t("Zobrazuje sa {from}–{to} z {total}", { from, to, total })}
       </span>
       <div className="flex items-center gap-1">
         <button
@@ -77,7 +82,7 @@ export function Pagination({
           disabled={page <= 1}
           className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-40"
         >
-          <ChevronLeft className="h-3 w-3" /> Predošlá
+          <ChevronLeft className="h-3 w-3" /> {t("Predošlá")}
         </button>
         {pages.map((p, i) =>
           p === "…" ? (
@@ -99,7 +104,7 @@ export function Pagination({
           disabled={page >= totalPages}
           className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-40"
         >
-          Ďalšia <ChevronRight className="h-3 w-3" />
+          {t("Ďalšia")} <ChevronRight className="h-3 w-3" />
         </button>
       </div>
     </div>
@@ -134,6 +139,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   busy?: boolean;
 }) {
+  const { t } = useT();
   // Hook musí bežať aj pri zavretom dialógu — inak by sa poradie hookov menilo.
   useZatvorNaEscape(open ? onCancel : null);
   if (!open) return null;
@@ -159,14 +165,14 @@ export function ConfirmDialog({
             onClick={onCancel}
             className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
           >
-            Zrušiť
+            {t("Zrušiť")}
           </button>
           <button
             onClick={onConfirm}
             disabled={busy}
             className={`rounded-md px-4 py-2 text-sm font-medium ${danger ? "bg-destructive text-destructive-foreground hover:opacity-90" : "bg-primary text-primary-foreground hover:opacity-90"} disabled:opacity-50`}
           >
-            {busy ? "…" : (confirmLabel ?? (danger ? "Vymazať" : "Potvrdiť"))}
+            {busy ? "…" : (confirmLabel ?? (danger ? t("Vymazať") : t("Potvrdiť")))}
           </button>
         </div>
       </div>
@@ -197,10 +203,11 @@ export function BulkBar({
    */
   akcie?: ReactNode;
 }) {
+  const { t } = useT();
   if (count === 0) return null;
   return (
     <div className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm">
-      <span className="font-medium text-primary">Vybraté: {count}</span>
+      <span className="font-medium text-primary">{t("Vybraté: {n}", { n: count })}</span>
       <div className="flex flex-wrap gap-2">
         {!showDeleted && akcie}
         {showDeleted ? (
@@ -209,14 +216,14 @@ export function BulkBar({
               onClick={onRestore}
               className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
             >
-              <RotateCcw className="h-3.5 w-3.5" /> Obnoviť
+              <RotateCcw className="h-3.5 w-3.5" /> {t("Obnoviť")}
             </button>
             {onHardDelete && (
               <button
                 onClick={onHardDelete}
                 className="inline-flex items-center gap-1 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:opacity-90"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Vymazať natrvalo
+                <Trash2 className="h-3.5 w-3.5" /> {t("Vymazať natrvalo")}
               </button>
             )}
           </>
@@ -225,14 +232,14 @@ export function BulkBar({
             onClick={onDelete}
             className="inline-flex items-center gap-1 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:opacity-90"
           >
-            <Trash2 className="h-3.5 w-3.5" /> Vymazať vybraté
+            <Trash2 className="h-3.5 w-3.5" /> {t("Vymazať vybraté")}
           </button>
         )}
         <button
           onClick={onClear}
           className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
         >
-          Zrušiť výber
+          {t("Zrušiť výber")}
         </button>
       </div>
     </div>
@@ -251,11 +258,12 @@ export function DeletedToggle({
   onEmptyTrash?: () => void;
   trashCount?: number;
 }) {
+  const { t } = useT();
   return (
     <span className="inline-flex items-center gap-3">
       <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
         <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
-        Zobraziť vymazané
+        {t("Zobraziť vymazané")}
       </label>
       {/*
         Trvalé mazanie bolo dovtedy len v hromadnej lište, ktorá sa objaví až po
@@ -267,7 +275,7 @@ export function DeletedToggle({
           onClick={onEmptyTrash}
           className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
         >
-          <Trash2 className="h-3.5 w-3.5" /> Vyprázdniť kôš ({trashCount})
+          <Trash2 className="h-3.5 w-3.5" /> {t("Vyprázdniť kôš ({n})", { n: trashCount ?? 0 })}
         </button>
       )}
     </span>
@@ -302,7 +310,7 @@ export type LogsToolbarSelect = {
 export function LogsToolbar({
   search,
   onSearchChange,
-  searchPlaceholder = "Hľadať…",
+  searchPlaceholder,
   selects = [],
   dateFrom,
   dateTo,
@@ -322,6 +330,7 @@ export function LogsToolbar({
   onReset?: () => void;
   right?: React.ReactNode;
 }) {
+  const { t } = useT();
   const showDates = !!(onDateFromChange || onDateToChange);
   const dirty =
     !!search ||
@@ -337,7 +346,7 @@ export function LogsToolbar({
         <input
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder={searchPlaceholder}
+          placeholder={t(searchPlaceholder ?? "Hľadať…")}
           className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm"
         />
       </label>
@@ -348,7 +357,7 @@ export function LogsToolbar({
           key={s.label}
           className="flex min-w-[140px] flex-1 flex-col text-[11px] font-medium text-muted-foreground sm:flex-none"
         >
-          <span className="mb-1 uppercase tracking-wider">{s.label}</span>
+          <span className="mb-1 uppercase tracking-wider">{t(s.label)}</span>
           <select
             value={s.value}
             onChange={(e) => s.onChange(e.target.value)}
@@ -356,7 +365,7 @@ export function LogsToolbar({
           >
             {s.options.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.label}
+                {t(o.label)}
               </option>
             ))}
           </select>
@@ -367,7 +376,7 @@ export function LogsToolbar({
         <>
           <label className="flex flex-col text-[11px] font-medium text-muted-foreground">
             <span className="mb-1 inline-flex items-center gap-1 uppercase tracking-wider">
-              <CalendarRange className="h-3 w-3" /> Od
+              <CalendarRange className="h-3 w-3" /> {t("Od")}
             </span>
             <input
               type="date"
@@ -378,7 +387,7 @@ export function LogsToolbar({
           </label>
           <label className="flex flex-col text-[11px] font-medium text-muted-foreground">
             <span className="mb-1 inline-flex items-center gap-1 uppercase tracking-wider">
-              <CalendarRange className="h-3 w-3" /> Do
+              <CalendarRange className="h-3 w-3" /> {t("Do")}
             </span>
             <input
               type="date"
@@ -395,7 +404,7 @@ export function LogsToolbar({
           onClick={onReset}
           className="inline-flex h-9 items-center gap-1 rounded-md border border-border bg-card px-2.5 text-xs text-muted-foreground hover:bg-secondary"
         >
-          <X className="h-3 w-3" /> Vyčistiť
+          <X className="h-3 w-3" /> {t("Vyčistiť")}
         </button>
       )}
 
@@ -444,14 +453,15 @@ export function EmptyState({
   icon?: React.ComponentType<{ className?: string }>;
   action?: React.ReactNode;
 }) {
+  const { t } = useT();
   return (
     <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
       <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
         <Icon className="h-5 w-5" />
       </div>
-      <div className="mt-4 text-sm font-semibold text-foreground">{title}</div>
+      <div className="mt-4 text-sm font-semibold text-foreground">{t(title)}</div>
       {description && (
-        <div className="mt-1 max-w-sm text-xs text-muted-foreground">{description}</div>
+        <div className="mt-1 max-w-sm text-xs text-muted-foreground">{t(description)}</div>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>
@@ -479,6 +489,7 @@ export function SortSelect({
   onChange: (z: { column: string; ascending?: boolean }) => void;
   className?: string;
 }) {
+  const { t } = useT();
   const kluc = (m: { column: string; ascending?: boolean }) =>
     `${m.column}:${m.ascending ? "asc" : "desc"}`;
   const aktualny = kluc(hodnota);
@@ -489,7 +500,7 @@ export function SortSelect({
   return (
     <label className={`flex items-center gap-1.5 text-sm ${className}`}>
       <ArrowDownUp className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <span className="sr-only">Zoradenie</span>
+      <span className="sr-only">{t("Zoradenie")}</span>
       <select
         value={zname ? aktualny : ""}
         onChange={(e) => {
@@ -497,12 +508,12 @@ export function SortSelect({
           if (m) onChange({ column: m.column, ascending: m.ascending });
         }}
         className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-        aria-label="Zoradenie"
+        aria-label={t("Zoradenie")}
       >
-        {!zname && <option value="">Vlastné zoradenie</option>}
+        {!zname && <option value="">{t("Vlastné zoradenie")}</option>}
         {moznosti.map((m) => (
           <option key={kluc(m)} value={kluc(m)}>
-            {m.label}
+            {t(m.label)}
           </option>
         ))}
       </select>

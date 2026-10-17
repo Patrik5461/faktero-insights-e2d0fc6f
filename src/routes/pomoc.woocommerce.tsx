@@ -1,20 +1,30 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
 import { Download } from "lucide-react";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/woocommerce")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — WooCommerce — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — WooCommerce — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Doplnok Faktero pre WooCommerce: faktúry z objednávok e-shopu vznikajú samy, aj s PDF pre zákazníka.",
+        ),
       },
-      { property: "og:title", content: "Pomoc — WooCommerce — Faktero" },
+      {
+        property: "og:title",
+        content: preloz(match.context.jazyk, "Pomoc — WooCommerce — Faktero"),
+      },
       {
         property: "og:description",
-        content: "Ako napojiť e-shop na WooCommerce na Faktero, aby sa faktúry vystavovali samy.",
+        content: preloz(
+          match.context.jazyk,
+          "Ako napojiť e-shop na WooCommerce na Faktero, aby sa faktúry vystavovali samy.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/woocommerce" },
     ],
@@ -169,7 +179,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · WooCommerce"
       title="Faktúry z e-shopu na WooCommerce"
       intro={

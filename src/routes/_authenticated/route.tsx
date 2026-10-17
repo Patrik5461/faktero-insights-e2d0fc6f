@@ -25,6 +25,7 @@ import {
   setActiveProduct,
   type ActiveProduct,
 } from "@/lib/faktero/active-product";
+import { useT } from "@/lib/i18n/useT";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -51,6 +52,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthedLayout() {
+  const { t } = useT();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<any[] | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -171,7 +173,7 @@ function AuthedLayout() {
   if (companies === null || !profileLoaded) {
     return (
       <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">
-        Načítavam…
+        {t("Načítavam…")}
       </div>
     );
   }

@@ -7,13 +7,18 @@ import { getStockValuation } from "@/lib/faktero/stock.functions";
 import { Download } from "lucide-react";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/hodnota")({
-  head: () => ({ meta: [{ title: "Hodnota skladu — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Hodnota skladu — Faktero") }],
+  }),
   component: ValuationPage,
 });
 
 function ValuationPage() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const fetchVal = useServerFn(getStockValuation);
   const [data, setData] = useState<any>(null);
@@ -32,7 +37,11 @@ function ValuationPage() {
 
   function exportCsv() {
     if (!data) return;
-    const lines = ["Produkt;SKU;Množstvo;Nákupná hodnota;Predajná hodnota"];
+    const lines = [
+      ["Produkt", "SKU", "Množstvo", "Nákupná hodnota", "Predajná hodnota"]
+        .map((h) => t(h))
+        .join(";"),
+    ];
     for (const p of data.by_product) {
       lines.push(
         [
@@ -59,31 +68,31 @@ function ValuationPage() {
     const wb = XLSX.utils.book_new();
     const sheetA = XLSX.utils.json_to_sheet(
       data.by_warehouse.map((w: any) => ({
-        Sklad: w.name,
-        Množstvo: w.qty,
-        "Nákupná hodnota": Number(w.purchase.toFixed(2)),
-        "Predajná hodnota": Number(w.sale.toFixed(2)),
+        [t("Sklad")]: w.name,
+        [t("Množstvo")]: w.qty,
+        [t("Nákupná hodnota")]: Number(w.purchase.toFixed(2)),
+        [t("Predajná hodnota")]: Number(w.sale.toFixed(2)),
       })),
     );
     const sheetB = XLSX.utils.json_to_sheet(
       data.by_product.map((p: any) => ({
-        Produkt: p.name,
-        SKU: p.sku,
-        Množstvo: p.qty,
-        "Nákupná hodnota": Number(p.purchase.toFixed(2)),
-        "Predajná hodnota": Number(p.sale.toFixed(2)),
+        [t("Produkt")]: p.name,
+        [t("SKU")]: p.sku,
+        [t("Množstvo")]: p.qty,
+        [t("Nákupná hodnota")]: Number(p.purchase.toFixed(2)),
+        [t("Predajná hodnota")]: Number(p.sale.toFixed(2)),
       })),
     );
-    XLSX.utils.book_append_sheet(wb, sheetA, "Sklady");
-    XLSX.utils.book_append_sheet(wb, sheetB, "Produkty");
+    XLSX.utils.book_append_sheet(wb, sheetA, t("Sklady"));
+    XLSX.utils.book_append_sheet(wb, sheetB, t("Produkty"));
     XLSX.writeFile(wb, `hodnota-skladu-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
   return (
     <>
       <PageHeader
-        title="Hodnota skladu"
-        description="Ocenenie zásob podľa nákupnej a predajnej ceny."
+        title={t("Hodnota skladu")}
+        description={t("Ocenenie zásob podľa nákupnej a predajnej ceny.")}
         action={
           data ? (
             <div className="flex gap-2">
@@ -105,9 +114,9 @@ function ValuationPage() {
       />
       <PageBody>
         {loading ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : !data ? (
-          <div className="text-sm text-muted-foreground">Žiadne dáta.</div>
+          <div className="text-sm text-muted-foreground">{t("Žiadne dáta.")}</div>
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -122,22 +131,22 @@ function ValuationPage() {
             </div>
 
             <div className="mt-6 min-w-0 rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 text-sm font-semibold">Podľa skladu</div>
+              <div className="mb-3 text-sm font-semibold">{t("Podľa skladu")}</div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
-                      <th className="p-2">Sklad</th>
-                      <th className="p-2 text-right">Množstvo</th>
-                      <th className="p-2 text-right">Nákupná</th>
-                      <th className="p-2 text-right">Predajná</th>
+                      <th className="p-2">{t("Sklad")}</th>
+                      <th className="p-2 text-right">{t("Množstvo")}</th>
+                      <th className="p-2 text-right">{t("Nákupná")}</th>
+                      <th className="p-2 text-right">{t("Predajná")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {data.by_warehouse.length === 0 && (
                       <tr>
                         <td colSpan={4} className="p-4 text-center text-muted-foreground">
-                          Žiadne stavy.
+                          {t("Žiadne stavy.")}
                         </td>
                       </tr>
                     )}
@@ -161,23 +170,23 @@ function ValuationPage() {
             </div>
 
             <div className="mt-4 min-w-0 rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 text-sm font-semibold">Podľa produktu</div>
+              <div className="mb-3 text-sm font-semibold">{t("Podľa produktu")}</div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
-                      <th className="p-2">Produkt</th>
-                      <th className="p-2">Kód</th>
-                      <th className="p-2 text-right">Množstvo</th>
-                      <th className="p-2 text-right">Nákupná</th>
-                      <th className="p-2 text-right">Predajná</th>
+                      <th className="p-2">{t("Produkt")}</th>
+                      <th className="p-2">{t("Kód")}</th>
+                      <th className="p-2 text-right">{t("Množstvo")}</th>
+                      <th className="p-2 text-right">{t("Nákupná")}</th>
+                      <th className="p-2 text-right">{t("Predajná")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {data.by_product.length === 0 && (
                       <tr>
                         <td colSpan={5} className="p-4 text-center text-muted-foreground">
-                          Žiadne stavy.
+                          {t("Žiadne stavy.")}
                         </td>
                       </tr>
                     )}
@@ -204,7 +213,7 @@ function ValuationPage() {
             </div>
             <div className="mt-4 text-xs text-muted-foreground">
               <Link to="/sklad" className="text-primary hover:underline">
-                ← Prehľad skladu
+                {t("← Prehľad skladu")}
               </Link>
             </div>
           </>
@@ -215,9 +224,10 @@ function ValuationPage() {
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
+  const { t } = useT();
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{t(label)}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
     </div>
   );

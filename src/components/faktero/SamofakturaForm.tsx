@@ -21,6 +21,7 @@ import { krajinaDane, sadzbyKrajiny, zakladnaSadzba } from "@/lib/faktero/vat-ra
 import { MENY, formatovacMeny, formatujMenu, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { UPRAVY_NA_VYBER } from "@/lib/faktero/faktura-nalezitosti";
 import { JAZYKY_DOKLADU } from "@/lib/faktero/faktura-jazyk";
+import { useT } from "@/lib/i18n/useT";
 
 function dnes() {
   return new Date().toISOString().slice(0, 10);
@@ -76,6 +77,7 @@ const cislo = (v: string) => Number(String(v).replace(",", ".")) || 0;
  * režimu dodávateľa, nie našej firmy.
  */
 export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: string }) {
+  const { t } = useT();
   const navigate = useNavigate();
   const uloz = useServerFn(ulozSamofakturuFn);
   const [kontakty, setKontakty] = useState<any[]>([]);
@@ -120,12 +122,22 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
   });
   /** Cenník a skladové karty na výber položiek. */
   const [katalog, setKatalog] = useState<
-    { id: string; product_id: string | null; stock_item_id: string | null; name: string; unit: string; cena: number; sklad: boolean }[]
+    {
+      id: string;
+      product_id: string | null;
+      stock_item_id: string | null;
+      name: string;
+      unit: string;
+      cena: number;
+      sklad: boolean;
+    }[]
   >([]);
   const [zalohy, setZalohy] = useState<
     { id: string; invoice_number: string; amount_total: number; currency: string }[]
   >([]);
-  const [riadky, setRiadky] = useState<Riadok[]>(() => [prazdnyRiadok(zakladnaSadzba("SK", dnes()))]);
+  const [riadky, setRiadky] = useState<Riadok[]>(() => [
+    prazdnyRiadok(zakladnaSadzba("SK", dnes())),
+  ]);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
 
   /*
@@ -207,7 +219,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           .maybeSingle();
         if (zrusene) return;
         if (!sf?.samofakturacia) {
-          toast.error("Samofaktúra sa nenašla.");
+          toast.error(t("Samofaktúra sa nenašla."));
           navigate({ to: "/prijate-faktury" });
           return;
         }
@@ -240,9 +252,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           specific_symbol: sf.specific_symbol ?? "",
           payment_method: sf.payment_method ?? "prevod",
           note: dobropis ? "" : (sf.note ?? ""),
-          intro_note: dobropis
-            ? `Dobropis k faktúre ${sf.invoice_number}`
-            : (sf.intro_note ?? ""),
+          intro_note: dobropis ? `Dobropis k faktúre ${sf.invoice_number}` : (sf.intro_note ?? ""),
           language: sf.language ?? "sk",
           job_id: sf.job_id ?? "",
           reverse_charge: Boolean(sf.reverse_charge),
@@ -251,14 +261,18 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           osobitna_uprava: sf.osobitna_uprava ?? "",
           opravuje_id: dobropis ? sf.id : (sf.opravuje_id ?? ""),
           discount_type: dobropis ? "" : (sf.discount_type ?? ""),
-          discount_value: dobropis ? "" : sf.discount_value != null ? String(sf.discount_value) : "",
+          discount_value: dobropis
+            ? ""
+            : sf.discount_value != null
+              ? String(sf.discount_value)
+              : "",
           advance_invoice_id: dobropis ? "" : (sf.advance_invoice_id ?? ""),
         });
         const pol = Array.isArray(sf.items) ? sf.items : [];
         if (pol.length) setRiadky(pol.map((p: any) => riadokZUlozeneho(p, dobropis)));
       }
     })()
-      .catch((e: any) => toast.error(e?.message ?? "Načítanie zlyhalo"))
+      .catch((e: any) => toast.error(t(e?.message ?? "Načítanie zlyhalo")))
       .finally(() => {
         // Aj pri chybe — inak stránka ostane navždy na „Načítavam…“.
         if (!zrusene) setNacitavam(false);
@@ -296,7 +310,9 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
   const prenesenie = platitel && f.reverse_charge;
   const zaloha = zalohy.find((z) => z.id === f.advance_invoice_id) ?? null;
   const spoluDoklad = prenesenie ? sumy.zaklad : sumy.spolu;
-  const naUhradu = zaloha ? Math.max(0, Math.round((spoluDoklad - zaloha.amount_total) * 100) / 100) : spoluDoklad;
+  const naUhradu = zaloha
+    ? Math.max(0, Math.round((spoluDoklad - zaloha.amount_total) * 100) / 100)
+    : spoluDoklad;
 
   /*
     Prijaté zálohové faktúry toho istého dodávateľa, ktoré ešte nikto
@@ -381,7 +397,10 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
     if (posledna?.supplier_iban) set("supplier_iban", posledna.supplier_iban);
     const zaklad = zakladnaSadzba(krajinaDane(k.country), f.issue_date);
     if (!k.ic_dph) setRiadky((rs) => rs.map((r) => ({ ...r, vat_rate: "0" })));
-    else setRiadky((rs) => rs.map((r) => (r.vat_rate === "0" ? { ...r, vat_rate: String(zaklad) } : r)));
+    else
+      setRiadky((rs) =>
+        rs.map((r) => (r.vat_rate === "0" ? { ...r, vat_rate: String(zaklad) } : r)),
+      );
   }
 
   function upravRiadok(i: number, k: keyof Riadok, v: string) {
@@ -391,9 +410,9 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
   async function ulozit(e: React.FormEvent) {
     e.preventDefault();
     const cid = getActiveCompanyId();
-    if (!cid) return toast.error("Vyberte firmu.");
-    if (!f.customer_id) return toast.error("Vyberte dodávateľa z adresára.");
-    if (chyba) return toast.error(chyba);
+    if (!cid) return toast.error(t("Vyberte firmu."));
+    if (!f.customer_id) return toast.error(t("Vyberte dodávateľa z adresára."));
+    if (chyba) return toast.error(t(chyba));
     const plne = polozky
       .map((p, i) => ({
         ...p,
@@ -401,7 +420,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
         stock_item_id: riadky[i]?.stock_item_id ?? null,
       }))
       .filter((p) => p.name);
-    if (!plne.length) return toast.error("Pridajte aspoň jednu položku.");
+    if (!plne.length) return toast.error(t("Pridajte aspoň jednu položku."));
     setBusy(true);
     try {
       const r = await uloz({
@@ -421,35 +440,42 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
       });
       toast.success(
         id
-          ? "Samofaktúra je uložená"
+          ? t("Samofaktúra je uložená")
           : opravujeCislo
-            ? `Dobropis ${r.cislo} k faktúre ${opravujeCislo} je vyhotovený`
-            : `Samofaktúra ${r.cislo} je vyhotovená`,
+            ? t("Dobropis {cislo} k faktúre {faktura} je vyhotovený", {
+                cislo: r.cislo,
+                faktura: opravujeCislo,
+              })
+            : t("Samofaktúra {cislo} je vyhotovená", { cislo: r.cislo }),
       );
       navigate({ to: "/prijate-faktury/$id", params: { id: r.id } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Uloženie zlyhalo");
+      toast.error(t(e?.message ?? "Uloženie zlyhalo"));
     } finally {
       setBusy(false);
     }
   }
 
-  if (nacitavam) return <PageBody>Načítavam…</PageBody>;
+  if (nacitavam) return <PageBody>{t("Načítavam…")}</PageBody>;
 
   if (stav === "odsuhlasena") {
     return (
       <PageBody>
         <div className="mx-auto max-w-xl rounded-xl border border-border bg-card p-8 text-center text-sm">
-          <p>Samofaktúru {cisloDokladu} dodávateľ už odsúhlasil, takže sa meniť nedá.</p>
+          <p>
+            {t("Samofaktúru {cislo} dodávateľ už odsúhlasil, takže sa meniť nedá.", {
+              cislo: cisloDokladu ?? "",
+            })}
+          </p>
           <p className="mt-1 text-muted-foreground">
-            Chybu na nej opravíte dobropisom, ako pri každej faktúre.
+            {t("Chybu na nej opravíte dobropisom, ako pri každej faktúre.")}
           </p>
           <Link
             to="/prijate-faktury/$id"
             params={{ id: id! }}
             className="mt-4 inline-block text-primary underline"
           >
-            Späť na faktúru
+            {t("Späť na faktúru")}
           </Link>
         </div>
       </PageBody>
@@ -463,15 +489,21 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
       <PageHeader
         title={
           id
-            ? `Úprava ${opravujeCislo ? "dobropisu" : "samofaktúry"} ${cisloDokladu ?? ""}`
+            ? opravujeCislo
+              ? t("Úprava dobropisu {cislo}", { cislo: cisloDokladu ?? "" })
+              : t("Úprava samofaktúry {cislo}", { cislo: cisloDokladu ?? "" })
             : opravujeCislo
-              ? `Dobropis k samofaktúre ${opravujeCislo}`
-              : "Nová samofaktúra"
+              ? t("Dobropis k samofaktúre {cislo}", { cislo: opravujeCislo })
+              : t("Nová samofaktúra")
         }
         description={
           opravujeCislo
-            ? "Opravný doklad k odsúhlasenej samofaktúre. Množstvá sú záporné — upravte ich na to, čo sa vracia alebo zľavuje. Aj dobropis musí dodávateľ odsúhlasiť."
-            : "Faktúru za dodávateľa vyhotovujete vy podľa dohody o samofakturácii. Dodávateľ ju potom odsúhlasí — až potom vstupuje do DPH a na úhradu."
+            ? t(
+                "Opravný doklad k odsúhlasenej samofaktúre. Množstvá sú záporné — upravte ich na to, čo sa vracia alebo zľavuje. Aj dobropis musí dodávateľ odsúhlasiť.",
+              )
+            : t(
+                "Faktúru za dodávateľa vyhotovujete vy podľa dohody o samofakturácii. Dodávateľ ju potom odsúhlasí — až potom vstupuje do DPH a na úhradu.",
+              )
         }
         action={
           <Link
@@ -479,7 +511,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
             params={id ? { id } : undefined}
             className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
           >
-            <ArrowLeft className="h-4 w-4" /> Späť
+            <ArrowLeft className="h-4 w-4" /> {t("Späť")}
           </Link>
         }
       />
@@ -487,16 +519,17 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
         <form onSubmit={ulozit} className="mx-auto grid max-w-4xl gap-6">
           {stav === "caka" && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-              Faktúra čaká na odsúhlasenie. Po uložení zmien prestane platiť odkaz, ktorý dostal
-              dodávateľ — treba mu ju poslať znova.
+              {t(
+                "Faktúra čaká na odsúhlasenie. Po uložení zmien prestane platiť odkaz, ktorý dostal dodávateľ — treba mu ju poslať znova.",
+              )}
             </div>
           )}
           <section className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Dodávateľ
+              {t("Dodávateľ")}
             </h3>
             <p className="mb-4 text-xs text-muted-foreground">
-              Faktúra je jeho — v hlavičke bude ako dodávateľ, vaša firma ako odberateľ.
+              {t("Faktúra je jeho — v hlavičke bude ako dodávateľ, vaša firma ako odberateľ.")}
             </p>
             <div className="max-w-md">
               <CustomerSearch
@@ -512,21 +545,21 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
             </div>
             {chyba && (
               <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200">
-                {chyba}{" "}
+                {t(chyba)}{" "}
                 <Link to="/odberatelia" className="font-medium underline">
-                  Otvoriť adresár
+                  {t("Otvoriť adresár")}
                 </Link>
               </div>
             )}
             {f.customer_id && !chyba && kontakt?.samofakturacia_dohoda && (
               <p className="mt-2 text-xs text-muted-foreground">
-                Dohoda: {kontakt.samofakturacia_dohoda}
+                {t("Dohoda: {text}", { text: kontakt.samofakturacia_dohoda })}
               </p>
             )}
             {f.customer_id && (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <label className="block">
-                  <span className="text-sm font-medium">Názov *</span>
+                  <span className="text-sm font-medium">{t("Názov *")}</span>
                   <input
                     required
                     value={f.supplier_name}
@@ -535,7 +568,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   />
                 </label>
                 <label className="block">
-                  <span className="text-sm font-medium">IČO</span>
+                  <span className="text-sm font-medium">{t("IČO")}</span>
                   <input
                     value={f.supplier_ico}
                     onChange={(e) => set("supplier_ico", e.target.value)}
@@ -543,7 +576,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   />
                 </label>
                 <label className="block">
-                  <span className="text-sm font-medium">DIČ</span>
+                  <span className="text-sm font-medium">{t("DIČ")}</span>
                   <input
                     value={f.supplier_dic}
                     onChange={(e) => set("supplier_dic", e.target.value)}
@@ -551,7 +584,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   />
                 </label>
                 <label className="block">
-                  <span className="text-sm font-medium">IČ DPH</span>
+                  <span className="text-sm font-medium">{t("IČ DPH")}</span>
                   <input
                     value={f.supplier_ic_dph}
                     onChange={(e) => {
@@ -559,7 +592,9 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                       // Dodávateľ sa stal platiteľom — nulové riadky dostanú jeho základnú sadzbu.
                       if (!platitel && dodavatelPlatitel(v)) {
                         const zaklad = String(zakladnaSadzba(krajina, f.issue_date));
-                        setRiadky((rs) => rs.map((r) => (r.vat_rate === "0" ? { ...r, vat_rate: zaklad } : r)));
+                        setRiadky((rs) =>
+                          rs.map((r) => (r.vat_rate === "0" ? { ...r, vat_rate: zaklad } : r)),
+                        );
                       }
                       set("supplier_ic_dph", v);
                     }}
@@ -567,12 +602,12 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   />
                   <span className="mt-1 block text-xs text-muted-foreground">
                     {platitel
-                      ? "Dodávateľ je platiteľ DPH — daň sa vyčísli podľa jeho sadzieb."
-                      : "Bez IČ DPH je dodávateľ neplatiteľ — faktúra bude bez dane."}
+                      ? t("Dodávateľ je platiteľ DPH — daň sa vyčísli podľa jeho sadzieb.")
+                      : t("Bez IČ DPH je dodávateľ neplatiteľ — faktúra bude bez dane.")}
                   </span>
                 </label>
                 <label className="block sm:col-span-2">
-                  <span className="text-sm font-medium">Ulica</span>
+                  <span className="text-sm font-medium">{t("Ulica")}</span>
                   <input
                     value={f.supplier_street}
                     onChange={(e) => set("supplier_street", e.target.value)}
@@ -580,7 +615,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   />
                 </label>
                 <label className="block">
-                  <span className="text-sm font-medium">Mesto</span>
+                  <span className="text-sm font-medium">{t("Mesto")}</span>
                   <input
                     value={f.supplier_city}
                     onChange={(e) => set("supplier_city", e.target.value)}
@@ -589,7 +624,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <label className="block">
-                    <span className="text-sm font-medium">PSČ</span>
+                    <span className="text-sm font-medium">{t("PSČ")}</span>
                     <input
                       value={f.supplier_zip}
                       onChange={(e) => set("supplier_zip", e.target.value)}
@@ -597,7 +632,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                     />
                   </label>
                   <label className="block">
-                    <span className="text-sm font-medium">Krajina</span>
+                    <span className="text-sm font-medium">{t("Krajina")}</span>
                     <input
                       value={f.supplier_country}
                       maxLength={2}
@@ -607,7 +642,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   </label>
                 </div>
                 <label className="block">
-                  <span className="text-sm font-medium">IBAN dodávateľa</span>
+                  <span className="text-sm font-medium">{t("IBAN dodávateľa")}</span>
                   <input
                     value={f.supplier_iban}
                     onChange={(e) => set("supplier_iban", e.target.value)}
@@ -616,7 +651,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   />
                 </label>
                 <label className="block">
-                  <span className="text-sm font-medium">E-mail na odsúhlasenie</span>
+                  <span className="text-sm font-medium">{t("E-mail na odsúhlasenie")}</span>
                   <input
                     type="email"
                     value={f.supplier_email}
@@ -630,11 +665,11 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
 
           <section className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Údaje faktúry
+              {t("Údaje faktúry")}
             </h3>
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="block">
-                <span className="text-sm font-medium">Dátum vyhotovenia</span>
+                <span className="text-sm font-medium">{t("Dátum vyhotovenia")}</span>
                 <input
                   type="date"
                   required
@@ -644,7 +679,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Dátum dodania</span>
+                <span className="text-sm font-medium">{t("Dátum dodania")}</span>
                 <input
                   type="date"
                   required
@@ -654,7 +689,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Splatnosť</span>
+                <span className="text-sm font-medium">{t("Splatnosť")}</span>
                 <input
                   type="date"
                   required
@@ -664,16 +699,16 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Variabilný symbol</span>
+                <span className="text-sm font-medium">{t("Variabilný symbol")}</span>
                 <input
                   value={f.variable_symbol}
-                  placeholder="podľa čísla faktúry"
+                  placeholder={t("podľa čísla faktúry")}
                   onChange={(e) => set("variable_symbol", e.target.value.replace(/\D/g, ""))}
                   className={vstup}
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Mena</span>
+                <span className="text-sm font-medium">{t("Mena")}</span>
                 <select
                   value={f.currency}
                   onChange={(e) => set("currency", e.target.value)}
@@ -681,29 +716,31 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                 >
                   {MENY.map((m) => (
                     <option key={m.code} value={m.code}>
-                      {m.code} — {m.name}
+                      {m.code} — {t(m.name)}
                     </option>
                   ))}
                 </select>
                 {f.currency !== "EUR" && (
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    Daň sa prepočíta na eurá kurzom ECB zo dňa pred dodaním a vypíše sa na faktúre.
+                    {t(
+                      "Daň sa prepočíta na eurá kurzom ECB zo dňa pred dodaním a vypíše sa na faktúre.",
+                    )}
                   </span>
                 )}
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Forma úhrady</span>
+                <span className="text-sm font-medium">{t("Forma úhrady")}</span>
                 <select
                   value={f.payment_method}
                   onChange={(e) => set("payment_method", e.target.value)}
                   className={vstup}
                 >
-                  <option value="prevod">Prevod</option>
-                  <option value="hotovost">Hotovosť</option>
+                  <option value="prevod">{t("Prevod")}</option>
+                  <option value="hotovost">{t("Hotovosť")}</option>
                 </select>
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Konštantný symbol</span>
+                <span className="text-sm font-medium">{t("Konštantný symbol")}</span>
                 <input
                   value={f.constant_symbol}
                   onChange={(e) => set("constant_symbol", e.target.value.replace(/\D/g, ""))}
@@ -711,7 +748,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Špecifický symbol</span>
+                <span className="text-sm font-medium">{t("Špecifický symbol")}</span>
                 <input
                   value={f.specific_symbol}
                   onChange={(e) => set("specific_symbol", e.target.value.replace(/\D/g, ""))}
@@ -719,7 +756,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Jazyk faktúry</span>
+                <span className="text-sm font-medium">{t("Jazyk faktúry")}</span>
                 <select
                   value={f.language}
                   onChange={(e) => set("language", e.target.value)}
@@ -727,25 +764,26 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                 >
                   {JAZYKY_DOKLADU.map((j) => (
                     <option key={j.kod} value={j.kod}>
-                      {j.nazov}
+                      {t(j.nazov)}
                     </option>
                   ))}
                 </select>
               </label>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Číslo dostane faktúra z vášho radu Samofaktúry (SF…) — dodávateľ si ju zaeviduje
-              pod týmto číslom.
+              {t(
+                "Číslo dostane faktúra z vášho radu Samofaktúry (SF…) — dodávateľ si ju zaeviduje pod týmto číslom.",
+              )}
             </p>
           </section>
 
           {platitel && (
             <section className="rounded-xl border border-border bg-card p-5">
               <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Režim DPH
+                {t("Režim DPH")}
               </h3>
               <p className="mb-4 text-xs text-muted-foreground">
-                Podľa toho, čo dodávateľ dodáva — faktúra je jeho, režim určuje jeho plnenie.
+                {t("Podľa toho, čo dodávateľ dodáva — faktúra je jeho, režim určuje jeho plnenie.")}
               </p>
               <label className="flex items-start gap-2 text-sm">
                 <input
@@ -758,36 +796,37 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   className="mt-0.5"
                 />
                 <span>
-                  <span className="font-medium">Prenesenie daňovej povinnosti</span>
+                  <span className="font-medium">{t("Prenesenie daňovej povinnosti")}</span>
                   <span className="block text-xs text-muted-foreground">
-                    Daň na faktúre nebude — samozdaníte ju vy (napr. kovový šrot a odpad, stavebné
-                    práce, dodávateľ z EÚ). Dodávateľovi platíte len základ.
+                    {t(
+                      "Daň na faktúre nebude — samozdaníte ju vy (napr. kovový šrot a odpad, stavebné práce, dodávateľ z EÚ). Dodávateľovi platíte len základ.",
+                    )}
                   </span>
                 </span>
               </label>
               {f.reverse_charge && (
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <label className="block">
-                    <span className="text-sm font-medium">Dôvod</span>
+                    <span className="text-sm font-medium">{t("Dôvod")}</span>
                     <select
                       value={f.reverse_charge_type}
                       onChange={(e) => set("reverse_charge_type", e.target.value as any)}
                       className={vstup}
                     >
-                      <option value="domestic_69">Tuzemsko — § 69 ods. 12</option>
-                      <option value="eu_b2b">Dodávateľ z iného štátu EÚ</option>
+                      <option value="domestic_69">{t("Tuzemsko — § 69 ods. 12")}</option>
+                      <option value="eu_b2b">{t("Dodávateľ z iného štátu EÚ")}</option>
                     </select>
                   </label>
                   {f.reverse_charge_type === "eu_b2b" && (
                     <label className="block">
-                      <span className="text-sm font-medium">Čo dodáva</span>
+                      <span className="text-sm font-medium">{t("Čo dodáva")}</span>
                       <select
                         value={f.eu_plnenie}
                         onChange={(e) => set("eu_plnenie", e.target.value as any)}
                         className={vstup}
                       >
-                        <option value="tovar">Tovar (nadobudnutie)</option>
-                        <option value="sluzba">Službu</option>
+                        <option value="tovar">{t("Tovar (nadobudnutie)")}</option>
+                        <option value="sluzba">{t("Službu")}</option>
                       </select>
                     </label>
                   )}
@@ -795,16 +834,16 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
               )}
               {!f.reverse_charge && (
                 <label className="mt-4 block max-w-md">
-                  <span className="text-sm font-medium">Osobitná úprava</span>
+                  <span className="text-sm font-medium">{t("Osobitná úprava")}</span>
                   <select
                     value={f.osobitna_uprava}
                     onChange={(e) => set("osobitna_uprava", e.target.value as any)}
                     className={vstup}
                   >
-                    <option value="">Žiadna</option>
+                    <option value="">{t("Žiadna")}</option>
                     {UPRAVY_NA_VYBER.map((u) => (
                       <option key={u.kod} value={u.kod}>
-                        {u.nazov}
+                        {t(u.nazov)}
                       </option>
                     ))}
                   </select>
@@ -815,14 +854,16 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
 
           <section className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Položky
+              {t("Položky")}
             </h3>
             <label className="mb-4 block">
-              <span className="text-sm font-medium">Text nad položkami</span>
+              <span className="text-sm font-medium">{t("Text nad položkami")}</span>
               <textarea
                 rows={2}
                 value={f.intro_note}
-                placeholder="napr. Fakturujeme Vám výkup dreva podľa dodacích listov za september"
+                placeholder={t(
+                  "napr. Fakturujeme Vám výkup dreva podľa dodacích listov za september",
+                )}
                 onChange={(e) => set("intro_note", e.target.value)}
                 className={vstup}
               />
@@ -834,7 +875,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-[1fr_80px_70px_110px_70px_90px_auto] sm:items-end"
                 >
                   <label className="block min-w-0">
-                    <span className="text-xs text-muted-foreground">Názov</span>
+                    <span className="text-xs text-muted-foreground">{t("Názov")}</span>
                     <input
                       value={r.name}
                       onChange={(e) => upravRiadok(i, "name", e.target.value)}
@@ -842,7 +883,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs text-muted-foreground">Množstvo</span>
+                    <span className="text-xs text-muted-foreground">{t("Množstvo")}</span>
                     <input
                       inputMode="decimal"
                       value={r.quantity}
@@ -851,7 +892,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs text-muted-foreground">MJ</span>
+                    <span className="text-xs text-muted-foreground">{t("MJ")}</span>
                     <input
                       value={r.unit}
                       onChange={(e) => upravRiadok(i, "unit", e.target.value)}
@@ -859,7 +900,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs text-muted-foreground">Cena bez DPH</span>
+                    <span className="text-xs text-muted-foreground">{t("Cena bez DPH")}</span>
                     <input
                       inputMode="decimal"
                       value={r.unit_price}
@@ -868,7 +909,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs text-muted-foreground">Zľava %</span>
+                    <span className="text-xs text-muted-foreground">{t("Zľava %")}</span>
                     <input
                       inputMode="decimal"
                       value={r.discount_percent}
@@ -877,7 +918,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs text-muted-foreground">DPH</span>
+                    <span className="text-xs text-muted-foreground">{t("DPH")}</span>
                     <select
                       value={platitel ? r.vat_rate : "0"}
                       disabled={!platitel}
@@ -893,7 +934,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   </label>
                   <button
                     type="button"
-                    aria-label="Odstrániť položku"
+                    aria-label={t("Odstrániť položku")}
                     disabled={riadky.length === 1}
                     onClick={() => setRiadky((rs) => rs.filter((_, j) => j !== i))}
                     className="inline-flex h-9 items-center justify-center rounded-md border border-border px-2 text-muted-foreground hover:bg-secondary disabled:opacity-40"
@@ -901,9 +942,11 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                     <Trash2 className="h-4 w-4" />
                   </button>
                   <input
-                    aria-label="Popis položky"
+                    aria-label={t("Popis položky")}
                     value={r.description}
-                    placeholder="Popis (nepovinné) — napr. číslo dodacieho listu, druh materiálu"
+                    placeholder={t(
+                      "Popis (nepovinné) — napr. číslo dodacieho listu, druh materiálu",
+                    )}
                     onChange={(e) => upravRiadok(i, "description", e.target.value)}
                     className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs sm:col-span-7"
                   />
@@ -920,7 +963,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
               }
               className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              <Plus className="h-4 w-4" /> Pridať položku
+              <Plus className="h-4 w-4" /> {t("Pridať položku")}
             </button>
             {katalog.length > 0 && (
               <Katalog
@@ -945,11 +988,11 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="flex items-end gap-2">
                 <label className="block flex-1">
-                  <span className="text-sm font-medium">Zľava na celú faktúru</span>
+                  <span className="text-sm font-medium">{t("Zľava na celú faktúru")}</span>
                   <input
                     inputMode="decimal"
                     value={f.discount_value}
-                    placeholder="žiadna"
+                    placeholder={t("žiadna")}
                     onChange={(e) => {
                       set("discount_value", e.target.value);
                       if (!f.discount_type && e.target.value) set("discount_type", "percent");
@@ -958,24 +1001,24 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   />
                 </label>
                 <select
-                  aria-label="Druh zľavy"
+                  aria-label={t("Druh zľavy")}
                   value={f.discount_type || "percent"}
                   onChange={(e) => set("discount_type", e.target.value as any)}
                   className="h-9 rounded-md border border-input bg-background px-2 text-sm"
                 >
                   <option value="percent">%</option>
-                  <option value="amount">{f.currency} bez DPH</option>
+                  <option value="amount">{t("{mena} bez DPH", { mena: f.currency })}</option>
                 </select>
               </div>
               {zalohy.length > 0 && (
                 <label className="block">
-                  <span className="text-sm font-medium">Zúčtovať zaplatenú zálohu</span>
+                  <span className="text-sm font-medium">{t("Zúčtovať zaplatenú zálohu")}</span>
                   <select
                     value={f.advance_invoice_id}
                     onChange={(e) => set("advance_invoice_id", e.target.value)}
                     className={vstup}
                   >
-                    <option value="">— žiadnu —</option>
+                    <option value="">{t("— žiadnu —")}</option>
                     {zalohy.map((z) => (
                       <option key={z.id} value={z.id}>
                         {z.invoice_number} · {formatujMenu(z.amount_total, z.currency)}
@@ -989,15 +1032,13 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
             <div className="mt-5 ml-auto max-w-xs space-y-1 text-sm">
               {zlava > 0 && (
                 <div className="flex justify-between gap-4 text-muted-foreground">
-                  <span>Zľava na faktúru</span>
+                  <span>{t("Zľava na faktúru")}</span>
                   <span className="tabular-nums">− {mena(zlava)}</span>
                 </div>
               )}
               {sumy.sadzby.map((s) => (
                 <div key={s.sadzba} className="flex justify-between gap-4 text-muted-foreground">
-                  <span>
-                    Základ {s.sadzba} % / DPH
-                  </span>
+                  <span>{t("Základ {sadzba} % / DPH", { sadzba: s.sadzba })}</span>
                   <span className="tabular-nums">
                     {mena(s.zaklad)} / {mena(s.dan)}
                   </span>
@@ -1005,26 +1046,28 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
               ))}
               {prenesenie && (
                 <div className="text-xs text-muted-foreground">
-                  Daň {mena(sumy.dan)} samozdaníte vy — na faktúre nebude a dodávateľovi sa neplatí.
+                  {t("Daň {suma} samozdaníte vy — na faktúre nebude a dodávateľovi sa neplatí.", {
+                    suma: mena(sumy.dan),
+                  })}
                 </div>
               )}
               {zaloha && (
                 <div className="flex justify-between gap-4 text-muted-foreground">
-                  <span>Záloha {zaloha.invoice_number}</span>
+                  <span>{t("Záloha {cislo}", { cislo: zaloha.invoice_number })}</span>
                   <span className="tabular-nums">− {mena(zaloha.amount_total)}</span>
                 </div>
               )}
               <div className="flex justify-between gap-4 border-t border-border pt-2 text-base font-semibold">
-                <span>{prenesenie || zaloha ? "Na úhradu" : "Spolu"}</span>
+                <span>{prenesenie || zaloha ? t("Na úhradu") : t("Spolu")}</span>
                 <span className="tabular-nums">{mena(naUhradu)}</span>
               </div>
             </div>
           </section>
 
           <section className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2">
-            <JobPicker value={f.job_id} onChange={(v) => set("job_id", v)} label="Zákazka" />
+            <JobPicker value={f.job_id} onChange={(v) => set("job_id", v)} label={t("Zákazka")} />
             <label className="block">
-              <span className="text-sm font-medium">Poznámka na faktúre</span>
+              <span className="text-sm font-medium">{t("Poznámka na faktúre")}</span>
               <textarea
                 rows={2}
                 value={f.note}
@@ -1040,7 +1083,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
               params={id ? { id } : undefined}
               className="inline-flex h-10 items-center rounded-md border border-border px-4 text-sm hover:bg-secondary"
             >
-              Zrušiť
+              {t("Zrušiť")}
             </Link>
             <button
               type="submit"
@@ -1048,7 +1091,11 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
               className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              {id ? "Uložiť zmeny" : opravujeCislo ? "Vyhotoviť dobropis" : "Vyhotoviť samofaktúru"}
+              {id
+                ? t("Uložiť zmeny")
+                : opravujeCislo
+                  ? t("Vyhotoviť dobropis")
+                  : t("Vyhotoviť samofaktúru")}
             </button>
           </div>
         </form>
@@ -1075,10 +1122,18 @@ function Katalog({
   polozky: PolozkaKatalogu[];
   onPick: (p: PolozkaKatalogu) => void;
 }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const holy = (v: string) => v.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const filtrovane = (q ? polozky.filter((p) => holy(p.name).includes(holy(q))) : polozky).slice(0, 12);
+  const holy = (v: string) =>
+    v
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  const filtrovane = (q ? polozky.filter((p) => holy(p.name).includes(holy(q))) : polozky).slice(
+    0,
+    12,
+  );
   return (
     <div className="relative ml-2 inline-block">
       <button
@@ -1086,7 +1141,7 @@ function Katalog({
         onClick={() => setOpen((v) => !v)}
         className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
       >
-        <Search className="h-4 w-4" /> Z cenníka / skladu
+        <Search className="h-4 w-4" /> {t("Z cenníka / skladu")}
       </button>
       {open && (
         <div className="absolute left-0 top-full z-20 mt-1 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card shadow-lg">
@@ -1094,12 +1149,12 @@ function Katalog({
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Hľadať položku…"
+            placeholder={t("Hľadať položku…")}
             className="w-full border-b border-border bg-transparent px-3 py-2 text-sm outline-none"
           />
           <ul className="max-h-64 overflow-auto py-1">
             {filtrovane.length === 0 && (
-              <li className="px-3 py-2 text-sm text-muted-foreground">Nič sa nenašlo</li>
+              <li className="px-3 py-2 text-sm text-muted-foreground">{t("Nič sa nenašlo")}</li>
             )}
             {filtrovane.map((p) => (
               <li key={p.id}>

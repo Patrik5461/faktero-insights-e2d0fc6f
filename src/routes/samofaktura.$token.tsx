@@ -9,6 +9,8 @@ import {
   samofakturaPodlaTokenuFn,
 } from "@/lib/faktero/samofakturacia.functions";
 import { localeDodavatela, textyDodavatela } from "@/lib/faktero/samofakturacia-texty";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 /**
  * Samofaktúra očami dodávateľa.
@@ -21,12 +23,15 @@ export const Route = createFileRoute("/samofaktura/$token")({
   validateSearch: (s: Record<string, unknown>) => ({
     odpoved: s.odpoved === "suhlas" || s.odpoved === "nesuhlas" ? s.odpoved : undefined,
   }),
-  head: () => ({
-    meta: [
-      { title: "Faktúra na odsúhlasenie — Faktero" },
-      { name: "robots", content: "noindex,nofollow" },
-    ],
-  }),
+  head: ({ match }) => {
+    const j = match.context.jazyk;
+    return {
+      meta: [
+        { title: preloz(j, "Faktúra na odsúhlasenie — Faktero") },
+        { name: "robots", content: "noindex,nofollow" },
+      ],
+    };
+  },
   component: SamofakturaPage,
 });
 
@@ -38,6 +43,7 @@ function suma(n: unknown, mena: string | null | undefined, locale = "sk-SK"): st
 }
 
 function SamofakturaPage() {
+  const { t } = useT();
   const { token } = Route.useParams();
   const { odpoved } = useSearch({ from: "/samofaktura/$token" });
   const nacitaj = useServerFn(samofakturaPodlaTokenuFn);
@@ -59,7 +65,7 @@ function SamofakturaPage() {
   useEffect(() => {
     nacitaj({ data: { token } })
       .then(setData)
-      .catch((e: any) => setChyba(e?.message ?? "Faktúru sa nepodarilo načítať."));
+      .catch((e: any) => setChyba(e?.message ?? t("Faktúru sa nepodarilo načítať.")));
   }, [nacitaj, token]);
 
   async function posli(suhlas: boolean) {
@@ -69,7 +75,7 @@ function SamofakturaPage() {
       const v = await rozhodni({ data: { token, suhlas, poznamka: poznamka || undefined } });
       setHotovo(v.suhlas);
     } catch (e: any) {
-      setChyba(e?.message ?? "Odpoveď sa nepodarilo zapísať.");
+      setChyba(e?.message ?? t("Odpoveď sa nepodarilo zapísať."));
     } finally {
       setPosielam(false);
     }
@@ -89,7 +95,7 @@ function SamofakturaPage() {
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (e: any) {
-      setChyba(e?.message ?? "PDF sa nepodarilo stiahnuť.");
+      setChyba(e?.message ?? t("PDF sa nepodarilo stiahnuť."));
     } finally {
       setStahujem(false);
     }
@@ -98,7 +104,7 @@ function SamofakturaPage() {
   if (chyba && !data) {
     return (
       <Stranka>
-        <p className="text-sm text-destructive">{chyba}</p>
+        <p className="text-sm text-destructive">{t(chyba)}</p>
       </Stranka>
     );
   }
@@ -106,7 +112,7 @@ function SamofakturaPage() {
     return (
       <Stranka>
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Načítavam faktúru…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam faktúru…")}
         </p>
       </Stranka>
     );
@@ -123,7 +129,14 @@ function SamofakturaPage() {
       year: "numeric",
     });
   const kc = (n: unknown) => suma(n, f.mena, loc);
-  const rozhodnute = hotovo !== null ? hotovo : f.stav === "odsuhlasena" ? true : f.stav === "zamietnuta" ? false : null;
+  const rozhodnute =
+    hotovo !== null
+      ? hotovo
+      : f.stav === "odsuhlasena"
+        ? true
+        : f.stav === "zamietnuta"
+          ? false
+          : null;
 
   return (
     <Stranka>
@@ -134,12 +147,8 @@ function SamofakturaPage() {
         <h1 className="mt-1 text-2xl font-semibold">
           {f.opravuje ? T.dobropis : T.faktura} {f.cislo}
         </h1>
-        {f.opravuje && (
-          <p className="text-sm text-muted-foreground">{T.opravuje(f.opravuje)}</p>
-        )}
-        <p className="mt-2 text-sm text-muted-foreground">
-          {T.uvod(o?.name ?? T.odberatel)}
-        </p>
+        {f.opravuje && <p className="text-sm text-muted-foreground">{T.opravuje(f.opravuje)}</p>}
+        <p className="mt-2 text-sm text-muted-foreground">{T.uvod(o?.name ?? T.odberatel)}</p>
 
         <div className="mt-6 grid gap-6 text-sm sm:grid-cols-2">
           <div>
@@ -147,15 +156,39 @@ function SamofakturaPage() {
               {T.dodavatelVy}
             </div>
             <div className="mt-1 font-medium">{d.nazov}</div>
-            {d.ico && <div>{T.ico}: {d.ico}</div>}
-            {d.dic && <div>{T.dic}: {d.dic}</div>}
-            {d.icDph ? <div>{T.icDph}: {d.icDph}</div> : <div>{T.neplatitel}</div>}
+            {d.ico && (
+              <div>
+                {T.ico}: {d.ico}
+              </div>
+            )}
+            {d.dic && (
+              <div>
+                {T.dic}: {d.dic}
+              </div>
+            )}
+            {d.icDph ? (
+              <div>
+                {T.icDph}: {d.icDph}
+              </div>
+            ) : (
+              <div>{T.neplatitel}</div>
+            )}
           </div>
           <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">{T.odberatel}</div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              {T.odberatel}
+            </div>
             <div className="mt-1 font-medium">{o?.name}</div>
-            {o?.ico && <div>{T.ico}: {o.ico}</div>}
-            {o?.ic_dph && <div>{T.icDph}: {o.ic_dph}</div>}
+            {o?.ico && (
+              <div>
+                {T.ico}: {o.ico}
+              </div>
+            )}
+            {o?.ic_dph && (
+              <div>
+                {T.icDph}: {o.ic_dph}
+              </div>
+            )}
           </div>
         </div>
 
@@ -220,9 +253,7 @@ function SamofakturaPage() {
             <span className="tabular-nums">{kc(f.zaklad)}</span>
           </div>
           {f.prenesenie ? (
-            <div className="text-xs text-muted-foreground">
-              {T.prenesenie}
-            </div>
+            <div className="text-xs text-muted-foreground">{T.prenesenie}</div>
           ) : (
             <div className="flex justify-between">
               <span className="text-muted-foreground">{T.dph}</span>
@@ -240,7 +271,11 @@ function SamofakturaPage() {
           disabled={stahujem}
           className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
         >
-          {stahujem ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          {stahujem ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
           {T.stiahnutPdf}
         </button>
       </div>
@@ -249,9 +284,7 @@ function SamofakturaPage() {
         {rozhodnute === true ? (
           <div className="flex items-start gap-2 text-sm text-emerald-700">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-            <span>
-              {T.odsuhlasene}
-            </span>
+            <span>{T.odsuhlasene}</span>
           </div>
         ) : rozhodnute === false ? (
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -314,13 +347,13 @@ function SamofakturaPage() {
                 </button>
               </div>
             )}
-            {chyba && <p className="mt-3 text-sm text-destructive">{chyba}</p>}
+            {chyba && <p className="mt-3 text-sm text-destructive">{t(chyba)}</p>}
           </>
         )}
       </div>
 
       <p className="mt-10 text-center text-xs text-muted-foreground">
-        {T.vyhotoveneCez} <span className="font-medium">Faktero</span>
+        {T.vyhotoveneCez} <span className="font-medium">{t("Faktero")}</span>
       </p>
     </Stranka>
   );

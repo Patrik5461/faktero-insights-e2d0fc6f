@@ -8,12 +8,17 @@ import { recordLegalAcceptance } from "@/lib/legal.functions";
 import { odlozSuhlasy, zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
 import { Logo } from "@/components/faktero/Logo";
 import { MailCheck } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/registracia")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Registrácia — Faktero" },
-      { name: "description", content: "Vytvorte si účet vo Faktere zdarma." },
+      { title: preloz(match.context.jazyk ?? "sk", "Registrácia — Faktero") },
+      {
+        name: "description",
+        content: preloz(match.context.jazyk ?? "sk", "Vytvorte si účet vo Faktere zdarma."),
+      },
     ],
   }),
   /** `?plan=` prichádza z objednávky — voľbu si prenesieme až za nastavenie firmy. */
@@ -27,6 +32,7 @@ export const Route = createFileRoute("/registracia")({
 export const PLAN_PENDING_KEY = "faktero_plan_pending";
 
 function RegisterPage() {
+  const { t } = useT();
   const navigate = useNavigate();
   const { plan } = Route.useSearch();
 
@@ -52,7 +58,7 @@ function RegisterPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!acceptTerms || !acceptGdpr) {
-      toast.error("Pre pokračovanie potvrďte obidva súhlasy.");
+      toast.error(t("Pre pokračovanie potvrďte obidva súhlasy."));
       return;
     }
     setLoading(true);
@@ -65,7 +71,7 @@ function RegisterPage() {
       },
     });
     setLoading(false);
-    if (error) return toast.error(prelozAuthChybu(error.message).sprava);
+    if (error) return toast.error(t(prelozAuthChybu(error.message).sprava));
     /*
       Súhlas sa odloží vždy a zapíše sa hneď, ako je relácia. Bez potvrdeného
       e-mailu ju Supabase nevydá, takže zápis by inak spadol do prázdna —
@@ -86,7 +92,7 @@ function RegisterPage() {
       return;
     }
 
-    toast.success("Účet vytvorený. Pokračujte do nastavenia firmy.");
+    toast.success(t("Účet vytvorený. Pokračujte do nastavenia firmy."));
     navigate({ to: "/onboarding" });
   }
 
@@ -98,8 +104,8 @@ function RegisterPage() {
       options: { emailRedirectTo: `${window.location.origin}/dashboard` },
     });
     setPosielamZnova(false);
-    if (error) return toast.error(prelozAuthChybu(error.message).sprava);
-    toast.success("E-mail sme poslali znova.");
+    if (error) return toast.error(t(prelozAuthChybu(error.message).sprava));
+    toast.success(t("E-mail sme poslali znova."));
   }
 
   if (cakaNaPotvrdenie) {
@@ -112,25 +118,25 @@ function RegisterPage() {
           <div className="mb-4 grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
             <MailCheck className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Potvrďte si e-mail</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("Potvrďte si e-mail")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Účet <strong className="text-foreground">{email}</strong> je vytvorený. Poslali sme naň
-            odkaz — otvorte ho a budete rovno v aplikácii. Bez potvrdenia sa prihlásiť nedá.
+            {t("Účet")} <strong className="text-foreground">{email}</strong>{" "}
+            {t("je vytvorený. Poslali sme naň odkaz — otvorte ho a budete rovno v aplikácii. Bez potvrdenia sa prihlásiť nedá.")}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Ak e-mail do pár minút nepríde, pozrite si priečinok s nevyžiadanou poštou.
+            {t("Ak e-mail do pár minút nepríde, pozrite si priečinok s nevyžiadanou poštou.")}
           </p>
           <button
             onClick={posliPotvrdenieZnova}
             disabled={posielamZnova}
             className="mt-6 w-full rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-60"
           >
-            {posielamZnova ? "Posielam…" : "Poslať e-mail znova"}
+            {posielamZnova ? t("Posielam…") : t("Poslať e-mail znova")}
           </button>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Už potvrdené?{" "}
+            {t("Už potvrdené?")}{" "}
             <Link to="/prihlasenie" className="font-medium text-primary hover:underline">
-              Prihlásiť sa
+              {t("Prihlásiť sa")}
             </Link>
           </p>
         </div>
@@ -144,9 +150,9 @@ function RegisterPage() {
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Vytvorte si účet</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("Vytvorte si účet")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          30 dní zadarmo na pláne Premium. Bez platobnej karty.
+          {t("30 dní zadarmo na pláne Premium. Bez platobnej karty.")}
         </p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-3">
@@ -159,7 +165,7 @@ function RegisterPage() {
             iOS nevedia, čo do poľa patrí, a registrácia sa vypĺňa ručne.
           */}
           <label className="block">
-            <span className="text-sm font-medium">Meno a priezvisko</span>
+            <span className="text-sm font-medium">{t("Meno a priezvisko")}</span>
             <input
               type="text"
               autoComplete="name"
@@ -170,7 +176,7 @@ function RegisterPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Email</span>
+            <span className="text-sm font-medium">{t("Email")}</span>
             <input
               type="email"
               autoComplete="email"
@@ -181,7 +187,7 @@ function RegisterPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Heslo</span>
+            <span className="text-sm font-medium">{t("Heslo")}</span>
             <input
               type="password"
               autoComplete="new-password"
@@ -201,13 +207,13 @@ function RegisterPage() {
                 className="mt-1"
               />
               <span>
-                Súhlasím s{" "}
+                {t("Súhlasím s")}{" "}
                 <Link
                   to="/pravne/obchodne-podmienky"
                   target="_blank"
                   className="text-primary underline"
                 >
-                  Obchodnými podmienkami
+                  {t("Obchodnými podmienkami")}
                 </Link>
                 .
               </span>
@@ -220,9 +226,9 @@ function RegisterPage() {
                 className="mt-1"
               />
               <span>
-                Beriem na vedomie{" "}
+                {t("Beriem na vedomie")}{" "}
                 <Link to="/pravne/gdpr" target="_blank" className="text-primary underline">
-                  Spracúvanie osobných údajov
+                  {t("Spracúvanie osobných údajov")}
                 </Link>
                 .
               </span>
@@ -233,14 +239,14 @@ function RegisterPage() {
             disabled={loading || !acceptTerms || !acceptGdpr}
             className="mt-2 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
           >
-            {loading ? "Vytváram..." : "Vytvoriť účet"}
+            {loading ? t("Vytváram...") : t("Vytvoriť účet")}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Už máte účet?{" "}
+          {t("Už máte účet?")}{" "}
           <Link to="/prihlasenie" className="font-medium text-primary hover:underline">
-            Prihlásiť sa
+            {t("Prihlásiť sa")}
           </Link>
         </p>
       </div>

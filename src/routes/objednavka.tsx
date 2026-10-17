@@ -16,24 +16,33 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LEGAL_COMPANY } from "@/components/faktero/LegalShell";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/objednavka")({
-  head: () => ({
-    meta: [
-      { title: "Objednávka — Faktero" },
-      {
-        name: "description",
-        content:
-          "Aktivujte si predplatné Faktero. Starter 9 €/mes alebo Premium 19 €/mes. Bezpečná platba cez GoPay.",
-      },
-      { property: "og:title", content: "Objednávka Faktero" },
-      {
-        property: "og:description",
-        content:
-          "Aktivujte si predplatné Faktero. Starter 9 €/mes alebo Premium 19 €/mes. Bezpečná platba cez GoPay.",
-      },
-    ],
-  }),
+  head: ({ match }) => {
+    const j = match.context.jazyk;
+    return {
+      meta: [
+        { title: preloz(j, "Objednávka — Faktero") },
+        {
+          name: "description",
+          content: preloz(
+            j,
+            "Aktivujte si predplatné Faktero. Starter 9 €/mes alebo Premium 19 €/mes. Bezpečná platba cez GoPay.",
+          ),
+        },
+        { property: "og:title", content: preloz(j, "Objednávka Faktero") },
+        {
+          property: "og:description",
+          content: preloz(
+            j,
+            "Aktivujte si predplatné Faktero. Starter 9 €/mes alebo Premium 19 €/mes. Bezpečná platba cez GoPay.",
+          ),
+        },
+      ],
+    };
+  },
   component: ObjednavkaPage,
 });
 
@@ -106,6 +115,7 @@ function useAuthSession() {
 }
 
 function ObjednavkaPage() {
+  const { t } = useT();
   const navigate = useNavigate();
   const { session, loading: authLoading } = useAuthSession();
   const [selectedSlug, setSelectedSlug] = useState<string>("premium");
@@ -127,12 +137,14 @@ function ObjednavkaPage() {
     <MarketingShell>
       <section className="border-b border-border/60 bg-gradient-to-b from-primary/5 to-transparent">
         <div className="mx-auto max-w-6xl px-6 py-16 text-center">
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Objednávka</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+            {t("Objednávka")}
+          </p>
           <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
-            Aktivujte si Faktero
+            {t("Aktivujte si Faktero")}
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Vyberte si plán a začnite fakturovať. Platba cez GoPay — bezpečne a okamžite.
+            {t("Vyberte si plán a začnite fakturovať. Platba cez GoPay — bezpečne a okamžite.")}
           </p>
         </div>
       </section>
@@ -159,29 +171,30 @@ function ObjednavkaPage() {
                       <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
                         <Icon className="h-4 w-4" />
                       </span>
-                      <CardTitle className="text-lg">{p.name}</CardTitle>
+                      <CardTitle className="text-lg">{t(p.name)}</CardTitle>
                     </div>
                     {p.featured && (
                       <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
-                        Najobľúbenejšie
+                        {t("Najobľúbenejšie")}
                       </span>
                     )}
                   </div>
                   <div className="mt-3 flex items-baseline gap-1">
                     <span className="text-4xl font-bold tracking-tight">{p.price}</span>
-                    <span className="text-sm text-muted-foreground">{p.period}</span>
+                    <span className="text-sm text-muted-foreground">{t(p.period)}</span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    S DPH 23 %: <span className="font-medium text-foreground">{p.priceVat}</span>
+                    {t("S DPH 23 %:")}{" "}
+                    <span className="font-medium text-foreground">{p.priceVat}</span>
                   </p>
-                  <p className="mt-2 text-sm text-muted-foreground">{p.tagline}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{t(p.tagline)}</p>
                 </CardHeader>
                 <CardContent className="flex flex-1 flex-col">
                   <ul className="space-y-2 text-sm">
                     {p.features.map((f) => (
                       <li key={f} className="flex gap-2">
                         <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                        <span>{f}</span>
+                        <span>{t(f)}</span>
                       </li>
                     ))}
                   </ul>
@@ -195,7 +208,7 @@ function ObjednavkaPage() {
                         setSelectedSlug(p.slug);
                       }}
                     >
-                      {isSelected ? "Vybraté" : "Vybrať tento plán"}
+                      {t(isSelected ? "Vybraté" : "Vybrať tento plán")}
                     </Button>
                   </div>
                 </CardContent>
@@ -209,9 +222,14 @@ function ObjednavkaPage() {
           <CardContent className="p-6">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-lg font-semibold">Vybratý plán: {selectedPlan.name}</h2>
+                <h2 className="text-lg font-semibold">
+                  {t("Vybratý plán:")} {t(selectedPlan.name)}
+                </h2>
                 <p className="text-sm text-muted-foreground">
-                  {selectedPlan.price} / mesiac ({selectedPlan.priceVat} s DPH)
+                  {t("{cena} / mesiac ({sDph} s DPH)", {
+                    cena: selectedPlan.price,
+                    sDph: selectedPlan.priceVat,
+                  })}
                 </p>
               </div>
               <Button
@@ -224,7 +242,7 @@ function ObjednavkaPage() {
                   <RefreshCw className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    Aktivovať plán <ArrowRight className="h-4 w-4" />
+                    {t("Aktivovať plán")} <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </Button>
@@ -236,10 +254,11 @@ function ObjednavkaPage() {
         <div className="mt-6 flex items-start gap-3 rounded-xl border border-blue-500/30 bg-blue-500/10 p-4 text-sm text-blue-900 dark:text-blue-100">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-300" />
           <div className="space-y-1">
-            <p className="font-medium">Opakované platby</p>
+            <p className="font-medium">{t("Opakované platby")}</p>
             <p>
-              Predplatné sa automaticky obnovuje každý mesiac. Platba je spracovaná cez GoPay
-              (Visa/Mastercard). Zrušiť môžete kedykoľvek v nastaveniach účtu alebo emailom na{" "}
+              {t(
+                "Predplatné sa automaticky obnovuje každý mesiac. Platba je spracovaná cez GoPay (Visa/Mastercard). Zrušiť môžete kedykoľvek v nastaveniach účtu alebo emailom na",
+              )}{" "}
               <a href={`mailto:${LEGAL_COMPANY.email}`} className="underline">
                 {LEGAL_COMPANY.email}
               </a>
@@ -251,56 +270,58 @@ function ObjednavkaPage() {
         {/* Trust / payment badges */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground">
-            <CreditCard className="h-3.5 w-3.5" /> GoPay
+            <CreditCard className="h-3.5 w-3.5" /> {t("GoPay")}
           </span>
           <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-[#1a1f71]">
-            VISA
+            {t("VISA")}
           </span>
           <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold">
-            <span className="text-[#eb001b]">Master</span>
-            <span className="text-[#f79e1b]">card</span>
+            <span className="text-[#eb001b]">{t("Master")}</span>
+            <span className="text-[#f79e1b]">{t("card")}</span>
           </span>
           <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground">
-            <Lock className="h-3.5 w-3.5" /> 3-D Secure
+            <Lock className="h-3.5 w-3.5" /> {t("3-D Secure")}
           </span>
           <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground">
-            <ShieldCheck className="h-3.5 w-3.5" /> Údaje karty spracúva GoPay
+            <ShieldCheck className="h-3.5 w-3.5" /> {t("Údaje karty spracúva GoPay")}
           </span>
         </div>
 
         {/* Legal links */}
         <div className="mt-8 rounded-xl border border-border bg-card p-5 text-xs text-muted-foreground space-y-2">
           <p>
-            <strong className="text-foreground">Ceny a DPH:</strong> Uvedené ceny sú bez DPH.
-            Prevádzkovateľ je platca DPH; k cene sa uplatňuje sadzba <strong>23 %</strong> (Starter
-            9 € → 11,07 € s DPH; Premium 19 € → 23,37 € s DPH).
+            <strong className="text-foreground">{t("Ceny a DPH:")}</strong>{" "}
+            {t("Uvedené ceny sú bez DPH. Prevádzkovateľ je platca DPH; k cene sa uplatňuje sadzba")}{" "}
+            <strong>23 %</strong>{" "}
+            {t("(Starter 9 € → 11,07 € s DPH; Premium 19 € → 23,37 € s DPH).")}
           </p>
           <p>
-            <strong className="text-foreground">Automatické obnovenie:</strong> Predplatné sa po
-            skončení obdobia automaticky obnovuje, kým ho nezrušíte. Zrušiť môžete kedykoľvek —
-            prístup ostáva do konca zaplateného obdobia.
+            <strong className="text-foreground">{t("Automatické obnovenie:")}</strong>{" "}
+            {t(
+              "Predplatné sa po skončení obdobia automaticky obnovuje, kým ho nezrušíte. Zrušiť môžete kedykoľvek — prístup ostáva do konca zaplateného obdobia.",
+            )}
           </p>
           <p>
-            Kliknutím na „Aktivovať plán“ potvrdzujete súhlas s{" "}
+            {t("Kliknutím na „Aktivovať plán“ potvrdzujete súhlas s")}{" "}
             <Link to="/pravne/obchodne-podmienky" target="_blank" className="underline">
-              Obchodnými podmienkami
+              {t("Obchodnými podmienkami")}
             </Link>
             ,{" "}
             <Link to="/pravne/opakovane-platby" target="_blank" className="underline">
-              podmienkami opakovaných platieb
+              {t("podmienkami opakovaných platieb")}
             </Link>{" "}
-            a{" "}
+            {t("a")}{" "}
             <Link to="/pravne/gopay-podmienky" target="_blank" className="underline">
-              GoPay podmienkami
+              {t("GoPay podmienkami")}
             </Link>
             .
           </p>
         </div>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Máte otázky?{" "}
+          {t("Máte otázky?")}{" "}
           <Link to="/kontakt" className="underline">
-            Kontaktujte nás
+            {t("Kontaktujte nás")}
           </Link>
           .
         </p>

@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/doklady")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Doklady a skenovanie — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Doklady a skenovanie — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Doklady vo Faktere: odfotenie bločku, načítanie eKasa QR kódu z Finančnej správy, nahratie PDF, presun medzi prijaté faktúry a odovzdanie účtovníčke.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/doklady" },
     ],
@@ -24,24 +28,23 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Všetko, čo príde <strong>e-mailom</strong> alebo čo <strong>nahráte</strong>{" "}
-          (tlačidlo Nahrať faktúru, appka, pretiahnutie súborov), čaká najprv v{" "}
-          <Link to="/nespracovane">Doklady → Nespracované doklady</Link>. Faktero doklad prečíta
-          a navrhne, čo to je. Kým je doklad tu, nevstupuje do DPH, pokladne ani do účtovníctva.
+          Všetko, čo príde <strong>e-mailom</strong> alebo čo <strong>nahráte</strong> (tlačidlo
+          Nahrať faktúru, appka, pretiahnutie súborov), čaká najprv v{" "}
+          <Link to="/nespracovane">Doklady → Nespracované doklady</Link>. Faktero doklad prečíta a
+          navrhne, čo to je. Kým je doklad tu, nevstupuje do DPH, pokladne ani do účtovníctva.
         </p>
-        <p>
-          Kam sa čo uloží (rovnako ako v Doklado):
-        </p>
+        <p>Kam sa čo uloží (rovnako ako v Doklado):</p>
         <ul>
           <li>
-            <strong>Bloček s QR kódom</strong> (eKasa) ide rovno do <Link to="/doklady">Bločkov</Link> —
-            údaje sú z Finančnej správy. Kto chce aj tieto kontrolovať, zapne v Účtovníctvo →
-            Predkontácie voľbu „Bločky s QR kódom ukladať do Nespracovaných dokladov“.
+            <strong>Bloček s QR kódom</strong> (eKasa) ide rovno do{" "}
+            <Link to="/doklady">Bločkov</Link> — údaje sú z Finančnej správy. Kto chce aj tieto
+            kontrolovať, zapne v Účtovníctvo → Predkontácie voľbu „Bločky s QR kódom ukladať do
+            Nespracovaných dokladov“.
           </li>
           <li>
-            <strong>Bloček bez QR</strong> (fotka, parkovanie, zahraničný), <strong>faktúra</strong>,{" "}
-            <strong>zálohová faktúra</strong> a <strong>iný doklad</strong> z appky, nahratie na webe aj
-            doklad z e-mailu idú do Nespracovaných dokladov.
+            <strong>Bloček bez QR</strong> (fotka, parkovanie, zahraničný), <strong>faktúra</strong>
+            , <strong>zálohová faktúra</strong> a <strong>iný doklad</strong> z appky, nahratie na
+            webe aj doklad z e-mailu idú do Nespracovaných dokladov.
           </li>
           <li>
             Po kliknutí na <strong>Vytvoriť</strong> sa doklad presunie do Bločkov, Prijatých faktúr
@@ -70,12 +73,12 @@ const sections: HelpSection[] = [
         </ol>
         <p>
           Bločky odfotené v appke alebo zadané vo formulári sú v tom istom zozname — otvoria sa vo
-          formulári dokladu, kde ich spracujete tlačidlom Spracovať. Spracovaný bloček sa presunie do{" "}
-          <Link to="/doklady">Doklady → Bločky</Link>; tam sú len skontrolované bločky, rozdelené na
-          spracované a odovzdané účtovníkovi. Menu Doklady má sekcie ako Doklado: Nespracované doklady,
-          Bločky, Prijaté faktúry, Vystavené faktúry, Iné doklady a <Link to="/kos">Kôš</Link>, kde sa
-          dajú zmazané doklady obnoviť. Zmazaný nespracovaný doklad
-          ide do koša a dá sa obnoviť.
+          formulári dokladu, kde ich spracujete tlačidlom Spracovať. Spracovaný bloček sa presunie
+          do <Link to="/doklady">Doklady → Bločky</Link>; tam sú len skontrolované bločky, rozdelené
+          na spracované a odovzdané účtovníkovi. Menu Doklady má sekcie ako Doklado: Nespracované
+          doklady, Bločky, Prijaté faktúry, Vystavené faktúry, Iné doklady a{" "}
+          <Link to="/kos">Kôš</Link>, kde sa dajú zmazané doklady obnoviť. Zmazaný nespracovaný
+          doklad ide do koša a dá sa obnoviť.
         </p>
       </>
     ),
@@ -98,9 +101,9 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Keď sú položky vyčítané úplne zle, stlačte <strong>Vypnúť položky</strong>. Doklad sa
-          potom vytvorí a zaúčtuje len podľa súčtov a rozpisu DPH — rozúčtovanie, export do
-          Pohody aj výkazy k DPH položky nepoužijú. To isté tlačidlo je aj v detaile prijatej
-          faktúry a položky sa ním dajú kedykoľvek vrátiť.
+          potom vytvorí a zaúčtuje len podľa súčtov a rozpisu DPH — rozúčtovanie, export do Pohody
+          aj výkazy k DPH položky nepoužijú. To isté tlačidlo je aj v detaile prijatej faktúry a
+          položky sa ním dajú kedykoľvek vrátiť.
         </p>
         <p>
           Prijatú faktúru aj bloček môžete <strong>zamknúť</strong> — sumy, dátumy ani zaúčtovanie
@@ -110,9 +113,9 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Na detaile dokladu je <strong>história zmien</strong> (kto, kedy a čo zmenil) a{" "}
-          <strong>štítky</strong> — najviac päť vlastných značiek na triedenie. V komentári
-          označíte kolegu napísaním <strong>@meno</strong>; dostane upozornenie do zvončeka.
-          Iné doklady sa dajú triediť do <strong>priečinkov</strong>.
+          <strong>štítky</strong> — najviac päť vlastných značiek na triedenie. V komentári označíte
+          kolegu napísaním <strong>@meno</strong>; dostane upozornenie do zvončeka. Iné doklady sa
+          dajú triediť do <strong>priečinkov</strong>.
         </p>
       </>
     ),
@@ -333,10 +336,10 @@ const sections: HelpSection[] = [
           detaile dokladu len na prezretie, do skladu ani do účtovníctva nevstupujú.
         </p>
         <p>
-          <strong>Zdrojový e-mail.</strong> Text mailu, s ktorým doklad prišiel („to je za september“,
-          „zákazka Novák“), sa uloží. Ukážete ho ikonou obálky v Nespracovaných alebo tlačidlom{" "}
-          <em>Zdrojový e-mail</em> pri doklade — aj po tom, čo z neho vznikla prijatá faktúra, bloček
-          či iný doklad.
+          <strong>Zdrojový e-mail.</strong> Text mailu, s ktorým doklad prišiel („to je za
+          september“, „zákazka Novák“), sa uloží. Ukážete ho ikonou obálky v Nespracovaných alebo
+          tlačidlom <em>Zdrojový e-mail</em> pri doklade — aj po tom, čo z neho vznikla prijatá
+          faktúra, bloček či iný doklad.
         </p>
         <p>
           Na detaile dokladu je aj <strong>náhľad prílohy</strong>, takže na prezretie nemusíte nič
@@ -397,9 +400,9 @@ const sections: HelpSection[] = [
           účtovníčka s klientmi), nemusí si pamätať adresu každej. V karte <em>Rozdeľovač</em> na
           tej istej stránke je vaša osobná adresa v tvare{" "}
           <code>rozdelovac-…@doklady.faktero.sk</code>. Faktero z každej prílohy prečíta IČO alebo
-          IČ DPH odberateľa a doklad založí v tej z vašich firiem, na ktorú je vystavený — jeden mail
-          tak môže rozdeliť faktúry aj medzi viac firiem. Doklad, ktorý nesedí na žiadnu vašu firmu
-          (alebo sedí na dve s rovnakým IČO), sa naslepo nezaloží: počká v zozname{" "}
+          IČ DPH odberateľa a doklad založí v tej z vašich firiem, na ktorú je vystavený — jeden
+          mail tak môže rozdeliť faktúry aj medzi viac firiem. Doklad, ktorý nesedí na žiadnu vašu
+          firmu (alebo sedí na dve s rovnakým IČO), sa naslepo nezaloží: počká v zozname{" "}
           <em>Nepriradené doklady</em>, kde vyberiete firmu a kliknete na <strong>Priradiť</strong>,
           prípadne <strong>Zahodiť</strong>. Rozdeľovač sa dá vypnúť a adresa vymeniť za novú.
           Potvrdenie preposielania z Gmailu treba nastaviť na adresu konkrétnej firmy, nie na
@@ -507,9 +510,9 @@ const sections: HelpSection[] = [
       <>
         <p>
           V <Link to="/nastavenia/schvalovanie">Nastavenia → Schvaľovanie dokladov</Link> zapnete,
-          ktoré doklady sa schvaľujú (bločky, prijaté, vystavené faktúry), sumu, pod ktorou sa schvália
-          samy, a či sa vystavená faktúra smie odoslať až po schválení. Platí to pre doklady pridané
-          od zapnutia.
+          ktoré doklady sa schvaľujú (bločky, prijaté, vystavené faktúry), sumu, pod ktorou sa
+          schvália samy, a či sa vystavená faktúra smie odoslať až po schválení. Platí to pre
+          doklady pridané od zapnutia.
         </p>
         <p>
           <strong>Schvaľovacia cesta</strong> má úrovne od najnižšej po najvyššiu, v každej jedného
@@ -518,14 +521,15 @@ const sections: HelpSection[] = [
           inak predvolená. Bez ciest stačí jedno schválenie majiteľom, správcom alebo účtovníkom.
         </p>
         <p>
-          Do úrovne cesty sa dá namiesto konkrétneho človeka vybrať <strong>manažér zákazky
-          dokladu</strong> (projektový manažér). Doklad zaradený na zákazku potom schvaľuje jej
-          manažér — ten sa nastavuje na detaile <Link to="/zakazky">zákazky</Link>. Keď doklad na
-          zákazke nie je alebo zákazka manažéra nemá, táto úroveň sa preskočí.
+          Do úrovne cesty sa dá namiesto konkrétneho človeka vybrať{" "}
+          <strong>manažér zákazky dokladu</strong> (projektový manažér). Doklad zaradený na zákazku
+          potom schvaľuje jej manažér — ten sa nastavuje na detaile{" "}
+          <Link to="/zakazky">zákazky</Link>. Keď doklad na zákazke nie je alebo zákazka manažéra
+          nemá, táto úroveň sa preskočí.
         </p>
         <p>
-          Doklady čakajúce na vás sú v <Link to="/schvalovanie">Doklady → Na schválenie</Link> aj
-          v zvončeku; schváliť, vrátiť na opravu či zamietnuť ich viete hromadne aj na detaile
+          Doklady čakajúce na vás sú v <Link to="/schvalovanie">Doklady → Na schválenie</Link> aj v
+          zvončeku; schváliť, vrátiť na opravu či zamietnuť ich viete hromadne aj na detaile
           dokladu. Do Pohody, do mesačného balíka a do príkazu na úhradu idú len schválené. Vrátený
           doklad sa po oprave vráti na schválenie odznova.
         </p>
@@ -571,7 +575,9 @@ const sections: HelpSection[] = [
             firemnej pokladne. Prijatú faktúru vo vyúčtovaní hromadný príkaz na úhradu vynechá —
             dodávateľa už zaplatil zamestnanec.
           </li>
-          <li>Doklad môže byť len v jednom vyúčtovaní. Uzavreté vyúčtovanie sa dá znova otvoriť.</li>
+          <li>
+            Doklad môže byť len v jednom vyúčtovaní. Uzavreté vyúčtovanie sa dá znova otvoriť.
+          </li>
         </ul>
       </>
     ),
@@ -586,8 +592,8 @@ const sections: HelpSection[] = [
           obnoviť aj s párovaním na pohyb v banke, potom sa kôš vysype sám aj so skenom.
         </p>
         <p>
-          Na detaile dokladu sú <strong>komentáre</strong> — otázka účtovníčke, vysvetlenie
-          výdavku. Označený kolega dostane upozornenie do zvončeka.
+          Na detaile dokladu sú <strong>komentáre</strong> — otázka účtovníčke, vysvetlenie výdavku.
+          Označený kolega dostane upozornenie do zvončeka.
         </p>
         <p>
           Pri poznámke si viete opakované texty uložiť ako <strong>preddefinované</strong> a potom
@@ -595,19 +601,19 @@ const sections: HelpSection[] = [
         </p>
         <p>
           <strong>Prílohy a presun.</strong> K dokladu sa dá priložiť ďalší súbor (dodací list,
-          druhá strana). Keď sa druhá strana či dodací list nahrali ako saminý doklad,
-          tlačidlom <strong>Presunúť ako prílohu</strong> ho pripojíte k správnemu dokladu,
-          prijatej či vystavenej faktúre — pôvodný záznam ide do koša.
+          druhá strana). Keď sa druhá strana či dodací list nahrali ako saminý doklad, tlačidlom{" "}
+          <strong>Presunúť ako prílohu</strong> ho pripojíte k správnemu dokladu, prijatej či
+          vystavenej faktúre — pôvodný záznam ide do koša.
         </p>
         <p>
-          <strong>Pravidlo účtovania</strong> doplní kódy samo; doklad, ktorý ich má z pravidla,
-          má pri zaúčtovaní hviezdičku. Keď má dodávateľ pravidiel viac, vyberiete iné cez{" "}
-          <em>Použiť pravidlo</em>. Zoznam sa dá zoradiť kliknutím na hlavičku stĺpca a stiahnuť
-          do Excelu.
+          <strong>Pravidlo účtovania</strong> doplní kódy samo; doklad, ktorý ich má z pravidla, má
+          pri zaúčtovaní hviezdičku. Keď má dodávateľ pravidiel viac, vyberiete iné cez{" "}
+          <em>Použiť pravidlo</em>. Zoznam sa dá zoradiť kliknutím na hlavičku stĺpca a stiahnuť do
+          Excelu.
         </p>
         <p>
-          Odovzdaný doklad je <strong>zamknutý</strong> — jeho sumy, dátumy ani zaúčtovanie sa nedajú
-          zmeniť, kým ho nevrátite z Pohody.
+          Odovzdaný doklad je <strong>zamknutý</strong> — jeho sumy, dátumy ani zaúčtovanie sa
+          nedajú zmeniť, kým ho nevrátite z Pohody.
         </p>
       </>
     ),
@@ -616,7 +622,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Doklady"
       title="Doklady a skenovanie"
       intro={

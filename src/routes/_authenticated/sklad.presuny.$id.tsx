@@ -8,9 +8,13 @@ import { toast } from "sonner";
 import { ArrowRightLeft, CheckCircle2, XCircle } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/$id")({
-  head: () => ({ meta: [{ title: "Detail presunu — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Detail presunu — Faktero") }],
+  }),
   component: TransferDetailPage,
 });
 
@@ -26,6 +30,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 function TransferDetailPage() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const { id } = Route.useParams();
   const nav = useNavigate();
@@ -43,7 +48,7 @@ function TransferDetailPage() {
       const res = await fetchDetail({ data: { id } });
       setData(res);
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa načítať presun.");
+      toast.error(e?.message ?? t("Nepodarilo sa načítať presun."));
       setData(null);
     } finally {
       setLoading(false);
@@ -57,9 +62,11 @@ function TransferDetailPage() {
   if (loading) {
     return (
       <>
-        <PageHeader title="Detail presunu" />
+        <PageHeader title={t("Detail presunu")} />
         <PageBody>
-          <div className="rounded-md border p-6 text-sm text-muted-foreground">Načítavam…</div>
+          <div className="rounded-md border p-6 text-sm text-muted-foreground">
+            {t("Načítavam…")}
+          </div>
         </PageBody>
       </>
     );
@@ -72,12 +79,12 @@ function TransferDetailPage() {
   if (!data?.transfer) {
     return (
       <>
-        <PageHeader title="Detail presunu" />
+        <PageHeader title={t("Detail presunu")} />
         <PageBody>
           <div className="rounded-md border p-6 text-sm text-muted-foreground">
-            Presun sa nenašiel. Možno bol zrušený alebo patrí inej firme.{" "}
+            {t("Presun sa nenašiel. Možno bol zrušený alebo patrí inej firme.")}{" "}
             <Link to="/sklad/presuny" className="text-primary hover:underline">
-              Späť na presuny
+              {t("Späť na presuny")}
             </Link>
           </div>
         </PageBody>
@@ -100,29 +107,29 @@ function TransferDetailPage() {
   );
 
   const doComplete = async () => {
-    if (!(await potvrd("Naozaj dokončiť presun? Vytvoria sa skladové pohyby (výdaj + príjem).")))
+    if (!(await potvrd(t("Naozaj dokončiť presun? Vytvoria sa skladové pohyby (výdaj + príjem)."))))
       return;
     setBusy(true);
     try {
       await complete({ data: { id } });
-      toast.success("Presun dokončený.");
+      toast.success(t("Presun dokončený."));
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Presun sa nepodarilo dokončiť.");
+      toast.error(e?.message ?? t("Presun sa nepodarilo dokončiť."));
     } finally {
       setBusy(false);
     }
   };
 
   const doCancel = async () => {
-    if (!(await potvrd("Zrušiť presun?"))) return;
+    if (!(await potvrd(t("Zrušiť presun?")))) return;
     setBusy(true);
     try {
       await cancelFn({ data: { id } });
-      toast.success("Presun zrušený.");
+      toast.success(t("Presun zrušený."));
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa zrušiť.");
+      toast.error(e?.message ?? t("Nepodarilo sa zrušiť."));
     } finally {
       setBusy(false);
     }
@@ -136,8 +143,10 @@ function TransferDetailPage() {
   return (
     <>
       <PageHeader
-        title={`Presun ${transfer.id.slice(0, 8)}`}
-        description={`Vytvorený ${new Date(transfer.created_at).toLocaleString("sk-SK")}`}
+        title={t("Presun {cislo}", { cislo: transfer.id.slice(0, 8) })}
+        description={t("Vytvorený {datum}", {
+          datum: new Date(transfer.created_at).toLocaleString("sk-SK"),
+        })}
       />
       <PageBody>
         <div className="mx-auto max-w-4xl space-y-5">
@@ -146,7 +155,7 @@ function TransferDetailPage() {
               <span
                 className={`inline-block rounded px-2 py-0.5 text-xs ${STATUS_STYLE[transfer.status] ?? ""}`}
               >
-                {STATUS_LABEL[transfer.status] ?? transfer.status}
+                {t(STATUS_LABEL[transfer.status] ?? transfer.status)}
               </span>
               {transfer.status === "draft" && (
                 <div className="flex gap-2">
@@ -155,21 +164,21 @@ function TransferDetailPage() {
                     onClick={doCancel}
                     className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50"
                   >
-                    <XCircle className="h-4 w-4" /> Zrušiť
+                    <XCircle className="h-4 w-4" /> {t("Zrušiť")}
                   </button>
                   <button
                     disabled={busy}
                     onClick={doComplete}
                     className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
                   >
-                    <CheckCircle2 className="h-4 w-4" /> Dokončiť presun
+                    <CheckCircle2 className="h-4 w-4" /> {t("Dokončiť presun")}
                   </button>
                 </div>
               )}
             </div>
             <div className="mt-4 flex items-center gap-3 text-sm">
               <div>
-                <div className="text-xs text-muted-foreground">Zo skladu</div>
+                <div className="text-xs text-muted-foreground">{t("Zo skladu")}</div>
                 <div className="font-medium">{whMap[transfer.warehouse_from_id]?.name ?? "—"}</div>
                 <div className="text-xs text-muted-foreground">
                   {coMap[transfer.company_id]?.name ?? ""}
@@ -177,13 +186,13 @@ function TransferDetailPage() {
               </div>
               <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
               <div>
-                <div className="text-xs text-muted-foreground">Do</div>
+                <div className="text-xs text-muted-foreground">{t("Do")}</div>
                 <div className="font-medium">
                   {transfer.warehouse_to_id ? (whMap[transfer.warehouse_to_id]?.name ?? "—") : "—"}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {transfer.target_company_id
-                    ? (coMap[transfer.target_company_id]?.name ?? "Iná firma")
+                    ? (coMap[transfer.target_company_id]?.name ?? t("Iná firma"))
                     : (coMap[transfer.company_id]?.name ?? "")}
                 </div>
               </div>
@@ -197,12 +206,14 @@ function TransferDetailPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-left">
                 <tr>
-                  <th className="px-3 py-2">Položka</th>
-                  <th className="px-3 py-2">Kód</th>
-                  <th className="px-3 py-2 text-right">Množstvo</th>
-                  <th className="px-3 py-2 text-right">Jedn. cena</th>
-                  <th className="px-3 py-2 text-right">Spolu</th>
-                  {transfer.target_company_id && <th className="px-3 py-2">Cieľ. položka</th>}
+                  <th className="px-3 py-2">{t("Položka")}</th>
+                  <th className="px-3 py-2">{t("Kód")}</th>
+                  <th className="px-3 py-2 text-right">{t("Množstvo")}</th>
+                  <th className="px-3 py-2 text-right">{t("Jedn. cena")}</th>
+                  <th className="px-3 py-2 text-right">{t("Spolu")}</th>
+                  {transfer.target_company_id && (
+                    <th className="px-3 py-2">{t("Cieľ. položka")}</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -226,7 +237,7 @@ function TransferDetailPage() {
                           {tgt
                             ? (tgt.sku ?? tgt.id.slice(0, 8))
                             : transfer.status === "draft"
-                              ? "Bude priradená pri dokončení"
+                              ? t("Bude priradená pri dokončení")
                               : "—"}
                         </td>
                       )}
@@ -237,7 +248,7 @@ function TransferDetailPage() {
               <tfoot>
                 <tr className="border-t bg-muted/30 font-medium">
                   <td className="px-3 py-2" colSpan={4}>
-                    Spolu
+                    {t("Spolu")}
                   </td>
                   <td className="px-3 py-2 text-right">{formatujMenu(total, mena.kod)}</td>
                   {transfer.target_company_id && <td />}

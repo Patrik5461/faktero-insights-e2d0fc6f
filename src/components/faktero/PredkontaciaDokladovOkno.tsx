@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { navrhyKodovFn, zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Predkontácia, členenie DPH a kategória pre vybrané bločky — ako v Doklado,
@@ -22,6 +23,7 @@ export function PredkontaciaDokladovOkno({
   onClose: () => void;
   onHotovo: () => void;
 }) {
+  const { t } = useT();
   useZatvorNaEscape(onClose);
   const nacitaj = useServerFn(navrhyKodovFn);
   const uloz = useServerFn(zauctujDokladyFn);
@@ -57,37 +59,52 @@ export function PredkontaciaDokladovOkno({
       const r = await uloz({ data: { company_id: companyId, ids, ...h } });
       if (r.preskocenych)
         toast.warning(
-          `Nastavené na ${r.zmenenych}; ${r.preskocenych} už je odovzdaných do Pohody, tie sa nemenia.`,
+          t(
+            "Nastavené na {zmenenych}; {preskocenych} už je odovzdaných do Pohody, tie sa nemenia.",
+            {
+              zmenenych: r.zmenenych,
+              preskocenych: r.preskocenych,
+            },
+          ),
         );
-      else toast.success(r.zmenenych ? "Nastavené" : "Nič sa nezmenilo — vyplňte aspoň jedno pole.");
+      else
+        toast.success(
+          r.zmenenych ? t("Nastavené") : t("Nič sa nezmenilo — vyplňte aspoň jedno pole."),
+        );
       onHotovo();
       onClose();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
   }
 
-  const pocet = ids.length === 1 ? "1 doklad" : ids.length < 5 ? `${ids.length} doklady` : `${ids.length} dokladov`;
+  const pocet = t(ids.length === 1 ? "1 doklad" : ids.length < 5 ? "{n} doklady" : "{n} dokladov", {
+    n: ids.length,
+  });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Predkontácia vybraných dokladov"
+        aria-label={t("Predkontácia vybraných dokladov")}
         className="w-full max-w-2xl rounded-xl border border-border bg-card p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">Predkontácia — {pocet}</h2>
+        <h2 className="text-lg font-semibold">{t("Predkontácia — {pocet}", { pocet })}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Vyplnené pole sa nastaví na všetkých vybraných; prázdne nechá, čo na doklade je (z pravidla
-          alebo predvolené pre bločky z{" "}
+          {t(
+            "Vyplnené pole sa nastaví na všetkých vybraných; prázdne nechá, čo na doklade je (z pravidla alebo predvolené pre bločky z",
+          )}{" "}
           <Link to="/uctovnictvo/predkontacie" className="underline">
-            nastavení predkontácií
+            {t("nastavení predkontácií")}
           </Link>
-          ). Do Pohody idú spracované doklady.
+          {t("). Do Pohody idú spracované doklady.")}
         </p>
         <div className="mt-4">
           <PoliaZauctovania navrhy={navrhy} hodnoty={h} setHodnoty={setH} hromadne />
@@ -97,7 +114,7 @@ export function PredkontaciaDokladovOkno({
             onClick={onClose}
             className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
           >
-            Zrušiť
+            {t("Zrušiť")}
           </button>
           <button
             onClick={ulozit}
@@ -105,7 +122,7 @@ export function PredkontaciaDokladovOkno({
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-            Nastaviť
+            {t("Nastaviť")}
           </button>
         </div>
       </div>

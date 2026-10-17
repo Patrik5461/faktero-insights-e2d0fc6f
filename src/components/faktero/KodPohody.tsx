@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import type { MoznostKodu } from "@/lib/faktero/predkontacie";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Políčko na kód Pohody — predkontáciu alebo členenie DPH.
@@ -35,6 +36,7 @@ export function KodPohody({
   /** Pri prázdnom číselníku ukáže odkaz na jeho načítanie (len pri hlavnej predkontácii). */
   odkazNaCiselnik?: boolean;
 }) {
+  const { t } = useT();
   const id = useId();
   const [pisat, setPisat] = useState(false);
   const vybrany = moznosti.find((m) => m.kod === value.trim());
@@ -48,7 +50,7 @@ export function KodPohody({
     return (
       <>
         <select
-          aria-label={ariaLabel}
+          aria-label={ariaLabel ? t(ariaLabel) : ariaLabel}
           value={value.trim()}
           onChange={(e) => {
             if (e.target.value === "__iny__") {
@@ -63,13 +65,13 @@ export function KodPohody({
         >
           <option value="">
             {placeholder && /^[\w.\-]{1,20}$/.test(placeholder) && placeholder !== "nemeniť"
-              ? `predvolené: ${placeholder}`
+              ? t("predvolené: {kod}", { kod: placeholder })
               : placeholder === "nemeniť" || placeholder?.startsWith("ako ")
-                ? placeholder
+                ? t(placeholder)
                 : "—"}
           </option>
           {neznamy ? (
-            <option value={value.trim()}>{value.trim()} — nie je v číselníku</option>
+            <option value={value.trim()}>{value.trim()} — {t("nie je v číselníku")}</option>
           ) : null}
           {moznosti.map((m) => (
             <option key={m.kod} value={m.kod}>
@@ -78,11 +80,11 @@ export function KodPohody({
               {m.ucty ? ` (${m.ucty})` : ""}
             </option>
           ))}
-          <option value="__iny__">Iný kód…</option>
+          <option value="__iny__">{t("Iný kód…")}</option>
         </select>
         {!bezPopisu && neznamy ? (
           <span className="mt-0.5 block truncate text-xs text-amber-700">
-            Kód nie je v číselníku — skontrolujte, či ho Pohoda pozná
+            {t("Kód nie je v číselníku — skontrolujte, či ho Pohoda pozná")}
           </span>
         ) : null}
       </>
@@ -93,8 +95,8 @@ export function KodPohody({
       <input
         list={id}
         value={value}
-        placeholder={placeholder}
-        aria-label={ariaLabel}
+        placeholder={placeholder ? t(placeholder) : placeholder}
+        aria-label={ariaLabel ? t(ariaLabel) : ariaLabel}
         onChange={(e) => onChange(e.target.value)}
         className={
           className ?? "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -112,14 +114,14 @@ export function KodPohody({
           className={`mt-0.5 block truncate text-xs ${neznamy ? "text-amber-700" : "text-muted-foreground"}`}
         >
           {neznamy
-            ? "Kód nie je v číselníku predkontácií"
+            ? t("Kód nie je v číselníku predkontácií")
             : [vybrany?.popis, vybrany?.ucty].filter(Boolean).join(" · ")}
         </span>
       ) : null}
       {vyber && odkazNaCiselnik && !moznosti.length && !bezPopisu ? (
         <span className="mt-0.5 block text-xs text-muted-foreground">
           <Link to="/uctovnictvo/predkontacie" className="text-primary hover:underline">
-            Načítať číselník z Pohody
+            {t("Načítať číselník z Pohody")}
           </Link>
         </span>
       ) : null}

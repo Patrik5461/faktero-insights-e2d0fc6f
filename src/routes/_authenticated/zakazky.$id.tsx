@@ -14,9 +14,11 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/zakazky/$id")({
-  head: () => ({ meta: [{ title: "Zákazka — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zákazka — Faktero") }] }),
   component: JobDetail,
 });
 
@@ -35,11 +37,12 @@ function Karta({
   farba?: string;
   poznamka?: string;
 }) {
+  const { t } = useT();
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{titulok}</div>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{t(titulok)}</div>
       <div className={`mt-1 text-xl font-semibold tabular-nums ${farba ?? ""}`}>{hodnota}</div>
-      {poznamka && <div className="mt-1 text-xs text-muted-foreground">{poznamka}</div>}
+      {poznamka && <div className="mt-1 text-xs text-muted-foreground">{t(poznamka)}</div>}
     </div>
   );
 }
@@ -58,6 +61,7 @@ function Prucok({ percento, obratene }: { percento: number; obratene?: boolean }
 }
 
 function JobDetail() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const { id } = useParams({ from: "/_authenticated/zakazky/$id" });
   const nav = useNavigate();
@@ -96,7 +100,7 @@ function JobDetail() {
         setData(d);
         setError(null);
       })
-      .catch((e: any) => setError(e?.message ?? "Zákazku sa nepodarilo načítať"))
+      .catch((e: any) => setError(e?.message ?? t("Zákazku sa nepodarilo načítať")))
       .finally(() => setLoading(false));
   }, [cid, fetchJob, id]);
 
@@ -135,7 +139,7 @@ function JobDetail() {
       await fn();
       nacitaj();
     } catch (e: any) {
-      setError(e?.message ?? "Operácia zlyhala");
+      setError(e?.message ?? t("Operácia zlyhala"));
     } finally {
       setBusy(false);
     }
@@ -144,14 +148,14 @@ function JobDetail() {
   if (loading) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Načítavam…</div>
+        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
       </PageBody>
     );
   }
   if (!data) {
     return (
       <PageBody>
-        <div className="text-sm text-destructive">{error ?? "Zákazka nenájdená."}</div>
+        <div className="text-sm text-destructive">{error ?? t("Zákazka nenájdená.")}</div>
       </PageBody>
     );
   }
@@ -176,8 +180,8 @@ function JobDetail() {
         title={`${j.job_number} — ${j.name}`}
         description={[
           j.customer_name,
-          j.start_date && `od ${datumNaDoklade(j.start_date)}`,
-          j.end_date && `do ${datumNaDoklade(j.end_date)}`,
+          j.start_date && t("od {datum}", { datum: datumNaDoklade(j.start_date) }),
+          j.end_date && t("do {datum}", { datum: datumNaDoklade(j.end_date) }),
         ]
           .filter(Boolean)
           .join(" · ")}
@@ -191,7 +195,7 @@ function JobDetail() {
                   disabled={busy}
                   className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
                 >
-                  <Pencil className="h-4 w-4" /> Upraviť
+                  <Pencil className="h-4 w-4" /> {t("Upraviť")}
                 </button>
                 <button
                   type="button"
@@ -201,7 +205,7 @@ function JobDetail() {
                   disabled={busy}
                   className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  <Lock className="h-4 w-4" /> Uzavrieť
+                  <Lock className="h-4 w-4" /> {t("Uzavrieť")}
                 </button>
               </>
             )}
@@ -214,7 +218,7 @@ function JobDetail() {
                 disabled={busy}
                 className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
               >
-                <Unlock className="h-4 w-4" /> Znovu otvoriť
+                <Unlock className="h-4 w-4" /> {t("Znovu otvoriť")}
               </button>
             )}
           </div>
@@ -229,8 +233,12 @@ function JobDetail() {
 
         {!otvorena && (
           <div className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-            Zákazka je {STAV_ZAKAZKY_POPIS[j.status as StavZakazky]?.toLowerCase()}. Nový doklad sa
-            k nej priradiť nedá — vyhodnotenie sa už nezmení.
+            {t(
+              "Zákazka je {stav}. Nový doklad sa k nej priradiť nedá — vyhodnotenie sa už nezmení.",
+              {
+                stav: t(STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status).toLowerCase(),
+              },
+            )}
           </div>
         )}
 
@@ -260,7 +268,7 @@ function JobDetail() {
             }}
           >
             <div>
-              <label className={popis}>Názov</label>
+              <label className={popis}>{t("Názov")}</label>
               <input
                 className={pole}
                 value={form.name}
@@ -269,13 +277,13 @@ function JobDetail() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={popis}>Odberateľ</label>
+                <label className={popis}>{t("Odberateľ")}</label>
                 <select
                   className={pole}
                   value={form.customer_id}
                   onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
                 >
-                  <option value="">— bez odberateľa —</option>
+                  <option value="">{t("— bez odberateľa —")}</option>
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -285,7 +293,7 @@ function JobDetail() {
               </div>
               <div />
               <div>
-                <label className={popis}>Začiatok</label>
+                <label className={popis}>{t("Začiatok")}</label>
                 <input
                   type="date"
                   className={pole}
@@ -294,7 +302,7 @@ function JobDetail() {
                 />
               </div>
               <div>
-                <label className={popis}>Koniec</label>
+                <label className={popis}>{t("Koniec")}</label>
                 <input
                   type="date"
                   className={pole}
@@ -303,7 +311,9 @@ function JobDetail() {
                 />
               </div>
               <div>
-                <label className={popis}>Plánované výnosy ({mena.symbol})</label>
+                <label className={popis}>
+                  {t("Plánované výnosy ({mena})", { mena: mena.symbol })}
+                </label>
                 <input
                   type="number"
                   step="0.01"
@@ -314,7 +324,9 @@ function JobDetail() {
                 />
               </div>
               <div>
-                <label className={popis}>Plánované náklady ({mena.symbol})</label>
+                <label className={popis}>
+                  {t("Plánované náklady ({mena})", { mena: mena.symbol })}
+                </label>
                 <input
                   type="number"
                   step="0.01"
@@ -326,13 +338,13 @@ function JobDetail() {
               </div>
             </div>
             <div>
-              <label className={popis}>Manažér zákazky</label>
+              <label className={popis}>{t("Manažér zákazky")}</label>
               <select
                 className={pole}
                 value={form.manazer_id}
                 onChange={(e) => setForm({ ...form, manazer_id: e.target.value })}
               >
-                <option value="">— bez manažéra —</option>
+                <option value="">{t("— bez manažéra —")}</option>
                 {ludia.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.meno}
@@ -340,11 +352,13 @@ function JobDetail() {
                 ))}
               </select>
               <span className="mt-1 block text-xs text-muted-foreground">
-                Môže schvaľovať doklady tejto zákazky, keď je v schvaľovacej ceste „manažér zákazky“.
+                {t(
+                  "Môže schvaľovať doklady tejto zákazky, keď je v schvaľovacej ceste „manažér zákazky“.",
+                )}
               </span>
             </div>
             <div>
-              <label className={popis}>Poznámka</label>
+              <label className={popis}>{t("Poznámka")}</label>
               <textarea
                 className={`${pole} min-h-20`}
                 value={form.note}
@@ -357,14 +371,14 @@ function JobDetail() {
                 disabled={busy}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                Uložiť
+                {t("Uložiť")}
               </button>
               <button
                 type="button"
                 onClick={() => setUpravujem(false)}
                 className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
               >
-                Zrušiť
+                {t("Zrušiť")}
               </button>
             </div>
           </form>
@@ -408,14 +422,14 @@ function JobDetail() {
 
         {(v.planovany_vynos != null || v.planovany_naklad != null) && (
           <div className="mt-6 rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-medium">Plán a skutočnosť</div>
+            <div className="mb-3 text-sm font-medium">{t("Plán a skutočnosť")}</div>
             <div className="grid gap-4 sm:grid-cols-2">
               {v.planovany_vynos != null && (
                 <div>
                   <div className="mb-1 flex justify-between text-sm">
-                    <span className="text-muted-foreground">Výnosy</span>
+                    <span className="text-muted-foreground">{t("Výnosy")}</span>
                     <span className="tabular-nums">
-                      {suma(v.vynosy)} z {suma(v.planovany_vynos)}
+                      {t("{suma} z {plan}", { suma: suma(v.vynosy), plan: suma(v.planovany_vynos) })}
                       {v.plnenie_vynosu != null && ` (${v.plnenie_vynosu} %)`}
                     </span>
                   </div>
@@ -425,9 +439,9 @@ function JobDetail() {
               {v.planovany_naklad != null && (
                 <div>
                   <div className="mb-1 flex justify-between text-sm">
-                    <span className="text-muted-foreground">Náklady</span>
+                    <span className="text-muted-foreground">{t("Náklady")}</span>
                     <span className="tabular-nums">
-                      {suma(v.naklady)} z {suma(v.planovany_naklad)}
+                      {t("{suma} z {plan}", { suma: suma(v.naklady), plan: suma(v.planovany_naklad) })}
                       {v.cerpanie_nakladu != null && ` (${v.cerpanie_nakladu} %)`}
                     </span>
                   </div>
@@ -437,7 +451,7 @@ function JobDetail() {
             </div>
             {v.planovany_zisk != null && (
               <div className="mt-3 text-sm text-muted-foreground">
-                Plánovaný zisk {suma(v.planovany_zisk)}, skutočný{" "}
+                {t("Plánovaný zisk {suma}, skutočný", { suma: suma(v.planovany_zisk) })}{" "}
                 <span className={v.zisk < 0 ? "text-destructive" : "text-emerald-600"}>
                   {suma(v.zisk)}
                 </span>
@@ -450,7 +464,7 @@ function JobDetail() {
         {j.note && (
           <div className="mt-6 rounded-xl border border-border bg-card p-4 text-sm">
             <div className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
-              Poznámka
+              {t("Poznámka")}
             </div>
             <div className="whitespace-pre-wrap">{j.note}</div>
           </div>
@@ -471,12 +485,12 @@ function JobDetail() {
             </Link>,
             f.issue_date,
             f.type === "credit_note"
-              ? "Dobropis"
+              ? t("Dobropis")
               : f.type === "debit_note"
-                ? "Ťarchopis"
+                ? t("Ťarchopis")
                 : f.type === "proforma"
-                  ? "Zálohová"
-                  : "Faktúra",
+                  ? t("Zálohová")
+                  : t("Faktúra"),
             suma(Number(f.subtotal)),
           ])}
         />
@@ -499,7 +513,7 @@ function JobDetail() {
           hlavicka={["Položka", "Pohyb", "Množstvo", "Vážená cena", "Hodnota"]}
           riadky={data.pohyby.map((p: any) => [
             p.nazov,
-            pohybNazov(p.type),
+            t(pohybNazov(p.type)),
             Number(p.quantity),
             p.unit_cost == null ? "—" : suma(Number(p.unit_cost)),
             suma(Number(p.unit_cost ?? 0) * Number(p.quantity)),
@@ -523,7 +537,7 @@ function JobDetail() {
             o.supplier_name ?? "—",
             o.order_date,
             o.expected_date ?? "—",
-            STAV_POPIS[o.status as StavObjednavky] ?? o.status,
+            t(STAV_POPIS[o.status as StavObjednavky] ?? o.status),
           ])}
         />
 
@@ -547,7 +561,7 @@ function JobDetail() {
             type="button"
             disabled={busy}
             onClick={async () => {
-              if (!(await potvrd(`Naozaj zmazať zákazku ${j.job_number}?`))) return;
+              if (!(await potvrd(t("Naozaj zmazať zákazku {cislo}?", { cislo: j.job_number })))) return;
               akcia(async () => {
                 await doDelete({ data: { company_id: cid!, id } });
                 nav({ to: "/zakazky" });
@@ -555,12 +569,14 @@ function JobDetail() {
             }}
             className="inline-flex items-center gap-1 text-sm text-destructive hover:underline disabled:opacity-50"
           >
-            <Trash2 className="h-4 w-4" /> Zmazať zákazku
+            <Trash2 className="h-4 w-4" /> {t("Zmazať zákazku")}
           </button>
           <p className="mt-1 text-xs text-muted-foreground">
             {maDoklady
-              ? "Zákazka má naviazané doklady — najprv ich od nej odpojte, inak ju možno len uzavrieť."
-              : "Zmazať sa dá zákazka bez dokladov. Rozbehnutú radšej uzavrite."}
+              ? t(
+                  "Zákazka má naviazané doklady — najprv ich od nej odpojte, inak ju možno len uzavrieť.",
+                )
+              : t("Zmazať sa dá zákazka bez dokladov. Rozbehnutú radšej uzavrite.")}
           </p>
         </div>
       </PageBody>
@@ -581,15 +597,16 @@ function Zoznam({
   riadky: React.ReactNode[][];
   poznamka?: string;
 }) {
+  const { t } = useT();
   return (
     <div className="mt-6">
       <div className="mb-2 text-sm font-medium">
-        {titulok} <span className="text-muted-foreground">({riadky.length})</span>
+        {t(titulok)} <span className="text-muted-foreground">({riadky.length})</span>
       </div>
-      {poznamka && <div className="mb-2 text-xs text-muted-foreground">{poznamka}</div>}
+      {poznamka && <div className="mb-2 text-xs text-muted-foreground">{t(poznamka)}</div>}
       {riadky.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-          {prazdne}
+          {t(prazdne)}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
@@ -598,7 +615,7 @@ function Zoznam({
               <tr>
                 {hlavicka.map((h, i) => (
                   <th key={h} className={`p-3 ${i >= hlavicka.length - 2 ? "text-right" : ""}`}>
-                    {h}
+                    {t(h)}
                   </th>
                 ))}
               </tr>

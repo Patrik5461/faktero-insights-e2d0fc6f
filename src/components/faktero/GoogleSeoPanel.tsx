@@ -15,10 +15,12 @@ import {
   requestIndexingFn,
 } from "@/lib/faktero/google-seo.functions";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/useT";
 
 type ConnType = "gsc" | "ga4";
 
 export function GoogleSeoPanel() {
+  const { t } = useT();
   const qc = useQueryClient();
   const statusFn = useServerFn(getGoogleSeoStatus);
   const authFn = useServerFn(getGoogleSeoAuthUrl);
@@ -34,23 +36,23 @@ export function GoogleSeoPanel() {
     onSuccess: ({ url }) => {
       window.location.href = url;
     },
-    onError: (e: any) => toast.error(e.message ?? "Chyba"),
+    onError: (e: any) => toast.error(e.message ?? t("Chyba")),
   });
 
   const disconnect = useMutation({
     mutationFn: (type: ConnType) => disconnectFn({ data: { type } }),
     onSuccess: () => {
-      toast.success("Odpojené");
+      toast.success(t("Odpojené"));
       qc.invalidateQueries({ queryKey: ["google-seo-status"] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Chyba"),
+    onError: (e: any) => toast.error(e.message ?? t("Chyba")),
   });
 
   return (
     <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
-      <h2 className="font-semibold mb-1">Google integrácia</h2>
+      <h2 className="font-semibold mb-1">{t("Google integrácia")}</h2>
       <p className="text-xs text-muted-foreground mb-4">
-        Prepojte Search Console a Analytics 4 pre dashboard so štatistikami.
+        {t("Prepojte Search Console a Analytics 4 pre dashboard so štatistikami.")}
       </p>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -93,6 +95,7 @@ function ConnectionCard({
   onDisconnect: () => void;
   type: ConnType;
 }) {
+  const { t } = useT();
   const qc = useQueryClient();
   const sitesFn = useServerFn(listGscSitesFn);
   const propsFn = useServerFn(listGa4PropertiesFn);
@@ -107,10 +110,10 @@ function ConnectionCard({
   const setProp = useMutation({
     mutationFn: (property_id: string) => setPropFn({ data: { type, property_id } }),
     onSuccess: () => {
-      toast.success("Property nastavené");
+      toast.success(t("Property nastavené"));
       qc.invalidateQueries({ queryKey: ["google-seo-status"] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Chyba"),
+    onError: (e: any) => toast.error(e.message ?? t("Chyba")),
   });
 
   return (
@@ -119,25 +122,25 @@ function ConnectionCard({
         <div>
           <div className="font-medium">{title}</div>
           {loading ? (
-            <div className="text-xs text-muted-foreground">Načítavam...</div>
+            <div className="text-xs text-muted-foreground">{t("Načítavam…")}</div>
           ) : conn ? (
             <div className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
-              <CheckCircle2 className="h-3 w-3" /> Pripojené
-              {conn.property_id ? ` — ${conn.property_id}` : " (vyberte property)"}
+              <CheckCircle2 className="h-3 w-3" /> {t("Pripojené")}
+              {conn.property_id ? ` — ${conn.property_id}` : " " + t("(vyberte property)")}
             </div>
           ) : (
             <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <AlertCircle className="h-3 w-3" /> Nepripojené
+              <AlertCircle className="h-3 w-3" /> {t("Nepripojené")}
             </div>
           )}
         </div>
         {conn ? (
           <Button size="sm" variant="ghost" onClick={onDisconnect}>
-            <Unlink className="h-3 w-3 mr-1" /> Odpojiť
+            <Unlink className="h-3 w-3 mr-1" /> {t("Odpojiť")}
           </Button>
         ) : (
           <Button size="sm" onClick={onConnect}>
-            <ExternalLink className="h-3 w-3 mr-1" /> Pripojiť
+            <ExternalLink className="h-3 w-3 mr-1" /> {t("Pripojiť")}
           </Button>
         )}
       </div>
@@ -145,10 +148,10 @@ function ConnectionCard({
       {conn && !conn.property_id && (
         <div>
           <div className="text-xs font-medium mb-1">
-            Vyberte {type === "gsc" ? "web" : "property"}:
+            {type === "gsc" ? t("Vyberte web:") : t("Vyberte property:")}
           </div>
           {listQuery.isLoading && (
-            <div className="text-xs text-muted-foreground">Načítavam zoznam...</div>
+            <div className="text-xs text-muted-foreground">{t("Načítavam zoznam…")}</div>
           )}
           {listQuery.error && (
             <div className="text-xs text-destructive">{(listQuery.error as any).message}</div>
@@ -176,6 +179,7 @@ function ConnectionCard({
 }
 
 function GscDashboard() {
+  const { t } = useT();
   const [busy, setBusy] = useState<string | null>(null);
   const gscFn = useServerFn(getGscOverview);
   const indexFn = useServerFn(requestIndexingFn);
@@ -190,9 +194,10 @@ function GscDashboard() {
   return (
     <div className="mt-6 border-t border-border pt-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-sm">Search Console — posledných 28 dní</h3>
+        <h3 className="font-semibold text-sm">{t("Search Console — posledných 28 dní")}</h3>
         <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCcw className={`h-3 w-3 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Obnoviť
+          <RefreshCcw className={`h-3 w-3 mr-1 ${isFetching ? "animate-spin" : ""}`} />{" "}
+          {t("Obnoviť")}
         </Button>
       </div>
 
@@ -230,15 +235,15 @@ function GscDashboard() {
                 setBusy(row.page);
                 try {
                   await indexFn({ data: { url: row.page } });
-                  toast.success("Odoslané na indexovanie");
+                  toast.success(t("Odoslané na indexovanie"));
                 } catch (e: any) {
-                  toast.error(e.message ?? "Chyba");
+                  toast.error(e.message ?? t("Chyba"));
                 } finally {
                   setBusy(null);
                 }
               }}
             >
-              Indexovať
+              {t("Indexovať")}
             </button>
           )}
         />
@@ -248,6 +253,7 @@ function GscDashboard() {
 }
 
 function Ga4Dashboard() {
+  const { t } = useT();
   const ga4Fn = useServerFn(getGa4Overview);
   const { data, refetch, isFetching } = useQuery({
     queryKey: ["ga4-overview"],
@@ -259,9 +265,10 @@ function Ga4Dashboard() {
   return (
     <div className="mt-6 border-t border-border pt-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-sm">Analytics 4 — posledných 28 dní</h3>
+        <h3 className="font-semibold text-sm">{t("Analytics 4 — posledných 28 dní")}</h3>
         <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCcw className={`h-3 w-3 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Obnoviť
+          <RefreshCcw className={`h-3 w-3 mr-1 ${isFetching ? "animate-spin" : ""}`} />{" "}
+          {t("Obnoviť")}
         </Button>
       </div>
 
@@ -303,9 +310,10 @@ function Ga4Dashboard() {
 }
 
 function Stat({ label, value }: { label: string; value: any }) {
+  const { t } = useT();
   return (
     <div className="rounded-lg border border-border p-3">
-      <div className="text-[11px] text-muted-foreground uppercase">{label}</div>
+      <div className="text-[11px] text-muted-foreground uppercase">{t(label)}</div>
       <div className="text-lg font-semibold mt-1">{value}</div>
     </div>
   );
@@ -328,13 +336,16 @@ function Table({
   }>;
   rowAction?: (row: any) => React.ReactNode;
 }) {
+  const { t } = useT();
   return (
     <div className="rounded-lg border border-border overflow-hidden">
       <div className="px-3 py-2 border-b border-border bg-muted/50 text-xs font-medium">
-        {title}
+        {t(title)}
       </div>
       <div className="divide-y divide-border">
-        {rows.length === 0 && <div className="p-3 text-xs text-muted-foreground">Žiadne dáta</div>}
+        {rows.length === 0 && (
+          <div className="p-3 text-xs text-muted-foreground">{t("Žiadne dáta")}</div>
+        )}
         {rows.map((row: any, i) => (
           <div key={i} className="flex items-center gap-2 px-3 py-2 text-xs">
             {columns.map((c) => (

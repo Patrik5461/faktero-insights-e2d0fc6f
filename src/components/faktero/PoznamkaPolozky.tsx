@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Podrobnejší rozpis pod položkou faktúry (napr. čo presne práca obsahovala).
@@ -16,6 +17,7 @@ export function PoznamkaPolozky({
   disabled?: boolean;
   mobil?: boolean;
 }) {
+  const { t } = useT();
   const [otvorene, setOtvorene] = useState(false);
   const text = value ?? "";
   if (!text && !otvorene) {
@@ -26,13 +28,13 @@ export function PoznamkaPolozky({
         onClick={() => setOtvorene(true)}
         className={`text-xs text-primary hover:underline ${mobil ? "mb-2" : "ml-2 mt-0.5"}`}
       >
-        + Poznámka k položke
+        {t("+ Poznámka k položke")}
       </button>
     );
   }
   return (
     <textarea
-      aria-label="Poznámka k položke"
+      aria-label={t("Poznámka k položke")}
       value={text}
       disabled={disabled}
       autoFocus={otvorene && !text}
@@ -40,7 +42,7 @@ export function PoznamkaPolozky({
       onBlur={() => !text.trim() && setOtvorene(false)}
       rows={Math.min(6, Math.max(2, text.split("\n").length))}
       maxLength={2000}
-      placeholder="Podrobnejší rozpis položky — vytlačí sa pod jej názvom"
+      placeholder={t("Podrobnejší rozpis položky — vytlačí sa pod jej názvom")}
       className={
         mobil
           ? "mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-xs"

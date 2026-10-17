@@ -1,17 +1,27 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/predplatne")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Predplatné — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Predplatné — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Skúšobné obdobie, obnovovanie, GoPay platba, zmena plánu a zrušenie predplatného Faktero.",
+        ),
       },
-      { property: "og:title", content: "Pomoc — Predplatné — Faktero" },
-      { property: "og:description", content: "Ako funguje predplatné a fakturácia Faktera." },
+      {
+        property: "og:title",
+        content: preloz(match.context.jazyk, "Pomoc — Predplatné — Faktero"),
+      },
+      {
+        property: "og:description",
+        content: preloz(match.context.jazyk, "Ako funguje predplatné a fakturácia Faktera."),
+      },
       { property: "og:url", content: "https://faktero.sk/pomoc/predplatne" },
     ],
     links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/predplatne" }],
@@ -126,7 +136,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Predplatné"
       title="Predplatné a fakturácia Faktera"
       intro={<p>Ako funguje skúšobné obdobie, obnova, zmena plánu a zrušenie predplatného.</p>}

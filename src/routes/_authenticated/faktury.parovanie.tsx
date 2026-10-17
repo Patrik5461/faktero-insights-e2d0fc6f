@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -23,7 +25,7 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/faktury/parovanie")({
-  head: () => ({ meta: [{ title: "Párovanie platieb — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Párovanie platieb — Faktero") }] }),
   component: ParovaniePage,
 });
 
@@ -58,6 +60,7 @@ type Zhoda = {
 };
 
 function ParovaniePage() {
+  const { t } = useT();
   const nacitaj = useServerFn(navrhniParovanie);
   const potvrd = useServerFn(potvrdParovanie);
   const automaticky = useServerFn(sparujAutomaticky);
@@ -85,7 +88,7 @@ function ParovaniePage() {
       // Isté zhody sú predvolene zaškrtnuté, návrhy nie — tie má človek prejsť.
       setVybrane(new Set(d.auto.map((z: Zhoda) => z.transactionId)));
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa načítať platby.");
+      toast.error(e?.message ?? t("Nepodarilo sa načítať platby."));
     } finally {
       setLoading(false);
     }
@@ -103,19 +106,19 @@ function ParovaniePage() {
     const pary = vsetky
       .filter((z) => vybrane.has(z.transactionId))
       .map((z) => ({ transactionId: z.transactionId, invoiceId: z.invoiceId, suma: z.suma }));
-    if (pary.length === 0) return toast.info("Nie je vybraná žiadna platba.");
+    if (pary.length === 0) return toast.info(t("Nie je vybraná žiadna platba."));
     setBusy(true);
     try {
       const r = (await potvrd({ data: { companyId: cid, pary } })) as any;
-      if (r.zapisanych === 0) toast.error(r.preskocene?.[0] ?? "Nezapísalo sa nič.");
+      if (r.zapisanych === 0) toast.error(r.preskocene?.[0] ? t(r.preskocene[0]) : t("Nezapísalo sa nič."));
       else
         toast.success(
-          `Zapísaných ${r.zapisanych} úhrad, uhradených faktúr: ${r.uhradenych}.` +
-            (r.preskocene?.length ? ` Preskočené: ${r.preskocene.length}.` : ""),
+          t("Zapísaných {n} úhrad, uhradených faktúr: {m}.", { n: r.zapisanych, m: r.uhradenych }) +
+            (r.preskocene?.length ? " " + t("Preskočené: {n}.", { n: r.preskocene.length }) : ""),
         );
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Zápis zlyhal.");
+      toast.error(e?.message ?? t("Zápis zlyhal."));
     } finally {
       setBusy(false);
     }
@@ -129,12 +132,12 @@ function ParovaniePage() {
       const r = (await automaticky({ data: { companyId: cid } })) as any;
       toast.success(
         r.zapisanych === 0
-          ? "Nič isté na spárovanie — pozrite návrhy nižšie."
-          : `Spárovaných ${r.zapisanych} platieb, uhradených faktúr: ${r.uhradenych}.`,
+          ? t("Nič isté na spárovanie — pozrite návrhy nižšie.")
+          : t("Spárovaných {n} platieb, uhradených faktúr: {m}.", { n: r.zapisanych, m: r.uhradenych }),
       );
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Párovanie zlyhalo.");
+      toast.error(e?.message ?? t("Párovanie zlyhalo."));
     } finally {
       setBusy(false);
     }
@@ -151,22 +154,22 @@ function ParovaniePage() {
   return (
     <>
       <PageHeader
-        title="Párovanie platieb"
-        description="Príchodzie platby z banky priradené k otvoreným faktúram."
+        title={t("Párovanie platieb")}
+        description={t("Príchodzie platby z banky priradené k otvoreným faktúram.")}
         action={
           <div className="flex flex-wrap gap-2">
             <Link
               to="/faktury"
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
             >
-              <ArrowLeft className="h-4 w-4" /> Späť na faktúry
+              <ArrowLeft className="h-4 w-4" /> {t("Späť na faktúry")}
             </Link>
             <button
               onClick={obnov}
               disabled={loading || busy}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Obnoviť
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> {t("Obnoviť")}
             </button>
             <button
               onClick={spustAutomat}
@@ -174,7 +177,7 @@ function ParovaniePage() {
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-              Spárovať isté ({data?.auto.length ?? 0})
+              {t("Spárovať isté ({n})", { n: data?.auto.length ?? 0 })}
             </button>
           </div>
         }
@@ -182,37 +185,35 @@ function ParovaniePage() {
       <PageBody>
         {loading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Hľadám platby k faktúram…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("Hľadám platby k faktúram…")}
           </div>
         )}
 
         {!loading && data && (
           <>
             <div className="mb-4 grid gap-3 sm:grid-cols-4">
-              <Dlazdica label="Isté zhody" value={data.auto.length} zvyraznene />
-              <Dlazdica label="Na rozhodnutie" value={data.navrhy.length} />
-              <Dlazdica label="Bez zhody" value={data.bezZhody} />
-              <Dlazdica label="Otvorené faktúry" value={data.otvorenychFaktur} />
+              <Dlazdica label={t("Isté zhody")} value={data.auto.length} zvyraznene />
+              <Dlazdica label={t("Na rozhodnutie")} value={data.navrhy.length} />
+              <Dlazdica label={t("Bez zhody")} value={data.bezZhody} />
+              <Dlazdica label={t("Otvorené faktúry")} value={data.otvorenychFaktur} />
             </div>
 
             {/* Odrezaný zoznam vyzeral ako celý. Pri tisíckach pohybov to
                 znamenalo, že staršie platby nikto nikdy neuvidel. */}
             {data.orezane && (
               <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-                Platieb je viac, než sa dá spracovať naraz. Načítaných je{" "}
-                {data.stropPlatieb ?? 2000} najnovších za posledných {data.dniDozadu ?? 400} dní.
-                Spárujte ich a zvyšok sa načíta po obnovení stránky.
+                {t("Platieb je viac, než sa dá spracovať naraz. Načítaných je {n} najnovších za posledných {dni} dní. Spárujte ich a zvyšok sa načíta po obnovení stránky.", { n: data.stropPlatieb ?? 2000, dni: data.dniDozadu ?? 400 })}
               </div>
             )}
 
             {vsetky.length === 0 ? (
               <EmptyState
                 icon={Landmark}
-                title="Niet čo párovať"
+                title={t("Niet čo párovať")}
                 description={
                   data.otvorenychFaktur === 0
-                    ? "Žiadna faktúra nečaká na úhradu."
-                    : "K otvoreným faktúram sa nenašla žiadna zodpovedajúca platba. Skúste najprv stiahnuť nové pohyby v bankových účtoch."
+                    ? t("Žiadna faktúra nečaká na úhradu.")
+                    : t("K otvoreným faktúram sa nenašla žiadna zodpovedajúca platba. Skúste najprv stiahnuť nové pohyby v bankových účtoch.")
                 }
               />
             ) : (
@@ -222,10 +223,10 @@ function ParovaniePage() {
                     <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
                         <th className="w-10 px-3 py-2"></th>
-                        <th className="px-3 py-2">Platba z banky</th>
-                        <th className="px-3 py-2">Faktúra</th>
-                        <th className="px-3 py-2">Prečo</th>
-                        <th className="px-3 py-2 text-right">Zapíše sa</th>
+                        <th className="px-3 py-2">{t("Platba z banky")}</th>
+                        <th className="px-3 py-2">{t("Faktúra")}</th>
+                        <th className="px-3 py-2">{t("Prečo")}</th>
+                        <th className="px-3 py-2 text-right">{t("Zapíše sa")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -267,17 +268,17 @@ function ParovaniePage() {
                                   : "bg-amber-500/10 text-amber-700"
                               }`}
                             >
-                              {z.istota === "auto" ? "isté" : "na rozhodnutie"}
+                              {z.istota === "auto" ? t("isté") : t("na rozhodnutie")}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {z.dovody.join(" · ")}
+                              {z.dovody.map((d) => t(d)).join(" · ")}
                             </span>
                           </td>
                           <td className="px-3 py-3 text-right tabular-nums font-medium">
                             {fmt(z.suma, z.transakcia?.currency)}
                             {z.ciastocna && (
                               <div className="text-xs font-normal text-amber-700 dark:text-amber-300">
-                                faktúra ostane otvorená
+                                {t("faktúra ostane otvorená")}
                               </div>
                             )}
                           </td>
@@ -289,9 +290,9 @@ function ParovaniePage() {
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-xs text-muted-foreground">
-                    Zapísaná úhrada sa dá vrátiť v{" "}
+                    {t("Zapísaná úhrada sa dá vrátiť v")}{" "}
                     <Link to="/bankove-ucty/transakcie" className="underline">
-                      bankových transakciách
+                      {t("bankových transakciách")}
                     </Link>
                     .
                   </p>
@@ -305,7 +306,7 @@ function ParovaniePage() {
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
-                    Zapísať úhrady ({vybrane.size})
+                    {t("Zapísať úhrady ({n})", { n: vybrane.size })}
                   </button>
                 </div>
               </>
@@ -314,9 +315,9 @@ function ParovaniePage() {
             {/* Obyčajný odsek, nie flex — flex by text a odkaz rozdelil do stĺpcov a „.“ odtrhol. */}
             <p className="mt-6 text-xs text-muted-foreground">
               <HelpCircle className="mr-1.5 inline h-3.5 w-3.5 align-[-2px]" />
-              Ako párovanie rozhoduje a čo robiť s platbami bez variabilného symbolu, je v{" "}
+              {t("Ako párovanie rozhoduje a čo robiť s platbami bez variabilného symbolu, je v")}{" "}
               <a href="/pomoc/banka" target="_blank" className="underline">
-                manuáli k banke
+                {t("manuáli k banke")}
               </a>
               .
             </p>

@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/banka")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Bankové účty — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Bankové účty — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Pripojenie banky, sťahovanie transakcií, párovanie úhrad s faktúrami a bankové výpisy vo Faktere.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/banka" },
     ],
@@ -270,7 +274,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Účtovníctvo"
       title="Bankové účty a párovanie úhrad"
       intro={<p>Pripojenie banky, sťahovanie pohybov, automatické párovanie faktúr a výpisy.</p>}

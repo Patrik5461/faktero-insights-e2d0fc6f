@@ -78,6 +78,7 @@ import { useIsNative } from "@/hooks/useIsNative";
 import { initNativePlatform } from "@/lib/mobile/native-init";
 import { PrepinacMotivu } from "@/components/faktero/PrepinacMotivu";
 import { PrepinacJazyka } from "@/components/faktero/PrepinacJazyka";
+import { useT } from "@/lib/i18n/useT";
 import {
   BocnyPanel,
   SekcieNavigacie,
@@ -131,6 +132,7 @@ export function AppShell({
   productMode?: ProductMode;
   activeProduct?: ActiveProduct;
 }) {
+  const { t } = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const navigate = useNavigate();
@@ -243,10 +245,10 @@ export function AppShell({
       if (!zrusene) setPocetNespracovanych((a.count ?? 0) + (b.count ?? 0));
     };
     void nacitaj().catch(() => {});
-    const t = setInterval(() => void nacitaj().catch(() => {}), 60_000);
+    const casovac = setInterval(() => void nacitaj().catch(() => {}), 60_000);
     return () => {
       zrusene = true;
-      clearInterval(t);
+      clearInterval(casovac);
     };
   }, [pathname]);
 
@@ -266,10 +268,10 @@ export function AppShell({
       if (!zrusene) setPocetUloh(r.spolu);
     };
     void nacitaj().catch(() => {});
-    const t = setInterval(() => void nacitaj().catch(() => {}), 60_000);
+    const casovac = setInterval(() => void nacitaj().catch(() => {}), 60_000);
     return () => {
       zrusene = true;
-      clearInterval(t);
+      clearInterval(casovac);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
@@ -370,7 +372,7 @@ export function AppShell({
               <SheetTrigger asChild>
                 <button
                   className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-secondary max-md:text-primary-foreground max-md:hover:bg-white/15 lg:hidden"
-                  aria-label="Menu"
+                  aria-label={t("Menu")}
                 >
                   <Menu className="h-5 w-5" />
                 </button>
@@ -426,7 +428,7 @@ export function AppShell({
             {canSwitch && (
               <div
                 role="tablist"
-                aria-label="Produkt"
+                aria-label={t("Produkt")}
                 /* Naľavo od prepínača firiem — obe sú kontext, v ktorom človek
                    práve je, tak patria vedľa seba. */
                 className="hidden h-7 shrink-0 items-center gap-0.5 rounded-full bg-muted/60 p-[2px] md:inline-flex"
@@ -444,8 +446,8 @@ export function AppShell({
                       type="button"
                       role="tab"
                       aria-selected={isActive}
-                      aria-label={label}
-                      title={label}
+                      aria-label={t(label)}
+                      title={t(label)}
                       onClick={() => {
                         if (!isActive) switchProduct();
                       }}
@@ -456,7 +458,7 @@ export function AppShell({
                       }`}
                     >
                       <Icon className="h-3.5 w-3.5 min-[900px]:hidden" />
-                      <span className="hidden min-[900px]:inline">{label}</span>
+                      <span className="hidden min-[900px]:inline">{t(label)}</span>
                     </button>
                   );
                 })}
@@ -476,7 +478,7 @@ export function AppShell({
                   <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-64">
-                  <DropdownMenuLabel>Firmy</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t("Firmy")}</DropdownMenuLabel>
                   {/* Účtovník môže mať stovky firiem — od šiestich sa dá hľadať. */}
                   {companies.length >= HLADANIE_OD && (
                     <div className="px-2 pb-1.5">
@@ -486,8 +488,8 @@ export function AppShell({
                         onChange={(e) => setHladanieFiriem(e.target.value)}
                         // Menu inak písmená berie ako skok na položku a pole by nepísalo.
                         onKeyDown={(e) => e.key !== "Escape" && e.stopPropagation()}
-                        placeholder="Hľadať firmu alebo IČO…"
-                        aria-label="Hľadať firmu"
+                        placeholder={t("Hľadať firmu alebo IČO…")}
+                        aria-label={t("Hľadať firmu")}
                         className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
                       />
                     </div>
@@ -495,7 +497,7 @@ export function AppShell({
                   <div className="max-h-80 overflow-y-auto">
                     {filtrujFirmy(companies, hladanieFiriem, activeId).length === 0 && (
                       <p className="px-2 py-3 text-center text-sm text-muted-foreground">
-                        Nič sa nenašlo.
+                        {t("Nič sa nenašlo.")}
                       </p>
                     )}
                     {filtrujFirmy(companies, hladanieFiriem, activeId).map((c) => (
@@ -513,11 +515,11 @@ export function AppShell({
                           {c.name}
                           {c.ico && (
                             <span className="block text-[11px] font-normal text-muted-foreground">
-                              IČO {c.ico}
+                              {t("IČO {ico}", { ico: c.ico })}
                             </span>
                           )}
                         </span>
-                        <span className="ml-auto pl-2 text-xs text-muted-foreground">{popisRoly(c.role)}</span>
+                        <span className="ml-auto pl-2 text-xs text-muted-foreground">{t(popisRoly(c.role))}</span>
                       </DropdownMenuItem>
                     ))}
                   </div>
@@ -528,7 +530,7 @@ export function AppShell({
                       setCreateOpen(true);
                     }}
                   >
-                    <Plus className="mr-2 h-3.5 w-3.5" /> Pridať firmu
+                    <Plus className="mr-2 h-3.5 w-3.5" /> {t("Pridať firmu")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -543,7 +545,7 @@ export function AppShell({
                     ref={searchRef}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Hľadať"
+                    placeholder={t("Hľadať")}
                     className="h-8 w-full rounded-full bg-muted/60 pl-8 pr-12 text-[12.5px] placeholder:text-muted-foreground focus:bg-muted focus:outline-none"
                   />
                   <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">
@@ -565,16 +567,16 @@ export function AppShell({
                 <DropdownMenu>
                   <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[12px] font-medium text-primary-foreground hover:opacity-90 max-md:bg-white max-md:text-primary">
                     <Plus className="h-3.5 w-3.5" />{" "}
-                    <span className="hidden sm:inline">Vytvoriť</span>
+                    <span className="hidden sm:inline">{t("Vytvoriť")}</span>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel className="flex items-center gap-1.5 text-xs">
-                      <Sparkles className="h-3 w-3" /> Rýchle vytvorenie
+                      <Sparkles className="h-3 w-3" /> {t("Rýchle vytvorenie")}
                     </DropdownMenuLabel>
                     {QUICK_CREATE.map((c) => (
                       <DropdownMenuItem key={c.to + c.label} asChild>
                         <Link to={c.to as any} search={c.search as any}>
-                          {c.label}
+                          {t(c.label)}
                         </Link>
                       </DropdownMenuItem>
                     ))}
@@ -588,24 +590,24 @@ export function AppShell({
                   {(active?.name?.[0] ?? "U").toUpperCase()}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
-                  <DropdownMenuLabel>Účet</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t("Účet")}</DropdownMenuLabel>
                   <DropdownMenuItem asChild>
                     <Link to={"/nastavenia" as any}>
-                      <User className="mr-2 h-3.5 w-3.5" /> Profil
+                      <User className="mr-2 h-3.5 w-3.5" /> {t("Profil")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/predplatne">
-                      <CreditCard className="mr-2 h-3.5 w-3.5" /> Predplatné
+                      <CreditCard className="mr-2 h-3.5 w-3.5" /> {t("Predplatné")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Settings className="h-3 w-3" /> Nastavenia
+                    <Settings className="h-3 w-3" /> {t("Nastavenia")}
                   </DropdownMenuLabel>
                   {ACCOUNT_SETTINGS_LINKS.map((c) => (
                     <DropdownMenuItem key={c.to + c.label} asChild>
-                      <Link to={c.to as any}>{c.label}</Link>
+                      <Link to={c.to as any}>{t(c.label)}</Link>
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
@@ -614,13 +616,13 @@ export function AppShell({
                   </DropdownMenuLabel>
                   {ACCOUNT_API_LINKS.map((c) => (
                     <DropdownMenuItem key={c.to + c.label} asChild>
-                      <Link to={c.to as any}>{c.label}</Link>
+                      <Link to={c.to as any}>{t(c.label)}</Link>
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to={"/podpora" as any}>
-                      <HelpCircle className="mr-2 h-3.5 w-3.5" /> Pomoc a podpora
+                      <HelpCircle className="mr-2 h-3.5 w-3.5" /> {t("Pomoc a podpora")}
                     </Link>
                   </DropdownMenuItem>
                   {/* Nahlásiť sa dá z každej stránky — chyba sa nájde tam, kde človek pracuje. */}
@@ -630,7 +632,7 @@ export function AppShell({
                       setNahlasenieOtvorene(true);
                     }}
                   >
-                    <Bug className="mr-2 h-3.5 w-3.5" /> Nahlásiť chybu alebo návrh
+                    <Bug className="mr-2 h-3.5 w-3.5" /> {t("Nahlásiť chybu alebo návrh")}
                   </DropdownMenuItem>
                   {adminRole && (
                     <DropdownMenuItem asChild>
@@ -648,17 +650,17 @@ export function AppShell({
                 */}
                   <div className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
                     <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Vzhľad
+                      {t("Vzhľad")}
                     </div>
                     <PrepinacMotivu />
                     <div className="mb-1 mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Dizajn
+                      {t("Dizajn")}
                     </div>
                     <PrepinacDizajnu />
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
-                    <LogOut className="mr-2 h-3.5 w-3.5" /> Odhlásiť
+                    <LogOut className="mr-2 h-3.5 w-3.5" /> {t("Odhlásiť")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -670,9 +672,9 @@ export function AppShell({
             panel je len pás ikon.
           */}
           {dizajn === "kompaktny" && activeGroup && activeGroup.children.length > 1 && (
-            <nav aria-label={activeGroup.label} className="hidden overflow-x-auto border-t border-border px-4 lg:block lg:px-6">
+            <nav aria-label={t(activeGroup.label)} className="hidden overflow-x-auto border-t border-border px-4 lg:block lg:px-6">
               <ul className="flex items-center gap-1 py-2">
-                <li className="mr-2 shrink-0 text-sm font-semibold text-foreground">{activeGroup.label}</li>
+                <li className="mr-2 shrink-0 text-sm font-semibold text-foreground">{t(activeGroup.label)}</li>
                 {activeGroup.children.map((c) => {
                   const je = activeKey === c.to + c.label;
                   return (
@@ -684,7 +686,7 @@ export function AppShell({
                           je ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                         }`}
                       >
-                        {c.label}
+                        {t(c.label)}
                         {c.to === "/nespracovane" && pocetNespracovanych ? (
                           <span className="rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
                             {pocetNespracovanych > 99 ? "99+" : pocetNespracovanych}
@@ -704,9 +706,8 @@ export function AppShell({
             správa firmy — nech to vie skôr, než to začne hľadať. */}
           {active?.role === "accountant" && (
             <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6 lg:px-8 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
-              Ste vo firme <strong>{active.name}</strong> ako účtovník — doklady vediete v plnom
-              rozsahu. Napojenie banky, platby, API kľúče a správu používateľov má na starosti
-              majiteľ alebo administrátor.
+              {t("Ste vo firme")} <strong>{active.name}</strong>{" "}
+              {t("ako účtovník — doklady vediete v plnom rozsahu. Napojenie banky, platby, API kľúče a správu používateľov má na starosti majiteľ alebo administrátor.")}
             </div>
           )}
           {children}
@@ -760,6 +761,7 @@ function MobileNav({
   pocetNespracovanych?: number;
   pocetUloh?: number;
 }) {
+  const { t } = useT();
   const [hladanie, setHladanie] = useState("");
   const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const sekcie: SekciaPanela[] = nav.map((g) => ({
@@ -793,6 +795,7 @@ function MobileNav({
         </Link>
         <button
           onClick={onClose}
+          aria-label={t("Zavrieť")}
           className="grid h-8 w-8 place-items-center rounded-md hover:bg-secondary"
         >
           <X className="h-4 w-4" />
@@ -808,18 +811,18 @@ function MobileNav({
           className="flex items-center justify-center gap-1.5 border-b border-border bg-secondary/40 px-4 py-2 text-xs font-medium text-foreground/80 hover:bg-secondary"
         >
           <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
-          {view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
+          {view === "invoicing" ? t("Prepnúť na Knihu jázd") : t("Prepnúť na Fakturáciu")}
         </button>
       )}
       {active && (
         <div className="border-b border-border px-4 py-3">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Firma</div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Firma")}</div>
           {companies.length >= HLADANIE_OD && (
             <input
               value={hladanie}
               onChange={(e) => setHladanie(e.target.value)}
-              placeholder="Hľadať firmu alebo IČO…"
-              aria-label="Hľadať firmu"
+              placeholder={t("Hľadať firmu alebo IČO…")}
+              aria-label={t("Hľadať firmu")}
               className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             />
           )}
@@ -844,7 +847,7 @@ function MobileNav({
             }}
             className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1.5 text-sm hover:bg-secondary"
           >
-            <Plus className="h-3.5 w-3.5" /> Pridať firmu
+            <Plus className="h-3.5 w-3.5" /> {t("Pridať firmu")}
           </button>
         </div>
       )}
@@ -864,7 +867,7 @@ function MobileNav({
           onClick={onSignOut}
           className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary"
         >
-          <LogOut className="h-4 w-4" /> Odhlásiť
+          <LogOut className="h-4 w-4" /> {t("Odhlásiť")}
         </button>
       </div>
     </div>
@@ -891,6 +894,7 @@ export function PageHeader({
   /** Vlastný manuál, keď automatický odkaz nesedí. `false` ho skryje. */
   help?: string | false;
 }) {
+  const { t } = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const manual = help === false ? null : (help ?? manualPre(pathname));
   const router = useRouter();
@@ -936,29 +940,29 @@ export function PageHeader({
             <button
               type="button"
               onClick={spat}
-              title="Späť"
-              aria-label="Späť"
+              title={t("Späť")}
+              aria-label={t("Späť")}
               className="-ml-1 inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Späť</span>
+              <span className="hidden sm:inline">{t("Späť")}</span>
             </button>
           )}
-          <h1 className="min-w-0 break-words text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
+          <h1 className="min-w-0 break-words text-xl font-semibold tracking-tight sm:text-2xl">{t(title)}</h1>
           {manual && (
             <a
               href={manual}
               target="_blank"
               rel="noreferrer"
-              title="Otvoriť manuál v novom okne"
+              title={t("Otvoriť manuál v novom okne")}
               className="inline-flex shrink-0 items-center gap-1 self-start rounded-full border border-border px-1.5 py-1 text-[11px] sm:mt-1.5 sm:px-2 sm:py-0.5 font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
             >
               <BookOpen className="h-3 w-3" />
-              <span className="sr-only sm:not-sr-only">Manuál</span>
+              <span className="sr-only sm:not-sr-only">{t("Manuál")}</span>
             </a>
           )}
         </div>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+        {description && <p className="mt-1 text-sm text-muted-foreground">{t(description)}</p>}
       </div>
       {action && (
         <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">{action}</div>

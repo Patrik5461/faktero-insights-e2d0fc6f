@@ -16,13 +16,16 @@ import { Play, Square } from "lucide-react";
 import { toast } from "sonner";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/jazdy/gps")({
-  head: () => ({ meta: [{ title: "GPS jazda — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "GPS jazda — Faktero") }] }),
   component: GpsTripPage,
 });
 
 function GpsTripPage() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const navigate = useNavigate();
   const [tracking, setTracking] = useState(false);
@@ -70,11 +73,11 @@ function GpsTripPage() {
   }, [tracking]);
 
   async function start() {
-    if (!vehicleId) return toast.error("Vyberte vozidlo");
+    if (!vehicleId) return toast.error(t("Vyberte vozidlo"));
     const r = await startTracking();
-    if (!r.ok) return toast.error(r.error ?? "GPS sa nepodarilo spustiť");
+    if (!r.ok) return toast.error(r.error ?? t("GPS sa nepodarilo spustiť"));
     setTracking(true);
-    toast.success("GPS sledovanie spustené");
+    toast.success(t("GPS sledovanie spustené"));
   }
 
   async function stop() {
@@ -105,18 +108,18 @@ function GpsTripPage() {
       .select()
       .single();
     if (error) return toast.error(error.message);
-    toast.success(`Jazda uložená (${formatujCislo(result.distance_km, 1, 2)} km)`);
+    toast.success(t("Jazda uložená ({km} km)", { km: formatujCislo(result.distance_km, 1, 2) }));
     if (data) navigate({ to: "/jazdy" });
   }
 
   return (
     <>
-      <PageHeader title="GPS jazda" description="Automatický záznam trasy" />
+      <PageHeader title={t("GPS jazda")} description={t("Automatický záznam trasy")} />
       <PageBody>
         <div className="mx-auto max-w-md space-y-4">
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <label className="block text-sm">
-              Vozidlo
+              {t("Vozidlo")}
               <select
                 disabled={tracking}
                 value={vehicleId}
@@ -125,8 +128,8 @@ function GpsTripPage() {
               >
                 <option value="">
                   {vozidlaNacitane && vehicles.length === 0
-                    ? "— žiadne vozidlo —"
-                    : "— vyberte vozidlo —"}
+                    ? t("— žiadne vozidlo —")
+                    : t("— vyberte vozidlo —")}
                 </option>
                 {vehicles.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -137,15 +140,15 @@ function GpsTripPage() {
             </label>
             {vozidlaNacitane && vehicles.length === 0 && (
               <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-                Zatiaľ nemáte žiadne aktívne vozidlo.{" "}
+                {t("Zatiaľ nemáte žiadne aktívne vozidlo.")}{" "}
                 <Link to="/jazdy/vozidla" className="font-medium text-primary hover:underline">
-                  Pridajte vozidlo
+                  {t("Pridajte vozidlo")}
                 </Link>{" "}
-                a potom môžete spustiť GPS jazdu.
+                {t("a potom môžete spustiť GPS jazdu.")}
               </div>
             )}
             <label className="block text-sm">
-              Účel cesty
+              {t("Účel cesty")}
               <input
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
@@ -155,7 +158,9 @@ function GpsTripPage() {
             <JobPicker value={jobId} onChange={setJobId} disabled={tracking} />
             {fuelPrice != null && (
               <div className="text-xs text-muted-foreground">
-                Cena PHM {formatujJednotkovuCenu(fuelPrice, mena.kod)}/l z posledného tankovania.
+                {t("Cena PHM {cena}/l z posledného tankovania.", {
+                  cena: formatujJednotkovuCenu(fuelPrice, mena.kod),
+                })}
               </div>
             )}
           </div>
@@ -166,7 +171,7 @@ function GpsTripPage() {
               <span className="text-2xl text-muted-foreground">km</span>
             </div>
             <div className="mt-2 text-sm text-muted-foreground">
-              {tracking ? "Nahrávam…" : "Pripravené"}
+              {tracking ? t("Nahrávam…") : t("Pripravené")}
             </div>
           </div>
 
@@ -175,14 +180,14 @@ function GpsTripPage() {
               onClick={start}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-base font-medium text-primary-foreground hover:opacity-90"
             >
-              <Play className="h-5 w-5" /> Spustiť sledovanie
+              <Play className="h-5 w-5" /> {t("Spustiť sledovanie")}
             </button>
           ) : (
             <button
               onClick={stop}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-destructive px-6 py-4 text-base font-medium text-destructive-foreground hover:opacity-90"
             >
-              <Square className="h-5 w-5" /> Ukončiť a uložiť
+              <Square className="h-5 w-5" /> {t("Ukončiť a uložiť")}
             </button>
           )}
         </div>

@@ -6,9 +6,11 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { ArrowRightLeft, Plus } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/")({
-  head: () => ({ meta: [{ title: "Presuny — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Presuny — Faktero") }] }),
   component: TransfersListPage,
 });
 
@@ -24,6 +26,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 function TransfersListPage() {
+  const { t } = useT();
   const fetchList = useServerFn(listTransfers);
   const [rows, setRows] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<Record<string, string>>({});
@@ -58,25 +61,27 @@ function TransfersListPage() {
   return (
     <>
       <PageHeader
-        title="Presuny skladu"
-        description="Presúvajte tovar medzi skladmi alebo firmami"
+        title={t("Presuny skladu")}
+        description={t("Presúvajte tovar medzi skladmi alebo firmami")}
         action={
           <Link
             to="/sklad/presuny/nova"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Nový presun
+            <Plus className="h-4 w-4" /> {t("Nový presun")}
           </Link>
         }
       />
       <PageBody>
         {loading ? (
-          <div className="rounded-md border p-6 text-sm text-muted-foreground">Načítavam…</div>
+          <div className="rounded-md border p-6 text-sm text-muted-foreground">
+            {t("Načítavam…")}
+          </div>
         ) : rows.length === 0 ? (
           <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
-            Zatiaľ nemáte žiadne presuny.{" "}
+            {t("Zatiaľ nemáte žiadne presuny.")}{" "}
             <Link className="text-primary underline" to="/sklad/presuny/nova">
-              Vytvorte prvý
+              {t("Vytvorte prvý")}
             </Link>
             .
           </div>
@@ -85,11 +90,11 @@ function TransfersListPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-left">
                 <tr>
-                  <th className="px-3 py-2">Vytvorený</th>
-                  <th className="px-3 py-2">Zo skladu</th>
-                  <th className="px-3 py-2">Do</th>
-                  <th className="px-3 py-2">Stav</th>
-                  <th className="px-3 py-2">Poznámka</th>
+                  <th className="px-3 py-2">{t("Vytvorený")}</th>
+                  <th className="px-3 py-2">{t("Zo skladu")}</th>
+                  <th className="px-3 py-2">{t("Do")}</th>
+                  <th className="px-3 py-2">{t("Stav")}</th>
+                  <th className="px-3 py-2">{t("Poznámka")}</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
@@ -102,7 +107,7 @@ function TransfersListPage() {
                       <span className="inline-flex items-center gap-1">
                         <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
                         {r.target_company_id
-                          ? `${companies[r.target_company_id] ?? "Iná firma"}${r.warehouse_to_id ? ` · ${warehouses[r.warehouse_to_id] ?? ""}` : ""}`
+                          ? `${companies[r.target_company_id] ?? t("Iná firma")}${r.warehouse_to_id ? ` · ${warehouses[r.warehouse_to_id] ?? ""}` : ""}`
                           : (warehouses[r.warehouse_to_id] ?? "—")}
                       </span>
                     </td>
@@ -110,7 +115,7 @@ function TransfersListPage() {
                       <span
                         className={`inline-block rounded px-2 py-0.5 text-xs ${STATUS_STYLE[r.status] ?? ""}`}
                       >
-                        {STATUS_LABEL[r.status] ?? r.status}
+                        {t(STATUS_LABEL[r.status] ?? r.status)}
                       </span>
                     </td>
                     <td className="px-3 py-2 max-w-[240px] truncate text-muted-foreground">
@@ -122,7 +127,7 @@ function TransfersListPage() {
                         params={{ id: r.id }}
                         className="text-primary hover:underline"
                       >
-                        Detail
+                        {t("Detail")}
                       </Link>
                     </td>
                   </tr>

@@ -8,6 +8,8 @@
  * nastaviť.
  */
 
+import { useT } from "@/lib/i18n/useT";
+
 export type ImportRozsah = "vsetko" | "odberatelia" | "faktury";
 
 export type ImportVolby = {
@@ -61,11 +63,12 @@ export function ImportOptions({
   options: ImportVolby;
   setOptions: (v: ImportVolby) => void;
 }) {
+  const { t } = useT();
   const rozsah = rozsahVolieb(options);
   return (
     <div className="space-y-4">
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">Čo importovať</legend>
+        <legend className="text-sm font-medium">{t("Čo importovať")}</legend>
         <div className="grid gap-2 sm:grid-cols-3">
           {ROZSAHY.map((r) => (
             <label
@@ -81,9 +84,9 @@ export function ImportOptions({
                   checked={rozsah === r.id}
                   onChange={() => setOptions(volbyPreRozsah(options, r.id))}
                 />
-                {r.label}
+                {t(r.label)}
               </span>
-              <span className="text-xs text-muted-foreground">{r.popis}</span>
+              <span className="text-xs text-muted-foreground">{t(r.popis)}</span>
             </label>
           ))}
         </div>
@@ -94,7 +97,7 @@ export function ImportOptions({
           checked={options.updateExisting}
           onChange={(e) => setOptions({ ...options, updateExisting: e.target.checked })}
         />
-        Aktualizovať faktúry, ktoré už v systéme sú
+        {t("Aktualizovať faktúry, ktoré už v systéme sú")}
       </label>
     </div>
   );

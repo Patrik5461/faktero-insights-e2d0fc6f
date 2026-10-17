@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, User, UserPlus } from "lucide-react";
 import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Výber odberateľa s vyhľadávaním.
@@ -24,6 +25,7 @@ export function CustomerSearch({
   /** Koho sa hľadá (akuzatív) — samofaktúra vyberá dodávateľa, nie odberateľa. */
   kto?: string;
 }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -55,7 +57,7 @@ export function CustomerSearch({
       >
         <User className="h-4 w-4 text-muted-foreground" />
         <span className={selected ? "" : "text-muted-foreground"}>
-          {selected ? selected.name : `Vyhľadať ${kto}…`}
+          {selected ? selected.name : t("Vyhľadať {kto}…", { kto: t(kto) })}
         </span>
       </button>
       {open && (
@@ -66,14 +68,16 @@ export function CustomerSearch({
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Hľadať podľa mena, IČO, e-mailu…"
+              placeholder={t("Hľadať podľa mena, IČO, e-mailu…")}
               className="flex-1 bg-transparent text-sm outline-none"
             />
           </div>
           <ul className="max-h-64 overflow-auto py-1">
             {filtered.length === 0 && (
               <li className="px-3 py-3">
-                <div className="text-sm text-muted-foreground mb-2">Nenašli ste {kto}?</div>
+                <div className="text-sm text-muted-foreground mb-2">
+                  {t("Nenašli ste {kto}?", { kto: t(kto) })}
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -82,7 +86,7 @@ export function CustomerSearch({
                   }}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                 >
-                  <UserPlus className="h-4 w-4" /> Vytvoriť nového {kto}
+                  <UserPlus className="h-4 w-4" /> {t("Vytvoriť nového {kto}", { kto: t(kto) })}
                 </button>
               </li>
             )}
@@ -115,7 +119,7 @@ export function CustomerSearch({
                 }}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm hover:bg-secondary"
               >
-                <UserPlus className="h-4 w-4" /> Vytvoriť nového {kto}
+                <UserPlus className="h-4 w-4" /> {t("Vytvoriť nového {kto}", { kto: t(kto) })}
               </button>
             </div>
           )}

@@ -26,6 +26,8 @@ import {
   synchronizujRevolutPohyby,
 } from "@/lib/faktero/revolut.functions";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { zostatkyPodlaMien, formatujSumu, zobrazitZauctovany } from "@/lib/faktero/zostatky";
 import {
   Building2,
@@ -41,7 +43,7 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/")({
-  head: () => ({ meta: [{ title: "Bankové účty — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Bankové účty — Faktero") }] }),
   component: BankAccountsPage,
 });
 
@@ -50,6 +52,7 @@ function fmtMoney(n: number, c = "EUR") {
 }
 
 function BankAccountsPage() {
+  const { t, jazyk } = useT();
   const list = useServerFn(listBankData);
   const syncAcc = useServerFn(syncBankAccounts);
   const wiseUcty = useServerFn(synchronizujWiseUcty);
@@ -75,9 +78,9 @@ function BankAccountsPage() {
   }
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (url.searchParams.get("connected")) toast.success("Banka pripojená");
+    if (url.searchParams.get("connected")) toast.success(t("Banka pripojená"));
     const err = url.searchParams.get("error");
-    if (err) toast.error(`Pripojenie zlyhalo: ${err}`);
+    if (err) toast.error(t("Pripojenie zlyhalo: {chyba}", { chyba: err }));
     if (url.searchParams.size) window.history.replaceState({}, "", url.pathname);
     reload();
   }, []);
@@ -88,7 +91,10 @@ function BankAccountsPage() {
    */
   function potvrdOdpojenie(nazov: string): Promise<boolean> {
     return potvrd(
-      `Naozaj odpojiť ${nazov}?\n\nZostatky sa prestanú aktualizovať a pripojenie budete musieť nastaviť znova. Už stiahnuté pohyby ostanú.`,
+      t(
+        "Naozaj odpojiť {nazov}?\n\nZostatky sa prestanú aktualizovať a pripojenie budete musieť nastaviť znova. Už stiahnuté pohyby ostanú.",
+        { nazov },
+      ),
     );
   }
 
@@ -102,21 +108,24 @@ function BankAccountsPage() {
     try {
       if (co === "ucty") {
         const r: any = await revUcty({ data: { company_id: cid } });
-        toast.success(`Načítaných účtov: ${r.pocet}`);
+        toast.success(t("Načítaných účtov: {n}", { n: r.pocet }));
       } else if (co === "pohyby") {
         const r: any = await revPohyby({ data: { company_id: cid } });
         toast.success(
           r.problemy?.length
-            ? `Načítaných pohybov: ${r.vlozenych}. Nepodarilo sa: ${r.problemy.join(", ")}`
-            : `Načítaných pohybov: ${r.vlozenych}`,
+            ? t("Načítaných pohybov: {n}. Nepodarilo sa: {problemy}", {
+                n: r.vlozenych,
+                problemy: r.problemy.join(", "),
+              })
+            : t("Načítaných pohybov: {n}", { n: r.vlozenych }),
         );
       } else {
         await revOdpoj({ data: { company_id: cid } });
-        toast.success("Revolut odpojený.");
+        toast.success(t("Revolut odpojený."));
       }
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa to.");
+      toast.error(e?.message ?? t("Nepodarilo sa to."));
     } finally {
       setBusy(null);
     }
@@ -132,21 +141,24 @@ function BankAccountsPage() {
     try {
       if (co === "ucty") {
         const r: any = await walUcty({ data: { company_id: cid } });
-        toast.success(`Načítaných kartových účtov: ${r.pocet}`);
+        toast.success(t("Načítaných kartových účtov: {n}", { n: r.pocet }));
       } else if (co === "pohyby") {
         const r: any = await walPohyby({ data: { company_id: cid } });
         toast.success(
           r.problemy?.length
-            ? `Načítaných pohybov: ${r.vlozenych}. Nepodarilo sa: ${r.problemy.join(", ")}`
-            : `Načítaných pohybov: ${r.vlozenych}`,
+            ? t("Načítaných pohybov: {n}. Nepodarilo sa: {problemy}", {
+                n: r.vlozenych,
+                problemy: r.problemy.join(", "),
+              })
+            : t("Načítaných pohybov: {n}", { n: r.vlozenych }),
         );
       } else {
         await walOdpoj({ data: { company_id: cid } });
-        toast.success("Wallester odpojený.");
+        toast.success(t("Wallester odpojený."));
       }
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa to.");
+      toast.error(e?.message ?? t("Nepodarilo sa to."));
     } finally {
       setBusy(null);
     }
@@ -162,21 +174,24 @@ function BankAccountsPage() {
     try {
       if (co === "ucty") {
         const r: any = await wiseUcty({ data: { company_id: cid } });
-        toast.success(`Načítaných zostatkov: ${r.pocet}`);
+        toast.success(t("Načítaných zostatkov: {n}", { n: r.pocet }));
       } else if (co === "pohyby") {
         const r: any = await wisePohyby({ data: { company_id: cid } });
         toast.success(
           r.problemy?.length
-            ? `Načítaných pohybov: ${r.vlozenych}. Nepodarilo sa: ${r.problemy.join(", ")}`
-            : `Načítaných pohybov: ${r.vlozenych}`,
+            ? t("Načítaných pohybov: {n}. Nepodarilo sa: {problemy}", {
+                n: r.vlozenych,
+                problemy: r.problemy.join(", "),
+              })
+            : t("Načítaných pohybov: {n}", { n: r.vlozenych }),
         );
       } else {
         await wiseOdpoj({ data: { company_id: cid } });
-        toast.success("Wise odpojený.");
+        toast.success(t("Wise odpojený."));
       }
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa to.");
+      toast.error(e?.message ?? t("Nepodarilo sa to."));
     } finally {
       setBusy(null);
     }
@@ -191,14 +206,14 @@ function BankAccountsPage() {
     try {
       if (co === "sync") {
         const r: any = await fioSync({ data: { company_id: cid, connection_id: connId } });
-        toast.success(`Nových pohybov: ${r.vlozenych}`);
+        toast.success(t("Nových pohybov: {n}", { n: r.vlozenych }));
       } else {
         await fioOdpoj({ data: { company_id: cid, connection_id: connId } });
-        toast.success("Fio účet odpojený.");
+        toast.success(t("Fio účet odpojený."));
       }
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa to.");
+      toast.error(e?.message ?? t("Nepodarilo sa to."));
     } finally {
       setBusy(null);
     }
@@ -212,12 +227,15 @@ function BankAccountsPage() {
       const r = await syncAcc({ data: { company_id: cid, connection_id: connId } });
       toast.success(
         r.refresh_requested
-          ? `Synchronizovaných ${r.count} účtov. Dáta z iných bánk banka práve obnovuje, prejavia sa o chvíľu.`
-          : `Synchronizovaných ${r.count} účtov`,
+          ? t(
+              "Synchronizovaných {n} účtov. Dáta z iných bánk banka práve obnovuje, prejavia sa o chvíľu.",
+              { n: r.count },
+            )
+          : t("Synchronizovaných {n} účtov", { n: r.count }),
       );
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba synchronizácie");
+      toast.error(e?.message ?? t("Chyba synchronizácie"));
     } finally {
       setBusy(null);
     }
@@ -231,21 +249,21 @@ function BankAccountsPage() {
       const { authorize_url } = await renew({ data: { company_id: cid, connection_id: connId } });
       window.location.href = authorize_url;
     } catch (e: any) {
-      toast.error(e?.message ?? "Obnovu súhlasu sa nepodarilo spustiť");
+      toast.error(e?.message ?? t("Obnovu súhlasu sa nepodarilo spustiť"));
       setBusy(null);
     }
   }
 
   async function onDisconnect(connId: string) {
-    if (!(await potvrd("Naozaj odpojiť banku? Všetky účty a transakcie budú vymazané."))) return;
+    if (!(await potvrd(t("Naozaj odpojiť banku? Všetky účty a transakcie budú vymazané.")))) return;
     const cid = getActiveCompanyId();
     if (!cid) return;
     try {
       await disconnect({ data: { company_id: cid, connection_id: connId } });
-      toast.success("Odpojené");
+      toast.success(t("Odpojené"));
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     }
   }
 
@@ -255,8 +273,8 @@ function BankAccountsPage() {
   return (
     <>
       <PageHeader
-        title="Bankové účty"
-        description="Tatra banka, Fio banka, Wise, Wallester a Revolut. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie."
+        title={t("Bankové účty")}
+        description={t("Tatra banka, Fio banka, Wise, Wallester a Revolut. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie.")}
         action={
           <div className="flex items-center gap-2">
             {/* Banky bez priameho pripojenia (Akcenta a spol.) sa dostanú dnu
@@ -265,13 +283,13 @@ function BankAccountsPage() {
               to="/bankove-ucty/import"
               className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
             >
-              <Upload className="h-4 w-4" /> Nahrať výpis
+              <Upload className="h-4 w-4" /> {t("Nahrať výpis")}
             </Link>
             <Link
               to="/bankove-ucty/pripojit"
               className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
             >
-              <Plus className="h-4 w-4" /> Pripojiť banku
+              <Plus className="h-4 w-4" /> {t("Pripojiť banku")}
             </Link>
           </div>
         }
@@ -280,7 +298,7 @@ function BankAccountsPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-card p-4">
             <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-              Celkový zostatok{zostatky.length > 1 ? " po menách" : ""}
+              {zostatky.length > 1 ? t("Celkový zostatok po menách") : t("Celkový zostatok")}
             </div>
             {zostatky.length === 0 ? (
               <div className="mt-1 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">
@@ -298,27 +316,27 @@ function BankAccountsPage() {
             )}
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">Počet účtov</div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Počet účtov")}</div>
             <div className="mt-1 text-2xl font-semibold">{data?.accounts.length ?? 0}</div>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">Pripojenia</div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Pripojenia")}</div>
             <div className="mt-1 text-2xl font-semibold">{data?.connections.length ?? 0}</div>
           </div>
         </div>
 
         <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Pripojené banky
+          {t("Pripojené banky")}
         </h2>
         {data && data.connections.length === 0 && (
           <div className="mt-3 rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
             <Building2 className="mx-auto h-10 w-10 text-muted-foreground" />
-            <p className="mt-2 text-sm text-muted-foreground">Žiadna banka nie je pripojená.</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t("Žiadna banka nie je pripojená.")}</p>
             <Link
               to="/bankove-ucty/pripojit"
               className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
             >
-              <Plus className="h-4 w-4" /> Pripojiť banku
+              <Plus className="h-4 w-4" /> {t("Pripojiť banku")}
             </Link>
           </div>
         )}
@@ -334,7 +352,7 @@ function BankAccountsPage() {
                     {c.provider}
                     {c.status === "connected" ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                        <CheckCircle2 className="h-3 w-3" /> Pripojené
+                        <CheckCircle2 className="h-3 w-3" /> {t("Pripojené")}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
@@ -344,8 +362,12 @@ function BankAccountsPage() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {c.last_synced_at
-                      ? `Posledná synchronizácia: ${new Date(c.last_synced_at).toLocaleString("sk-SK")}`
-                      : "Ešte nesynchronizované"}
+                      ? t("Posledná synchronizácia: {cas}", {
+                          cas: new Date(c.last_synced_at).toLocaleString(
+                            jazyk === "de" ? "de-DE" : "sk-SK",
+                          ),
+                        })
+                      : t("Ešte nesynchronizované")}
                   </div>
                 </div>
                 {/*
@@ -363,14 +385,14 @@ function BankAccountsPage() {
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
-                      Stiahnuť pohyby
+                      {t("Stiahnuť pohyby")}
                     </button>
                     <button
                       onClick={() => onFio(c.id, "odpojit")}
                       disabled={busy === c.id}
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Odpojiť
+                      <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
                     </button>
                   </>
                 ) : c.provider === "revolut" ? (
@@ -381,21 +403,21 @@ function BankAccountsPage() {
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
-                      Načítať účty
+                      {t("Načítať účty")}
                     </button>
                     <button
                       onClick={() => onRevolut(c.id, "pohyby")}
                       disabled={busy === c.id}
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
                     >
-                      <ArrowRight className="h-3.5 w-3.5" /> Stiahnuť pohyby
+                      <ArrowRight className="h-3.5 w-3.5" /> {t("Stiahnuť pohyby")}
                     </button>
                     <button
                       onClick={() => onRevolut(c.id, "odpojit")}
                       disabled={busy === c.id}
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Odpojiť
+                      <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
                     </button>
                   </>
                 ) : c.provider === "wallester" ? (
@@ -406,21 +428,21 @@ function BankAccountsPage() {
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
-                      Načítať účty
+                      {t("Načítať účty")}
                     </button>
                     <button
                       onClick={() => onWallester(c.id, "pohyby")}
                       disabled={busy === c.id}
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
                     >
-                      <ArrowRight className="h-3.5 w-3.5" /> Stiahnuť pohyby
+                      <ArrowRight className="h-3.5 w-3.5" /> {t("Stiahnuť pohyby")}
                     </button>
                     <button
                       onClick={() => onWallester(c.id, "odpojit")}
                       disabled={busy === c.id}
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Odpojiť
+                      <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
                     </button>
                   </>
                 ) : c.provider === "wise" ? (
@@ -431,21 +453,21 @@ function BankAccountsPage() {
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
-                      Načítať zostatky
+                      {t("Načítať zostatky")}
                     </button>
                     <button
                       onClick={() => onWise(c.id, "pohyby")}
                       disabled={busy === c.id}
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
                     >
-                      <ArrowRight className="h-3.5 w-3.5" /> Stiahnuť pohyby
+                      <ArrowRight className="h-3.5 w-3.5" /> {t("Stiahnuť pohyby")}
                     </button>
                     <button
                       onClick={() => onWise(c.id, "odpojit")}
                       disabled={busy === c.id}
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Odpojiť
+                      <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
                     </button>
                   </>
                 ) : (
@@ -456,21 +478,21 @@ function BankAccountsPage() {
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
-                      Načítať účty
+                      {t("Načítať účty")}
                     </button>
                     <button
                       onClick={() => onRenew(c.id)}
                       disabled={busy === c.id}
-                      title="Prihlásite sa znova do banky. Účty, transakcie ani výpisy sa nezmažú."
+                      title={t("Prihlásite sa znova do banky. Účty, transakcie ani výpisy sa nezmažú.")}
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
                     >
-                      <ShieldCheck className="h-3.5 w-3.5" /> Obnoviť súhlas
+                      <ShieldCheck className="h-3.5 w-3.5" /> {t("Obnoviť súhlas")}
                     </button>
                     <button
                       onClick={() => onDisconnect(c.id)}
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Odpojiť
+                      <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
                     </button>
                   </>
                 )}
@@ -482,7 +504,7 @@ function BankAccountsPage() {
                     <div key={a.id} className="rounded-lg border border-border bg-muted/30 p-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium">{a.account_name ?? a.iban ?? "Účet"}</div>
+                          <div className="font-medium">{a.account_name ?? a.iban ?? t("Účet")}</div>
                           <div className="font-mono text-xs text-muted-foreground">
                             {a.iban ?? "—"}
                           </div>
@@ -493,7 +515,7 @@ function BankAccountsPage() {
                               className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400"
                               title={a.unavailable_reason ?? undefined}
                             >
-                              Banka ho nepozná — obnovte súhlas
+                              {t("Banka ho nepozná — obnovte súhlas")}
                             </div>
                           )}
                         </div>
@@ -506,9 +528,9 @@ function BankAccountsPage() {
                             return zauctovany.zobrazit ? (
                               <div
                                 className="text-xs tabular-nums text-muted-foreground"
-                                title="Suma, ktorú má banka zaúčtovanú. Líši sa o blokácie a nezaúčtované platby."
+                                title={t("Suma, ktorú má banka zaúčtovanú. Líši sa o blokácie a nezaúčtované platby.")}
                               >
-                                Zaúčtovaný {fmtMoney(zauctovany.suma, a.currency)}
+                                {t("Zaúčtovaný {suma}", { suma: fmtMoney(zauctovany.suma, a.currency) })}
                               </div>
                             ) : null;
                           })()}
@@ -517,7 +539,7 @@ function BankAccountsPage() {
                             search={{ account: a.id } as any}
                             className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 hover:underline"
                           >
-                            Transakcie <ArrowRight className="h-3 w-3" />
+                            {t("Transakcie")} <ArrowRight className="h-3 w-3" />
                           </Link>
                         </div>
                       </div>
@@ -525,7 +547,7 @@ function BankAccountsPage() {
                   ))}
                 {data.accounts.filter((a) => a.bank_connection_id === c.id).length === 0 && (
                   <div className="text-sm text-muted-foreground">
-                    Žiadne účty — kliknite "Načítať účty".
+                    {t("Žiadne účty — kliknite \"Načítať účty\".")}
                   </div>
                 )}
               </div>

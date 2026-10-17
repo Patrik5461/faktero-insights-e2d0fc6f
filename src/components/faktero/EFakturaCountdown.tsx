@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Timer } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 interface TimeLeft {
   dni: number;
@@ -40,6 +41,7 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
 }
 
 export function EFakturaCountdown() {
+  const { t } = useT();
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ dni: 0, hodiny: 0, minuty: 0, sekundy: 0 });
   const [mounted, setMounted] = useState(false);
 
@@ -61,18 +63,18 @@ export function EFakturaCountdown() {
           <Timer className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <h3 className="text-base font-semibold">eFaktúra 2027</h3>
+          <h3 className="text-base font-semibold">{t("eFaktúra 2027")}</h3>
           <p className="text-xs text-muted-foreground">
-            Povinná eFaktúra sa blíži. Faktero je pripravené.
+            {t("Povinná eFaktúra sa blíži. Faktero je pripravené.")}
           </p>
         </div>
       </div>
 
       <div className="mt-6 flex justify-center gap-3">
-        <CountdownUnit value={mounted ? timeLeft.dni : 0} label="dni" />
-        <CountdownUnit value={mounted ? timeLeft.hodiny : 0} label="hodiny" />
-        <CountdownUnit value={mounted ? timeLeft.minuty : 0} label="minúty" />
-        <CountdownUnit value={mounted ? timeLeft.sekundy : 0} label="sekundy" />
+        <CountdownUnit value={mounted ? timeLeft.dni : 0} label={t("dni")} />
+        <CountdownUnit value={mounted ? timeLeft.hodiny : 0} label={t("hodiny")} />
+        <CountdownUnit value={mounted ? timeLeft.minuty : 0} label={t("minúty")} />
+        <CountdownUnit value={mounted ? timeLeft.sekundy : 0} label={t("sekundy")} />
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
@@ -81,7 +83,7 @@ export function EFakturaCountdown() {
             key={badge}
             className="inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-medium text-secondary-foreground"
           >
-            {badge}
+            {t(badge)}
           </span>
         ))}
       </div>
@@ -91,7 +93,7 @@ export function EFakturaCountdown() {
           to="/efaktura"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
         >
-          Zistiť viac <ArrowRight className="h-3.5 w-3.5" />
+          {t("Zistiť viac")} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
     </div>

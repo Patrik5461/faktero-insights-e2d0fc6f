@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/oss")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — OSS, predaj spotrebiteľom v EÚ — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — OSS, predaj spotrebiteľom v EÚ — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Predaj tovaru a digitálnych služieb spotrebiteľom v EÚ: hranica 10 000 €, sadzba štátu zákazníka a podklady pre priznanie OSS.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/oss" },
     ],
@@ -98,7 +102,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Účtovníctvo"
       title="OSS — predaj spotrebiteľom v EÚ"
       intro={

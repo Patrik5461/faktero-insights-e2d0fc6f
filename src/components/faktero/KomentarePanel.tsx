@@ -5,6 +5,7 @@ import { Loader2, MessageSquare, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { nastavenieSchvalovaniaFn } from "@/lib/faktero/schvalovanie.functions";
 import type { AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
+import { useT } from "@/lib/i18n/useT";
 
 type Komentar = { id: string; user_id: string; text: string; upozornit: string[]; created_at: string };
 
@@ -21,6 +22,7 @@ export function KomentarePanel({
   agenda: AgendaSchvalovania;
   id: string;
 }) {
+  const { t, jazyk } = useT();
   const nacitajLudi = useServerFn(nastavenieSchvalovaniaFn);
   const [ludia, setLudia] = useState<{ id: string; meno: string }[]>([]);
   const [ja, setJa] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export function KomentarePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, agenda, id]);
 
-  const meno = (u: string) => ludia.find((l) => l.id === u)?.meno ?? "kolega";
+  const meno = (u: string) => ludia.find((l) => l.id === u)?.meno ?? t("kolega");
   const holy = (v: string) => v.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   // „@me…“ na konci textu — ponuka kolegov na označenie.
   const zmienka = /(^|\s)@([^\s@]*)$/.exec(text)?.[2] ?? null;
@@ -58,7 +60,7 @@ export function KomentarePanel({
       ? []
       : ludia.filter((l) => l.id !== ja && holy(l.meno).startsWith(holy(zmienka))).slice(0, 6);
   function oznac(l: { id: string; meno: string }) {
-    setText((t) => t.replace(/@([^\s@]*)$/, `@${l.meno} `));
+    setText((s) => s.replace(/@([^\s@]*)$/, `@${l.meno} `));
     setUpozornit((u) => (u.includes(l.id) ? u : [...u, l.id]));
   }
 
@@ -81,7 +83,7 @@ export function KomentarePanel({
       setUpozornit([]);
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Komentár sa nepodarilo uložiť");
+      toast.error(e?.message ?? t("Komentár sa nepodarilo uložiť"));
     } finally {
       setBusy(false);
     }
@@ -90,7 +92,7 @@ export function KomentarePanel({
   return (
     <div className="rounded-xl border border-border bg-card p-5 text-sm">
       <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-        <MessageSquare className="h-3.5 w-3.5" /> Komentáre
+        <MessageSquare className="h-3.5 w-3.5" /> {t("Komentáre")}
       </div>
       {komentare.length > 0 && (
         <ul className="mt-3 space-y-2">
@@ -99,8 +101,10 @@ export function KomentarePanel({
               <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>
                   <span className="font-medium text-foreground">{meno(k.user_id)}</span> ·{" "}
-                  {new Date(k.created_at).toLocaleString("sk-SK", { dateStyle: "short", timeStyle: "short" })}
-                  {k.upozornit?.length ? ` · pre ${k.upozornit.map(meno).join(", ")}` : ""}
+                  {new Date(k.created_at).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK", { dateStyle: "short", timeStyle: "short" })}
+                  {k.upozornit?.length
+                    ? ` · ${t("pre {komu}", { komu: k.upozornit.map(meno).join(", ") })}`
+                    : ""}
                 </span>
                 {k.user_id === ja && (
                   <button
@@ -109,7 +113,7 @@ export function KomentarePanel({
                       await obnov();
                     }}
                     className="rounded p-0.5 hover:text-destructive"
-                    aria-label="Zmazať komentár"
+                    aria-label={t("Zmazať komentár")}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -125,11 +129,11 @@ export function KomentarePanel({
         onChange={(e) => setText(e.target.value)}
         rows={2}
         maxLength={2000}
-        placeholder="Napíšte komentár — @meno označí kolegu"
+        placeholder={t("Napíšte komentár — @meno označí kolegu")}
         className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
       />
       {ponuka.length > 0 && (
-        <ul role="listbox" aria-label="Označiť kolegu" className="mt-1 rounded-md border border-border bg-popover p-1 text-xs shadow-sm">
+        <ul role="listbox" aria-label={t("Označiť kolegu")} className="mt-1 rounded-md border border-border bg-popover p-1 text-xs shadow-sm">
           {ponuka.map((l) => (
             <li key={l.id}>
               <button
@@ -147,7 +151,7 @@ export function KomentarePanel({
       )}
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         {ludia.filter((l) => l.id !== ja).length > 0 && (
-          <span className="text-xs text-muted-foreground">Upozorniť:</span>
+          <span className="text-xs text-muted-foreground">{t("Upozorniť:")}</span>
         )}
         {ludia
           .filter((l) => l.id !== ja)
@@ -170,7 +174,7 @@ export function KomentarePanel({
           disabled={busy || !text.trim()}
           className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {busy && <Loader2 className="h-4 w-4 animate-spin" />} Pridať komentár
+          {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Pridať komentár")}
         </button>
       </div>
     </div>

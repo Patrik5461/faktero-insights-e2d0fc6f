@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, type HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 /**
  * Manuál k nastaveniam firmy.
@@ -9,18 +11,26 @@ import { HelpArticle, type HelpSection } from "@/components/faktero/HelpArticle"
  * len to, čo na tých troch obrazovkách naozaj je.
  */
 export const Route = createFileRoute("/pomoc/nastavenia")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Nastavenia firmy — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Nastavenia firmy — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Údaje firmy, logo a farba na faktúre, číslovanie dokladov a e-mailové šablóny — čo kde nastaviť a čo sa tým zmení.",
+        ),
       },
-      { property: "og:title", content: "Pomoc — Nastavenia firmy — Faktero" },
+      {
+        property: "og:title",
+        content: preloz(match.context.jazyk, "Pomoc — Nastavenia firmy — Faktero"),
+      },
       {
         property: "og:description",
-        content: "Údaje firmy, vzhľad faktúry, číslovanie a e-mailové šablóny.",
+        content: preloz(
+          match.context.jazyk,
+          "Údaje firmy, vzhľad faktúry, číslovanie a e-mailové šablóny.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/nastavenia" },
     ],
@@ -277,7 +287,7 @@ const SEKCIE: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Nastavenia"
       title="Nastavenia firmy"
       intro={

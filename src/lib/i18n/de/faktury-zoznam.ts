@@ -1,0 +1,391 @@
+// Zoznam faktúr, oprava faktúry, rýchla faktúra, skener a párovanie platieb.
+export default {
+  "Ak máte doklady odovzdané účtovníčke, radšej ich nechajte v koši.":
+    "Wenn Sie die Belege bereits an Ihre Buchhaltung übergeben haben, lassen Sie sie besser im Papierkorb.",
+  "Ako párovanie rozhoduje a čo robiť s platbami bez variabilného symbolu, je v":
+    "Wie der Zahlungsabgleich entscheidet und was mit Zahlungen ohne Verwendungszweck (VS) zu tun ist, steht im",
+  "Bankový prevod": "Banküberweisung",
+  "Bez DPH": "Ohne MwSt.",
+  "Bez zhody": "Ohne Treffer",
+  "Bloček s QR kódom sa načíta priamo z Finančnej správy — aj s položkami.":
+    "Ein Kassenbon mit QR-Code wird direkt von der slowakischen Finanzverwaltung geladen — samt Positionen.",
+  Cena: "Preis",
+  Chyba: "Fehler",
+  "Chyba pri ukladaní": "Fehler beim Speichern",
+  DIČ: "Steuernummer (DIČ)",
+  DPH: "MwSt.",
+  "Daňové doklady": "Steuerbelege",
+  "Daňové doklady k prijatej platbe. Vystavujú sa zo zálohovej faktúry po jej úhrade.":
+    "Steuerbelege zur Zahlung. Sie werden nach Bezahlung aus der Anzahlungsrechnung ausgestellt.",
+  "Do ZIPu pridaných {ok}, zlyhalo {fail}": "Zum ZIP hinzugefügt: {ok}, fehlgeschlagen: {fail}",
+  "Do stĺpca „Spolu s DPH“ sa dá napísať suma, na ktorej ste sa dohodli — jednotková cena bez dane sa dopočíta sama.":
+    "In die Spalte „Gesamt inkl. MwSt.“ können Sie den vereinbarten Betrag eintragen — der Nettoeinzelpreis wird automatisch berechnet.",
+  Dobropis: "Gutschrift",
+  "Dobropisy a ťarchopisy": "Gutschriften und Belastungsanzeigen",
+  "Doklad je v Nespracovaných — číta sa":
+    "Der Beleg liegt in „Unbearbeitete Belege“ — er wird gelesen",
+  "Doklad je zaevidovaný v systéme eKasa, údaje sedia s tým, čo predajca odoslal.":
+    "Der Beleg ist im System eKasa erfasst, die Daten stimmen mit den vom Verkäufer übermittelten überein.",
+  "Doklad načítaný z Finančnej správy": "Beleg von der Finanzverwaltung geladen",
+  "Doklad sa nepodarilo odovzdať. Skúste to znova.":
+    "Der Beleg konnte nicht übergeben werden. Versuchen Sie es erneut.",
+  "Doklad sa nepodarilo prečítať": "Der Beleg konnte nicht gelesen werden",
+  "Doklad sa vo Finančnej správe nenašiel — údaje sú len z QR kódu.":
+    "Der Beleg wurde bei der Finanzverwaltung nicht gefunden — die Daten stammen nur aus dem QR-Code.",
+  "Doklad sa vo Finančnej správe nenašiel, údaje sú prečítané z fotky.":
+    "Der Beleg wurde bei der Finanzverwaltung nicht gefunden, die Daten wurden aus dem Foto gelesen.",
+  Dátum: "Datum",
+  "Dátum dodania": "Leistungsdatum",
+  "Dátum vystavenia": "Rechnungsdatum",
+  "E-mail": "E-Mail",
+  "Export zlyhal": "Export fehlgeschlagen",
+  "Export {n} do {program}": "Export {n} nach {program}",
+  "Exportované faktúry: {n}": "Exportierte Rechnungen: {n}",
+  "Exportovať PDF (ZIP)": "PDF exportieren (ZIP)",
+  Faktúra: "Rechnung",
+  "Faktúra bola skopírovaná": "Die Rechnung wurde kopiert",
+  "Faktúra je v režime prenesenia daňovej povinnosti — nový odberateľ musí mať IČ DPH.":
+    "Die Rechnung unterliegt dem Reverse-Charge-Verfahren — der neue Kunde muss eine USt-IdNr. haben.",
+  "Faktúra nenájdená": "Rechnung nicht gefunden",
+  "Faktúra s týmto číslom už existuje. Zvoľte iné číslo.":
+    "Eine Rechnung mit dieser Nummer existiert bereits. Wählen Sie eine andere Nummer.",
+  "Faktúra upravená. PDF treba pregenerovať.":
+    "Rechnung geändert. Das PDF muss neu erstellt werden.",
+  "Faktúra už odišla cez eFaktúru pôvodnému odberateľovi — v jeho systéme ostane. Správne je vystaviť dobropis a novú faktúru.":
+    "Die Rechnung wurde bereits als E-Rechnung an den ursprünglichen Kunden gesendet — in seinem System bleibt sie bestehen. Richtig ist, eine Gutschrift und eine neue Rechnung auszustellen.",
+  "Faktúra vymazaná": "Rechnung gelöscht",
+  "Faktúra za dodávateľa podľa dohody o samofakturácii — uloží sa medzi prijaté faktúry":
+    "Rechnung im Namen des Lieferanten gemäß Gutschriftvereinbarung — wird unter den Eingangsrechnungen gespeichert",
+  "Faktúra {cislo} bude skrytá z rozhrania. Môžete ju neskôr obnoviť.":
+    "Die Rechnung {cislo} wird ausgeblendet. Sie können sie später wiederherstellen.",
+  "Faktúra {cislo} je vystavená.": "Die Rechnung {cislo} ist ausgestellt.",
+  "Faktúra {cislo} vytvorená": "Rechnung {cislo} erstellt",
+  "Faktúru sa nepodarilo vytvoriť": "Die Rechnung konnte nicht erstellt werden",
+  Faktúry: "Rechnungen",
+  "Faktúry po splatnosti": "Überfällige Rechnungen",
+  "Faktúry sa odstránia aj s položkami, upomienkami a záznamami o odoslaní. Toto sa už nedá vrátiť.":
+    "Die Rechnungen werden samt Positionen, Mahnungen und Versandprotokollen entfernt. Dies kann nicht rückgängig gemacht werden.",
+  "Faktúry vo vystavenom stave — ešte neodoslané odberateľovi.":
+    "Ausgestellte Rechnungen — noch nicht an den Kunden gesendet.",
+  "Faktúry — Faktero": "Rechnungen — Faktero",
+  "Faktúry, ktoré vám zákazníci ešte nezaplatili.":
+    "Rechnungen, die Ihre Kunden noch nicht bezahlt haben.",
+  "Historické sadzby": "Historische Sätze",
+  "Hotovostný doklad uberie zo stavu pokladne.": "Ein Barbeleg verringert den Kassenbestand.",
+  Hotovosť: "Bar",
+  "Hľadať číslo, odberateľa, IČO…": "Nummer, Kunde, Firmen-ID (IČO) suchen…",
+  "Hľadám platby k faktúram…": "Zahlungen zu Rechnungen werden gesucht…",
+  "Isté zhody": "Sichere Treffer",
+  "IČ DPH": "USt-IdNr.",
+  IČO: "Firmen-ID (IČO)",
+  "Je to faktúra — uložiť do Nespracovaných dokladov":
+    "Das ist eine Rechnung — unter „Unbearbeitete Belege“ speichern",
+  "K otvoreným faktúram sa nenašla žiadna zodpovedajúca platba. Skúste najprv stiahnuť nové pohyby v bankových účtoch.":
+    "Zu den offenen Rechnungen wurde keine passende Zahlung gefunden. Rufen Sie zuerst neue Umsätze in den Bankkonten ab.",
+  Karta: "Karte",
+  Kartou: "Mit Karte",
+  "Klonovanie zlyhalo": "Kopieren fehlgeschlagen",
+  Klonovať: "Kopieren",
+  Koncepty: "Entwürfe",
+  "Krajina (kód)": "Land (Code)",
+  "Krok {krok} z 3": "Schritt {krok} von 3",
+  "Kôš vyprázdnený — natrvalo vymazaných {n} faktúr":
+    "Papierkorb geleert — endgültig gelöschte Rechnungen: {n}",
+  "Len faktúry — bez zálohových, dobropisov a daňových dokladov.":
+    "Nur Rechnungen — ohne Anzahlungsrechnungen, Gutschriften und Steuerbelege.",
+  "Len z QR kódu": "Nur aus dem QR-Code",
+  MJ: "ME",
+  "Maže sa to, čo je práve zobrazené na tejto stránke koša.":
+    "Gelöscht wird, was gerade auf dieser Seite des Papierkorbs angezeigt wird.",
+  Medzisúčet: "Zwischensumme",
+  Mena: "Währung",
+  Mesto: "Ort",
+  "Mn.": "Menge",
+  "Na rozhodnutie": "Zu entscheiden",
+  "Najbližšia splatnosť": "Nächste Fälligkeit",
+  "Najnižšia suma": "Niedrigster Betrag",
+  "Najnovšie prvé": "Neueste zuerst",
+  "Najstaršie prvé": "Älteste zuerst",
+  "Najvyššia suma": "Höchster Betrag",
+  "Naozaj chcete vymazať túto faktúru?": "Möchten Sie diese Rechnung wirklich löschen?",
+  "Naposledy pridané": "Zuletzt hinzugefügt",
+  "Napríklad: Práce podľa objednávky č. 2026/114":
+    "Zum Beispiel: Leistungen gemäß Bestellung Nr. 2026/114",
+  "Nasnímať QR kód": "QR-Code scannen",
+  "Natrvalo vymazané faktúry: {n}": "Endgültig gelöschte Rechnungen: {n}",
+  "Natrvalo vymazať {n} faktúr?": "{n} Rechnungen endgültig löschen?",
+  "Načítané z Finančnej správy": "Von der Finanzverwaltung geladen",
+  "Načítavam…": "Wird geladen…",
+  "Nebolo z čoho čítať — chýba QR kód aj fotka.": "Nichts zum Lesen — QR-Code und Foto fehlen.",
+  "Nepodarilo sa načítať platby.": "Die Zahlungen konnten nicht geladen werden.",
+  "Nepodarilo sa prečítať nič": "Es konnte nichts gelesen werden",
+  "Nepodarilo sa uložiť": "Speichern fehlgeschlagen",
+  "Neuhradené faktúry": "Offene Rechnungen",
+  "Nezapísalo sa nič.": "Es wurde nichts erfasst.",
+  "Nie je vybraná žiadna platba.": "Keine Zahlung ausgewählt.",
+  "Niet čo párovať": "Nichts abzugleichen",
+  "Nič isté na spárovanie — pozrite návrhy nižšie.":
+    "Nichts Sicheres zum Abgleichen — sehen Sie sich die Vorschläge unten an.",
+  "Nová faktúra": "Neue Rechnung",
+  Náhľad: "Vorschau",
+  "Náhľad faktúry": "Rechnungsvorschau",
+  "Náhľad {cislo}": "Vorschau {cislo}",
+  Názov: "Name",
+  "Názov / meno": "Name / Firma",
+  "Názov položky": "Positionsbezeichnung",
+  "Obdobie je uzamknuté uzávierkou — číslo, dátumy ani sumy sa v ňom meniť nedajú.":
+    "Der Zeitraum ist durch einen Abschluss gesperrt — Nummer, Datumsangaben und Beträge können darin nicht geändert werden.",
+  Obnovené: "Wiederhergestellt",
+  Obnoviť: "Wiederherstellen",
+  Odberateľ: "Kunde",
+  "Odberateľ ju mohol dostať, preto mu po oprave pošlite nové PDF. Ak je obdobie uzamknuté uzávierkou, dátumy ani sumy sa zmeniť nedajú.":
+    "Der Kunde hat sie möglicherweise bereits erhalten, senden Sie ihm nach der Korrektur daher das neue PDF. Ist der Zeitraum durch einen Abschluss gesperrt, können Datumsangaben und Beträge nicht geändert werden.",
+  "Odberateľ musí mať názov.": "Der Kunde muss einen Namen haben.",
+  "Odfotiť doklad": "Beleg fotografieren",
+  "Odfoťte doklad celý aj s QR kódom. Keď sa QR prečítať nedá, údaje sa odhadnú z fotky — vtedy ich pred uložením skontrolujte.":
+    "Fotografieren Sie den ganzen Beleg samt QR-Code. Lässt sich der QR-Code nicht lesen, werden die Daten aus dem Foto geschätzt — prüfen Sie sie dann vor dem Speichern.",
+  "Odfoťte doklad celý aj s QR kódom. Česká evidencia tržieb (EET) skončila 1. 1. 2023 — doklad sa preto nemá kde overiť a položky v QR kóde nie sú. Z QR sa prečíta suma, dátum a DIČ predajcu, zvyšok sa odhadne z fotky, tak si ho pred uložením skontrolujte.":
+    "Fotografieren Sie den ganzen Beleg samt QR-Code. Die tschechische Umsatzerfassung (EET) endete am 1. 1. 2023 — der Beleg lässt sich daher nirgends prüfen, und der QR-Code enthält keine Positionen. Aus dem QR-Code werden Betrag, Datum und Steuernummer (DIČ) des Verkäufers gelesen, der Rest wird aus dem Foto geschätzt — prüfen Sie ihn vor dem Speichern.",
+  "Odhadnuté z fotky": "Aus dem Foto geschätzt",
+  "Odosielajú sa iba po splatnosti faktúry s emailom odberateľa. Číslo upomienky sa určí automaticky.":
+    "Gesendet werden nur überfällige Rechnungen mit E-Mail-Adresse des Kunden. Die Mahnstufe wird automatisch bestimmt.",
+  "Odosielajú sa iba vystavené/odoslané faktúry s emailom odberateľa.":
+    "Gesendet werden nur ausgestellte/gesendete Rechnungen mit E-Mail-Adresse des Kunden.",
+  "Odoslané e-maily: {n}": "Gesendete E-Mails: {n}",
+  "Odoslané upomienky: {n}": "Gesendete Mahnungen: {n}",
+  "Odoslaných {ok}, zlyhalo {fail}": "Gesendet: {ok}, fehlgeschlagen: {fail}",
+  Odoslať: "Senden",
+  "Odoslať e-mailom": "Per E-Mail senden",
+  "Odoslať e-mailom {n} faktúr?": "{n} Rechnungen per E-Mail senden?",
+  "Odoslať upomienky": "Mahnungen senden",
+  "Odoslať upomienky pre {n} faktúr?": "Mahnungen für {n} Rechnungen senden?",
+  "Opravujete už uhradenú faktúru.": "Sie korrigieren eine bereits bezahlte Rechnung.",
+  "Opravujete už vystavenú faktúru.": "Sie korrigieren eine bereits ausgestellte Rechnung.",
+  "Otvorené faktúry": "Offene Rechnungen",
+  "Označenie zlyhalo": "Markieren fehlgeschlagen",
+  "Označiť ako zaplatené": "Als bezahlt markieren",
+  "Označiť {n} faktúr ako zaplatené?": "{n} Rechnungen als bezahlt markieren?",
+  "PDF sa nepodarilo pripraviť.": "Das PDF konnte nicht vorbereitet werden.",
+  "PDP (prenesenie)": "RC (Reverse-Charge)",
+  PSČ: "PLZ",
+  "Platba alebo faktúra sa nenašla.": "Zahlung oder Rechnung wurde nicht gefunden.",
+  "Platba nemá kladnú sumu.": "Die Zahlung hat keinen positiven Betrag.",
+  "Platba už je spárovaná.": "Die Zahlung ist bereits zugeordnet.",
+  "Platba z banky": "Zahlung von der Bank",
+  "Platieb je viac, než sa dá spracovať naraz. Načítaných je {n} najnovších za posledných {dni} dní. Spárujte ich a zvyšok sa načíta po obnovení stránky.":
+    "Es gibt mehr Zahlungen, als auf einmal verarbeitet werden können. Geladen sind die {n} neuesten der letzten {dni} Tage. Gleichen Sie sie ab, der Rest wird nach dem Neuladen der Seite geladen.",
+  "Platobné údaje a symboly": "Zahlungsdaten und Symbole",
+  "Po splatnosti bez upomienky": "Überfällig ohne Mahnung",
+  "Po uložení sa PDF pregeneruje pri ďalšom otvorení.":
+    "Nach dem Speichern wird das PDF beim nächsten Öffnen neu erstellt.",
+  "Pohody XML": "Pohoda XML",
+  "Pokračovať v tomto číselnom rade": "In diesem Nummernkreis fortfahren",
+  "Položka ovplyvňujúca sklad — nemožno meniť po odoslaní.":
+    "Lagerrelevante Position — nach dem Senden nicht änderbar.",
+  "Položka so sumou musí mať názov.": "Eine Position mit Betrag muss eine Bezeichnung haben.",
+  Položky: "Positionen",
+  "Položky ({n})": "Positionen ({n})",
+  "Položky ovplyvňujúce sklad nie je možné meniť po odoslaní faktúry.":
+    "Lagerrelevante Positionen können nach dem Senden der Rechnung nicht geändert werden.",
+  "Poslať upomienku": "Mahnung senden",
+  Povinné: "Pflichtfeld",
+  Poznámka: "Notiz",
+  "Pre každú faktúru sa vygeneruje PDF a spakuje do jedného ZIP archívu.":
+    "Für jede Rechnung wird ein PDF erstellt und in ein ZIP-Archiv gepackt.",
+  Predajca: "Verkäufer",
+  "Preskočené: {n}.": "Übersprungen: {n}.",
+  Prevodom: "Per Überweisung",
+  Prečo: "Warum",
+  "Pridať položku": "Position hinzufügen",
+  "Príchodzie platby z banky priradené k otvoreným faktúram.":
+    "Eingehende Bankzahlungen, zugeordnet zu offenen Rechnungen.",
+  "Párovanie platieb": "Zahlungsabgleich",
+  "Párovanie platieb — Faktero": "Zahlungsabgleich — Faktero",
+  "Párovanie zlyhalo.": "Der Zahlungsabgleich ist fehlgeschlagen.",
+  "Pôvodne {datum}": "Ursprünglich {datum}",
+  "Pôvodný odberateľ mohol faktúru dostať — novému pošlite nové PDF.":
+    "Der ursprüngliche Kunde hat die Rechnung möglicherweise erhalten — senden Sie dem neuen das neue PDF.",
+  "QR kód sa nepodarilo prečítať, údaje sú prečítané z fotky.":
+    "Der QR-Code konnte nicht gelesen werden, die Daten wurden aus dem Foto gelesen.",
+  "QR skener nie je dostupný alebo bol zrušený. Skúste doklad odfotiť.":
+    "Der QR-Scanner ist nicht verfügbar oder wurde abgebrochen. Versuchen Sie, den Beleg zu fotografieren.",
+  "Riadky naviazané na sklad sa už meniť nedajú, aby sedel stav zásob.":
+    "Lagerbezogene Zeilen können nicht mehr geändert werden, damit der Bestand stimmt.",
+  "Rozpis DPH": "MwSt.-Aufschlüsselung",
+  "Rozpracované faktúry, ktoré ešte neboli vystavené.":
+    "Rechnungen in Bearbeitung, die noch nicht ausgestellt wurden.",
+  "Rýchla faktúra": "Schnellrechnung",
+  "Rýchla faktúra — Faktero": "Schnellrechnung — Faktero",
+  Samofaktúra: "Selbstfakturierung",
+  Schvaľovanie: "Freigabe",
+  "Skener dokladov": "Belegscanner",
+  "Skener dokladov — Faktero": "Belegscanner — Faktero",
+  "Skontrolujte odberateľa, položky a dátumy a tlačidlom „Vystaviť faktúru“ ho vystavíte. Kým je to koncept, odberateľ ho nemá a do prehľadov sa nepočíta.":
+    "Prüfen Sie Kunde, Positionen und Datumsangaben und stellen Sie den Entwurf über „Rechnung ausstellen“ aus. Solange es ein Entwurf ist, hat der Kunde ihn nicht, und er zählt nicht in die Übersichten.",
+  Splatnosť: "Fälligkeit",
+  Spolu: "Gesamt",
+  "Spolu s DPH": "Gesamt inkl. MwSt.",
+  "Spracovanie zlyhalo": "Verarbeitung fehlgeschlagen",
+  "Spracováva sa {a}/{b}…": "Wird verarbeitet {a}/{b}…",
+  "Spárovaných {n} platieb, uhradených faktúr: {m}.":
+    "Abgeglichene Zahlungen: {n}, bezahlte Rechnungen: {m}.",
+  "Spárovať isté ({n})": "Sichere abgleichen ({n})",
+  "Spárovať platby": "Zahlungen abgleichen",
+  Späť: "Zurück",
+  "Späť na faktúry": "Zurück zu den Rechnungen",
+  "Spôsob platby": "Zahlungsart",
+  "Spôsob úhrady": "Zahlungsart",
+  Stav: "Status",
+  "Stiahnuť PDF ZIP pre {n} faktúr?": "PDF-ZIP für {n} Rechnungen herunterladen?",
+  "Stiahnuť ZIP": "ZIP herunterladen",
+  "Stornované a už zaplatené faktúry budú preskočené. Nastaví sa dnešný dátum úhrady.":
+    "Stornierte und bereits bezahlte Rechnungen werden übersprungen. Als Zahlungsdatum wird das heutige Datum gesetzt.",
+  "Stornovanú faktúru už upraviť nemožno.":
+    "Eine stornierte Rechnung kann nicht mehr bearbeitet werden.",
+  Suma: "Betrag",
+  "Suma (s DPH)": "Betrag (inkl. MwSt.)",
+  "Suma a popis": "Betrag und Beschreibung",
+  "Suma s DPH — cena bez dane sa dopočíta": "Betrag inkl. MwSt. — der Nettopreis wird berechnet",
+  "Suma, dátum a predajca sú z QR kódu, položky sú prečítané z fotky.":
+    "Betrag, Datum und Verkäufer stammen aus dem QR-Code, die Positionen wurden aus dem Foto gelesen.",
+  Súhrn: "Zusammenfassung",
+  "Text nad položkami": "Text über den Positionen",
+  "Text, ktorý sa vytlačí nad tabuľkou položiek":
+    "Text, der über der Positionstabelle gedruckt wird",
+  "Toto je koncept.": "Dies ist ein Entwurf.",
+  "Táto faktúra je už odoslaná alebo zaplatená. Mazanie môže narušiť účtovnú stopu.":
+    "Diese Rechnung ist bereits gesendet oder bezahlt. Das Löschen kann die Nachvollziehbarkeit der Buchhaltung beeinträchtigen.",
+  "Ukladám…": "Wird gespeichert…",
+  "Ulica a číslo": "Straße und Hausnummer",
+  "Uložiť ako výdavok": "Als Ausgabe speichern",
+  "Uložiť koncept": "Entwurf speichern",
+  "Uložiť zmeny": "Änderungen speichern",
+  "Upomienka #{n}": "Mahnung #{n}",
+  "Upomienka bola odoslaná": "Mahnung wurde gesendet",
+  "Upraviť faktúru {cislo}": "Rechnung {cislo} bearbeiten",
+  "Upraviť faktúru — Faktero": "Rechnung bearbeiten — Faktero",
+  "Variabilný symbol": "Verwendungszweck (VS)",
+  "Vrátiť pôvodného ({nazov})": "Ursprünglichen wiederherstellen ({nazov})",
+  "Vyberte firmu": "Wählen Sie ein Unternehmen",
+  "Vyberte jednu z možností — bez nej sa doklad uložiť nedá.":
+    "Wählen Sie eine der Optionen — ohne sie kann der Beleg nicht gespeichert werden.",
+  "Vyberte odberateľa": "Wählen Sie einen Kunden",
+  "Vyberte spôsob úhrady": "Zahlungsart wählen",
+  "Vybrané faktúry: {n}": "Ausgewählte Rechnungen: {n}",
+  "Vybraté faktúry budú skryté z rozhrania. Môžete ich neskôr obnoviť.":
+    "Die ausgewählten Rechnungen werden ausgeblendet. Sie können sie später wiederherstellen.",
+  "Vybrať iného z adresára": "Anderen aus den Kontakten wählen",
+  "Vydané faktúry": "Ausgangsrechnungen",
+  "Vymazané faktúry: {n}": "Gelöschte Rechnungen: {n}",
+  Vymazať: "Löschen",
+  "Vymazať natrvalo": "Endgültig löschen",
+  "Vymazať {n} faktúr?": "{n} Rechnungen löschen?",
+  "Vyplňte text nad položkami — hovorí, čo sa fakturuje.":
+    "Füllen Sie den Text über den Positionen aus — er beschreibt, was berechnet wird.",
+  "Vyprázdniť kôš": "Papierkorb leeren",
+  "Vyprázdniť kôš — natrvalo vymazať {n} faktúr?":
+    "Papierkorb leeren — {n} Rechnungen endgültig löschen?",
+  Vystavená: "Ausgestellt",
+  "Vystavené a odoslané faktúry, ktorým uplynula splatnosť a nie sú uhradené.":
+    "Ausgestellte und gesendete Rechnungen, deren Fälligkeit abgelaufen ist und die nicht bezahlt sind.",
+  "Vystavené faktúry": "Ausgangsrechnungen",
+  "Vystavené opravné faktúry — dobropisy cenu znižujú, ťarchopisy zvyšujú.":
+    "Ausgestellte Korrekturrechnungen — Gutschriften senken den Preis, Belastungsanzeigen erhöhen ihn.",
+  "Vystaviť dobropis": "Gutschrift ausstellen",
+  "Vystaviť faktúru": "Rechnung ausstellen",
+  "Vystaviť pre ďalší mesiac": "Für den nächsten Monat ausstellen",
+  "Vystaviť zo zálohovej faktúry": "Aus Anzahlungsrechnung ausstellen",
+  "Vytlačí sa nad tabuľkou; suma pod ním pôjde ako jeden riadok.":
+    "Wird über der Tabelle gedruckt; der Betrag darunter erscheint als eine Zeile.",
+  "Vytvorené kópie pre ďalší mesiac: {n}": "Kopien für den nächsten Monat erstellt: {n}",
+  "Vytvorených {ok}, zlyhalo {fail}": "Erstellt: {ok}, fehlgeschlagen: {fail}",
+  "Vytvoria sa nové koncepty s inkrementovaným mesiacom v popisoch.":
+    "Es werden neue Entwürfe mit fortgeschriebenem Monat in den Beschreibungen erstellt.",
+  "Vytvoriť faktúru": "Rechnung erstellen",
+  "Vytvoriť kópie": "Kopien erstellen",
+  "Vytvoriť kópie {n} faktúr pre ďalší mesiac?":
+    "Kopien von {n} Rechnungen für den nächsten Monat erstellen?",
+  "Výsledky hľadania „{q}“.": "Suchergebnisse für „{q}“.",
+  "Všetky vystavené faktúry, koncepty aj stornované.":
+    "Alle ausgestellten Rechnungen, Entwürfe und stornierten Rechnungen.",
+  "Z QR kódu na bločku sa prečíta suma, dátum a DIČ predajcu. Položky sa čítajú z fotky.":
+    "Aus dem QR-Code auf dem Kassenbon werden Betrag, Datum und Steuernummer (DIČ) des Verkäufers gelesen. Die Positionen werden aus dem Foto gelesen.",
+  "Z fotky sa nepodarilo prečítať nič. Skúste doklad odfotiť zhora, celý a pri lepšom svetle.":
+    "Aus dem Foto konnte nichts gelesen werden. Fotografieren Sie den Beleg von oben, vollständig und bei besserem Licht.",
+  "Z tohto čísla sa rad odvodiť nedá — potrebuje poradie aspoň o dvoch číslach na konci. Doklad sa uloží, číslovanie ostane pôvodné.":
+    "Aus dieser Nummer lässt sich kein Nummernkreis ableiten — dafür ist eine laufende Nummer mit mindestens zwei Ziffern am Ende nötig. Der Beleg wird gespeichert, die Nummerierung bleibt unverändert.",
+  "ZIP stiahnutý — faktúr: {n}": "ZIP heruntergeladen — Rechnungen: {n}",
+  "Zadajte sumu": "Geben Sie einen Betrag ein",
+  "Zapísaná úhrada sa dá vrátiť v": "Eine erfasste Zahlung lässt sich rückgängig machen in den",
+  "Zapísaných {n} úhrad, uhradených faktúr: {m}.":
+    "Erfasste Zahlungen: {n}, bezahlte Rechnungen: {m}.",
+  "Zapísať úhrady ({n})": "Zahlungen erfassen ({n})",
+  "Zapíše sa": "Wird erfasst",
+  Zaúčtovaná: "Verbucht",
+  "Zaúčtovať ({n})": "Verbuchen ({n})",
+  Zrušiť: "Abbrechen",
+  "Zrušiť filter": "Filter zurücksetzen",
+  "Zákazka patrila pôvodnému odberateľovi, tak sa z faktúry odobrala.":
+    "Das Projekt gehörte dem ursprünglichen Kunden und wurde daher von der Rechnung entfernt.",
+  "Základné údaje": "Grunddaten",
+  "Zápis zlyhal.": "Die Erfassung ist fehlgeschlagen.",
+  Zľava: "Rabatt",
+  "Zľava %": "Rabatt %",
+  "Zľava na doklad": "Rabatt auf den Beleg",
+  "Zľava v %": "Rabatt in %",
+  "bankových transakciách": "Banktransaktionen",
+  "bez názvu": "ohne Namen",
+  "faktúra ostane otvorená": "Rechnung bleibt offen",
+  isté: "sicher",
+  "manuáli k banke": "Handbuch zur Bank",
+  "na rozhodnutie": "zu entscheiden",
+  "novom doklade": "einem neuen Beleg",
+  "náhľad dokladu": "Belegvorschau",
+  predĺžená: "verlängert",
+  "prečítané z dokladu": "aus dem Beleg gelesen",
+  "splat.": "fällig",
+  "suma sedí presne": "Betrag stimmt genau",
+  "z toho DPH": "davon MwSt.",
+  "základ {suma}": "Nettobetrag {suma}",
+  "{n} faktúr označených ako zaplatené": "Als bezahlt markierte Rechnungen: {n}",
+  "{n} faktúr označených ako zaplatené ({m} preskočených)":
+    "Als bezahlt markierte Rechnungen: {n} ({m} übersprungen)",
+  "{n} z vybratých je odoslaných alebo zaplatených. Mazanie môže narušiť účtovnú stopu.":
+    "{n} der ausgewählten sind gesendet oder bezahlt. Das Löschen kann die Nachvollziehbarkeit der Buchhaltung beeinträchtigen.",
+  "{sadzba}% (do {rok})": "{sadzba}% (bis {rok})",
+  "{suma} {mena} (vrátane {sadzba}% DPH)": "{suma} {mena} (inkl. {sadzba}% MwSt.)",
+  "Údaje nižšie sú tie, ktoré sú na faktúre. Opravíte ich len na tomto doklade — v adresári ostanú, ako sú.":
+    "Die Angaben unten sind die auf der Rechnung. Sie korrigieren sie nur auf diesem Beleg — in den Kontakten bleiben sie unverändert.",
+  "Údaje pred uložením skontrolujte.": "Prüfen Sie die Daten vor dem Speichern.",
+  "Údaje sa dajú zapísať aj ručne v": "Die Daten können auch manuell erfasst werden in",
+  "Účtovné exporty": "Export an die Buchhaltung",
+  "Český QR kód sa nepodarilo prečítať, údaje sú prečítané z fotky.":
+    "Der tschechische QR-Code konnte nicht gelesen werden, die Daten wurden aus dem Foto gelesen.",
+  "Český QR kód sa nepodarilo prečítať.": "Der tschechische QR-Code konnte nicht gelesen werden.",
+  "Český bloček — údaje sú priamo z QR kódu. Evidencia tržieb (EET) skončila v roku 2023, takže doklad ani jeho položky sa nemajú kde overiť.":
+    "Tschechischer Kassenbon — die Daten stammen direkt aus dem QR-Code. Die Umsatzerfassung (EET) endete 2023, daher lassen sich weder der Beleg noch seine Positionen prüfen.",
+  "Číselný rad sa nepodarilo zmeniť.": "Der Nummernkreis konnte nicht geändert werden.",
+  Číslo: "Nummer",
+  "Číslo dokladu": "Belegnummer",
+  "Číslo faktúry": "Rechnungsnummer",
+  "Číslo faktúry nesmie byť prázdne.": "Die Rechnungsnummer darf nicht leer sein.",
+  "Číslo sa mení z {stare} na {nove}. Odberateľ mohol starý doklad dostať, tak mu pošlite nové PDF. Variabilný symbol sa nemení sám — keď má sedieť s číslom, prepíšte ho tiež.":
+    "Die Nummer ändert sich von {stare} auf {nove}. Der Kunde hat den alten Beleg möglicherweise erhalten, senden Sie ihm daher das neue PDF. Der Verwendungszweck (VS) ändert sich nicht automatisch — wenn er zur Nummer passen soll, ändern Sie ihn ebenfalls.",
+  "Číslo vzostupne": "Nummer aufsteigend",
+  "Číslo zostupne": "Nummer absteigend",
+  "Čítam doklad…": "Beleg wird gelesen…",
+  "číslo faktúry je v popise platby": "Rechnungsnummer steht im Verwendungszweck der Zahlung",
+  Ďalej: "Weiter",
+  "Ďalšie doklady pokračujú v rade {format}.":
+    "Weitere Belege werden im Nummernkreis {format} fortgesetzt.",
+  "Ďalšie doklady tohto druhu budú číslované {format} — najbližší dostane {cislo}.":
+    "Weitere Belege dieser Art werden als {format} nummeriert — der nächste erhält {cislo}.",
+  Ťarchopis: "Belastungsanzeige",
+  "Žiadna faktúra nečaká na úhradu.": "Keine Rechnung wartet auf Bezahlung.",
+  "Žiadne faktúry.": "Keine Rechnungen.",
+  "Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav).":
+    "Keine versandfähigen Rechnungen (E-Mail fehlt oder falscher Status).",
+  "Žiadne po splatnosti faktúry s emailom.": "Keine überfälligen Rechnungen mit E-Mail-Adresse.",
+  "Žiadne vymazané faktúry.": "Keine gelöschten Rechnungen.",
+  "— vyberte —": "— auswählen —",
+} satisfies Record<string, string>;

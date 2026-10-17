@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getRecurringDiagnostics } from "@/lib/faktero/recurring.functions";
@@ -8,11 +10,12 @@ import { Activity, AlertTriangle, CheckCircle2, Clock, RefreshCw, Link2, Copy } 
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/diagnostika")({
-  head: () => ({ meta: [{ title: "Diagnostika — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Diagnostika — Faktero") }] }),
   component: DiagnostikaPage,
 });
 
 function DiagnostikaPage() {
+  const { t } = useT();
   const fetchDiag = useServerFn(getRecurringDiagnostics);
   const fetchTb = useServerFn(previewTatraAuthorizeUrl);
   const [data, setData] = useState<any | null>(null);
@@ -30,7 +33,7 @@ function DiagnostikaPage() {
       setData(r);
       platformAdmin = r?.is_platform_admin === true;
     } catch (e: any) {
-      setErr(e?.message ?? "Chyba pri načítaní");
+      setErr(e?.message ?? t("Chyba pri načítaní"));
     } finally {
       setLoading(false);
     }
@@ -42,18 +45,18 @@ function DiagnostikaPage() {
       return;
     }
     try {
-      const t = await fetchTb();
-      setTb(t);
+      const tbData = await fetchTb();
+      setTb(tbData);
       setTbErr(null);
     } catch (e: any) {
-      setTbErr(e?.message ?? "Chyba");
+      setTbErr(e?.message ?? t("Chyba"));
     }
   }
   useEffect(() => {
     load();
   }, []);
 
-  if (loading) return <div className="p-6 text-sm text-muted-foreground">Načítavam…</div>;
+  if (loading) return <div className="p-6 text-sm text-muted-foreground">{t("Načítavam…")}</div>;
   if (err) return <div className="p-6 text-sm text-destructive">{err}</div>;
 
   const isPlatformAdmin = data?.is_platform_admin === true;
@@ -65,19 +68,19 @@ function DiagnostikaPage() {
   return (
     <>
       <PageHeader
-        title="Diagnostika"
-        description="Stav automatického spúšťania opakovaných faktúr"
+        title={t("Diagnostika")}
+        description={t("Stav automatického spúšťania opakovaných faktúr")}
       />
       <PageBody>
         <div className="mb-4 flex items-center justify-between">
           <Link to="/opakovane" className="text-sm text-primary hover:underline">
-            ← Opakované faktúry
+            ← {t("Opakované faktúry")}
           </Link>
           <button
             onClick={load}
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted/60"
           >
-            <RefreshCw className="h-3.5 w-3.5" /> Obnoviť
+            <RefreshCw className="h-3.5 w-3.5" /> {t("Obnoviť")}
           </button>
         </div>
 
@@ -88,10 +91,10 @@ function DiagnostikaPage() {
                 <>
                   <Row k="Job" v={cron.jobname} />
                   <Row k="Plán" v={cron.schedule ?? "—"} />
-                  <Row k="Aktívny" v={cron.active ? "Áno" : "Nie"} />
+                  <Row k="Aktívny" v={cron.active ? t("Áno") : t("Nie")} />
                 </>
               ) : (
-                <div className="text-sm text-destructive">Cron nie je nakonfigurovaný.</div>
+                <div className="text-sm text-destructive">{t("Cron nie je nakonfigurovaný.")}</div>
               )}
             </Card>
           )}
@@ -105,14 +108,14 @@ function DiagnostikaPage() {
                   <Row k="Správa" v={lastRun.return_message ?? "—"} />
                 </>
               ) : (
-                <div className="text-sm text-muted-foreground">Zatiaľ žiadne spustenie.</div>
+                <div className="text-sm text-muted-foreground">{t("Zatiaľ žiadne spustenie.")}</div>
               )}
             </Card>
           )}
 
           <Card title="Chyby (7 dní)" icon={AlertTriangle}>
             <div className="text-3xl font-semibold tabular-nums">{data?.failed_7d ?? 0}</div>
-            <div className="mt-1 text-xs text-muted-foreground">neúspešných generovaní</div>
+            <div className="mt-1 text-xs text-muted-foreground">{t("neúspešných generovaní")}</div>
           </Card>
         </div>
 
@@ -120,7 +123,7 @@ function DiagnostikaPage() {
           {isPlatformAdmin && (
             <Card title="Posledné cron behy" icon={Activity}>
               {runs.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Žiadne záznamy.</div>
+                <div className="text-sm text-muted-foreground">{t("Žiadne záznamy.")}</div>
               ) : (
                 <ul className="divide-y divide-border text-sm">
                   {runs.map((r, i) => (
@@ -147,7 +150,7 @@ function DiagnostikaPage() {
 
           <Card title="Posledné generovania" icon={CheckCircle2}>
             {logs.length === 0 ? (
-              <div className="text-sm text-muted-foreground">Žiadne záznamy.</div>
+              <div className="text-sm text-muted-foreground">{t("Žiadne záznamy.")}</div>
             ) : (
               <ul className="divide-y divide-border text-sm">
                 {logs.map((l) => (
@@ -177,12 +180,12 @@ function DiagnostikaPage() {
           <div className="mt-6">
             <Card title="Tatra banka — OAuth authorize URL" icon={Link2}>
               {tbErr && <div className="text-sm text-destructive">{tbErr}</div>}
-              {!tb && !tbErr && <div className="text-sm text-muted-foreground">Načítavam…</div>}
+              {!tb && !tbErr && <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>}
               {tb && (
                 <div className="space-y-3 text-sm">
                   <Row
                     k="Konfigurované"
-                    v={tb.configured ? "Áno" : "Nie (chýba TB_CLIENT_ID/SECRET)"}
+                    v={tb.configured ? t("Áno") : t("Nie (chýba TB_CLIENT_ID/SECRET)")}
                   />
                   <Row k="Prostredie (TB_ENV)" v={tb.env} />
                   <Row k="Scope" v={tb.scope} />
@@ -190,7 +193,7 @@ function DiagnostikaPage() {
                   <Row k="redirect_uri" v={tb.redirect_uri} />
                   <div>
                     <div className="mb-1 text-xs text-muted-foreground">
-                      authorize_url (state je preview placeholder)
+                      {t("authorize_url (state je preview placeholder)")}
                     </div>
                     <div className="flex items-start gap-2">
                       <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md border border-border bg-muted/40 p-2 text-xs">
@@ -200,11 +203,11 @@ function DiagnostikaPage() {
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(tb.authorize_url);
-                            toast.success("Skopírované");
+                            toast.success(t("Skopírované"));
                           }}
                           className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-border px-2 text-xs hover:bg-muted/60"
                         >
-                          <Copy className="h-3 w-3" /> Kopírovať
+                          <Copy className="h-3 w-3" /> {t("Kopírovať")}
                         </button>
                       )}
                     </div>
@@ -228,11 +231,12 @@ function Card({
   icon: any;
   children: React.ReactNode;
 }) {
+  const { t } = useT();
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-medium">
         <Icon className="h-4 w-4 text-muted-foreground" />
-        {title}
+        {t(title)}
       </div>
       {children}
     </div>
@@ -240,9 +244,10 @@ function Card({
 }
 
 function Row({ k, v }: { k: string; v: any }) {
+  const { t } = useT();
   return (
     <div className="flex items-baseline justify-between py-1 text-sm">
-      <span className="text-muted-foreground">{k}</span>
+      <span className="text-muted-foreground">{t(k)}</span>
       <span className="ml-2 truncate font-medium">{String(v)}</span>
     </div>
   );

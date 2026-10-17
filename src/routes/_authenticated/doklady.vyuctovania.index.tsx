@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useEffect, useMemo, useState } from "react";
@@ -14,13 +16,28 @@ import { nazovTypu } from "@/lib/faktero/vyuctovanie-vydavkov";
  * v Doklado). Nové vznikne tu alebo z označených bločkov a prijatých faktúr.
  */
 export const Route = createFileRoute("/_authenticated/doklady/vyuctovania/")({
-  head: () => ({ meta: [{ title: "Vyúčtovanie výdavkov — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vyúčtovanie výdavkov — Faktero") }] }),
   component: Zoznam,
 });
 
 const datum = (d?: string | null) => (d ? new Date(d).toLocaleDateString("sk-SK") : "");
 
+/** Výsledok vyúčtovania v jazyku webu — server ho skladá po slovensky aj so sumou. */
+function vysledokVyuctovania(
+  t: (s: string, p?: Record<string, string | number>) => string,
+  typ: string,
+  rozdiel: number,
+  mena: string,
+): string {
+  const suma = `${Math.abs(rozdiel).toFixed(2).replace(".", ",")} ${mena || "EUR"}`;
+  if (typ === "karta") return t("Platené firemnou kartou — nič sa nedopláca.");
+  if (rozdiel > 0) return t("Firma doplatí zamestnancovi {suma}.", { suma });
+  if (rozdiel < 0) return t("Zamestnanec vráti firme {suma}.", { suma });
+  return t("Vyrovnané — nikto nikomu nič nedlhuje.");
+}
+
 function Zoznam() {
+  const { t } = useT();
   const cid = useMemo(() => getActiveCompanyId(), []);
   const nacitaj = useServerFn(zoznamVyuctovaniFn);
   const [rows, setRows] = useState<any[] | null>(null);
@@ -29,7 +46,7 @@ function Zoznam() {
     nacitaj({ data: { company_id: cid } })
       .then(setRows)
       .catch((e) => {
-        toast.error(e?.message ?? "Vyúčtovania sa nepodarilo načítať");
+        toast.error(e?.message ?? t("Vyúčtovania sa nepodarilo načítať"));
         setRows([]);
       });
   }, [cid, nacitaj]);
@@ -37,52 +54,51 @@ function Zoznam() {
   return (
     <>
       <PageHeader
-        title="Vyúčtovanie výdavkov"
-        description="Bločky a faktúry, ktoré zamestnanec zaplatil zo zálohy, z vlastných peňazí alebo firemnou kartou — súhrn, doplatok a PDF na podpis."
+        title={t("Vyúčtovanie výdavkov")}
+        description={t("Bločky a faktúry, ktoré zamestnanec zaplatil zo zálohy, z vlastných peňazí alebo firemnou kartou — súhrn, doplatok a PDF na podpis.")}
         action={
           <Link
             to="/doklady/vyuctovania/$id"
             params={{ id: "novy" }}
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Nové vyúčtovanie
+            <Plus className="h-4 w-4" /> {t("Nové vyúčtovanie")}
           </Link>
         }
       />
       <PageBody>
         <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-          Vyúčtovanie založíte aj priamo zo zoznamu{" "}
+          {t("Vyúčtovanie založíte aj priamo zo zoznamu")}{" "}
           <Link to="/doklady" className="text-primary hover:underline">
-            Bločkov
+            {t("Bločkov")}
           </Link>{" "}
-          alebo{" "}
+          {t("alebo")}{" "}
           <Link to="/prijate-faktury" className="text-primary hover:underline">
-            Prijatých faktúr
+            {t("Prijatých faktúr")}
           </Link>{" "}
-          — označte doklady a kliknite na <em>Vyúčtovanie</em>. Doklad vo vyúčtovaní ide do Pohody
-          ako interný doklad (nie z firemnej pokladne) a prijatá faktúra sa už neponúkne v hromadnom
-          príkaze na úhradu.
+          {t("— označte doklady a kliknite na")} <em>{t("Vyúčtovanie")}</em>
+          {t(". Doklad vo vyúčtovaní ide do Pohody ako interný doklad (nie z firemnej pokladne) a prijatá faktúra sa už neponúkne v hromadnom príkaze na úhradu.")}
         </div>
         {rows === null ? (
           <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Načítavam…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
           </div>
         ) : rows.length === 0 ? (
           <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            Zatiaľ žiadne vyúčtovanie.
+            {t("Zatiaľ žiadne vyúčtovanie.")}
           </div>
         ) : (
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
               <thead className="border-b border-border text-left text-xs text-muted-foreground">
                 <tr>
-                  <th className="p-3">Vyúčtovanie</th>
-                  <th className="p-3">Zamestnanec</th>
-                  <th className="p-3">Typ</th>
-                  <th className="p-3 text-right">Doklady</th>
-                  <th className="p-3 text-right">Spolu</th>
-                  <th className="p-3">Výsledok</th>
-                  <th className="p-3">Stav</th>
+                  <th className="p-3">{t("Vyúčtovanie")}</th>
+                  <th className="p-3">{t("Zamestnanec")}</th>
+                  <th className="p-3">{t("Typ")}</th>
+                  <th className="p-3 text-right">{t("Doklady")}</th>
+                  <th className="p-3 text-right">{t("Spolu")}</th>
+                  <th className="p-3">{t("Výsledok")}</th>
+                  <th className="p-3">{t("Stav")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -102,19 +118,21 @@ function Zoznam() {
                       <div className="text-xs text-muted-foreground">{datum(r.created_at)}</div>
                     </td>
                     <td className="p-3">{r.zamestnanec_meno ?? "—"}</td>
-                    <td className="p-3 text-xs">{nazovTypu(r.typ).replace("Vyúčtovanie ", "")}</td>
+                    <td className="p-3 text-xs">{t(nazovTypu(r.typ)).replace("Vyúčtovanie ", "").replace("Abrechnung ", "")}</td>
                     <td className="p-3 text-right tabular-nums">{r.suhrn.pocet}</td>
                     <td className="p-3 text-right tabular-nums">
                       {formatujMenu(r.suhrn.spolu, r.mena)}
                     </td>
-                    <td className="p-3 text-xs">{r.suhrn.vysledok}</td>
+                    <td className="p-3 text-xs">
+                      {vysledokVyuctovania(t, r.typ, Number(r.suhrn.rozdiel) || 0, r.mena)}
+                    </td>
                     <td className="p-3 text-xs">
                       {r.stav === "uzavrete" ? (
                         <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
-                          uzavreté
+                          {t("uzavreté")}
                         </span>
                       ) : (
-                        <span className="rounded-full bg-secondary px-2 py-0.5">otvorené</span>
+                        <span className="rounded-full bg-secondary px-2 py-0.5">{t("otvorené")}</span>
                       )}
                     </td>
                   </tr>

@@ -7,7 +7,12 @@ import {
   priraditCestuFn,
   rozhodnutieFn,
 } from "@/lib/faktero/schvalovanie.functions";
-import { NAZVY_STAVOV, type AgendaSchvalovania, type StavSchvalovania } from "@/lib/faktero/schvalovanie";
+import {
+  NAZVY_STAVOV,
+  type AgendaSchvalovania,
+  type StavSchvalovania,
+} from "@/lib/faktero/schvalovanie";
+import { useT } from "@/lib/i18n/useT";
 
 const AKCIE: Record<string, string> = {
   schvalil: "schválil",
@@ -37,6 +42,7 @@ export function SchvalovaniePanel({
   id: string;
   onZmena?: () => void;
 }) {
+  const { t, jazyk } = useT();
   const nacitaj = useServerFn(detailSchvalovaniaFn);
   const rozhodni = useServerFn(rozhodnutieFn);
   const prirad = useServerFn(priraditCestuFn);
@@ -57,19 +63,21 @@ export function SchvalovaniePanel({
 
   async function akcia(a: "schvalit" | "zamietnut" | "vratit" | "zrusit") {
     if ((a === "zamietnut" || a === "vratit") && !poznamka.trim()) {
-      toast.error("Napíšte dôvod — dostane ho ten, kto doklad nahral.");
+      toast.error(t("Napíšte dôvod — dostane ho ten, kto doklad nahral."));
       return;
     }
     setBusy(true);
     try {
-      const r = await rozhodni({ data: { company_id: companyId, agenda, ids: [id], akcia: a, poznamka } });
-      if (!r.hotovo) toast.error("Na toto nemáte oprávnenie.");
-      else toast.success("Uložené");
+      const r = await rozhodni({
+        data: { company_id: companyId, agenda, ids: [id], akcia: a, poznamka },
+      });
+      if (!r.hotovo) toast.error(t("Na toto nemáte oprávnenie."));
+      else toast.success(t("Uložené"));
       setPoznamka("");
       await obnov();
       onZmena?.();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -79,14 +87,16 @@ export function SchvalovaniePanel({
   return (
     <div className="rounded-xl border border-border bg-card p-5 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">Schvaľovanie</div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          {t("Schvaľovanie")}
+        </div>
         {z ? (
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${FARBY[z.stav] ?? ""}`}>
-            {NAZVY_STAVOV[z.stav as StavSchvalovania]} · {z.odznak}
+            {t(NAZVY_STAVOV[z.stav as StavSchvalovania] ?? z.stav)} · {z.odznak}
           </span>
         ) : (
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-            Doklad je spred zapnutia schvaľovania
+            {t("Doklad je spred zapnutia schvaľovania")}
           </span>
         )}
       </div>
@@ -112,7 +122,7 @@ export function SchvalovaniePanel({
             </ol>
           ) : (
             <p className="mt-2 text-xs text-muted-foreground">
-              Jednoduché schvaľovanie — schváli majiteľ, správca alebo účtovník.
+              {t("Jednoduché schvaľovanie — schváli majiteľ, správca alebo účtovník.")}
             </p>
           )}
 
@@ -122,7 +132,7 @@ export function SchvalovaniePanel({
                 <input
                   value={poznamka}
                   onChange={(e) => setPoznamka(e.target.value)}
-                  placeholder="Poznámka (pri zamietnutí a vrátení povinná)"
+                  placeholder={t("Poznámka (pri zamietnutí a vrátení povinná)")}
                   className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
                 />
               )}
@@ -134,22 +144,26 @@ export function SchvalovaniePanel({
                       disabled={busy}
                       className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                     >
-                      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                      Schváliť
+                      {busy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4" />
+                      )}
+                      {t("Schváliť")}
                     </button>
                     <button
                       onClick={() => akcia("vratit")}
                       disabled={busy}
                       className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
                     >
-                      <Undo2 className="h-4 w-4" /> Vrátiť na opravu
+                      <Undo2 className="h-4 w-4" /> {t("Vrátiť na opravu")}
                     </button>
                     <button
                       onClick={() => akcia("zamietnut")}
                       disabled={busy}
                       className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
                     >
-                      <XCircle className="h-4 w-4" /> Zamietnuť
+                      <XCircle className="h-4 w-4" /> {t("Zamietnuť")}
                     </button>
                   </>
                 )}
@@ -159,7 +173,7 @@ export function SchvalovaniePanel({
                     disabled={busy}
                     className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
                   >
-                    Zrušiť rozhodnutie
+                    {t("Zrušiť rozhodnutie")}
                   </button>
                 )}
               </div>
@@ -170,9 +184,12 @@ export function SchvalovaniePanel({
             <ul className="mt-3 space-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
               {d.historia.map((h: any, i: number) => (
                 <li key={i}>
-                  {new Date(h.created_at).toLocaleString("sk-SK", { dateStyle: "short", timeStyle: "short" })} ·{" "}
-                  <span className="text-foreground">{h.meno}</span> {AKCIE[h.akcia] ?? h.akcia}
-                  {h.uroven ? ` (úroveň ${h.uroven})` : ""}
+                  {new Date(h.created_at).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}{" "}
+                  · <span className="text-foreground">{h.meno}</span> {t(AKCIE[h.akcia] ?? h.akcia)}
+                  {h.uroven ? ` ${t("(úroveň {n})", { n: h.uroven })}` : ""}
                   {h.poznamka ? ` — „${h.poznamka}“` : ""}
                 </li>
               ))}
@@ -183,7 +200,7 @@ export function SchvalovaniePanel({
 
       {d.mozemPriradit && d.cesty?.length > 0 && (
         <label className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          Schvaľovacia cesta
+          {t("Schvaľovacia cesta")}
           <select
             value={z?.cestaId ?? ""}
             onChange={async (e) => {
@@ -192,18 +209,18 @@ export function SchvalovaniePanel({
                 await prirad({
                   data: { company_id: companyId, agenda, id, cesta_id: e.target.value || null },
                 });
-                toast.success("Cesta pridelená — schvaľovanie začína odznova");
+                toast.success(t("Cesta pridelená — schvaľovanie začína odznova"));
                 await obnov();
                 onZmena?.();
               } catch (err: any) {
-                toast.error(err?.message ?? "Nepodarilo sa");
+                toast.error(t(err?.message ?? "Nepodarilo sa"));
               } finally {
                 setBusy(false);
               }
             }}
             className="rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
           >
-            <option value="">jednoduché schvaľovanie</option>
+            <option value="">{t("jednoduché schvaľovanie")}</option>
             {d.cesty.map((c: any) => (
               <option key={c.id} value={c.id}>
                 {c.nazov}

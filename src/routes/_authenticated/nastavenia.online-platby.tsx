@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CreditCard, QrCode, Landmark } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 /**
  * Online platby kartou pre zákazníkov firmy — zatiaľ neponúkame.
@@ -16,16 +18,19 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
  */
 
 export const Route = createFileRoute("/_authenticated/nastavenia/online-platby")({
-  head: () => ({ meta: [{ title: "Online platby — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Online platby — Faktero") }],
+  }),
   component: OnlinePlatbyPage,
 });
 
 function OnlinePlatbyPage() {
+  const { t } = useT();
   return (
     <>
       <PageHeader
-        title="Online platby"
-        description="Ako od zákazníkov dostať peniaze rýchlejšie."
+        title={t("Online platby")}
+        description={t("Ako od zákazníkov dostať peniaze rýchlejšie.")}
       />
       <PageBody>
         <div className="mx-auto max-w-2xl space-y-4">
@@ -35,11 +40,11 @@ function OnlinePlatbyPage() {
                 <CreditCard className="h-5 w-5" />
               </span>
               <div>
-                <h2 className="text-lg font-semibold">Platby kartou zatiaľ neponúkame</h2>
+                <h2 className="text-lg font-semibold">{t("Platby kartou zatiaľ neponúkame")}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Aby ste mohli prijímať platby kartou pod vlastným účtom, potrebuje poskytovateľ
-                  platobnej brány zmluvu, ktorá to na spoločnej doméne umožňuje. Kým ju nemáme,
-                  funkciu radšej neponúkame, než aby vás sklamala v momente, keď na ňu spoľahnete.
+                  {t(
+                    "Aby ste mohli prijímať platby kartou pod vlastným účtom, potrebuje poskytovateľ platobnej brány zmluvu, ktorá to na spoločnej doméne umožňuje. Kým ju nemáme, funkciu radšej neponúkame, než aby vás sklamala v momente, keď na ňu spoľahnete.",
+                  )}
                 </p>
               </div>
             </div>
@@ -47,7 +52,7 @@ function OnlinePlatbyPage() {
 
           <div className="rounded-xl border border-border bg-card p-6">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Čo funguje už teraz
+              {t("Čo funguje už teraz")}
             </h3>
             <ul className="mt-4 space-y-4">
               <li className="flex items-start gap-3">
@@ -55,10 +60,11 @@ function OnlinePlatbyPage() {
                   <QrCode className="h-[18px] w-[18px]" />
                 </span>
                 <span className="text-sm">
-                  <span className="block font-medium">QR platba na každej faktúre</span>
+                  <span className="block font-medium">{t("QR platba na každej faktúre")}</span>
                   <span className="block text-muted-foreground">
-                    Odberateľ naskenuje kód v mobilnej banke a má predvyplnenú sumu aj variabilný
-                    symbol. Netreba nič nastavovať — je to na PDF automaticky.
+                    {t(
+                      "Odberateľ naskenuje kód v mobilnej banke a má predvyplnenú sumu aj variabilný symbol. Netreba nič nastavovať — je to na PDF automaticky.",
+                    )}
                   </span>
                 </span>
               </li>
@@ -67,9 +73,9 @@ function OnlinePlatbyPage() {
                   <Landmark className="h-[18px] w-[18px]" />
                 </span>
                 <span className="text-sm">
-                  <span className="block font-medium">Párovanie úhrad z banky</span>
+                  <span className="block font-medium">{t("Párovanie úhrad z banky")}</span>
                   <span className="block text-muted-foreground">
-                    Keď platba príde, Faktero ju samo priradí k faktúre a označí ju za uhradenú.
+                    {t("Keď platba príde, Faktero ju samo priradí k faktúre a označí ju za uhradenú.")}
                   </span>
                 </span>
               </li>
@@ -78,7 +84,7 @@ function OnlinePlatbyPage() {
               to="/bankove-ucty"
               className="mt-5 inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              Pripojiť bankový účet
+              {t("Pripojiť bankový účet")}
             </Link>
           </div>
         </div>

@@ -13,13 +13,16 @@ import {
   tlacidlo,
   tlacidloObrys,
 } from "@/components/faktero/zamestnanci/ui";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/novy")({
-  head: () => ({ meta: [{ title: "Nový zamestnanec — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nový zamestnanec — Faktero") }] }),
   component: NovyZamestnanec,
 });
 
 function NovyZamestnanec() {
+  const { t } = useT();
   const uloz = useServerFn(ulozZamestnanca);
   const ulozCitlive = useServerFn(nastavCitliveUdaje);
   const nav = useNavigate();
@@ -34,7 +37,7 @@ function NovyZamestnanec() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     if (!udaje.first_name.trim() || !udaje.last_name.trim()) {
-      setChyba("Meno a priezvisko sú povinné.");
+      setChyba(t("Meno a priezvisko sú povinné."));
       return;
     }
     setUklada(true);
@@ -54,7 +57,7 @@ function NovyZamestnanec() {
       }
       nav({ to: "/zamestnanci/$id", params: { id } });
     } catch (err: any) {
-      setChyba(err?.message ?? "Zamestnanca sa nepodarilo uložiť.");
+      setChyba(err?.message ?? t("Zamestnanca sa nepodarilo uložiť."));
     } finally {
       setUklada(false);
     }
@@ -63,8 +66,8 @@ function NovyZamestnanec() {
   return (
     <>
       <PageHeader
-        title="Nový zamestnanec"
-        description="Stačí meno a priezvisko, ostatné doplníte kedykoľvek neskôr."
+        title={t("Nový zamestnanec")}
+        description={t("Stačí meno a priezvisko, ostatné doplníte kedykoľvek neskôr.")}
       />
       <PageBody>
         <form onSubmit={odoslat} className="max-w-3xl space-y-4">
@@ -73,21 +76,22 @@ function NovyZamestnanec() {
           )}
           <FormularZamestnanca udaje={udaje} zmen={setUdaje} />
           <section className="rounded-xl border border-border bg-card p-4">
-            <h3 className="mb-1 text-sm font-semibold">Citlivé údaje</h3>
+            <h3 className="mb-1 text-sm font-semibold">{t("Citlivé údaje")}</h3>
             <p className="mb-3 text-xs text-muted-foreground">
-              Rodné číslo a číslo občianskeho preukazu sa ukladajú šifrované. Zobraziť ich bude možné len na karte
-              zamestnanca a každé zobrazenie sa zapíše.
+              {t(
+                "Rodné číslo a číslo občianskeho preukazu sa ukladajú šifrované. Zobraziť ich bude možné len na karte zamestnanca a každé zobrazenie sa zapíše.",
+              )}
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={popis} htmlFor="zam-rc">
-                  Rodné číslo
+                  {t("Rodné číslo")}
                 </label>
                 <input id="zam-rc" className={pole} value={rodneCislo} onChange={(e) => setRodneCislo(e.target.value)} autoComplete="off" />
               </div>
               <div>
                 <label className={popis} htmlFor="zam-op">
-                  Číslo občianskeho preukazu
+                  {t("Číslo občianskeho preukazu")}
                 </label>
                 <input id="zam-op" className={pole} value={opCislo} onChange={(e) => setOpCislo(e.target.value)} autoComplete="off" />
               </div>
@@ -95,10 +99,10 @@ function NovyZamestnanec() {
           </section>
           <div className="flex justify-end gap-2">
             <Link to="/zamestnanci" className={tlacidloObrys}>
-              Zrušiť
+              {t("Zrušiť")}
             </Link>
             <button type="submit" className={tlacidlo} disabled={uklada}>
-              {uklada ? "Ukladám…" : "Uložiť zamestnanca"}
+              {uklada ? t("Ukladám…") : t("Uložiť zamestnanca")}
             </button>
           </div>
         </form>

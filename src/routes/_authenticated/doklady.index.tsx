@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
@@ -58,7 +60,7 @@ import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
-  head: () => ({ meta: [{ title: "Doklady — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doklady — Faktero") }] }),
   /*
    * `mesiac` v adrese otvorí zoznam rovno na mesiaci dokladu. Bez neho sa
    * zoznam otvára na tomto mesiaci a doklad vystavený v minulom mesiaci sa hneď
@@ -103,10 +105,13 @@ const STLPCE_DOKLADOV: StlpecZoznamu[] = [
 ];
 
 /** „2026-08" → „august 2026" — do vety, nie do tabuľky. */
-function nazovMesiaca(m: string): string {
+function nazovMesiaca(m: string, jazyk: string = "sk"): string {
   const [r, me] = m.split("-").map(Number);
   if (!r || !me) return m;
-  return new Date(r, me - 1, 1).toLocaleDateString("sk-SK", { month: "long", year: "numeric" });
+  return new Date(r, me - 1, 1).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK", {
+    month: "long",
+    year: "numeric",
+  });
 }
 
 const STATUS_LABEL: Record<string, string> = STAV_DOKLADU_NAZOV;
@@ -124,6 +129,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 function DokladyPage() {
+  const { t, jazyk } = useT();
   const navigate = useNavigate();
   const listFn = useServerFn(listExpensesFn);
   const mimoFn = useServerFn(dokladyMimoMesiacaFn);
@@ -220,9 +226,9 @@ function DokladyPage() {
         [z.expenseId]: { datum: z.pohyb?.booking_date, transactionId: z.transactionId },
       }));
       setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId));
-      toast.success("Doklad označený za uhradený z účtu.");
+      toast.success(t("Doklad označený za uhradený z účtu."));
     } catch (e: any) {
-      toast.error(e?.message ?? "Spárovať sa to nepodarilo.");
+      toast.error(e?.message ?? t("Spárovať sa to nepodarilo."));
     } finally {
       setParujem(null);
     }
@@ -236,9 +242,9 @@ function DokladyPage() {
         delete kopia[expenseId];
         return kopia;
       });
-      toast.success("Párovanie zrušené.");
+      toast.success(t("Párovanie zrušené."));
     } catch (e: any) {
-      toast.error(e?.message ?? "Zrušiť sa to nepodarilo.");
+      toast.error(e?.message ?? t("Zrušiť sa to nepodarilo."));
     }
   }
 
@@ -280,7 +286,7 @@ function DokladyPage() {
         }
       })();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba pri načítaní");
+      toast.error(e?.message ?? t("Chyba pri načítaní"));
     } finally {
       setLoading(false);
     }
@@ -288,10 +294,13 @@ function DokladyPage() {
   async function doPrijatych(r: any) {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    const popis = r.supplier_name ?? "doklad";
+    const popis = r.supplier_name ?? t("doklad");
     if (
       !(await potvrd(
-        `Presunúť ${popis} medzi prijaté faktúry? Z Dokladov zmizne, aby sa ten istý náklad nepočítal dvakrát.`,
+        t(
+          "Presunúť {popis} medzi prijaté faktúry? Z Dokladov zmizne, aby sa ten istý náklad nepočítal dvakrát.",
+          { popis },
+        ),
       ))
     )
       return;
@@ -299,11 +308,11 @@ function DokladyPage() {
     try {
       const { presunDokladDoPrijatychFn } = await import("@/lib/faktero/doklad-presun.functions");
       const v: any = await presunDokladDoPrijatychFn({ data: { company_id: cid, id: r.id } });
-      toast.success("Doklad je medzi prijatými faktúrami.");
+      toast.success(t("Doklad je medzi prijatými faktúrami."));
       navigate({ to: "/prijate-faktury/$id", params: { id: v.id } });
     } catch (e: any) {
       const { friendlyError } = await import("@/lib/faktero/plan-error");
-      toast.error(friendlyError(e, "Presun sa nepodaril"));
+      toast.error(friendlyError(e, t("Presun sa nepodaril")));
     } finally {
       setPresuvam(null);
     }
@@ -329,18 +338,24 @@ function DokladyPage() {
       if (stav === "processed") {
         if (v.zmenene)
           toast.success(
-            v.zmenene === 1 ? "Doklad je spracovaný." : `Spracovaných ${v.zmenene} dokladov.`,
+            v.zmenene === 1
+              ? t("Doklad je spracovaný.")
+              : t("Spracovaných dokladov: {n}.", { n: v.zmenene }),
           );
         if (v.preskocene.length)
           toast.warning(
-            `${v.preskocene.length === 1 ? "Jeden doklad nemá" : `${v.preskocene.length} dokladov nemá`} sumu alebo dátum — otvorte ho a doplňte.`,
+            v.preskocene.length === 1
+              ? t("Jeden doklad nemá sumu alebo dátum — otvorte ho a doplňte.")
+              : t("{n} dokladov nemá sumu alebo dátum — otvorte ich a doplňte.", {
+                  n: v.preskocene.length,
+                }),
           );
       } else if (v.zmenene) {
-        toast.success("Vrátené medzi nespracované.");
+        toast.success(t("Vrátené medzi nespracované."));
       }
       refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Zmena stavu sa nepodarila.");
+      toast.error(e?.message ?? t("Zmena stavu sa nepodarila."));
     } finally {
       setMenimStav(false);
     }
@@ -379,7 +394,9 @@ function DokladyPage() {
       markExported &&
       nesprac > 0 &&
       !(await potvrd(
-        `${nesprac === 1 ? "Jeden doklad je" : `${nesprac} dokladov je`} ešte nespracovaných. Odovzdať aj ${nesprac === 1 ? "ten" : "tie"}?`,
+        nesprac === 1
+          ? t("Jeden doklad je ešte nespracovaný. Odovzdať aj ten?")
+          : t("{n} dokladov je ešte nespracovaných. Odovzdať aj tie?", { n: nesprac }),
       ))
     )
       return;
@@ -408,10 +425,10 @@ function DokladyPage() {
       a.download = res.filename;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`Exportovaných ${res.count} dokladov`);
+      toast.success(t("Exportované doklady: {n}", { n: res.count }));
       if (markExported) refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Export zlyhal");
+      toast.error(e?.message ?? t("Export zlyhal"));
     } finally {
       setExporting(false);
     }
@@ -422,44 +439,44 @@ function DokladyPage() {
       const { url } = await urlFn({ data: { file_path: path } });
       window.open(url, "_blank");
     } catch (e: any) {
-      toast.error(e?.message ?? "Nedá sa otvoriť súbor");
+      toast.error(e?.message ?? t("Nedá sa otvoriť súbor"));
     }
   }
 
   async function del(id: string) {
-    if (!(await potvrd("Presunúť doklad do koša? Do 90 dní sa dá obnoviť."))) return;
+    if (!(await potvrd(t("Presunúť doklad do koša? Do 90 dní sa dá obnoviť.")))) return;
     try {
       await deleteFn({ data: { id } });
       refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Zmazanie zlyhalo");
+      toast.error(e?.message ?? t("Zmazanie zlyhalo"));
     }
   }
 
   return (
     <>
       <PageHeader
-        title="Bločky"
-        description="Spracované bločky a výdavkové doklady. Nové najprv skontrolujete v Nespracovaných dokladoch."
+        title={t("Bločky")}
+        description={t("Spracované bločky a výdavkové doklady. Nové najprv skontrolujete v Nespracovaných dokladoch.")}
         action={
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setKos(true)}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              <Trash2 className="h-4 w-4" /> Kôš
+              <Trash2 className="h-4 w-4" /> {t("Kôš")}
             </button>
             <Link
               to="/importy/doklady"
               className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              <UploadIcon className="h-4 w-4" /> Import z Doklado
+              <UploadIcon className="h-4 w-4" /> {t("Import z Doklado")}
             </Link>
             <Link
               to="/doklady/novy"
               className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Nový doklad
+              <Plus className="h-4 w-4" /> {t("Nový doklad")}
             </Link>
           </div>
         }
@@ -467,7 +484,7 @@ function DokladyPage() {
       <PageBody>
         <div
           role="tablist"
-          aria-label="Stav dokladov"
+          aria-label={t("Stav dokladov")}
           className="mb-4 flex flex-wrap gap-1 border-b border-border"
         >
           {/* Nespracované bločky majú vlastné miesto v Nespracovaných dokladoch;
@@ -484,7 +501,7 @@ function DokladyPage() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {z.nazov}
+              {t(z.nazov)}
               {z.kluc === "nespracovane" && nespracovanych ? (
                 <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
                   {nespracovanych}
@@ -500,24 +517,26 @@ function DokladyPage() {
             className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
           >
             <span>
-              {nespracovanych === 1 ? "1 bloček čaká" : `${nespracovanych} bločkov čaká`} na kontrolu v Nespracovaných
-              dokladoch — sem sa presunie, keď ho spracujete.
+              {nespracovanych === 1
+                ? t("1 bloček čaká na kontrolu v Nespracovaných dokladoch — sem sa presunie, keď ho spracujete.")
+                : t("{n} bločkov čaká na kontrolu v Nespracovaných dokladoch — sem sa presunú, keď ich spracujete.", {
+                    n: nespracovanych,
+                  })}
             </span>
-            <span className="shrink-0 font-medium">Otvoriť →</span>
+            <span className="shrink-0 font-medium">{t("Otvoriť")} →</span>
           </Link>
         ) : null}
 
         {bezMesiaca && (
           <p className="mb-4 text-sm text-muted-foreground">
-            Sem padne každý nový doklad — z appky, z webu aj naskenovaný. Skontrolujte ho a označte
-            ako spracovaný; ukazujú sa tu nespracované zo všetkých mesiacov.
+            {t("Sem padne každý nový doklad — z appky, z webu aj naskenovaný. Skontrolujte ho a označte ako spracovaný; ukazujú sa tu nespracované zo všetkých mesiacov.")}
           </p>
         )}
 
         <div className="mb-4 flex flex-wrap items-end gap-3">
           {!bezMesiaca && (
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Mesiac</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t("Mesiac")}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="month"
@@ -531,7 +550,7 @@ function DokladyPage() {
                   disabled={!month}
                   className="rounded-md border border-border bg-card px-2 py-1.5 text-xs hover:bg-secondary disabled:opacity-40"
                 >
-                  Všetky
+                  {t("Všetky")}
                 </button>
               </div>
             </div>
@@ -546,12 +565,12 @@ function DokladyPage() {
             >
               {zalozka === "nespracovane" ? (
                 <>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Označiť ako spracované (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> {t("Označiť ako spracované")} (
                   {selected.size})
                 </>
               ) : (
                 <>
-                  <Undo2 className="h-4 w-4" /> Vrátiť medzi nespracované ({selected.size})
+                  <Undo2 className="h-4 w-4" /> {t("Vrátiť medzi nespracované")} ({selected.size})
                 </>
               )}
             </button>
@@ -561,7 +580,7 @@ function DokladyPage() {
               onClick={() => setPredkontaciaOkno(true)}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
             >
-              Predkontácia ({selected.size})
+              {t("Predkontácia")} ({selected.size})
             </button>
           )}
           {selected.size > 0 && cid && (
@@ -573,32 +592,33 @@ function DokladyPage() {
                 if (await program.spusti("doklad", Array.from(selected))) await refresh();
               }}
               disabled={program.busy}
-              title="Spracované doklady so zaúčtovaním; označia sa ako odovzdané"
+              title={t("Spracované doklady so zaúčtovaním; označia sa ako odovzdané")}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> Export pre {program.nazov} ({selected.size})
+              <Download className="h-4 w-4" /> {t("Export pre {program}", { program: program.nazov })} (
+              {selected.size})
             </button>
           )}
           <div className="w-full sm:w-auto">
-            <label className="mb-1 block text-xs text-muted-foreground">Hľadať</label>
+            <label className="mb-1 block text-xs text-muted-foreground">{t("Hľadať")}</label>
             <input
               value={hladaj}
               onChange={(e) => setHladaj(e.target.value)}
-              placeholder="Dodávateľ, IČO, číslo…"
+              placeholder={t("Dodávateľ, IČO, číslo…")}
               className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm sm:w-48"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Úhrada</label>
+            <label className="mb-1 block text-xs text-muted-foreground">{t("Úhrada")}</label>
             <select
               value={platba}
               onChange={(e) => setPlatba(e.target.value)}
               className="h-9 rounded-md border border-border bg-background px-2 text-sm"
             >
-              <option value="">Všetky</option>
-              <option value="hotovost">Hotovosť</option>
-              <option value="karta">Karta</option>
-              <option value="prevod">Prevod</option>
+              <option value="">{t("Všetky")}</option>
+              <option value="hotovost">{t("Hotovosť")}</option>
+              <option value="karta">{t("Karta")}</option>
+              <option value="prevod">{t("Prevod")}</option>
             </select>
           </div>
           {/* Excel a nastavenia zoznamu idú spolu v jednom rade, nech sa nerozhádžu medzi filtre. */}
@@ -609,27 +629,27 @@ function DokladyPage() {
               const r = rad.zoradene as any[];
               void stiahniExcel(`doklady-${new Date().toISOString().slice(0, 10)}.xlsx`, [
                 {
-                  nazov: "Doklady",
+                  nazov: t("Doklady"),
                   data: tabulka(r, [
-                    { nazov: "Dátum", hodnota: (x: any) => x.issue_date },
-                    { nazov: "Dodávateľ", hodnota: (x: any) => x.supplier_name },
-                    { nazov: "IČO", hodnota: (x: any) => x.supplier_ico },
-                    { nazov: "IČ DPH", hodnota: (x: any) => x.supplier_ic_dph },
-                    { nazov: "Číslo", hodnota: (x: any) => x.document_number },
-                    { nazov: "Kategória", hodnota: (x: any) => x.category },
-                    { nazov: "Základ", hodnota: (x: any) => (x.net_amount == null ? null : Number(x.net_amount)) },
-                    { nazov: "DPH", hodnota: (x: any) => (x.vat_amount == null ? null : Number(x.vat_amount)) },
-                    { nazov: "Spolu", hodnota: (x: any) => (x.total_amount == null ? null : Number(x.total_amount)) },
-                    { nazov: "Mena", hodnota: (x: any) => x.currency },
-                    { nazov: "Úhrada", hodnota: (x: any) => x.payment_method },
-                    { nazov: "Stav", hodnota: (x: any) => STATUS_LABEL[x.status] ?? x.status },
-                    { nazov: "Predkontácia", hodnota: (x: any) => x.pohoda_predkontacia },
-                    { nazov: "Členenie DPH", hodnota: (x: any) => x.pohoda_clenenie_dph },
-                    { nazov: "Zdroj", hodnota: (x: any) => ZDROJ_DOKLADU[x.source] ?? x.source },
+                    { nazov: t("Dátum"), hodnota: (x: any) => x.issue_date },
+                    { nazov: t("Dodávateľ"), hodnota: (x: any) => x.supplier_name },
+                    { nazov: t("IČO"), hodnota: (x: any) => x.supplier_ico },
+                    { nazov: t("IČ DPH"), hodnota: (x: any) => x.supplier_ic_dph },
+                    { nazov: t("Číslo"), hodnota: (x: any) => x.document_number },
+                    { nazov: t("Kategória"), hodnota: (x: any) => x.category },
+                    { nazov: t("Základ"), hodnota: (x: any) => (x.net_amount == null ? null : Number(x.net_amount)) },
+                    { nazov: t("DPH"), hodnota: (x: any) => (x.vat_amount == null ? null : Number(x.vat_amount)) },
+                    { nazov: t("Spolu"), hodnota: (x: any) => (x.total_amount == null ? null : Number(x.total_amount)) },
+                    { nazov: t("Mena"), hodnota: (x: any) => x.currency },
+                    { nazov: t("Úhrada"), hodnota: (x: any) => x.payment_method },
+                    { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
+                    { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
+                    { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
+                    { nazov: t("Zdroj"), hodnota: (x: any) => t(ZDROJ_DOKLADU[x.source] ?? x.source) },
                   ]),
                 },
                 {
-                  nazov: "Položky",
+                  nazov: t("Položky"),
                   data: tabulka(
                     r.flatMap((x: any) =>
                       (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
@@ -639,14 +659,14 @@ function DokladyPage() {
                       })),
                     ),
                     [
-                      { nazov: "Doklad", hodnota: (x: any) => x.doklad },
-                      { nazov: "Dodávateľ", hodnota: (x: any) => x.dodavatel },
-                      { nazov: "Položka", hodnota: (x: any) => x.p?.name },
-                      { nazov: "Množstvo", hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
-                      { nazov: "MJ", hodnota: (x: any) => x.p?.unit },
-                      { nazov: "Jedn. cena", hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
-                      { nazov: "Sadzba DPH", hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
-                      { nazov: "Spolu", hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
+                      { nazov: t("Doklad"), hodnota: (x: any) => x.doklad },
+                      { nazov: t("Dodávateľ"), hodnota: (x: any) => x.dodavatel },
+                      { nazov: t("Položka"), hodnota: (x: any) => x.p?.name },
+                      { nazov: t("Množstvo"), hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
+                      { nazov: t("MJ"), hodnota: (x: any) => x.p?.unit },
+                      { nazov: t("Jedn. cena"), hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
+                      { nazov: t("Sadzba DPH"), hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
+                      { nazov: t("Spolu"), hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
                     ],
                   ),
                 },
@@ -672,7 +692,7 @@ function DokladyPage() {
           {volbyExportu ? (
             <VolbyExportuOkno
               pocet={selected.size || rows.length}
-              nazov="Bločky — ZIP so XML pre Pohodu a skenmi"
+              nazov={t("Bločky — ZIP so XML pre Pohodu a skenmi")}
               onClose={() => setVolbyExportu(false)}
               onExport={(v) => handleExport(v.oznacit, v)}
             />
@@ -683,19 +703,19 @@ function DokladyPage() {
               disabled={exporting || !rows.length}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : "všetko"}
+              <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : t("všetko")}
             </button>
             <button
               onClick={() => setVolbyExportu(true)}
               disabled={exporting || !rows.length || (!month && !bezMesiaca && !selected.size)}
               title={
                 !month && !bezMesiaca && !selected.size
-                  ? "Vyberte mesiac alebo označte doklady — inak by sa za odovzdané označili všetky."
+                  ? t("Vyberte mesiac alebo označte doklady — inak by sa za odovzdané označili všetky.")
                   : undefined
               }
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> Odovzdať účtovníkovi
+              <Download className="h-4 w-4" /> {t("Odovzdať účtovníkovi")}
             </button>
           </div>
         </div>
@@ -704,9 +724,11 @@ function DokladyPage() {
           <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
             <span>
               {rows.length === 0
-                ? `V tomto mesiaci nie je žiadny doklad.`
-                : `Mimo tohto mesiaca ${mimo.pocet === 1 ? "je ešte 1 doklad" : `je ešte ${mimo.pocet} dokladov`}.`}{" "}
-              Doklady sa radia podľa dátumu vystavenia, nie podľa dňa nahratia.
+                ? t("V tomto mesiaci nie je žiadny doklad.")
+                : mimo.pocet === 1
+                  ? t("Mimo tohto mesiaca je ešte 1 doklad.")
+                  : t("Mimo tohto mesiaca je ešte {n} dokladov.", { n: mimo.pocet })}{" "}
+              {t("Doklady sa radia podľa dátumu vystavenia, nie podľa dňa nahratia.")}
             </span>
             {mimo.mesiac && (
               <button
@@ -714,7 +736,7 @@ function DokladyPage() {
                 onClick={() => setMonth(mimo.mesiac!)}
                 className="rounded-md border border-border bg-card px-2 py-1 text-xs font-medium hover:bg-secondary"
               >
-                Zobraziť {nazovMesiaca(mimo.mesiac)}
+                {t("Zobraziť {mesiac}", { mesiac: nazovMesiaca(mimo.mesiac, jazyk) })}
               </button>
             )}
             <button
@@ -722,15 +744,14 @@ function DokladyPage() {
               onClick={() => setMonth("")}
               className="rounded-md border border-border bg-card px-2 py-1 text-xs hover:bg-secondary"
             >
-              Zobraziť všetky
+              {t("Zobraziť všetky")}
             </button>
           </div>
         )}
 
         <p className="mb-4 text-xs text-muted-foreground">
-          V balíku je <strong>pohoda.xml</strong> na priamy import do Pohody, súpiska v CSV a
-          naskenované doklady. Predkontáciu prijatých dokladov nastavíte v Účtovníctvo → Prepojenie
-          s Pohodou.
+          {t("V balíku je")} <strong>{t("pohoda.xml")}</strong>{" "}
+          {t("na priamy import do Pohody, súpiska v CSV a naskenované doklady. Predkontáciu prijatých dokladov nastavíte v Účtovníctvo → Prepojenie s Pohodou.")}
         </p>
 
         {/*
@@ -741,7 +762,7 @@ function DokladyPage() {
         {navrhy.length > 0 && (
           <div className="mb-4 overflow-hidden rounded-xl border border-primary/40 bg-primary/5">
             <div className="px-4 py-3 text-sm font-medium">
-              Našli sme platby k dokladom ({navrhy.length})
+              {t("Našli sme platby k dokladom")} ({navrhy.length})
             </div>
             {navrhy.map((z) => (
               <div
@@ -750,7 +771,7 @@ function DokladyPage() {
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">
-                    {z.doklad?.supplier_name ?? "Doklad"}{" "}
+                    {z.doklad?.supplier_name ?? t("Doklad")}{" "}
                     <span className="tabular-nums">
                       {z.doklad?.total_amount != null
                         ? formatujMenu(z.doklad.total_amount, z.doklad.currency ?? "EUR")
@@ -758,7 +779,8 @@ function DokladyPage() {
                     </span>
                   </span>
                   <span className="block text-xs text-muted-foreground">
-                    {datumNaDoklade(z.pohyb?.booking_date)} · {z.dovody.join(" · ")}
+                    {datumNaDoklade(z.pohyb?.booking_date)} ·{" "}
+                    {z.dovody.map((x: string) => t(x)).join(" · ")}
                   </span>
                 </span>
                 <button
@@ -766,7 +788,7 @@ function DokladyPage() {
                   onClick={() => sparuj(z)}
                   className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary disabled:opacity-60"
                 >
-                  {z.istota === "auto" ? "Spárovať" : "Áno, patrí k sebe"}
+                  {z.istota === "auto" ? t("Spárovať") : t("Áno, patrí k sebe")}
                 </button>
                 <button
                   onClick={() =>
@@ -774,7 +796,7 @@ function DokladyPage() {
                   }
                   className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground"
                 >
-                  Nie
+                  {t("Nie")}
                 </button>
               </div>
             ))}
@@ -782,22 +804,24 @@ function DokladyPage() {
         )}
 
         <div className="mb-4 grid grid-cols-3 gap-3">
-          <SummaryCard label="Základ" value={totals.net} />
-          <SummaryCard label="DPH" value={totals.vat} />
-          <SummaryCard label="Celkom" value={totals.total} highlight />
+          <SummaryCard label={t("Základ")} value={totals.net} />
+          <SummaryCard label={t("DPH")} value={totals.vat} />
+          <SummaryCard label={t("Celkom")} value={totals.total} highlight />
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-border bg-card">
           {loading ? (
-            <div className="p-12 text-center text-sm text-muted-foreground">Načítavam…</div>
+            <div className="p-12 text-center text-sm text-muted-foreground">{t("Načítavam…")}</div>
           ) : rows.length === 0 ? (
             <div className="p-12 text-center text-sm text-muted-foreground">
               <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
               {bezMesiaca
-                ? "Všetko je spracované — žiadny doklad nečaká na kontrolu."
+                ? t("Všetko je spracované — žiadny doklad nečaká na kontrolu.")
                 : mimo.pocet > 0
-                  ? `Vo výbere nie je žiadny doklad — ${mimo.pocet === 1 ? "jeden je" : `${mimo.pocet} ich je`} v inom mesiaci.`
-                  : "Zatiaľ tu nemáte žiadne doklady. Odfoťte blok alebo nahrajte fotku/PDF."}
+                  ? mimo.pocet === 1
+                    ? t("Vo výbere nie je žiadny doklad — jeden je v inom mesiaci.")
+                    : t("Vo výbere nie je žiadny doklad — {n} ich je v inom mesiaci.", { n: mimo.pocet })
+                  : t("Zatiaľ tu nemáte žiadne doklady. Odfoťte blok alebo nahrajte fotku/PDF.")}
               <div className="mt-4 flex justify-center gap-2">
                 {bezMesiaca ? (
                   <button
@@ -805,7 +829,7 @@ function DokladyPage() {
                     onClick={() => prepniZalozku("vsetky")}
                     className="rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
                   >
-                    Zobraziť všetky doklady
+                    {t("Zobraziť všetky doklady")}
                   </button>
                 ) : mimo.pocet > 0 ? (
                   <button
@@ -813,14 +837,14 @@ function DokladyPage() {
                     onClick={() => setMonth("")}
                     className="rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
                   >
-                    Zobraziť všetky doklady
+                    {t("Zobraziť všetky doklady")}
                   </button>
                 ) : (
                   <Link
                     to="/doklady/novy"
                     className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
                   >
-                    <Camera className="h-4 w-4" /> Skenovať doklad
+                    <Camera className="h-4 w-4" /> {t("Skenovať doklad")}
                   </Link>
                 )}
               </div>
@@ -829,7 +853,7 @@ function DokladyPage() {
             <>
             {rows.length >= 500 && (
               <p className="border-b border-border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                Zobrazuje sa 500 najnovších dokladov za tento výber — ostatné sa nezmestili, zúžte výber stavom alebo mesiacom.
+                {t("Zobrazuje sa 500 najnovších dokladov za tento výber — ostatné sa nezmestili, zúžte výber stavom alebo mesiacom.")}
               </p>
             )}
             <table className="w-full text-sm">
@@ -842,17 +866,17 @@ function DokladyPage() {
                       onChange={toggleAll}
                     />
                   </th>
-                  {je("datum") && <th className="px-3 py-2 text-left">{rad.hlavicka("datum", "Dátum")}</th>}
-                  <th className="px-3 py-2 text-left">{rad.hlavicka("dodavatel", "Dodávateľ")}</th>
-                  {je("cislo") && <th className="px-3 py-2 text-left">{rad.hlavicka("cislo", "Číslo")}</th>}
-                  {je("kategoria") && <th className="px-3 py-2 text-left">{rad.hlavicka("kategoria", "Kategória")}</th>}
-                  {je("zaklad") && <th className="px-3 py-2 text-right">{rad.hlavicka("zaklad", "Základ")}</th>}
-                  {je("dph") && <th className="px-3 py-2 text-right">{rad.hlavicka("dph", "DPH")}</th>}
-                  {je("celkom") && <th className="px-3 py-2 text-right">{rad.hlavicka("celkom", "Celkom")}</th>}
-                  {je("platba") && <th className="px-3 py-2 text-left">{rad.hlavicka("platba", "Spôsob úhrady")}</th>}
-                  <th className="px-3 py-2 text-left">{rad.hlavicka("stav", "Stav")}</th>
-                  {je("zdroj") && <th className="px-3 py-2 text-left">{rad.hlavicka("zdroj", "Zdroj")}</th>}
-                  {je("uhrada") && <th className="px-3 py-2 text-left">Úhrada z účtu</th>}
+                  {je("datum") && <th className="px-3 py-2 text-left">{rad.hlavicka("datum", t("Dátum"))}</th>}
+                  <th className="px-3 py-2 text-left">{rad.hlavicka("dodavatel", t("Dodávateľ"))}</th>
+                  {je("cislo") && <th className="px-3 py-2 text-left">{rad.hlavicka("cislo", t("Číslo"))}</th>}
+                  {je("kategoria") && <th className="px-3 py-2 text-left">{rad.hlavicka("kategoria", t("Kategória"))}</th>}
+                  {je("zaklad") && <th className="px-3 py-2 text-right">{rad.hlavicka("zaklad", t("Základ"))}</th>}
+                  {je("dph") && <th className="px-3 py-2 text-right">{rad.hlavicka("dph", t("DPH"))}</th>}
+                  {je("celkom") && <th className="px-3 py-2 text-right">{rad.hlavicka("celkom", t("Celkom"))}</th>}
+                  {je("platba") && <th className="px-3 py-2 text-left">{rad.hlavicka("platba", t("Spôsob úhrady"))}</th>}
+                  <th className="px-3 py-2 text-left">{rad.hlavicka("stav", t("Stav"))}</th>
+                  {je("zdroj") && <th className="px-3 py-2 text-left">{rad.hlavicka("zdroj", t("Zdroj"))}</th>}
+                  {je("uhrada") && <th className="px-3 py-2 text-left">{t("Úhrada z účtu")}</th>}
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
@@ -877,27 +901,29 @@ function DokladyPage() {
                         className="text-left hover:underline"
                       >
                         {r.supplier_name ?? (
-                          <span className="text-muted-foreground italic">bez názvu</span>
+                          <span className="text-muted-foreground italic">{t("bez názvu")}</span>
                         )}
                       </button>
                       <span className="ml-1.5 inline-flex align-middle">
                         <OdovzdaneIkona kedy={r.exported_at} />
                       </span>
                       {r.supplier_ico ? (
-                        <div className="text-xs text-muted-foreground">IČO {r.supplier_ico}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {t("IČO")} {r.supplier_ico}
+                        </div>
                       ) : null}
                       {r.stitky?.length ? (
                         <div className="mt-0.5 flex flex-wrap gap-1">
-                          {r.stitky.map((t: string) => (
-                            <span key={t} className="rounded-full bg-secondary px-1.5 text-[11px] text-muted-foreground">
-                              {t}
+                          {r.stitky.map((stitok: string) => (
+                            <span key={stitok} className="rounded-full bg-secondary px-1.5 text-[11px] text-muted-foreground">
+                              {stitok}
                             </span>
                           ))}
                         </div>
                       ) : null}
                       {r.status === "new" && chybajuceUdaje(r).length > 0 && (
                         <div className="text-xs text-amber-700 dark:text-amber-400">
-                          Chýba: {chybajuceUdaje(r).join(", ")}
+                          {t("Chýba: {polia}", { polia: chybajuceUdaje(r).map((x) => t(x)).join(", ") })}
                         </div>
                       )}
                     </td>
@@ -907,7 +933,7 @@ function DokladyPage() {
                         {r.pohoda_predkontacia || r.pohoda_clenenie_dph ? (
                           <div
                             className="text-xs text-muted-foreground"
-                            title="Predkontácia / členenie DPH pre Pohodu"
+                            title={t("Predkontácia / členenie DPH pre Pohodu")}
                           >
                             {[r.pohoda_predkontacia, r.pohoda_clenenie_dph]
                               .filter(Boolean)
@@ -941,20 +967,22 @@ function DokladyPage() {
                         {/* Spôsob úhrady priamo v riadku — odovzdaný ani zamknutý doklad meniť nejde. */}
                         {!r.exported_at && !r.locked_at ? (
                           <select
-                            aria-label={`Spôsob úhrady dokladu ${r.document_number ?? ""}`}
+                            aria-label={t("Spôsob úhrady dokladu {cislo}", { cislo: r.document_number ?? "" })}
                             value={r.payment_method ?? ""}
                             onChange={(e) => void zmenPlatbuRiadku(r.id, e.target.value)}
                             className="rounded-md border border-input bg-background px-1.5 py-1 text-xs text-foreground"
                           >
                             <option value="">—</option>
-                            <option value="hotovost">hotovosť</option>
-                            <option value="karta">karta</option>
-                            <option value="prevod">prevod</option>
+                            <option value="hotovost">{t("hotovosť")}</option>
+                            <option value="karta">{t("karta")}</option>
+                            <option value="prevod">{t("prevod")}</option>
                           </select>
                         ) : (
-                          ({ hotovost: "hotovosť", karta: "karta", prevod: "prevod" } as Record<string, string>)[
-                            r.payment_method as string
-                          ] ?? "—"
+                          t(
+                            ({ hotovost: "hotovosť", karta: "karta", prevod: "prevod" } as Record<string, string>)[
+                              r.payment_method as string
+                            ] ?? "—",
+                          )
                         )}
                       </td>
                     )}
@@ -963,24 +991,26 @@ function DokladyPage() {
                         <span
                           title={
                             r.processed_at
-                              ? `Spracované ${new Date(r.processed_at).toLocaleDateString("sk-SK")}`
+                              ? t("Spracované {datum}", {
+                                  datum: new Date(r.processed_at).toLocaleDateString("sk-SK"),
+                                })
                               : undefined
                           }
                           className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_STYLE[r.status]}`}
                         >
-                          {STATUS_LABEL[r.status] ?? r.status}
+                          {t(STATUS_LABEL[r.status] ?? r.status)}
                         </span>
                         {r.locked_at ? (
-                          <span title="Zamknutý doklad" className="text-muted-foreground">
+                          <span title={t("Zamknutý doklad")} className="text-muted-foreground">
                             <Lock className="h-3.5 w-3.5" />
                           </span>
                         ) : null}
                         {sch.stavy[r.id] ? (
                           <span
                             className={`text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`}
-                            title="Schvaľovanie"
+                            title={t("Schvaľovanie")}
                           >
-                            {sch.stavy[r.id].odznak}
+                            {t(sch.stavy[r.id].odznak)}
                           </span>
                         ) : null}
                         {r.status === "new" &&
@@ -990,7 +1020,7 @@ function DokladyPage() {
                               disabled={menimStav}
                               className="inline-flex items-center gap-1 rounded-md bg-emerald-600/10 px-2 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
                             >
-                              <CheckCircle2 className="h-3.5 w-3.5" /> Spracovať
+                              <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
                             </button>
                           ) : (
                             <button
@@ -999,14 +1029,14 @@ function DokladyPage() {
                               }
                               className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-secondary"
                             >
-                              Doplniť
+                              {t("Doplniť")}
                             </button>
                           ))}
                         {r.status === "processed" && (
                           <button
                             onClick={() => zmenStav([r.id], "new")}
                             disabled={menimStav}
-                            title="Vrátiť medzi nespracované"
+                            title={t("Vrátiť medzi nespracované")}
                             className="rounded-md p-0.5 text-muted-foreground hover:bg-secondary disabled:opacity-50"
                           >
                             <Undo2 className="h-3.5 w-3.5" />
@@ -1016,7 +1046,7 @@ function DokladyPage() {
                     </td>
                     {je("zdroj") && (
                       <td className="px-3 py-2 text-xs text-muted-foreground">
-                        {ZDROJ_DOKLADU[r.source] ?? r.source}
+                        {t(ZDROJ_DOKLADU[r.source] ?? r.source)}
                       </td>
                     )}
                     {je("uhrada") && (
@@ -1028,15 +1058,15 @@ function DokladyPage() {
                             </span>
                             <button
                               onClick={() => rozparuj(r.id, uhrady[r.id].transactionId)}
-                              title="Zrušiť párovanie s platbou"
+                              title={t("Zrušiť párovanie s platbou")}
                               className="text-muted-foreground hover:underline"
                             >
-                              zrušiť
+                              {t("zrušiť")}
                             </button>
                           </span>
                         ) : r.payment_method === "hotovost" ? (
                           // Hotovosť v banke nikdy nebude — pomlčka by tu vyzerala ako chýbajúci údaj.
-                          <span className="text-muted-foreground">hotovosť</span>
+                          <span className="text-muted-foreground">{t("hotovosť")}</span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -1046,7 +1076,7 @@ function DokladyPage() {
                       {r.file_path && (
                         <button
                           onClick={() => openFile(r.file_path)}
-                          title="Otvoriť súbor"
+                          title={t("Otvoriť súbor")}
                           className="rounded-md p-1.5 hover:bg-secondary"
                         >
                           <FileText className="h-4 w-4" />
@@ -1055,14 +1085,14 @@ function DokladyPage() {
                       <button
                         onClick={() => doPrijatych(r)}
                         disabled={presuvam === r.id}
-                        title="Presunúť medzi prijaté faktúry"
+                        title={t("Presunúť medzi prijaté faktúry")}
                         className="rounded-md p-1.5 hover:bg-secondary disabled:opacity-50"
                       >
                         <FileInput className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => del(r.id)}
-                        title="Zmazať"
+                        title={t("Zmazať")}
                         className="rounded-md p-1.5 hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -1077,15 +1107,15 @@ function DokladyPage() {
           {rows.length > 0 ? (
             <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
               <span>
-                Vybrané: <strong className="text-foreground">{vybrane.length}</strong>
+                {t("Vybrané:")} <strong className="text-foreground">{vybrane.length}</strong>
                 {vybrane.length ? ` · ${sumyDokladov(vybrane)}` : ""}
               </span>
-              <span title="Spracované a ešte neodovzdané do účtovníctva">
-                Na export: <strong className="text-foreground">{naExport.length}</strong>
+              <span title={t("Spracované a ešte neodovzdané do účtovníctva")}>
+                {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
                 {naExport.length ? ` · ${sumyDokladov(naExport)}` : ""}
               </span>
               <span>
-                Spolu: <strong className="text-foreground">{rad.zoradene.length}</strong> · {sumyDokladov(rad.zoradene)}
+                {t("Spolu:")} <strong className="text-foreground">{rad.zoradene.length}</strong> · {sumyDokladov(rad.zoradene)}
               </span>
             </div>
           ) : null}

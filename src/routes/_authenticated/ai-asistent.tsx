@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -35,7 +37,7 @@ import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ai-asistent")({
-  head: () => ({ meta: [{ title: "Faktero AI — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Faktero AI — Faktero") }] }),
   // Otázka z Pomoc a podpora — predvyplní sa, odošle ju až človek.
   validateSearch: (s: Record<string, unknown>): { otazka?: string } => ({
     otazka: typeof s.otazka === "string" && s.otazka.trim() ? s.otazka.slice(0, 500) : undefined,
@@ -55,6 +57,7 @@ const SUGGESTED = [
 type Tab = "chat" | "odporucania" | "rizika" | "automatizacie";
 
 function AiAssistantPage() {
+  const { t } = useT();
   const [tab, setTab] = useState<Tab>("chat");
   const [companyId, setCompanyId] = useState<string | null>(null);
   useEffect(() => {
@@ -65,7 +68,7 @@ function AiAssistantPage() {
     <>
       <PageHeader
         title="Faktero AI"
-        description="Inteligentný asistent pre faktúry, odberateľov, eFaktúru a administratívu."
+        description={t("Inteligentný asistent pre faktúry, odberateľov, eFaktúru a administratívu.")}
         action={
           <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
             {(
@@ -85,7 +88,7 @@ function AiAssistantPage() {
                     : "text-muted-foreground hover:bg-secondary"
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" /> {l}
+                <Icon className="h-3.5 w-3.5" /> {t(l)}
               </button>
             ))}
           </div>
@@ -94,7 +97,7 @@ function AiAssistantPage() {
       <PageBody>
         {!companyId ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-            Vyberte aktívnu firmu, aby som vám mohol pomôcť.
+            {t("Vyberte aktívnu firmu, aby som vám mohol pomôcť.")}
           </div>
         ) : tab === "chat" ? (
           <ChatView companyId={companyId} />
@@ -107,6 +110,7 @@ function AiAssistantPage() {
 }
 
 function ChatView({ companyId }: { companyId: string }) {
+  const { t } = useT();
   const qc = useQueryClient();
   const listFn = useServerFn(listConversationsFn);
   const createFn = useServerFn(createConversationFn);
@@ -151,7 +155,7 @@ function ChatView({ companyId }: { companyId: string }) {
       qc.invalidateQueries({ queryKey: ["ai-msgs", activeId] });
       qc.invalidateQueries({ queryKey: ["ai-conv", companyId] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Chyba"),
+    onError: (e: any) => toast.error(e.message ?? t("Chyba")),
   });
 
   const newConv = useMutation({
@@ -197,9 +201,9 @@ function ChatView({ companyId }: { companyId: string }) {
           </button>
           <button
             onClick={async () => {
-              if (await potvrd("Vymazať konverzáciu?")) delConv.mutate(c.id);
+              if (await potvrd(t("Vymazať konverzáciu?"))) delConv.mutate(c.id);
             }}
-            aria-label="Vymazať konverzáciu"
+            aria-label={t("Vymazať konverzáciu")}
             className="text-muted-foreground transition hover:text-destructive lg:opacity-0 lg:group-hover:opacity-100"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -207,7 +211,7 @@ function ChatView({ companyId }: { companyId: string }) {
         </div>
       ))}
       {(conversations.data ?? []).length === 0 && (
-        <div className="px-2 py-4 text-xs text-muted-foreground">Žiadne konverzácie.</div>
+        <div className="px-2 py-4 text-xs text-muted-foreground">{t("Žiadne konverzácie.")}</div>
       )}
     </>
   );
@@ -222,7 +226,7 @@ function ChatView({ companyId }: { companyId: string }) {
             onClick={() => newConv.mutate()}
             className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Nová konverzácia
+            <Plus className="h-4 w-4" /> {t("Nová konverzácia")}
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-2">{zoznamKonverzacii}</div>
@@ -235,11 +239,11 @@ function ChatView({ companyId }: { companyId: string }) {
           <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm">
             <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 truncate">
-              {aktivnaKonverzacia?.title ?? "Konverzácie"}
+              {aktivnaKonverzacia?.title ?? t("Konverzácie")}
             </span>
-            <span className="text-xs text-muted-foreground group-open/konv:hidden">Zobraziť</span>
+            <span className="text-xs text-muted-foreground group-open/konv:hidden">{t("Zobraziť")}</span>
             <span className="hidden text-xs text-muted-foreground group-open/konv:inline">
-              Skryť
+              {t("Skryť")}
             </span>
           </summary>
           <div className="border-t border-border p-2">
@@ -247,7 +251,7 @@ function ChatView({ companyId }: { companyId: string }) {
               onClick={() => newConv.mutate()}
               className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Nová konverzácia
+              <Plus className="h-4 w-4" /> {t("Nová konverzácia")}
             </button>
             <div className="max-h-56 overflow-y-auto">{zoznamKonverzacii}</div>
           </div>
@@ -262,7 +266,7 @@ function ChatView({ companyId }: { companyId: string }) {
               ))}
               {sendMut.isPending && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" /> Faktero AI premýšľa…
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" /> {t("Faktero AI premýšľa…")}
                 </div>
               )}
             </div>
@@ -285,7 +289,7 @@ function ChatView({ companyId }: { companyId: string }) {
                   send(input);
                 }
               }}
-              placeholder="Napíšte správu pre Faktero AI…"
+              placeholder={t("Napíšte správu pre Faktero AI…")}
               rows={1}
               autoFocus
               className="min-h-[44px] max-h-40 flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -305,23 +309,24 @@ function ChatView({ companyId }: { companyId: string }) {
 }
 
 function EmptyState({ onPick }: { onPick: (s: string) => void }) {
+  const { t } = useT();
   return (
     <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center py-8 text-center">
       <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-lg">
         <Sparkles className="h-7 w-7 text-primary-foreground" />
       </div>
-      <h2 className="mt-4 text-xl font-semibold">Vitajte vo Faktero AI</h2>
+      <h2 className="mt-4 text-xl font-semibold">{t("Vitajte vo Faktero AI")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Asistent pre faktúry, odberateľov a administratívu vašej firmy.
+        {t("Asistent pre faktúry, odberateľov a administratívu vašej firmy.")}
       </p>
       <div className="mt-6 grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
         {SUGGESTED.map((s) => (
           <button
             key={s}
-            onClick={() => onPick(s)}
+            onClick={() => onPick(t(s))}
             className="rounded-lg border border-border bg-background px-3 py-2.5 text-left text-sm hover:border-primary/40 hover:bg-primary/5"
           >
-            {s}
+            {t(s)}
           </button>
         ))}
       </div>
@@ -330,6 +335,7 @@ function EmptyState({ onPick }: { onPick: (s: string) => void }) {
 }
 
 function MessageBubble({ role, content }: { role: string; content: string }) {
+  const { t } = useT();
   const [copied, setCopied] = useState(false);
   const isUser = role === "user";
 
@@ -363,11 +369,11 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
           >
             {copied ? (
               <>
-                <Check className="h-3 w-3" /> Skopírované
+                <Check className="h-3 w-3" /> {t("Skopírované")}
               </>
             ) : (
               <>
-                <Copy className="h-3 w-3" /> Kopírovať
+                <Copy className="h-3 w-3" /> {t("Kopírovať")}
               </>
             )}
           </button>
@@ -378,6 +384,7 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
 }
 
 function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab }) {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const recFn = useServerFn(getRecommendationsFn);
   const { data, isLoading } = useQuery({
@@ -388,7 +395,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
   if (isLoading)
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Načítavam…
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
       </div>
     );
   if (!data) return null;
@@ -401,7 +408,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             color: "text-amber-600",
             title: "Faktúry po splatnosti",
             value: data.overdueCount,
-            hint: `${formatujMenu(data.unpaidTotal, mena.kod)} nezaplatených`,
+            hint: t("{suma} nezaplatených", { suma: formatujMenu(data.unpaidTotal, mena.kod) }),
             to: "/faktury",
             search: { poSplatnosti: true as const },
           },
@@ -410,7 +417,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             color: "text-rose-600",
             title: "Neúspešné webhooky",
             value: data.failedWebhooks,
-            hint: "Posledných 30 dní",
+            hint: t("Posledných 30 dní"),
             to: "/webhooky-logy",
           },
           {
@@ -418,7 +425,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             color: "text-orange-600",
             title: "Chýbajúce firemné údaje",
             value: data.missingCompanyFields.length,
-            hint: data.missingCompanyFields.join(", ") || "Všetko vyplnené",
+            hint: data.missingCompanyFields.map((f) => t(f)).join(", ") || t("Všetko vyplnené"),
             to: "/firma",
           },
         ]
@@ -429,7 +436,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               color: "text-primary",
               title: "Nadchádzajúce opakované faktúry",
               value: data.recurringDueSoon.length,
-              hint: "V najbližších 14 dňoch",
+              hint: t("V najbližších 14 dňoch"),
               to: "/opakovane",
             },
             {
@@ -437,7 +444,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               color: "text-emerald-600",
               title: "Top dlžníci",
               value: data.topDebtors.length,
-              hint: data.topDebtors[0]?.name ?? "Žiadni dlžníci",
+              hint: data.topDebtors[0]?.name ?? t("Žiadni dlžníci"),
               to: "/odberatelia",
             },
           ]
@@ -447,7 +454,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               color: "text-amber-600",
               title: "Faktúry po splatnosti",
               value: data.overdueCount,
-              hint: `${formatujMenu(data.unpaidTotal, mena.kod)} nezaplatených`,
+              hint: t("{suma} nezaplatených", { suma: formatujMenu(data.unpaidTotal, mena.kod) }),
               to: "/faktury",
               search: { poSplatnosti: true as const },
             },
@@ -456,7 +463,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               color: "text-primary",
               title: "Návrh opakovaných faktúr",
               value: data.recurringDueSoon.length,
-              hint: "Nadchádzajúce spustenia",
+              hint: t("Nadchádzajúce spustenia"),
               to: "/opakovane",
             },
             {
@@ -464,7 +471,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               color: "text-orange-600",
               title: "Chýbajúce firemné údaje",
               value: data.missingCompanyFields.length,
-              hint: data.missingCompanyFields.join(", ") || "Všetko vyplnené",
+              hint: data.missingCompanyFields.map((f) => t(f)).join(", ") || t("Všetko vyplnené"),
               to: "/firma",
             },
             {
@@ -472,7 +479,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               color: "text-rose-600",
               title: "Neúspešné webhooky",
               value: data.failedWebhooks,
-              hint: "Posledných 30 dní",
+              hint: t("Posledných 30 dní"),
               to: "/webhooky-logy",
             },
             {
@@ -480,7 +487,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               color: "text-sky-600",
               title: "Neodoslané faktúry",
               value: data.unsentInvoices,
-              hint: `Koncepty: ${data.draftInvoices}`,
+              hint: t("Koncepty: {n}", { n: data.draftInvoices }),
               to: "/faktury",
               search: { status: "issued" as const },
             },
@@ -513,7 +520,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             <c.icon className={`h-5 w-5 ${c.color}`} />
             <span className="text-2xl font-bold tracking-tight">{c.value}</span>
           </div>
-          <div className="mt-3 text-sm font-semibold">{c.title}</div>
+          <div className="mt-3 text-sm font-semibold">{t(c.title)}</div>
           <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.hint}</div>
         </Link>
       ))}

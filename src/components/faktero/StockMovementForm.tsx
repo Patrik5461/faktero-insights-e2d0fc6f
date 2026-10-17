@@ -10,6 +10,7 @@ import { JobPicker } from "@/components/faktero/JobPicker";
 import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { useT } from "@/lib/i18n/useT";
 
 type MovementType = "prijem" | "vydaj" | "oprava";
 const SHOW_STOCK_DEBUG =
@@ -35,6 +36,7 @@ export function MovementForm({
   polozkaId?: string;
   action?: React.ReactNode;
 }) {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const createMovement = useServerFn(createStockMovementDebug);
   const [warehouses, setWarehouses] = useState<any[]>([]);
@@ -75,7 +77,7 @@ export function MovementForm({
           .single();
         if (created) {
           wh = [created];
-          toast.success("Vytvorený sklad 'Hlavný sklad'.");
+          toast.success(t("Vytvorený sklad 'Hlavný sklad'."));
         } else if (error) toast.error(error.message);
       }
       const [{ data: si }, { data: prods }] = await Promise.all([
@@ -97,9 +99,7 @@ export function MovementForm({
       });
       setProductMap(pm);
       setWarehouses(wh ?? []);
-      setItems(
-        (si ?? []).filter((i: any) => !i.archived_at || i.id === polozkaId),
-      );
+      setItems((si ?? []).filter((i: any) => !i.archived_at || i.id === polozkaId));
       if ((wh ?? []).length) setWarehouse(wh![0].id);
       /*
         Cenu dopĺňa `onChange` rozbaľovacieho zoznamu, ale predvybraná položka
@@ -109,9 +109,7 @@ export function MovementForm({
       const predvybrana = polozkaId ? (si ?? []).find((i: any) => i.id === polozkaId) : null;
       if (predvybrana) {
         setStockItem(predvybrana.id);
-        setPrice(
-          String(type === "prijem" ? predvybrana.purchase_price : predvybrana.sale_price),
-        );
+        setPrice(String(type === "prijem" ? predvybrana.purchase_price : predvybrana.sale_price));
       }
       setLoading(false);
     })();
@@ -144,13 +142,21 @@ export function MovementForm({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const cid = getActiveCompanyId();
-    if (!cid || !stockItem) return toast.error("Vyplňte firmu a položku.");
+    if (!cid || !stockItem) return toast.error(t("Vyplňte firmu a položku."));
     const qty = Number(quantity);
-    if (!Number.isFinite(qty) || qty <= 0) return toast.error("Množstvo musí byť kladné.");
+    if (!Number.isFinite(qty) || qty <= 0) return toast.error(t("Množstvo musí byť kladné."));
     if (type === "vydaj" && availability && qty > availability.available) {
-      const ok = (await potvrd(
-        `Vydávate ${formatujCislo(qty, 0, 3)} ks, ale k dispozícii je len ${formatujCislo(availability.available, 0, 2)} (na sklade ${formatujCislo(availability.on_hand, 0, 2)}, rezervované ${formatujCislo(availability.reserved, 0, 2)}). Pokračovať a porušiť rezervácie?`,
-      ));
+      const ok = await potvrd(
+        t(
+          "Vydávate {qty} ks, ale k dispozícii je len {k_dispozicii} (na sklade {na_sklade}, rezervované {rezervovane}). Pokračovať a porušiť rezervácie?",
+          {
+            qty: formatujCislo(qty, 0, 3),
+            k_dispozicii: formatujCislo(availability.available, 0, 2),
+            na_sklade: formatujCislo(availability.on_hand, 0, 2),
+            rezervovane: formatujCislo(availability.reserved, 0, 2),
+          },
+        ),
+      );
       if (!ok) return;
     }
     setBusy(true);
@@ -175,41 +181,42 @@ export function MovementForm({
         const m = (result as any).error ?? "Pohyb sa nepodarilo uložiť.";
         if (m.includes("FAKTERO_STOCK:negative_stock"))
           return toast.error(
-            "Pohyb by spôsobil záporný stav skladu." + (SHOW_STOCK_DEBUG ? ` (${m})` : ""),
+            t("Pohyb by spôsobil záporný stav skladu.") + (SHOW_STOCK_DEBUG ? ` (${m})` : ""),
           );
         if (m.includes("FAKTERO_STOCK:zero_quantity"))
-          return toast.error("Množstvo nemôže byť 0." + (SHOW_STOCK_DEBUG ? ` (${m})` : ""));
+          return toast.error(t("Množstvo nemôže byť 0.") + (SHOW_STOCK_DEBUG ? ` (${m})` : ""));
         if (m.includes("FAKTERO_STOCK:cross_company"))
           return toast.error(
-            "Sklad a položka musia patriť tej istej firme." + (SHOW_STOCK_DEBUG ? ` (${m})` : ""),
+            t("Sklad a položka musia patriť tej istej firme.") +
+              (SHOW_STOCK_DEBUG ? ` (${m})` : ""),
           );
         if (m.includes("FAKTERO_STOCK:warehouse_inactive"))
           return toast.error(
-            "Sklad je neaktívny — pohyb nie je možný." + (SHOW_STOCK_DEBUG ? ` (${m})` : ""),
+            t("Sklad je neaktívny — pohyb nie je možný.") + (SHOW_STOCK_DEBUG ? ` (${m})` : ""),
           );
         if (m.includes("FAKTERO_STOCK:movement_immutable"))
           return toast.error(
-            "Skladové pohyby nie je možné upravovať ani mazať. Vytvorte opravný pohyb." +
+            t("Skladové pohyby nie je možné upravovať ani mazať. Vytvorte opravný pohyb.") +
               (SHOW_STOCK_DEBUG ? ` (${m})` : ""),
           );
         if (m.includes("FAKTERO_STOCK:invoice_item_locked"))
           return toast.error(
-            "Položky ovplyvňujúce sklad nie je možné meniť po odoslaní faktúry." +
+            t("Položky ovplyvňujúce sklad nie je možné meniť po odoslaní faktúry.") +
               (SHOW_STOCK_DEBUG ? ` (${m})` : ""),
           );
         if (m.includes("FAKTERO_PLAN_BLOCK"))
           return toast.error(
-            "Vaše predplatné nie je aktívne. Pre pokračovanie si aktivujte plán." +
+            t("Vaše predplatné nie je aktívne. Pre pokračovanie si aktivujte plán.") +
               (SHOW_STOCK_DEBUG ? ` (${m})` : ""),
           );
-        return toast.error(SHOW_STOCK_DEBUG ? `Sklad chyba: ${m}` : m);
+        return toast.error(SHOW_STOCK_DEBUG ? `Sklad chyba: ${m}` : t(m));
       }
-      toast.success("Pohyb uložený.");
+      toast.success(t("Pohyb uložený."));
       onDone?.();
     } catch (error: any) {
       console.error("[sklad-debug:movement:client-exception]", error);
       setDebug({ exact_error: error?.message ?? String(error), exception: error });
-      toast.error(error?.message ?? "Pohyb sa nepodarilo uložiť.");
+      toast.error(t(error?.message ?? "Pohyb sa nepodarilo uložiť."));
     } finally {
       setBusy(false);
     }
@@ -219,21 +226,21 @@ export function MovementForm({
     const name = i.product_id ? productMap[i.product_id] : null;
     if (name && i.sku) return `${name} (${i.sku})`;
     // Kus identifikátora („d09c0368") nikomu nepovie, o ktorý tovar ide.
-    return name ?? i.sku ?? "(karta bez názvu)";
+    return name ?? i.sku ?? t("(karta bez názvu)");
   }
 
   return (
     <>
-      <PageHeader title={title} description="Manuálny skladový pohyb." action={action} />
+      <PageHeader title={t(title)} description={t("Manuálny skladový pohyb.")} action={action} />
       <PageBody>
         {!loading && items.length === 0 ? (
           <div className="mx-auto max-w-xl rounded-xl border border-border bg-card p-8 text-center">
-            <p className="text-sm text-muted-foreground">Najprv pridajte tovar do skladu.</p>
+            <p className="text-sm text-muted-foreground">{t("Najprv pridajte tovar do skladu.")}</p>
             <Link
               to="/sklad/produkty"
               className="mt-3 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              Pridať tovar
+              {t("Pridať tovar")}
             </Link>
           </div>
         ) : (
@@ -242,7 +249,7 @@ export function MovementForm({
             className="mx-auto grid max-w-xl gap-3 rounded-xl border border-border bg-card p-6"
           >
             <label className="block">
-              <span className="text-sm font-medium">Sklad *</span>
+              <span className="text-sm font-medium">{t("Sklad *")}</span>
               <select
                 required
                 value={warehouse}
@@ -257,7 +264,7 @@ export function MovementForm({
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium">Tovar / skladová karta *</span>
+              <span className="text-sm font-medium">{t("Tovar / skladová karta *")}</span>
               <select
                 required
                 value={stockItem}
@@ -268,7 +275,7 @@ export function MovementForm({
                 }}
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
-                <option value="">— vyberte —</option>
+                <option value="">{t("— vyberte —")}</option>
                 {items.map((i) => (
                   <option key={i.id} value={i.id}>
                     {itemLabel(i)}
@@ -280,14 +287,14 @@ export function MovementForm({
               <div
                 className={`rounded-md border px-3 py-2 text-xs tabular-nums ${Number(quantity) > availability.available ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100" : "border-border bg-muted text-muted-foreground"}`}
               >
-                Na sklade <b>{formatujCislo(availability.on_hand, 0, 2)}</b> · Rezervované{" "}
-                <b>{formatujCislo(availability.reserved, 0, 2)}</b> · K dispozícii{" "}
-                <b>{formatujCislo(availability.available, 0, 2)}</b>
+                {t("Na sklade")} <b>{formatujCislo(availability.on_hand, 0, 2)}</b> ·{" "}
+                {t("Rezervované")} <b>{formatujCislo(availability.reserved, 0, 2)}</b> ·{" "}
+                {t("K dispozícii")} <b>{formatujCislo(availability.available, 0, 2)}</b>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-sm font-medium">Množstvo *</span>
+                <span className="text-sm font-medium">{t("Množstvo *")}</span>
                 <input
                   type="number"
                   step="0.001"
@@ -299,7 +306,7 @@ export function MovementForm({
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Jedn. cena</span>
+                <span className="text-sm font-medium">{t("Jedn. cena")}</span>
                 <input
                   type="number"
                   step={KROK_CENY}
@@ -312,7 +319,9 @@ export function MovementForm({
             {type === "prijem" && (
               <>
                 <label className="block">
-                  <span className="text-sm font-medium">Vedľajšie náklady (doprava, clo…)</span>
+                  <span className="text-sm font-medium">
+                    {t("Vedľajšie náklady (doprava, clo…)")}
+                  </span>
                   <input
                     type="number"
                     step="0.01"
@@ -322,12 +331,12 @@ export function MovementForm({
                     className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm tabular-nums"
                   />
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    Alokujú sa do obstarávacej ceny.
+                    {t("Alokujú sa do obstarávacej ceny.")}
                   </span>
                 </label>
                 <div className="rounded-md border border-border bg-muted px-3 py-2 text-sm">
                   <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Obstarávacia cena / MJ
+                    {t("Obstarávacia cena / MJ")}
                   </span>
                   <div className="mt-0.5 font-semibold tabular-nums">
                     {(() => {
@@ -345,7 +354,7 @@ export function MovementForm({
                 materiálu a náklad naopak zníži. */}
             <JobPicker value={jobId} onChange={setJobId} />
             <label className="block">
-              <span className="text-sm font-medium">Poznámka</span>
+              <span className="text-sm font-medium">{t("Poznámka")}</span>
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
@@ -357,7 +366,7 @@ export function MovementForm({
                 disabled={busy}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
-                {busy ? "Ukladám…" : "Uložiť pohyb"}
+                {busy ? t("Ukladám…") : t("Uložiť pohyb")}
               </button>
             </div>
             {SHOW_STOCK_DEBUG && debug && (

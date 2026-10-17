@@ -23,8 +23,12 @@ import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { colneUdajeNaZapis, jePlatnyColnyKod } from "@/lib/faktero/colny-kod";
 import { VyberColnehoKodu } from "@/components/faktero/VyberColnehoKodu";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 export const Route = createFileRoute("/_authenticated/produkty")({
-  head: () => ({ meta: [{ title: "Produkty a služby — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Produkty a služby — Faktero") }],
+  }),
   /** `?new=1` z menu („Nový produkt“) rovno otvorí formulár. */
   validateSearch: (s: Record<string, unknown>): { new?: "1" } => ({
     new: s.new === "1" || s.new === 1 ? "1" : undefined,
@@ -57,6 +61,7 @@ const EMPTY: Product = {
 };
 
 function ProductsPage() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const list = usePagedList({ resource: "products", searchColumns: ["name", "code"] });
   /* Sadzby DPH podľa krajiny registrácie firmy. */
@@ -70,10 +75,10 @@ function ProductsPage() {
     const pocet = list.selectedIds.length;
     try {
       await list.hardDelete(list.selectedIds);
-      toast.success(`Natrvalo vymazaných: ${pocet}`);
+      toast.success(t("Natrvalo vymazaných: {n}", { n: pocet }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBulkHardDelete(false);
     }
@@ -118,7 +123,7 @@ function ProductsPage() {
       ...colneUdajeNaZapis(p),
     };
     if (!jePlatnyColnyKod(p.colny_kod))
-      return toast.error("Colný kód má mať 6 až 10 číslic (napr. 8517 13 00).");
+      return toast.error(t("Colný kód má mať 6 až 10 číslic (napr. 8517 13 00)."));
     const op = p.id
       ? supabase.from("products").update(payload).eq("id", p.id)
       : supabase.from("products").insert(payload);
@@ -142,9 +147,9 @@ function ProductsPage() {
         },
       });
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba pri synchronizácii skladu.");
+      toast.error(e?.message ?? t("Chyba pri synchronizácii skladu."));
     }
-    toast.success("Uložené");
+    toast.success(t("Uložené"));
     setEditing(null);
     list.reload();
   }
@@ -153,9 +158,9 @@ function ProductsPage() {
     if (!rowDelete) return;
     try {
       await list.softDelete([rowDelete.id]);
-      toast.success("Položka vymazaná");
+      toast.success(t("Položka vymazaná"));
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setRowDelete(null);
     }
@@ -163,10 +168,10 @@ function ProductsPage() {
   async function confirmBulk() {
     try {
       await list.softDelete(list.selectedIds);
-      toast.success(`Vymazaných ${list.selectedIds.length}`);
+      toast.success(t("Vymazaných {n}", { n: list.selectedIds.length }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBulkDelete(false);
     }
@@ -175,14 +180,16 @@ function ProductsPage() {
   return (
     <>
       <PageHeader
-        title="Produkty a služby"
-        description="Cenník na faktúry — tovar aj služby. Pri tovare zapnite „Sledovať sklad“ a Faktero mu založí skladovú kartu."
+        title={t("Produkty a služby")}
+        description={t(
+          "Cenník na faktúry — tovar aj služby. Pri tovare zapnite „Sledovať sklad“ a Faktero mu založí skladovú kartu.",
+        )}
         action={
           <button
             onClick={() => setEditing({ ...EMPTY, vat_rate: zakladnaSadzbaRezimu(rezim) })}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Nová položka
+            <Plus className="h-4 w-4" /> {t("Nová položka")}
           </button>
         }
       />
@@ -191,7 +198,7 @@ function ProductsPage() {
           <input
             value={list.search}
             onChange={(e) => list.setSearch(e.target.value)}
-            placeholder="Hľadať názov, kód…"
+            placeholder={t("Hľadať názov, kód…")}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
           />
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -207,10 +214,10 @@ function ProductsPage() {
           onRestore={async () => {
             try {
               await list.restore(list.selectedIds);
-              toast.success("Obnovené");
+              toast.success(t("Obnovené"));
               list.clearSelection();
             } catch (e: any) {
-              toast.error(e?.message ?? "Chyba");
+              toast.error(e?.message ?? t("Chyba"));
             }
           }}
           onClear={list.clearSelection}
@@ -224,15 +231,16 @@ function ProductsPage() {
                     type="checkbox"
                     checked={list.allOnPageSelected}
                     onChange={(e) => list.toggleAllOnPage(e.target.checked)}
+                    aria-label={t("Vybrať všetky")}
                   />
                 </th>
-                <th className="p-3">Názov</th>
+                <th className="p-3">{t("Názov")}</th>
                 {/* Na mobile sú kód, MJ a DPH pod názvom — inak sa riadok
                     lámal po písmenách a ikony úprav ostali mimo obrazovky. */}
-                <th className="hidden p-3 sm:table-cell">Kód</th>
-                <th className="hidden p-3 sm:table-cell">MJ</th>
-                <th className="p-3 text-right">Cena</th>
-                <th className="hidden p-3 text-right sm:table-cell">DPH</th>
+                <th className="hidden p-3 sm:table-cell">{t("Kód")}</th>
+                <th className="hidden p-3 sm:table-cell">{t("MJ")}</th>
+                <th className="p-3 text-right">{t("Cena")}</th>
+                <th className="hidden p-3 text-right sm:table-cell">{t("DPH")}</th>
                 <th></th>
               </tr>
             </thead>
@@ -240,14 +248,14 @@ function ProductsPage() {
               {list.loading && (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                    Načítavam…
+                    {t("Načítavam…")}
                   </td>
                 </tr>
               )}
               {!list.loading && list.rows.length === 0 && (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                    {list.showDeleted ? "Žiadne vymazané položky." : "Žiadne položky."}
+                    {list.showDeleted ? t("Žiadne vymazané položky.") : t("Žiadne položky.")}
                   </td>
                 </tr>
               )}
@@ -263,7 +271,11 @@ function ProductsPage() {
                   <td className="p-3 font-medium">
                     {p.name}
                     <div className="mt-0.5 text-xs font-normal text-muted-foreground sm:hidden">
-                      {[p.code, p.unit, `DPH ${formatujCislo(p.vat_rate, 0, 2)} %`]
+                      {[
+                        p.code,
+                        p.unit,
+                        t("DPH {sadzba} %", { sadzba: formatujCislo(p.vat_rate, 0, 2) }),
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </div>
@@ -281,8 +293,8 @@ function ProductsPage() {
                   <td className="whitespace-nowrap p-3 text-right">
                     {!list.showDeleted && (
                       <button
-                        aria-label="Upraviť"
-                        title="Upraviť"
+                        aria-label={t("Upraviť")}
+                        title={t("Upraviť")}
                         onClick={() => setEditing(p)}
                         className="rounded p-1.5 hover:bg-muted"
                       >
@@ -291,14 +303,14 @@ function ProductsPage() {
                     )}
                     {list.showDeleted ? (
                       <button
-                        aria-label="Obnoviť"
-                        title="Obnoviť"
+                        aria-label={t("Obnoviť")}
+                        title={t("Obnoviť")}
                         onClick={async () => {
                           try {
                             await list.restore([p.id]);
-                            toast.success("Obnovené");
+                            toast.success(t("Obnovené"));
                           } catch (e: any) {
-                            toast.error(e?.message ?? "Chyba");
+                            toast.error(e?.message ?? t("Chyba"));
                           }
                         }}
                         className="rounded p-1.5 text-primary hover:bg-primary/10"
@@ -307,8 +319,8 @@ function ProductsPage() {
                       </button>
                     ) : (
                       <button
-                        aria-label="Zmazať"
-                        title="Zmazať"
+                        aria-label={t("Zmazať")}
+                        title={t("Zmazať")}
                         onClick={() => setRowDelete(p)}
                         className="rounded p-1.5 text-destructive hover:bg-destructive/10"
                       >
@@ -337,12 +349,12 @@ function ProductsPage() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Produkt"
+            aria-label={t("Produkt")}
             className="w-full max-w-lg rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">
-              {editing.id ? "Upraviť položku" : "Nová položka"}
+              {editing.id ? t("Upraviť položku") : t("Nová položka")}
             </h2>
             <form
               onSubmit={(e) => {
@@ -382,7 +394,7 @@ function ProductsPage() {
                 onChange={(v) => setEditing({ ...editing, vat_rate: Number(v) })}
               />
               <label className="sm:col-span-2 block">
-                <span className="text-sm font-medium">Popis</span>
+                <span className="text-sm font-medium">{t("Popis")}</span>
                 <textarea
                   rows={2}
                   value={editing.description ?? ""}
@@ -392,7 +404,7 @@ function ProductsPage() {
               </label>
               {/* Colné údaje — len pri tovare, ktorý sa vyváža alebo hlási do Intrastatu. */}
               <label className="block">
-                <span className="text-sm font-medium">Colný kód (KN)</span>
+                <span className="text-sm font-medium">{t("Colný kód (KN)")}</span>
                 <div className="mt-1">
                   <VyberColnehoKodu
                     value={editing.colny_kod}
@@ -421,7 +433,7 @@ function ProductsPage() {
                   checked={editing.active}
                   onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
                 />
-                Aktívna
+                {t("Aktívna")}
               </label>
               <label className="sm:col-span-2 inline-flex items-center gap-2 text-sm">
                 <input
@@ -429,9 +441,9 @@ function ProductsPage() {
                   checked={!!editing.track_stock}
                   onChange={(e) => setEditing({ ...editing, track_stock: e.target.checked })}
                 />
-                Sledovať sklad
+                {t("Sledovať sklad")}
                 <span className="text-xs text-muted-foreground">
-                  — automaticky vytvorí skladovú kartu a prepojí ju s faktúrami.
+                  {t("— automaticky vytvorí skladovú kartu a prepojí ju s faktúrami.")}
                 </span>
               </label>
               <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
@@ -440,13 +452,13 @@ function ProductsPage() {
                   onClick={() => setEditing(null)}
                   className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
                 >
-                  Zrušiť
+                  {t("Zrušiť")}
                 </button>
                 <button
                   type="submit"
                   className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
-                  Uložiť
+                  {t("Uložiť")}
                 </button>
               </div>
             </form>
@@ -455,23 +467,23 @@ function ProductsPage() {
       )}
       <ConfirmDialog
         open={!!rowDelete}
-        title="Naozaj chcete vymazať túto položku?"
-        message={rowDelete ? `${rowDelete.name} bude skrytá z rozhrania.` : ""}
+        title={t("Naozaj chcete vymazať túto položku?")}
+        message={rowDelete ? t("{nazov} bude skrytá z rozhrania.", { nazov: rowDelete.name }) : ""}
         onCancel={() => setRowDelete(null)}
         onConfirm={confirmRow}
       />
       <ConfirmDialog
         open={bulkDelete}
-        title={`Vymazať ${list.selectedIds.length} položiek?`}
-        message="Vybraté položky budú skryté z rozhrania."
+        title={t("Vymazať {n} položiek?", { n: list.selectedIds.length })}
+        message={t("Vybraté položky budú skryté z rozhrania.")}
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulk}
       />
       <ConfirmDialog
         open={bulkHardDelete}
-        title={`Natrvalo vymazať ${list.selectedIds.length} položiek?`}
-        message="Položky cenníka sa odstránia natrvalo. Na už vystavených faktúrach ostanú."
-        confirmLabel="Vymazať natrvalo"
+        title={t("Natrvalo vymazať {n} položiek?", { n: list.selectedIds.length })}
+        message={t("Položky cenníka sa odstránia natrvalo. Na už vystavených faktúrach ostanú.")}
+        confirmLabel={t("Vymazať natrvalo")}
         onCancel={() => setBulkHardDelete(false)}
         onConfirm={confirmBulkHardDelete}
       />
@@ -496,9 +508,10 @@ function In({
   required?: boolean;
   full?: boolean;
 }) {
+  const { t } = useT();
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium">{t(label)}</span>
       <input
         type={type}
         step={step}

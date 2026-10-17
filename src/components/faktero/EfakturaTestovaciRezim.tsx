@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { FlaskConical } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 import { efakturaRezimFn } from "@/lib/faktero/efaktura/efaktura.functions";
 
 /**
@@ -21,6 +22,7 @@ export function useEfakturaTestovaciRezim(): boolean {
 /** Pás nad stránkami eFaktúry, kým beží proti testovaciemu prostrediu. */
 export function EfakturaTestovaciRezim({ className = "" }: { className?: string }) {
   const testovaci = useEfakturaTestovaciRezim();
+  const { t } = useT();
   if (!testovaci) return null;
   return (
     <div
@@ -29,11 +31,11 @@ export function EfakturaTestovaciRezim({ className = "" }: { className?: string 
     >
       <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
       <div>
-        <div className="font-semibold text-foreground">eFaktúra beží v testovacom režime</div>
+        <div className="font-semibold text-foreground">{t("eFaktúra beží v testovacom režime")}</div>
         <p className="mt-0.5 text-muted-foreground">
-          Faktúry sa odosielajú do skúšobného prostredia, nie do skutočnej siete Peppol —{" "}
-          <strong className="text-foreground">odberateľovi nepríde nič</strong>, hoci doklad bude
-          vyzerať ako odoslaný. Faktúru mu pošlite e-mailom.
+          {t("Faktúry sa odosielajú do skúšobného prostredia, nie do skutočnej siete Peppol —")}{" "}
+          <strong className="text-foreground">{t("odberateľovi nepríde nič")}</strong>
+          {t(", hoci doklad bude vyzerať ako odoslaný. Faktúru mu pošlite e-mailom.")}
         </p>
       </div>
     </div>

@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrijemMailom } from "@/components/faktero/PrijemMailom";
@@ -12,7 +14,7 @@ import { Forward, ScanLine, FileCheck2 } from "lucide-react";
  * bola adresa poruke aj pri práci s dokladmi.
  */
 export const Route = createFileRoute("/_authenticated/doklady/mailom")({
-  head: () => ({ meta: [{ title: "Doklady e-mailom — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doklady e-mailom — Faktero") }] }),
   component: Stranka,
 });
 
@@ -35,11 +37,12 @@ const KROKY = [
 ];
 
 function Stranka() {
+  const { t } = useT();
   return (
     <>
       <PageHeader
-        title="Doklady e-mailom"
-        description="Vlastná adresa, na ktorú prepošlete faktúru od dodávateľa — a ona sa sama zaeviduje."
+        title={t("Doklady e-mailom")}
+        description={t("Vlastná adresa, na ktorú prepošlete faktúru od dodávateľa — a ona sa sama zaeviduje.")}
       />
       <PageBody>
         <div className="mb-4 grid gap-3 sm:grid-cols-3">
@@ -52,10 +55,10 @@ function Stranka() {
                     <Icon className="h-4 w-4" />
                   </span>
                   <div className="text-sm font-medium">
-                    {i + 1}. {k.nadpis}
+                    {i + 1}. {t(k.nadpis)}
                   </div>
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">{k.text}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{t(k.text)}</p>
               </div>
             );
           })}
@@ -64,56 +67,56 @@ function Stranka() {
         <PrijemMailom predvoleneOtvorene />
 
         <div className="rounded-xl border border-border bg-card p-5 text-sm">
-          <h2 className="font-medium">Dobré vedieť</h2>
+          <h2 className="font-medium">{t("Dobré vedieť")}</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
             <li>
-              Adresa je <strong>pre každú firmu iná</strong>. Keď máte firiem viac, prepnite sa hore
-              v lište a vezmite si tú správnu.
+              {t("Adresa je")} <strong>{t("pre každú firmu iná")}</strong>
+              {t(". Keď máte firiem viac, prepnite sa hore v lište a vezmite si tú správnu.")}
             </li>
             <li>
-              Berie sa <strong>PDF alebo fotka</strong> v prílohe. Mail bez prílohy sa v denníku
-              označí ako „bez prílohy“ a nič sa nezaloží.
+              {t("Berie sa")} <strong>{t("PDF alebo fotka")}</strong>{" "}
+              {t("v prílohe. Mail bez prílohy sa v denníku označí ako „bez prílohy“ a nič sa nezaloží.")}
             </li>
             <li>
-              Viac príloh v jednom maile znamená <strong>viac dokladov</strong> — každá sa spracuje
-              zvlášť.
+              {t("Viac príloh v jednom maile znamená")} <strong>{t("viac dokladov")}</strong>{" "}
+              {t("— každá sa spracuje zvlášť.")}
             </li>
             <li>
-              Z jedného e-mailu spracujeme <strong>až 15 príloh</strong>, takže pokojne pošlite aj
-              celý mesiac faktúr naraz. Jedna príloha môže mať najviac <strong>15 MB</strong>. Keby
-              ich bolo viac než 15, zvyšok sa nespracuje — napíšeme to v denníku nižšie a stačí ho
-              poslať druhým e-mailom.
+              {t("Z jedného e-mailu spracujeme")} <strong>{t("až 15 príloh")}</strong>
+              {t(", takže pokojne pošlite aj celý mesiac faktúr naraz. Jedna príloha môže mať najviac")}{" "}
+              <strong>15 MB</strong>
+              {t(". Keby ich bolo viac než 15, zvyšok sa nespracuje — napíšeme to v denníku nižšie a stačí ho poslať druhým e-mailom.")}
             </li>
             <li>
-              Doklady čakajú v{" "}
+              {t("Doklady čakajú v")}{" "}
               <Link to="/nespracovane" className="text-primary underline">
-                Nespracovaných dokladoch
+                {t("Nespracovaných dokladoch")}
               </Link>
-              . AI navrhne druh — faktúra, zálohová, dobropis, bloček, alebo exekúcia, predpis
-              poistného, list z úradu či zmluva (tie pôjdu do{" "}
+              {t(". AI navrhne druh — faktúra, zálohová, dobropis, bloček, alebo exekúcia, predpis poistného, list z úradu či zmluva (tie pôjdu do")}{" "}
               <Link to="/ostatne-doklady" className="text-primary underline">
-                Iných dokladov
+                {t("Iných dokladov")}
               </Link>
-              ) — a vy ho potvrdíte alebo zmeníte.
+              {t(") — a vy ho potvrdíte alebo zmeníte.")}
             </li>
             <li>
-              Keď by sa adresa dostala tam, kam nemá, dá sa nižšie <strong>vypnúť</strong> alebo{" "}
-              <strong>vymeniť za novú</strong> — stará prestane prijímať.
+              {t("Keď by sa adresa dostala tam, kam nemá, dá sa nižšie")}{" "}
+              <strong>{t("vypnúť")}</strong> {t("alebo")} <strong>{t("vymeniť za novú")}</strong>{" "}
+              {t("— stará prestane prijímať.")}
             </li>
             <li>
-              Nechce sa vám preposielať každý mail ručne? <strong>Gmail to vie robiť sám</strong> —
-              potvrdenie, ktoré Google pošle na túto adresu, zachytíme a ukážeme vám ho tu ako žltý
-              pruh. Postup je v{" "}
+              {t("Nechce sa vám preposielať každý mail ručne?")}{" "}
+              <strong>{t("Gmail to vie robiť sám")}</strong>{" "}
+              {t("— potvrdenie, ktoré Google pošle na túto adresu, zachytíme a ukážeme vám ho tu ako žltý pruh. Postup je v")}{" "}
               <Link to="/pomoc/doklady" hash="gmail" className="text-primary underline">
-                manuáli
+                {t("manuáli")}
               </Link>
               .
             </li>
           </ul>
           <p className="mt-3 text-muted-foreground">
-            Podrobne v{" "}
+            {t("Podrobne v")}{" "}
             <Link to="/pomoc/doklady" className="text-primary underline">
-              manuáli k dokladom
+              {t("manuáli k dokladom")}
             </Link>
             .
           </p>

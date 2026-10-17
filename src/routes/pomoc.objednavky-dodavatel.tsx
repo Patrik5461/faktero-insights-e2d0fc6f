@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/objednavky-dodavatel")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Objednávky u dodávateľov — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Objednávky u dodávateľov — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Objednávky u dodávateľov: návrh doobjednania podľa minimálnych zásob, odoslanie, čiastočný príjem tovaru a stav objednávky.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/objednavky-dodavatel" },
     ],
@@ -95,7 +99,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Sklad"
       title="Objednávky u dodávateľov"
       intro={<p>Čo máte objednané, čo už prišlo a čo ešte čakáte.</p>}

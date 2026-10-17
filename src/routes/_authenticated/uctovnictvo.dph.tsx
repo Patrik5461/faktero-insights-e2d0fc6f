@@ -33,14 +33,19 @@ import {
   vatBucketOrder,
 } from "@/lib/faktero/vat-rates";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/dph")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "DPH prehľad — Faktero" },
+      { title: preloz(match.context.jazyk, "DPH prehľad — Faktero") },
       {
         name: "description",
-        content: "Informatívny prehľad DPH na výstupe a vstupe za zvolené obdobie.",
+        content: preloz(
+          match.context.jazyk,
+          "Informatívny prehľad DPH na výstupe a vstupe za zvolené obdobie.",
+        ),
       },
     ],
   }),
@@ -127,6 +132,7 @@ function sucet(b: Record<string, Bucket>, pole: "base" | "vat"): number {
 }
 
 function DphPage() {
+  const { t } = useT();
   const now = new Date();
   /* Priehradky aj názvy sadzieb patria krajine registrácie firmy. */
   const krajina = useKrajinaDane();
@@ -139,6 +145,16 @@ function DphPage() {
   const [purchases, setPurchases] = useState<any[]>([]);
 
   const period = useMemo(() => periodBounds(year, mode, periodIdx), [year, mode, periodIdx]);
+  // Názov obdobia na zobrazenie; `period.label` ostáva v názve súboru.
+  const nazovObdobia = mode === "month" ? `${t(MONTHS[periodIdx])} ${year}` : period.label;
+  // Popis sadzby nesie číslo („23 % (základná)“) — preloží sa len jeho slovo.
+  const nazovSadzby = (r: string) => {
+    const s = vatBucketLabel(r, krajina);
+    const m = s.match(/^(\S+) % \((základná|znížená|historická)\)$/);
+    return m ? t(`{n} % (${m[2]})`, { n: m[1] }) : t(s);
+  };
+  const typDokladu = (typ: string) =>
+    typ === "credit_note" ? ` (${t("dobropis")})` : typ === "debit_note" ? ` (${t("ťarchopis")})` : "";
 
   async function load() {
     const cid = getActiveCompanyId();
@@ -263,42 +279,42 @@ function DphPage() {
 
   function exportCsv() {
     const lines: string[] = [];
-    lines.push(`DPH prehľad;${period.label}`);
-    lines.push(`Od;${period.from};Do;${period.to}`);
+    lines.push(`${t("DPH prehľad")};${nazovObdobia}`);
+    lines.push(`${t("Od")};${period.from};${t("Do")};${period.to}`);
     lines.push("");
-    lines.push("DPH NA VÝSTUPE (vystavené faktúry)");
-    lines.push("Sadzba;Základ dane;DPH;Počet faktúr");
+    lines.push(t("DPH NA VÝSTUPE (vystavené faktúry)"));
+    lines.push(t("Sadzba;Základ dane;DPH;Počet faktúr"));
     for (const r of rateOrder) {
       const v = riadok(output, r);
       lines.push(
-        `${vatBucketLabel(r, krajina)};${v.base.toFixed(2)};${v.vat.toFixed(2)};${v.count}`,
+        `${nazovSadzby(r)};${v.base.toFixed(2)};${v.vat.toFixed(2)};${v.count}`,
       );
     }
-    lines.push(`SPOLU;${totalOutputBase.toFixed(2)};${totalOutputVat.toFixed(2)};`);
+    lines.push(`${t("SPOLU")};${totalOutputBase.toFixed(2)};${totalOutputVat.toFixed(2)};`);
     lines.push("");
-    lines.push("DPH NA VSTUPE (prijaté faktúry)");
-    lines.push("Sadzba;Základ dane;DPH;Počet faktúr");
+    lines.push(t("DPH NA VSTUPE (prijaté faktúry)"));
+    lines.push(t("Sadzba;Základ dane;DPH;Počet faktúr"));
     for (const r of rateOrder) {
       const v = riadok(input, r);
       lines.push(
-        `${vatBucketLabel(r, krajina)};${v.base.toFixed(2)};${v.vat.toFixed(2)};${v.count}`,
+        `${nazovSadzby(r)};${v.base.toFixed(2)};${v.vat.toFixed(2)};${v.count}`,
       );
     }
-    lines.push(`SPOLU;${totalInputBase.toFixed(2)};${totalInputVat.toFixed(2)};`);
+    lines.push(`${t("SPOLU")};${totalInputBase.toFixed(2)};${totalInputVat.toFixed(2)};`);
     lines.push("");
-    lines.push(`Rozdiel (odvod/nadmerný odpočet);${rozdiel.toFixed(2)}`);
+    lines.push(`${t("Rozdiel (odvod/nadmerný odpočet)")};${rozdiel.toFixed(2)}`);
     lines.push("");
-    lines.push("VYSTAVENÉ FAKTÚRY");
-    lines.push("Číslo;Dátum;Odberateľ;Základ;DPH;Spolu;PDP");
+    lines.push(t("VYSTAVENÉ FAKTÚRY"));
+    lines.push(t("Číslo;Dátum;Odberateľ;Základ;DPH;Spolu;PDP"));
     for (const i of invoices) {
       const zn = znamienkoDokladu(i.type, i.total);
       lines.push(
-        `${bezVzorca(i.invoice_number)};${i.issue_date};${bezVzorca((i.customer_name || "").replace(/;/g, ","))};${(zn * Number(i.subtotal || 0)).toFixed(2)};${(zn * Number(i.vat_total || 0)).toFixed(2)};${(zn * Number(i.total || 0)).toFixed(2)};${i.reverse_charge ? "áno" : "nie"}`,
+        `${bezVzorca(i.invoice_number)};${i.issue_date};${bezVzorca((i.customer_name || "").replace(/;/g, ","))};${(zn * Number(i.subtotal || 0)).toFixed(2)};${(zn * Number(i.vat_total || 0)).toFixed(2)};${(zn * Number(i.total || 0)).toFixed(2)};${i.reverse_charge ? t("áno") : t("nie")}`,
       );
     }
     lines.push("");
-    lines.push("PRIJATÉ FAKTÚRY");
-    lines.push("Číslo;Dátum;Dodávateľ;Základ;DPH;Spolu");
+    lines.push(t("PRIJATÉ FAKTÚRY"));
+    lines.push(t("Číslo;Dátum;Dodávateľ;Základ;DPH;Spolu"));
     for (const p of purchases) {
       lines.push(
         `${bezVzorca(p.invoice_number)};${p.issue_date};${bezVzorca((p.supplier_name || "").replace(/;/g, ","))};${Number(p.amount_without_vat || 0).toFixed(2)};${Number(p.vat_amount || 0).toFixed(2)};${Number(p.amount_total || 0).toFixed(2)}`,
@@ -322,31 +338,31 @@ function DphPage() {
     // nič neurobí a človek nemá ako zistiť prečo. Rovnako to rieši aj vývoz
     // knihy jázd.
     if (!win) {
-      toast.error("Prehliadač zablokoval nové okno. Povoľte ho a skúste znova.");
+      toast.error(t("Prehliadač zablokoval nové okno. Povoľte ho a skúste znova."));
       return;
     }
     const row = (label: string, b: Bucket) =>
       `<tr><td>${label}</td><td style="text-align:right">${fmt(b.base)}</td><td style="text-align:right">${fmt(b.vat)}</td><td style="text-align:right">${b.count}</td></tr>`;
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>DPH prehľad ${period.label}</title>
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${t("DPH prehľad")} ${escHtml(nazovObdobia)}</title>
 <style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:20px;margin:0 0 4px}h2{font-size:14px;margin:20px 0 6px}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}th,td{padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}th{background:#f5f5f5}.tot td{font-weight:bold;background:#fafafa}.note{background:#fef3c7;border:1px solid #f59e0b;padding:10px;border-radius:6px;font-size:12px;margin:12px 0}</style></head><body>
-<h1>DPH prehľad — ${period.label}</h1>
-<div>Obdobie: ${datumNaDoklade(period.from)} – ${datumNaDoklade(period.to)}</div>
-<div class="note"><b>Upozornenie:</b> Toto je informatívny prehľad. Pre podanie DPH priznania použite certifikovaný účtovný softvér alebo kontaktujte účtovníka.</div>
-<h2>DPH na výstupe (vystavené faktúry)</h2>
-<table><thead><tr><th>Sadzba DPH</th><th style="text-align:right">Základ dane</th><th style="text-align:right">Suma DPH</th><th style="text-align:right">Počet faktúr</th></tr></thead>
-<tbody>${rateOrder.map((r) => row(vatBucketLabel(r, krajina), riadok(output, r))).join("")}
-<tr class="tot"><td>SPOLU</td><td style="text-align:right">${fmt(totalOutputBase)}</td><td style="text-align:right">${fmt(totalOutputVat)}</td><td></td></tr></tbody></table>
-<h2>DPH na vstupe (prijaté faktúry)</h2>
-<table><thead><tr><th>Sadzba DPH</th><th style="text-align:right">Základ dane</th><th style="text-align:right">Suma DPH</th><th style="text-align:right">Počet faktúr</th></tr></thead>
-<tbody>${rateOrder.map((r) => row(vatBucketLabel(r, krajina), riadok(input, r))).join("")}
-<tr class="tot"><td>SPOLU</td><td style="text-align:right">${fmt(totalInputBase)}</td><td style="text-align:right">${fmt(totalInputVat)}</td><td></td></tr></tbody></table>
-<h2>Rozdiel (odvod / nadmerný odpočet)</h2>
-<table><tr class="tot"><td>${rozdiel >= 0 ? "Odvod DPH" : "Nadmerný odpočet"}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
-<h2>Vystavené faktúry (${invoices.length})</h2>
-<table><thead><tr><th>Číslo</th><th>Dátum</th><th>Odberateľ</th><th style="text-align:right">Základ</th><th style="text-align:right">DPH</th><th style="text-align:right">Spolu</th></tr></thead>
-<tbody>${invoices.map((i) => `<tr><td>${escHtml(i.invoice_number)}</td><td>${escHtml(datumNaDoklade(i.issue_date))}</td><td>${escHtml(i.customer_name)}${i.reverse_charge ? " (PDP)" : ""}${i.type === "credit_note" ? " (dobropis)" : i.type === "debit_note" ? " (ťarchopis)" : ""}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
-<h2>Prijaté faktúry (${purchases.length})</h2>
-<table><thead><tr><th>Číslo</th><th>Dátum</th><th>Dodávateľ</th><th style="text-align:right">Základ</th><th style="text-align:right">DPH</th><th style="text-align:right">Spolu</th></tr></thead>
+<h1>${t("DPH prehľad")} — ${escHtml(nazovObdobia)}</h1>
+<div>${t("Obdobie")}: ${datumNaDoklade(period.from)} – ${datumNaDoklade(period.to)}</div>
+<div class="note"><b>${t("Upozornenie:")}</b> ${t("Toto je informatívny prehľad. Pre podanie DPH priznania použite certifikovaný účtovný softvér alebo kontaktujte účtovníka.")}</div>
+<h2>${t("DPH na výstupe (vystavené faktúry)")}</h2>
+<table><thead><tr><th>${t("Sadzba DPH")}</th><th style="text-align:right">${t("Základ dane")}</th><th style="text-align:right">${t("Suma DPH")}</th><th style="text-align:right">${t("Počet faktúr")}</th></tr></thead>
+<tbody>${rateOrder.map((r) => row(nazovSadzby(r), riadok(output, r))).join("")}
+<tr class="tot"><td>${t("SPOLU")}</td><td style="text-align:right">${fmt(totalOutputBase)}</td><td style="text-align:right">${fmt(totalOutputVat)}</td><td></td></tr></tbody></table>
+<h2>${t("DPH na vstupe (prijaté faktúry)")}</h2>
+<table><thead><tr><th>${t("Sadzba DPH")}</th><th style="text-align:right">${t("Základ dane")}</th><th style="text-align:right">${t("Suma DPH")}</th><th style="text-align:right">${t("Počet faktúr")}</th></tr></thead>
+<tbody>${rateOrder.map((r) => row(nazovSadzby(r), riadok(input, r))).join("")}
+<tr class="tot"><td>${t("SPOLU")}</td><td style="text-align:right">${fmt(totalInputBase)}</td><td style="text-align:right">${fmt(totalInputVat)}</td><td></td></tr></tbody></table>
+<h2>${t("Rozdiel (odvod / nadmerný odpočet)")}</h2>
+<table><tr class="tot"><td>${rozdiel >= 0 ? t("Odvod DPH") : t("Nadmerný odpočet")}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
+<h2>${t("Vystavené faktúry ({n})", { n: invoices.length })}</h2>
+<table><thead><tr><th>${t("Číslo")}</th><th>${t("Dátum")}</th><th>${t("Odberateľ")}</th><th style="text-align:right">${t("Základ")}</th><th style="text-align:right">${t("DPH")}</th><th style="text-align:right">${t("Spolu")}</th></tr></thead>
+<tbody>${invoices.map((i) => `<tr><td>${escHtml(i.invoice_number)}</td><td>${escHtml(datumNaDoklade(i.issue_date))}</td><td>${escHtml(i.customer_name)}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
+<h2>${t("Prijaté faktúry ({n})", { n: purchases.length })}</h2>
+<table><thead><tr><th>${t("Číslo")}</th><th>${t("Dátum")}</th><th>${t("Dodávateľ")}</th><th style="text-align:right">${t("Základ")}</th><th style="text-align:right">${t("DPH")}</th><th style="text-align:right">${t("Spolu")}</th></tr></thead>
 <tbody>${purchases.map((p) => `<tr><td>${escHtml(p.invoice_number)}</td><td>${escHtml(datumNaDoklade(p.issue_date))}</td><td>${escHtml(p.supplier_name)}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
 </body></html>`;
@@ -357,41 +373,47 @@ function DphPage() {
 
   return (
     <>
-      <PageHeader title="DPH prehľad" description="Informatívny prehľad DPH na výstupe a vstupe" />
+      <PageHeader
+        title={t("DPH prehľad")}
+        description={t("Informatívny prehľad DPH na výstupe a vstupe")}
+      />
       <PageBody>
         <p className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Tento prehľad je informatívny.{" "}
+          {t("Tento prehľad je informatívny.")}{" "}
           <Link to="/uctovnictvo/vykazy" className="underline">
-            Výkazy k DPH
+            {t("Výkazy k DPH")}
           </Link>{" "}
-          z tých istých dokladov zostavia priznanie, kontrolný výkaz aj súhrnný výkaz a stiahnu ich
-          v XML pre eDane.
+          {t(
+            "z tých istých dokladov zostavia priznanie, kontrolný výkaz aj súhrnný výkaz a stiahnu ich v XML pre eDane.",
+          )}
         </p>
         <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 flex gap-2 items-start dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
           <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
           <div className="text-sm">
-            <b>Upozornenie:</b> Toto je informatívny prehľad. Pre podanie DPH priznania použite
-            certifikovaný účtovný softvér alebo kontaktujte účtovníka.
+            <b>{t("Upozornenie:")}</b>{" "}
+            {t(
+              "Toto je informatívny prehľad. Pre podanie DPH priznania použite certifikovaný účtovný softvér alebo kontaktujte účtovníka.",
+            )}
           </div>
         </div>
 
         {/* Po podaní priznania sa oplatí obdobie zamknúť — inak neskoršia
             oprava staršej faktúry ticho zmení číslo, ktoré je už odovzdané. */}
         <div className="text-sm text-muted-foreground">
-          Máte priznanie podané?{" "}
+          {t("Máte priznanie podané?")}{" "}
           <Link to="/uctovnictvo/uzavierka" className="text-primary hover:underline">
-            Uzamknite obdobie
+            {t("Uzamknite obdobie")}
           </Link>
-          , aby sa doklady v ňom už nedali zmeniť.
+          {t(", aby sa doklady v ňom už nedali zmeniť.")}
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Obdobie</CardTitle>
+            <CardTitle>{t("Obdobie")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3 items-end">
             <div className="w-40">
-              <label className="text-xs text-muted-foreground">Typ obdobia</label>
+              <label className="text-xs text-muted-foreground">{t("Typ obdobia")}</label>
               <Select
                 value={mode}
                 onValueChange={(v) => {
@@ -403,14 +425,14 @@ function DphPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="month">Mesiac</SelectItem>
-                  <SelectItem value="quarter">Kvartál</SelectItem>
+                  <SelectItem value="month">{t("Mesiac")}</SelectItem>
+                  <SelectItem value="quarter">{t("Kvartál")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="w-40">
               <label className="text-xs text-muted-foreground">
-                {mode === "month" ? "Mesiac" : "Kvartál"}
+                {mode === "month" ? t("Mesiac") : t("Kvartál")}
               </label>
               <Select value={String(periodIdx)} onValueChange={(v) => setPeriodIdx(Number(v))}>
                 <SelectTrigger>
@@ -420,7 +442,7 @@ function DphPage() {
                   {mode === "month"
                     ? MONTHS.map((m, i) => (
                         <SelectItem key={i} value={String(i)}>
-                          {m}
+                          {t(m)}
                         </SelectItem>
                       ))
                     : [0, 1, 2, 3].map((i) => (
@@ -432,7 +454,7 @@ function DphPage() {
               </Select>
             </div>
             <div className="w-32">
-              <label className="text-xs text-muted-foreground">Rok</label>
+              <label className="text-xs text-muted-foreground">{t("Rok")}</label>
               <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
                 <SelectTrigger>
                   <SelectValue />
@@ -465,31 +487,31 @@ function DphPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>DPH sumár</CardTitle>
+            <CardTitle>{t("DPH sumár")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="font-semibold mb-2">DPH na výstupe (vystavené faktúry)</h3>
+              <h3 className="font-semibold mb-2">{t("DPH na výstupe (vystavené faktúry)")}</h3>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Sadzba DPH</TableHead>
-                    <TableHead className="text-right">Základ dane</TableHead>
-                    <TableHead className="text-right">Suma DPH</TableHead>
-                    <TableHead className="text-right">Počet faktúr</TableHead>
+                    <TableHead>{t("Sadzba DPH")}</TableHead>
+                    <TableHead className="text-right">{t("Základ dane")}</TableHead>
+                    <TableHead className="text-right">{t("Suma DPH")}</TableHead>
+                    <TableHead className="text-right">{t("Počet faktúr")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rateOrder.map((r) => (
                     <TableRow key={r}>
-                      <TableCell>{vatBucketLabel(r, krajina)}</TableCell>
+                      <TableCell>{nazovSadzby(r)}</TableCell>
                       <TableCell className="text-right">{fmt(riadok(output, r).base)}</TableCell>
                       <TableCell className="text-right">{fmt(riadok(output, r).vat)}</TableCell>
                       <TableCell className="text-right">{riadok(output, r).count}</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="font-bold bg-muted/40">
-                    <TableCell>SPOLU</TableCell>
+                    <TableCell>{t("SPOLU")}</TableCell>
                     <TableCell className="text-right">{fmt(totalOutputBase)}</TableCell>
                     <TableCell className="text-right">{fmt(totalOutputVat)}</TableCell>
                     <TableCell></TableCell>
@@ -499,27 +521,27 @@ function DphPage() {
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">DPH na vstupe (prijaté faktúry)</h3>
+              <h3 className="font-semibold mb-2">{t("DPH na vstupe (prijaté faktúry)")}</h3>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Sadzba DPH</TableHead>
-                    <TableHead className="text-right">Základ dane</TableHead>
-                    <TableHead className="text-right">Suma DPH</TableHead>
-                    <TableHead className="text-right">Počet faktúr</TableHead>
+                    <TableHead>{t("Sadzba DPH")}</TableHead>
+                    <TableHead className="text-right">{t("Základ dane")}</TableHead>
+                    <TableHead className="text-right">{t("Suma DPH")}</TableHead>
+                    <TableHead className="text-right">{t("Počet faktúr")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rateOrder.map((r) => (
                     <TableRow key={r}>
-                      <TableCell>{vatBucketLabel(r, krajina)}</TableCell>
+                      <TableCell>{nazovSadzby(r)}</TableCell>
                       <TableCell className="text-right">{fmt(riadok(input, r).base)}</TableCell>
                       <TableCell className="text-right">{fmt(riadok(input, r).vat)}</TableCell>
                       <TableCell className="text-right">{riadok(input, r).count}</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="font-bold bg-muted/40">
-                    <TableCell>SPOLU</TableCell>
+                    <TableCell>{t("SPOLU")}</TableCell>
                     <TableCell className="text-right">{fmt(totalInputBase)}</TableCell>
                     <TableCell className="text-right">{fmt(totalInputVat)}</TableCell>
                     <TableCell></TableCell>
@@ -530,7 +552,7 @@ function DphPage() {
 
             <div className="rounded-md border p-4 flex items-center justify-between bg-muted/30">
               <div className="font-semibold">
-                {rozdiel >= 0 ? "Odvod DPH (na úhradu)" : "Nadmerný odpočet (v prospech)"}
+                {rozdiel >= 0 ? t("Odvod DPH (na úhradu)") : t("Nadmerný odpočet (v prospech)")}
               </div>
               <div
                 className={`text-2xl font-bold ${rozdiel >= 0 ? "text-red-600" : "text-green-600"}`}
@@ -543,16 +565,16 @@ function DphPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Vystavené faktúry ({invoices.length})</CardTitle>
+            <CardTitle>{t("Vystavené faktúry ({n})", { n: invoices.length })}</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <MobilnyZoznam
-              prazdne="Žiadne faktúry v období"
+              prazdne={t("Žiadne faktúry v období")}
               riadky={invoices.map((i) => ({
                 id: i.id,
                 cislo: i.invoice_number,
                 datum: datumNaDoklade(i.issue_date),
-                meno: `${i.customer_name ?? ""}${i.reverse_charge ? " (PDP)" : ""}${i.type === "credit_note" ? " (dobropis)" : i.type === "debit_note" ? " (ťarchopis)" : ""}`,
+                meno: `${i.customer_name ?? ""}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}`,
                 zaklad: fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR"),
                 dph: fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR"),
                 spolu: fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR"),
@@ -561,12 +583,12 @@ function DphPage() {
             <Table className="hidden md:table">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Číslo</TableHead>
-                  <TableHead>Dátum</TableHead>
-                  <TableHead>Odberateľ</TableHead>
-                  <TableHead className="text-right">Základ</TableHead>
-                  <TableHead className="text-right">DPH</TableHead>
-                  <TableHead className="text-right">Spolu</TableHead>
+                  <TableHead>{t("Číslo")}</TableHead>
+                  <TableHead>{t("Dátum")}</TableHead>
+                  <TableHead>{t("Odberateľ")}</TableHead>
+                  <TableHead className="text-right">{t("Základ")}</TableHead>
+                  <TableHead className="text-right">{t("DPH")}</TableHead>
+                  <TableHead className="text-right">{t("Spolu")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -576,8 +598,8 @@ function DphPage() {
                     <TableCell className="whitespace-nowrap">{datumNaDoklade(i.issue_date)}</TableCell>
                     <TableCell>
                       {i.customer_name}
-                      {i.reverse_charge ? " (PDP)" : ""}
-                      {i.type === "credit_note" ? " (dobropis)" : i.type === "debit_note" ? " (ťarchopis)" : ""}
+                      {i.reverse_charge ? ` (${t("PDP")})` : ""}
+                      {typDokladu(i.type)}
                     </TableCell>
                     <TableCell className="text-right">
                       {fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}
@@ -596,7 +618,7 @@ function DphPage() {
                 {invoices.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      Žiadne faktúry v období
+                      {t("Žiadne faktúry v období")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -607,11 +629,11 @@ function DphPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Prijaté faktúry ({purchases.length})</CardTitle>
+            <CardTitle>{t("Prijaté faktúry ({n})", { n: purchases.length })}</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <MobilnyZoznam
-              prazdne="Žiadne prijaté faktúry v období"
+              prazdne={t("Žiadne prijaté faktúry v období")}
               riadky={purchases.map((p) => ({
                 id: p.id,
                 cislo: p.invoice_number,
@@ -625,12 +647,12 @@ function DphPage() {
             <Table className="hidden md:table">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Číslo</TableHead>
-                  <TableHead>Dátum</TableHead>
-                  <TableHead>Dodávateľ</TableHead>
-                  <TableHead className="text-right">Základ</TableHead>
-                  <TableHead className="text-right">DPH</TableHead>
-                  <TableHead className="text-right">Spolu</TableHead>
+                  <TableHead>{t("Číslo")}</TableHead>
+                  <TableHead>{t("Dátum")}</TableHead>
+                  <TableHead>{t("Dodávateľ")}</TableHead>
+                  <TableHead className="text-right">{t("Základ")}</TableHead>
+                  <TableHead className="text-right">{t("DPH")}</TableHead>
+                  <TableHead className="text-right">{t("Spolu")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -653,7 +675,7 @@ function DphPage() {
                 {purchases.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      Žiadne prijaté faktúry v období
+                      {t("Žiadne prijaté faktúry v období")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -682,6 +704,7 @@ function MobilnyZoznam({
   }[];
   prazdne: string;
 }) {
+  const { t } = useT();
   if (riadky.length === 0) {
     return <p className="py-4 text-center text-sm text-muted-foreground md:hidden">{prazdne}</p>;
   }
@@ -697,9 +720,9 @@ function MobilnyZoznam({
           </div>
           <div className="mt-0.5 truncate text-muted-foreground">{r.meno}</div>
           <div className="mt-1 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-xs">
-            <span className="whitespace-nowrap">Základ {r.zaklad}</span>
-            <span className="whitespace-nowrap">DPH {r.dph}</span>
-            <span className="whitespace-nowrap font-semibold">Spolu {r.spolu}</span>
+            <span className="whitespace-nowrap">{t("Základ {suma}", { suma: r.zaklad })}</span>
+            <span className="whitespace-nowrap">{t("DPH {suma}", { suma: r.dph })}</span>
+            <span className="whitespace-nowrap font-semibold">{t("Spolu {suma}", { suma: r.spolu })}</span>
           </div>
         </li>
       ))}

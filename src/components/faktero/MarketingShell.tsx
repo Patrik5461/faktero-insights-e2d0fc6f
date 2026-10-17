@@ -4,8 +4,10 @@ import { PublicSupportWidget } from "./PublicSupportWidget";
 import { Logo } from "./Logo";
 import { LEGAL_COMPANY } from "./LegalShell";
 import { Mail, Phone, ShieldCheck, Lock } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 export function MarketingShell({ children }: { children: React.ReactNode }) {
+  const { t } = useT();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <MarketingNav />
@@ -16,11 +18,13 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
             <div className="space-y-3">
               <Logo className="h-7 w-[112px] opacity-80" />
               <p className="text-xs">
-                Fakturačný systém pre slovenských podnikateľov. Pripravený na eFaktúru od 1.1.2027.
+                {t(
+                  "Fakturačný systém pre slovenských podnikateľov. Pripravený na eFaktúru od 1.1.2027.",
+                )}
               </p>
             </div>
             <div className="space-y-2 text-xs">
-              <div className="font-medium text-foreground/80">Kontakt</div>
+              <div className="font-medium text-foreground/80">{t("Kontakt")}</div>
               <a
                 href={`mailto:${LEGAL_COMPANY.email}`}
                 className="flex items-center gap-2 hover:text-foreground"
@@ -36,11 +40,11 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
                 {LEGAL_COMPANY.phone}
               </a>
               <Link to="/kontakt" className="inline-block underline hover:text-foreground">
-                Kontaktný formulár
+                {t("Kontaktný formulár")}
               </Link>
             </div>
             <div className="space-y-2 text-xs">
-              <div className="font-medium text-foreground/80">Bezpečné platby</div>
+              <div className="font-medium text-foreground/80">{t("Bezpečné platby")}</div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] font-semibold text-foreground">
                   GoPay
@@ -59,68 +63,68 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
               </div>
               <p className="flex items-center gap-1 text-[11px]">
                 <ShieldCheck className="h-3 w-3" />
-                Údaje karty spracúva výhradne GoPay.
+                {t("Údaje karty spracúva výhradne GoPay.")}
               </p>
             </div>
           </div>
 
           <div className="border-t border-border/60 pt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <span>
-              © {new Date().getFullYear()} {LEGAL_COMPANY.name.replace(/\.$/, "")}. Všetky práva
-              vyhradené.
+              © {new Date().getFullYear()} {LEGAL_COMPANY.name.replace(/\.$/, "")}.{" "}
+              {t("Všetky práva vyhradené.")}
             </span>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               <Link to="/cennik" className="hover:text-foreground">
-                Cenník
+                {t("Cenník")}
               </Link>
               <Link to="/objednavka" className="hover:text-foreground">
-                Objednať
+                {t("Objednať")}
               </Link>
               <Link to="/funkcie" className="hover:text-foreground">
-                Funkcie
+                {t("Funkcie")}
               </Link>
               <Link to="/vyvojari" className="hover:text-foreground">
                 API
               </Link>
               <Link to="/efakturacia" className="hover:text-foreground">
-                eFaktúra
+                {t("eFaktúra")}
               </Link>
               <Link to="/uctovnici" className="hover:text-foreground">
-                Účtovníci
+                {t("Účtovníci")}
               </Link>
               <Link to="/blog" className="hover:text-foreground">
                 Blog
               </Link>
               <Link to="/pomoc" className="hover:text-foreground">
-                Návody
+                {t("Návody")}
               </Link>
               <Link to="/kontakt" className="hover:text-foreground">
-                Kontakt
+                {t("Kontakt")}
               </Link>
             </div>
           </div>
           <div className="border-t border-border/60 pt-4 flex flex-wrap gap-x-5 gap-y-2">
-            <span className="font-medium text-foreground/80">Právne:</span>
+            <span className="font-medium text-foreground/80">{t("Právne:")}</span>
             <Link to="/pravne/obchodne-podmienky" className="hover:text-foreground">
-              Obchodné podmienky
+              {t("Obchodné podmienky")}
             </Link>
             <Link to="/pravne/gdpr" className="hover:text-foreground">
               GDPR
             </Link>
             <Link to="/pravne/reklamacny-poriadok" className="hover:text-foreground">
-              Reklamačný poriadok
+              {t("Reklamačný poriadok")}
             </Link>
             <Link to="/pravne/gopay-podmienky" className="hover:text-foreground">
-              GoPay podmienky
+              {t("GoPay podmienky")}
             </Link>
             <Link to="/pravne/opakovane-platby" className="hover:text-foreground">
-              Opakované platby
+              {t("Opakované platby")}
             </Link>
             <Link to="/pravne/cookies" className="hover:text-foreground">
               Cookies
             </Link>
             <Link to="/pravne/spracovanie-udajov" className="hover:text-foreground">
-              Spracúvanie údajov (čl. 28)
+              {t("Spracúvanie údajov (čl. 28)")}
             </Link>
             <Link to="/pravne/tesla-podmienky" className="hover:text-foreground">
               Tesla Fleet API
@@ -128,10 +132,11 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="text-xs text-muted-foreground/80 space-y-1">
             <div>
-              Prevádzkovateľ: {LEGAL_COMPANY.name}, {LEGAL_COMPANY.address}
+              {t("Prevádzkovateľ:")} {LEGAL_COMPANY.name}, {LEGAL_COMPANY.address}
             </div>
             <div>
-              IČO: {LEGAL_COMPANY.ico} · DIČ: {LEGAL_COMPANY.dic} · IČ DPH: {LEGAL_COMPANY.icDph}
+              {t("IČO:")} {LEGAL_COMPANY.ico} · {t("DIČ:")} {LEGAL_COMPANY.dic} · {t("IČ DPH:")}{" "}
+              {LEGAL_COMPANY.icDph}
             </div>
           </div>
         </div>

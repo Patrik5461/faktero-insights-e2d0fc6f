@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronDown, Rocket, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "./Logo";
+import { useT } from "@/lib/i18n/useT";
 
 type Item = { label: string; href: string };
 type Menu = { label: string; href: string; items: Item[] };
@@ -57,6 +58,7 @@ const simpleLinks: Item[] = [
 ];
 
 export function MarketingNav() {
+  const { t } = useT();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   return (
@@ -69,7 +71,7 @@ export function MarketingNav() {
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-6 py-2">
           <Rocket className="h-3.5 w-3.5 text-primary" />
           <span>
-            Faktero je pripravené na povinnú eFaktúru od{" "}
+            {t("Faktero je pripravené na povinnú eFaktúru od")}{" "}
             <span className="font-semibold text-primary">1.1.2027</span>
           </span>
         </div>
@@ -95,7 +97,7 @@ export function MarketingNav() {
                   className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
                   onClick={() => setOpenMenu(null)}
                 >
-                  {menu.label}
+                  {t(menu.label)}
                   <ChevronDown className="h-3.5 w-3.5 opacity-60 group-hover:rotate-180 transition-transform" />
                 </Link>
                 <div className="invisible opacity-0 translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all absolute left-0 top-full pt-2 z-50">
@@ -104,7 +106,7 @@ export function MarketingNav() {
                       to={menu.href}
                       className="block rounded-md px-3 py-2 text-sm font-semibold text-primary hover:bg-secondary"
                     >
-                      Prehľad — {menu.label}
+                      {t("Prehľad — {nazov}", { nazov: t(menu.label) })}
                     </Link>
                     <div className="my-1 h-px bg-border" />
                     {menu.items.map((it) => (
@@ -113,7 +115,7 @@ export function MarketingNav() {
                         to={it.href}
                         className="block rounded-md px-3 py-2 text-sm text-foreground hover:bg-secondary"
                       >
-                        {it.label}
+                        {t(it.label)}
                       </Link>
                     ))}
                   </div>
@@ -126,7 +128,7 @@ export function MarketingNav() {
                 to={l.href}
                 className="rounded-md px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
               >
-                {l.label}
+                {t(l.label)}
               </Link>
             ))}
           </nav>
@@ -135,25 +137,25 @@ export function MarketingNav() {
             <PrepinacJazyka className="hidden sm:inline-flex" />
             <span className="hidden md:inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              30 dní zdarma
+              {t("30 dní zdarma")}
             </span>
             <Link
               to="/prihlasenie"
               className="hidden sm:inline-flex whitespace-nowrap px-3 py-2 text-muted-foreground hover:text-foreground"
             >
-              Prihlásenie
+              {t("Prihlásenie")}
             </Link>
             <Link
               to="/registracia"
               className="whitespace-nowrap rounded-md bg-primary px-3 py-2 font-medium sm:px-4 text-primary-foreground hover:opacity-90"
             >
-              Vyskúšať zdarma
+              {t("Vyskúšať zdarma")}
             </Link>
             <button
               type="button"
               onClick={() => setMobileOpen((v) => !v)}
               className="lg:hidden inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary"
-              aria-label="Otvoriť menu"
+              aria-label={t("Otvoriť menu")}
             >
               {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
@@ -175,13 +177,13 @@ export function MarketingNav() {
                         to={menu.href}
                         className="flex-1 py-3 text-sm font-medium text-foreground"
                       >
-                        {menu.label}
+                        {t(menu.label)}
                       </Link>
                       <button
                         type="button"
                         onClick={() => setOpenMenu(isOpen ? null : menu.label)}
                         className="p-2 text-muted-foreground"
-                        aria-label="Rozbaliť"
+                        aria-label={t("Rozbaliť")}
                       >
                         <ChevronDown
                           className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -196,7 +198,7 @@ export function MarketingNav() {
                             to={it.href}
                             className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
                           >
-                            {it.label}
+                            {t(it.label)}
                           </Link>
                         ))}
                       </div>
@@ -210,7 +212,7 @@ export function MarketingNav() {
                   to={l.href}
                   className="block border-b border-border/60 py-3 text-sm font-medium text-foreground last:border-0"
                 >
-                  {l.label}
+                  {t(l.label)}
                 </Link>
               ))}
             </div>

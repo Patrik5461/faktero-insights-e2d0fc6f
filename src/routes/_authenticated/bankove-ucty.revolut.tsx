@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { dokonciRevolut } from "@/lib/faktero/revolut.functions";
@@ -18,7 +20,7 @@ import { dokonciRevolut } from "@/lib/faktero/revolut.functions";
  * znamenalo dôverovať tomu, čo príde v odkaze.
  */
 export const Route = createFileRoute("/_authenticated/bankove-ucty/revolut")({
-  head: () => ({ meta: [{ title: "Revolut — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Revolut — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>): { code?: string } => ({
     code: typeof s.code === "string" && s.code ? s.code : undefined,
   }),
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/bankove-ucty/revolut")({
 });
 
 function RevolutNavrat() {
+  const { t } = useT();
   const { code } = Route.useSearch();
   const navigate = useNavigate();
   const dokonci = useServerFn(dokonciRevolut);
@@ -39,7 +42,7 @@ function RevolutNavrat() {
     if (!code || !cid || spustene.current) {
       if (!code) {
         setStav("chyba");
-        setChyba("V adrese nie je kód z Revolutu. Spustite potvrdenie znova.");
+        setChyba(t("V adrese nie je kód z Revolutu. Spustite potvrdenie znova."));
       }
       return;
     }
@@ -47,22 +50,22 @@ function RevolutNavrat() {
     dokonci({ data: { company_id: cid, code } })
       .then(() => {
         setStav("hotovo");
-        toast.success("Revolut pripojený.");
+        toast.success(t("Revolut pripojený."));
         navigate({ to: "/bankove-ucty" });
       })
       .catch((e: any) => {
         setStav("chyba");
-        setChyba(e?.message ?? "Pripojenie sa nepodarilo.");
+        setChyba(e?.message ?? t("Pripojenie sa nepodarilo."));
       });
-  }, [code, dokonci, navigate]);
+  }, [code, dokonci, navigate, t]);
 
   return (
     <>
-      <PageHeader title="Revolut" description="Dokončujeme pripojenie účtu." />
+      <PageHeader title="Revolut" description={t("Dokončujeme pripojenie účtu.")} />
       <PageBody>
         <div className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-8 text-sm">
-          {stav === "pracujem" && <p>Vymieňam kód za prístup…</p>}
-          {stav === "hotovo" && <p>Hotovo. Presúvam vás na bankové účty.</p>}
+          {stav === "pracujem" && <p>{t("Vymieňam kód za prístup…")}</p>}
+          {stav === "hotovo" && <p>{t("Hotovo. Presúvam vás na bankové účty.")}</p>}
           {stav === "chyba" && (
             <>
               <p className="text-destructive">{chyba}</p>
@@ -70,7 +73,7 @@ function RevolutNavrat() {
                 onClick={() => navigate({ to: "/bankove-ucty/pripojit" })}
                 className="mt-4 inline-flex h-9 items-center rounded-md border border-border px-3 hover:bg-secondary"
               >
-                Späť na pripojenie
+                {t("Späť na pripojenie")}
               </button>
             </>
           )}

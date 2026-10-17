@@ -11,12 +11,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { buttonVariants } from "@/components/ui/button";
 import { jeNebezpecna, prihlasOkno, vybavZiadost, type Ziadost } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Okno pre `potvrd()` — pripája sa raz v koreni aplikácie. Otázka môže mať
  * viac riadkov (`\n`), prvý sa ukáže ako nadpis, zvyšok ako text.
  */
 export function PotvrdzovacieOkno() {
+  const { t } = useT();
   const [ziadost, setZiadost] = useState<Ziadost | null>(null);
   useEffect(() => prihlasOkno(setZiadost), []);
   /*
@@ -65,7 +67,7 @@ export function PotvrdzovacieOkno() {
           {popis ? (
             <AlertDialogDescription className="whitespace-pre-line">{popis}</AlertDialogDescription>
           ) : (
-            <AlertDialogDescription className="sr-only">Potvrďte akciu.</AlertDialogDescription>
+            <AlertDialogDescription className="sr-only">{t("Potvrďte akciu.")}</AlertDialogDescription>
           )}
         </AlertDialogHeader>
         {pole ? (
@@ -97,7 +99,7 @@ export function PotvrdzovacieOkno() {
         ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => odpovedz(false)}>
-            {ziadost?.zrusit ?? "Späť"}
+            {t(ziadost?.zrusit ?? "Späť")}
           </AlertDialogCancel>
           {/* Fokus ostáva na „Späť" (Radix) — Enter omylom nič nezmaže. */}
           <AlertDialogAction
@@ -110,7 +112,7 @@ export function PotvrdzovacieOkno() {
               } else odpovedz(true);
             }}
           >
-            {ziadost?.potvrdit ?? (nebezpecne ? "Áno, pokračovať" : "Potvrdiť")}
+            {t(ziadost?.potvrdit ?? (nebezpecne ? "Áno, pokračovať" : "Potvrdiť"))}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +19,7 @@ import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { sadzbyRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/objednavky/nova")({
-  head: () => ({ meta: [{ title: "Nová objednávka — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová objednávka — Faktero") }] }),
   /**
    * Úprava existujúcej objednávky používa ten istý formulár. Keď parameter
    * nie je, musí sa vrátiť prázdny objekt — inak router vyžaduje `search` pri
@@ -62,6 +64,7 @@ function suma(n: unknown) {
 }
 
 function NewOrder() {
+  const { t } = useT();
   const nav = useNavigate();
   const { id } = Route.useSearch();
   const uloz = useServerFn(saveSalesOrder);
@@ -142,7 +145,7 @@ function NewOrder() {
           })),
         );
       })
-      .catch((e: any) => setChyba(e?.message ?? "Objednávku sa nepodarilo načítať"))
+      .catch((e: any) => setChyba(e?.message ?? t("Objednávku sa nepodarilo načítať")))
       .finally(() => setNacitava(false));
   }, [cid, id, nacitajObjednavku]);
 
@@ -225,7 +228,7 @@ function NewOrder() {
     setChyba(null);
     const platne = polozky.filter((p) => p.name.trim() && Number(p.quantity) > 0);
     if (!platne.length) {
-      setChyba("Objednávka musí mať aspoň jednu položku s názvom a množstvom.");
+      setChyba(t("Objednávka musí mať aspoň jednu položku s názvom a množstvom."));
       return;
     }
     setSaving(true);
@@ -255,7 +258,7 @@ function NewOrder() {
       });
       nav({ to: "/objednavky/$id", params: { id: r.id } });
     } catch (err: any) {
-      setChyba(err?.message ?? "Objednávku sa nepodarilo uložiť");
+      setChyba(err?.message ?? t("Objednávku sa nepodarilo uložiť"));
     } finally {
       setSaving(false);
     }
@@ -264,7 +267,7 @@ function NewOrder() {
   if (nacitava) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Načítavam…</div>
+        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
       </PageBody>
     );
   }
@@ -272,8 +275,8 @@ function NewOrder() {
   return (
     <>
       <PageHeader
-        title={id ? "Upraviť objednávku" : "Nová prijatá objednávka"}
-        description="Číslo pridelí Faktero. Objednávku vybavíte faktúrou — aj po častiach."
+        title={id ? t("Upraviť objednávku") : t("Nová prijatá objednávka")}
+        description={t("Číslo pridelí Faktero. Objednávku vybavíte faktúrou — aj po častiach.")}
       />
       <PageBody>
         <form onSubmit={odosli} className="space-y-4">
@@ -286,13 +289,13 @@ function NewOrder() {
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={popis}>Odberateľ</label>
+                <label className={popis}>{t("Odberateľ")}</label>
                 <select
                   className={pole}
                   value={form.customer_id}
                   onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
                 >
-                  <option value="">— bez odberateľa —</option>
+                  <option value="">{t("— bez odberateľa —")}</option>
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -301,16 +304,16 @@ function NewOrder() {
                 </select>
               </div>
               <div>
-                <label className={popis}>Číslo objednávky u odberateľa</label>
+                <label className={popis}>{t("Číslo objednávky u odberateľa")}</label>
                 <input
                   className={pole}
                   value={form.customer_order_number}
                   onChange={(e) => setForm({ ...form, customer_order_number: e.target.value })}
-                  placeholder="Napíše sa na faktúru"
+                  placeholder={t("Napíše sa na faktúru")}
                 />
               </div>
               <div>
-                <label className={popis}>Dátum objednávky</label>
+                <label className={popis}>{t("Dátum objednávky")}</label>
                 <input
                   type="date"
                   required
@@ -320,7 +323,7 @@ function NewOrder() {
                 />
               </div>
               <div>
-                <label className={popis}>Požadovaný termín dodania</label>
+                <label className={popis}>{t("Požadovaný termín dodania")}</label>
                 <input
                   type="date"
                   min={form.order_date}
@@ -337,7 +340,7 @@ function NewOrder() {
               />
               <JobPicker
                 className="sm:col-span-2"
-                label="Zákazka"
+                label={t("Zákazka")}
                 value={form.job_id}
                 onChange={(v) => setForm({ ...form, job_id: v || "" })}
               />
@@ -346,7 +349,7 @@ function NewOrder() {
 
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="text-sm font-medium">Položky</div>
+              <div className="text-sm font-medium">{t("Položky")}</div>
               {products.length > 0 && (
                 <select
                   className="min-w-0 max-w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
@@ -355,7 +358,7 @@ function NewOrder() {
                     if (e.target.value) pridajProdukt(e.target.value);
                   }}
                 >
-                  <option value="">+ pridať z katalógu</option>
+                  <option value="">{t("+ pridať z katalógu")}</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} — {suma(p.unit_price)}
@@ -371,17 +374,17 @@ function NewOrder() {
                 <div key={i} className="space-y-2 rounded-md border border-border p-3">
                   <div className="flex items-start gap-2">
                     <label className="min-w-0 flex-1 text-xs text-muted-foreground">
-                      Názov
+                      {t("Názov")}
                       <input
                         className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
                         value={p.name}
                         onChange={(e) => nastavPolozku(i, { name: e.target.value })}
-                        placeholder="Názov položky"
+                        placeholder={t("Názov položky")}
                       />
                     </label>
                     <button
                       type="button"
-                      aria-label="Odobrať položku"
+                      aria-label={t("Odobrať položku")}
                       onClick={() => setPolozky(polozky.filter((_, j) => j !== i))}
                       className="mt-5 shrink-0 rounded p-1.5 text-muted-foreground hover:bg-muted"
                     >
@@ -390,7 +393,7 @@ function NewOrder() {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <label className="min-w-0 text-xs text-muted-foreground">
-                      Množstvo
+                      {t("Množstvo")}
                       <input
                         type="number"
                         step="0.001"
@@ -402,7 +405,7 @@ function NewOrder() {
                       />
                     </label>
                     <label className="min-w-0 text-xs text-muted-foreground">
-                      MJ
+                      {t("MJ")}
                       <input
                         className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
                         value={p.unit}
@@ -410,7 +413,7 @@ function NewOrder() {
                       />
                     </label>
                     <label className="min-w-0 text-xs text-muted-foreground">
-                      Cena bez DPH
+                      {t("Cena bez DPH")}
                       <input
                         type="number"
                         step={KROK_CENY}
@@ -429,7 +432,7 @@ function NewOrder() {
                       )}
                     </label>
                     <label className="min-w-0 text-xs text-muted-foreground">
-                      DPH
+                      {t("DPH")}
                       <select
                         className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
                         value={p.vat_rate}
@@ -444,7 +447,7 @@ function NewOrder() {
                     </label>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Spolu</span>
+                    <span className="text-muted-foreground">{t("Spolu")}</span>
                     <span className="font-medium tabular-nums">
                       {suma(Number(p.quantity) * Number(p.unit_price))}
                     </span>
@@ -457,12 +460,12 @@ function NewOrder() {
               <table className="w-full text-sm">
                 <thead className="text-xs text-muted-foreground">
                   <tr className="border-b border-border">
-                    <th className="py-2 text-left font-medium">Názov</th>
-                    <th className="py-2 pl-3 text-left font-medium">Množstvo</th>
-                    <th className="py-2 pl-3 text-left font-medium">MJ</th>
-                    <th className="py-2 pl-3 text-right font-medium">Cena bez DPH</th>
-                    <th className="py-2 pl-3 text-left font-medium">DPH</th>
-                    <th className="py-2 pl-3 text-right font-medium">Spolu</th>
+                    <th className="py-2 text-left font-medium">{t("Názov")}</th>
+                    <th className="py-2 pl-3 text-left font-medium">{t("Množstvo")}</th>
+                    <th className="py-2 pl-3 text-left font-medium">{t("MJ")}</th>
+                    <th className="py-2 pl-3 text-right font-medium">{t("Cena bez DPH")}</th>
+                    <th className="py-2 pl-3 text-left font-medium">{t("DPH")}</th>
+                    <th className="py-2 pl-3 text-right font-medium">{t("Spolu")}</th>
                     <th />
                   </tr>
                 </thead>
@@ -474,7 +477,7 @@ function NewOrder() {
                           className="w-full min-w-40 rounded-md border border-transparent bg-transparent px-2 py-1.5 hover:border-input focus:border-input focus:bg-background"
                           value={p.name}
                           onChange={(e) => nastavPolozku(i, { name: e.target.value })}
-                          placeholder="Názov položky"
+                          placeholder={t("Názov položky")}
                         />
                       </td>
                       <td className="py-2 pl-3">
@@ -530,7 +533,7 @@ function NewOrder() {
                       <td className="py-2 pl-2 text-right">
                         <button
                           type="button"
-                          aria-label="Odobrať položku"
+                          aria-label={t("Odobrať položku")}
                           onClick={() => setPolozky(polozky.filter((_, j) => j !== i))}
                           className="rounded p-1.5 text-muted-foreground hover:bg-muted"
                         >
@@ -548,21 +551,21 @@ function NewOrder() {
               onClick={() => setPolozky([...polozky, { ...PRAZDNA }])}
               className="mt-3 inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
             >
-              <Plus className="h-4 w-4" /> Pridať riadok
+              <Plus className="h-4 w-4" /> {t("Pridať riadok")}
             </button>
 
             <div className="mt-4 flex justify-end">
               <div className="w-full space-y-1 text-sm sm:w-64">
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Základ</span>
+                  <span>{t("Základ")}</span>
                   <span className="tabular-nums">{suma(sucty.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>DPH</span>
+                  <span>{t("DPH")}</span>
                   <span className="tabular-nums">{suma(sucty.vat_total)}</span>
                 </div>
                 <div className="flex justify-between border-t border-border pt-1 font-medium">
-                  <span>Spolu</span>
+                  <span>{t("Spolu")}</span>
                   <span className="tabular-nums">{suma(sucty.total)}</span>
                 </div>
               </div>
@@ -576,9 +579,9 @@ function NewOrder() {
                 checked={form.reserve_stock}
                 onChange={(e) => setForm({ ...form, reserve_stock: e.target.checked })}
               />
-              Po potvrdení rezervovať tovar na sklade
+              {t("Po potvrdení rezervovať tovar na sklade")}
             </label>
-            <label className={`${popis} mt-4`}>Poznámka</label>
+            <label className={`${popis} mt-4`}>{t("Poznámka")}</label>
             <textarea
               className={`${pole} min-h-20`}
               value={form.note}
@@ -591,7 +594,7 @@ function NewOrder() {
             disabled={saving}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
-            {saving ? "Ukladám…" : id ? "Uložiť zmeny" : "Založiť objednávku"}
+            {saving ? t("Ukladám…") : id ? t("Uložiť zmeny") : t("Založiť objednávku")}
           </button>
         </form>
       </PageBody>

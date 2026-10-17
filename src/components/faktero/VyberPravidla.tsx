@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Plus, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { pravidloSedi, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
+import { useT } from "@/lib/i18n/useT";
 
 /** Hodnoty, z ktorých sa dá založiť nové pravidlo („Vytvoriť automatické účtovanie"). */
 export type ZakladPravidla = {
@@ -39,6 +40,7 @@ export function VyberPravidla({
   zaklad?: ZakladPravidla;
   onPouzi: (p: Pravidlo) => void;
 }) {
+  const { t } = useT();
   const [pravidla, setPravidla] = useState<(Pravidlo & { id: string })[]>([]);
   const [vybrane, setVybrane] = useState("");
 
@@ -72,20 +74,21 @@ export function VyberPravidla({
       {pouzite ? (
         <span
           className="inline-flex items-center gap-1 text-amber-700"
-          title="Kódy doplnilo pravidlo účtovania"
+          title={t("Kódy doplnilo pravidlo účtovania")}
         >
-          <Star className="h-3.5 w-3.5 fill-current" /> Pravidlo „{pouzite.nazov}“
+          <Star className="h-3.5 w-3.5 fill-current" />{" "}
+          {t("Pravidlo „{nazov}“", { nazov: pouzite.nazov })}
         </span>
       ) : null}
       {zhodne.some((p) => p.id !== pouzite?.id) ? (
         <>
           <select
-            aria-label="Pravidlo účtovania"
+            aria-label={t("Pravidlo účtovania")}
             value={vybrane}
             onChange={(e) => setVybrane(e.target.value)}
             className="rounded-md border border-input bg-background px-2 py-1 text-xs"
           >
-            <option value="">{pouzite ? "Iné pravidlo…" : "Použiť pravidlo…"}</option>
+            <option value="">{pouzite ? t("Iné pravidlo…") : t("Použiť pravidlo…")}</option>
             {zhodne
               .filter((p) => p.id !== pouzite?.id)
               .map((p) => (
@@ -106,7 +109,7 @@ export function VyberPravidla({
             }}
             className="rounded-md border border-border px-2 py-1 hover:bg-secondary disabled:opacity-50"
           >
-            Použiť
+            {t("Použiť")}
           </button>
         </>
       ) : null}
@@ -126,12 +129,13 @@ export function VyberPravidla({
           }}
           className="inline-flex items-center gap-1 text-primary hover:underline"
         >
-          <Plus className="h-3.5 w-3.5" /> Vytvoriť pravidlo pre {partner || `IČO ${ico}`}
+          <Plus className="h-3.5 w-3.5" />{" "}
+          {t("Vytvoriť pravidlo pre {partner}", { partner: partner || t("IČO {ico}", { ico }) })}
         </Link>
       ) : (
         /* Samotné „pravidlá“ viselo osamote bez súvislosti — povedz, kam odkaz vedie. */
         <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
-          Pravidlá účtovania →
+          {t("Pravidlá účtovania →")}
         </Link>
       )}
     </div>

@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { CislovaniePoImporte } from "@/components/faktero/CislovaniePoImporte";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -28,7 +30,7 @@ import {
 } from "@/lib/faktero/ciselne-rady.functions";
 
 export const Route = createFileRoute("/_authenticated/ciselne-rady/")({
-  head: () => ({ meta: [{ title: "Číselné rady — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Číselné rady — Faktero") }] }),
   component: CiselneRadyPage,
 });
 
@@ -40,6 +42,7 @@ export const Route = createFileRoute("/_authenticated/ciselne-rady/")({
  * číslujú cesty, ktoré sa nepýtajú (appka, API, opakované faktúry).
  */
 function CiselneRadyPage() {
+  const { t } = useT();
   const nacitaj = useServerFn(ciselneRadyFn);
   const uloz = useServerFn(ulozCiselnyRadFn);
   const zmaz = useServerFn(zmazCiselnyRadFn);
@@ -55,9 +58,9 @@ function CiselneRadyPage() {
     try {
       const v = await zImportu({ data: { company_id: cid } });
       setRadyZImportu(v.rady);
-      if (!v.rady.length) toast.info("Medzi naimportovanými faktúrami sme číslovanie nenašli.");
+      if (!v.rady.length) toast.info(t("Medzi naimportovanými faktúrami sme číslovanie nenašli."));
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa.");
+      toast.error(e?.message ?? t("Nepodarilo sa."));
     } finally {
       setHladam(false);
     }
@@ -77,7 +80,7 @@ function CiselneRadyPage() {
       const v = await nacitaj({ data: { company_id: cid } });
       setRady(v.rady);
     } catch (e: any) {
-      toast.error(e?.message ?? "Rady sa nepodarilo načítať.");
+      toast.error(e?.message ?? t("Rady sa nepodarilo načítať."));
     } finally {
       setLoading(false);
     }
@@ -99,8 +102,8 @@ function CiselneRadyPage() {
     const cid = getActiveCompanyId();
     if (!cid || !upravovany?.kind) return;
     const chyba = chybaSablony(upravovany.format ?? "");
-    if (chyba) return toast.error(chyba);
-    if (!(upravovany.name ?? "").trim()) return toast.error("Zadajte názov radu.");
+    if (chyba) return toast.error(t(chyba));
+    if (!(upravovany.name ?? "").trim()) return toast.error(t("Zadajte názov radu."));
     setBusy(true);
     try {
       await uloz({
@@ -115,11 +118,11 @@ function CiselneRadyPage() {
           start_from: Math.max(1, Number(upravovany.start_from ?? 1) || 1),
         },
       });
-      toast.success("Číselný rad je uložený");
+      toast.success(t("Číselný rad je uložený"));
       setUpravovany(null);
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Rad sa nepodarilo uložiť.");
+      toast.error(e?.message ?? t("Rad sa nepodarilo uložiť."));
     } finally {
       setBusy(false);
     }
@@ -131,11 +134,11 @@ function CiselneRadyPage() {
     setBusy(true);
     try {
       await zmaz({ data: { company_id: cid, id: mazany.id } });
-      toast.success("Rad je zmazaný");
+      toast.success(t("Rad je zmazaný"));
       setMazany(null);
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Rad sa nepodarilo zmazať.");
+      toast.error(e?.message ?? t("Rad sa nepodarilo zmazať."));
     } finally {
       setBusy(false);
     }
@@ -144,13 +147,13 @@ function CiselneRadyPage() {
   return (
     <>
       <PageHeader
-        title="Číselné rady"
-        description="Ako sa číslujú doklady. Na jeden druh môžete mať viac radov a pri vystavovaní si vyberiete."
+        title={t("Číselné rady")}
+        description={t("Ako sa číslujú doklady. Na jeden druh môžete mať viac radov a pri vystavovaní si vyberiete.")}
       />
       <PageBody>
         {loading ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            Načítavam…
+            {t("Načítavam…")}
           </div>
         ) : (
           <div className="space-y-6">
@@ -158,11 +161,10 @@ function CiselneRadyPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="text-[13px] font-semibold uppercase tracking-wide text-foreground">
-                    Prechod z iného programu
+                    {t("Prechod z iného programu")}
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Faktero z naimportovaných faktúr zistí, ako ste číslovali, a nové doklady
-                    nadviažu na posledné číslo.
+                    {t("Faktero z naimportovaných faktúr zistí, ako ste číslovali, a nové doklady nadviažu na posledné číslo.")}
                   </p>
                 </div>
                 <button
@@ -171,7 +173,7 @@ function CiselneRadyPage() {
                   disabled={hladam}
                   className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
                 >
-                  {hladam ? "Hľadám…" : "Rozpoznať z naimportovaných faktúr"}
+                  {hladam ? t("Hľadám…") : t("Rozpoznať z naimportovaných faktúr")}
                 </button>
               </div>
               {radyZImportu && <CislovaniePoImporte rady={radyZImportu} onZmena={load} />}
@@ -183,7 +185,7 @@ function CiselneRadyPage() {
                   {/* Bez flex-wrap: dlhý názov druhu sa zalomí v nadpise a tlačidlo ostane vpravo ako všade. */}
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <h3 className="min-w-0 text-[13px] font-semibold uppercase tracking-wide text-foreground">
-                      {NAZVY_DRUHOV[druh]}
+                      {t(NAZVY_DRUHOV[druh])}
                     </h3>
                     <button
                       type="button"
@@ -198,14 +200,13 @@ function CiselneRadyPage() {
                       }
                       className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                     >
-                      <Plus className="h-3.5 w-3.5" /> Pridať rad
+                      <Plus className="h-3.5 w-3.5" /> {t("Pridať rad")}
                     </button>
                   </div>
 
                   {zoznam.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Zatiaľ bez vlastného radu — doklady sa číslujú pôvodným tvarom a rad sa založí
-                      sám pri najbližšom doklade.
+                      {t("Zatiaľ bez vlastného radu — doklady sa číslujú pôvodným tvarom a rad sa založí sám pri najbližšom doklade.")}
                     </p>
                   ) : (
                     <ul className="divide-y divide-border">
@@ -215,12 +216,12 @@ function CiselneRadyPage() {
                             {r.name}
                             {r.is_default && (
                               <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                                <Star className="h-3 w-3" /> predvolený
+                                <Star className="h-3 w-3" /> {t("predvolený")}
                               </span>
                             )}
                             {!r.active && (
                               <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                                vypnutý
+                                {t("vypnutý")}
                               </span>
                             )}
                           </span>
@@ -234,13 +235,13 @@ function CiselneRadyPage() {
                               onClick={() => setUpravovany(r)}
                               className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                             >
-                              Upraviť
+                              {t("Upraviť")}
                             </button>
                             <button
                               type="button"
                               onClick={() => setMazany(r)}
                               className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                              title="Zmazať"
+                              title={t("Zmazať")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -267,10 +268,10 @@ function CiselneRadyPage() {
 
         <ConfirmDialog
           open={!!mazany}
-          title="Zmazať číselný rad?"
+          title={t("Zmazať číselný rad?")}
           message={mazany ? `${mazany.name} — ${mazany.format}` : ""}
-          warning="Rad, z ktorého už doklady visia, sa zmazať nedá. Vtedy ho vypnite."
-          confirmLabel="Zmazať"
+          warning={t("Rad, z ktorého už doklady visia, sa zmazať nedá. Vtedy ho vypnite.")}
+          confirmLabel={t("Zmazať")}
           busy={busy}
           onConfirm={zmazRad}
           onCancel={() => setMazany(null)}
@@ -294,6 +295,7 @@ function FormularRadu({
   onUloz: () => void;
   onZrus: () => void;
 }) {
+  const { t } = useT();
   const chyba = rad.format ? chybaSablony(rad.format) : null;
   /* Nie je to chyba — len nech človek vie, čo z jeho tvaru vyjde. */
   const upozornenie = rad.format ? upozornenieSablony(rad.format) : null;
@@ -308,26 +310,26 @@ function FormularRadu({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Číselný rad"
+      aria-label={t("Číselný rad")}
       className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
       onClick={(e) => e.target === e.currentTarget && onZrus()}
     >
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-lg">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">
-          {rad.id ? "Úprava radu" : "Nový rad"} — {NAZVY_DRUHOV[rad.kind as DruhRadu]}
+          {rad.id ? t("Úprava radu") : t("Nový rad")} — {t(NAZVY_DRUHOV[rad.kind as DruhRadu])}
         </h3>
         <div className="space-y-4">
           <label className="block">
-            <span className="text-[13px] font-semibold text-foreground">Názov</span>
+            <span className="text-[13px] font-semibold text-foreground">{t("Názov")}</span>
             <input
               value={rad.name ?? ""}
               onChange={(e) => onZmena({ ...rad, name: e.target.value })}
-              placeholder="Napríklad: Faktúry Trnava"
+              placeholder={t("Napríklad: Faktúry Trnava")}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
           </label>
           <div className="block">
-            <label className="text-[13px] font-semibold text-foreground">Šablóna čísla</label>
+            <label className="text-[13px] font-semibold text-foreground">{t("Šablóna čísla")}</label>
             {/*
               Väčšina firiem si vyberie jeden z bežných tvarov — tokeny sú
               zrozumiteľné, až keď je vidieť, čo z nich vyjde. Vlastný tvar
@@ -345,13 +347,13 @@ function FormularRadu({
               }}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              {!rad.format && <option value="">— vyberte tvar čísla —</option>}
+              {!rad.format && <option value="">{t("— vyberte tvar čísla —")}</option>}
               {predlohy.map((v) => (
                 <option key={v.format} value={v.format}>
-                  {ukazkaCisla(v.format, 1)} — {v.popis}
+                  {ukazkaCisla(v.format, 1)} — {t(v.popis)}
                 </option>
               ))}
-              <option value="vlastna">Vlastná šablóna…</option>
+              <option value="vlastna">{t("Vlastná šablóna…")}</option>
             </select>
             {vlastna && (
               <input
@@ -364,38 +366,35 @@ function FormularRadu({
             )}
             {vlastna && (
               <span className="mt-1 block text-xs text-muted-foreground">
-                Napíšte si číslo, ako chcete. Čo vloží Faktero: {"{YYYY}"} rok, {"{YY}"} rok
-                dvojčíslím, {"{MM}"} mesiac a {"{NN}"} až {"{NNNNNN}"} poradie (počet N = počet
-                číslic). Všetko ostatné sa vytlačí tak, ako to napíšete. Keď poradie vynecháte,
-                doplní sa na koniec.
+                {t("Napíšte si číslo, ako chcete. Čo vloží Faktero: {YYYY} rok, {YY} rok dvojčíslím, {MM} mesiac a {NN} až {NNNNNN} poradie (počet N = počet číslic). Všetko ostatné sa vytlačí tak, ako to napíšete. Keď poradie vynecháte, doplní sa na koniec.")}
               </span>
             )}
             {rad.format && !chyba && (
               <span className="mt-2 block rounded-md bg-muted px-3 py-2 text-sm">
-                Prvé číslo:{" "}
+                {t("Prvé číslo:")}{" "}
                 <strong className="tabular-nums">
                   {ukazkaCisla(hotovaSablona, rad.start_from ?? 1)}
                 </strong>
-                , desiate:{" "}
+                {t(", desiate:")}{" "}
                 <strong className="tabular-nums">
                   {ukazkaCisla(hotovaSablona, (rad.start_from ?? 1) + 9)}
                 </strong>{" "}
-                · poradie sa resetuje {resetujeSaMesacne(hotovaSablona) ? "mesačne" : "ročne"}
+                · {resetujeSaMesacne(hotovaSablona) ? t("poradie sa resetuje mesačne") : t("poradie sa resetuje ročne")}
               </span>
             )}
             {upozornenie && !chyba && (
               <span className="mt-2 block rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
-                {upozornenie}
+                {t(upozornenie)}
               </span>
             )}
             {chyba && (
               <span className="mt-2 block rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                {chyba}
+                {t(chyba)}
               </span>
             )}
           </div>
           <label className="block">
-            <span className="text-[13px] font-semibold text-foreground">Začať od poradia</span>
+            <span className="text-[13px] font-semibold text-foreground">{t("Začať od poradia")}</span>
             <input
               type="number"
               min="1"
@@ -404,8 +403,7 @@ function FormularRadu({
               className="mt-1 w-32 rounded-md border border-input bg-background px-3 py-2 text-sm tabular-nums"
             />
             <span className="mt-1 block text-xs text-muted-foreground">
-              Pri prechode z iného programu sem dajte číslo, ktorým chcete nadviazať. Nižšie poradia
-              sa už neponúknu.
+              {t("Pri prechode z iného programu sem dajte číslo, ktorým chcete nadviazať. Nižšie poradia sa už neponúknu.")}
             </span>
           </label>
           <label className="flex items-center gap-2 text-sm">
@@ -415,7 +413,7 @@ function FormularRadu({
               onChange={(e) => onZmena({ ...rad, is_default: e.target.checked })}
               className="h-4 w-4 rounded border-input"
             />
-            Predvolený rad tohto druhu
+            {t("Predvolený rad tohto druhu")}
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -424,7 +422,7 @@ function FormularRadu({
               onChange={(e) => onZmena({ ...rad, active: e.target.checked })}
               className="h-4 w-4 rounded border-input"
             />
-            Ponúkať pri vystavovaní
+            {t("Ponúkať pri vystavovaní")}
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
@@ -433,7 +431,7 @@ function FormularRadu({
             onClick={onZrus}
             className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
           >
-            Zrušiť
+            {t("Zrušiť")}
           </button>
           <button
             type="button"
@@ -441,7 +439,7 @@ function FormularRadu({
             onClick={onUloz}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
-            {busy && <Loader2 className="h-4 w-4 animate-spin" />} Uložiť
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Uložiť")}
           </button>
         </div>
       </div>

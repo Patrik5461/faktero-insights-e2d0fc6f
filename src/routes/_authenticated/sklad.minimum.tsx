@@ -6,13 +6,18 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getLowStockReport } from "@/lib/faktero/stock.functions";
 import { AlertTriangle, Plus } from "lucide-react";
 import { formatujCislo } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/minimum")({
-  head: () => ({ meta: [{ title: "Pod minimom — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Pod minimom — Faktero") }],
+  }),
   component: LowStockPage,
 });
 
 function LowStockPage() {
+  const { t } = useT();
   const fetchLow = useServerFn(getLowStockReport);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,11 +36,13 @@ function LowStockPage() {
   return (
     <>
       <PageHeader
-        title="Pod minimálnym stavom"
+        title={t("Pod minimálnym stavom")}
         description={
           rows.length > 0
-            ? "Stĺpec Objednať dopĺňa zásobu na optimum. Rezervovaný tovar sa počíta ako chýbajúci, tovar objednaný u dodávateľa naopak ako už zabezpečený."
-            : "Položky, ktorých stav klesol pod nastavené minimum."
+            ? t(
+                "Stĺpec Objednať dopĺňa zásobu na optimum. Rezervovaný tovar sa počíta ako chýbajúci, tovar objednaný u dodávateľa naopak ako už zabezpečený.",
+              )
+            : t("Položky, ktorých stav klesol pod nastavené minimum.")
         }
         action={
           rows.length > 0 ? (
@@ -43,32 +50,32 @@ function LowStockPage() {
               to="/sklad/objednavky/nova"
               className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Objednať u dodávateľa
+              <Plus className="h-4 w-4" /> {t("Objednať u dodávateľa")}
             </Link>
           ) : undefined
         }
       />
       <PageBody>
         {loading ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            Všetky sledované položky majú dostatočný stav.
+            {t("Všetky sledované položky majú dostatočný stav.")}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="p-3">Produkt</th>
-                  <th className="p-3">Kód</th>
-                  <th className="p-3 text-right">Stav</th>
-                  <th className="p-3 text-right">Rezervované</th>
-                  <th className="p-3 text-right">Na ceste</th>
-                  <th className="p-3 text-right">Minimum</th>
-                  <th className="p-3 text-right">Optimum</th>
-                  <th className="p-3 text-right">Objednať</th>
-                  <th className="p-3">Sklady</th>
+                  <th className="p-3">{t("Produkt")}</th>
+                  <th className="p-3">{t("Kód")}</th>
+                  <th className="p-3 text-right">{t("Stav")}</th>
+                  <th className="p-3 text-right">{t("Rezervované")}</th>
+                  <th className="p-3 text-right">{t("Na ceste")}</th>
+                  <th className="p-3 text-right">{t("Minimum")}</th>
+                  <th className="p-3 text-right">{t("Optimum")}</th>
+                  <th className="p-3 text-right">{t("Objednať")}</th>
+                  <th className="p-3">{t("Sklady")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -116,7 +123,7 @@ function LowStockPage() {
                         to="/sklad/prijem"
                         className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
                       >
-                        <Plus className="h-3 w-3" /> Vytvoriť príjem
+                        <Plus className="h-3 w-3" /> {t("Vytvoriť príjem")}
                       </Link>
                     </td>
                   </tr>

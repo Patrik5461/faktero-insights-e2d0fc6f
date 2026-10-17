@@ -19,6 +19,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n/useT";
 
 import { oznamSuhlas } from "@/lib/faktero/gtm";
 const STORAGE_KEY = "faktero-cookie-consent";
@@ -67,6 +68,7 @@ const defaultConsent: CookieConsent = {
 };
 
 export function CookieConsentBanner() {
+  const { t } = useT();
   const [mounted, setMounted] = useState(false);
   const [consent, setConsent] = useState<CookieConsent | null>(null);
   const [open, setOpen] = useState(false);
@@ -180,7 +182,7 @@ export function CookieConsentBanner() {
       <div
         role="dialog"
         aria-live="polite"
-        aria-label="Cookies súhlas"
+        aria-label={t("Cookies súhlas")}
         data-plavajuce=""
         hidden={okno}
         ref={bannerRef}
@@ -199,16 +201,14 @@ export function CookieConsentBanner() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-card-foreground">
-                Používame cookies na zabezpečenie prevádzky a anonymnú analýzu. Viac informácií
-                nájdete v{" "}
+                {t("Používame cookies na zabezpečenie prevádzky a anonymnú analýzu. Viac informácií nájdete v")}{" "}
                 <Link to="/pravne/cookies" className="underline hover:text-primary">
-                  pravidlách používania cookies
+                  {t("pravidlách používania cookies")}
                 </Link>
                 .
               </p>
               <p className="text-xs text-muted-foreground">
-                Nevyhnutné cookies sú povolené vždy. Analytické a marketingové cookies si môžete
-                nastaviť.
+                {t("Nevyhnutné cookies sú povolené vždy. Analytické a marketingové cookies si môžete nastaviť.")}
               </p>
             </div>
           </div>
@@ -224,13 +224,13 @@ export function CookieConsentBanner() {
               disabled={pending}
             >
               <Settings2 className="h-4 w-4" />
-              Nastaviť
+              {t("Nastaviť")}
             </Button>
             <Button variant="secondary" size="sm" onClick={acceptNecessaryOnly} disabled={pending}>
-              Iba nevyhnutné
+              {t("Iba nevyhnutné")}
             </Button>
             <Button size="sm" onClick={acceptAll} disabled={pending}>
-              Prijať všetko
+              {t("Prijať všetko")}
             </Button>
           </div>
         </div>
@@ -257,6 +257,7 @@ function CookieSettingsSheet({
   onSave: (analytics: boolean, marketing: boolean) => void;
   pending: boolean;
 }) {
+  const { t } = useT();
   const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
 
@@ -266,19 +267,18 @@ function CookieSettingsSheet({
         <SheetHeader className="space-y-2">
           <SheetTitle className="flex items-center gap-2">
             <Cookie className="h-5 w-5 text-primary" />
-            Nastavenia cookies
+            {t("Nastavenia cookies")}
           </SheetTitle>
           <SheetDescription>
-            Vyberte, ktoré kategórie cookies môžeme používať. Nevyhnutné cookies sú povinné pre
-            prevádzku aplikácie.
+            {t("Vyberte, ktoré kategórie cookies môžeme používať. Nevyhnutné cookies sú povinné pre prevádzku aplikácie.")}
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-5">
           <CategoryRow
             icon={ShieldCheck}
-            title="Nevyhnutné cookies"
-            description="Prihlásenie, bezpečnosť, relácia, predvolené nastavenia. Bez nich Faktero nemôže fungovať."
+            title={t("Nevyhnutné cookies")}
+            description={t("Prihlásenie, bezpečnosť, relácia, predvolené nastavenia. Bez nich Faktero nemôže fungovať.")}
             checked={true}
             onCheckedChange={() => {}}
             disabled
@@ -286,16 +286,16 @@ function CookieSettingsSheet({
           <Separator />
           <CategoryRow
             icon={BarChart3}
-            title="Analytické cookies"
-            description="Anonymizované štatistiky používania, ktoré nám pomáhajú zlepšovať službu."
+            title={t("Analytické cookies")}
+            description={t("Anonymizované štatistiky používania, ktoré nám pomáhajú zlepšovať službu.")}
             checked={analytics}
             onCheckedChange={setAnalytics}
           />
           <Separator />
           <CategoryRow
             icon={Megaphone}
-            title="Marketingové cookies"
-            description="Aktuálne nepoužívame. Ak ich v budúcnosti nasadíme, budete informovaní."
+            title={t("Marketingové cookies")}
+            description={t("Aktuálne nepoužívame. Ak ich v budúcnosti nasadíme, budete informovaní.")}
             checked={marketing}
             onCheckedChange={setMarketing}
           />
@@ -303,10 +303,10 @@ function CookieSettingsSheet({
 
         <SheetFooter className="mt-8 gap-2 sm:justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
-            Zrušiť
+            {t("Zrušiť")}
           </Button>
           <Button onClick={() => onSave(analytics, marketing)} disabled={pending}>
-            Uložiť nastavenia
+            {t("Uložiť nastavenia")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -365,6 +365,7 @@ export function useCookieConsent() {
 }
 
 export function CookieConsentResetButton() {
+  const { t } = useT();
   return (
     <Button
       variant="outline"
@@ -375,7 +376,7 @@ export function CookieConsentResetButton() {
         window.location.reload();
       }}
     >
-      Zmeniť nastavenia cookies
+      {t("Zmeniť nastavenia cookies")}
     </Button>
   );
 }

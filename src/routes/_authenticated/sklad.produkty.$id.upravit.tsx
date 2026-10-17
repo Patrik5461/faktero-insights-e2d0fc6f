@@ -18,14 +18,19 @@ import { ArrowLeft, Save, Upload, X } from "lucide-react";
 import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { moznostiSadziebRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { VyberColnehoKodu } from "@/components/faktero/VyberColnehoKodu";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/upravit")({
-  head: () => ({ meta: [{ title: "Upraviť skladovú kartu — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Upraviť skladovú kartu — Faktero") }],
+  }),
   component: EditStockProduct,
 });
 
 const UNITS = ["ks", "bal", "kg", "g", "l", "ml", "m", "cm", "m²", "m³", "h", "deň"];
 
 function EditStockProduct() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const { id } = Route.useParams();
   const nav = useNavigate();
@@ -123,7 +128,7 @@ function EditStockProduct() {
         });
       })
       .catch((e) => {
-        setError(e?.message ?? "Chyba načítania");
+        setError(e?.message ?? t("Chyba načítania"));
         setNenajdene(true);
       })
       .finally(() => setLoading(false));
@@ -137,7 +142,7 @@ function EditStockProduct() {
     const file = e.target.files?.[0];
     if (!file || !cid) return;
     if (file.size > 5 * 1024 * 1024) {
-      setError("Max 5 MB.");
+      setError(t("Max 5 MB."));
       return;
     }
     setUploading(true);
@@ -155,7 +160,7 @@ function EditStockProduct() {
         .createSignedUrl(path, 60 * 60);
       setPhotoPreview(signed?.signedUrl ?? null);
     } catch (err: any) {
-      setError(err?.message ?? "Upload zlyhal");
+      setError(err?.message ?? t("Upload zlyhal"));
     } finally {
       setUploading(false);
     }
@@ -171,7 +176,7 @@ function EditStockProduct() {
       set("category_id", created.id);
       setNewCategoryName("");
     } catch (e: any) {
-      setError(e?.message ?? "Nepodarilo sa vytvoriť kategóriu");
+      setError(e?.message ?? t("Nepodarilo sa vytvoriť kategóriu"));
     }
   }
 
@@ -193,7 +198,7 @@ function EditStockProduct() {
       });
       nav({ to: "/sklad/produkty/$id", params: { id } });
     } catch (err: any) {
-      setError(err?.message ?? "Uloženie zlyhalo");
+      setError(err?.message ?? t("Uloženie zlyhalo"));
       setSaving(false);
     }
   }
@@ -201,16 +206,16 @@ function EditStockProduct() {
   if (loading)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Načítavam…</div>
+        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
       </PageBody>
     );
   if (nenajdene)
     return (
       <PageBody>
         <div className="rounded-md border border-border p-6 text-sm text-muted-foreground">
-          Skladová karta sa nenašla. Možno bola zmazaná alebo patrí inej firme.{" "}
+          {t("Skladová karta sa nenašla. Možno bola zmazaná alebo patrí inej firme.")}{" "}
           <Link to="/sklad/produkty" className="text-primary hover:underline">
-            Späť na produkty
+            {t("Späť na produkty")}
           </Link>
         </div>
       </PageBody>
@@ -219,7 +224,7 @@ function EditStockProduct() {
     return (
       <PageBody>
         <div className="text-sm text-muted-foreground">
-          Nemáte oprávnenie upravovať skladové karty.
+          {t("Nemáte oprávnenie upravovať skladové karty.")}
         </div>
       </PageBody>
     );
@@ -227,8 +232,8 @@ function EditStockProduct() {
   return (
     <>
       <PageHeader
-        title="Upraviť skladovú kartu"
-        description={form.name || "Produkt"}
+        title={t("Upraviť skladovú kartu")}
+        description={form.name || t("Produkt")}
         action={
           <div className="flex gap-2">
           </div>
@@ -246,17 +251,18 @@ function EditStockProduct() {
             {/* Photo */}
             <div className="rounded-xl border border-border bg-card p-3">
               <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
-                Fotografia
+                {t("Fotografia")}
               </div>
               {photoPreview ? (
                 <div className="relative">
                   <img
                     src={photoPreview}
-                    alt="produkt"
+                    alt={t("produkt")}
                     className="aspect-square w-full rounded-md object-cover"
                   />
                   <button
                     type="button"
+                    aria-label={t("Odstrániť fotografiu")}
                     onClick={() => {
                       set("photo_url", "");
                       setPhotoPreview(null);
@@ -268,11 +274,11 @@ function EditStockProduct() {
                 </div>
               ) : (
                 <div className="flex aspect-square w-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
-                  Bez fotografie
+                  {t("Bez fotografie")}
                 </div>
               )}
               <label className="mt-2 inline-flex w-full cursor-pointer items-center justify-center gap-1 rounded-md border border-border bg-secondary px-3 py-2 text-sm hover:bg-secondary/70">
-                <Upload className="h-4 w-4" /> {uploading ? "Nahrávam…" : "Nahrať fotku"}
+                <Upload className="h-4 w-4" /> {uploading ? t("Nahrávam…") : t("Nahrať fotku")}
                 <input
                   type="file"
                   accept="image/*"
@@ -281,12 +287,12 @@ function EditStockProduct() {
                   disabled={uploading}
                 />
               </label>
-              <p className="mt-1 text-[11px] text-muted-foreground">JPG/PNG do 5 MB.</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{t("JPG/PNG do 5 MB.")}</p>
             </div>
 
             {/* Basics */}
             <div className="rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 text-sm font-semibold">Základné údaje</div>
+              <div className="mb-3 text-sm font-semibold">{t("Základné údaje")}</div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Názov (SK)" required>
                   <input
@@ -322,7 +328,7 @@ function EditStockProduct() {
                     value={form.barcode}
                     onChange={(e) => set("barcode", e.target.value)}
                     className="input"
-                    placeholder="napr. 8588001234567"
+                    placeholder={t("napr. 8588001234567")}
                   />
                 </Field>
                 <Field label="Jednotka">
@@ -352,9 +358,9 @@ function EditStockProduct() {
 
           {/* Prices & VAT */}
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">Ceny a DPH (2025)</div>
+            <div className="mb-3 text-sm font-semibold">{t("Ceny a DPH (2025)")}</div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Field label={`Nákupná cena (${mena.symbol})`}>
+              <Field label={t("Nákupná cena ({mena})", { mena: mena.symbol })}>
                 <input
                   type="number"
                   step={KROK_CENY}
@@ -364,7 +370,7 @@ function EditStockProduct() {
                   className="input"
                 />
               </Field>
-              <Field label={`Predajná cena (${mena.symbol})`}>
+              <Field label={t("Predajná cena ({mena})", { mena: mena.symbol })}>
                 <input
                   type="number"
                   step={KROK_CENY}
@@ -390,7 +396,9 @@ function EditStockProduct() {
             </div>
             {form.sale_price > 0 && (
               <p className="mt-2 text-xs text-muted-foreground">
-                S DPH: {formatujJednotkovuCenu(form.sale_price * (1 + form.vat_rate / 100), mena.kod)} · Marža:{" "}
+                {t("S DPH:")}{" "}
+                {formatujJednotkovuCenu(form.sale_price * (1 + form.vat_rate / 100), mena.kod)} ·{" "}
+                {t("Marža:")}{" "}
                 {form.purchase_price > 0
                   ? formatujCislo(((form.sale_price - form.purchase_price) / form.purchase_price) * 100, 1)
                   : "—"}{" "}
@@ -401,7 +409,7 @@ function EditStockProduct() {
 
           {/* Category & supplier */}
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">Zaradenie</div>
+            <div className="mb-3 text-sm font-semibold">{t("Zaradenie")}</div>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Kategória">
                 <div className="flex gap-2">
@@ -410,7 +418,7 @@ function EditStockProduct() {
                     onChange={(e) => set("category_id", e.target.value)}
                     className="input flex-1"
                   >
-                    <option value="">— bez kategórie —</option>
+                    <option value="">{t("— bez kategórie —")}</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -422,7 +430,7 @@ function EditStockProduct() {
                   <input
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Nová kategória…"
+                    placeholder={t("Nová kategória…")}
                     className="input flex-1"
                   />
                   <button
@@ -430,7 +438,7 @@ function EditStockProduct() {
                     onClick={handleAddCategory}
                     className="rounded-md border border-border bg-secondary px-3 py-2 text-xs hover:bg-secondary/70"
                   >
-                    Pridať
+                    {t("Pridať")}
                   </button>
                 </div>
               </Field>
@@ -440,7 +448,7 @@ function EditStockProduct() {
                   onChange={(e) => set("supplier_id", e.target.value)}
                   className="input"
                 >
-                  <option value="">— bez dodávateľa —</option>
+                  <option value="">{t("— bez dodávateľa —")}</option>
                   {suppliers.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -449,7 +457,7 @@ function EditStockProduct() {
                   ))}
                 </select>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Dodávatelia sa spravujú v Zákazníci.
+                  {t("Dodávatelia sa spravujú v Zákazníci.")}
                 </p>
               </Field>
             </div>
@@ -457,7 +465,7 @@ function EditStockProduct() {
 
           {/* Stock */}
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">Sklad</div>
+            <div className="mb-3 text-sm font-semibold">{t("Sklad")}</div>
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Minimálna zásoba">
                 <input
@@ -469,7 +477,7 @@ function EditStockProduct() {
                   className="input"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Pod touto hranicou sa zásoba hlási ako nedostatková.
+                  {t("Pod touto hranicou sa zásoba hlási ako nedostatková.")}
                 </p>
               </Field>
               <Field label="Optimálna zásoba">
@@ -482,7 +490,7 @@ function EditStockProduct() {
                   className="input"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Stav, na ktorý sa doobjednáva. Keď je 0, dopĺňa sa len po minimum.
+                  {t("Stav, na ktorý sa doobjednáva. Keď je 0, dopĺňa sa len po minimum.")}
                 </p>
               </Field>
               <Field label="Colný kód (KN)">
@@ -492,7 +500,9 @@ function EditStockProduct() {
                   className="input"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Kód kombinovanej nomenklatúry pre vývoz mimo EÚ a Intrastat — prenesie sa do faktúry.
+                  {t(
+                    "Kód kombinovanej nomenklatúry pre vývoz mimo EÚ a Intrastat — prenesie sa do faktúry.",
+                  )}
                 </p>
               </Field>
               <Field label="Krajina pôvodu / hmotnosť (kg)">
@@ -517,7 +527,7 @@ function EditStockProduct() {
                   value={form.location}
                   onChange={(e) => set("location", e.target.value)}
                   className="input"
-                  placeholder="napr. A-3-12"
+                  placeholder={t("napr. A-3-12")}
                 />
               </Field>
               <Field label="Sledovať zásoby">
@@ -527,7 +537,7 @@ function EditStockProduct() {
                     checked={form.track_stock}
                     onChange={(e) => set("track_stock", e.target.checked)}
                   />
-                  <span className="text-sm">Áno, upozorňovať pod min.</span>
+                  <span className="text-sm">{t("Áno, upozorňovať pod min.")}</span>
                 </label>
               </Field>
               <Field label="Stav produktu">
@@ -537,7 +547,7 @@ function EditStockProduct() {
                     checked={form.active}
                     onChange={(e) => set("active", e.target.checked)}
                   />
-                  <span className="text-sm">Aktívny</span>
+                  <span className="text-sm">{t("Aktívny")}</span>
                 </label>
               </Field>
             </div>
@@ -546,17 +556,17 @@ function EditStockProduct() {
               súčtom pohybov. Bez tejto vety to vyzerá, že sa stav zadať zabudlo.
             */}
             <p className="mt-3 text-xs text-muted-foreground">
-              Množstvo na sklade sa počíta z pohybov, preto sa tu nezadáva. Tovar pridáte{" "}
+              {t("Množstvo na sklade sa počíta z pohybov, preto sa tu nezadáva. Tovar pridáte")}{" "}
               <Link to="/sklad/prijem" className="text-primary hover:underline">
-                príjmom
+                {t("príjmom")}
               </Link>
-              , uberiete{" "}
+              {t(", uberiete")}{" "}
               <Link to="/sklad/vydaj" className="text-primary hover:underline">
-                výdajom
+                {t("výdajom")}
               </Link>{" "}
-              a rozdiel oproti skutočnosti zrovnáte{" "}
+              {t("a rozdiel oproti skutočnosti zrovnáte")}{" "}
               <Link to="/sklad/inventura" className="text-primary hover:underline">
-                inventúrou
+                {t("inventúrou")}
               </Link>
               .
             </p>
@@ -568,14 +578,14 @@ function EditStockProduct() {
               params={{ id }}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
             >
-              Zrušiť
+              {t("Zrušiť")}
             </Link>
             <button
               type="submit"
               disabled={saving}
               className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
-              <Save className="h-4 w-4" /> {saving ? "Ukladám…" : "Uložiť zmeny"}
+              <Save className="h-4 w-4" /> {saving ? t("Ukladám…") : t("Uložiť zmeny")}
             </button>
           </div>
         </form>
@@ -597,10 +607,11 @@ function Field({
   full?: boolean;
   children: React.ReactNode;
 }) {
+  const { t } = useT();
   return (
     <div className={full ? "sm:col-span-2" : ""}>
       <label className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">
-        {label}
+        {t(label)}
         {required && <span className="text-destructive"> *</span>}
       </label>
       {children}

@@ -6,6 +6,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 /**
  * Faktúra otvorená z QR kódu na doklade.
@@ -82,27 +84,35 @@ export const Route = createFileRoute("/faktura/$token")({
     if (!Vstup.safeParse({ token: params.token }).success) throw notFound();
     return nacitajFakturu({ data: { token: params.token } });
   },
-  head: ({ loaderData }) => ({
+  head: ({ loaderData, match }) => ({
     meta: [
-      { title: `Faktúra ${loaderData?.doklad?.invoice_number ?? ""} — Faktero` },
+      {
+        title: `${preloz(match.context.jazyk, "Faktúra")} ${loaderData?.doklad?.invoice_number ?? ""} — Faktero`,
+      },
       // Doklad nepatrí do vyhľadávačov, aj keď je odkaz verejný.
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  notFoundComponent: () => (
-    <Obal>
-      <h1 className="text-xl font-semibold">Faktúra sa nenašla</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Odkaz je neplatný alebo bol doklad zrušený.
-      </p>
-    </Obal>
-  ),
-  errorComponent: () => (
-    <Obal>
-      <h1 className="text-xl font-semibold">Faktúru sa nepodarilo načítať</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Skúste to, prosím, znova.</p>
-    </Obal>
-  ),
+  notFoundComponent: () => {
+    const { t } = useT();
+    return (
+      <Obal>
+        <h1 className="text-xl font-semibold">{t("Faktúra sa nenašla")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {t("Odkaz je neplatný alebo bol doklad zrušený.")}
+        </p>
+      </Obal>
+    );
+  },
+  errorComponent: () => {
+    const { t } = useT();
+    return (
+      <Obal>
+        <h1 className="text-xl font-semibold">{t("Faktúru sa nepodarilo načítať")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("Skúste to, prosím, znova.")}</p>
+      </Obal>
+    );
+  },
   component: VerejnaFaktura,
 });
 
@@ -127,6 +137,7 @@ function Riadok({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 function VerejnaFaktura() {
+  const { t } = useT();
   const { doklad, polozky, firma, textDph, vetyUprav } = Route.useLoaderData();
 
   // Doklad pre zákazníka je vždy svetlý — tmavý podľa jeho prehliadača vyzerá
@@ -140,22 +151,24 @@ function VerejnaFaktura() {
       : doklad.type === "debit_note"
         ? "Ťarchopis"
         : doklad.type === "proforma"
-        ? "Zálohová faktúra"
-        : "Faktúra";
+          ? "Zálohová faktúra"
+          : "Faktúra";
 
   return (
     <Obal>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">{nazov}</div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">{t(nazov)}</div>
           <h1 className="text-2xl font-semibold">{doklad.invoice_number}</h1>
         </div>
         <div className="text-right">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Na úhradu</div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("Na úhradu")}
+          </div>
           <div className="text-2xl font-semibold tabular-nums">{suma(doklad.total)}</div>
           {doklad.status === "paid" && (
             <span className="mt-1 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-              Uhradené
+              {t("Uhradené")}
             </span>
           )}
         </div>
@@ -163,17 +176,25 @@ function VerejnaFaktura() {
 
       <div className="mt-6 grid gap-6 sm:grid-cols-2">
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Dodávateľ</div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("Dodávateľ")}
+          </div>
           <div className="mt-1 text-sm font-medium">{firma?.name}</div>
           <div className="text-sm text-muted-foreground">
             {[firma?.street, [firma?.zip, firma?.city].filter(Boolean).join(" ")]
               .filter(Boolean)
               .join(", ")}
           </div>
-          {firma?.ico && <div className="mt-1 text-xs text-muted-foreground">IČO {firma.ico}</div>}
+          {firma?.ico && (
+            <div className="mt-1 text-xs text-muted-foreground">
+              {t("IČO")} {firma.ico}
+            </div>
+          )}
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Odberateľ</div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("Odberateľ")}
+          </div>
           <div className="mt-1 text-sm font-medium">{doklad.customer_name}</div>
           <div className="text-sm text-muted-foreground">
             {[
@@ -184,7 +205,9 @@ function VerejnaFaktura() {
               .join(", ")}
           </div>
           {doklad.customer_ico && (
-            <div className="mt-1 text-xs text-muted-foreground">IČO {doklad.customer_ico}</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {t("IČO")} {doklad.customer_ico}
+            </div>
           )}
         </div>
       </div>
@@ -193,11 +216,11 @@ function VerejnaFaktura() {
         <table className="w-full text-sm">
           <thead className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="py-2">Položka</th>
-              <th className="py-2 text-right">Množstvo</th>
-              <th className="py-2 text-right">Cena</th>
-              <th className="py-2 text-right">DPH</th>
-              <th className="py-2 text-right">Celkom</th>
+              <th className="py-2">{t("Položka")}</th>
+              <th className="py-2 text-right">{t("Množstvo")}</th>
+              <th className="py-2 text-right">{t("Cena")}</th>
+              <th className="py-2 text-right">{t("DPH")}</th>
+              <th className="py-2 text-right">{t("Celkom")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -222,39 +245,39 @@ function VerejnaFaktura() {
       </div>
 
       <div className="mt-6 sm:ml-auto sm:w-72">
-        <Riadok k="Základ" v={suma(doklad.subtotal)} />
+        <Riadok k={t("Základ")} v={suma(doklad.subtotal)} />
         <Riadok
-          k={doklad.reverse_charge ? "DPH (PDP)" : "DPH"}
+          k={t(doklad.reverse_charge ? "DPH (PDP)" : "DPH")}
           v={suma(doklad.reverse_charge ? 0 : doklad.vat_total)}
         />
         <div className="mt-1 flex justify-between border-t border-border pt-2 text-base font-semibold">
-          <span>Spolu</span>
+          <span>{t("Spolu")}</span>
           <span className="tabular-nums">{suma(doklad.total)}</span>
         </div>
       </div>
 
       <div className="mt-6 rounded-xl border border-border bg-muted/30 p-4">
-        <Riadok k="Dátum vystavenia" v={datumNaDoklade(doklad.issue_date)} />
-        <Riadok k="Dátum dodania" v={datumNaDoklade(doklad.delivery_date)} />
-        <Riadok k="Splatnosť" v={datumNaDoklade(doklad.due_date)} />
-        <Riadok k="Variabilný symbol" v={doklad.variable_symbol} />
-        <Riadok k="IBAN" v={firma?.iban} />
+        <Riadok k={t("Dátum vystavenia")} v={datumNaDoklade(doklad.issue_date)} />
+        <Riadok k={t("Dátum dodania")} v={datumNaDoklade(doklad.delivery_date)} />
+        <Riadok k={t("Splatnosť")} v={datumNaDoklade(doklad.due_date)} />
+        <Riadok k={t("Variabilný symbol")} v={doklad.variable_symbol} />
+        <Riadok k={t("IBAN")} v={firma?.iban} />
       </div>
 
       {doklad.currency !== domacaMena(firma?.country) &&
         doklad.exchange_rate &&
         doklad.vat_total_eur != null && (
-        <p className="mt-4 text-sm text-muted-foreground">
-          {textPrepoctu(
-            String(doklad.currency),
-            Number(doklad.exchange_rate),
-            String(doklad.exchange_rate_date ?? doklad.delivery_date ?? doklad.issue_date),
-            Number(doklad.vat_total_eur),
-            krajinaKurzu(firma?.country) === "CZ" ? "cz" : "sk",
-            krajinaKurzu(firma?.country),
-          )}
-        </p>
-      )}
+          <p className="mt-4 text-sm text-muted-foreground">
+            {textPrepoctu(
+              String(doklad.currency),
+              Number(doklad.exchange_rate),
+              String(doklad.exchange_rate_date ?? doklad.delivery_date ?? doklad.issue_date),
+              Number(doklad.vat_total_eur),
+              krajinaKurzu(firma?.country) === "CZ" ? "cz" : "sk",
+              krajinaKurzu(firma?.country),
+            )}
+          </p>
+        )}
 
       {vetyUprav.map((v: string) => (
         <p key={v} className="mt-4 text-sm font-medium">
@@ -267,7 +290,7 @@ function VerejnaFaktura() {
       {doklad.notes && <p className="mt-4 text-sm text-muted-foreground">{doklad.notes}</p>}
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Vystavené cez <span className="font-medium">Faktero</span>
+        {t("Vystavené cez")} <span className="font-medium">{t("Faktero")}</span>
       </p>
     </Obal>
   );

@@ -17,9 +17,13 @@ import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-
 import { toast } from "sonner";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/pohyby/")({
-  head: () => ({ meta: [{ title: "Skladové pohyby — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Skladové pohyby — Faktero") }],
+  }),
   validateSearch: (s: Record<string, unknown>): { stock_item_id?: string } => ({
     stock_item_id: typeof s.stock_item_id === "string" ? s.stock_item_id : undefined,
   }),
@@ -36,6 +40,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 function MovementsPage() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const { stock_item_id } = Route.useSearch();
   const navigate = useNavigate();
@@ -167,7 +172,7 @@ function MovementsPage() {
 
   async function exportMovements(format: "csv" | "xlsx") {
     setExportOpen(false);
-    if (!visibleRows.length) return toast.error("Žiadne dáta na export.");
+    if (!visibleRows.length) return toast.error(t("Žiadne dáta na export."));
     const headers = [
       "Dátum",
       "Typ pohybu",
@@ -180,41 +185,41 @@ function MovementsPage() {
       "Referencia",
       "Poznámka",
       "Vytvoril",
-    ];
+    ].map((h) => t(h));
     const data: ExportRow[] = visibleRows.map((m) => {
       const si = items[m.stock_item_id];
       const prodName = si?.product_id ? (products[si.product_id]?.name ?? "") : "";
       const refLabel =
         m.reference_type === "invoice" && invoices[m.reference_id]
-          ? `Faktúra ${invoices[m.reference_id].number}`
+          ? t("Faktúra {cislo}", { cislo: invoices[m.reference_id].number })
           : (m.reference_type ?? "");
       return {
-        Dátum: new Date(m.created_at).toLocaleString("sk-SK"),
-        "Typ pohybu": TYPE_LABEL[m.type] ?? m.type,
-        Produkt: prodName,
-        SKU: si?.sku ?? "",
-        Sklad: warehouses[m.warehouse_id] ?? "",
+        [t("Dátum")]: new Date(m.created_at).toLocaleString("sk-SK"),
+        [t("Typ pohybu")]: t(TYPE_LABEL[m.type] ?? m.type),
+        [t("Produkt")]: prodName,
+        [t("SKU")]: si?.sku ?? "",
+        [t("Sklad")]: warehouses[m.warehouse_id] ?? "",
         // Do exportu ide množstvo so znamienkom — inak sa výdaj a príjem
         // v tabuľkovom procesore sčítajú ako dva prírastky.
-        Množstvo: pohybDelta(m.type, m.quantity),
-        "Jednotková cena": Number(m.unit_cost ?? m.unit_price),
-        "Celková hodnota": hodnotaPohybu(m),
-        Referencia: refLabel,
-        Poznámka: m.note ?? "",
-        Vytvoril: profiles[m.created_by] ?? "",
+        [t("Množstvo")]: pohybDelta(m.type, m.quantity),
+        [t("Jednotková cena")]: Number(m.unit_cost ?? m.unit_price),
+        [t("Celková hodnota")]: hodnotaPohybu(m),
+        [t("Referencia")]: refLabel,
+        [t("Poznámka")]: m.note ?? "",
+        [t("Vytvoril")]: profiles[m.created_by] ?? "",
       };
     });
     const base = `pohyby-${new Date().toISOString().slice(0, 10)}`;
     if (format === "csv") downloadCsv(base, headers, data);
-    else await downloadXlsx(base, headers, data, "Pohyby");
-    toast.success(`Exportované ${data.length} riadkov.`);
+    else await downloadXlsx(base, headers, data, t("Pohyby"));
+    toast.success(t("Exportované {n} riadkov.", { n: data.length }));
   }
 
   return (
     <>
       <PageHeader
-        title="Skladové pohyby"
-        description="História všetkých pohybov skladu."
+        title={t("Skladové pohyby")}
+        description={t("História všetkých pohybov skladu.")}
         action={
           <div className="flex flex-wrap gap-2">
             <div className="relative">
@@ -224,7 +229,8 @@ function MovementsPage() {
                 aria-expanded={exportOpen}
                 className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary"
               >
-                <Download className="h-4 w-4" /> Export pohybov <ChevronDown className="h-3 w-3" />
+                <Download className="h-4 w-4" /> {t("Export pohybov")}{" "}
+                <ChevronDown className="h-3 w-3" />
               </button>
               {exportOpen && (
                 <div
@@ -253,7 +259,7 @@ function MovementsPage() {
                 aria-expanded={newOpen}
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                <Plus className="h-4 w-4" /> Nový pohyb <ChevronDown className="h-3 w-3" />
+                <Plus className="h-4 w-4" /> {t("Nový pohyb")} <ChevronDown className="h-3 w-3" />
               </button>
               {newOpen && (
                 <div
@@ -265,21 +271,21 @@ function MovementsPage() {
                     onClick={() => setNewOpen(false)}
                     className="flex items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted"
                   >
-                    <ArrowDownToLine className="h-4 w-4 text-emerald-600" /> Príjem
+                    <ArrowDownToLine className="h-4 w-4 text-emerald-600" /> {t("Príjem")}
                   </Link>
                   <Link
                     to="/sklad/vydaj"
                     onClick={() => setNewOpen(false)}
                     className="flex items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted"
                   >
-                    <ArrowUpFromLine className="h-4 w-4 text-destructive" /> Výdaj
+                    <ArrowUpFromLine className="h-4 w-4 text-destructive" /> {t("Výdaj")}
                   </Link>
                   <Link
                     to="/sklad/presuny/nova"
                     onClick={() => setNewOpen(false)}
                     className="flex items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted"
                   >
-                    <ArrowLeftRight className="h-4 w-4 text-primary" /> Presun
+                    <ArrowLeftRight className="h-4 w-4 text-primary" /> {t("Presun")}
                   </Link>
                 </div>
               )}
@@ -294,10 +300,10 @@ function MovementsPage() {
             onChange={(e) => setFilter(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-auto"
           >
-            <option value="">Všetky typy</option>
+            <option value="">{t("Všetky typy")}</option>
             {Object.entries(TYPE_LABEL).map(([k, v]) => (
               <option key={k} value={k}>
-                {v}
+                {t(v)}
               </option>
             ))}
           </select>
@@ -306,7 +312,7 @@ function MovementsPage() {
             onChange={(e) => setWarehouseFilter(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-auto"
           >
-            <option value="">Všetky sklady</option>
+            <option value="">{t("Všetky sklady")}</option>
             {allWarehouses.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.name}
@@ -314,7 +320,7 @@ function MovementsPage() {
             ))}
           </select>
           <label className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-            Od{" "}
+            {t("Od")}{" "}
             <input
               type="date"
               value={dateFrom}
@@ -323,7 +329,7 @@ function MovementsPage() {
             />
           </label>
           <label className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-            Do{" "}
+            {t("Do")}{" "}
             <input
               type="date"
               value={dateTo}
@@ -334,15 +340,15 @@ function MovementsPage() {
           <input
             value={productSearch}
             onChange={(e) => setProductSearch(e.target.value)}
-            placeholder="Hľadať názov alebo kód…"
+            placeholder={t("Hľadať názov alebo kód…")}
             className="col-span-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-56"
           />
           {stock_item_id && (
             <div className="col-span-2 inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs">
-              Filter: skladová karta{" "}
+              {t("Filter: skladová karta")}{" "}
               {nazovPolozky(stock_item_id) ?? `${stock_item_id.slice(0, 8)}…`}
               <Link to="/sklad/pohyby" className="text-primary hover:underline">
-                × zrušiť
+                × {t("zrušiť")}
               </Link>
             </div>
           )}
@@ -352,28 +358,28 @@ function MovementsPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="p-3">Dátum</th>
-                <th className="p-3">Typ</th>
-                <th className="p-3">Položka</th>
-                <th className="p-3">Sklad</th>
-                <th className="p-3 text-right">Množstvo</th>
-                <th className="p-3 text-right">Cena/MJ</th>
-                <th className="p-3 text-right">Hodnota</th>
-                <th className="p-3">Zdroj</th>
+                <th className="p-3">{t("Dátum")}</th>
+                <th className="p-3">{t("Typ")}</th>
+                <th className="p-3">{t("Položka")}</th>
+                <th className="p-3">{t("Sklad")}</th>
+                <th className="p-3 text-right">{t("Množstvo")}</th>
+                <th className="p-3 text-right">{t("Cena/MJ")}</th>
+                <th className="p-3 text-right">{t("Hodnota")}</th>
+                <th className="p-3">{t("Zdroj")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading && (
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    Načítavam…
+                    {t("Načítavam…")}
                   </td>
                 </tr>
               )}
               {!loading && visibleRows.length === 0 && (
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    Žiadne pohyby.
+                    {t("Žiadne pohyby.")}
                   </td>
                 </tr>
               )}
@@ -386,7 +392,7 @@ function MovementsPage() {
                   <td className="p-3 text-muted-foreground">
                     {new Date(m.created_at).toLocaleString("sk-SK")}
                   </td>
-                  <td className="p-3 font-medium">{TYPE_LABEL[m.type] ?? m.type}</td>
+                  <td className="p-3 font-medium">{t(TYPE_LABEL[m.type] ?? m.type)}</td>
                   <td className="p-3">
                     <div className="font-medium">
                       {nazovPolozky(m.stock_item_id) ?? m.stock_item_id.slice(0, 8)}
@@ -419,7 +425,9 @@ function MovementsPage() {
                         params={{ id: invoices[m.source_document_id ?? m.reference_id].id }}
                         className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground hover:underline"
                       >
-                        Faktúra {invoices[m.source_document_id ?? m.reference_id].number}
+                        {t("Faktúra {cislo}", {
+                          cislo: invoices[m.source_document_id ?? m.reference_id].number,
+                        })}
                       </Link>
                     ) : m.source_document_type === "self_billing" && m.source_document_id ? (
                       <Link
@@ -427,18 +435,20 @@ function MovementsPage() {
                         params={{ id: m.source_document_id }}
                         className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground hover:underline"
                       >
-                        Samofaktúra
+                        {t("Samofaktúra")}
                       </Link>
                     ) : m.source_document_type ? (
                       <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
-                        {(
-                          {
-                            receipt_note: "Príjemka",
-                            issue_note: "Výdajka",
-                            manual: "Manuálne",
-                            inventory: "Inventúra",
-                          } as Record<string, string>
-                        )[m.source_document_type] ?? m.source_document_type}
+                        {t(
+                          (
+                            {
+                              receipt_note: "Príjemka",
+                              issue_note: "Výdajka",
+                              manual: "Manuálne",
+                              inventory: "Inventúra",
+                            } as Record<string, string>
+                          )[m.source_document_type] ?? m.source_document_type,
+                        )}
                       </span>
                     ) : m.note ? null : (
                       <span className="text-muted-foreground">—</span>
@@ -455,12 +465,12 @@ function MovementsPage() {
         <div className="md:hidden space-y-2">
           {loading && (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
-              Načítavam…
+              {t("Načítavam…")}
             </div>
           )}
           {!loading && visibleRows.length === 0 && (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
-              Žiadne pohyby.
+              {t("Žiadne pohyby.")}
             </div>
           )}
           {visibleRows.map((m) => (
@@ -473,7 +483,7 @@ function MovementsPage() {
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{new Date(m.created_at).toLocaleString("sk-SK")}</span>
                 <span className="rounded bg-muted px-2 py-0.5 font-medium text-foreground">
-                  {TYPE_LABEL[m.type] ?? m.type}
+                  {t(TYPE_LABEL[m.type] ?? m.type)}
                 </span>
               </div>
               <div className="mt-2 flex items-center justify-between">

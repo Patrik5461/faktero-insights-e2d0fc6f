@@ -31,6 +31,8 @@ import {
   zmazPredkontaciuFn,
 } from "@/lib/faktero/predkontacie.functions";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 /**
  * Predkontácie a členenia DPH — číselník z Pohody a predvolené kódy podľa
@@ -40,7 +42,9 @@ import { potvrd } from "@/lib/potvrdenie";
  * vyberajú s popisom, nie píšu naslepo.
  */
 export const Route = createFileRoute("/_authenticated/uctovnictvo/predkontacie")({
-  head: () => ({ meta: [{ title: "Predkontácie — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Predkontácie — Faktero") }],
+  }),
   component: Stranka,
 });
 
@@ -65,6 +69,7 @@ const kedy = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleString("sk-SK", { dateStyle: "medium", timeStyle: "short" }) : "";
 
 function Stranka() {
+  const { t } = useT();
   const companyId = getActiveCompanyId();
   const nacitaj = useServerFn(predkontacieFn);
   const [zaznamy, setZaznamy] = useState<Zaznam[] | null>(null);
@@ -79,7 +84,7 @@ function Stranka() {
       setZaznamy(r.zaznamy as Zaznam[]);
       setFirma(r.firma);
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa načítať");
+      toast.error(e?.message ?? t("Nepodarilo sa načítať"));
       setZaznamy([]);
     }
   }, [companyId, nacitaj]);
@@ -91,9 +96,9 @@ function Stranka() {
   if (!companyId || zaznamy === null)
     return (
       <>
-        <PageHeader title="Predkontácie" />
+        <PageHeader title={t("Predkontácie")} />
         <PageBody>
-          <p className="text-sm text-muted-foreground">Načítavam…</p>
+          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
         </PageBody>
       </>
     );
@@ -101,15 +106,17 @@ function Stranka() {
   return (
     <>
       <PageHeader
-        title="Predkontácie"
-        description="Číselník predkontácií a členení DPH z Pohody a čo sa predvolene použije pri faktúrach, prijatých faktúrach, bločkoch, pokladni a banke."
+        title={t("Predkontácie")}
+        description={t(
+          "Číselník predkontácií a členení DPH z Pohody a čo sa predvolene použije pri faktúrach, prijatých faktúrach, bločkoch, pokladni a banke.",
+        )}
         action={
           <button
             type="button"
             onClick={() => setKopirovat(true)}
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
           >
-            Kopírovať do iných firiem
+            {t("Kopírovať do iných firiem")}
           </button>
         }
       />
@@ -138,6 +145,7 @@ function Predvolene({
   zaznamy: Zaznam[];
   onUlozene: () => void;
 }) {
+  const { t } = useT();
   const uloz = useServerFn(ulozPredvoleneFn);
   const [h, setH] = useState<Record<string, string>>({});
   const [oznaceni, setOznaceni] = useState<Record<string, string>>({});
@@ -188,10 +196,10 @@ function Predvolene({
           ...ine,
         },
       });
-      toast.success("Uložené");
+      toast.success(t("Uložené"));
       onUlozene();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa uložiť");
+      toast.error(e?.message ?? t("Nepodarilo sa uložiť"));
     } finally {
       setBusy(false);
     }
@@ -200,23 +208,23 @@ function Predvolene({
   return (
     <section className="rounded-xl border border-border bg-card p-5">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Predvolené podľa druhu dokladu
+        {t("Predvolené podľa druhu dokladu")}
       </h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        Použije sa, keď doklad nemá vlastnú predkontáciu — tú mu dá{" "}
+        {t("Použije sa, keď doklad nemá vlastnú predkontáciu — tú mu dá")}{" "}
         <Link to="/uctovnictvo/pravidla" className="underline">
-          pravidlo účtovania
+          {t("pravidlo účtovania")}
         </Link>{" "}
-        alebo človek pri zaúčtovaní. Prázdne pole = Pohoda doklad nechá nezaúčtovaný.
+        {t("alebo človek pri zaúčtovaní. Prázdne pole = Pohoda doklad nechá nezaúčtovaný.")}
       </p>
 
       <div className="mt-4 md:overflow-x-auto">
         <table className="block w-full text-sm md:table md:min-w-[560px]">
           <thead className="hidden md:table-header-group">
             <tr className="text-left text-xs text-muted-foreground">
-              <th className="py-1 pr-3 font-medium">Doklad</th>
-              <th className="py-1 pr-3 font-medium">Predkontácia</th>
-              <th className="py-1 font-medium">Členenie DPH</th>
+              <th className="py-1 pr-3 font-medium">{t("Doklad")}</th>
+              <th className="py-1 pr-3 font-medium">{t("Predkontácia")}</th>
+              <th className="py-1 font-medium">{t("Členenie DPH")}</th>
             </tr>
           </thead>
           <tbody className="block md:table-row-group">
@@ -226,43 +234,43 @@ function Predvolene({
                 className="block border-t border-border py-2 align-top md:table-row md:py-0"
               >
                 <td className="block py-1 font-medium md:table-cell md:py-2 md:pr-3 md:font-normal">
-                  {p.nazov}
+                  {t(p.nazov)}
                   {pocetNaVyber(p.kluc, "predkontacia") + pocetNaVyber(p.kluc, "clenenie_dph") >
                   0 ? (
                     <span className="block text-xs text-muted-foreground">
-                      kódov len pre tento doklad:{" "}
+                      {t("kódov len pre tento doklad:")}{" "}
                       {pocetNaVyber(p.kluc, "predkontacia") + pocetNaVyber(p.kluc, "clenenie_dph")}
                     </span>
                   ) : null}
                   {p.kluc === "doklady" && !h[p.predkontacia] && h.pohoda_predkontacia_prijata ? (
                     <span className="block text-xs text-muted-foreground">
-                      prázdne = ako prijatá faktúra
+                      {t("prázdne = ako prijatá faktúra")}
                     </span>
                   ) : null}
                 </td>
                 <td className="block py-1 md:table-cell md:py-2 md:pr-3">
-                  <span className="block text-xs text-muted-foreground md:hidden">Predkontácia</span>
+                  <span className="block text-xs text-muted-foreground md:hidden">{t("Predkontácia")}</span>
                   {p.predkontacia ? (
                     <KodPohody
-                      ariaLabel={`Predkontácia — ${p.nazov}`}
+                      ariaLabel={t("Predkontácia — {nazov}", { nazov: t(p.nazov) })}
                       value={h[p.predkontacia] ?? ""}
                       onChange={(v) => setH({ ...h, [p.predkontacia]: v })}
                       moznosti={ponuka(zaznamy, "predkontacia", p.agendy, p.kluc)}
                       placeholder={
-                        p.kluc === "doklady" ? h.pohoda_predkontacia_prijata || "napr. 5Fp" : "—"
+                        p.kluc === "doklady" ? h.pohoda_predkontacia_prijata || t("napr. {kod}", { kod: "5Fp" }) : "—"
                       }
                       className={vstup}
                       vyber
                     />
                   ) : (
-                    <span className="text-xs text-muted-foreground">{p.smer === "vstup" ? "ako prijatá faktúra" : "ako vydaná faktúra"}</span>
+                    <span className="text-xs text-muted-foreground">{p.smer === "vstup" ? t("ako prijatá faktúra") : t("ako vydaná faktúra")}</span>
                   )}
                 </td>
                 <td className="block py-1 md:table-cell md:py-2">
-                  <span className="block text-xs text-muted-foreground md:hidden">Členenie DPH</span>
+                  <span className="block text-xs text-muted-foreground md:hidden">{t("Členenie DPH")}</span>
                   {p.clenenie ? (
                     <KodPohody
-                      ariaLabel={`Členenie DPH — ${p.nazov}`}
+                      ariaLabel={t("Členenie DPH — {nazov}", { nazov: t(p.nazov) })}
                       value={h[p.clenenie] ?? ""}
                       onChange={(v) => setH({ ...h, [p.clenenie!]: v })}
                       moznosti={ponukaClenenia(ponuka(zaznamy, "clenenie_dph", [], p.kluc), p.kluc)}
@@ -283,7 +291,7 @@ function Predvolene({
       </div>
 
       <fieldset className="mt-4 rounded-md border border-border p-3">
-        <legend className="px-1 text-sm font-medium">Bločky do Pohody</legend>
+        <legend className="px-1 text-sm font-medium">{t("Bločky do Pohody")}</legend>
         <label className="flex items-start gap-2 text-sm">
           <input
             type="radio"
@@ -293,29 +301,31 @@ function Predvolene({
             className="mt-1"
           />
           <span>
-            Podľa spôsobu platby
+            {t("Podľa spôsobu platby")}
             <span className="block text-xs text-muted-foreground">
-              Hotovosť ako výdavkový pokladničný doklad, karta ako interný doklad, prevod ako
-              prijatá faktúra.
+              {t(
+                "Hotovosť ako výdavkový pokladničný doklad, karta ako interný doklad, prevod ako prijatá faktúra.",
+              )}
             </span>
           </span>
         </label>
         {blockyAgenda === "podla_platby" && (
           <label className="ml-6 mt-2 block">
-            <span className="text-xs text-muted-foreground">Skratka pokladne v Pohode</span>
+            <span className="text-xs text-muted-foreground">{t("Skratka pokladne v Pohode")}</span>
             <span className="block max-w-xs">
               <input
                 value={pokladna}
                 onChange={(e) => setPokladna(e.target.value)}
-                placeholder="napr. HP"
-                aria-label="Skratka pokladne v Pohode"
+                placeholder={t("napr. {kod}", { kod: "HP" })}
+                aria-label={t("Skratka pokladne v Pohode")}
                 className={vstup}
               />
             </span>
             {!pokladna.trim() && (
               <span className="mt-1 block max-w-prose text-xs text-amber-700">
-                Bez skratky pokladne Pohoda pokladničný doklad nezaloží — hotovostné bločky pôjdu
-                zatiaľ ako prijaté faktúry.
+                {t(
+                  "Bez skratky pokladne Pohoda pokladničný doklad nezaloží — hotovostné bločky pôjdu zatiaľ ako prijaté faktúry.",
+                )}
               </span>
             )}
           </label>
@@ -329,9 +339,9 @@ function Predvolene({
             className="mt-1"
           />
           <span>
-            Všetky ako prijaté faktúry
+            {t("Všetky ako prijaté faktúry")}
             <span className="block text-xs text-muted-foreground">
-              Doklad sa zaúčtuje ako záväzok a úhradu spáruje účtovníčka.
+              {t("Doklad sa zaúčtuje ako záväzok a úhradu spáruje účtovníčka.")}
             </span>
           </span>
         </label>
@@ -343,10 +353,11 @@ function Predvolene({
             className="mt-1"
           />
           <span>
-            Posielať aj položky bločku
+            {t("Posielať aj položky bločku")}
             <span className="block text-xs text-muted-foreground">
-              Inak ide len súhrn po sadzbách DPH. Položky idú v cenách s DPH, tak ako sú na bločku.
-              Doklad s ďalšími pokladňami vyberiete v záložke Pokladne v číselníku nižšie.
+              {t(
+                "Inak ide len súhrn po sadzbách DPH. Položky idú v cenách s DPH, tak ako sú na bločku. Doklad s ďalšími pokladňami vyberiete v záložke Pokladne v číselníku nižšie.",
+              )}
             </span>
           </span>
         </label>
@@ -354,32 +365,33 @@ function Predvolene({
 
       <fieldset className="mt-4 space-y-3 rounded-md border border-border p-3 text-sm">
         <legend className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Export a spracovanie dokladov
+          {t("Export a spracovanie dokladov")}
         </legend>
         <label className="block">
-          <span className="text-xs text-muted-foreground">Párovací symbol v Pohode</span>
+          <span className="text-xs text-muted-foreground">{t("Párovací symbol v Pohode")}</span>
           <select
             value={ine.parovaciSymbol}
             onChange={(e) => setIne({ ...ine, parovaciSymbol: e.target.value as any })}
             className="mt-1 block w-full max-w-sm rounded-md border border-input bg-background px-2 py-1.5"
           >
-            <option value="vs">Variabilný symbol</option>
-            <option value="dodaci_list">Číslo dodacieho listu (inak VS)</option>
-            <option value="cislo">Číslo faktúry dodávateľa (inak VS)</option>
+            <option value="vs">{t("Variabilný symbol")}</option>
+            <option value="dodaci_list">{t("Číslo dodacieho listu (inak VS)")}</option>
+            <option value="cislo">{t("Číslo faktúry dodávateľa (inak VS)")}</option>
           </select>
         </label>
         <label className="block">
-          <span className="text-xs text-muted-foreground">Predkontácia pre zaokrúhlenie</span>
+          <span className="text-xs text-muted-foreground">{t("Predkontácia pre zaokrúhlenie")}</span>
           <input
             value={ine.predkontaciaZaokruhlenie}
             maxLength={30}
             onChange={(e) => setIne({ ...ine, predkontaciaZaokruhlenie: e.target.value })}
-            placeholder="prázdne = zaokrúhlenie dokladu"
+            placeholder={t("prázdne = zaokrúhlenie dokladu")}
             className="mt-1 block w-full max-w-sm rounded-md border border-input bg-background px-2 py-1.5"
           />
           <span className="mt-1 block text-xs text-muted-foreground">
-            Keď je vyplnená, rozdiel medzi položkami a sumou dokladu ide ako samostatná položka s touto
-            predkontáciou.
+            {t(
+              "Keď je vyplnená, rozdiel medzi položkami a sumou dokladu ide ako samostatná položka s touto predkontáciou.",
+            )}
           </span>
         </label>
         <label className="flex items-start gap-2">
@@ -390,14 +402,14 @@ function Predvolene({
             onChange={(e) => setIne({ ...ine, qrDoNespracovanych: e.target.checked })}
           />
           <span>
-            Bločky s QR kódom ukladať do Nespracovaných dokladov
+            {t("Bločky s QR kódom ukladať do Nespracovaných dokladov")}
             <span className="block text-xs text-muted-foreground">
-              Inak idú rovno medzi bločky, lebo údaje z Finančnej správy sú úradné.
+              {t("Inak idú rovno medzi bločky, lebo údaje z Finančnej správy sú úradné.")}
             </span>
           </span>
         </label>
         <div>
-          <span className="text-xs text-muted-foreground">Povinné pri spracovaní dokladu</span>
+          <span className="text-xs text-muted-foreground">{t("Povinné pri spracovaní dokladu")}</span>
           <div className="mt-1 flex flex-wrap gap-4">
             {(
               [
@@ -419,7 +431,7 @@ function Predvolene({
                     })
                   }
                 />
-                {n}
+                {t(n)}
               </label>
             ))}
           </div>
@@ -427,33 +439,34 @@ function Predvolene({
       </fieldset>
 
       <fieldset className="mt-4 rounded-md border border-border p-3">
-        <legend className="px-1 text-sm font-medium">Číselné rady a stredisko v Pohode</legend>
+        <legend className="px-1 text-sm font-medium">{t("Číselné rady a stredisko v Pohode")}</legend>
         <p className="text-xs text-muted-foreground">
-          Predpona radu, do ktorého Pohoda doklad očísluje. Prázdne = predvolený rad v Pohode.
-          Doklad môže mať vlastný rad v zaúčtovaní.
+          {t(
+            "Predpona radu, do ktorého Pohoda doklad očísluje. Prázdne = predvolený rad v Pohode. Doklad môže mať vlastný rad v zaúčtovaní.",
+          )}
         </p>
         <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {RADY_POHODY.map((r) => (
             <label key={r.stlpec} className="block">
-              <span className="text-xs text-muted-foreground">{r.nazov}</span>
+              <span className="text-xs text-muted-foreground">{t(r.nazov)}</span>
               <KodPohody
-                ariaLabel={`Číselný rad — ${r.nazov}`}
+                ariaLabel={t("Číselný rad — {nazov}", { nazov: t(r.nazov) })}
                 value={h[r.stlpec] ?? ""}
                 onChange={(v) => setH({ ...h, [r.stlpec]: v })}
                 moznosti={ponuka(zaznamy, "ciselny_rad").sort(
                   (a, b) =>
                     Number(b.agenda.startsWith(r.agenda)) - Number(a.agenda.startsWith(r.agenda)),
                 )}
-                placeholder="predvolený v Pohode"
+                placeholder={t("predvolený v Pohode")}
                 className={vstup}
                 vyber
               />
             </label>
           ))}
           <label className="block">
-            <span className="text-xs text-muted-foreground">Predvolené stredisko</span>
+            <span className="text-xs text-muted-foreground">{t("Predvolené stredisko")}</span>
             <KodPohody
-              ariaLabel="Predvolené stredisko"
+              ariaLabel={t("Predvolené stredisko")}
               value={h.pohoda_stredisko ?? ""}
               onChange={(v) => setH({ ...h, pohoda_stredisko: v })}
               moznosti={ponuka(zaznamy, "stredisko")}
@@ -471,10 +484,11 @@ function Predvolene({
             className="mt-1"
           />
           <span>
-            Prikladať odkaz na sken bločkov a prijatých faktúr
+            {t("Prikladať odkaz na sken bločkov a prijatých faktúr")}
             <span className="block text-xs text-muted-foreground">
-              Doklad má v Pohode v záložke Dokumenty odkaz, ktorým sa otvorí sken. Odkaz je dlhý
-              náhodný reťazec.
+              {t(
+                "Doklad má v Pohode v záložke Dokumenty odkaz, ktorým sa otvorí sken. Odkaz je dlhý náhodný reťazec.",
+              )}
             </span>
           </span>
         </label>
@@ -482,44 +496,46 @@ function Predvolene({
 
       <label className="mt-4 block max-w-md">
         <span className="text-xs text-muted-foreground">
-          Predkontácia hlavičky pri rozúčtovanom doklade
+          {t("Predkontácia hlavičky pri rozúčtovanom doklade")}
         </span>
         <KodPohody
-          ariaLabel="Predkontácia hlavičky pri rozúčtovaní"
+          ariaLabel={t("Predkontácia hlavičky pri rozúčtovaní")}
           value={h.pohoda_predkontacia_rozuctovat ?? ""}
           onChange={(v) => setH({ ...h, pohoda_predkontacia_rozuctovat: v })}
           moznosti={ponuka(zaznamy, "predkontacia")}
-          placeholder="Rozúčtovať"
+          placeholder={t("Rozúčtovať")}
           className={vstup}
           vyber
         />
         <span className="mt-0.5 block text-xs text-muted-foreground">
-          Keď je doklad rozúčtovaný na viac predkontácií, hlavička v Pohode dostane tento kód a
-          predkontácie nesú položky. Prázdne = „Rozúčtovať“.
+          {t(
+            "Keď je doklad rozúčtovaný na viac predkontácií, hlavička v Pohode dostane tento kód a predkontácie nesú položky. Prázdne = „Rozúčtovať“.",
+          )}
         </span>
       </label>
 
       <details className="mt-4 rounded-md border border-border p-3">
         <summary className="cursor-pointer text-sm font-medium">
-          Bankové pohyby podľa označenia platby
+          {t("Bankové pohyby podľa označenia platby")}
         </summary>
         <p className="mt-2 text-xs text-muted-foreground">
-          Pri{" "}
+          {t("Pri")}{" "}
           <Link to="/uctovnictvo/vypis-do-pohody" className="underline">
-            bankovom výpise
+            {t("bankovom výpise")}
           </Link>{" "}
-          dostane pohyb s týmto označením vlastnú predkontáciu. Prázdne = predkontácia bankového
-          dokladu.
+          {t(
+            "dostane pohyb s týmto označením vlastnú predkontáciu. Prázdne = predkontácia bankového dokladu.",
+          )}
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {OZNACENIA.map((o) => (
             <label key={o.kod} className="block">
-              <span className="text-xs text-muted-foreground">{o.nazov}</span>
+              <span className="text-xs text-muted-foreground">{t(o.nazov)}</span>
               <KodPohody
                 value={oznaceni[o.kod] ?? ""}
                 onChange={(v) => setOznaceni({ ...oznaceni, [o.kod]: v })}
                 moznosti={ponuka(zaznamy, "predkontacia", ["bankIssued", "bankReceived"])}
-                placeholder={h.pohoda_predkontacia_banka || "napr. 3Bv"}
+                placeholder={h.pohoda_predkontacia_banka || t("napr. {kod}", { kod: "3Bv" })}
                 vyber
               />
             </label>
@@ -534,7 +550,7 @@ function Predvolene({
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-          Uložiť predvolené
+          {t("Uložiť predvolené")}
         </button>
       </div>
     </section>
@@ -552,6 +568,7 @@ function Import({
   firma: Record<string, any>;
   onZmena: () => void;
 }) {
+  const { t } = useT();
   const prepni = useServerFn(nacitatZPohodyFn);
   const importuj = useServerFn(importCiselnikaFn);
   const subor = useRef<HTMLInputElement>(null);
@@ -564,12 +581,12 @@ function Import({
       await prepni({ data: { company_id: companyId, zapnut } });
       toast.success(
         zapnut
-          ? "Pri najbližšom behu konektora si Faktero vypýta predkontácie a členenia DPH."
-          : "Žiadosť zrušená",
+          ? t("Pri najbližšom behu konektora si Faktero vypýta predkontácie a členenia DPH.")
+          : t("Žiadosť zrušená"),
       );
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(e?.message ?? t("Nepodarilo sa"));
     } finally {
       setBusy(null);
     }
@@ -585,7 +602,7 @@ function Import({
   }
 
   async function nahraj(f: File) {
-    if (f.size > 5 * 1024 * 1024) return toast.error("Súbor je väčší ako 5 MB.");
+    if (f.size > 5 * 1024 * 1024) return toast.error(t("Súbor je väčší ako 5 MB."));
     setBusy("subor");
     try {
       const b = new Uint8Array(await f.arrayBuffer());
@@ -596,13 +613,13 @@ function Import({
         data: { company_id: companyId, nazov: f.name, base64: btoa(bin) },
       });
       toast.success(
-        `Načítané: ${r.predkontacii} predkontácií, ${r.cleneni} členení DPH` +
-          (r.ostatnych ? `, ${r.ostatnych} stredísk, činností a radov` : "") +
-          (r.vypnutych ? ` · ${r.vypnutych} už v Pohode nie je, vypnuté` : ""),
+        t("Načítané: {p} predkontácií, {c} členení DPH", { p: r.predkontacii, c: r.cleneni }) +
+          (r.ostatnych ? t(", {n} stredísk, činností a radov", { n: r.ostatnych }) : "") +
+          (r.vypnutych ? t(" · {n} už v Pohode nie je, vypnuté", { n: r.vypnutych }) : ""),
       );
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Súbor sa nepodarilo načítať");
+      toast.error(e?.message ?? t("Súbor sa nepodarilo načítať"));
     } finally {
       setBusy(null);
       if (subor.current) subor.current.value = "";
@@ -612,37 +629,38 @@ function Import({
   return (
     <section className="rounded-xl border border-border bg-card p-5">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Načítať z Pohody
+        {t("Načítať z Pohody")}
       </h2>
       <p className="mt-1 text-xs text-muted-foreground">
         {firma.pohoda_ciselniky_nacitane_at
-          ? `Naposledy načítané z Pohody ${kedy(firma.pohoda_ciselniky_nacitane_at)}.`
-          : "Z Pohody sa ešte nič nenačítalo."}{" "}
-        Opakované načítanie prepíše popisy a účty, nič nezdvojí; kódy, ktoré v Pohode už nie sú, sa
-        vypnú.
+          ? t("Naposledy načítané z Pohody {kedy}.", { kedy: kedy(firma.pohoda_ciselniky_nacitane_at) })
+          : t("Z Pohody sa ešte nič nenačítalo.")}{" "}
+        {t(
+          "Opakované načítanie prepíše popisy a účty, nič nezdvojí; kódy, ktoré v Pohode už nie sú, sa vypnú.",
+        )}
       </p>
 
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <div className="rounded-md border border-border p-3">
-          <div className="text-sm font-medium">1. Konektorom</div>
+          <div className="text-sm font-medium">{t("1. Konektorom")}</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Keď beží{" "}
+            {t("Keď beží")}{" "}
             <Link to="/uctovnictvo/pohoda" className="underline">
-              konektor Pohody
+              {t("konektor Pohody")}
             </Link>
-            , pri ďalšom behu si číselníky vypýta sám.
+            {t(", pri ďalšom behu si číselníky vypýta sám.")}
           </p>
           {caka ? (
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                Čaká na konektor
+                {t("Čaká na konektor")}
               </span>
               <button
                 onClick={() => konektor(false)}
                 disabled={!!busy}
                 className="text-xs underline disabled:opacity-50"
               >
-                Zrušiť
+                {t("Zrušiť")}
               </button>
             </div>
           ) : (
@@ -656,30 +674,32 @@ function Import({
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              Načítať pri ďalšom behu
+              {t("Načítať pri ďalšom behu")}
             </button>
           )}
         </div>
 
         <div className="rounded-md border border-border p-3">
-          <div className="text-sm font-medium">2. XML súborom</div>
+          <div className="text-sm font-medium">{t("2. XML súborom")}</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Žiadosť načítajte v Pohode cez Súbor → Dátová komunikácia → XML import a odpoveď, ktorú
-            Pohoda uloží, nahrajte sem.
+            {t(
+              "Žiadosť načítajte v Pohode cez Súbor → Dátová komunikácia → XML import a odpoveď, ktorú Pohoda uloží, nahrajte sem.",
+            )}
           </p>
           <button
             onClick={stiahniZiadost}
             className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
           >
-            <Download className="h-4 w-4" /> Stiahnuť žiadosť
+            <Download className="h-4 w-4" /> {t("Stiahnuť žiadosť")}
           </button>
         </div>
 
         <div className="rounded-md border border-border p-3">
-          <div className="text-sm font-medium">3. Nahrať súbor</div>
+          <div className="text-sm font-medium">{t("3. Nahrať súbor")}</div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Odpoveď Pohody (XML), alebo tabuľka CSV či Excel so stĺpcami Kód, Popis, prípadne
-            Agenda, MD, D.
+            {t(
+              "Odpoveď Pohody (XML), alebo tabuľka CSV či Excel so stĺpcami Kód, Popis, prípadne Agenda, MD, D.",
+            )}
           </p>
           <input
             ref={subor}
@@ -701,7 +721,7 @@ function Import({
             ) : (
               <Upload className="h-4 w-4" />
             )}
-            Nahrať súbor
+            {t("Nahrať súbor")}
           </button>
         </div>
       </div>
@@ -733,6 +753,7 @@ function Ciselnik({
   zaznamy: Zaznam[];
   onZmena: () => void;
 }) {
+  const { t } = useT();
   const uloz = useServerFn(ulozPredkontaciuFn);
   const zmaz = useServerFn(zmazPredkontaciuFn);
   const [druh, setDruh] = useState<DruhCiselnika>("predkontacia");
@@ -766,11 +787,11 @@ function Ciselnik({
     setBusy(true);
     try {
       await uloz({ data: { company_id: companyId, druh, ...form } });
-      toast.success("Uložené");
+      toast.success(t("Uložené"));
       setForm(null);
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa uložiť");
+      toast.error(e?.message ?? t("Nepodarilo sa uložiť"));
     } finally {
       setBusy(false);
     }
@@ -781,7 +802,7 @@ function Ciselnik({
       await uloz({ data: { company_id: companyId, ...z, aktivne: !z.aktivne } });
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(e?.message ?? t("Nepodarilo sa"));
     }
   }
 
@@ -789,10 +810,10 @@ function Ciselnik({
     if (!(await potvrd(otazka))) return;
     try {
       await zmaz({ data: { company_id: companyId, ids } });
-      toast.success("Zmazané");
+      toast.success(t("Zmazané"));
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa zmazať");
+      toast.error(e?.message ?? t("Nepodarilo sa zmazať"));
     }
   }
 
@@ -815,7 +836,7 @@ function Ciselnik({
               }}
               className={`shrink-0 whitespace-nowrap rounded px-3 py-1 ${druh === k ? "bg-background font-medium shadow-sm" : "text-muted-foreground"}`}
             >
-              {n} <span className="text-xs text-muted-foreground">({pocty[k]})</span>
+              {t(n)} <span className="text-xs text-muted-foreground">({pocty[k]})</span>
             </button>
           ))}
         </div>
@@ -823,14 +844,14 @@ function Ciselnik({
           onClick={() => setForm({ ...PRAZDNY })}
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
         >
-          <Plus className="h-4 w-4" /> Pridať {jednotne}
+          <Plus className="h-4 w-4" /> {t("Pridať {co}", { co: t(jednotne) })}
         </button>
       </div>
 
       {form && (
         <div className="mt-4 grid gap-3 rounded-md border border-primary/30 bg-primary/5 p-3 sm:grid-cols-6">
           <label className="block sm:col-span-1">
-            <span className="text-xs text-muted-foreground">Kód</span>
+            <span className="text-xs text-muted-foreground">{t("Kód")}</span>
             <input
               value={form.kod}
               onChange={(e) => setForm({ ...form, kod: e.target.value })}
@@ -850,17 +871,17 @@ function Ciselnik({
             />
           </label>
           <label className="block sm:col-span-2">
-            <span className="text-xs text-muted-foreground">Popis</span>
+            <span className="text-xs text-muted-foreground">{t("Popis")}</span>
             <input
               value={form.popis}
               onChange={(e) => setForm({ ...form, popis: e.target.value })}
               className={vstup}
-              placeholder={druh === "predkontacia" ? "Nákup materiálu" : "Tuzemské plnenie"}
+              placeholder={druh === "predkontacia" ? t("Nákup materiálu") : t("Tuzemské plnenie")}
             />
           </label>
           <label className="block sm:col-span-1">
             <span className="text-xs text-muted-foreground">
-              {druh === "predkontacia" ? "Agenda" : "Typ"}
+              {druh === "predkontacia" ? t("Agenda") : t("Typ")}
             </span>
             {druh === "predkontacia" ? (
               <select
@@ -868,10 +889,10 @@ function Ciselnik({
                 onChange={(e) => setForm({ ...form, agenda: e.target.value })}
                 className={vstup}
               >
-                <option value="">všetky</option>
+                <option value="">{t("všetky")}</option>
                 {AGENDY.map((a) => (
                   <option key={a.kod} value={a.kod}>
-                    {a.nazov}
+                    {t(a.nazov)}
                   </option>
                 ))}
               </select>
@@ -880,7 +901,7 @@ function Ciselnik({
                 value={form.agenda}
                 onChange={(e) => setForm({ ...form, agenda: e.target.value })}
                 className={vstup}
-                placeholder="napr. prijaté plnenia"
+                placeholder={t("napr. prijaté plnenia")}
               />
             )}
           </label>
@@ -910,7 +931,7 @@ function Ciselnik({
           )}
           <div className="sm:col-span-4">
             <span className="text-xs text-muted-foreground">
-              Ponúkať pri dokladoch (nič nezaškrtnuté = všade)
+              {t("Ponúkať pri dokladoch (nič nezaškrtnuté = všade)")}
             </span>
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
               {PREDVOLENE.filter((p) =>
@@ -929,13 +950,13 @@ function Ciselnik({
                       })
                     }
                   />
-                  {p.nazov}
+                  {t(p.nazov)}
                 </label>
               ))}
             </div>
           </div>
           <label className="block sm:col-span-2">
-            <span className="text-xs text-muted-foreground">Použiť sám pre kategóriu nákladu</span>
+            <span className="text-xs text-muted-foreground">{t("Použiť sám pre kategóriu nákladu")}</span>
             <select
               value={form.kategoria}
               onChange={(e) => setForm({ ...form, kategoria: e.target.value })}
@@ -944,7 +965,7 @@ function Ciselnik({
               <option value="">—</option>
               {KATEGORIE_VYDAVKOV.map((k) => (
                 <option key={k.kod} value={k.kod}>
-                  {k.nazov}
+                  {t(k.nazov)}
                 </option>
               ))}
             </select>
@@ -961,13 +982,13 @@ function Ciselnik({
           )}
           <div className="flex flex-wrap items-center justify-end gap-2 sm:col-span-6">
             <p className="mr-auto text-xs text-muted-foreground">
-              Kód musí byť rovnaký ako v Pohode, inak ho Pohoda pri importe nenájde.
+              {t("Kód musí byť rovnaký ako v Pohode, inak ho Pohoda pri importe nenájde.")}
             </p>
             <button
               onClick={() => setForm(null)}
               className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              Zrušiť
+              {t("Zrušiť")}
             </button>
             <button
               onClick={ulozit}
@@ -975,7 +996,7 @@ function Ciselnik({
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              Uložiť
+              {t("Uložiť")}
             </button>
           </div>
         </div>
@@ -985,7 +1006,7 @@ function Ciselnik({
         <input
           value={hladaj}
           onChange={(e) => setHladaj(e.target.value)}
-          placeholder="Hľadať kód, popis alebo účet"
+          placeholder={t("Hľadať kód, popis alebo účet")}
           className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
         />
         {agendyVZozname.length > 1 && (
@@ -993,42 +1014,42 @@ function Ciselnik({
             value={agenda}
             onChange={(e) => setAgenda(e.target.value)}
             className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
-            aria-label="Agenda"
+            aria-label={t("Agenda")}
           >
-            <option value="">Všetky agendy</option>
+            <option value="">{t("Všetky agendy")}</option>
             {agendyVZozname.map((a) => (
               <option key={a} value={a}>
-                {druh === "predkontacia" ? nazovAgendy(a) : a || "bez typu"}
+                {druh === "predkontacia" ? t(nazovAgendy(a)) : a || t("bez typu")}
               </option>
             ))}
           </select>
         )}
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <input type="checkbox" checked={vsetky} onChange={(e) => setVsetky(e.target.checked)} />
-          aj vypnuté
+          {t("aj vypnuté")}
         </label>
       </div>
 
       {riadky.length === 0 ? (
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {pocty[druh] === 0
-            ? "Číselník je prázdny. Načítajte ho z Pohody vyššie alebo pridajte kód ručne."
-            : "Nič nevyhovuje filtru."}
+            ? t("Číselník je prázdny. Načítajte ho z Pohody vyššie alebo pridajte kód ručne.")
+            : t("Nič nevyhovuje filtru.")}
         </p>
       ) : (
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="text-left text-xs text-muted-foreground">
-                <th className="py-1 pr-3 font-medium">Kód</th>
-                <th className="py-1 pr-3 font-medium">Popis</th>
+                <th className="py-1 pr-3 font-medium">{t("Kód")}</th>
+                <th className="py-1 pr-3 font-medium">{t("Popis")}</th>
                 <th className="py-1 pr-3 font-medium">
-                  {druh === "predkontacia" ? "Agenda" : "Typ"}
+                  {druh === "predkontacia" ? t("Agenda") : t("Typ")}
                 </th>
                 {druh === "predkontacia" && <th className="py-1 pr-3 font-medium">MD / D</th>}
-                <th className="py-1 pr-3 font-medium">Použitie</th>
-                <th className="py-1 pr-3 font-medium">Zdroj</th>
-                <th className="py-1 pr-3 font-medium">Aktívne</th>
+                <th className="py-1 pr-3 font-medium">{t("Použitie")}</th>
+                <th className="py-1 pr-3 font-medium">{t("Zdroj")}</th>
+                <th className="py-1 pr-3 font-medium">{t("Aktívne")}</th>
                 <th className="py-1" />
               </tr>
             </thead>
@@ -1044,13 +1065,13 @@ function Ciselnik({
                     {z.pomer ? (
                       <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800">
                         {z.pomer.typ === "dph5050"
-                          ? `pomer ${z.pomer.zaklad} %, DPH 50 %`
-                          : `pomer ${z.pomer.casti.map((c) => `${c.podiel}`).join("/")}`}
+                          ? t("pomer {z} %, DPH 50 %", { z: z.pomer.zaklad })
+                          : t("pomer {p}", { p: z.pomer.casti.map((c) => `${c.podiel}`).join("/") })}
                       </span>
                     ) : null}
                   </td>
                   <td className="py-1.5 pr-3 text-muted-foreground">
-                    {druh === "predkontacia" ? nazovAgendy(z.agenda) : z.agenda || "—"}
+                    {druh === "predkontacia" ? t(nazovAgendy(z.agenda)) : z.agenda || "—"}
                   </td>
                   {druh === "predkontacia" && (
                     <td className="py-1.5 pr-3 font-mono text-xs">
@@ -1060,26 +1081,28 @@ function Ciselnik({
                   <td className="py-1.5 pr-3 text-xs text-muted-foreground">
                     {z.druhy_dokladov?.length
                       ? z.druhy_dokladov
-                          .map((k) => PREDVOLENE.find((p) => p.kluc === k)?.nazov ?? k)
+                          .map((k) => t(PREDVOLENE.find((p) => p.kluc === k)?.nazov ?? k))
                           .join(", ")
-                      : "všade"}
+                      : t("všade")}
                     {z.kategoria ? (
                       <span className="block text-foreground">
-                        kategória:{" "}
-                        {KATEGORIE_VYDAVKOV.find((k) => k.kod === z.kategoria)?.nazov ??
-                          z.kategoria}
+                        {t("kategória:")}{" "}
+                        {t(
+                          KATEGORIE_VYDAVKOV.find((k) => k.kod === z.kategoria)?.nazov ??
+                            z.kategoria,
+                        )}
                       </span>
                     ) : null}
                   </td>
                   <td className="py-1.5 pr-3 text-xs text-muted-foreground">
-                    {ZDROJ[z.zdroj] ?? z.zdroj}
+                    {t(ZDROJ[z.zdroj] ?? z.zdroj)}
                   </td>
                   <td className="py-1.5 pr-3">
                     <input
                       type="checkbox"
                       checked={z.aktivne}
                       onChange={() => prepniAktivne(z)}
-                      aria-label={`Aktívne ${z.kod}`}
+                      aria-label={t("Aktívne {kod}", { kod: z.kod })}
                     />
                   </td>
                   <td className="py-1.5 text-right whitespace-nowrap">
@@ -1099,7 +1122,7 @@ function Ciselnik({
                         })
                       }
                       className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                      aria-label={`Upraviť ${z.kod}`}
+                      aria-label={t("Upraviť {kod}", { kod: z.kod })}
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
@@ -1107,11 +1130,11 @@ function Ciselnik({
                       onClick={() =>
                         zmazat(
                           [z.id],
-                          `Zmazať ${z.kod} z číselníka? Doklady, ktoré ho už majú, sa nezmenia.`,
+                          t("Zmazať {kod} z číselníka? Doklady, ktoré ho už majú, sa nezmenia.", { kod: z.kod }),
                         )
                       }
                       className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                      aria-label={`Zmazať ${z.kod}`}
+                      aria-label={t("Zmazať {kod}", { kod: z.kod })}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -1126,12 +1149,15 @@ function Ciselnik({
                 onClick={() =>
                   zmazat(
                     riadky.map((r) => r.id),
-                    `Zmazať všetkých ${riadky.length} zobrazených záznamov? Doklady, ktoré ich už majú, sa nezmenia.`,
+                    t(
+                      "Zmazať všetkých {n} zobrazených záznamov? Doklady, ktoré ich už majú, sa nezmenia.",
+                      { n: riadky.length },
+                    ),
                   )
                 }
                 className="text-xs text-muted-foreground underline hover:text-destructive"
               >
-                Zmazať zobrazené ({riadky.length})
+                {t("Zmazať zobrazené ({n})", { n: riadky.length })}
               </button>
             </div>
           )}

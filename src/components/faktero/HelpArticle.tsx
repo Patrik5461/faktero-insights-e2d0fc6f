@@ -1,6 +1,7 @@
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { Link } from "@tanstack/react-router";
 import { ReactNode } from "react";
+import { useT } from "@/lib/i18n/useT";
 
 export type HelpSection = { id: string; title: string; body: ReactNode };
 
@@ -15,6 +16,7 @@ export function HelpArticle({
   intro?: ReactNode;
   sections: HelpSection[];
 }) {
+  const { t } = useT();
   return (
     <MarketingShell>
       <div className="mx-auto max-w-6xl px-4 py-12 lg:py-16">
@@ -36,15 +38,15 @@ export function HelpArticle({
               ))}
             </div>
             <div className="mt-12 rounded-xl border border-border bg-card p-5 text-sm">
-              <p className="font-semibold">Potrebujete ďalšiu pomoc?</p>
+              <p className="font-semibold">{t("Potrebujete ďalšiu pomoc?")}</p>
               <p className="mt-1 text-muted-foreground">
-                Napíšte nám na{" "}
+                {t("Napíšte nám na")}{" "}
                 <a href="mailto:info@faktero.sk" className="text-primary underline">
                   info@faktero.sk
                 </a>{" "}
-                alebo sa vráťte do{" "}
+                {t("alebo sa vráťte do")}{" "}
                 <Link to="/pomoc" className="text-primary underline">
-                  centra pomoci
+                  {t("centra pomoci")}
                 </Link>
                 .
               </p>
@@ -53,7 +55,7 @@ export function HelpArticle({
           <aside className="hidden lg:block">
             <div className="sticky top-24 rounded-xl border border-border bg-card p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Obsah
+                {t("Obsah")}
               </p>
               <nav className="mt-3 space-y-2 text-sm">
                 {sections.map((s) => (

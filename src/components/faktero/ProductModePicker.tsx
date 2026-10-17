@@ -3,6 +3,7 @@ import { FileText, Car, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { setActiveProduct } from "@/lib/faktero/active-product";
+import { useT } from "@/lib/i18n/useT";
 
 type Mode = "invoicing" | "logbook" | "both";
 
@@ -28,6 +29,7 @@ const OPTIONS: { value: Mode; title: string; desc: string; icon: any }[] = [
 ];
 
 export function ProductModePicker({ onPicked }: { onPicked: (mode: Mode) => void }) {
+  const { t } = useT();
   const [saving, setSaving] = useState<Mode | null>(null);
 
   async function pick(mode: Mode) {
@@ -35,7 +37,7 @@ export function ProductModePicker({ onPicked }: { onPicked: (mode: Mode) => void
     setSaving(mode);
     try {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Nie ste prihlásený");
+      if (!u.user) throw new Error(t("Nie ste prihlásený"));
       const { error } = await supabase
         .from("profiles")
         .update({ product_mode: mode })
@@ -44,7 +46,7 @@ export function ProductModePicker({ onPicked }: { onPicked: (mode: Mode) => void
       setActiveProduct(mode === "logbook" ? "logbook" : "invoicing");
       onPicked(mode);
     } catch (err: any) {
-      toast.error(err?.message ?? "Nepodarilo sa uložiť výber");
+      toast.error(err?.message ?? t("Nepodarilo sa uložiť výber"));
       setSaving(null);
     }
   }
@@ -52,9 +54,13 @@ export function ProductModePicker({ onPicked }: { onPicked: (mode: Mode) => void
   return (
     <div className="mx-auto max-w-4xl px-6 py-16">
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Čo chcete používať?</h1>
+        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+          {t("Čo chcete používať?")}
+        </h1>
         <p className="mt-3 text-muted-foreground">
-          Vyberte produkty, ktoré budete využívať. Voľbu môžete kedykoľvek zmeniť v Nastaveniach.
+          {t(
+            "Vyberte produkty, ktoré budete využívať. Voľbu môžete kedykoľvek zmeniť v Nastaveniach.",
+          )}
         </p>
       </div>
       <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -72,10 +78,10 @@ export function ProductModePicker({ onPicked }: { onPicked: (mode: Mode) => void
               <span className="grid h-11 w-11 place-items-center rounded-lg bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />
               </span>
-              <span className="text-lg font-semibold">{opt.title}</span>
-              <span className="text-sm text-muted-foreground">{opt.desc}</span>
+              <span className="text-lg font-semibold">{t(opt.title)}</span>
+              <span className="text-sm text-muted-foreground">{t(opt.desc)}</span>
               <span className="mt-auto text-sm font-medium text-primary">
-                {isSaving ? "Ukladám…" : "Vybrať →"}
+                {isSaving ? t("Ukladám…") : t("Vybrať →")}
               </span>
             </button>
           );

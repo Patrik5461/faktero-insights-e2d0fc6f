@@ -14,12 +14,17 @@ import { zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { MENY } from "@/lib/faktero/mena";
 import { domacaMena } from "@/lib/faktero/kurzy";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 export const Route = createFileRoute("/_authenticated/onboarding")({
-  head: () => ({ meta: [{ title: "Nastavenie firmy — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Nastavenie firmy — Faktero") }],
+  }),
   component: Onboarding,
 });
 
 function Onboarding() {
+  const { t } = useT();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
@@ -69,14 +74,14 @@ function Onboarding() {
     if (loading) return;
     setErrorMsg(null);
     if (!form.name.trim()) {
-      setErrorMsg("Zadajte názov firmy.");
+      setErrorMsg(t("Zadajte názov firmy."));
       return;
     }
     setLoading(true);
     try {
       const { data: userData, error: authErr } = await supabase.auth.getUser();
       if (authErr || !userData.user) {
-        throw new Error("Chýba prihlásenie. Prihláste sa znova.");
+        throw new Error(t("Chýba prihlásenie. Prihláste sa znova."));
       }
       const { data: companyId, error } = await supabase.rpc("create_company_with_owner", {
         _name: form.name,
@@ -95,10 +100,10 @@ function Onboarding() {
         _vat_scheme: zosuladSchemu(form.vat_scheme, krajinaDane(form.country), form.vat_payer),
       });
       if (error || !companyId) {
-        throw new Error(error?.message ?? "Nepodarilo sa vytvoriť firmu.");
+        throw new Error(error?.message ?? t("Nepodarilo sa vytvoriť firmu."));
       }
       setActiveCompanyId(companyId as string);
-      toast.success("Firma vytvorená");
+      toast.success(t("Firma vytvorená"));
       // Keď používateľ prišiel z objednávky s vybraným plánom, dokončíme, čo začal —
       // firmu už má, takže platba má kam patriť.
       let pendingPlan: string | null = null;
@@ -113,7 +118,7 @@ function Onboarding() {
         pendingPlan ? `/predplatne?plan=${encodeURIComponent(pendingPlan)}` : "/dashboard",
       );
     } catch (err: any) {
-      const msg = err?.message ?? "Nepodarilo sa vytvoriť firmu.";
+      const msg = err?.message ?? t("Nepodarilo sa vytvoriť firmu.");
       setErrorMsg(msg);
       toast.error(msg);
       setLoading(false);
@@ -122,9 +127,9 @@ function Onboarding() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="text-3xl font-semibold tracking-tight">Vytvorte si firmu</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">{t("Vytvorte si firmu")}</h1>
       <p className="mt-2 text-muted-foreground">
-        Tieto údaje sa zobrazia na faktúrach. Môžete ich kedykoľvek upraviť.
+        {t("Tieto údaje sa zobrazia na faktúrach. Môžete ich kedykoľvek upraviť.")}
       </p>
 
       <form
@@ -141,7 +146,8 @@ function Onboarding() {
         )}
         <label className="block">
           <span className="text-sm font-medium">
-            Názov firmy<span className="text-destructive"> *</span>
+            {t("Názov firmy")}
+            <span className="text-destructive"> *</span>
           </span>
           <div className="mt-1">
             <CompanyNameAutocomplete
@@ -160,7 +166,7 @@ function Onboarding() {
         </label>
         <div className="grid gap-4 sm:grid-cols-3">
           <label className="block">
-            <span className="text-sm font-medium">IČO</span>
+            <span className="text-sm font-medium">{t("IČO")}</span>
             <div className="mt-1 flex -space-x-px items-start">
               <input
                 value={form.ico}
@@ -209,7 +215,7 @@ function Onboarding() {
           {/* Mena firmy sa dedí do dokladov — voľný text by sem pustil kód,
               ktorý nikto nekontroluje. */}
           <label className="block">
-            <span className="text-sm font-medium">Mena</span>
+            <span className="text-sm font-medium">{t("Mena")}</span>
             <select
               value={form.default_currency}
               onChange={(e) => set("default_currency", e.target.value)}
@@ -229,7 +235,7 @@ function Onboarding() {
           disabled={loading}
           className="w-full rounded-md bg-primary px-4 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
         >
-          {loading ? "Vytváram..." : "Vytvoriť firmu a pokračovať"}
+          {loading ? t("Vytváram...") : t("Vytvoriť firmu a pokračovať")}
         </button>
       </form>
     </div>
@@ -249,10 +255,11 @@ function Field({
   required?: boolean;
   type?: string;
 }) {
+  const { t } = useT();
   return (
     <label className="block">
       <span className="text-sm font-medium">
-        {label}
+        {t(label)}
         {required && <span className="text-destructive"> *</span>}
       </span>
       <input

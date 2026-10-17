@@ -3,6 +3,8 @@ import { PrepojeneOstatneDoklady } from "@/components/faktero/ostatne/PrepojeneO
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
@@ -23,7 +25,9 @@ import { nazovDruhuFinancovania } from "@/lib/faktero/kontokorent";
 import { potvrd as potvrdAkciu } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/financovanie/$id")({
-  head: () => ({ meta: [{ title: "Zmluva o financovaní — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Zmluva o financovaní — Faktero") }],
+  }),
   component: Stranka,
 });
 
@@ -41,23 +45,24 @@ type Splatka = {
   bank_transaction_id: string | null;
 };
 
-function datum(d: string): string {
-  return new Date(`${d}T00:00:00`).toLocaleDateString("sk-SK");
+function datum(d: string, jazyk: string = "sk"): string {
+  return new Date(`${d}T00:00:00`).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK");
 }
 
 /** Nahratá zmluva sa otvára cez podpísaný odkaz — vedro je súkromné. */
-async function otvorDokument(cesta: string) {
+async function otvorDokument(cesta: string, t: (s: string) => string = (s) => s) {
   const { data, error } = await supabase.storage
     .from("financing-documents")
     .createSignedUrl(cesta, 300);
   if (error || !data?.signedUrl) {
-    toast.error("Dokument sa nepodarilo otvoriť.");
+    toast.error(t("Dokument sa nepodarilo otvoriť."));
     return;
   }
   window.open(data.signedUrl, "_blank", "noopener");
 }
 
 function Stranka() {
+  const { t, jazyk } = useT();
   const { id } = useParams({ from: "/_authenticated/financovanie/$id" });
   const navigate = useNavigate();
   const nacitaj = useServerFn(detailZmluvyFn);
@@ -91,9 +96,9 @@ function Stranka() {
       setPohyby(n.pohyby as any[]);
     } catch (e: any) {
       setNenajdene(true);
-      toast.error(e?.message ?? "Zmluvu sa nepodarilo načítať.");
+      toast.error(e?.message ?? t("Zmluvu sa nepodarilo načítať."));
     }
-  }, [id, nacitaj, nacitajNavrhy]);
+  }, [id, nacitaj, nacitajNavrhy, t]);
 
   useEffect(() => {
     void obnov();
@@ -106,7 +111,7 @@ function Stranka() {
       toast.success(hlaska);
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa to.");
+      toast.error(e?.message ?? t("Nepodarilo sa to."));
     } finally {
       setBusy(false);
     }
@@ -115,20 +120,20 @@ function Stranka() {
   if (!data) {
     return (
       <>
-        <PageHeader title="Zmluva o financovaní" />
+        <PageHeader title={t("Zmluva o financovaní")} />
         <PageBody>
           {nenajdene ? (
             <div className="rounded-xl border border-border bg-card p-8 text-center text-sm">
-              <p>Táto zmluva v aktívnej firme neexistuje.</p>
+              <p>{t("Táto zmluva v aktívnej firme neexistuje.")}</p>
               <p className="mt-1 text-muted-foreground">
-                Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.
+                {t("Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.")}
               </p>
               <Link to="/financovanie" className="mt-4 inline-block text-primary underline">
-                Späť na leasingy a úvery
+                {t("Späť na leasingy a úvery")}
               </Link>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Načítavam…</p>
+            <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
           )}
         </PageBody>
       </>
@@ -147,10 +152,10 @@ function Stranka() {
       <PageHeader
         title={z.name}
         description={[
-          nazovDruhuFinancovania(z.kind),
+          t(nazovDruhuFinancovania(z.kind)),
           z.provider_name,
-          z.contract_number ? `zmluva ${z.contract_number}` : null,
-          z.schedule_source === "zmluva" ? "kalendár prevzatý z dokumentu" : null,
+          z.contract_number ? t("zmluva {cislo}", { cislo: z.contract_number }) : null,
+          z.schedule_source === "zmluva" ? t("kalendár prevzatý z dokumentu") : null,
         ]
           .filter(Boolean)
           .join(" · ")}
@@ -158,10 +163,10 @@ function Stranka() {
           <div className="flex gap-2">
             {z.document_path && (
               <button
-                onClick={() => void otvorDokument(z.document_path)}
+                onClick={() => void otvorDokument(z.document_path, t)}
                 className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
               >
-                <FileText className="h-4 w-4" /> Zmluva
+                <FileText className="h-4 w-4" /> {t("Zmluva")}
               </button>
             )}
             {!kontokorent && (
@@ -177,42 +182,47 @@ function Stranka() {
                     if (r.zapisanych === 0 && r.navrhov === 0) {
                       throw new Error(
                         r.pohybov === 0
-                          ? "V banke nie sú žiadne nespárované odchádzajúce platby."
-                          : `Prezrelo sa ${r.pohybov} odchádzajúcich platieb a ani jedna nesedí so splátkou. Skontrolujte variabilný symbol zmluvy.`,
+                          ? t("V banke nie sú žiadne nespárované odchádzajúce platby.")
+                          : t(
+                              "Prezrelo sa {n} odchádzajúcich platieb a ani jedna nesedí so splátkou. Skontrolujte variabilný symbol zmluvy.",
+                              { n: r.pohybov },
+                            ),
                       );
                     }
-                  }, "Párovanie s bankou prebehlo.")
+                  }, t("Párovanie s bankou prebehlo."))
                 }
                 disabled={busy}
                 className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
               >
-                <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Spárovať s bankou
+                <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> {t("Spárovať s bankou")}
               </button>
             )}
             <button
               onClick={() => setUpravujem((x) => !x)}
               className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
             >
-              <Pencil className="h-4 w-4" /> {upravujem ? "Zavrieť úpravu" : "Upraviť"}
+              <Pencil className="h-4 w-4" /> {upravujem ? t("Zavrieť úpravu") : t("Upraviť")}
             </button>
             <button
               onClick={async () => {
                 if (
                   !(await potvrdAkciu(
                     kontokorent
-                      ? "Zmazať zmluvu o kontokorente aj so spárovanými úrokmi a poplatkami? Pohyby v banke ostanú."
-                      : "Zmazať zmluvu aj s celým splátkovým kalendárom?",
+                      ? t(
+                          "Zmazať zmluvu o kontokorente aj so spárovanými úrokmi a poplatkami? Pohyby v banke ostanú.",
+                        )
+                      : t("Zmazať zmluvu aj s celým splátkovým kalendárom?"),
                   ))
                 )
                   return;
                 void urobit(async () => {
                   await zmaz({ data: { company_id: cid, id } });
                   navigate({ to: "/financovanie" });
-                }, "Zmluva zmazaná.");
+                }, t("Zmluva zmazaná."));
               }}
               className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-destructive"
             >
-              <Trash2 className="h-4 w-4" /> Zmazať
+              <Trash2 className="h-4 w-4" /> {t("Zmazať")}
             </button>
           </div>
         }
@@ -226,7 +236,9 @@ function Stranka() {
               onZrusit={() => setUpravujem(false)}
               onUlozene={async (_id, splatok) => {
                 toast.success(
-                  kontokorent ? "Uložené." : `Uložené, kalendár má ${splatok} splátok.`,
+                  kontokorent
+                    ? t("Uložené.")
+                    : t("Uložené, kalendár má {n} splátok.", { n: splatok }),
                 );
                 setUpravujem(false);
                 await obnov();
@@ -253,7 +265,7 @@ function Stranka() {
                 ],
               ].map(([popis, hodnota]) => (
                 <div key={popis} className="rounded-xl border bg-card p-4">
-                  <div className="text-xs text-muted-foreground">{popis}</div>
+                  <div className="text-xs text-muted-foreground">{t(popis)}</div>
                   <div className="mt-1 text-xl font-semibold tabular-nums">{hodnota}</div>
                 </div>
               ))}
@@ -262,11 +274,10 @@ function Stranka() {
             {navrhy.length > 0 && (
               <div className="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-5">
                 <h2 className="mb-1 flex items-center gap-2 text-sm font-medium">
-                  <Link2 className="h-4 w-4" /> Platby, ktoré sem asi patria
+                  <Link2 className="h-4 w-4" /> {t("Platby, ktoré sem asi patria")}
                 </h2>
                 <p className="mb-3 text-xs text-muted-foreground">
-                  Sami sa nespárovali — buď sa suma trochu líši, alebo platbu nič jednoznačne
-                  neidentifikuje.
+                  {t("Sami sa nespárovali — buď sa suma trochu líši, alebo platbu nič jednoznačne neidentifikuje.")}
                 </p>
                 <div className="space-y-2">
                   {navrhy.map((n) => {
@@ -279,9 +290,9 @@ function Stranka() {
                       >
                         <div className="min-w-0">
                           <div className="font-medium">
-                            {p ? datum(p.booking_date) : "—"} ·{" "}
+                            {p ? datum(p.booking_date, jazyk) : "—"} ·{" "}
                             {p ? formatujSumu(Math.abs(p.amount), z.currency) : "—"}
-                            {sp ? ` → splátka č. ${sp.number}` : ""}
+                            {sp ? ` → ${t("splátka č. {n}", { n: sp.number })}` : ""}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {n.dovody.join(" · ")}
@@ -298,13 +309,13 @@ function Stranka() {
                                     transaction_id: n.transactionId,
                                   },
                                 }),
-                              "Platba priradená k splátke.",
+                              t("Platba priradená k splátke."),
                             )
                           }
                           disabled={busy}
                           className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
                         >
-                          Priradiť
+                          {t("Priradiť")}
                         </button>
                       </div>
                     );
@@ -317,14 +328,14 @@ function Stranka() {
               <table className="w-full min-w-[46rem] text-sm">
                 <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
                   <tr>
-                    <th className="p-3 text-left font-medium">Č.</th>
-                    <th className="p-3 text-left font-medium">Splatnosť</th>
-                    <th className="p-3 text-right font-medium">Splátka</th>
-                    <th className="p-3 text-right font-medium">Istina</th>
-                    <th className="p-3 text-right font-medium">Úrok</th>
-                    {Number(z.vat_rate) > 0 && <th className="p-3 text-right font-medium">DPH</th>}
-                    <th className="p-3 text-right font-medium">Zostatok istiny</th>
-                    <th className="p-3 text-right font-medium">Stav</th>
+                    <th className="p-3 text-left font-medium">{t("Č.")}</th>
+                    <th className="p-3 text-left font-medium">{t("Splatnosť")}</th>
+                    <th className="p-3 text-right font-medium">{t("Splátka")}</th>
+                    <th className="p-3 text-right font-medium">{t("Istina")}</th>
+                    <th className="p-3 text-right font-medium">{t("Úrok")}</th>
+                    {Number(z.vat_rate) > 0 && <th className="p-3 text-right font-medium">{t("DPH")}</th>}
+                    <th className="p-3 text-right font-medium">{t("Zostatok istiny")}</th>
+                    <th className="p-3 text-right font-medium">{t("Stav")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -334,7 +345,7 @@ function Stranka() {
                       <tr key={r.id} className="border-b last:border-0">
                         <td className="p-3 text-muted-foreground">{r.number}</td>
                         <td className={`p-3 ${poSplatnosti ? "text-destructive" : ""}`}>
-                          {datum(r.due_date)}
+                          {datum(r.due_date, jazyk)}
                         </td>
                         <td className="p-3 text-right font-medium tabular-nums">
                           {formatujSumu(r.amount, z.currency)}
@@ -358,11 +369,11 @@ function Stranka() {
                             <div className="flex items-center justify-end gap-2">
                               <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
                                 <Check className="h-3.5 w-3.5" />
-                                {datum(r.paid_at)}
-                                {r.bank_transaction_id ? " (z banky)" : ""}
+                                {datum(r.paid_at, jazyk)}
+                                {r.bank_transaction_id ? ` ${t("(z banky)")}` : ""}
                               </span>
                               <button
-                                title="Vrátiť späť"
+                                title={t("Vrátiť späť")}
                                 onClick={() =>
                                   void urobit(
                                     () =>
@@ -375,7 +386,7 @@ function Stranka() {
                                               paid_at: null,
                                             },
                                           }),
-                                    "Splátka je zase otvorená.",
+                                    t("Splátka je zase otvorená."),
                                   )
                                 }
                                 disabled={busy}
@@ -397,13 +408,13 @@ function Stranka() {
                                         paid_amount: r.amount,
                                       },
                                     }),
-                                  "Splátka označená za zaplatenú.",
+                                  t("Splátka označená za zaplatenú."),
                                 )
                               }
                               disabled={busy}
                               className="rounded-lg border px-2.5 py-1 text-xs"
                             >
-                              Zaplatené
+                              {t("Zaplatené")}
                             </button>
                           )}
                         </td>
@@ -415,24 +426,22 @@ function Stranka() {
             </div>
 
             <p className="mt-4 px-1 text-xs text-muted-foreground">
-              Platby z napojenej banky sa priraďujú samy pri každom sťahovaní pohybov. Ručne
-              odškrtnúť sa dá vždy — hodí sa, keď splátka odišla z účtu, ktorý vo Fakteri napojený
-              nie je.{" "}
+              {t("Platby z napojenej banky sa priraďujú samy pri každom sťahovaní pohybov. Ručne odškrtnúť sa dá vždy — hodí sa, keď splátka odišla z účtu, ktorý vo Fakteri napojený nie je.")}{" "}
               <Link to="/financovanie" className="text-primary">
-                Späť na zoznam
+                {t("Späť na zoznam")}
               </Link>
             </p>
           </>
         )}
 
         <section className="mt-8">
-          <h2 className="mb-2 text-sm font-medium">Doklady k zmluve</h2>
+          <h2 className="mb-2 text-sm font-medium">{t("Doklady k zmluve")}</h2>
           <PrepojeneOstatneDoklady
             cid={cid}
             financingContractId={id}
             druhNoveho="leasing_uver"
-            popisPrazdny="Oznámenia banky, dodatky, predpisy poistenia a ďalšie doklady z Iných dokladov."
-            tlacidlo="Pridať doklad"
+            popisPrazdny={t("Oznámenia banky, dodatky, predpisy poistenia a ďalšie doklady z Iných dokladov.")}
+            tlacidlo={t("Pridať doklad")}
           />
         </section>
       </PageBody>

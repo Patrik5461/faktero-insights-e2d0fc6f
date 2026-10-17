@@ -1,5 +1,6 @@
 import { PlayCircle } from "lucide-react";
 import { formatDuration, type VideoNavod } from "@/lib/faktero/video-navody";
+import { useT } from "@/lib/i18n/useT";
 
 /** Prehrávač video návodu. Video sa sťahuje až po kliknutí na prehrať (preload="none"). */
 export function VideoNavodPlayer({
@@ -9,6 +10,7 @@ export function VideoNavodPlayer({
   video: VideoNavod;
   className?: string;
 }) {
+  const { t } = useT();
   return (
     <figure
       className={`overflow-hidden rounded-xl border border-border bg-card shadow-sm ${className}`}
@@ -19,12 +21,12 @@ export function VideoNavodPlayer({
         playsInline
         poster={video.posterUrl}
         className="aspect-video w-full bg-black"
-        aria-label={`Video návod: ${video.title}`}
+        aria-label={t("Video návod: {nazov}", { nazov: video.title })}
       >
         <source src={video.videoUrl} type="video/mp4" />
-        Váš prehliadač nevie prehrať video.{" "}
+        {t("Váš prehliadač nevie prehrať video.")}{" "}
         <a href={video.videoUrl} className="text-primary underline">
-          Stiahnuť video
+          {t("Stiahnuť video")}
         </a>
         .
       </video>

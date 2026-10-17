@@ -14,6 +14,8 @@ import {
 import { NAZVY_AGEND, type AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 /**
  * Nastavenie schvaľovania dokladov — ako v Doklado: zapnutie, agendy,
@@ -21,7 +23,9 @@ import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
  * schvaľovacie cesty s úrovňami a pravidlami.
  */
 export const Route = createFileRoute("/_authenticated/nastavenia/schvalovanie")({
-  head: () => ({ meta: [{ title: "Schvaľovanie dokladov — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Schvaľovanie dokladov — Faktero") }],
+  }),
   component: Stranka,
 });
 
@@ -39,6 +43,7 @@ const AGENDY: AgendaSchvalovania[] = ["doklad", "prijata", "vystavena"];
 const vstup = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 
 function Stranka() {
+  const { t, jazyk } = useT();
   const mena = useMenaFirmy();
   const companyId = getActiveCompanyId();
   const nacitaj = useServerFn(nastavenieSchvalovaniaFn);
@@ -67,16 +72,16 @@ function Stranka() {
     });
   };
   useEffect(() => {
-    obnov().catch((e) => toast.error(e?.message ?? "Nepodarilo sa načítať"));
+    obnov().catch((e) => toast.error(e?.message ?? t("Nepodarilo sa načítať")));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
   if (!companyId || !d)
     return (
       <>
-        <PageHeader title="Schvaľovanie dokladov" />
+        <PageHeader title={t("Schvaľovanie dokladov")} />
         <PageBody>
-          <p className="text-sm text-muted-foreground">Načítavam…</p>
+          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
         </PageBody>
       </>
     );
@@ -84,7 +89,7 @@ function Stranka() {
   const spravca = ["owner", "admin"].includes(d.mojaRola);
   const ludia: Clovek[] = d.ludia;
   const meno = (id: string) =>
-    id === "manazer" ? "manažér zákazky" : (ludia.find((l) => l.id === id)?.meno ?? "používateľ");
+    id === "manazer" ? t("manažér zákazky") : (ludia.find((l) => l.id === id)?.meno ?? t("používateľ"));
 
   async function ulozNastavenie() {
     setBusy(true);
@@ -98,10 +103,10 @@ function Stranka() {
           odoslanie: n.odoslanie,
         },
       });
-      toast.success("Uložené");
+      toast.success(t("Uložené"));
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(e?.message ?? t("Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -127,11 +132,11 @@ function Stranka() {
           poradie: form.poradie,
         },
       });
-      toast.success("Cesta uložená");
+      toast.success(t("Cesta uložená"));
       setForm(null);
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(e?.message ?? t("Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -140,8 +145,8 @@ function Stranka() {
   return (
     <>
       <PageHeader
-        title="Schvaľovanie dokladov"
-        description="Kto musí doklad schváliť, kým ide do Pohody, na úhradu alebo k odberateľovi."
+        title={t("Schvaľovanie dokladov")}
+        description={t("Kto musí doklad schváliť, kým ide do Pohody, na úhradu alebo k odberateľovi.")}
       />
       <PageBody>
         <section className="rounded-xl border border-border bg-card p-5">
@@ -154,12 +159,19 @@ function Stranka() {
               className="mt-1 h-4 w-4"
             />
             <span>
-              <span className="font-medium">Schvaľovať doklady</span>
+              <span className="font-medium">{t("Schvaľovať doklady")}</span>
               <span className="block text-xs text-muted-foreground">
-                Platí pre doklady pridané od zapnutia. Do Pohody, do mesačného balíka a do príkazu na
-                úhradu potom idú len schválené.
+                {t(
+                  "Platí pre doklady pridané od zapnutia. Do Pohody, do mesačného balíka a do príkazu na úhradu potom idú len schválené.",
+                )}
                 {d.nastavenie.od
-                  ? ` Zapnuté od ${new Date(d.nastavenie.od).toLocaleString("sk-SK", { dateStyle: "medium", timeStyle: "short" })}.`
+                  ? " " +
+                    t("Zapnuté od {datum}.", {
+                      datum: new Date(d.nastavenie.od).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      }),
+                    })
                   : ""}
               </span>
             </span>
@@ -167,7 +179,7 @@ function Stranka() {
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <div className="text-xs text-muted-foreground">Čo sa schvaľuje</div>
+              <div className="text-xs text-muted-foreground">{t("Čo sa schvaľuje")}</div>
               <div className="mt-1 flex flex-wrap gap-3">
                 {AGENDY.map((a) => (
                   <label key={a} className="flex items-center gap-1.5 text-sm">
@@ -182,18 +194,18 @@ function Stranka() {
                         })
                       }
                     />
-                    {NAZVY_AGEND[a]}
+                    {t(NAZVY_AGEND[a])}
                   </label>
                 ))}
               </div>
             </div>
             <label className="block">
-              <span className="text-xs text-muted-foreground">Automaticky schváliť doklad so sumou pod ({mena.symbol})</span>
+              <span className="text-xs text-muted-foreground">{t("Automaticky schváliť doklad so sumou pod ({mena})", { mena: mena.symbol })}</span>
               <input
                 value={n.autoPod}
                 disabled={!spravca}
                 onChange={(e) => setN({ ...n, autoPod: e.target.value })}
-                placeholder="napr. 50"
+                placeholder={t("napr. 50")}
                 inputMode="decimal"
                 className={vstup}
               />
@@ -206,7 +218,7 @@ function Stranka() {
               checked={n.odoslanie}
               onChange={(e) => setN({ ...n, odoslanie: e.target.checked })}
             />
-            Vystavenú faktúru odoslať (mailom, eFaktúrou) až po schválení
+            {t("Vystavenú faktúru odoslať (mailom, eFaktúrou) až po schválení")}
           </label>
           {spravca ? (
             <div className="mt-4 flex justify-end">
@@ -215,11 +227,11 @@ function Stranka() {
                 disabled={busy}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                {busy && <Loader2 className="h-4 w-4 animate-spin" />} Uložiť
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Uložiť")}
               </button>
             </div>
           ) : (
-            <p className="mt-3 text-xs text-muted-foreground">Nastavenie mení majiteľ alebo správca firmy.</p>
+            <p className="mt-3 text-xs text-muted-foreground">{t("Nastavenie mení majiteľ alebo správca firmy.")}</p>
           )}
         </section>
 
@@ -227,12 +239,12 @@ function Stranka() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Schvaľovacie cesty
+                {t("Schvaľovacie cesty")}
               </h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Úrovne od najnižšej po najvyššiu. Schválenie vyššou úrovňou platí aj za nižšie. Prvá cesta,
-                ktorej pravidlá sedia, sa použije; inak predvolená; bez ciest stačí jedno schválenie
-                majiteľom, správcom alebo účtovníkom.
+                {t(
+                  "Úrovne od najnižšej po najvyššiu. Schválenie vyššou úrovňou platí aj za nižšie. Prvá cesta, ktorej pravidlá sedia, sa použije; inak predvolená; bez ciest stačí jedno schválenie majiteľom, správcom alebo účtovníkom.",
+                )}
               </p>
             </div>
             {spravca && (
@@ -242,7 +254,7 @@ function Stranka() {
                 }
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                <Plus className="h-4 w-4" /> Nová cesta
+                <Plus className="h-4 w-4" /> {t("Nová cesta")}
               </button>
             )}
           </div>
@@ -250,14 +262,14 @@ function Stranka() {
           {form && (
             <div className="mt-4 space-y-3 rounded-md border border-primary/30 bg-primary/5 p-3">
               <label className="block">
-                <span className="text-xs text-muted-foreground">Názov</span>
+                <span className="text-xs text-muted-foreground">{t("Názov")}</span>
                 <input value={form.nazov} onChange={(e) => setForm({ ...form, nazov: e.target.value })} className={vstup} />
               </label>
               {form.urovne.map((u, i) => (
                 <div key={i}>
-                  <div className="text-xs text-muted-foreground">{i + 1}. úroveň — schvaľovatelia</div>
+                  <div className="text-xs text-muted-foreground">{t("{n}. úroveň — schvaľovatelia", { n: i + 1 })}</div>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                    {[...ludia, { id: "manazer", rola: "", meno: "manažér zákazky dokladu" }].map((l) => (
+                    {[...ludia, { id: "manazer", rola: "", meno: t("manažér zákazky dokladu") }].map((l) => (
                       <label key={l.id} className="flex items-center gap-1.5 text-sm">
                         <input
                           type="checkbox"
@@ -279,7 +291,7 @@ function Stranka() {
                         onClick={() => setForm({ ...form, urovne: form.urovne.filter((_, j) => j !== i) })}
                         className="text-xs text-destructive hover:underline"
                       >
-                        odobrať úroveň
+                        {t("odobrať úroveň")}
                       </button>
                     )}
                   </div>
@@ -290,27 +302,27 @@ function Stranka() {
                   onClick={() => setForm({ ...form, urovne: [...form.urovne, []] })}
                   className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Pridať ďalšiu úroveň
+                  <Plus className="h-3.5 w-3.5" /> {t("Pridať ďalšiu úroveň")}
                 </button>
               )}
               <div className="grid gap-3 sm:grid-cols-4">
                 <label className="block">
-                  <span className="text-xs text-muted-foreground">Pre doklady</span>
+                  <span className="text-xs text-muted-foreground">{t("Pre doklady")}</span>
                   <select
                     value={form.podmienky.agenda ?? ""}
                     onChange={(e) => setForm({ ...form, podmienky: { ...form.podmienky, agenda: e.target.value as any } })}
                     className={vstup}
                   >
-                    <option value="">všetky</option>
+                    <option value="">{t("všetky")}</option>
                     {AGENDY.map((a) => (
                       <option key={a} value={a}>
-                        {NAZVY_AGEND[a]}
+                        {t(NAZVY_AGEND[a])}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="block">
-                  <span className="text-xs text-muted-foreground">IČO dodávateľa / odberateľa</span>
+                  <span className="text-xs text-muted-foreground">{t("IČO dodávateľa / odberateľa")}</span>
                   <input
                     value={form.podmienky.ico ?? ""}
                     onChange={(e) => setForm({ ...form, podmienky: { ...form.podmienky, ico: e.target.value } })}
@@ -318,7 +330,7 @@ function Stranka() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-muted-foreground">Suma od ({mena.symbol})</span>
+                  <span className="text-xs text-muted-foreground">{t("Suma od ({mena})", { mena: mena.symbol })}</span>
                   <input
                     value={form.podmienky.suma_od ?? ""}
                     inputMode="decimal"
@@ -335,7 +347,7 @@ function Stranka() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-muted-foreground">Predkontácia</span>
+                  <span className="text-xs text-muted-foreground">{t("Predkontácia")}</span>
                   <input
                     value={form.podmienky.predkontacia ?? ""}
                     onChange={(e) => setForm({ ...form, podmienky: { ...form.podmienky, predkontacia: e.target.value } })}
@@ -349,18 +361,18 @@ function Stranka() {
                   checked={form.predvolena}
                   onChange={(e) => setForm({ ...form, predvolena: e.target.checked })}
                 />
-                Predvolená cesta (pre doklady, na ktoré nesedí iné pravidlo)
+                {t("Predvolená cesta (pre doklady, na ktoré nesedí iné pravidlo)")}
               </label>
               <div className="flex justify-end gap-2">
                 <button onClick={() => setForm(null)} className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
-                  Zrušiť
+                  {t("Zrušiť")}
                 </button>
                 <button
                   onClick={ulozCestu}
                   disabled={busy || !form.nazov.trim() || !form.urovne.some((u) => u.length)}
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  {busy && <Loader2 className="h-4 w-4 animate-spin" />} Uložiť cestu
+                  {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Uložiť cestu")}
                 </button>
               </div>
             </div>
@@ -368,7 +380,7 @@ function Stranka() {
 
           {d.cesty.length === 0 ? (
             <p className="mt-4 text-sm text-muted-foreground">
-              Zatiaľ žiadna cesta — schvaľuje sa jednoducho (jedno schválenie majiteľom, správcom alebo účtovníkom).
+              {t("Zatiaľ žiadna cesta — schvaľuje sa jednoducho (jedno schválenie majiteľom, správcom alebo účtovníkom).")}
             </p>
           ) : (
             <ul className="mt-4 divide-y divide-border">
@@ -378,7 +390,7 @@ function Stranka() {
                     <div className="font-medium">
                       {c.nazov}
                       {c.predvolena && (
-                        <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">predvolená</span>
+                        <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{t("predvolená")}</span>
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">
@@ -386,13 +398,17 @@ function Stranka() {
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {[
-                        c.podmienky?.agenda ? NAZVY_AGEND[c.podmienky.agenda as AgendaSchvalovania] : null,
-                        c.podmienky?.ico ? `IČO ${c.podmienky.ico}` : null,
-                        c.podmienky?.suma_od != null ? `od ${c.podmienky.suma_od} ${mena.symbol}` : null,
-                        c.podmienky?.predkontacia ? `predkontácia ${c.podmienky.predkontacia}` : null,
+                        c.podmienky?.agenda ? t(NAZVY_AGEND[c.podmienky.agenda as AgendaSchvalovania]) : null,
+                        c.podmienky?.ico ? t("IČO {ico}", { ico: c.podmienky.ico }) : null,
+                        c.podmienky?.suma_od != null
+                          ? t("od {suma} {mena}", { suma: c.podmienky.suma_od, mena: mena.symbol })
+                          : null,
+                        c.podmienky?.predkontacia
+                          ? t("predkontácia {kod}", { kod: c.podmienky.predkontacia })
+                          : null,
                       ]
                         .filter(Boolean)
-                        .join(" · ") || "bez pravidiel"}
+                        .join(" · ") || t("bez pravidiel")}
                     </div>
                   </div>
                   {spravca && (
@@ -409,22 +425,22 @@ function Stranka() {
                           })
                         }
                         className="rounded p-1 text-muted-foreground hover:bg-secondary"
-                        aria-label={`Upraviť ${c.nazov}`}
+                        aria-label={t("Upraviť {nazov}", { nazov: c.nazov })}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={async () => {
-                          if (!(await potvrd(`Zmazať cestu ${c.nazov}?`))) return;
+                          if (!(await potvrd(t("Zmazať cestu {nazov}?", { nazov: c.nazov })))) return;
                           try {
                             await zmazC({ data: { company_id: companyId, id: c.id } });
                             await obnov();
                           } catch (e: any) {
-                            toast.error(e?.message ?? "Nepodarilo sa");
+                            toast.error(e?.message ?? t("Nepodarilo sa"));
                           }
                         }}
                         className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                        aria-label={`Zmazať ${c.nazov}`}
+                        aria-label={t("Zmazať {nazov}", { nazov: c.nazov })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

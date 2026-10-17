@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
@@ -77,7 +79,7 @@ const PAY_ERRORS: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/$id/")({
-  head: () => ({ meta: [{ title: "Detail prijatej faktúry — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Detail prijatej faktúry — Faktero") }] }),
   component: PurchaseInvoiceDetail,
 });
 
@@ -101,6 +103,7 @@ function fmt(n: number, c = "EUR") {
 }
 
 function PurchaseInvoiceDetail() {
+  const { t } = useT();
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [presunPrilohy, setPresunPrilohy] = useState(false);
@@ -156,11 +159,11 @@ function PurchaseInvoiceDetail() {
     const stav = url.searchParams.get("platba");
     const chyba = url.searchParams.get("platba_chyba");
     if (stav) {
-      const text = PAYMENT_STATUS_TEXT[stav] ?? stav;
-      if (stav === "RJCT") toast.error(`Platba zamietnutá bankou`);
-      else toast.success(`Platba odoslaná do banky — ${text}`);
+      const text = t(PAYMENT_STATUS_TEXT[stav] ?? stav);
+      if (stav === "RJCT") toast.error(t("Platba zamietnutá bankou"));
+      else toast.success(t("Platba odoslaná do banky — {stav}", { stav: text }));
     }
-    if (chyba) toast.error(`Platba zlyhala: ${chyba}`);
+    if (chyba) toast.error(t("Platba zlyhala: {chyba}", { chyba }));
     if (stav || chyba) {
       window.history.replaceState({}, "", url.pathname);
       load();
@@ -183,7 +186,11 @@ function PurchaseInvoiceDetail() {
       // Z účtu sa zatiaľ nič nestrhlo — platbu vykoná až podpis v banke.
       window.location.href = authorize_url;
     } catch (e: any) {
-      toast.error(PAY_ERRORS[e?.message] ?? e?.message ?? "Platbu sa nepodarilo založiť");
+      toast.error(
+        PAY_ERRORS[e?.message]
+          ? t(PAY_ERRORS[e?.message])
+          : (e?.message ?? t("Platbu sa nepodarilo založiť")),
+      );
       setPaying(false);
     }
   }
@@ -193,11 +200,11 @@ function PurchaseInvoiceDetail() {
     if (!cid) return;
     try {
       const r = await refreshPayment({ data: { company_id: cid, payment_row_id: rowId } });
-      toast.success(PAYMENT_STATUS_TEXT[r.transaction_status] ?? r.transaction_status);
+      toast.success(t(PAYMENT_STATUS_TEXT[r.transaction_status] ?? r.transaction_status));
       load();
       loadBankStuff();
     } catch (e: any) {
-      toast.error(e?.message ?? "Stav sa nepodarilo načítať");
+      toast.error(e?.message ?? t("Stav sa nepodarilo načítať"));
     }
   }
 
@@ -230,11 +237,11 @@ function PurchaseInvoiceDetail() {
     if (!uhrada) return;
     try {
       await rozparujFn({ data: { transaction_id: uhrada.transactionId } });
-      toast.success("Väzba na platbu zrušená.");
+      toast.success(t("Väzba na platbu zrušená."));
       setUhrada(null);
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Zrušiť sa to nepodarilo.");
+      toast.error(e?.message ?? t("Zrušiť sa to nepodarilo."));
     }
   }
 
@@ -244,7 +251,7 @@ function PurchaseInvoiceDetail() {
       .update({ status, ...extra })
       .eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Stav aktualizovaný");
+    toast.success(t("Stav aktualizovaný"));
     load();
   }
 
@@ -254,25 +261,29 @@ function PurchaseInvoiceDetail() {
       .update({ job_id: jobId || null })
       .eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success(jobId ? "Zákazka priradená" : "Zákazka odobraná");
+    toast.success(jobId ? t("Zákazka priradená") : t("Zákazka odobraná"));
     load();
   }
 
   async function markPaid() {
-    const d = await zadaj("Dátum úhrady", { predvolene: new Date().toISOString().slice(0, 10), typ: "date" }, { potvrdit: "Označiť ako uhradenú" });
+    const d = await zadaj(
+      t("Dátum úhrady"),
+      { predvolene: new Date().toISOString().slice(0, 10), typ: "date" },
+      { potvrdit: t("Označiť ako uhradenú") },
+    );
     if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
     await setStatus("paid", { payment_date: d });
   }
 
   const doNespracovanych = useServerFn(prijataDoNespracovanychFn);
   async function vratitDoNespracovanych() {
-    if (!(await potvrd("Vrátiť faktúru do Nespracovaných dokladov? Zmizne odtiaľto a spracujete ju znova."))) return;
+    if (!(await potvrd(t("Vrátiť faktúru do Nespracovaných dokladov? Zmizne odtiaľto a spracujete ju znova.")))) return;
     try {
       const r = await doNespracovanych({ data: { id } });
-      toast.success("Faktúra je späť v Nespracovaných");
+      toast.success(t("Faktúra je späť v Nespracovaných"));
       navigate({ to: "/nespracovane/$id", params: { id: r.id } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(e?.message ?? t("Nepodarilo sa"));
     }
   }
 
@@ -284,23 +295,27 @@ function PurchaseInvoiceDetail() {
       .update({ locked_at: zamknut ? new Date().toISOString() : null, locked_by: zamknut ? (u.user?.id ?? null) : null } as any)
       .eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success(zamknut ? "Faktúra je zamknutá — sumy, dátumy ani zaúčtovanie sa nedajú meniť" : "Faktúra je odomknutá");
+    toast.success(
+      zamknut
+        ? t("Faktúra je zamknutá — sumy, dátumy ani zaúčtovanie sa nedajú meniť")
+        : t("Faktúra je odomknutá"),
+    );
     await load();
   }
 
   async function del() {
-    if (!(await potvrd("Naozaj vymazať túto prijatú faktúru?"))) return;
+    if (!(await potvrd(t("Naozaj vymazať túto prijatú faktúru?")))) return;
     const { error } = await supabase
       .from("purchase_invoices")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Vymazané");
+    toast.success(t("Vymazané"));
     navigate({ to: "/prijate-faktury" });
   }
 
   async function downloadPdf() {
-    if (!row?.file_path) return toast.error("Bez prílohy");
+    if (!row?.file_path) return toast.error(t("Bez prílohy"));
     const { data, error } = await supabase.storage
       .from("purchase-invoices")
       // Bez koncovky sa súbor uloží ako „VS-2026-777" a systém ho nevie otvoriť.
@@ -309,7 +324,7 @@ function PurchaseInvoiceDetail() {
           row.file_path.split(".").pop() ?? "pdf"
         ).toLowerCase()}`,
       });
-    if (error || !data) return toast.error(error?.message ?? "Chyba");
+    if (error || !data) return toast.error(error?.message ?? t("Chyba"));
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
 
@@ -335,17 +350,17 @@ function PurchaseInvoiceDetail() {
     return (
       <PageBody>
         <div className="rounded-xl border border-border bg-card p-8 text-center text-sm">
-          <p>Tento doklad v aktívnej firme neexistuje.</p>
+          <p>{t("Tento doklad v aktívnej firme neexistuje.")}</p>
           <p className="mt-1 text-muted-foreground">
-            Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.
+            {t("Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.")}
           </p>
           <Link to="/prijate-faktury" className="mt-4 inline-block text-primary underline">
-            Späť na prijaté faktúry
+            {t("Späť na prijaté faktúry")}
           </Link>
         </div>
       </PageBody>
     );
-  if (!row) return <PageBody>Načítavam…</PageBody>;
+  if (!row) return <PageBody>{t("Načítavam…")}</PageBody>;
 
   /*
     Samofaktúra pred odsúhlasením je len návrh — prijatou faktúrou sa stane
@@ -357,11 +372,17 @@ function PurchaseInvoiceDetail() {
   return (
     <>
       <PageHeader
-        title={`${samo ? (row.opravuje_cislo ? "Dobropis (samofaktúra)" : "Samofaktúra") : (row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra"} ${row.invoice_number}`}
+        title={`${t(samo ? (row.opravuje_cislo ? "Dobropis (samofaktúra)" : "Samofaktúra") : (row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra")} ${row.invoice_number}`}
         description={
           (row as any).type === "proforma"
-            ? `Dodávateľ: ${row.supplier_name} · Vystavená ${datumNaDoklade(row.issue_date)} · Nie je daňový doklad — daň prinesie ostrá faktúra.`
-            : `Dodávateľ: ${row.supplier_name} · Vystavená ${datumNaDoklade(row.issue_date)}`
+            ? t(
+                "Dodávateľ: {dodavatel} · Vystavená {datum} · Nie je daňový doklad — daň prinesie ostrá faktúra.",
+                { dodavatel: row.supplier_name, datum: datumNaDoklade(row.issue_date) },
+              )
+            : t("Dodávateľ: {dodavatel} · Vystavená {datum}", {
+                dodavatel: row.supplier_name,
+                datum: datumNaDoklade(row.issue_date),
+              })
         }
         action={
           <div className="flex flex-wrap gap-2">
@@ -373,7 +394,7 @@ function PurchaseInvoiceDetail() {
             <span
               className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASS[row.status] ?? ""}`}
             >
-              {STATUS_LABEL[row.status] ?? row.status}
+              {t(STATUS_LABEL[row.status] ?? row.status)}
             </span>
             {row.status !== "cancelled" && !samo && (
               <Link
@@ -381,7 +402,7 @@ function PurchaseInvoiceDetail() {
                 params={{ id }}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
               >
-                <Pencil className="h-4 w-4" /> Upraviť
+                <Pencil className="h-4 w-4" /> {t("Upraviť")}
               </Link>
             )}
             {(row as any).type === "regular" && !navrh && (
@@ -392,7 +413,7 @@ function PurchaseInvoiceDetail() {
                 onClick={markPaid}
                 className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
               >
-                <CheckCircle2 className="h-4 w-4" /> Označiť ako zaplatené
+                <CheckCircle2 className="h-4 w-4" /> {t("Označiť ako zaplatené")}
               </button>
             )}
             {row.file_path && (
@@ -400,7 +421,7 @@ function PurchaseInvoiceDetail() {
                 onClick={downloadPdf}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
               >
-                <Download className="h-4 w-4" /> Stiahnuť PDF
+                <Download className="h-4 w-4" /> {t("Stiahnuť PDF")}
               </button>
             )}
             {/* Menej časté akcie sú v ponuke — jedenásť tlačidiel lámalo nadpis do troch riadkov. */}
@@ -409,8 +430,8 @@ function PurchaseInvoiceDetail() {
                 <button
                   type="button"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background hover:bg-secondary"
-                  aria-label="Ďalšie akcie"
-                  title="Ďalšie akcie"
+                  aria-label={t("Ďalšie akcie")}
+                  title={t("Ďalšie akcie")}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
@@ -418,15 +439,15 @@ function PurchaseInvoiceDetail() {
               <DropdownMenuContent align="end" className="w-64">
                 {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
                   <DropdownMenuItem onClick={() => setStatus("received")}>
-                    <CheckCircle2 className="mr-2 h-4 w-4" /> Označiť ako prijaté
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> {t("Označiť ako prijaté")}
                   </DropdownMenuItem>
                 )}
                 {row.file_path && !row.exported_at && !samo && (
                   <DropdownMenuItem
                     onClick={() => setPresunPrilohy(true)}
-                    title="Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha"
+                    title={t("Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha")}
                   >
-                    <Paperclip className="mr-2 h-4 w-4" /> Presunúť ako prílohu
+                    <Paperclip className="mr-2 h-4 w-4" /> {t("Presunúť ako prílohu")}
                   </DropdownMenuItem>
                 )}
                 {!row.exported_at && !samo && (
@@ -436,15 +457,15 @@ function PurchaseInvoiceDetail() {
                     ) : (
                       <Lock className="mr-2 h-4 w-4" />
                     )}
-                    {(row as any).locked_at ? "Odomknúť úpravy" : "Zamknúť proti úpravám"}
+                    {(row as any).locked_at ? t("Odomknúť úpravy") : t("Zamknúť proti úpravám")}
                   </DropdownMenuItem>
                 )}
                 {!row.exported_at && !(row as any).locked_at && !samo && (
                   <DropdownMenuItem
                     onClick={vratitDoNespracovanych}
-                    title="Zle zaradená faktúra — spracuje sa znova v Nespracovaných dokladoch"
+                    title={t("Zle zaradená faktúra — spracuje sa znova v Nespracovaných dokladoch")}
                   >
-                    <Undo2 className="mr-2 h-4 w-4" /> Vrátiť do Nespracovaných
+                    <Undo2 className="mr-2 h-4 w-4" /> {t("Vrátiť do Nespracovaných")}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
@@ -453,11 +474,11 @@ function PurchaseInvoiceDetail() {
                     onClick={() => setStatus("cancelled")}
                     className="text-rose-700 focus:text-rose-700"
                   >
-                    <Ban className="mr-2 h-4 w-4" /> Storno
+                    <Ban className="mr-2 h-4 w-4" /> {t("Storno")}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={del} className="text-destructive focus:text-destructive">
-                  <Trash2 className="mr-2 h-4 w-4" /> Vymazať
+                  <Trash2 className="mr-2 h-4 w-4" /> {t("Vymazať")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -488,7 +509,7 @@ function PurchaseInvoiceDetail() {
             <div className="grid min-w-0 gap-6 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 sm:p-6">
               <div className="min-w-0 break-words">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Dodávateľ
+                  {t("Dodávateľ")}
                 </div>
                 <div className="mt-1 font-medium">{row.supplier_name}</div>
                 {(row.supplier_street || row.supplier_city) && (
@@ -499,36 +520,40 @@ function PurchaseInvoiceDetail() {
                   </div>
                 )}
                 <div className="mt-2 text-sm">
-                  IČO: {row.supplier_ico ?? "—"} · DIČ: {row.supplier_dic ?? "—"}
+                  {t("IČO")}: {row.supplier_ico ?? "—"} · {t("DIČ")}: {row.supplier_dic ?? "—"}
                 </div>
                 {row.supplier_ic_dph && (
-                  <div className="text-sm">IČ DPH: {row.supplier_ic_dph}</div>
+                  <div className="text-sm">
+                    {t("IČ DPH")}: {row.supplier_ic_dph}
+                  </div>
                 )}
                 {row.supplier_iban && (
                   <div className="mt-2 font-mono text-sm">{row.supplier_iban}</div>
                 )}
                 {row.variable_symbol && (
-                  <div className="text-sm text-muted-foreground">VS: {row.variable_symbol}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {t("VS")}: {row.variable_symbol}
+                  </div>
                 )}
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Dátumy</div>
-                <Row label="Vystavenie" value={datumNaDoklade(row.issue_date)} />
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Dátumy")}</div>
+                <Row label={t("Vystavenie")} value={datumNaDoklade(row.issue_date)} />
                 <Row
-                  label="Dodanie (daňové plnenie)"
+                  label={t("Dodanie (daňové plnenie)")}
                   value={
                     row.delivery_date
                       ? datumNaDoklade(row.delivery_date)
-                      : `${datumNaDoklade(row.issue_date)} (ako vystavenie)`
+                      : t("{datum} (ako vystavenie)", { datum: datumNaDoklade(row.issue_date) })
                   }
                 />
-                <Row label="Prijatie" value={datumNaDoklade(row.received_date)} />
-                <Row label="Splatnosť" value={popisSplatnosti(row)} />
-                {row.payment_date && <Row label="Úhrada" value={datumNaDoklade(row.payment_date)} />}
+                <Row label={t("Prijatie")} value={datumNaDoklade(row.received_date)} />
+                <Row label={t("Splatnosť")} value={popisSplatnosti(row)} />
+                {row.payment_date && <Row label={t("Úhrada")} value={datumNaDoklade(row.payment_date)} />}
                 {uhrada && (
                   <div className="mt-1 flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs">
                     <span className="min-w-0">
-                      <span className="block font-medium">Zaplatené z účtu</span>
+                      <span className="block font-medium">{t("Zaplatené z účtu")}</span>
                       <span className="block truncate text-muted-foreground">
                         {datumNaDoklade(uhrada.datum)}
                         {uhrada.protistrana ? ` · ${uhrada.protistrana}` : ""}
@@ -538,7 +563,7 @@ function PurchaseInvoiceDetail() {
                       onClick={zrusVazbu}
                       className="shrink-0 rounded border border-border px-2 py-1 text-muted-foreground hover:bg-background"
                     >
-                      Zrušiť väzbu
+                      {t("Zrušiť väzbu")}
                     </button>
                   </div>
                 )}
@@ -575,8 +600,8 @@ function PurchaseInvoiceDetail() {
                 if (error) return toast.error(error.message);
                 toast.success(
                   vypnut
-                    ? "Položky sú vypnuté — faktúra sa zaúčtuje podľa súčtov dokladu."
-                    : "Položky sú znova zapnuté.",
+                    ? t("Položky sú vypnuté — faktúra sa zaúčtuje podľa súčtov dokladu.")
+                    : t("Položky sú znova zapnuté."),
                 );
                 load();
               }}
@@ -598,10 +623,10 @@ function PurchaseInvoiceDetail() {
 
           <aside className="min-w-0 space-y-4">
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Sumár</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
               <div className="mt-3 space-y-1 text-sm">
-                <Row label="Bez DPH" value={fmt(Number(row.amount_without_vat), row.currency)} />
-                <Row label="DPH" value={fmt(Number(row.vat_amount), row.currency)} />
+                <Row label={t("Bez DPH")} value={fmt(Number(row.amount_without_vat), row.currency)} />
+                <Row label={t("DPH")} value={fmt(Number(row.vat_amount), row.currency)} />
               </div>
               <div className="mt-3 border-t border-border pt-3 text-lg font-semibold">
                 {fmt(Number(row.amount_total), row.currency)}
@@ -615,74 +640,84 @@ function PurchaseInvoiceDetail() {
               <JobPicker
                 value={row.job_id ?? ""}
                 onChange={(v) => nastavZakazku(v)}
-                label="Zákazka"
+                label={t("Zákazka")}
               />
             </div>
             <div className="rounded-xl border border-border bg-card p-5 text-sm">
               <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                <Wallet className="h-3.5 w-3.5" /> Platba
+                <Wallet className="h-3.5 w-3.5" /> {t("Platba")}
               </div>
-              <div className="mt-2">Spôsob: {row.payment_method ?? "—"}</div>
-              <div>Splatnosť: {popisSplatnosti(row)}</div>
+              <div className="mt-2">
+                {t("Spôsob:")} {row.payment_method ? t(row.payment_method) : "—"}
+              </div>
+              <div>
+                {t("Splatnosť:")} {popisSplatnosti(row)}
+              </div>
               {predlzena(row) && (
                 <div className="text-xs text-muted-foreground">
-                  Oprava odpočtu podľa § 53b sa počíta od pôvodnej splatnosti.
-                  {row.predlzenie_poznamka ? ` Dohoda: ${row.predlzenie_poznamka}` : ""}
+                  {t("Oprava odpočtu podľa § 53b sa počíta od pôvodnej splatnosti.")}
+                  {row.predlzenie_poznamka
+                    ? " " + t("Dohoda: {text}", { text: row.predlzenie_poznamka })
+                    : ""}
                 </div>
               )}
               <div className="mt-2">
                 <PredlzitSplatnost druh="prijata" faktura={row} onZmena={load} />
               </div>
-              {row.payment_date && <div>Uhradené: {datumNaDoklade(row.payment_date)}</div>}
+              {row.payment_date && (
+                <div>
+                  {t("Uhradené:")} {datumNaDoklade(row.payment_date)}
+                </div>
+              )}
             </div>
 
             {accounts.length > 0 && row.status !== "cancelled" && !navrh && (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-900/40">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
-                  <Landmark className="h-3.5 w-3.5" /> Zaplatiť cez banku
+                  <Landmark className="h-3.5 w-3.5" /> {t("Zaplatiť cez banku")}
                 </div>
 
                 {!row.supplier_iban ? (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Faktúra nemá IBAN dodávateľa — bez neho sa príkaz nedá zadať.
+                    {t("Faktúra nemá IBAN dodávateľa — bez neho sa príkaz nedá zadať.")}
                   </p>
                 ) : row.status === "paid" ? (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Faktúra je označená ako zaplatená.
+                    {t("Faktúra je označená ako zaplatená.")}
                   </p>
                 ) : (
                   <>
                     <div className="mt-3 space-y-1 text-sm">
                       <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground">Príjemca</span>
+                        <span className="text-muted-foreground">{t("Príjemca")}</span>
                         <span className="text-right">{row.supplier_name}</span>
                       </div>
                       <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground">IBAN</span>
+                        <span className="text-muted-foreground">{t("IBAN")}</span>
                         <span className="font-mono text-xs">{row.supplier_iban}</span>
                       </div>
                       <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground">Suma</span>
+                        <span className="text-muted-foreground">{t("Suma")}</span>
                         <span className="font-semibold tabular-nums">
                           {fmt(Number(row.amount_total), row.currency)}
                         </span>
                       </div>
                       {row.variable_symbol && (
                         <div className="flex justify-between gap-2">
-                          <span className="text-muted-foreground">VS</span>
+                          <span className="text-muted-foreground">{t("VS")}</span>
                           <span className="tabular-nums">{row.variable_symbol}</span>
                         </div>
                       )}
                     </div>
 
                     <label className="mt-3 block text-xs text-muted-foreground">
-                      Z účtu
+                      {t("Z účtu")}
                       <select
                         value={debtorAccountId}
                         onChange={(e) => setDebtorAccountId(e.target.value)}
                         className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
                       >
-                        <option value="">Vyberiem v banke</option>
+                        <option value="">{t("Vyberiem v banke")}</option>
                         {accounts.map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.account_name ?? a.iban}
@@ -697,11 +732,10 @@ function PurchaseInvoiceDetail() {
                       className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                     >
                       <Landmark className="h-4 w-4" />
-                      {paying ? "Pripravujem…" : "Zaplatiť cez banku"}
+                      {paying ? t("Pripravujem…") : t("Zaplatiť cez banku")}
                     </button>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Presmerujeme vás do Tatra banky na podpis. Z účtu sa nič nestrhne, kým platbu
-                      nepodpíšete.
+                      {t("Presmerujeme vás do Tatra banky na podpis. Z účtu sa nič nestrhne, kým platbu nepodpíšete.")}
                     </p>
                   </>
                 )}
@@ -709,16 +743,18 @@ function PurchaseInvoiceDetail() {
                 {payments.length > 0 && (
                   <div className="mt-4 border-t border-emerald-200 pt-3 dark:border-emerald-900/40">
                     <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                      História platieb
+                      {t("História platieb")}
                     </div>
                     <ul className="mt-2 space-y-2">
                       {payments.map((p) => (
                         <li key={p.id} className="flex items-start justify-between gap-2 text-sm">
                           <div className="min-w-0">
                             <div className="font-medium">
-                              {PAYMENT_STATUS_TEXT[p.transaction_status] ??
-                                p.transaction_status ??
-                                p.status}
+                              {t(
+                                PAYMENT_STATUS_TEXT[p.transaction_status] ??
+                                  p.transaction_status ??
+                                  p.status,
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {new Date(p.created_at).toLocaleString("sk-SK")} ·{" "}
@@ -730,7 +766,7 @@ function PurchaseInvoiceDetail() {
                           </div>
                           <button
                             onClick={() => onRefreshPayment(p.id)}
-                            title="Načítať aktuálny stav z banky"
+                            title={t("Načítať aktuálny stav z banky")}
                             className="rounded-md border border-border bg-background p-1.5 hover:bg-secondary"
                           >
                             <RefreshCw className="h-3.5 w-3.5" />
@@ -782,6 +818,7 @@ function PolozkyDokladu({
   mozeMenit?: boolean;
   onPrepni?: (vypnut: boolean) => void;
 }) {
+  const { t } = useT();
   const jeVypnute = Array.isArray(vypnute) && vypnute.length > 0 && (!Array.isArray(items) || items.length === 0);
   const zoznam = (jeVypnute ? vypnute : items) as any[];
   if (!Array.isArray(zoznam) || zoznam.length === 0) return null;
@@ -792,17 +829,21 @@ function PolozkyDokladu({
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
         <h2 className="text-sm font-medium">
-          {samo ? "Položky" : "Položky z dokladu"}
+          {samo ? t("Položky") : t("Položky z dokladu")}
           {jeVypnute && (
             <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-              vypnuté
+              {t("vypnuté")}
             </span>
           )}
         </h2>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">
-            {zoznam.length === 1 ? "1 položka" : zoznam.length < 5 ? `${zoznam.length} položky` : `${zoznam.length} položiek`}
-            {samo ? " · ceny bez DPH" : " · prečítané z prílohy"}
+            {zoznam.length === 1
+              ? t("1 položka")
+              : zoznam.length < 5
+                ? t("{n} položky", { n: zoznam.length })
+                : t("{n} položiek", { n: zoznam.length })}
+            {samo ? ` · ${t("ceny bez DPH")}` : ` · ${t("prečítané z prílohy")}`}
           </span>
           {!samo && onPrepni && mozeMenit !== false && (
             <button
@@ -811,11 +852,11 @@ function PolozkyDokladu({
               className="rounded-md border border-border px-2.5 py-1 text-xs hover:bg-secondary"
               title={
                 jeVypnute
-                  ? "Vrátiť položky — rozúčtovanie a export ich znova použijú"
-                  : "Zle vyčítané položky — účtovať len podľa súčtov a rozpisu DPH v hlavičke"
+                  ? t("Vrátiť položky — rozúčtovanie a export ich znova použijú")
+                  : t("Zle vyčítané položky — účtovať len podľa súčtov a rozpisu DPH v hlavičke")
               }
             >
-              {jeVypnute ? "Zapnúť položky" : "Vypnúť položky"}
+              {jeVypnute ? t("Zapnúť položky") : t("Vypnúť položky")}
             </button>
           )}
         </div>
@@ -824,11 +865,11 @@ function PolozkyDokladu({
         <table className="w-full min-w-[34rem] text-sm">
           <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="p-3">Položka</th>
-              <th className="p-3 text-right">Množstvo</th>
-              <th className="p-3 text-right">Cena za kus</th>
-              <th className="p-3 text-right">DPH</th>
-              <th className="p-3 text-right">Spolu</th>
+              <th className="p-3">{t("Položka")}</th>
+              <th className="p-3 text-right">{t("Množstvo")}</th>
+              <th className="p-3 text-right">{t("Cena za kus")}</th>
+              <th className="p-3 text-right">{t("DPH")}</th>
+              <th className="p-3 text-right">{t("Spolu")}</th>
             </tr>
           </thead>
           <tbody className={`divide-y divide-border ${jeVypnute ? "line-through" : ""}`}>
@@ -850,10 +891,10 @@ function PolozkyDokladu({
       </div>
       <p className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
         {samo
-          ? "Položky samofaktúry určujú jej sumy a DPH po sadzbách. Skladové položky sa po odsúhlasení dajú prijať na sklad."
+          ? t("Položky samofaktúry určujú jej sumy a DPH po sadzbách. Skladové položky sa po odsúhlasení dajú prijať na sklad.")
           : jeVypnute
-            ? "Položky sú vypnuté — zaúčtovanie, export do Pohody aj výkazy k DPH idú len podľa súčtov a rozpisu DPH v hlavičke dokladu."
-            : "Rozhodujú sumy v hlavičke dokladu. Položky sa použijú pri rozúčtovaní a v exporte do Pohody, ak sedia so súčtami — keď sú vyčítané zle, vypnite ich."}
+            ? t("Položky sú vypnuté — zaúčtovanie, export do Pohody aj výkazy k DPH idú len podľa súčtov a rozpisu DPH v hlavičke dokladu.")
+            : t("Rozhodujú sumy v hlavičke dokladu. Položky sa použijú pri rozúčtovaní a v exporte do Pohody, ak sedia so súčtami — keď sú vyčítané zle, vypnite ich.")}
       </p>
     </div>
   );
@@ -874,24 +915,25 @@ function NahladPrilohy({
   maPrilohu: boolean;
   stiahni: () => void;
 }) {
+  const { t } = useT();
   if (!maPrilohu) return null;
   const jeObrazok = (mime ?? "").startsWith("image/");
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
-        <h2 className="text-sm font-medium">Náhľad dokladu</h2>
+        <h2 className="text-sm font-medium">{t("Náhľad dokladu")}</h2>
         <button
           onClick={stiahni}
           className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
         >
-          <Download className="h-3.5 w-3.5" /> Stiahnuť
+          <Download className="h-3.5 w-3.5" /> {t("Stiahnuť")}
         </button>
       </div>
       {!url ? (
-        <div className="p-8 text-center text-sm text-muted-foreground">Načítavam náhľad…</div>
+        <div className="p-8 text-center text-sm text-muted-foreground">{t("Načítavam náhľad…")}</div>
       ) : jeObrazok ? (
-        <img src={url} alt="Doklad" className="max-h-[70vh] w-full bg-muted/20 object-contain" />
+        <img src={url} alt={t("Doklad")} className="max-h-[70vh] w-full bg-muted/20 object-contain" />
       ) : (
         /* Vlastné vykreslenie — na zabudovaný prehliadač PDF sa spoľahnúť nedá. */
         <NahladPdf url={url} />

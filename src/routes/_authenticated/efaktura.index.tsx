@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -30,6 +32,7 @@ function SparovanieSPostakom({
     enabled?: boolean | null;
   } | null;
 }) {
+  const { t } = useT();
   const sparuj = useServerFn(sparujEpostakFirmuFn);
   const qc = useQueryClient();
   const [stav, setStav] = useState<any>(null);
@@ -42,8 +45,8 @@ function SparovanieSPostakom({
       const r: any = await sparuj({ data: { company_id: companyId } });
       setStav(r);
       void qc.invalidateQueries({ queryKey: ["efaktura-readiness"] });
-      if (r.sparovane) toast.success(`Spárované s ${r.name}.`);
-      else toast.error("Vaša firma u ePoštáka nie je — treba ju tam najprv zaregistrovať.");
+      if (r.sparovane) toast.success(t("Spárované s {nazov}.", { nazov: r.name }));
+      else toast.error(t("Vaša firma u ePoštáka nie je — treba ju tam najprv zaregistrovať."));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -55,9 +58,9 @@ function SparovanieSPostakom({
     <div id="sparovanie" className="mb-6 scroll-mt-20 rounded-xl border border-border bg-card p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Odosielanie cez ePoštáka</h2>
+          <h2 className="text-lg font-semibold">{t("Odosielanie cez ePoštáka")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Bez spárovania sa eFaktúra nemá ako odoslať. Páruje sa podľa IČO vašej firmy.
+            {t("Bez spárovania sa eFaktúra nemá ako odoslať. Páruje sa podľa IČO vašej firmy.")}
           </p>
         </div>
         <button
@@ -66,13 +69,13 @@ function SparovanieSPostakom({
           className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           <Link2 className="h-4 w-4" />{" "}
-          {bezi ? "Overujem…" : profil?.epostak_firm_id ? "Overiť znova" : "Spárovať"}
+          {bezi ? t("Overujem…") : profil?.epostak_firm_id ? t("Overiť znova") : t("Spárovať")}
         </button>
       </div>
 
       {stav?.sparovane && (
         <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-          Spárované s <span className="font-medium">{stav.name}</span>
+          {t("Spárované s")} <span className="font-medium">{stav.name}</span>
           {stav.peppolId ? (
             <>
               {" "}
@@ -85,25 +88,26 @@ function SparovanieSPostakom({
       {/* Po obnovení stránky výsledok kliknutia nie je — ukáže sa uložený stav. */}
       {!stav && profil?.epostak_firm_id && (
         <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-          Spárované s ePoštákom
+          {t("Spárované s ePoštákom")}
           {profil.peppol_participant_id ? (
             <>
               {" "}
               · Peppol <span className="font-mono text-xs">{profil.peppol_participant_id}</span>
             </>
           ) : (
-            " · Peppol ID zatiaľ nepridelené"
+            " · " + t("Peppol ID zatiaľ nepridelené")
           )}
           {" · "}
-          {profil.enabled ? "eFaktúra zapnutá" : "eFaktúra vypnutá"}
+          {profil.enabled ? t("eFaktúra zapnutá") : t("eFaktúra vypnutá")}
         </div>
       )}
       {stav && !stav.sparovane && (
         <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
-          Firmu s IČO <span className="font-mono">{stav.ico}</span> ePošták nepozná.
+          {t("Firmu s IČO")} <span className="font-mono">{stav.ico}</span>{" "}
+          {t("ePošták nepozná.")}
           {stav.dostupne?.length ? (
             <div className="mt-1 text-xs text-muted-foreground">
-              Registrované sú: {stav.dostupne.map((f: any) => `${f.name} (${f.ico})`).join(", ")}
+              {t("Registrované sú:")} {stav.dostupne.map((f: any) => `${f.name} (${f.ico})`).join(", ")}
             </div>
           ) : null}
         </div>
@@ -113,35 +117,37 @@ function SparovanieSPostakom({
 }
 
 export const Route = createFileRoute("/_authenticated/efaktura/")({
-  head: () => ({ meta: [{ title: "eFaktúra — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "eFaktúra — Faktero") }] }),
   component: EFakturaPage,
 });
 
 type Status = "done" | "missing" | "soon";
 
 function StatusPill({ status }: { status: Status }) {
+  const { t } = useT();
   if (status === "done") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-        <CheckCircle2 className="h-3.5 w-3.5" /> Hotovo
+        <CheckCircle2 className="h-3.5 w-3.5" /> {t("Hotovo")}
       </span>
     );
   }
   if (status === "missing") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
-        <Circle className="h-3.5 w-3.5" /> Chýba
+        <Circle className="h-3.5 w-3.5" /> {t("Chýba")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-      <Clock className="h-3.5 w-3.5" /> Pripravujeme
+      <Clock className="h-3.5 w-3.5" /> {t("Pripravujeme")}
     </span>
   );
 }
 
 function EFakturaPage() {
+  const { t } = useT();
   const [company, setCompany] = useState<any | null>(null);
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -187,8 +193,8 @@ function EFakturaPage() {
       // Skutočný stav z profilu eFaktúry — predtým tu bolo natvrdo „Pripravujeme“.
       {
         label: profil?.peppol_participant_id
-          ? `Peppol ID pripravené (${profil.peppol_participant_id})`
-          : "Peppol ID pripravené",
+          ? t("Peppol ID pripravené ({id})", { id: profil.peppol_participant_id })
+          : t("Peppol ID pripravené"),
         status: profil?.peppol_participant_id ? "done" : ("missing" as Status),
       },
       {
@@ -196,14 +202,14 @@ function EFakturaPage() {
         status: profil?.enabled ? "done" : ("missing" as Status),
       },
     ];
-  }, [company, profil]);
+  }, [company, profil, t]);
 
   async function onSignup(e: React.FormEvent) {
     e.preventDefault();
     if (submitting) return;
     const value = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      toast.error("Zadajte platný e-mail.");
+      toast.error(t("Zadajte platný e-mail."));
       return;
     }
     setSubmitting(true);
@@ -216,18 +222,18 @@ function EFakturaPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Ďakujeme! Ozveme sa s novinkami k eFaktúre.");
+    toast.success(t("Ďakujeme! Ozveme sa s novinkami k eFaktúre."));
     setEmail("");
   }
 
   return (
     <>
       <PageHeader
-        title="eFaktúra"
+        title={t("eFaktúra")}
         description={
           profil?.enabled
-            ? "eFaktúry posielate a prijímate cez sieť Peppol."
-            : "Povinná elektronická fakturácia od 1. 1. 2027 — zapnite si ju cez Portál finančnej správy."
+            ? t("eFaktúry posielate a prijímate cez sieť Peppol.")
+            : t("Povinná elektronická fakturácia od 1. 1. 2027 — zapnite si ju cez Portál finančnej správy.")
         }
       />
       <PageBody>
@@ -241,9 +247,9 @@ function EFakturaPage() {
           <div className="mb-6 rounded-xl border border-border bg-card p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold">Skóre pripravenosti</h2>
+                <h2 className="text-lg font-semibold">{t("Skóre pripravenosti")}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Vyhodnotenie firemných údajov, DPH, napojenia na Peppol a tvorby XML.
+                  {t("Vyhodnotenie firemných údajov, DPH, napojenia na Peppol a tvorby XML.")}
                 </p>
               </div>
               <div className="text-right">
@@ -262,13 +268,13 @@ function EFakturaPage() {
             {readinessQuery.data.blockers.length > 0 && (
               <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-destructive">
-                  <AlertTriangle className="h-4 w-4" /> Blokujúce nedostatky (
+                  <AlertTriangle className="h-4 w-4" /> {t("Blokujúce nedostatky")} (
                   {readinessQuery.data.blockers.length})
                 </div>
                 <ul className="mt-2 space-y-1 text-sm">
                   {readinessQuery.data.blockers.map((b) => (
                     <li key={b.key} className="flex items-center justify-between">
-                      <span>{b.label}</span>
+                      <span>{t(b.label)}</span>
                       {b.fixUrl === "/efaktura" ? (
                         /* Peppol nedostatky sa riešia spárovaním na tejto stránke —
                            odkaz na tú istú stránku by nespravil nič. */
@@ -281,11 +287,11 @@ function EFakturaPage() {
                           }
                           className="text-xs text-primary hover:underline"
                         >
-                          Spárovať →
+                          {t("Spárovať")} →
                         </button>
                       ) : b.fixUrl ? (
                         <Link to={b.fixUrl} className="text-xs text-primary hover:underline">
-                          Opraviť →
+                          {t("Opraviť")} →
                         </Link>
                       ) : null}
                     </li>
@@ -295,14 +301,14 @@ function EFakturaPage() {
             )}
             {readinessQuery.data.missing.filter((m) => m.severity === "warning").length > 0 && (
               <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3">
-                <div className="text-sm font-medium">Upozornenia — zatiaľ nesplnené</div>
+                <div className="text-sm font-medium">{t("Upozornenia — zatiaľ nesplnené")}</div>
                 <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                   {readinessQuery.data.missing
                     .filter((m) => m.severity === "warning")
                     .map((m) => (
                       <li key={m.key}>
-                        • {m.label}
-                        {m.hint ? ` — ${m.hint}` : ""}
+                        • {t(m.label)}
+                        {m.hint ? ` — ${t(m.hint)}` : ""}
                       </li>
                     ))}
                 </ul>
@@ -312,17 +318,17 @@ function EFakturaPage() {
         )}
         {readinessQuery.isError && (
           <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-            Skóre pripravenosti sa nepodarilo načítať: {(readinessQuery.error as Error).message}
+            {t("Skóre pripravenosti sa nepodarilo načítať:")}{" "}
+            {(readinessQuery.error as Error).message}
           </div>
         )}
         <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6">
           <div className="flex items-start gap-3">
             <Info className="mt-1 h-5 w-5 shrink-0 text-primary" />
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold leading-7">Čo je eFaktúra?</h2>
+              <h2 className="text-lg font-semibold leading-7">{t("Čo je eFaktúra?")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                eFaktúra nie je PDF ani sken faktúry. Ide o štruktúrovaný XML formát, ktorému
-                rozumejú účtovné a podnikové systémy.
+                {t("eFaktúra nie je PDF ani sken faktúry. Ide o štruktúrovaný XML formát, ktorému rozumejú účtovné a podnikové systémy.")}
               </p>
             </div>
           </div>
@@ -330,14 +336,14 @@ function EFakturaPage() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
-            <h2 className="font-semibold">Kontrola pripravenosti</h2>
+            <h2 className="font-semibold">{t("Kontrola pripravenosti")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Skontrolujeme, či máte vyplnené všetko potrebné na prechod na eFaktúru.
+              {t("Skontrolujeme, či máte vyplnené všetko potrebné na prechod na eFaktúru.")}
             </p>
             <ul className="mt-4 divide-y divide-border">
               {checklist.map((item) => (
                 <li key={item.label} className="flex items-center justify-between py-3">
-                  <span className="text-sm">{item.label}</span>
+                  <span className="text-sm">{t(item.label)}</span>
                   <StatusPill status={item.status} />
                 </li>
               ))}
@@ -347,29 +353,29 @@ function EFakturaPage() {
                 to="/firma"
                 className="inline-flex items-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted/50"
               >
-                Upraviť firemné údaje
+                {t("Upraviť firemné údaje")}
               </Link>
             </div>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="font-semibold">Koho sa bude eFaktúra týkať</h2>
+            <h2 className="font-semibold">{t("Koho sa bude eFaktúra týkať")}</h2>
             <ul className="mt-4 space-y-3 text-sm">
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
-                <span>Platitelia DPH</span>
+                <span>{t("Platitelia DPH")}</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
-                <span>Neplatitelia DPH pri prijímaní eFaktúr</span>
+                <span>{t("Neplatitelia DPH pri prijímaní eFaktúr")}</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
-                <span>B2B a B2G transakcie</span>
+                <span>{t("B2B a B2G transakcie")}</span>
               </li>
               <li className="flex items-start gap-2 text-muted-foreground">
                 <Circle className="mt-0.5 h-4 w-4" />
-                <span>B2C transakcie zatiaľ nie</span>
+                <span>{t("B2C transakcie zatiaľ nie")}</span>
               </li>
             </ul>
           </div>
@@ -381,10 +387,9 @@ function EFakturaPage() {
             <div className="flex items-start gap-3">
               <Mail className="mt-0.5 h-5 w-5 text-primary" />
               <div className="flex-1">
-                <h2 className="font-semibold">Chcem dostávať novinky k eFaktúre</h2>
+                <h2 className="font-semibold">{t("Chcem dostávať novinky k eFaktúre")}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Pošleme vám e-mail, keď bude eFaktúra v Faktero k dispozícii a pri každom
-                  dôležitom kroku.
+                  {t("Pošleme vám e-mail, keď bude eFaktúra v Faktero k dispozícii a pri každom dôležitom kroku.")}
                 </p>
                 <form onSubmit={onSignup} className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <input
@@ -392,7 +397,7 @@ function EFakturaPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="vas@email.sk"
+                    placeholder={t("vas@email.sk")}
                     className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                   />
                   <button
@@ -400,7 +405,7 @@ function EFakturaPage() {
                     disabled={submitting}
                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
                   >
-                    {submitting ? "Odosielam…" : "Chcem novinky k eFaktúre"}
+                    {submitting ? t("Odosielam…") : t("Chcem novinky k eFaktúre")}
                   </button>
                 </form>
               </div>

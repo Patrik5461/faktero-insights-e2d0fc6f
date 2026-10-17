@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/opakovane")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Opakované faktúry — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Opakované faktúry — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Opakované faktúry vo Faktere: interval, automatické vystavovanie, odosielanie a pozastavenie.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/opakovane" },
     ],
@@ -80,7 +84,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Fakturácia"
       title="Opakované faktúry"
       intro={<p>Paušály a pravidelné platby, ktoré sa vystavia samy.</p>}

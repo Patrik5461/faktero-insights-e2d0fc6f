@@ -1,6 +1,7 @@
 import { Download, X } from "lucide-react";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * PDF v okne nad stránkou — pozrieť si doklad bez sťahovania.
@@ -17,6 +18,7 @@ export function NahladPdfOkno({
   poznamka?: string | null;
   onClose: () => void;
 }) {
+  const { t } = useT();
   useZatvorNaEscape(onClose);
   const subor = nazov.endsWith(".pdf") ? nazov : `${nazov}.pdf`;
   return (
@@ -27,7 +29,7 @@ export function NahladPdfOkno({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={`Náhľad ${nazov}`}
+        aria-label={t("Náhľad {nazov}", { nazov })}
         className="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-card shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -43,11 +45,11 @@ export function NahladPdfOkno({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
           >
-            <Download className="h-3.5 w-3.5" /> Stiahnuť PDF
+            <Download className="h-3.5 w-3.5" /> {t("Stiahnuť PDF")}
           </a>
           <button
             onClick={onClose}
-            aria-label="Zavrieť"
+            aria-label={t("Zavrieť")}
             className="rounded-md p-1 hover:bg-secondary"
           >
             <X className="h-4 w-4" />

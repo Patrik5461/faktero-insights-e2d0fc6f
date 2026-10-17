@@ -19,6 +19,7 @@ import { VyberRezimuDph } from "@/components/faktero/VyberRezimuDph";
 import { zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { domacaMena } from "@/lib/faktero/kurzy";
+import { useT } from "@/lib/i18n/useT";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,6 +42,7 @@ const EMPTY = {
 };
 
 export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
+  const { t } = useT();
   const [form, setForm] = useState(EMPTY);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
     if (loading) return;
     setErrorMsg(null);
     if (!form.name.trim()) {
-      setErrorMsg("Zadajte názov firmy.");
+      setErrorMsg(t("Zadajte názov firmy."));
       return;
     }
     setLoading(true);
@@ -89,18 +91,18 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
       });
       if (error || !companyId) {
         console.error("[create_company]", error);
-        throw new Error(error?.message ?? "Nepodarilo sa vytvoriť firmu.");
+        throw new Error(error?.message ?? t("Nepodarilo sa vytvoriť firmu."));
       }
       const id = companyId as string;
       setActiveCompanyId(id);
-      toast.success("Firma bola vytvorená.");
+      toast.success(t("Firma bola vytvorená."));
       onCreated?.(id);
       reset();
       onOpenChange(false);
       // Hard reload so all company-scoped data and context refresh.
       window.location.assign("/dashboard");
     } catch (err: any) {
-      const msg = err?.message ?? "Nepodarilo sa vytvoriť firmu.";
+      const msg = err?.message ?? t("Nepodarilo sa vytvoriť firmu.");
       setErrorMsg(msg);
       setLoading(false);
     }
@@ -118,9 +120,9 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
     >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Pridať firmu</DialogTitle>
+          <DialogTitle>{t("Pridať firmu")}</DialogTitle>
           <DialogDescription>
-            Vytvorte ďalšiu firmu, ku ktorej budete mať prístup ako vlastník.
+            {t("Vytvorte ďalšiu firmu, ku ktorej budete mať prístup ako vlastník.")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
@@ -133,7 +135,7 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
             </div>
           )}
           <label className="block">
-            <span className="text-sm font-medium">Názov firmy *</span>
+            <span className="text-sm font-medium">{t("Názov firmy *")}</span>
             <div className="mt-1">
               <CompanyNameAutocomplete
                 value={form.name}
@@ -148,7 +150,7 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
           </label>
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="block">
-              <span className="text-sm font-medium">IČO</span>
+              <span className="text-sm font-medium">{t("IČO")}</span>
               <div className="mt-1 flex -space-x-px items-start">
                 <input
                   value={form.ico}
@@ -198,14 +200,14 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
               }}
               className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
             >
-              Zrušiť
+              {t("Zrušiť")}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {loading ? "Vytváram…" : "Vytvoriť firmu"}
+              {loading ? t("Vytváram…") : t("Vytvoriť firmu")}
             </button>
           </DialogFooter>
         </form>
@@ -223,9 +225,10 @@ function Field({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const { t } = useT();
   return (
     <label className="block">
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium">{t(label)}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}

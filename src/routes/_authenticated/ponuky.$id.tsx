@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -27,7 +29,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ponuky/$id")({
-  head: () => ({ meta: [{ title: "Detail ponuky — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Detail ponuky — Faktero") }] }),
   component: QuoteDetail,
 });
 
@@ -49,6 +51,7 @@ const STATUS_CLS: Record<string, string> = {
 };
 
 function QuoteDetail() {
+  const { t } = useT();
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [q, setQ] = useState<any>(null);
@@ -103,10 +106,10 @@ function QuoteDetail() {
         .update({ status: status as any })
         .eq("id", id);
       if (error) throw error;
-      toast.success("Stav aktualizovaný");
+      toast.success(t("Stav aktualizovaný"));
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(null);
     }
@@ -116,11 +119,11 @@ function QuoteDetail() {
     setPdfBusy(true);
     try {
       const r = await genPdf({ data: { quoteId: id } });
-      toast.success("PDF vygenerované");
+      toast.success(t("PDF vygenerované"));
       if (r.signedUrl) window.open(r.signedUrl, "_blank");
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setPdfBusy(false);
     }
@@ -130,41 +133,41 @@ function QuoteDetail() {
       const r = await getPdf({ data: { quoteId: id } });
       window.open(r.signedUrl, "_blank");
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     }
   }
   async function handleDuplicate() {
     setBusy("dup");
     try {
       const r = await dup({ data: { quoteId: id } });
-      toast.success("Ponuka duplikovaná");
+      toast.success(t("Ponuka duplikovaná"));
       navigate({ to: "/ponuky/$id", params: { id: r.quote_id } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(null);
     }
   }
   async function handleConvert() {
-    if (!(await potvrd("Konvertovať ponuku na faktúru?"))) return;
+    if (!(await potvrd(t("Konvertovať ponuku na faktúru?")))) return;
     setBusy("conv");
     try {
       const r = await convert({ data: { quoteId: id } });
-      toast.success(r.already ? "Ponuka už bola konvertovaná" : "Faktúra vytvorená");
+      toast.success(r.already ? t("Ponuka už bola konvertovaná") : t("Faktúra vytvorená"));
       navigate({ to: "/faktury/$id", params: { id: r.invoice_id } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(null);
     }
   }
   function openEmail() {
     if (!q.customer_email)
-      return toast.error("Odberateľ nemá e-mail. Doplňte ho v karte odberateľa.");
+      return toast.error(t("Odberateľ nemá e-mail. Doplňte ho v karte odberateľa."));
     setEmailForm({
       recipient_email: q.customer_email,
-      subject: `Cenová ponuka ${q.quote_number}`,
-      message: `Dobrý deň,\n\nv prílohe Vám posielame cenovú ponuku ${q.quote_number} platnú do ${datumNaDoklade(q.valid_until)}.\n\nS pozdravom,\n${company?.name ?? ""}`,
+      subject: t("Cenová ponuka {cislo}", { cislo: q.quote_number }),
+      message: t("Dobrý deň,\n\nv prílohe Vám posielame cenovú ponuku {cislo} platnú do {datum}.\n\nS pozdravom,\n{firma}", { cislo: q.quote_number, datum: datumNaDoklade(q.valid_until), firma: company?.name ?? "" }),
     });
     setEmailOpen(true);
   }
@@ -174,15 +177,15 @@ function QuoteDetail() {
       const r: any = await send({
         data: { quoteId: id, ...emailForm, s_prilohami: pocetPriloh > 0 && posielatPrilohy },
       });
-      toast.success("E-mail odoslaný");
+      toast.success(t("E-mail odoslaný"));
       if (r?.vynechane?.length) {
         /* Mail odišiel, ale nie celý — to sa musí povedať nahlas. */
-        toast.warning(`Do mailu sa nezmestili: ${r.vynechane.join(", ")}`, { duration: 12000 });
+        toast.warning(t("Do mailu sa nezmestili: {subory}", { subory: r.vynechane.join(", ") }), { duration: 12000 });
       }
       setEmailOpen(false);
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(null);
     }
@@ -192,36 +195,35 @@ function QuoteDetail() {
     return (
       <PageBody>
         <div className="rounded-xl border border-border bg-card p-6 text-sm">
-          Táto ponuka v aktívnej firme neexistuje. Ak patrí inej vašej firme, prepnite sa na ňu hore
-          v lište.{" "}
+          {t("Táto ponuka v aktívnej firme neexistuje. Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.")}{" "}
           <Link to="/ponuky" className="text-primary underline">
-            Späť na ponuky
+            {t("Späť na ponuky")}
           </Link>
         </div>
       </PageBody>
     );
-  if (!q) return <PageBody>Načítavam…</PageBody>;
+  if (!q) return <PageBody>{t("Načítavam…")}</PageBody>;
 
   const converted = q.status === "converted";
 
   return (
     <>
       <PageHeader
-        title={`Ponuka ${q.quote_number}`}
-        description={`Vystavená ${datumNaDoklade(q.issue_date)} · platná do ${q.valid_until}`}
+        title={t("Ponuka {cislo}", { cislo: q.quote_number })}
+        description={t("Vystavená {datum} · platná do {platnost}", { datum: datumNaDoklade(q.issue_date), platnost: datumNaDoklade(q.valid_until) })}
         action={
           <div className="flex flex-wrap gap-2">
             <span
               className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLS[q.status] ?? "bg-muted"}`}
             >
-              {STATUS_LABEL[q.status] ?? q.status}
+              {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
             </span>
             <button
               onClick={openEmail}
               disabled={converted}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
-              <Mail className="h-4 w-4" /> Poslať e-mailom
+              <Mail className="h-4 w-4" /> {t("Poslať e-mailom")}
             </button>
             {!q.pdf_url ? (
               <button
@@ -229,7 +231,7 @@ function QuoteDetail() {
                 disabled={pdfBusy}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                <FileText className="h-4 w-4" /> {pdfBusy ? "Generujem…" : "Vygenerovať PDF"}
+                <FileText className="h-4 w-4" /> {pdfBusy ? t("Generujem…") : t("Vygenerovať PDF")}
               </button>
             ) : (
               <>
@@ -237,14 +239,14 @@ function QuoteDetail() {
                   onClick={handleDownload}
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
-                  <Download className="h-4 w-4" /> Stiahnuť PDF
+                  <Download className="h-4 w-4" /> {t("Stiahnuť PDF")}
                 </button>
                 <button
                   onClick={handleGenerate}
                   disabled={pdfBusy}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
                 >
-                  <RefreshCw className="h-4 w-4" /> {pdfBusy ? "…" : "Pregenerovať"}
+                  <RefreshCw className="h-4 w-4" /> {pdfBusy ? "…" : t("Pregenerovať")}
                 </button>
               </>
             )}
@@ -253,19 +255,19 @@ function QuoteDetail() {
               disabled={busy === "dup"}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <Copy className="h-4 w-4" /> Duplikovať
+              <Copy className="h-4 w-4" /> {t("Duplikovať")}
             </button>
             <button
               onClick={async () => {
                 const cid = getActiveCompanyId();
                 if (!cid) return;
-                if (!(await potvrd("Vytvoriť z ponuky prijatú objednávku?"))) return;
+                if (!(await potvrd(t("Vytvoriť z ponuky prijatú objednávku?")))) return;
                 setBusy("obj");
                 try {
                   const r: any = await naObjednavku({ data: { company_id: cid, quote_id: id } });
                   navigate({ to: "/objednavky/$id", params: { id: r.id } });
                 } catch (e: any) {
-                  toast.error(e?.message ?? "Objednávku sa nepodarilo vytvoriť");
+                  toast.error(e?.message ?? t("Objednávku sa nepodarilo vytvoriť"));
                 } finally {
                   setBusy(null);
                 }
@@ -273,7 +275,7 @@ function QuoteDetail() {
               disabled={busy === "obj"}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <ClipboardList className="h-4 w-4" /> Vytvoriť objednávku
+              <ClipboardList className="h-4 w-4" /> {t("Vytvoriť objednávku")}
             </button>
             <button
               onClick={handleConvert}
@@ -281,14 +283,14 @@ function QuoteDetail() {
               className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
             >
               <ArrowRightLeft className="h-4 w-4" />{" "}
-              {converted ? "Konvertovaná" : "Konvertovať na faktúru"}
+              {converted ? t("Konvertovaná") : t("Konvertovať na faktúru")}
             </button>
             {!converted && q.status !== "accepted" && (
               <button
                 onClick={() => setStatus("accepted")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
               >
-                <CheckCircle2 className="h-4 w-4" /> Akceptovaná
+                <CheckCircle2 className="h-4 w-4" /> {t("Akceptovaná")}
               </button>
             )}
             {!converted && q.status !== "rejected" && (
@@ -296,7 +298,7 @@ function QuoteDetail() {
                 onClick={() => setStatus("rejected")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
               >
-                <XCircle className="h-4 w-4" /> Zamietnutá
+                <XCircle className="h-4 w-4" /> {t("Zamietnutá")}
               </button>
             )}
           </div>
@@ -305,13 +307,13 @@ function QuoteDetail() {
       <PageBody>
         {converted && q.converted_invoice_id && (
           <div className="mb-6 flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 p-4 text-sm">
-            <span>Táto ponuka bola konvertovaná na faktúru.</span>
+            <span>{t("Táto ponuka bola konvertovaná na faktúru.")}</span>
             <Link
               to="/faktury/$id"
               params={{ id: q.converted_invoice_id }}
               className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
             >
-              Otvoriť faktúru →
+              {t("Otvoriť faktúru →")}
             </Link>
           </div>
         )}
@@ -320,7 +322,7 @@ function QuoteDetail() {
             <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Dodávateľ
+                  {t("Dodávateľ")}
                 </div>
                 <div className="mt-1 font-medium">{company?.name}</div>
                 <div className="text-sm text-muted-foreground">
@@ -329,12 +331,12 @@ function QuoteDetail() {
                   {company?.zip} {company?.city}, {company?.country}
                 </div>
                 <div className="mt-2 text-sm">
-                  IČO: {company?.ico ?? "—"} · DIČ: {company?.dic ?? "—"}
+                  {t("IČO")}: {company?.ico ?? "—"} · {t("DIČ")}: {company?.dic ?? "—"}
                 </div>
               </div>
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Odberateľ
+                  {t("Odberateľ")}
                 </div>
                 <div className="mt-1 font-medium">{q.customer_name}</div>
                 <div className="text-sm text-muted-foreground">
@@ -343,7 +345,7 @@ function QuoteDetail() {
                   {q.customer_zip} {q.customer_city}, {q.customer_country}
                 </div>
                 <div className="mt-2 text-sm">
-                  IČO: {q.customer_ico ?? "—"} · DIČ: {q.customer_dic ?? "—"}
+                  {t("IČO")}: {q.customer_ico ?? "—"} · {t("DIČ")}: {q.customer_dic ?? "—"}
                 </div>
               </div>
             </div>
@@ -352,19 +354,19 @@ function QuoteDetail() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="p-3">Položka</th>
-                    <th className="p-3 text-right">Mn.</th>
-                    <th className="p-3">MJ</th>
-                    <th className="p-3 text-right">Cena</th>
-                    <th className="p-3 text-right">DPH</th>
-                    <th className="p-3 text-right">Spolu</th>
+                    <th className="p-3">{t("Položka")}</th>
+                    <th className="p-3 text-right">{t("Mn.")}</th>
+                    <th className="p-3">{t("MJ")}</th>
+                    <th className="p-3 text-right">{t("Cena")}</th>
+                    <th className="p-3 text-right">{t("DPH")}</th>
+                    <th className="p-3 text-right">{t("Spolu")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {items.length === 0 && (
                     <tr>
                       <td colSpan={6} className="p-6 text-center text-muted-foreground">
-                        Žiadne položky.
+                        {t("Žiadne položky.")}
                       </td>
                     </tr>
                   )}
@@ -404,12 +406,11 @@ function QuoteDetail() {
                 }`}
               >
                 <div className="font-medium">
-                  Odberateľ ponuku {q.status === "accepted" ? "prijal" : "zamietol"}{" "}
-                  {new Date(q.responded_at).toLocaleString("sk-SK")}
+                  {q.status === "accepted" ? t("Odberateľ ponuku prijal {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") }) : t("Odberateľ ponuku zamietol {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") })}
                 </div>
                 {q.response_note && (
                   <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
-                    Dôvod: {q.response_note}
+                    {t("Dôvod:")} {q.response_note}
                   </div>
                 )}
               </div>
@@ -425,18 +426,18 @@ function QuoteDetail() {
 
           <aside className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Sumár</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
               <div className="mt-3 space-y-1 text-sm">
                 {Number(q.discount_total ?? 0) > 0 && (
                   <>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Medzisúčet</span>
+                      <span className="text-muted-foreground">{t("Medzisúčet")}</span>
                       <span>
                         {(Number(q.subtotal) + Number(q.discount_total)).toFixed(2)} {q.currency}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Zľava</span>
+                      <span className="text-muted-foreground">{t("Zľava")}</span>
                       <span>
                         −{Number(q.discount_total).toFixed(2)} {q.currency}
                       </span>
@@ -444,13 +445,13 @@ function QuoteDetail() {
                   </>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Bez DPH</span>
+                  <span className="text-muted-foreground">{t("Bez DPH")}</span>
                   <span>
                     {Number(q.subtotal).toFixed(2)} {q.currency}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">DPH</span>
+                  <span className="text-muted-foreground">{t("DPH")}</span>
                   <span>
                     {Number(q.vat_total).toFixed(2)} {q.currency}
                   </span>
@@ -461,12 +462,12 @@ function QuoteDetail() {
               </div>
             </div>
             <div className="rounded-xl border border-border bg-card p-5 text-sm">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Údaje</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Údaje")}</div>
               <div className="mt-2">
-                Číslo: <span className="font-mono">{q.quote_number}</span>
+                {t("Číslo:")} <span className="font-mono">{q.quote_number}</span>
               </div>
-              <div>Mena: {q.currency}</div>
-              <div>Platnosť do: {datumNaDoklade(q.valid_until)}</div>
+              <div>{t("Mena:")} {q.currency}</div>
+              <div>{t("Platnosť do:")} {datumNaDoklade(q.valid_until)}</div>
             </div>
           </aside>
         </div>
@@ -480,13 +481,13 @@ function QuoteDetail() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Odoslať ponuku e-mailom"
+            aria-label={t("Odoslať ponuku e-mailom")}
             className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold">Odoslať ponuku e-mailom</h3>
+            <h3 className="text-lg font-semibold">{t("Odoslať ponuku e-mailom")}</h3>
             <label className="block text-sm">
-              <span className="font-medium">Príjemca</span>
+              <span className="font-medium">{t("Príjemca")}</span>
               <input
                 value={emailForm.recipient_email}
                 onChange={(e) => setEmailForm({ ...emailForm, recipient_email: e.target.value })}
@@ -494,7 +495,7 @@ function QuoteDetail() {
               />
             </label>
             <label className="block text-sm">
-              <span className="font-medium">Predmet</span>
+              <span className="font-medium">{t("Predmet")}</span>
               <input
                 value={emailForm.subject}
                 onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
@@ -502,7 +503,7 @@ function QuoteDetail() {
               />
             </label>
             <label className="block text-sm">
-              <span className="font-medium">Správa</span>
+              <span className="font-medium">{t("Správa")}</span>
               <textarea
                 rows={6}
                 value={emailForm.message}
@@ -519,30 +520,30 @@ function QuoteDetail() {
                   className="mt-0.5"
                 />
                 <span>
-                  <span className="font-medium">Odoslať aj prílohy ponuky</span>
+                  <span className="font-medium">{t("Odoslať aj prílohy ponuky")}</span>
                   <span className="block text-xs text-muted-foreground">
                     {pocetPriloh === 1
-                      ? "K ponuke visí 1 príloha"
-                      : `K ponuke visia prílohy: ${pocetPriloh}`}
-                    . Pôjdu v tom istom maile.
+                      ? t("K ponuke visí 1 príloha")
+                      : t("K ponuke visia prílohy: {n}", { n: pocetPriloh })}
+                    {t(". Pôjdu v tom istom maile.")}
                   </span>
                 </span>
               </label>
             )}
-            <p className="text-xs text-muted-foreground">PDF ponuky sa pripojí automaticky.</p>
+            <p className="text-xs text-muted-foreground">{t("PDF ponuky sa pripojí automaticky.")}</p>
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setEmailOpen(false)}
                 className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
               >
-                Zrušiť
+                {t("Zrušiť")}
               </button>
               <button
                 onClick={submitEmail}
                 disabled={busy === "mail"}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                {busy === "mail" ? "Odosielam…" : "Odoslať"}
+                {busy === "mail" ? t("Odosielam…") : t("Odoslať")}
               </button>
             </div>
           </div>

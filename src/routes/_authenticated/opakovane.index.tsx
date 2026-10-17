@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { useState } from "react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { useServerFn } from "@tanstack/react-start";
@@ -19,7 +21,7 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/opakovane/")({
-  head: () => ({ meta: [{ title: "Opakované faktúry — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Opakované faktúry — Faktero") }] }),
   component: RecurringList,
 });
 
@@ -31,6 +33,7 @@ const FREQ_LABEL: Record<string, string> = {
 };
 
 function RecurringList() {
+  const { t } = useT();
   const list = usePagedList({
     resource: "recurring_invoices",
     searchColumns: ["name", "customer_name"],
@@ -43,10 +46,10 @@ function RecurringList() {
     const pocet = list.selectedIds.length;
     try {
       await list.hardDelete(list.selectedIds);
-      toast.success(`Natrvalo vymazaných: ${pocet}`);
+      toast.success(t("Natrvalo vymazaných: {n}", { n: pocet }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBulkHardDelete(false);
     }
@@ -59,14 +62,14 @@ function RecurringList() {
     setBusy(id);
     try {
       const r: any = await runFn({ data: { id } });
-      if (r?.skipped) toast.message(`Preskočené: ${r.reason}`);
+      if (r?.skipped) toast.message(t("Preskočené: {dovod}", { dovod: r.reason }));
       else {
-        toast.success("Faktúra vytvorená");
+        toast.success(t("Faktúra vytvorená"));
         navigate({ to: "/faktury/$id", params: { id: r.invoice_id } });
       }
       list.reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(null);
     }
@@ -74,19 +77,19 @@ function RecurringList() {
   async function toggle(id: string, active: boolean) {
     try {
       await toggleFn({ data: { id, active } });
-      toast.success(active ? "Aktivované" : "Pozastavené");
+      toast.success(active ? t("Aktivované") : t("Pozastavené"));
       list.reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     }
   }
   async function confirmRow() {
     if (!rowDelete) return;
     try {
       await list.softDelete([rowDelete.id]);
-      toast.success("Šablóna vymazaná");
+      toast.success(t("Šablóna vymazaná"));
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setRowDelete(null);
     }
@@ -94,10 +97,10 @@ function RecurringList() {
   async function confirmBulk() {
     try {
       await list.softDelete(list.selectedIds);
-      toast.success(`Vymazaných ${list.selectedIds.length}`);
+      toast.success(t("Vymazaných {n}", { n: list.selectedIds.length }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBulkDelete(false);
     }
@@ -106,8 +109,8 @@ function RecurringList() {
   return (
     <>
       <PageHeader
-        title="Opakované faktúry"
-        description="Šablóny, ktoré automaticky generujú faktúry podľa intervalu."
+        title={t("Opakované faktúry")}
+        description={t("Šablóny, ktoré automaticky generujú faktúry podľa intervalu.")}
         action={
           <div className="flex flex-wrap gap-2">
             <OdkazNaRady />
@@ -115,7 +118,7 @@ function RecurringList() {
               to="/opakovane/nova"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Nová šablóna
+              <Plus className="h-4 w-4" /> {t("Nová šablóna")}
             </Link>
           </div>
         }
@@ -125,7 +128,7 @@ function RecurringList() {
           <input
             value={list.search}
             onChange={(e) => list.setSearch(e.target.value)}
-            placeholder="Hľadať názov, odberateľa…"
+            placeholder={t("Hľadať názov, odberateľa…")}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
           />
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -141,30 +144,30 @@ function RecurringList() {
           onRestore={async () => {
             try {
               await list.restore(list.selectedIds);
-              toast.success("Obnovené");
+              toast.success(t("Obnovené"));
               list.clearSelection();
             } catch (e: any) {
-              toast.error(e?.message ?? "Chyba");
+              toast.error(e?.message ?? t("Chyba"));
             }
           }}
           onClear={list.clearSelection}
         />
         {list.loading ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : list.rows.length === 0 && !list.search && !list.showDeleted ? (
           <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center">
             <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary">
               <Repeat className="h-6 w-6" />
             </div>
-            <h3 className="text-lg font-semibold">Zatiaľ žiadne opakované faktúry</h3>
+            <h3 className="text-lg font-semibold">{t("Zatiaľ žiadne opakované faktúry")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Vytvorte šablónu a Faktero bude automaticky vystavovať faktúry pravidelne.
+              {t("Vytvorte šablónu a Faktero bude automaticky vystavovať faktúry pravidelne.")}
             </p>
             <Link
               to="/opakovane/nova"
               className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Vytvoriť šablónu
+              <Plus className="h-4 w-4" /> {t("Vytvoriť šablónu")}
             </Link>
           </div>
         ) : (
@@ -179,12 +182,12 @@ function RecurringList() {
                       onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                     />
                   </th>
-                  <th className="p-3">Názov</th>
-                  <th className="p-3">Odberateľ</th>
-                  <th className="p-3">Frekvencia</th>
-                  <th className="p-3">Ďalší beh</th>
-                  <th className="p-3 text-right">Suma</th>
-                  <th className="p-3">Stav</th>
+                  <th className="p-3">{t("Názov")}</th>
+                  <th className="p-3">{t("Odberateľ")}</th>
+                  <th className="p-3">{t("Frekvencia")}</th>
+                  <th className="p-3">{t("Ďalší beh")}</th>
+                  <th className="p-3 text-right">{t("Suma")}</th>
+                  <th className="p-3">{t("Stav")}</th>
                   <th className="p-3"></th>
                 </tr>
               </thead>
@@ -192,7 +195,7 @@ function RecurringList() {
                 {list.rows.length === 0 && (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                      Žiadne výsledky.
+                      {t("Žiadne výsledky.")}
                     </td>
                   </tr>
                 )}
@@ -215,14 +218,14 @@ function RecurringList() {
                       </Link>
                     </td>
                     <td className="p-3">{r.customer_name ?? "—"}</td>
-                    <td className="p-3">{FREQ_LABEL[r.frequency] ?? r.frequency}</td>
+                    <td className="p-3">{FREQ_LABEL[r.frequency] ? t(FREQ_LABEL[r.frequency]) : r.frequency}</td>
                     <td className="p-3">{datumNaDoklade(r.next_run)}</td>
                     <td className="p-3 text-right">{formatujMenu(r.total, r.currency)}</td>
                     <td className="p-3">
                       <span
                         className={`inline-block rounded-full px-2 py-0.5 text-xs ${r.active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}
                       >
-                        {r.active ? "Aktívna" : "Pozastavená"}
+                        {r.active ? t("Aktívna") : t("Pozastavená")}
                       </span>
                     </td>
                     <td className="p-3 text-right">
@@ -232,14 +235,14 @@ function RecurringList() {
                             <button
                               onClick={() => runNow(r.id)}
                               disabled={busy === r.id || !r.active}
-                              title="Spustiť teraz"
+                              title={t("Spustiť teraz")}
                               className="rounded p-1.5 text-primary hover:bg-primary/10 disabled:opacity-40"
                             >
                               <Play className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => toggle(r.id, !r.active)}
-                              title={r.active ? "Pozastaviť" : "Aktivovať"}
+                              title={r.active ? t("Pozastaviť") : t("Aktivovať")}
                               className="rounded p-1.5 hover:bg-muted"
                             >
                               {r.active ? (
@@ -252,13 +255,13 @@ function RecurringList() {
                         )}
                         {list.showDeleted ? (
                           <button
-                            title="Obnoviť"
+                            title={t("Obnoviť")}
                             onClick={async () => {
                               try {
                                 await list.restore([r.id]);
-                                toast.success("Obnovené");
+                                toast.success(t("Obnovené"));
                               } catch (e: any) {
-                                toast.error(e?.message ?? "Chyba");
+                                toast.error(e?.message ?? t("Chyba"));
                               }
                             }}
                             className="rounded p-1.5 text-primary hover:bg-primary/10"
@@ -267,7 +270,7 @@ function RecurringList() {
                           </button>
                         ) : (
                           <button
-                            title="Vymazať"
+                            title={t("Vymazať")}
                             onClick={() => setRowDelete(r)}
                             className="rounded p-1.5 text-destructive hover:bg-destructive/10"
                           >
@@ -291,13 +294,13 @@ function RecurringList() {
       </PageBody>
       <ConfirmDialog
         open={!!rowDelete}
-        title="Naozaj chcete vymazať túto šablónu?"
+        title={t("Naozaj chcete vymazať túto šablónu?")}
         message={
-          rowDelete ? `${rowDelete.name} bude skrytá z rozhrania a prestane generovať faktúry.` : ""
+          rowDelete ? t("{nazov} bude skrytá z rozhrania a prestane generovať faktúry.", { nazov: rowDelete.name }) : ""
         }
         warning={
           rowDelete?.active
-            ? "Šablóna je aktívna. Mazaním sa zastaví automatické vystavovanie."
+            ? t("Šablóna je aktívna. Mazaním sa zastaví automatické vystavovanie.")
             : undefined
         }
         onCancel={() => setRowDelete(null)}
@@ -305,16 +308,16 @@ function RecurringList() {
       />
       <ConfirmDialog
         open={bulkDelete}
-        title={`Vymazať ${list.selectedIds.length} šablón?`}
-        message="Vybraté šablóny budú skryté a prestanú generovať faktúry."
+        title={t("Vymazať {n} šablón?", { n: list.selectedIds.length })}
+        message={t("Vybraté šablóny budú skryté a prestanú generovať faktúry.")}
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulk}
       />
       <ConfirmDialog
         open={bulkHardDelete}
-        title={`Natrvalo vymazať ${list.selectedIds.length} šablón?`}
-        message="Šablóny sa odstránia natrvalo. Faktúry, ktoré z nich vznikli, ostanú."
-        confirmLabel="Vymazať natrvalo"
+        title={t("Natrvalo vymazať {n} šablón?", { n: list.selectedIds.length })}
+        message={t("Šablóny sa odstránia natrvalo. Faktúry, ktoré z nich vznikli, ostanú.")}
+        confirmLabel={t("Vymazať natrvalo")}
         onCancel={() => setBulkHardDelete(false)}
         onConfirm={confirmBulkHardDelete}
       />

@@ -16,9 +16,11 @@ import { PackageCheck, Send, Trash2, X } from "lucide-react";
 import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
-  head: () => ({ meta: [{ title: "Objednávka — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Objednávka — Faktero") }] }),
   component: PurchaseOrderDetail,
 });
 
@@ -27,6 +29,7 @@ function suma(n: number, mena = "EUR") {
 }
 
 function PurchaseOrderDetail() {
+  const { t } = useT();
   const { id } = Route.useParams();
   const nav = useNavigate();
   const fetchOrder = useServerFn(getPurchaseOrder);
@@ -88,7 +91,7 @@ function PurchaseOrderDetail() {
       if (hlaska) setSprava(hlaska);
       await nacitaj();
     } catch (e: any) {
-      setError(e?.message ?? "Akcia zlyhala");
+      setError(e?.message ?? t("Akcia zlyhala"));
     } finally {
       setBusy(false);
     }
@@ -97,14 +100,14 @@ function PurchaseOrderDetail() {
   if (loading) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Načítavam…</div>
+        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
       </PageBody>
     );
   }
   if (!data) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Objednávka sa nenašla.</div>
+        <div className="text-sm text-muted-foreground">{t("Objednávka sa nenašla.")}</div>
       </PageBody>
     );
   }
@@ -117,8 +120,8 @@ function PurchaseOrderDetail() {
   return (
     <>
       <PageHeader
-        title={`Objednávka ${o.order_number}`}
-        description={`${o.supplier_name ?? "Bez dodávateľa"} · ${STAV_POPIS[stav] ?? stav}`}
+        title={t("Objednávka {cislo}", { cislo: o.order_number })}
+        description={`${o.supplier_name ?? t("Bez dodávateľa")} · ${t(STAV_POPIS[stav] ?? stav)}`}
       />
       <PageBody>
         <div className="space-y-4">
@@ -135,24 +138,24 @@ function PurchaseOrderDetail() {
 
           <div className="grid gap-3 rounded-xl border border-border bg-card p-4 text-sm sm:grid-cols-4">
             <div>
-              <div className="text-xs text-muted-foreground">Vystavená</div>
+              <div className="text-xs text-muted-foreground">{t("Vystavená")}</div>
               <div>{datumNaDoklade(o.order_date)}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Očakávané dodanie</div>
+              <div className="text-xs text-muted-foreground">{t("Očakávané dodanie")}</div>
               <div>{o.expected_date ?? "—"}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Sklad</div>
+              <div className="text-xs text-muted-foreground">{t("Sklad")}</div>
               <div>{data.warehouse?.name ?? "—"}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Spolu</div>
+              <div className="text-xs text-muted-foreground">{t("Spolu")}</div>
               <div className="font-semibold">{suma(data.total, o.currency)}</div>
             </div>
             {data.job && (
               <div className="sm:col-span-4">
-                <div className="text-xs text-muted-foreground">Zákazka</div>
+                <div className="text-xs text-muted-foreground">{t("Zákazka")}</div>
                 <Link
                   to="/zakazky/$id"
                   params={{ id: data.job.id }}
@@ -164,7 +167,7 @@ function PurchaseOrderDetail() {
             )}
             {o.note && (
               <div className="sm:col-span-4">
-                <div className="text-xs text-muted-foreground">Poznámka</div>
+                <div className="text-xs text-muted-foreground">{t("Poznámka")}</div>
                 <div>{o.note}</div>
               </div>
             )}
@@ -178,12 +181,12 @@ function PurchaseOrderDetail() {
                 onClick={() =>
                   akcia(
                     () => doSend({ data: { company_id: cid!, id } }),
-                    "Objednávka je odoslaná — od teraz sa počíta ako tovar na ceste.",
+                    t("Objednávka je odoslaná — od teraz sa počíta ako tovar na ceste."),
                   )
                 }
                 className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                <Send className="h-4 w-4" /> Označiť ako odoslanú
+                <Send className="h-4 w-4" /> {t("Označiť ako odoslanú")}
               </button>
             )}
             {/* Zrušená objednávka je len riadok v zozname — nech sa dá upratať.
@@ -193,7 +196,7 @@ function PurchaseOrderDetail() {
                 type="button"
                 disabled={busy}
                 onClick={async () => {
-                  if (!(await potvrd("Naozaj zmazať objednávku?"))) return;
+                  if (!(await potvrd(t("Naozaj zmazať objednávku?")))) return;
                   akcia(async () => {
                     await doDelete({ data: { company_id: cid!, id } });
                     nav({ to: "/sklad/objednavky" });
@@ -201,7 +204,7 @@ function PurchaseOrderDetail() {
                 }}
                 className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
               >
-                <Trash2 className="h-4 w-4" /> Zmazať
+                <Trash2 className="h-4 w-4" /> {t("Zmazať")}
               </button>
             )}
             {otvorena && (
@@ -211,12 +214,12 @@ function PurchaseOrderDetail() {
                 onClick={() =>
                   akcia(
                     () => doCancel({ data: { company_id: cid!, id } }),
-                    "Objednávka je zrušená.",
+                    t("Objednávka je zrušená."),
                   )
                 }
                 className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
               >
-                <X className="h-4 w-4" /> Zrušiť objednávku
+                <X className="h-4 w-4" /> {t("Zrušiť objednávku")}
               </button>
             )}
           </div>
@@ -225,12 +228,12 @@ function PurchaseOrderDetail() {
             <table className="w-full min-w-[680px] text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="p-3">Položka</th>
-                  <th className="p-3 text-right">Objednané</th>
-                  <th className="p-3 text-right">Prijaté</th>
-                  <th className="p-3 text-right">Zostáva</th>
-                  <th className="p-3 text-right">Cena / MJ</th>
-                  {otvorena && <th className="p-3 text-right">Prijať teraz</th>}
+                  <th className="p-3">{t("Položka")}</th>
+                  <th className="p-3 text-right">{t("Objednané")}</th>
+                  <th className="p-3 text-right">{t("Prijaté")}</th>
+                  <th className="p-3 text-right">{t("Zostáva")}</th>
+                  <th className="p-3 text-right">{t("Cena / MJ")}</th>
+                  {otvorena && <th className="p-3 text-right">{t("Prijať teraz")}</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -240,7 +243,7 @@ function PurchaseOrderDetail() {
                       {it.name}
                       {!it.stock_item_id && (
                         <span className="ml-2 rounded bg-amber-500/10 px-1.5 py-0.5 text-xs text-amber-600">
-                          bez skladovej karty
+                          {t("bez skladovej karty")}
                         </span>
                       )}
                     </td>
@@ -271,7 +274,7 @@ function PurchaseOrderDetail() {
                             className="input w-24 text-right"
                           />
                         ) : (
-                          <span className="text-xs text-muted-foreground">vybavené</span>
+                          <span className="text-xs text-muted-foreground">{t("vybavené")}</span>
                         )}
                       </td>
                     )}
@@ -283,20 +286,21 @@ function PurchaseOrderDetail() {
 
           {otvorena && riadkyNaPrijem.length > 0 && (
             <div className="rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 text-sm font-semibold">Príjem na sklad</div>
+              <div className="mb-3 text-sm font-semibold">{t("Príjem na sklad")}</div>
               <p className="mb-3 text-xs text-muted-foreground">
-                Príjem vytvorí skladový pohyb s cenou z objednávky, takže sa premietne do váženej
-                nákupnej ceny zásoby. Prijať sa dá najviac to, čo zostáva.
+                {t(
+                  "Príjem vytvorí skladový pohyb s cenou z objednávky, takže sa premietne do váženej nákupnej ceny zásoby. Prijať sa dá najviac to, čo zostáva.",
+                )}
               </p>
               <div className="flex flex-wrap items-end gap-3">
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">Sklad</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">{t("Sklad")}</span>
                   <select
                     value={prijemSklad}
                     onChange={(e) => setPrijemSklad(e.target.value)}
                     className="input"
                   >
-                    <option value="">— vyberte —</option>
+                    <option value="">{t("— vyberte —")}</option>
                     {warehouses.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name}
@@ -312,7 +316,7 @@ function PurchaseOrderDetail() {
                       .map(([item_id, quantity]) => ({ item_id, quantity: Number(quantity) }))
                       .filter((l) => l.quantity > 0);
                     if (lines.length === 0) {
-                      setError("Zadajte aspoň jedno množstvo na príjem.");
+                      setError(t("Zadajte aspoň jedno množstvo na príjem."));
                       return;
                     }
                     akcia(
@@ -320,12 +324,12 @@ function PurchaseOrderDetail() {
                         doReceive({
                           data: { company_id: cid!, id, warehouse_id: prijemSklad, lines },
                         }),
-                      "Tovar je naskladnený.",
+                      t("Tovar je naskladnený."),
                     );
                   }}
                   className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  <PackageCheck className="h-4 w-4" /> Prijať na sklad
+                  <PackageCheck className="h-4 w-4" /> {t("Prijať na sklad")}
                 </button>
               </div>
             </div>

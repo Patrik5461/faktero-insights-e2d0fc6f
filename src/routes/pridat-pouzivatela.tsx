@@ -7,6 +7,8 @@ import { getInvitationByTokenFn, acceptInvitationFn } from "@/lib/faktero/invita
 import { setActiveCompanyId } from "@/lib/faktero/active-company";
 import { toast } from "sonner";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 /** Rola z databázy po slovensky — v pozvánke svietilo „accountant". */
 const ROLA_POPIS: Record<string, string> = {
@@ -17,7 +19,9 @@ const ROLA_POPIS: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/pridat-pouzivatela")({
-  head: () => ({ meta: [{ title: "Pozvánka do firmy — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Pozvánka do firmy — Faktero") }],
+  }),
   component: AcceptInvitationPage,
   validateSearch: (s: Record<string, unknown>) => ({ token: (s.token as string) ?? "" }),
 });
@@ -37,6 +41,7 @@ function Obal({ children, className = "" }: { children: React.ReactNode; classNa
 }
 
 function AcceptInvitationPage() {
+  const { t } = useT();
   const { token } = Route.useSearch();
   const navigate = useNavigate();
   const getInv = useServerFn(getInvitationByTokenFn);
@@ -83,7 +88,7 @@ function AcceptInvitationPage() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
         if (pwd.length < 8) {
-          toast.error("Heslo musí mať aspoň 8 znakov");
+          toast.error(t("Heslo musí mať aspoň 8 znakov"));
           setBusy(false);
           return;
         }
@@ -100,7 +105,7 @@ function AcceptInvitationPage() {
             email: inv.email,
             password: pwd,
           });
-          if (signInErr) throw new Error(prelozAuthChybu(signInErr.message).sprava);
+          if (signInErr) throw new Error(t(prelozAuthChybu(signInErr.message).sprava));
         } else if (!reg.session) {
           /*
             Nový účet musí najprv potvrdiť e-mail. Bez prihlásenia server
@@ -114,10 +119,10 @@ function AcceptInvitationPage() {
       }
       await acceptInv({ data: { token } });
       setActiveCompanyId(inv.company_id);
-      toast.success(`Pripojili ste sa k firme ${inv.company_name}`);
+      toast.success(t("Pripojili ste sa k firme {firma}", { firma: inv.company_name }));
       navigate({ to: "/dashboard" });
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba pri prijímaní pozvánky");
+      toast.error(e?.message ?? t("Chyba pri prijímaní pozvánky"));
     } finally {
       setBusy(false);
     }
@@ -136,47 +141,47 @@ function AcceptInvitationPage() {
   if (cakaNaPotvrdenie)
     return (
       <Obal>
-        <h1 className="text-2xl font-bold">Potvrďte e-mail</h1>
+        <h1 className="text-2xl font-bold">{t("Potvrďte e-mail")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Na adresu <strong className="text-foreground">{inv?.email}</strong> sme poslali odkaz na
-          potvrdenie účtu. Kliknite naň — vrátite sa sem a pripojíte sa k firme{" "}
+          {t("Na adresu")} <strong className="text-foreground">{inv?.email}</strong>{" "}
+          {t("sme poslali odkaz na potvrdenie účtu. Kliknite naň — vrátite sa sem a pripojíte sa k firme")}{" "}
           <strong className="text-foreground">{inv?.company_name}</strong>.
         </p>
         <p className="mt-3 text-sm text-muted-foreground">
-          E-mail neprišiel? Pozrite aj priečinok nevyžiadanej pošty.
+          {t("E-mail neprišiel? Pozrite aj priečinok nevyžiadanej pošty.")}
         </p>
       </Obal>
     );
 
   if (loading)
-    return <Obal className="text-center text-sm text-muted-foreground">Načítavam pozvánku…</Obal>;
+    return <Obal className="text-center text-sm text-muted-foreground">{t("Načítavam pozvánku…")}</Obal>;
 
   if (!token || !inv || !inv.valid) {
     return (
       <Obal className="text-center">
-        <h1 className="text-2xl font-bold">Neplatná pozvánka</h1>
+        <h1 className="text-2xl font-bold">{t("Neplatná pozvánka")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {inv?.reason === "expired"
-            ? "Platnosť pozvánky vypršala."
+            ? t("Platnosť pozvánky vypršala.")
             : inv?.reason === "already_accepted"
-              ? "Pozvánka už bola využitá."
-              : "Odkaz je neplatný."}
+              ? t("Pozvánka už bola využitá.")
+              : t("Odkaz je neplatný.")}
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Ak už účet máte, prihláste sa. O novú pozvánku požiadajte toho, kto vás do firmy pozval.
+          {t("Ak už účet máte, prihláste sa. O novú pozvánku požiadajte toho, kto vás do firmy pozval.")}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link
             to="/prihlasenie"
             className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            Prihlásiť sa
+            {t("Prihlásiť sa")}
           </Link>
           <Link
             to="/"
             className="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary"
           >
-            Na úvodnú stránku
+            {t("Na úvodnú stránku")}
           </Link>
         </div>
       </Obal>
@@ -188,17 +193,17 @@ function AcceptInvitationPage() {
 
   return (
     <Obal>
-      <h1 className="text-2xl font-bold">Pozvánka do firmy</h1>
+      <h1 className="text-2xl font-bold">{t("Pozvánka do firmy")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Firma <strong>{inv.company_name}</strong> vás pozvala ako{" "}
-        <strong>{ROLA_POPIS[inv.role] ?? inv.role}</strong>.
+        {t("Firma")} <strong>{inv.company_name}</strong> {t("vás pozvala ako")}{" "}
+        <strong>{ROLA_POPIS[inv.role] ? t(ROLA_POPIS[inv.role]) : inv.role}</strong>.
       </p>
       <form
         onSubmit={handleAccept}
         className="mt-6 space-y-4 rounded-xl border border-border bg-card p-6"
       >
         <label className="block">
-          <span className="text-sm font-medium">E-mail</span>
+          <span className="text-sm font-medium">{t("E-mail")}</span>
           <input
             value={inv.email}
             disabled
@@ -207,7 +212,7 @@ function AcceptInvitationPage() {
         </label>
         {!alreadySignedIn && (
           <label className="block">
-            <span className="text-sm font-medium">Zvoľte heslo (min. 8 znakov)</span>
+            <span className="text-sm font-medium">{t("Zvoľte heslo (min. 8 znakov)")}</span>
             <input
               type="password"
               value={pwd}
@@ -220,9 +225,11 @@ function AcceptInvitationPage() {
         )}
         {emailMismatch && (
           <p className="rounded-md bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-            Ste prihlásený ako <strong>{userEmail}</strong>. Pozvánka je pre {inv.email} — buď sa
-            odhláste a prijmite ju pod správnym účtom, alebo pokračujte a pripojte túto firmu k
-            svojmu súčasnému účtu.
+            {t("Ste prihlásený ako")} <strong>{userEmail}</strong>.{" "}
+            {t(
+              "Pozvánka je pre {email} — buď sa odhláste a prijmite ju pod správnym účtom, alebo pokračujte a pripojte túto firmu k svojmu súčasnému účtu.",
+              { email: inv.email },
+            )}
           </p>
         )}
         <button
@@ -231,10 +238,10 @@ function AcceptInvitationPage() {
           className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {busy
-            ? "Prijímam…"
+            ? t("Prijímam…")
             : alreadySignedIn
-              ? "Pripojiť k firme"
-              : "Vytvoriť účet a pripojiť sa"}
+              ? t("Pripojiť k firme")
+              : t("Vytvoriť účet a pripojiť sa")}
         </button>
       </form>
     </Obal>

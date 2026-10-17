@@ -14,13 +14,16 @@ import {
 import { toast } from "sonner";
 import { ScanLine } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/inventura")({
-  head: () => ({ meta: [{ title: "Inventúra — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Inventúra — Faktero") }] }),
   component: InventoryPage,
 });
 
 function InventoryPage() {
+  const { t } = useT();
   const start = useServerFn(startInventory);
   const complete = useServerFn(completeInventory);
   const lookup = useServerFn(lookupStockItemByCode);
@@ -66,7 +69,7 @@ function InventoryPage() {
       (si ?? []).forEach((x: any) => {
         // Kus identifikátora („d09c0368") človeku nepovie nič; názov áno.
         const nazov = x.products?.name ?? null;
-        m[x.id] = nazov ? (x.sku ? `${nazov} · ${x.sku}` : nazov) : (x.sku ?? "(bez názvu)");
+        m[x.id] = nazov ? (x.sku ? `${nazov} · ${x.sku}` : nazov) : (x.sku ?? t("(bez názvu)"));
       });
       setSkuMap(m);
     }
@@ -81,10 +84,10 @@ function InventoryPage() {
       setCountId(r.id);
       setZacata(r.zacata ?? null);
       await loadItems(r.id);
-      if (r.resumed) toast.message("Pokračujete v otvorenej inventúre.");
-      if (r.doplnene) toast.message(`Doplnené nové karty: ${r.doplnene}.`);
+      if (r.resumed) toast.message(t("Pokračujete v otvorenej inventúre."));
+      if (r.doplnene) toast.message(t("Doplnené nové karty: {n}.", { n: r.doplnene }));
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(false);
     }
@@ -103,12 +106,12 @@ function InventoryPage() {
     setBusy(true);
     try {
       const r = await complete({ data: { company_id: cid, inventory_count_id: countId } });
-      toast.success(`Inventúra ukončená. ${r.adjustments} úprav.`);
+      toast.success(t("Inventúra ukončená. {n} úprav.", { n: r.adjustments }));
       setCountId(null);
       setZacata(null);
       setItems([]);
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(false);
     }
@@ -118,7 +121,9 @@ function InventoryPage() {
     const cid = getActiveCompanyId();
     if (!cid || !countId) return;
     if (
-      !(await potvrd("Zahodiť rozpočítanú inventúru? Spočítané hodnoty sa stratia, stavy ostanú."))
+      !(await potvrd(
+        t("Zahodiť rozpočítanú inventúru? Spočítané hodnoty sa stratia, stavy ostanú."),
+      ))
     ) {
       return;
     }
@@ -128,9 +133,9 @@ function InventoryPage() {
       setCountId(null);
       setZacata(null);
       setItems([]);
-      toast.success("Inventúra zahodená.");
+      toast.success(t("Inventúra zahodená."));
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(false);
     }
@@ -143,35 +148,35 @@ function InventoryPage() {
     try {
       const found = await lookup({ data: { company_id: cid, code: code.trim() } });
       if (!found) {
-        toast.error(`Nenájdené: ${code}`);
+        toast.error(t("Nenájdené: {kod}", { kod: code }));
         return;
       }
       const row = items.find((it) => it.stock_item_id === (found as any).id);
       if (!row) {
-        toast.error("Položka nie je v inventúre");
+        toast.error(t("Položka nie je v inventúre"));
         return;
       }
       const next = Number(row.counted_quantity ?? 0) + 1;
       await setCounted(row.id, String(next));
-      toast.success(`+1 → ${(found as any).sku ?? "položka"} (${next})`);
+      toast.success(`+1 → ${(found as any).sku ?? t("položka")} (${next})`);
       setScan("");
       scanRef.current?.focus();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     }
   }
 
   return (
     <>
       <PageHeader
-        title="Inventúra"
-        description="Spočítajte fyzický stav skladu a vytvorte úpravy."
+        title={t("Inventúra")}
+        description={t("Spočítajte fyzický stav skladu a vytvorte úpravy.")}
       />
       <PageBody>
         {!countId ? (
           <div className="mx-auto max-w-md rounded-xl border border-border bg-card p-6">
             <label className="block">
-              <span className="text-sm font-medium">Sklad</span>
+              <span className="text-sm font-medium">{t("Sklad")}</span>
               <select
                 value={warehouse}
                 onChange={(e) => setWarehouse(e.target.value)}
@@ -189,7 +194,7 @@ function InventoryPage() {
               onClick={onStart}
               className="mt-4 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {busy ? "Spúšťam…" : "Začať inventúru"}
+              {busy ? t("Spúšťam…") : t("Začať inventúru")}
             </button>
           </div>
         ) : (
@@ -202,8 +207,9 @@ function InventoryPage() {
               */
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
                 <span>
-                  Inventúra začatá <strong>{new Date(zacata).toLocaleString("sk-SK")}</strong>.
-                  Očakávané stavy sú z tohto času.
+                  {t("Inventúra začatá")}{" "}
+                  <strong>{new Date(zacata).toLocaleString("sk-SK")}</strong>.{" "}
+                  {t("Očakávané stavy sú z tohto času.")}
                 </span>
                 <button
                   type="button"
@@ -211,7 +217,7 @@ function InventoryPage() {
                   onClick={onZahodit}
                   className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
                 >
-                  Zahodiť inventúru
+                  {t("Zahodiť inventúru")}
                 </button>
               </div>
             )}
@@ -228,7 +234,7 @@ function InventoryPage() {
                     onScan(scan);
                   }
                 }}
-                placeholder="Naskenujte alebo napíšte čiarový kód alebo kód a stlačte Enter…"
+                placeholder={t("Naskenujte alebo napíšte čiarový kód alebo kód a stlačte Enter…")}
                 className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
               <button
@@ -242,10 +248,10 @@ function InventoryPage() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="p-3">Položka</th>
-                    <th className="p-3 text-right">Očakávané</th>
-                    <th className="p-3 text-right">Spočítané</th>
-                    <th className="p-3 text-right">Rozdiel</th>
+                    <th className="p-3">{t("Položka")}</th>
+                    <th className="p-3 text-right">{t("Očakávané")}</th>
+                    <th className="p-3 text-right">{t("Spočítané")}</th>
+                    <th className="p-3 text-right">{t("Rozdiel")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -286,7 +292,7 @@ function InventoryPage() {
                 onClick={onComplete}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
-                {busy ? "Ukončujem…" : "Ukončiť a vytvoriť úpravy"}
+                {busy ? t("Ukončujem…") : t("Ukončiť a vytvoriť úpravy")}
               </button>
             </div>
           </>

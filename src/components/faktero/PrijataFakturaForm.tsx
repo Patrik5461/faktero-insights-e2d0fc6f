@@ -17,6 +17,7 @@ import { JobPicker } from "@/components/faktero/JobPicker";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
 import { dicPreRegister, ucetNaIban } from "@/lib/faktero/cz-registr-dph";
+import { useT } from "@/lib/i18n/useT";
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -41,6 +42,7 @@ export function PrijataFakturaForm({
   /** Predvolený druh dokladu pri zakladaní — zo zoznamu prijatých záloh. */
   druh?: "regular" | "proforma";
 }) {
+  const { t } = useT();
   const upravujeme = Boolean(id);
   const prepocitaj = useServerFn(prepocitajPrijatuFn);
   const hladajDuplicitu = useServerFn(najdiDuplicituPrijatejFn);
@@ -192,7 +194,7 @@ export function PrijataFakturaForm({
     try {
       await prepocitaj({ data: { id } });
     } catch {
-      toast.warning("Kurz sa nepodarilo načítať — prepočet doplňte pred podaním DPH.");
+      toast.warning(t("Kurz sa nepodarilo načítať — prepočet doplňte pred podaním DPH."));
     }
   }
 
@@ -211,14 +213,16 @@ export function PrijataFakturaForm({
         .maybeSingle();
       if (zrusene) return;
       if (error || !data) {
-        toast.error("Prijatú faktúru sa nepodarilo načítať.");
+        toast.error(t("Prijatú faktúru sa nepodarilo načítať."));
         setNenajdene(true);
         setNacitavam(false);
         return;
       }
       // Kľúč faktúry pri načítaní — otázka na duplicitu len keď sa zmení.
       setPovodnyKluc(
-        [data.invoice_number, data.supplier_ico, data.supplier_name].map((x) => String(x ?? "").trim()).join("|"),
+        [data.invoice_number, data.supplier_ico, data.supplier_name]
+          .map((x) => String(x ?? "").trim())
+          .join("|"),
       );
       setForm({
         supplier_name: data.supplier_name ?? "",
@@ -235,7 +239,8 @@ export function PrijataFakturaForm({
         issue_date: data.issue_date ?? today(),
         received_date: data.received_date ?? today(),
         due_date: data.due_date ?? today(),
-        amount_without_vat: data.amount_without_vat != null ? formatujCislo(data.amount_without_vat, 2, 2) : "",
+        amount_without_vat:
+          data.amount_without_vat != null ? formatujCislo(data.amount_without_vat, 2, 2) : "",
         vat_amount: data.vat_amount != null ? formatujCislo(data.vat_amount, 2, 2) : "",
         amount_total: data.amount_total != null ? formatujCislo(data.amount_total, 2, 2) : "",
         currency: data.currency ?? "EUR",
@@ -273,7 +278,7 @@ export function PrijataFakturaForm({
       return;
     }
     let zrusene = false;
-    const t = setTimeout(async () => {
+    const casovac = setTimeout(async () => {
       let q = supabase
         .from("purchase_invoices")
         .select("id, invoice_number, amount_total, currency")
@@ -310,7 +315,7 @@ export function PrijataFakturaForm({
     }, 400);
     return () => {
       zrusene = true;
-      clearTimeout(t);
+      clearTimeout(casovac);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.supplier_ico, form.supplier_name, form.type]);
@@ -329,12 +334,12 @@ export function PrijataFakturaForm({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const cid = getActiveCompanyId();
-    if (!cid) return toast.error("Vyberte firmu.");
-    if (!form.supplier_name.trim()) return toast.error("Zadajte dodávateľa.");
-    if (!form.invoice_number.trim()) return toast.error("Zadajte číslo faktúry.");
+    if (!cid) return toast.error(t("Vyberte firmu."));
+    if (!form.supplier_name.trim()) return toast.error(t("Zadajte dodávateľa."));
+    if (!form.invoice_number.trim()) return toast.error(t("Zadajte číslo faktúry."));
     // Splatnosť pred vystavením je takmer vždy preklep v roku či mesiaci.
     if (form.due_date && form.issue_date && form.due_date < form.issue_date)
-      return toast.error("Splatnosť je skôr ako dátum vystavenia — skontrolujte dátumy.");
+      return toast.error(t("Splatnosť je skôr ako dátum vystavenia — skontrolujte dátumy."));
 
     setBusy(true);
     try {
@@ -346,22 +351,25 @@ export function PrijataFakturaForm({
       const kluc = [form.invoice_number, form.supplier_ico, form.supplier_name]
         .map((x) => String(x ?? "").trim())
         .join("|");
-      const dup = id && kluc === povodnyKluc ? null : await hladajDuplicitu({
-        data: {
-          company_id: cid,
-          invoice_number: form.invoice_number.trim(),
-          supplier_ico: form.supplier_ico.trim() || null,
-          supplier_name: form.supplier_name.trim(),
-          supplier_iban: form.supplier_iban.replace(/\s+/g, "") || null,
-          amount_total: sumaZPola(form.amount_total || "0") || null,
-          vylucit_id: id ?? null,
-        },
-      }).catch(() => null);
+      const dup =
+        id && kluc === povodnyKluc
+          ? null
+          : await hladajDuplicitu({
+              data: {
+                company_id: cid,
+                invoice_number: form.invoice_number.trim(),
+                supplier_ico: form.supplier_ico.trim() || null,
+                supplier_name: form.supplier_name.trim(),
+                supplier_iban: form.supplier_iban.replace(/\s+/g, "") || null,
+                amount_total: sumaZPola(form.amount_total || "0") || null,
+                vylucit_id: id ?? null,
+              },
+            }).catch(() => null);
       if (
         dup &&
-        !(await potvrd(`${textDuplicity(dup)}\nUložiť ju aj tak druhýkrát?`, {
-          potvrdit: "Uložiť aj tak",
-          zrusit: "Neukladať",
+        !(await potvrd(`${t(textDuplicity(dup))}\n${t("Uložiť ju aj tak druhýkrát?")}`, {
+          potvrdit: t("Uložiť aj tak"),
+          zrusit: t("Neukladať"),
           nebezpecne: true,
         }))
       ) {
@@ -379,7 +387,7 @@ export function PrijataFakturaForm({
         const up = await supabase.storage
           .from("purchase-invoices")
           .upload(path, file, { contentType: file.type, upsert: false });
-        if (up.error) throw new Error(`Upload PDF zlyhal: ${up.error.message}`);
+        if (up.error) throw new Error(t("Upload PDF zlyhal: {chyba}", { chyba: up.error.message }));
         file_path = path;
         file_mime = file.type || null;
         file_size = file.size;
@@ -439,7 +447,7 @@ export function PrijataFakturaForm({
           .eq("id", id);
         if (error) throw error;
         await doplnKurz(id);
-        toast.success("Zmeny sú uložené");
+        toast.success(t("Zmeny sú uložené"));
         navigate({ to: "/prijate-faktury/$id", params: { id } });
         return;
       }
@@ -451,10 +459,10 @@ export function PrijataFakturaForm({
       if (error) throw error;
       await ulozDodavatelaDoAdresara(cid);
       await doplnKurz(data!.id);
-      toast.success("Prijatá faktúra bola uložená");
+      toast.success(t("Prijatá faktúra bola uložená"));
       navigate({ to: "/prijate-faktury/$id", params: { id: data!.id } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Uloženie zlyhalo");
+      toast.error(t(e?.message ?? "Uloženie zlyhalo"));
     } finally {
       setBusy(false);
     }
@@ -463,7 +471,7 @@ export function PrijataFakturaForm({
   if (nacitavam) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Načítavam…</div>
+        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
       </PageBody>
     );
   }
@@ -471,12 +479,12 @@ export function PrijataFakturaForm({
   if (nenajdene) {
     return (
       <>
-        <PageHeader title="Prijatá faktúra sa nenašla" />
+        <PageHeader title={t("Prijatá faktúra sa nenašla")} />
         <PageBody>
           <div className="rounded-md border border-border p-6 text-sm text-muted-foreground">
-            Doklad neexistuje alebo patrí inej firme.{" "}
+            {t("Doklad neexistuje alebo patrí inej firme.")}{" "}
             <Link to="/prijate-faktury" className="text-primary hover:underline">
-              Späť na prijaté faktúry
+              {t("Späť na prijaté faktúry")}
             </Link>
           </div>
         </PageBody>
@@ -487,28 +495,28 @@ export function PrijataFakturaForm({
   return (
     <>
       <PageHeader
-        title={
+        title={t(
           form.type === "proforma"
             ? upravujeme
               ? "Úprava prijatej zálohovej faktúry"
               : "Nová prijatá zálohová faktúra"
             : upravujeme
               ? "Úprava prijatej faktúry"
-              : "Nová prijatá faktúra"
-        }
-        description={
+              : "Nová prijatá faktúra",
+        )}
+        description={t(
           form.type === "proforma"
             ? "Zálohová faktúra od dodávateľa — platí sa, ale daň z nej neodpočítavate."
             : upravujeme
               ? "Opravte údaje dokladu. Doklad z uzamknutého obdobia sa zmeniť nedá."
-              : "Zaevidujte faktúru od dodávateľa (nákup / výdavok)."
-        }
+              : "Zaevidujte faktúru od dodávateľa (nákup / výdavok).",
+        )}
       />
       <PageBody>
         <form onSubmit={submit} className="mx-auto grid max-w-4xl gap-6">
           <section className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Dodávateľ
+              {t("Dodávateľ")}
             </h3>
             <div className="grid gap-3 sm:grid-cols-2">
               {dodavatelia.length > 0 && (
@@ -518,11 +526,11 @@ export function PrijataFakturaForm({
                     onChange={(e) => vyberDodavatela(e.target.value)}
                     className="input"
                   >
-                    <option value="">— vybrať dodávateľa —</option>
+                    <option value="">{t("— vybrať dodávateľa —")}</option>
                     {dodavatelia.map((d) => (
                       <option key={d.id} value={d.id}>
                         {d.name}
-                        {d.ico ? ` · IČO ${d.ico}` : ""}
+                        {d.ico ? ` · ${t("IČO {ico}", { ico: d.ico })}` : ""}
                       </option>
                     ))}
                   </select>
@@ -575,7 +583,11 @@ export function PrijataFakturaForm({
                   className="input font-mono"
                 />
               </Field>
-              <OverenieRegistraCz dic={form.supplier_dic} icDph={form.supplier_ic_dph} iban={form.supplier_iban} />
+              <OverenieRegistraCz
+                dic={form.supplier_dic}
+                icDph={form.supplier_ic_dph}
+                iban={form.supplier_iban}
+              />
               {!upravujeme && !znamyDodavatel && form.supplier_name.trim() && (
                 <label className="flex items-start gap-2 text-sm sm:col-span-2">
                   <input
@@ -585,9 +597,9 @@ export function PrijataFakturaForm({
                     onChange={(e) => setPridatDoAdresara(e.target.checked)}
                   />
                   <span>
-                    Uložiť dodávateľa do adresára
+                    {t("Uložiť dodávateľa do adresára")}
                     <span className="block text-xs text-muted-foreground">
-                      Nabudúce ho vyberiete zo zoznamu a údaje sa doplnia samy.
+                      {t("Nabudúce ho vyberiete zo zoznamu a údaje sa doplnia samy.")}
                     </span>
                   </span>
                 </label>
@@ -596,7 +608,7 @@ export function PrijataFakturaForm({
                 <input
                   value={form.variable_symbol}
                   onChange={(e) => set("variable_symbol", e.target.value)}
-                  placeholder={form.invoice_number || "napr. 20260112"}
+                  placeholder={form.invoice_number || t("napr. 20260112")}
                   className="input"
                 />
               </Field>
@@ -619,7 +631,11 @@ export function PrijataFakturaForm({
                 />
               </Field>
               <Field label="Číslo objednávky">
-                <input value={form.order_number} onChange={(e) => set("order_number", e.target.value)} className="input" />
+                <input
+                  value={form.order_number}
+                  onChange={(e) => set("order_number", e.target.value)}
+                  className="input"
+                />
               </Field>
               <Field label="Číslo dodacieho listu">
                 <input
@@ -633,7 +649,7 @@ export function PrijataFakturaForm({
 
           <section className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Faktúra
+              {t("Faktúra")}
             </h3>
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Druh dokladu">
@@ -642,12 +658,12 @@ export function PrijataFakturaForm({
                   onChange={(e) => set("type", e.target.value as "regular" | "proforma")}
                   className="input"
                 >
-                  <option value="regular">Prijatá faktúra (daňový doklad)</option>
-                  <option value="proforma">Prijatá zálohová faktúra</option>
+                  <option value="regular">{t("Prijatá faktúra (daňový doklad)")}</option>
+                  <option value="proforma">{t("Prijatá zálohová faktúra")}</option>
                 </select>
                 {form.type === "proforma" && (
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    Do výkazov k DPH nevstupuje. Daň si odpočítate až z ostrej faktúry.
+                    {t("Do výkazov k DPH nevstupuje. Daň si odpočítate až z ostrej faktúry.")}
                   </span>
                 )}
               </Field>
@@ -658,7 +674,7 @@ export function PrijataFakturaForm({
                     onChange={(e) => set("advance_invoice_id", e.target.value)}
                     className="input"
                   >
-                    <option value="">— žiadnu —</option>
+                    <option value="">{t("— žiadnu —")}</option>
                     {zalohy.map((z) => (
                       <option key={z.id} value={z.id}>
                         {z.invoice_number} · {formatujMenu(z.amount_total, z.currency)}
@@ -694,7 +710,7 @@ export function PrijataFakturaForm({
                   className="input"
                 />
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  Rozhoduje o období DPH. Prázdne = dátum vystavenia.
+                  {t("Rozhoduje o období DPH. Prázdne = dátum vystavenia.")}
                 </span>
               </Field>
               <Field label="Dátum prijatia">
@@ -721,13 +737,13 @@ export function PrijataFakturaForm({
                   onChange={(e) => set("payment_method", e.target.value)}
                   className="input"
                 >
-                  <option value="prevod">Prevod</option>
-                  <option value="hotovost">Hotovosť</option>
-                  <option value="karta">Karta</option>
-                  <option value="dobierka">Dobierka</option>
-                  <option value="inkaso">Inkaso</option>
-                  <option value="zaloha">Úhrada zálohou</option>
-                  <option value="zapocet">Zápočet</option>
+                  <option value="prevod">{t("Prevod")}</option>
+                  <option value="hotovost">{t("Hotovosť")}</option>
+                  <option value="karta">{t("Karta")}</option>
+                  <option value="dobierka">{t("Dobierka")}</option>
+                  <option value="inkaso">{t("Inkaso")}</option>
+                  <option value="zaloha">{t("Úhrada zálohou")}</option>
+                  <option value="zapocet">{t("Zápočet")}</option>
                 </select>
               </Field>
               <Field label="Stav">
@@ -736,10 +752,10 @@ export function PrijataFakturaForm({
                   onChange={(e) => set("status", e.target.value as any)}
                   className="input"
                 >
-                  <option value="draft">Koncept</option>
-                  <option value="received">Prijaté</option>
-                  <option value="booked">Zaúčtované</option>
-                  <option value="paid">Zaplatené</option>
+                  <option value="draft">{t("Koncept")}</option>
+                  <option value="received">{t("Prijaté")}</option>
+                  <option value="booked">{t("Zaúčtované")}</option>
+                  <option value="paid">{t("Zaplatené")}</option>
                 </select>
               </Field>
             </div>
@@ -747,7 +763,7 @@ export function PrijataFakturaForm({
 
           <section className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Sumy
+              {t("Sumy")}
             </h3>
             <div className="grid gap-3 sm:grid-cols-4">
               <Field label="Bez DPH">
@@ -793,7 +809,7 @@ export function PrijataFakturaForm({
 
           <section className="space-y-4 rounded-xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Príloha & poznámka
+              {t("Príloha & poznámka")}
             </h3>
             <Field label="PDF príloha">
               <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border bg-background px-4 py-6 text-sm text-muted-foreground hover:bg-muted/30">
@@ -801,8 +817,8 @@ export function PrijataFakturaForm({
                 {file
                   ? file.name
                   : prilohaCesta
-                    ? "Priložený súbor ostáva — kliknutím ho nahradíte"
-                    : "Kliknite pre výber PDF/obrázka"}
+                    ? t("Priložený súbor ostáva — kliknutím ho nahradíte")
+                    : t("Kliknite pre výber PDF/obrázka")}
                 <input
                   type="file"
                   className="hidden"
@@ -814,7 +830,7 @@ export function PrijataFakturaForm({
             <JobPicker
               value={form.job_id}
               onChange={(v) => set("job_id", v)}
-              label="Zákazka (náklad sa započíta do jej vyhodnotenia)"
+              label={t("Zákazka (náklad sa započíta do jej vyhodnotenia)")}
             />
             <Field label="Režim DPH">
               <select
@@ -822,16 +838,17 @@ export function PrijataFakturaForm({
                 onChange={(e) => set("dph_rezim", e.target.value as typeof form.dph_rezim)}
                 className="input"
               >
-                <option value="">Určiť podľa dodávateľa</option>
-                <option value="tuzemsko">Tuzemská faktúra od platiteľa (B.2)</option>
-                <option value="samozdanenie">Daň platím ja — § 69 (B.1)</option>
-                <option value="nadobudnutie">Nadobudnutie tovaru z EÚ</option>
-                <option value="dovoz">Dovoz — daň zaplatená colnému úradu</option>
-                <option value="bez_dane">Bez dane / od neplatiteľa</option>
+                <option value="">{t("Určiť podľa dodávateľa")}</option>
+                <option value="tuzemsko">{t("Tuzemská faktúra od platiteľa (B.2)")}</option>
+                <option value="samozdanenie">{t("Daň platím ja — § 69 (B.1)")}</option>
+                <option value="nadobudnutie">{t("Nadobudnutie tovaru z EÚ")}</option>
+                <option value="dovoz">{t("Dovoz — daň zaplatená colnému úradu")}</option>
+                <option value="bez_dane">{t("Bez dane / od neplatiteľa")}</option>
               </select>
               <span className="mt-1 block text-xs text-muted-foreground">
-                Rozhoduje, do ktorej časti kontrolného výkazu a do ktorého riadku priznania faktúra
-                vstúpi.
+                {t(
+                  "Rozhoduje, do ktorej časti kontrolného výkazu a do ktorého riadku priznania faktúra vstúpi.",
+                )}
               </span>
             </Field>
             <Field label="Odpočítanie dane">
@@ -842,14 +859,14 @@ export function PrijataFakturaForm({
                   onChange={(e) => set("odpocet", e.target.checked)}
                   className="h-4 w-4 rounded border-input"
                 />
-                Daň si z tejto faktúry odpočítavam
+                {t("Daň si z tejto faktúry odpočítavam")}
               </label>
             </Field>
             <Field label="Opravuje faktúru číslo">
               <input
                 value={form.opravuje_cislo}
                 onChange={(e) => set("opravuje_cislo", e.target.value)}
-                placeholder="pri dobropise číslo pôvodnej faktúry"
+                placeholder={t("pri dobropise číslo pôvodnej faktúry")}
                 className="input"
               />
             </Field>
@@ -862,7 +879,7 @@ export function PrijataFakturaForm({
               />
               <PreddefinovanaPoznamka
                 companyId={getActiveCompanyId()}
-                onVyber={(t) => set("note", form.note ? `${form.note}\n${t}` : t)}
+                onVyber={(text) => set("note", form.note ? `${form.note}\n${text}` : text)}
               />
             </Field>
           </section>
@@ -872,7 +889,7 @@ export function PrijataFakturaForm({
               to="/prijate-faktury"
               className="inline-flex h-10 items-center rounded-md border border-border px-4 text-sm hover:bg-secondary"
             >
-              Zrušiť
+              {t("Zrušiť")}
             </Link>
             <button
               disabled={busy}
@@ -880,7 +897,7 @@ export function PrijataFakturaForm({
               className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              {upravujeme ? "Uložiť zmeny" : "Uložiť prijatú faktúru"}
+              {upravujeme ? t("Uložiť zmeny") : t("Uložiť prijatú faktúru")}
             </button>
           </div>
         </form>
@@ -891,13 +908,18 @@ export function PrijataFakturaForm({
 
 /** Suma z poľa po slovensky — „1 234,50“ aj „1234.50“. */
 function sumaZPola(v: string): number {
-  return parseFloat(String(v).replace(/[\s\u00a0\u202f]/g, "").replace(",", "."));
+  return parseFloat(
+    String(v)
+      .replace(/[\s\u00a0\u202f]/g, "")
+      .replace(",", "."),
+  );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const { t } = useT();
   return (
     <label className="block">
-      <div className="mb-1 text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="mb-1 text-xs font-medium text-muted-foreground">{t(label)}</div>
       {children}
     </label>
   );
@@ -911,12 +933,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function OverenieRegistraCz({ dic, icDph, iban }: { dic: string; icDph: string; iban: string }) {
   const [hodnoty, setHodnoty] = useState({ dic, icDph, iban });
   useEffect(() => {
-    const t = setTimeout(() => setHodnoty({ dic, icDph, iban }), 700);
-    return () => clearTimeout(t);
+    const casovac = setTimeout(() => setHodnoty({ dic, icDph, iban }), 700);
+    return () => clearTimeout(casovac);
   }, [dic, icDph, iban]);
   const cid = getActiveCompanyId();
   const ucetOk = !hodnoty.iban.trim() || ucetNaIban(hodnoty.iban) != null;
-  if (!cid || !ucetOk || !(dicPreRegister(hodnoty.icDph) ?? dicPreRegister(hodnoty.dic))) return null;
+  if (!cid || !ucetOk || !(dicPreRegister(hodnoty.icDph) ?? dicPreRegister(hodnoty.dic)))
+    return null;
   return (
     <div className="sm:col-span-2">
       <RegistrPlatcuDph

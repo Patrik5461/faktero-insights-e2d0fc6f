@@ -7,6 +7,8 @@ import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric
 import { toast } from "sonner";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { Logo } from "@/components/faktero/Logo";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import {
   getActiveProduct,
   setActiveProduct,
@@ -15,16 +17,17 @@ import {
 } from "@/lib/faktero/active-product";
 
 export const Route = createFileRoute("/prihlasenie")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Prihlásenie — Faktero" },
-      { name: "description", content: "Prihláste sa do Faktera." },
+      { title: preloz(match.context.jazyk ?? "sk", "Prihlásenie — Faktero") },
+      { name: "description", content: preloz(match.context.jazyk ?? "sk", "Prihláste sa do Faktera.") },
     ],
   }),
   component: LoginPage,
 });
 
 function LoginPage() {
+  const { t } = useT();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -94,7 +97,7 @@ function LoginPage() {
     setLoading(false);
     if (vysledok === "ticho") {
       return toast.error(
-        "Prihlásenie neodpovedalo. Zatvorte ostatné otvorené okná Faktera a skúste to znova.",
+        t("Prihlásenie neodpovedalo. Zatvorte ostatné otvorené okná Faktera a skúste to znova."),
       );
     }
     const { error } = vysledok;
@@ -107,7 +110,7 @@ function LoginPage() {
        */
       const ch = prelozAuthChybu(error.message);
       setNepotvrdeny(ch.nepotvrdeny);
-      return toast.error(ch.sprava);
+      return toast.error(t(ch.sprava));
     }
     setNepotvrdeny(false);
     navigate({ to: landingPathFor(product) as any });
@@ -121,8 +124,8 @@ function LoginPage() {
       options: { emailRedirectTo: `${window.location.origin}/dashboard` },
     });
     setPosielam(false);
-    if (error) return toast.error(prelozAuthChybu(error.message).sprava);
-    toast.success("Potvrdzovací e-mail sme poslali znova.");
+    if (error) return toast.error(t(prelozAuthChybu(error.message).sprava));
+    toast.success(t("Potvrdzovací e-mail sme poslali znova."));
   }
 
   return (
@@ -131,32 +134,32 @@ function LoginPage() {
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Prihlásenie</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("Prihlásenie")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Vitajte späť. Vyberte produkt a prihláste sa do svojho účtu.
+          {t("Vitajte späť. Vyberte produkt a prihláste sa do svojho účtu.")}
         </p>
 
         {/* Product picker */}
         <div className="mt-5">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Prihlásiť sa do:
+            {t("Prihlásiť sa do:")}
           </p>
           <div className="grid grid-cols-2 gap-2">
             <ProductButton
               icon={<FileText className="h-4 w-4" />}
-              label="Fakturačný systém"
+              label={t("Fakturačný systém")}
               selected={product === "invoicing"}
               onClick={() => chooseProduct("invoicing")}
             />
             <ProductButton
               icon={<Car className="h-4 w-4" />}
-              label="Kniha jázd"
+              label={t("Kniha jázd")}
               selected={product === "logbook"}
               onClick={() => chooseProduct("logbook")}
             />
           </div>
           <p className="mt-1.5 text-[11px] text-muted-foreground">
-            Rovnaký účet, iný produkt. Prepnúť môžete kedykoľvek v hlavičke.
+            {t("Rovnaký účet, iný produkt. Prepnúť môžete kedykoľvek v hlavičke.")}
           </p>
         </div>
 
@@ -167,7 +170,7 @@ function LoginPage() {
         <form onSubmit={onSubmit} className="mt-5 space-y-3">
           {/* Pole vnútri <label> a `autoComplete` — to isté ako pri registrácii. */}
           <label className="block">
-            <span className="text-sm font-medium">Email</span>
+            <span className="text-sm font-medium">{t("Email")}</span>
             <input
               type="email"
               autoComplete="username"
@@ -178,7 +181,7 @@ function LoginPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Heslo</span>
+            <span className="text-sm font-medium">{t("Heslo")}</span>
             <input
               type="password"
               autoComplete="current-password"
@@ -194,25 +197,24 @@ function LoginPage() {
               search={email ? { email } : {}}
               className="text-sm font-medium text-primary hover:underline"
             >
-              Zabudli ste heslo?
+              {t("Zabudli ste heslo?")}
             </Link>
           </div>
           <p className="text-xs text-muted-foreground">
-            Prihlasovali ste sa doteraz cez Google? Táto možnosť sa zrušila — cez „Zabudli ste
-            heslo?“ si na svoj e-mail nastavíte heslo a účet aj dáta ostanú.
+            {t("Prihlasovali ste sa doteraz cez Google? Táto možnosť sa zrušila — cez „Zabudli ste heslo?“ si na svoj e-mail nastavíte heslo a účet aj dáta ostanú.")}
           </p>
           <button
             type="submit"
             disabled={loading}
             className="mt-2 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
           >
-            {loading ? "Prihlasujem..." : "Prihlásiť sa"}
+            {loading ? t("Prihlasujem...") : t("Prihlásiť sa")}
           </button>
 
           {nepotvrdeny && (
             <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
               <p className="text-muted-foreground">
-                Účet ešte nie je potvrdený. Odkaz sme poslali na{" "}
+                {t("Účet ešte nie je potvrdený. Odkaz sme poslali na")}{" "}
                 <strong className="text-foreground">{email}</strong>.
               </p>
               <button
@@ -221,7 +223,7 @@ function LoginPage() {
                 disabled={posielam}
                 className="mt-2 font-medium text-primary hover:underline disabled:opacity-60"
               >
-                {posielam ? "Posielam…" : "Poslať e-mail znova"}
+                {posielam ? t("Posielam…") : t("Poslať e-mail znova")}
               </button>
             </div>
           )}
@@ -230,9 +232,9 @@ function LoginPage() {
         <BiometricLoginButton onSuccess={() => navigate({ to: landingPathFor(product) as any })} />
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Nemáte účet?{" "}
+          {t("Nemáte účet?")}{" "}
           <Link to="/registracia" className="font-medium text-primary hover:underline">
-            Vytvoriť účet
+            {t("Vytvoriť účet")}
           </Link>
         </p>
       </div>
@@ -273,6 +275,7 @@ function ProductButton({
 }
 
 function BiometricLoginButton({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useT();
   const [available, setAvailable] = useState(false);
   useEffect(() => {
     isBiometricAvailable().then(setAvailable);
@@ -280,7 +283,7 @@ function BiometricLoginButton({ onSuccess }: { onSuccess: () => void }) {
   if (!available) return null;
   async function go() {
     const r = await loginWithBiometric();
-    if (!r.ok) return toast.error(r.error ?? "Biometria zlyhala");
+    if (!r.ok) return toast.error(r.error ?? t("Biometria zlyhala"));
     onSuccess();
   }
   return (
@@ -289,7 +292,7 @@ function BiometricLoginButton({ onSuccess }: { onSuccess: () => void }) {
       onClick={go}
       className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-secondary"
     >
-      <Fingerprint className="h-4 w-4" /> Prihlásiť sa biometriou
+      <Fingerprint className="h-4 w-4" /> {t("Prihlásiť sa biometriou")}
     </button>
   );
 }

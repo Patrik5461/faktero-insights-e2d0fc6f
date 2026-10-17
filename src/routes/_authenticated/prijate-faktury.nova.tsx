@@ -1,8 +1,9 @@
+import { preloz } from "@/lib/i18n/jazyk";
 import { createFileRoute } from "@tanstack/react-router";
 import { PrijataFakturaForm } from "@/components/faktero/PrijataFakturaForm";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/nova")({
-  head: () => ({ meta: [{ title: "Nová prijatá faktúra — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová prijatá faktúra — Faktero") }] }),
   /* `?typ=proforma` otvorí formulár rovno ako prijatú zálohovú faktúru. */
   validateSearch: (s: Record<string, unknown>): { typ?: "proforma" } => ({
     typ: s.typ === "proforma" ? "proforma" : undefined,

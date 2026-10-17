@@ -7,9 +7,13 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getMovementDetail } from "@/lib/faktero/stock.functions";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/pohyby/$id")({
-  head: () => ({ meta: [{ title: "Detail pohybu — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Detail pohybu — Faktero") }],
+  }),
   component: MovementDetail,
 });
 
@@ -35,6 +39,7 @@ const SHOW_STOCK_DEBUG =
   (typeof window !== "undefined" && window.location.hostname.includes("lovable"));
 
 function MovementDetail() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const { id } = Route.useParams();
   const fetchDetail = useServerFn(getMovementDetail);
@@ -75,13 +80,13 @@ function MovementDetail() {
   if (loading)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Načítavam…</div>
+        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
       </PageBody>
     );
   if (!data?.movement)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Pohyb sa nenašiel.</div>
+        <div className="text-sm text-muted-foreground">{t("Pohyb sa nenašiel.")}</div>
         {SHOW_STOCK_DEBUG && error && (
           <pre className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
             {error}
@@ -94,14 +99,18 @@ function MovementDetail() {
   return (
     <>
       <PageHeader
-        title={NADPIS[m.type] ?? `Skladový pohyb — ${TYPE_LABEL[m.type] ?? m.type}`}
+        title={
+          NADPIS[m.type]
+            ? t(NADPIS[m.type])
+            : t("Skladový pohyb — {typ}", { typ: t(TYPE_LABEL[m.type] ?? m.type) })
+        }
         description={new Date(m.created_at).toLocaleString("sk-SK")}
       />
       <PageBody>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-4">
             <dl className="grid gap-3 text-sm">
-              <Pair label="Typ pohybu" value={TYPE_LABEL[m.type] ?? m.type} />
+              <Pair label="Typ pohybu" value={t(TYPE_LABEL[m.type] ?? m.type)} />
               <Pair
                 label="Množstvo"
                 value={pohybText(m.type, m.quantity)}
@@ -149,7 +158,7 @@ function MovementDetail() {
                       params={{ id: data.invoice.id }}
                       className="text-primary hover:underline"
                     >
-                      Faktúra {data.invoice.invoice_number}
+                      {t("Faktúra {cislo}", { cislo: data.invoice.invoice_number })}
                     </Link>
                   ) : (
                     (m.reference_type ?? "—")
@@ -174,9 +183,10 @@ function Pair({
   value: React.ReactNode;
   accent?: string;
 }) {
+  const { t } = useT();
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{t(label)}</dt>
       <dd className={`mt-0.5 ${accent ?? ""}`}>{value}</dd>
     </div>
   );

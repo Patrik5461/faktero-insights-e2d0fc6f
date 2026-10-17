@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/vykazy-dph")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Výkazy k DPH — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Výkazy k DPH — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Priznanie k DPH, kontrolný výkaz a súhrnný výkaz vo Faktere: čo treba vyplniť na dokladoch, ako sa výkazy zostavia a ako sa XML podá cez eDane.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/vykazy-dph" },
     ],
@@ -32,7 +36,8 @@ const sections: HelpSection[] = [
             <strong>Priznanie k DPH</strong> — za obdobia od júla 2025 na novom tlačive (vzor
             DPH2025), kde má každá sadzba vlastný riadok: 19 % v r. 01 a 02, 5 % v r. 01a a 02a,
             23 % v r. 03 a 04, a rovnako pri samozdanení (r. 09 až 10b) aj odpočte (r. 18, 18a, 19).
-            Za staršie obdobia (napríklad dodatočné priznanie) Faktero použije pôvodné tlačivo DPHv21,
+            Za staršie obdobia (napríklad dodatočné priznanie) Faktero použije pôvodné tlačivo
+            DPHv21,
           </li>
           <li>
             <strong>Kontrolný výkaz</strong> (schéma KVDPH 2025) — časti A.1, A.2, B.1, B.2, B.3 a
@@ -99,23 +104,23 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          <strong>Vy dlžíte (§ 53b, povinné).</strong> Keď prijatú faktúru od platiteľa
-          nezaplatíte ani na 101. deň po splatnosti, musíte štátu vrátiť odpočítanú daň. Faktero to
-          urobí samo: v období, v ktorom 101. deň nastal, pridá opravu do r. 29 priznania a do časti
-          C.2 kontrolného výkazu (číslo dokladu „0“, záporné sumy, označenie nevymožiteľnej
-          pohľadávky). Doklad sa nevystavuje a cez eFaktúru sa nič neposiela. Keď faktúru neskôr
-          zaplatíte, v období úhrady si daň odpočítate znova — aj to Faktero doplní samo. Rozhoduje
-          dátum úhrady na prijatej faktúre, preto ju označujte ako zaplatenú s dátumom.
+          <strong>Vy dlžíte (§ 53b, povinné).</strong> Keď prijatú faktúru od platiteľa nezaplatíte
+          ani na 101. deň po splatnosti, musíte štátu vrátiť odpočítanú daň. Faktero to urobí samo:
+          v období, v ktorom 101. deň nastal, pridá opravu do r. 29 priznania a do časti C.2
+          kontrolného výkazu (číslo dokladu „0“, záporné sumy, označenie nevymožiteľnej pohľadávky).
+          Doklad sa nevystavuje a cez eFaktúru sa nič neposiela. Keď faktúru neskôr zaplatíte, v
+          období úhrady si daň odpočítate znova — aj to Faktero doplní samo. Rozhoduje dátum úhrady
+          na prijatej faktúre, preto ju označujte ako zaplatenú s dátumom.
         </p>
         <p>
           <strong>Vám dlžia (§ 25a, môžete).</strong> Keď odberateľ nezaplatí ani 150 dní po
-          splatnosti, môžete si daň z nezaplatenej časti vrátiť. Do 1 000 € s DPH stačí doložiť
-          úkon na vymoženie — napríklad upomienku odoslanú z Faktera; nad 1 000 € musí byť podaná
-          žaloba alebo vedená exekúcia. Na detaile faktúry sa vtedy objaví{" "}
+          splatnosti, môžete si daň z nezaplatenej časti vrátiť. Do 1 000 € s DPH stačí doložiť úkon
+          na vymoženie — napríklad upomienku odoslanú z Faktera; nad 1 000 € musí byť podaná žaloba
+          alebo vedená exekúcia. Na detaile faktúry sa vtedy objaví{" "}
           <em>Vystaviť opravný doklad (§ 25a)</em>: vznikne doklad s textom „oprava základu dane
           podľa § 25a“, ktorý musíte odberateľovi odoslať (e-mailom alebo cez eFaktúru ako dobropis
-          s číslom pôvodnej faktúry) do lehoty na podanie priznania. Vo výkazoch ide do r. 26 a 27
-          a do C.1. Keď odberateľ neskôr zaplatí, opravu treba vrátiť — Faktero na to upozorní a
+          s číslom pôvodnej faktúry) do lehoty na podanie priznania. Vo výkazoch ide do r. 26 a 27 a
+          do C.1. Keď odberateľ neskôr zaplatí, opravu treba vrátiť — Faktero na to upozorní a
           doklad o vrátení vystaví jedným klikom. Pri uplatňovaní dane na základe prijatia platby
           (§ 68d) a pri prenesení daňovej povinnosti sa nič z toho neuplatní.
         </p>
@@ -179,8 +184,8 @@ const sections: HelpSection[] = [
         <p>
           Kto dodáva tovar alebo služby platiteľom v iných štátoch EÚ, podáva aj{" "}
           <strong>souhrnné hlášení</strong> (DPHSHV) — zostaví sa na tej istej stránke podľa
-          odberateľov a kódu plnenia (0 tovar, 2 trojstranný obchod, 3 služba). Pri dodaní tovaru
-          sa podáva za každý mesiac, pri samotných službách stačí štvrťrok.
+          odberateľov a kódu plnenia (0 tovar, 2 trojstranný obchod, 3 služba). Pri dodaní tovaru sa
+          podáva za každý mesiac, pri samotných službách stačí štvrťrok.
         </p>
       </>
     ),
@@ -189,7 +194,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Účtovníctvo"
       title="Výkazy k DPH"
       intro={

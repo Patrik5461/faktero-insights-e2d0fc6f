@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { supabase } from "@/integrations/supabase/client";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -32,7 +34,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
-  head: () => ({ meta: [{ title: "Iné doklady — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Iné doklady — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>): { stav?: ZalozkaDokladov } =>
     jeZalozkaDokladov(s.stav) ? { stav: s.stav } : {},
   component: OstatneDokladyPage,
@@ -45,6 +47,7 @@ const STAV_STYLE: Record<string, string> = {
 };
 
 function OstatneDokladyPage() {
+  const { t } = useT();
   const navigate = useNavigate();
   const zoznamFn = useServerFn(zoznamOstatnychFn);
   const stavFn = useServerFn(nastavStavOstatnychFn);
@@ -70,18 +73,22 @@ function OstatneDokladyPage() {
     ? rows.filter((r) => String(r.priecinok ?? "").trim() === (priecinok === "__bez" ? "" : priecinok))
     : rows;
   async function doPriecinka() {
-    const nazov = await zadaj("Do ktorého priečinka?\nPrázdne = bez priečinka.", {
+    const nazov = await zadaj(t("Do ktorého priečinka?\nPrázdne = bez priečinka."), {
       predvolene: priecinok && priecinok !== "__bez" ? priecinok : "",
       povolitPrazdne: true,
       moznosti: priecinky,
-    }, { potvrdit: "Presunúť" });
+    }, { potvrdit: t("Presunúť") });
     if (nazov === null) return;
     const { error } = await supabase
       .from("other_documents")
       .update({ priecinok: nazov.trim().slice(0, 60) || null } as any)
       .in("id", Array.from(selected));
     if (error) return toast.error(error.message);
-    toast.success(nazov.trim() ? `Presunuté do priečinka „${nazov.trim()}"` : "Priečinok zrušený");
+    toast.success(
+      nazov.trim()
+        ? t("Presunuté do priečinka „{nazov}\"", { nazov: nazov.trim() })
+        : t("Priečinok zrušený"),
+    );
     await refresh();
   }
   const [loading, setLoading] = useState(true);
@@ -110,7 +117,7 @@ function OstatneDokladyPage() {
           /* počet je len na záložke */
         });
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba pri načítaní");
+      toast.error(e?.message ?? t("Chyba pri načítaní"));
     } finally {
       setLoading(false);
     }
@@ -133,13 +140,13 @@ function OstatneDokladyPage() {
         toast.success(
           novy === "processed"
             ? v.zmenene === 1
-              ? "Doklad je spracovaný."
-              : `Spracovaných ${v.zmenene} dokladov.`
-            : "Vrátené medzi nespracované.",
+              ? t("Doklad je spracovaný.")
+              : t("Spracovaných dokladov: {n}.", { n: v.zmenene })
+            : t("Vrátené medzi nespracované."),
         );
       refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Zmena stavu sa nepodarila.");
+      toast.error(e?.message ?? t("Zmena stavu sa nepodarila."));
     } finally {
       setPracujem(false);
     }
@@ -150,19 +157,25 @@ function OstatneDokladyPage() {
       const { url } = await odkazFn({ data: { id } });
       window.open(url, "_blank");
     } catch (e: any) {
-      toast.error(e?.message ?? "Prílohu sa nepodarilo otvoriť.");
+      toast.error(e?.message ?? t("Prílohu sa nepodarilo otvoriť."));
     }
   }
 
   async function zmaz(r: any) {
-    if (!(await potvrd(`Naozaj zmazať doklad „${r.subject || r.sender || nazovDruhu(r.kind)}“ aj s prílohami?`)))
+    if (
+      !(await potvrd(
+        t("Naozaj zmazať doklad „{nazov}“ aj s prílohami?", {
+          nazov: r.subject || r.sender || t(nazovDruhu(r.kind)),
+        }),
+      ))
+    )
       return;
     try {
       await zmazFn({ data: { id: r.id } });
-      toast.success("Doklad zmazaný.");
+      toast.success(t("Doklad zmazaný."));
       refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Zmazanie zlyhalo.");
+      toast.error(e?.message ?? t("Zmazanie zlyhalo."));
     }
   }
 
@@ -174,7 +187,9 @@ function OstatneDokladyPage() {
       oznacit &&
       nesprac > 0 &&
       !(await potvrd(
-        `${nesprac === 1 ? "Jeden doklad je" : `${nesprac} dokladov je`} ešte nespracovaných. Odovzdať aj ${nesprac === 1 ? "ten" : "tie"}?`,
+        nesprac === 1
+          ? t("Jeden doklad je ešte nespracovaný. Odovzdať aj ten?")
+          : t("{n} dokladov je ešte nespracovaných. Odovzdať aj tie?", { n: nesprac }),
       ))
     )
       return;
@@ -192,10 +207,10 @@ function OstatneDokladyPage() {
       a.download = res.filename;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`V balíku je ${res.count} dokladov.`);
+      toast.success(t("Počet dokladov v balíku: {n}.", { n: res.count }));
       if (oznacit) refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Export zlyhal.");
+      toast.error(e?.message ?? t("Export zlyhal."));
     } finally {
       setPracujem(false);
     }
@@ -213,21 +228,21 @@ function OstatneDokladyPage() {
   return (
     <>
       <PageHeader
-        title="Iné doklady"
-        description="Listy, predpisy, exekúcie, zmluvy a ďalšie podklady pre účtovníka."
+        title={t("Iné doklady")}
+        description={t("Listy, predpisy, exekúcie, zmluvy a ďalšie podklady pre účtovníka.")}
         action={
           <Link
             to="/ostatne-doklady/novy"
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Pridať doklad
+            <Plus className="h-4 w-4" /> {t("Pridať doklad")}
           </Link>
         }
       />
       <PageBody>
         <div
           role="tablist"
-          aria-label="Stav dokladov"
+          aria-label={t("Stav dokladov")}
           className="mb-4 flex flex-wrap gap-1 border-b border-border"
         >
           {ZALOZKY_DOKLADOV.map((z) => (
@@ -242,7 +257,7 @@ function OstatneDokladyPage() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {z.nazov}
+              {t(z.nazov)}
               {z.kluc === "nespracovane" && nespracovanych ? (
                 <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
                   {nespracovanych}
@@ -254,15 +269,14 @@ function OstatneDokladyPage() {
 
         {bezMesiaca && (
           <p className="mb-4 text-sm text-muted-foreground">
-            Sem padne každý nový doklad. Účtovník ho pozrie a označí ako spracovaný; ukazujú sa tu
-            nespracované zo všetkých mesiacov.
+            {t("Sem padne každý nový doklad. Účtovník ho pozrie a označí ako spracovaný; ukazujú sa tu nespracované zo všetkých mesiacov.")}
           </p>
         )}
 
         <div className="mb-4 flex flex-wrap items-end gap-3">
           {!bezMesiaca && (
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Mesiac doručenia</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t("Mesiac doručenia")}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="month"
@@ -276,41 +290,41 @@ function OstatneDokladyPage() {
                   disabled={!month}
                   className="rounded-md border border-border bg-card px-2 py-1.5 text-xs hover:bg-secondary disabled:opacity-40"
                 >
-                  Všetky
+                  {t("Všetky")}
                 </button>
               </div>
             </div>
           )}
           <div className="w-full sm:w-auto">
-            <label className="mb-1 block text-xs text-muted-foreground">Druh</label>
+            <label className="mb-1 block text-xs text-muted-foreground">{t("Druh")}</label>
             <select
               value={druh}
               onChange={(e) => setDruh(e.target.value as DruhOstatneho | "")}
               className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm sm:w-auto"
             >
-              <option value="">Všetky druhy</option>
+              <option value="">{t("Všetky druhy")}</option>
               {DRUHY_OSTATNYCH.map((d) => (
                 <option key={d.kluc} value={d.kluc}>
-                  {d.nazov}
+                  {t(d.nazov)}
                 </option>
               ))}
             </select>
           </div>
           <div className="w-full sm:w-auto">
-            <label className="mb-1 block text-xs text-muted-foreground">Priečinok</label>
+            <label className="mb-1 block text-xs text-muted-foreground">{t("Priečinok")}</label>
             <select
-              aria-label="Priečinok"
+              aria-label={t("Priečinok")}
               value={priecinok}
               onChange={(e) => setPriecinok(e.target.value)}
               className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm sm:w-auto"
             >
-              <option value="">Všetky priečinky</option>
+              <option value="">{t("Všetky priečinky")}</option>
               {priecinky.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
               ))}
-              <option value="__bez">Bez priečinka</option>
+              <option value="__bez">{t("Bez priečinka")}</option>
             </select>
           </div>
           {selected.size > 0 && (
@@ -318,7 +332,7 @@ function OstatneDokladyPage() {
               onClick={() => void doPriecinka()}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
             >
-              <FolderOpen className="h-4 w-4" /> Do priečinka ({selected.size})
+              <FolderOpen className="h-4 w-4" /> {t("Do priečinka")} ({selected.size})
             </button>
           )}
           {selected.size > 0 && (zalozka === "nespracovane" || zalozka === "spracovane") && (
@@ -331,12 +345,12 @@ function OstatneDokladyPage() {
             >
               {zalozka === "nespracovane" ? (
                 <>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Označiť ako spracované (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> {t("Označiť ako spracované")} (
                   {selected.size})
                 </>
               ) : (
                 <>
-                  <Undo2 className="h-4 w-4" /> Vrátiť medzi nespracované ({selected.size})
+                  <Undo2 className="h-4 w-4" /> {t("Vrátiť medzi nespracované")} ({selected.size})
                 </>
               )}
             </button>
@@ -347,33 +361,33 @@ function OstatneDokladyPage() {
               disabled={pracujem || !rows.length}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : "všetko"}
+              <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : t("všetko")}
             </button>
             <button
               onClick={() => odovzdaj(true)}
               disabled={pracujem || !rows.length || zalozka === "odovzdane"}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> Odovzdať účtovníkovi
+              <Download className="h-4 w-4" /> {t("Odovzdať účtovníkovi")}
             </button>
           </div>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-border bg-card">
           {loading ? (
-            <div className="p-12 text-center text-sm text-muted-foreground">Načítavam…</div>
+            <div className="p-12 text-center text-sm text-muted-foreground">{t("Načítavam…")}</div>
           ) : rows.length === 0 ? (
             <div className="p-12 text-center text-sm text-muted-foreground">
               <FolderOpen className="mx-auto mb-2 h-8 w-8 opacity-40" />
               {bezMesiaca
-                ? "Žiadny iný doklad nečaká na spracovanie."
-                : "Vo výbere nie je žiadny doklad."}
+                ? t("Žiadny iný doklad nečaká na spracovanie.")
+                : t("Vo výbere nie je žiadny doklad.")}
               <div className="mt-4 flex justify-center gap-2">
                 <Link
                   to="/ostatne-doklady/novy"
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
                 >
-                  <Plus className="h-4 w-4" /> Pridať doklad
+                  <Plus className="h-4 w-4" /> {t("Pridať doklad")}
                 </Link>
               </div>
             </div>
@@ -385,7 +399,7 @@ function OstatneDokladyPage() {
                     <th className="w-8 px-3 py-2">
                       <input
                         type="checkbox"
-                        aria-label="Označiť všetky"
+                        aria-label={t("Označiť všetky")}
                         checked={rows.length > 0 && selected.size === rows.length}
                         onChange={() =>
                           setSelected((p) =>
@@ -394,12 +408,12 @@ function OstatneDokladyPage() {
                         }
                       />
                     </th>
-                    <th className="px-3 py-2 text-left">Doručené</th>
-                    <th className="px-3 py-2 text-left">Druh</th>
-                    <th className="px-3 py-2 text-left">Odosielateľ a predmet</th>
-                    <th className="px-3 py-2 text-right">Suma</th>
-                    <th className="px-3 py-2 text-left">Lehota</th>
-                    <th className="px-3 py-2 text-left">Stav</th>
+                    <th className="px-3 py-2 text-left">{t("Doručené")}</th>
+                    <th className="px-3 py-2 text-left">{t("Druh")}</th>
+                    <th className="px-3 py-2 text-left">{t("Odosielateľ a predmet")}</th>
+                    <th className="px-3 py-2 text-right">{t("Suma")}</th>
+                    <th className="px-3 py-2 text-left">{t("Lehota")}</th>
+                    <th className="px-3 py-2 text-left">{t("Stav")}</th>
                     <th className="px-3 py-2"></th>
                   </tr>
                 </thead>
@@ -414,14 +428,14 @@ function OstatneDokladyPage() {
                         <td className="px-3 py-2">
                           <input
                             type="checkbox"
-                            aria-label="Označiť doklad"
+                            aria-label={t("Označiť doklad")}
                             checked={selected.has(r.id)}
                             onChange={() => toggle(r.id)}
                           />
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">{datumNaDoklade(r.received_date)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
-                          {nazovDruhu(r.kind)}
+                          {t(nazovDruhu(r.kind))}
                           {r.priecinok ? (
                             <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                               <FolderOpen className="h-3 w-3" /> {r.priecinok}
@@ -436,7 +450,7 @@ function OstatneDokladyPage() {
                             className="text-left hover:underline"
                           >
                             {r.sender || (
-                              <span className="italic text-muted-foreground">bez odosielateľa</span>
+                              <span className="italic text-muted-foreground">{t("bez odosielateľa")}</span>
                             )}
                           </button>
                           {r.subject && (
@@ -446,10 +460,16 @@ function OstatneDokladyPage() {
                           {(r.zamestnanec || r.zmluva) && (
                             <div className="text-xs text-primary">
                               {r.zamestnanec &&
-                                `Zamestnanec: ${[r.zamestnanec.first_name, r.zamestnanec.last_name].filter(Boolean).join(" ")}`}
+                                t("Zamestnanec: {meno}", {
+                                  meno: [r.zamestnanec.first_name, r.zamestnanec.last_name]
+                                    .filter(Boolean)
+                                    .join(" "),
+                                })}
                               {r.zamestnanec && r.zmluva ? " · " : ""}
                               {r.zmluva &&
-                                `Zmluva: ${r.zmluva.name || r.zmluva.provider_name || ""}${r.zmluva.contract_number ? ` č. ${r.zmluva.contract_number}` : ""}`}
+                                t("Zmluva: {nazov}", {
+                                  nazov: `${r.zmluva.name || r.zmluva.provider_name || ""}${r.zmluva.contract_number ? ` ${t("č.")} ${r.zmluva.contract_number}` : ""}`,
+                                })}
                             </div>
                           )}
                           {prilohy.length > 0 && (
@@ -493,13 +513,17 @@ function OstatneDokladyPage() {
                             <span
                               title={
                                 r.processed_at
-                                  ? `Spracované ${new Date(r.processed_at).toLocaleDateString("sk-SK")}`
+                                  ? t("Spracované {datum}", {
+                                      datum: new Date(r.processed_at).toLocaleDateString("sk-SK"),
+                                    })
                                   : undefined
                               }
                               className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STAV_STYLE[r.status]}`}
                             >
-                              {STAV_DOKLADU_NAZOV[r.status as keyof typeof STAV_DOKLADU_NAZOV] ??
-                                r.status}
+                              {t(
+                                STAV_DOKLADU_NAZOV[r.status as keyof typeof STAV_DOKLADU_NAZOV] ??
+                                  r.status,
+                              )}
                             </span>
                             {r.status === "new" && (
                               <button
@@ -507,15 +531,15 @@ function OstatneDokladyPage() {
                                 disabled={pracujem}
                                 className="inline-flex items-center gap-1 rounded-md bg-emerald-600/10 px-2 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
                               >
-                                <CheckCircle2 className="h-3.5 w-3.5" /> Spracovať
+                                <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
                               </button>
                             )}
                             {r.status === "processed" && (
                               <button
                                 onClick={() => zmenStav([r.id], "new")}
                                 disabled={pracujem}
-                                title="Vrátiť medzi nespracované"
-                                aria-label="Vrátiť medzi nespracované"
+                                title={t("Vrátiť medzi nespracované")}
+                                aria-label={t("Vrátiť medzi nespracované")}
                                 className="rounded-md p-0.5 text-muted-foreground hover:bg-secondary disabled:opacity-50"
                               >
                                 <Undo2 className="h-3.5 w-3.5" />
@@ -526,8 +550,8 @@ function OstatneDokladyPage() {
                         <td className="px-3 py-2 text-right">
                           <button
                             onClick={() => zmaz(r)}
-                            title="Zmazať"
-                            aria-label="Zmazať doklad"
+                            title={t("Zmazať")}
+                            aria-label={t("Zmazať doklad")}
                             className="rounded-md p-1.5 hover:bg-destructive/10"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />

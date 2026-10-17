@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * ResponsiveTable — renders the full table on >=sm screens and a stack of
@@ -30,6 +31,7 @@ export function ResponsiveTable<T>({
   mobileCard: (item: T, index: number) => ReactNode;
   className?: string;
 }) {
+  const { t } = useT();
   return (
     <div className={className}>
       {/* Desktop / tablet table */}
@@ -39,12 +41,12 @@ export function ResponsiveTable<T>({
       <div className="space-y-2 sm:hidden">
         {loading && (
           <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            Načítavam…
+            {t("Načítavam…")}
           </div>
         )}
         {!loading && items.length === 0 && (
           <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            {emptyText}
+            {t(emptyText)}
           </div>
         )}
         {!loading &&

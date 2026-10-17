@@ -7,9 +7,11 @@ import { listJobs } from "@/lib/faktero/jobs.functions";
 import { STAV_ZAKAZKY_POPIS, prekrocenyRozpocet, type StavZakazky } from "@/lib/faktero/zakazky";
 import { Plus, HardHat } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/zakazky/")({
-  head: () => ({ meta: [{ title: "Zákazky — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zákazky — Faktero") }] }),
   component: JobsPage,
 });
 
@@ -24,6 +26,7 @@ function suma(n: number) {
 }
 
 function JobsPage() {
+  const { t } = useT();
   const fetchJobs = useServerFn(listJobs);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,14 +71,16 @@ function JobsPage() {
   return (
     <>
       <PageHeader
-        title="Zákazky"
-        description="Faktúry, materiál zo skladu a jazdy zvedené na jedno miesto. Zákazka povie, koľko na nej ostalo."
+        title={t("Zákazky")}
+        description={t(
+          "Faktúry, materiál zo skladu a jazdy zvedené na jedno miesto. Zákazka povie, koľko na nej ostalo.",
+        )}
         action={
           <Link
             to="/zakazky/nova"
             className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Nová zákazka
+            <Plus className="h-4 w-4" /> {t("Nová zákazka")}
           </Link>
         }
       />
@@ -96,24 +101,25 @@ function JobsPage() {
                 filter === k ? "bg-secondary font-medium" : "text-muted-foreground"
               }`}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center">
             <HardHat className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
             <div className="text-sm text-muted-foreground">
               {filter === "otvorene"
-                ? "Žiadna otvorená zákazka."
-                : "Zatiaľ ste nezaložili žiadnu zákazku."}
+                ? t("Žiadna otvorená zákazka.")
+                : t("Zatiaľ ste nezaložili žiadnu zákazku.")}
             </div>
             <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground">
-              Zákazku priradíte faktúre, prijatej faktúre, výdaju zo skladu aj jazde. Náklady a
-              výnosy sa potom zbierajú samy.
+              {t(
+                "Zákazku priradíte faktúre, prijatej faktúre, výdaju zo skladu aj jazde. Náklady a výnosy sa potom zbierajú samy.",
+              )}
             </p>
           </div>
         ) : (
@@ -121,14 +127,14 @@ function JobsPage() {
             <table className="w-full min-w-[860px] text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="p-3">Číslo</th>
-                  <th className="p-3">Názov</th>
-                  <th className="p-3">Odberateľ</th>
-                  <th className="p-3 text-right">Výnosy</th>
-                  <th className="p-3 text-right">Náklady</th>
-                  <th className="p-3 text-right">Zisk</th>
-                  <th className="p-3 text-right">Marža</th>
-                  <th className="p-3">Stav</th>
+                  <th className="p-3">{t("Číslo")}</th>
+                  <th className="p-3">{t("Názov")}</th>
+                  <th className="p-3">{t("Odberateľ")}</th>
+                  <th className="p-3 text-right">{t("Výnosy")}</th>
+                  <th className="p-3 text-right">{t("Náklady")}</th>
+                  <th className="p-3 text-right">{t("Zisk")}</th>
+                  <th className="p-3 text-right">{t("Marža")}</th>
+                  <th className="p-3">{t("Stav")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -152,7 +158,9 @@ function JobsPage() {
                       }`}
                       title={
                         prekrocenyRozpocet(j)
-                          ? `Prekročený plánovaný náklad ${suma(j.planovany_naklad)}`
+                          ? t("Prekročený plánovaný náklad {suma}", {
+                              suma: suma(j.planovany_naklad),
+                            })
                           : undefined
                       }
                     >
@@ -174,7 +182,7 @@ function JobsPage() {
                           FARBA_STAVU[j.status as StavZakazky] ?? ""
                         }`}
                       >
-                        {STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status}
+                        {t(STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status)}
                       </span>
                     </td>
                   </tr>
@@ -183,7 +191,7 @@ function JobsPage() {
               <tfoot className="border-t-2 border-border bg-muted/20 font-medium">
                 <tr>
                   <td className="p-3" colSpan={3}>
-                    Spolu ({rows.length})
+                    {t("Spolu ({n})", { n: rows.length })}
                   </td>
                   <td className="p-3 text-right tabular-nums">{suma(spolu.vynosy)}</td>
                   <td className="p-3 text-right tabular-nums">{suma(spolu.naklady)}</td>

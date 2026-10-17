@@ -4,14 +4,20 @@ import {
   LEGAL_VERSION,
   LEGAL_UPDATED,
   LEGAL_COMPANY,
+  DeUpozornenie,
 } from "@/components/faktero/LegalShell";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { CookieConsentResetButton } from "@/components/faktero/cookie-consent";
 
 export const Route = createFileRoute("/pravne/cookies")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Cookies — Faktero" },
-      { name: "description", content: "Informácie o používaní cookies v službe Faktero." },
+      { title: preloz(match.context.jazyk, "Cookies — Faktero") },
+      {
+        name: "description",
+        content: preloz(match.context.jazyk, "Informácie o používaní cookies v službe Faktero."),
+      },
       { property: "og:url", content: "https://faktero.sk/pravne/cookies" },
     ],
     links: [{ rel: "canonical", href: "https://faktero.sk/pravne/cookies" }],
@@ -20,8 +26,17 @@ export const Route = createFileRoute("/pravne/cookies")({
 });
 
 function Page() {
+  const { jazyk, t } = useT();
   return (
-    <LegalShell title="Používanie cookies" updated={LEGAL_UPDATED} version={LEGAL_VERSION}>
+    <LegalShell title={t("Používanie cookies")} updated={LEGAL_UPDATED} version={LEGAL_VERSION}>
+      {jazyk === "de" ? <De /> : <Sk />}
+    </LegalShell>
+  );
+}
+
+function Sk() {
+  return (
+    <>
       <p>
         Stránka faktero.sk a aplikácia Faktero používajú cookies a podobné technológie (lokálne
         úložisko prehliadača) na zabezpečenie prevádzky a zlepšenie používateľského zážitku.
@@ -73,6 +88,68 @@ function Page() {
         cookies.
       </p>
       <CookieConsentResetButton />
-    </LegalShell>
+    </>
+  );
+}
+
+function De() {
+  return (
+    <>
+      <DeUpozornenie />
+      <p>
+        Die Website faktero.sk und die Anwendung Faktero verwenden Cookies und ähnliche Technologien
+        (lokaler Speicher des Browsers), um den Betrieb sicherzustellen und das Nutzungserlebnis zu
+        verbessern.
+      </p>
+
+      <h2>1. Notwendige Cookies</h2>
+      <p>
+        Sie sind für das Funktionieren der Anwendung erforderlich — Anmeldung, Aufrechterhaltung der
+        Sitzung, Sicherheitstoken, Standardeinstellungen. Ohne sie kann Faktero nicht funktionieren.
+        Eine Einwilligung ist nicht erforderlich.
+      </p>
+
+      <h2>2. Analyse-Cookies</h2>
+      <p>
+        Sie helfen uns zu verstehen, wie Besucher die Seiten nutzen (Anzahl der Besuche, Quellen,
+        meistgenutzte Bereiche). Die Daten werden aggregiert und anonymisiert. Wenn wir Google
+        Analytics verwenden, wird die IP-Adresse anonymisiert.
+      </p>
+
+      <h2>3. Marketing-Cookies</h2>
+      <p>
+        Diese Cookies verwenden wir derzeit nicht. Sollten wir sie einsetzen (z. B. Remarketing,
+        Conversion-Pixel), werden wir Sie informieren und Ihre Einwilligung einholen.
+      </p>
+
+      <h2>4. Verwaltung der Einwilligung</h2>
+      <p>
+        Die Einwilligung in Analyse- und Marketing-Cookies können Sie jederzeit in den
+        Cookie-Einstellungen in der Fußzeile der Website oder direkt in den Einstellungen Ihres
+        Browsers erteilen oder widerrufen.
+      </p>
+
+      <h2>5. Speicherdauer</h2>
+      <ul>
+        <li>Sitzungscookies — erlöschen mit dem Schließen des Browsers.</li>
+        <li>
+          Dauerhafte Cookies — werden je nach Zweck in der Regel 1 Tag bis 24 Monate gespeichert.
+        </li>
+        <li>Lokaler Speicher der Anmeldung — bis zur Abmeldung des Nutzers.</li>
+      </ul>
+
+      <h2>6. Kontakt</h2>
+      <p>
+        {LEGAL_COMPANY.name}, {LEGAL_COMPANY.address},{" "}
+        <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>
+      </p>
+
+      <h2>7. Änderung der Einwilligung</h2>
+      <p>
+        Wenn Sie Ihre Einwilligung bereits erteilt haben, können Sie sie jederzeit ändern. Nach der
+        Änderung wird das Cookie-Angebot erneut angezeigt.
+      </p>
+      <CookieConsentResetButton />
+    </>
   );
 }

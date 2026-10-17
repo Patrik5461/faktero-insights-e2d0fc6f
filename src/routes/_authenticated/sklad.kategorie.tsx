@@ -13,9 +13,13 @@ import {
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Tags, Ban } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/kategorie")({
-  head: () => ({ meta: [{ title: "Kategórie skladu — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Kategórie skladu — Faktero") }],
+  }),
   component: CategoriesPage,
 });
 
@@ -34,6 +38,7 @@ const PALETTE: { kod: string; nazov: string }[] = [
 ];
 
 function CategoriesPage() {
+  const { t } = useT();
   const listFn = useServerFn(listCategoriesWithCounts);
   const createFn = useServerFn(createStockCategory);
   const updateFn = useServerFn(updateStockCategory);
@@ -85,12 +90,12 @@ function CategoriesPage() {
             note: note || null,
           },
         });
-        toast.success("Kategória upravená");
+        toast.success(t("Kategória upravená"));
       } else {
         await createFn({
           data: { company_id: cid, name: name.trim(), color: color || null, note: note || null },
         });
-        toast.success("Kategória vytvorená");
+        toast.success(t("Kategória vytvorená"));
       }
       resetForm();
       await load();
@@ -105,16 +110,18 @@ function CategoriesPage() {
     if (
       count > 0 &&
       !(await potvrd(
-        `Kategória má ${count} produktov. Naozaj zmazať? Produkty zostanú bez kategórie.`,
+        t("Kategória má {n} produktov. Naozaj zmazať? Produkty zostanú bez kategórie.", {
+          n: count,
+        }),
       ))
     )
       return;
-    if (count === 0 && !(await potvrd("Zmazať kategóriu?"))) return;
+    if (count === 0 && !(await potvrd(t("Zmazať kategóriu?")))) return;
     const cid = getActiveCompanyId();
     if (!cid) return;
     try {
       await deleteFn({ data: { company_id: cid, category_id: id } });
-      toast.success("Kategória zmazaná");
+      toast.success(t("Kategória zmazaná"));
       await load();
     } catch (e: any) {
       toast.error(friendlyError(e));
@@ -131,8 +138,8 @@ function CategoriesPage() {
   return (
     <>
       <PageHeader
-        title="Kategórie skladu"
-        description="Rozdeľte produkty do kategórií pre lepší prehľad a filtrovanie."
+        title={t("Kategórie skladu")}
+        description={t("Rozdeľte produkty do kategórií pre lepší prehľad a filtrovanie.")}
       />
       <PageBody>
         <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
@@ -140,9 +147,9 @@ function CategoriesPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="p-3">Kategória</th>
-                  <th className="p-3">Poznámka</th>
-                  <th className="p-3 text-right">Produkty</th>
+                  <th className="p-3">{t("Kategória")}</th>
+                  <th className="p-3">{t("Poznámka")}</th>
+                  <th className="p-3 text-right">{t("Produkty")}</th>
                   <th className="p-3"></th>
                 </tr>
               </thead>
@@ -150,7 +157,7 @@ function CategoriesPage() {
                 {loading && (
                   <tr>
                     <td colSpan={4} className="p-8 text-center text-muted-foreground">
-                      Načítavam…
+                      {t("Načítavam…")}
                     </td>
                   </tr>
                 )}
@@ -158,7 +165,7 @@ function CategoriesPage() {
                   <tr>
                     <td colSpan={4} className="p-8 text-center text-muted-foreground">
                       <Tags className="mx-auto mb-2 h-6 w-6 opacity-40" />
-                      Žiadne kategórie. Vytvorte prvú vo formulári.
+                      {t("Žiadne kategórie. Vytvorte prvú vo formulári.")}
                     </td>
                   </tr>
                 )}
@@ -180,14 +187,14 @@ function CategoriesPage() {
                         <button
                           onClick={() => startEdit(r)}
                           className="rounded-md border border-border p-1.5 hover:bg-muted"
-                          title="Upraviť"
+                          title={t("Upraviť")}
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => onDelete(r.id, r.product_count)}
                           className="rounded-md border border-border p-1.5 text-destructive hover:bg-destructive/10"
-                          title="Zmazať"
+                          title={t("Zmazať")}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -201,23 +208,25 @@ function CategoriesPage() {
 
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="mb-3 text-sm font-semibold">
-              {editing ? "Upraviť kategóriu" : "Nová kategória"}
+              {editing ? t("Upraviť kategóriu") : t("Nová kategória")}
             </div>
-            <label className="block text-xs font-medium text-muted-foreground">Názov</label>
+            <label className="block text-xs font-medium text-muted-foreground">{t("Názov")}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              placeholder="napr. Elektro"
+              placeholder={t("napr. Elektro")}
             />
-            <label className="mt-3 block text-xs font-medium text-muted-foreground">Farba</label>
+            <label className="mt-3 block text-xs font-medium text-muted-foreground">
+              {t("Farba")}
+            </label>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {/* Bez farby — prečiarknutý krúžok, inak vyzeral ako biela farba. */}
               <button
                 onClick={() => setColor("")}
                 className={`grid h-7 w-7 place-items-center rounded-full border border-dashed border-muted-foreground/60 text-muted-foreground ${color === "" ? "ring-2 ring-primary" : ""}`}
-                title="Bez farby"
-                aria-label="Bez farby"
+                title={t("Bez farby")}
+                aria-label={t("Bez farby")}
                 aria-pressed={color === ""}
               >
                 <Ban className="h-4 w-4" />
@@ -226,15 +235,17 @@ function CategoriesPage() {
                 <button
                   key={f.kod}
                   onClick={() => setColor(f.kod)}
-                  aria-label={f.nazov}
-                  title={f.nazov}
+                  aria-label={t(f.nazov)}
+                  title={t(f.nazov)}
                   aria-pressed={color === f.kod}
                   className={`h-7 w-7 rounded-full border border-border ${color === f.kod ? "ring-2 ring-primary" : ""}`}
                   style={{ background: f.kod }}
                 />
               ))}
             </div>
-            <label className="mt-3 block text-xs font-medium text-muted-foreground">Poznámka</label>
+            <label className="mt-3 block text-xs font-medium text-muted-foreground">
+              {t("Poznámka")}
+            </label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -248,14 +259,14 @@ function CategoriesPage() {
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
                 <Plus className="h-3.5 w-3.5" />
-                {editing ? "Uložiť" : "Vytvoriť"}
+                {editing ? t("Uložiť") : t("Vytvoriť")}
               </button>
               {editing && (
                 <button
                   onClick={resetForm}
                   className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
                 >
-                  Zrušiť
+                  {t("Zrušiť")}
                 </button>
               )}
             </div>

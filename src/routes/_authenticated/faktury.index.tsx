@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
@@ -111,7 +113,7 @@ function jePoSplatnosti(r: Splatnost, dnes: string): boolean {
 }
 
 export const Route = createFileRoute("/_authenticated/faktury/")({
-  head: () => ({ meta: [{ title: "Faktúry — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Faktúry — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>): InvoiceSearch => ({
     type: s.type === "credit" || s.type === "vydane" || s.type === "danove" ? s.type : undefined,
     status: s.status === "draft" || s.status === "issued" ? s.status : undefined,
@@ -126,6 +128,7 @@ export const Route = createFileRoute("/_authenticated/faktury/")({
 });
 
 function InvoicesPage() {
+  const { t } = useT();
   const navigate = useNavigate();
   const { type, status, poSplatnosti, neuhradene, q } = Route.useSearch();
   // Opravné faktúry: dobropis `credit_note` a ťarchopis `debit_note`; v adrese je kratšie `credit`.
@@ -179,7 +182,7 @@ function InvoicesPage() {
       const r = await pdfUrlFn({ data: { invoiceId: i.id } });
       if (r?.signedUrl) setNahlad({ url: r.signedUrl, nazov: i.invoice_number ?? "faktura" });
     } catch (e: any) {
-      toast.error(e?.message ?? "PDF sa nepodarilo pripraviť.");
+      toast.error(e?.message ?? t("PDF sa nepodarilo pripraviť."));
     }
   }
   const markPaidFn = useServerFn(bulkMarkPaidFn);
@@ -261,10 +264,10 @@ function InvoicesPage() {
   async function cloneRow(invoiceId: string) {
     try {
       const r = await cloneFn({ data: { invoiceId } });
-      toast.success("Faktúra bola skopírovaná");
+      toast.success(t("Faktúra bola skopírovaná"));
       navigate({ to: "/faktury/$id/upravit", params: { id: r.id } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Klonovanie zlyhalo");
+      toast.error(e?.message ?? t("Klonovanie zlyhalo"));
     }
   }
 
@@ -295,10 +298,10 @@ function InvoicesPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success(`Exportovaných ${r.invoiceCount} faktúr`);
+      toast.success(t("Exportované faktúry: {n}", { n: r.invoiceCount }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Export zlyhal");
+      toast.error(e?.message ?? t("Export zlyhal"));
     } finally {
       setBusy(false);
     }
@@ -308,9 +311,9 @@ function InvoicesPage() {
     if (!rowDelete) return;
     try {
       await list.softDelete([rowDelete.id]);
-      toast.success("Faktúra vymazaná");
+      toast.success(t("Faktúra vymazaná"));
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setRowDelete(null);
     }
@@ -318,10 +321,10 @@ function InvoicesPage() {
   async function confirmBulkDelete() {
     try {
       await list.softDelete(list.selectedIds);
-      toast.success(`Vymazaných ${list.selectedIds.length} faktúr`);
+      toast.success(t("Vymazané faktúry: {n}", { n: list.selectedIds.length }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBulkDelete(false);
     }
@@ -333,10 +336,10 @@ function InvoicesPage() {
     const ids = list.rows.map((r: any) => r.id);
     try {
       await list.hardDelete(ids);
-      toast.success(`Kôš vyprázdnený — natrvalo vymazaných ${ids.length} faktúr`);
+      toast.success(t("Kôš vyprázdnený — natrvalo vymazaných {n} faktúr", { n: ids.length }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setVyprazdnitKos(false);
     }
@@ -345,10 +348,10 @@ function InvoicesPage() {
     const pocet = list.selectedIds.length;
     try {
       await list.hardDelete(list.selectedIds);
-      toast.success(`Natrvalo vymazaných ${pocet} faktúr`);
+      toast.success(t("Natrvalo vymazané faktúry: {n}", { n: pocet }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBulkHardDelete(false);
     }
@@ -356,10 +359,10 @@ function InvoicesPage() {
   async function bulkRestoreNow() {
     try {
       await list.restore(list.selectedIds);
-      toast.success("Obnovené");
+      toast.success(t("Obnovené"));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     }
   }
 
@@ -385,13 +388,13 @@ function InvoicesPage() {
       const r = await markPaidFn({ data: { invoiceIds: list.selectedIds } });
       toast.success(
         r.skipped > 0
-          ? `${r.updated} faktúr označených ako zaplatené (${r.skipped} preskočených)`
-          : `${r.updated} faktúr označených ako zaplatené`,
+          ? t("{n} faktúr označených ako zaplatené ({m} preskočených)", { n: r.updated, m: r.skipped })
+          : t("{n} faktúr označených ako zaplatené", { n: r.updated }),
       );
       list.clearSelection();
       list.reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Označenie zlyhalo");
+      toast.error(e?.message ?? t("Označenie zlyhalo"));
     } finally {
       setBusy(false);
     }
@@ -403,7 +406,7 @@ function InvoicesPage() {
       (r: any) => (r.status === "issued" || r.status === "sent") && r.customer_email,
     );
     if (!targets.length) {
-      toast.error("Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav).");
+      toast.error(t("Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav)."));
       return;
     }
     setBusy(true);
@@ -423,8 +426,8 @@ function InvoicesPage() {
     }
     setProgress(null);
     setBusy(false);
-    if (fail === 0) toast.success(`Odoslaných ${ok} emailov`);
-    else toast.error(`Odoslaných ${ok}, zlyhalo ${fail}`);
+    if (fail === 0) toast.success(t("Odoslané e-maily: {n}", { n: ok }));
+    else toast.error(t("Odoslaných {ok}, zlyhalo {fail}", { ok, fail }));
     list.clearSelection();
     list.reload();
   }
@@ -448,8 +451,8 @@ function InvoicesPage() {
     }
     setProgress(null);
     setBusy(false);
-    if (fail === 0) toast.success(`Vytvorených ${ok} kópií pre ďalší mesiac`);
-    else toast.error(`Vytvorených ${ok}, zlyhalo ${fail}`);
+    if (fail === 0) toast.success(t("Vytvorené kópie pre ďalší mesiac: {n}", { n: ok }));
+    else toast.error(t("Vytvorených {ok}, zlyhalo {fail}", { ok, fail }));
     list.clearSelection();
     list.reload();
   }
@@ -465,7 +468,7 @@ function InvoicesPage() {
         r.customer_email,
     );
     if (!targets.length) {
-      toast.error("Žiadne po splatnosti faktúry s emailom.");
+      toast.error(t("Žiadne po splatnosti faktúry s emailom."));
       return;
     }
     setBusy(true);
@@ -488,8 +491,8 @@ function InvoicesPage() {
     }
     setProgress(null);
     setBusy(false);
-    if (fail === 0) toast.success(`Odoslaných ${ok} upomienok`);
-    else toast.error(`Odoslaných ${ok}, zlyhalo ${fail}`);
+    if (fail === 0) toast.success(t("Odoslané upomienky: {n}", { n: ok }));
+    else toast.error(t("Odoslaných {ok}, zlyhalo {fail}", { ok, fail }));
     list.clearSelection();
     list.reload();
   }
@@ -530,8 +533,8 @@ function InvoicesPage() {
       URL.revokeObjectURL(url);
     }
     setBusy(false);
-    if (fail === 0) toast.success(`ZIP so ${ok} faktúrami stiahnutý`);
-    else toast.error(`Do ZIPu pridaných ${ok}, zlyhalo ${fail}`);
+    if (fail === 0) toast.success(t("ZIP stiahnutý — faktúr: {n}", { n: ok }));
+    else toast.error(t("Do ZIPu pridaných {ok}, zlyhalo {fail}", { ok, fail }));
     list.clearSelection();
   }
 
@@ -541,30 +544,30 @@ function InvoicesPage() {
     { title: string; message: string; confirmLabel: string }
   > = {
     paid: {
-      title: `Označiť ${list.selectedIds.length} faktúr ako zaplatené?`,
-      message: "Stornované a už zaplatené faktúry budú preskočené. Nastaví sa dnešný dátum úhrady.",
-      confirmLabel: "Označiť ako zaplatené",
+      title: t("Označiť {n} faktúr ako zaplatené?", { n: list.selectedIds.length }),
+      message: t("Stornované a už zaplatené faktúry budú preskočené. Nastaví sa dnešný dátum úhrady."),
+      confirmLabel: t("Označiť ako zaplatené"),
     },
     email: {
-      title: `Odoslať e-mailom ${emailableCount} faktúr?`,
-      message: "Odosielajú sa iba vystavené/odoslané faktúry s emailom odberateľa.",
-      confirmLabel: "Odoslať",
+      title: t("Odoslať e-mailom {n} faktúr?", { n: emailableCount }),
+      message: t("Odosielajú sa iba vystavené/odoslané faktúry s emailom odberateľa."),
+      confirmLabel: t("Odoslať"),
     },
     clone: {
-      title: `Vytvoriť kópie ${list.selectedIds.length} faktúr pre ďalší mesiac?`,
-      message: "Vytvoria sa nové koncepty s inkrementovaným mesiacom v popisoch.",
-      confirmLabel: "Vytvoriť kópie",
+      title: t("Vytvoriť kópie {n} faktúr pre ďalší mesiac?", { n: list.selectedIds.length }),
+      message: t("Vytvoria sa nové koncepty s inkrementovaným mesiacom v popisoch."),
+      confirmLabel: t("Vytvoriť kópie"),
     },
     reminder: {
-      title: `Odoslať upomienky pre ${overdueSelectedCount} faktúr?`,
+      title: t("Odoslať upomienky pre {n} faktúr?", { n: overdueSelectedCount }),
       message:
-        "Odosielajú sa iba po splatnosti faktúry s emailom odberateľa. Číslo upomienky sa určí automaticky.",
-      confirmLabel: "Odoslať upomienky",
+        t("Odosielajú sa iba po splatnosti faktúry s emailom odberateľa. Číslo upomienky sa určí automaticky."),
+      confirmLabel: t("Odoslať upomienky"),
     },
     zip: {
-      title: `Stiahnuť PDF ZIP pre ${list.selectedIds.length} faktúr?`,
-      message: "Pre každú faktúru sa vygeneruje PDF a spakuje do jedného ZIP archívu.",
-      confirmLabel: "Stiahnuť ZIP",
+      title: t("Stiahnuť PDF ZIP pre {n} faktúr?", { n: list.selectedIds.length }),
+      message: t("Pre každú faktúru sa vygeneruje PDF a spakuje do jedného ZIP archívu."),
+      confirmLabel: t("Stiahnuť ZIP"),
     },
   };
   const runners: Record<Exclude<BulkAction, null>, () => Promise<void>> = {
@@ -584,39 +587,39 @@ function InvoicesPage() {
       <PageHeader
         title={
           type === "credit"
-            ? "Dobropisy a ťarchopisy"
+            ? t("Dobropisy a ťarchopisy")
             : type === "vydane"
-              ? "Vydané faktúry"
+              ? t("Vydané faktúry")
               : type === "danove"
-                ? "Daňové doklady"
+                ? t("Daňové doklady")
                 : poSplatnosti
-              ? "Faktúry po splatnosti"
+              ? t("Faktúry po splatnosti")
               : neuhradene
-                ? "Neuhradené faktúry"
+                ? t("Neuhradené faktúry")
                 : status === "draft"
-                  ? "Koncepty"
+                  ? t("Koncepty")
                   : status === "issued"
-                    ? "Vystavené faktúry"
-                    : "Faktúry"
+                    ? t("Vystavené faktúry")
+                    : t("Faktúry")
         }
         description={
           q
-            ? `Výsledky hľadania „${q}“.`
+            ? t("Výsledky hľadania „{q}“.", { q })
             : type === "credit"
-              ? "Vystavené opravné faktúry — dobropisy cenu znižujú, ťarchopisy zvyšujú."
+              ? t("Vystavené opravné faktúry — dobropisy cenu znižujú, ťarchopisy zvyšujú.")
               : type === "vydane"
-                ? "Len faktúry — bez zálohových, dobropisov a daňových dokladov."
+                ? t("Len faktúry — bez zálohových, dobropisov a daňových dokladov.")
                 : type === "danove"
-                  ? "Daňové doklady k prijatej platbe. Vystavujú sa zo zálohovej faktúry po jej úhrade."
+                  ? t("Daňové doklady k prijatej platbe. Vystavujú sa zo zálohovej faktúry po jej úhrade.")
                   : poSplatnosti
-                ? "Vystavené a odoslané faktúry, ktorým uplynula splatnosť a nie sú uhradené."
+                ? t("Vystavené a odoslané faktúry, ktorým uplynula splatnosť a nie sú uhradené.")
                 : neuhradene
-                  ? "Faktúry, ktoré vám zákazníci ešte nezaplatili."
+                  ? t("Faktúry, ktoré vám zákazníci ešte nezaplatili.")
                   : status === "draft"
-                    ? "Rozpracované faktúry, ktoré ešte neboli vystavené."
+                    ? t("Rozpracované faktúry, ktoré ešte neboli vystavené.")
                     : status === "issued"
-                      ? "Faktúry vo vystavenom stave — ešte neodoslané odberateľovi."
-                      : "Všetky vystavené faktúry, koncepty aj stornované."
+                      ? t("Faktúry vo vystavenom stave — ešte neodoslané odberateľovi.")
+                      : t("Všetky vystavené faktúry, koncepty aj stornované.")
         }
         action={
           /* Hlavné tlačidlo je posledné a vpravo; Číselné rady a Účtovné exporty sú
@@ -629,7 +632,7 @@ function InvoicesPage() {
                 onClick={() => list.setSearch("")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
               >
-                <X className="h-4 w-4" /> Zrušiť filter
+                <X className="h-4 w-4" /> {t("Zrušiť filter")}
               </Link>
             )}
             {list.selectedIds.length > 0 && !list.showDeleted && (
@@ -637,7 +640,7 @@ function InvoicesPage() {
                 onClick={() => setZauctovanie(true)}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-secondary"
               >
-                <BookCheck className="h-4 w-4" /> Zaúčtovať ({list.selectedIds.length})
+                <BookCheck className="h-4 w-4" /> {t("Zaúčtovať ({n})", { n: list.selectedIds.length })}
               </button>
             )}
             {list.selectedIds.length > 0 && !list.showDeleted && (
@@ -651,7 +654,7 @@ function InvoicesPage() {
                 ) : (
                   <FileCode2 className="h-4 w-4" />
                 )}
-                Export {list.selectedIds.length} do {program.inyProgram ? program.nazov : "Pohody XML"}
+                {t("Export {n} do {program}", { n: list.selectedIds.length, program: program.inyProgram ? program.nazov : t("Pohody XML") })}
               </button>
             )}
             {maBanku && (
@@ -659,7 +662,7 @@ function InvoicesPage() {
                 to="/faktury/parovanie"
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
               >
-                <Landmark className="h-4 w-4" /> Spárovať platby
+                <Landmark className="h-4 w-4" /> {t("Spárovať platby")}
                 {cakaNaParovanie > 0 && (
                   <span className="rounded-full bg-emerald-600 px-1.5 text-xs font-medium text-white">
                     {cakaNaParovanie}
@@ -674,10 +677,10 @@ function InvoicesPage() {
             {type !== "credit" && (
             <Link
               to="/prijate-faktury/samofaktura"
-              title="Faktúra za dodávateľa podľa dohody o samofakturácii — uloží sa medzi prijaté faktúry"
+              title={t("Faktúra za dodávateľa podľa dohody o samofakturácii — uloží sa medzi prijaté faktúry")}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
             >
-              <Plus className="h-4 w-4" /> Samofaktúra
+              <Plus className="h-4 w-4" /> {t("Samofaktúra")}
             </Link>
             )}
             {/* Krátka cesta pre jednu položku — plný formulár je na zvyšok. */}
@@ -686,7 +689,7 @@ function InvoicesPage() {
               to="/faktury/rychla"
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
             >
-              <Zap className="h-4 w-4" /> Rýchla faktúra
+              <Zap className="h-4 w-4" /> {t("Rýchla faktúra")}
             </Link>
             )}
             {type === "danove" ? (
@@ -694,7 +697,7 @@ function InvoicesPage() {
                 to="/zalohove"
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                <Plus className="h-4 w-4" /> Vystaviť zo zálohovej faktúry
+                <Plus className="h-4 w-4" /> {t("Vystaviť zo zálohovej faktúry")}
               </Link>
             ) : type === "credit" ? (
               <Link
@@ -702,14 +705,14 @@ function InvoicesPage() {
                 search={{ type: "credit_note" } as any}
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                <Plus className="h-4 w-4" /> Vystaviť dobropis
+                <Plus className="h-4 w-4" /> {t("Vystaviť dobropis")}
               </Link>
             ) : (
             <Link
               to="/faktury/nova"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Nová faktúra
+              <Plus className="h-4 w-4" /> {t("Nová faktúra")}
             </Link>
             )}
           </div>
@@ -720,7 +723,7 @@ function InvoicesPage() {
           <input
             value={list.search}
             onChange={(e) => list.setSearch(e.target.value)}
-            placeholder="Hľadať číslo, odberateľa, IČO…"
+            placeholder={t("Hľadať číslo, odberateľa, IČO…")}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
           />
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -730,7 +733,7 @@ function InvoicesPage() {
                 checked={overdueNoReminder}
                 onChange={(e) => setOverdueNoReminder(e.target.checked)}
               />
-              Po splatnosti bez upomienky
+              {t("Po splatnosti bez upomienky")}
             </label>
             <SortSelect moznosti={ZORADENIE_FAKTUR} hodnota={list.sort} onChange={list.setSort} />
             <DeletedToggle
@@ -745,7 +748,7 @@ function InvoicesPage() {
               to="/exporty"
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
             >
-              <FileCode2 className="h-4 w-4" /> Účtovné exporty
+              <FileCode2 className="h-4 w-4" /> {t("Účtovné exporty")}
             </Link>
           </div>
         </div>
@@ -760,7 +763,7 @@ function InvoicesPage() {
         {list.selectedIds.length > 0 && !list.showDeleted && (
           <div className="sticky top-16 z-20 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
             <span className="font-medium text-primary">
-              {list.selectedIds.length} faktúr vybraných
+              {t("Vybrané faktúry: {n}", { n: list.selectedIds.length })}
             </span>
             <div className="flex flex-wrap gap-2">
               <button
@@ -768,14 +771,14 @@ function InvoicesPage() {
                 onClick={() => setBulkAction("paid")}
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
               >
-                <CheckCircle2 className="h-3.5 w-3.5" /> Označiť ako zaplatené
+                <CheckCircle2 className="h-3.5 w-3.5" /> {t("Označiť ako zaplatené")}
               </button>
               <button
                 disabled={busy || emailableCount === 0}
                 onClick={() => setBulkAction("email")}
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
               >
-                <Mail className="h-3.5 w-3.5" /> Odoslať e-mailom{" "}
+                <Mail className="h-3.5 w-3.5" /> {t("Odoslať e-mailom")}{" "}
                 {emailableCount > 0 ? `(${emailableCount})` : ""}
               </button>
               <button
@@ -783,14 +786,14 @@ function InvoicesPage() {
                 onClick={() => setBulkAction("clone")}
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
               >
-                <CalendarPlus className="h-3.5 w-3.5" /> Vystaviť pre ďalší mesiac
+                <CalendarPlus className="h-3.5 w-3.5" /> {t("Vystaviť pre ďalší mesiac")}
               </button>
               <button
                 disabled={busy || overdueSelectedCount === 0}
                 onClick={() => setBulkAction("reminder")}
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
               >
-                <Bell className="h-3.5 w-3.5" /> Poslať upomienku{" "}
+                <Bell className="h-3.5 w-3.5" /> {t("Poslať upomienku")}{" "}
                 {overdueSelectedCount > 0 ? `(${overdueSelectedCount})` : ""}
               </button>
               <button
@@ -798,12 +801,11 @@ function InvoicesPage() {
                 onClick={() => setBulkAction("zip")}
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
               >
-                <Archive className="h-3.5 w-3.5" /> Exportovať PDF (ZIP)
+                <Archive className="h-3.5 w-3.5" /> {t("Exportovať PDF (ZIP)")}
               </button>
               {progress && (
                 <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Spracováva sa {progress.current}/
-                  {progress.total}…
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("Spracováva sa {a}/{b}…", { a: progress.current, b: progress.total })}
                 </span>
               )}
             </div>
@@ -813,7 +815,7 @@ function InvoicesPage() {
           className="mt-3"
           items={visibleRows}
           loading={list.loading}
-          emptyText={list.showDeleted ? "Žiadne vymazané faktúry." : "Žiadne faktúry."}
+          emptyText={list.showDeleted ? t("Žiadne vymazané faktúry.") : t("Žiadne faktúry.")}
           mobileCard={(i: any) => (
             <MobileListCard
               onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
@@ -823,36 +825,36 @@ function InvoicesPage() {
                   <OdovzdaneIkona kedy={i.exported_at} />
                   {i.type === "credit_note" || i.type === "debit_note" ? (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      {i.type === "credit_note" ? "Dobropis" : "Ťarchopis"}
+                      {i.type === "credit_note" ? t("Dobropis") : t("Ťarchopis")}
                     </span>
                   ) : null}
                   {reminderMap[i.id] ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200">
-                      <Bell className="h-3 w-3" /> Upomienka #{reminderMap[i.id]}
+                      <Bell className="h-3 w-3" /> {t("Upomienka #{n}", { n: reminderMap[i.id] })}
                     </span>
                   ) : null}
                 </span>
               }
               subtitle={i.customer_name ?? "—"}
               status={<StatusBadge status={i.status} />}
-              meta={`${datumNaDoklade(i.issue_date)} · splat. ${datumNaDoklade(i.due_date)}`}
+              meta={`${datumNaDoklade(i.issue_date)} · ${t("splat.")} ${datumNaDoklade(i.due_date)}`}
               amount={formatujMenu(i.total, i.currency)}
               actions={
                 list.showDeleted ? (
                   <button
-                    aria-label="Obnoviť"
-                    title="Obnoviť"
+                    aria-label={t("Obnoviť")}
+                    title={t("Obnoviť")}
                     onClick={async () => {
                       try {
                         await list.restore([i.id]);
-                        toast.success("Obnovené");
+                        toast.success(t("Obnovené"));
                       } catch (e: any) {
-                        toast.error(e?.message ?? "Chyba");
+                        toast.error(e?.message ?? t("Chyba"));
                       }
                     }}
                     className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
                   >
-                    <RotateCcw className="h-3.5 w-3.5" /> Obnoviť
+                    <RotateCcw className="h-3.5 w-3.5" /> {t("Obnoviť")}
                   </button>
                 ) : (
                   <div className="flex gap-1">
@@ -860,13 +862,13 @@ function InvoicesPage() {
                       onClick={() => cloneRow(i.id)}
                       className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
                     >
-                      <Copy className="h-3.5 w-3.5" /> Klonovať
+                      <Copy className="h-3.5 w-3.5" /> {t("Klonovať")}
                     </button>
                     <button
                       onClick={() => setRowDelete(i)}
                       className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Vymazať
+                      <Trash2 className="h-3.5 w-3.5" /> {t("Vymazať")}
                     </button>
                   </div>
                 )
@@ -885,12 +887,12 @@ function InvoicesPage() {
                         onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                       />
                     </th>
-                    <th className="p-3">Číslo</th>
-                    <th className="p-3">Odberateľ</th>
-                    <th className="p-3">Vystavená</th>
-                    <th className="p-3">Splatnosť</th>
-                    <th className="p-3 text-right">Suma</th>
-                    <th className="p-3">Stav</th>
+                    <th className="p-3">{t("Číslo")}</th>
+                    <th className="p-3">{t("Odberateľ")}</th>
+                    <th className="p-3">{t("Vystavená")}</th>
+                    <th className="p-3">{t("Splatnosť")}</th>
+                    <th className="p-3 text-right">{t("Suma")}</th>
+                    <th className="p-3">{t("Stav")}</th>
                     <th className="p-3"></th>
                   </tr>
                 </thead>
@@ -898,14 +900,14 @@ function InvoicesPage() {
                   {list.loading && (
                     <tr>
                       <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                        Načítavam…
+                        {t("Načítavam…")}
                       </td>
                     </tr>
                   )}
                   {!list.loading && visibleRows.length === 0 && (
                     <tr>
                       <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                        {list.showDeleted ? "Žiadne vymazané faktúry." : "Žiadne faktúry."}
+                        {list.showDeleted ? t("Žiadne vymazané faktúry.") : t("Žiadne faktúry.")}
                       </td>
                     </tr>
                   )}
@@ -933,13 +935,13 @@ function InvoicesPage() {
                           <OdovzdaneIkona kedy={i.exported_at} />
                           {i.type === "credit_note" || i.type === "debit_note" ? (
                             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                              {i.type === "credit_note" ? "Dobropis" : "Ťarchopis"}
+                              {i.type === "credit_note" ? t("Dobropis") : t("Ťarchopis")}
                             </span>
                           ) : null}
                           {reminderMap[i.id] ? (
                             <span
                               className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200"
-                              title="Upomienka bola odoslaná"
+                              title={t("Upomienka bola odoslaná")}
                             >
                               <Bell className="h-3 w-3" /> #{reminderMap[i.id]}
                             </span>
@@ -952,8 +954,8 @@ function InvoicesPage() {
                       <td className="p-3">
                         {datumNaDoklade(i.due_date)}
                         {i.povodna_splatnost && i.povodna_splatnost !== i.due_date && (
-                          <span className="block text-xs text-muted-foreground" title={`Pôvodne ${datumNaDoklade(i.povodna_splatnost)}`}>
-                            predĺžená
+                          <span className="block text-xs text-muted-foreground" title={t("Pôvodne {datum}", { datum: datumNaDoklade(i.povodna_splatnost) })}>
+                            {t("predĺžená")}
                           </span>
                         )}
                       </td>
@@ -963,8 +965,8 @@ function InvoicesPage() {
                       <td className="p-3">
                         <StatusBadge status={i.status} />
                         {sch.stavy[i.id] ? (
-                          <div className={`mt-1 text-xs ${farbaOdznaku(sch.stavy[i.id].stav)}`} title="Schvaľovanie">
-                            {sch.stavy[i.id].odznak}
+                          <div className={`mt-1 text-xs ${farbaOdznaku(sch.stavy[i.id].stav)}`} title={t("Schvaľovanie")}>
+                            {t(sch.stavy[i.id].odznak)}
                           </div>
                         ) : null}
                         {i.zauctovane_at ? (
@@ -972,7 +974,7 @@ function InvoicesPage() {
                             className="mt-1 text-xs text-sky-700"
                             title={[i.pohoda_predkontacia, i.pohoda_clenenie_dph].filter(Boolean).join(" · ")}
                           >
-                            Zaúčtovaná
+                            {t("Zaúčtovaná")}
                             {i.pohoda_predkontacia ? ` · ${i.pohoda_predkontacia}` : ""}
                           </div>
                         ) : null}
@@ -980,13 +982,13 @@ function InvoicesPage() {
                       <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                         {list.showDeleted ? (
                           <button
-                            title="Obnoviť"
+                            title={t("Obnoviť")}
                             onClick={async () => {
                               try {
                                 await list.restore([i.id]);
-                                toast.success("Obnovené");
+                                toast.success(t("Obnovené"));
                               } catch (e: any) {
-                                toast.error(e?.message ?? "Chyba");
+                                toast.error(e?.message ?? t("Chyba"));
                               }
                             }}
                             className="rounded p-1.5 text-primary hover:bg-primary/10"
@@ -996,22 +998,22 @@ function InvoicesPage() {
                         ) : (
                           <div className="flex justify-end gap-1">
                             <button
-                              title="Náhľad"
-                              aria-label={`Náhľad ${i.invoice_number ?? "faktúry"}`}
+                              title={t("Náhľad")}
+                              aria-label={i.invoice_number ? t("Náhľad {cislo}", { cislo: i.invoice_number }) : t("Náhľad faktúry")}
                               onClick={() => nahladRiadku(i)}
                               className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
                             >
                               <Eye className="h-4 w-4" />
                             </button>
                             <button
-                              title="Klonovať"
+                              title={t("Klonovať")}
                               onClick={() => cloneRow(i.id)}
                               className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
                             >
                               <Copy className="h-4 w-4" />
                             </button>
                             <button
-                              title="Vymazať"
+                              title={t("Vymazať")}
                               onClick={() => setRowDelete(i)}
                               className="rounded p-1.5 text-destructive hover:bg-destructive/10"
                             >
@@ -1048,15 +1050,15 @@ function InvoicesPage() {
 
       <ConfirmDialog
         open={!!rowDelete}
-        title="Naozaj chcete vymazať túto faktúru?"
+        title={t("Naozaj chcete vymazať túto faktúru?")}
         message={
           rowDelete
-            ? `Faktúra ${rowDelete.invoice_number} bude skrytá z rozhrania. Môžete ju neskôr obnoviť.`
+            ? t("Faktúra {cislo} bude skrytá z rozhrania. Môžete ju neskôr obnoviť.", { cislo: rowDelete.invoice_number })
             : ""
         }
         warning={
           rowWarning
-            ? "Táto faktúra je už odoslaná alebo zaplatená. Mazanie môže narušiť účtovnú stopu."
+            ? t("Táto faktúra je už odoslaná alebo zaplatená. Mazanie môže narušiť účtovnú stopu.")
             : undefined
         }
         onCancel={() => setRowDelete(null)}
@@ -1064,11 +1066,11 @@ function InvoicesPage() {
       />
       <ConfirmDialog
         open={bulkDelete}
-        title={`Vymazať ${list.selectedIds.length} faktúr?`}
-        message="Vybraté faktúry budú skryté z rozhrania. Môžete ich neskôr obnoviť."
+        title={t("Vymazať {n} faktúr?", { n: list.selectedIds.length })}
+        message={t("Vybraté faktúry budú skryté z rozhrania. Môžete ich neskôr obnoviť.")}
         warning={
           sensitiveSelected > 0
-            ? `${sensitiveSelected} z vybratých je odoslaných alebo zaplatených. Mazanie môže narušiť účtovnú stopu.`
+            ? t("{n} z vybratých je odoslaných alebo zaplatených. Mazanie môže narušiť účtovnú stopu.", { n: sensitiveSelected })
             : undefined
         }
         onCancel={() => setBulkDelete(false)}
@@ -1076,19 +1078,19 @@ function InvoicesPage() {
       />
       <ConfirmDialog
         open={bulkHardDelete}
-        title={`Natrvalo vymazať ${list.selectedIds.length} faktúr?`}
-        message="Faktúry sa odstránia aj s položkami, upomienkami a záznamami o odoslaní. Toto sa už nedá vrátiť."
-        warning="Ak máte doklady odovzdané účtovníčke, radšej ich nechajte v koši."
-        confirmLabel="Vymazať natrvalo"
+        title={t("Natrvalo vymazať {n} faktúr?", { n: list.selectedIds.length })}
+        message={t("Faktúry sa odstránia aj s položkami, upomienkami a záznamami o odoslaní. Toto sa už nedá vrátiť.")}
+        warning={t("Ak máte doklady odovzdané účtovníčke, radšej ich nechajte v koši.")}
+        confirmLabel={t("Vymazať natrvalo")}
         onCancel={() => setBulkHardDelete(false)}
         onConfirm={confirmBulkHardDelete}
       />
       <ConfirmDialog
         open={vyprazdnitKos}
-        title={`Vyprázdniť kôš — natrvalo vymazať ${list.rows.length} faktúr?`}
-        message="Faktúry sa odstránia aj s položkami, upomienkami a záznamami o odoslaní. Toto sa už nedá vrátiť."
-        warning="Maže sa to, čo je práve zobrazené na tejto stránke koša."
-        confirmLabel="Vyprázdniť kôš"
+        title={t("Vyprázdniť kôš — natrvalo vymazať {n} faktúr?", { n: list.rows.length })}
+        message={t("Faktúry sa odstránia aj s položkami, upomienkami a záznamami o odoslaní. Toto sa už nedá vrátiť.")}
+        warning={t("Maže sa to, čo je práve zobrazené na tejto stránke koša.")}
+        confirmLabel={t("Vyprázdniť kôš")}
         onCancel={() => setVyprazdnitKos(false)}
         onConfirm={confirmVyprazdnitKos}
       />

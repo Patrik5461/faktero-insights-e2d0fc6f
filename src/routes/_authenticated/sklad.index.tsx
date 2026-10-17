@@ -8,13 +8,16 @@ import { Warehouse, AlertTriangle, Package, TrendingUp, ArrowRight, ScanLine } f
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { hodnotaPohybu, pohybNazov, pohybText } from "@/lib/faktero/stock-pohyb";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/")({
-  head: () => ({ meta: [{ title: "Sklad — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Sklad — Faktero") }] }),
   component: SkladDashboard,
 });
 
 function SkladDashboard() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const fetch = useServerFn(getStockDashboard);
   const [data, setData] = useState<any>(null);
@@ -36,17 +39,17 @@ function SkladDashboard() {
   return (
     <>
       <PageHeader
-        title="Skladové hospodárstvo"
-        description="Prehľad stavu skladu, položiek a posledných pohybov."
+        title={t("Skladové hospodárstvo")}
+        description={t("Prehľad stavu skladu, položiek a posledných pohybov.")}
       />
       <PageBody>
         {loading ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : !data ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            Žiadne dáta.{" "}
+            {t("Žiadne dáta.")}{" "}
             <Link to="/sklad/nastavenia" className="text-primary hover:underline">
-              Vytvorte sklad
+              {t("Vytvorte sklad")}
             </Link>
             .
           </div>
@@ -76,7 +79,7 @@ function SkladDashboard() {
               <Card title="Položky pod minimálnym stavom">
                 {data.below_min_items.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Všetky položky majú dostatočný stav.
+                    {t("Všetky položky majú dostatočný stav.")}
                   </p>
                 ) : (
                   <ul className="divide-y divide-border text-sm">
@@ -104,12 +107,12 @@ function SkladDashboard() {
                   to="/sklad/produkty"
                   className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
                 >
-                  Spravovať položky <ArrowRight className="h-3.5 w-3.5" />
+                  {t("Spravovať položky")} <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </Card>
               <Card title="Posledné pohyby">
                 {data.recent_movements.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Zatiaľ žiadne pohyby.</p>
+                  <p className="text-sm text-muted-foreground">{t("Zatiaľ žiadne pohyby.")}</p>
                 ) : (
                   <ul className="divide-y divide-border text-sm">
                     {data.recent_movements.map((m: any) => (
@@ -123,7 +126,7 @@ function SkladDashboard() {
                             {m.name ?? m.sku ?? "—"}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {pohybNazov(m.type)} ·{" "}
+                            {t(pohybNazov(m.type))} ·{" "}
                             {new Date(m.created_at).toLocaleDateString("sk-SK")}
                           </div>
                         </Link>
@@ -143,7 +146,7 @@ function SkladDashboard() {
                   to="/sklad/pohyby"
                   className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
                 >
-                  Všetky pohyby <ArrowRight className="h-3.5 w-3.5" />
+                  {t("Všetky pohyby")} <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </Card>
             </div>
@@ -176,10 +179,11 @@ function Stat({
   value: string;
   accent?: string;
 }) {
+  const { t } = useT();
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">{t(label)}</span>
         <Icon className={`h-4 w-4 ${accent ?? ""}`} />
       </div>
       <div className="mt-2 text-2xl font-semibold tracking-tight">{value}</div>
@@ -188,11 +192,12 @@ function Stat({
 }
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  const { t } = useT();
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
         <Warehouse className="h-4 w-4 text-primary" />
-        {title}
+        {t(title)}
       </div>
       {children}
     </div>
@@ -200,6 +205,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 }
 
 function QuickLink({ to, label, icon: Icon }: { to: string; label: string; icon?: any }) {
+  const { t } = useT();
   return (
     <Link
       to={to as any}
@@ -207,7 +213,7 @@ function QuickLink({ to, label, icon: Icon }: { to: string; label: string; icon?
     >
       <span className="inline-flex items-center gap-2">
         {Icon && <Icon className="h-4 w-4 text-primary" />}
-        {label}
+        {t(label)}
       </span>
       <ArrowRight className="h-4 w-4 text-muted-foreground" />
     </Link>

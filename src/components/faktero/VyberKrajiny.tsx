@@ -1,4 +1,5 @@
 import { KRAJINY_DANE, krajinaDane, sadzbyKrajiny } from "@/lib/faktero/vat-rates";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Krajina registrácie firmy.
@@ -20,21 +21,22 @@ export function VyberKrajiny({
   onZmena: (v: string) => void;
   label?: string;
 }) {
+  const { t } = useT();
   const vybrana = krajinaDane(hodnota);
   const sadzby = sadzbyKrajiny(vybrana);
 
   return (
     <label className="block">
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium">{t(label)}</span>
       <select value={vybrana} onChange={(e) => onZmena(e.target.value)} className="input mt-1">
         {KRAJINY_DANE.map((k) => (
           <option key={k.kod} value={k.kod}>
-            {k.nazov}
+            {t(k.nazov)}
           </option>
         ))}
       </select>
       <span className="mt-1 block text-xs text-muted-foreground">
-        Sadzby DPH: {sadzby.filter((s) => s > 0).join(" %, ")} % a 0 %
+        {t("Sadzby DPH: {sadzby} % a 0 %", { sadzby: sadzby.filter((s) => s > 0).join(" %, ") })}
       </span>
     </label>
   );

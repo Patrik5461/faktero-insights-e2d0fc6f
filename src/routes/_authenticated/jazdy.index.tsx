@@ -19,9 +19,11 @@ import { trasaMedziBodmi } from "@/lib/faktero/trasa.server";
 import { BulkBar, ConfirmDialog } from "@/components/faktero/ListControls";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/jazdy/")({
-  head: () => ({ meta: [{ title: "Kniha jázd — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Kniha jázd — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>): { vehicle_id?: string } => ({
     vehicle_id: typeof s.vehicle_id === "string" && s.vehicle_id ? s.vehicle_id : undefined,
   }),
@@ -75,6 +77,7 @@ type Bod = { lat: number; lng: number };
 const DAVKA = 500;
 
 function TripsPage() {
+  const { t } = useT();
   const { vehicle_id } = Route.useSearch();
   const navigate = useNavigate({ from: "/jazdy/" });
   const [rows, setRows] = useState<Trip[]>([]);
@@ -167,7 +170,7 @@ function TripsPage() {
       const v = await ziadajTrasu({ data: body });
       setNavrhy((n) => ({ ...n, [r.id]: v.route }));
     } catch (e: any) {
-      toast.error(e?.message ?? "Trasu sa nepodarilo navrhnúť.");
+      toast.error(e?.message ?? t("Trasu sa nepodarilo navrhnúť."));
     } finally {
       setNavrhujem(false);
     }
@@ -196,13 +199,18 @@ function TripsPage() {
     if (error) return toast.error(error.message);
 
     const zmenenych = data?.length ?? 0;
-    const popis = classification === "private" ? "súkromné" : "služobné";
     if (zmenenych === vybraneIds.length) {
-      toast.success(`Označených ako ${popis}: ${zmenenych}`);
+      toast.success(
+        classification === "private"
+          ? t("Označených ako súkromné: {n}", { n: zmenenych })
+          : t("Označených ako služobné: {n}", { n: zmenenych }),
+      );
     } else {
       toast.warning(
-        `Zmenených ${zmenenych} z ${vybraneIds.length} — zvyšok sa zmeniť nedal, ` +
-          `skontrolujte, či nie je obdobie uzamknuté.`,
+        t(
+          "Zmenených {n} z {spolu} — zvyšok sa zmeniť nedal, skontrolujte, či nie je obdobie uzamknuté.",
+          { n: zmenenych, spolu: vybraneIds.length },
+        ),
       );
     }
     setVybrane({});
@@ -230,11 +238,15 @@ function TripsPage() {
 
     const zmazanych = data?.length ?? 0;
     if (zmazanych === vybraneIds.length) {
-      toast.success(zmazanych === 1 ? "Jazda je vymazaná" : `Vymazaných ${zmazanych} jázd`);
+      toast.success(
+        zmazanych === 1 ? t("Jazda je vymazaná") : t("Vymazaných {n} jázd", { n: zmazanych }),
+      );
     } else {
       toast.warning(
-        `Vymazaných ${zmazanych} z ${vybraneIds.length} — zvyšok sa vymazať nedal, ` +
-          `skontrolujte, či nie je obdobie uzamknuté.`,
+        t(
+          "Vymazaných {n} z {spolu} — zvyšok sa vymazať nedal, skontrolujte, či nie je obdobie uzamknuté.",
+          { n: zmazanych, spolu: vybraneIds.length },
+        ),
       );
     }
     setVybrane({});
@@ -244,20 +256,20 @@ function TripsPage() {
   return (
     <>
       <PageHeader
-        title="Kniha jázd"
-        description="Záznamy služobných ciest s automatickým výpočtom km."
+        title={t("Kniha jázd")}
+        description={t("Záznamy služobných ciest s automatickým výpočtom km.")}
         action={
           <Link
             to="/jazdy/nova"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Nová jazda
+            <Plus className="h-4 w-4" /> {t("Nová jazda")}
           </Link>
         }
       />
       <PageBody>
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <label className="text-sm font-medium">Vozidlo</label>
+          <label className="text-sm font-medium">{t("Vozidlo")}</label>
           <select
             value={vehicle_id ?? ""}
             onChange={(e) => {
@@ -266,7 +278,7 @@ function TripsPage() {
             }}
             className="rounded-md border border-border bg-card px-3 py-2 text-sm"
           >
-            <option value="">Všetky vozidlá</option>
+            <option value="">{t("Všetky vozidlá")}</option>
             {vehicleList.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.name}
@@ -276,16 +288,16 @@ function TripsPage() {
           </select>
         </div>
         {loading && rows.length === 0 ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-10 text-center">
             <Car className="mx-auto h-10 w-10 text-muted-foreground" />
-            <div className="mt-3 text-sm text-muted-foreground">Zatiaľ žiadne jazdy.</div>
+            <div className="mt-3 text-sm text-muted-foreground">{t("Zatiaľ žiadne jazdy.")}</div>
             <Link
               to="/jazdy/nova"
               className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
             >
-              <Plus className="h-4 w-4" /> Pridať prvú jazdu
+              <Plus className="h-4 w-4" /> {t("Pridať prvú jazdu")}
             </Link>
           </div>
         ) : (
@@ -303,13 +315,13 @@ function TripsPage() {
                       onClick={() => nastavZaradenie("business")}
                       className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
                     >
-                      Označiť ako služobné
+                      {t("Označiť ako služobné")}
                     </button>
                     <button
                       onClick={() => nastavZaradenie("private")}
                       className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
                     >
-                      Označiť ako súkromné
+                      {t("Označiť ako súkromné")}
                     </button>
                   </>
                 }
@@ -324,24 +336,24 @@ function TripsPage() {
                     <th className="p-3 w-10">
                       <input
                         type="checkbox"
-                        aria-label="Označiť všetky jazdy v zozname"
+                        aria-label={t("Označiť všetky jazdy v zozname")}
                         checked={vsetkyVybrate}
                         onChange={(e) => prepniVsetky(e.target.checked)}
                         className="h-4 w-4 cursor-pointer accent-primary"
                       />
                     </th>
-                    <th className="p-3">Dátum jazdy</th>
-                    <th className="p-3">Vozidlo</th>
-                    <th className="p-3">Vodič</th>
-                    <th className="p-3">Odkiaľ</th>
-                    <th className="p-3">Kam</th>
-                    <th className="p-3">Za kým</th>
-                    <th className="p-3 text-right">Počet km</th>
-                    <th className="p-3 text-right">Priemerná rýchlosť</th>
-                    <th className="p-3 text-right">Najvyššia rýchlosť</th>
-                    <th className="p-3 text-right">Trvanie jazdy</th>
-                    <th className="p-3">Typ jazdy</th>
-                    <th className="p-3">Zdroj</th>
+                    <th className="p-3">{t("Dátum jazdy")}</th>
+                    <th className="p-3">{t("Vozidlo")}</th>
+                    <th className="p-3">{t("Vodič")}</th>
+                    <th className="p-3">{t("Odkiaľ")}</th>
+                    <th className="p-3">{t("Kam")}</th>
+                    <th className="p-3">{t("Za kým")}</th>
+                    <th className="p-3 text-right">{t("Počet km")}</th>
+                    <th className="p-3 text-right">{t("Priemerná rýchlosť")}</th>
+                    <th className="p-3 text-right">{t("Najvyššia rýchlosť")}</th>
+                    <th className="p-3 text-right">{t("Trvanie jazdy")}</th>
+                    <th className="p-3">{t("Typ jazdy")}</th>
+                    <th className="p-3">{t("Zdroj")}</th>
                     <th className="p-3"></th>
                   </tr>
                 </thead>
@@ -361,7 +373,9 @@ function TripsPage() {
                       <td className="p-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
-                          aria-label={`Označiť jazdu z ${datumNaDoklade(r.trip_date)}`}
+                          aria-label={t("Označiť jazdu z {datum}", {
+                            datum: datumNaDoklade(r.trip_date),
+                          })}
                           checked={!!vybrane[r.id]}
                           onChange={(e) => prepniJazdu(r.id, e.target.checked)}
                           className="h-4 w-4 cursor-pointer accent-primary"
@@ -407,7 +421,7 @@ function TripsPage() {
                               : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                           }`}
                         >
-                          {jeSukromna(r.classification) ? "Súkromná" : "Služobná"}
+                          {jeSukromna(r.classification) ? t("Súkromná") : t("Služobná")}
                         </span>
                         {ucelNaZobrazenie(r.purpose, r.classification) && (
                           <div className="mt-1 text-xs text-muted-foreground">
@@ -416,7 +430,7 @@ function TripsPage() {
                         )}
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">
-                        {sourceLabel(r.external_source)}
+                        {t(sourceLabel(r.external_source))}
                       </td>
                       <td
                         className="p-3 text-right whitespace-nowrap"
@@ -425,7 +439,7 @@ function TripsPage() {
                         {(r.route || koncoveBody(r)) && (
                           <button
                             onClick={() => otvorTrasu(r)}
-                            title="Zobraziť trasu na mape"
+                            title={t("Zobraziť trasu na mape")}
                             className="rounded p-1.5 text-muted-foreground hover:bg-muted"
                           >
                             <MapIcon className="h-4 w-4" />
@@ -434,14 +448,14 @@ function TripsPage() {
                         <Link
                           to="/jazdy/nova"
                           search={{ id: r.id }}
-                          title="Upraviť jazdu"
+                          title={t("Upraviť jazdu")}
                           className="inline-block rounded p-1.5 text-muted-foreground hover:bg-muted"
                         >
                           <Pencil className="h-4 w-4" />
                         </Link>
                         <button
                           onClick={() => zmazJednu(r.id)}
-                          title="Vymazať jazdu"
+                          title={t("Vymazať jazdu")}
                           className="rounded p-1.5 text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -473,7 +487,9 @@ function TripsPage() {
                     <div className="flex min-w-0 gap-2">
                       <input
                         type="checkbox"
-                        aria-label={`Označiť jazdu z ${datumNaDoklade(r.trip_date)}`}
+                        aria-label={t("Označiť jazdu z {datum}", {
+                          datum: datumNaDoklade(r.trip_date),
+                        })}
                         checked={!!vybrane[r.id]}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => prepniJazdu(r.id, e.target.checked)}
@@ -487,12 +503,14 @@ function TripsPage() {
                           {r.start_location ?? "—"} → {r.end_location ?? "—"}
                         </div>
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                          <span>Trvanie: {formatDuration(r.duration_seconds)}</span>
+                          <span>
+                            {t("Trvanie: {cas}", { cas: formatDuration(r.duration_seconds) })}
+                          </span>
                           <span>
                             Ø {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
                           </span>
                           <span className="font-medium">
-                            {jeSukromna(r.classification) ? "Súkromná" : "Služobná"}
+                            {jeSukromna(r.classification) ? t("Súkromná") : t("Služobná")}
                           </span>
                           {ucelNaZobrazenie(r.purpose, r.classification) && (
                             <span>{ucelNaZobrazenie(r.purpose, r.classification)}</span>
@@ -507,7 +525,7 @@ function TripsPage() {
                       {(r.route || koncoveBody(r)) && (
                         <button
                           onClick={() => otvorTrasu(r)}
-                          aria-label="Zobraziť trasu na mape"
+                          aria-label={t("Zobraziť trasu na mape")}
                           className="mt-1 rounded p-1 text-muted-foreground"
                         >
                           <MapIcon className="h-4 w-4" />
@@ -516,14 +534,14 @@ function TripsPage() {
                       <Link
                         to="/jazdy/nova"
                         search={{ id: r.id }}
-                        aria-label="Upraviť jazdu"
+                        aria-label={t("Upraviť jazdu")}
                         className="mt-1 inline-block rounded p-1 text-muted-foreground"
                       >
                         <Pencil className="h-4 w-4" />
                       </Link>
                       <button
                         onClick={() => zmazJednu(r.id)}
-                        aria-label="Vymazať jazdu"
+                        aria-label={t("Vymazať jazdu")}
                         className="mt-1 rounded p-1 text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -536,8 +554,9 @@ function TripsPage() {
 
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
               <span>
-                Zobrazených {rows.length}
-                {spolu !== null && spolu > rows.length ? ` z ${spolu}` : ""} jázd
+                {spolu !== null && spolu > rows.length
+                  ? t("Zobrazených {n} z {spolu} jázd", { n: rows.length, spolu })
+                  : t("Zobrazených {n} jázd", { n: rows.length })}
               </span>
               {spolu !== null && spolu > rows.length && (
                 <button
@@ -546,8 +565,8 @@ function TripsPage() {
                   className="rounded-md border border-border bg-card px-3 py-1.5 font-medium text-foreground hover:bg-secondary disabled:opacity-60"
                 >
                   {loading
-                    ? "Načítavam…"
-                    : `Načítať ďalších ${Math.min(DAVKA, spolu - rows.length)}`}
+                    ? t("Načítavam…")
+                    : t("Načítať ďalších {n}", { n: Math.min(DAVKA, spolu - rows.length) })}
                 </button>
               )}
             </div>
@@ -556,10 +575,14 @@ function TripsPage() {
 
         <ConfirmDialog
           open={potvrdenie}
-          title={vybraneIds.length === 1 ? "Vymazať jazdu?" : `Vymazať ${vybraneIds.length} jázd?`}
-          message="Jazdy sa z knihy odstránia natrvalo — kniha jázd nemá kôš."
-          warning="Ak boli priradené k zákazke, jej náklady sa o ne znížia."
-          confirmLabel="Vymazať"
+          title={
+            vybraneIds.length === 1
+              ? t("Vymazať jazdu?")
+              : t("Vymazať {n} jázd?", { n: vybraneIds.length })
+          }
+          message={t("Jazdy sa z knihy odstránia natrvalo — kniha jázd nemá kôš.")}
+          warning={t("Ak boli priradené k zákazke, jej náklady sa o ne znížia.")}
+          confirmLabel={t("Vymazať")}
           busy={mazem}
           onCancel={() => setPotvrdenie(false)}
           onConfirm={zmazVybrate}
@@ -569,7 +592,7 @@ function TripsPage() {
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>
-                Trasa jazdy
+                {t("Trasa jazdy")}
                 {trasa
                   ? ` — ${datumNaDoklade(trasa.trip_date)}, ${formatujCislo(trasa.distance_km, 1)} km`
                   : ""}
@@ -584,14 +607,14 @@ function TripsPage() {
                   {/* Nech je to povedané rovno v mape: Commander posiela len
                       začiatok a koniec, cesta medzi nimi je dopočítaná. */}
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Commander posiela iba začiatok a koniec jazdy. Nakreslená cesta medzi nimi je
-                    návrh po cestách, nie skutočne prejdená trasa — kilometre v knihe ostávajú tie z
-                    tachometra.
+                    {t(
+                      "Commander posiela iba začiatok a koniec jazdy. Nakreslená cesta medzi nimi je návrh po cestách, nie skutočne prejdená trasa — kilometre v knihe ostávajú tie z tachometra.",
+                    )}
                   </p>
                 </>
               ) : (
                 <div className="py-10 text-center text-sm text-muted-foreground">
-                  {navrhujem ? "Kreslím trasu…" : "Trasa nie je k dispozícii."}
+                  {navrhujem ? t("Kreslím trasu…") : t("Trasa nie je k dispozícii.")}
                 </div>
               ))}
           </DialogContent>

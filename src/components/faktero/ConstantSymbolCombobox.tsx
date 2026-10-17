@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 export const CONSTANT_SYMBOLS: { code: string; label: string }[] = [
   { code: "0008", label: "Platby daní" },
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function ConstantSymbolCombobox({ value, onChange, placeholder, id }: Props) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -39,7 +41,7 @@ export function ConstantSymbolCombobox({ value, onChange, placeholder, id }: Pro
   const q = query.trim().toLowerCase();
   const filtered = q
     ? CONSTANT_SYMBOLS.filter(
-        (k) => k.code.toLowerCase().includes(q) || k.label.toLowerCase().includes(q),
+        (k) => k.code.toLowerCase().includes(q) || (k.label.toLowerCase().includes(q) || t(k.label).toLowerCase().includes(q)),
       )
     : CONSTANT_SYMBOLS;
 
@@ -63,7 +65,7 @@ export function ConstantSymbolCombobox({ value, onChange, placeholder, id }: Pro
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
-          placeholder={placeholder ?? "napr. 0098"}
+          placeholder={placeholder ?? t("napr. 0098")}
           autoComplete="off"
           className="w-full rounded-md border border-input bg-background py-2 pl-3 pr-9 text-sm"
         />
@@ -75,19 +77,19 @@ export function ConstantSymbolCombobox({ value, onChange, placeholder, id }: Pro
             setOpen((o) => !o);
           }}
           className="absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground hover:text-foreground"
-          aria-label="Otvoriť zoznam konštantných symbolov"
+          aria-label={t("Otvoriť zoznam konštantných symbolov")}
         >
           <ChevronDown className="h-4 w-4" />
         </button>
       </div>
       {matched && !open && (
-        <div className="mt-1 text-xs text-muted-foreground">{matched.label}</div>
+        <div className="mt-1 text-xs text-muted-foreground">{t(matched.label)}</div>
       )}
       {open && (
         <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-border bg-popover shadow-lg">
           {filtered.length === 0 && (
             <div className="px-3 py-2 text-xs text-muted-foreground">
-              Žiadna zhoda — môžete zadať vlastný kód.
+              {t("Žiadna zhoda — môžete zadať vlastný kód.")}
             </div>
           )}
           {filtered.map((k) => (
@@ -103,7 +105,7 @@ export function ConstantSymbolCombobox({ value, onChange, placeholder, id }: Pro
               }`}
             >
               <span className="font-mono font-medium">{k.code}</span>
-              <span className="text-muted-foreground">— {k.label}</span>
+              <span className="text-muted-foreground">— {t(k.label)}</span>
             </button>
           ))}
         </div>

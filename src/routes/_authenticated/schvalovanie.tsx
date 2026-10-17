@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -12,7 +14,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 /** Doklady, ktoré čakajú na moje schválenie — jednotlivo aj hromadne. */
 export const Route = createFileRoute("/_authenticated/schvalovanie")({
-  head: () => ({ meta: [{ title: "Na schválenie — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Na schválenie — Faktero") }] }),
   component: Stranka,
 });
 
@@ -23,6 +25,7 @@ const ODKAZ: Record<AgendaSchvalovania, (id: string) => { to: string; params?: a
 };
 
 function Stranka() {
+  const { t } = useT();
   const companyId = getActiveCompanyId();
   const nacitaj = useServerFn(cakajuNaMnaFn);
   const rozhodni = useServerFn(rozhodnutieFn);
@@ -37,7 +40,7 @@ function Stranka() {
       setD(await nacitaj({ data: { company_id: companyId } }));
       setVyber(new Set());
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa načítať");
+      toast.error(e?.message ?? t("Nepodarilo sa načítať"));
       setD({ zapnute: false, polozky: [] });
     }
   };
@@ -48,7 +51,7 @@ function Stranka() {
 
   async function hromadne(akcia: "schvalit" | "zamietnut" | "vratit") {
     if (!d || !companyId) return;
-    if (akcia !== "schvalit" && !poznamka.trim()) return toast.error("Napíšte dôvod.");
+    if (akcia !== "schvalit" && !poznamka.trim()) return toast.error(t("Napíšte dôvod."));
     setBusy(true);
     try {
       let spolu = 0;
@@ -58,11 +61,11 @@ function Stranka() {
         const r = await rozhodni({ data: { company_id: companyId, agenda, ids, akcia, poznamka } });
         spolu += r.hotovo;
       }
-      toast.success(`Hotovo: ${spolu}`);
+      toast.success(t("Hotovo: {n}", { n: spolu }));
       setPoznamka("");
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(e?.message ?? t("Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -70,27 +73,27 @@ function Stranka() {
 
   return (
     <>
-      <PageHeader title="Na schválenie" description="Doklady, ktoré čakajú na vaše schválenie." />
+      <PageHeader title={t("Na schválenie")} description={t("Doklady, ktoré čakajú na vaše schválenie.")} />
       <PageBody>
         {!d ? (
-          <p className="text-sm text-muted-foreground">Načítavam…</p>
+          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
         ) : !d.zapnute ? (
           <p className="text-sm text-muted-foreground">
-            Schvaľovanie nie je zapnuté. Zapína sa v{" "}
+            {t("Schvaľovanie nie je zapnuté. Zapína sa v")}{" "}
             <Link to="/nastavenia/schvalovanie" className="underline">
-              Nastavenia → Schvaľovanie dokladov
+              {t("Nastavenia → Schvaľovanie dokladov")}
             </Link>
             .
           </p>
         ) : d.polozky.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nič nečaká na vaše schválenie.</p>
+          <p className="text-sm text-muted-foreground">{t("Nič nečaká na vaše schválenie.")}</p>
         ) : (
           <section className="rounded-xl border border-border bg-card p-5">
             <div className="flex flex-wrap items-center gap-2">
               <input
                 value={poznamka}
                 onChange={(e) => setPoznamka(e.target.value)}
-                placeholder="Poznámka (pri zamietnutí a vrátení povinná)"
+                placeholder={t("Poznámka (pri zamietnutí a vrátení povinná)")}
                 className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
               />
               <button
@@ -98,21 +101,21 @@ function Stranka() {
                 disabled={busy || !vyber.size}
                 className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
               >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Schváliť ({vyber.size})
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} {t("Schváliť ({n})", { n: vyber.size })}
               </button>
               <button
                 onClick={() => hromadne("vratit")}
                 disabled={busy || !vyber.size}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm disabled:opacity-50"
               >
-                <Undo2 className="h-4 w-4" /> Vrátiť
+                <Undo2 className="h-4 w-4" /> {t("Vrátiť")}
               </button>
               <button
                 onClick={() => hromadne("zamietnut")}
                 disabled={busy || !vyber.size}
                 className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive disabled:opacity-50"
               >
-                <XCircle className="h-4 w-4" /> Zamietnuť
+                <XCircle className="h-4 w-4" /> {t("Zamietnuť")}
               </button>
             </div>
             <div className="mt-3 overflow-x-auto">
@@ -122,18 +125,18 @@ function Stranka() {
                     <th className="w-8 py-1">
                       <input
                         type="checkbox"
-                        aria-label="Vybrať všetky"
+                        aria-label={t("Vybrať všetky")}
                         checked={vyber.size === d.polozky.length}
                         onChange={(e) =>
                           setVyber(e.target.checked ? new Set(d.polozky.map((p) => `${p.agenda}:${p.id}`)) : new Set())
                         }
                       />
                     </th>
-                    <th className="py-1 pr-3 font-medium">Doklad</th>
-                    <th className="py-1 pr-3 font-medium">Partner</th>
-                    <th className="py-1 pr-3 font-medium">Dátum</th>
-                    <th className="py-1 pr-3 text-right font-medium">Suma</th>
-                    <th className="py-1 font-medium">Stav</th>
+                    <th className="py-1 pr-3 font-medium">{t("Doklad")}</th>
+                    <th className="py-1 pr-3 font-medium">{t("Partner")}</th>
+                    <th className="py-1 pr-3 font-medium">{t("Dátum")}</th>
+                    <th className="py-1 pr-3 text-right font-medium">{t("Suma")}</th>
+                    <th className="py-1 font-medium">{t("Stav")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -155,9 +158,9 @@ function Stranka() {
                         </td>
                         <td className="py-1.5 pr-3">
                           <Link {...(ODKAZ[p.agenda as AgendaSchvalovania](p.id) as any)} className="font-medium hover:underline">
-                            {p.cislo || "bez čísla"}
+                            {p.cislo || t("bez čísla")}
                           </Link>
-                          <span className="block text-xs text-muted-foreground">{NAZVY_AGEND[p.agenda as AgendaSchvalovania]}</span>
+                          <span className="block text-xs text-muted-foreground">{t(NAZVY_AGEND[p.agenda as AgendaSchvalovania])}</span>
                         </td>
                         <td className="py-1.5 pr-3">{p.partner ?? "—"}</td>
                         <td className="py-1.5 pr-3">{datumNaDoklade(p.datum)}</td>
@@ -165,7 +168,7 @@ function Stranka() {
                           {formatujMenu(p.suma, p.mena)}
                         </td>
                         <td className="py-1.5 text-xs">
-                          {NAZVY_STAVOV[p.stav as keyof typeof NAZVY_STAVOV]} · {p.odznak}
+                          {t(NAZVY_STAVOV[p.stav as keyof typeof NAZVY_STAVOV] ?? "")} · {p.odznak}
                         </td>
                       </tr>
                     );

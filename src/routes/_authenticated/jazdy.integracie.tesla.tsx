@@ -24,6 +24,7 @@ import {
   syncTeslaSnapshots,
 } from "@/lib/faktero/tesla.functions";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
 
 export const Route = createFileRoute("/_authenticated/jazdy/integracie/tesla")({
   head: () => ({ meta: [{ title: "Tesla Fleet API — Faktero" }] }),
@@ -51,6 +52,7 @@ function popisStavuSync(s?: string | null) {
 }
 
 function TeslaPage() {
+  const { t } = useT();
   const cid = getActiveCompanyId();
   const _get = useServerFn(getTeslaStatus);
   const _start = useServerFn(startTeslaOAuth);
@@ -77,8 +79,8 @@ function TeslaPage() {
   useEffect(() => {
     load();
     const sp = new URLSearchParams(window.location.search);
-    if (sp.get("connected")) toast.success("Tesla účet pripojený.");
-    if (sp.get("error")) toast.error("OAuth chyba: " + sp.get("error"));
+    if (sp.get("connected")) toast.success(t("Tesla účet pripojený."));
+    if (sp.get("error")) toast.error(t("OAuth chyba: {chyba}", { chyba: sp.get("error") ?? "" }));
     if (sp.get("connected") || sp.get("error")) {
       window.history.replaceState({}, "", window.location.pathname);
     }
@@ -91,7 +93,7 @@ function TeslaPage() {
       const r = await _start({ data: { companyId: cid } });
       window.location.href = r.url;
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
       setBusy(null);
     }
   }
@@ -100,7 +102,9 @@ function TeslaPage() {
     if (!cid) return;
     if (
       !(await potvrd(
-        "Naozaj odpojiť Tesla účet?\n\nImportované dáta zostanú zachované. Vozidlá, ktoré sem priniesla integrácia a nemajú žiadnu jazdu ani tankovanie, sa odstránia.",
+        t(
+          "Naozaj odpojiť Tesla účet?\n\nImportované dáta zostanú zachované. Vozidlá, ktoré sem priniesla integrácia a nemajú žiadnu jazdu ani tankovanie, sa odstránia.",
+        ),
       ))
     )
       return;
@@ -108,11 +112,13 @@ function TeslaPage() {
     try {
       const r: any = await _disc({ data: { companyId: cid } });
       toast.success(
-        r?.zmazaneVozidla ? `Odpojené — odstránených vozidiel: ${r.zmazaneVozidla}` : "Odpojené",
+        r?.zmazaneVozidla
+          ? t("Odpojené — odstránených vozidiel: {n}", { n: r.zmazaneVozidla })
+          : t("Odpojené"),
       );
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(null);
     }
@@ -124,10 +130,10 @@ function TeslaPage() {
     try {
       const r = await _syncV({ data: { companyId: cid } });
       if (r.ok) toast.success(r.message);
-      else toast.error(r.error ?? "Chyba");
+      else toast.error(r.error ?? t("Chyba"));
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(null);
     }
@@ -139,7 +145,7 @@ function TeslaPage() {
       await _link({ data: { companyId: cid, linkId, faktero_vehicle_id } });
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     }
   }
 
@@ -149,10 +155,10 @@ function TeslaPage() {
     try {
       const r = await _syncSnap({ data: { companyId: cid } });
       if (r.ok) toast.success(r.message);
-      else toast.error(r.error ?? "Chyba");
+      else toast.error(r.error ?? t("Chyba"));
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(null);
     }
@@ -171,7 +177,7 @@ function TeslaPage() {
     <>
       <PageHeader
         title="Tesla Fleet API"
-        description="Synchronizácia Tesla vozidiel, polohy a stavu tachometra."
+        description={t("Synchronizácia Tesla vozidiel, polohy a stavu tachometra.")}
       />
       <PageBody>
         {(state.credentials_invalid || conn?.credentials_invalid) && (
@@ -180,11 +186,12 @@ function TeslaPage() {
               <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
               <div className="flex-1">
                 <div className="font-medium text-amber-900 dark:text-amber-200">
-                  Tesla účet je potrebné znova pripojiť
+                  {t("Tesla účet je potrebné znova pripojiť")}
                 </div>
                 <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/80">
-                  Uložené prístupové tokeny sa nedajú dešifrovať. Toto sa stáva po zmene
-                  bezpečnostného kľúča systému. Pripojte prosím Tesla účet znovu cez OAuth.
+                  {t(
+                    "Uložené prístupové tokeny sa nedajú dešifrovať. Toto sa stáva po zmene bezpečnostného kľúča systému. Pripojte prosím Tesla účet znovu cez OAuth.",
+                  )}
                 </p>
                 <button
                   type="button"
@@ -192,7 +199,7 @@ function TeslaPage() {
                   onClick={onConnect}
                   className="mt-3 inline-flex items-center gap-2 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
                 >
-                  <PlugZap className="h-4 w-4" /> Znova pripojiť Tesla účet
+                  <PlugZap className="h-4 w-4" /> {t("Znova pripojiť Tesla účet")}
                 </button>
               </div>
             </div>
@@ -207,19 +214,19 @@ function TeslaPage() {
                   <Car className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="font-medium">Pripojenie Tesla účtu</div>
+                  <div className="font-medium">{t("Pripojenie Tesla účtu")}</div>
                   <div className="text-xs text-muted-foreground">
-                    OAuth 2.0 — tokeny sú uložené šifrovane na serveri.
+                    {t("OAuth 2.0 — tokeny sú uložené šifrovane na serveri.")}
                   </div>
                 </div>
               </div>
               <div className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
-                  <span className="text-muted-foreground">Tesla účet:</span>{" "}
+                  <span className="text-muted-foreground">{t("Tesla účet:")}</span>{" "}
                   <span className="font-mono">{conn?.email_masked ?? "—"}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Token platnosť:</span>{" "}
+                  <span className="text-muted-foreground">{t("Token platnosť:")}</span>{" "}
                   {fmt(conn?.token_expires_at)}
                 </div>
               </div>
@@ -230,7 +237,7 @@ function TeslaPage() {
                     onClick={onConnect}
                     className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                   >
-                    <PlugZap className="h-4 w-4" /> Pripojiť Tesla účet
+                    <PlugZap className="h-4 w-4" /> {t("Pripojiť Tesla účet")}
                   </button>
                 ) : (
                   <button
@@ -238,7 +245,7 @@ function TeslaPage() {
                     onClick={onDisconnect}
                     className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   >
-                    <Power className="h-4 w-4" /> Odpojiť
+                    <Power className="h-4 w-4" /> {t("Odpojiť")}
                   </button>
                 )}
               </div>
@@ -251,18 +258,18 @@ function TeslaPage() {
                   <FileText className="h-4 w-4" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-medium">Podmienky používania Tesla Fleet API</div>
+                  <div className="font-medium">{t("Podmienky používania Tesla Fleet API")}</div>
                   <p className="mt-1 text-emerald-800/90 dark:text-emerald-100/80">
-                    Pripojením Tesla účtu súhlasíte so spracúvaním údajov o vozidle (VIN,
-                    tachometer, poloha) v rozsahu uvedenom v našich podmienkach. Faktero používa
-                    výhradne čítacie oprávnenia — žiadne príkazy do vozidla.
+                    {t(
+                      "Pripojením Tesla účtu súhlasíte so spracúvaním údajov o vozidle (VIN, tachometer, poloha) v rozsahu uvedenom v našich podmienkach. Faktero používa výhradne čítacie oprávnenia — žiadne príkazy do vozidla.",
+                    )}
                   </p>
                   <Link
                     to="/pravne/tesla-podmienky"
                     target="_blank"
                     className="mt-3 inline-flex items-center gap-1.5 font-medium underline hover:text-emerald-700"
                   >
-                    Zobraziť podmienky <ExternalLink className="h-3.5 w-3.5" />
+                    {t("Zobraziť podmienky")} <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
                 </div>
               </div>
@@ -273,9 +280,9 @@ function TeslaPage() {
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <div>
-                  Tesla Fleet API neposkytuje hotový zoznam jázd ako Commander. Faktero vie
-                  synchronizovať vozidlá, stav tachometra a polohu. Automatická tvorba jázd bude
-                  vychádzať z pravidelne zaznamenaného stavu tachometra a polohy.
+                  {t(
+                    "Tesla Fleet API neposkytuje hotový zoznam jázd ako Commander. Faktero vie synchronizovať vozidlá, stav tachometra a polohu. Automatická tvorba jázd bude vychádzať z pravidelne zaznamenaného stavu tachometra a polohy.",
+                  )}
                 </div>
               </div>
             </div>
@@ -284,11 +291,11 @@ function TeslaPage() {
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="font-medium">Tesla vozidlá</div>
+                  <div className="font-medium">{t("Tesla vozidlá")}</div>
                   <div className="text-xs text-muted-foreground">
                     {state.links.length === 0
-                      ? "Žiadne vozidlá ešte neboli synchronizované."
-                      : `${state.links.length} vozidiel z Tesla účtu.`}
+                      ? t("Žiadne vozidlá ešte neboli synchronizované.")
+                      : t("{n} vozidiel z Tesla účtu.", { n: state.links.length })}
                   </div>
                 </div>
                 <button
@@ -296,7 +303,7 @@ function TeslaPage() {
                   onClick={onSyncVehicles}
                   className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-md sm:w-auto border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
                 >
-                  <RefreshCcw className="h-4 w-4" /> Synchronizovať vozidlá
+                  <RefreshCcw className="h-4 w-4" /> {t("Synchronizovať vozidlá")}
                 </button>
               </div>
               {state.links.length > 0 && (
@@ -304,9 +311,9 @@ function TeslaPage() {
                   <table className="w-full text-sm">
                     <thead className="text-left text-xs uppercase text-muted-foreground">
                       <tr>
-                        <th className="py-2 pr-3">Tesla vozidlo</th>
+                        <th className="py-2 pr-3">{t("Tesla vozidlo")}</th>
                         <th className="py-2 pr-3">VIN</th>
-                        <th className="py-2 pr-3">Faktero vozidlo</th>
+                        <th className="py-2 pr-3">{t("Faktero vozidlo")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -324,7 +331,7 @@ function TeslaPage() {
                               value={l.faktero_vehicle_id ?? ""}
                               onChange={(e) => onLink(l.id, e.target.value || null)}
                             >
-                              <option value="">— neprepojené —</option>
+                              <option value="">{t("— neprepojené —")}</option>
                               {vehicles.map((v) => (
                                 <option key={v.id} value={v.id}>
                                   {v.name}
@@ -344,26 +351,28 @@ function TeslaPage() {
             {/* Tesla data section */}
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-3 flex items-center justify-between">
-                <div className="font-medium">Tesla dáta</div>
+                <div className="font-medium">{t("Tesla dáta")}</div>
                 <button
                   disabled={!isConnected || !!busy || state.links.length === 0}
                   onClick={onSyncSnap}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  <PlugZap className="h-4 w-4" /> Synchronizovať jazdy
+                  <PlugZap className="h-4 w-4" /> {t("Synchronizovať jazdy")}
                 </button>
               </div>
               {state.links.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Najprv synchronizujte vozidlá.</div>
+                <div className="text-sm text-muted-foreground">
+                  {t("Najprv synchronizujte vozidlá.")}
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="text-left text-xs uppercase text-muted-foreground">
                       <tr>
-                        <th className="py-2 pr-3">Vozidlo</th>
-                        <th className="py-2 pr-3">Tachometer</th>
-                        <th className="py-2 pr-3">Poloha</th>
-                        <th className="py-2 pr-3">Posledná sync.</th>
+                        <th className="py-2 pr-3">{t("Vozidlo")}</th>
+                        <th className="py-2 pr-3">{t("Tachometer")}</th>
+                        <th className="py-2 pr-3">{t("Poloha")}</th>
+                        <th className="py-2 pr-3">{t("Posledná sync.")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -400,27 +409,29 @@ function TeslaPage() {
           {/* Sidebar */}
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 font-medium">Stav</div>
+              <div className="mb-3 font-medium">{t("Stav")}</div>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Pripojenie</dt>
-                  <dd>{isConnected ? (conn.enabled ? "Aktívne" : "Vypnuté") : "Nepripojené"}</dd>
+                  <dt className="text-muted-foreground">{t("Pripojenie")}</dt>
+                  <dd>
+                    {isConnected ? (conn.enabled ? t("Aktívne") : t("Vypnuté")) : t("Nepripojené")}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Tesla účet</dt>
+                  <dt className="text-muted-foreground">{t("Tesla účet")}</dt>
                   <dd className="font-mono text-xs">{conn?.email_masked ?? "—"}</dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Posledná sync.</dt>
+                  <dt className="text-muted-foreground">{t("Posledná sync.")}</dt>
                   <dd>{fmt(conn?.last_sync_at)}</dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Stav synchronizácie</dt>
-                  <dd className="text-right">{popisStavuSync(conn?.sync_status)}</dd>
+                  <dt className="text-muted-foreground">{t("Stav synchronizácie")}</dt>
+                  <dd className="text-right">{t(popisStavuSync(conn?.sync_status))}</dd>
                 </div>
                 {conn?.error_message && (
                   <div>
-                    <dt className="text-muted-foreground">Posledná chyba</dt>
+                    <dt className="text-muted-foreground">{t("Posledná chyba")}</dt>
                     <dd className="mt-1 rounded-md bg-destructive/10 p-2 text-xs text-destructive">
                       {conn.error_message}
                     </dd>
@@ -430,10 +441,10 @@ function TeslaPage() {
             </div>
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-3 flex items-center gap-2 font-medium">
-                <Link2 className="h-4 w-4" /> História synchronizácií
+                <Link2 className="h-4 w-4" /> {t("História synchronizácií")}
               </div>
               {state.logs.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Žiadne záznamy.</div>
+                <div className="text-sm text-muted-foreground">{t("Žiadne záznamy.")}</div>
               ) : (
                 <ul className="space-y-2 text-xs">
                   {state.logs.map((l: any) => (
@@ -443,7 +454,7 @@ function TeslaPage() {
                         <span
                           className={l.status === "ok" ? "text-emerald-600" : "text-destructive"}
                         >
-                          {popisStavuSync(l.status)}
+                          {t(popisStavuSync(l.status))}
                         </span>
                       </div>
                       <div className="mt-1 text-muted-foreground">{fmt(l.created_at)}</div>
@@ -454,14 +465,16 @@ function TeslaPage() {
               )}
             </div>
             <div className="rounded-xl border border-border bg-muted/30 p-4 text-xs text-muted-foreground">
-              <div className="mb-1 font-medium text-foreground">Čo z Tesly dostanete</div>
+              <div className="mb-1 font-medium text-foreground">{t("Čo z Tesly dostanete")}</div>
               <p className="mb-2">
-                Faktero z vášho vozidla Tesla načíta stav tachometra a polohu. Z nich si potom ľahko
-                doplníte jazdy do knihy jázd.
+                {t(
+                  "Faktero z vášho vozidla Tesla načíta stav tachometra a polohu. Z nich si potom ľahko doplníte jazdy do knihy jázd.",
+                )}
               </p>
               <p>
-                Ak chcete, aby sa hotové jazdy zapisovali do knihy samy, použite GPS jednotku
-                Commander.
+                {t(
+                  "Ak chcete, aby sa hotové jazdy zapisovali do knihy samy, použite GPS jednotku Commander.",
+                )}
               </p>
             </div>
           </div>

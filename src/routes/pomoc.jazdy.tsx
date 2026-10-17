@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/jazdy")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Kniha jázd — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Kniha jázd — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Kniha jázd vo Faktere: vozidlá, spotreba, tankovanie, GPS záznam, priradenie jazdy na zákazku a export.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/jazdy" },
     ],
@@ -145,7 +149,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Kniha jázd"
       title="Kniha jázd"
       intro={<p>Vozidlá, spotreba, tankovanie, GPS záznam a prepojenie jázd so zákazkami.</p>}

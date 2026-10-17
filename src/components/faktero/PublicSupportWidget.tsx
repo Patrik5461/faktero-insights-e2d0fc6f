@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
 import ReactMarkdown from "react-markdown";
 import { MessageCircle, X, Send, Loader2, Minus, Mail, Phone } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -22,6 +23,7 @@ const GREETING: Msg = {
 };
 
 export function PublicSupportWidget() {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const oknoOtvorene = useOtvoreneOkno();
   const [msgs, setMsgs] = useState<Msg[]>([GREETING]);
@@ -104,14 +106,16 @@ export function PublicSupportWidget() {
                 <MessageCircle className="h-4 w-4" />
               </div>
               <div className="leading-tight">
-                <div className="text-sm font-semibold">Faktero AI podpora</div>
-                <div className="text-[11px] text-muted-foreground">Zvyčajne odpovedá ihneď</div>
+                <div className="text-sm font-semibold">{t("Faktero AI podpora")}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {t("Zvyčajne odpovedá ihneď")}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                aria-label="Minimalizovať"
+                aria-label={t("Minimalizovať")}
                 onClick={() => setOpen(false)}
                 className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               >
@@ -119,7 +123,7 @@ export function PublicSupportWidget() {
               </button>
               <button
                 type="button"
-                aria-label="Zatvoriť"
+                aria-label={t("Zatvoriť")}
                 onClick={() => setOpen(false)}
                 className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               >
@@ -144,7 +148,8 @@ export function PublicSupportWidget() {
                 >
                   {m.role === "assistant" ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_a]:text-primary">
-                      <ReactMarkdown>{m.content}</ReactMarkdown>
+                      {/* Uvítanie a záložné hlášky sú pevné slovenské texty — preložia sa; odpoveď AI prejde bez zmeny. */}
+                      <ReactMarkdown>{t(m.content)}</ReactMarkdown>
                     </div>
                   ) : (
                     m.content
@@ -163,17 +168,17 @@ export function PublicSupportWidget() {
             {msgs.length <= 1 && !busy && (
               <div className="space-y-1.5 pt-1">
                 <div className="px-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Časté otázky
+                  {t("Časté otázky")}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {SUGGESTED.map((q) => (
                     <button
                       key={q}
                       type="button"
-                      onClick={() => send(q)}
+                      onClick={() => send(t(q))}
                       className="rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground hover:border-primary/50 hover:bg-primary/5"
                     >
-                      {q}
+                      {t(q)}
                     </button>
                   ))}
                 </div>
@@ -183,7 +188,7 @@ export function PublicSupportWidget() {
             {escalate && !busy && (
               <div className="rounded-lg border border-border bg-muted/50 p-2.5 text-xs">
                 <div className="mb-1.5 text-muted-foreground">
-                  Napíšte nám alebo zavolajte a ozveme sa vám.
+                  {t("Napíšte nám alebo zavolajte a ozveme sa vám.")}
                 </div>
                 {/* Telefón vedľa e-mailu: kto sa pýta cez widget, býva rozhodnutý
                     hneď a e-mailová odpoveď mu príde neskoro. */}
@@ -222,7 +227,7 @@ export function PublicSupportWidget() {
                   send(input);
                 }
               }}
-              placeholder="Napíšte otázku…"
+              placeholder={t("Napíšte otázku…")}
               rows={1}
               className="max-h-24 flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
@@ -230,13 +235,13 @@ export function PublicSupportWidget() {
               type="submit"
               disabled={busy || !input.trim()}
               className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
-              aria-label="Odoslať"
+              aria-label={t("Odoslať")}
             >
               <Send className="h-4 w-4" />
             </button>
           </form>
           <div className="border-t border-border bg-muted/30 px-3 py-1.5 text-center text-[10px] text-muted-foreground">
-            Faktero AI · neposkytuje právne ani daňové poradenstvo
+            {t("Faktero AI · neposkytuje právne ani daňové poradenstvo")}
           </div>
         </div>
       )}
@@ -244,12 +249,12 @@ export function PublicSupportWidget() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Opýtajte sa Faktero AI"
-        title="Opýtajte sa Faktero AI"
+        aria-label={t("Opýtajte sa Faktero AI")}
+        title={t("Opýtajte sa Faktero AI")}
         className="inline-flex items-center gap-2 rounded-full bg-primary p-3 text-sm sm:px-4 font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-transform hover:scale-105"
       >
         {open ? <X className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
-        <span className="sr-only sm:not-sr-only">{open ? "Zavrieť" : "Pomoc"}</span>
+        <span className="sr-only sm:not-sr-only">{open ? t("Zavrieť") : t("Pomoc")}</span>
       </button>
     </div>
   );

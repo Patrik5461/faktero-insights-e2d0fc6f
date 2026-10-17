@@ -1,4 +1,6 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -67,7 +69,7 @@ import { ColneUdajePolozky } from "@/components/faktero/ColneUdajePolozky";
 import { colneUdajeNaZapis } from "@/lib/faktero/colny-kod";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
-  head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová faktúra — Faktero") }] }),
   /**
    * `supplier_hint` a `total_hint` posiela skener dokladov. Bez nich by sa po
    * naskenovaní otvoril prázdny formulár a celé ťaženie by vyšlo nazmar.
@@ -166,6 +168,7 @@ function useModKlaves(): string {
 }
 
 function NewInvoice() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const mod = useModKlaves();
   const navigate = useNavigate();
@@ -303,7 +306,7 @@ function NewInvoice() {
       .then((o: any) => {
         setObjednavka(o);
         if (!o.polozky?.length) {
-          toast.error("Objednávka je už celá vyfakturovaná.");
+          toast.error(t("Objednávka je už celá vyfakturovaná."));
           return;
         }
         setForm((f) => ({
@@ -329,7 +332,7 @@ function NewInvoice() {
           })),
         );
       })
-      .catch((e: any) => toast.error(e?.message ?? "Objednávku sa nepodarilo načítať"));
+      .catch((e: any) => toast.error(e?.message ?? t("Objednávku sa nepodarilo načítať")));
   }, [search.sales_order, nacitajObjednavku]);
 
   /*
@@ -360,9 +363,9 @@ function NewInvoice() {
         .eq("company_id", cid)
         .eq("id", invoiceId)
         .maybeSingle();
-      if (!f) return toast.error(`Faktúru na ${tarchopis ? "ťarchopis" : "dobropis"} sa nepodarilo načítať`);
+      if (!f) return toast.error(tarchopis ? t("Faktúru na ťarchopis sa nepodarilo načítať") : t("Faktúru na dobropis sa nepodarilo načítať"));
       if ((f as any).type !== "regular")
-        return toast.error(`${nazovDokladu} sa vystavuje k bežnej faktúre, nie k zálohovej ani k opravnej.`);
+        return toast.error(tarchopis ? t("Ťarchopis sa vystavuje k bežnej faktúre, nie k zálohovej ani k opravnej.") : t("Dobropis sa vystavuje k bežnej faktúre, nie k zálohovej ani k opravnej."));
       setOpravujeCislo(String((f as any).invoice_number ?? ""));
       // Text nad položkami je povinný — pri dobropise ho dá väzba sama.
       setForm((x) =>
@@ -387,7 +390,7 @@ function NewInvoice() {
             order_number: fh.order_number ?? "",
             opravuje_fakturu_id: fh.id,
           }));
-          toast.success(`Ťarchopis k faktúre ${fh.invoice_number} — zadajte, o koľko sa cena zvyšuje`);
+          toast.success(t("Ťarchopis k faktúre {cislo} — zadajte, o koľko sa cena zvyšuje", { cislo: fh.invoice_number }));
           return;
         }
         setForm((x) => ({ ...x, opravuje_fakturu_id: (f as any).id }));
@@ -438,7 +441,7 @@ function NewInvoice() {
             _cena_rucne: true,
           })),
         );
-      toast.success(`Dobropis k faktúre ${ff.invoice_number} — upravte, čo sa vracia`);
+      toast.success(t("Dobropis k faktúre {cislo} — upravte, čo sa vracia", { cislo: ff.invoice_number }));
     }
   }
 
@@ -458,9 +461,9 @@ function NewInvoice() {
         .is("deleted_at", null)
         .or(`invoice_number.eq.${q},variable_symbol.eq.${q}`)
         .limit(5);
-      if (!data?.length) return toast.error(`Faktúra s číslom ani VS „${q}“ sa nenašla.`);
+      if (!data?.length) return toast.error(t("Faktúra s číslom ani VS „{q}“ sa nenašla.", { q }));
       if (data.length > 1) {
-        toast.message("Tomu zodpovedá viac faktúr — vyberte zo zoznamu.");
+        toast.message(t("Tomu zodpovedá viac faktúr — vyberte zo zoznamu."));
         setPickerOpen("opravuje");
         return;
       }
@@ -471,7 +474,7 @@ function NewInvoice() {
       // Prázdny dobropis si rovno vezme položky faktúry so záporným množstvom.
       const prazdny = items.every((i) => !i.name.trim() && !Number(i.unit_price));
       await predvyplnDobropis(f.id, prazdny, form.type === "debit_note" ? "debit_note" : "credit_note");
-      if (!prazdny) toast.success(`${form.type === "debit_note" ? "Ťarchopis" : "Dobropis"} opravuje faktúru ${f.invoice_number}`);
+      if (!prazdny) toast.success(form.type === "debit_note" ? t("Ťarchopis opravuje faktúru {cislo}", { cislo: f.invoice_number }) : t("Dobropis opravuje faktúru {cislo}", { cislo: f.invoice_number }));
     } finally {
       setHladamOpravovanu(false);
     }
@@ -803,7 +806,7 @@ function NewInvoice() {
       sequence_number: number;
       series_id?: string | null;
     } | null;
-    if (!row?.invoice_number) throw new Error("Nepodarilo sa vygenerovať číslo faktúry.");
+    if (!row?.invoice_number) throw new Error(t("Nepodarilo sa vygenerovať číslo faktúry."));
     return {
       invoice_number: row.invoice_number,
       sequence_number: Number(row.sequence_number),
@@ -827,11 +830,11 @@ function NewInvoice() {
         );
         if (match) setForm((f) => ({ ...f, customer_id: match.id }));
       }
-      toast.success("Položky vyplnené pomocou AI");
+      toast.success(t("Položky vyplnené pomocou AI"));
       setAiOpen(false);
       setAiPrompt("");
     } catch (e: any) {
-      toast.error(e?.message ?? "AI chyba");
+      toast.error(e?.message ?? t("AI chyba"));
     } finally {
       setAiLoading(false);
     }
@@ -843,20 +846,20 @@ function NewInvoice() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     const cust = customers.find((c) => c.id === form.customer_id);
-    if (!cust) return toast.error("Vyberte odberateľa");
+    if (!cust) return toast.error(t("Vyberte odberateľa"));
     /*
       Položky povinné nie sú — doklad môže znieť len na text nad položkami
       (nájomné, paušál, práce podľa zmluvy). Povinný je preto ten text.
     */
     if (!form.intro_note.trim()) {
-      return toast.error("Vyplňte text nad položkami — hovorí, čo sa fakturuje.");
+      return toast.error(t("Vyplňte text nad položkami — hovorí, čo sa fakturuje."));
     }
     const bezNazvu = riadkyDokladu.find((it) => !it.name.trim());
-    if (bezNazvu) return toast.error("Položka so sumou musí mať názov.");
+    if (bezNazvu) return toast.error(t("Položka so sumou musí mať názov."));
     // Ťarchopis zvyšuje cenu konkrétnej faktúry — bez väzby a so zápornou sumou by to bol dobropis.
     if (form.type === "debit_note") {
-      if (!form.opravuje_fakturu_id) return toast.error("Ťarchopis musí opravovať konkrétnu faktúru — priraďte ju.");
-      if (!(totals.total > 0)) return toast.error("Ťarchopis cenu zvyšuje — sumy zadajte kladne.");
+      if (!form.opravuje_fakturu_id) return toast.error(t("Ťarchopis musí opravovať konkrétnu faktúru — priraďte ju."));
+      if (!(totals.total > 0)) return toast.error(t("Ťarchopis cenu zvyšuje — sumy zadajte kladne."));
     }
     // Dátum dodania je na faktúre platiteľa povinný a určuje obdobie DPH.
     const datumy = skontrolujDatumy({
@@ -864,22 +867,22 @@ function NewInvoice() {
       datumDodania: form.delivery_date,
       datumVystavenia: form.issue_date,
     });
-    if (datumy.chyba) return toast.error(datumy.chyba);
-    if (datumy.upozornenie) toast.warning(datumy.upozornenie);
+    if (datumy.chyba) return toast.error(t(datumy.chyba));
+    if (datumy.upozornenie) toast.warning(t(datumy.upozornenie));
     // Reverse charge validations
     if (form.reverse_charge && form.reverse_charge_type === "eu_b2b") {
       const vat = (cust.ic_dph || "").trim();
       if (!vat) {
         return toast.error(
-          "Pri intrakomunitárnom dodaní (EÚ B2B) je IČ DPH odberateľa povinné. Doplňte ho v karte odberateľa.",
+          t("Pri intrakomunitárnom dodaní (EÚ B2B) je IČ DPH odberateľa povinné. Doplňte ho v karte odberateľa."),
         );
       }
       if (!/^[A-Z]{2}[A-Z0-9]{2,}$/i.test(vat)) {
-        return toast.error("IČ DPH odberateľa musí byť v platnom EU formáte (napr. CZ12345678).");
+        return toast.error(t("IČ DPH odberateľa musí byť v platnom EU formáte (napr. CZ12345678)."));
       }
       if (/^SK/i.test(vat)) {
         return toast.error(
-          "Pri intrakomunitárnom dodaní musí byť odberateľ z iného členského štátu EÚ (nie SK).",
+          t("Pri intrakomunitárnom dodaní musí byť odberateľ z iného členského štátu EÚ (nie SK)."),
         );
       }
     }
@@ -890,7 +893,7 @@ function NewInvoice() {
     );
     if (offending) {
       toast.error(
-        `Na sklade nie je dostatok kusov pre „${offending.name}". Dostupné: ${offending._available ?? 0}.`,
+        t("Na sklade nie je dostatok kusov pre „{nazov}\". Dostupné: {n}.", { nazov: offending.name, n: offending._available ?? 0 }),
       );
       return;
     }
@@ -970,7 +973,7 @@ function NewInvoice() {
         .single();
       if (error || !inv) {
         const { friendlyError } = await import("@/lib/faktero/plan-error");
-        toast.error(friendlyError(error));
+        toast.error(t(friendlyError(error)));
         setSubmitting(false);
         return;
       }
@@ -1021,7 +1024,7 @@ function NewInvoice() {
         );
         if (e3) {
           // Bez zapísaných odpočtov by faktúra pýtala celú sumu znovu.
-          toast.error(`Odpočet zálohy sa nezapísal: ${e3.message}`);
+          toast.error(t("Odpočet zálohy sa nezapísal: {chyba}", { chyba: e3.message }));
           setSubmitting(false);
           return;
         }
@@ -1068,8 +1071,7 @@ function NewInvoice() {
           });
         } catch (e: any) {
           toast.error(
-            "Faktúra vznikla, ale objednávku sa nepodarilo označiť za vybavenú: " +
-              (e?.message ?? ""),
+            t("Faktúra vznikla, ale objednávku sa nepodarilo označiť za vybavenú: {chyba}", { chyba: e?.message ?? "" }),
           );
         }
       }
@@ -1081,18 +1083,18 @@ function NewInvoice() {
         try {
           await prepocitaj({ data: { invoice_id: inv.id } });
         } catch {
-          toast.warning("Kurz sa nepodarilo načítať — prepočet dane doplňte pred podaním DPH.");
+          toast.warning(t("Kurz sa nepodarilo načítať — prepočet dane doplňte pred podaním DPH."));
         }
       }
 
       toast.success(
         form.type === "debit_note"
-          ? "Ťarchopis vytvorený"
+          ? t("Ťarchopis vytvorený")
           : form.type === "credit_note"
-            ? "Dobropis vytvorený"
+            ? t("Dobropis vytvorený")
             : form.type === "proforma"
-              ? "Zálohová faktúra vytvorená"
-              : "Faktúra vytvorená",
+              ? t("Zálohová faktúra vytvorená")
+              : t("Faktúra vytvorená"),
       );
       navigate({ to: "/faktury/$id", params: { id: inv.id } });
     } finally {
@@ -1105,19 +1107,19 @@ function NewInvoice() {
       <PageHeader
         title={
           form.type === "credit_note"
-            ? "Nový dobropis"
+            ? t("Nový dobropis")
             : form.type === "debit_note"
-              ? "Nový ťarchopis"
+              ? t("Nový ťarchopis")
               : form.type === "proforma"
-                ? "Nová zálohová faktúra"
-                : "Nová faktúra"
+                ? t("Nová zálohová faktúra")
+                : t("Nová faktúra")
         }
         description={
           form.type === "credit_note"
-            ? "Opravný doklad k vystavenej faktúre — priraďte ju podľa čísla alebo VS, alebo nechajte dobropis samostatný."
+            ? t("Opravný doklad k vystavenej faktúre — priraďte ju podľa čísla alebo VS, alebo nechajte dobropis samostatný.")
             : form.type === "debit_note"
-              ? "Opravná faktúra, ktorá zvyšuje cenu už vystavenej faktúry (§ 25) — položky zadajte kladne, len o koľko sa cena zvyšuje."
-              : "Vytvorte faktúru za menej než 30 sekúnd."
+              ? t("Opravná faktúra, ktorá zvyšuje cenu už vystavenej faktúry (§ 25) — položky zadajte kladne, len o koľko sa cena zvyšuje.")
+              : t("Vytvorte faktúru za menej než 30 sekúnd.")
         }
         action={
           <button
@@ -1125,7 +1127,7 @@ function NewInvoice() {
             onClick={() => setAiOpen(true)}
             className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/5 px-3 py-2 text-sm font-medium text-primary hover:opacity-90"
           >
-            <Sparkles className="h-4 w-4" /> AI vytvorenie
+            <Sparkles className="h-4 w-4" /> {t("AI vytvorenie")}
             <kbd className="ml-1 hidden rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono sm:inline">
               {mod}K
             </kbd>
@@ -1145,10 +1147,10 @@ function NewInvoice() {
           <div className="grid gap-6 lg:grid-cols-2">
           {/* SECTION 1 — basic info */}
           <section className="rounded-2xl border border-border bg-card p-5">
-            <SectionHeader icon={FileText} title="Základné údaje" />
+            <SectionHeader icon={FileText} title={t("Základné údaje")} />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               <div>
-                <label className="text-[13px] font-semibold text-foreground">Odberateľ *</label>
+                <label className="text-[13px] font-semibold text-foreground">{t("Odberateľ *")}</label>
                 <CustomerSearch
                   customers={customers}
                   value={form.customer_id}
@@ -1160,16 +1162,16 @@ function NewInvoice() {
                 />
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-foreground">Typ dokladu</label>
+                <label className="text-[13px] font-semibold text-foreground">{t("Typ dokladu")}</label>
                 <select
                   value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value as any })}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="regular">Faktúra</option>
-                  <option value="proforma">Zálohová faktúra</option>
-                  <option value="credit_note">Dobropis</option>
-                  <option value="debit_note">Ťarchopis (zvýšenie ceny)</option>
+                  <option value="regular">{t("Faktúra")}</option>
+                  <option value="proforma">{t("Zálohová faktúra")}</option>
+                  <option value="credit_note">{t("Dobropis")}</option>
+                  <option value="debit_note">{t("Ťarchopis (zvýšenie ceny)")}</option>
                 </select>
               </div>
               <VyberRadu
@@ -1180,13 +1182,12 @@ function NewInvoice() {
               />
               {(form.type === "credit_note" || form.type === "debit_note") && (
                 <div className="col-span-full rounded-lg border border-primary/30 bg-primary/5 p-3">
-                  <div className="text-[13px] font-semibold text-foreground">Opravovaná faktúra</div>
+                  <div className="text-[13px] font-semibold text-foreground">{t("Opravovaná faktúra")}</div>
                   {form.opravuje_fakturu_id ? (
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
                       <span>
-                        {form.type === "debit_note" ? "Ťarchopis" : "Dobropis"} opravuje faktúru{" "}
-                        <strong>{opravujeCislo || "vybranú faktúru"}</strong> — v účtovníctve aj eFaktúre sa
-                        spárujú.
+                        {form.type === "debit_note" ? t("Ťarchopis opravuje faktúru") : t("Dobropis opravuje faktúru")}{" "}
+                        <strong>{opravujeCislo || t("vybranú faktúru")}</strong> — {t("v účtovníctve aj eFaktúre sa spárujú.")}
                       </span>
                       {form.type === "credit_note" && (
                         <button
@@ -1194,7 +1195,7 @@ function NewInvoice() {
                           onClick={() => predvyplnDobropis(form.opravuje_fakturu_id, true)}
                           className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-secondary"
                         >
-                          Načítať jej položky (so mínusom)
+                          {t("Načítať jej položky (so mínusom)")}
                         </button>
                       )}
                       <button
@@ -1202,7 +1203,7 @@ function NewInvoice() {
                         onClick={() => setPickerOpen("opravuje")}
                         className="text-xs text-primary hover:underline"
                       >
-                        Zmeniť
+                        {t("Zmeniť")}
                       </button>
                       {form.type === "credit_note" && (
                         <button
@@ -1213,7 +1214,7 @@ function NewInvoice() {
                           }}
                           className="text-xs text-muted-foreground hover:underline"
                         >
-                          Samostatný dobropis
+                          {t("Samostatný dobropis")}
                         </button>
                       )}
                     </div>
@@ -1229,8 +1230,8 @@ function NewInvoice() {
                               void priradPodlaVs();
                             }
                           }}
-                          placeholder="Číslo faktúry alebo VS"
-                          aria-label="Číslo faktúry alebo variabilný symbol"
+                          placeholder={t("Číslo faktúry alebo VS")}
+                          aria-label={t("Číslo faktúry alebo variabilný symbol")}
                           className="w-48 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
                         />
                         <button
@@ -1240,26 +1241,24 @@ function NewInvoice() {
                           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                         >
                           {hladamOpravovanu && <Loader2 className="h-4 w-4 animate-spin" />}
-                          Priradiť
+                          {t("Priradiť")}
                         </button>
                         <button
                           type="button"
                           onClick={() => setPickerOpen("opravuje")}
                           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-secondary"
                         >
-                          <Link2 className="h-4 w-4" /> Vybrať zo zoznamu
+                          <Link2 className="h-4 w-4" /> {t("Vybrať zo zoznamu")}
                         </button>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {form.type === "debit_note" ? (
                           <>
-                            Ťarchopis musí byť naviazaný na pôvodnú faktúru. Sumy zadávajte{" "}
-                            <strong>kladne</strong> — len o koľko sa cena zvyšuje.
+                            {t("Ťarchopis musí byť naviazaný na pôvodnú faktúru. Sumy zadávajte kladne — len o koľko sa cena zvyšuje.")}
                           </>
                         ) : (
                           <>
-                            Nechajte prázdne pre <strong>samostatný dobropis</strong> bez väzby na faktúru
-                            (napr. zľava za obdobie). Sumy zadávajte so mínusom.
+                            {t("Nechajte prázdne pre samostatný dobropis bez väzby na faktúru (napr. zľava za obdobie). Sumy zadávajte so mínusom.")}
                           </>
                         )}
                       </p>
@@ -1269,7 +1268,7 @@ function NewInvoice() {
               )}
               <div>
                 <label className="text-[13px] font-semibold text-foreground">
-                  Dátum vystavenia
+                  {t("Dátum vystavenia")}
                 </label>
                 <input
                   type="date"
@@ -1280,7 +1279,7 @@ function NewInvoice() {
                 />
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-foreground">Dátum dodania</label>
+                <label className="text-[13px] font-semibold text-foreground">{t("Dátum dodania")}</label>
                 <input
                   type="date"
                   value={form.delivery_date}
@@ -1289,7 +1288,7 @@ function NewInvoice() {
                 />
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-foreground">Splatnosť</label>
+                <label className="text-[13px] font-semibold text-foreground">{t("Splatnosť")}</label>
                 {/* V polovičnom stĺpci sa dátum a rýchle tlačidlá do jedného
                     riadku nezmestia — nech sa radšej zalomia, než orežú. */}
                 <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -1322,7 +1321,7 @@ function NewInvoice() {
                 </div>
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-foreground">Spôsob platby</label>
+                <label className="text-[13px] font-semibold text-foreground">{t("Spôsob platby")}</label>
                 <select
                   value={form.payment_method}
                   onChange={(e) => {
@@ -1343,15 +1342,14 @@ function NewInvoice() {
                 >
                   {PAYMENT_METHODS.map((m) => (
                     <option key={m.value} value={m.value}>
-                      {m.label}
+                      {t(m.label)}
                     </option>
                   ))}
                 </select>
               </div>
               {jeHotovost(form.payment_method) && (
                 <p className="text-xs text-muted-foreground sm:col-span-2">
-                  Suma sa zaokrúhli na päť centov, ako to pri platbe v hotovosti ukladá zákon o
-                  cenách.
+                  {t("Suma sa zaokrúhli na päť centov, ako to pri platbe v hotovosti ukladá zákon o cenách.")}
                 </p>
               )}
               {prekrocenyStrop(totals.payable, form.payment_method) && (
@@ -1368,7 +1366,7 @@ function NewInvoice() {
                 />
               )}
               <div>
-                <label className="text-[13px] font-semibold text-foreground">Mena</label>
+                <label className="text-[13px] font-semibold text-foreground">{t("Mena")}</label>
                 <select
                   value={form.currency}
                   onChange={(e) => setForm({ ...form, currency: e.target.value })}
@@ -1396,7 +1394,7 @@ function NewInvoice() {
                 onClick={() => setPickerOpen("copy")}
                 className="inline-flex items-center gap-1.5 text-primary hover:underline"
               >
-                <FileDown className="h-4 w-4" /> Načítať položky z dokladu
+                <FileDown className="h-4 w-4" /> {t("Načítať položky z dokladu")}
               </button>
               <button
                 type="button"
@@ -1404,7 +1402,7 @@ function NewInvoice() {
                 className="inline-flex items-center gap-1.5 text-primary hover:underline"
               >
                 <Link2 className="h-4 w-4" />{" "}
-                {odpocty.length ? "Pridať ďalšiu zálohu" : "Pridať zálohovú faktúru"}
+                {odpocty.length ? t("Pridať ďalšiu zálohu") : t("Pridať zálohovú faktúru")}
               </button>
               {nezuctovane.filter((z) => !odpocty.some((o) => o.id === z.id)).length > 0 && (
                 /*
@@ -1415,8 +1413,8 @@ function NewInvoice() {
                 <div className="w-full rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100">
                   <div className="font-medium">
                     {nezuctovane.length === 1
-                      ? "Odberateľ má zaplatenú zálohu, ktorá ešte nie je zúčtovaná."
-                      : `Odberateľ má ${nezuctovane.length} zaplatené zálohy, ktoré ešte nie sú zúčtované.`}
+                      ? t("Odberateľ má zaplatenú zálohu, ktorá ešte nie je zúčtovaná.")
+                      : t("Odberateľ má {n} zaplatené zálohy, ktoré ešte nie sú zúčtované.", { n: nezuctovane.length })}
                   </div>
                   <ul className="mt-2 space-y-1">
                     {nezuctovane
@@ -1429,7 +1427,7 @@ function NewInvoice() {
                         </span>
                         {z.doklad_k_platbe && (
                           <span className="text-xs opacity-80">
-                            daň priznaná dokladom {z.doklad_k_platbe}
+                            {t("daň priznaná dokladom {cislo}", { cislo: z.doklad_k_platbe })}
                           </span>
                         )}
                         <button
@@ -1440,23 +1438,23 @@ function NewInvoice() {
                                 ? zoz
                                 : [...zoz, { id: z.id, cislo: z.invoice_number, suma: z.total }],
                             );
-                            toast.success(`Záloha ${z.invoice_number} pripojená`);
+                            toast.success(t("Záloha {cislo} pripojená", { cislo: z.invoice_number }));
                           }}
                           className="rounded-md bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:opacity-90"
                         >
-                          Odpočítať
+                          {t("Odpočítať")}
                         </button>
                       </li>
                     ))}
                   </ul>
                   <p className="mt-2 text-xs opacity-80">
-                    Bez odpočtu zaplatí zákazník to isté plnenie druhýkrát.
+                    {t("Bez odpočtu zaplatí zákazník to isté plnenie druhýkrát.")}
                   </p>
                 </div>
               )}
               {odpocty.length > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  {odpocty.length === 1 ? "Záloha odpočítaná:" : "Odpočítané zálohy:"}{" "}
+                  {odpocty.length === 1 ? t("Záloha odpočítaná:") : t("Odpočítané zálohy:")}{" "}
                   {odpocty.map((z) => (
                     <span key={z.id} className="mr-2 inline-flex items-center gap-1">
                       <strong>
@@ -1467,13 +1465,13 @@ function NewInvoice() {
                         onClick={() => setOdpocty((zoz) => zoz.filter((o) => o.id !== z.id))}
                         className="text-destructive hover:underline"
                       >
-                        Zrušiť
+                        {t("Zrušiť")}
                       </button>
                     </span>
                   ))}
                   {odpocty.length > 1 && (
                     <strong className="ml-1">
-                      Spolu {formatujMenu(totals.advance, form.currency)}
+                      {t("Spolu")} {formatujMenu(totals.advance, form.currency)}
                     </strong>
                   )}
                 </span>
@@ -1483,23 +1481,23 @@ function NewInvoice() {
 
           {/* SECTION 1b — payment & symbols */}
           <section className="rounded-2xl border border-border bg-card p-5">
-            <SectionHeader icon={CreditCard} title="Platobné údaje a symboly" />
+            <SectionHeader icon={CreditCard} title={t("Platobné údaje a symboly")} />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               <div>
                 <label className="text-[13px] font-semibold text-foreground">
-                  Variabilný symbol
+                  {t("Variabilný symbol")}
                 </label>
                 <input
                   value={form.variable_symbol}
                   onChange={(e) => setForm({ ...form, variable_symbol: e.target.value })}
-                  placeholder="Podľa čísla faktúry"
-                  title="Prázdne pole = variabilný symbol sa vezme z čísla faktúry"
+                  placeholder={t("Podľa čísla faktúry")}
+                  title={t("Prázdne pole = variabilný symbol sa vezme z čísla faktúry")}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </div>
               <div>
                 <label className="text-[13px] font-semibold text-foreground">
-                  Konštantný symbol
+                  {t("Konštantný symbol")}
                 </label>
                 <div className="mt-1">
                   <ConstantSymbolCombobox
@@ -1510,7 +1508,7 @@ function NewInvoice() {
               </div>
               <div>
                 <label className="text-[13px] font-semibold text-foreground">
-                  Špecifický symbol
+                  {t("Špecifický symbol")}
                 </label>
                 <input
                   value={form.specific_symbol}
@@ -1520,7 +1518,7 @@ function NewInvoice() {
               </div>
               <div>
                 <label className="text-[13px] font-semibold text-foreground">
-                  Číslo objednávky
+                  {t("Číslo objednávky")}
                 </label>
                 <input
                   value={form.order_number}
@@ -1529,7 +1527,7 @@ function NewInvoice() {
                 />
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-foreground">Jazyk dokladu</label>
+                <label className="text-[13px] font-semibold text-foreground">{t("Jazyk dokladu")}</label>
                 <select
                   value={form.language}
                   onChange={(e) => setForm({ ...form, language: e.target.value })}
@@ -1542,35 +1540,35 @@ function NewInvoice() {
                   ))}
                 </select>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Prekladajú sa popisky v PDF, nie názvy položiek a poznámky.
+                  {t("Prekladajú sa popisky v PDF, nie názvy položiek a poznámky.")}
                 </p>
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-foreground">Spôsob dodania</label>
+                <label className="text-[13px] font-semibold text-foreground">{t("Spôsob dodania")}</label>
                 <select
                   value={form.delivery_method}
                   onChange={(e) => setForm({ ...form, delivery_method: e.target.value })}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">— nevyplnené —</option>
-                  <option value="personal">Osobne</option>
-                  <option value="courier">Kuriér</option>
-                  <option value="post">Pošta</option>
-                  <option value="electronic">Elektronicky</option>
+                  <option value="">{t("— nevyplnené —")}</option>
+                  <option value="personal">{t("Osobne")}</option>
+                  <option value="courier">{t("Kuriér")}</option>
+                  <option value="post">{t("Pošta")}</option>
+                  <option value="electronic">{t("Elektronicky")}</option>
                 </select>
               </div>
               <div className="sm:col-span-2">
                 <label className="text-[13px] font-semibold text-foreground">
-                  Spôsob zaokrúhľovania
+                  {t("Spôsob zaokrúhľovania")}
                 </label>
                 <select
                   value={form.rounding_mode}
                   onChange={(e) => setForm({ ...form, rounding_mode: e.target.value as any })}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="per_item">Po položkách (zaokrúhli každú položku zvlášť)</option>
-                  <option value="per_document">Za celý doklad (zaokrúhli až finálny súčet)</option>
-                  <option value="retail">Maloobchod (na 0,05 €, SK pravidlá)</option>
+                  <option value="per_item">{t("Po položkách (zaokrúhli každú položku zvlášť)")}</option>
+                  <option value="per_document">{t("Za celý doklad (zaokrúhli až finálny súčet)")}</option>
+                  <option value="retail">{t("Maloobchod (na 0,05 €, SK pravidlá)")}</option>
                 </select>
               </div>
             </div>
@@ -1583,10 +1581,9 @@ function NewInvoice() {
             nech je na prvý pohľad vidieť, ktorý režim je zapnutý.
           */}
           <section className="rounded-2xl border border-border bg-card p-5">
-            <SectionHeader icon={Percent} title="Daňový režim" />
+            <SectionHeader icon={Percent} title={t("Daňový režim")} />
             <p className="-mt-1 mb-4 text-xs text-muted-foreground">
-              Bežne sa fakturuje so slovenskou DPH. Prepnite len vtedy, keď daň odvedie odberateľ
-              alebo predávate spotrebiteľovi v inom štáte EÚ.
+              {t("Bežne sa fakturuje so slovenskou DPH. Prepnite len vtedy, keď daň odvedie odberateľ alebo predávate spotrebiteľovi v inom štáte EÚ.")}
             </p>
             <div className="grid gap-4 md:grid-cols-2">
               <label
@@ -1611,9 +1608,9 @@ function NewInvoice() {
                   className="mt-0.5 h-4 w-4 rounded border-input"
                 />
                 <span className="text-sm">
-                  <strong>Prenos daňovej povinnosti (PDP)</strong>
+                  <strong>{t("Prenos daňovej povinnosti (PDP)")}</strong>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    DPH neúčtujem — daň odvedie odberateľ. Sadzba na položkách bude 0 %.
+                    {t("DPH neúčtujem — daň odvedie odberateľ. Sadzba na položkách bude 0 %.")}
                   </span>
                 </span>
               </label>
@@ -1638,10 +1635,9 @@ function NewInvoice() {
                     className="mt-0.5 h-4 w-4 rounded border-input"
                   />
                   <span className="text-sm">
-                    <strong>Predaj spotrebiteľovi v EÚ (OSS)</strong>
+                    <strong>{t("Predaj spotrebiteľovi v EÚ (OSS)")}</strong>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      Sadzba štátu zákazníka; daň sa odvádza cez jedno kontaktné miesto, nie v
-                      slovenskom priznaní.
+                      {t("Sadzba štátu zákazníka; daň sa odvádza cez jedno kontaktné miesto, nie v slovenskom priznaní.")}
                     </span>
                   </span>
                 </label>
@@ -1652,7 +1648,7 @@ function NewInvoice() {
             {form.reverse_charge && (
               <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
                 <label className="block">
-                  <span className="text-[13px] font-semibold text-foreground">Druh prenosu</span>
+                  <span className="text-[13px] font-semibold text-foreground">{t("Druh prenosu")}</span>
                   <select
                     value={form.reverse_charge_type || "domestic_69"}
                     onChange={(e) =>
@@ -1661,18 +1657,18 @@ function NewInvoice() {
                     className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="domestic_69">
-                      Tuzemský prenos podľa §69 zákona o DPH (stavebné práce, kovový odpad…)
+                      {t("Tuzemský prenos podľa §69 zákona o DPH (stavebné práce, kovový odpad…)")}
                     </option>
                     <option value="eu_b2b">
-                      Intrakomunitárne dodanie do EÚ (B2B, odberateľ má IČ DPH)
+                      {t("Intrakomunitárne dodanie do EÚ (B2B, odberateľ má IČ DPH)")}
                     </option>
-                    <option value="export">Vývoz mimo EÚ (oslobodené podľa §47)</option>
+                    <option value="export">{t("Vývoz mimo EÚ (oslobodené podľa §47)")}</option>
                   </select>
                 </label>
                 {form.reverse_charge_type === "eu_b2b" && (
                   <label className="block">
                     <span className="text-[13px] font-semibold text-foreground">
-                      Druh plnenia do súhrnného výkazu
+                      {t("Druh plnenia do súhrnného výkazu")}
                     </span>
                     <select
                       value={form.eu_plnenie}
@@ -1684,12 +1680,12 @@ function NewInvoice() {
                       }
                       className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
-                      <option value="tovar">Dodanie tovaru</option>
-                      <option value="sluzba">Dodanie služby (§ 15 ods. 1)</option>
-                      <option value="trojstranny">Trojstranný obchod</option>
+                      <option value="tovar">{t("Dodanie tovaru")}</option>
+                      <option value="sluzba">{t("Dodanie služby (§ 15 ods. 1)")}</option>
+                      <option value="trojstranny">{t("Trojstranný obchod")}</option>
                     </select>
                     <span className="mt-1 block text-xs text-muted-foreground">
-                      Tovar ide aj do priznania (r. 13 a 14), služba len do súhrnného výkazu.
+                      {t("Tovar ide aj do priznania (r. 13 a 14), služba len do súhrnného výkazu.")}
                     </span>
                   </label>
                 )}
@@ -1720,12 +1716,12 @@ function NewInvoice() {
                     return (
                       <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive md:col-span-2">
                         {!cust
-                          ? "Vyberte odberateľa s platným IČ DPH z iného členského štátu EÚ."
+                          ? t("Vyberte odberateľa s platným IČ DPH z iného členského štátu EÚ.")
                           : !vat
-                            ? "Odberateľ nemá vyplnené IČ DPH. Pri intrakomunitárnom dodaní je povinné — doplňte ho v karte odberateľa."
+                            ? t("Odberateľ nemá vyplnené IČ DPH. Pri intrakomunitárnom dodaní je povinné — doplňte ho v karte odberateľa.")
                             : /^SK/i.test(vat)
-                              ? "Odberateľ má slovenské IČ DPH. Intrakomunitárne dodanie sa vzťahuje len na iné členské štáty EÚ."
-                              : "IČ DPH odberateľa nie je v platnom EU formáte (napr. CZ12345678)."}
+                              ? t("Odberateľ má slovenské IČ DPH. Intrakomunitárne dodanie sa vzťahuje len na iné členské štáty EÚ.")
+                              : t("IČ DPH odberateľa nie je v platnom EU formáte (napr. CZ12345678).")}
                       </p>
                     );
                   })()}
@@ -1735,7 +1731,7 @@ function NewInvoice() {
               <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
                 {form.oss && (
                   <label className="block">
-                    <span className="text-[13px] font-semibold text-foreground">Štát spotreby</span>
+                    <span className="text-[13px] font-semibold text-foreground">{t("Štát spotreby")}</span>
                     <select
                       value={form.oss_country}
                       onChange={(e) =>
@@ -1746,7 +1742,7 @@ function NewInvoice() {
                     >
                       {SADZBY_EU.filter((x) => x.kod !== "SK").map((x) => (
                         <option key={x.kod} value={x.kod}>
-                          {x.nazov} — základná {x.zakladna} %
+                          {x.nazov} — {t("základná {n} %", { n: x.zakladna })}
                         </option>
                       ))}
                     </select>
@@ -1755,14 +1751,14 @@ function NewInvoice() {
                 {rezim.platitel && (
                   <label className="block">
                     <span className="text-[13px] font-semibold text-foreground">
-                      Osobitná úprava (nepovinné)
+                      {t("Osobitná úprava (nepovinné)")}
                     </span>
                     <select
                       value={form.osobitna_uprava}
                       onChange={(e) => setForm({ ...form, osobitna_uprava: e.target.value })}
                       className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
-                      <option value="">Bez osobitnej úpravy</option>
+                      <option value="">{t("Bez osobitnej úpravy")}</option>
                       {UPRAVY_NA_VYBER.map((u) => (
                         <option key={u.kod} value={u.kod}>
                           {u.nazov}
@@ -1770,7 +1766,7 @@ function NewInvoice() {
                       ))}
                     </select>
                     <span className="mt-1 block text-xs text-muted-foreground">
-                      Veta sa vytlačí na faktúru; zdaňuje sa len prirážka, nie celá cena.
+                      {t("Veta sa vytlačí na faktúru; zdaňuje sa len prirážka, nie celá cena.")}
                     </span>
                   </label>
                 )}
@@ -1786,18 +1782,18 @@ function NewInvoice() {
           <section className="rounded-2xl border border-border bg-card p-5">
             <label className="block">
               <span className="text-[13px] font-semibold text-foreground">
-                Text nad položkami <span className="text-destructive">*</span>
+                {t("Text nad položkami")} <span className="text-destructive">*</span>
               </span>
               <textarea
                 rows={2}
                 required
                 value={form.intro_note}
                 onChange={(e) => setForm({ ...form, intro_note: e.target.value })}
-                placeholder="Napríklad: Fakturujeme vám práce podľa objednávky č. 2026/114 za obdobie 1. – 31. 8. 2026."
+                placeholder={t("Napríklad: Fakturujeme vám práce podľa objednávky č. 2026/114 za obdobie 1. – 31. 8. 2026.")}
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
               <span className="mt-1 block text-xs text-muted-foreground">
-                Povinný — hovorí, čo sa fakturuje. Položky pod ním sú nepovinné.
+                {t("Povinný — hovorí, čo sa fakturuje. Položky pod ním sú nepovinné.")}
               </span>
             </label>
           </section>
@@ -1805,7 +1801,7 @@ function NewInvoice() {
 
           {/* SECTION 2 — items */}
           <section className="rounded-2xl border border-border bg-card p-5">
-            <SectionHeader icon={Package} title="Položky">
+            <SectionHeader icon={Package} title={t("Položky")}>
               <ProductSearch
                 products={products}
                 onPick={(p) => {
@@ -1851,13 +1847,13 @@ function NewInvoice() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-foreground">
-                    <th className="py-2 font-medium">Názov</th>
-                    <th className="py-2 pl-3 font-medium">Mn.</th>
-                    <th className="py-2 pl-3 font-medium">MJ</th>
-                    <th className="py-2 pl-3 font-medium text-right">Cena</th>
-                    <th className="py-2 pl-3 font-medium text-right">Zľava %</th>
-                    <th className="py-2 pl-3 font-medium">DPH</th>
-                    <th className="py-2 pl-3 font-medium text-right">Spolu s DPH</th>
+                    <th className="py-2 font-medium">{t("Názov")}</th>
+                    <th className="py-2 pl-3 font-medium">{t("Mn.")}</th>
+                    <th className="py-2 pl-3 font-medium">{t("MJ")}</th>
+                    <th className="py-2 pl-3 font-medium text-right">{t("Cena")}</th>
+                    <th className="py-2 pl-3 font-medium text-right">{t("Zľava %")}</th>
+                    <th className="py-2 pl-3 font-medium">{t("DPH")}</th>
+                    <th className="py-2 pl-3 font-medium text-right">{t("Spolu s DPH")}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -1868,7 +1864,7 @@ function NewInvoice() {
                         <input
                           value={it.name}
                           onChange={(e) => setItem(idx, { name: e.target.value })}
-                          placeholder="Názov položky"
+                          placeholder={t("Názov položky")}
                           className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         />
                         <PoznamkaPolozky value={it.description} onChange={(v) => setItem(idx, { description: v })} />
@@ -1920,9 +1916,9 @@ function NewInvoice() {
                         {form.reverse_charge ? (
                           <span
                             className="inline-block rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900 dark:text-amber-100"
-                            title="Prenesenie daňovej povinnosti"
+                            title={t("Prenesenie daňovej povinnosti")}
                           >
-                            PDP
+                            {t("PDP")}
                           </span>
                         ) : (
                           <select
@@ -1936,7 +1932,7 @@ function NewInvoice() {
                                     _dph_rucne: true,
                                   })
                             }
-                            title={it.prenesenie ? "Prenesenie daňovej povinnosti — daň priznáva odberateľ" : undefined}
+                            title={it.prenesenie ? t("Prenesenie daňovej povinnosti — daň priznáva odberateľ") : undefined}
                             className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                           >
                             {sadzbyPolozky.map((r) => (
@@ -1945,12 +1941,12 @@ function NewInvoice() {
                               </option>
                             ))}
                             {/* Prenesenie len na túto položku — zvyšok faktúry ide s DPH. */}
-                            {rezim.platitel && !form.oss && <option value="pdp">PDP (prenesenie)</option>}
+                            {rezim.platitel && !form.oss && <option value="pdp">{t("PDP (prenesenie)")}</option>}
                             {historickeSadzbyDokladu.length > 0 && (
-                              <optgroup label="Historické sadzby">
+                              <optgroup label={t("Historické sadzby")}>
                                 {historickeSadzbyDokladu.map((h) => (
                                   <option key={h.sadzba} value={h.sadzba}>
-                                    {h.sadzba}% (do {h.doRoku})
+                                    {t("{sadzba}% (do {rok})", { sadzba: h.sadzba, rok: h.doRoku })}
                                   </option>
                                 ))}
                               </optgroup>
@@ -1990,7 +1986,7 @@ function NewInvoice() {
                   <input
                     value={it.name}
                     onChange={(e) => setItem(idx, { name: e.target.value })}
-                    placeholder="Názov položky"
+                    placeholder={t("Názov položky")}
                     className="mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                   {/* Dva odkazy vedľa seba s medzerou — inak sa zliali do „+ Poznámka k položke+ Colný kód“. */}
@@ -2002,11 +1998,11 @@ function NewInvoice() {
                   {/* Päť polí v jednom riadku sa na telefóne nezmestilo (DPH ostala „2…“) — dva stĺpce s popiskami. */}
                   <div className="grid grid-cols-2 gap-2">
                     <label className="min-w-0 text-xs text-muted-foreground">
-                      Množstvo
+                      {t("Množstvo")}
                       <CellNum w="mt-1 w-full border-input! bg-background! text-foreground" value={it.quantity} onChange={(v) => setItem(idx, { quantity: v })} />
                     </label>
                     <label className="min-w-0 text-xs text-muted-foreground">
-                      MJ
+                      {t("MJ")}
                       <input
                         value={it.unit}
                         onChange={(e) => setItem(idx, { unit: e.target.value })}
@@ -2014,7 +2010,7 @@ function NewInvoice() {
                       />
                     </label>
                     <label className="min-w-0 text-xs text-muted-foreground">
-                      Cena bez DPH
+                      {t("Cena bez DPH")}
                       <CellNum
                         w="mt-1 w-full border-input! bg-background! text-foreground"
                         value={it.unit_price}
@@ -2023,23 +2019,23 @@ function NewInvoice() {
                       />
                     </label>
                     <label className="min-w-0 text-xs text-muted-foreground">
-                      Zľava %
+                      {t("Zľava %")}
                       <CellNum
                         w="mt-1 w-full border-input! bg-background! text-foreground"
                         value={it.discount_percent ?? 0}
                         onChange={(v) => setItem(idx, { discount_percent: percentoZlavy(v) })}
-                        title="Zľava v %"
+                        title={t("Zľava v %")}
                       />
                     </label>
                     <div className="col-span-2 min-w-0 text-xs text-muted-foreground">
-                      DPH
+                      {t("DPH")}
                     {form.reverse_charge ? (
                       <span className="mt-1 flex items-center justify-center rounded bg-amber-100 px-2 py-1.5 text-[10px] font-semibold text-amber-900 dark:text-amber-100">
-                        PDP
+                        {t("PDP")}
                       </span>
                     ) : (
                       <select
-                        aria-label="Sadzba DPH"
+                        aria-label={t("Sadzba DPH")}
                         value={it.prenesenie ? "pdp" : it.vat_rate}
                         onChange={(e) =>
                           e.target.value === "pdp"
@@ -2058,12 +2054,12 @@ function NewInvoice() {
                           </option>
                         ))}
                             {/* Prenesenie len na túto položku — zvyšok faktúry ide s DPH. */}
-                            {rezim.platitel && !form.oss && <option value="pdp">PDP (prenesenie)</option>}
+                            {rezim.platitel && !form.oss && <option value="pdp">{t("PDP (prenesenie)")}</option>}
                         {historickeSadzbyDokladu.length > 0 && (
-                          <optgroup label="Historické sadzby">
+                          <optgroup label={t("Historické sadzby")}>
                             {historickeSadzbyDokladu.map((h) => (
                               <option key={h.sadzba} value={h.sadzba}>
-                                {h.sadzba}% (do {h.doRoku})
+                                {t("{sadzba}% (do {rok})", { sadzba: h.sadzba, rok: h.doRoku })}
                               </option>
                             ))}
                           </optgroup>
@@ -2074,7 +2070,7 @@ function NewInvoice() {
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
-                      <span className="text-[13px] font-semibold text-foreground">Spolu s DPH</span>
+                      <span className="text-[13px] font-semibold text-foreground">{t("Spolu s DPH")}</span>
                       <CellSpolu
                         hodnota={
                           zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
@@ -2098,15 +2094,14 @@ function NewInvoice() {
             </div>
 
             <p className="mt-3 text-xs text-muted-foreground">
-              Do stĺpca <strong>Spolu s DPH</strong> sa dá napísať suma, na ktorej ste sa dohodli —
-              jednotková cena bez dane sa dopočíta sama.
+              {t("Do stĺpca „Spolu s DPH“ sa dá napísať suma, na ktorej ste sa dohodli — jednotková cena bez dane sa dopočíta sama.")}
             </p>
             <button
               type="button"
               onClick={() => setItems([...items, { ...EMPTY_ITEM, vat_rate: zakladnaSadzba }])}
               className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground"
             >
-              <Plus className="h-3.5 w-3.5" /> Pridať položku
+              <Plus className="h-3.5 w-3.5" /> {t("Pridať položku")}
               <kbd className="ml-1 hidden rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono sm:inline">
                 {mod}I
               </kbd>
@@ -2122,7 +2117,7 @@ function NewInvoice() {
                 sadzby DPH, riadky ostanú nedotknuté.
               */}
               <div className="flex items-center justify-between gap-2 pb-1">
-                <span className="text-[13px] font-semibold text-foreground">Zľava na doklad</span>
+                <span className="text-[13px] font-semibold text-foreground">{t("Zľava na doklad")}</span>
                 <span className="flex items-center gap-1">
                   <input
                     type="number"
@@ -2156,13 +2151,13 @@ function NewInvoice() {
               {totals.zlava > 0 && (
                 <>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Medzisúčet</span>
+                    <span>{t("Medzisúčet")}</span>
                     <span className="tabular-nums">
                       {formatujMenu(totals.medzisucet, form.currency)}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Zľava</span>
+                    <span>{t("Zľava")}</span>
                     <span className="tabular-nums">
                       −{formatujMenu(totals.zlava, form.currency)}
                     </span>
@@ -2170,19 +2165,19 @@ function NewInvoice() {
                 </>
               )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Bez DPH</span>
+                <span className="text-muted-foreground">{t("Bez DPH")}</span>
                 <span className="tabular-nums">
                   {formatujMenu(totals.subtotal, form.currency)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">DPH</span>
+                <span className="text-muted-foreground">{t("DPH")}</span>
                 <span className="tabular-nums">
                   {formatujMenu(totals.vat_total, form.currency)}
                 </span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
-                <span>Celkom</span>
+                <span>{t("Celkom")}</span>
                 <span className="tabular-nums">
                   {formatujMenu(totals.total, form.currency)}
                 </span>
@@ -2190,13 +2185,13 @@ function NewInvoice() {
               {totals.advance > 0 && (
                 <>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Odpočet zálohy</span>
+                    <span>{t("Odpočet zálohy")}</span>
                     <span className="tabular-nums">
                       −{formatujMenu(totals.advance, form.currency)}
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
-                    <span>K úhrade</span>
+                    <span>{t("K úhrade")}</span>
                     <span className="tabular-nums text-primary">
                       {formatujMenu(totals.payable, form.currency)}
                     </span>
@@ -2205,7 +2200,7 @@ function NewInvoice() {
               )}
               {totals.advance === 0 && (
                 <div className="flex justify-between text-lg font-bold">
-                  <span>K úhrade</span>
+                  <span>{t("K úhrade")}</span>
                   <span className="tabular-nums text-primary">
                     {formatujMenu(totals.total, form.currency)}
                   </span>
@@ -2221,7 +2216,7 @@ function NewInvoice() {
               onClick={() => setAdvancedOpen((v) => !v)}
               className="flex w-full items-center justify-between p-5 text-left"
             >
-              <SectionHeader icon={Calendar} title="Rozšírené nastavenia" />
+              <SectionHeader icon={Calendar} title={t("Rozšírené nastavenia")} />
               {advancedOpen ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
               ) : (
@@ -2231,12 +2226,12 @@ function NewInvoice() {
             {advancedOpen && (
               <div className="grid gap-4 p-5 pt-0">
                 <label className="block">
-                  <span className="text-[13px] font-semibold text-foreground">Poznámka</span>
+                  <span className="text-[13px] font-semibold text-foreground">{t("Poznámka")}</span>
                   <textarea
                     rows={3}
                     value={form.notes}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    placeholder="Voliteľná poznámka, ktorá sa zobrazí na faktúre"
+                    placeholder={t("Voliteľná poznámka, ktorá sa zobrazí na faktúre")}
                     className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                 </label>
@@ -2253,7 +2248,7 @@ function NewInvoice() {
             className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-2xl border border-border bg-card/95 p-4 pr-20 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             {/* Na telefóne klávesnicu nikto nemá — nápoveda by lištu len zvýšila a zakryla viac obsahu. */}
             <div className="hidden text-xs text-muted-foreground sm:block">
-              <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">{mod}↵</kbd> uložiť ·
+              <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">{mod}↵</kbd> {t("uložiť")} ·
               <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono">{mod}K</kbd> AI
             </div>
             <div className="flex gap-2">
@@ -2262,7 +2257,7 @@ function NewInvoice() {
                 onClick={() => navigate({ to: "/faktury" })}
                 className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-secondary"
               >
-                Zrušiť
+                {t("Zrušiť")}
               </button>
               <button
                 id="invoice-submit"
@@ -2272,12 +2267,12 @@ function NewInvoice() {
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {form.type === "credit_note"
-                  ? "Vystaviť dobropis"
+                  ? t("Vystaviť dobropis")
                   : form.type === "debit_note"
-                    ? "Vystaviť ťarchopis"
+                    ? t("Vystaviť ťarchopis")
                     : form.type === "proforma"
-                    ? "Vystaviť zálohovú faktúru"
-                    : "Vystaviť faktúru"}
+                    ? t("Vystaviť zálohovú faktúru")
+                    : t("Vystaviť faktúru")}
               </button>
             </div>
           </div>
@@ -2299,14 +2294,14 @@ function NewInvoice() {
             onClose={() => setPickerOpen(null)}
             onPickCopy={(loaded) => {
               setItems(loaded.map((it) => ({ ...EMPTY_ITEM, ...it })));
-              toast.success(`Načítaných ${loaded.length} položiek`);
+              toast.success(t("Načítané položky: {n}", { n: loaded.length }));
               setPickerOpen(null);
             }}
             onPickAdvance={(inv) => {
               if (pickerOpen === "opravuje") {
                 setForm((f) => ({ ...f, opravuje_fakturu_id: inv.id }));
                 setOpravujeCislo(inv.invoice_number);
-                toast.success(`Dobropis opravuje faktúru ${inv.invoice_number}`);
+                toast.success(t("Dobropis opravuje faktúru {cislo}", { cislo: inv.invoice_number }));
               } else {
                 setOdpocty((zoz) =>
                   zoz.some((o) => o.id === inv.id)
@@ -2316,7 +2311,7 @@ function NewInvoice() {
                         { id: inv.id, cislo: inv.invoice_number, suma: Number(inv.total) },
                       ],
                 );
-                toast.success(`Záloha pripojená: ${inv.invoice_number}`);
+                toast.success(t("Záloha pripojená: {cislo}", { cislo: inv.invoice_number }));
               }
               setPickerOpen(null);
             }}
@@ -2403,13 +2398,14 @@ function CellSpolu({
   onZmena: (v: number) => void;
   w?: string;
 }) {
+  const { t } = useT();
   const [rozpisane, setRozpisane] = useState<string | null>(null);
   return (
     <input
       type="number"
       step="0.01"
       inputMode="decimal"
-      title="Suma s DPH — cena bez dane sa dopočíta"
+      title={t("Suma s DPH — cena bez dane sa dopočíta")}
       placeholder="0.00"
       // Nulová suma sa nepíše do poľa, je len nápovedou — klik a hneď sa píše.
       value={rozpisane ?? (Number.isFinite(hodnota) && hodnota !== 0 ? hodnota.toFixed(2) : "")}
@@ -2452,6 +2448,7 @@ function ProductSearch({
   onPick: (p: any) => void;
   stockByProduct: Record<string, StockMeta>;
 }) {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -2476,7 +2473,7 @@ function ProductSearch({
         onClick={() => setOpen((v) => !v)}
         className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
       >
-        <Search className="h-3.5 w-3.5" /> Z katalógu
+        <Search className="h-3.5 w-3.5" /> {t("Z katalógu")}
       </button>
       {open && (
         <div className="absolute right-0 top-full z-20 mt-1 w-80 rounded-lg border border-border bg-card shadow-lg">
@@ -2486,13 +2483,13 @@ function ProductSearch({
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Hľadať produkt…"
+              placeholder={t("Hľadať produkt…")}
               className="flex-1 bg-transparent text-sm outline-none"
             />
           </div>
           <ul className="max-h-64 overflow-auto py-1">
             {filtered.length === 0 && (
-              <li className="px-3 py-2 text-sm text-muted-foreground">Žiadne produkty</li>
+              <li className="px-3 py-2 text-sm text-muted-foreground">{t("Žiadne produkty")}</li>
             )}
             {filtered.map((p) => (
               <li key={p.id}>
@@ -2511,7 +2508,7 @@ function ProductSearch({
                       <span
                         className={`text-[11px] ${stockByProduct[p.id].available <= 0 ? "text-destructive" : "text-muted-foreground"}`}
                       >
-                        Sklad: {stockByProduct[p.id].available} {p.unit ?? "ks"}
+                        {t("Sklad:")} {stockByProduct[p.id].available} {p.unit ?? "ks"}
                       </span>
                     )}
                   </span>
@@ -2529,6 +2526,7 @@ function ProductSearch({
 }
 
 function StockHint({ item, warehouseName }: { item: Item; warehouseName: string }) {
+  const { t } = useT();
   if (!item.stock_item_id || !item._track_stock) return null;
   const available = Number(item._available ?? 0);
   const insufficient = Number(item.quantity) > available;
@@ -2539,12 +2537,12 @@ function StockHint({ item, warehouseName }: { item: Item; warehouseName: string 
       {insufficient && <AlertTriangle className="h-3 w-3" />}
       {insufficient ? (
         <>
-          Na sklade nie je dostatok kusov. Dostupné: {available}
+          {t("Na sklade nie je dostatok kusov. Dostupné: {n}", { n: available })}
           {warehouseName ? ` · ${warehouseName}` : ""}
         </>
       ) : (
         <>
-          Sklad: {available} {item.unit}
+          {t("Sklad:")} {available} {item.unit}
           {warehouseName ? ` · ${warehouseName}` : ""}
           {item._sku ? ` · ${item._sku}` : ""}
         </>
@@ -2566,6 +2564,7 @@ function AiModal({
   onClose: () => void;
   onRun: () => void;
 }) {
+  const { t } = useT();
   useZatvorNaEscape(onClose);
   return (
     <div
@@ -2575,16 +2574,16 @@ function AiModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Faktúra z dokumentu"
+        aria-label={t("Faktúra z dokumentu")}
         className="w-full max-w-xl rounded-2xl border border-border bg-card p-5 shadow-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold">AI vytvorenie faktúry</h3>
+          <h3 className="font-semibold">{t("AI vytvorenie faktúry")}</h3>
         </div>
         <p className="mb-3 text-sm text-muted-foreground">
-          Opíšte faktúru bežnou rečou — AI vyplní položky, ceny a DPH.
+          {t("Opíšte faktúru bežnou rečou — AI vyplní položky, ceny a DPH.")}
         </p>
         <textarea
           autoFocus
@@ -2594,12 +2593,12 @@ function AiModal({
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") onRun();
           }}
-          placeholder="Napr. 10 hodín konzultácií po 60 € pre Acme s.r.o. + licencia softvéru 240 € s DPH"
+          placeholder={t("Napr. 10 hodín konzultácií po 60 € pre Acme s.r.o. + licencia softvéru 240 € s DPH")}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         />
         <div className="mt-3 flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            <Command className="inline h-3 w-3" />↵ spustiť
+            <Command className="inline h-3 w-3" />↵ {t("spustiť")}
           </span>
           <div className="flex gap-2">
             <button
@@ -2607,7 +2606,7 @@ function AiModal({
               onClick={onClose}
               className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              Zrušiť
+              {t("Zrušiť")}
             </button>
             <button
               type="button"
@@ -2620,7 +2619,7 @@ function AiModal({
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              Vygenerovať
+              {t("Vygenerovať")}
             </button>
           </div>
         </div>
@@ -2640,6 +2639,7 @@ function InvoicePickerModal({
   onPickCopy: (items: Partial<Item>[]) => void;
   onPickAdvance: (inv: { id: string; invoice_number: string; total: number }) => void;
 }) {
+  const { t } = useT();
   useZatvorNaEscape(onClose);
   const [list, setList] = useState<any[]>([]);
   const [q, setQ] = useState("");
@@ -2692,17 +2692,17 @@ function InvoicePickerModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Výber faktúry"
+        aria-label={t("Výber faktúry")}
         className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h3 className="text-sm font-semibold">
             {mode === "copy"
-              ? "Načítať položky z dokladu"
+              ? t("Načítať položky z dokladu")
               : mode === "opravuje"
-                ? "Ktorú faktúru dobropis opravuje"
-                : "Vybrať zálohovú faktúru"}
+                ? t("Ktorú faktúru dobropis opravuje")
+                : t("Vybrať zálohovú faktúru")}
           </h3>
           <button type="button" onClick={onClose} className="rounded-md p-1 hover:bg-muted">
             <X className="h-4 w-4" />
@@ -2715,16 +2715,16 @@ function InvoicePickerModal({
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Hľadať podľa čísla, VS alebo odberateľa…"
+              placeholder={t("Hľadať podľa čísla, VS alebo odberateľa…")}
               className="flex-1 bg-transparent text-sm outline-none"
             />
           </div>
         </div>
         <ul className="max-h-96 overflow-auto">
-          {loading && <li className="p-4 text-sm text-muted-foreground">Načítavam…</li>}
+          {loading && <li className="p-4 text-sm text-muted-foreground">{t("Načítavam…")}</li>}
           {!loading && filtered.length === 0 && (
             <li className="p-4 text-sm text-muted-foreground">
-              {mode === "advance" ? "Žiadne zálohové faktúry." : "Žiadne faktúry."}
+              {mode === "advance" ? t("Žiadne zálohové faktúry.") : t("Žiadne faktúry.")}
             </li>
           )}
           {filtered.map((inv) => (

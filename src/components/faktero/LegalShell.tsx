@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { MarketingShell } from "./MarketingShell";
+import { useT } from "@/lib/i18n/useT";
 
 const LINKS = [
   { to: "/pravne/obchodne-podmienky", label: "Obchodné podmienky" },
@@ -23,12 +24,13 @@ export function LegalShell({
   version: string;
   children: React.ReactNode;
 }) {
+  const { t } = useT();
   return (
     <MarketingShell>
       <div className="mx-auto max-w-6xl px-4 py-12 grid gap-10 md:grid-cols-[220px_1fr]">
         <aside className="md:sticky md:top-24 md:self-start">
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-            Právne
+            {t("Právne")}
           </p>
           <nav className="mt-3 space-y-1 text-sm">
             {LINKS.map((l) => (
@@ -41,7 +43,7 @@ export function LegalShell({
                     "block rounded-md px-3 py-2 bg-emerald-50 text-emerald-900 font-medium",
                 }}
               >
-                {l.label}
+                {t(l.label)}
               </Link>
             ))}
           </nav>
@@ -49,7 +51,7 @@ export function LegalShell({
         <article className="min-w-0">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Posledná aktualizácia: {updated} · Verzia {version}
+            {t("Posledná aktualizácia: {updated} · Verzia {version}", { updated, version })}
           </p>
           {/* Plugin @tailwindcss/typography v projekte nie je, triedy `prose` by
               nerobili nič — typografiu právnych textov preto píšeme priamo. */}
@@ -59,6 +61,17 @@ export function LegalShell({
         </article>
       </div>
     </MarketingShell>
+  );
+}
+
+/** Upozornenie na začiatku každej nemeckej verzie právneho dokumentu. */
+export function DeUpozornenie() {
+  return (
+    <p className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">
+      <strong>
+        Diese Übersetzung dient nur zur Information. Rechtsverbindlich ist die slowakische Fassung.
+      </strong>
+    </p>
   );
 }
 

@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -33,7 +35,7 @@ import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/novy")({
-  head: () => ({ meta: [{ title: "Iný doklad — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Iný doklad — Faktero") }] }),
   /*
     `zamestnanec`, `zmluva` a `druh` predvyplnia nový doklad — z karty
     zamestnanca („Pridať exekúciu“) alebo z detailu leasingu.
@@ -98,6 +100,7 @@ function naDataUrl(f: File): Promise<string> {
 const cakaj = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function OstatnyDokladPage() {
+  const { t } = useT();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const detailFn = useServerFn(detailOstatnehoFn);
@@ -173,7 +176,7 @@ function OstatnyDokladPage() {
           [...(d.other_document_files ?? [])].sort((a: any, b: any) => a.position - b.position),
         );
       } catch (e: any) {
-        toast.error(e?.message ?? "Doklad sa nepodarilo načítať.");
+        toast.error(e?.message ?? t("Doklad sa nepodarilo načítať."));
       } finally {
         setNacitavam(false);
       }
@@ -196,28 +199,28 @@ function OstatnyDokladPage() {
     const doplnene: string[] = [];
     if (f.kind === "ine" && r.kind !== "ine") {
       zmeny.kind = r.kind;
-      doplnene.push(`druh (${nazovDruhu(r.kind)})`);
+      doplnene.push(t("druh ({nazov})", { nazov: t(nazovDruhu(r.kind)) }));
     }
     if (!f.sender.trim() && r.sender) {
       zmeny.sender = r.sender;
-      doplnene.push("odosielateľ");
+      doplnene.push(t("odosielateľ"));
     }
     if (!f.subject.trim() && r.subject) {
       zmeny.subject = r.subject;
-      doplnene.push("predmet");
+      doplnene.push(t("predmet"));
     }
     if (!f.amount.trim() && r.amount != null) {
       zmeny.amount = String(r.amount);
       if (r.currency) zmeny.currency = r.currency;
-      doplnene.push("suma");
+      doplnene.push(t("suma"));
     }
     if (!f.due_date && r.due_date) {
       zmeny.due_date = r.due_date;
-      doplnene.push("lehota");
+      doplnene.push(t("lehota"));
     }
     if (!f.note.trim() && r.summary) {
       zmeny.note = r.summary;
-      doplnene.push("poznámka");
+      doplnene.push(t("poznámka"));
     }
     // Exekúcia k zamestnancovi, leasing k zmluve — len pri jednoznačnej zhode.
     const druh = zmeny.kind ?? f.kind;
@@ -226,14 +229,14 @@ function OstatnyDokladPage() {
       const idZ = navrhniZamestnanca(text, vazby.zamestnanci);
       if (idZ) {
         zmeny.employee_id = idZ;
-        doplnene.push("zamestnanec");
+        doplnene.push(t("zamestnanec"));
       }
     }
     if ((druh === "leasing_uver" || druh === "poistovna") && !f.financing_contract_id) {
       const idM = navrhniZmluvu(text, vazby.zmluvy);
       if (idM) {
         zmeny.financing_contract_id = idM;
-        doplnene.push("zmluva");
+        doplnene.push(t("zmluva"));
       }
     }
     setForm((x) => ({ ...x, ...zmeny }));
@@ -254,14 +257,14 @@ function OstatnyDokladPage() {
         if (!v.hotovo) continue;
         if (!v.ok) throw new Error(v.chyba);
         if (!jeRozpoznaniePouzitelne(v.rozpoznanie)) {
-          throw new Error("V dokumente sa nenašiel odosielateľ ani predmet.");
+          throw new Error(t("V dokumente sa nenašiel odosielateľ ani predmet."));
         }
         setCitanie({ stav: "hotovo", subor: f.name, doplnene: doplnZRozpoznania(v.rozpoznanie) });
         return;
       }
-      throw new Error("Čítanie trvá príliš dlho.");
+      throw new Error(t("Čítanie trvá príliš dlho."));
     } catch (e: any) {
-      setCitanie({ stav: "chyba", subor: f.name, chyba: e?.message ?? "Dokument sa nepodarilo prečítať." });
+      setCitanie({ stav: "chyba", subor: f.name, chyba: e?.message ?? t("Dokument sa nepodarilo prečítať.") });
     }
   }
 
@@ -269,11 +272,13 @@ function OstatnyDokladPage() {
     const ok: File[] = [];
     for (const f of Array.from(zoznam)) {
       if (!POVOLENE_TYPY_PRILOH.includes(f.type)) {
-        toast.error(`${f.name}: podporované sú PDF a obrázky (JPG, PNG, WEBP, HEIC).`);
+        toast.error(
+          t("{subor}: podporované sú PDF a obrázky (JPG, PNG, WEBP, HEIC).", { subor: f.name }),
+        );
         continue;
       }
       if (f.size > MAX_VELKOST_PRILOHY) {
-        toast.error(`${f.name}: súbor môže mať najviac 20 MB.`);
+        toast.error(t("{subor}: súbor môže mať najviac 20 MB.", { subor: f.name }));
         continue;
       }
       ok.push(f);
@@ -292,32 +297,32 @@ function OstatnyDokladPage() {
       const { url } = await odkazFn({ data: { id: fileId } });
       window.open(url, "_blank");
     } catch (e: any) {
-      toast.error(e?.message ?? "Prílohu sa nepodarilo otvoriť.");
+      toast.error(e?.message ?? t("Prílohu sa nepodarilo otvoriť."));
     }
   }
 
   async function odober(fileId: string) {
-    if (!(await potvrd("Odstrániť prílohu?"))) return;
+    if (!(await potvrd(t("Odstrániť prílohu?")))) return;
     try {
       await odoberFn({ data: { id: fileId } });
       setUlozene((u) => u.filter((p) => p.id !== fileId));
     } catch (e: any) {
-      toast.error(e?.message ?? "Prílohu sa nepodarilo odstrániť.");
+      toast.error(e?.message ?? t("Prílohu sa nepodarilo odstrániť."));
     }
   }
 
   async function uloz(spracovat: boolean) {
     if (!cid) {
-      toast.error("Vyberte firmu");
+      toast.error(t("Vyberte firmu"));
       return;
     }
     if (!form.received_date) {
-      toast.error("Vyplňte dátum doručenia.");
+      toast.error(t("Vyplňte dátum doručenia."));
       return;
     }
     const suma = form.amount.trim() ? Number(form.amount.replace(",", ".")) : null;
     if (suma != null && !Number.isFinite(suma)) {
-      toast.error("Suma nie je číslo.");
+      toast.error(t("Suma nie je číslo."));
       return;
     }
     setUkladam(true);
@@ -358,10 +363,10 @@ function OstatnyDokladPage() {
       }
       toast.success(
         vysledok === "processed" && spracovat
-          ? "Doklad uložený a spracovaný"
+          ? t("Doklad uložený a spracovaný")
           : novy
-            ? "Doklad uložený medzi nespracované"
-            : "Doklad uložený",
+            ? t("Doklad uložený medzi nespracované")
+            : t("Doklad uložený"),
       );
       navigate({
         to: "/ostatne-doklady",
@@ -378,7 +383,7 @@ function OstatnyDokladPage() {
           .remove(nahrate.map((n) => n.path))
           .catch(() => {});
       }
-      toast.error(e?.message ?? "Uloženie zlyhalo.");
+      toast.error(e?.message ?? t("Uloženie zlyhalo."));
     } finally {
       setUkladam(false);
     }
@@ -389,23 +394,24 @@ function OstatnyDokladPage() {
   return (
     <>
       <PageHeader
-        title={novy ? "Pridať iný doklad" : "Iný doklad"}
-        description="List, predpis, exekúcia, zmluva alebo iný podklad pre účtovníka."
+        title={novy ? t("Pridať iný doklad") : t("Iný doklad")}
+        description={t("List, predpis, exekúcia, zmluva alebo iný podklad pre účtovníka.")}
       />
       <PageBody>
         {nacitavam ? (
-          <div className="p-12 text-center text-sm text-muted-foreground">Načítavam…</div>
+          <div className="p-12 text-center text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
             <div className="min-w-0 rounded-2xl border border-border bg-card p-5">
               {stav && (
                 <div className="mb-4 text-sm">
-                  Stav: <strong>{STAV_DOKLADU_NAZOV[stav as keyof typeof STAV_DOKLADU_NAZOV]}</strong>
+                  {t("Stav:")}{" "}
+                  <strong>{t(STAV_DOKLADU_NAZOV[stav as keyof typeof STAV_DOKLADU_NAZOV] ?? stav)}</strong>
                 </div>
               )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm">
-                  <span className="mb-1 block text-xs text-muted-foreground">Druh dokladu</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">{t("Druh dokladu")}</span>
                   <select
                     value={form.kind}
                     onChange={(e) => nastav("kind", e.target.value as DruhOstatneho)}
@@ -413,13 +419,13 @@ function OstatnyDokladPage() {
                   >
                     {DRUHY_OSTATNYCH.map((d) => (
                       <option key={d.kluc} value={d.kluc}>
-                        {d.nazov}
+                        {t(d.nazov)}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="block text-sm">
-                  <span className="mb-1 block text-xs text-muted-foreground">Dátum doručenia</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">{t("Dátum doručenia")}</span>
                   <input
                     type="date"
                     value={form.received_date}
@@ -428,25 +434,25 @@ function OstatnyDokladPage() {
                   />
                 </label>
                 <label className="block text-sm sm:col-span-2">
-                  <span className="mb-1 block text-xs text-muted-foreground">Odosielateľ</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">{t("Odosielateľ")}</span>
                   <input
                     value={form.sender}
                     onChange={(e) => nastav("sender", e.target.value)}
-                    placeholder="napr. exekútor, poisťovňa, daňový úrad"
+                    placeholder={t("napr. exekútor, poisťovňa, daňový úrad")}
                     className={pole}
                   />
                 </label>
                 <label className="block text-sm sm:col-span-2">
-                  <span className="mb-1 block text-xs text-muted-foreground">Predmet</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">{t("Predmet")}</span>
                   <input
                     value={form.subject}
                     onChange={(e) => nastav("subject", e.target.value)}
-                    placeholder="napr. exekučný príkaz, predpis poistného"
+                    placeholder={t("napr. exekučný príkaz, predpis poistného")}
                     className={pole}
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="mb-1 block text-xs text-muted-foreground">Suma (nepovinné)</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">{t("Suma (nepovinné)")}</span>
                   <div className="flex gap-2">
                     <input
                       inputMode="decimal"
@@ -457,7 +463,7 @@ function OstatnyDokladPage() {
                     <select
                       value={form.currency}
                       onChange={(e) => nastav("currency", e.target.value)}
-                      aria-label="Mena"
+                      aria-label={t("Mena")}
                       className="rounded-md border border-border bg-background px-2 text-sm"
                     >
                       {MENY.map((m) => (
@@ -470,7 +476,7 @@ function OstatnyDokladPage() {
                 </label>
                 <label className="block text-sm">
                   <span className="mb-1 block text-xs text-muted-foreground">
-                    Lehota / splatnosť (nepovinné)
+                    {t("Lehota / splatnosť (nepovinné)")}
                   </span>
                   <input
                     type="date"
@@ -482,14 +488,14 @@ function OstatnyDokladPage() {
                 {(form.kind === "exekucia" || form.employee_id) && vazby.zamestnanci.length > 0 && (
                   <label className="block text-sm sm:col-span-2">
                     <span className="mb-1 block text-xs text-muted-foreground">
-                      Zamestnanec, ktorému sa zráža zo mzdy
+                      {t("Zamestnanec, ktorému sa zráža zo mzdy")}
                     </span>
                     <select
                       value={form.employee_id}
                       onChange={(e) => nastav("employee_id", e.target.value)}
                       className={pole}
                     >
-                      <option value="">— nepriradený —</option>
+                      <option value="">{t("— nepriradený —")}</option>
                       {vazby.zamestnanci.map((z) => (
                         <option key={z.id} value={z.id}>
                           {z.meno}
@@ -502,14 +508,14 @@ function OstatnyDokladPage() {
                   vazby.zmluvy.length > 0 && (
                     <label className="block text-sm sm:col-span-2">
                       <span className="mb-1 block text-xs text-muted-foreground">
-                        Zmluva o leasingu alebo úvere
+                        {t("Zmluva o leasingu alebo úvere")}
                       </span>
                       <select
                         value={form.financing_contract_id}
                         onChange={(e) => nastav("financing_contract_id", e.target.value)}
                         className={pole}
                       >
-                        <option value="">— nepriradená —</option>
+                        <option value="">{t("— nepriradená —")}</option>
                         {vazby.zmluvy.map((z) => (
                           <option key={z.id} value={z.id}>
                             {z.nazov}
@@ -519,7 +525,7 @@ function OstatnyDokladPage() {
                     </label>
                   )}
                 <label className="block text-sm sm:col-span-2">
-                  <span className="mb-1 block text-xs text-muted-foreground">Poznámka pre účtovníka</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">{t("Poznámka pre účtovníka")}</span>
                   <textarea
                     value={form.note}
                     onChange={(e) => nastav("note", e.target.value)}
@@ -531,10 +537,9 @@ function OstatnyDokladPage() {
             </div>
 
             <div className="min-w-0 rounded-2xl border border-border bg-card p-5">
-              <h2 className="text-sm font-semibold">Prílohy</h2>
+              <h2 className="text-sm font-semibold">{t("Prílohy")}</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                PDF alebo fotky, aj viac strán naraz. Najviac 20 MB na súbor. Prvú prílohu
-                prečíta AI a vyplní druh, odosielateľa, predmet, sumu a lehotu.
+                {t("PDF alebo fotky, aj viac strán naraz. Najviac 20 MB na súbor. Prvú prílohu prečíta AI a vyplní druh, odosielateľa, predmet, sumu a lehotu.")}
               </p>
               <div
                 onDragOver={(e) => {
@@ -552,13 +557,13 @@ function OstatnyDokladPage() {
                 }`}
               >
                 <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
-                Pretiahnite súbory sem alebo
+                {t("Pretiahnite súbory sem alebo")}
                 <button
                   type="button"
                   onClick={() => inputRef.current?.click()}
                   className="mt-2 rounded-md border border-border bg-secondary px-3 py-1.5 text-sm hover:bg-secondary/70"
                 >
-                  Vybrať súbory
+                  {t("Vybrať súbory")}
                 </button>
                 <input
                   ref={inputRef}
@@ -584,14 +589,20 @@ function OstatnyDokladPage() {
                 >
                   {citanie.stav === "bezi" && (
                     <span className="inline-flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Čítam {citanie.subor}…
+                      <Loader2 className="h-4 w-4 animate-spin" />{" "}
+                      {t("Čítam {subor}…", { subor: citanie.subor })}
                     </span>
                   )}
                   {citanie.stav === "hotovo" &&
                     (citanie.doplnene.length
-                      ? `Z prílohy som doplnil: ${citanie.doplnene.join(", ")}. Skontrolujte to.`
-                      : "Príloha je prečítaná, všetky polia už boli vyplnené.")}
-                  {citanie.stav === "chyba" && `Prílohu sa nepodarilo prečítať: ${citanie.chyba} Vyplňte údaje ručne.`}
+                      ? t("Z prílohy som doplnil: {polia}. Skontrolujte to.", {
+                          polia: citanie.doplnene.join(", "),
+                        })
+                      : t("Príloha je prečítaná, všetky polia už boli vyplnené."))}
+                  {citanie.stav === "chyba" &&
+                    t("Prílohu sa nepodarilo prečítať: {chyba} Vyplňte údaje ručne.", {
+                      chyba: t(citanie.chyba),
+                    })}
                 </div>
               )}
 
@@ -610,7 +621,7 @@ function OstatnyDokladPage() {
                       <span className="shrink-0 text-xs text-muted-foreground">{velkost(p.size)}</span>
                       <button
                         onClick={() => odober(p.id)}
-                        aria-label={`Odstrániť ${p.name}`}
+                        aria-label={t("Odstrániť {nazov}", { nazov: p.name })}
                         className="rounded p-1 hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -624,20 +635,20 @@ function OstatnyDokladPage() {
                         {f.name}
                       </span>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        {velkost(f.size)} · nahrá sa pri uložení
+                        {velkost(f.size)} · {t("nahrá sa pri uložení")}
                       </span>
                       <button
                         onClick={() => precitaj(f)}
                         disabled={citanie?.stav === "bezi"}
-                        title="Vyplniť údaje z tejto prílohy"
-                        aria-label={`Prečítať ${f.name}`}
+                        title={t("Vyplniť údaje z tejto prílohy")}
+                        aria-label={t("Prečítať {nazov}", { nazov: f.name })}
                         className="rounded p-1 text-primary hover:bg-primary/10 disabled:opacity-40"
                       >
                         <Sparkles className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => setNove((n) => n.filter((_, j) => j !== i))}
-                        aria-label={`Nepridávať ${f.name}`}
+                        aria-label={t("Nepridávať {nazov}", { nazov: f.name })}
                         className="rounded p-1 hover:bg-secondary"
                       >
                         <X className="h-4 w-4" />
@@ -655,7 +666,7 @@ function OstatnyDokladPage() {
                 onClick={() => navigate({ to: "/ostatne-doklady" })}
                 className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
               >
-                Zrušiť
+                {t("Zrušiť")}
               </button>
               {(novy || stav === "new") && (
                 <button
@@ -663,7 +674,7 @@ function OstatnyDokladPage() {
                   disabled={ukladam}
                   className="inline-flex items-center justify-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600/10 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
                 >
-                  <CheckCircle2 className="h-4 w-4" /> Uložiť a spracovať
+                  <CheckCircle2 className="h-4 w-4" /> {t("Uložiť a spracovať")}
                 </button>
               )}
               <button
@@ -672,7 +683,7 @@ function OstatnyDokladPage() {
                 className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
                 {ukladam ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Uložiť
+                {t("Uložiť")}
               </button>
             </div>
           </div>

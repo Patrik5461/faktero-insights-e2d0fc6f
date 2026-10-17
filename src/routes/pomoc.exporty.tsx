@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/exporty")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Exporty a importy — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Exporty a importy — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Účtovné exporty pre účtovníčku — Pohoda, KROS Omega, Money S3, ISDOC, ABRA Flexi aj súpiska CSV — a prenos dát zo SuperFaktúry, iDokladu a KROSu do Faktera.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/exporty" },
     ],
@@ -54,32 +58,31 @@ const sections: HelpSection[] = [
         <p>
           Kto neúčtuje v Pohode, nájde v <Link to="/exporty">Účtovné exporty</Link> časť{" "}
           <strong>Zaúčtované doklady do vášho programu</strong>. Raz vyberiete{" "}
-          <strong>účtovný program</strong> (KROS Omega, Money S3, ABRA Flexi alebo „iný program“
-          so súpiskou CSV) a Faktero si ho zapamätá. Potom zvolíte, čo posielate —{" "}
+          <strong>účtovný program</strong> (KROS Omega, Money S3, ABRA Flexi alebo „iný program“ so
+          súpiskou CSV) a Faktero si ho zapamätá. Potom zvolíte, čo posielate —{" "}
           <strong>vystavené faktúry, prijaté faktúry alebo bločky</strong> — obdobie a doklady.
-          Súbor obsahuje zaúčtovanie tak, ako ste ho urobili vo Fakteri: predkontáciu, členenie
-          DPH a kontrolného výkazu, stredisko, zákazku a činnosť, rozúčtovanie aj účtovanie
-          pomerom.
+          Súbor obsahuje zaúčtovanie tak, ako ste ho urobili vo Fakteri: predkontáciu, členenie DPH
+          a kontrolného výkazu, stredisko, zákazku a činnosť, rozúčtovanie aj účtovanie pomerom.
         </p>
         <p>
           Predkontácie a členenia sú pre všetky programy spoločné (
           <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie</Link>) — zadajte ich s
-          rovnakými skratkami, aké má váš program. Pri každom programe treba ešte vyplniť pár vecí
-          v <em>Nastavenia pre …</em>:
+          rovnakými skratkami, aké má váš program. Pri každom programe treba ešte vyplniť pár vecí v{" "}
+          <em>Nastavenia pre …</em>:
         </p>
         <ul>
           <li>
             <strong>KROS Omega</strong> dostane rovno <strong>účtovné doklady</strong> (EUD) s
-            účtovnými zápismi a typmi súm pre DPH. Vyplňte kódy evidencií a číselných radov, ktoré
-            v Omege existujú (došlé faktúry, pokladničné, interné…), a účty — odberatelia,
+            účtovnými zápismi a typmi súm pre DPH. Vyplňte kódy evidencií a číselných radov, ktoré v
+            Omege existujú (došlé faktúry, pokladničné, interné…), a účty — odberatelia,
             dodávatelia, pokladňa, DPH. Pri predkontáciách v číselníku musia byť{" "}
             <strong>účty MD a Dal</strong>. Import: Firma → Import → Import z textového súboru.
           </li>
           <li>
             <strong>Money S3</strong> dostane prijaté a vydané faktúry, pokladničné a interné
-            doklady s predkontáciou a členením DPH. Vyplňte skratky číselných radov a pokladne;
-            pre interné doklady (bločky kartou) aj účet DPH. Kódy v Money majú najviac 10
-            znakov. Import: XML prenosy.
+            doklady s predkontáciou a členením DPH. Vyplňte skratky číselných radov a pokladne; pre
+            interné doklady (bločky kartou) aj účet DPH. Kódy v Money majú najviac 10 znakov.
+            Import: XML prenosy.
           </li>
           <li>
             <strong>ABRA Flexi</strong> dostane faktúry prijaté a vydané, pokladničné pohyby a
@@ -88,23 +91,23 @@ const sections: HelpSection[] = [
           </li>
           <li>
             <strong>Iný program</strong> (MRP, Helios, Premier, Excel) dostane{" "}
-            <strong>zaúčtovanú súpisku CSV</strong>: riadok na každý riadok zaúčtovania s
-            dokladom, partnerom, sadzbou, základom, DPH, predkontáciou s účtami MD/Dal,
-            členením, strediskom, zákazkou a činnosťou.
+            <strong>zaúčtovanú súpisku CSV</strong>: riadok na každý riadok zaúčtovania s dokladom,
+            partnerom, sadzbou, základom, DPH, predkontáciou s účtami MD/Dal, členením, strediskom,
+            zákazkou a činnosťou.
           </li>
         </ul>
         <p>
           Zaškrtnuté <strong>Označiť ako odovzdané</strong> doklady zamkne a nabudúce ich nepošle
-          druhýkrát. Doklad v cudzej mene ide v eurách aj v pôvodnej mene s kurzom ECB a
-          vyúčtovacia faktúra s odpočtom zálohy ako záporný riadok v sadzbe dokladu k prijatej
-          platbe (so zálohovou predkontáciou). Čo do súboru nejde (doklad bez kurzu, záloha bez
-          dokladu k platbe, chýbajúce nastavenie), Faktero vymenuje aj s dôvodom. V zoznamoch Faktúry, Prijaté faktúry a
-          Doklady potom tlačidlo pri vybraných dokladoch nesie meno vášho programu namiesto
-          „XML pre Pohodu“.
+          druhýkrát. Doklad v cudzej mene ide v eurách aj v pôvodnej mene s kurzom ECB a vyúčtovacia
+          faktúra s odpočtom zálohy ako záporný riadok v sadzbe dokladu k prijatej platbe (so
+          zálohovou predkontáciou). Čo do súboru nejde (doklad bez kurzu, záloha bez dokladu k
+          platbe, chýbajúce nastavenie), Faktero vymenuje aj s dôvodom. V zoznamoch Faktúry, Prijaté
+          faktúry a Doklady potom tlačidlo pri vybraných dokladoch nesie meno vášho programu
+          namiesto „XML pre Pohodu“.
         </p>
         <p>
-          Zoznamy Doklady a Prijaté faktúry majú aj tlačidlo <strong>Excel</strong> — stiahne to,
-          čo práve vidíte (s filtrami aj zoradením), v dvoch hárkoch: doklady a ich položky.
+          Zoznamy Doklady a Prijaté faktúry majú aj tlačidlo <strong>Excel</strong> — stiahne to, čo
+          práve vidíte (s filtrami aj zoradením), v dvoch hárkoch: doklady a ich položky.
         </p>
       </>
     ),
@@ -262,10 +265,10 @@ const sections: HelpSection[] = [
             <strong>ABRA Flexi XML</strong> — dávka <code>winstrom</code> s vydanými faktúrami.
             Import je v <em>Nástroje → Import → XML</em>. Sadzba DPH ide priehradkou (základná,
             znížená, oslobodené), lebo Flexi si percentá drží vo vlastnom číselníku podľa obdobia.
-            Dobropis ide ako typ <code>DOBROPIS</code> so zápornými sumami. Faktúra v cudzej mene
-            má sumy v eurách aj v pôvodnej mene (<code>…Men</code>) s kurzom; odpočet zálohy ide
-            ako záporná položka. <strong>Zálohové faktúry sa vynechajú</strong> — Flexi pre ne
-            chce vlastný typ dokladu.
+            Dobropis ide ako typ <code>DOBROPIS</code> so zápornými sumami. Faktúra v cudzej mene má
+            sumy v eurách aj v pôvodnej mene (<code>…Men</code>) s kurzom; odpočet zálohy ide ako
+            záporná položka. <strong>Zálohové faktúry sa vynechajú</strong> — Flexi pre ne chce
+            vlastný typ dokladu.
           </li>
           <li>
             <strong>Súpiska CSV</strong> — jeden riadok na doklad s rozpisom po sadzbách DPH,
@@ -329,7 +332,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Účtovníctvo"
       title="Exporty a importy"
       intro={<p>Podklady pre účtovníčku a prenos dát z iného fakturačného systému.</p>}

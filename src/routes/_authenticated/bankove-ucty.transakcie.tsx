@@ -10,6 +10,8 @@ import {
 } from "@/lib/faktero/tatrabanka.functions";
 import type { SucetMeny } from "@/lib/faktero/bank-sumy";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { RefreshCw, Link2, Unlink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { zrusParovanie } from "@/lib/faktero/parovanie.functions";
@@ -20,7 +22,9 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/transakcie")({
-  head: () => ({ meta: [{ title: "Bankové transakcie — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Bankové transakcie — Faktero") }],
+  }),
   validateSearch: (s: Record<string, unknown>): { account?: string } => ({
     account: typeof s.account === "string" ? s.account : undefined,
   }),
@@ -36,11 +40,15 @@ const NAZVY_BANK: Record<string, string> = {
 };
 
 /** Podnadpis podľa toho, čo je naozaj pripojené — nie natvrdo Tatra banka. */
-function popisZdroja(providers: string[] | null): string {
-  if (providers === null) return "Pohyby z pripojených bankových účtov.";
-  if (providers.length === 0) return "Zatiaľ nie je pripojená žiadna banka.";
-  const mena = [...new Set(providers)].map((p) => NAZVY_BANK[p] ?? p);
-  return `Pohyby z ${mena.join(", ")}.`;
+function popisZdroja(
+  providers: string[] | null,
+  t: (s: string, p?: Record<string, string | number>) => string = (s, p) =>
+    p ? s.split("{banky}").join(String(p.banky)) : s,
+): string {
+  if (providers === null) return t("Pohyby z pripojených bankových účtov.");
+  if (providers.length === 0) return t("Zatiaľ nie je pripojená žiadna banka.");
+  const mena = [...new Set(providers)].map((p) => (NAZVY_BANK[p] ? t(NAZVY_BANK[p]) : p));
+  return t("Pohyby z {banky}.", { banky: mena.join(", ") });
 }
 
 function fmtMoney(n: number, c = "EUR") {
@@ -48,15 +56,20 @@ function fmtMoney(n: number, c = "EUR") {
 }
 
 /** Popis obdobia nad súčtom — bez neho nie je jasné, za čo to číslo je. */
-function obdobiePopis(od: string, do_: string): string {
+function obdobiePopis(
+  od: string,
+  do_: string,
+  t: (s: string, p?: Record<string, string | number>) => string,
+): string {
   const d = (s: string) => s.split("-").reverse().join(". ");
   if (od && do_) return `${d(od)} – ${d(do_)}`;
-  if (od) return `od ${d(od)}`;
-  if (do_) return `do ${d(do_)}`;
-  return "Celé obdobie";
+  if (od) return t("od {datum}", { datum: d(od) });
+  if (do_) return t("do {datum}", { datum: d(do_) });
+  return t("Celé obdobie");
 }
 
 function TxPage() {
+  const { t } = useT();
   const search = Route.useSearch();
   const fetchData = useServerFn(listBankData);
   const sync = useServerFn(syncBankTransactions);
@@ -170,10 +183,10 @@ function TxPage() {
     if (!cid) return;
     try {
       await zrus({ data: { companyId: cid, transactionId: id } });
-      toast.success("Párovanie zrušené, faktúra je znovu otvorená.");
+      toast.success(t("Párovanie zrušené, faktúra je znovu otvorená."));
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa zrušiť párovanie.");
+      toast.error(e?.message ?? t("Nepodarilo sa zrušiť párovanie."));
     }
   }
 
@@ -198,11 +211,11 @@ function TxPage() {
           chyby.push(accounts.find((a) => a.id === id)?.iban ?? id);
         }
       }
-      if (chyby.length) toast.error(`Nepodarilo sa načítať: ${chyby.join(", ")}`);
-      else toast.success(`Synchronizovaných ${inserted} nových z ${total}`);
+      if (chyby.length) toast.error(t("Nepodarilo sa načítať: {ucty}", { ucty: chyby.join(", ") }));
+      else toast.success(t("Synchronizovaných {n} nových z {m}", { n: inserted, m: total }));
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBusy(false);
     }
@@ -210,30 +223,30 @@ function TxPage() {
 
   return (
     <>
-      <PageHeader title="Bankové transakcie" description={popisZdroja(providers)} />
+      <PageHeader title={t("Bankové transakcie")} description={popisZdroja(providers, t)} />
       <PageBody>
         <LogsToolbar
           search={q}
           onSearchChange={setQ}
-          searchPlaceholder="Hľadať protistranu, VS alebo popis…"
+          searchPlaceholder={t("Hľadať protistranu, VS alebo popis…")}
           selects={[
             {
-              label: "Účet",
+              label: t("Účet"),
               value: selected ?? "",
               onChange: (v) => setSelected(v || undefined),
               options: [
-                { value: "", label: "Všetky účty" },
+                { value: "", label: t("Všetky účty") },
                 ...accounts.map((a) => ({ value: a.id, label: a.account_name ?? a.iban ?? a.id })),
               ],
             },
             {
-              label: "Smer",
+              label: t("Smer"),
               value: smer,
               onChange: (v) => setSmer(v as "" | "prijate" | "odoslane"),
               options: [
-                { value: "", label: "Prijaté aj odoslané" },
-                { value: "prijate", label: "Iba prijaté" },
-                { value: "odoslane", label: "Iba odoslané" },
+                { value: "", label: t("Prijaté aj odoslané") },
+                { value: "prijate", label: t("Iba prijaté") },
+                { value: "odoslane", label: t("Iba odoslané") },
               ],
             },
           ]}
@@ -253,14 +266,14 @@ function TxPage() {
                 to="/faktury/parovanie"
                 className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-3 text-sm hover:bg-secondary"
               >
-                <Link2 className="h-4 w-4" /> Spárovať s faktúrami
+                <Link2 className="h-4 w-4" /> {t("Spárovať s faktúrami")}
               </Link>
               <button
                 onClick={onSync}
                 disabled={accounts.length === 0 || busy}
                 className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               >
-                <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Synchronizovať
+                <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> {t("Synchronizovať")}
               </button>
             </div>
           }
@@ -272,14 +285,14 @@ function TxPage() {
               <div key={s.currency} className="rounded-xl border border-border bg-card p-4">
                 <div className="flex items-baseline justify-between">
                   <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                    {obdobiePopis(dateFrom, dateTo)}
+                    {obdobiePopis(dateFrom, dateTo, t)}
                   </span>
                   <span className="font-mono text-xs text-muted-foreground">{s.currency}</span>
                 </div>
                 <dl className="mt-3 space-y-1.5 text-sm">
                   <div className="flex items-baseline justify-between gap-3">
                     <dt className="text-muted-foreground">
-                      Prijaté <span className="text-xs">({s.pocetPrijatych})</span>
+                      {t("Prijaté")} <span className="text-xs">({s.pocetPrijatych})</span>
                     </dt>
                     <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-300">
                       {fmtMoney(s.prijate, s.currency)}
@@ -287,14 +300,14 @@ function TxPage() {
                   </div>
                   <div className="flex items-baseline justify-between gap-3">
                     <dt className="text-muted-foreground">
-                      Odoslané <span className="text-xs">({s.pocetOdoslanych})</span>
+                      {t("Odoslané")} <span className="text-xs">({s.pocetOdoslanych})</span>
                     </dt>
                     <dd className="tabular-nums font-medium text-destructive">
                       {fmtMoney(s.odoslane, s.currency)}
                     </dd>
                   </div>
                   <div className="flex items-baseline justify-between gap-3 border-t border-border pt-1.5">
-                    <dt className="font-medium">Rozdiel</dt>
+                    <dt className="font-medium">{t("Rozdiel")}</dt>
                     <dd
                       className={`tabular-nums font-semibold ${s.rozdiel < 0 ? "text-destructive" : ""}`}
                     >
@@ -311,59 +324,59 @@ function TxPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-3 py-2">Dátum</th>
-                {!selected && <th className="px-3 py-2">Účet</th>}
-                <th className="px-3 py-2">Protistrana</th>
-                <th className="px-3 py-2">VS</th>
-                <th className="px-3 py-2">Popis</th>
-                <th className="px-3 py-2">Faktúra</th>
-                <th className="px-3 py-2 text-right">Suma</th>
+                <th className="px-3 py-2">{t("Dátum")}</th>
+                {!selected && <th className="px-3 py-2">{t("Účet")}</th>}
+                <th className="px-3 py-2">{t("Protistrana")}</th>
+                <th className="px-3 py-2">{t("VS")}</th>
+                <th className="px-3 py-2">{t("Popis")}</th>
+                <th className="px-3 py-2">{t("Faktúra")}</th>
+                <th className="px-3 py-2 text-right">{t("Suma")}</th>
               </tr>
             </thead>
             <tbody>
-              {txs.map((t) => (
-                <tr key={t.id} className="border-t border-border">
-                  <td className="px-3 py-2 tabular-nums">{datumNaDoklade(t.booking_date)}</td>
+              {txs.map((tx) => (
+                <tr key={tx.id} className="border-t border-border">
+                  <td className="px-3 py-2 tabular-nums">{datumNaDoklade(tx.booking_date)}</td>
                   {!selected && (
                     <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
                       {(() => {
-                        const a = accounts.find((x) => x.id === t.bank_account_id);
+                        const a = accounts.find((x) => x.id === tx.bank_account_id);
                         const iban = a?.iban as string | undefined;
                         return iban ? `…${iban.slice(-6)}` : "—";
                       })()}
                     </td>
                   )}
-                  <td className="px-3 py-2">{t.counterparty ?? "—"}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{t.variable_symbol ?? "—"}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{t.description ?? "—"}</td>
+                  <td className="px-3 py-2">{tx.counterparty ?? "—"}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{tx.variable_symbol ?? "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{tx.description ?? "—"}</td>
                   <td className="px-3 py-2">
-                    {t.matched_invoice_id ? (
+                    {tx.matched_invoice_id ? (
                       <span className="inline-flex items-center gap-1.5">
                         <Link
                           to="/faktury/$id"
-                          params={{ id: t.matched_invoice_id }}
+                          params={{ id: tx.matched_invoice_id }}
                           className="font-medium text-primary hover:underline"
                         >
-                          {faktury[t.matched_invoice_id] ?? "faktúra"}
+                          {faktury[tx.matched_invoice_id] ?? t("faktúra")}
                         </Link>
                         <button
-                          onClick={() => odparuj(t.id)}
-                          title="Zrušiť párovanie a vrátiť faktúru medzi otvorené"
+                          onClick={() => odparuj(tx.id)}
+                          title={t("Zrušiť párovanie a vrátiť faktúru medzi otvorené")}
                           className="text-muted-foreground hover:text-destructive"
                         >
                           <Unlink className="h-3.5 w-3.5" />
                         </button>
                       </span>
-                    ) : Number(t.amount) > 0 ? (
-                      <span className="text-xs text-muted-foreground">nespárované</span>
+                    ) : Number(tx.amount) > 0 ? (
+                      <span className="text-xs text-muted-foreground">{t("nespárované")}</span>
                     ) : (
                       "—"
                     )}
                   </td>
                   <td
-                    className={`px-3 py-2 text-right tabular-nums font-medium ${Number(t.amount) < 0 ? "text-destructive" : "text-emerald-700"}`}
+                    className={`px-3 py-2 text-right tabular-nums font-medium ${Number(tx.amount) < 0 ? "text-destructive" : "text-emerald-700"}`}
                   >
-                    {fmtMoney(Number(t.amount), t.currency)}
+                    {fmtMoney(Number(tx.amount), tx.currency)}
                   </td>
                 </tr>
               ))}
@@ -372,8 +385,8 @@ function TxPage() {
           {!loading && txs.length === 0 && (
             <EmptyState
               icon={Landmark}
-              title="Žiadne transakcie"
-              description="Pre vybraté obdobie a filtre nemáme žiadne výsledky."
+              title={t("Žiadne transakcie")}
+              description={t("Pre vybraté obdobie a filtre nemáme žiadne výsledky.")}
             />
           )}
           <ListFooter

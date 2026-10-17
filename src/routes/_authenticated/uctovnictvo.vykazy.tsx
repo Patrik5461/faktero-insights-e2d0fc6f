@@ -10,16 +10,20 @@ import { verziaPriznania } from "@/lib/faktero/dph-vykazy";
 import { AlertTriangle, Download, Loader2, CheckCircle2 } from "lucide-react";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { CzVykazyDph } from "@/components/faktero/CzVykazyDph";
-import { pocetSlovom } from "@/lib/faktero/sklonovanie";
+import { slovoPodlaPoctu } from "@/lib/faktero/sklonovanie";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/vykazy")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Výkazy k DPH — Faktero" },
+      { title: preloz(match.context.jazyk, "Výkazy k DPH — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Priznanie k DPH, kontrolný výkaz a súhrnný výkaz zostavené z dokladov a pripravené na podanie v XML.",
+        ),
       },
     ],
   }),
@@ -204,6 +208,7 @@ function stiahni(nazov: string, obsah: string) {
 }
 
 function VykazyPage() {
+  const { t } = useT();
   const zostav = useServerFn(zostavVykazyFn);
   const uloz = useServerFn(ulozVykazFn);
 
@@ -249,11 +254,11 @@ function VykazyPage() {
       setDanovyUrad((d) => d || res.hlavicka.danovyUrad);
       setKonatel((k) => k || res.hlavicka.konatel);
     } catch (e: any) {
-      setChyba(e?.message ?? "Nepodarilo sa zostaviť výkazy.");
+      setChyba(e?.message ?? t("Nepodarilo sa zostaviť výkazy."));
     } finally {
       setNacitavam(false);
     }
-  }, [zostav, rok, rezim, mesiac, stvrtrok, cisla]);
+  }, [zostav, rok, rezim, mesiac, stvrtrok, cisla, t]);
 
   useEffect(() => {
     nacitaj();
@@ -298,9 +303,9 @@ function VykazyPage() {
           podane: true,
         },
       });
-      toast.success("Zapísané ako podané.");
+      toast.success(t("Zapísané ako podané."));
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa uložiť.");
+      toast.error(e?.message ?? t("Nepodarilo sa uložiť."));
     }
   }
 
@@ -319,13 +324,15 @@ function VykazyPage() {
   return (
     <>
       <PageHeader
-        title="Výkazy k DPH"
-        description="Priznanie, kontrolný výkaz a súhrnný výkaz zostavené z dokladov, v XML pre eDane."
+        title={t("Výkazy k DPH")}
+        description={t(
+          "Priznanie, kontrolný výkaz a súhrnný výkaz zostavené z dokladov, v XML pre eDane.",
+        )}
       />
       <PageBody>
         <div className="mb-4 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 lg:grid-cols-6">
           <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Rok</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Rok")}</span>
             <input
               type="number"
               value={rok}
@@ -334,18 +341,18 @@ function VykazyPage() {
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Zdaňovacie obdobie</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Zdaňovacie obdobie")}</span>
             <select
               value={rezim}
               onChange={(e) => setRezim(e.target.value as "mesiac" | "stvrtrok")}
               className="input mt-1"
             >
-              <option value="mesiac">Mesiac</option>
-              <option value="stvrtrok">Štvrťrok</option>
+              <option value="mesiac">{t("Mesiac")}</option>
+              <option value="stvrtrok">{t("Štvrťrok")}</option>
             </select>
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Obdobie</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Obdobie")}</span>
             {rezim === "mesiac" ? (
               <select
                 value={mesiac}
@@ -354,7 +361,7 @@ function VykazyPage() {
               >
                 {MESIACE.map((m, i) => (
                   <option key={m} value={i + 1}>
-                    {m}
+                    {t(m)}
                   </option>
                 ))}
               </select>
@@ -366,39 +373,39 @@ function VykazyPage() {
               >
                 {[1, 2, 3, 4].map((q) => (
                   <option key={q} value={q}>
-                    {q}. štvrťrok
+                    {t("{q}. štvrťrok", { q })}
                   </option>
                 ))}
               </select>
             )}
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Druh</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Druh")}</span>
             <select
               value={typ}
               onChange={(e) => setTyp(e.target.value as TypVykazu)}
               className="input mt-1"
             >
-              <option value="R">Riadny</option>
-              <option value="O">Opravný</option>
-              <option value="D">Dodatočný</option>
+              <option value="R">{t("Riadny")}</option>
+              <option value="O">{t("Opravný")}</option>
+              <option value="D">{t("Dodatočný")}</option>
             </select>
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Daňový úrad</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Daňový úrad")}</span>
             <input
               value={danovyUrad}
               onChange={(e) => setDanovyUrad(e.target.value)}
-              placeholder="napr. Bratislava"
+              placeholder={t("napr. {x}", { x: "Bratislava" })}
               className="input mt-1"
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Výkaz podáva</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Výkaz podáva")}</span>
             <input
               value={konatel}
               onChange={(e) => setKonatel(e.target.value)}
-              placeholder="Meno a priezvisko"
+              placeholder={t("Meno a priezvisko")}
               className="input mt-1"
             />
           </label>
@@ -412,29 +419,49 @@ function VykazyPage() {
 
         {nacitavam && (
           <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Zostavujem z dokladov…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("Zostavujem z dokladov…")}
           </div>
         )}
 
         {data && (
           <>
             <p className="mb-4 text-sm text-muted-foreground">
-              V období:{" "}
-              {pocetSlovom(data.pocty.vystavene, "vystavená faktúra", "vystavené faktúry", "vystavených faktúr")},{" "}
-              {pocetSlovom(data.pocty.prijate, "prijatá", "prijaté", "prijatých")} a{" "}
-              {pocetSlovom(data.pocty.doklady, "doklad s DPH", "doklady s DPH", "dokladov s DPH")}.
+              {t("V období: {vystavene}, {prijate} a {doklady}.", {
+                vystavene: t(
+                  slovoPodlaPoctu(
+                    data.pocty.vystavene,
+                    "{n} vystavená faktúra",
+                    "{n} vystavené faktúry",
+                    "{n} vystavených faktúr",
+                  ),
+                  { n: data.pocty.vystavene },
+                ),
+                prijate: t(
+                  slovoPodlaPoctu(data.pocty.prijate, "{n} prijatá", "{n} prijaté", "{n} prijatých"),
+                  { n: data.pocty.prijate },
+                ),
+                doklady: t(
+                  slovoPodlaPoctu(
+                    data.pocty.doklady,
+                    "{n} doklad s DPH",
+                    "{n} doklady s DPH",
+                    "{n} dokladov s DPH",
+                  ),
+                  { n: data.pocty.doklady },
+                ),
+              })}
             </p>
 
             {data.vytky.length > 0 && (
               <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
                 <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="h-4 w-4" />
-                  Pred podaním treba doplniť ({data.vytky.length})
+                  {t("Pred podaním treba doplniť ({n})", { n: data.vytky.length })}
                 </div>
                 <ul className="mt-2 space-y-1 text-sm text-amber-700 dark:text-amber-400">
                   {data.vytky.slice(0, 20).map((v, i) => (
                     <li key={i}>
-                      <span className="font-medium">{v.doklad}</span>: {v.text}
+                      <span className="font-medium">{v.doklad}</span>: {t(v.text)}
                     </li>
                   ))}
                 </ul>
@@ -445,9 +472,11 @@ function VykazyPage() {
             <section className="mb-6 rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">Priznanie k DPH</div>
+                  <div className="font-medium">{t("Priznanie k DPH")}</div>
                   <div className="text-xs text-muted-foreground">
-                    {verzia === "2025" ? "Vzor DPH2025 (od 07/2025)" : "Vzor DPHv21 (do 06/2025)"}
+                    {verzia === "2025"
+                      ? t("Vzor DPH2025 (od 07/2025)")
+                      : t("Vzor DPHv21 (do 06/2025)")}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -477,7 +506,7 @@ function VykazyPage() {
                     }
                     className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
                   >
-                    <CheckCircle2 className="h-4 w-4" /> Podané
+                    <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                   </button>
                 </div>
               </div>
@@ -486,7 +515,7 @@ function VykazyPage() {
                   <tbody>
                     {riadkyPriznania.map((k) => (
                       <tr key={k} className="border-b border-border last:border-0">
-                        <td className="px-4 py-1.5 text-muted-foreground">{POPIS_RIADKOV[k]}</td>
+                        <td className="px-4 py-1.5 text-muted-foreground">{t(POPIS_RIADKOV[k])}</td>
                         <td className="px-4 py-1.5 text-right font-medium tabular-nums">
                           {eur((data.priznanie as Record<string, number>)[k])} €
                         </td>
@@ -497,12 +526,12 @@ function VykazyPage() {
               </div>
               <details className="border-t border-border px-4 py-3 text-sm">
                 <summary className="cursor-pointer font-medium">
-                  Riadky, ktoré z dokladov nevyplývajú
+                  {t("Riadky, ktoré z dokladov nevyplývajú")}
                 </summary>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   {RUCNE.map((r) => (
                     <label key={r.kluc} className="block">
-                      <span className="text-xs text-muted-foreground">{r.popis}</span>
+                      <span className="text-xs text-muted-foreground">{t(r.popis)}</span>
                       <input
                         value={rucne[r.kluc] ?? ""}
                         onChange={(e) => setRucne((p) => ({ ...p, [r.kluc]: e.target.value }))}
@@ -520,8 +549,8 @@ function VykazyPage() {
             <section className="mb-6 rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">Kontrolný výkaz</div>
-                  <div className="text-xs text-muted-foreground">Schéma KVDPH 2025</div>
+                  <div className="font-medium">{t("Kontrolný výkaz")}</div>
+                  <div className="text-xs text-muted-foreground">{t("Schéma KVDPH 2025")}</div>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -540,7 +569,7 @@ function VykazyPage() {
                     onClick={() => ulozAOznac("kv", data.kv as unknown as Record<string, unknown>)}
                     className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
                   >
-                    <CheckCircle2 className="h-4 w-4" /> Podané
+                    <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                   </button>
                 </div>
               </div>
@@ -556,7 +585,7 @@ function VykazyPage() {
                   ["C.2 — prijaté opravné doklady", data.kv.c2.length],
                 ].map(([popis, pocet]) => (
                   <li key={String(popis)} className="flex justify-between px-4 py-2">
-                    <span className={pocet ? "" : "text-muted-foreground"}>{popis}</span>
+                    <span className={pocet ? "" : "text-muted-foreground"}>{t(String(popis))}</span>
                     <span className="tabular-nums">{pocet as number}</span>
                   </li>
                 ))}
@@ -567,8 +596,8 @@ function VykazyPage() {
             <section className="rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">Súhrnný výkaz</div>
-                  <div className="text-xs text-muted-foreground">Dodania do EÚ, vzor SVDPHv20</div>
+                  <div className="font-medium">{t("Súhrnný výkaz")}</div>
+                  <div className="text-xs text-muted-foreground">{t("Dodania do EÚ, vzor SVDPHv20")}</div>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -589,23 +618,24 @@ function VykazyPage() {
                     disabled={data.sv.riadky.length === 0}
                     className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
                   >
-                    <CheckCircle2 className="h-4 w-4" /> Podané
+                    <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                   </button>
                 </div>
               </div>
               {data.sv.riadky.length === 0 ? (
                 <p className="px-4 py-6 text-sm text-muted-foreground">
-                  V období nie je žiadne dodanie do iného členského štátu — súhrnný výkaz sa
-                  nepodáva.
+                  {t(
+                    "V období nie je žiadne dodanie do iného členského štátu — súhrnný výkaz sa nepodáva.",
+                  )}
                 </p>
               ) : (
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-2 font-medium">Štát</th>
-                      <th className="px-4 py-2 font-medium">IČ DPH odberateľa</th>
-                      <th className="px-4 py-2 font-medium">Druh plnenia</th>
-                      <th className="px-4 py-2 text-right font-medium">Hodnota</th>
+                      <th className="px-4 py-2 font-medium">{t("Štát")}</th>
+                      <th className="px-4 py-2 font-medium">{t("IČ DPH odberateľa")}</th>
+                      <th className="px-4 py-2 font-medium">{t("Druh plnenia")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("Hodnota")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -614,7 +644,11 @@ function VykazyPage() {
                         <td className="px-4 py-2">{r.kodStatu}</td>
                         <td className="px-4 py-2">{r.idCislo}</td>
                         <td className="px-4 py-2">
-                          {r.kod === "" ? "Tovar" : r.kod === "1" ? "Trojstranný obchod" : "Služba"}
+                          {r.kod === ""
+                            ? t("Tovar")
+                            : r.kod === "1"
+                              ? t("Trojstranný obchod")
+                              : t("Služba")}
                         </td>
                         <td className="px-4 py-2 text-right tabular-nums">{eur(r.hodnota)} €</td>
                       </tr>
@@ -625,8 +659,9 @@ function VykazyPage() {
             </section>
 
             <p className="mt-6 text-xs text-muted-foreground">
-              XML sa nahráva do eDane alebo na portál finančnej správy, kde sa podpíše. Faktero
-              výkazy neodosiela — kontrolu a podanie robí ten, kto za priznanie zodpovedá.
+              {t(
+                "XML sa nahráva do eDane alebo na portál finančnej správy, kde sa podpíše. Faktero výkazy neodosiela — kontrolu a podanie robí ten, kto za priznanie zodpovedá.",
+              )}
             </p>
           </>
         )}

@@ -7,9 +7,11 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listZamestnancov } from "@/lib/faktero/zamestnanci.functions";
 import { celeMeno, datumSk, DRUH_ZMLUVY, type DruhZmluvy, type Pripomienka } from "@/lib/faktero/zamestnanci";
 import { ChybaModulu, tlacidlo } from "@/components/faktero/zamestnanci/ui";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/")({
-  head: () => ({ meta: [{ title: "Zamestnanci — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zamestnanci — Faktero") }] }),
   component: ZamestnanciPage,
 });
 
@@ -20,6 +22,7 @@ const FARBA: Record<Pripomienka["zavaznost"], string> = {
 };
 
 function ZamestnanciPage() {
+  const { t } = useT();
   const nacitajZoznam = useServerFn(listZamestnancov);
   const [stav, setStav] = useState<"active" | "ended" | "vsetci">("active");
   const [data, setData] = useState<{ zamestnanci: any[]; zmluvy: any[]; pripomienky: Pripomienka[] } | null>(null);
@@ -33,7 +36,7 @@ function ZamestnanciPage() {
     setChyba(null);
     nacitajZoznam({ data: { company_id: cid, stav } })
       .then((d: any) => setData(d))
-      .catch((e: any) => setChyba(e?.message ?? "Zoznam sa nepodarilo načítať."))
+      .catch((e: any) => setChyba(e?.message ?? t("Zoznam sa nepodarilo načítať.")))
       .finally(() => setNacitava(false));
   }, [nacitajZoznam, stav]);
   useEffect(nacitaj, [nacitaj]);
@@ -43,11 +46,13 @@ function ZamestnanciPage() {
   return (
     <>
       <PageHeader
-        title="Zamestnanci"
-        description="Karty zamestnancov, zmluvy, dokumenty, neprítomnosti a dochádzka. Mzdy sa tu nepočítajú."
+        title={t("Zamestnanci")}
+        description={t(
+          "Karty zamestnancov, zmluvy, dokumenty, neprítomnosti a dochádzka. Mzdy sa tu nepočítajú.",
+        )}
         action={
           <Link to="/zamestnanci/novy" className={tlacidlo}>
-            <Plus className="h-4 w-4" /> Nový zamestnanec
+            <Plus className="h-4 w-4" /> {t("Nový zamestnanec")}
           </Link>
         }
       />
@@ -57,7 +62,7 @@ function ZamestnanciPage() {
         ) : (
           <>
             {data && data.pripomienky.length > 0 && (
-              <section className="mb-4 space-y-2" aria-label="Pripomienky">
+              <section className="mb-4 space-y-2" aria-label={t("Pripomienky")}>
                 {data.pripomienky.map((p) => (
                   <Link
                     key={p.kluc}
@@ -89,25 +94,28 @@ function ZamestnanciPage() {
                   aria-pressed={stav === k}
                   className={`rounded px-3 py-1.5 ${stav === k ? "bg-secondary font-medium" : "text-muted-foreground"}`}
                 >
-                  {nazov}
+                  {t(nazov)}
                 </button>
               ))}
             </div>
 
             {nacitava ? (
-              <div className="text-sm text-muted-foreground">Načítavam…</div>
+              <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
             ) : !data || data.zamestnanci.length === 0 ? (
               <div className="rounded-xl border border-border bg-card p-8 text-center">
                 <IdCard className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                 <div className="text-sm font-medium">
-                  {stav === "active" ? "Zatiaľ tu nie je žiadny aktívny zamestnanec." : "Žiadny zamestnanec v tomto zozname."}
+                  {stav === "active"
+                    ? t("Zatiaľ tu nie je žiadny aktívny zamestnanec.")
+                    : t("Žiadny zamestnanec v tomto zozname.")}
                 </div>
                 <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground">
-                  Na karte zamestnanca vediete zmluvy, dokumenty, dovolenky a dochádzku. Faktero vám pripomenie
-                  prihlášku do poisťovní, koniec skúšobnej doby aj lekárske prehliadky.
+                  {t(
+                    "Na karte zamestnanca vediete zmluvy, dokumenty, dovolenky a dochádzku. Faktero vám pripomenie prihlášku do poisťovní, koniec skúšobnej doby aj lekárske prehliadky.",
+                  )}
                 </p>
                 <Link to="/zamestnanci/novy" className={`${tlacidlo} mt-4`}>
-                  <Plus className="h-4 w-4" /> Pridať prvého zamestnanca
+                  <Plus className="h-4 w-4" /> {t("Pridať prvého zamestnanca")}
                 </Link>
               </div>
             ) : (
@@ -115,11 +123,11 @@ function ZamestnanciPage() {
                 <table className="w-full min-w-[640px] text-sm">
                   <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
-                      <th className="p-3">Meno</th>
-                      <th className="p-3">Pozícia</th>
-                      <th className="p-3">Zmluva</th>
-                      <th className="p-3">Nástup</th>
-                      <th className="p-3">Stav</th>
+                      <th className="p-3">{t("Meno")}</th>
+                      <th className="p-3">{t("Pozícia")}</th>
+                      <th className="p-3">{t("Zmluva")}</th>
+                      <th className="p-3">{t("Nástup")}</th>
+                      <th className="p-3">{t("Stav")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -133,7 +141,7 @@ function ZamestnanciPage() {
                             </Link>
                           </td>
                           <td className="p-3 text-muted-foreground">{z.position || "—"}</td>
-                          <td className="p-3 text-muted-foreground">{k ? DRUH_ZMLUVY[k.kind as DruhZmluvy] : "—"}</td>
+                          <td className="p-3 text-muted-foreground">{k ? t(DRUH_ZMLUVY[k.kind as DruhZmluvy] ?? k.kind) : "—"}</td>
                           <td className="p-3 text-muted-foreground">{datumSk(z.start_date)}</td>
                           <td className="p-3">
                             <span
@@ -141,7 +149,7 @@ function ZamestnanciPage() {
                                 z.status === "active" ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"
                               }`}
                             >
-                              {z.status === "active" ? "Aktívny" : "Ukončený"}
+                              {z.status === "active" ? t("Aktívny") : t("Ukončený")}
                             </span>
                           </td>
                         </tr>

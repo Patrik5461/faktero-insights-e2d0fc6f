@@ -3,6 +3,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 const Input = z.object({ token: z.string().min(16).max(128) });
 
@@ -46,24 +48,32 @@ export const Route = createFileRoute("/danovy-doklad/$token")({
     if (!Input.safeParse({ token: params.token }).success) throw notFound();
     return getPlatformInvoice({ data: { token: params.token } });
   },
-  head: ({ loaderData }) => ({
+  head: ({ loaderData, match }) => ({
     meta: [
-      { title: `Daňový doklad ${loaderData?.invoice_number ?? ""} — Faktero` },
+      {
+        title: `${preloz(match.context.jazyk, "Daňový doklad")} ${loaderData?.invoice_number ?? ""} — Faktero`,
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  errorComponent: () => (
-    <div style={{ padding: 40, fontFamily: "Inter, Arial, sans-serif" }}>
-      <h1>Chyba pri načítaní dokladu</h1>
-      <p>Skúste prosím znova, alebo nás kontaktujte na info@faktero.sk.</p>
-    </div>
-  ),
-  notFoundComponent: () => (
-    <div style={{ padding: 40, fontFamily: "Inter, Arial, sans-serif" }}>
-      <h1>Doklad nenájdený</h1>
-      <p>Odkaz na daňový doklad je neplatný alebo bol zmenený.</p>
-    </div>
-  ),
+  errorComponent: () => {
+    const { t } = useT();
+    return (
+      <div style={{ padding: 40, fontFamily: "Inter, Arial, sans-serif" }}>
+        <h1>{t("Chyba pri načítaní dokladu")}</h1>
+        <p>{t("Skúste prosím znova, alebo nás kontaktujte na info@faktero.sk.")}</p>
+      </div>
+    );
+  },
+  notFoundComponent: () => {
+    const { t } = useT();
+    return (
+      <div style={{ padding: 40, fontFamily: "Inter, Arial, sans-serif" }}>
+        <h1>{t("Doklad nenájdený")}</h1>
+        <p>{t("Odkaz na daňový doklad je neplatný alebo bol zmenený.")}</p>
+      </div>
+    );
+  },
   component: PlatformInvoicePage,
 });
 
@@ -72,6 +82,7 @@ function money(cents: number, currency: string) {
 }
 
 function PlatformInvoicePage() {
+  const { t } = useT();
   const inv = Route.useLoaderData();
   const b = (inv.buyer_snapshot ?? {}) as any;
   return (
@@ -89,7 +100,7 @@ function PlatformInvoicePage() {
         }}
       >
         <a href="/" style={{ color: "#666", textDecoration: "none" }}>
-          ← Faktero
+          {t("← Faktero")}
         </a>
         <button
           onClick={() => window.print()}
@@ -102,7 +113,7 @@ function PlatformInvoicePage() {
             cursor: "pointer",
           }}
         >
-          Vytlačiť / Uložiť ako PDF
+          {t("Vytlačiť / Uložiť ako PDF")}
         </button>
       </div>
       <div
@@ -128,22 +139,22 @@ function PlatformInvoicePage() {
           }}
         >
           <div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>Faktúra — daňový doklad</div>
+            <div style={{ fontSize: 22, fontWeight: 700 }}>{t("Faktúra — daňový doklad")}</div>
             <div style={{ color: "#555", marginTop: 4 }}>
-              č. <b>{inv.invoice_number}</b>
+              {t("č.")} <b>{inv.invoice_number}</b>
             </div>
           </div>
           <div style={{ textAlign: "right", color: "#555" }}>
             <div>
-              Dátum vystavenia: <b>{datumNaDoklade(inv.issue_date)}</b>
+              {t("Dátum vystavenia:")} <b>{datumNaDoklade(inv.issue_date)}</b>
             </div>
             <div>
-              Dátum dodania: <b>{datumNaDoklade(inv.taxable_date)}</b>
+              {t("Dátum dodania:")} <b>{datumNaDoklade(inv.taxable_date)}</b>
             </div>
             <div>
-              Dátum splatnosti: <b>{datumNaDoklade(inv.due_date)}</b>
+              {t("Dátum splatnosti:")} <b>{datumNaDoklade(inv.due_date)}</b>
             </div>
-            <div style={{ marginTop: 6, color: "#16a34a", fontWeight: 600 }}>UHRADENÁ</div>
+            <div style={{ marginTop: 6, color: "#16a34a", fontWeight: 600 }}>{t("UHRADENÁ")}</div>
           </div>
         </div>
 
@@ -158,7 +169,7 @@ function PlatformInvoicePage() {
                 marginBottom: 6,
               }}
             >
-              Dodávateľ
+              {t("Dodávateľ")}
             </div>
             <div style={{ fontWeight: 600 }}>{TOBIFY.name}</div>
             <div>{TOBIFY.street}</div>
@@ -167,13 +178,13 @@ function PlatformInvoicePage() {
             </div>
             <div>{TOBIFY.country}</div>
             <div style={{ marginTop: 6 }}>
-              IČO: <b>{TOBIFY.ico}</b>
+              {t("IČO:")} <b>{TOBIFY.ico}</b>
             </div>
             <div>
-              DIČ: <b>{TOBIFY.dic}</b>
+              {t("DIČ:")} <b>{TOBIFY.dic}</b>
             </div>
             <div>
-              IČ DPH: <b>{TOBIFY.ic_dph}</b>
+              {t("IČ DPH:")} <b>{TOBIFY.ic_dph}</b>
             </div>
             <div style={{ marginTop: 6 }}>{TOBIFY.email}</div>
             <div style={{ color: "#666", fontSize: 12, marginTop: 6 }}>{TOBIFY.registration}</div>
@@ -188,7 +199,7 @@ function PlatformInvoicePage() {
                 marginBottom: 6,
               }}
             >
-              Odberateľ
+              {t("Odberateľ")}
             </div>
             <div style={{ fontWeight: 600 }}>{b.name ?? "—"}</div>
             {b.street && <div>{b.street}</div>}
@@ -200,17 +211,17 @@ function PlatformInvoicePage() {
             {b.country && <div>{b.country}</div>}
             {b.ico && (
               <div style={{ marginTop: 6 }}>
-                IČO: <b>{b.ico}</b>
+                {t("IČO:")} <b>{b.ico}</b>
               </div>
             )}
             {b.dic && (
               <div>
-                DIČ: <b>{b.dic}</b>
+                {t("DIČ:")} <b>{b.dic}</b>
               </div>
             )}
             {b.ic_dph && (
               <div>
-                IČ DPH: <b>{b.ic_dph}</b>
+                {t("IČ DPH:")} <b>{b.ic_dph}</b>
               </div>
             )}
             {b.email && <div style={{ marginTop: 6 }}>{b.email}</div>}
@@ -220,22 +231,22 @@ function PlatformInvoicePage() {
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}>
           <thead>
             <tr style={{ background: "#f3f4f6", textAlign: "left" }}>
-              <th style={{ padding: 10, borderBottom: "1px solid #e5e7eb" }}>Položka</th>
+              <th style={{ padding: 10, borderBottom: "1px solid #e5e7eb" }}>{t("Položka")}</th>
               <th style={{ padding: 10, borderBottom: "1px solid #e5e7eb", textAlign: "right" }}>
-                Základ
+                {t("Základ")}
               </th>
               <th style={{ padding: 10, borderBottom: "1px solid #e5e7eb", textAlign: "right" }}>
-                DPH {Number(inv.vat_rate).toFixed(0)}%
+                {t("DPH")} {Number(inv.vat_rate).toFixed(0)}%
               </th>
               <th style={{ padding: 10, borderBottom: "1px solid #e5e7eb", textAlign: "right" }}>
-                Spolu
+                {t("Spolu")}
               </th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>
-                Predplatné Faktero — <b>{inv.plan_name}</b> (mesačné)
+                {t("Predplatné Faktero —")} <b>{inv.plan_name}</b> {t("(mesačné)")}
               </td>
               <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0", textAlign: "right" }}>
                 {money(inv.subtotal_cents, inv.currency)}
@@ -251,7 +262,7 @@ function PlatformInvoicePage() {
           <tfoot>
             <tr>
               <td colSpan={3} style={{ padding: 10, textAlign: "right", fontWeight: 600 }}>
-                Celkom na úhradu
+                {t("Celkom na úhradu")}
               </td>
               <td style={{ padding: 10, textAlign: "right", fontSize: 18, fontWeight: 700 }}>
                 {money(inv.total_cents, inv.currency)}
@@ -262,21 +273,28 @@ function PlatformInvoicePage() {
 
         <div style={{ color: "#555", fontSize: 13 }}>
           <div>
-            Spôsob úhrady: <b>online platobná karta cez GoPay</b>
-            {inv.provider_payment_id ? <> (ref. {inv.provider_payment_id})</> : null}
+            {t("Spôsob úhrady:")} <b>{t("online platobná karta cez GoPay")}</b>
+            {inv.provider_payment_id ? (
+              <>
+                {" "}
+                {t("(ref.")} {inv.provider_payment_id})
+              </>
+            ) : null}
           </div>
           <div style={{ marginTop: 6 }}>
-            Doklad je vystavený elektronicky a je platný bez podpisu a pečiatky.
+            {t("Doklad je vystavený elektronicky a je platný bez podpisu a pečiatky.")}
           </div>
           {(inv as any).prenesenie_dph ? (
             <div style={{ marginTop: 6, fontWeight: 600 }}>
-              Prenesenie daňovej povinnosti — daň je povinný priznať odberateľ (čl. 196 smernice
-              2006/112/ES, § 15 ods. 1 zákona č. 222/2004 Z. z.). Reverse charge.
+              {t(
+                "Prenesenie daňovej povinnosti — daň je povinný priznať odberateľ (čl. 196 smernice 2006/112/ES, § 15 ods. 1 zákona č. 222/2004 Z. z.). Reverse charge.",
+              )}
             </div>
           ) : (
             <div style={{ marginTop: 6 }}>
-              Dodávateľ je platiteľom DPH. Uplatnená sadzba DPH 23 % podľa zákona č. 222/2004 Z. z.
-              v znení účinnom od 1. 1. 2025.
+              {t(
+                "Dodávateľ je platiteľom DPH. Uplatnená sadzba DPH 23 % podľa zákona č. 222/2004 Z. z. v znení účinnom od 1. 1. 2025.",
+              )}
             </div>
           )}
         </div>

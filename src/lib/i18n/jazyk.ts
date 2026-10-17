@@ -45,9 +45,18 @@ type Slovnik = Record<string, string>;
 const moduly = import.meta.glob<Slovnik>("./de/*.ts", { eager: true, import: "default" });
 const DE: Slovnik = Object.assign({}, ...Object.values(moduly));
 
-/** Text v danom jazyku; `{meno}` sa nahradí hodnotou z `p`. */
+/**
+ * Text v danom jazyku; `{meno}` sa nahradí hodnotou z `p`.
+ *
+ * Kontext: to isté slovenské slovo môže mať v nemčine dva preklady
+ * („Prijaté“ = pozvánka „Angenommen“ aj pošta „Eingänge“). Vtedy sa kľúč
+ * napíše s kontextom `"pozvanka::Prijaté"` — slovensky sa ukáže časť za `::`,
+ * v slovníku je kľúč celý. Bez kontextového prekladu sa skúsi holé slovo.
+ */
 export function preloz(jazyk: Jazyk, text: string, p?: Record<string, string | number>): string {
-  let s = jazyk === "de" ? (DE[text] ?? text) : text;
+  const i = text.indexOf("::");
+  const holy = i > 0 ? text.slice(i + 2) : text;
+  let s = jazyk === "de" ? (DE[text] ?? DE[holy] ?? holy) : holy;
   if (p) for (const [k, v] of Object.entries(p)) s = s.split(`{${k}}`).join(String(v));
   return s;
 }

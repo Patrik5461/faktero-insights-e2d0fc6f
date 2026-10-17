@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Hash } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Odkaz na číselné rady z hlavičky zoznamu dokladov.
@@ -9,12 +10,13 @@ import { Hash } from "lucide-react";
  * vystavujú, rovnako ako „Účtovné exporty" pri faktúrach.
  */
 export function OdkazNaRady({ label = "Číselné rady" }: { label?: string }) {
+  const { t } = useT();
   return (
     <Link
       to="/ciselne-rady"
       className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
     >
-      <Hash className="h-4 w-4" /> {label}
+      <Hash className="h-4 w-4" /> {t(label)}
     </Link>
   );
 }

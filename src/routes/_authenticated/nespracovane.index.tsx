@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { useEffect, useRef, useState } from "react";
@@ -12,7 +14,7 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/")({
-  head: () => ({ meta: [{ title: "Nespracované doklady — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nespracované doklady — Faktero") }] }),
   component: Stranka,
 });
 
@@ -43,6 +45,7 @@ function naBase64(f: File): Promise<string> {
  * údaje, zaúčtuje a vytvorí.
  */
 function Stranka() {
+  const { t } = useT();
   const navigate = useNavigate();
   const nacitaj = useServerFn(nespracovaneFn);
   const nahraj = useServerFn(nahrajNespracovaneFn);
@@ -58,7 +61,7 @@ function Stranka() {
     try {
       setData(await nacitaj({ data: { company_id: cid } }));
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa načítať");
+      toast.error(e?.message ?? t("Nepodarilo sa načítať"));
     }
   }
   useEffect(() => {
@@ -70,18 +73,18 @@ function Stranka() {
   const cita = data?.doklady.some((d: any) => d.stav === "cita");
   useEffect(() => {
     if (!cita) return;
-    const t = setInterval(() => void obnov(), 4000);
-    return () => clearInterval(t);
+    const casovac = setInterval(() => void obnov(), 4000);
+    return () => clearInterval(casovac);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cita]);
 
   async function pridaj(subory: FileList | File[]) {
     const cid = getActiveCompanyId();
-    if (!cid) return toast.error("Vyberte firmu.");
+    if (!cid) return toast.error(t("Vyberte firmu."));
     const zoznam = Array.from(subory);
     for (const f of zoznam) {
       if (f.size > 15 * 1024 * 1024) {
-        toast.error(`${f.name}: súbor je väčší než 15 MB`);
+        toast.error(t("{subor}: súbor je väčší než 15 MB", { subor: f.name }));
         continue;
       }
       setNahravam((n) => n + 1);
@@ -90,7 +93,7 @@ function Stranka() {
           data: { company_id: cid, nazov: f.name, mime: f.type || "application/octet-stream", subor: await naBase64(f) },
         });
       } catch (e: any) {
-        toast.error(`${f.name}: ${e?.message ?? "nepodarilo sa nahrať"}`);
+        toast.error(`${f.name}: ${e?.message ?? t("nepodarilo sa nahrať")}`);
       } finally {
         setNahravam((n) => n - 1);
       }
@@ -101,7 +104,7 @@ function Stranka() {
   const riadky = [
     ...(data?.doklady ?? []).map((d: any) => ({ ...d, kluc: `n-${d.id}` })),
     // Druh bločka zo skenu nie je istý (aj faktúra sa dá naskenovať) — určí sa po otvorení.
-    ...(data?.blocky ?? []).map((b: any) => ({ ...b, kluc: `b-${b.id}`, stav: "vytazene", druh: null, chyba: null, subor: "zo skenu" })),
+    ...(data?.blocky ?? []).map((b: any) => ({ ...b, kluc: `b-${b.id}`, stav: "vytazene", druh: null, chyba: null, subor: t("zo skenu") })),
   ].sort((a, b) => String(b.vytvorene).localeCompare(String(a.vytvorene)));
 
   async function otvor(r: any) {
@@ -112,21 +115,21 @@ function Stranka() {
       if (v.id) navigate({ to: "/nespracovane/$id", params: { id: v.id } });
       else navigate({ to: "/doklady/novy", search: { id: r.id } as any });
     } catch (e: any) {
-      toast.error(e?.message ?? "Doklad sa nepodarilo otvoriť");
+      toast.error(e?.message ?? t("Doklad sa nepodarilo otvoriť"));
     }
   }
 
   const druhText = (r: any) =>
     r.druh ? (
-      DRUHY_NESPRACOVANYCH.find((d) => d.kluc === r.druh)?.nazov
+      t(DRUHY_NESPRACOVANYCH.find((d) => d.kluc === r.druh)?.nazov ?? r.druh)
     ) : (
-      <span className="text-muted-foreground">Neurčený</span>
+      <span className="text-muted-foreground">{t("Neurčený")}</span>
     );
   const sumaText = (r: any) => (r.suma != null ? formatujMenu(r.suma, r.mena) : "—");
   const datumText = (r: any) => (r.datum ? datumNaDoklade(r.datum) : "—");
   const zdrojText = (r: any) => (
     <span className="inline-flex items-center gap-1">
-      {ZDROJ[r.zdroj] ?? r.zdroj}
+      {t(ZDROJ[r.zdroj] ?? r.zdroj)}
       {r.typ === "nespracovany" ? (
         <ZdrojovyMailTlacidlo druh="nespracovany" id={r.id} inboxMessageId={r.inboxMessageId} ikona />
       ) : null}
@@ -135,21 +138,21 @@ function Stranka() {
   const stavText = (r: any) =>
     r.stav === "cita" ? (
       <span className="inline-flex items-center gap-1 text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Číta sa…
+        <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("Číta sa…")}
       </span>
     ) : r.stav === "chyba" ? (
       <span className="inline-flex items-center gap-1 text-amber-700" title={r.chyba ?? undefined}>
-        <AlertTriangle className="h-3.5 w-3.5" /> Doplniť ručne
+        <AlertTriangle className="h-3.5 w-3.5" /> {t("Doplniť ručne")}
       </span>
     ) : (
-      <span className="text-emerald-700">Vyťažené</span>
+      <span className="text-emerald-700">{t("Vyťažené")}</span>
     );
 
   return (
     <>
       <PageHeader
-        title="Nespracované doklady"
-        description="Všetko, čo príde e-mailom alebo nahráte, čaká tu. Otvorte doklad, určte druh, skontrolujte údaje, zaúčtujte a vytvorte."
+        title={t("Nespracované doklady")}
+        description={t("Všetko, čo príde e-mailom alebo nahráte, čaká tu. Otvorte doklad, určte druh, skontrolujte údaje, zaúčtujte a vytvorte.")}
         action={
           <button
             type="button"
@@ -157,7 +160,7 @@ function Stranka() {
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             {nahravam ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            Nahrať doklady
+            {t("Nahrať doklady")}
           </button>
         }
       />
@@ -187,28 +190,27 @@ function Stranka() {
           }}
           className={`mb-4 rounded-xl border-2 border-dashed p-6 text-center text-sm text-muted-foreground ${nad ? "border-primary bg-primary/5" : "border-border"}`}
         >
-          Pretiahnite sem faktúry, zálohové faktúry, bločky či iné doklady (PDF alebo fotky) — aj viac
-          naraz. Faktero ich prečíta a počkajú tu na zaradenie.
+          {t("Pretiahnite sem faktúry, zálohové faktúry, bločky či iné doklady (PDF alebo fotky) — aj viac naraz. Faktero ich prečíta a počkajú tu na zaradenie.")}
         </div>
 
         <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="p-3">Druh</th>
-                <th className="p-3">Dodávateľ</th>
-                <th className="p-3">Číslo</th>
-                <th className="p-3">Dátum</th>
-                <th className="p-3 text-right">Suma</th>
-                <th className="p-3">Zdroj</th>
-                <th className="p-3">Stav</th>
+                <th className="p-3">{t("Druh")}</th>
+                <th className="p-3">{t("Dodávateľ")}</th>
+                <th className="p-3">{t("Číslo")}</th>
+                <th className="p-3">{t("Dátum")}</th>
+                <th className="p-3 text-right">{t("Suma")}</th>
+                <th className="p-3">{t("Zdroj")}</th>
+                <th className="p-3">{t("Stav")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {!data && (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                    Načítavam…
+                    {t("Načítavam…")}
                   </td>
                 </tr>
               )}
@@ -216,7 +218,7 @@ function Stranka() {
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-muted-foreground">
                     <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                    Všetko je spracované.
+                    {t("Všetko je spracované.")}
                   </td>
                 </tr>
               )}
@@ -245,12 +247,12 @@ function Stranka() {
         {/* Na mobile karty — tabuľka by ukázala len prvé tri stĺpce. */}
         <div className="space-y-2 md:hidden">
           {!data && (
-            <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">Načítavam…</div>
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">{t("Načítavam…")}</div>
           )}
           {data && riadky.length === 0 && (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
               <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
-              Všetko je spracované.
+              {t("Všetko je spracované.")}
             </div>
           )}
           {riadky.map((r) => (

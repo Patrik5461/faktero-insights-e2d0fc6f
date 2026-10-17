@@ -1,3 +1,5 @@
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -16,11 +18,12 @@ function prijemca(d: {
 }
 
 export const Route = createFileRoute("/_authenticated/efaktura/dorucenia")({
-  head: () => ({ meta: [{ title: "Doručenia eFaktúr — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doručenia eFaktúr — Faktero") }] }),
   component: DeliveriesPage,
 });
 
 function DeliveriesPage() {
+  const { t } = useT();
   const [companyId, setCompanyId] = useState<string | null>(null);
   useEffect(() => setCompanyId(getActiveCompanyId()), []);
   const fn = useServerFn(listEfakturaDeliveriesFn);
@@ -33,27 +36,27 @@ function DeliveriesPage() {
   return (
     <>
       <PageHeader
-        title="Doručenia"
-        description="História pokusov o doručenie eFaktúr cez Peppol / digitálneho poštára / e-mail."
+        title={t("Doručenia")}
+        description={t("História pokusov o doručenie eFaktúr cez Peppol / digitálneho poštára / e-mail.")}
       />
       <PageBody>
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="p-3">Kanál</th>
-                <th className="p-3">Príjemca</th>
-                <th className="p-3">Stav</th>
-                <th className="p-3">Pokusy</th>
-                <th className="p-3">Odoslané</th>
-                <th className="p-3">Chyba</th>
+                <th className="p-3">{t("Kanál")}</th>
+                <th className="p-3">{t("Príjemca")}</th>
+                <th className="p-3">{t("Stav")}</th>
+                <th className="p-3">{t("Pokusy")}</th>
+                <th className="p-3">{t("Odoslané")}</th>
+                <th className="p-3">{t("Chyba")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {q.isLoading && (
                 <tr>
                   <td colSpan={6} className="p-6 text-center text-muted-foreground">
-                    Načítavam…
+                    {t("Načítavam…")}
                   </td>
                 </tr>
               )}
@@ -65,8 +68,7 @@ function DeliveriesPage() {
                         <Send className="h-6 w-6" />
                       </div>
                       <p className="text-sm">
-                        Zatiaľ neboli odoslané žiadne eFaktúry. Doručenia sa zobrazia po napojení
-                        Peppol prepravy.
+                        {t("Zatiaľ neboli odoslané žiadne eFaktúry. Doručenia sa zobrazia po napojení Peppol prepravy.")}
                       </p>
                     </div>
                   </td>
@@ -74,7 +76,7 @@ function DeliveriesPage() {
               )}
               {q.data?.map((d) => (
                 <tr key={d.id}>
-                  <td className="whitespace-nowrap p-3 text-xs">{kanalDorucenia(d.channel)}</td>
+                  <td className="whitespace-nowrap p-3 text-xs">{t(kanalDorucenia(d.channel))}</td>
                   <td className="max-w-[220px] truncate p-3 font-mono text-xs" title={prijemca(d)}>
                     {prijemca(d)}
                   </td>
@@ -82,7 +84,7 @@ function DeliveriesPage() {
                     <span
                       className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${d.status === "failed" || d.status === "rejected" ? "bg-destructive/10 text-destructive" : "bg-muted"}`}
                     >
-                      {stavDorucenia(d.status)}
+                      {t(stavDorucenia(d.status))}
                     </span>
                   </td>
                   <td className="p-3 tabular-nums">{d.attempt_count}</td>

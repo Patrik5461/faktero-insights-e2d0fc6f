@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -8,7 +10,7 @@ import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/api-kluce")({
-  head: () => ({ meta: [{ title: "API kľúče — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "API kľúče — Faktero") }] }),
   component: ApiKeysPage,
 });
 
@@ -29,6 +31,7 @@ function randomKey(mode: "test" | "live") {
 }
 
 function ApiKeysPage() {
+  const { t } = useT();
   const [keys, setKeys] = useState<any[]>([]);
   const [revealed, setRevealed] = useState<{ id: string; plaintext: string } | null>(null);
 
@@ -65,14 +68,14 @@ function ApiKeysPage() {
       .single();
     if (error || !data) {
       const { friendlyError } = await import("@/lib/faktero/plan-error");
-      return toast.error(friendlyError(error));
+      return toast.error(t(friendlyError(error)));
     }
     setRevealed({ id: data.id, plaintext });
     reload();
   }
 
   async function revoke(id: string) {
-    if (!(await potvrd("Zneplatniť kľúč?"))) return;
+    if (!(await potvrd(t("Zneplatniť kľúč?")))) return;
     // Kľúč sa nemaže, len zneplatní — denník volaní si tak drží, ktorým kľúčom čo prišlo.
     const { error } = await supabase
       .from("api_keys")
@@ -85,21 +88,21 @@ function ApiKeysPage() {
   return (
     <>
       <PageHeader
-        title="API kľúče"
-        description="Použite Bearer kľúč v hlavičke Authorization."
+        title={t("API kľúče")}
+        description={t("Použite Bearer kľúč v hlavičke Authorization.")}
         action={
           <div className="flex gap-2">
             <button
               onClick={() => create("test")}
               className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
             >
-              <Plus className="h-4 w-4" /> Test kľúč
+              <Plus className="h-4 w-4" /> {t("Test kľúč")}
             </button>
             <button
               onClick={() => create("live")}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Live kľúč
+              <Plus className="h-4 w-4" /> {t("Live kľúč")}
             </button>
           </div>
         }
@@ -108,7 +111,7 @@ function ApiKeysPage() {
         {revealed && (
           <div className="mb-4 rounded-xl border border-primary/40 bg-primary/5 p-4">
             <div className="text-sm font-medium">
-              Skopírujte si kľúč. Po zatvorení ho už nezobrazíme.
+              {t("Skopírujte si kľúč. Po zatvorení ho už nezobrazíme.")}
             </div>
             <div className="mt-2 flex items-center gap-2">
               <code className="flex-1 rounded bg-background p-2 font-mono text-sm">
@@ -117,7 +120,7 @@ function ApiKeysPage() {
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(revealed.plaintext);
-                  toast.success("Skopírované");
+                  toast.success(t("Skopírované"));
                 }}
                 className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
               >
@@ -127,7 +130,7 @@ function ApiKeysPage() {
                 onClick={() => setRevealed(null)}
                 className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
               >
-                Hotovo
+                {t("Hotovo")}
               </button>
             </div>
           </div>
@@ -136,10 +139,10 @@ function ApiKeysPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="p-3">Názov</th>
-                <th className="p-3">Režim</th>
-                <th className="p-3">Prefix</th>
-                <th className="p-3">Vytvorený</th>
+                <th className="p-3">{t("Názov")}</th>
+                <th className="p-3">{t("Režim")}</th>
+                <th className="p-3">{t("Prefix")}</th>
+                <th className="p-3">{t("Vytvorený")}</th>
                 <th></th>
               </tr>
             </thead>
@@ -147,7 +150,7 @@ function ApiKeysPage() {
               {keys.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                    Žiadne kľúče.
+                    {t("Žiadne kľúče.")}
                   </td>
                 </tr>
               )}
@@ -172,13 +175,13 @@ function ApiKeysPage() {
                   <td className="p-3 text-right">
                     {k.revoked_at ? (
                       <span className="text-xs text-muted-foreground">
-                        Zneplatnený {new Date(k.revoked_at).toLocaleDateString("sk-SK")}
+                        {t("Zneplatnený {datum}", { datum: new Date(k.revoked_at).toLocaleDateString("sk-SK") })}
                       </span>
                     ) : (
                       <button
                         onClick={() => revoke(k.id)}
-                        aria-label="Zneplatniť kľúč"
-                        title="Zneplatniť kľúč"
+                        aria-label={t("Zneplatniť kľúč")}
+                        title={t("Zneplatniť kľúč")}
                         className="rounded p-1.5 text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />

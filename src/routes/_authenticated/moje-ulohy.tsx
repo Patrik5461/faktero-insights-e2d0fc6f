@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { useEffect, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -41,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/moje-ulohy")({
     firma: typeof s.firma === "string" && /^[0-9a-f-]{36}$/i.test(s.firma) ? s.firma : undefined,
     dalej: s.dalej === "po-splatnosti" ? "po-splatnosti" : undefined,
   }),
-  head: () => ({ meta: [{ title: "Moje úlohy — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Moje úlohy — Faktero") }] }),
   component: Stranka,
 });
 
@@ -52,6 +54,7 @@ type Schvalenie = Awaited<ReturnType<typeof cakajuNaMnaFn>>;
 type Ulohy = Awaited<ReturnType<typeof mojeUlohyFn>>;
 
 function Stranka() {
+  const { t } = useT();
   const { firma, dalej } = Route.useSearch();
   const navigate = useNavigate();
   const prepnut = Boolean(firma && firma !== getActiveCompanyId());
@@ -75,7 +78,7 @@ function Stranka() {
             dalej === "po-splatnosti" ? "/faktury?poSplatnosti=true" : "/moje-ulohy",
           );
         } else {
-          toast.error("K firme z odkazu nemáte prístup — ukazujem úlohy vybranej firmy.");
+          toast.error(t("K firme z odkazu nemáte prístup — ukazujem úlohy vybranej firmy."));
           setPrepinam(false);
           void navigate({ to: "/moje-ulohy", search: {}, replace: true });
         }
@@ -102,7 +105,7 @@ function Stranka() {
       nacitajUlohy({ data: { company_id: companyId } })
         .then(setUlohy)
         .catch((e: any) => {
-          setChyba(e?.message ?? "Úlohy sa nepodarilo načítať");
+          setChyba(e?.message ?? t("Úlohy sa nepodarilo načítať"));
           setUlohy({ komentare: [], nespracovane: { pocet: 0, polozky: [] } });
         }),
     ]);
@@ -119,14 +122,14 @@ function Stranka() {
       await vyries({ data: { company_id: companyId, id, vyriesene } });
       if (vyriesene) {
         setUlohy((u) => (u ? { ...u, komentare: u.komentare.filter((k) => k.id !== id) } : u));
-        toast.success("Komentár je vyriešený", {
-          action: { label: "Späť", onClick: () => void vyriesit(id, false) },
+        toast.success(t("Komentár je vyriešený"), {
+          action: { label: t("Späť"), onClick: () => void vyriesit(id, false) },
         });
       } else {
         await obnov();
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(e?.message ?? t("Nepodarilo sa"));
     } finally {
       setRiesim(null);
     }
@@ -142,19 +145,19 @@ function Stranka() {
   return (
     <>
       <PageHeader
-        title="Moje úlohy"
-        description="Doklady na vaše schválenie, komentáre, v ktorých vás kolega označil, a doklady čakajúce na kontrolu."
+        title={t("Moje úlohy")}
+        description={t("Doklady na vaše schválenie, komentáre, v ktorých vás kolega označil, a doklady čakajúce na kontrolu.")}
       />
       <PageBody>
         {prepinam ? (
           <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Prepínam firmu…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("Prepínam firmu…")}
           </p>
         ) : !companyId ? (
-          <p className="text-sm text-muted-foreground">Vyberte firmu.</p>
+          <p className="text-sm text-muted-foreground">{t("Vyberte firmu.")}</p>
         ) : !nacitane ? (
           <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Načítavam…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
           </p>
         ) : (
           <>
@@ -166,10 +169,9 @@ function Stranka() {
             {nicNecaka(pocty) && !chyba && (
               <div className="rounded-xl border border-border bg-card p-6 text-center">
                 <PartyPopper className="mx-auto mb-2 h-8 w-8 text-primary" />
-                <p className="font-medium">Nič na vás nečaká</p>
+                <p className="font-medium">{t("Nič na vás nečaká")}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Keď vám niekto pošle doklad na schválenie alebo vás označí v komentári, objaví sa
-                  tu.
+                  {t("Keď vám niekto pošle doklad na schválenie alebo vás označí v komentári, objaví sa tu.")}
                 </p>
               </div>
             )}
@@ -184,13 +186,13 @@ function Stranka() {
             >
               {!schvalenie.zapnute ? (
                 <Prazdne>
-                  Schvaľovanie dokladov nie je vo firme zapnuté.{" "}
+                  {t("Schvaľovanie dokladov nie je vo firme zapnuté.")}{" "}
                   <Link to="/nastavenia/schvalovanie" className="underline">
-                    Nastavenia → Schvaľovanie dokladov
+                    {t("Nastavenia → Schvaľovanie dokladov")}
                   </Link>
                 </Prazdne>
               ) : schvalenie.polozky.length === 0 ? (
-                <Prazdne>Nič nečaká na vaše schválenie.</Prazdne>
+                <Prazdne>{t("Nič nečaká na vaše schválenie.")}</Prazdne>
               ) : (
                 <ul className="space-y-2">
                   {schvalenie.polozky.slice(0, NAJVIAC_NA_SCHVALENIE).map((p: any) => (
@@ -201,7 +203,7 @@ function Stranka() {
                       >
                         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
                           <div className="min-w-0">
-                            <div className="break-words font-medium">{p.cislo || "bez čísla"}</div>
+                            <div className="break-words font-medium">{p.cislo || t("bez čísla")}</div>
                             <div className="break-words text-sm text-muted-foreground">
                               {p.partner ?? "—"}
                             </div>
@@ -211,10 +213,10 @@ function Stranka() {
                           </div>
                         </div>
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                          <span>{NAZVY_AGEND[p.agenda as AgendaSchvalovania]}</span>
+                          <span>{t(NAZVY_AGEND[p.agenda as AgendaSchvalovania])}</span>
                           {p.datum ? <span>{datumNaDoklade(p.datum)}</span> : null}
                           <span>
-                            {NAZVY_STAVOV[p.stav as keyof typeof NAZVY_STAVOV]} · {p.odznak}
+                            {t(NAZVY_STAVOV[p.stav as keyof typeof NAZVY_STAVOV] ?? "")} · {p.odznak}
                           </span>
                         </div>
                       </Link>
@@ -222,9 +224,9 @@ function Stranka() {
                   ))}
                   {schvalenie.polozky.length > NAJVIAC_NA_SCHVALENIE && (
                     <li className="text-sm text-muted-foreground">
-                      …a ďalších {schvalenie.polozky.length - NAJVIAC_NA_SCHVALENIE} na stránke{" "}
+                      {t("…a ďalších {n} na stránke", { n: schvalenie.polozky.length - NAJVIAC_NA_SCHVALENIE })}{" "}
                       <Link to="/schvalovanie" className="underline">
-                        Na schválenie
+                        {t("Na schválenie")}
                       </Link>
                       .
                     </li>
@@ -239,7 +241,7 @@ function Stranka() {
               pocet={pocty.komentare}
             >
               {ulohy.komentare.length === 0 ? (
-                <Prazdne>Žiadny nevyriešený komentár, v ktorom by vás kolega označil.</Prazdne>
+                <Prazdne>{t("Žiadny nevyriešený komentár, v ktorom by vás kolega označil.")}</Prazdne>
               ) : (
                 <ul className="space-y-2">
                   {ulohy.komentare.map((k) => (
@@ -260,7 +262,7 @@ function Stranka() {
                             {popisDokladu(k.agenda, k.cislo, k.partner)}
                           </Link>
                         ) : (
-                          <span className="min-w-0 break-words">Doklad už nie je dostupný</span>
+                          <span className="min-w-0 break-words">{t("Doklad už nie je dostupný")}</span>
                         )}
                       </div>
                       {/* Text komentára ide ako obyčajný text — žiadne HTML z databázy. */}
@@ -277,7 +279,7 @@ function Stranka() {
                           ) : (
                             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                           )}
-                          Vyriešiť
+                          {t("Vyriešiť")}
                         </button>
                       </div>
                     </li>
@@ -293,7 +295,7 @@ function Stranka() {
               odkaz={{ to: "/nespracovane", text: "Celý zoznam" }}
             >
               {ulohy.nespracovane.polozky.length === 0 ? (
-                <Prazdne>Všetko je spracované.</Prazdne>
+                <Prazdne>{t("Všetko je spracované.")}</Prazdne>
               ) : (
                 <ul className="space-y-2">
                   {ulohy.nespracovane.polozky.map((r: any) => {
@@ -313,12 +315,12 @@ function Stranka() {
                             <div className="min-w-0">
                               <div className="break-words font-medium">
                                 {r.dodavatel ?? (
-                                  <span className="text-muted-foreground">Dodávateľ neurčený</span>
+                                  <span className="text-muted-foreground">{t("Dodávateľ neurčený")}</span>
                                 )}
                               </div>
                               <div className="break-words text-xs text-muted-foreground">
                                 {[
-                                  druh ?? (r.typ === "blocek" ? "Bloček" : "Druh neurčený"),
+                                  druh ? t(druh) : r.typ === "blocek" ? t("Bloček") : t("Druh neurčený"),
                                   r.cislo,
                                   r.datum ? datumNaDoklade(r.datum) : null,
                                 ]
@@ -333,14 +335,14 @@ function Stranka() {
                           <div className="mt-1 text-xs">
                             {s.ton === "cita" ? (
                               <span className="inline-flex items-center gap-1 text-muted-foreground">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> {s.text}
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t(s.text)}
                               </span>
                             ) : s.ton === "chyba" ? (
                               <span className="inline-flex items-center gap-1 text-amber-700">
-                                <AlertTriangle className="h-3.5 w-3.5" /> {s.text}
+                                <AlertTriangle className="h-3.5 w-3.5" /> {t(s.text)}
                               </span>
                             ) : (
-                              <span className="text-emerald-700">{s.text}</span>
+                              <span className="text-emerald-700">{t(s.text)}</span>
                             )}
                           </div>
                         </Link>
@@ -349,9 +351,9 @@ function Stranka() {
                   })}
                   {ulohy.nespracovane.pocet > ulohy.nespracovane.polozky.length && (
                     <li className="text-sm text-muted-foreground">
-                      …a ďalších {ulohy.nespracovane.pocet - ulohy.nespracovane.polozky.length} v{" "}
+                      {t("…a ďalších {n} v", { n: ulohy.nespracovane.pocet - ulohy.nespracovane.polozky.length })}{" "}
                       <Link to="/nespracovane" className="underline">
-                        Nespracovaných dokladoch
+                        {t("Nespracovaných dokladoch")}
                       </Link>
                       .
                     </li>
@@ -379,12 +381,13 @@ function Sekcia({
   odkaz?: { to: string; text: string };
   children: ReactNode;
 }) {
+  const { t } = useT();
   return (
     <section className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
           {ikona}
-          <span className="break-words">{nadpis}</span>
+          <span className="break-words">{t(nadpis)}</span>
           {pocet > 0 && (
             <span className="rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
               {pocet > 99 ? "99+" : pocet}
@@ -396,7 +399,7 @@ function Sekcia({
             to={odkaz.to as any}
             className="shrink-0 text-sm font-medium text-primary hover:underline"
           >
-            {odkaz.text} →
+            {t(odkaz.text)} →
           </Link>
         )}
       </div>

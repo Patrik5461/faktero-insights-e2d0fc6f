@@ -1,4 +1,5 @@
 import { BookCheck } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Tlačidlo v hlavičke dokladu: skočí na časť Zaúčtovanie (id „zauctovanie")
@@ -16,13 +17,14 @@ export function skocNaZauctovanie() {
 }
 
 export function TlacidloZauctovat({ zauctovane }: { zauctovane?: boolean }) {
+  const { t } = useT();
   return (
     <button
       type="button"
       onClick={skocNaZauctovanie}
       className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
     >
-      <BookCheck className="h-4 w-4" /> {zauctovane ? "Zaúčtovanie" : "Zaúčtovať"}
+      <BookCheck className="h-4 w-4" /> {zauctovane ? t("Zaúčtovanie") : t("Zaúčtovať")}
     </button>
   );
 }

@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/pokladna")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Pokladňa a doklady — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Pokladňa a doklady — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Pokladňa vo Faktere: stav hotovosti, pokladničné doklady, bločky, spôsob platby a načítanie eKasa QR kódu.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/pokladna" },
     ],
@@ -195,7 +199,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Pokladňa"
       title="Pokladňa, doklady a eKasa"
       intro={

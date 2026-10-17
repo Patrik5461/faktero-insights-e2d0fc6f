@@ -11,6 +11,7 @@ import {
   zostavPain001,
   type FakturaNaUhradu,
 } from "@/lib/faktero/hromadny-prikaz";
+import { useT } from "@/lib/i18n/useT";
 
 type Ucet = {
   id: string;
@@ -22,6 +23,13 @@ type Ucet = {
 
 const eur = formatovacMeny("EUR", "sk-SK");
 const dnes = () => new Date().toLocaleDateString("sv-SE");
+
+/** Dôvod vynechania z `pripravPlatby` (po slovensky) v jazyku používateľa. */
+function prelozDovod(dovod: string, t: (s: string, p?: Record<string, string | number>) => string) {
+  const m = dovod.match(/^je v mene (\S+) — SEPA príkaz platí len v eurách$/);
+  if (m) return t("je v mene {mena} — SEPA príkaz platí len v eurách", { mena: m[1] });
+  return t(dovod);
+}
 
 /**
  * Hromadný príkaz na úhradu z vybraných prijatých faktúr. Súbor sa stiahne a
@@ -37,6 +45,7 @@ export function HromadnyPrikaz({
   faktury: FakturaNaUhradu[];
   onClose: () => void;
 }) {
+  const { t } = useT();
   useZatvorNaEscape(onClose);
   const [ucty, setUcty] = useState<Ucet[] | null>(null);
   const [meno, setMeno] = useState("");
@@ -150,7 +159,14 @@ export function HromadnyPrikaz({
       a.remove();
       URL.revokeObjectURL(url);
       toast.success(
-        `Príkaz na ${platby.length} ${platby.length === 1 ? "platbu" : platby.length >= 2 && platby.length <= 4 ? "platby" : "platieb"} stiahnutý. Nahrajte ho v internetbankingu.`,
+        t(
+          platby.length === 1
+            ? "Príkaz na {n} platbu stiahnutý. Nahrajte ho v internetbankingu."
+            : platby.length >= 2 && platby.length <= 4
+              ? "Príkaz na {n} platby stiahnutý. Nahrajte ho v internetbankingu."
+              : "Príkaz na {n} platieb stiahnutý. Nahrajte ho v internetbankingu.",
+          { n: platby.length },
+        ),
       );
       onClose();
     } catch (e) {
@@ -165,31 +181,34 @@ export function HromadnyPrikaz({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Hromadný príkaz na úhradu"
+        aria-label={t("Hromadný príkaz na úhradu")}
         className="w-full max-w-lg rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold">Hromadný príkaz na úhradu</h3>
+        <h3 className="text-lg font-semibold">{t("Hromadný príkaz na úhradu")}</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Súbor SEPA XML, ktorý nahráte do internetbankingu ako hromadný príkaz. Prijme ho každá
-          slovenská aj česká banka.
+          {t(
+            "Súbor SEPA XML, ktorý nahráte do internetbankingu ako hromadný príkaz. Prijme ho každá slovenská aj česká banka.",
+          )}
         </p>
 
         <div className="mt-4 rounded-md bg-secondary/50 p-3 text-sm">
           <span className="font-medium">
-            {platby.length}{" "}
-            {platby.length === 1
-              ? "platba"
-              : platby.length >= 2 && platby.length <= 4
-                ? "platby"
-                : "platieb"}
+            {t(
+              platby.length === 1
+                ? "{n} platba"
+                : platby.length >= 2 && platby.length <= 4
+                  ? "{n} platby"
+                  : "{n} platieb",
+              { n: platby.length },
+            )}
           </span>{" "}
-          spolu <span className="font-semibold tabular-nums">{eur(spolu)}</span>
+          {t("spolu")} <span className="font-semibold tabular-nums">{eur(spolu)}</span>
         </div>
 
         {platby.some((p) => p.odpocitane > 0) && (
           <p className="mt-3 text-xs text-muted-foreground">
-            Platí sa len zvyšok (už uhradené z banky alebo zálohou):{" "}
+            {t("Platí sa len zvyšok (už uhradené z banky alebo zálohou):")}{" "}
             {platby
               .filter((p) => p.odpocitane > 0)
               .map((p) => `${p.cisloFaktury} −${eur(p.odpocitane)}`)
@@ -200,13 +219,14 @@ export function HromadnyPrikaz({
 
         {platby.some((p) => !p.vs) && (
           <p className="mt-3 text-xs text-muted-foreground">
-            Bez variabilného symbolu pôjde{" "}
+            {t("Bez variabilného symbolu pôjde")}{" "}
             {platby
               .filter((p) => !p.vs)
               .map((p) => p.cisloFaktury)
               .join(", ")}{" "}
-            — dodávateľ platbu spozná len podľa čísla faktúry v správe pre príjemcu. Symbol doplníte
-            v detaile faktúry.
+            {t(
+              "— dodávateľ platbu spozná len podľa čísla faktúry v správe pre príjemcu. Symbol doplníte v detaile faktúry.",
+            )}
           </p>
         )}
 
@@ -214,11 +234,13 @@ export function HromadnyPrikaz({
           <div className="mt-3 flex gap-2 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <div>
-              <div className="font-medium">Do príkazu nepôjde {preskocene.length}:</div>
+              <div className="font-medium">
+                {t("Do príkazu nepôjde {n}:", { n: preskocene.length })}
+              </div>
               <ul className="mt-1 space-y-0.5">
                 {preskocene.map((p) => (
                   <li key={p.id}>
-                    {p.cisloFaktury} — {p.dovod}
+                    {p.cisloFaktury} — {prelozDovod(p.dovod, t)}
                   </li>
                 ))}
               </ul>
@@ -229,12 +251,14 @@ export function HromadnyPrikaz({
         {platby.length > 0 && (
           <div className="mt-4 space-y-3 text-sm">
             <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Platiť z účtu</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {t("Platiť z účtu")}
+              </span>
               {ucty === null ? (
-                <div className="mt-1 text-muted-foreground">Načítavam účty…</div>
+                <div className="mt-1 text-muted-foreground">{t("Načítavam účty…")}</div>
               ) : ucty.length === 0 ? (
                 <div className="mt-1 text-destructive">
-                  Firma nemá zadaný bankový účet — doplňte ho v nastaveniach firmy.
+                  {t("Firma nemá zadaný bankový účet — doplňte ho v nastaveniach firmy.")}
                 </div>
               ) : (
                 <select
@@ -251,7 +275,7 @@ export function HromadnyPrikaz({
               )}
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Dátum úhrady</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("Dátum úhrady")}</span>
               <input
                 type="date"
                 value={datum}
@@ -268,10 +292,12 @@ export function HromadnyPrikaz({
                 className="mt-0.5"
               />
               <span>
-                Každú faktúru zaplatiť až v deň splatnosti
+                {t("Každú faktúru zaplatiť až v deň splatnosti")}
                 <span className="block text-xs text-muted-foreground">
-                  Faktúry po splatnosti pôjdu v zvolený dátum.
-                  {podlaSplatnosti && dni > 1 && ` Banka dostane ${dni} dávky podľa dátumu.`}
+                  {t("Faktúry po splatnosti pôjdu v zvolený dátum.")}
+                  {podlaSplatnosti &&
+                    dni > 1 &&
+                    " " + t("Banka dostane {n} dávky podľa dátumu.", { n: dni })}
                 </span>
               </span>
             </label>
@@ -283,7 +309,7 @@ export function HromadnyPrikaz({
             onClick={onClose}
             className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
           >
-            Zavrieť
+            {t("Zavrieť")}
           </button>
           {platby.length > 0 && (
             <button
@@ -296,7 +322,7 @@ export function HromadnyPrikaz({
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              Stiahnuť XML
+              {t("Stiahnuť XML")}
             </button>
           )}
         </div>

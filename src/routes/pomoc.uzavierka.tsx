@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/uzavierka")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Uzávierka — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Uzávierka — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Uzamknutie účtovného obdobia vo Faktere: čo sa zamkne, čo ostane možné a ako obdobie odomknúť.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/uzavierka" },
     ],
@@ -136,7 +140,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Účtovníctvo"
       title="Uzamknutie účtovného obdobia"
       intro={

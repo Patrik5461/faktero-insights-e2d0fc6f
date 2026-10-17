@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,11 +15,12 @@ import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/faktury/rychla")({
-  head: () => ({ meta: [{ title: "Rýchla faktúra — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Rýchla faktúra — Faktero") }] }),
   component: QuickInvoicePage,
 });
 
 function QuickInvoicePage() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const navigate = useNavigate();
   const vystav = useServerFn(vystavFakturuFn);
@@ -61,12 +64,12 @@ function QuickInvoicePage() {
 
   async function save() {
     const cid = getActiveCompanyId();
-    if (!cid) return toast.error("Vyberte firmu");
-    if (!customerId) return toast.error("Vyberte odberateľa");
+    if (!cid) return toast.error(t("Vyberte firmu"));
+    if (!customerId) return toast.error(t("Vyberte odberateľa"));
     const amt = Number(String(amount).replace(",", "."));
-    if (!amt || amt <= 0) return toast.error("Zadajte sumu");
+    if (!amt || amt <= 0) return toast.error(t("Zadajte sumu"));
     if (!description.trim()) {
-      return toast.error("Vyplňte text nad položkami — hovorí, čo sa fakturuje.");
+      return toast.error(t("Vyplňte text nad položkami — hovorí, čo sa fakturuje."));
     }
     setSaving(true);
     const today = new Date().toISOString().slice(0, 10);
@@ -100,10 +103,10 @@ function QuickInvoicePage() {
           ],
         },
       });
-      toast.success(`Faktúra ${inv.invoice_number} vytvorená`);
+      toast.success(t("Faktúra {cislo} vytvorená", { cislo: inv.invoice_number }));
       navigate({ to: "/faktury/$id", params: { id: inv.id } });
     } catch (e) {
-      toast.error(friendlyError(e, "Faktúru sa nepodarilo vytvoriť"));
+      toast.error(t(friendlyError(e, "Faktúru sa nepodarilo vytvoriť")));
     } finally {
       setSaving(false);
     }
@@ -111,7 +114,7 @@ function QuickInvoicePage() {
 
   return (
     <>
-      <PageHeader title="Rýchla faktúra" description={`Krok ${step} z 3`} />
+      <PageHeader title={t("Rýchla faktúra")} description={t("Krok {krok} z 3", { krok: step })} />
       <PageBody>
         <PoznamkaRezimuDph />
         <div className="mx-auto max-w-md space-y-4">
@@ -126,13 +129,13 @@ function QuickInvoicePage() {
 
           {step === 1 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-              <h2 className="font-medium">Odberateľ</h2>
+              <h2 className="font-medium">{t("Odberateľ")}</h2>
               <select
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
-                <option value="">— vyberte —</option>
+                <option value="">{t("— vyberte —")}</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -144,16 +147,16 @@ function QuickInvoicePage() {
                 onClick={() => setStep(2)}
                 className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
               >
-                Ďalej
+                {t("Ďalej")}
               </button>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-              <h2 className="font-medium">Suma a popis</h2>
+              <h2 className="font-medium">{t("Suma a popis")}</h2>
               <label className="block text-[13px] font-semibold text-foreground">
-                Suma (s DPH)
+                {t("Suma (s DPH)")}
                 <input
                   type="number"
                   inputMode="decimal"
@@ -165,7 +168,7 @@ function QuickInvoicePage() {
                 />
               </label>
               <label className="block text-[13px] font-semibold text-foreground">
-                DPH
+                {t("DPH")}
                 <select
                   value={vatRate}
                   onChange={(e) => {
@@ -182,16 +185,16 @@ function QuickInvoicePage() {
                 </select>
               </label>
               <label className="block text-[13px] font-semibold text-foreground">
-                Text nad položkami <span className="text-destructive">*</span>
+                {t("Text nad položkami")} <span className="text-destructive">*</span>
                 <input
                   required
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Napríklad: Práce podľa objednávky č. 2026/114"
+                  placeholder={t("Napríklad: Práce podľa objednávky č. 2026/114")}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal"
                 />
                 <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                  Vytlačí sa nad tabuľkou; suma pod ním pôjde ako jeden riadok.
+                  {t("Vytlačí sa nad tabuľkou; suma pod ním pôjde ako jeden riadok.")}
                 </span>
               </label>
               <div className="flex gap-2">
@@ -199,14 +202,14 @@ function QuickInvoicePage() {
                   onClick={() => setStep(1)}
                   className="flex-1 rounded-md border border-border px-4 py-2 text-sm"
                 >
-                  Späť
+                  {t("Späť")}
                 </button>
                 <button
                   disabled={!amount || !description.trim()}
                   onClick={() => setStep(3)}
                   className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
-                  Ďalej
+                  {t("Ďalej")}
                 </button>
               </div>
             </div>
@@ -214,28 +217,28 @@ function QuickInvoicePage() {
 
           {step === 3 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-              <h2 className="font-medium">Súhrn</h2>
+              <h2 className="font-medium">{t("Súhrn")}</h2>
               <div className="space-y-1 text-sm">
                 <Row
-                  label="Odberateľ"
+                  label={t("Odberateľ")}
                   value={customers.find((c) => c.id === customerId)?.name ?? ""}
                 />
-                <Row label="Text nad položkami" value={description} />
-                <Row label="Suma" value={`${amount} ${mena.symbol} (vrátane ${vatRate}% DPH)`} />
+                <Row label={t("Text nad položkami")} value={description} />
+                <Row label={t("Suma")} value={t("{suma} {mena} (vrátane {sadzba}% DPH)", { suma: amount, mena: mena.symbol, sadzba: vatRate })} />
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setStep(2)}
                   className="flex-1 rounded-md border border-border px-4 py-2 text-sm"
                 >
-                  Späť
+                  {t("Späť")}
                 </button>
                 <button
                   disabled={saving}
                   onClick={save}
                   className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
                 >
-                  {saving ? "Ukladám…" : "Vytvoriť faktúru"}
+                  {saving ? t("Ukladám…") : t("Vytvoriť faktúru")}
                 </button>
               </div>
             </div>

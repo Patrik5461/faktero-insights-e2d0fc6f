@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { NastaveniaZoznamu as Nastavenia } from "@/hooks/useNastaveniaZoznamu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Lišta nad zoznamom: uložené filtre a výber stĺpcov (ako v Doklado).
@@ -21,6 +22,7 @@ export function NastaveniaZoznamu({
   aktualne: Record<string, string>;
   pouzi: (hodnoty: Record<string, string>) => void;
 }) {
+  const { t } = useT();
   const [vybrany, setVybrany] = useState("");
   const [meno, setMeno] = useState("");
   const [filtrePreVsetky, setFiltrePreVsetky] = useState(false);
@@ -36,7 +38,7 @@ export function NastaveniaZoznamu({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <select
-        aria-label="Uložené filtre"
+        aria-label={t("Uložené filtre")}
         value={vybrany}
         onChange={(e) => {
           setVybrany(e.target.value);
@@ -45,24 +47,24 @@ export function NastaveniaZoznamu({
         }}
         className="h-9 max-w-48 rounded-md border border-input bg-background px-3 text-sm"
       >
-        <option value="">Uložené filtre…</option>
+        <option value="">{t("Uložené filtre…")}</option>
         {nastavenia.filtre.map((f) => (
           <option key={kluc(f)} value={kluc(f)}>
             {f.nazov}
-            {f.vsetkyFirmy ? " (všetky firmy)" : ""}
+            {f.vsetkyFirmy ? ` ${t("(všetky firmy)")}` : ""}
           </option>
         ))}
       </select>
       {aktivny && (
         <button
           type="button"
-          title="Zmazať uložený filter"
-          aria-label="Zmazať uložený filter"
+          title={t("Zmazať uložený filter")}
+          aria-label={t("Zmazať uložený filter")}
           onClick={async () => {
-            if (!(await potvrd(`Zmazať filter „${aktivny.nazov}"?`))) return;
+            if (!(await potvrd(t('Zmazať filter „{nazov}"?', { nazov: aktivny.nazov })))) return;
             await nastavenia
               .zmazFilter(aktivny)
-              .catch((e) => toast.error(e?.message ?? "Nepodarilo sa"));
+              .catch((e) => toast.error(t(e?.message ?? "Nepodarilo sa")));
             setVybrany("");
           }}
           className="inline-flex h-9 items-center rounded-md border border-border px-2 text-muted-foreground hover:bg-secondary"
@@ -77,15 +79,15 @@ export function NastaveniaZoznamu({
             type="button"
             className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
           >
-            <Bookmark className="h-4 w-4" /> Uložiť filter
+            <Bookmark className="h-4 w-4" /> {t("Uložiť filter")}
           </button>
         </PopoverTrigger>
         <PopoverContent align="start" className="space-y-3">
-          <div className="text-sm font-medium">Uložiť aktuálny filter</div>
+          <div className="text-sm font-medium">{t("Uložiť aktuálny filter")}</div>
           <input
             value={meno}
             onChange={(e) => setMeno(e.target.value)}
-            placeholder="Názov, napr. Neuhradené Orange"
+            placeholder={t("Názov, napr. Neuhradené Orange")}
             className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
           />
           <label className="flex items-center gap-2 text-sm">
@@ -94,7 +96,7 @@ export function NastaveniaZoznamu({
               checked={filtrePreVsetky}
               onChange={(e) => setFiltrePreVsetky(e.target.checked)}
             />
-            Pre všetky moje firmy
+            {t("Pre všetky moje firmy")}
           </label>
           <button
             type="button"
@@ -105,14 +107,14 @@ export function NastaveniaZoznamu({
                 setVybrany(kluc({ nazov: meno.trim().slice(0, 60), vsetkyFirmy: filtrePreVsetky }));
                 setMeno("");
                 setOtvoreneUlozenie(false);
-                toast.success("Filter je uložený");
+                toast.success(t("Filter je uložený"));
               } catch (e: any) {
-                toast.error(e?.message ?? "Nepodarilo sa");
+                toast.error(t(e?.message ?? "Nepodarilo sa"));
               }
             }}
             className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
-            Uložiť
+            {t("Uložiť")}
           </button>
         </PopoverContent>
       </Popover>
@@ -132,11 +134,11 @@ export function NastaveniaZoznamu({
             type="button"
             className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
           >
-            <Columns3 className="h-4 w-4" /> Stĺpce
+            <Columns3 className="h-4 w-4" /> {t("Stĺpce")}
           </button>
         </PopoverTrigger>
         <PopoverContent align="end" className="space-y-2">
-          <div className="text-sm font-medium">Zobrazené stĺpce</div>
+          <div className="text-sm font-medium">{t("Zobrazené stĺpce")}</div>
           {stlpce.map((s) => (
             <label key={s.kluc} className="flex items-center gap-2 text-sm">
               <input
@@ -149,7 +151,7 @@ export function NastaveniaZoznamu({
                   )
                 }
               />
-              {s.nazov}
+              {t(s.nazov)}
             </label>
           ))}
           <label className="flex items-center gap-2 border-t border-border pt-2 text-sm">
@@ -158,7 +160,7 @@ export function NastaveniaZoznamu({
               checked={stlpcePreVsetky}
               onChange={(e) => setStlpcePreVsetky(e.target.checked)}
             />
-            Pre všetky moje firmy
+            {t("Pre všetky moje firmy")}
           </label>
           <button
             type="button"
@@ -167,12 +169,12 @@ export function NastaveniaZoznamu({
                 await nastavenia.ulozStlpce(zvolene, stlpcePreVsetky);
                 setOtvoreneStlpce(false);
               } catch (e: any) {
-                toast.error(e?.message ?? "Nepodarilo sa");
+                toast.error(t(e?.message ?? "Nepodarilo sa"));
               }
             }}
             className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
           >
-            Uložiť
+            {t("Uložiť")}
           </button>
         </PopoverContent>
       </Popover>

@@ -4,9 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { Logo } from "@/components/faktero/Logo";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/nove-heslo")({
-  head: () => ({ meta: [{ title: "Nové heslo — Faktero" }, { name: "robots", content: "noindex" }] }),
+  head: ({ match }) => ({
+    meta: [
+      { title: preloz(match.context.jazyk ?? "sk", "Nové heslo — Faktero") },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: NoveHesloPage,
 });
 
@@ -16,6 +23,7 @@ export const Route = createFileRoute("/nove-heslo")({
  * adrese, ktorý spracuje klient Supabase) — tu sa už len mení heslo.
  */
 function NoveHesloPage() {
+  const { t } = useT();
   const [stav, setStav] = useState<"overujem" | "formular" | "bez-relacie" | "hotovo">("overujem");
   const [heslo, setHeslo] = useState("");
   const [znova, setZnova] = useState("");
@@ -41,12 +49,12 @@ function NoveHesloPage() {
 
   async function uloz(e: React.FormEvent) {
     e.preventDefault();
-    if (heslo.length < 8) return toast.error("Heslo musí mať aspoň 8 znakov.");
-    if (heslo !== znova) return toast.error("Heslá sa nezhodujú.");
+    if (heslo.length < 8) return toast.error(t("Heslo musí mať aspoň 8 znakov."));
+    if (heslo !== znova) return toast.error(t("Heslá sa nezhodujú."));
     setUkladam(true);
     const { error } = await supabase.auth.updateUser({ password: heslo });
     setUkladam(false);
-    if (error) return toast.error(prelozAuthChybu(error.message).sprava);
+    if (error) return toast.error(t(prelozAuthChybu(error.message).sprava));
     setStav("hotovo");
   }
 
@@ -59,20 +67,20 @@ function NoveHesloPage() {
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Nové heslo</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("Nové heslo")}</h1>
 
-        {stav === "overujem" && <p className="mt-3 text-sm text-muted-foreground">Overujem odkaz…</p>}
+        {stav === "overujem" && <p className="mt-3 text-sm text-muted-foreground">{t("Overujem odkaz…")}</p>}
 
         {stav === "bez-relacie" && (
           <>
             <p className="mt-3 text-sm text-muted-foreground">
-              Odkaz na zmenu hesla vypršal alebo už bol použitý. Vyžiadajte si nový.
+              {t("Odkaz na zmenu hesla vypršal alebo už bol použitý. Vyžiadajte si nový.")}
             </p>
             <Link
               to="/zabudnute-heslo"
               className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
             >
-              Poslať nový odkaz
+              {t("Poslať nový odkaz")}
             </Link>
           </>
         )}
@@ -80,7 +88,7 @@ function NoveHesloPage() {
         {stav === "formular" && (
           <form onSubmit={uloz} className="mt-5 space-y-3">
             <label className="block">
-              <span className="text-sm font-medium">Nové heslo</span>
+              <span className="text-sm font-medium">{t("Nové heslo")}</span>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -92,7 +100,7 @@ function NoveHesloPage() {
               />
             </label>
             <label className="block">
-              <span className="text-sm font-medium">Nové heslo znova</span>
+              <span className="text-sm font-medium">{t("Nové heslo znova")}</span>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -103,13 +111,13 @@ function NoveHesloPage() {
                 className={pole}
               />
             </label>
-            <p className="text-xs text-muted-foreground">Aspoň 8 znakov. Heslo, ktoré uniklo z iných služieb, neprejde.</p>
+            <p className="text-xs text-muted-foreground">{t("Aspoň 8 znakov. Heslo, ktoré uniklo z iných služieb, neprejde.")}</p>
             <button
               type="submit"
               disabled={ukladam}
               className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {ukladam ? "Ukladám…" : "Uložiť nové heslo"}
+              {ukladam ? t("Ukladám…") : t("Uložiť nové heslo")}
             </button>
           </form>
         )}
@@ -117,13 +125,13 @@ function NoveHesloPage() {
         {stav === "hotovo" && (
           <>
             <p className="mt-3 text-sm text-muted-foreground">
-              Heslo je zmenené a ste prihlásený. V mobilnej appke sa prihláste novým heslom.
+              {t("Heslo je zmenené a ste prihlásený. V mobilnej appke sa prihláste novým heslom.")}
             </p>
             <Link
               to="/dashboard"
               className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
             >
-              Pokračovať do Faktera
+              {t("Pokračovať do Faktera")}
             </Link>
           </>
         )}

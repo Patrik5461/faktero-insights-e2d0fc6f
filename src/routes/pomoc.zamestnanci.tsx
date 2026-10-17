@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/zamestnanci")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Zamestnanci — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Zamestnanci — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Personalistika vo Fakteru: karta zamestnanca, zmluvy a dokumenty zo šablón, dochádzka, neprítomnosti a pripomienky lehôt.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/zamestnanci" },
     ],
@@ -93,7 +97,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Firma"
       title="Zamestnanci"
       intro={<p>Karty, zmluvy zo šablón, dochádzka a lehoty — personalistika bez miezd.</p>}

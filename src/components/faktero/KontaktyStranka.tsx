@@ -7,6 +7,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, Pencil, Trash2, RotateCcw, Upload } from "lucide-react";
 import { ImportOdberatelovOkno } from "@/components/faktero/ImportOdberatelovOkno";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useServerFn } from "@tanstack/react-start";
 import { triggerEventFn } from "@/lib/faktero/email.functions";
@@ -83,8 +84,11 @@ const TEXTY = {
     ziadniVymazani: "Žiadni vymazaní odberatelia.",
     karta: "Otvoriť kartu odberateľa",
     vymazatJedneho: "Naozaj chcete vymazať tohto odberateľa?",
-    mnozne: "odberateľov",
-    vybrani: "Vybraní odberatelia",
+    vymazatViac: "Vymazať {n} odberateľov?",
+    natrvaloViac: "Natrvalo vymazať {n} odberateľov?",
+    skryti: "Vybraní odberatelia budú skrytí z rozhrania.",
+    natrvaloSprava: "Odberatelia sa odstránia natrvalo. Doklady ostanú — nesú si vlastný odpis údajov.",
+    skrytyJeden: "{meno} bude skrytý z rozhrania. Existujúce faktúry ostanú.",
     cesta: "/odberatelia",
   },
   dodavatel: {
@@ -97,8 +101,11 @@ const TEXTY = {
     ziadniVymazani: "Žiadni vymazaní dodávatelia.",
     karta: "Otvoriť kartu dodávateľa",
     vymazatJedneho: "Naozaj chcete vymazať tohto dodávateľa?",
-    mnozne: "dodávateľov",
-    vybrani: "Vybraní dodávatelia",
+    vymazatViac: "Vymazať {n} dodávateľov?",
+    natrvaloViac: "Natrvalo vymazať {n} dodávateľov?",
+    skryti: "Vybraní dodávatelia budú skrytí z rozhrania.",
+    natrvaloSprava: "Dodávatelia sa odstránia natrvalo. Doklady ostanú — nesú si vlastný odpis údajov.",
+    skrytyJeden: "{meno} bude skrytý z rozhrania. Existujúce faktúry ostanú.",
     cesta: "/dodavatelia",
   },
 } as const;
@@ -111,6 +118,7 @@ const EMPTY: Customer = { name: "", country: "SK", typ: "firma" };
  */
 export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy?: boolean }) {
   const T = TEXTY[rola];
+  const { t } = useT();
   const PRAZDNY: Customer = {
     ...EMPTY,
     odberatel: rola === "odberatel",
@@ -130,10 +138,10 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
     const pocet = list.selectedIds.length;
     try {
       await list.hardDelete(list.selectedIds);
-      toast.success(`Natrvalo vymazaných: ${pocet}`);
+      toast.success(t("Natrvalo vymazaných: {n}", { n: pocet }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBulkHardDelete(false);
     }
@@ -154,7 +162,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
     const cid = getActiveCompanyId();
     if (!cid) return;
     if (!c.odberatel && !c.dodavatel)
-      return toast.error("Kontakt musí byť odberateľ, dodávateľ alebo oboje.");
+      return toast.error(t("Kontakt musí byť odberateľ, dodávateľ alebo oboje."));
     // Zľava príde z políčka ako reťazec; číselný stĺpec ho neprijme a prázdne
     // pole musí ísť ako NULL, nie ako "".
     const zlava =
@@ -204,7 +212,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
         console.warn("[webhook] customer.created trigger zlyhal", e);
       }
     }
-    toast.success("Uložené");
+    toast.success(t("Uložené"));
     setEditing(null);
     list.reload();
   }
@@ -213,9 +221,9 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
     if (!rowDelete) return;
     try {
       await list.softDelete([rowDelete.id]);
-      toast.success(T.vymazany);
+      toast.success(t(T.vymazany));
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setRowDelete(null);
     }
@@ -223,10 +231,10 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
   async function confirmBulk() {
     try {
       await list.softDelete(list.selectedIds);
-      toast.success(`Vymazaných ${list.selectedIds.length}`);
+      toast.success(t("Vymazaných {n}", { n: list.selectedIds.length }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBulkDelete(false);
     }
@@ -237,8 +245,8 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
     <>
       {!list.showDeleted && (
         <button
-          aria-label="Upraviť"
-          title="Upraviť"
+          aria-label={t("Upraviť")}
+          title={t("Upraviť")}
           onClick={() => setEditing(c)}
           className="rounded p-1.5 hover:bg-muted"
         >
@@ -247,14 +255,14 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
       )}
       {list.showDeleted ? (
         <button
-          aria-label="Obnoviť"
-          title="Obnoviť"
+          aria-label={t("Obnoviť")}
+          title={t("Obnoviť")}
           onClick={async () => {
             try {
               await list.restore([c.id]);
-              toast.success("Obnovené");
+              toast.success(t("Obnovené"));
             } catch (e: any) {
-              toast.error(e?.message ?? "Chyba");
+              toast.error(e?.message ?? t("Chyba"));
             }
           }}
           className="rounded p-1.5 text-primary hover:bg-primary/10"
@@ -263,8 +271,8 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
         </button>
       ) : (
         <button
-          aria-label="Zmazať"
-          title="Zmazať"
+          aria-label={t("Zmazať")}
+          title={t("Zmazať")}
           onClick={() => setRowDelete(c)}
           className="rounded p-1.5 text-destructive hover:bg-destructive/10"
         >
@@ -277,21 +285,21 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
   return (
     <>
       <PageHeader
-        title={T.titulok}
-        description={T.popis}
+        title={t(T.titulok)}
+        description={t(T.popis)}
         action={
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setImportOtvoreny(true)}
               className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
             >
-              <Upload className="h-4 w-4" /> Importovať
+              <Upload className="h-4 w-4" /> {t("Importovať")}
             </button>
             <button
               onClick={() => setEditing(PRAZDNY)}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> {T.novy}
+              <Plus className="h-4 w-4" /> {t(T.novy)}
             </button>
           </div>
         }
@@ -309,7 +317,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
           <input
             value={list.search}
             onChange={(e) => list.setSearch(e.target.value)}
-            placeholder="Hľadať názov, IČO, email…"
+            placeholder={t("Hľadať názov, IČO, email…")}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
           />
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -325,10 +333,10 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
           onRestore={async () => {
             try {
               await list.restore(list.selectedIds);
-              toast.success("Obnovené");
+              toast.success(t("Obnovené"));
               list.clearSelection();
             } catch (e: any) {
-              toast.error(e?.message ?? "Chyba");
+              toast.error(e?.message ?? t("Chyba"));
             }
           }}
           onClear={list.clearSelection}
@@ -345,10 +353,10 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                       onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                     />
                   </th>
-                  <th className="p-3">Názov</th>
-                  <th className="p-3">IČO</th>
-                  <th className="p-3">DIČ</th>
-                  <th className="p-3">Email</th>
+                  <th className="p-3">{t("Názov")}</th>
+                  <th className="p-3">{t("IČO")}</th>
+                  <th className="p-3">{t("DIČ")}</th>
+                  <th className="p-3">{t("Email")}</th>
                   <th className="p-3"></th>
                 </tr>
               </thead>
@@ -356,14 +364,14 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                 {list.loading && (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      Načítavam…
+                      {t("Načítavam…")}
                     </td>
                   </tr>
                 )}
                 {!list.loading && list.rows.length === 0 && (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      {list.showDeleted ? T.ziadniVymazani : T.ziadni}
+                      {t(list.showDeleted ? T.ziadniVymazani : T.ziadni)}
                     </td>
                   </tr>
                 )}
@@ -385,13 +393,13 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                       <button
                         onClick={() => setEditing(c)}
                         className="text-left hover:underline"
-                        title={T.karta}
+                        title={t(T.karta)}
                       >
                         {c.name}
                       </button>
                       {jeFyzicka(c) && (
                         <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                          fyzická osoba
+                          {t("fyzická osoba")}
                         </span>
                       )}
                     </td>
@@ -406,10 +414,10 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
           </div>
           {/* Na mobile karty — v tabuľke by ikony Upraviť/Zmazať ostali mimo obrazovky. */}
           <ul className="divide-y divide-border md:hidden">
-            {list.loading && <li className="p-6 text-center text-muted-foreground">Načítavam…</li>}
+            {list.loading && <li className="p-6 text-center text-muted-foreground">{t("Načítavam…")}</li>}
             {!list.loading && list.rows.length === 0 && (
               <li className="p-6 text-center text-muted-foreground">
-                {list.showDeleted ? T.ziadniVymazani : T.ziadni}
+                {t(list.showDeleted ? T.ziadniVymazani : T.ziadni)}
               </li>
             )}
             {list.rows.map((c) => (
@@ -417,7 +425,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                 <input
                   type="checkbox"
                   className="mt-1"
-                  aria-label={`Vybrať ${c.name}`}
+                  aria-label={t("Vybrať {meno}", { meno: c.name })}
                   checked={!!list.selected[c.id]}
                   onChange={(e) => list.toggleSelect(c.id, e.target.checked)}
                 />
@@ -425,18 +433,18 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                   <button
                     onClick={() => setEditing(c)}
                     className="break-words text-left font-medium hover:underline"
-                    title={T.karta}
+                    title={t(T.karta)}
                   >
                     {c.name}
                   </button>
                   {jeFyzicka(c) && (
                     <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                      fyzická osoba
+                      {t("fyzická osoba")}
                     </span>
                   )}
                   <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-                    {c.ico && <span>IČO {c.ico}</span>}
-                    {c.dic && <span>DIČ {c.dic}</span>}
+                    {c.ico && <span>{t("IČO")} {c.ico}</span>}
+                    {c.dic && <span>{t("DIČ")} {c.dic}</span>}
                     {c.email && <span className="min-w-0 break-all">{c.email}</span>}
                   </div>
                 </div>
@@ -463,25 +471,25 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
       )}
       <ConfirmDialog
         open={!!rowDelete}
-        title={T.vymazatJedneho}
+        title={t(T.vymazatJedneho)}
         message={
-          rowDelete ? `${rowDelete.name} bude skrytý z rozhrania. Existujúce faktúry ostanú.` : ""
+          rowDelete ? t(T.skrytyJeden, { meno: rowDelete.name }) : ""
         }
         onCancel={() => setRowDelete(null)}
         onConfirm={confirmRow}
       />
       <ConfirmDialog
         open={bulkDelete}
-        title={`Vymazať ${list.selectedIds.length} ${T.mnozne}?`}
-        message={`${T.vybrani} budú skrytí z rozhrania.`}
+        title={t(T.vymazatViac, { n: list.selectedIds.length })}
+        message={t(T.skryti)}
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulk}
       />
       <ConfirmDialog
         open={bulkHardDelete}
-        title={`Natrvalo vymazať ${list.selectedIds.length} ${T.mnozne}?`}
-        message={`${T.titulok} sa odstránia natrvalo. Doklady ostanú — nesú si vlastný odpis údajov.`}
-        confirmLabel="Vymazať natrvalo"
+        title={t(T.natrvaloViac, { n: list.selectedIds.length })}
+        message={t(T.natrvaloSprava)}
+        confirmLabel={t("Vymazať natrvalo")}
         onCancel={() => setBulkHardDelete(false)}
         onConfirm={confirmBulkHardDelete}
       />
@@ -501,6 +509,7 @@ function CustomerDialog({
   onSave: (c: Customer) => void;
 }) {
   useZatvorNaEscape(onClose);
+  const { t: tr } = useT();
   const [c, setC] = useState<Customer>(initial);
   const [dup, setDup] = useState<null | { id: string; name: string }>(null);
   const findDup = useServerFn(findCustomerByIcoFn);
@@ -546,11 +555,11 @@ function CustomerDialog({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={c.id ? TEXTY[rola].upravit : TEXTY[rola].novy}
+        aria-label={tr(c.id ? TEXTY[rola].upravit : TEXTY[rola].novy)}
         className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">{c.id ? TEXTY[rola].upravit : TEXTY[rola].novy}</h2>
+        <h2 className="text-lg font-semibold">{tr(c.id ? TEXTY[rola].upravit : TEXTY[rola].novy)}</h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -566,7 +575,7 @@ function CustomerDialog({
                 checked={c.odberatel !== false}
                 onChange={(e) => f("odberatel", e.target.checked)}
               />
-              Odberateľ
+              {tr("Odberateľ")}
             </label>
             <label className="inline-flex items-center gap-2">
               <input
@@ -574,10 +583,10 @@ function CustomerDialog({
                 checked={Boolean(c.dodavatel)}
                 onChange={(e) => f("dodavatel", e.target.checked)}
               />
-              Dodávateľ
+              {tr("Dodávateľ")}
             </label>
             {c.odberatel === false && !c.dodavatel && (
-              <span className="text-xs text-destructive">Vyberte aspoň jedno.</span>
+              <span className="text-xs text-destructive">{tr("Vyberte aspoň jedno.")}</span>
             )}
           </div>
           {/* Firma alebo súkromná osoba. Rozhoduje to o tom, čo sa vypĺňa:
@@ -597,21 +606,21 @@ function CustomerDialog({
                     : "border-border hover:bg-secondary"
                 }`}
               >
-                {t.popis}
+                {tr(t.popis)}
               </button>
             ))}
           </div>
 
           <label className="block sm:col-span-2">
             <span className="text-sm font-medium">
-              {jeFyzicka(c) ? "Meno a priezvisko *" : "Názov *"}
+              {tr(jeFyzicka(c) ? "Meno a priezvisko *" : "Názov *")}
             </span>
             <div className="mt-1">
               {jeFyzicka(c) ? (
                 <input
                   value={c.name}
                   onChange={(e) => f("name", e.target.value)}
-                  placeholder="Ján Novák"
+                  placeholder={tr("Ján Novák")}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               ) : (
@@ -632,14 +641,17 @@ function CustomerDialog({
           </label>
           {dup && (
             <div className="sm:col-span-2 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
-              Kontakt s týmto IČO už v adresári je: <strong>{dup.name}</strong>. Ak je to ten istý,
-              otvorte radšej jeho kartu a zaškrtnite mu{" "}
-              {rola === "dodavatel" ? "Dodávateľ" : "Odberateľ"}.
+              {tr("Kontakt s týmto IČO už v adresári je:")} <strong>{dup.name}</strong>.{" "}
+              {tr(
+                rola === "dodavatel"
+                  ? "Ak je to ten istý, otvorte radšej jeho kartu a zaškrtnite mu Dodávateľ."
+                  : "Ak je to ten istý, otvorte radšej jeho kartu a zaškrtnite mu Odberateľ.",
+              )}
             </div>
           )}
           {!jeFyzicka(c) && (
             <label className="block">
-              <span className="text-sm font-medium">IČO</span>
+              <span className="text-sm font-medium">{tr("IČO")}</span>
               <div className="mt-1 flex -space-x-px items-start">
                 <input
                   value={c.ico ?? ""}
@@ -660,10 +672,10 @@ function CustomerDialog({
               </div>
             </label>
           )}
-          {!jeFyzicka(c) && <In label="DIČ" value={c.dic ?? ""} onChange={(v) => f("dic", v)} />}
+          {!jeFyzicka(c) && <In label={tr("DIČ")} value={c.dic ?? ""} onChange={(v) => f("dic", v)} />}
           {!jeFyzicka(c) && (
             <div>
-              <In label="IČ DPH" value={c.ic_dph ?? ""} onChange={(v) => f("ic_dph", v)} />
+              <In label={tr("IČ DPH")} value={c.ic_dph ?? ""} onChange={(v) => f("ic_dph", v)} />
               <OverenieVies
                 companyId={getActiveCompanyId()}
                 icDph={c.ic_dph}
@@ -685,16 +697,16 @@ function CustomerDialog({
             </div>
           )}
           <In
-            label="Kontaktná osoba"
+            label={tr("Kontaktná osoba")}
             value={c.contact_person ?? ""}
             onChange={(v) => f("contact_person", v)}
           />
-          <In label="Ulica" value={c.street ?? ""} onChange={(v) => f("street", v)} full />
-          <In label="Mesto" value={c.city ?? ""} onChange={(v) => f("city", v)} />
-          <In label="PSČ" value={c.zip ?? ""} onChange={(v) => f("zip", v)} />
-          <In label="Krajina" value={c.country ?? "SK"} onChange={(v) => f("country", v)} />
-          <In label="Email" type="email" value={c.email ?? ""} onChange={(v) => f("email", v)} />
-          <In label="Telefón" value={c.phone ?? ""} onChange={(v) => f("phone", v)} />
+          <In label={tr("Ulica")} value={c.street ?? ""} onChange={(v) => f("street", v)} full />
+          <In label={tr("Mesto")} value={c.city ?? ""} onChange={(v) => f("city", v)} />
+          <In label={tr("PSČ")} value={c.zip ?? ""} onChange={(v) => f("zip", v)} />
+          <In label={tr("Krajina")} value={c.country ?? "SK"} onChange={(v) => f("country", v)} />
+          <In label={tr("Email")} type="email" value={c.email ?? ""} onChange={(v) => f("email", v)} />
+          <In label={tr("Telefón")} value={c.phone ?? ""} onChange={(v) => f("phone", v)} />
           {c.dodavatel && (
             <>
               <label className="block">
@@ -708,7 +720,7 @@ function CustomerDialog({
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  Doplní sa do prijatej faktúry od tohto dodávateľa.
+                  {tr("Doplní sa do prijatej faktúry od tohto dodávateľa.")}
                 </span>
               </label>
               <label className="block">
@@ -726,7 +738,7 @@ function CustomerDialog({
             <>
               <JobPicker
                 className="sm:col-span-2"
-                label="Predvolená zákazka"
+                label={tr("Predvolená zákazka")}
                 value={c.default_job_id ?? ""}
                 // Prázdny výber musí ísť do databázy ako NULL — prázdny reťazec
                 // nie je platné UUID a uloženie by padlo.
@@ -734,13 +746,13 @@ function CustomerDialog({
               />
               {skupiny.length > 0 && (
                 <label className="block">
-                  <span className="text-sm font-medium">Cenová skupina</span>
+                  <span className="text-sm font-medium">{tr("Cenová skupina")}</span>
                   <select
                     value={c.price_group_id ?? ""}
                     onChange={(e) => f("price_group_id", e.target.value || null)}
                     className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
-                    <option value="">— bez skupiny —</option>
+                    <option value="">{tr("— bez skupiny —")}</option>
                     {skupiny.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
@@ -753,7 +765,7 @@ function CustomerDialog({
                 </label>
               )}
               <label className="block">
-                <span className="text-sm font-medium">Individuálna zľava (%)</span>
+                <span className="text-sm font-medium">{tr("Individuálna zľava (%)")}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -768,11 +780,11 @@ function CustomerDialog({
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  Prebíja zľavu cenovej skupiny. Dohodnutá cena v cenníku prebíja obe.
+                  {tr("Prebíja zľavu cenovej skupiny. Dohodnutá cena v cenníku prebíja obe.")}
                 </span>
               </label>
               <label className="block">
-                <span className="text-sm font-medium">Jazyk dokladov</span>
+                <span className="text-sm font-medium">{tr("Jazyk dokladov")}</span>
                 <select
                   value={c.invoice_language ?? "sk"}
                   onChange={(e) =>
@@ -787,7 +799,7 @@ function CustomerDialog({
                   ))}
                 </select>
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  Predvolí sa na jeho faktúrach; prekladajú sa popisky v PDF, nie názvy položiek.
+                  {tr("Predvolí sa na jeho faktúrach; prekladajú sa popisky v PDF, nie názvy položiek.")}
                 </span>
               </label>
             </>
@@ -795,7 +807,7 @@ function CustomerDialog({
           {/* Samofakturácia je dohoda s dodávateľom; staršie dohody ostávajú viditeľné. */}
           {(c.dodavatel || c.samofakturacia_od) && <SamofakturaciaDohoda c={c} f={f} />}
           <label className="sm:col-span-2 block">
-            <span className="text-sm font-medium">Poznámky</span>
+            <span className="text-sm font-medium">{tr("Poznámky")}</span>
             <textarea
               value={c.notes ?? ""}
               onChange={(e) => f("notes", e.target.value)}
@@ -809,13 +821,13 @@ function CustomerDialog({
               onClick={onClose}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
             >
-              Zrušiť
+              {tr("Zrušiť")}
             </button>
             <button
               type="submit"
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              Uložiť
+              {tr("Uložiť")}
             </button>
           </div>
         </form>
@@ -835,6 +847,7 @@ function SamofakturaciaDohoda({
   c: Customer;
   f: <K extends keyof Customer>(k: K, v: any) => void;
 }) {
+  const { t } = useT();
   const [otvorena, setOtvorena] = useState(Boolean(c.samofakturacia_od));
   if (!otvorena) {
     return (
@@ -844,21 +857,22 @@ function SamofakturaciaDohoda({
           onClick={() => setOtvorena(true)}
           className="text-sm text-primary hover:underline"
         >
-          + Dohoda o samofakturácii (faktúry za tohto dodávateľa vyhotovujete vy)
+          {t("+ Dohoda o samofakturácii (faktúry za tohto dodávateľa vyhotovujete vy)")}
         </button>
       </div>
     );
   }
   return (
     <fieldset className="sm:col-span-2 rounded-md border border-border p-3">
-      <legend className="px-1 text-sm font-medium">Dohoda o samofakturácii</legend>
+      <legend className="px-1 text-sm font-medium">{t("Dohoda o samofakturácii")}</legend>
       <p className="mb-3 text-xs text-muted-foreground">
-        Faktúry za tohto dodávateľa vyhotovujete vy a on ich odsúhlasí. Zákon chce písomnú dohodu
-        uzavretú vopred — zapíšte, od kedy platí.
+        {t(
+          "Faktúry za tohto dodávateľa vyhotovujete vy a on ich odsúhlasí. Zákon chce písomnú dohodu uzavretú vopred — zapíšte, od kedy platí.",
+        )}
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-sm font-medium">Platí od</span>
+          <span className="text-sm font-medium">{t("Platí od")}</span>
           <input
             type="date"
             value={c.samofakturacia_od ?? ""}
@@ -867,7 +881,7 @@ function SamofakturaciaDohoda({
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium">Platí do (nepovinné)</span>
+          <span className="text-sm font-medium">{t("Platí do (nepovinné)")}</span>
           <input
             type="date"
             value={c.samofakturacia_do ?? ""}
@@ -877,10 +891,10 @@ function SamofakturaciaDohoda({
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-sm font-medium">Dohoda (číslo, dátum podpisu, poznámka)</span>
+          <span className="text-sm font-medium">{t("Dohoda (číslo, dátum podpisu, poznámka)")}</span>
           <input
             value={c.samofakturacia_dohoda ?? ""}
-            placeholder="napr. Zmluva o samofakturácii č. 3/2026 zo dňa 1. 10. 2026"
+            placeholder={t("napr. Zmluva o samofakturácii č. 3/2026 zo dňa 1. 10. 2026")}
             onChange={(e) => f("samofakturacia_dohoda", e.target.value)}
             className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
@@ -896,7 +910,7 @@ function SamofakturaciaDohoda({
           }}
           className="mt-2 text-xs text-muted-foreground hover:underline"
         >
-          Bez dohody
+          {t("Bez dohody")}
         </button>
       )}
     </fieldset>

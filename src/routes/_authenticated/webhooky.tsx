@@ -7,9 +7,11 @@ import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { Plus, Trash2, Copy } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/webhooky")({
-  head: () => ({ meta: [{ title: "Webhooky — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Webhooky — Faktero") }] }),
   component: WebhooksPage,
 });
 
@@ -33,6 +35,7 @@ function genSecret() {
 }
 
 function WebhooksPage() {
+  const { t } = useT();
   const [hooks, setHooks] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
@@ -64,7 +67,7 @@ function WebhooksPage() {
   async function save(w: any) {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    if (!w.url?.startsWith("https://")) return toast.error("URL musí začínať https://");
+    if (!w.url?.startsWith("https://")) return toast.error(t("URL musí začínať https://"));
     const payload = {
       company_id: cid,
       url: w.url,
@@ -80,12 +83,12 @@ function WebhooksPage() {
       const { friendlyError } = await import("@/lib/faktero/plan-error");
       return toast.error(friendlyError(error));
     }
-    toast.success("Uložené");
+    toast.success(t("Uložené"));
     setEditing(null);
     reload();
   }
   async function remove(id: string) {
-    if (!(await potvrd("Zmazať webhook?"))) return;
+    if (!(await potvrd(t("Zmazať webhook?")))) return;
     const { error } = await supabase.from("webhooks").delete().eq("id", id);
     if (error) return toast.error(error.message);
     reload();
@@ -94,8 +97,8 @@ function WebhooksPage() {
   return (
     <>
       <PageHeader
-        title="Webhooky"
-        description="Koncové body (HTTPS adresy), ktoré zavoláme pri udalostiach."
+        title={t("Webhooky")}
+        description={t("Koncové body (HTTPS adresy), ktoré zavoláme pri udalostiach.")}
         action={
           <button
             onClick={() =>
@@ -103,7 +106,7 @@ function WebhooksPage() {
             }
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Nový webhook
+            <Plus className="h-4 w-4" /> {t("Nový webhook")}
           </button>
         }
       />
@@ -114,16 +117,16 @@ function WebhooksPage() {
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="p-3">URL</th>
-                  <th className="p-3">Udalosti</th>
-                  <th className="p-3">Aktívny</th>
-                  <th className="p-3 text-right">Akcie</th>
+                  <th className="p-3">{t("Udalosti")}</th>
+                  <th className="p-3">{t("Aktívny")}</th>
+                  <th className="p-3 text-right">{t("Akcie")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {hooks.length === 0 && (
                   <tr>
                     <td colSpan={4} className="p-6 text-center text-muted-foreground">
-                      Žiadne webhooky.
+                      {t("Žiadne webhooky.")}
                     </td>
                   </tr>
                 )}
@@ -131,16 +134,17 @@ function WebhooksPage() {
                   <tr key={w.id}>
                     <td className="p-3 font-mono text-xs">{w.url}</td>
                     <td className="p-3 text-xs">{(w.events ?? []).join(", ")}</td>
-                    <td className="p-3">{w.active ? "áno" : "nie"}</td>
+                    <td className="p-3">{w.active ? t("áno") : t("nie")}</td>
                     <td className="p-3 text-right">
                       <button
                         onClick={() => setEditing(w)}
                         className="mr-2 rounded border border-border px-2 py-1 text-xs hover:bg-secondary"
                       >
-                        Upraviť
+                        {t("Upraviť")}
                       </button>
                       <button
                         onClick={() => remove(w.id)}
+                        aria-label={t("Zmazať")}
                         className="rounded p-1 text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -153,23 +157,23 @@ function WebhooksPage() {
           </div>
 
           <div>
-            <h3 className="mb-2 text-sm font-semibold">Posledné doručenia</h3>
+            <h3 className="mb-2 text-sm font-semibold">{t("Posledné doručenia")}</h3>
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="p-3">Čas</th>
-                    <th className="p-3">Udalosť</th>
-                    <th className="p-3">Stav</th>
+                    <th className="p-3">{t("Čas")}</th>
+                    <th className="p-3">{t("Udalosť")}</th>
+                    <th className="p-3">{t("Stav")}</th>
                     <th className="p-3">HTTP</th>
-                    <th className="p-3">Pokusy</th>
+                    <th className="p-3">{t("Pokusy")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {logs.length === 0 && (
                     <tr>
                       <td colSpan={5} className="p-6 text-center text-muted-foreground">
-                        Žiadne doručenia.
+                        {t("Žiadne doručenia.")}
                       </td>
                     </tr>
                   )}
@@ -203,7 +207,7 @@ function WebhooksPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold">
-                {editing.id ? "Upraviť webhook" : "Nový webhook"}
+                {editing.id ? t("Upraviť webhook") : t("Nový webhook")}
               </h3>
               <label className="block text-sm">
                 <span className="font-medium">URL</span>
@@ -215,7 +219,7 @@ function WebhooksPage() {
                 />
               </label>
               <div className="text-sm">
-                <span className="font-medium">Udalosti</span>
+                <span className="font-medium">{t("Udalosti")}</span>
                 <div className="mt-1 grid grid-cols-2 gap-1">
                   {EVENTS.map((ev) => {
                     const checked = editing.events?.includes(ev) || editing.events?.includes("*");
@@ -245,10 +249,10 @@ function WebhooksPage() {
                   checked={editing.active ?? true}
                   onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
                 />{" "}
-                Aktívny
+                {t("Aktívny")}
               </label>
               <div>
-                <span className="text-sm font-medium">Podpisový tajný kľúč</span>
+                <span className="text-sm font-medium">{t("Podpisový tajný kľúč")}</span>
                 <div className="mt-1 flex gap-2">
                   <input
                     readOnly
@@ -259,15 +263,16 @@ function WebhooksPage() {
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(editing.secret ?? "");
-                      toast.success("Skopírované");
+                      toast.success(t("Skopírované"));
                     }}
+                    aria-label={t("Kopírovať")}
                     className="rounded-md border border-border px-2 hover:bg-secondary"
                   >
                     <Copy className="h-4 w-4" />
                   </button>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Hlavička <code>X-Faktero-Signature</code> = HMAC-SHA256(secret, body).
+                  {t("Hlavička")} <code>X-Faktero-Signature</code> = HMAC-SHA256(secret, body).
                 </p>
               </div>
               <div className="flex justify-end gap-2 pt-2">
@@ -275,13 +280,13 @@ function WebhooksPage() {
                   onClick={() => setEditing(null)}
                   className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
                 >
-                  Zrušiť
+                  {t("Zrušiť")}
                 </button>
                 <button
                   onClick={() => save(editing)}
                   className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
-                  Uložiť
+                  {t("Uložiť")}
                 </button>
               </div>
             </div>

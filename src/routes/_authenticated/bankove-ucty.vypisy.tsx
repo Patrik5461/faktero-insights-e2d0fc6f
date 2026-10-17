@@ -9,6 +9,8 @@ import {
   getBankStatementUrl,
 } from "@/lib/faktero/tatrabanka.functions";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import {
   FileText,
   FileCode2,
@@ -21,7 +23,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/vypisy")({
-  head: () => ({ meta: [{ title: "Bankové výpisy — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Bankové výpisy — Faktero") }] }),
   component: BankStatementsPage,
 });
 
@@ -41,9 +43,9 @@ const MESIACE = [
 ];
 
 /** "2026-07-01" → "Júl 2026" */
-function fmtObdobie(periodStart: string) {
+function fmtObdobie(periodStart: string, t: (s: string) => string = (s) => s) {
   const [y, m] = periodStart.split("-");
-  return `${MESIACE[Number(m) - 1]} ${y}`;
+  return `${t(MESIACE[Number(m) - 1])} ${y}`;
 }
 
 function fmtVelkost(bytes: number | null) {
@@ -54,6 +56,7 @@ function fmtVelkost(bytes: number | null) {
 }
 
 function BankStatementsPage() {
+  const { t } = useT();
   const loadData = useServerFn(listBankData);
   const loadStatements = useServerFn(listBankStatements);
   const getUrl = useServerFn(getBankStatementUrl);
@@ -75,7 +78,7 @@ function BankStatementsPage() {
         setAccounts(d.accounts ?? []);
         setStatements(s.statements ?? []);
       } catch (e: any) {
-        toast.error(e?.message ?? "Nepodarilo sa načítať výpisy");
+        toast.error(e?.message ?? t("Nepodarilo sa načítať výpisy"));
       } finally {
         setLoading(false);
       }
@@ -92,7 +95,7 @@ function BankStatementsPage() {
       window.open(url, "_blank", "noopener");
     } catch (e: any) {
       toast.error(
-        e?.message === "not_ready" ? "Výpis ešte nie je pripravený" : "Stiahnutie zlyhalo",
+        e?.message === "not_ready" ? t("Výpis ešte nie je pripravený") : t("Stiahnutie zlyhalo"),
       );
     } finally {
       setBusy(null);
@@ -126,26 +129,25 @@ function BankStatementsPage() {
   return (
     <>
       <PageHeader
-        title="Bankové výpisy"
-        description="Mesačné výpisy v PDF a XML. Sťahujú sa automaticky; pre účty vedené v inej banke ich zostaví Faktero."
+        title={t("Bankové výpisy")}
+        description={t("Mesačné výpisy v PDF a XML. Sťahujú sa automaticky; pre účty vedené v inej banke ich zostaví Faktero.")}
         action={
           <Link
             to="/bankove-ucty"
             className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm hover:bg-secondary"
           >
-            <ArrowLeft className="h-4 w-4" /> Späť na účty
+            <ArrowLeft className="h-4 w-4" /> {t("Späť na účty")}
           </Link>
         }
       />
       <PageBody>
-        {loading && <div className="text-sm text-muted-foreground">Načítavam…</div>}
+        {loading && <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>}
 
         {!loading && zoradeneObdobia.length === 0 && (
           <div className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
             <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
             <p className="mt-2 text-sm text-muted-foreground">
-              Zatiaľ tu nie sú žiadne výpisy. Sťahujú sa automaticky vždy na začiatku mesiaca za
-              mesiac predchádzajúci.
+              {t("Zatiaľ tu nie sú žiadne výpisy. Sťahujú sa automaticky vždy na začiatku mesiaca za mesiac predchádzajúci.")}
             </p>
           </div>
         )}
@@ -159,7 +161,7 @@ function BankStatementsPage() {
           return (
             <div key={obdobie} className="mt-6 first:mt-0">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {fmtObdobie(obdobie)}
+                {fmtObdobie(obdobie, t)}
               </h2>
               <div className="mt-3 space-y-2">
                 {riadky.map(([ucetId, formaty]) => {
@@ -172,13 +174,13 @@ function BankStatementsPage() {
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">{ucet?.account_name ?? "Účet"}</span>
+                          <span className="font-medium">{ucet?.account_name ?? t("Účet")}</span>
                           {vlastny && (
                             <span
                               className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-200"
-                              title="Banka pre tento účet výpis nevydáva, zostavilo ho Faktero z načítaných transakcií."
+                              title={t("Banka pre tento účet výpis nevydáva, zostavilo ho Faktero z načítaných transakcií.")}
                             >
-                              <Sparkles className="h-3 w-3" /> Zostavené Fakterom
+                              <Sparkles className="h-3 w-3" /> {t("Zostavené Fakterom")}
                             </span>
                           )}
                         </div>
@@ -213,9 +215,9 @@ function BankStatementsPage() {
                             <span
                               key={typ}
                               className="inline-flex h-9 items-center gap-1.5 rounded-md border border-dashed border-border px-3 text-sm text-muted-foreground"
-                              title="Banka výpis ešte generuje, skúste neskôr"
+                              title={t("Banka výpis ešte generuje, skúste neskôr")}
                             >
-                              <Clock className="h-4 w-4" /> {typ} sa pripravuje
+                              <Clock className="h-4 w-4" /> {t("{typ} sa pripravuje", { typ })}
                             </span>
                           );
                         }
@@ -225,7 +227,7 @@ function BankStatementsPage() {
                             className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-destructive"
                             title={s.error ?? undefined}
                           >
-                            <AlertCircle className="h-4 w-4" /> {typ} zlyhalo
+                            <AlertCircle className="h-4 w-4" /> {t("{typ} zlyhalo", { typ })}
                           </span>
                         );
                       })}
@@ -242,13 +244,9 @@ function BankStatementsPage() {
             <div className="flex gap-2">
               <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
               <div className="text-sm text-amber-900 dark:text-amber-100">
-                <p className="font-medium">Výpisy označené „Zostavené Fakterom“</p>
+                <p className="font-medium">{t("Výpisy označené „Zostavené Fakterom“")}</p>
                 <p className="mt-1">
-                  Pre účty vedené v inej banke Tatra banka výpis nevydáva, preto ho zostavíme z
-                  transakcií, ktoré sme z účtu načítali. Formát je rovnaký ako od banky — PDF na
-                  čítanie a XML (camt.053) na import do účtovníctva. Nejde však o doklad vydaný
-                  bankou a nemusí obsahovať položky, ktoré banka do prehľadu transakcií neposiela
-                  (napríklad niektoré poplatky).
+                  {t("Pre účty vedené v inej banke Tatra banka výpis nevydáva, preto ho zostavíme z transakcií, ktoré sme z účtu načítali. Formát je rovnaký ako od banky — PDF na čítanie a XML (camt.053) na import do účtovníctva. Nejde však o doklad vydaný bankou a nemusí obsahovať položky, ktoré banka do prehľadu transakcií neposiela (napríklad niektoré poplatky).")}
                 </p>
               </div>
             </div>
@@ -261,9 +259,7 @@ function BankStatementsPage() {
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="text-sm text-muted-foreground">
                 <p>
-                  Pre tieto účty zatiaľ výpis nemáme — banka ho nevydáva a nemáme ani dosť
-                  transakcií na to, aby sme ho zostavili sami. Zostatky a transakcie sa načítavajú
-                  normálne.
+                  {t("Pre tieto účty zatiaľ výpis nemáme — banka ho nevydáva a nemáme ani dosť transakcií na to, aby sme ho zostavili sami. Zostatky a transakcie sa načítavajú normálne.")}
                 </p>
                 <ul className="mt-2 space-y-0.5 text-xs">
                   {nepodporovane.map((a) => (

@@ -1,15 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
 import { APP_STORE_FAKTERO, APP_STORE_KNIHA_JAZD } from "@/lib/faktero/obchody";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/apka")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Aplikácia v telefóne — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Aplikácia v telefóne — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Faktero v telefóne: vystavovanie faktúr a skenovanie dokladov bez signálu, automatické rozpoznanie jazdy a samostatná appka Kniha jázd.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/apka" },
     ],
@@ -239,7 +243,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Aplikácia v telefóne"
       title="Faktero v telefóne"
       intro={

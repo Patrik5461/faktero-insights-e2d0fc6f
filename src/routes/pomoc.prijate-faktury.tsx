@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/prijate-faktury")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Prijaté faktúry — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Prijaté faktúry — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Prijaté faktúry vo Faktere: zápis ručne aj e-mailom, položky a náhľad dokladu, hromadné akcie, splatnosť, úhrady, platba z banky, DPH na vstupe a samofakturácia.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/prijate-faktury" },
     ],
@@ -66,9 +70,9 @@ const sections: HelpSection[] = [
           <li>
             <strong>E-mailom</strong> — faktúru od dodávateľa prepošlete na svoju adresu a zaeviduje
             sa sama. Najrýchlejšia cesta, popísaná v{" "}
-            <Link to="/pomoc/doklady">manuáli k dokladom</Link>. Kto vedie viac firiem, môže
-            použiť <strong>rozdeľovač</strong> — jednu adresu pre všetky firmy; doklad pôjde tej, na
-            ktorej IČO alebo IČ DPH je vystavený, a čo nesedí na žiadnu, počká na ručné priradenie.
+            <Link to="/pomoc/doklady">manuáli k dokladom</Link>. Kto vedie viac firiem, môže použiť{" "}
+            <strong>rozdeľovač</strong> — jednu adresu pre všetky firmy; doklad pôjde tej, na ktorej
+            IČO alebo IČ DPH je vystavený, a čo nesedí na žiadnu, počká na ručné priradenie.
           </li>
           <li>
             <strong>Zo Skenera</strong> — PDF alebo fotku nahráte v{" "}
@@ -137,8 +141,8 @@ const sections: HelpSection[] = [
             internetbankingu (býva to „Import príkazov“ alebo „Hromadný príkaz“) a zaplatíte všetky
             vybrané faktúry naraz. Vyberiete účet, z ktorého sa platí, a dátum; faktúry môžu ísť aj
             každá až v deň splatnosti. Variabilný, špecifický a konštantný symbol sa prenesú tak,
-            ako ich dodávateľ uvidí vo výpise. Symbol dlhší ako 10 číslic alebo s písmenami
-            (napr. referencia <code>RF…</code> zahraničného dodávateľa) sa neoreže — ide celý ako{" "}
+            ako ich dodávateľ uvidí vo výpise. Symbol dlhší ako 10 číslic alebo s písmenami (napr.
+            referencia <code>RF…</code> zahraničného dodávateľa) sa neoreže — ide celý ako{" "}
             <strong>referencia platiteľa</strong>. Faktúry bez IBAN-u, v inej mene než euro, už
             zaplatené alebo platené hotovosťou či kartou sa do príkazu nedostanú — okno povie ktoré
             a prečo. Za zaplatené sa faktúry neoznačia hneď — až keď platbu z účtu spárujete s
@@ -273,23 +277,22 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Na detaile prijatej faktúry je časť <strong>Zaúčtovanie</strong> s
-          predkontáciou, členením DPH (plnením) a kategóriou nákladu. Kódy píšete také, aké máte v
-          Pohode; Faktero ponúkne tie, ktoré už používate. Prázdne pole znamená predvolenú hodnotu z{" "}
+          Na detaile prijatej faktúry je časť <strong>Zaúčtovanie</strong> s predkontáciou, členením
+          DPH (plnením) a kategóriou nákladu. Kódy píšete také, aké máte v Pohode; Faktero ponúkne
+          tie, ktoré už používate. Prázdne pole znamená predvolenú hodnotu z{" "}
           <Link to="/uctovnictvo/pohoda">nastavení prepojenia s Pohodou</Link>.
         </p>
         <p>
           Viac faktúr naraz zaúčtujete v zozname: označte ich a kliknite na <em>Zaúčtovať</em>.
           Vyplnené pole sa nastaví všetkým, prázdne nechá, čo na faktúre je. Opakujúcich sa
-          dodávateľov zaúčtuje samo{" "}
-          <Link to="/uctovnictvo/pravidla">pravidlo účtovania</Link> (napríklad „Orange →
-          predkontácia 5Fp, členenie PD“).
+          dodávateľov zaúčtuje samo <Link to="/uctovnictvo/pravidla">pravidlo účtovania</Link>{" "}
+          (napríklad „Orange → predkontácia 5Fp, členenie PD“).
         </p>
         <p>
           Zaúčtované faktúry si berie konektor do Pohody — ako prijatú faktúru s číslom dodávateľa,
-          dátumom dodania, splatnosťou a rozpisom DPH. Odovzdaná faktúra je označená <em>V Pohode</em>{" "}
-          a vo Fakteri sa jej zaúčtovanie už nemení. Samofaktúra sa dá zaúčtovať až po odsúhlasení
-          dodávateľom.
+          dátumom dodania, splatnosťou a rozpisom DPH. Odovzdaná faktúra je označená{" "}
+          <em>V Pohode</em> a vo Fakteri sa jej zaúčtovanie už nemení. Samofaktúra sa dá zaúčtovať
+          až po odsúhlasení dodávateľom.
         </p>
         <p>
           <strong>Rozúčtovanie na viac predkontácií:</strong> v časti Zaúčtovanie kliknite na{" "}
@@ -300,17 +303,18 @@ const sections: HelpSection[] = [
           kódy. Rovnako sa dá rozúčtovať aj bloček (Doklady → otvoriť doklad → Zaúčtovanie).
         </p>
         <p>
-          <strong>Stiahnuť hneď:</strong> zaúčtovaná faktúra má tlačidlo <em>Stiahnuť XML pre Pohodu</em>{" "}
-          (v zozname aj hromadne pre označené). Faktúra sa tým označí ako odovzdaná, aby ju konektor
-          neposlal druhýkrát.
+          <strong>Stiahnuť hneď:</strong> zaúčtovaná faktúra má tlačidlo{" "}
+          <em>Stiahnuť XML pre Pohodu</em> (v zozname aj hromadne pre označené). Faktúra sa tým
+          označí ako odovzdaná, aby ju konektor neposlal druhýkrát.
         </p>
         <p>
           <strong>Zle zaúčtované alebo zatriedené:</strong> odovzdanú faktúru vrátite tlačidlom{" "}
-          <em>Vrátiť z Pohody (opraviť)</em> — zaúčtovanie sa zruší a po oprave pôjde znova; v Pohode
-          ju predtým zmažte, inak tam bude dvakrát. Bloček zaradený medzi faktúry presuniete späť
-          tlačidlom <em>Presunúť medzi doklady</em> (aj s prílohou a úhradou z účtu). Odovzdaný bloček
-          sa vracia v úprave dokladu, rovnako tlačidlom <em>Vrátiť z Pohody</em>. Dátum dodania (deň
-          daňového plnenia) je vo formulári hneď pri dátume vystavenia — rozhoduje o období DPH.
+          <em>Vrátiť z Pohody (opraviť)</em> — zaúčtovanie sa zruší a po oprave pôjde znova; v
+          Pohode ju predtým zmažte, inak tam bude dvakrát. Bloček zaradený medzi faktúry presuniete
+          späť tlačidlom <em>Presunúť medzi doklady</em> (aj s prílohou a úhradou z účtu). Odovzdaný
+          bloček sa vracia v úprave dokladu, rovnako tlačidlom <em>Vrátiť z Pohody</em>. Dátum
+          dodania (deň daňového plnenia) je vo formulári hneď pri dátume vystavenia — rozhoduje o
+          období DPH.
         </p>
       </>
     ),
@@ -357,14 +361,15 @@ const sections: HelpSection[] = [
           vyhotovení odberateľom sa preloží), cudziu menu s prepočtom dane kurzom ECB a osobitnú
           úpravu podľa § 65 a § 66, zľavu na celú faktúru a zúčtovanie zaplatenej zálohy (prijatej
           zálohovej faktúry od toho istého dodávateľa). Položky sa dajú vybrať z cenníka a skladu —
-          pri skladovej karte sa ponúkne posledná nákupná cena. Pri <strong>prenesení daňovej povinnosti</strong> (kovový šrot
-          a odpad, stavebné práce podľa § 69 ods. 12, alebo dodávateľ z iného štátu EÚ) daň na
-          faktúre nebude — samozdaníte ju vy a dodávateľovi platíte len základ. Pri dodávateľovi z
-          iného štátu EÚ faktúra odkazuje na smernicu (čl. 138 pri tovare, čl. 196 pri službe).
+          pri skladovej karte sa ponúkne posledná nákupná cena. Pri{" "}
+          <strong>prenesení daňovej povinnosti</strong> (kovový šrot a odpad, stavebné práce podľa
+          § 69 ods. 12, alebo dodávateľ z iného štátu EÚ) daň na faktúre nebude — samozdaníte ju vy
+          a dodávateľovi platíte len základ. Pri dodávateľovi z iného štátu EÚ faktúra odkazuje na
+          smernicu (čl. 138 pri tovare, čl. 196 pri službe).
         </p>
         <p>
-          Dodávateľ dostane e-mail aj stránku na odsúhlasenie <strong>v jazyku faktúry</strong> —
-          po slovensky, česky, anglicky, nemecky alebo maďarsky.
+          Dodávateľ dostane e-mail aj stránku na odsúhlasenie <strong>v jazyku faktúry</strong> — po
+          slovensky, česky, anglicky, nemecky alebo maďarsky.
         </p>
         <p>
           <strong>3. Odsúhlasenie.</strong> Na detaile faktúry kliknite na{" "}
@@ -379,14 +384,14 @@ const sections: HelpSection[] = [
         </p>
         <p>
           <strong>Čo sa deje potom.</strong> Odsúhlasená samofaktúra je obyčajná prijatá faktúra:
-          vstupuje do DPH na vstupe a kontrolného výkazu (časť B.2, pri viacerých sadzbách
-          rozpísaná po sadzbách), dá sa uhradiť z banky aj hromadným príkazom a PDF v odsúhlasenej
-          podobe sa uloží ako príloha. Meniť sa už nedá — chyba sa opravuje dobropisom: na detaile
-          kliknite na <em>Vystaviť dobropis</em>, položky sa predvyplnia so záporným množstvom a na
-          dobropise bude číslo opravovanej faktúry. Aj dobropis musí dodávateľ odsúhlasiť. Výkup tovaru
-          na sklad prijmete z odsúhlasenej samofaktúry tlačidlom <em>Prijať na sklad</em> — nákupná
-          cena je cena z faktúry po zľavách, v pohyboch skladu je pri ňom odkaz na samofaktúru. Kým nie je
-          odsúhlasená, do výkazov ani do príkazu na úhradu nevstúpi a výkaz na ňu upozorní.
+          vstupuje do DPH na vstupe a kontrolného výkazu (časť B.2, pri viacerých sadzbách rozpísaná
+          po sadzbách), dá sa uhradiť z banky aj hromadným príkazom a PDF v odsúhlasenej podobe sa
+          uloží ako príloha. Meniť sa už nedá — chyba sa opravuje dobropisom: na detaile kliknite na{" "}
+          <em>Vystaviť dobropis</em>, položky sa predvyplnia so záporným množstvom a na dobropise
+          bude číslo opravovanej faktúry. Aj dobropis musí dodávateľ odsúhlasiť. Výkup tovaru na
+          sklad prijmete z odsúhlasenej samofaktúry tlačidlom <em>Prijať na sklad</em> — nákupná
+          cena je cena z faktúry po zľavách, v pohyboch skladu je pri ňom odkaz na samofaktúru. Kým
+          nie je odsúhlasená, do výkazov ani do príkazu na úhradu nevstúpi a výkaz na ňu upozorní.
         </p>
         <p>
           Dodávateľ si faktúru zaeviduje medzi svoje <em>vydané</em> faktúry pod číslom, ktoré
@@ -420,7 +425,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Fakturácia"
       title="Prijaté faktúry"
       intro={

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/useT";
 
 const logoFull = "/faktero-logo-full.png";
 /*
@@ -31,6 +32,7 @@ type LogoProps = {
 };
 
 export function Logo({ variant = "header", className }: LogoProps) {
+  const { t } = useT();
   if (variant === "icon") {
     return (
       <img
@@ -46,7 +48,7 @@ export function Logo({ variant = "header", className }: LogoProps) {
     return (
       <div className={cn("flex flex-col gap-1", className)}>
         <LogoObrazok className="h-10 w-auto" />
-        <span className="text-xs text-muted-foreground">API-first fakturácia</span>
+        <span className="text-xs text-muted-foreground">{t("API-first fakturácia")}</span>
       </div>
     );
   }

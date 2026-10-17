@@ -14,15 +14,20 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { Trash2, Plus, ArrowRightLeft } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/nova")({
-  head: () => ({ meta: [{ title: "Nový presun — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Nový presun — Faktero") }],
+  }),
   component: NewTransferPage,
 });
 
 type LineItem = { source_stock_item_id: string; quantity: string; unit_price: string };
 
 function NewTransferPage() {
+  const { t } = useT();
   const nav = useNavigate();
   const create = useServerFn(createTransfer);
   const fetchCompanies = useServerFn(listUserCompaniesForTransfer);
@@ -157,10 +162,10 @@ function NewTransferPage() {
           })),
         },
       });
-      toast.success("Presun vytvorený ako koncept.");
+      toast.success(t("Presun vytvorený ako koncept."));
       nav({ to: "/sklad/presuny/$id", params: { id: res.id } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa vytvoriť presun.");
+      toast.error(e?.message ?? t("Nepodarilo sa vytvoriť presun."));
     } finally {
       setBusy(false);
     }
@@ -169,8 +174,8 @@ function NewTransferPage() {
   return (
     <>
       <PageHeader
-        title="Nový presun"
-        description="Presun medzi skladmi jednej firmy alebo medzi vlastnými firmami"
+        title={t("Nový presun")}
+        description={t("Presun medzi skladmi jednej firmy alebo medzi vlastnými firmami")}
       />
       <PageBody>
         <div className="mx-auto max-w-3xl space-y-6">
@@ -181,20 +186,20 @@ function NewTransferPage() {
               onClick={() => setMode("warehouse")}
               className={`px-4 py-2 rounded text-sm ${mode === "warehouse" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
             >
-              Medzi skladmi
+              {t("Medzi skladmi")}
             </button>
             <button
               type="button"
               onClick={() => setMode("company")}
               className={`px-4 py-2 rounded text-sm ${mode === "company" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
             >
-              Medzi firmami
+              {t("Medzi firmami")}
             </button>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr] items-end">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Zo skladu</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("Zo skladu")}</label>
               <select
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                 value={warehouseFrom}
@@ -212,13 +217,15 @@ function NewTransferPage() {
             </div>
             {mode === "warehouse" ? (
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Do skladu</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {t("Do skladu")}
+                </label>
                 <select
                   className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                   value={warehouseTo}
                   onChange={(e) => setWarehouseTo(e.target.value)}
                 >
-                  <option value="">— vyberte —</option>
+                  <option value="">{t("— vyberte —")}</option>
                   {warehouses
                     .filter((w) => w.id !== warehouseFrom)
                     .map((w) => (
@@ -231,13 +238,15 @@ function NewTransferPage() {
             ) : (
               <div className="space-y-2">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Cieľová firma</label>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    {t("Cieľová firma")}
+                  </label>
                   <select
                     className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                     value={targetCompany}
                     onChange={(e) => setTargetCompany(e.target.value)}
                   >
-                    <option value="">— vyberte —</option>
+                    <option value="">{t("— vyberte —")}</option>
                     {companies.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -248,14 +257,14 @@ function NewTransferPage() {
                 {targetCompany && (
                   <div>
                     <label className="text-xs font-medium text-muted-foreground">
-                      Cieľový sklad
+                      {t("Cieľový sklad")}
                     </label>
                     <select
                       className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                       value={warehouseTo}
                       onChange={(e) => setWarehouseTo(e.target.value)}
                     >
-                      <option value="">— vyberte —</option>
+                      <option value="">{t("— vyberte —")}</option>
                       {targetWarehouses.map((w) => (
                         <option key={w.id} value={w.id}>
                           {w.name}
@@ -264,7 +273,7 @@ function NewTransferPage() {
                     </select>
                     {targetWarehouses.length === 0 && (
                       <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
-                        Cieľová firma zatiaľ nemá žiadny sklad — presun by nemal kam prísť.
+                        {t("Cieľová firma zatiaľ nemá žiadny sklad — presun by nemal kam prísť.")}
                         <button
                           type="button"
                           disabled={busy}
@@ -279,16 +288,16 @@ function NewTransferPage() {
                               });
                               setTargetWarehouses(list ?? []);
                               setWarehouseTo(w?.id ?? "");
-                              toast.success("Cieľová firma má teraz Hlavný sklad.");
+                              toast.success(t("Cieľová firma má teraz Hlavný sklad."));
                             } catch (e: any) {
-                              toast.error(e?.message ?? "Sklad sa nepodarilo založiť.");
+                              toast.error(e?.message ?? t("Sklad sa nepodarilo založiť."));
                             } finally {
                               setBusy(false);
                             }
                           }}
                           className="ml-1 font-medium underline disabled:opacity-50"
                         >
-                          Založiť jej Hlavný sklad
+                          {t("Založiť jej Hlavný sklad")}
                         </button>
                       </div>
                     )}
@@ -300,15 +309,16 @@ function NewTransferPage() {
 
           {companies.length === 0 && mode === "company" && (
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
-              Nemáte prístup k žiadnej ďalšej firme. Pridajte sa do inej firmy pre presuny medzi
-              firmami.
+              {t(
+                "Nemáte prístup k žiadnej ďalšej firme. Pridajte sa do inej firmy pre presuny medzi firmami.",
+              )}
             </div>
           )}
 
           {/* Items */}
           <div className="rounded-md border">
             <div className="flex items-center justify-between border-b px-3 py-2 bg-muted/30">
-              <div className="text-sm font-medium">Položky</div>
+              <div className="text-sm font-medium">{t("Položky")}</div>
               <button
                 type="button"
                 onClick={() =>
@@ -319,13 +329,13 @@ function NewTransferPage() {
                 }
                 className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
               >
-                <Plus className="h-4 w-4" /> Pridať položku
+                <Plus className="h-4 w-4" /> {t("Pridať položku")}
               </button>
             </div>
             <div className="hidden gap-2 border-b px-3 py-1.5 text-xs text-muted-foreground sm:grid sm:grid-cols-[1fr_120px_120px_32px]">
-              <span>Položka</span>
-              <span>Množstvo</span>
-              <span>Cena/MJ</span>
+              <span>{t("Položka")}</span>
+              <span>{t("Množstvo")}</span>
+              <span>{t("Cena/MJ")}</span>
               <span />
             </div>
             <div className="divide-y">
@@ -354,7 +364,7 @@ function NewTransferPage() {
                           });
                         }}
                       >
-                        <option value="">— vyberte položku —</option>
+                        <option value="">{t("— vyberte položku —")}</option>
                         {stockItems.map((si) => (
                           <option key={si.id} value={si.id}>
                             {itemLabel(si)}
@@ -365,12 +375,14 @@ function NewTransferPage() {
                         <div className="mt-1 text-xs">
                           {m.matched_target_id ? (
                             <span className="text-emerald-700 dark:text-emerald-300">
-                              ✓ Nájdená v cieľovej firme (
-                              {m.matched_by === "sku" ? "podľa kódu" : "podľa čiarového kódu"})
+                              ✓{" "}
+                              {m.matched_by === "sku"
+                                ? t("Nájdená v cieľovej firme (podľa kódu)")
+                                : t("Nájdená v cieľovej firme (podľa čiarového kódu)")}
                             </span>
                           ) : (
                             <span className="text-amber-700 dark:text-amber-300">
-                              Nie je v cieľovej firme — pri dokončení sa vytvorí nová.
+                              {t("Nie je v cieľovej firme — pri dokončení sa vytvorí nová.")}
                             </span>
                           )}
                         </div>
@@ -378,14 +390,14 @@ function NewTransferPage() {
                     </div>
                     <label className="block min-w-0">
                       <span className="mb-1 block text-xs text-muted-foreground sm:hidden">
-                        Množstvo
+                        {t("Množstvo")}
                       </span>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
-                        placeholder="Množstvo"
-                        aria-label="Množstvo"
+                        placeholder={t("Množstvo")}
+                        aria-label={t("Množstvo")}
                         className="w-full rounded-md border px-2 py-1.5 text-sm"
                         value={it.quantity}
                         onChange={(e) => updateItem(idx, { quantity: e.target.value })}
@@ -393,14 +405,14 @@ function NewTransferPage() {
                     </label>
                     <label className="block min-w-0">
                       <span className="mb-1 block text-xs text-muted-foreground sm:hidden">
-                        Cena/MJ
+                        {t("Cena/MJ")}
                       </span>
                       <input
                         type="number"
                         step={KROK_CENY}
                         min="0"
-                        placeholder="Cena"
-                        aria-label="Cena za MJ"
+                        placeholder={t("Cena")}
+                        aria-label={t("Cena za MJ")}
                         className="w-full rounded-md border px-2 py-1.5 text-sm"
                         value={it.unit_price}
                         onChange={(e) => updateItem(idx, { unit_price: e.target.value })}
@@ -410,8 +422,8 @@ function NewTransferPage() {
                       type="button"
                       onClick={() => setItems((p) => p.filter((_, i) => i !== idx))}
                       disabled={items.length === 1}
-                      aria-label="Odstrániť položku"
-                      title="Odstrániť položku"
+                      aria-label={t("Odstrániť položku")}
+                      title={t("Odstrániť položku")}
                       className="rounded p-1.5 text-muted-foreground hover:text-destructive disabled:opacity-40"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -423,7 +435,7 @@ function NewTransferPage() {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Poznámka</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("Poznámka")}</label>
             <textarea
               className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               rows={2}
@@ -435,20 +447,20 @@ function NewTransferPage() {
           {!canSubmit && (
             <p className="text-right text-xs text-muted-foreground">
               {!warehouseFrom
-                ? "Vyberte zdrojový sklad."
+                ? t("Vyberte zdrojový sklad.")
                 : mode === "company" && !targetCompany
-                  ? "Vyberte cieľovú firmu."
+                  ? t("Vyberte cieľovú firmu.")
                   : !warehouseTo
-                    ? "Vyberte cieľový sklad."
+                    ? t("Vyberte cieľový sklad.")
                     : mode === "warehouse" && warehouseTo === warehouseFrom
-                      ? "Cieľový sklad musí byť iný než zdrojový."
-                      : "Doplňte položku a množstvo väčšie než nula."}
+                      ? t("Cieľový sklad musí byť iný než zdrojový.")
+                      : t("Doplňte položku a množstvo väčšie než nula.")}
             </p>
           )}
 
           <div className="flex justify-end gap-2">
             <Link to="/sklad/presuny" className="rounded-md border px-4 py-2 text-sm">
-              Zrušiť
+              {t("Zrušiť")}
             </Link>
             <button
               type="button"
@@ -456,7 +468,7 @@ function NewTransferPage() {
               onClick={submit}
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >
-              {busy ? "Vytváram…" : "Vytvoriť presun"}
+              {busy ? t("Vytváram…") : t("Vytvoriť presun")}
             </button>
           </div>
         </div>

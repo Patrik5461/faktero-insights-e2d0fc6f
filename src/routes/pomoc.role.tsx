@@ -1,19 +1,30 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
+import { useT } from "@/lib/i18n/useT";
 
 export const Route = createFileRoute("/pomoc/role")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Role a prístupy — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Role a prístupy — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Čo smie majiteľ, administrátor, účtovník a zamestnanec vo Faktere — prehľadná tabuľka prístupov.",
+        ),
       },
-      { property: "og:title", content: "Pomoc — Role a prístupy — Faktero" },
+      {
+        property: "og:title",
+        content: preloz(match.context.jazyk, "Pomoc — Role a prístupy — Faktero"),
+      },
       {
         property: "og:description",
-        content: "Kto vo firme čo smie: majiteľ, administrátor, účtovník, zamestnanec.",
+        content: preloz(
+          match.context.jazyk,
+          "Kto vo firme čo smie: majiteľ, administrátor, účtovník, zamestnanec.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/role" },
     ],
@@ -24,15 +35,17 @@ export const Route = createFileRoute("/pomoc/role")({
 
 /** Jedna bunka tabuľky — nech sa „smie/nesmie“ číta na prvý pohľad. */
 function Ano() {
+  const { t } = useT();
   return (
-    <span className="font-medium text-emerald-700 dark:text-emerald-400" title="Smie">
-      áno
+    <span className="font-medium text-emerald-700 dark:text-emerald-400" title={t("Smie")}>
+      {t("áno")}
     </span>
   );
 }
 function Nie() {
+  const { t } = useT();
   return (
-    <span className="text-muted-foreground" title="Nesmie">
+    <span className="text-muted-foreground" title={t("Nesmie")}>
       —
     </span>
   );
@@ -283,7 +296,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Role a prístupy"
       title="Kto vo firme čo smie"
       intro={

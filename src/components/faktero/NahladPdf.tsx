@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Náhľad PDF vykreslený do plátna.
@@ -21,6 +22,7 @@ const SIRKA = 1100;
 type Stav = "citam" | "hotovo" | "zlyhalo";
 
 export function NahladPdf({ url, className }: { url: string; className?: string }) {
+  const { t } = useT();
   const box = useRef<HTMLDivElement>(null);
   const [stav, setStav] = useState<Stav>("citam");
   const [stran, setStran] = useState(0);
@@ -82,26 +84,33 @@ export function NahladPdf({ url, className }: { url: string; className?: string 
   return (
     <div className={className}>
       {stav === "citam" && (
-        <div className="p-8 text-center text-sm text-muted-foreground">Načítavam náhľad…</div>
+        <div className="p-8 text-center text-sm text-muted-foreground">
+          {t("Načítavam náhľad…")}
+        </div>
       )}
       {stav === "zlyhalo" && (
         <div className="p-8 text-center text-sm text-muted-foreground">
-          Náhľad sa nepodarilo vykresliť.{" "}
+          {t("Náhľad sa nepodarilo vykresliť.")}{" "}
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary underline"
           >
-            Otvoriť doklad
+            {t("Otvoriť doklad")}
           </a>
         </div>
       )}
       <div ref={box} className="max-h-[70vh] overflow-auto bg-muted/20" />
       {stav === "hotovo" && stran > MAX_STRAN && (
         <div className="border-t border-border px-4 py-2 text-center text-xs text-muted-foreground">
-          Náhľad ukazuje prvých {MAX_STRAN} strán z {stran}. Celý doklad otvoríte tlačidlom
-          Stiahnuť.
+          {t(
+            "Náhľad ukazuje prvých {max} strán z {stran}. Celý doklad otvoríte tlačidlom Stiahnuť.",
+            {
+              max: MAX_STRAN,
+              stran,
+            },
+          )}
         </div>
       )}
     </div>

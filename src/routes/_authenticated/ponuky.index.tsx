@@ -1,4 +1,6 @@
 import { formatujMenu } from "@/lib/faktero/mena";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -16,7 +18,7 @@ import {
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/ponuky/")({
-  head: () => ({ meta: [{ title: "Cenové ponuky — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenové ponuky — Faktero") }] }),
   component: QuotesPage,
 });
 
@@ -38,6 +40,7 @@ const STATUS_CLS: Record<string, string> = {
 };
 
 function QuotesPage() {
+  const { t } = useT();
   const navigate = useNavigate();
   const list = usePagedList({
     resource: "quotes",
@@ -53,10 +56,10 @@ function QuotesPage() {
     const pocet = list.selectedIds.length;
     try {
       await list.hardDelete(list.selectedIds);
-      toast.success(`Natrvalo vymazaných: ${pocet}`);
+      toast.success(t("Natrvalo vymazaných: {n}", { n: pocet }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBulkHardDelete(false);
     }
@@ -66,9 +69,9 @@ function QuotesPage() {
     if (!rowDelete) return;
     try {
       await list.softDelete([rowDelete.id]);
-      toast.success("Ponuka vymazaná");
+      toast.success(t("Ponuka vymazaná"));
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setRowDelete(null);
     }
@@ -76,10 +79,10 @@ function QuotesPage() {
   async function confirmBulk() {
     try {
       await list.softDelete(list.selectedIds);
-      toast.success(`Vymazaných ${list.selectedIds.length}`);
+      toast.success(t("Vymazaných {n}", { n: list.selectedIds.length }));
       list.clearSelection();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(e?.message ?? t("Chyba"));
     } finally {
       setBulkDelete(false);
     }
@@ -87,8 +90,8 @@ function QuotesPage() {
   return (
     <>
       <PageHeader
-        title="Cenové ponuky"
-        description="Vytvárajte a posielajte cenové ponuky odberateľom."
+        title={t("Cenové ponuky")}
+        description={t("Vytvárajte a posielajte cenové ponuky odberateľom.")}
         action={
           <div className="flex flex-wrap gap-2">
             <OdkazNaRady />
@@ -96,7 +99,7 @@ function QuotesPage() {
               to="/ponuky/nova"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Nová ponuka
+              <Plus className="h-4 w-4" /> {t("Nová ponuka")}
             </Link>
           </div>
         }
@@ -106,7 +109,7 @@ function QuotesPage() {
           <input
             value={list.search}
             onChange={(e) => list.setSearch(e.target.value)}
-            placeholder="Hľadať číslo, odberateľa…"
+            placeholder={t("Hľadať číslo, odberateľa…")}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
           />
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -122,10 +125,10 @@ function QuotesPage() {
           onRestore={async () => {
             try {
               await list.restore(list.selectedIds);
-              toast.success("Obnovené");
+              toast.success(t("Obnovené"));
               list.clearSelection();
             } catch (e: any) {
-              toast.error(e?.message ?? "Chyba");
+              toast.error(e?.message ?? t("Chyba"));
             }
           }}
           onClear={list.clearSelection}
@@ -141,12 +144,12 @@ function QuotesPage() {
                     onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                   />
                 </th>
-                <th className="p-3">Číslo</th>
-                <th className="p-3">Odberateľ</th>
-                <th className="p-3">Vystavená</th>
-                <th className="p-3">Platnosť do</th>
-                <th className="p-3 text-right">Suma</th>
-                <th className="p-3">Stav</th>
+                <th className="p-3">{t("Číslo")}</th>
+                <th className="p-3">{t("Odberateľ")}</th>
+                <th className="p-3">{t("Vystavená")}</th>
+                <th className="p-3">{t("Platnosť do")}</th>
+                <th className="p-3 text-right">{t("Suma")}</th>
+                <th className="p-3">{t("Stav")}</th>
                 <th></th>
               </tr>
             </thead>
@@ -154,14 +157,14 @@ function QuotesPage() {
               {list.loading && (
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    Načítavam…
+                    {t("Načítavam…")}
                   </td>
                 </tr>
               )}
               {!list.loading && list.rows.length === 0 && (
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    {list.showDeleted ? "Žiadne vymazané ponuky." : "Žiadne cenové ponuky."}
+                    {list.showDeleted ? t("Žiadne vymazané ponuky.") : t("Žiadne cenové ponuky.")}
                   </td>
                 </tr>
               )}
@@ -193,20 +196,20 @@ function QuotesPage() {
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-xs ${STATUS_CLS[q.status] ?? "bg-muted"}`}
                     >
-                      {STATUS_LABEL[q.status] ?? q.status}
+                      {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
                     </span>
                   </td>
                   <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                     {list.showDeleted ? (
                       <button
-                        aria-label="Obnoviť"
-                        title="Obnoviť"
+                        aria-label={t("Obnoviť")}
+                        title={t("Obnoviť")}
                         onClick={async () => {
                           try {
                             await list.restore([q.id]);
-                            toast.success("Obnovené");
+                            toast.success(t("Obnovené"));
                           } catch (e: any) {
-                            toast.error(e?.message ?? "Chyba");
+                            toast.error(e?.message ?? t("Chyba"));
                           }
                         }}
                         className="rounded p-1.5 text-primary hover:bg-primary/10"
@@ -239,11 +242,11 @@ function QuotesPage() {
       </PageBody>
       <ConfirmDialog
         open={!!rowDelete}
-        title="Naozaj chcete vymazať túto ponuku?"
-        message={rowDelete ? `Ponuka ${rowDelete.quote_number} bude skrytá z rozhrania.` : ""}
+        title={t("Naozaj chcete vymazať túto ponuku?")}
+        message={rowDelete ? t("Ponuka {cislo} bude skrytá z rozhrania.", { cislo: rowDelete.quote_number }) : ""}
         warning={
           rowDelete && (rowDelete.status === "sent" || rowDelete.status === "accepted")
-            ? "Ponuka už bola odoslaná alebo akceptovaná."
+            ? t("Ponuka už bola odoslaná alebo akceptovaná.")
             : undefined
         }
         onCancel={() => setRowDelete(null)}
@@ -251,16 +254,16 @@ function QuotesPage() {
       />
       <ConfirmDialog
         open={bulkDelete}
-        title={`Vymazať ${list.selectedIds.length} ponúk?`}
-        message="Vybraté ponuky budú skryté z rozhrania."
+        title={t("Vymazať {n} ponúk?", { n: list.selectedIds.length })}
+        message={t("Vybraté ponuky budú skryté z rozhrania.")}
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulk}
       />
       <ConfirmDialog
         open={bulkHardDelete}
-        title={`Natrvalo vymazať ${list.selectedIds.length} ponúk?`}
-        message="Ponuky sa odstránia aj s položkami. Toto sa už nedá vrátiť."
-        confirmLabel="Vymazať natrvalo"
+        title={t("Natrvalo vymazať {n} ponúk?", { n: list.selectedIds.length })}
+        message={t("Ponuky sa odstránia aj s položkami. Toto sa už nedá vrátiť.")}
+        confirmLabel={t("Vymazať natrvalo")}
         onCancel={() => setBulkHardDelete(false)}
         onConfirm={confirmBulkHardDelete}
       />

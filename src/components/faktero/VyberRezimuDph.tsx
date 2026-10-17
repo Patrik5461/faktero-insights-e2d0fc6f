@@ -6,6 +6,7 @@ import {
   type SchemaDph,
 } from "@/lib/faktero/dph-rezim";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Postavenie firmy k DPH.
@@ -29,6 +30,7 @@ export function VyberRezimuDph({
   icDph?: string | null;
   onZmena: (zmena: { platitel: boolean; schema: SchemaDph }) => void;
 }) {
+  const { t } = useT();
   const k = krajinaDane(krajina);
   const vybrana = zosuladSchemu(schema as SchemaDph | null, k, platitel);
   const moznosti = schemyKrajiny(k, platitel);
@@ -50,12 +52,12 @@ export function VyberRezimuDph({
           }
           className="mt-0.5 h-4 w-4 rounded border-input"
         />
-        <span className="text-sm font-medium">Firma je platiteľ DPH</span>
+        <span className="text-sm font-medium">{t("Firma je platiteľ DPH")}</span>
       </label>
 
       <label className="mt-3 block">
         <span className="text-sm font-medium">
-          {platitel ? "Typ registrácie" : "Postavenie k DPH"}
+          {platitel ? t("Typ registrácie") : t("Postavenie k DPH")}
         </span>
         <select
           value={vybrana}
@@ -64,22 +66,23 @@ export function VyberRezimuDph({
         >
           {moznosti.map((m) => (
             <option key={m.kod} value={m.kod}>
-              {m.nazov}
+              {t(m.nazov)}
             </option>
           ))}
         </select>
-        <span className="mt-1 block text-xs text-muted-foreground">{popisSchemy(vybrana)}</span>
+        <span className="mt-1 block text-xs text-muted-foreground">{t(popisSchemy(vybrana))}</span>
       </label>
 
       {chybaIc && (
         <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-          K tejto registrácii patrí IČ DPH — doplňte ho vyššie, inak nebude na faktúrach.
+          {t("K tejto registrácii patrí IČ DPH — doplňte ho vyššie, inak nebude na faktúrach.")}
         </p>
       )}
       {icNavyse && (
         <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-          Máte vyplnené IČ DPH, ale firma je vedená bez registrácie. Skontrolujte, či nejde o
-          registráciu podľa § 7 alebo § 7a.
+          {t(
+            "Máte vyplnené IČ DPH, ale firma je vedená bez registrácie. Skontrolujte, či nejde o registráciu podľa § 7 alebo § 7a.",
+          )}
         </p>
       )}
     </div>

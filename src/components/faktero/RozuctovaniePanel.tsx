@@ -17,6 +17,7 @@ import { KodPohody } from "./KodPohody";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import type { Navrhy } from "./ZauctovaniePanel";
 import { formatujCislo } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
 
 const f2 = (n: number) => formatujCislo(n, 2);
 
@@ -47,6 +48,7 @@ export function RozuctovaniePanel({
   zamknute?: boolean;
   onZmena?: () => void;
 }) {
+  const { t } = useT();
   const uloz = useServerFn(ulozRozuctovanieFn);
   const povodne = useMemo(() => nacitajRozuctovanie(ulozene), [ulozene]);
   const [riadky, setRiadky] = useState<RiadokRozuctovania[]>(povodne);
@@ -67,10 +69,14 @@ export function RozuctovaniePanel({
     setBusy(true);
     try {
       await uloz({ data: { company_id: companyId, druh, id, riadky: nove as any } });
-      toast.success(nove.length ? `Rozúčtované na ${nove.length} riadky` : "Rozúčtovanie zrušené");
+      toast.success(
+        nove.length
+          ? t("Rozúčtované na {n} riadky", { n: nove.length })
+          : t("Rozúčtovanie zrušené"),
+      );
       onZmena?.();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa uložiť");
+      toast.error(t(e?.message ?? "Nepodarilo sa uložiť"));
     } finally {
       setBusy(false);
     }
@@ -112,10 +118,12 @@ export function RozuctovaniePanel({
           onClick={() => setRiadky(zaciatokRozuctovania(rozpis, kody))}
           className="inline-flex items-center gap-1.5 text-primary hover:underline disabled:opacity-50"
         >
-          <Split className="h-4 w-4" /> Rozúčtovať na viac predkontácií
+          <Split className="h-4 w-4" /> {t("Rozúčtovať na viac predkontácií")}
         </button>
         <span className="ml-2 text-xs text-muted-foreground">
-          napr. časť materiál, časť réžia — každý riadok s vlastnou predkontáciou a členením DPH
+          {t(
+            "napr. časť materiál, časť réžia — každý riadok s vlastnou predkontáciou a členením DPH",
+          )}
         </span>
       </div>
     );
@@ -126,12 +134,18 @@ export function RozuctovaniePanel({
     <div className="mt-3 rounded-md border border-border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-sm font-medium">
-          <Split className="h-4 w-4" /> Rozúčtovanie
+          <Split className="h-4 w-4" /> {t("Rozúčtovanie")}
         </div>
         <div className="text-xs text-muted-foreground">
-          Doklad:{" "}
+          {t("Doklad:")}{" "}
           {rozpis
-            .map((r) => `${r.sadzba} % — základ ${f2(r.zaklad)}, DPH ${f2(r.dph)}`)
+            .map((r) =>
+              t("{sadzba} % — základ {zaklad}, DPH {dph}", {
+                sadzba: r.sadzba,
+                zaklad: f2(r.zaklad),
+                dph: f2(r.dph),
+              }),
+            )
             .join(" · ")}
         </div>
       </div>
@@ -139,13 +153,13 @@ export function RozuctovaniePanel({
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="text-left text-xs text-muted-foreground">
-              <th className="py-1 pr-2 font-medium">Predkontácia</th>
-              <th className="py-1 pr-2 font-medium">Členenie DPH</th>
-              <th className="py-1 pr-2 font-medium">KV DPH</th>
-              <th className="py-1 pr-2 font-medium">Sadzba</th>
-              <th className="py-1 pr-2 text-right font-medium">Základ</th>
-              <th className="py-1 pr-2 text-right font-medium">DPH</th>
-              <th className="py-1 pr-2 font-medium">Text</th>
+              <th className="py-1 pr-2 font-medium">{t("Predkontácia")}</th>
+              <th className="py-1 pr-2 font-medium">{t("Členenie DPH")}</th>
+              <th className="py-1 pr-2 font-medium">{t("KV DPH")}</th>
+              <th className="py-1 pr-2 font-medium">{t("Sadzba")}</th>
+              <th className="py-1 pr-2 text-right font-medium">{t("Základ")}</th>
+              <th className="py-1 pr-2 text-right font-medium">{t("DPH")}</th>
+              <th className="py-1 pr-2 font-medium">{t("Text")}</th>
               <th />
             </tr>
           </thead>
@@ -154,7 +168,7 @@ export function RozuctovaniePanel({
               <tr key={i} className="align-top">
                 <td className="py-1 pr-2 w-36">
                   <KodPohody
-                    ariaLabel={`Predkontácia riadku ${i + 1}`}
+                    ariaLabel={t("Predkontácia riadku {n}", { n: i + 1 })}
                     value={r.predkontacia ?? ""}
                     onChange={(v) => zmen(i, { predkontacia: v })}
                     moznosti={navrhy?.predkontacie ?? []}
@@ -165,7 +179,7 @@ export function RozuctovaniePanel({
                 </td>
                 <td className="py-1 pr-2 w-32">
                   <KodPohody
-                    ariaLabel={`Členenie DPH riadku ${i + 1}`}
+                    ariaLabel={t("Členenie DPH riadku {n}", { n: i + 1 })}
                     value={r.clenenie ?? ""}
                     onChange={(v) => zmen(i, { clenenie: v })}
                     moznosti={navrhy?.clenenia ?? []}
@@ -179,12 +193,12 @@ export function RozuctovaniePanel({
                     value={r.kv ?? ""}
                     onChange={(e) => zmen(i, { kv: e.target.value || null })}
                     className={vstup}
-                    aria-label={`Členenie KV riadku ${i + 1}`}
+                    aria-label={t("Členenie KV riadku {n}", { n: i + 1 })}
                   >
-                    <option value="">z dokladu</option>
+                    <option value="">{t("z dokladu")}</option>
                     {KV_PRIJATE.map((k) => (
-                      <option key={k.kod} value={k.kod} title={k.nazov}>
-                        {k.kod === "X" ? "nezahŕňať" : k.kod}
+                      <option key={k.kod} value={k.kod} title={t(k.nazov)}>
+                        {k.kod === "X" ? t("nezahŕňať") : k.kod}
                       </option>
                     ))}
                   </select>
@@ -194,7 +208,7 @@ export function RozuctovaniePanel({
                     value={r.sadzba}
                     onChange={(e) => zmen(i, { sadzba: Number(e.target.value) })}
                     className={vstup}
-                    aria-label={`Sadzba riadku ${i + 1}`}
+                    aria-label={t("Sadzba riadku {n}", { n: i + 1 })}
                   >
                     {sadzby.map((s) => (
                       <option key={s} value={s}>
@@ -210,7 +224,7 @@ export function RozuctovaniePanel({
                     value={r.zaklad}
                     onChange={(e) => zmen(i, { zaklad: Number(e.target.value) })}
                     className={`${vstup} text-right`}
-                    aria-label={`Základ riadku ${i + 1}`}
+                    aria-label={t("Základ riadku {n}", { n: i + 1 })}
                   />
                 </td>
                 <td className="py-1 pr-2 w-24">
@@ -220,32 +234,32 @@ export function RozuctovaniePanel({
                     value={r.dph}
                     onChange={(e) => zmen(i, { dph: Number(e.target.value) })}
                     className={`${vstup} text-right`}
-                    aria-label={`DPH riadku ${i + 1}`}
+                    aria-label={t("DPH riadku {n}", { n: i + 1 })}
                   />
                 </td>
                 <td className="py-1 pr-2">
                   <input
                     value={r.text ?? ""}
                     onChange={(e) => zmen(i, { text: e.target.value })}
-                    placeholder="nepovinné"
+                    placeholder={t("nepovinné")}
                     className={vstup}
-                    aria-label={`Text riadku ${i + 1}`}
+                    aria-label={t("Text riadku {n}", { n: i + 1 })}
                   />
                 </td>
                 <td className="py-1 whitespace-nowrap">
                   <button
                     type="button"
-                    title="Doplniť sem zvyšok sadzby"
+                    title={t("Doplniť sem zvyšok sadzby")}
                     onClick={() => setRiadky((rs) => dorovnaj(rs, rozpis, i))}
                     className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-secondary"
                   >
-                    = zvyšok
+                    {t("= zvyšok")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setRiadky((rs) => rs.filter((_, j) => j !== i))}
                     className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                    aria-label={`Zmazať riadok ${i + 1}`}
+                    aria-label={t("Zmazať riadok {n}", { n: i + 1 })}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -260,12 +274,15 @@ export function RozuctovaniePanel({
         onClick={pridaj}
         className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
       >
-        <Plus className="h-3.5 w-3.5" /> Pridať riadok
+        <Plus className="h-3.5 w-3.5" /> {t("Pridať riadok")}
       </button>
 
       <p className={`mt-2 text-xs ${chyba ? "text-amber-700" : "text-emerald-700"}`}>
-        {chyba ??
-          "Súčty sedia s dokladom. Do Pohody pôjde ako položky s vlastnou predkontáciou, hlavička „Rozúčtovať“."}
+        {chyba
+          ? t(chyba)
+          : t(
+              "Súčty sedia s dokladom. Do Pohody pôjde ako položky s vlastnou predkontáciou, hlavička „Rozúčtovať“.",
+            )}
       </p>
 
       <div className="mt-3 flex flex-wrap justify-end gap-2">
@@ -276,7 +293,7 @@ export function RozuctovaniePanel({
             onClick={() => ulozit([])}
             className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
           >
-            Zrušiť rozúčtovanie
+            {t("Zrušiť rozúčtovanie")}
           </button>
         )}
         {!povodne.length && (
@@ -285,7 +302,7 @@ export function RozuctovaniePanel({
             onClick={() => setRiadky([])}
             className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
           >
-            Zrušiť
+            {t("Zrušiť")}
           </button>
         )}
         <button
@@ -295,7 +312,7 @@ export function RozuctovaniePanel({
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-          Uložiť rozúčtovanie
+          {t("Uložiť rozúčtovanie")}
         </button>
       </div>
     </div>

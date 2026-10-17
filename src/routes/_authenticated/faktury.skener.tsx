@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nahrajNespracovaneFn } from "@/lib/faktero/nespracovane.functions";
 import { useState } from "react";
@@ -15,7 +17,7 @@ import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 type Uhrada = "hotovost" | "karta" | "prevod";
 
 export const Route = createFileRoute("/_authenticated/faktury/skener")({
-  head: () => ({ meta: [{ title: "Skener dokladov — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Skener dokladov — Faktero") }] }),
   component: ScannerPage,
 });
 
@@ -25,6 +27,7 @@ function fmt(n?: number, mena = "EUR") {
 }
 
 function ScannerPage() {
+  const { t } = useT();
   const navigate = useNavigate();
   const nacitaj = useServerFn(nacitajBlocekFn);
   /*
@@ -56,10 +59,10 @@ function ScannerPage() {
       })) as BlocekVysledok;
       setResult(r);
       setUhrada(r.payment_method ?? null);
-      if (r.zdroj === "ekasa") toast.success("Doklad načítaný z Finančnej správy");
-      else if (r.zdroj === "nic") toast.error(r.poznamka ?? "Nepodarilo sa prečítať nič");
+      if (r.zdroj === "ekasa") toast.success(t("Doklad načítaný z Finančnej správy"));
+      else if (r.zdroj === "nic") toast.error(r.poznamka ? t(r.poznamka) : t("Nepodarilo sa prečítať nič"));
     } catch (e: any) {
-      toast.error(e?.message ?? "Spracovanie zlyhalo");
+      toast.error(e?.message ?? t("Spracovanie zlyhalo"));
     } finally {
       setLoading(false);
     }
@@ -81,7 +84,7 @@ function ScannerPage() {
   async function nasnimajQr() {
     const res = await scanQrCode();
     if (!res) {
-      toast.error("QR skener nie je dostupný alebo bol zrušený. Skúste doklad odfotiť.");
+      toast.error(t("QR skener nie je dostupný alebo bol zrušený. Skúste doklad odfotiť."));
       return;
     }
     setPreview(null);
@@ -102,10 +105,10 @@ function ScannerPage() {
       const r = await nahrajNespracovane({
         data: { company_id: cid, nazov: `sken.${mime.includes("png") ? "png" : "jpg"}`, mime, subor: b64 ?? "" },
       });
-      toast.success("Doklad je v Nespracovaných — číta sa");
+      toast.success(t("Doklad je v Nespracovaných — číta sa"));
       navigate({ to: "/nespracovane/$id", params: { id: r.id } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa uložiť");
+      toast.error(e?.message ?? t("Nepodarilo sa uložiť"));
     }
   }
 
@@ -118,7 +121,7 @@ function ScannerPage() {
     try {
       sessionStorage.setItem(PRENOS_KLUC, JSON.stringify({ ...result, payment_method: uhrada }));
     } catch {
-      toast.error("Doklad sa nepodarilo odovzdať. Skúste to znova.");
+      toast.error(t("Doklad sa nepodarilo odovzdať. Skúste to znova."));
       return;
     }
     navigate({ to: "/doklady/novy", search: { prenos: "1" } as any });
@@ -127,11 +130,11 @@ function ScannerPage() {
   return (
     <>
       <PageHeader
-        title="Skener dokladov"
+        title={t("Skener dokladov")}
         description={
           cesko
-            ? "Z QR kódu na bločku sa prečíta suma, dátum a DIČ predajcu. Položky sa čítajú z fotky."
-            : "Bloček s QR kódom sa načíta priamo z Finančnej správy — aj s položkami."
+            ? t("Z QR kódu na bločku sa prečíta suma, dátum a DIČ predajcu. Položky sa čítajú z fotky.")
+            : t("Bloček s QR kódom sa načíta priamo z Finančnej správy — aj s položkami.")
         }
       />
       <PageBody>
@@ -142,42 +145,38 @@ function ScannerPage() {
               disabled={loading}
               className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-base font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
-              <Camera className="h-5 w-5" /> Odfotiť doklad
+              <Camera className="h-5 w-5" /> {t("Odfotiť doklad")}
             </button>
             <button
               onClick={nasnimajQr}
               disabled={loading}
               className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-4 text-base font-medium hover:bg-secondary disabled:opacity-50"
             >
-              <QrCode className="h-5 w-5" /> Nasnímať QR kód
+              <QrCode className="h-5 w-5" /> {t("Nasnímať QR kód")}
             </button>
           </div>
 
           <p className="text-xs text-muted-foreground">
             {cesko ? (
               <>
-                Odfoťte doklad celý aj s QR kódom. Česká evidencia tržieb (EET) skončila 1. 1. 2023
-                — doklad sa preto nemá kde overiť a položky v QR kóde nie sú. Z QR sa prečíta suma,
-                dátum a DIČ predajcu, zvyšok sa odhadne z fotky, tak si ho pred uložením
-                skontrolujte.
+                {t("Odfoťte doklad celý aj s QR kódom. Česká evidencia tržieb (EET) skončila 1. 1. 2023 — doklad sa preto nemá kde overiť a položky v QR kóde nie sú. Z QR sa prečíta suma, dátum a DIČ predajcu, zvyšok sa odhadne z fotky, tak si ho pred uložením skontrolujte.")}
               </>
             ) : (
               <>
-                Odfoťte doklad celý aj s QR kódom. Keď sa QR prečítať nedá, údaje sa odhadnú z fotky
-                — vtedy ich pred uložením skontrolujte.
+                {t("Odfoťte doklad celý aj s QR kódom. Keď sa QR prečítať nedá, údaje sa odhadnú z fotky — vtedy ich pred uložením skontrolujte.")}
               </>
             )}
           </p>
 
           {preview && (
             <div className="overflow-hidden rounded-xl border border-border bg-card">
-              <img src={preview} alt="náhľad dokladu" className="max-h-72 w-full object-contain" />
+              <img src={preview} alt={t("náhľad dokladu")} className="max-h-72 w-full object-contain" />
             </div>
           )}
 
           {loading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Čítam doklad…
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("Čítam doklad…")}
             </div>
           )}
 
@@ -186,14 +185,14 @@ function ScannerPage() {
               <Povod result={result} />
 
               <div className="space-y-2">
-                <Riadok label="Predajca" value={result.supplier ?? "—"} />
-                <Riadok label="IČO" value={result.supplier_ico ?? "—"} />
-                <Riadok label="IČ DPH" value={result.supplier_ic_dph ?? "—"} />
-                <Riadok label="Dátum" value={result.date ?? "—"} />
-                <Riadok label="Číslo dokladu" value={result.document_number ?? "—"} />
-                <Riadok label="Suma" value={fmt(result.total, result.currency ?? "EUR")} />
+                <Riadok label={t("Predajca")} value={result.supplier ?? "—"} />
+                <Riadok label={t("IČO")} value={result.supplier_ico ?? "—"} />
+                <Riadok label={t("IČ DPH")} value={result.supplier_ic_dph ?? "—"} />
+                <Riadok label={t("Dátum")} value={result.date ?? "—"} />
+                <Riadok label={t("Číslo dokladu")} value={result.document_number ?? "—"} />
+                <Riadok label={t("Suma")} value={fmt(result.total, result.currency ?? "EUR")} />
                 <Riadok
-                  label="z toho DPH"
+                  label={t("z toho DPH")}
                   value={
                     result.vat_amount != null
                       ? `${fmt(result.vat_amount, result.currency ?? "EUR")}${
@@ -211,7 +210,7 @@ function ScannerPage() {
               {result.vat_breakdown && result.vat_breakdown.length > 1 && (
                 <div className="rounded-lg border border-border">
                   <div className="border-b border-border bg-muted/50 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
-                    Rozpis DPH
+                    {t("Rozpis DPH")}
                   </div>
                   <table className="w-full text-xs">
                     <tbody>
@@ -219,7 +218,7 @@ function ScannerPage() {
                         <tr key={i} className="border-t border-border first:border-t-0">
                           <td className="px-3 py-1.5">{s.sadzba} %</td>
                           <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
-                            základ {fmt(s.zaklad, result.currency ?? "EUR")}
+                            {t("základ {suma}", { suma: fmt(s.zaklad, result.currency ?? "EUR") })}
                           </td>
                           <td className="px-3 py-1.5 text-right tabular-nums font-medium">
                             {fmt(s.dph, result.currency ?? "EUR")}
@@ -233,17 +232,17 @@ function ScannerPage() {
 
               <div>
                 <div className="mb-1.5 text-xs uppercase tracking-wide text-muted-foreground">
-                  Spôsob úhrady
+                  {t("Spôsob úhrady")}
                   {!uhrada && (
                     <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
-                      Povinné
+                      {t("Povinné")}
                     </span>
                   )}
-                  {result.payment_method && " · prečítané z dokladu"}
+                  {result.payment_method && ` · ${t("prečítané z dokladu")}`}
                 </div>
                 {!uhrada && (
                   <p className="mb-2 text-xs text-primary">
-                    Vyberte jednu z možností — bez nej sa doklad uložiť nedá.
+                    {t("Vyberte jednu z možností — bez nej sa doklad uložiť nedá.")}
                   </p>
                 )}
                 <div className="grid grid-cols-3 gap-2">
@@ -265,13 +264,13 @@ function ScannerPage() {
                             : "border-primary/40 font-medium hover:bg-secondary"
                       }`}
                     >
-                      {label}
+                      {t(label)}
                     </button>
                   ))}
                 </div>
                 {uhrada === "hotovost" && (
                   <p className="mt-1.5 text-xs text-muted-foreground">
-                    Hotovostný doklad uberie zo stavu pokladne.
+                    {t("Hotovostný doklad uberie zo stavu pokladne.")}
                   </p>
                 )}
               </div>
@@ -279,7 +278,7 @@ function ScannerPage() {
               {result.items.length > 0 && (
                 <div className="rounded-lg border border-border">
                   <div className="border-b border-border bg-muted/50 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
-                    Položky ({result.items.length})
+                    {t("Položky ({n})", { n: result.items.length })}
                   </div>
                   <table className="w-full text-xs">
                     <tbody>
@@ -305,7 +304,7 @@ function ScannerPage() {
                 disabled={!uhrada}
                 className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                {uhrada ? "Uložiť ako výdavok" : "Vyberte spôsob úhrady"}
+                {uhrada ? t("Uložiť ako výdavok") : t("Vyberte spôsob úhrady")}
               </button>
               {preview ? (
                 <button
@@ -313,7 +312,7 @@ function ScannerPage() {
                   onClick={doNespracovanych}
                   className="w-full rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
                 >
-                  Je to faktúra — uložiť do Nespracovaných dokladov
+                  {t("Je to faktúra — uložiť do Nespracovaných dokladov")}
                 </button>
               ) : null}
             </div>
@@ -324,12 +323,12 @@ function ScannerPage() {
               <div className="flex items-start gap-2">
                 <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-600" />
                 <div>
-                  <p className="font-medium">Doklad sa nepodarilo prečítať</p>
-                  <p className="text-muted-foreground">{result.poznamka}</p>
+                  <p className="font-medium">{t("Doklad sa nepodarilo prečítať")}</p>
+                  <p className="text-muted-foreground">{result.poznamka ? t(result.poznamka) : null}</p>
                   <p className="mt-2 text-muted-foreground">
-                    Údaje sa dajú zapísať aj ručne v{" "}
+                    {t("Údaje sa dajú zapísať aj ručne v")}{" "}
                     <Link to="/doklady/novy" className="underline">
-                      novom doklade
+                      {t("novom doklade")}
                     </Link>
                     .
                   </p>
@@ -345,16 +344,17 @@ function ScannerPage() {
 
 /** Odkiaľ údaje pochádzajú — úradný doklad verzus odhad z fotky. */
 function Povod({ result }: { result: BlocekVysledok }) {
+  const { t } = useT();
   if (result.zdroj === "ekasa") {
     return (
       <div className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
         <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-600" />
         <div>
           <p className="font-medium text-emerald-800 dark:text-emerald-300">
-            Načítané z Finančnej správy
+            {t("Načítané z Finančnej správy")}
           </p>
           <p className="text-xs text-muted-foreground">
-            Doklad je zaevidovaný v systéme eKasa, údaje sedia s tým, čo predajca odoslal.
+            {t("Doklad je zaevidovaný v systéme eKasa, údaje sedia s tým, čo predajca odoslal.")}
           </p>
         </div>
       </div>
@@ -365,10 +365,10 @@ function Povod({ result }: { result: BlocekVysledok }) {
       <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-600" />
       <div>
         <p className="font-medium">
-          {result.zdroj === "qr" ? "Len z QR kódu" : "Odhadnuté z fotky"}
+          {result.zdroj === "qr" ? t("Len z QR kódu") : t("Odhadnuté z fotky")}
         </p>
         <p className="text-xs text-muted-foreground">
-          {result.poznamka ?? "Údaje pred uložením skontrolujte."}
+          {result.poznamka ? t(result.poznamka) : t("Údaje pred uložením skontrolujte.")}
         </p>
       </div>
     </div>

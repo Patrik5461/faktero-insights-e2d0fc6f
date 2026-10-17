@@ -10,9 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { CheckCircle2, XCircle, Clock, RefreshCw, Eye, FileJson, Webhook } from "lucide-react";
 import { usePagedLogs } from "@/hooks/usePagedLogs";
 import { EmptyState, ListFooter, LogsToolbar } from "@/components/faktero/ListControls";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/webhooky-logy")({
-  head: () => ({ meta: [{ title: "Záznamy doručení webhookov — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Záznamy doručení webhookov — Faktero") }],
+  }),
   component: WebhookLogsPage,
 });
 
@@ -32,6 +36,7 @@ type LogRow = {
 };
 
 function WebhookLogsPage() {
+  const { t } = useT();
   const [filter, setFilter] = useState<Filter>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -84,12 +89,12 @@ function WebhookLogsPage() {
       const r = await retry({ data: { id } });
       toast.success(
         r.ok
-          ? `Doručené (${r.response_status ?? "—"}) za ${r.duration_ms} ms`
-          : `Zlyhalo (${r.response_status ?? "—"})`,
+          ? t("Doručené ({http}) za {ms} ms", { http: r.response_status ?? "—", ms: r.duration_ms })
+          : t("Zlyhalo ({http})", { http: r.response_status ?? "—" }),
       );
       reload();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba pri opakovaní");
+      toast.error(e?.message ?? t("Chyba pri opakovaní"));
     } finally {
       setRetryingId(null);
     }
@@ -98,49 +103,49 @@ function WebhookLogsPage() {
   return (
     <>
       <PageHeader
-        title="Záznamy doručení webhookov"
-        description="História doručovania webhookov, opakovanie a detaily odpovedí."
+        title={t("Záznamy doručení webhookov")}
+        description={t("História doručovania webhookov, opakovanie a detaily odpovedí.")}
         action={
           <Link
             to="/webhooky"
             className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted/60"
           >
-            Spravovať webhooky
+            {t("Spravovať webhooky")}
           </Link>
         }
       />
       <PageBody>
         <div className="mb-5 grid gap-3 md:grid-cols-3">
           <SummaryCard
-            label="Úspešné doručenia"
+            label={t("Úspešné doručenia")}
             value={counts.success}
             tone="success"
             icon={CheckCircle2}
           />
           <SummaryCard
-            label="Neúspešné doručenia"
+            label={t("Neúspešné doručenia")}
             value={counts.failed}
             tone="failed"
             icon={XCircle}
           />
-          <SummaryCard label="Čakajúce" value={counts.pending} tone="pending" icon={Clock} />
+          <SummaryCard label={t("Čakajúce")} value={counts.pending} tone="pending" icon={Clock} />
         </div>
 
         <div className="mb-4">
           <LogsToolbar
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Hľadať podľa udalosti…"
+            searchPlaceholder={t("Hľadať podľa udalosti…")}
             selects={[
               {
-                label: "Stav",
+                label: t("Stav"),
                 value: filter,
                 onChange: (v) => setFilter(v as Filter),
                 options: [
-                  { value: "all", label: "Všetky" },
-                  { value: "success", label: "Úspešné" },
-                  { value: "failed", label: "Neúspešné" },
-                  { value: "pending", label: "Čakajúce" },
+                  { value: "all", label: t("Všetky") },
+                  { value: "success", label: t("Úspešné") },
+                  { value: "failed", label: t("Neúspešné") },
+                  { value: "pending", label: t("Čakajúce") },
                 ],
               },
             ]}
@@ -159,7 +164,7 @@ function WebhookLogsPage() {
                 onClick={reload}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted/60"
               >
-                <RefreshCw className="h-3.5 w-3.5" /> Obnoviť
+                <RefreshCw className="h-3.5 w-3.5" /> {t("Obnoviť")}
               </button>
             }
           />
@@ -171,28 +176,28 @@ function WebhookLogsPage() {
           {!loading && logs.length === 0 ? (
             <EmptyState
               icon={Webhook}
-              title="Žiadne záznamy"
-              description="Skúste zmeniť filtre alebo počkajte na ďalšie doručenia."
+              title={t("Žiadne záznamy")}
+              description={t("Skúste zmeniť filtre alebo počkajte na ďalšie doručenia.")}
             />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="px-3 py-2.5">Stav</th>
-                    <th className="px-3 py-2.5">Udalosť</th>
-                    <th className="px-3 py-2.5">Cieľová URL</th>
+                    <th className="px-3 py-2.5">{t("Stav")}</th>
+                    <th className="px-3 py-2.5">{t("Udalosť")}</th>
+                    <th className="px-3 py-2.5">{t("Cieľová URL")}</th>
                     <th className="px-3 py-2.5 text-right">HTTP</th>
-                    <th className="px-3 py-2.5 text-right">Trvanie</th>
-                    <th className="px-3 py-2.5">Vytvorené</th>
-                    <th className="px-3 py-2.5 text-right">Akcie</th>
+                    <th className="px-3 py-2.5 text-right">{t("Trvanie")}</th>
+                    <th className="px-3 py-2.5">{t("Vytvorené")}</th>
+                    <th className="px-3 py-2.5 text-right">{t("Akcie")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {loading ? (
                     <tr>
                       <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
-                        Načítavam…
+                        {t("Načítavam…")}
                       </td>
                     </tr>
                   ) : logs.length === 0 ? (
@@ -200,8 +205,8 @@ function WebhookLogsPage() {
                       <td colSpan={7}>
                         <EmptyState
                           icon={Webhook}
-                          title="Žiadne záznamy"
-                          description="Skúste zmeniť filtre alebo počkajte na ďalšie doručenia."
+                          title={t("Žiadne záznamy")}
+                          description={t("Skúste zmeniť filtre alebo počkajte na ďalšie doručenia.")}
                         />
                       </td>
                     </tr>
@@ -230,19 +235,19 @@ function WebhookLogsPage() {
                         <td className="px-3 py-2.5">
                           <div className="flex items-center justify-end gap-1">
                             <IconBtn
-                              title="Zobraziť payload"
+                              title={t("Zobraziť payload")}
                               onClick={() => setViewing({ kind: "payload", log: l })}
                             >
                               <FileJson className="h-3.5 w-3.5" />
                             </IconBtn>
                             <IconBtn
-                              title="Zobraziť odpoveď"
+                              title={t("Zobraziť odpoveď")}
                               onClick={() => setViewing({ kind: "response", log: l })}
                             >
                               <Eye className="h-3.5 w-3.5" />
                             </IconBtn>
                             <IconBtn
-                              title="Opakovať doručenie"
+                              title={t("Opakovať doručenie")}
                               onClick={() => onRetry(l.id)}
                               disabled={retryingId === l.id}
                             >
@@ -273,7 +278,7 @@ function WebhookLogsPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {viewing?.kind === "payload" ? "Payload" : "Odpoveď"}
+              {viewing?.kind === "payload" ? t("Payload") : t("Odpoveď")}
               {viewing && (
                 <span className="ml-2 text-xs font-normal text-muted-foreground">
                   {viewing.log.event_type}
@@ -290,10 +295,10 @@ function WebhookLogsPage() {
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <Stat k="HTTP" v={viewing.log.response_status ?? "—"} />
                 <Stat
-                  k="Trvanie"
+                  k={t("Trvanie")}
                   v={viewing.log.duration_ms != null ? `${viewing.log.duration_ms} ms` : "—"}
                 />
-                <Stat k="Pokusov" v={viewing.log.attempt_count ?? "—"} />
+                <Stat k={t("Pokusov")} v={viewing.log.attempt_count ?? "—"} />
               </div>
               {viewing.log.error_message && (
                 <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
@@ -301,7 +306,7 @@ function WebhookLogsPage() {
                 </div>
               )}
               <pre className="max-h-[50vh] overflow-auto rounded-lg bg-muted/40 p-3 text-xs">
-                {viewing.log.response_body || "(prázdne telo odpovede)"}
+                {viewing.log.response_body || t("(prázdne telo odpovede)")}
               </pre>
             </div>
           ) : null}
@@ -312,6 +317,7 @@ function WebhookLogsPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useT();
   const map: Record<string, { label: string; cls: string }> = {
     success: { label: "Úspech", cls: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20" },
     failed: { label: "Zlyhalo", cls: "bg-destructive/10 text-destructive ring-destructive/20" },
@@ -322,7 +328,7 @@ function StatusBadge({ status }: { status: string }) {
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${m.cls}`}
     >
-      {m.label}
+      {t(m.label)}
     </span>
   );
 }

@@ -4,16 +4,21 @@ import {
   LEGAL_VERSION,
   LEGAL_UPDATED,
   LEGAL_COMPANY,
+  DeUpozornenie,
 } from "@/components/faktero/LegalShell";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/pravne/gopay-podmienky")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "GoPay podmienky — Faktero" },
+      { title: preloz(match.context.jazyk, "GoPay podmienky — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Ako funguje GoPay vo Faktere — peniaze nikdy nejdú cez Faktero, každá firma má vlastný GoPay účet.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pravne/gopay-podmienky" },
     ],
@@ -23,12 +28,21 @@ export const Route = createFileRoute("/pravne/gopay-podmienky")({
 });
 
 function Page() {
+  const { jazyk, t } = useT();
   return (
     <LegalShell
-      title="Podmienky používania GoPay vo Faktere"
+      title={t("Podmienky používania GoPay vo Faktere")}
       updated={LEGAL_UPDATED}
       version={LEGAL_VERSION}
     >
+      {jazyk === "de" ? <De /> : <Sk />}
+    </LegalShell>
+  );
+}
+
+function Sk() {
+  return (
+    <>
       <h2>1. Faktero nie je platobná inštitúcia</h2>
       <p>
         Spoločnosť <strong>{LEGAL_COMPANY.name}</strong> ako prevádzkovateľ služby Faktero{" "}
@@ -120,6 +134,118 @@ function Page() {
         <br />
         E-mail: <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>
       </p>
-    </LegalShell>
+    </>
+  );
+}
+
+function De() {
+  return (
+    <>
+      <DeUpozornenie />
+      <h2>1. Faktero ist kein Zahlungsinstitut</h2>
+      <p>
+        Die Gesellschaft <strong>{LEGAL_COMPANY.name}</strong> als Betreiber des Dienstes Faktero{" "}
+        <strong>ist kein Zahlungsinstitut</strong> und auch kein E-Geld-Institut im Sinne des
+        Gesetzes Nr. 492/2009 Slg. über Zahlungsdienste (zákon č. 492/2009 Z. z. o platobných
+        službách).
+      </p>
+      <p>
+        <strong>
+          Tobify s. r. o. nimmt keine Geldmittel der Kunden ihrer Nutzer entgegen und verarbeitet
+          diese auch nicht.
+        </strong>
+      </p>
+
+      <h2>2. Das Geld fließt nie über Faktero</h2>
+      <p>
+        Die Zahlung des Kunden geht direkt vom Kunden über das Zahlungsgateway GoPay auf das Bank-
+        oder GoPay-Konto des Händlers (Nutzers von Faktero).
+      </p>
+
+      <h2>3. Jedes Unternehmen nutzt ein eigenes GoPay-Konto</h2>
+      <p>
+        Jeder Nutzer von Faktero, der Online-Zahlungen empfangen möchte, ist verpflichtet,{" "}
+        <strong>sein eigenes GoPay-Konto</strong> anzubinden. Faktero ermöglicht keine gemeinsame
+        Nutzung eines GoPay-Kontos durch mehrere Unternehmen und verwendet kein eigenes GoPay-Konto,
+        um Zahlungen im Namen der Nutzer zu empfangen.
+      </p>
+
+      <h2>4. Der Kunde zahlt direkt an den Händler</h2>
+      <p>
+        <strong>Der Kunde zahlt über GoPay direkt auf das Konto des Händlers.</strong> Das
+        Vertragsverhältnis bei der Zahlung besteht zwischen dem Kunden und dem Händler (Nutzer von
+        Faktero), nicht zwischen dem Kunden und der Gesellschaft Tobify s. r. o.
+      </p>
+
+      <h2>5. Rolle von GoPay</h2>
+      <p>
+        GoPay s.r.o. (mit Sitz in der Tschechischen Republik) ist ein lizenziertes Zahlungsinstitut,
+        das die Zahlung verarbeitet, die Karte autorisiert und die Mittel auf das Konto des Händlers
+        abrechnet. Das Verhältnis zwischen Händler und GoPay richtet sich nach den
+        Geschäftsbedingungen von GoPay.
+      </p>
+
+      <h2>6. Rolle von Faktero</h2>
+      <p>Faktero erfüllt im Zahlungsprozess ausschließlich eine technische Rolle:</p>
+      <ul>
+        <li>
+          erstellt einen <strong>Zahlungslink</strong> für die Rechnung,
+        </li>
+        <li>leitet den Kunden mit der Zahlungskennung zu GoPay weiter,</li>
+        <li>
+          empfängt den Webhook zum Zahlungsstatus und <strong>gleicht die Zahlung</strong> mit der
+          Rechnung ab,
+        </li>
+        <li>
+          aktualisiert den Status der Rechnung in der Anwendung (bezahlt / teilweise bezahlt /
+          storniert).
+        </li>
+      </ul>
+      <p>
+        Faktero sieht die Daten der Zahlungskarte des Kunden nicht, hält kein Geld und berechnet
+        keine Provision aus der Zahlung des Kunden.
+      </p>
+
+      <h2>7. Reklamationen von Zahlungen</h2>
+      <p>
+        Reklamationen einer konkreten Zahlung (Chargeback, falscher Betrag, Rückerstattung) werden
+        bei GoPay bzw. beim Händler geltend gemacht. Faktero kann bei der Suche nach Aufzeichnungen
+        über den Zahlungsversuch mitwirken.
+      </p>
+
+      <h2>8. Automatische Verlängerung des Faktero-Abonnements</h2>
+      <p>
+        Die Nutzung von GoPay gilt auch für die Bezahlung des Abonnements für den Dienst Faktero:
+      </p>
+      <ul>
+        <li>
+          <strong>Wiederkehrende Zahlungen</strong> können zur Bezahlung des Faktero-Abonnements
+          verwendet werden.
+        </li>
+        <li>
+          Mit der Aktivierung des Abonnements{" "}
+          <strong>stimmt der Nutzer der wiederholten Abbuchung</strong> des dem gewählten Tarif
+          entsprechenden Betrags zu (monatlich oder jährlich).
+        </li>
+        <li>
+          Das Abonnement kann <strong>jederzeit gekündigt werden</strong>, und zwar im Bereich
+          Einstellungen → Abonnement.
+        </li>
+        <li>
+          <strong>Die Kündigung wird ab dem nächsten Abrechnungszeitraum wirksam</strong>; bereits
+          bezahlte Beträge werden nicht erstattet, mit Ausnahme der gesetzlich vorgeschriebenen
+          Fälle.
+        </li>
+      </ul>
+
+      <h2>9. Kontakt</h2>
+      <p>
+        {LEGAL_COMPANY.name}
+        <br />
+        {LEGAL_COMPANY.address}
+        <br />
+        E-Mail: <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>
+      </p>
+    </>
   );
 }

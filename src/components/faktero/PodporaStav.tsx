@@ -1,4 +1,5 @@
 import { nazovStavu } from "@/lib/faktero/podpora";
+import { useT } from "@/lib/i18n/useT";
 
 const FARBA: Record<string, string> = {
   nova: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
@@ -9,9 +10,10 @@ const FARBA: Record<string, string> = {
 
 /** Štítok stavu požiadavky — rovnaký v Pomoc a podpora aj v administrácii. */
 export function PodporaStav({ stav, nazov }: { stav: string; nazov?: string }) {
+  const { t } = useT();
   return (
     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${FARBA[stav] ?? ""}`}>
-      {nazov ?? nazovStavu(stav)}
+      {t(nazov ?? nazovStavu(stav))}
     </span>
   );
 }

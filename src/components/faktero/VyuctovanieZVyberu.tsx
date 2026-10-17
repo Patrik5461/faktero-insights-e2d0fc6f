@@ -8,6 +8,7 @@ import {
   zoznamVyuctovaniFn,
 } from "@/lib/faktero/vyuctovanie-vydavkov.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Hromadná akcia „Vyúčtovanie" — označené bločky či prijaté faktúry do nového
@@ -24,6 +25,7 @@ export function VyuctovanieZVyberu({
   ids: string[];
   onHotovo?: () => void;
 }) {
+  const { t } = useT();
   const [otvorene, setOtvorene] = useState(false);
   return (
     <>
@@ -33,7 +35,7 @@ export function VyuctovanieZVyberu({
         disabled={!ids.length}
         className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
       >
-        <HandCoins className="h-4 w-4" /> Vyúčtovanie ({ids.length})
+        <HandCoins className="h-4 w-4" /> {t("Vyúčtovanie ({n})", { n: ids.length })}
       </button>
       {otvorene && (
         <Okno
@@ -61,6 +63,7 @@ function Okno({
   onClose: () => void;
   onHotovo?: () => void;
 }) {
+  const { t } = useT();
   useZatvorNaEscape(onClose);
   const navigate = useNavigate();
   const zoznam = useServerFn(zoznamVyuctovaniFn);
@@ -96,13 +99,13 @@ function Okno({
       });
       toast.success(
         r.vInom
-          ? `Pridané ${r.priradenych}; ${r.vInom} už bolo v inom vyúčtovaní.`
-          : `Pridané do vyúčtovania (${r.priradenych}).`,
+          ? t("Pridané {n}; {inom} už bolo v inom vyúčtovaní.", { n: r.priradenych, inom: r.vInom })
+          : t("Pridané do vyúčtovania ({n}).", { n: r.priradenych }),
       );
       onClose();
       onHotovo?.();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -113,31 +116,37 @@ function Okno({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Vyúčtovanie výdavkov"
+        aria-label={t("Vyúčtovanie výdavkov")}
         className="w-full max-w-md rounded-xl border border-border bg-card p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold">Vyúčtovanie výdavkov</h3>
+        <h3 className="text-lg font-semibold">{t("Vyúčtovanie výdavkov")}</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          {ids.length} {druh === "blocek" ? "bločkov" : "prijatých faktúr"} zaplatil zamestnanec —
-          zo zálohy, z vlastných peňazí alebo firemnou kartou.
+          {t(
+            druh === "blocek"
+              ? "{n} bločkov zaplatil zamestnanec — zo zálohy, z vlastných peňazí alebo firemnou kartou."
+              : "{n} prijatých faktúr zaplatil zamestnanec — zo zálohy, z vlastných peňazí alebo firemnou kartou.",
+            { n: ids.length },
+          )}
         </p>
         <button
           onClick={nove}
           className="mt-4 w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
         >
-          Vytvoriť nové vyúčtovanie
+          {t("Vytvoriť nové vyúčtovanie")}
         </button>
         {otvorene.length > 0 && (
           <div className="mt-4 border-t border-border pt-4">
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">alebo pridať do existujúceho</span>
+              <span className="text-xs text-muted-foreground">
+                {t("alebo pridať do existujúceho")}
+              </span>
               <select
                 value={vybrane}
                 onChange={(e) => setVybrane(e.target.value)}
                 className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
               >
-                <option value="">— vyberte —</option>
+                <option value="">{t("— vyberte —")}</option>
                 {otvorene.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.nazov}
@@ -150,7 +159,7 @@ function Okno({
               disabled={!vybrane || busy}
               className="mt-2 w-full rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              Pridať
+              {t("Pridať")}
             </button>
           </div>
         )}

@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
+import { useT } from "@/lib/i18n/useT";
 import {
   LifeBuoy,
   Settings,
@@ -39,13 +41,15 @@ import {
 import { VIDEO_NAVODY } from "@/lib/faktero/video-navody";
 
 export const Route = createFileRoute("/pomoc/")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Centrum pomoci Faktero — manuály k faktúram, skladu, cenníku, zákazkám, pokladni, DPH, banke, knihe jázd a API.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc" },
     ],
@@ -345,24 +349,26 @@ const SKUPINY = [
 /** 1 video, 2 – 4 videá, 5 a viac videí. */
 function pocetVidei(n: number) {
   if (n === 1) return "1 video";
-  return n >= 2 && n <= 4 ? `${n} videá` : `${n} videí`;
+  return n >= 2 && n <= 4 ? "{n} videá" : "{n} videí";
 }
 
 function Page() {
+  const { t } = useT();
   return (
     <MarketingShell>
       <div className="mx-auto max-w-5xl px-4 py-16">
         <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-          Pomoc
+          {t("Pomoc")}
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">Centrum pomoci</h1>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight">{t("Centrum pomoci")}</h1>
         <p className="mt-2 text-muted-foreground max-w-2xl">
-          Vyberte si oblasť, s ktorou potrebujete poradiť. Ak hľadáte konkrétnu odpoveď, napíšte nám
-          na{" "}
+          {t(
+            "Vyberte si oblasť, s ktorou potrebujete poradiť. Ak hľadáte konkrétnu odpoveď, napíšte nám na",
+          )}{" "}
           <a href="mailto:info@faktero.sk" className="text-primary hover:underline">
             info@faktero.sk
           </a>{" "}
-          alebo zavolajte na{" "}
+          {t("alebo zavolajte na")}{" "}
           <a href="tel:+421902101967" className="text-primary hover:underline">
             +421 902 101 967
           </a>
@@ -377,20 +383,20 @@ function Page() {
               <PlayCircle className="h-6 w-6" />
             </span>
             <div>
-              <div className="font-semibold">Video návody</div>
+              <div className="font-semibold">{t("Video návody")}</div>
               <p className="text-sm text-muted-foreground">
-                Pozrite si, ako na to — krátke videá so slovenským komentárom.
+                {t("Pozrite si, ako na to — krátke videá so slovenským komentárom.")}
               </p>
             </div>
             <span className="ml-auto hidden text-sm font-medium text-emerald-700 sm:block dark:text-emerald-300">
-              {pocetVidei(VIDEO_NAVODY.length)} →
+              {t(pocetVidei(VIDEO_NAVODY.length), { n: VIDEO_NAVODY.length })} →
             </span>
           </Link>
         )}
         {SKUPINY.map((skupina) => (
           <section key={skupina} className="mt-10">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {skupina}
+              {t(skupina)}
             </h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {CATS.filter((c) => c.skupina === skupina).map((c) => {
@@ -403,14 +409,14 @@ function Page() {
                       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
                         <Icon className="h-5 w-5" />
                       </span>
-                      <div className="font-semibold">{c.label}</div>
+                      <div className="font-semibold">{t(c.label)}</div>
                       {!c.available && (
                         <span className="ml-auto text-[10px] font-medium uppercase text-muted-foreground">
-                          Pripravujeme
+                          {t("Pripravujeme")}
                         </span>
                       )}
                     </div>
-                    <p className="mt-3 text-sm text-muted-foreground">{c.desc}</p>
+                    <p className="mt-3 text-sm text-muted-foreground">{t(c.desc)}</p>
                   </div>
                 );
                 return c.available ? (
@@ -425,11 +431,11 @@ function Page() {
           </section>
         ))}
         <div className="mt-10 rounded-xl border border-border bg-card p-6 text-sm">
-          <h2 className="font-semibold">Právne dokumenty</h2>
+          <h2 className="font-semibold">{t("Právne dokumenty")}</h2>
           <p className="text-muted-foreground mt-1">
-            Obchodné podmienky, GDPR, GoPay podmienky a ďalšie nájdete v sekcii{" "}
+            {t("Obchodné podmienky, GDPR, GoPay podmienky a ďalšie nájdete v sekcii")}{" "}
             <Link to="/pravne" className="text-primary hover:underline">
-              Právne
+              {t("Právne")}
             </Link>
             .
           </p>

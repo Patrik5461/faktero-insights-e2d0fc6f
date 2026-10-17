@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
 import { zadaj } from "@/lib/potvrdenie";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,9 +24,16 @@ import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight, Mail } from "lucide-react";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+
+/** Kľúč podľa počtu: 1 / 2–4 / 5 a viac (slovenské tvary, preklad ich zjednotí). */
+const tvar = (n: number, jeden: string, dva: string, pat: string) =>
+  n === 1 ? jeden : n >= 2 && n <= 4 ? dva : pat;
 
 export const Route = createFileRoute("/_authenticated/exporty")({
-  head: () => ({ meta: [{ title: "Účtovné exporty — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Účtovné exporty — Faktero") }],
+  }),
   /** História je sekcia tejto istej stránky; `?tab=history` na ňu zroluje. */
   validateSearch: (s: Record<string, unknown>): { tab?: "history" } => ({
     tab: s.tab === "history" ? "history" : undefined,
@@ -68,6 +76,7 @@ const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
 ];
 
 function ExportsPage() {
+  const { t } = useT();
   const [format, setFormat] = useState<ExportFormat>("pohoda_xml");
   const [jobs, setJobs] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -122,22 +131,24 @@ function ExportsPage() {
   async function runExport() {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    if (!selectedIds.length) return toast.error("Vyberte aspoň jednu faktúru");
+    if (!selectedIds.length) return toast.error(t("Vyberte aspoň jednu faktúru"));
     setBusy(true);
     try {
       const r = await exportFn({
         data: { companyId: cid, invoiceIds: selectedIds, format },
       });
       downloadFile(r.fileName, r.content, r.mime, r.encoding);
-      toast.success(`Exportovaných ${r.invoiceCount} faktúr`);
+      toast.success(t("Exportovaných faktúr: {n}", { n: r.invoiceCount }));
       // Vynechaný doklad sa musí povedať nahlas — inak by účtovníčke ticho chýbal.
       if (r.preskocene?.length) {
-        toast.warning(`Do súboru sa nedostali: ${r.preskocene.join(", ")}`, { duration: 10000 });
+        toast.warning(t("Do súboru sa nedostali: {zoznam}", { zoznam: r.preskocene.join(", ") }), {
+          duration: 10000,
+        });
       }
       setPicked({});
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Export zlyhal");
+      toast.error(e?.message ?? t("Export zlyhal"));
     } finally {
       setBusy(false);
     }
@@ -148,15 +159,17 @@ function ExportsPage() {
       const r = await getContent({ data: { jobId: j.id } });
       downloadFile(r.fileName ?? "export.xml", r.content ?? "", r.mime, r.encoding);
     } catch (e: any) {
-      toast.error(e?.message ?? "Stiahnutie zlyhalo");
+      toast.error(e?.message ?? t("Stiahnutie zlyhalo"));
     }
   }
 
   return (
     <>
       <PageHeader
-        title="Účtovné exporty"
-        description="Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, do ISDOC-u alebo ako súpisku pre Excel."
+        title={t("Účtovné exporty")}
+        description={t(
+          "Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, do ISDOC-u alebo ako súpisku pre Excel.",
+        )}
       />
       <PageBody>
         <ZauctovaneDoProgramu />
@@ -169,7 +182,7 @@ function ExportsPage() {
             <div className="rounded-2xl border border-border bg-card p-5">
               <div className="mb-4 flex flex-wrap items-end gap-3">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Od</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("Od")}</label>
                   <input
                     type="date"
                     value={dateFrom}
@@ -178,7 +191,7 @@ function ExportsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Do</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("Do")}</label>
                   <input
                     type="date"
                     value={dateTo}
@@ -191,13 +204,13 @@ function ExportsPage() {
                     onClick={() => setPicked(Object.fromEntries(invoices.map((i) => [i.id, true])))}
                     className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
                   >
-                    Vybrať všetko
+                    {t("Vybrať všetko")}
                   </button>
                   <button
                     onClick={() => setPicked({})}
                     className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
                   >
-                    Zrušiť výber
+                    {t("Zrušiť výber")}
                   </button>
                 </div>
               </div>
@@ -207,17 +220,17 @@ function ExportsPage() {
                   <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
                       <th className="w-10 p-3"></th>
-                      <th className="p-3">Číslo</th>
-                      <th className="p-3">Odberateľ</th>
-                      <th className="hidden p-3 md:table-cell">Vystavená</th>
-                      <th className="hidden p-3 text-right md:table-cell">Suma</th>
+                      <th className="p-3">{t("Číslo")}</th>
+                      <th className="p-3">{t("Odberateľ")}</th>
+                      <th className="hidden p-3 md:table-cell">{t("Vystavená")}</th>
+                      <th className="hidden p-3 text-right md:table-cell">{t("Suma")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {invoices.length === 0 && (
                       <tr>
                         <td colSpan={5} className="p-6 text-center text-sm text-muted-foreground">
-                          Žiadne faktúry v zvolenom období.
+                          {t("Žiadne faktúry v zvolenom období.")}
                         </td>
                       </tr>
                     )}
@@ -251,7 +264,7 @@ function ExportsPage() {
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="text-sm text-muted-foreground">
-                  Vybraných:{" "}
+                  {t("Vybraných:")}{" "}
                   <span className="font-semibold text-foreground">{selectedIds.length}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -262,7 +275,7 @@ function ExportsPage() {
                   >
                     {FORMATY.map((f) => (
                       <option key={f.format} value={f.format}>
-                        {f.label}
+                        {t(f.label)}
                       </option>
                     ))}
                   </select>
@@ -276,7 +289,7 @@ function ExportsPage() {
                     ) : (
                       <FileCode2 className="h-4 w-4" />
                     )}
-                    Exportovať
+                    {t("Exportovať")}
                   </button>
                 </div>
               </div>
@@ -285,11 +298,11 @@ function ExportsPage() {
             {/* History */}
             <div id="historia-exportov" className="rounded-2xl border border-border bg-card p-5">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-                História exportov
+                {t("História exportov")}
               </h3>
               {jobs.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  Zatiaľ žiadne exporty.
+                  {t("Zatiaľ žiadne exporty.")}
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
@@ -301,16 +314,20 @@ function ExportsPage() {
                           {j.file_name ?? `${j.target_system} — ${j.format}`}
                         </div>
                         <div className="mt-0.5 text-xs text-muted-foreground">
-                          {j.invoice_count} faktúr ·{" "}
-                          {new Date(j.created_at).toLocaleString("sk-SK")}
-                          {j.date_from && j.date_to ? ` · ${datumNaDoklade(j.date_from)} → ${datumNaDoklade(j.date_to)}` : ""}
+                          {t(tvar(j.invoice_count, "{n} faktúra", "{n} faktúry", "{n} faktúr"), {
+                            n: j.invoice_count,
+                          })}{" "}
+                          · {new Date(j.created_at).toLocaleString("sk-SK")}
+                          {j.date_from && j.date_to
+                            ? ` · ${datumNaDoklade(j.date_from)} → ${datumNaDoklade(j.date_to)}`
+                            : ""}
                         </div>
                       </div>
                       <button
                         onClick={() => downloadJob(j)}
                         className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                       >
-                        <Download className="h-3.5 w-3.5" /> Stiahnuť
+                        <Download className="h-3.5 w-3.5" /> {t("Stiahnuť")}
                       </button>
                     </li>
                   ))}
@@ -322,7 +339,9 @@ function ExportsPage() {
           {/* RIGHT: formats sidebar */}
           <aside className="min-w-0 space-y-3">
             <div className="rounded-2xl border border-border bg-card p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wide">Podporované formáty</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wide">
+                {t("Podporované formáty")}
+              </h3>
               <ul className="mt-3 space-y-2 text-sm">
                 {FORMATY.map((f) => (
                   <li
@@ -332,14 +351,14 @@ function ExportsPage() {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{f.label}</span>
+                      <span className="font-medium">{t(f.label)}</span>
                       {format === f.format && (
                         <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
-                          Vybrané
+                          {t("Vybrané")}
                         </span>
                       )}
                     </div>
-                    {f.note && <p className="mt-1 text-xs text-muted-foreground">{f.note}</p>}
+                    {f.note && <p className="mt-1 text-xs text-muted-foreground">{t(f.note)}</p>}
                   </li>
                 ))}
               </ul>
@@ -347,8 +366,9 @@ function ExportsPage() {
             <div className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
               <p className="flex items-start gap-2">
                 <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                Vyberte obdobie a faktúry, ktoré chcete preniesť do účtovníctva. Súbor sa stiahne a
-                uloží sa do histórie.
+                {t(
+                  "Vyberte obdobie a faktúry, ktoré chcete preniesť do účtovníctva. Súbor sa stiahne a uloží sa do histórie.",
+                )}
               </p>
             </div>
           </aside>
@@ -380,6 +400,7 @@ type Prehlad = {
 };
 
 function OdovzdanieZaMesiac() {
+  const { t } = useT();
   const [mesiac, setMesiac] = useState(() => new Date().toISOString().slice(0, 7));
   const [prehlad, setPrehlad] = useState<Prehlad | null>(null);
   const [busy, setBusy] = useState<null | "stiahnut" | "odovzdat" | "mail">(null);
@@ -411,10 +432,14 @@ function OdovzdanieZaMesiac() {
     pocetPokladnicnych: number;
   }) {
     if (r.preskocene.length) {
-      toast.warning(`Do XML sa nedostali: ${r.preskocene.join(", ")}`, { duration: 10000 });
+      toast.warning(t("Do XML sa nedostali: {zoznam}", { zoznam: r.preskocene.join(", ") }), {
+        duration: 10000,
+      });
     }
     if (r.vynechanePrilohy) {
-      toast.warning(`${r.vynechanePrilohy} dokladov je bez prílohy — balík by sa inak nezmestil`);
+      toast.warning(
+        t("Dokladov bez prílohy: {n} — balík by sa inak nezmestil", { n: r.vynechanePrilohy }),
+      );
     }
   }
 
@@ -427,14 +452,50 @@ function OdovzdanieZaMesiac() {
   }) {
     return (
       [
-        r.pocetFaktur ? `${r.pocetFaktur} faktúr` : "",
-        r.pocetPrijatych ? `${r.pocetPrijatych} prijatých faktúr` : "",
-        r.pocetDokladov ? `${r.pocetDokladov} prijatých dokladov` : "",
-        r.pocetPokladnicnych ? `${r.pocetPokladnicnych} pokladničných` : "",
-        r.pocetOstatnych ? `${r.pocetOstatnych} iných dokladov` : "",
+        r.pocetFaktur
+          ? t(tvar(r.pocetFaktur, "{n} faktúra", "{n} faktúry", "{n} faktúr"), { n: r.pocetFaktur })
+          : "",
+        r.pocetPrijatych
+          ? t(
+              tvar(
+                r.pocetPrijatych,
+                "{n} prijatá faktúra",
+                "{n} prijaté faktúry",
+                "{n} prijatých faktúr",
+              ),
+              { n: r.pocetPrijatych },
+            )
+          : "",
+        r.pocetDokladov
+          ? t(
+              tvar(
+                r.pocetDokladov,
+                "{n} prijatý doklad",
+                "{n} prijaté doklady",
+                "{n} prijatých dokladov",
+              ),
+              { n: r.pocetDokladov },
+            )
+          : "",
+        r.pocetPokladnicnych
+          ? t(
+              tvar(
+                r.pocetPokladnicnych,
+                "{n} pokladničný doklad",
+                "{n} pokladničné doklady",
+                "{n} pokladničných dokladov",
+              ),
+              { n: r.pocetPokladnicnych },
+            )
+          : "",
+        r.pocetOstatnych
+          ? t(tvar(r.pocetOstatnych, "{n} iný doklad", "{n} iné doklady", "{n} iných dokladov"), {
+              n: r.pocetOstatnych,
+            })
+          : "",
       ]
         .filter(Boolean)
-        .join(", ") || "nič"
+        .join(", ") || t("nič")
     );
   }
 
@@ -453,11 +514,11 @@ function OdovzdanieZaMesiac() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success(`Balík obsahuje ${popisObsahu(r)}`);
+      toast.success(t("Balík obsahuje: {obsah}", { obsah: popisObsahu(r) }));
       povedzVysledok(r);
       refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Odovzdanie zlyhalo");
+      toast.error(e instanceof Error ? e.message : t("Odovzdanie zlyhalo"));
     } finally {
       setBusy(null);
     }
@@ -469,10 +530,14 @@ function OdovzdanieZaMesiac() {
     const email =
       prehlad?.uctovnikEmail ||
       (
-        await zadaj("E-mail účtovníčky\nUloží sa v Účtovníctvo → Prepojenie s Pohodou.", {
-          typ: "email",
-          placeholder: "uctovnicka@kancelaria.sk",
-        }, { potvrdit: "Poslať podklady" })
+        await zadaj(
+          t("E-mail účtovníčky\nUloží sa v Účtovníctvo → Prepojenie s Pohodou."),
+          {
+            typ: "email",
+            placeholder: "uctovnicka@kancelaria.sk",
+          },
+          { potvrdit: t("Poslať podklady") },
+        )
       )?.trim();
     if (!email) return;
     setBusy("mail");
@@ -480,11 +545,13 @@ function OdovzdanieZaMesiac() {
       const r = await posliMailom({
         data: { companyId: cid, mesiac, oznacit: true, lenNove: true, email },
       });
-      toast.success(`Odoslané na ${r.prijemca} — ${popisObsahu(r)}`);
+      toast.success(
+        t("Odoslané na {prijemca} — {obsah}", { prijemca: r.prijemca, obsah: popisObsahu(r) }),
+      );
       povedzVysledok(r);
       refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Odoslanie zlyhalo");
+      toast.error(e instanceof Error ? e.message : t("Odoslanie zlyhalo"));
     } finally {
       setBusy(null);
     }
@@ -505,7 +572,9 @@ function OdovzdanieZaMesiac() {
     <div className="mb-6 rounded-2xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-end gap-4">
         <div>
-          <label className="text-xs font-medium text-muted-foreground">Odovzdať za mesiac</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            {t("Odovzdať za mesiac")}
+          </label>
           <input
             type="month"
             value={mesiac}
@@ -515,23 +584,51 @@ function OdovzdanieZaMesiac() {
         </div>
         <div className="text-sm">
           {prehlad === null ? (
-            <span className="text-muted-foreground">Zisťujem…</span>
+            <span className="text-muted-foreground">{t("Zisťujem…")}</span>
           ) : !jeCo ? (
             <span className="text-muted-foreground">
-              Za {prehlad.obdobie} nie sú žiadne doklady.
+              {t("Za {obdobie} nie sú žiadne doklady.", { obdobie: prehlad.obdobie })}
             </span>
           ) : (
             <>
               <div className="font-medium">
-                {prehlad.spolu} faktúr ·{" "}
-                {prehlad.suma.toLocaleString("sk-SK", { style: "currency", currency: "EUR" })}
-                {prehlad.prijatych ? ` · ${prehlad.prijatych} prijatých faktúr` : ""}
-                {prehlad.dokladov ? ` · ${prehlad.dokladov} prijatých dokladov` : ""}
-                {prehlad.pokladnicnych ? ` · pokladňa ${prehlad.pokladnicnych}` : ""}
+                {t(tvar(prehlad.spolu, "{n} faktúra", "{n} faktúry", "{n} faktúr"), {
+                  n: prehlad.spolu,
+                })}{" "}
+                · {prehlad.suma.toLocaleString("sk-SK", { style: "currency", currency: "EUR" })}
+                {prehlad.prijatych
+                  ? ` · ${t(
+                      tvar(
+                        prehlad.prijatych,
+                        "{n} prijatá faktúra",
+                        "{n} prijaté faktúry",
+                        "{n} prijatých faktúr",
+                      ),
+                      { n: prehlad.prijatych },
+                    )}`
+                  : ""}
+                {prehlad.dokladov
+                  ? ` · ${t(
+                      tvar(
+                        prehlad.dokladov,
+                        "{n} prijatý doklad",
+                        "{n} prijaté doklady",
+                        "{n} prijatých dokladov",
+                      ),
+                      { n: prehlad.dokladov },
+                    )}`
+                  : ""}
+                {prehlad.pokladnicnych
+                  ? ` · ${t("pokladňa {n}", { n: prehlad.pokladnicnych })}`
+                  : ""}
               </div>
               <div className="text-xs text-muted-foreground">
-                {zostava === 0 ? "Všetko už bolo odovzdané." : `Ešte neodovzdaných: ${zostava}`}
-                {prehlad.uctovnikEmail ? ` · účtovníčka: ${prehlad.uctovnikEmail}` : ""}
+                {zostava === 0
+                  ? t("Všetko už bolo odovzdané.")
+                  : t("Ešte neodovzdaných: {n}", { n: zostava })}
+                {prehlad.uctovnikEmail
+                  ? ` · ${t("účtovníčka: {email}", { email: prehlad.uctovnikEmail })}`
+                  : ""}
               </div>
             </>
           )}
@@ -547,7 +644,7 @@ function OdovzdanieZaMesiac() {
             ) : (
               <Download className="h-4 w-4" />
             )}
-            Stiahnuť balík
+            {t("Stiahnuť balík")}
           </button>
           <button
             onClick={() => stiahni(true)}
@@ -559,7 +656,7 @@ function OdovzdanieZaMesiac() {
             ) : (
               <Download className="h-4 w-4" />
             )}
-            Označiť za odovzdané
+            {t("Označiť za odovzdané")}
           </button>
           <button
             onClick={posli}
@@ -571,14 +668,14 @@ function OdovzdanieZaMesiac() {
             ) : (
               <Mail className="h-4 w-4" />
             )}
-            Poslať účtovníčke
+            {t("Poslať účtovníčke")}
           </button>
         </div>
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        V balíku sú súbory XML pre Pohodu (faktúry, prijaté doklady, pokladňa), súpisky v CSV a
-        samotné doklady. Odoslanie aj označenie si zapamätá, čo už odišlo, a nabudúce priloží len
-        nové doklady.
+        {t(
+          "V balíku sú súbory XML pre Pohodu (faktúry, prijaté doklady, pokladňa), súpisky v CSV a samotné doklady. Odoslanie aj označenie si zapamätá, čo už odišlo, a nabudúce priloží len nové doklady.",
+        )}
       </p>
     </div>
   );
@@ -591,6 +688,7 @@ function OdovzdanieZaMesiac() {
  * raz a pamätá sa.
  */
 function ZauctovaneDoProgramu() {
+  const { t } = useT();
   const nacitajProgram = useServerFn(programUctovaniaFn);
   const exportuj = useServerFn(exportUctovanieFn);
   const [program, setProgram] = useState<string>("pohoda");
@@ -646,7 +744,9 @@ function ZauctovaneDoProgramu() {
     } else if (agenda === "prijata") {
       const r = await supabase
         .from("purchase_invoices")
-        .select("id, invoice_number, supplier_name, issue_date, amount_total, currency, zauctovane_at, exported_at, type")
+        .select(
+          "id, invoice_number, supplier_name, issue_date, amount_total, currency, zauctovane_at, exported_at, type",
+        )
         .eq("company_id", cid)
         .gte("issue_date", od)
         .lte("issue_date", doDna)
@@ -666,7 +766,9 @@ function ZauctovaneDoProgramu() {
     } else {
       const r = await supabase
         .from("expense_documents")
-        .select("id, document_number, supplier_name, issue_date, total_amount, currency, status, exported_at, pohoda_predkontacia")
+        .select(
+          "id, document_number, supplier_name, issue_date, total_amount, currency, status, exported_at, pohoda_predkontacia",
+        )
         .eq("company_id", cid)
         .gte("issue_date", od)
         .lte("issue_date", doDna)
@@ -674,7 +776,7 @@ function ZauctovaneDoProgramu() {
         .order("issue_date", { ascending: false });
       data = (r.data ?? []).map((x: any) => ({
         id: x.id,
-        cislo: x.document_number || "bloček",
+        cislo: x.document_number || t("bloček"),
         partner: x.supplier_name,
         datum: x.issue_date,
         suma: x.total_amount,
@@ -698,13 +800,14 @@ function ZauctovaneDoProgramu() {
     try {
       await nacitajProgram({ data: { company_id: cid, program: p as any } });
     } catch (e: any) {
-      toast.error(e?.message ?? "Program sa nepodarilo uložiť");
+      toast.error(e?.message ?? t("Program sa nepodarilo uložiť"));
     }
   }
 
   const zobrazene = riadky.filter((r) => !lenNove || !r.odovzdany);
   const ids = zobrazene.filter((r) => vyber[r.id]).map((r) => r.id);
   const def = PROGRAMY_UCTOVANIA.find((p) => p.program === program);
+  const kratkyNazov = t(def?.nazov ?? "").split(" — ")[0];
 
   async function spusti() {
     const cid = getActiveCompanyId();
@@ -715,12 +818,14 @@ function ZauctovaneDoProgramu() {
         data: { company_id: cid, program: program as any, agenda, ids, oznacit },
       });
       downloadFile(r.fileName, r.content, r.mime, r.encoding);
-      toast.success(`Vyvezených ${r.pocet} dokladov`);
+      toast.success(t("Vyvezených dokladov: {n}", { n: r.pocet }));
       if (r.preskocene.length)
-        toast.warning(`Do súboru sa nedostali: ${r.preskocene.join(" · ")}`, { duration: 12000 });
+        toast.warning(t("Do súboru sa nedostali: {zoznam}", { zoznam: r.preskocene.join(" · ") }), {
+          duration: 12000,
+        });
       void nacitaj();
     } catch (e: any) {
-      toast.error(e?.message ?? "Export zlyhal");
+      toast.error(e?.message ?? t("Export zlyhal"));
     } finally {
       setBusy(false);
     }
@@ -730,23 +835,24 @@ function ZauctovaneDoProgramu() {
     <div className="mb-6 rounded-2xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold">Zaúčtované doklady do vášho programu</h2>
+          <h2 className="text-base font-semibold">{t("Zaúčtované doklady do vášho programu")}</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Vystavené faktúry, prijaté faktúry aj bločky s predkontáciou, členením DPH, strediskom a
-            zákazkou — tak, ako ste ich zaúčtovali vo Fakteri.
+            {t(
+              "Vystavené faktúry, prijaté faktúry aj bločky s predkontáciou, členením DPH, strediskom a zákazkou — tak, ako ste ich zaúčtovali vo Fakteri.",
+            )}
           </p>
         </div>
         <label className="min-w-0 max-w-full text-sm">
-          <span className="block text-xs text-muted-foreground">Účtovný program</span>
+          <span className="block text-xs text-muted-foreground">{t("Účtovný program")}</span>
           <select
-            aria-label="Účtovný program"
+            aria-label={t("Účtovný program")}
             value={program}
             onChange={(e) => void zmenProgram(e.target.value)}
             className="mt-1 w-full max-w-full rounded-md border border-border bg-background px-3 py-2 text-sm sm:w-auto"
           >
             {PROGRAMY_UCTOVANIA.map((p) => (
               <option key={p.program} value={p.program}>
-                {p.nazov}
+                {t(p.nazov)}
               </option>
             ))}
           </select>
@@ -755,9 +861,11 @@ function ZauctovaneDoProgramu() {
 
       {program === "pohoda" ? (
         <p className="mt-4 rounded-md bg-muted/40 p-3 text-sm text-muted-foreground">
-          Do Pohody idú zaúčtované doklady konektorom alebo mesačným balíkom nižšie; jednotlivo
-          tlačidlom <em>Stiahnuť XML pre Pohodu</em> pri doklade či v zozname. Používate iný program?
-          Vyberte ho vpravo hore.
+          {t(
+            "Do Pohody idú zaúčtované doklady konektorom alebo mesačným balíkom nižšie; jednotlivo tlačidlom",
+          )}{" "}
+          <em>{t("Stiahnuť XML pre Pohodu")}</em>{" "}
+          {t("pri doklade či v zozname. Používate iný program? Vyberte ho vpravo hore.")}
         </p>
       ) : (
         <>
@@ -776,12 +884,12 @@ function ZauctovaneDoProgramu() {
                   onClick={() => setAgenda(k)}
                   className={`rounded px-3 py-1.5 ${agenda === k ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}
                 >
-                  {n}
+                  {t(n)}
                 </button>
               ))}
             </div>
             <label className="text-xs text-muted-foreground">
-              Od
+              {t("Od")}
               <input
                 type="date"
                 value={od}
@@ -790,7 +898,7 @@ function ZauctovaneDoProgramu() {
               />
             </label>
             <label className="text-xs text-muted-foreground">
-              Do
+              {t("Do")}
               <input
                 type="date"
                 value={doDna}
@@ -800,8 +908,12 @@ function ZauctovaneDoProgramu() {
             </label>
             {agenda !== "vystavena" && (
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={lenNove} onChange={(e) => setLenNove(e.target.checked)} />
-                Len ešte neodovzdané
+                <input
+                  type="checkbox"
+                  checked={lenNove}
+                  onChange={(e) => setLenNove(e.target.checked)}
+                />
+                {t("Len ešte neodovzdané")}
               </label>
             )}
             <button
@@ -809,7 +921,7 @@ function ZauctovaneDoProgramu() {
               onClick={() => setOtvoreneNastavenia((o) => !o)}
               className="ml-auto rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              Nastavenia pre {def?.nazov.split(" — ")[0]}
+              {t("Nastavenia pre {program}", { program: kratkyNazov })}
             </button>
           </div>
 
@@ -822,7 +934,7 @@ function ZauctovaneDoProgramu() {
                 if (!cid) return;
                 const r = await nacitajProgram({ data: { company_id: cid, nastavenia: h } });
                 setNastavenia(r.nastavenia as any);
-                toast.success("Nastavenia sú uložené");
+                toast.success(t("Nastavenia sú uložené"));
               }}
             />
           )}
@@ -834,25 +946,31 @@ function ZauctovaneDoProgramu() {
                   <th className="w-10 p-2">
                     <input
                       type="checkbox"
-                      aria-label="Vybrať všetko"
+                      aria-label={t("Vybrať všetko")}
                       checked={zobrazene.length > 0 && ids.length === zobrazene.length}
                       onChange={(e) =>
-                        setVyber(e.target.checked ? Object.fromEntries(zobrazene.map((r) => [r.id, true])) : {})
+                        setVyber(
+                          e.target.checked
+                            ? Object.fromEntries(zobrazene.map((r) => [r.id, true]))
+                            : {},
+                        )
                       }
                     />
                   </th>
-                  <th className="p-2">Číslo</th>
-                  <th className="p-2">{agenda === "vystavena" ? "Odberateľ" : "Dodávateľ"}</th>
-                  <th className="hidden p-2 md:table-cell">Dátum</th>
-                  <th className="hidden p-2 text-right md:table-cell">Suma</th>
-                  <th className="p-2">Stav</th>
+                  <th className="p-2">{t("Číslo")}</th>
+                  <th className="p-2">
+                    {agenda === "vystavena" ? t("Odberateľ") : t("Dodávateľ")}
+                  </th>
+                  <th className="hidden p-2 md:table-cell">{t("Dátum")}</th>
+                  <th className="hidden p-2 text-right md:table-cell">{t("Suma")}</th>
+                  <th className="p-2">{t("Stav")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {zobrazene.length === 0 && (
                   <tr>
                     <td colSpan={6} className="p-6 text-center text-muted-foreground">
-                      V tomto období tu nič nie je.
+                      {t("V tomto období tu nič nie je.")}
                     </td>
                   </tr>
                 )}
@@ -872,17 +990,19 @@ function ZauctovaneDoProgramu() {
                       </span>
                     </td>
                     <td className="p-2">{r.partner ?? "—"}</td>
-                    <td className="hidden whitespace-nowrap p-2 md:table-cell">{datumNaDoklade(r.datum)}</td>
+                    <td className="hidden whitespace-nowrap p-2 md:table-cell">
+                      {datumNaDoklade(r.datum)}
+                    </td>
                     <td className="hidden whitespace-nowrap p-2 text-right tabular-nums md:table-cell">
                       {formatujMenu(r.suma ?? 0, r.mena)}
                     </td>
                     <td className="p-2 text-xs">
                       {r.odovzdany ? (
-                        <span className="text-emerald-700">odovzdaný</span>
+                        <span className="text-emerald-700">{t("odovzdaný")}</span>
                       ) : r.zauctovany ? (
-                        <span className="text-sky-700">zaúčtovaný</span>
+                        <span className="text-sky-700">{t("zaúčtovaný")}</span>
                       ) : (
-                        <span className="text-muted-foreground">predvolené kódy</span>
+                        <span className="text-muted-foreground">{t("predvolené kódy")}</span>
                       )}
                     </td>
                   </tr>
@@ -893,8 +1013,12 @@ function ZauctovaneDoProgramu() {
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={oznacit} onChange={(e) => setOznacit(e.target.checked)} />
-              Označiť ako odovzdané (zamknú sa a nepôjdu druhýkrát)
+              <input
+                type="checkbox"
+                checked={oznacit}
+                onChange={(e) => setOznacit(e.target.checked)}
+              />
+              {t("Označiť ako odovzdané (zamknú sa a nepôjdu druhýkrát)")}
             </label>
             <button
               type="button"
@@ -902,8 +1026,12 @@ function ZauctovaneDoProgramu() {
               disabled={busy || !ids.length}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode2 className="h-4 w-4" />}
-              Stiahnuť pre {def?.nazov.split(" — ")[0]} ({ids.length})
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileCode2 className="h-4 w-4" />
+              )}
+              {t("Stiahnuť pre {program} ({n})", { program: kratkyNazov, n: ids.length })}
             </button>
           </div>
         </>
@@ -911,4 +1039,3 @@ function ZauctovaneDoProgramu() {
     </div>
   );
 }
-

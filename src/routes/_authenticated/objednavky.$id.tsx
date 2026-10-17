@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -23,7 +25,7 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/objednavky/$id")({
-  head: () => ({ meta: [{ title: "Objednávka — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Objednávka — Faktero") }] }),
   component: OrderDetail,
 });
 
@@ -51,6 +53,7 @@ function datum(s?: string | null) {
 }
 
 function OrderDetail() {
+  const { t } = useT();
   const { id } = Route.useParams();
   const nav = useNavigate();
   const nacitaj = useServerFn(getSalesOrder);
@@ -71,7 +74,7 @@ function OrderDetail() {
     setLoading(true);
     nacitaj({ data: { company_id: cid, id } })
       .then((d: any) => setO(d))
-      .catch((e: any) => setChyba(e?.message ?? "Objednávku sa nepodarilo načítať"))
+      .catch((e: any) => setChyba(e?.message ?? t("Objednávku sa nepodarilo načítať")))
       .finally(() => setLoading(false));
   }, [cid, id, nacitaj]);
 
@@ -80,7 +83,7 @@ function OrderDetail() {
   if (loading) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">Načítavam…</div>
+        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
       </PageBody>
     );
   }
@@ -88,9 +91,9 @@ function OrderDetail() {
     return (
       <PageBody>
         <div className="rounded-xl border border-border bg-card p-6 text-sm">
-          {chyba ?? "Objednávka sa nenašla."}{" "}
+          {chyba ?? t("Objednávka sa nenašla.")}{" "}
           <Link to="/objednavky" className="text-primary underline">
-            Späť na zoznam
+            {t("Späť na zoznam")}
           </Link>
         </div>
       </PageBody>
@@ -109,20 +112,20 @@ function OrderDetail() {
     try {
       await zmenStav({ data: { company_id: cid!, id, status: novy } });
       nacitajDetail();
-      toast.success("Stav objednávky zmenený");
+      toast.success(t("Stav objednávky zmenený"));
     } catch (e: any) {
-      toast.error(e?.message ?? "Stav sa nepodarilo zmeniť");
+      toast.error(e?.message ?? t("Stav sa nepodarilo zmeniť"));
     }
   }
 
   return (
     <>
       <PageHeader
-        title={`${o.order_number} — ${o.customers?.name ?? o.customer_name ?? "bez odberateľa"}`}
+        title={`${o.order_number} — ${o.customers?.name ?? o.customer_name ?? t("bez odberateľa")}`}
         description={
           o.customer_order_number
-            ? `Objednávka odberateľa č. ${o.customer_order_number}`
-            : "Prijatá objednávka od odberateľa"
+            ? t("Objednávka odberateľa č. {cislo}", { cislo: o.customer_order_number })
+            : t("Prijatá objednávka od odberateľa")
         }
         action={
           <div className="flex flex-wrap gap-2">
@@ -132,7 +135,7 @@ function OrderDetail() {
                 search={{ id }}
                 className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
               >
-                <Pencil className="h-4 w-4" /> Upraviť
+                <Pencil className="h-4 w-4" /> {t("Upraviť")}
               </Link>
             )}
             {stav === "draft" && (
@@ -141,7 +144,7 @@ function OrderDetail() {
                 onClick={() => nastav("confirmed")}
                 className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                <Check className="h-4 w-4" /> Potvrdiť
+                <Check className="h-4 w-4" /> {t("Potvrdiť")}
               </button>
             )}
             {daSaFakturovat && (
@@ -150,7 +153,7 @@ function OrderDetail() {
                 search={{ sales_order: id }}
                 className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                <FileText className="h-4 w-4" /> Vyfakturovať
+                <FileText className="h-4 w-4" /> {t("Vyfakturovať")}
               </Link>
             )}
           </div>
@@ -160,16 +163,16 @@ function OrderDetail() {
         <div className="space-y-4">
           {/* Prehľad */}
           <div className="grid gap-3 sm:grid-cols-4">
-            <Karta popis="Stav">
+            <Karta popis={t("Stav")}>
               <span className={`rounded-full px-2 py-0.5 text-sm ${FARBA[stav]}`}>
-                {STAV_POPIS[stav]}
+                {t(STAV_POPIS[stav])}
               </span>
             </Karta>
-            <Karta popis="Hodnota objednávky">{suma(o.total)}</Karta>
-            <Karta popis="Zostáva vyfakturovať">
+            <Karta popis={t("Hodnota objednávky")}>{suma(o.total)}</Karta>
+            <Karta popis={t("Zostáva vyfakturovať")}>
               <span className={o.zostava > 0 ? "" : "text-emerald-600"}>{suma(o.zostava)}</span>
             </Karta>
-            <Karta popis="Vybavené">
+            <Karta popis={t("Vybavené")}>
               <div className="flex items-center gap-2">
                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                   <div
@@ -184,16 +187,16 @@ function OrderDetail() {
 
           {meska && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              Požadovaný termín {datum(o.requested_date)} už uplynul a objednávka nie je vybavená.
+              {t("Požadovaný termín {datum} už uplynul a objednávka nie je vybavená.", { datum: datum(o.requested_date) })}
             </div>
           )}
 
           {/* Údaje */}
           <div className="rounded-xl border border-border bg-card p-4 text-sm">
             <dl className="grid gap-3 sm:grid-cols-3">
-              <Udaj popis="Objednané">{datum(o.order_date)}</Udaj>
-              <Udaj popis="Požadovaný termín">{datum(o.requested_date)}</Udaj>
-              <Udaj popis="Zákazka">
+              <Udaj popis={t("Objednané")}>{datum(o.order_date)}</Udaj>
+              <Udaj popis={t("Požadovaný termín")}>{datum(o.requested_date)}</Udaj>
+              <Udaj popis={t("Zákazka")}>
                 {o.jobs ? (
                   <Link
                     to="/zakazky/$id"
@@ -207,17 +210,17 @@ function OrderDetail() {
                 )}
               </Udaj>
               {o.quote_id && (
-                <Udaj popis="Vznikla z ponuky">
+                <Udaj popis={t("Vznikla z ponuky")}>
                   <Link
                     to="/ponuky/$id"
                     params={{ id: o.quote_id }}
                     className="text-primary hover:underline"
                   >
-                    zobraziť ponuku
+                    {t("zobraziť ponuku")}
                   </Link>
                 </Udaj>
               )}
-              {o.reserve_stock && <Udaj popis="Sklad">tovar sa rezervuje</Udaj>}
+              {o.reserve_stock && <Udaj popis={t("Sklad")}>{t("tovar sa rezervuje")}</Udaj>}
             </dl>
             {o.note && <p className="mt-3 whitespace-pre-wrap text-muted-foreground">{o.note}</p>}
           </div>
@@ -227,12 +230,12 @@ function OrderDetail() {
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground">
                 <tr className="border-b border-border">
-                  <th className="px-4 py-2 text-left font-medium">Položka</th>
-                  <th className="px-4 py-2 text-right font-medium">Objednané</th>
-                  <th className="px-4 py-2 text-right font-medium">Vyfakturované</th>
-                  <th className="px-4 py-2 text-right font-medium">Zostáva</th>
-                  <th className="px-4 py-2 text-right font-medium">Cena</th>
-                  <th className="px-4 py-2 text-right font-medium">Spolu</th>
+                  <th className="px-4 py-2 text-left font-medium">{t("Položka")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("Objednané")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("Vyfakturované")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("Zostáva")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("Cena")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("Spolu")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -255,7 +258,7 @@ function OrderDetail() {
                       <td
                         className={`px-4 py-2 text-right tabular-nums ${zostava > 0 ? "font-medium" : "text-emerald-600"}`}
                       >
-                        {zostava > 0 ? zostava : "vybavené"}
+                        {zostava > 0 ? zostava : t("vybavené")}
                       </td>
                       <td className="px-4 py-2 text-right tabular-nums">{suma(p.unit_price)}</td>
                       <td className="px-4 py-2 text-right tabular-nums">
@@ -270,11 +273,10 @@ function OrderDetail() {
 
           {/* Faktúry z objednávky */}
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-2 text-sm font-medium">Faktúry z tejto objednávky</div>
+            <div className="mb-2 text-sm font-medium">{t("Faktúry z tejto objednávky")}</div>
             {(o.faktury ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Zatiaľ žiadna. Tlačidlo „Vyfakturovať" prenesie do novej faktúry to, čo ešte
-                zostáva.
+                {t("Zatiaľ žiadna. Tlačidlo „Vyfakturovať\" prenesie do novej faktúry to, čo ešte zostáva.")}
               </p>
             ) : (
               <ul className="space-y-1 text-sm">
@@ -306,29 +308,29 @@ function OrderDetail() {
                 onClick={() =>
                   nastav(
                     "cancelled",
-                    "Zrušiť objednávku? Rezervácie tovaru sa uvoľnia, objednávka ostane v zozname.",
+                    t("Zrušiť objednávku? Rezervácie tovaru sa uvoľnia, objednávka ostane v zozname."),
                   )
                 }
                 className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
               >
-                <Ban className="h-4 w-4" /> Zrušiť objednávku
+                <Ban className="h-4 w-4" /> {t("Zrušiť objednávku")}
               </button>
             )}
             {saDaZmazat(stav) && (
               <button
                 type="button"
                 onClick={async () => {
-                  if (!(await potvrd("Zmazať rozpracovanú objednávku?"))) return;
+                  if (!(await potvrd(t("Zmazať rozpracovanú objednávku?")))) return;
                   try {
                     await zmaz({ data: { company_id: cid!, id } });
                     nav({ to: "/objednavky" });
                   } catch (e: any) {
-                    toast.error(e?.message ?? "Objednávku sa nepodarilo zmazať");
+                    toast.error(e?.message ?? t("Objednávku sa nepodarilo zmazať"));
                   }
                 }}
                 className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
               >
-                <Trash2 className="h-4 w-4" /> Zmazať
+                <Trash2 className="h-4 w-4" /> {t("Zmazať")}
               </button>
             )}
           </div>

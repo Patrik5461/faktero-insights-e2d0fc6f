@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { useT } from "@/lib/i18n/useT";
 
 export type Odberatel = {
   id: string;
@@ -41,6 +42,7 @@ export function PoleOdberatela({
   napoveda?: string;
   className?: string;
 }) {
+  const { t } = useT();
   const [zoznam, setZoznam] = useState<Odberatel[] | null>(null);
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export function PoleOdberatela({
 
   return (
     <label className={`block ${className ?? ""}`}>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium">{t(label)}</span>
       <select
         value={value}
         onChange={(e) => {
@@ -68,7 +70,7 @@ export function PoleOdberatela({
         }}
         className="input mt-1"
       >
-        <option value="">— nevybraný —</option>
+        <option value="">{t("— nevybraný —")}</option>
         {(zoznam ?? []).map((o) => (
           <option key={o.id} value={o.id}>
             {o.name}
@@ -77,15 +79,15 @@ export function PoleOdberatela({
       </select>
       {zoznam !== null && zoznam.length === 0 && (
         <span className="mt-1 block text-xs text-muted-foreground">
-          Firma zatiaľ nemá odberateľov —{" "}
+          {t("Firma zatiaľ nemá odberateľov —")}{" "}
           <a href="/odberatelia?new=1" className="text-primary underline-offset-2 hover:underline">
-            pridajte prvého
+            {t("pridajte prvého")}
           </a>
           .
         </span>
       )}
       {napoveda && zoznam !== null && zoznam.length > 0 && (
-        <span className="mt-1 block text-xs text-muted-foreground">{napoveda}</span>
+        <span className="mt-1 block text-xs text-muted-foreground">{t(napoveda)}</span>
       )}
     </label>
   );

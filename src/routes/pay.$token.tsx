@@ -4,9 +4,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { getPaymentLinkPublic, startPaymentPublic } from "@/lib/faktero/payments.functions";
 import { CheckCircle2, ShieldCheck } from "lucide-react";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/pay/$token")({
-  head: () => ({ meta: [{ title: "Platba faktúry — Faktero" }] }),
+  head: ({ match }) => {
+    const j = match.context.jazyk;
+    return { meta: [{ title: preloz(j, "Platba faktúry — Faktero") }] };
+  },
   component: PayPage,
 });
 
@@ -15,6 +20,7 @@ function fmt(amountCents: number, currency: string) {
 }
 
 function PayPage() {
+  const { t } = useT();
   const { token } = Route.useParams();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,9 +42,9 @@ function PayPage() {
     try {
       const r = await fnStart({ data: { token, payerEmail: email || undefined } });
       if (r.gwUrl) window.location.href = r.gwUrl;
-      else setError("GoPay nevrátil platobné URL.");
+      else setError(t("GoPay nevrátil platobné URL."));
     } catch (e: any) {
-      setError(e?.message ?? "Platbu sa nepodarilo spustiť.");
+      setError(e?.message ?? t("Platbu sa nepodarilo spustiť."));
     } finally {
       setBusy(false);
     }
@@ -48,15 +54,15 @@ function PayPage() {
     return (
       <PageWrap>
         <Center>
-          <h1 className="text-xl font-semibold mb-2">Odkaz nie je dostupný</h1>
-          <p className="text-muted-foreground">{error}</p>
+          <h1 className="text-xl font-semibold mb-2">{t("Odkaz nie je dostupný")}</h1>
+          <p className="text-muted-foreground">{t(error)}</p>
         </Center>
       </PageWrap>
     );
   if (!data)
     return (
       <PageWrap>
-        <Center>Načítavam…</Center>
+        <Center>{t("Načítavam…")}</Center>
       </PageWrap>
     );
 
@@ -67,9 +73,13 @@ function PayPage() {
       <div className="mx-auto max-w-md px-4 py-12">
         <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
           <div className="text-center space-y-1">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Platba faktúry</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              {t("Platba faktúry")}
+            </p>
             <h1 className="text-xl font-semibold">{data.company.name}</h1>
-            <p className="text-sm text-muted-foreground">Faktúra {data.invoice.number}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("Faktúra")} {data.invoice.number}
+            </p>
           </div>
           <div className="my-6 text-center">
             <div className="text-3xl font-bold tracking-tight">
@@ -77,7 +87,7 @@ function PayPage() {
             </div>
             {data.invoice.dueDate && (
               <p className="mt-1 text-xs text-muted-foreground">
-                Splatnosť do {data.invoice.dueDate}
+                {t("Splatnosť do")} {data.invoice.dueDate}
               </p>
             )}
           </div>
@@ -85,13 +95,13 @@ function PayPage() {
           {paid ? (
             <div className="rounded-lg bg-emerald-50 text-emerald-900 p-4 flex items-center gap-2 dark:bg-emerald-950/30 dark:text-emerald-100">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              <span className="text-sm font-medium">Faktúra je už uhradená. Ďakujeme!</span>
+              <span className="text-sm font-medium">{t("Faktúra je už uhradená. Ďakujeme!")}</span>
             </div>
           ) : (
             <>
               <label className="block text-sm">
                 <span className="text-muted-foreground">
-                  Váš e-mail (voliteľné, pre potvrdenie)
+                  {t("Váš e-mail (voliteľné, pre potvrdenie)")}
                 </span>
                 <input
                   type="email"
@@ -105,12 +115,12 @@ function PayPage() {
                 disabled={busy}
                 className="mt-4 w-full rounded-md bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                {busy ? "Otváram bránu…" : "Zaplatiť cez GoPay"}
+                {busy ? t("Otváram bránu…") : t("Zaplatiť cez GoPay")}
               </button>
-              {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+              {error && <p className="mt-3 text-sm text-destructive">{t(error)}</p>}
               {data.link.sandbox && (
                 <p className="mt-3 text-center text-xs text-amber-700 dark:text-amber-300">
-                  Testovací režim — žiadne skutočné peniaze sa neúčtujú.
+                  {t("Testovací režim — žiadne skutočné peniaze sa neúčtujú.")}
                 </p>
               )}
             </>
@@ -119,7 +129,9 @@ function PayPage() {
           <div className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" />
             <span>
-              Platba prebieha priamo cez GoPay. Peniaze idú na účet príjemcu — nie cez Faktero.
+              {t(
+                "Platba prebieha priamo cez GoPay. Peniaze idú na účet príjemcu — nie cez Faktero.",
+              )}
             </span>
           </div>
         </div>

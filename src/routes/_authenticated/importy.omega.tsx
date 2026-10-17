@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
 import { VendorImportPage } from "@/components/faktero/VendorImportPage";
 import { zdrojPodlaId } from "@/components/faktero/import-zdroje";
 
@@ -7,7 +8,9 @@ import { zdrojPodlaId } from "@/components/faktero/import-zdroje";
 const z = zdrojPodlaId("omega");
 
 export const Route = createFileRoute("/_authenticated/importy/omega")({
-  head: () => ({ meta: [{ title: "Import z Omega — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Import z Omega — Faktero") }],
+  }),
   component: () => (
     <VendorImportPage
       source="omega"

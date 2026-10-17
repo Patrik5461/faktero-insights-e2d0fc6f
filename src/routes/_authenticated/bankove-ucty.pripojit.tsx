@@ -27,6 +27,8 @@ import {
 import { pripojFio, stavFio, synchronizujFio, odpojFio } from "@/lib/faktero/fio.functions";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import {
   Building2,
   ExternalLink,
@@ -37,11 +39,12 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/pripojit")({
-  head: () => ({ meta: [{ title: "Pripojiť banku — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Pripojiť banku — Faktero") }] }),
   component: ConnectPage,
 });
 
 function ConnectPage() {
+  const { t } = useT();
   const startFn = useServerFn(startBankConnect);
   // Českej firme je Fio najbližšia banka — ide hneď za Tatra banku.
   const ceska = useKrajinaDane() === "CZ";
@@ -64,9 +67,9 @@ function ConnectPage() {
     } catch (e: any) {
       setBusy(false);
       if (e?.message === "not_configured") {
-        toast.error("Chýbajú TB_CLIENT_ID alebo TB_CLIENT_SECRET.");
+        toast.error(t("Chýbajú TB_CLIENT_ID alebo TB_CLIENT_SECRET."));
       } else {
-        toast.error(e?.message ?? "Chyba pri spustení OAuth");
+        toast.error(e?.message ?? t("Chyba pri spustení OAuth"));
       }
     }
   }
@@ -74,8 +77,8 @@ function ConnectPage() {
   return (
     <>
       <PageHeader
-        title="Pripojiť banku"
-        description="Tatra banka, Fio banka, Wise, Wallester a Revolut Business. Všetky iba na čítanie."
+        title={t("Pripojiť banku")}
+        description={t("Tatra banka, Fio banka, Wise, Wallester a Revolut Business. Všetky iba na čítanie.")}
       />
       <PageBody>
         {/* Dva a dva vedľa seba: štyri panely pod sebou pôsobili rozhádzane. */}
@@ -87,29 +90,27 @@ function ConnectPage() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold">
-                  Tatra banka <span className="font-normal text-muted-foreground">a ďalšie</span>
+                  Tatra banka <span className="font-normal text-muted-foreground">{t("a ďalšie")}</span>
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Premium API. Cez multibanking aj účty vedené v iných bankách.
+                  {t("Premium API. Cez multibanking aj účty vedené v iných bankách.")}
                 </p>
               </div>
             </div>
             <ul className="mt-6 space-y-2 text-sm text-foreground/80">
-              <li>• Načítanie zoznamu účtov a aktuálnych zostatkov</li>
-              <li>• Načítanie transakcií za posledných 90 dní</li>
-              <li>• Automatické párovanie platieb s faktúrami</li>
-              <li>• Bez platobných príkazov, iba na čítanie</li>
+              <li>• {t("Načítanie zoznamu účtov a aktuálnych zostatkov")}</li>
+              <li>• {t("Načítanie transakcií za posledných 90 dní")}</li>
+              <li>• {t("Automatické párovanie platieb s faktúrami")}</li>
+              <li>• {t("Bez platobných príkazov, iba na čítanie")}</li>
             </ul>
             {/*
               Najčastejšia otázka na tejto obrazovke: „a čo keď mám inú banku?".
               Z názvu panela to nikto neuhádne, tak je to napísané rovno pod ním.
             */}
             <div className="mt-4 rounded-xl border border-emerald-300/60 bg-white/70 p-4 text-sm dark:border-emerald-900/40 dark:bg-card/70">
-              <p className="font-medium">Máte inú banku?</p>
+              <p className="font-medium">{t("Máte inú banku?")}</p>
               <p className="mt-1 text-foreground/80">
-                Ak ju máte v internetbankingu Tatra banky pripojenú cez multibanking (Slovenská
-                sporiteľňa, VÚB, ČSOB a ďalšie), natiahnu sa aj tieto účty — zostatky aj pohyby.
-                Oficiálne výpisy na stiahnutie vydá banka len pre účty vedené v TB.
+                {t("Ak ju máte v internetbankingu Tatra banky pripojenú cez multibanking (Slovenská sporiteľňa, VÚB, ČSOB a ďalšie), natiahnu sa aj tieto účty — zostatky aj pohyby. Oficiálne výpisy na stiahnutie vydá banka len pre účty vedené v TB.")}
               </p>
             </div>
             <button
@@ -118,11 +119,10 @@ function ConnectPage() {
               className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
             >
               <ExternalLink className="h-4 w-4" />
-              {busy ? "Presmerovanie…" : "Pripojiť cez Tatra banku"}
+              {busy ? t("Presmerovanie…") : t("Pripojiť cez Tatra banku")}
             </button>
             <p className="mt-3 text-xs text-muted-foreground">
-              Po pripojení vás presmerujeme späť do Faktera. Prístupové tokeny sa ukladajú bezpečne
-              na serveri a nikdy nie sú dostupné v prehliadači.
+              {t("Po pripojení vás presmerujeme späť do Faktera. Prístupové tokeny sa ukladajú bezpečne na serveri a nikdy nie sú dostupné v prehliadači.")}
             </p>
           </div>
           {ceska && <FioPripojenie />}
@@ -163,6 +163,8 @@ function stiahniKluc(pem: string, nazov = "faktero-wise-public-key.pem") {
  * pustí ďalšie volanie na ten istý token až o 30 sekúnd.
  */
 function FioPripojenie() {
+  const { t, jazyk } = useT();
+  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
   const pripoj = useServerFn(pripojFio);
   const stavFn = useServerFn(stavFio);
   const syncFn = useServerFn(synchronizujFio);
@@ -195,7 +197,7 @@ function FioPripojenie() {
       toast.success(hlaska(r));
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa to.");
+      toast.error(e?.message ?? t("Nepodarilo sa to."));
     } finally {
       setBusy(null);
     }
@@ -212,7 +214,7 @@ function FioPripojenie() {
         <div>
           <h2 className="text-lg font-semibold">Fio banka</h2>
           <p className="text-sm text-muted-foreground">
-            Token z internetbankingu, iba na čítanie. Jeden token = jeden účet.
+            {t("Token z internetbankingu, iba na čítanie. Jeden token = jeden účet.")}
           </p>
         </div>
       </div>
@@ -226,8 +228,8 @@ function FioPripojenie() {
                 {u.mena ? ` · ${u.mena}` : ""}
                 <span className="block text-xs text-muted-foreground">
                   {u.last_synced_at
-                    ? `Naposledy ${new Date(u.last_synced_at).toLocaleString("sk-SK")}`
-                    : "Ešte nesynchronizované"}
+                    ? t("Naposledy {cas}", { cas: new Date(u.last_synced_at).toLocaleString(loc) })
+                    : t("Ešte nesynchronizované")}
                 </span>
               </span>
               <button
@@ -236,12 +238,12 @@ function FioPripojenie() {
                   sprav(
                     `sync-${u.id}`,
                     () => syncFn({ data: { company_id: cid!, connection_id: u.id } }),
-                    (r) => `Nových pohybov: ${r.vlozenych}`,
+                    (r) => t("Nových pohybov: {n}", { n: r.vlozenych }),
                   )
                 }
                 className="inline-flex h-8 items-center rounded-md border border-border px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
               >
-                {busy === `sync-${u.id}` ? "Sťahujem…" : "Stiahnuť pohyby"}
+                {busy === `sync-${u.id}` ? t("Sťahujem…") : t("Stiahnuť pohyby")}
               </button>
               <button
                 disabled={busy !== null}
@@ -249,12 +251,12 @@ function FioPripojenie() {
                   sprav(
                     `odpoj-${u.id}`,
                     () => odpojFn({ data: { company_id: cid!, connection_id: u.id } }),
-                    () => "Fio účet odpojený. Pohyby ostávajú.",
+                    () => t("Fio účet odpojený. Pohyby ostávajú."),
                   )
                 }
                 className="inline-flex h-8 items-center rounded-md border border-border px-2.5 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
               >
-                Odpojiť
+                {t("Odpojiť")}
               </button>
             </li>
           ))}
@@ -262,14 +264,14 @@ function FioPripojenie() {
       )}
 
       <ol className="mt-6 space-y-1 text-sm text-foreground/80">
-        <li>1. V internetbankingu Fio otvorte Nastavení → API → Přidat nový token.</li>
-        <li>2. Vyberte účet a oprávnenie „Pouze sledovat účet“, token potvrďte.</li>
-        <li>3. Token (64 znakov) vložte sem. Pre ďalší účet pridajte ďalší token.</li>
+        <li>{t("1. V internetbankingu Fio otvorte Nastavení → API → Přidat nový token.")}</li>
+        <li>{t("2. Vyberte účet a oprávnenie „Pouze sledovat účet“, token potvrďte.")}</li>
+        <li>{t("3. Token (64 znakov) vložte sem. Pre ďalší účet pridajte ďalší token.")}</li>
       </ol>
       <input
         value={token}
         onChange={(e) => setToken(e.target.value)}
-        placeholder="Token z Fio internetbankingu"
+        placeholder={t("Token z Fio internetbankingu")}
         autoComplete="off"
         className="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
       />
@@ -281,17 +283,16 @@ function FioPripojenie() {
             () => pripoj({ data: { company_id: cid!, token: token.trim() } }),
             (r) => {
               setToken("");
-              return `Pripojený ${r.iban ?? r.ucet}. Stiahnutých pohybov: ${r.vlozenych}.`;
+              return t("Pripojený {ucet}. Stiahnutých pohybov: {n}.", { ucet: r.iban ?? r.ucet, n: r.vlozenych });
             },
           )
         }
         className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
       >
-        {busy === "pripojenie" ? "Overujem token…" : ucty.length ? "Pripojiť ďalší účet" : "Pripojiť Fio"}
+        {busy === "pripojenie" ? t("Overujem token…") : ucty.length ? t("Pripojiť ďalší účet") : t("Pripojiť Fio")}
       </button>
       <p className="mt-3 text-xs text-muted-foreground">
-        Bez ďalšej autorizácie vydá Fio pohyby za posledných 90 dní. Ďalej sa sťahujú každú noc
-        automaticky. Overenie neplatného tokenu môže trvať až pol minúty.
+        {t("Bez ďalšej autorizácie vydá Fio pohyby za posledných 90 dní. Ďalej sa sťahujú každú noc automaticky. Overenie neplatného tokenu môže trvať až pol minúty.")}
       </p>
     </div>
   );
@@ -307,6 +308,8 @@ function FioPripojenie() {
  * kľúč hneď na obrazovke a nie schovaný v nastaveniach.
  */
 function WisePripojenie() {
+  const { t, jazyk } = useT();
+  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
   const pripoj = useServerFn(pripojWise);
   const stavFn = useServerFn(stavWise);
   const uctyFn = useServerFn(synchronizujWiseUcty);
@@ -331,7 +334,7 @@ function WisePripojenie() {
       toast.success(hlaska(r));
       setStav(await stavFn({ data: { company_id: cid } }));
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa to.");
+      toast.error(e?.message ?? t("Nepodarilo sa to."));
     } finally {
       setBusy(null);
     }
@@ -346,7 +349,7 @@ function WisePripojenie() {
         <div>
           <h2 className="text-lg font-semibold">Wise</h2>
           <p className="text-sm text-muted-foreground">
-            Osobný token, iba na čítanie. Každá mena je samostatný účet.
+            {t("Osobný token, iba na čítanie. Každá mena je samostatný účet.")}
           </p>
         </div>
       </div>
@@ -354,14 +357,14 @@ function WisePripojenie() {
       {!stav?.pripojene ? (
         <>
           <ol className="mt-6 space-y-1 text-sm text-foreground/80">
-            <li>1. Vo Wise otvorte Settings → API tokens a vytvorte token na čítanie.</li>
-            <li>2. Vložte ho sem.</li>
-            <li>3. Skopírujte verejný kľúč, ktorý sa objaví, a nahrajte ho vo Wise k tokenu.</li>
+            <li>{t("1. Vo Wise otvorte Settings → API tokens a vytvorte token na čítanie.")}</li>
+            <li>{t("2. Vložte ho sem.")}</li>
+            <li>{t("3. Skopírujte verejný kľúč, ktorý sa objaví, a nahrajte ho vo Wise k tokenu.")}</li>
           </ol>
           <input
             value={token}
             onChange={(e) => setToken(e.target.value)}
-            placeholder="Token z Wise"
+            placeholder={t("Token z Wise")}
             autoComplete="off"
             className="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
           />
@@ -371,29 +374,28 @@ function WisePripojenie() {
               sprav(
                 "pripojenie",
                 () => pripoj({ data: { company_id: cid!, token: token.trim() } }),
-                () => "Wise pripojený. Nahrajte ešte verejný kľúč.",
+                () => t("Wise pripojený. Nahrajte ešte verejný kľúč."),
               )
             }
             className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
-            {busy === "pripojenie" ? "Overujem token…" : "Pripojiť Wise"}
+            {busy === "pripojenie" ? t("Overujem token…") : t("Pripojiť Wise")}
           </button>
         </>
       ) : (
         <>
           <p className="mt-6 text-sm">
-            Pripojené · profil {stav.profil}
+            {t("Pripojené · profil {profil}", { profil: stav.profil })}
             {stav.last_synced_at
-              ? ` · naposledy ${new Date(stav.last_synced_at).toLocaleString("sk-SK")}`
+              ? ` · ${t("naposledy {cas}", { cas: new Date(stav.last_synced_at).toLocaleString(loc) })}`
               : ""}
           </p>
 
           {stav.verejnyKluc && (
             <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
-              <p className="text-sm font-medium">Verejný kľúč pre Wise</p>
+              <p className="text-sm font-medium">{t("Verejný kľúč pre Wise")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Bez neho Wise nepustí výpisy — zostatky sa načítajú, pohyby nie. Nahrajte ho vo Wise
-                pri tokene (Settings → API tokens → Manage public keys).
+                {t("Bez neho Wise nepustí výpisy — zostatky sa načítajú, pohyby nie. Nahrajte ho vo Wise pri tokene (Settings → API tokens → Manage public keys).")}
               </p>
               <textarea
                 readOnly
@@ -407,20 +409,20 @@ function WisePripojenie() {
                   onClick={() => stiahniKluc(stav.verejnyKluc)}
                   className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm hover:bg-secondary"
                 >
-                  <Download className="h-4 w-4" /> Stiahnuť ako súbor
+                  <Download className="h-4 w-4" /> {t("Stiahnuť ako súbor")}
                 </button>
                 <button
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(stav.verejnyKluc);
-                      toast.success("Kľúč skopírovaný.");
+                      toast.success(t("Kľúč skopírovaný."));
                     } catch {
-                      toast.error("Skopírovať sa nepodarilo, označte text a použite Ctrl+C.");
+                      toast.error(t("Skopírovať sa nepodarilo, označte text a použite Ctrl+C."));
                     }
                   }}
                   className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary"
                 >
-                  Kopírovať
+                  {t("Kopírovať")}
                 </button>
               </div>
             </div>
@@ -433,12 +435,12 @@ function WisePripojenie() {
                 sprav(
                   "ucty",
                   () => uctyFn({ data: { company_id: cid! } }),
-                  (r) => `Načítaných zostatkov: ${r.pocet}`,
+                  (r) => t("Načítaných zostatkov: {n}", { n: r.pocet }),
                 )
               }
               className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              {busy === "ucty" ? "Načítavam…" : "Načítať zostatky"}
+              {busy === "ucty" ? t("Načítavam…") : t("Načítať zostatky")}
             </button>
             <button
               disabled={busy !== null}
@@ -448,13 +450,16 @@ function WisePripojenie() {
                   () => pohybyFn({ data: { company_id: cid! } }),
                   (r) =>
                     r.problemy?.length
-                      ? `Načítaných pohybov: ${r.vlozenych}. Nepodarilo sa: ${r.problemy.join(", ")}`
-                      : `Načítaných pohybov: ${r.vlozenych}`,
+                      ? t("Načítaných pohybov: {n}. Nepodarilo sa: {problemy}", {
+                          n: r.vlozenych,
+                          problemy: r.problemy.join(", "),
+                        })
+                      : t("Načítaných pohybov: {n}", { n: r.vlozenych }),
                 )
               }
               className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              {busy === "pohyby" ? "Sťahujem…" : "Stiahnuť pohyby"}
+              {busy === "pohyby" ? t("Sťahujem…") : t("Stiahnuť pohyby")}
             </button>
           </div>
         </>
@@ -472,6 +477,8 @@ function WisePripojenie() {
  * skúsi. Kým sa neskúsi, nedá sa rozoznať preklep v issuer ID od výpadku.
  */
 function WallesterPripojenie() {
+  const { t, jazyk } = useT();
+  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
   const zacni = useServerFn(zacniWallester);
   const dokonci = useServerFn(dokonciWallester);
   const stavFn = useServerFn(stavWallester);
@@ -502,7 +509,7 @@ function WallesterPripojenie() {
       toast.success(hlaska(r));
       setStav(await stavFn({ data: { company_id: cid } }));
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa to.");
+      toast.error(e?.message ?? t("Nepodarilo sa to."));
     } finally {
       setBusy(null);
     }
@@ -517,18 +524,18 @@ function WallesterPripojenie() {
         <div>
           <h2 className="text-lg font-semibold">Wallester</h2>
           <p className="text-sm text-muted-foreground">
-            Firemné karty. Platby sa spárujú s bločkami podľa obchodníka.
+            {t("Firemné karty. Platby sa spárujú s bločkami podľa obchodníka.")}
           </p>
         </div>
       </div>
 
       {stav?.stav !== "pripojene" && (
         <ol className="mt-6 space-y-1 text-sm text-foreground/80">
-          <li>1. Napíšte Wallesteru, že chcete prístup k API (podpora alebo váš kontakt).</li>
-          <li>2. Nižšie si vyrobte verejný kľúč a pošlite im ho.</li>
+          <li>{t("1. Napíšte Wallesteru, že chcete prístup k API (podpora alebo váš kontakt).")}</li>
+          <li>{t("2. Nižšie si vyrobte verejný kľúč a pošlite im ho.")}</li>
           <li>
-            3. Oni pošlú <strong>issuer ID</strong>, <strong>audience ID</strong>, kód produktu a
-            maximálnu platnosť tokenu — doplňte ich sem.
+            {t("3. Oni pošlú")} <strong>issuer ID</strong>, <strong>audience ID</strong>,{" "}
+            {t("kód produktu a maximálnu platnosť tokenu — doplňte ich sem.")}
           </li>
         </ol>
       )}
@@ -540,18 +547,18 @@ function WallesterPripojenie() {
             sprav(
               "kluc",
               () => zacni({ data: { company_id: cid! } }),
-              () => "Kľúč vyrobený. Pošlite ho Wallesteru.",
+              () => t("Kľúč vyrobený. Pošlite ho Wallesteru."),
             )
           }
           className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
-          {busy === "kluc" ? "Vyrábam kľúč…" : "Vyrobiť verejný kľúč"}
+          {busy === "kluc" ? t("Vyrábam kľúč…") : t("Vyrobiť verejný kľúč")}
         </button>
       ) : null}
 
       {stav?.verejnyKluc && (
         <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
-          <p className="text-sm font-medium">Verejný kľúč pre Wallester</p>
+          <p className="text-sm font-medium">{t("Verejný kľúč pre Wallester")}</p>
           <textarea
             readOnly
             value={stav.verejnyKluc}
@@ -564,20 +571,20 @@ function WallesterPripojenie() {
               onClick={() => stiahniKluc(stav.verejnyKluc, "faktero-wallester-public-key.pem")}
               className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm hover:bg-secondary"
             >
-              <Download className="h-4 w-4" /> Stiahnuť ako súbor
+              <Download className="h-4 w-4" /> {t("Stiahnuť ako súbor")}
             </button>
             <button
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(stav.verejnyKluc);
-                  toast.success("Kľúč skopírovaný.");
+                  toast.success(t("Kľúč skopírovaný."));
                 } catch {
-                  toast.error("Skopírovať sa nepodarilo, označte text a použite Ctrl+C.");
+                  toast.error(t("Skopírovať sa nepodarilo, označte text a použite Ctrl+C."));
                 }
               }}
               className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary"
             >
-              Kopírovať
+              {t("Kopírovať")}
             </button>
           </div>
         </div>
@@ -594,7 +601,7 @@ function WallesterPripojenie() {
             ] as const
           ).map(([kluc, label]) => (
             <label key={kluc} className="block">
-              <span className="text-xs font-medium text-muted-foreground">{label}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t(label)}</span>
               <input
                 value={(udaje as any)[kluc]}
                 onChange={(e) => setUdaje({ ...udaje, [kluc]: e.target.value })}
@@ -619,12 +626,12 @@ function WallesterPripojenie() {
                         max_exp_seconds: Number(udaje.max_exp_seconds) || 60,
                       },
                     }),
-                  () => "Wallester pripojený.",
+                  () => t("Wallester pripojený."),
                 )
               }
               className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >
-              {busy === "dokoncenie" ? "Overujem…" : "Dokončiť pripojenie"}
+              {busy === "dokoncenie" ? t("Overujem…") : t("Dokončiť pripojenie")}
             </button>
           </div>
         </div>
@@ -633,9 +640,9 @@ function WallesterPripojenie() {
       {stav?.stav === "pripojene" && (
         <>
           <p className="mt-6 text-sm">
-            Pripojené · produkt {stav.product_code}
+            {t("Pripojené · produkt {produkt}", { produkt: stav.product_code })}
             {stav.last_synced_at
-              ? ` · naposledy ${new Date(stav.last_synced_at).toLocaleString("sk-SK")}`
+              ? ` · ${t("naposledy {cas}", { cas: new Date(stav.last_synced_at).toLocaleString(loc) })}`
               : ""}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -645,12 +652,12 @@ function WallesterPripojenie() {
                 sprav(
                   "ucty",
                   () => uctyFn({ data: { company_id: cid! } }),
-                  (r) => `Načítaných kartových účtov: ${r.pocet}`,
+                  (r) => t("Načítaných kartových účtov: {n}", { n: r.pocet }),
                 )
               }
               className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              {busy === "ucty" ? "Načítavam…" : "Načítať účty"}
+              {busy === "ucty" ? t("Načítavam…") : t("Načítať účty")}
             </button>
             <button
               disabled={busy !== null}
@@ -660,13 +667,16 @@ function WallesterPripojenie() {
                   () => pohybyFn({ data: { company_id: cid! } }),
                   (r) =>
                     r.problemy?.length
-                      ? `Načítaných pohybov: ${r.vlozenych}. Nepodarilo sa: ${r.problemy.join(", ")}`
-                      : `Načítaných pohybov: ${r.vlozenych}`,
+                      ? t("Načítaných pohybov: {n}. Nepodarilo sa: {problemy}", {
+                          n: r.vlozenych,
+                          problemy: r.problemy.join(", "),
+                        })
+                      : t("Načítaných pohybov: {n}", { n: r.vlozenych }),
                 )
               }
               className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              {busy === "pohyby" ? "Sťahujem…" : "Stiahnuť pohyby"}
+              {busy === "pohyby" ? t("Sťahujem…") : t("Stiahnuť pohyby")}
             </button>
           </div>
         </>
@@ -683,6 +693,8 @@ function WallesterPripojenie() {
  * vždy len ten ďalší krok, aby človek nemusel držať poradie v hlave.
  */
 function RevolutPripojenie() {
+  const { t, jazyk } = useT();
+  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
   const zacni = useServerFn(zacniRevolut);
   const ulozId = useServerFn(ulozClientIdRevolut);
   const stavFn = useServerFn(stavRevolut);
@@ -709,7 +721,7 @@ function RevolutPripojenie() {
       setStav(await stavFn({ data: { company_id: cid } }));
       return r;
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa to.");
+      toast.error(e?.message ?? t("Nepodarilo sa to."));
     } finally {
       setBusy(null);
     }
@@ -726,22 +738,22 @@ function RevolutPripojenie() {
         <div>
           <h2 className="text-lg font-semibold">Revolut Business</h2>
           <p className="text-sm text-muted-foreground">
-            Účty a pohyby, iba na čítanie. Súhlas platí 90 dní.
+            {t("Účty a pohyby, iba na čítanie. Súhlas platí 90 dní.")}
           </p>
         </div>
       </div>
 
       {stav?.stav !== "pripojene" && (
         <ol className="mt-6 space-y-1 text-sm text-foreground/80">
-          <li>1. Nižšie si vyrobte certifikát a stiahnite ho.</li>
+          <li>{t("1. Nižšie si vyrobte certifikát a stiahnite ho.")}</li>
           <li>
-            2. V Revolut Business otvorte <em>Settings → APIs → Business API</em>, nahrajte
-            certifikát a ako návratovú adresu zadajte presne túto:
+            {t("2. V Revolut Business otvorte")} <em>Settings → APIs → Business API</em>
+            {t(", nahrajte certifikát a ako návratovú adresu zadajte presne túto:")}
           </li>
           <li className="rounded-md bg-secondary px-2 py-1 font-mono text-xs break-words">
             {navratova || "…"}
           </li>
-          <li>3. Portál vám ukáže client ID — vložte ho sem a potvrďte prístup.</li>
+          <li>{t("3. Portál vám ukáže client ID — vložte ho sem a potvrďte prístup.")}</li>
         </ol>
       )}
 
@@ -752,18 +764,18 @@ function RevolutPripojenie() {
             sprav(
               "cert",
               () => zacni({ data: { company_id: cid!, prostredie: "produkcia" } }),
-              () => "Certifikát vyrobený. Nahrajte ho v Revolute.",
+              () => t("Certifikát vyrobený. Nahrajte ho v Revolute."),
             )
           }
           className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
-          {busy === "cert" ? "Vyrábam certifikát…" : "Vyrobiť certifikát"}
+          {busy === "cert" ? t("Vyrábam certifikát…") : t("Vyrobiť certifikát")}
         </button>
       )}
 
       {stav?.certifikat && stav.stav !== "pripojene" && (
         <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
-          <p className="text-sm font-medium">Certifikát pre Revolut</p>
+          <p className="text-sm font-medium">{t("Certifikát pre Revolut")}</p>
           <textarea
             readOnly
             value={stav.certifikat}
@@ -776,20 +788,20 @@ function RevolutPripojenie() {
               onClick={() => stiahniKluc(stav.certifikat, "faktero-revolut-certificate.cer")}
               className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm hover:bg-secondary"
             >
-              <Download className="h-4 w-4" /> Stiahnuť ako súbor
+              <Download className="h-4 w-4" /> {t("Stiahnuť ako súbor")}
             </button>
             <button
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(stav.certifikat);
-                  toast.success("Certifikát skopírovaný.");
+                  toast.success(t("Certifikát skopírovaný."));
                 } catch {
-                  toast.error("Skopírovať sa nepodarilo, označte text a použite Ctrl+C.");
+                  toast.error(t("Skopírovať sa nepodarilo, označte text a použite Ctrl+C."));
                 }
               }}
               className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary"
             >
-              Kopírovať
+              {t("Kopírovať")}
             </button>
           </div>
         </div>
@@ -798,7 +810,7 @@ function RevolutPripojenie() {
       {stav && stav.stav !== "pripojene" && stav.stav !== "ziadne" && (
         <div className="mt-4 flex flex-wrap items-end gap-2">
           <label className="block flex-1">
-            <span className="text-xs font-medium text-muted-foreground">Client ID z portálu</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Client ID z portálu")}</span>
             <input
               value={clientId || stav.client_id || ""}
               onChange={(e) => setClientId(e.target.value)}
@@ -818,14 +830,14 @@ function RevolutPripojenie() {
                       client_id: (clientId || stav.client_id || "").trim(),
                     },
                   }),
-                () => "Otvárame potvrdenie v Revolute.",
+                () => t("Otvárame potvrdenie v Revolute."),
               );
               if (r?.adresa) window.open(r.adresa, "_blank", "noopener");
             }}
             className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             <ExternalLink className="h-4 w-4" />
-            {busy === "clientid" ? "Pripravujem…" : "Potvrdiť prístup"}
+            {busy === "clientid" ? t("Pripravujem…") : t("Potvrdiť prístup")}
           </button>
         </div>
       )}
@@ -833,12 +845,12 @@ function RevolutPripojenie() {
       {stav?.stav === "pripojene" && (
         <>
           <p className="mt-6 text-sm">
-            Pripojené
+            {t("Pripojené")}
             {stav.consent_until
-              ? ` · súhlas platí do ${new Date(stav.consent_until).toLocaleDateString("sk-SK")}`
+              ? ` · ${t("súhlas platí do {datum}", { datum: new Date(stav.consent_until).toLocaleDateString(loc) })}`
               : ""}
             {stav.last_synced_at
-              ? ` · naposledy ${new Date(stav.last_synced_at).toLocaleString("sk-SK")}`
+              ? ` · ${t("naposledy {cas}", { cas: new Date(stav.last_synced_at).toLocaleString(loc) })}`
               : ""}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -848,12 +860,12 @@ function RevolutPripojenie() {
                 sprav(
                   "ucty",
                   () => uctyFn({ data: { company_id: cid! } }),
-                  (r) => `Načítaných účtov: ${r.pocet}`,
+                  (r) => t("Načítaných účtov: {n}", { n: r.pocet }),
                 )
               }
               className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              {busy === "ucty" ? "Načítavam…" : "Načítať účty"}
+              {busy === "ucty" ? t("Načítavam…") : t("Načítať účty")}
             </button>
             <button
               disabled={busy !== null}
@@ -863,13 +875,16 @@ function RevolutPripojenie() {
                   () => pohybyFn({ data: { company_id: cid! } }),
                   (r) =>
                     r.problemy?.length
-                      ? `Načítaných pohybov: ${r.vlozenych}. Nepodarilo sa: ${r.problemy.join(", ")}`
-                      : `Načítaných pohybov: ${r.vlozenych}`,
+                      ? t("Načítaných pohybov: {n}. Nepodarilo sa: {problemy}", {
+                          n: r.vlozenych,
+                          problemy: r.problemy.join(", "),
+                        })
+                      : t("Načítaných pohybov: {n}", { n: r.vlozenych }),
                 )
               }
               className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              {busy === "pohyby" ? "Sťahujem…" : "Stiahnuť pohyby"}
+              {busy === "pohyby" ? t("Sťahujem…") : t("Stiahnuť pohyby")}
             </button>
           </div>
         </>

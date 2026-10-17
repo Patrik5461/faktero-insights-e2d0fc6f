@@ -67,6 +67,8 @@ import {
 } from "@/lib/faktero/obchody";
 import { PartneriPas } from "@/components/faktero/PartneriPas";
 import { zoznamPartnerovPublic } from "@/lib/partneri.functions";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/")({
   /*
@@ -82,23 +84,30 @@ export const Route = createFileRoute("/")({
       return { partneri: [] };
     }
   },
-  head: () => ({
-    meta: [
-      { title: "Faktero — Fakturácia pre moderné firmy. API a eFaktúra v jednom." },
-      {
-        name: "description",
-        content:
-          "Vystavujte faktúry, posielajte PDF, automatizujte cez API a pripravte firmu na eFaktúru 2027. Pohoda export, prechod z iného systému. 30 dní zdarma.",
-      },
-      { property: "og:title", content: "Faktero — Fakturácia pre moderné firmy" },
-      {
-        property: "og:description",
-        content:
-          "API, eFaktúra a automatizácia v jednom systéme. Pohoda export, REST API, opakované faktúry. Pripravené na eFaktúru 2027.",
-      },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: ({ match }) => {
+    const j = match.context.jazyk;
+    return {
+      meta: [
+        { title: preloz(j, "Faktero — Fakturácia pre moderné firmy. API a eFaktúra v jednom.") },
+        {
+          name: "description",
+          content: preloz(
+            j,
+            "Vystavujte faktúry, posielajte PDF, automatizujte cez API a pripravte firmu na eFaktúru 2027. Pohoda export, prechod z iného systému. 30 dní zdarma.",
+          ),
+        },
+        { property: "og:title", content: preloz(j, "Faktero — Fakturácia pre moderné firmy") },
+        {
+          property: "og:description",
+          content: preloz(
+            j,
+            "API, eFaktúra a automatizácia v jednom systéme. Pohoda export, REST API, opakované faktúry. Pripravené na eFaktúru 2027.",
+          ),
+        },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+    };
+  },
   component: Landing,
 });
 
@@ -445,6 +454,7 @@ function Landing() {
 /* -------------------------------------------------------------------------- */
 
 function Hero() {
+  const { t } = useT();
   return (
     <section className="relative overflow-hidden">
       <div
@@ -466,24 +476,26 @@ function Hero() {
             <div className="mb-6 flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3 py-1 text-xs font-medium text-primary backdrop-blur">
                 <Sparkles className="h-3 w-3" />
-                eFaktúra 2027 — zadarmo v každom pláne
+                {t("eFaktúra 2027 — zadarmo v každom pláne")}
               </div>
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Private Beta · Prijímame
-                prvých testerov
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />{" "}
+                {t("Private Beta · Prijímame prvých testerov")}
               </div>
             </div>
             <h1 className="text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.03em] text-foreground sm:text-5xl md:text-6xl lg:text-[4.25rem]">
-              Fakturácia pripravená na{" "}
+              {t("Fakturácia pripravená na")}{" "}
               <span className="relative inline-block">
                 <span className="bg-gradient-to-br from-primary via-primary to-primary/70 bg-clip-text text-transparent">
-                  rok 2027.
+                  {t("rok 2027.")}
                 </span>
               </span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Vystavujte faktúry, posielajte PDF, automatizujte procesy cez API a pripravte firmu na
-              povinnú <span className="font-medium text-foreground">eFaktúru</span>.
+              {t(
+                "Vystavujte faktúry, posielajte PDF, automatizujte procesy cez API a pripravte firmu na povinnú",
+              )}{" "}
+              <span className="font-medium text-foreground">{t("eFaktúru")}</span>.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link
@@ -494,7 +506,7 @@ function Hero() {
                 }}
                 className="group inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-all hover:translate-y-[-1px] hover:shadow-[var(--shadow-elegant)]"
               >
-                Vyskúšať zdarma
+                {t("Vyskúšať zdarma")}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <a
@@ -502,13 +514,13 @@ function Hero() {
                 onClick={() => track("api_docs_click", { source: "hero" })}
                 className="inline-flex items-center gap-2 rounded-lg border border-border bg-card/70 px-5 py-3 text-sm font-semibold text-foreground backdrop-blur transition-colors hover:bg-secondary"
               >
-                <Code2 className="h-4 w-4" /> Pozrieť API
+                <Code2 className="h-4 w-4" /> {t("Pozrieť API")}
               </a>
             </div>
             <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              {["30 dní zdarma", "Bezpečné platby cez GoPay", "Zrušenie kedykoľvek"].map((t) => (
-                <li key={t} className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-primary" /> {t}
+              {["30 dní zdarma", "Bezpečné platby cez GoPay", "Zrušenie kedykoľvek"].map((x) => (
+                <li key={x} className="inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-primary" /> {t(x)}
                 </li>
               ))}
             </ul>
@@ -527,6 +539,7 @@ function Hero() {
 /* -------------------------------------------------------------------------- */
 
 function DashboardMockup() {
+  const { t } = useT();
   return (
     <div className="relative min-w-0 max-w-full">
       {/* Decorative ambient glows — na mobile bez presahu, inak rozširuje stránku */}
@@ -542,10 +555,10 @@ function DashboardMockup() {
           <span className="h-2.5 w-2.5 rounded-full bg-accent/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-primary/70" />
           <span className="ml-3 truncate text-[11px] text-muted-foreground">
-            app.faktero.sk / prehlad
+            {t("app.faktero.sk / prehlad")}
           </span>
           <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Live
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {t("Live")}
           </span>
         </div>
 
@@ -554,17 +567,17 @@ function DashboardMockup() {
           <div className="grid grid-cols-2 gap-2 sm:gap-3 [&>*]:min-w-0">
             <KpiCard
               icon={<Banknote className="h-3.5 w-3.5" />}
-              label="Neuhradené faktúry"
+              label={t("Neuhradené faktúry")}
               value="4 218 €"
-              hint="12 faktúr"
+              hint={t("12 faktúr")}
               trend="+8,4 %"
               trendPositive
             />
             <KpiCard
               icon={<TrendingUp className="h-3.5 w-3.5" />}
-              label="Cashflow (30 dní)"
+              label={t("Cashflow (30 dní)")}
               value="+14 920 €"
-              hint="46 platieb"
+              hint={t("46 platieb")}
               trend="+12,1 %"
               trendPositive
             />
@@ -575,9 +588,9 @@ function DashboardMockup() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Cashflow
+                  {t("Cashflow")}
                 </div>
-                <div className="mt-0.5 text-sm font-semibold">Posledných 12 týždňov</div>
+                <div className="mt-0.5 text-sm font-semibold">{t("Posledných 12 týždňov")}</div>
               </div>
               <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                 +18,3 %
@@ -599,15 +612,18 @@ function DashboardMockup() {
             </div>
             <div className="min-w-0">
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Posledná prijatá platba
+                {t("Posledná prijatá platba")}
               </div>
               <div className="truncate text-sm font-semibold">
-                Acme s.r.o. <span className="text-muted-foreground font-normal">· FA2026-0042</span>
+                {t("Acme s.r.o.")}{" "}
+                <span className="text-muted-foreground font-normal">{t("· FA2026-0042")}</span>
               </div>
             </div>
             <div className="ml-auto shrink-0 text-right">
               <div className="whitespace-nowrap text-sm font-bold tabular-nums">+1 698,60 €</div>
-              <div className="text-[10px] text-muted-foreground">pred 4 min · bankový prevod</div>
+              <div className="text-[10px] text-muted-foreground">
+                {t("pred 4 min · bankový prevod")}
+              </div>
             </div>
           </div>
         </div>
@@ -620,13 +636,13 @@ function DashboardMockup() {
             <FileText className="h-3.5 w-3.5" />
           </div>
           <div className="min-w-0">
-            <div className="truncate text-[11px] font-semibold">FA2026-0042</div>
+            <div className="truncate text-[11px] font-semibold">{t("FA2026-0042")}</div>
             <div className="truncate text-[10px] text-muted-foreground">
-              Acme s.r.o. · 1 698,60 €
+              {t("Acme s.r.o. · 1 698,60 €")}
             </div>
           </div>
           <span className="ml-auto shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
-            Uhradená
+            {t("Uhradená")}
           </span>
         </div>
       </div>
@@ -702,7 +718,8 @@ function MiniBarChart() {
 }
 
 function MiniEFakturaCard() {
-  const [t, setT] = useState<{ d: number; h: number; m: number }>({ d: 0, h: 0, m: 0 });
+  const { t } = useT();
+  const [zost, setT] = useState<{ d: number; h: number; m: number }>({ d: 0, h: 0, m: 0 });
   useEffect(() => {
     const tick = () => {
       const target = new Date("2027-01-01T00:00:00+01:00").getTime();
@@ -719,13 +736,13 @@ function MiniEFakturaCard() {
   return (
     <div className="rounded-xl border border-border/70 bg-card p-3.5">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-        eFaktúra 2027
+        {t("eFaktúra 2027")}
       </div>
       <div className="mt-2 flex items-baseline gap-1.5">
-        <span className="text-xl font-bold tabular-nums tracking-tight">{t.d}</span>
-        <span className="text-[10px] uppercase text-muted-foreground">dní</span>
+        <span className="text-xl font-bold tabular-nums tracking-tight">{zost.d}</span>
+        <span className="text-[10px] uppercase text-muted-foreground">{t("dní")}</span>
         <span className="ml-1 text-sm font-semibold tabular-nums text-muted-foreground">
-          {String(t.h).padStart(2, "0")}:{String(t.m).padStart(2, "0")}
+          {String(zost.h).padStart(2, "0")}:{String(zost.m).padStart(2, "0")}
         </span>
       </div>
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
@@ -734,26 +751,27 @@ function MiniEFakturaCard() {
           style={{ width: "62%", background: "var(--brand-gradient)" }}
         />
       </div>
-      <div className="mt-1.5 text-[10px] text-muted-foreground">Pripravenosť integrácie</div>
+      <div className="mt-1.5 text-[10px] text-muted-foreground">{t("Pripravenosť integrácie")}</div>
     </div>
   );
 }
 
 function MiniApiStatusCard() {
+  const { t } = useT();
   return (
     <div className="rounded-xl border border-border/70 bg-card p-3.5">
       <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <Activity className="h-3 w-3 text-primary" /> API status
+          <Activity className="h-3 w-3 text-primary" /> {t("API status")}
         </span>
         <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          OK
+          {t("OK")}
         </span>
       </div>
       <div className="mt-2 flex items-baseline gap-1">
         <span className="text-xl font-bold tracking-tight">142</span>
-        <span className="text-[10px] text-muted-foreground">ms · p95</span>
+        <span className="text-[10px] text-muted-foreground">{t("ms · p95")}</span>
       </div>
       <div className="mt-2 grid h-8 grid-cols-12 items-end gap-[3px]">
         {Array.from({ length: 24 }).map((_, i) => {
@@ -788,6 +806,7 @@ function PartneriSection() {
 }
 
 function TrustRow() {
+  const { t } = useT();
   return (
     <section className="border-y border-border/60 bg-card/40 backdrop-blur">
       <div className="mx-auto max-w-7xl px-6 py-8 md:py-10">
@@ -801,7 +820,7 @@ function TrustRow() {
                 <Icon className="h-5 w-5" />
               </div>
               <span className="min-w-0 text-sm font-medium leading-snug text-foreground sm:text-[15px] lg:whitespace-nowrap">
-                {label}
+                {t(label)}
               </span>
             </div>
           ))}
@@ -816,13 +835,16 @@ function TrustRow() {
 /* -------------------------------------------------------------------------- */
 
 function FeatureGrid() {
+  const { t } = useT();
   return (
     <section id="funkcie" className="relative">
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
         <SectionHeader
-          eyebrow="Funkcie"
-          title="Všetko, čo potrebujete na fakturáciu"
-          subtitle="Od jednoduchej faktúry po REST API, opakované faktúry a pripravenosť na eFaktúru 2027."
+          eyebrow={t("Funkcie")}
+          title={t("Všetko, čo potrebujete na fakturáciu")}
+          subtitle={t(
+            "Od jednoduchej faktúry po REST API, opakované faktúry a pripravenosť na eFaktúru 2027.",
+          )}
         />
         <div className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
           {features.map((f) => (
@@ -833,8 +855,8 @@ function FeatureGrid() {
               <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary transition-transform group-hover:scale-105">
                 <f.icon className="h-5 w-5" />
               </div>
-              <h3 className="mt-4 text-[15px] font-semibold tracking-tight">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.text}</p>
+              <h3 className="mt-4 text-[15px] font-semibold tracking-tight">{t(f.title)}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(f.text)}</p>
             </div>
           ))}
         </div>
@@ -848,6 +870,7 @@ function FeatureGrid() {
 /* -------------------------------------------------------------------------- */
 
 function ApiSection() {
+  const { t } = useT();
   return (
     <section id="api" className="relative isolate overflow-hidden">
       <div
@@ -867,14 +890,16 @@ function ApiSection() {
         <div className="grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
           <div className="min-w-0 text-sidebar-foreground">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-medium text-primary">
-              <Code2 className="h-3 w-3" /> Pre vývojárov
+              <Code2 className="h-3 w-3" /> {t("Pre vývojárov")}
             </div>
             <h2 className="text-balance break-words text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-              REST API, ktoré <span className="text-primary">vyzerá ako u veľkých</span>.
+              {t("REST API, ktoré")}{" "}
+              <span className="text-primary">{t("vyzerá ako u veľkých")}</span>.
             </h2>
             <p className="mt-5 w-full max-w-lg break-words text-sidebar-foreground/70">
-              Vystavujte faktúry priamo z vášho e-shopu, CRM alebo ERP. Predvídateľné JSON odpovede,
-              idempotencia, webhooky a oddelený test / live režim.
+              {t(
+                "Vystavujte faktúry priamo z vášho e-shopu, CRM alebo ERP. Predvídateľné JSON odpovede, idempotencia, webhooky a oddelený test / live režim.",
+              )}
             </p>
             <ul className="mt-8 grid gap-3 text-sm sm:grid-cols-2">
               {[
@@ -887,8 +912,8 @@ function ApiSection() {
                   key={i.t}
                   className="rounded-lg border border-white/10 bg-white/5 p-4 backdrop-blur"
                 >
-                  <div className="text-sm font-semibold text-sidebar-foreground">{i.t}</div>
-                  <div className="mt-1 text-xs text-sidebar-foreground/65">{i.d}</div>
+                  <div className="text-sm font-semibold text-sidebar-foreground">{t(i.t)}</div>
+                  <div className="mt-1 text-xs text-sidebar-foreground/65">{t(i.d)}</div>
                 </li>
               ))}
             </ul>
@@ -897,13 +922,13 @@ function ApiSection() {
                 href="/docs/api"
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform hover:translate-y-[-1px]"
               >
-                API dokumentácia <ArrowRight className="h-4 w-4" />
+                {t("API dokumentácia")} <ArrowRight className="h-4 w-4" />
               </a>
               <a
                 href="/api-playground"
                 className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-sidebar-foreground hover:bg-white/10"
               >
-                Playground
+                {t("Playground")}
               </a>
             </div>
           </div>
@@ -916,6 +941,7 @@ function ApiSection() {
 }
 
 function CodeCard() {
+  const { t } = useT();
   return (
     <div className="relative w-full min-w-0 max-w-full">
       <div
@@ -932,10 +958,10 @@ function CodeCard() {
           <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent/80" />
           <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/80" />
           <span className="ml-3 truncate text-xs font-medium text-white/60">
-            POST /api/v1/invoices
+            {t("POST /api/v1/invoices")}
           </span>
           <span className="ml-auto shrink-0 rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
-            201 Created · 142 ms
+            {t("201 Created · 142 ms")}
           </span>
         </div>
         <pre className="w-full min-w-0 max-w-full overflow-x-auto p-6 text-[12.5px] leading-relaxed">
@@ -997,6 +1023,7 @@ function highlightCode(src: string) {
 /* -------------------------------------------------------------------------- */
 
 function EFakturaSection() {
+  const { t } = useT();
   return (
     <section id="efaktura-2027" className="relative">
       <div
@@ -1011,19 +1038,23 @@ function EFakturaSection() {
         <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              Pripravené na 2027 ✓
+              {t("Pripravené na 2027 ✓")}
             </div>
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
-              eFaktúra <span className="text-primary">zadarmo</span> v každom pláne
+              {t("eFaktúra")} <span className="text-primary">{t("zadarmo")}</span>{" "}
+              {t("v každom pláne")}
             </h2>
             {/* Odosielanie beží proti testovacej prevádzke ePoštáka — ostrý kanál
                 zapneme pred 1.1.2027. Cenový sľub platí už dnes, tvrdiť ale, že
                 faktúry už dnes odchádzajú cez Peppol, by nebola pravda. */}
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Faktúry vo formáte eFaktúry pripraví Faktero za vás a odošle ich cez Peppol. Žiadna
-              extra registrácia, žiadne skryté poplatky —{" "}
-              <span className="font-semibold text-foreground">eFaktúra je zahrnutá v cene</span>.
-              Kanál je v testovacej prevádzke a naostro ho zapneme pred termínom.
+              {t(
+                "Faktúry vo formáte eFaktúry pripraví Faktero za vás a odošle ich cez Peppol. Žiadna extra registrácia, žiadne skryté poplatky —",
+              )}{" "}
+              <span className="font-semibold text-foreground">
+                {t("eFaktúra je zahrnutá v cene")}
+              </span>
+              {t(". Kanál je v testovacej prevádzke a naostro ho zapneme pred termínom.")}
             </p>
             <ul className="mt-8 space-y-3 text-sm">
               {[
@@ -1031,10 +1062,10 @@ function EFakturaSection() {
                 "Žiadne poplatky za odoslanú eFaktúru, v každom pláne.",
                 "Strojovo čitateľný XML formát (UBL 2.1) namiesto PDF prílohy.",
                 "Pripravené na povinnosť pre B2B a B2G od 1.1.2027.",
-              ].map((t) => (
-                <li key={t} className="flex items-start gap-2">
+              ].map((x) => (
+                <li key={x} className="flex items-start gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>{t}</span>
+                  <span>{t(x)}</span>
                 </li>
               ))}
             </ul>
@@ -1043,13 +1074,13 @@ function EFakturaSection() {
                 to="/registracia"
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] hover:translate-y-[-1px] transition-transform"
               >
-                Pripraviť firmu <ArrowRight className="h-4 w-4" />
+                {t("Pripraviť firmu")} <ArrowRight className="h-4 w-4" />
               </Link>
               <a
                 href="/efakturacia"
                 className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold hover:bg-secondary"
               >
-                Zistiť viac
+                {t("Zistiť viac")}
               </a>
             </div>
           </div>
@@ -1062,7 +1093,8 @@ function EFakturaSection() {
 }
 
 function BigCountdownCard() {
-  const [t, setT] = useState<{ d: number; h: number; m: number; s: number }>({
+  const { t } = useT();
+  const [zost, setT] = useState<{ d: number; h: number; m: number; s: number }>({
     d: 0,
     h: 0,
     m: 0,
@@ -1083,10 +1115,10 @@ function BigCountdownCard() {
     return () => clearInterval(id);
   }, []);
   const items: Array<[number, string]> = [
-    [t.d, "Dní"],
-    [t.h, "Hodín"],
-    [t.m, "Minút"],
-    [t.s, "Sekúnd"],
+    [zost.d, "Dní"],
+    [zost.h, "Hodín"],
+    [zost.m, "Minút"],
+    [zost.s, "Sekúnd"],
   ];
   return (
     <div className="relative">
@@ -1099,12 +1131,12 @@ function BigCountdownCard() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              Štart eFaktúry
+              {t("Štart eFaktúry")}
             </div>
-            <div className="mt-1 text-lg font-semibold">1. január 2027</div>
+            <div className="mt-1 text-lg font-semibold">{t("1. január 2027")}</div>
           </div>
           <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-            Povinné
+            {t("Povinné")}
           </span>
         </div>
         <div className="mt-6 grid grid-cols-4 gap-2 md:gap-3">
@@ -1114,7 +1146,7 @@ function BigCountdownCard() {
                 {String(val).padStart(2, "0")}
               </div>
               <span className="mt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                {label}
+                {t(label)}
               </span>
             </div>
           ))}
@@ -1139,26 +1171,28 @@ function BigCountdownCard() {
 /* -------------------------------------------------------------------------- */
 
 function AccountingSection() {
+  const { t } = useT();
   return (
     <section id="uctovnici" className="border-y border-border/60 bg-card/40">
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
         <div className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              <Calculator className="h-3 w-3" /> Pre účtovníkov
+              <Calculator className="h-3 w-3" /> {t("Pre účtovníkov")}
             </div>
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
-              Mesačné podklady <span className="text-primary">jedným klikom</span>.
+              {t("Mesačné podklady")} <span className="text-primary">{t("jedným klikom")}</span>.
             </h2>
             <p className="mt-5 max-w-md text-muted-foreground">
-              Pohoda konektor aj XML, šesť formátov exportu, výkazy k DPH, pravidlá účtovania a
-              výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.
+              {t(
+                "Pohoda konektor aj XML, šesť formátov exportu, výkazy k DPH, pravidlá účtovania a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.",
+              )}
             </p>
             <Link
               to="/registracia"
               className="mt-8 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] hover:translate-y-[-1px] transition-transform"
             >
-              Vyskúšať pre účtovnícku firmu <ArrowRight className="h-4 w-4" />
+              {t("Vyskúšať pre účtovnícku firmu")} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
@@ -1170,8 +1204,8 @@ function AccountingSection() {
                 <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
                   <a.icon className="h-5 w-5" />
                 </div>
-                <h3 className="mt-4 text-[15px] font-semibold tracking-tight">{a.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.text}</p>
+                <h3 className="mt-4 text-[15px] font-semibold tracking-tight">{t(a.title)}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(a.text)}</p>
               </div>
             ))}
           </div>
@@ -1186,13 +1220,14 @@ function AccountingSection() {
 /* -------------------------------------------------------------------------- */
 
 function PricingSection() {
+  const { t } = useT();
   return (
     <section id="cennik" className="relative">
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
         <SectionHeader
-          eyebrow="Cenník"
-          title="Jednoduchý cenník. 30 dní zdarma."
-          subtitle="Začnite zdarma, prejdite na platený plán až keď vám Faktero ušetrí čas."
+          eyebrow={t("Cenník")}
+          title={t("Jednoduchý cenník. 30 dní zdarma.")}
+          subtitle={t("Začnite zdarma, prejdite na platený plán až keď vám Faktero ušetrí čas.")}
         />
         <div className="mt-14 grid gap-6 lg:grid-cols-3">
           {plans.map((p) => (
@@ -1207,20 +1242,20 @@ function PricingSection() {
             >
               {p.featured && (
                 <span className="absolute -top-3 left-7 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-glow)]">
-                  Najobľúbenejší
+                  {t("Najobľúbenejší")}
                 </span>
               )}
-              <div className="text-sm font-semibold text-muted-foreground">{p.name}</div>
+              <div className="text-sm font-semibold text-muted-foreground">{t(p.name)}</div>
               <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-4xl font-bold tracking-tight">{p.price}</span>
-                {p.period && <span className="text-sm text-muted-foreground">{p.period}</span>}
+                <span className="text-4xl font-bold tracking-tight">{t(p.price)}</span>
+                {p.period && <span className="text-sm text-muted-foreground">{t(p.period)}</span>}
               </div>
-              <p className="mt-3 text-sm text-muted-foreground">{p.tagline}</p>
+              <p className="mt-3 text-sm text-muted-foreground">{t(p.tagline)}</p>
               <ul className="mt-6 space-y-2.5 text-sm">
                 {p.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span>{f}</span>
+                    <span>{t(f)}</span>
                   </li>
                 ))}
               </ul>
@@ -1234,13 +1269,13 @@ function PricingSection() {
                     : "border border-border bg-card hover:bg-secondary",
                 ].join(" ")}
               >
-                {p.cta} <ArrowRight className="h-4 w-4" />
+                {t(p.cta)} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           ))}
         </div>
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          Všetky plány zahŕňajú 30-dňovú skúšobnú dobu zdarma. Bez platobnej karty.
+          {t("Všetky plány zahŕňajú 30-dňovú skúšobnú dobu zdarma. Bez platobnej karty.")}
         </p>
       </div>
     </section>
@@ -1252,6 +1287,7 @@ function PricingSection() {
 /* -------------------------------------------------------------------------- */
 
 function ComparisonSection() {
+  const { t, jazyk } = useT();
   const rows: Array<{
     label: string;
     faktero: boolean | string;
@@ -1278,7 +1314,7 @@ function ComparisonSection() {
     if (v === false) return <X className="mx-auto h-5 w-5 text-muted-foreground/50" />;
     return (
       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-        <Minus className="h-3 w-3" /> {v}
+        <Minus className="h-3 w-3" /> {t(v)}
       </span>
     );
   };
@@ -1286,9 +1322,11 @@ function ComparisonSection() {
     <section id="porovnanie" className="border-y border-border/60 bg-card/40">
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
         <SectionHeader
-          eyebrow="Porovnanie"
-          title="Prečo si firmy vyberajú Faktero"
-          subtitle="Neutrálne porovnanie funkcií, ktoré sú dnes dôležité pre moderné slovenské firmy."
+          eyebrow={t("Porovnanie")}
+          title={t("Prečo si firmy vyberajú Faktero")}
+          subtitle={t(
+            "Neutrálne porovnanie funkcií, ktoré sú dnes dôležité pre moderné slovenské firmy.",
+          )}
         />
         <div className="mt-12 overflow-x-auto rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
           <div className="overflow-x-auto">
@@ -1296,23 +1334,23 @@ function ComparisonSection() {
               <thead>
                 <tr className="border-b border-border bg-secondary/40">
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Funkcia
+                    {t("Funkcia")}
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-primary">
-                    Faktero
+                    {t("Faktero")}
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    INÉ FAKTURAČNÉ SYSTÉMY
+                    {t("INÉ FAKTURAČNÉ SYSTÉMY")}
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Manuálna fakturácia
+                    {t("Manuálna fakturácia")}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={r.label} className={i % 2 === 0 ? "bg-card" : "bg-background/40"}>
-                    <td className="px-6 py-4 font-medium text-foreground">{r.label}</td>
+                    <td className="px-6 py-4 font-medium text-foreground">{t(r.label)}</td>
                     <td className="px-6 py-4 text-center">{cell(r.faktero)}</td>
                     <td className="px-6 py-4 text-center">{cell(r.ine)}</td>
                     <td className="px-6 py-4 text-center">{cell(r.manual)}</td>
@@ -1323,8 +1361,12 @@ function ComparisonSection() {
           </div>
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Údaje k {new Date().toLocaleDateString("sk-SK", { month: "long", year: "numeric" })}.
-          Funkcie konkurencie sa môžu meniť.
+          {t("Údaje k {datum}. Funkcie konkurencie sa môžu meniť.", {
+            datum: new Date().toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK", {
+              month: "long",
+              year: "numeric",
+            }),
+          })}
         </p>
       </div>
     </section>
@@ -1332,6 +1374,7 @@ function ComparisonSection() {
 }
 
 function MobileAppSection() {
+  const { t } = useT();
   const items = [
     {
       icon: ScanLine,
@@ -1360,19 +1403,20 @@ function MobileAppSection() {
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              <Smartphone className="h-3 w-3" /> iPhone aj Android
+              <Smartphone className="h-3 w-3" /> {t("iPhone aj Android")}
             </div>
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl whitespace-pre-line">
-              Faktero v mobile{"\n"}
-              <span className="text-primary">fakturujte kdekoľvek</span>
+              {t("Faktero v mobile")}
+              {"\n"}
+              <span className="text-primary">{t("fakturujte kdekoľvek")}</span>
             </h2>
             <p className="mt-5 max-w-lg text-muted-foreground">
               {/* Pôvodne tu stálo „s offline režimom". Appka bez signálu naozaj zapíše
                   jazdu aj doklad, ale rozhranie sa načítava zo živého webu — pri
                   studenom štarte bez pripojenia sa neotvorí. Sľubujme len to, čo platí. */}
-              Appka pre iPhone aj Android so skenovaním dokladov a GPS knihou jázd — pre iPhone z
-              App Store, pre Android zatiaľ priamo z webu. Jazdu aj odfotený doklad zapíše aj bez
-              signálu a odošle ich, len čo ste online.
+              {t(
+                "Appka pre iPhone aj Android so skenovaním dokladov a GPS knihou jázd — pre iPhone z App Store, pre Android zatiaľ priamo z webu. Jazdu aj odfotený doklad zapíše aj bez signálu a odošle ich, len čo ste online.",
+              )}
             </p>
             <ul className="mt-8 grid gap-3 sm:grid-cols-2">
               {items.map((i) => (
@@ -1380,8 +1424,8 @@ function MobileAppSection() {
                   <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary">
                     <i.icon className="h-4 w-4" />
                   </div>
-                  <div className="mt-3 text-sm font-semibold">{i.title}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">{i.text}</div>
+                  <div className="mt-3 text-sm font-semibold">{t(i.title)}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{t(i.text)}</div>
                 </li>
               ))}
             </ul>
@@ -1391,12 +1435,12 @@ function MobileAppSection() {
                 href={APP_STORE_FAKTERO}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Stiahnuť Faktero v App Store"
+                aria-label={t("Stiahnuť Faktero v App Store")}
                 className="inline-block rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <img
                   src={APP_STORE_ODZNAK}
-                  alt="Download on the App Store"
+                  alt={t("Download on the App Store")}
                   className="h-12 w-auto"
                 />
               </a>
@@ -1405,7 +1449,7 @@ function MobileAppSection() {
                 to={ANDROID_STRANKA}
                 className="inline-flex h-12 items-center gap-2 rounded-lg border border-border bg-card px-5 text-sm font-semibold transition hover:border-primary/40 hover:text-primary"
               >
-                <Smartphone className="h-4 w-4" /> Stiahnuť pre Android
+                <Smartphone className="h-4 w-4" /> {t("Stiahnuť pre Android")}
               </Link>
             </div>
             {/*
@@ -1416,22 +1460,22 @@ function MobileAppSection() {
             <div className="mt-6 flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
               <img src="/kniha-jazd-icon.png" alt="" className="h-12 w-12 shrink-0 rounded-[22%]" />
               <div className="min-w-0 flex-1 basis-48">
-                <div className="text-sm font-semibold">Potrebujete len knihu jázd?</div>
+                <div className="text-sm font-semibold">{t("Potrebujete len knihu jázd?")}</div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
-                  Samostatná appka <strong>Kniha jázd</strong> pre vodičov — jazdy rozpozná a zapíše
-                  sama, aj s telefónom vo vrecku.
+                  {t("Samostatná appka")} <strong>{t("Kniha jázd")}</strong>{" "}
+                  {t("pre vodičov — jazdy rozpozná a zapíše sama, aj s telefónom vo vrecku.")}
                 </div>
               </div>
               <a
                 href={APP_STORE_KNIHA_JAZD}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Stiahnuť Knihu jázd v App Store"
+                aria-label={t("Stiahnuť Knihu jázd v App Store")}
                 className="inline-block shrink-0 rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <img
                   src={APP_STORE_ODZNAK}
-                  alt="Download on the App Store"
+                  alt={t("Download on the App Store")}
                   className="h-10 w-auto"
                 />
               </a>
@@ -1448,34 +1492,36 @@ function MobileAppSection() {
               <div className="space-y-3">
                 <div className="rounded-xl border border-border bg-card p-3">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Dnes
+                    {t("Dnes")}
                   </div>
-                  <div className="mt-1 text-sm font-semibold">3 nové platby · +2 340 €</div>
+                  <div className="mt-1 text-sm font-semibold">{t("3 nové platby · +2 340 €")}</div>
                 </div>
                 <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.08] p-3">
                   <div className="flex items-center gap-2">
                     <ScanLine className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <div className="text-sm font-semibold">Doklad naskenovaný</div>
+                    <div className="text-sm font-semibold">{t("Doklad naskenovaný")}</div>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    Shell · 62,40 € · DPH 23 %
+                    {t("Shell · 62,40 € · DPH 23 %")}
                   </div>
                 </div>
                 <div className="rounded-xl border border-border bg-card p-3">
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-primary" />
-                    <div className="text-sm font-semibold">Kniha jázd</div>
+                    <div className="text-sm font-semibold">{t("Kniha jázd")}</div>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    BA → TT · 68 km · automaticky
+                    {t("BA → TT · 68 km · automaticky")}
                   </div>
                 </div>
                 <div className="rounded-xl border border-border bg-card p-3">
                   <div className="flex items-center gap-2">
                     <BellRing className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    <div className="text-sm font-semibold">FA2026-0042 uhradená</div>
+                    <div className="text-sm font-semibold">{t("FA2026-0042 uhradená")}</div>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">Acme s.r.o. · 1 698,60 €</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {t("Acme s.r.o. · 1 698,60 €")}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1487,6 +1533,7 @@ function MobileAppSection() {
 }
 
 function FinalCta() {
+  const { t } = useT();
   return (
     <section className="mx-auto max-w-7xl px-6 pb-24">
       <div className="relative overflow-hidden rounded-3xl border border-border bg-[oklch(0.14_0.025_250)] p-10 text-center text-sidebar-foreground md:p-16">
@@ -1502,29 +1549,29 @@ function FinalCta() {
           <Zap className="h-5 w-5" />
         </div>
         <h2 className="mt-5 text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
-          Prestaňte strácať čas <span className="text-primary">fakturáciou</span>.
+          {t("Prestaňte strácať čas")} <span className="text-primary">{t("fakturáciou")}</span>.
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-sidebar-foreground/70">
-          Začnite za pár minút. 30 dní zdarma, bez platobnej karty.
+          {t("Začnite za pár minút. 30 dní zdarma, bez platobnej karty.")}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
             to="/registracia"
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] hover:translate-y-[-1px] transition-transform"
           >
-            Vyskúšať zdarma <ArrowRight className="h-4 w-4" />
+            {t("Vyskúšať zdarma")} <ArrowRight className="h-4 w-4" />
           </Link>
           <a
             href="mailto:podpora@faktero.sk"
             className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-sidebar-foreground hover:bg-white/10"
           >
-            Kontaktovať nás
+            {t("Kontaktovať nás")}
           </a>
         </div>
         <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-sidebar-foreground/60">
-          {["30 dní zdarma", "Bez platobnej karty", "Slovenská podpora", "GDPR"].map((t) => (
-            <span key={t} className="inline-flex items-center gap-1.5">
-              <BadgeCheck className="h-3.5 w-3.5 text-primary" /> {t}
+          {["30 dní zdarma", "Bez platobnej karty", "Slovenská podpora", "GDPR"].map((x) => (
+            <span key={x} className="inline-flex items-center gap-1.5">
+              <BadgeCheck className="h-3.5 w-3.5 text-primary" /> {t(x)}
             </span>
           ))}
         </div>
@@ -1538,13 +1585,16 @@ function FinalCta() {
 /* -------------------------------------------------------------------------- */
 
 function SiteFooter() {
+  const { t } = useT();
   return (
     <footer className="border-t border-border/60">
       <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 sm:gap-10 sm:px-6 sm:py-14 sm:grid-cols-2 md:grid-cols-[1.2fr_repeat(4,1fr)]">
         <div className="sm:col-span-2 md:col-span-1">
-          <div className="text-lg font-bold tracking-tight">Faktero</div>
+          <div className="text-lg font-bold tracking-tight">{t("Faktero")}</div>
           <p className="mt-3 max-w-xs text-sm text-muted-foreground">
-            Moderná fakturácia s API pre slovenské a české firmy. Pripravené na eFaktúru 2027.
+            {t(
+              "Moderná fakturácia s API pre slovenské a české firmy. Pripravené na eFaktúru 2027.",
+            )}
           </p>
         </div>
         {[
@@ -1588,13 +1638,13 @@ function SiteFooter() {
         ].map((col) => (
           <div key={col.title}>
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {col.title}
+              {t(col.title)}
             </div>
             <ul className="mt-4 space-y-2 text-sm">
               {col.links.map(([label, href]) => (
                 <li key={label}>
                   <a href={href} className="text-foreground/80 hover:text-foreground">
-                    {label}
+                    {t(label)}
                   </a>
                 </li>
               ))}
@@ -1605,35 +1655,36 @@ function SiteFooter() {
       <div className="border-t border-border/60">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-5 py-5 text-xs text-muted-foreground sm:items-center sm:px-6 sm:py-6 md:flex-row">
           <div className="order-2 md:order-1">
-            © 2026 Tobify s. r. o. — Športová 707/43, 919 26 Zavar · IČO: 56607016 · DIČ: 2122358579
-            · info@faktero.sk · +421 902 101 967
+            {t(
+              "© 2026 Tobify s. r. o. — Športová 707/43, 919 26 Zavar · IČO: 56607016 · DIČ: 2122358579 · info@faktero.sk · +421 902 101 967",
+            )}
           </div>
           <div className="order-1 flex flex-wrap items-center gap-x-4 gap-y-2 md:order-2 md:gap-x-5">
             <a href="/pravne/obchodne-podmienky" className="hover:text-foreground">
-              Obchodné podmienky
+              {t("Obchodné podmienky")}
             </a>
             <a href="/pravne/gdpr" className="hover:text-foreground">
-              GDPR
+              {t("GDPR")}
             </a>
             <a href="/pravne/spracovanie-udajov" className="hover:text-foreground">
-              Spracúvanie údajov (čl. 28)
+              {t("Spracúvanie údajov (čl. 28)")}
             </a>
             <a href="/pravne/tesla-podmienky" className="hover:text-foreground">
-              Tesla Fleet API
+              {t("Tesla Fleet API")}
             </a>
             <a href="/kontakt" className="hover:text-foreground">
-              Kontakt
+              {t("Kontakt")}
             </a>
           </div>
         </div>
         <div
           className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-5 pb-6 sm:px-6"
-          aria-label="Podporované spôsoby platby"
+          aria-label={t("Podporované spôsoby platby")}
         >
-          <span className="text-xs text-muted-foreground">Platby zabezpečuje:</span>
+          <span className="text-xs text-muted-foreground">{t("Platby zabezpečuje:")}</span>
           <img
             src="https://cdn.gopay.com/img/logo/gopay_logo.svg"
-            alt="GoPay"
+            alt={t("GoPay")}
             width={64}
             height={20}
             loading="lazy"
@@ -1641,7 +1692,7 @@ function SiteFooter() {
           />
           <img
             src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
-            alt="Visa"
+            alt={t("Visa")}
             width={40}
             height={16}
             loading="lazy"
@@ -1649,7 +1700,7 @@ function SiteFooter() {
           />
           <img
             src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
-            alt="Mastercard"
+            alt={t("Mastercard")}
             width={28}
             height={20}
             loading="lazy"
@@ -1698,6 +1749,7 @@ void Wallet;
 /* -------------------------------------------------------------------------- */
 
 function ScreenshotShowcase() {
+  const { t } = useT();
   const shots = [
     {
       key: "dashboard",
@@ -1730,9 +1782,9 @@ function ScreenshotShowcase() {
     <section id="ukazky" className="relative">
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-28">
         <SectionHeader
-          eyebrow="Produkt"
-          title="Pozrite si Faktero v akcii"
-          subtitle="Skutočné obrazovky aplikácie od prehľadu cez faktúru po eFaktúru."
+          eyebrow={t("Produkt")}
+          title={t("Pozrite si Faktero v akcii")}
+          subtitle={t("Skutočné obrazovky aplikácie od prehľadu cez faktúru po eFaktúru.")}
         />
         <div className="mt-10 flex flex-wrap justify-center gap-2">
           {shots.map((s) => (
@@ -1747,20 +1799,20 @@ function ScreenshotShowcase() {
                   : "border-border bg-card text-muted-foreground hover:bg-secondary",
               ].join(" ")}
             >
-              {s.title}
+              {t(s.title)}
             </button>
           ))}
         </div>
         <div className="mt-8 grid items-center gap-8 lg:grid-cols-[1fr_1.4fr] [&>*]:min-w-0">
           <div>
-            <h3 className="text-2xl font-semibold tracking-tight">{current.title}</h3>
-            <p className="mt-3 text-muted-foreground">{current.desc}</p>
+            <h3 className="text-2xl font-semibold tracking-tight">{t(current.title)}</h3>
+            <p className="mt-3 text-muted-foreground">{t(current.desc)}</p>
             <Link
               to="/registracia"
               onClick={() => track("registration_click", { source: "screenshots" })}
               className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] hover:translate-y-[-1px] transition-transform"
             >
-              Vyskúšať zdarma <ArrowRight className="h-4 w-4" />
+              {t("Vyskúšať zdarma")} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           <div className="relative">
@@ -1775,7 +1827,7 @@ function ScreenshotShowcase() {
                 <span className="h-2.5 w-2.5 rounded-full bg-accent/70" />
                 <span className="h-2.5 w-2.5 rounded-full bg-primary/70" />
                 <span className="ml-3 truncate text-[11px] text-muted-foreground">
-                  app.faktero.sk
+                  {t("app.faktero.sk")}
                 </span>
               </div>
               <div className="rounded-xl bg-background p-3 sm:p-4">{current.node}</div>
@@ -1788,6 +1840,7 @@ function ScreenshotShowcase() {
 }
 
 function ShotDashboard() {
+  const { t } = useT();
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -1807,15 +1860,17 @@ function ShotDashboard() {
         ))}
       </div>
       <div className="rounded-lg border border-border bg-card p-3">
-        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Cashflow</div>
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          {t("Cashflow")}
+        </div>
         <MiniBarChart />
       </div>
       <div className="rounded-lg border border-border bg-card p-3 text-xs">
-        <div className="font-semibold">Najnovšie aktivity</div>
+        <div className="font-semibold">{t("Najnovšie aktivity")}</div>
         <ul className="mt-2 space-y-1.5 text-muted-foreground">
-          <li>· FA2026-0042 · Acme s.r.o. · +1 698,60 € · prevod</li>
-          <li>· FA2026-0041 · Beta s.r.o. · odoslaná e-mailom</li>
-          <li>· Nový odberateľ: Gamma s.r.o.</li>
+          <li>{t("· FA2026-0042 · Acme s.r.o. · +1 698,60 € · prevod")}</li>
+          <li>{t("· FA2026-0041 · Beta s.r.o. · odoslaná e-mailom")}</li>
+          <li>{t("· Nový odberateľ: Gamma s.r.o.")}</li>
         </ul>
       </div>
     </div>
@@ -1823,6 +1878,7 @@ function ShotDashboard() {
 }
 
 function ShotInvoiceList() {
+  const { t } = useT();
   const rows = [
     { n: "FA2026-0042", c: "Acme s.r.o.", s: "Uhradená", sum: "1 698,60 €", color: "emerald" },
     { n: "FA2026-0041", c: "Beta s.r.o.", s: "Odoslaná", sum: "920,00 €", color: "primary" },
@@ -1839,10 +1895,10 @@ function ShotInvoiceList() {
   return (
     <div className="overflow-hidden rounded-lg border border-border">
       <div className="grid grid-cols-[1.2fr_2fr_1fr_1fr] gap-3 border-b border-border bg-secondary/40 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        <span>Číslo</span>
-        <span>Odberateľ</span>
-        <span>Stav</span>
-        <span className="text-right">Suma</span>
+        <span>{t("Číslo")}</span>
+        <span>{t("Odberateľ")}</span>
+        <span>{t("Stav")}</span>
+        <span className="text-right">{t("Suma")}</span>
       </div>
       {rows.map((r, i) => (
         <div
@@ -1866,7 +1922,7 @@ function ShotInvoiceList() {
                 .filter(Boolean)
                 .join(" ")}
             >
-              {r.s}
+              {t(r.s)}
             </span>
           </span>
           <span className="text-right font-semibold tabular-nums">{r.sum}</span>
@@ -1877,56 +1933,57 @@ function ShotInvoiceList() {
 }
 
 function ShotInvoiceDetail() {
+  const { t } = useT();
   return (
     <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr]">
       <div className="rounded-lg border border-border bg-card p-4 text-xs">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              Faktúra
+              {t("Faktúra")}
             </div>
-            <div className="text-base font-bold">FA2026-0042</div>
+            <div className="text-base font-bold">{t("FA2026-0042")}</div>
           </div>
           <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-            Uhradená
+            {t("Uhradená")}
           </span>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
           <div>
-            <div className="text-muted-foreground">Dodávateľ</div>
-            <div className="font-semibold">Faktero s.r.o.</div>
+            <div className="text-muted-foreground">{t("Dodávateľ")}</div>
+            <div className="font-semibold">{t("Faktero s.r.o.")}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">Odberateľ</div>
-            <div className="font-semibold">Acme s.r.o.</div>
+            <div className="text-muted-foreground">{t("Odberateľ")}</div>
+            <div className="font-semibold">{t("Acme s.r.o.")}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">Splatnosť</div>
-            <div className="font-semibold">14. jún 2026</div>
+            <div className="text-muted-foreground">{t("Splatnosť")}</div>
+            <div className="font-semibold">{t("14. jún 2026")}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">IBAN</div>
-            <div className="font-mono">SK12 1100…</div>
+            <div className="text-muted-foreground">{t("IBAN")}</div>
+            <div className="font-mono">{t("SK12 1100…")}</div>
           </div>
         </div>
         <div className="mt-3 border-t border-border pt-2 text-[11px]">
           <div className="flex justify-between py-1">
-            <span>Web design</span>
+            <span>{t("Web design")}</span>
             <span className="tabular-nums">1 200,00 €</span>
           </div>
           <div className="flex justify-between py-1">
-            <span>Hosting 12 m</span>
+            <span>{t("Hosting 12 m")}</span>
             <span className="tabular-nums">180,00 €</span>
           </div>
           <div className="flex justify-between border-t border-border pt-1 font-bold">
-            <span>Spolu s DPH</span>
+            <span>{t("Spolu s DPH")}</span>
             <span className="tabular-nums">1 698,60 €</span>
           </div>
         </div>
       </div>
       <div className="space-y-3">
         <div className="rounded-lg border border-border bg-card p-3 text-center text-[11px]">
-          <div className="font-semibold">QR platba</div>
+          <div className="font-semibold">{t("QR platba")}</div>
           <div className="mx-auto mt-2 grid h-20 w-20 grid-cols-8 grid-rows-8 gap-[1px] bg-foreground/10 p-1">
             {Array.from({ length: 64 }).map((_, i) => (
               <div key={i} className={(i * 7) % 3 === 0 ? "bg-foreground" : "bg-transparent"} />
@@ -1934,12 +1991,12 @@ function ShotInvoiceDetail() {
           </div>
         </div>
         <div className="rounded-lg border border-border bg-card p-3 text-[11px]">
-          <div className="font-semibold">Časová os</div>
+          <div className="font-semibold">{t("Časová os")}</div>
           <ul className="mt-2 space-y-1 text-muted-foreground">
-            <li>· Vytvorená</li>
-            <li>· Odoslaná e-mailom</li>
+            <li>{t("· Vytvorená")}</li>
+            <li>{t("· Odoslaná e-mailom")}</li>
             <li className="text-emerald-600 dark:text-emerald-400">
-              · Uhradená — spárované s bankou
+              {t("· Uhradená — spárované s bankou")}
             </li>
           </ul>
         </div>
@@ -1949,16 +2006,17 @@ function ShotInvoiceDetail() {
 }
 
 function ShotEfaktura() {
+  const { t } = useT();
   return (
     <div className="space-y-3">
       <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-          <ShieldCheck className="h-4 w-4" /> Vaša firma je pripravená na eFaktúru
+          <ShieldCheck className="h-4 w-4" /> {t("Vaša firma je pripravená na eFaktúru")}
         </div>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-emerald-500/15">
           <div className="h-full w-[88%] bg-emerald-500" />
         </div>
-        <div className="mt-1 text-[11px] text-muted-foreground">Pripravenosť 88 %</div>
+        <div className="mt-1 text-[11px] text-muted-foreground">{t("Pripravenosť 88 %")}</div>
       </div>
       <div className="grid grid-cols-2 gap-3 text-xs">
         {[
@@ -1989,6 +2047,7 @@ function ShotEfaktura() {
 /* -------------------------------------------------------------------------- */
 
 function HowItWorks() {
+  const { t } = useT();
   const steps = [
     {
       icon: Building,
@@ -2013,9 +2072,9 @@ function HowItWorks() {
     <section id="ako-to-funguje" className="border-y border-border/60 bg-card/30">
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-28">
         <SectionHeader
-          eyebrow="Ako to funguje"
-          title="Od registrácie po prvú platbu za pár minút"
-          subtitle="Tri kroky a faktúra je na ceste. Bez návodov, bez školení."
+          eyebrow={t("Ako to funguje")}
+          title={t("Od registrácie po prvú platbu za pár minút")}
+          subtitle={t("Tri kroky a faktúra je na ceste. Bez návodov, bez školení.")}
         />
         <div className="relative mt-14 grid gap-6 md:grid-cols-3">
           <div className="pointer-events-none absolute left-0 right-0 top-8 hidden h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent md:block" />
@@ -2030,8 +2089,8 @@ function HowItWorks() {
                 </div>
                 <span className="text-3xl font-bold tracking-tight text-primary/30">{s.n}</span>
               </div>
-              <h3 className="mt-5 text-lg font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.text}</p>
+              <h3 className="mt-5 text-lg font-semibold">{t(s.title)}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(s.text)}</p>
             </div>
           ))}
         </div>
@@ -2045,6 +2104,7 @@ function HowItWorks() {
 /* -------------------------------------------------------------------------- */
 
 function IntegrationsTrust() {
+  const { t } = useT();
   const items = [
     { name: "FinStat", desc: "Automatické dohľadanie firmy podľa IČO.", icon: Database },
     { name: "Tatra banka", desc: "Pohyby na účte a párovanie úhrad s faktúrami.", icon: Landmark },
@@ -2065,9 +2125,9 @@ function IntegrationsTrust() {
     <section id="integracie" className="relative">
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-28">
         <SectionHeader
-          eyebrow="Integrácie"
-          title="Navrhnuté pre slovenské firmy"
-          subtitle="Pracujeme s nástrojmi, ktoré už dnes používate."
+          eyebrow={t("Integrácie")}
+          title={t("Navrhnuté pre slovenské firmy")}
+          subtitle={t("Pracujeme s nástrojmi, ktoré už dnes používate.")}
         />
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((i) => (
@@ -2078,8 +2138,8 @@ function IntegrationsTrust() {
               <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
                 <i.icon className="h-5 w-5" />
               </div>
-              <div className="mt-4 text-sm font-bold">{i.name}</div>
-              <div className="mt-1 text-xs text-muted-foreground">{i.desc}</div>
+              <div className="mt-4 text-sm font-bold">{t(i.name)}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{t(i.desc)}</div>
             </div>
           ))}
         </div>
@@ -2093,23 +2153,24 @@ function IntegrationsTrust() {
 /* -------------------------------------------------------------------------- */
 
 function FounderStory() {
+  const { t } = useT();
   return (
     <section id="pribeh" className="border-y border-border/60 bg-card/40">
       <div className="mx-auto max-w-3xl px-6 py-20 md:py-24">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          <Rocket className="h-3 w-3" /> Prečo vzniklo Faktero
+          <Rocket className="h-3 w-3" /> {t("Prečo vzniklo Faktero")}
         </div>
         <h2 className="mt-5 text-3xl font-semibold tracking-tight md:text-4xl">
-          Existujúce nástroje na fakturáciu sú <span className="text-primary">zastarané</span>,
-          zbytočne zložité a nepripravené na to, čo príde.
+          {t("Existujúce nástroje na fakturáciu sú")}{" "}
+          <span className="text-primary">{t("zastarané")}</span>
+          {t(", zbytočne zložité a nepripravené na to, čo príde.")}
         </h2>
         <p className="mt-5 text-base leading-relaxed text-muted-foreground">
-          Faktero som postavil pre seba — pre podnikateľov, ktorí chcú fakturovať rýchlo,
-          automatizovať cez API a byť pripravení na povinnú eFaktúru 2027 skôr, ako začne tlačiť
-          termín. Žiadne pop-upy, žiadne staré rozhrania, žiadne prekvapenia na faktúre na konci
-          mesiaca.
+          {t(
+            "Faktero som postavil pre seba — pre podnikateľov, ktorí chcú fakturovať rýchlo, automatizovať cez API a byť pripravení na povinnú eFaktúru 2027 skôr, ako začne tlačiť termín. Žiadne pop-upy, žiadne staré rozhrania, žiadne prekvapenia na faktúre na konci mesiaca.",
+          )}
         </p>
-        <p className="mt-4 text-sm text-muted-foreground">— zakladateľ Faktero</p>
+        <p className="mt-4 text-sm text-muted-foreground">{t("— zakladateľ Faktero")}</p>
       </div>
     </section>
   );
@@ -2120,6 +2181,7 @@ function FounderStory() {
 /* -------------------------------------------------------------------------- */
 
 function FaqSection() {
+  const { t } = useT();
   const faqs = [
     {
       q: "Ako funguje skúšobná verzia?",
@@ -2154,9 +2216,9 @@ function FaqSection() {
     <section id="faq" className="relative">
       <div className="mx-auto max-w-3xl px-6 py-24 md:py-28">
         <SectionHeader
-          eyebrow="Časté otázky"
-          title="Odpovede na to, čo sa najčastejšie pýtate"
-          subtitle="Niečo nenašli ste? Napíšte nám na podpora@faktero.sk."
+          eyebrow={t("Časté otázky")}
+          title={t("Odpovede na to, čo sa najčastejšie pýtate")}
+          subtitle={t("Niečo nenašli ste? Napíšte nám na podpora@faktero.sk.")}
         />
         <Accordion type="single" collapsible className="mt-10">
           {faqs.map((f, i) => (
@@ -2169,10 +2231,10 @@ function FaqSection() {
                 onClick={() => track("faq_open", { question: f.q })}
                 className="text-left text-base font-semibold hover:no-underline"
               >
-                {f.q}
+                {t(f.q)}
               </AccordionTrigger>
               <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
-                {f.a}
+                {t(f.a)}
               </AccordionContent>
             </AccordionItem>
           ))}
@@ -2183,14 +2245,14 @@ function FaqSection() {
             onClick={() => track("registration_click", { source: "faq" })}
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] hover:translate-y-[-1px] transition-transform"
           >
-            Vyskúšať zdarma <ArrowRight className="h-4 w-4" />
+            {t("Vyskúšať zdarma")} <ArrowRight className="h-4 w-4" />
           </Link>
           <a
             href="mailto:podpora@faktero.sk"
             onClick={() => track("contact_click", { source: "faq" })}
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold hover:bg-secondary"
           >
-            <Send className="h-4 w-4" /> Kontaktovať
+            <Send className="h-4 w-4" /> {t("Kontaktovať")}
           </a>
         </div>
       </div>
@@ -2203,6 +2265,7 @@ function FaqSection() {
 /* -------------------------------------------------------------------------- */
 
 function FloatingCta() {
+  const { t } = useT();
   const [show, setShow] = useState(false);
   useEffect(() => {
     const onScroll = () => setShow(window.scrollY > 800);
@@ -2227,7 +2290,7 @@ function FloatingCta() {
           }}
           className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] hover:translate-y-[-1px] transition-transform"
         >
-          <UserPlus className="h-4 w-4" /> Vyskúšať zdarma
+          <UserPlus className="h-4 w-4" /> {t("Vyskúšať zdarma")}
         </Link>
       </div>
       {/* Mobile: sticky bottom bar */}
@@ -2246,7 +2309,7 @@ function FloatingCta() {
           }}
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)]"
         >
-          Vyskúšať zdarma <ArrowRight className="h-4 w-4" />
+          {t("Vyskúšať zdarma")} <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     </>

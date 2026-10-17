@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -7,7 +9,7 @@ import { Copy, Play } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/api-playground")({
-  head: () => ({ meta: [{ title: "API Playground — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "API Playground — Faktero") }] }),
   component: Playground,
 });
 
@@ -110,6 +112,7 @@ const RECIPES: Recipe[] = [
 ];
 
 function Playground() {
+  const { t } = useT();
   const [keys, setKeys] = useState<any[]>([]);
   const [selectedKeyId, setSelectedKeyId] = useState<string>("");
   const [tokenInput, setTokenInput] = useState("");
@@ -151,12 +154,12 @@ function Playground() {
   const path = recipe.path.replaceAll("{invoice_id}", vars["invoice_id"] || "{invoice_id}");
   const body = recipe.body ? recipe.body(vars) : null;
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const curl = `curl -X ${recipe.method} '${baseUrl}${path}' \\\n  -H 'Authorization: Bearer ${tokenInput || "VÁŠ_API_KĽÚČ"}'${body ? ` \\\n  -H 'Content-Type: application/json' \\\n  -d '${body.replace(/'/g, "'\\''")}'` : ""}`;
+  const curl = `curl -X ${recipe.method} '${baseUrl}${path}' \\\n  -H 'Authorization: Bearer ${tokenInput || t("VÁŠ_API_KĽÚČ")}'${body ? ` \\\n  -H 'Content-Type: application/json' \\\n  -d '${body.replace(/'/g, "'\\''")}'` : ""}`;
 
   async function run() {
     if (!tokenInput)
       return toast.error(
-        "Vložte plaintext API kľúč (zobrazí sa pri vytvorení v sekcii API kľúče).",
+        t("Vložte plaintext API kľúč (zobrazí sa pri vytvorení v sekcii API kľúče)."),
       );
     setBusy(true);
     setResponse(null);
@@ -189,21 +192,21 @@ function Playground() {
     <>
       <PageHeader
         title="API Playground"
-        description="Vyskúšajte verejné API priamo z prehliadača."
+        description={t("Vyskúšajte verejné API priamo z prehliadača.")}
       />
       <PageBody>
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-5 space-y-3">
               <label className="block text-sm">
-                <span className="font-medium">API kľúč</span>
+                <span className="font-medium">{t("API kľúč")}</span>
                 <select
                   value={selectedKeyId}
                   onChange={(e) => setSelectedKeyId(e.target.value)}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   {keys.length === 0 && (
-                    <option value="">Žiadne kľúče — vytvorte v sekcii API kľúče</option>
+                    <option value="">{t("Žiadne kľúče — vytvorte v sekcii API kľúče")}</option>
                   )}
                   {keys.map((k) => (
                     <option key={k.id} value={k.id}>
@@ -213,7 +216,7 @@ function Playground() {
                 </select>
               </label>
               <label className="block text-sm">
-                <span className="font-medium">Plaintext token (Bearer)</span>
+                <span className="font-medium">{t("Plaintext token (Bearer)")}</span>
                 <input
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
@@ -221,11 +224,11 @@ function Playground() {
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
                 />
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  Tokeny vidíte len pri vytvorení kľúča. Zadajte ten, ktorý ste si uložili.
+                  {t("Tokeny vidíte len pri vytvorení kľúča. Zadajte ten, ktorý ste si uložili.")}
                 </span>
               </label>
               <label className="block text-sm">
-                <span className="font-medium">Požiadavka</span>
+                <span className="font-medium">{t("Požiadavka")}</span>
                 <select
                   value={recipeId}
                   onChange={(e) => {
@@ -237,7 +240,7 @@ function Playground() {
                 >
                   {RECIPES.map((r) => (
                     <option key={r.id} value={r.id}>
-                      {r.label}
+                      {t(r.label)}
                     </option>
                   ))}
                 </select>
@@ -245,10 +248,10 @@ function Playground() {
 
               {recipe.vars?.map((v) => (
                 <label key={v.key} className="block text-sm">
-                  <span className="font-medium">{v.label}</span>
+                  <span className="font-medium">{t(v.label)}</span>
                   <input
                     value={vars[v.key] ?? ""}
-                    placeholder={v.placeholder}
+                    placeholder={v.placeholder ? t(v.placeholder) : undefined}
                     onChange={(e) => setVars({ ...vars, [v.key]: e.target.value })}
                     className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
@@ -267,7 +270,7 @@ function Playground() {
                   disabled={busy}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  <Play className="h-4 w-4" /> {busy ? "Posielam…" : "Spustiť"}
+                  <Play className="h-4 w-4" /> {busy ? t("Posielam…") : t("Spustiť")}
                 </button>
               </div>
             </div>
@@ -278,11 +281,11 @@ function Playground() {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(curl);
-                    toast.success("Skopírované");
+                    toast.success(t("Skopírované"));
                   }}
                   className="rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
                 >
-                  <Copy className="mr-1 inline h-3 w-3" /> Kopírovať
+                  <Copy className="mr-1 inline h-3 w-3" /> {t("Kopírovať")}
                 </button>
               </div>
               <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">{curl}</pre>
@@ -291,7 +294,7 @@ function Playground() {
 
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="mb-2 text-sm font-semibold">Odpoveď</h3>
+              <h3 className="mb-2 text-sm font-semibold">{t("Odpoveď")}</h3>
               {response ? (
                 <>
                   <div className="mb-2 text-xs">
@@ -302,14 +305,14 @@ function Playground() {
                   </pre>
                 </>
               ) : (
-                <div className="text-sm text-muted-foreground">Ešte ste nespustili požiadavku.</div>
+                <div className="text-sm text-muted-foreground">{t("Ešte ste nespustili požiadavku.")}</div>
               )}
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="mb-2 text-sm font-semibold">Posledné api_logs</h3>
+              <h3 className="mb-2 text-sm font-semibold">{t("Posledné api_logs")}</h3>
               <div className="space-y-1 text-xs">
-                {logs.length === 0 && <div className="text-muted-foreground">Žiadne záznamy.</div>}
+                {logs.length === 0 && <div className="text-muted-foreground">{t("Žiadne záznamy.")}</div>}
                 {logs.map((l) => (
                   <div
                     key={l.id}

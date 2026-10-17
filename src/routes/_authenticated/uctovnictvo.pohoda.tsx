@@ -5,6 +5,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { KonektorPohody } from "@/components/faktero/KonektorPohody";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 /**
  * Nastavenie účtovania v Pohode a vydanie konektora.
@@ -15,7 +17,9 @@ import { toast } from "sonner";
  * zostávajú na `companies`, takže presun je len o mieste v rozhraní.
  */
 export const Route = createFileRoute("/_authenticated/uctovnictvo/pohoda")({
-  head: () => ({ meta: [{ title: "Prepojenie s Pohodou — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Prepojenie s Pohodou — Faktero") }],
+  }),
   component: Stranka,
 });
 
@@ -34,6 +38,7 @@ const POLIA = [
 ] as const;
 
 function Stranka() {
+  const { t } = useT();
   const [c, setC] = useState<any>(null);
   const [uklada, setUklada] = useState(false);
 
@@ -51,9 +56,9 @@ function Stranka() {
   if (!c)
     return (
       <>
-        <PageHeader title="Prepojenie s Pohodou" />
+        <PageHeader title={t("Prepojenie s Pohodou")} />
         <PageBody>
-          <p className="text-sm text-muted-foreground">Načítavam…</p>
+          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
         </PageBody>
       </>
     );
@@ -76,7 +81,7 @@ function Stranka() {
       .eq("id", c.id);
     setUklada(false);
     if (error) return toast.error(error.message);
-    toast.success("Uložené");
+    toast.success(t("Uložené"));
   }
 
   const f = (k: string) => (v: string) => setC({ ...c, [k]: v });
@@ -85,8 +90,10 @@ function Stranka() {
   return (
     <>
       <PageHeader
-        title="Prepojenie s Pohodou"
-        description="Čo sa do Pohody posiela, skratky pokladne, banky a skladu a konektor pre účtovníčku."
+        title={t("Prepojenie s Pohodou")}
+        description={t(
+          "Čo sa do Pohody posiela, skratky pokladne, banky a skladu a konektor pre účtovníčku.",
+        )}
       />
       <PageBody>
         <form
@@ -94,27 +101,27 @@ function Stranka() {
           className="grid gap-4 rounded-xl border border-border bg-card p-6 sm:grid-cols-2"
         >
           <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
-            Do Pohody sa dá dostať tromi cestami — mesačným balíkom mailom, XML z{" "}
+            {t("Do Pohody sa dá dostať tromi cestami — mesačným balíkom mailom, XML z")}{" "}
             <Link to="/exporty" className="text-primary underline">
-              účtovných exportov
+              {t("účtovných exportov")}
             </Link>{" "}
-            alebo konektorom dole na tejto stránke. Celé je to popísané v{" "}
+            {t("alebo konektorom dole na tejto stránke. Celé je to popísané v")}{" "}
             <Link to="/pomoc/pohoda" className="text-primary underline">
-              manuáli
+              {t("manuáli")}
             </Link>
             .
           </div>
 
           <div className="sm:col-span-2">
             <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Účtovníčka
+              {t("Účtovníčka")}
             </h3>
           </div>
           <In
-            label="E-mail účtovníčky"
+            label={t("E-mail účtovníčky")}
             value={c.uctovnik_email ?? ""}
             onChange={f("uctovnik_email")}
-            placeholder="kam chodí mesačné odovzdanie"
+            placeholder={t("kam chodí mesačné odovzdanie")}
           />
           <label className="flex items-start gap-3 rounded-md border border-border p-3">
             <input
@@ -124,55 +131,57 @@ function Stranka() {
               className="mt-0.5 h-4 w-4"
             />
             <span className="text-sm">
-              Posielať automaticky
+              {t("Posielať automaticky")}
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                Podklady za minulý mesiac odídu 5. v mesiaci samy. Posiela sa len to, čo ešte
-                neodišlo.
+                {t(
+                  "Podklady za minulý mesiac odídu 5. v mesiaci samy. Posiela sa len to, čo ešte neodišlo.",
+                )}
               </span>
             </span>
           </label>
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
             <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Účtovanie
+              {t("Účtovanie")}
             </h3>
             <p className="mb-3 text-xs text-muted-foreground">
-              Skratky pokladne, bankového účtu a skladu z Pohody vašej účtovníčky.{" "}
-              <strong>Predkontácie a členenia DPH</strong> — aj ich načítanie z Pohody — sú na
-              stránke{" "}
+              {t("Skratky pokladne, bankového účtu a skladu z Pohody vašej účtovníčky.")}{" "}
+              <strong>{t("Predkontácie a členenia DPH")}</strong>{" "}
+              {t("— aj ich načítanie z Pohody — sú na stránke")}{" "}
               <Link to="/uctovnictvo/predkontacie" className="text-primary underline">
-                Predkontácie
+                {t("Predkontácie")}
               </Link>
               .
             </p>
           </div>
           <In
-            label="Pokladňa v Pohode"
+            label={t("Pokladňa v Pohode")}
             value={c.pohoda_pokladna ?? ""}
             onChange={f("pohoda_pokladna")}
-            placeholder="napr. HOT"
+            placeholder={t("napr. {x}", { x: "HOT" })}
           />
           <In
-            label="Bankový účet v Pohode"
+            label={t("Bankový účet v Pohode")}
             value={c.pohoda_banka ?? ""}
             onChange={f("pohoda_banka")}
-            placeholder="napr. TB"
+            placeholder={t("napr. {x}", { x: "TB" })}
           />
           <In
-            label="Členenie skladu v Pohode"
+            label={t("Členenie skladu v Pohode")}
             value={c.pohoda_sklad ?? ""}
             onChange={f("pohoda_sklad")}
-            placeholder="napr. TOVAR"
+            placeholder={t("napr. {x}", { x: "TOVAR" })}
           />
 
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
             <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Čo sa do Pohody posiela
+              {t("Čo sa do Pohody posiela")}
             </h3>
             <p className="mb-3 text-xs text-muted-foreground">
-              Faktúry, prijaté doklady a pokladňa idú vždy. Ostatné si zapnite podľa toho, čo má
-              účtovníčka viesť.
+              {t(
+                "Faktúry, prijaté doklady a pokladňa idú vždy. Ostatné si zapnite podľa toho, čo má účtovníčka viesť.",
+              )}
             </p>
           </div>
           <label className="flex items-start gap-3 rounded-md border border-border p-3">
@@ -183,10 +192,11 @@ function Stranka() {
               className="mt-0.5 h-4 w-4"
             />
             <span className="text-sm">
-              Posielať adresár
+              {t("Posielať adresár")}
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                Odberatelia idú do Pohody aj vtedy, keď im tento mesiac nič nefakturujeme. Zmenený
-                kontakt sa prepíše, nezaloží sa druhý.
+                {t(
+                  "Odberatelia idú do Pohody aj vtedy, keď im tento mesiac nič nefakturujeme. Zmenený kontakt sa prepíše, nezaloží sa druhý.",
+                )}
               </span>
             </span>
           </label>
@@ -198,10 +208,12 @@ function Stranka() {
               className="mt-0.5 h-4 w-4"
             />
             <span className="text-sm">
-              Posielať skladové karty
+              {t("Posielať skladové karty")}
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                Posiela sa <strong>číselník zásob</strong>, nie stav skladu — ten v Pohode vzniká
-                príjemkami a výdajkami. Potrebuje vyplnené členenie skladu.
+                {t("Posiela sa")} <strong>{t("číselník zásob")}</strong>
+                {t(
+                  ", nie stav skladu — ten v Pohode vzniká príjemkami a výdajkami. Potrebuje vyplnené členenie skladu.",
+                )}
               </span>
             </span>
           </label>
@@ -213,11 +225,12 @@ function Stranka() {
               className="mt-0.5 h-4 w-4"
             />
             <span className="text-sm">
-              Posielať skladové pohyby
+              {t("Posielať skladové pohyby")}
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                Príjemky a výdajky, aby v Pohode sedeli <strong>stavy</strong> skladu, nielen karty.
-                Príjemka ide s príznakom „neúčtovať“, aby sa náklad nezdvojil s prijatým dokladom.
-                Potrebuje zapnuté skladové karty.
+                {t("Príjemky a výdajky, aby v Pohode sedeli")} <strong>{t("stavy")}</strong>{" "}
+                {t(
+                  "skladu, nielen karty. Príjemka ide s príznakom „neúčtovať“, aby sa náklad nezdvojil s prijatým dokladom. Potrebuje zapnuté skladové karty.",
+                )}
               </span>
             </span>
           </label>
@@ -229,11 +242,15 @@ function Stranka() {
               className="mt-0.5 h-4 w-4"
             />
             <span className="text-sm">
-              Posielať zákazky
+              {t("Posielať zákazky")}
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                Faktúra potom v Pohode nesie zákazku, takže je z nej vidieť výnos po zákazkách.
-                Zákazka odchádza <strong>raz</strong> — Pohoda ju vie založiť, ale nie prepísať, tak
-                si neskoršiu zmenu názvu prepíšte aj tam.
+                {t(
+                  "Faktúra potom v Pohode nesie zákazku, takže je z nej vidieť výnos po zákazkách. Zákazka odchádza",
+                )}{" "}
+                <strong>{t("raz")}</strong>{" "}
+                {t(
+                  "— Pohoda ju vie založiť, ale nie prepísať, tak si neskoršiu zmenu názvu prepíšte aj tam.",
+                )}
               </span>
             </span>
           </label>
@@ -245,10 +262,11 @@ function Stranka() {
               className="mt-0.5 h-4 w-4"
             />
             <span className="text-sm">
-              Prikladať odkaz na PDF faktúry
+              {t("Prikladať odkaz na PDF faktúry")}
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                Doklad má v Pohode v záložke Dokumenty odkaz, ktorým sa otvorí PDF. Odkaz je dlhý
-                náhodný reťazec a otvorí ho každý, kto ho má — rovnako ako faktúra poslaná mailom.
+                {t(
+                  "Doklad má v Pohode v záložke Dokumenty odkaz, ktorým sa otvorí PDF. Odkaz je dlhý náhodný reťazec a otvorí ho každý, kto ho má — rovnako ako faktúra poslaná mailom.",
+                )}
               </span>
             </span>
           </label>
@@ -259,7 +277,7 @@ function Stranka() {
               disabled={uklada}
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {uklada ? "Ukladám…" : "Uložiť"}
+              {uklada ? t("Ukladám…") : t("Uložiť")}
             </button>
           </div>
         </form>

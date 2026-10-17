@@ -8,9 +8,11 @@ import { Car, Route as RouteIcon, Fuel, Wallet, Gauge, Briefcase, User } from "l
 import { vsetkoAkoData } from "@/lib/faktero/strankovanie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/jazdy/prehlad")({
-  head: () => ({ meta: [{ title: "Prehľad jázd — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prehľad jázd — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>): { vehicle_id?: string } => ({
     vehicle_id: typeof s.vehicle_id === "string" && s.vehicle_id ? s.vehicle_id : undefined,
   }),
@@ -18,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/jazdy/prehlad")({
 });
 
 function OverviewPage() {
+  const { t } = useT();
   const mena = useMenaFirmy();
   const { vehicle_id } = Route.useSearch();
   const navigate = useNavigate({ from: "/jazdy/prehlad" });
@@ -143,8 +146,8 @@ function OverviewPage() {
   return (
     <>
       <PageHeader
-        title="Prehľad a reporty"
-        description="Mesačné a ročné súhrny jázd, spotreby a nákladov."
+        title={t("Prehľad a reporty")}
+        description={t("Mesačné a ročné súhrny jázd, spotreby a nákladov.")}
         action={
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -156,7 +159,7 @@ function OverviewPage() {
               }
               className="rounded-md border border-border bg-card px-3 py-2 text-sm"
             >
-              <option value="">Všetky vozidlá</option>
+              <option value="">{t("Všetky vozidlá")}</option>
               {vehicles.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.name}
@@ -183,32 +186,32 @@ function OverviewPage() {
       />
       <PageBody>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <Stat icon={RouteIcon} label={`Celkové km ${year}`} value={`${formatujCislo(kmYear, 1)} km`} />
-          <Stat icon={Car} label="Počet jázd" value={`${tripCount}`} />
+          <Stat icon={RouteIcon} label={t("Celkové km {rok}", { rok: year })} value={`${formatujCislo(kmYear, 1)} km`} />
+          <Stat icon={Car} label={t("Počet jázd")} value={`${tripCount}`} />
           <Stat
             icon={Gauge}
-            label="Priemerná rýchlosť"
+            label={t("Priemerná rýchlosť")}
             value={avgSpeed > 0 ? `${formatujCislo(avgSpeed, 0)} km/h` : "—"}
           />
-          <Stat icon={RouteIcon} label="Km tento mesiac" value={`${formatujCislo(kmMonth, 1)} km`} />
-          <Stat icon={Briefcase} label="Služobné km" value={`${formatujCislo(bizKm, 1)} km`} />
-          <Stat icon={User} label="Súkromné km" value={`${formatujCislo(privKm, 1)} km`} />
-          <Stat icon={Fuel} label={`Spotreba ${year}`} value={`${formatujCislo(fuelLiters, 1)} l`} />
-          <Stat icon={Wallet} label={`Náklady PHM ${year}`} value={formatujMenu(fuelCost, mena.kod)} />
+          <Stat icon={RouteIcon} label={t("Km tento mesiac")} value={`${formatujCislo(kmMonth, 1)} km`} />
+          <Stat icon={Briefcase} label={t("Služobné km")} value={`${formatujCislo(bizKm, 1)} km`} />
+          <Stat icon={User} label={t("Súkromné km")} value={`${formatujCislo(privKm, 1)} km`} />
+          <Stat icon={Fuel} label={t("Spotreba {rok}", { rok: year })} value={`${formatujCislo(fuelLiters, 1)} l`} />
+          <Stat icon={Wallet} label={t("Náklady PHM {rok}", { rok: year })} value={formatujMenu(fuelCost, mena.kod)} />
         </div>
 
         <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">
-          Mesačný report {year}
+          {t("Mesačný report {rok}", { rok: year })}
         </h2>
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="p-3">Mesiac</th>
-                <th className="p-3 text-right">Jazdy</th>
+                <th className="p-3">{t("Mesiac")}</th>
+                <th className="p-3 text-right">{t("Jazdy")}</th>
                 <th className="p-3 text-right">Km</th>
-                <th className="p-3 text-right">PHM (l)</th>
-                <th className="p-3 text-right">Náklady ({mena.symbol})</th>
+                <th className="p-3 text-right">{t("PHM (l)")}</th>
+                <th className="p-3 text-right">{t("Náklady ({mena})", { mena: mena.symbol })}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -227,16 +230,16 @@ function OverviewPage() {
           </table>
         </div>
 
-        <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">Podľa vozidla</h2>
+        <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">{t("Podľa vozidla")}</h2>
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="p-3">Vozidlo</th>
-                <th className="p-3 text-right">Jazdy</th>
+                <th className="p-3">{t("Vozidlo")}</th>
+                <th className="p-3 text-right">{t("Jazdy")}</th>
                 <th className="p-3 text-right">Km</th>
-                <th className="p-3 text-right">PHM (l)</th>
-                <th className="p-3 text-right">Náklady ({mena.symbol})</th>
+                <th className="p-3 text-right">{t("PHM (l)")}</th>
+                <th className="p-3 text-right">{t("Náklady ({mena})", { mena: mena.symbol })}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -257,7 +260,7 @@ function OverviewPage() {
               {Object.keys(byVehicle).length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-6 text-center text-muted-foreground">
-                    Žiadne dáta.
+                    {t("Žiadne dáta.")}
                   </td>
                 </tr>
               )}

@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/financovanie")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Leasingy a úvery — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Leasingy a úvery — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Leasingy, úvery a kontokorent vo Faktere: splátkový kalendár s rozpadom na istinu, úrok a DPH, načítanie zmluvy z PDF, párovanie splátok s platbami z banky a úroky z kontokorentu.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/financovanie" },
     ],
@@ -258,7 +262,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Leasingy a úvery"
       title="Leasingy a úvery"
       intro={

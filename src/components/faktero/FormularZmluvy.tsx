@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
 import { ulozZmluvuFn } from "@/lib/faktero/financovanie.functions";
 import { uctyPreKontokorentFn } from "@/lib/faktero/kontokorent.functions";
 import {
@@ -110,6 +111,7 @@ export function FormularZmluvy({
   onZrusit?: () => void;
 }) {
   const uloz = useServerFn(ulozZmluvuFn);
+  const { t } = useT();
 
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
 
@@ -212,7 +214,7 @@ export function FormularZmluvy({
 
   async function odosliKontokorent() {
     if (cislo(limit) <= 0) {
-      toast.error("Zadajte úverový rámec (limit).");
+      toast.error(t("Zadajte úverový rámec (limit)."));
       return;
     }
     setUkladam(true);
@@ -240,7 +242,7 @@ export function FormularZmluvy({
       });
       onUlozene(r.id, 0);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Zmluvu sa nepodarilo uložiť.");
+      toast.error(e instanceof Error ? e.message : t("Zmluvu sa nepodarilo uložiť."));
     } finally {
       setUkladam(false);
     }
@@ -248,7 +250,7 @@ export function FormularZmluvy({
 
   async function odosli() {
     if (!name.trim()) {
-      toast.error("Zmluva potrebuje názov — nech ju v zozname spoznáte.");
+      toast.error(t("Zmluva potrebuje názov — nech ju v zozname spoznáte."));
       return;
     }
     if (kontokorent) {
@@ -256,11 +258,11 @@ export function FormularZmluvy({
       return;
     }
     if (cislo(principal) <= 0) {
-      toast.error("Zadajte financovanú sumu.");
+      toast.error(t("Zadajte financovanú sumu."));
       return;
     }
     if (!DATUM.test(firstDue)) {
-      toast.error("Doplňte splatnosť prvej splátky — bez nej sa kalendár nedá zapísať.");
+      toast.error(t("Doplňte splatnosť prvej splátky — bez nej sa kalendár nedá zapísať."));
       return;
     }
     setUkladam(true);
@@ -293,7 +295,7 @@ export function FormularZmluvy({
       });
       onUlozene(r.id, r.splatok);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Zmluvu sa nepodarilo uložiť.");
+      toast.error(e instanceof Error ? e.message : t("Zmluvu sa nepodarilo uložiť."));
     } finally {
       setUkladam(false);
     }
@@ -307,11 +309,16 @@ export function FormularZmluvy({
       <div className="space-y-5 rounded-xl border bg-card p-5">
         {drziKalendarZoZmluvy && !kontokorent && (
           <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm">
-            <p className="font-medium">Kalendár je z dokumentu.</p>
+            <p className="font-medium">{t("Kalendár je z dokumentu.")}</p>
             <p className="mt-1 text-muted-foreground">
               {riadkyZoZmluvy.length > 0
-                ? `Prečítalo sa ${riadkyZoZmluvy.length} splátok a uložia sa presne tak, ako sú v zmluve — Faktero ich neprepočítava.`
-                : "Riadky prišli z nahratej zmluvy. Úprava údajov nižšie ich neprepíše — kalendár ostáva taký, aký je v zmluve."}
+                ? t(
+                    "Prečítalo sa {n} splátok a uložia sa presne tak, ako sú v zmluve — Faktero ich neprepočítava.",
+                    { n: riadkyZoZmluvy.length },
+                  )
+                : t(
+                    "Riadky prišli z nahratej zmluvy. Úprava údajov nižšie ich neprepíše — kalendár ostáva taký, aký je v zmluve.",
+                  )}
             </p>
             {(zoZmluvy?.vyhrady ?? []).length > 0 && (
               <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-amber-700 dark:text-amber-400">
@@ -324,7 +331,7 @@ export function FormularZmluvy({
         )}
 
         <div>
-          <span className={popis}>Druh</span>
+          <span className={popis}>{t("Druh")}</span>
           <div className="flex flex-wrap gap-2">
             {DRUHY_FINANCOVANIA.map(({ kluc: k, nazov: l }) => (
               <button
@@ -338,7 +345,7 @@ export function FormularZmluvy({
                   kind === k ? "border-primary bg-primary/10 font-medium" : ""
                 }`}
               >
-                {l}
+                {t(l)}
               </button>
             ))}
           </div>
@@ -346,7 +353,7 @@ export function FormularZmluvy({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className={popis}>Názov</label>
+            <label className={popis}>{t("Názov")}</label>
             <input
               className={pole}
               value={name}
@@ -355,7 +362,7 @@ export function FormularZmluvy({
             />
           </div>
           <div>
-            <label className={popis}>Leasingovka alebo banka</label>
+            <label className={popis}>{t("Leasingovka alebo banka")}</label>
             <input
               className={pole}
               value={provider}
@@ -364,7 +371,7 @@ export function FormularZmluvy({
             />
           </div>
           <div>
-            <label className={popis}>Číslo zmluvy</label>
+            <label className={popis}>{t("Číslo zmluvy")}</label>
             <input
               className={pole}
               value={contractNumber}
@@ -373,11 +380,10 @@ export function FormularZmluvy({
           </div>
           {!kontokorent && (
             <div>
-              <label className={popis}>Variabilný symbol splátok</label>
+              <label className={popis}>{t("Variabilný symbol splátok")}</label>
               <input className={pole} value={vs} onChange={(e) => setVs(e.target.value)} />
               <p className="mt-1 text-xs text-muted-foreground">
-                Podľa neho sa platba spozná v banke. Bez neho sa páruje podľa mena protistrany a
-                sporné prípady necháme na vás.
+                {t("Podľa neho sa platba spozná v banke. Bez neho sa páruje podľa mena protistrany a sporné prípady necháme na vás.")}
               </p>
             </div>
           )}
@@ -386,7 +392,7 @@ export function FormularZmluvy({
         {kontokorent && (
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={popis}>Úverový rámec (limit)</label>
+              <label className={popis}>{t("Úverový rámec (limit)")}</label>
               <input
                 className={pole}
                 inputMode="decimal"
@@ -395,11 +401,11 @@ export function FormularZmluvy({
                 placeholder="20000"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Do koľkých mínusov smie účet ísť.
+                {t("Do koľkých mínusov smie účet ísť.")}
               </p>
             </div>
             <div>
-              <label className={popis}>Účet, na ktorom je rámec</label>
+              <label className={popis}>{t("Účet, na ktorom je rámec")}</label>
               <select
                 className={pole}
                 value={ucetId}
@@ -409,7 +415,7 @@ export function FormularZmluvy({
                   if (u?.iban) setIban(u.iban);
                 }}
               >
-                <option value="">— účet nie je napojený —</option>
+                <option value="">{t("— účet nie je napojený —")}</option>
                 {(ucty ?? []).map((u) => (
                   <option key={u.id} value={u.id}>
                     {[u.account_name, u.iban].filter(Boolean).join(" · ") || u.id}
@@ -417,12 +423,12 @@ export function FormularZmluvy({
                 ))}
               </select>
               <p className="mt-1 text-xs text-muted-foreground">
-                Z tohto účtu banka strhne úroky — podľa neho ich Faktero spozná.
+                {t("Z tohto účtu banka strhne úroky — podľa neho ich Faktero spozná.")}
               </p>
             </div>
             {!ucetId && (
               <div className="sm:col-span-2">
-                <label className={popis}>IBAN účtu</label>
+                <label className={popis}>{t("IBAN účtu")}</label>
                 <input
                   className={pole}
                   value={iban}
@@ -430,12 +436,12 @@ export function FormularZmluvy({
                   placeholder="SK31 1200 0000 1987 4263 7541"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Keď účet napojíte neskôr, zmluva sa k nemu priradí pri ďalšom uložení podľa IBAN.
+                  {t("Keď účet napojíte neskôr, zmluva sa k nemu priradí pri ďalšom uložení podľa IBAN.")}
                 </p>
               </div>
             )}
             <div>
-              <label className={popis}>Úrok % p. a.</label>
+              <label className={popis}>{t("Úrok % p. a.")}</label>
               <input
                 className={pole}
                 inputMode="decimal"
@@ -444,12 +450,11 @@ export function FormularZmluvy({
                 placeholder="7,5"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Pri pohyblivej sadzbe (napr. 3M EURIBOR + marža) zadajte aktuálnu výslednú a
-                zloženie si poznačte do poznámky.
+                {t("Pri pohyblivej sadzbe (napr. 3M EURIBOR + marža) zadajte aktuálnu výslednú a zloženie si poznačte do poznámky.")}
               </p>
             </div>
             <div>
-              <label className={popis}>Poplatok za rámec ročne</label>
+              <label className={popis}>{t("Poplatok za rámec ročne")}</label>
               <input
                 className={pole}
                 inputMode="decimal"
@@ -458,11 +463,11 @@ export function FormularZmluvy({
                 placeholder="0"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Suma za rok. Keď ho banka účtuje mesačne, vynásobte dvanástimi.
+                {t("Suma za rok. Keď ho banka účtuje mesačne, vynásobte dvanástimi.")}
               </p>
             </div>
             <div>
-              <label className={popis}>Rámec platí do</label>
+              <label className={popis}>{t("Rámec platí do")}</label>
               <input
                 type="date"
                 className={pole}
@@ -470,11 +475,11 @@ export function FormularZmluvy({
                 onChange={(e) => setPlatnostDo(e.target.value)}
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Prázdne = na dobu neurčitú alebo s automatickým predĺžením.
+                {t("Prázdne = na dobu neurčitú alebo s automatickým predĺžením.")}
               </p>
             </div>
             <div>
-              <label className={popis}>Úrok banka strhne</label>
+              <label className={popis}>{t("Úrok banka strhne")}</label>
               <select
                 className={pole}
                 value={obdobie}
@@ -482,7 +487,7 @@ export function FormularZmluvy({
               >
                 {OBDOBIA_UROCENIA.map((o) => (
                   <option key={o.kluc} value={o.kluc}>
-                    {o.nazov}
+                    {t(o.nazov)}
                   </option>
                 ))}
               </select>
@@ -494,7 +499,7 @@ export function FormularZmluvy({
           <>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className={popis}>Financovaná suma (istina)</label>
+                <label className={popis}>{t("Financovaná suma (istina)")}</label>
                 <input
                   className={pole}
                   inputMode="decimal"
@@ -504,7 +509,7 @@ export function FormularZmluvy({
                 />
               </div>
               <div>
-                <label className={popis}>Úrok % p. a.</label>
+                <label className={popis}>{t("Úrok % p. a.")}</label>
                 <input
                   className={pole}
                   inputMode="decimal"
@@ -514,7 +519,7 @@ export function FormularZmluvy({
                 />
               </div>
               <div>
-                <label className={popis}>Počet splátok</label>
+                <label className={popis}>{t("Počet splátok")}</label>
                 <input
                   className={pole}
                   inputMode="numeric"
@@ -523,7 +528,7 @@ export function FormularZmluvy({
                 />
               </div>
               <div>
-                <label className={popis}>Prvá splátka</label>
+                <label className={popis}>{t("Prvá splátka")}</label>
                 <input
                   type="date"
                   className={pole}
@@ -532,7 +537,7 @@ export function FormularZmluvy({
                 />
               </div>
               <div>
-                <label className={popis}>Deň čerpania</label>
+                <label className={popis}>{t("Deň čerpania")}</label>
                 <input
                   type="date"
                   className={pole}
@@ -540,46 +545,45 @@ export function FormularZmluvy({
                   onChange={(e) => setInterestFrom(e.target.value)}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Odkedy banka počíta úrok. Keď ho necháte prázdny, ráta sa mesiac pred prvou
-                  splátkou — a prvý riadok potom môže o pár eur ujsť.
+                  {t("Odkedy banka počíta úrok. Keď ho necháte prázdny, ráta sa mesiac pred prvou splátkou — a prvý riadok potom môže o pár eur ujsť.")}
                 </p>
               </div>
               <div>
-                <label className={popis}>Výpočet úroku</label>
+                <label className={popis}>{t("Výpočet úroku")}</label>
                 <select
                   className={pole}
                   value={dayCount}
                   onChange={(e) => setDayCount(e.target.value as "ACT/365")}
                 >
-                  <option value="ACT/365">ACT/365 – skutočné dni</option>
-                  <option value="ACT/360">ACT/360 – skutočné dni</option>
-                  <option value="30E/360">30E/360 – mesiac 30 dní</option>
+                  <option value="ACT/365">{t("ACT/365 – skutočné dni")}</option>
+                  <option value="ACT/360">{t("ACT/360 – skutočné dni")}</option>
+                  <option value="30E/360">{t("30E/360 – mesiac 30 dní")}</option>
                 </select>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Slovenské banky bežne používajú ACT/365 — dlhší mesiac stojí viac na úroku.
+                  {t("Slovenské banky bežne používajú ACT/365 — dlhší mesiac stojí viac na úroku.")}
                 </p>
               </div>
               <div>
-                <label className={popis}>Splátka zo zmluvy</label>
+                <label className={popis}>{t("Splátka zo zmluvy")}</label>
                 <input
                   className={pole}
                   inputMode="decimal"
                   value={payment}
                   onChange={(e) => setPayment(e.target.value)}
-                  placeholder="dopočíta sa"
+                  placeholder={t("dopočíta sa")}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Vyplňte, ak ju máte v zmluve — má prednosť pred výpočtom.
+                  {t("Vyplňte, ak ju máte v zmluve — má prednosť pred výpočtom.")}
                 </p>
               </div>
               <div>
-                <label className={popis}>DPH v splátke</label>
+                <label className={popis}>{t("DPH v splátke")}</label>
                 <select
                   className={pole}
                   value={vat}
                   onChange={(e) => setVat(Number(e.target.value))}
                 >
-                  <option value={0}>bez DPH</option>
+                  <option value={0}>{t("bez DPH")}</option>
                   {sadzbyKrajiny(krajina)
                     .filter((r) => r > 0)
                     .map((r) => (
@@ -593,7 +597,7 @@ export function FormularZmluvy({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={popis}>Akontácia</label>
+                <label className={popis}>{t("Akontácia")}</label>
                 <input
                   className={pole}
                   inputMode="decimal"
@@ -602,12 +606,11 @@ export function FormularZmluvy({
                   placeholder="0"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Zaplatená na začiatku — do kalendára nevstupuje, financovanú sumu zadajte už bez
-                  nej.
+                  {t("Zaplatená na začiatku — do kalendára nevstupuje, financovanú sumu zadajte už bez nej.")}
                 </p>
               </div>
               <div>
-                <label className={popis}>Zostatková cena</label>
+                <label className={popis}>{t("Zostatková cena")}</label>
                 <input
                   className={pole}
                   inputMode="decimal"
@@ -616,7 +619,7 @@ export function FormularZmluvy({
                   placeholder="0"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Splatná na konci — pripočíta sa k poslednej splátke.
+                  {t("Splatná na konci — pripočíta sa k poslednej splátke.")}
                 </p>
               </div>
             </div>
@@ -624,7 +627,7 @@ export function FormularZmluvy({
         )}
 
         <div>
-          <label className={popis}>Poznámka</label>
+          <label className={popis}>{t("Poznámka")}</label>
           <textarea
             className={pole}
             rows={2}
@@ -638,21 +641,21 @@ export function FormularZmluvy({
           disabled={ukladam}
           className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          {ukladam ? "Ukladám…" : kontokorent ? "Uložiť" : "Uložiť a vytvoriť kalendár"}
+          {t(ukladam ? "Ukladám…" : kontokorent ? "Uložiť" : "Uložiť a vytvoriť kalendár")}
         </button>
       </div>
 
       {kontokorent ? (
         <div className="space-y-4">
           <div className="rounded-xl border bg-card p-5">
-            <h2 className="mb-3 text-sm font-medium">Náhľad</h2>
+            <h2 className="mb-3 text-sm font-medium">{t("Náhľad")}</h2>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Úverový rámec</dt>
+                <dt className="text-muted-foreground">{t("Úverový rámec")}</dt>
                 <dd className="font-medium tabular-nums">{formatujSumu(cislo(limit), "EUR")}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Úrok pri plnom čerpaní za mesiac</dt>
+                <dt className="text-muted-foreground">{t("Úrok pri plnom čerpaní za mesiac")}</dt>
                 <dd className="tabular-nums">
                   {formatujSumu(
                     Math.round(((cislo(limit) * cislo(rate)) / 100 / 12) * 100) / 100,
@@ -662,7 +665,7 @@ export function FormularZmluvy({
               </div>
               {cislo(poplatokRocne) > 0 && (
                 <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Poplatok za rámec mesačne</dt>
+                  <dt className="text-muted-foreground">{t("Poplatok za rámec mesačne")}</dt>
                   <dd className="tabular-nums">
                     {formatujSumu(Math.round((cislo(poplatokRocne) / 12) * 100) / 100, "EUR")}
                   </dd>
@@ -671,9 +674,7 @@ export function FormularZmluvy({
             </dl>
           </div>
           <p className="px-1 text-xs leading-relaxed text-muted-foreground">
-            Kontokorent nemá splátkový kalendár. Istinu splácajú príjmy na účet; Faktero sleduje
-            čerpanie podľa zostatku účtu a úroky a poplatky, ktoré banka z účtu strhne, si k zmluve
-            páruje samo.
+            {t("Kontokorent nemá splátkový kalendár. Istinu splácajú príjmy na účet; Faktero sleduje čerpanie podľa zostatku účtu a úroky a poplatky, ktoré banka z účtu strhne, si k zmluve páruje samo.")}
           </p>
           {(zoZmluvy?.vyhrady ?? []).length > 0 && (
             <ul className="list-disc space-y-1 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 pl-8 text-xs text-amber-700 dark:text-amber-400">
@@ -686,35 +687,35 @@ export function FormularZmluvy({
       ) : (
         <div className="space-y-4">
           <div className="rounded-xl border bg-card p-5">
-            <h2 className="mb-3 text-sm font-medium">Náhľad</h2>
+            <h2 className="mb-3 text-sm font-medium">{t("Náhľad")}</h2>
             {!nahlad ? (
               <p className="text-sm text-muted-foreground">
-                Zadajte financovanú sumu a počet splátok.
+                {t("Zadajte financovanú sumu a počet splátok.")}
               </p>
             ) : (
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Mesačná splátka</dt>
+                  <dt className="text-muted-foreground">{t("Mesačná splátka")}</dt>
                   <dd className="font-medium tabular-nums">
                     {formatujSumu(nahlad.riadky[0].amount, "EUR")}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Zaplatíte spolu</dt>
+                  <dt className="text-muted-foreground">{t("Zaplatíte spolu")}</dt>
                   <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.zaplatiSpolu, "EUR")}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Z toho úrok</dt>
+                  <dt className="text-muted-foreground">{t("Z toho úrok")}</dt>
                   <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.urokSpolu, "EUR")}</dd>
                 </div>
                 {nahlad.suhrn.dphSpolu > 0 && (
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Z toho DPH</dt>
+                    <dt className="text-muted-foreground">{t("Z toho DPH")}</dt>
                     <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.dphSpolu, "EUR")}</dd>
                   </div>
                 )}
                 <div className="flex justify-between border-t pt-2">
-                  <dt className="text-muted-foreground">Splátok</dt>
+                  <dt className="text-muted-foreground">{t("Splátok")}</dt>
                   <dd className="tabular-nums">{nahlad.suhrn.splatok}</dd>
                 </div>
               </dl>
@@ -724,15 +725,17 @@ export function FormularZmluvy({
           <p className="px-1 text-xs leading-relaxed text-muted-foreground">
             {drziKalendarZoZmluvy ? (
               <>
-                Riadky sú prevzaté z dokumentu, nie dopočítané — sedia s predpisom banky na cent.
-                Údaje vyššie slúžia na párovanie platieb a na zaúčtovanie. Už zaplatené splátky sa
-                nemenia.
+                {t(
+                  "Riadky sú prevzaté z dokumentu, nie dopočítané — sedia s predpisom banky na cent. Údaje vyššie slúžia na párovanie platieb a na zaúčtovanie. Už zaplatené splátky sa nemenia.",
+                )}
               </>
             ) : (
               <>
-                Kalendár je anuitný — splátka je rovnaká, ale mení sa jej zloženie. Ak sa čísla
-                nezhodujú so zmluvou, vyplňte <strong>Splátku zo zmluvy</strong>; kalendár sa
-                dopočíta z nej a bude sedieť na cent. Už zaplatené splátky sa prepočtom nemenia.
+                {t(
+                  "Kalendár je anuitný — splátka je rovnaká, ale mení sa jej zloženie. Ak sa čísla nezhodujú so zmluvou, vyplňte",
+                )}{" "}
+                <strong>{t("Splátku zo zmluvy")}</strong>
+                {t("; kalendár sa dopočíta z nej a bude sedieť na cent. Už zaplatené splátky sa prepočtom nemenia.")}
               </>
             )}
           </p>

@@ -21,8 +21,14 @@ const VYSTUP = path.join(KOREN, "src/lib/faktero/znalosti-manualy.json");
 function naText(jsx) {
   let s = jsx;
   // Odkaz si zaslúži cestu — asistent potom vie povedať, kam kliknúť.
-  s = s.replace(/<Link\s+to="([^"]+)"[^>]*>([\s\S]*?)<\/Link>/g, (_, cesta, text) => `${text.replace(/<[^>]+>/g, "")} (${cesta})`);
-  s = s.replace(/<a\s+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g, (_, cesta, text) => `${text.replace(/<[^>]+>/g, "")} (${cesta})`);
+  s = s.replace(
+    /<Link\s+to="([^"]+)"[^>]*>([\s\S]*?)<\/Link>/g,
+    (_, cesta, text) => `${text.replace(/<[^>]+>/g, "")} (${cesta})`,
+  );
+  s = s.replace(
+    /<a\s+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g,
+    (_, cesta, text) => `${text.replace(/<[^>]+>/g, "")} (${cesta})`,
+  );
   s = s.replace(/<li>/g, "\n- ");
   s = s.replace(/<\/(p|li|ul|ol|div|h[1-6]|table|tr)>/g, "\n");
   s = s.replace(/<[^>]+>/g, " ");
@@ -30,7 +36,11 @@ function naText(jsx) {
   s = s.replace(/\{"\s*"\}/g, " ");
   s = s.replace(/\{"([^"]*)"\}/g, "$1");
   s = s.replace(/\{[^{}]*\}/g, " ");
-  s = s.replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+  s = s
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
   return s
     .split("\n")
     .map((r) => r.replace(/\s+/g, " ").trim())
@@ -41,10 +51,16 @@ function naText(jsx) {
 
 function vytiahni(subor) {
   const zdroj = readFileSync(subor, "utf8");
-  const cesta = "/" + path.basename(subor).replace(/\.tsx$/, "").replace(/\./g, "/");
+  const cesta =
+    "/" +
+    path
+      .basename(subor)
+      .replace(/\.tsx$/, "")
+      .replace(/\./g, "/");
   const titulok =
-    zdroj.match(/title:\s*"Pomoc\s*—\s*([^"]+?)\s*—\s*Faktero"/)?.[1] ??
-    zdroj.match(/<HelpArticle[\s\S]*?title="([^"]+)"/)?.[1] ??
+    // Titulok býva obalený do `preloz(jazyk, "…")` (nemecká verzia webu).
+    zdroj.match(/title:\s*(?:preloz\([^,]+,\s*)?"Pomoc\s*—\s*([^"]+?)\s*—\s*Faktero"/)?.[1] ??
+    zdroj.match(/<(?:HelpArticle|PrelozenyManual)[\s\S]*?title="([^"]+)"/)?.[1] ??
     path.basename(subor);
 
   const sekcie = [];
@@ -111,5 +127,13 @@ writeFileSync(
   VYSTUP,
   JSON.stringify({ vytvorene: new Date().toISOString().slice(0, 10), clanky }, null, 1) + "\n",
 );
-console.log(`✓ ${clanky.length} manuálov, ${clanky.reduce((a, c) => a + c.sekcie.length, 0)} sekcií, ${Math.round(znakov / 1024)} kB textu → ${path.relative(KOREN, VYSTUP)}`);
-for (const c of clanky.slice(0, 3)) console.log(`  ${c.titulok}: ${c.sekcie.map((s) => s.nadpis).join(" · ").slice(0, 90)}`);
+console.log(
+  `✓ ${clanky.length} manuálov, ${clanky.reduce((a, c) => a + c.sekcie.length, 0)} sekcií, ${Math.round(znakov / 1024)} kB textu → ${path.relative(KOREN, VYSTUP)}`,
+);
+for (const c of clanky.slice(0, 3))
+  console.log(
+    `  ${c.titulok}: ${c.sekcie
+      .map((s) => s.nadpis)
+      .join(" · ")
+      .slice(0, 90)}`,
+  );

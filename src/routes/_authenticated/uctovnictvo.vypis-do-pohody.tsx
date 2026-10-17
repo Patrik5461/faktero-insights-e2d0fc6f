@@ -13,9 +13,13 @@ import type { Vypis, VypisPohyb } from "@/lib/faktero/vypis-pohyby";
 import { OZNACENIA, type KodOznacenia } from "@/lib/faktero/vypis-oznacenie";
 import { pravidloPohybu, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
 import { Download, FileUp, Loader2, Trash2 } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/vypis-do-pohody")({
-  head: () => ({ meta: [{ title: "Bankový výpis do Pohody — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Bankový výpis do Pohody — Faktero") }],
+  }),
   /*
     `?zdroj=brana` je tá istá stránka otvorená z položky „Výpis z platobnej
     brány". Čítanie je spoločné — rozdiel je len v tom, čo sa človeku povie:
@@ -122,6 +126,7 @@ function eur(n: number): string {
 type Riadok = VypisPohyb & { vyviezt: boolean };
 
 function VypisDoPohodyPage() {
+  const { t } = useT();
   const spusti = useServerFn(spustiCitanieVypisuFn);
   const stav = useServerFn(stavCitaniaVypisuFn);
   const doXml = useServerFn(vypisDoPohodyFn);
@@ -232,20 +237,25 @@ function VypisDoPohodyPage() {
   async function nahrajXml(file: File) {
     setNacitavam(true);
     try {
-      if (file.size > STROP_XML) throw new Error("Súbor je väčší než 20 MB — je to naozaj výpis?");
+      if (file.size > STROP_XML) throw new Error(t("Súbor je väčší než 20 MB — je to naozaj výpis?"));
       const { citajBankoveXml } = await import("@/lib/faktero/vypis-xml");
       const { vypis, varovanie: v, format } = citajBankoveXml(await file.text());
-      if (!vypis.pohyby.length) throw new Error("Vo výpise nie je ani jeden zaúčtovaný pohyb.");
+      if (!vypis.pohyby.length) throw new Error(t("Vo výpise nie je ani jeden zaúčtovaný pohyb."));
       prevezmi(vypis);
       setVarovanie(v);
       const n = vypis.pohyby.length;
       setZdroj(
-        `Prečítané priamo z XML (${format}) — ${n} ${
-          n === 1 ? "pohyb" : n < 5 ? "pohyby" : "pohybov"
-        }. Sumy, symboly aj protistrany sú od banky, nič sa nerozpoznávalo.`,
+        t(
+          n === 1
+            ? "Prečítané priamo z XML ({format}) — {n} pohyb. Sumy, symboly aj protistrany sú od banky, nič sa nerozpoznávalo."
+            : n < 5
+              ? "Prečítané priamo z XML ({format}) — {n} pohyby. Sumy, symboly aj protistrany sú od banky, nič sa nerozpoznávalo."
+              : "Prečítané priamo z XML ({format}) — {n} pohybov. Sumy, symboly aj protistrany sú od banky, nič sa nerozpoznávalo.",
+          { format, n },
+        ),
       );
     } catch (e: any) {
-      setChyba(e?.message ?? "Výpis sa nepodarilo prečítať.");
+      setChyba(e?.message ?? t("Výpis sa nepodarilo prečítať."));
       setVarovanie(null);
       setRiadky([]);
     } finally {
@@ -261,26 +271,29 @@ function VypisDoPohodyPage() {
   async function nahrajCsv(file: File) {
     setNacitavam(true);
     try {
-      if (file.size > STROP_XML) throw new Error("Súbor je väčší než 20 MB — je to naozaj výpis?");
+      if (file.size > STROP_XML) throw new Error(t("Súbor je väčší než 20 MB — je to naozaj výpis?"));
       const { citajVypisBrany, dekodujCsv, NAZVY_BRAN } = await import("@/lib/faktero/vypis-brany");
       const v = citajVypisBrany(dekodujCsv(await file.arrayBuffer()));
-      if (!v.pohyby.length) throw new Error("V exporte nie je ani jeden dokončený pohyb.");
+      if (!v.pohyby.length) throw new Error(t("V exporte nie je ani jeden dokončený pohyb."));
       prevezmi(v);
       setVarovanie(v.varovanie);
       const { platby, poplatky, vybery, vratenia } = v.pocty;
       const n = (k: number, t1: string, t2: string, t5: string) =>
-        `${k} ${k === 1 ? t1 : k >= 2 && k <= 4 ? t2 : t5}`;
+        t(k === 1 ? t1 : k >= 2 && k <= 4 ? t2 : t5, { n: k });
       const casti = [
-        n(platby, "platba", "platby", "platieb"),
-        n(poplatky, "poplatok", "poplatky", "poplatkov"),
-        n(vybery, "výber na účet", "výbery na účet", "výberov na účet"),
-        vratenia ? n(vratenia, "vrátenie", "vrátenia", "vrátení") : "",
+        n(platby, "{n} platba", "{n} platby", "{n} platieb"),
+        n(poplatky, "{n} poplatok", "{n} poplatky", "{n} poplatkov"),
+        n(vybery, "{n} výber na účet", "{n} výbery na účet", "{n} výberov na účet"),
+        vratenia ? n(vratenia, "{n} vrátenie", "{n} vrátenia", "{n} vrátení") : "",
       ].filter(Boolean);
       setZdroj(
-        `Prečítané z exportu ${NAZVY_BRAN[v.brana]} (${v.mena}) — ${casti.join(", ")}. Poplatky a výbery majú vlastné riadky a označenie; v Pohode vyberte banku, ktorú máte pre túto bránu.`,
+        t(
+          "Prečítané z exportu {brana} ({mena}) — {casti}. Poplatky a výbery majú vlastné riadky a označenie; v Pohode vyberte banku, ktorú máte pre túto bránu.",
+          { brana: NAZVY_BRAN[v.brana], mena: v.mena ?? "", casti: casti.join(", ") },
+        ),
       );
     } catch (e: any) {
-      setChyba(e?.message ?? "Export sa nepodarilo prečítať.");
+      setChyba(e?.message ?? t("Export sa nepodarilo prečítať."));
       setVarovanie(null);
       setRiadky([]);
     } finally {
@@ -293,7 +306,7 @@ function VypisDoPohodyPage() {
     setChyba(null);
     if (jeXml(file)) return void (await nahrajXml(file));
     if (jeCsv(file)) return void (await nahrajCsv(file));
-    if (!cid) return setChyba("Najprv vyberte firmu.");
+    if (!cid) return setChyba(t("Najprv vyberte firmu."));
     setNacitavam(true);
     try {
       const zPrehliadaca = await textZPdf(file);
@@ -311,19 +324,22 @@ function VypisDoPohodyPage() {
         await new Promise((r) => setTimeout(r, 2000));
         odpoved = await stav({ data: { company_id: cid, id } }).catch(() => null);
       }
-      if (!odpoved?.hotovo) throw new Error("Čítanie trvá príliš dlho. Skúste kratší výpis.");
+      if (!odpoved?.hotovo) throw new Error(t("Čítanie trvá príliš dlho. Skúste kratší výpis."));
       if (!odpoved.ok || !odpoved.vypis)
-        throw new Error(odpoved.chyba ?? "Výpis sa nepodarilo prečítať.");
+        throw new Error(odpoved.chyba ?? t("Výpis sa nepodarilo prečítať."));
       const v = odpoved.vypis;
       prevezmi(v);
       setVarovanie(v.varovanie ?? null);
       setZdroj(
         v.zdroj === "sken"
-          ? `PDF nemá textovú vrstvu, čítalo sa z obrazu (${v.stran} str.) — prejdite riadky pozornejšie.`
-          : `Prečítané z textu PDF (${v.stran} str.).`,
+          ? t(
+              "PDF nemá textovú vrstvu, čítalo sa z obrazu ({n} str.) — prejdite riadky pozornejšie.",
+              { n: v.stran },
+            )
+          : t("Prečítané z textu PDF ({n} str.).", { n: v.stran }),
       );
     } catch (e: any) {
-      setChyba(e?.message ?? "Výpis sa nepodarilo prečítať.");
+      setChyba(e?.message ?? t("Výpis sa nepodarilo prečítať."));
       setVarovanie(null);
       setRiadky([]);
     } finally {
@@ -367,7 +383,7 @@ function VypisDoPohodyPage() {
   const vydaje = vybrane.filter((r) => r.smer === "vydaj").reduce((s, r) => s + r.suma, 0);
 
   async function stiahni(format: "pohoda" | "sepa") {
-    if (!cid) return setChyba("Najprv vyberte firmu.");
+    if (!cid) return setChyba(t("Najprv vyberte firmu."));
     setChyba(null);
     setVyvazam(format);
     try {
@@ -394,7 +410,7 @@ function VypisDoPohodyPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: any) {
-      setChyba(e?.message ?? "XML sa nepodarilo vyrobiť.");
+      setChyba(e?.message ?? t("XML sa nepodarilo vyrobiť."));
     } finally {
       setVyvazam(null);
     }
@@ -406,39 +422,43 @@ function VypisDoPohodyPage() {
     <>
       {brana ? (
         <PageHeader
-          title="Výpis z platobnej brány"
-          description="Z exportu Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta alebo všeobecnej šablóny spraví bankový výpis — platby, poplatky a výbery na účet zvlášť, pripravené do Pohody."
+          title={t("Výpis z platobnej brány")}
+          description={t(
+            "Z exportu Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta alebo všeobecnej šablóny spraví bankový výpis — platby, poplatky a výbery na účet zvlášť, pripravené do Pohody.",
+          )}
         />
       ) : (
         <PageHeader
-          title="Bankový výpis do Pohody"
-          description="Z výpisu z banky (XML aj PDF) vyrobí XML, ktoré Pohoda načíta ako bankové doklady."
+          title={t("Bankový výpis do Pohody")}
+          description={t(
+            "Z výpisu z banky (XML aj PDF) vyrobí XML, ktoré Pohoda načíta ako bankové doklady.",
+          )}
         />
       )}
       <PageBody>
         <div className="space-y-6">
           {brana && riadky.length === 0 && (
             <div className="rounded-2xl border border-border/70 bg-card p-5 text-sm">
-              <div className="font-medium">Odkiaľ stiahnuť export</div>
+              <div className="font-medium">{t("Odkiaľ stiahnuť export")}</div>
               <ul className="mt-2 space-y-1 text-muted-foreground">
                 {EXPORTY_BRAN.map((e) => (
                   <li key={e.brana}>
-                    <strong className="text-foreground">{e.brana}</strong> — {e.kde}
+                    <strong className="text-foreground">{e.brana}</strong> — {t(e.kde)}
                   </li>
                 ))}
               </ul>
               <p className="mt-3 text-muted-foreground">
-                Každá platba bude príjem s variabilným symbolom z čísla objednávky, poplatok brány
-                samostatný výdaj a výber na váš účet prevod medzi vlastnými účtami. Chcete platby aj
-                spárovať s faktúrami vo Fakteri? Ten istý súbor nahrajte v{" "}
+                {t(
+                  "Každá platba bude príjem s variabilným symbolom z čísla objednávky, poplatok brány samostatný výdaj a výber na váš účet prevod medzi vlastnými účtami. Chcete platby aj spárovať s faktúrami vo Fakteri? Ten istý súbor nahrajte v",
+                )}{" "}
                 <Link to="/bankove-ucty/import" className="text-primary hover:underline">
-                  Bankové účty → Nahrať výpis
+                  {t("Bankové účty → Nahrať výpis")}
                 </Link>
                 .
               </p>
               <p className="mt-3 text-muted-foreground">
-                <strong className="text-foreground">Iná brána</strong> (Global Payments,
-                Fulfillment…)? Údaje prepíšte do{" "}
+                <strong className="text-foreground">{t("Iná brána")}</strong>{" "}
+                {t("(Global Payments, Fulfillment…)? Údaje prepíšte do")}{" "}
                 <button
                   type="button"
                   onClick={() => {
@@ -455,10 +475,11 @@ function VypisDoPohodyPage() {
                   }}
                   className="text-primary hover:underline"
                 >
-                  všeobecnej šablóny (CSV)
+                  {t("všeobecnej šablóny (CSV)")}
                 </button>{" "}
-                — typ riadku je platba, poplatok, výber alebo vrátenie; ukážkové riadky pred
-                nahratím zmažte.
+                {t(
+                  "— typ riadku je platba, poplatok, výber alebo vrátenie; ukážkové riadky pred nahratím zmažte.",
+                )}
               </p>
             </div>
           )}
@@ -471,17 +492,20 @@ function VypisDoPohodyPage() {
               )}
               <span className="text-sm font-medium">
                 {nacitavam
-                  ? "Čítam výpis…"
+                  ? t("Čítam výpis…")
                   : brana
-                    ? "Vyberte CSV export z platobnej brány"
-                    : "Vyberte výpis — XML, PDF alebo CSV z platobnej brány"}
+                    ? t("Vyberte CSV export z platobnej brány")
+                    : t("Vyberte výpis — XML, PDF alebo CSV z platobnej brány")}
               </span>
               <span className={`text-xs text-muted-foreground ${brana ? "hidden" : ""}`}>
-                <strong>XML z internetbankingu</strong> (banky mu hovoria SEPA XML alebo camt.053)
-                je presné — sumy, symboly aj protistrany sú priamo od banky a prečíta sa hneď. PDF
-                sa rozpoznáva, naskenované ešte aj z obrazu, takže riadky treba prejsť.{" "}
-                <strong>CSV z platobnej brány</strong> (Stripe, PayPal, GoPay, Comgate, Barion,
-                Mollie, Packeta) sa prevedie na výpis s platbami, poplatkami a výbermi na účet.
+                <strong>{t("XML z internetbankingu")}</strong>{" "}
+                {t(
+                  "(banky mu hovoria SEPA XML alebo camt.053) je presné — sumy, symboly aj protistrany sú priamo od banky a prečíta sa hneď. PDF sa rozpoznáva, naskenované ešte aj z obrazu, takže riadky treba prejsť.",
+                )}{" "}
+                <strong>{t("CSV z platobnej brány")}</strong>{" "}
+                {t(
+                  "(Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta) sa prevedie na výpis s platbami, poplatkami a výbermi na účet.",
+                )}
               </span>
               <input
                 type="file"
@@ -508,7 +532,7 @@ function VypisDoPohodyPage() {
             <>
               <div className="grid gap-4 rounded-2xl border border-border/70 bg-card p-5 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">Číslo výpisu</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">{t("Číslo výpisu")}</span>
                   <input
                     className={vstup}
                     value={cisloVypisu}
@@ -516,7 +540,7 @@ function VypisDoPohodyPage() {
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">Dátum výpisu</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">{t("Dátum výpisu")}</span>
                   <input
                     type="date"
                     className={vstup}
@@ -526,46 +550,47 @@ function VypisDoPohodyPage() {
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-xs text-muted-foreground">
-                    Skratka účtu v Pohode
+                    {t("Skratka účtu v Pohode")}
                   </span>
                   <input
                     className={vstup}
-                    placeholder="napr. TB"
+                    placeholder={t("napr. {kod}", { kod: "TB" })}
                     value={nastavenia.banka}
                     onChange={(e) => zapamataj({ banka: e.target.value })}
                   />
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-xs text-muted-foreground">
-                    Predkontácia (spoločná)
+                    {t("Predkontácia (spoločná)")}
                   </span>
                   <input
                     className={vstup}
-                    placeholder="napr. 2Bv"
+                    placeholder={t("napr. {kod}", { kod: "2Bv" })}
                     value={nastavenia.predkontacia}
                     onChange={(e) => zapamataj({ predkontacia: e.target.value })}
                   />
                 </label>
                 <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-4">
-                  Skratka účtu hovorí, do ktorého bankového účtu v Pohode doklady patria; bez nej
-                  ich Pohoda priradí sama a účtovník ich prepisuje ručne.
-                  {ucet ? ` Výpis je k účtu ${ucet}.` : ""}
-                  {mena && mena !== "EUR" ? ` Pozor, výpis je v mene ${mena}.` : ""}
+                  {t(
+                    "Skratka účtu hovorí, do ktorého bankového účtu v Pohode doklady patria; bez nej ich Pohoda priradí sama a účtovník ich prepisuje ručne.",
+                  )}
+                  {ucet ? " " + t("Výpis je k účtu {ucet}.", { ucet }) : ""}
+                  {mena && mena !== "EUR" ? " " + t("Pozor, výpis je v mene {mena}.", { mena }) : ""}
                 </p>
                 <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-4">
                   {pravidlaBanky.length ? (
                     <>
-                      Pravidlá účtovania pre banku dajú predkontáciu{" "}
+                      {t("Pravidlá účtovania pre banku dajú predkontáciu")}{" "}
                       <strong>
-                        {sPravidlom} z {vybrane.length}
+                        {t("{a} z {b}", { a: sPravidlom, b: vybrane.length })}
                       </strong>{" "}
-                      pohybov — majú prednosť pred predkontáciami nižšie.{" "}
+                      {t("pohybov — majú prednosť pred predkontáciami nižšie.")}{" "}
                     </>
                   ) : (
-                    <>Predkontáciu podľa účtu, smeru a protistrany vedia dávať aj </>
+                    <>{t("Predkontáciu podľa účtu, smeru a protistrany vedia dávať aj")} </>
                   )}
                   <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
-                    pravidlá účtovania
+                    {t("pravidlá účtovania")}
                   </Link>
                   .
                 </p>
@@ -573,20 +598,22 @@ function VypisDoPohodyPage() {
 
               {pouziteOznacenia.length > 0 && (
                 <div className="rounded-2xl border border-border/70 bg-card p-5">
-                  <div className="text-sm font-medium">Predkontácie podľa označenia platby</div>
+                  <div className="text-sm font-medium">{t("Predkontácie podľa označenia platby")}</div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Poplatok, daň a úhrada faktúry sa účtujú každé inam. Keď sem napíšete
-                    predkontácie z Pohody, doklad príde rovno zaúčtovaný; čo necháte prázdne,
-                    dostane spoločnú predkontáciu vyššie.{" "}
+                    {t(
+                      "Poplatok, daň a úhrada faktúry sa účtujú každé inam. Keď sem napíšete predkontácie z Pohody, doklad príde rovno zaúčtovaný; čo necháte prázdne, dostane spoločnú predkontáciu vyššie.",
+                    )}{" "}
                     {voFirme === false ? (
                       <>
-                        Zapísať ich k firme môže len jej správca — zatiaľ si ich pamätá len tento
-                        prehliadač. Natrvalo patria do <em>Účtovníctvo → Prepojenie s Pohodou</em>.
+                        {t(
+                          "Zapísať ich k firme môže len jej správca — zatiaľ si ich pamätá len tento prehliadač. Natrvalo patria do",
+                        )}{" "}
+                        <em>{t("Účtovníctvo → Prepojenie s Pohodou")}</em>.
                       </>
                     ) : (
                       <>
-                        Ukladajú sa k firme, takže ich má každý; nastaviť sa dajú aj v{" "}
-                        <em>Účtovníctvo → Prepojenie s Pohodou</em>.
+                        {t("Ukladajú sa k firme, takže ich má každý; nastaviť sa dajú aj v")}{" "}
+                        <em>{t("Účtovníctvo → Prepojenie s Pohodou")}</em>.
                       </>
                     )}
                   </p>
@@ -594,12 +621,12 @@ function VypisDoPohodyPage() {
                     {pouziteOznacenia.map((o) => (
                       <label key={o.kod} className="block">
                         <span className="mb-1 block text-xs text-muted-foreground">
-                          {o.nazov}
+                          {t(o.nazov)}
                           <span className="ml-1 opacity-70">({pocetPodlaOznacenia(o.kod)}×)</span>
                         </span>
                         <input
                           className={vstup}
-                          placeholder={nastavenia.predkontacia || "napr. 2Bv"}
+                          placeholder={nastavenia.predkontacia || t("napr. {kod}", { kod: "2Bv" })}
                           value={nastavenia.predkontacie[o.kod] ?? ""}
                           onChange={(e) =>
                             zapamataj({
@@ -621,13 +648,13 @@ function VypisDoPohodyPage() {
                   <thead className="border-b border-border/70 text-left text-xs text-muted-foreground">
                     <tr>
                       <th className="p-2"></th>
-                      <th className="p-2">Dátum</th>
-                      <th className="p-2">Smer</th>
-                      <th className="p-2 text-right">Suma</th>
-                      <th className="p-2">Popis</th>
-                      <th className="p-2">Označenie platby</th>
-                      <th className="p-2">Protistrana</th>
-                      <th className="p-2">Protiúčet</th>
+                      <th className="p-2">{t("Dátum")}</th>
+                      <th className="p-2">{t("Smer")}</th>
+                      <th className="p-2 text-right">{t("Suma")}</th>
+                      <th className="p-2">{t("Popis")}</th>
+                      <th className="p-2">{t("Označenie platby")}</th>
+                      <th className="p-2">{t("Protistrana")}</th>
+                      <th className="p-2">{t("Protiúčet")}</th>
                       <th className="p-2">VS</th>
                       <th className="p-2">KS</th>
                     </tr>
@@ -645,7 +672,7 @@ function VypisDoPohodyPage() {
                             type="checkbox"
                             checked={r.vyviezt}
                             onChange={(e) => uprav(i, { vyviezt: e.target.checked })}
-                            aria-label="Vyviezť tento pohyb"
+                            aria-label={t("Vyviezť tento pohyb")}
                           />
                         </td>
                         <td className="p-2">
@@ -664,8 +691,8 @@ function VypisDoPohodyPage() {
                               uprav(i, { smer: e.target.value as VypisPohyb["smer"] })
                             }
                           >
-                            <option value="prijem">príjem</option>
-                            <option value="vydaj">výdaj</option>
+                            <option value="prijem">{t("príjem")}</option>
+                            <option value="vydaj">{t("výdaj")}</option>
                           </select>
                         </td>
                         <td className="p-2">
@@ -700,12 +727,12 @@ function VypisDoPohodyPage() {
                                 oznacenie: (e.target.value || null) as KodOznacenia | null,
                               })
                             }
-                            aria-label="Označenie platby"
+                            aria-label={t("Označenie platby")}
                           >
                             <option value="">—</option>
                             {OZNACENIA.map((o) => (
                               <option key={o.kod} value={o.kod}>
-                                {o.nazov}
+                                {t(o.nazov)}
                               </option>
                             ))}
                           </select>
@@ -746,8 +773,9 @@ function VypisDoPohodyPage() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-5">
                 <div className="text-sm">
-                  <span className="font-medium">{vybrane.length}</span> z {riadky.length} pohybov ·
-                  príjmy <span className="font-medium">{eur(prijmy)}</span> · výdavky{" "}
+                  <span className="font-medium">{vybrane.length}</span>{" "}
+                  {t("z {n} pohybov", { n: riadky.length })} · {t("príjmy")}{" "}
+                  <span className="font-medium">{eur(prijmy)}</span> · {t("výdavky")}{" "}
                   <span className="font-medium">{eur(vydaje)}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -759,12 +787,12 @@ function VypisDoPohodyPage() {
                     }}
                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm"
                   >
-                    <Trash2 className="h-4 w-4" /> Zahodiť
+                    <Trash2 className="h-4 w-4" /> {t("Zahodiť")}
                   </button>
                   <button
                     onClick={() => void stiahni("sepa")}
                     disabled={!!vyvazam || !vybrane.length}
-                    title="Banka → Načítanie výpisov (homebanking, formát SEPA XML)"
+                    title={t("Banka → Načítanie výpisov (homebanking, formát SEPA XML)")}
                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm disabled:opacity-50"
                   >
                     {vyvazam === "sepa" ? (
@@ -777,7 +805,7 @@ function VypisDoPohodyPage() {
                   <button
                     onClick={() => void stiahni("pohoda")}
                     disabled={!!vyvazam || !vybrane.length}
-                    title="Súbor → Dátová komunikácia → XML import"
+                    title={t("Súbor → Dátová komunikácia → XML import")}
                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                   >
                     {vyvazam === "pohoda" ? (
@@ -785,29 +813,37 @@ function VypisDoPohodyPage() {
                     ) : (
                       <Download className="h-4 w-4" />
                     )}
-                    XML pre Pohodu
+                    {t("XML pre Pohodu")}
                   </button>
                 </div>
                 <p className="w-full text-xs text-muted-foreground">
-                  <strong>SEPA XML (camt.053)</strong> patrí do <em>Banka → Načítanie výpisov</em> —
-                  Pohoda ho vezme ako výpis od banky a platby si spáruje podľa variabilného symbolu.{" "}
-                  <strong>XML pre Pohodu</strong> je dávka dokladov do{" "}
-                  <em>Súbor → Dátová komunikácia → XML import</em>. Keď sa zamenia, Pohoda odpovie,
-                  že súbor nezodpovedá stanovenej štruktúre formátu SEPA XML.{" "}
-                  <strong>Označenie platby</strong> ide do Pohody ako poznámka dokladu a do SEPA XML
-                  ako účel platby (<code>Purp</code>).
+                  <strong>SEPA XML (camt.053)</strong> {t("patrí do")}{" "}
+                  <em>{t("Banka → Načítanie výpisov")}</em>{" "}
+                  {t(
+                    "— Pohoda ho vezme ako výpis od banky a platby si spáruje podľa variabilného symbolu.",
+                  )}{" "}
+                  <strong>{t("XML pre Pohodu")}</strong> {t("je dávka dokladov do")}{" "}
+                  <em>{t("Súbor → Dátová komunikácia → XML import")}</em>
+                  {t(
+                    ". Keď sa zamenia, Pohoda odpovie, že súbor nezodpovedá stanovenej štruktúre formátu SEPA XML.",
+                  )}{" "}
+                  <strong>{t("Označenie platby")}</strong>{" "}
+                  {t("ide do Pohody ako poznámka dokladu a do SEPA XML ako účel platby")} (
+                  <code>Purp</code>).
                   {vybrane.length < riadky.length && maZostatky && (
                     <>
                       {" "}
-                      Vynechané pohyby menia zostatok: konečný zostatok v SEPA XML sa dopočíta z
-                      vyvezených pohybov, takže nebude sedieť s výpisom od banky.
+                      {t(
+                        "Vynechané pohyby menia zostatok: konečný zostatok v SEPA XML sa dopočíta z vyvezených pohybov, takže nebude sedieť s výpisom od banky.",
+                      )}
                     </>
                   )}
                   {!maZostatky && (
                     <>
                       {" "}
-                      Pozor: tento výpis nemá pri pohyboch zostatky, takže v SEPA XML budú
-                      počiatočný aj konečný zostatok nulové — dopíšte ich v Pohode.
+                      {t(
+                        "Pozor: tento výpis nemá pri pohyboch zostatky, takže v SEPA XML budú počiatočný aj konečný zostatok nulové — dopíšte ich v Pohode.",
+                      )}
                     </>
                   )}
                 </p>

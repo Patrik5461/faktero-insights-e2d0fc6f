@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { pripravKonektorFn, stavKonektoraFn } from "@/lib/faktero/pohoda-konektor.functions";
 import { fetchMyCompanies } from "@/lib/faktero/active-company";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Priame prepojenie s Pohodou.
@@ -29,6 +30,8 @@ type StavKonektora = {
 type MojaFirma = { id: string; name: string; role: string };
 
 export function KonektorPohody({ companyId }: { companyId: string }) {
+  const { t, jazyk } = useT();
+  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
   const [stav, setStav] = useState<StavKonektora | null>(null);
   const [pracuje, setPracuje] = useState(false);
   /*
@@ -79,12 +82,12 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
       URL.revokeObjectURL(url);
       toast.success(
         r.firmy.length > 1
-          ? `Balíček stiahnutý pre ${r.firmy.length} firmy — pošlite ho účtovníčke.`
-          : "Balíček stiahnutý — pošlite ho účtovníčke.",
+          ? t("Balíček stiahnutý pre {n} firmy — pošlite ho účtovníčke.", { n: r.firmy.length })
+          : t("Balíček stiahnutý — pošlite ho účtovníčke."),
       );
       fnStav({ data: { companyId, companyIds: vybrane } }).then((r) => setStav(r as StavKonektora));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Balíček sa nepodarilo pripraviť.");
+      toast.error(e instanceof Error ? e.message : t("Balíček sa nepodarilo pripraviť."));
     } finally {
       setPracuje(false);
     }
@@ -92,18 +95,17 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
 
   return (
     <div>
-      <h4 className="text-sm font-semibold">Priame prepojenie s Pohodou</h4>
+      <h4 className="text-sm font-semibold">{t("Priame prepojenie s Pohodou")}</h4>
       <p className="mt-1 text-xs text-muted-foreground">
-        Namiesto posielania súborov mailom si Pohoda vezme doklady sama — raz denne v noci a späť
-        nám povie, aké čísla im pridelila. Účtovníčka nič neinštaluje: stiahnutý priečinok skopíruje
-        k Pohode, vyplní v ňom cestu a názov databázy a spustí druhý súbor, ktorý založí naplánovanú
-        úlohu. Keď vedie viac firiem, ďalšiu pridá jedným riadkom do{" "}
-        <code className="rounded bg-secondary px-1">firmy.txt</code> — priečinok ani úlohu už
-        nezakladá znova.
+        {t(
+          "Namiesto posielania súborov mailom si Pohoda vezme doklady sama — raz denne v noci a späť nám povie, aké čísla im pridelila. Účtovníčka nič neinštaluje: stiahnutý priečinok skopíruje k Pohode, vyplní v ňom cestu a názov databázy a spustí druhý súbor, ktorý založí naplánovanú úlohu. Keď vedie viac firiem, ďalšiu pridá jedným riadkom do",
+        )}{" "}
+        <code className="rounded bg-secondary px-1">firmy.txt</code> —{" "}
+        {t("priečinok ani úlohu už nezakladá znova.")}
       </p>
       {firmy.length > 1 && (
         <div className="mt-3 rounded-md border border-border bg-secondary/40 p-3">
-          <div className="mb-2 text-xs font-medium">Do balíčka zahrnúť</div>
+          <div className="mb-2 text-xs font-medium">{t("Do balíčka zahrnúť")}</div>
           <div className="space-y-1.5">
             {firmy.map((f) => (
               <label key={f.id} className="flex items-center gap-2 text-xs">
@@ -118,8 +120,9 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
             ))}
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Každá firma dostane vlastný kľúč a vlastný riadok vo firmy.txt. Účtovníčka tak zakladá
-            priečinok aj naplánovanú úlohu iba raz.
+            {t(
+              "Každá firma dostane vlastný kľúč a vlastný riadok vo firmy.txt. Účtovníčka tak zakladá priečinok aj naplánovanú úlohu iba raz.",
+            )}
           </p>
         </div>
       )}
@@ -131,39 +134,41 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
           className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {pracuje
-            ? "Pripravujem…"
+            ? t("Pripravujem…")
             : vybrane.length > 1
-              ? `Stiahnuť balíček pre ${vybrane.length} firmy`
-              : "Stiahnuť balíček pre účtovníčku"}
+              ? t("Stiahnuť balíček pre {n} firmy", { n: vybrane.length })
+              : t("Stiahnuť balíček pre účtovníčku")}
         </button>
         {stav?.naposledy ? (
           <span className="text-xs text-muted-foreground">
-            Naposledy sa ozval {new Date(stav.naposledy).toLocaleString("sk-SK")}
+            {t("Naposledy sa ozval {kedy}", { kedy: new Date(stav.naposledy).toLocaleString(loc) })}
           </span>
         ) : stav?.kluce ? (
           <span className="text-xs text-muted-foreground">
-            Balíček je vydaný, zatiaľ sa neozval.
+            {t("Balíček je vydaný, zatiaľ sa neozval.")}
           </span>
         ) : null}
       </div>
       {stav?.potvrdene?.length ? (
         <div className="mt-3 text-xs">
-          <div className="mb-1 font-medium">Naposledy potvrdené Pohodou</div>
+          <div className="mb-1 font-medium">{t("Naposledy potvrdené Pohodou")}</div>
           <ul className="space-y-0.5 text-muted-foreground">
             {stav.potvrdene.map((r: PotvrdenyDoklad, i: number) => (
               <li key={i}>
                 {r.invoice_number}
                 {r.pohoda_cislo ? ` → ${r.pohoda_cislo}` : ""}
-                {r.pohoda_stav === "error" ? ` — chyba: ${r.error ?? "neznáma"}` : ""}
+                {r.pohoda_stav === "error"
+                  ? ` — ${t("chyba: {text}", { text: r.error ?? t("neznáma") })}`
+                  : ""}
               </li>
             ))}
           </ul>
         </div>
       ) : null}
       <p className="mt-3 text-xs text-muted-foreground">
-        Každé stiahnutie vyrobí nový kľúč; staré ostávajú platné a zrušiť sa dajú v{" "}
+        {t("Každé stiahnutie vyrobí nový kľúč; staré ostávajú platné a zrušiť sa dajú v")}{" "}
         <Link to="/api-kluce" className="underline">
-          API kľúčoch
+          {t("API kľúčoch")}
         </Link>
         .
       </p>
@@ -179,15 +184,18 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
  * dátum posledného ozvania je jediné, z čoho sa dá poznať, že prenos beží.
  */
 function StavFirmyPopis({ stav }: { stav?: StavFirmy }) {
+  const { t, jazyk } = useT();
   if (!stav?.kluce) {
-    return <span className="shrink-0 text-[11px] text-muted-foreground">bez balíčka</span>;
+    return <span className="shrink-0 text-[11px] text-muted-foreground">{t("bez balíčka")}</span>;
   }
   if (!stav.naposledy) {
-    return <span className="shrink-0 text-[11px] text-amber-600">vydaný, zatiaľ ticho</span>;
+    return <span className="shrink-0 text-[11px] text-amber-600">{t("vydaný, zatiaľ ticho")}</span>;
   }
   return (
     <span className="shrink-0 text-[11px] text-muted-foreground">
-      ozval sa {new Date(stav.naposledy).toLocaleDateString("sk-SK")}
+      {t("ozval sa {kedy}", {
+        kedy: new Date(stav.naposledy).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK"),
+      })}
     </span>
   );
 }

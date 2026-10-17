@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Copy, Check, ShieldCheck, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Banner s potvrdením preposielania z Gmailu.
@@ -26,6 +27,7 @@ type Potvrdenie = {
 };
 
 export function PotvrdeniePreposielania({ companyId }: { companyId: string | null }) {
+  const { t } = useT();
   const [potvrdenia, setPotvrdenia] = useState<Potvrdenie[]>([]);
   const [skopirovany, setSkopirovany] = useState<string | null>(null);
   const [pracuje, setPracuje] = useState(false);
@@ -86,7 +88,7 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
       if (error) throw new Error(error.message);
       setPotvrdenia((s) => s.filter((x) => x.id !== p.id));
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setPracuje(false);
     }
@@ -101,8 +103,9 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
         >
           <div className="flex items-center gap-2 text-sm font-medium">
             <ShieldCheck className="h-4 w-4" />
-            Google žiada potvrdenie preposielania
-            {p.source_email ? ` z ${p.source_email}` : ""}
+            {p.source_email
+              ? t("Google žiada potvrdenie preposielania z {email}", { email: p.source_email })
+              : t("Google žiada potvrdenie preposielania")}
           </div>
 
           {/* Google posiela dve podoby mailu: s kódom a — častejšie — len s
@@ -123,7 +126,7 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
                   ) : (
                     <Copy className="h-4 w-4" />
                   )}
-                  {skopirovany === p.id ? "Skopírované" : "Kopírovať kód"}
+                  {skopirovany === p.id ? t("Skopírované") : t("Kopírovať kód")}
                 </button>
               </>
             ) : null}
@@ -135,7 +138,7 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700"
               >
-                <ExternalLink className="h-4 w-4" /> Potvrdiť preposielanie
+                <ExternalLink className="h-4 w-4" /> {t("Potvrdiť preposielanie")}
               </a>
             )}
 
@@ -144,15 +147,15 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
               onClick={() => uzPotvrdene(p)}
               className="ml-auto rounded-md border border-amber-300 px-3 py-2 text-sm hover:bg-amber-100 disabled:opacity-60 dark:border-amber-900/40"
             >
-              Už som potvrdil
+              {t("Už som potvrdil")}
             </button>
           </div>
 
           <p className="mt-2 text-xs">
             {p.code
-              ? "Kód sa dá zadať aj ručne v Gmaile → Nastavenia → Preposielanie a POP/IMAP. "
+              ? `${t("Kód sa dá zadať aj ručne v Gmaile → Nastavenia → Preposielanie a POP/IMAP.")} `
               : ""}
-            Odkaz funguje len v prehliadači prihlásenom do tej istej schránky.
+            {t("Odkaz funguje len v prehliadači prihlásenom do tej istej schránky.")}
           </p>
         </div>
       ))}

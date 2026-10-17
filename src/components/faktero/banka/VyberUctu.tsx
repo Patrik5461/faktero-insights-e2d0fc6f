@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatujIban } from "@/lib/faktero/platobny-ucet";
+import { useT } from "@/lib/i18n/useT";
 
 export type UcetFirmy = {
   id: string;
@@ -35,7 +36,11 @@ export function useUctyFirmy(companyId: string | null | undefined) {
 }
 
 export function popisUctu(u: UcetFirmy): string {
-  return [u.name || u.bank_name || "Účet", formatujIban(u.iban), u.currency !== "EUR" ? u.currency : null]
+  return [
+    u.name || u.bank_name || "Účet",
+    formatujIban(u.iban),
+    u.currency !== "EUR" ? u.currency : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 }
@@ -58,26 +63,28 @@ export function VyberUctu({
   /** Vo formulári predvyplní predvolený účet; v detaile nie — zmenilo by to faktúru. */
   predvyplnit?: boolean;
 }) {
+  const { t } = useT();
   const { ucty } = useUctyFirmy(companyId);
   useEffect(() => {
-    if (predvyplnit && !value && ucty?.length) onChange((ucty.find((u) => u.is_default) ?? ucty[0])!.id);
+    if (predvyplnit && !value && ucty?.length)
+      onChange((ucty.find((u) => u.is_default) ?? ucty[0])!.id);
     // eslint-disable-next-line
   }, [ucty]);
   if (!ucty || ucty.length < 2) return null;
   return (
     <label className={`block text-sm ${className}`}>
-      <span className="mb-1 block text-xs text-muted-foreground">Účet na úhradu</span>
+      <span className="mb-1 block text-xs text-muted-foreground">{t("Účet na úhradu")}</span>
       <select
         value={value ?? ""}
-        aria-label="Účet na úhradu"
+        aria-label={t("Účet na úhradu")}
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
       >
-        {!value && <option value="">— účet firmy —</option>}
+        {!value && <option value="">{t("— účet firmy —")}</option>}
         {ucty.map((u) => (
           <option key={u.id} value={u.id}>
             {popisUctu(u)}
-            {u.is_default ? " (predvolený)" : ""}
+            {u.is_default ? ` ${t("(predvolený)")}` : ""}
           </option>
         ))}
       </select>

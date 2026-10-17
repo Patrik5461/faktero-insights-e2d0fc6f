@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/zakazky")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Zákazky — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Zákazky — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Zákazky vo Faktere: sledovanie výnosov, nákladov a marže jednej práce naprieč faktúrami, skladom a jazdami.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/zakazky" },
     ],
@@ -56,10 +60,9 @@ const sections: HelpSection[] = [
             to, ako ďaleko ste od plánu.
           </li>
           <li>
-            <strong>manažéra zákazky</strong> (projektového manažéra) — vyberá sa na detaile
-            zákazky z ľudí vo firme. Keď v{" "}
-            <Link to="/nastavenia/schvalovanie">schvaľovaní dokladov</Link> dáte do cesty „manažér
-            zákazky dokladu“, doklady na tejto zákazke bude schvaľovať on.
+            <strong>manažéra zákazky</strong> (projektového manažéra) — vyberá sa na detaile zákazky
+            z ľudí vo firme. Keď v <Link to="/nastavenia/schvalovanie">schvaľovaní dokladov</Link>{" "}
+            dáte do cesty „manažér zákazky dokladu“, doklady na tejto zákazke bude schvaľovať on.
           </li>
         </ul>
       </>
@@ -178,7 +181,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Zákazky"
       title="Zákazky vo Faktere"
       intro={

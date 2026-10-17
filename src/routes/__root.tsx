@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -17,26 +18,38 @@ import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
 import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
 import { listSeoPagesPublic } from "@/lib/seo.functions";
 import { SKRIPT_DO_HLAVICKY } from "@/lib/faktero/motiv";
-import { zistiJazyk } from "@/lib/i18n/jazyk";
+import { zistiJazyk, preloz, type Jazyk } from "@/lib/i18n/jazyk";
 import { JazykProvider } from "@/lib/i18n/useT";
 import { SKRIPT_DIZAJNU } from "@/lib/faktero/dizajn";
 import { SKRIPT_SUHLASU, SKRIPT_GTM, GTM_NOSCRIPT_SRC } from "@/lib/faktero/gtm";
 
+/*
+  Chybové stránky koreňa nemusia ležať vnútri `JazykProvider` (ten je až
+  v `RootComponent`), preto jazyk berú priamo z kontextu koreňovej trasy.
+*/
+function useTKorena() {
+  const jazyk = useRouterState({
+    select: (s) => (s.matches[0]?.context as { jazyk?: Jazyk } | undefined)?.jazyk,
+  });
+  return (text: string) => preloz(jazyk ?? "sk", text);
+}
+
 function NotFoundComponent() {
+  const t = useTKorena();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Stránka sa nenašla</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">{t("Stránka sa nenašla")}</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Táto adresa neexistuje alebo sa presunula inam.
+          {t("Táto adresa neexistuje alebo sa presunula inam.")}
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Späť na úvod
+            {t("Späť na úvod")}
           </Link>
         </div>
       </div>
@@ -47,6 +60,7 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const t = useTKorena();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -55,10 +69,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Stránku sa nepodarilo načítať
+          {t("Stránku sa nepodarilo načítať")}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Chyba je na našej strane. Skúste to znova alebo sa vráťte na úvod.
+          {t("Chyba je na našej strane. Skúste to znova alebo sa vráťte na úvod.")}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -68,13 +82,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Skúsiť znova
+            {t("Skúsiť znova")}
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Späť na úvod
+            {t("Späť na úvod")}
           </a>
         </div>
       </div>
@@ -97,7 +111,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       return { googleVerification: null, gaMeasurementId: null };
     }
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, match }) => {
+    const jazyk: Jazyk = match.context.jazyk ?? "sk";
+    const nazov = preloz(jazyk, "Faktero — Moderná fakturácia pre SK a CZ firmy");
+    const popis = preloz(
+      jazyk,
+      "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API.",
+    );
     const gv = loaderData?.googleVerification;
     const ga = loaderData?.gaMeasurementId;
     const meta: any[] = [
@@ -106,25 +126,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "viewport",
         content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
       },
-      { title: "Faktero — Moderná fakturácia pre SK a CZ firmy" },
+      { title: nazov },
       {
         name: "description",
-        content:
-          "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API.",
+        content: popis,
       },
-      { property: "og:title", content: "Faktero — Moderná fakturácia pre SK a CZ firmy" },
+      { property: "og:title", content: nazov },
       {
         property: "og:description",
-        content:
-          "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API.",
+        content: popis,
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Faktero — Moderná fakturácia pre SK a CZ firmy" },
+      { name: "twitter:title", content: nazov },
       {
         name: "twitter:description",
-        content:
-          "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API.",
+        content: popis,
       },
       {
         property: "og:image",

@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { zoznamZmluvFn } from "@/lib/faktero/financovanie.functions";
@@ -10,7 +12,7 @@ import { nazovDruhuFinancovania, type StavRamca } from "@/lib/faktero/kontokoren
 import { Banknote, Car, Landmark, Plus, TriangleAlert } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/financovanie/")({
-  head: () => ({ meta: [{ title: "Leasingy a úvery — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Leasingy a úvery — Faktero") }] }),
   component: Stranka,
 });
 
@@ -33,11 +35,12 @@ type Zmluva = {
   dalsiaSplatka: { due_date: string; amount: number } | null;
 };
 
-function datum(d: string): string {
-  return new Date(`${d}T00:00:00`).toLocaleDateString("sk-SK");
+function datum(d: string, jazyk: string = "sk"): string {
+  return new Date(`${d}T00:00:00`).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK");
 }
 
 function Stranka() {
+  const { t, jazyk } = useT();
   const nacitaj = useServerFn(zoznamZmluvFn);
   const [zmluvy, setZmluvy] = useState<Zmluva[] | null>(null);
 
@@ -46,8 +49,8 @@ function Stranka() {
     if (!cid) return;
     nacitaj({ data: { company_id: cid } })
       .then((r) => setZmluvy(r.zmluvy as unknown as Zmluva[]))
-      .catch((e) => toast.error(e?.message ?? "Zmluvy sa nepodarilo načítať."));
-  }, [nacitaj]);
+      .catch((e) => toast.error(e?.message ?? t("Zmluvy sa nepodarilo načítať.")));
+  }, [nacitaj, t]);
 
   const aktivne = (zmluvy ?? []).filter((z) => z.status === "active");
   const zavrete = (zmluvy ?? []).filter((z) => z.status !== "active");
@@ -60,45 +63,48 @@ function Stranka() {
   return (
     <>
       <PageHeader
-        title="Leasingy a úvery"
-        description="Splátkový kalendár s rozpadom na istinu, úrok a DPH, aj kontokorentné úvery. Platby z banky sa k splátkam a úroky ku kontokorentu párujú samy."
+        title={t("Leasingy a úvery")}
+        description={t("Splátkový kalendár s rozpadom na istinu, úrok a DPH, aj kontokorentné úvery. Platby z banky sa k splátkam a úroky ku kontokorentu párujú samy.")}
         action={
           <Link
             to="/financovanie/nova"
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
-            <Plus className="h-4 w-4" /> Nová zmluva
+            <Plus className="h-4 w-4" /> {t("Nová zmluva")}
           </Link>
         }
       />
       <PageBody>
         {zmluvy === null ? (
-          <p className="text-sm text-muted-foreground">Načítavam…</p>
+          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
         ) : zmluvy.length === 0 ? (
           <div className="rounded-xl border border-dashed p-10 text-center">
             <Banknote className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
-            <p className="text-sm font-medium">Zatiaľ tu nie je žiadny leasing ani úver</p>
+            <p className="text-sm font-medium">{t("Zatiaľ tu nie je žiadny leasing ani úver")}</p>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Zapíšte zmluvu raz — Faktero z nej vyrobí splátkový kalendár a platby z banky si k
-              splátkam bude párovať samo.
+              {t("Zapíšte zmluvu raz — Faktero z nej vyrobí splátkový kalendár a platby z banky si k splátkam bude párovať samo.")}
             </p>
             <Link
               to="/financovanie/nova"
               className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary"
             >
-              <Plus className="h-4 w-4" /> Zapísať prvú zmluvu
+              <Plus className="h-4 w-4" /> {t("Zapísať prvú zmluvu")}
             </Link>
           </div>
         ) : (
           <div className="space-y-6">
             {aktivne.length > 0 && (
               <div className="rounded-xl border bg-card p-5">
-                <div className="text-sm text-muted-foreground">Zostáva splatiť</div>
+                <div className="text-sm text-muted-foreground">{t("Zostáva splatiť")}</div>
                 <div className="mt-1 text-3xl font-semibold tabular-nums">
                   {formatujSumu(dlhSpolu, mena)}
                 </div>
                 <div className="mt-1 text-sm text-muted-foreground">
-                  {aktivne.length === 1 ? "1 aktívna zmluva" : `${aktivne.length} aktívnych zmlúv`}
+                  {aktivne.length === 1
+                    ? t("1 aktívna zmluva")
+                    : aktivne.length < 5
+                      ? t("{n} aktívne zmluvy", { n: aktivne.length })
+                      : t("{n} aktívnych zmlúv", { n: aktivne.length })}
                 </div>
               </div>
             )}
@@ -111,7 +117,7 @@ function Stranka() {
               .map((s) => (
                 <div key={s.nadpis}>
                   <h2 className="mb-2 px-1 text-sm font-medium text-muted-foreground">
-                    {s.nadpis}
+                    {t(s.nadpis)}
                   </h2>
                   <div className="divide-y rounded-xl border bg-card">
                     {s.polozky.map((z) => (
@@ -134,12 +140,12 @@ function Stranka() {
                           <div className="flex items-center gap-2">
                             <span className="truncate font-medium">{z.name}</span>
                             <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
-                              {nazovDruhuFinancovania(z.kind)}
+                              {t(nazovDruhuFinancovania(z.kind))}
                             </span>
                             {z.poSplatnosti > 0 && (
                               <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
                                 <TriangleAlert className="h-3 w-3" />
-                                {z.poSplatnosti} po splatnosti
+                                {t("{n} po splatnosti", { n: z.poSplatnosti })}
                               </span>
                             )}
                           </div>
@@ -147,14 +153,18 @@ function Stranka() {
                             {z.provider_name ? `${z.provider_name} · ` : ""}
                             {z.kind === "kontokorent" ? (
                               <>
-                                rámec {formatujSumu(Number(z.credit_limit) || 0, z.currency)}
-                                {z.valid_until ? ` · platí do ${datum(z.valid_until)}` : ""}
+                                {t("rámec {suma}", {
+                                  suma: formatujSumu(Number(z.credit_limit) || 0, z.currency),
+                                })}
+                                {z.valid_until
+                                  ? ` · ${t("platí do {datum}", { datum: datum(z.valid_until, jazyk) })}`
+                                  : ""}
                               </>
                             ) : (
                               <>
-                                splatené {z.zaplatenych} z {z.splatok}
+                                {t("splatené {n} z {m}", { n: z.zaplatenych, m: z.splatok })}
                                 {z.dalsiaSplatka
-                                  ? ` · ďalšia ${datum(z.dalsiaSplatka.due_date)}`
+                                  ? ` · ${t("ďalšia {datum}", { datum: datum(z.dalsiaSplatka.due_date, jazyk) })}`
                                   : ""}
                               </>
                             )}
@@ -166,7 +176,7 @@ function Stranka() {
                               {z.ramec?.znamy ? formatujSumu(z.ramec.cerpanie, z.currency) : "—"}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {z.ramec?.znamy ? "čerpané" : "zostatok nie je známy"}
+                              {z.ramec?.znamy ? t("čerpané") : t("zostatok nie je známy")}
                             </div>
                           </div>
                         ) : (
@@ -174,7 +184,7 @@ function Stranka() {
                             <div className="font-medium tabular-nums">
                               {formatujSumu(z.zostavaSuma, z.currency)}
                             </div>
-                            <div className="text-xs text-muted-foreground">zostáva</div>
+                            <div className="text-xs text-muted-foreground">{t("zostáva")}</div>
                           </div>
                         )}
                       </Link>

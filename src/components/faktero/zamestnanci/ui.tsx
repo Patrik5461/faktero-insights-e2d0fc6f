@@ -2,6 +2,7 @@
  * Spoločné prvky obrazoviek modulu Zamestnanci.
  */
 import { IdCard } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 export const pole =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
@@ -13,15 +14,20 @@ export const tlacidloObrys =
 
 /** Chyba zo servera — pri vypnutom module ju zobrazíme ako vysvetlenie, nie ako poruchu. */
 export function ChybaModulu({ sprava }: { sprava: string }) {
+  const { t } = useT();
   const vypnuty = /nie je pre túto firmu zapnutý/.test(sprava);
   return (
     <div className="rounded-xl border border-border bg-card p-8 text-center">
       <IdCard className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-      <div className="text-sm font-medium">{vypnuty ? "Modul Zamestnanci nie je zapnutý" : "Niečo sa nepodarilo"}</div>
+      <div className="text-sm font-medium">
+        {vypnuty ? t("Modul Zamestnanci nie je zapnutý") : t("Niečo sa nepodarilo")}
+      </div>
       <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground">
         {vypnuty
-          ? "Evidencia zamestnancov sa zapína pre každú firmu zvlášť. Ak ju chcete používať, napíšte na servis@faktero.sk."
-          : sprava}
+          ? t(
+              "Evidencia zamestnancov sa zapína pre každú firmu zvlášť. Ak ju chcete používať, napíšte na servis@faktero.sk.",
+            )
+          : t(sprava)}
       </p>
     </div>
   );
@@ -106,7 +112,13 @@ export function naFormular(z: Record<string, any>): UdajeZamestnanca {
   const vysledok = prazdneUdaje();
   for (const k of Object.keys(vysledok) as (keyof UdajeZamestnanca)[]) {
     const v = z[k];
-    (vysledok as any)[k] = v == null ? "" : String(v).slice(0, k.endsWith("_date") || k.endsWith("_at") || k.endsWith("_due") ? 10 : undefined);
+    (vysledok as any)[k] =
+      v == null
+        ? ""
+        : String(v).slice(
+            0,
+            k.endsWith("_date") || k.endsWith("_at") || k.endsWith("_due") ? 10 : undefined,
+          );
   }
   return vysledok;
 }
@@ -120,21 +132,34 @@ export function FormularZamestnanca({
   udaje: UdajeZamestnanca;
   zmen: (u: UdajeZamestnanca) => void;
 }) {
+  const { t } = useT();
   const nastav = (k: keyof UdajeZamestnanca) => (e: { target: { value: string } }) =>
     zmen({ ...udaje, [k]: e.target.value });
-  const vstup = (k: keyof UdajeZamestnanca, nazov: string, typ = "text", extra: Record<string, unknown> = {}) => (
+  const vstup = (
+    k: keyof UdajeZamestnanca,
+    nazov: string,
+    typ = "text",
+    extra: Record<string, unknown> = {},
+  ) => (
     <div>
       <label className={popis} htmlFor={`zam-${k}`}>
-        {nazov}
+        {t(nazov)}
       </label>
-      <input id={`zam-${k}`} type={typ} className={pole} value={udaje[k] as string} onChange={nastav(k)} {...extra} />
+      <input
+        id={`zam-${k}`}
+        type={typ}
+        className={pole}
+        value={udaje[k] as string}
+        onChange={nastav(k)}
+        {...extra}
+      />
     </div>
   );
 
   return (
     <div className="space-y-4">
       <section className="rounded-xl border border-border bg-card p-4">
-        <h3 className="mb-3 text-sm font-semibold">Osobné údaje</h3>
+        <h3 className="mb-3 text-sm font-semibold">{t("Osobné údaje")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {vstup("first_name", "Meno *", "text", { autoComplete: "off" })}
           {vstup("last_name", "Priezvisko *", "text", { autoComplete: "off" })}
@@ -145,9 +170,15 @@ export function FormularZamestnanca({
           {vstup("nationality", "Štátna príslušnosť")}
           <div>
             <label className={popis} htmlFor="zam-health_insurer">
-              Zdravotná poisťovňa
+              {t("Zdravotná poisťovňa")}
             </label>
-            <input id="zam-health_insurer" list="zam-poistovne" className={pole} value={udaje.health_insurer} onChange={nastav("health_insurer")} />
+            <input
+              id="zam-health_insurer"
+              list="zam-poistovne"
+              className={pole}
+              value={udaje.health_insurer}
+              onChange={nastav("health_insurer")}
+            />
             <datalist id="zam-poistovne">
               {ZDRAVOTNE_POISTOVNE.map((p) => (
                 <option key={p} value={p} />
@@ -158,7 +189,7 @@ export function FormularZamestnanca({
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4">
-        <h3 className="mb-3 text-sm font-semibold">Kontakt a adresa</h3>
+        <h3 className="mb-3 text-sm font-semibold">{t("Kontakt a adresa")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {vstup("email", "E-mail", "email")}
           {vstup("phone", "Telefón", "tel")}
@@ -170,7 +201,7 @@ export function FormularZamestnanca({
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4">
-        <h3 className="mb-3 text-sm font-semibold">Pracovný pomer</h3>
+        <h3 className="mb-3 text-sm font-semibold">{t("Pracovný pomer")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {vstup("position", "Pracovná pozícia")}
           {vstup("department", "Oddelenie")}
@@ -178,20 +209,25 @@ export function FormularZamestnanca({
           {vstup("end_date", "Deň ukončenia", "date")}
           <div>
             <label className={popis} htmlFor="zam-status">
-              Stav
+              {t("Stav")}
             </label>
-            <select id="zam-status" className={pole} value={udaje.status} onChange={nastav("status")}>
-              <option value="active">Aktívny</option>
-              <option value="ended">Ukončený</option>
+            <select
+              id="zam-status"
+              className={pole}
+              value={udaje.status}
+              onChange={nastav("status")}
+            >
+              <option value="active">{t("Aktívny")}</option>
+              <option value="ended">{t("Ukončený")}</option>
             </select>
           </div>
         </div>
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4">
-        <h3 className="mb-1 text-sm font-semibold">Povinnosti zamestnávateľa</h3>
+        <h3 className="mb-1 text-sm font-semibold">{t("Povinnosti zamestnávateľa")}</h3>
         <p className="mb-3 text-xs text-muted-foreground">
-          Podľa týchto dátumov Faktero pripomína prihlášky a termíny v zvončeku aj e-mailom.
+          {t("Podľa týchto dátumov Faktero pripomína prihlášky a termíny v zvončeku aj e-mailom.")}
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {vstup("sp_registered_at", "Prihláška do Sociálnej poisťovne podaná", "date")}
@@ -203,9 +239,15 @@ export function FormularZamestnanca({
 
       <section className="rounded-xl border border-border bg-card p-4">
         <label className={popis} htmlFor="zam-note">
-          Poznámka
+          {t("Poznámka")}
         </label>
-        <textarea id="zam-note" rows={3} className={pole} value={udaje.note} onChange={nastav("note")} />
+        <textarea
+          id="zam-note"
+          rows={3}
+          className={pole}
+          value={udaje.note}
+          onChange={nastav("note")}
+        />
       </section>
     </div>
   );

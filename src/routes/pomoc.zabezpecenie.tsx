@@ -1,14 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 export const Route = createFileRoute("/pomoc/zabezpecenie")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Zabezpečenie účtu — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Zabezpečenie účtu — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Dvojfaktorové overenie, dôveryhodné zariadenia, prihlasovanie, zabudnuté heslo a zrušenie účtu vo Fakteru.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/zabezpecenie" },
     ],
@@ -114,7 +118,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Účet"
       title="Zabezpečenie účtu"
       intro={<p>Dvojfaktorové overenie, heslá, prístupy a zrušenie účtu.</p>}

@@ -7,6 +7,7 @@ import {
   companyLookupConfiguredFn,
 } from "@/lib/faktero/company-lookup.functions";
 import type { NormalizedCompany, FinstatSuggestion } from "@/lib/faktero/company-registry.server";
+import { useT } from "@/lib/i18n/useT";
 
 type Props = {
   value: string;
@@ -26,6 +27,7 @@ export function CompanyNameAutocomplete({
   autoFocus,
   placeholder,
 }: Props) {
+  const { t } = useT();
   const [enabled, setEnabled] = useState(false);
   const [nameSearchDisabled, setNameSearchDisabled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -100,13 +102,13 @@ export function CompanyNameAutocomplete({
           setNameSearchDisabled(true);
         } else {
           setItems([]);
-          setError("FinStat momentálne neodpovedá.");
+          setError(t("FinStat momentálne neodpovedá."));
           setOpen(true);
         }
       } catch (err) {
         console.warn("[CompanyNameAutocomplete] search error", err);
         setItems([]);
-        setError("FinStat momentálne neodpovedá.");
+        setError(t("FinStat momentálne neodpovedá."));
         setOpen(true);
       } finally {
         setLoading(false);
@@ -144,9 +146,9 @@ export function CompanyNameAutocomplete({
         setItems([]);
         setError(null);
         setOpen(false);
-        showSuccess("Údaje boli načítané z FinStat.");
+        showSuccess(t("Údaje boli načítané z FinStat."));
       } else {
-        setError("FinStat momentálne neodpovedá.");
+        setError(t("FinStat momentálne neodpovedá."));
         setOpen(true);
       }
     } finally {
@@ -167,7 +169,7 @@ export function CompanyNameAutocomplete({
         onFocus={() => {
           if (items.length || error || loading) setOpen(true);
         }}
-        placeholder={placeholder}
+        placeholder={placeholder ? t(placeholder) : placeholder}
         className={
           className ??
           "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
@@ -179,14 +181,14 @@ export function CompanyNameAutocomplete({
           {loading && (
             <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Vyhľadávam vo FinState...
+              {t("Vyhľadávam vo FinState...")}
             </div>
           )}
           {!loading && error && items.length === 0 && (
             <div className="px-3 py-2 text-xs text-destructive">{error}</div>
           )}
           {!loading && !error && items.length === 0 && (
-            <div className="px-3 py-2 text-xs text-muted-foreground">Firma nebola nájdená.</div>
+            <div className="px-3 py-2 text-xs text-muted-foreground">{t("Firma nebola nájdená.")}</div>
           )}
           {!loading &&
             items.map((s) => (
@@ -201,7 +203,7 @@ export function CompanyNameAutocomplete({
                 <div className="min-w-0 flex-1">
                   <div className="break-words font-medium text-foreground">{s.name}</div>
                   <div className="break-words text-[11px] text-muted-foreground">
-                    IČO {s.ico}
+                    {t("IČO")} {s.ico}
                     {s.city ? ` · ${s.city}` : ""}
                   </div>
                 </div>

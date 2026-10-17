@@ -22,6 +22,7 @@ import { KodPohody } from "./KodPohody";
 import { RozuctovaniePanel } from "./RozuctovaniePanel";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
 
 export type Navrhy = {
   predkontacie: MoznostKodu[];
@@ -67,6 +68,7 @@ export function PoliaZauctovania({
   kvAuto?: string;
   hromadne?: boolean;
 }) {
+  const { t } = useT();
   const vstup =
     "mt-1 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm";
   const zKategorie = navrhy?.podlaKategorie?.[hodnoty.kategoria];
@@ -75,14 +77,14 @@ export function PoliaZauctovania({
       className={`grid grid-cols-1 gap-3 [&>*]:min-w-0 ${hodnoty.kv !== undefined ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
     >
       <label className="block">
-        <span className="text-xs text-muted-foreground">Predkontácia (Pohoda)</span>
+        <span className="text-xs text-muted-foreground">{t("Predkontácia (Pohoda)")}</span>
         <KodPohody
           odkazNaCiselnik
           value={hodnoty.predkontacia}
           placeholder={
             hromadne
-              ? "nemeniť"
-              : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? "napr. 1Fp")
+              ? t("nemeniť")
+              : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? t("napr. 1Fp"))
           }
           onChange={(v) => setHodnoty({ ...hodnoty, predkontacia: v })}
           moznosti={navrhy?.predkontacie ?? []}
@@ -91,13 +93,13 @@ export function PoliaZauctovania({
         />
       </label>
       <label className="block">
-        <span className="text-xs text-muted-foreground">Členenie DPH (plnenie)</span>
+        <span className="text-xs text-muted-foreground">{t("Členenie DPH (plnenie)")}</span>
         <KodPohody
           value={hodnoty.clenenie}
           placeholder={
             hromadne
-              ? "nemeniť"
-              : (zKategorie?.clenenie ?? navrhy?.predvoleneClenenie ?? "napr. PD")
+              ? t("nemeniť")
+              : (zKategorie?.clenenie ?? navrhy?.predvoleneClenenie ?? t("napr. PD"))
           }
           onChange={(v) => setHodnoty({ ...hodnoty, clenenie: v })}
           moznosti={navrhy?.clenenia ?? []}
@@ -106,35 +108,35 @@ export function PoliaZauctovania({
         />
       </label>
       <label className="block">
-        <span className="text-xs text-muted-foreground">Kategória nákladu</span>
+        <span className="text-xs text-muted-foreground">{t("Kategória nákladu")}</span>
         <select
           value={hodnoty.kategoria}
           onChange={(e) => setHodnoty({ ...hodnoty, kategoria: e.target.value })}
           className={vstup}
         >
-          <option value="">{hromadne ? "nemeniť" : "—"}</option>
+          <option value="">{hromadne ? t("nemeniť") : "—"}</option>
           {KATEGORIE_VYDAVKOV.map((k) => (
             <option key={k.kod} value={k.kod}>
-              {k.nazov}
+              {t(k.nazov)}
             </option>
           ))}
         </select>
       </label>
       {hodnoty.kv !== undefined && (
         <label className="block">
-          <span className="text-xs text-muted-foreground">Členenie KV DPH</span>
+          <span className="text-xs text-muted-foreground">{t("Členenie KV DPH")}</span>
           <select
             value={hodnoty.kv}
             onChange={(e) => setHodnoty({ ...hodnoty, kv: e.target.value })}
             className={vstup}
           >
             <option value="">
-              {hromadne ? "nemeniť" : `automaticky${kvAuto ? ` (${kvAuto})` : ""}`}
+              {hromadne ? t("nemeniť") : `${t("automaticky")}${kvAuto ? ` (${kvAuto})` : ""}`}
             </option>
-            {hromadne && <option value="auto">automaticky</option>}
+            {hromadne && <option value="auto">{t("automaticky")}</option>}
             {KV_PRIJATE.map((k) => (
               <option key={k.kod} value={k.kod}>
-                {k.nazov}
+                {t(k.nazov)}
               </option>
             ))}
           </select>
@@ -142,12 +144,12 @@ export function PoliaZauctovania({
       )}
       {hodnoty.stredisko !== undefined && (
         <label className="block">
-          <span className="text-xs text-muted-foreground">Stredisko</span>
+          <span className="text-xs text-muted-foreground">{t("Stredisko")}</span>
           <KodPohody
             value={hodnoty.stredisko}
             onChange={(v) => setHodnoty({ ...hodnoty, stredisko: v })}
             moznosti={navrhy?.strediska ?? []}
-            placeholder={hromadne ? "nemeniť" : (navrhy?.predvoleneStredisko ?? "—")}
+            placeholder={hromadne ? t("nemeniť") : (navrhy?.predvoleneStredisko ?? "—")}
             className={vstup}
             vyber
           />
@@ -155,12 +157,12 @@ export function PoliaZauctovania({
       )}
       {hodnoty.cinnost !== undefined && (
         <label className="block">
-          <span className="text-xs text-muted-foreground">Činnosť</span>
+          <span className="text-xs text-muted-foreground">{t("Činnosť")}</span>
           <KodPohody
             value={hodnoty.cinnost}
             onChange={(v) => setHodnoty({ ...hodnoty, cinnost: v })}
             moznosti={navrhy?.cinnosti ?? []}
-            placeholder={hromadne ? "nemeniť" : "—"}
+            placeholder={hromadne ? t("nemeniť") : "—"}
             className={vstup}
             vyber
           />
@@ -168,12 +170,14 @@ export function PoliaZauctovania({
       )}
       {hodnoty.rad !== undefined && (
         <label className="block">
-          <span className="text-xs text-muted-foreground">Číselný rad v Pohode</span>
+          <span className="text-xs text-muted-foreground">{t("Číselný rad v Pohode")}</span>
           <KodPohody
             value={hodnoty.rad}
             onChange={(v) => setHodnoty({ ...hodnoty, rad: v })}
             moznosti={navrhy?.rady ?? []}
-            placeholder={hromadne ? "nemeniť" : (navrhy?.predvolenyRad ?? "predvolený v Pohode")}
+            placeholder={
+              hromadne ? t("nemeniť") : (navrhy?.predvolenyRad ?? t("predvolený v Pohode"))
+            }
             className={vstup}
             vyber
           />
@@ -182,7 +186,7 @@ export function PoliaZauctovania({
       {hodnoty.intPoznamka !== undefined && (
         <label className="block sm:col-span-full">
           <span className="text-xs text-muted-foreground">
-            Interná poznámka pre účtovníka (do Pohody)
+            {t("Interná poznámka pre účtovníka (do Pohody)")}
           </span>
           <input
             value={hodnoty.intPoznamka}
@@ -196,14 +200,16 @@ export function PoliaZauctovania({
   );
 }
 
-const kedy = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString("sk-SK", { dateStyle: "medium", timeStyle: "short" }) : "";
+const kedy = (iso: string | null, loc = "sk-SK") =>
+  iso ? new Date(iso).toLocaleString(loc, { dateStyle: "medium", timeStyle: "short" }) : "";
 
 /**
  * Zaúčtovanie prijatej faktúry — ako v Doklado: predkontácia, členenie DPH
  * a kategória; zaúčtovaná faktúra ide do Pohody.
  */
 export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => void }) {
+  const { t, jazyk } = useT();
+  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const zauctuj = useServerFn(zauctujPrijateFn);
   const zrus = useServerFn(zrusZauctovanieFn);
@@ -263,10 +269,12 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
       a.download = r.fileName;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-      toast.success(oznacit ? "XML stiahnuté, faktúra je označená ako odovzdaná" : "XML stiahnuté");
+      toast.success(
+        oznacit ? t("XML stiahnuté, faktúra je označená ako odovzdaná") : t("XML stiahnuté"),
+      );
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -275,32 +283,36 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
   async function vratit() {
     if (
       !(await potvrd(
-        "Vrátiť faktúru z Pohody? Zaúčtovanie sa zruší a pri ďalšom odovzdaní pôjde znova — v Pohode ju preto najprv zmažte, inak tam bude dvakrát.",
+        t(
+          "Vrátiť faktúru z Pohody? Zaúčtovanie sa zruší a pri ďalšom odovzdaní pôjde znova — v Pohode ju preto najprv zmažte, inak tam bude dvakrát.",
+        ),
       ))
     )
       return;
     setBusy(true);
     try {
       await vrat({ data: { company_id: row.company_id, druh: "prijata", ids: [row.id] } });
-      toast.success("Vrátené — opravte zaúčtovanie a zaúčtujte znova");
+      toast.success(t("Vrátené — opravte zaúčtovanie a zaúčtujte znova"));
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
   }
 
   async function doDokladov() {
-    if (!(await potvrd("Presunúť túto faktúru medzi doklady (bločky)? Z prijatých faktúr zmizne.")))
+    if (
+      !(await potvrd(t("Presunúť túto faktúru medzi doklady (bločky)? Z prijatých faktúr zmizne.")))
+    )
       return;
     setBusy(true);
     try {
       const r = await presun({ data: { company_id: row.company_id, id: row.id } });
-      toast.success("Presunuté medzi doklady");
+      toast.success(t("Presunuté medzi doklady"));
       navigate({ to: "/doklady/novy", search: { id: r.id } as any });
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
       setBusy(false);
     }
   }
@@ -326,11 +338,11 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
       if (r.preskocene.length) toast.error(r.preskocene.join(" · "));
       else
         toast.success(
-          lenUlozit ? "Uložené" : "Zaúčtované — pôjde do Pohody pri najbližšom odovzdaní.",
+          lenUlozit ? t("Uložené") : t("Zaúčtované — pôjde do Pohody pri najbližšom odovzdaní."),
         );
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -340,10 +352,10 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
     setBusy(true);
     try {
       await zrus({ data: { id: row.id } });
-      toast.success("Zaúčtovanie zrušené");
+      toast.success(t("Zaúčtovanie zrušené"));
       onZmena();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -356,19 +368,19 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-          <BookCheck className="h-3.5 w-3.5" /> Zaúčtovanie
+          <BookCheck className="h-3.5 w-3.5" /> {t("Zaúčtovanie")}
         </div>
         {odovzdana ? (
           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-            V Pohode od {kedy(row.exported_at)}
+            {t("V Pohode od {kedy}", { kedy: kedy(row.exported_at, loc) })}
           </span>
         ) : zauctovana ? (
           <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
-            Zaúčtovaná {kedy(row.zauctovane_at)} — čaká na odovzdanie
+            {t("Zaúčtovaná {kedy} — čaká na odovzdanie", { kedy: kedy(row.zauctovane_at, loc) })}
           </span>
         ) : (
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            Nezaúčtovaná
+            {t("Nezaúčtovaná")}
           </span>
         )}
       </div>
@@ -377,14 +389,14 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
         {odovzdana ? (
           <>
             <p>
-              Predkontácia{" "}
-              <strong>{row.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,
-              členenie DPH{" "}
+              {t("Predkontácia")}{" "}
+              <strong>{row.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,{" "}
+              {t("členenie DPH")}{" "}
               <strong>{row.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
               {Array.isArray(row.rozuctovanie) && row.rozuctovanie.length > 1
-                ? ` (rozúčtovaná na ${row.rozuctovanie.length} riadky)`
+                ? ` ${t("(rozúčtovaná na {n} riadky)", { n: row.rozuctovanie.length })}`
                 : ""}
-              . Faktúra je odovzdaná do Pohody.
+              . {t("Faktúra je odovzdaná do Pohody.")}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -392,14 +404,14 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
                 disabled={busy}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
               >
-                <Download className="h-4 w-4" /> Stiahnuť XML znova
+                <Download className="h-4 w-4" /> {t("Stiahnuť XML znova")}
               </button>
               <button
                 onClick={vratit}
                 disabled={busy}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
               >
-                <Undo2 className="h-4 w-4" /> Vrátiť z Pohody (opraviť)
+                <Undo2 className="h-4 w-4" /> {t("Vrátiť z Pohody (opraviť)")}
               </button>
             </div>
           </>
@@ -436,21 +448,21 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
               }
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              Prázdne pole = predvolené z{" "}
+              {t("Prázdne pole = predvolené z")}{" "}
               <Link to="/uctovnictvo/predkontacie" className="underline">
-                nastavení predkontácií
+                {t("nastavení predkontácií")}
               </Link>
-              {row.pravidlo_id ? " · doplnené pravidlom účtovania" : ""}.{" "}
+              {row.pravidlo_id ? ` · ${t("doplnené pravidlom účtovania")}` : ""}.{" "}
               {navrhy?.maCiselnik === false ? (
                 <>
-                  Číselník je prázdny —{" "}
+                  {t("Číselník je prázdny —")}{" "}
                   <Link to="/uctovnictvo/predkontacie" className="underline">
-                    načítajte ho z Pohody
+                    {t("načítajte ho z Pohody")}
                   </Link>
-                  , nech sa kódy vyberajú s popisom.
+                  {t(", nech sa kódy vyberajú s popisom.")}
                 </>
               ) : (
-                "Kódy musia existovať v Pohode."
+                t("Kódy musia existovať v Pohode.")
               )}
             </p>
             <RozuctovaniePanel
@@ -474,7 +486,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Zaúčtovať
+                  {t("Zaúčtovať")}
                 </button>
               )}
               <button
@@ -482,16 +494,18 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
                 disabled={busy}
                 className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
               >
-                Uložiť bez zaúčtovania
+                {t("Uložiť bez zaúčtovania")}
               </button>
               {zauctovana && (
                 <button
                   onClick={() => stiahniXml(true)}
                   disabled={busy}
-                  title="Stiahne XML na import do Pohody a označí faktúru ako odovzdanú, aby ju konektor neposlal druhýkrát."
+                  title={t(
+                    "Stiahne XML na import do Pohody a označí faktúru ako odovzdanú, aby ju konektor neposlal druhýkrát.",
+                  )}
                   className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
                 >
-                  <Download className="h-4 w-4" /> Stiahnuť XML pre Pohodu
+                  <Download className="h-4 w-4" /> {t("Stiahnuť XML pre Pohodu")}
                 </button>
               )}
               {zauctovana && (
@@ -500,17 +514,17 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
                   disabled={busy}
                   className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
                 >
-                  Zrušiť zaúčtovanie
+                  {t("Zrušiť zaúčtovanie")}
                 </button>
               )}
               {!row.samofakturacia && row.type === "regular" && row.source !== "efaktura" && (
                 <button
                   onClick={doDokladov}
                   disabled={busy}
-                  title="Zle zatriedené — je to bloček, nie faktúra"
+                  title={t("Zle zatriedené — je to bloček, nie faktúra")}
                   className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-secondary disabled:opacity-50"
                 >
-                  <MoveRight className="h-3.5 w-3.5" /> Presunúť medzi doklady
+                  <MoveRight className="h-3.5 w-3.5" /> {t("Presunúť medzi doklady")}
                 </button>
               )}
             </div>

@@ -17,6 +17,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PotvrdeniePreposielania } from "./PotvrdeniePreposielania";
 import { RozdelovacMailov } from "./RozdelovacMailov";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
 
 const STAVY: Record<string, { text: string; trieda: string }> = {
   hotovo: { text: "Založené", trieda: "text-emerald-700" },
@@ -34,6 +35,7 @@ const STAVY: Record<string, { text: string; trieda: string }> = {
 export function PrijemMailom({
   predvoleneOtvorene = false,
 }: { predvoleneOtvorene?: boolean } = {}) {
+  const { t, jazyk } = useT();
   const [stav, setStav] = useState<StavPrijmuMailom | null>(null);
   const [otvorene, setOtvorene] = useState(predvoleneOtvorene);
   const [skopirovane, setSkopirovane] = useState(false);
@@ -70,14 +72,14 @@ export function PrijemMailom({
   async function obnovStav() {
     const cid = getActiveCompanyId();
     if (!cid) {
-      setChyba("Najprv vyberte firmu.");
+      setChyba(t("Najprv vyberte firmu."));
       return;
     }
     try {
       setChyba(null);
       setStav(await nacitaj({ data: { company_id: cid } }));
     } catch (e: any) {
-      const m = e?.message ?? "Adresu na doklady sa nepodarilo načítať";
+      const m = t(e?.message ?? "Adresu na doklady sa nepodarilo načítať");
       setChyba(m);
       toast.error(m);
     }
@@ -107,7 +109,7 @@ export function PrijemMailom({
         >
           <span className="flex items-center gap-2 text-sm font-medium">
             <Mail className="h-4 w-4 text-primary" />
-            Posielanie dokladov e-mailom
+            {t("Posielanie dokladov e-mailom")}
           </span>
           {otvorene ? (
             <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -121,15 +123,15 @@ export function PrijemMailom({
             {chyba ? (
               <div className="text-sm text-destructive">{chyba}</div>
             ) : !stav ? (
-              <div className="text-sm text-muted-foreground">Načítavam…</div>
+              <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Prepošlite mail od dodávateľa na túto adresu — doklad sa prečíta a počká v{" "}
+                  {t("Prepošlite mail od dodávateľa na túto adresu — doklad sa prečíta a počká v")}{" "}
                   <Link to="/nespracovane" className="text-primary underline">
-                    Nespracovaných dokladoch
+                    {t("Nespracovaných dokladoch")}
                   </Link>{" "}
-                  s vyplneným dodávateľom, číslom a sumami. Tam ho zaradíte a zaúčtujete.
+                  {t("s vyplneným dodávateľom, číslom a sumami. Tam ho zaradíte a zaúčtujete.")}
                 </p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -141,29 +143,32 @@ export function PrijemMailom({
                     className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
                   >
                     {skopirovane ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {skopirovane ? "Skopírované" : "Kopírovať"}
+                    {skopirovane ? t("Skopírované") : t("Kopírovať")}
                   </button>
                   <button
                     disabled={pracuje}
                     onClick={async () => {
                       const cid = getActiveCompanyId();
                       if (!cid) return;
-                      if (!(await potvrd("Stará adresa okamžite prestane platiť. Vyrobiť novú?"))) return;
+                      if (
+                        !(await potvrd(t("Stará adresa okamžite prestane platiť. Vyrobiť novú?")))
+                      )
+                        return;
                       setPracuje(true);
                       try {
                         await obnov({ data: { company_id: cid } });
                         await obnovStav();
-                        toast.success("Adresa je nová");
+                        toast.success(t("Adresa je nová"));
                       } catch (e: any) {
-                        toast.error(e?.message ?? "Nepodarilo sa");
+                        toast.error(t(e?.message ?? "Nepodarilo sa"));
                       } finally {
                         setPracuje(false);
                       }
                     }}
                     className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-60"
-                    title="Použite, keď sa adresa dostane tam, kam nemala."
+                    title={t("Použite, keď sa adresa dostane tam, kam nemala.")}
                   >
-                    <RefreshCw className="h-4 w-4" /> Nová adresa
+                    <RefreshCw className="h-4 w-4" /> {t("Nová adresa")}
                   </button>
                   <button
                     onClick={() => {
@@ -171,9 +176,9 @@ export function PrijemMailom({
                       setUpravujem((u) => !u);
                     }}
                     className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
-                    title="Namiesto vygenerovanej si zvoľte vlastnú."
+                    title={t("Namiesto vygenerovanej si zvoľte vlastnú.")}
                   >
-                    <Pencil className="h-4 w-4" /> {upravujem ? "Zavrieť" : "Zvoliť vlastnú"}
+                    <Pencil className="h-4 w-4" /> {upravujem ? t("Zavrieť") : t("Zvoliť vlastnú")}
                   </button>
                   <label className="ml-auto inline-flex items-center gap-2 text-sm">
                     <input
@@ -188,13 +193,13 @@ export function PrijemMailom({
                           await prepni({ data: { company_id: cid, active: e.target.checked } });
                           await obnovStav();
                         } catch (err: any) {
-                          toast.error(err?.message ?? "Nepodarilo sa");
+                          toast.error(t(err?.message ?? "Nepodarilo sa"));
                         } finally {
                           setPracuje(false);
                         }
                       }}
                     />
-                    Príjem zapnutý
+                    {t("Príjem zapnutý")}
                   </label>
                 </div>
 
@@ -210,21 +215,21 @@ export function PrijemMailom({
                         await nastavVlastnu({ data: { company_id: cid, local_part: vlastna } });
                         await obnovStav();
                         setUpravujem(false);
-                        toast.success("Adresa je nastavená");
+                        toast.success(t("Adresa je nastavená"));
                       } catch (err: any) {
-                        toast.error(err?.message ?? "Nepodarilo sa");
+                        toast.error(t(err?.message ?? "Nepodarilo sa"));
                       } finally {
                         setPracuje(false);
                       }
                     }}
                   >
-                    <label className="block text-sm font-medium">Vlastná adresa</label>
+                    <label className="block text-sm font-medium">{t("Vlastná adresa")}</label>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <input
                         autoFocus
                         value={vlastna}
                         onChange={(e) => setVlastna(e.target.value)}
-                        placeholder="napr. doklady-2026"
+                        placeholder={t("napr. doklady-2026")}
                         className="w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm"
                       />
                       <span className="text-sm text-muted-foreground">@{stav.podomena}</span>
@@ -233,7 +238,7 @@ export function PrijemMailom({
                         disabled={pracuje}
                         className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
                       >
-                        Uložiť
+                        {t("Uložiť")}
                       </button>
                     </div>
                     {/* Náhľad ukazuje, čo z toho naozaj bude — diakritika, medzery
@@ -243,35 +248,37 @@ export function PrijemMailom({
                         const o = overVlastnyLocalPart(vlastna);
                         return o.ok ? (
                           <p className="mt-2 text-xs text-muted-foreground">
-                            Adresa bude:{" "}
+                            {t("Adresa bude:")}{" "}
                             <code className="font-medium text-foreground">
                               {o.hodnota}@{stav.podomena}
                             </code>
                           </p>
                         ) : (
-                          <p className="mt-2 text-xs text-destructive">{o.chyba}</p>
+                          <p className="mt-2 text-xs text-destructive">{t(o.chyba)}</p>
                         );
                       })()}
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Krátku a uhádnuteľnú adresu si vie domyslieť aj cudzí človek a poslať vám
-                      doklad. Ak nechcete riskovať, nechajte tú vygenerovanú s náhodným koncom —
-                      alebo si do vlastnej pridajte nejaké svoje číslo.
+                      {t(
+                        "Krátku a uhádnuteľnú adresu si vie domyslieť aj cudzí človek a poslať vám doklad. Ak nechcete riskovať, nechajte tú vygenerovanú s náhodným koncom — alebo si do vlastnej pridajte nejaké svoje číslo.",
+                      )}
                     </p>
                   </form>
                 )}
 
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Adresu si nechajte pre seba — kto ju pozná, môže vám do prijatých faktúr poslať
-                  doklad. Ak sa dostane von, vyrobte si novú.
+                  {t(
+                    "Adresu si nechajte pre seba — kto ju pozná, môže vám do prijatých faktúr poslať doklad. Ak sa dostane von, vyrobte si novú.",
+                  )}
                 </p>
 
                 <div className="mt-4 rounded-md border border-border p-3">
                   <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Povolení odosielatelia
+                    {t("Povolení odosielatelia")}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Jedna adresa alebo doména (napr. @dodavatel.sk) na riadok. Prázdne = doklad
-                    prijme od kohokoľvek, kto adresu pozná.
+                    {t(
+                      "Jedna adresa alebo doména (napr. @dodavatel.sk) na riadok. Prázdne = doklad prijme od kohokoľvek, kto adresu pozná.",
+                    )}
                   </p>
                   <textarea
                     value={povoleni}
@@ -287,28 +294,33 @@ export function PrijemMailom({
                         await ulozPovolenych({
                           data: {
                             company_id: getActiveCompanyId()!,
-                            zoznam: povoleni.split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean),
+                            zoznam: povoleni
+                              .split(/[\n,;]+/)
+                              .map((x) => x.trim())
+                              .filter(Boolean),
                           },
                         });
-                        toast.success("Uložené");
+                        toast.success(t("Uložené"));
                       } catch (e: any) {
-                        toast.error(e?.message ?? "Nepodarilo sa");
+                        toast.error(t(e?.message ?? "Nepodarilo sa"));
                       }
                     }}
                     className="mt-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                   >
-                    Uložiť odosielateľov
+                    {t("Uložiť odosielateľov")}
                   </button>
                 </div>
 
                 <div className="mt-4">
                   <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Posledné maily
+                    {t("Posledné maily")}
                   </div>
                   {stav.spravy.length === 0 ? (
                     <div className="text-sm text-muted-foreground">
-                      Zatiaľ nič neprišlo
-                      {stav.last_received_at ? "" : " — skúste si na tú adresu poslať prvý doklad."}
+                      {t("Zatiaľ nič neprišlo")}
+                      {stav.last_received_at
+                        ? ""
+                        : ` ${t("— skúste si na tú adresu poslať prvý doklad.")}`}
                     </div>
                   ) : (
                     <ul className="space-y-1.5">
@@ -320,70 +332,81 @@ export function PrijemMailom({
                             (vpravo), pod tým predmet a v treťom riadku odkazy. Predtým bolo
                             všetko v jednom zalamovanom rade a na mobile sa rozpadlo náhodne.
                           */
-                          <li key={s.id} className="border-b border-border/60 pb-1.5 text-sm last:border-0">
+                          <li
+                            key={s.id}
+                            className="border-b border-border/60 pb-1.5 text-sm last:border-0"
+                          >
                             <div className="flex items-baseline gap-2">
                               <span className="min-w-0 flex-1 truncate">
                                 <span className="text-muted-foreground">
-                                  {new Date(s.received_at).toLocaleString("sk-SK")}
+                                  {new Date(s.received_at).toLocaleString(
+                                    jazyk === "de" ? "de-DE" : "sk-SK",
+                                  )}
                                 </span>{" "}
-                                <span className="font-medium">{s.from_email ?? "neznámy"}</span>
+                                <span className="font-medium">{s.from_email ?? t("neznámy")}</span>
                               </span>
-                              <span className={`shrink-0 whitespace-nowrap ${st.trieda}`}>{st.text}</span>
+                              <span className={`shrink-0 whitespace-nowrap ${st.trieda}`}>
+                                {t(st.text)}
+                              </span>
                             </div>
                             {s.subject ? (
                               <div className="truncate text-muted-foreground">{s.subject}</div>
                             ) : null}
                             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-xs">
-                            {(s.created_nespracovane_ids?.length ?? 0) > 0 && (
-                              <Link
-                                to="/nespracovane/$id"
-                                params={{ id: s.created_nespracovane_ids![0]! }}
-                                className="text-primary hover:underline"
+                              {(s.created_nespracovane_ids?.length ?? 0) > 0 && (
+                                <Link
+                                  to="/nespracovane/$id"
+                                  params={{ id: s.created_nespracovane_ids![0]! }}
+                                  className="text-primary hover:underline"
+                                >
+                                  {t("otvoriť v Nespracovaných")}
+                                </Link>
+                              )}
+                              {s.created_invoice_ids?.length > 0 && (
+                                <Link
+                                  to="/prijate-faktury/$id"
+                                  params={{ id: s.created_invoice_ids[0]! }}
+                                  className="text-primary hover:underline"
+                                >
+                                  {t("otvoriť doklad")}
+                                </Link>
+                              )}
+                              {s.created_other_ids?.length > 0 && (
+                                <Link
+                                  to="/ostatne-doklady/novy"
+                                  search={{ id: s.created_other_ids[0]! }}
+                                  className="text-primary hover:underline"
+                                >
+                                  {t("otvoriť iný doklad")}
+                                </Link>
+                              )}
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (zdroj[s.id] !== undefined) {
+                                    const n = { ...zdroj };
+                                    delete n[s.id];
+                                    setZdroj(n);
+                                    return;
+                                  }
+                                  try {
+                                    const r = await nacitajZdroj({
+                                      data: { company_id: getActiveCompanyId()!, id: s.id },
+                                    });
+                                    setZdroj({ ...zdroj, [s.id]: r.text });
+                                  } catch (e: any) {
+                                    toast.error(t(e?.message ?? "Mail sa nepodarilo načítať"));
+                                  }
+                                }}
+                                className="text-xs text-primary hover:underline"
                               >
-                                otvoriť v Nespracovaných
-                              </Link>
-                            )}
-                            {s.created_invoice_ids?.length > 0 && (
-                              <Link
-                                to="/prijate-faktury/$id"
-                                params={{ id: s.created_invoice_ids[0]! }}
-                                className="text-primary hover:underline"
-                              >
-                                otvoriť doklad
-                              </Link>
-                            )}
-                            {s.created_other_ids?.length > 0 && (
-                              <Link
-                                to="/ostatne-doklady/novy"
-                                search={{ id: s.created_other_ids[0]! }}
-                                className="text-primary hover:underline"
-                              >
-                                otvoriť iný doklad
-                              </Link>
-                            )}
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                if (zdroj[s.id] !== undefined) {
-                                  const n = { ...zdroj };
-                                  delete n[s.id];
-                                  setZdroj(n);
-                                  return;
-                                }
-                                try {
-                                  const r = await nacitajZdroj({ data: { company_id: getActiveCompanyId()!, id: s.id } });
-                                  setZdroj({ ...zdroj, [s.id]: r.text });
-                                } catch (e: any) {
-                                  toast.error(e?.message ?? "Mail sa nepodarilo načítať");
-                                }
-                              }}
-                              className="text-xs text-primary hover:underline"
-                            >
-                              {zdroj[s.id] !== undefined ? "skryť e-mail" : "zobraziť e-mail"}
-                            </button>
+                                {zdroj[s.id] !== undefined
+                                  ? t("skryť e-mail")
+                                  : t("zobraziť e-mail")}
+                              </button>
                             </div>
                             {s.detail && (
-                              <div className="text-xs text-muted-foreground">{s.detail}</div>
+                              <div className="text-xs text-muted-foreground">{t(s.detail)}</div>
                             )}
                             {zdroj[s.id] !== undefined && (
                               <pre className="mt-1 max-h-64 w-full overflow-auto whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-xs">

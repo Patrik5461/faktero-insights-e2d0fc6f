@@ -7,6 +7,7 @@ import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { useT } from "@/lib/i18n/useT";
 
 type Polozka = {
   id: string;
@@ -33,6 +34,7 @@ export function KosDokladovOkno({
   /** Ako obsah stránky Kôš, nie ako okno nad inou stránkou. */
   vlozene?: boolean;
 }) {
+  const { t, jazyk } = useT();
   useZatvorNaEscape(vlozene ? null : onClose);
   const nacitaj = useServerFn(kosDokladovFn);
   const obnov = useServerFn(obnovZKosaFn);
@@ -44,7 +46,7 @@ export function KosDokladovOkno({
     nacitaj({ data: { company_id: companyId } })
       .then(setPolozky)
       .catch((e: any) => {
-        toast.error(e?.message ?? "Kôš sa nepodarilo načítať");
+        toast.error(e?.message ?? t("Kôš sa nepodarilo načítať"));
         setPolozky([]);
       });
   useEffect(() => {
@@ -60,7 +62,7 @@ export function KosDokladovOkno({
       await nacitajZnova();
       onObnovene();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(e?.message ?? t("Nepodarilo sa"));
     } finally {
       setBusy(null);
     }
@@ -74,7 +76,7 @@ export function KosDokladovOkno({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Kôš dokladov"
+          aria-label={t("Kôš dokladov")}
           className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-5 shadow-xl"
           onClick={(e) => e.stopPropagation()}
         >
@@ -88,17 +90,18 @@ export function KosDokladovOkno({
         {/* Vložený kôš má nadpis aj vysvetlenie v hlavičke stránky. */}
         {!vlozene && (
           <>
-            <h2 className="text-lg font-semibold">Kôš dokladov</h2>
+            <h2 className="text-lg font-semibold">{t("Kôš dokladov")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Zmazané doklady sa dajú obnoviť aj s párovaním na pohyb v banke. Po 90 dňoch sa kôš
-              vysype sám aj so skenmi.
+              {t(
+                "Zmazané doklady sa dajú obnoviť aj s párovaním na pohyb v banke. Po 90 dňoch sa kôš vysype sám aj so skenmi.",
+              )}
             </p>
           </>
         )}
         {polozky === null ? (
-          <p className={`${vlozene ? "" : "mt-4"} text-sm text-muted-foreground`}>Načítavam…</p>
+          <p className={`${vlozene ? "" : "mt-4"} text-sm text-muted-foreground`}>{t("Načítavam…")}</p>
         ) : polozky.length === 0 ? (
-          <p className={`${vlozene ? "py-4" : "mt-6"} text-center text-sm text-muted-foreground`}>Kôš je prázdny.</p>
+          <p className={`${vlozene ? "py-4" : "mt-6"} text-center text-sm text-muted-foreground`}>{t("Kôš je prázdny.")}</p>
         ) : (
           <ul className={`${vlozene ? "-my-2" : "mt-4"} divide-y divide-border`}>
             {polozky.map((p) => (
@@ -106,28 +109,28 @@ export function KosDokladovOkno({
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{p.popis}</div>
                   <div className="text-xs text-muted-foreground">
-                    {p.datum ? datumNaDoklade(p.datum) : "bez dátumu"}
-                    {p.suma != null ? ` · ${formatujMenu(p.suma, p.mena)}` : ""} · zmazané{" "}
-                    {new Date(p.zmazaneAt).toLocaleString("sk-SK", { dateStyle: "medium", timeStyle: "short" })}
+                    {p.datum ? datumNaDoklade(p.datum) : t("bez dátumu")}
+                    {p.suma != null ? ` · ${formatujMenu(p.suma, p.mena)}` : ""} · {t("zmazané")}{" "}
+                    {new Date(p.zmazaneAt).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK", { dateStyle: "medium", timeStyle: "short" })}
                   </div>
                 </div>
                 <button
-                  onClick={() => akcia(p.id, () => obnov({ data: { id: p.id } }), "Doklad obnovený")}
+                  onClick={() => akcia(p.id, () => obnov({ data: { id: p.id } }), t("Doklad obnovený"))}
                   disabled={!!busy}
                   className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
                 >
                   {busy === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
-                  Obnoviť
+                  {t("Obnoviť")}
                 </button>
                 <button
                   onClick={async () => {
-                    if (await potvrd("Zmazať doklad natrvalo aj so skenom? Už sa nebude dať obnoviť."))
-                      void akcia(p.id, () => zmaz({ data: { id: p.id } }), "Zmazané natrvalo");
+                    if (await potvrd(t("Zmazať doklad natrvalo aj so skenom? Už sa nebude dať obnoviť.")))
+                      void akcia(p.id, () => zmaz({ data: { id: p.id } }), t("Zmazané natrvalo"));
                   }}
                   disabled={!!busy}
                   className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2 py-1 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Natrvalo
+                  <Trash2 className="h-3.5 w-3.5" /> {t("Natrvalo")}
                 </button>
               </li>
             ))}
@@ -136,7 +139,7 @@ export function KosDokladovOkno({
         {!vlozene && (
           <div className="mt-4 flex justify-end">
             <button onClick={onClose} className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
-              Zavrieť
+              {t("Zavrieť")}
             </button>
           </div>
         )}

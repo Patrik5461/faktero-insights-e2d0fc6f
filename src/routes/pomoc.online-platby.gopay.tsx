@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, type HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 
 /**
  * Stránka ostáva kvôli uloženým odkazom, ale hovorí to, čo dnes platí:
@@ -7,15 +9,17 @@ import { HelpArticle, type HelpSection } from "@/components/faktero/HelpArticle"
  * vlastného GoPay účtu by posielal ľudí do funkcie, ktorá v aplikácii nie je.
  */
 export const Route = createFileRoute("/pomoc/online-platby/gopay")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Ako od zákazníkov dostať peniaze — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Ako od zákazníkov dostať peniaze — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "QR platba na faktúre a párovanie úhrad z banky. Platby kartou pre zákazníkov firmy Faktero neponúka.",
+        ),
       },
-      { name: "robots", content: "noindex" },
+      { name: "robots", content: preloz(match.context.jazyk, "noindex") },
     ],
   }),
   component: HelpPlatby,
@@ -67,7 +71,7 @@ const sections: HelpSection[] = [
 
 function HelpPlatby() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Úhrady faktúr"
       title="Ako od zákazníkov dostať peniaze"
       sections={sections}

@@ -16,10 +16,11 @@ import { VyberPravidla } from "./VyberPravidla";
 import type { Navrhy } from "./ZauctovaniePanel";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
+import { useT } from "@/lib/i18n/useT";
 
 const KV_VYDANE = KV_CLENENIA.filter((k) => ["A1", "A2", "C1", "D1", "D2", "X"].includes(k.kod));
-const kedy = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleString("sk-SK", { dateStyle: "medium", timeStyle: "short" }) : "";
+const kedy = (iso: string | null | undefined, loc = "sk-SK") =>
+  iso ? new Date(iso).toLocaleString(loc, { dateStyle: "medium", timeStyle: "short" }) : "";
 
 type Polozka = {
   id: string;
@@ -45,6 +46,8 @@ export function ZauctovanieVystavenejPanel({
   onZmena: () => void;
   onStiahnut: () => Promise<void> | void;
 }) {
+  const { t, jazyk } = useT();
+  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const nacitajStav = useServerFn(stavVystavenejFn);
   const zauctuj = useServerFn(zauctujVystavenuFn);
@@ -131,11 +134,11 @@ export function ZauctovanieVystavenejPanel({
           ),
         },
       });
-      toast.success(lenUlozit ? "Uložené" : "Zaúčtované");
+      toast.success(lenUlozit ? t("Uložené") : t("Zaúčtované"));
       onZmena();
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -145,11 +148,11 @@ export function ZauctovanieVystavenejPanel({
     setBusy(true);
     try {
       await fn();
-      toast.success(ok);
+      toast.success(t(ok));
       onZmena();
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa");
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
       setBusy(false);
     }
@@ -162,20 +165,20 @@ export function ZauctovanieVystavenejPanel({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-          <BookCheck className="h-3.5 w-3.5" /> Zaúčtovanie
+          <BookCheck className="h-3.5 w-3.5" /> {t("Zaúčtovanie")}
         </div>
         {vPohode ? (
           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-            V Pohode od {kedy(vPohode.kedy)}
-            {vPohode.cislo ? ` · č. ${vPohode.cislo}` : ""}
+            {t("V Pohode od {kedy}", { kedy: kedy(vPohode.kedy, loc) })}
+            {vPohode.cislo ? ` · ${t("č. {cislo}", { cislo: vPohode.cislo })}` : ""}
           </span>
         ) : zauctovana ? (
           <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
-            Zaúčtovaná {kedy(inv.zauctovane_at)}
+            {t("Zaúčtovaná {kedy}", { kedy: kedy(inv.zauctovane_at, loc) })}
           </span>
         ) : (
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            Nezaúčtovaná
+            {t("Nezaúčtovaná")}
           </span>
         )}
       </div>
@@ -183,16 +186,16 @@ export function ZauctovanieVystavenejPanel({
       {vPohode ? (
         <>
           <p className="mt-3">
-            Predkontácia{" "}
-            <strong>{inv.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,
-            členenie DPH{" "}
+            {t("Predkontácia")}{" "}
+            <strong>{inv.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,{" "}
+            {t("členenie DPH")}{" "}
             <strong>{inv.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
             {inv.kv_clenenie ? (
               <>
                 , KV <strong>{inv.kv_clenenie}</strong>
               </>
             ) : null}
-            . Faktúra je v Pohode.
+            . {t("Faktúra je v Pohode.")}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -200,13 +203,15 @@ export function ZauctovanieVystavenejPanel({
               disabled={busy}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> Stiahnuť XML znova
+              <Download className="h-4 w-4" /> {t("Stiahnuť XML znova")}
             </button>
             <button
               onClick={async () => {
                 if (
                   await potvrd(
-                    "Vrátiť faktúru z Pohody? Pri ďalšom odovzdaní pôjde znova — v Pohode ju preto najprv zmažte, inak tam bude dvakrát.",
+                    t(
+                      "Vrátiť faktúru z Pohody? Pri ďalšom odovzdaní pôjde znova — v Pohode ju preto najprv zmažte, inak tam bude dvakrát.",
+                    ),
                   )
                 )
                   void akcia(
@@ -217,7 +222,7 @@ export function ZauctovanieVystavenejPanel({
               disabled={busy}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <Undo2 className="h-4 w-4" /> Vrátiť z Pohody (opraviť)
+              <Undo2 className="h-4 w-4" /> {t("Vrátiť z Pohody (opraviť)")}
             </button>
           </div>
         </>
@@ -225,39 +230,39 @@ export function ZauctovanieVystavenejPanel({
         <>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <label className="block">
-              <span className="text-xs text-muted-foreground">Predkontácia (Pohoda)</span>
+              <span className="text-xs text-muted-foreground">{t("Predkontácia (Pohoda)")}</span>
               <KodPohody
                 odkazNaCiselnik
                 value={h.predkontacia}
                 onChange={(v) => setH({ ...h, predkontacia: v })}
                 moznosti={navrhy?.predkontacie ?? []}
-                placeholder={navrhy?.predvolenaPredkontacia ?? "napr. 3Fv"}
+                placeholder={navrhy?.predvolenaPredkontacia ?? t("napr. 3Fv")}
                 className={vstup}
                 vyber
               />
             </label>
             <label className="block">
-              <span className="text-xs text-muted-foreground">Členenie DPH</span>
+              <span className="text-xs text-muted-foreground">{t("Členenie DPH")}</span>
               <KodPohody
                 value={h.clenenie}
                 onChange={(v) => setH({ ...h, clenenie: v })}
                 moznosti={navrhy?.clenenia ?? []}
-                placeholder={navrhy?.predvoleneClenenie ?? "napr. UD"}
+                placeholder={navrhy?.predvoleneClenenie ?? t("napr. UD")}
                 className={vstup}
                 vyber
               />
             </label>
             <label className="block">
-              <span className="text-xs text-muted-foreground">Členenie KV DPH</span>
+              <span className="text-xs text-muted-foreground">{t("Členenie KV DPH")}</span>
               <select
                 value={h.kv}
                 onChange={(e) => setH({ ...h, kv: e.target.value })}
                 className={vstup}
               >
-                <option value="">automaticky</option>
+                <option value="">{t("automaticky")}</option>
                 {KV_VYDANE.map((k) => (
                   <option key={k.kod} value={k.kod}>
-                    {k.nazov}
+                    {t(k.nazov)}
                   </option>
                 ))}
               </select>
@@ -285,7 +290,7 @@ export function ZauctovanieVystavenejPanel({
 
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <label className="block">
-              <span className="text-xs text-muted-foreground">Stredisko</span>
+              <span className="text-xs text-muted-foreground">{t("Stredisko")}</span>
               <KodPohody
                 value={h.stredisko}
                 onChange={(v) => setH({ ...h, stredisko: v })}
@@ -296,7 +301,7 @@ export function ZauctovanieVystavenejPanel({
               />
             </label>
             <label className="block">
-              <span className="text-xs text-muted-foreground">Činnosť</span>
+              <span className="text-xs text-muted-foreground">{t("Činnosť")}</span>
               <KodPohody
                 value={h.cinnost}
                 onChange={(v) => setH({ ...h, cinnost: v })}
@@ -307,7 +312,9 @@ export function ZauctovanieVystavenejPanel({
               />
             </label>
             <label className="block">
-              <span className="text-xs text-muted-foreground">Interná poznámka (do Pohody)</span>
+              <span className="text-xs text-muted-foreground">
+                {t("Interná poznámka (do Pohody)")}
+              </span>
               <input
                 value={h.intPoznamka}
                 onChange={(e) => setH({ ...h, intPoznamka: e.target.value })}
@@ -323,18 +330,18 @@ export function ZauctovanieVystavenejPanel({
               checked={poPolozkach}
               onChange={(e) => setPoPolozkach(e.target.checked)}
             />
-            Účtovať po položkách (každá položka vlastná predkontácia)
+            {t("Účtovať po položkách (každá položka vlastná predkontácia)")}
           </label>
           {poPolozkach && (
             <div className="mt-2 overflow-x-auto">
               <table className="w-full min-w-[640px] text-sm">
                 <thead>
                   <tr className="text-left text-xs text-muted-foreground">
-                    <th className="py-1 pr-2 font-medium">Položka</th>
-                    <th className="py-1 pr-2 text-right font-medium">Základ</th>
-                    <th className="py-1 pr-2 font-medium">Predkontácia</th>
-                    <th className="py-1 pr-2 font-medium">Členenie DPH</th>
-                    <th className="py-1 font-medium">KV</th>
+                    <th className="py-1 pr-2 font-medium">{t("Položka")}</th>
+                    <th className="py-1 pr-2 text-right font-medium">{t("Základ")}</th>
+                    <th className="py-1 pr-2 font-medium">{t("Predkontácia")}</th>
+                    <th className="py-1 pr-2 font-medium">{t("Členenie DPH")}</th>
+                    <th className="py-1 font-medium">{t("KV")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -354,7 +361,7 @@ export function ZauctovanieVystavenejPanel({
                         </td>
                         <td className="py-1.5 pr-2 w-36">
                           <KodPohody
-                            ariaLabel={`Predkontácia položky ${i + 1}`}
+                            ariaLabel={t("Predkontácia položky {n}", { n: i + 1 })}
                             value={p.predkontacia}
                             onChange={(v) => zmen({ predkontacia: v })}
                             moznosti={navrhy?.predkontacie ?? []}
@@ -366,7 +373,7 @@ export function ZauctovanieVystavenejPanel({
                         </td>
                         <td className="py-1.5 pr-2 w-36">
                           <KodPohody
-                            ariaLabel={`Členenie DPH položky ${i + 1}`}
+                            ariaLabel={t("Členenie DPH položky {n}", { n: i + 1 })}
                             value={p.clenenie}
                             onChange={(v) => zmen({ clenenie: v })}
                             moznosti={navrhy?.clenenia ?? []}
@@ -377,15 +384,15 @@ export function ZauctovanieVystavenejPanel({
                         </td>
                         <td className="py-1.5 w-24">
                           <select
-                            aria-label={`KV položky ${i + 1}`}
+                            aria-label={t("KV položky {n}", { n: i + 1 })}
                             value={p.kv}
                             onChange={(e) => zmen({ kv: e.target.value })}
                             className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                           >
-                            <option value="">z faktúry</option>
+                            <option value="">{t("z faktúry")}</option>
                             {KV_VYDANE.map((k) => (
-                              <option key={k.kod} value={k.kod} title={k.nazov}>
-                                {k.kod === "X" ? "nezahŕňať" : k.kod}
+                              <option key={k.kod} value={k.kod} title={t(k.nazov)}>
+                                {k.kod === "X" ? t("nezahŕňať") : k.kod}
                               </option>
                             ))}
                           </select>
@@ -396,18 +403,21 @@ export function ZauctovanieVystavenejPanel({
                 </tbody>
               </table>
               <p className="mt-1 text-xs text-muted-foreground">
-                Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, hlavička
-                v Pohode dostane „Rozúčtovať“.
+                {t(
+                  "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, hlavička v Pohode dostane „Rozúčtovať“.",
+                )}
               </p>
             </div>
           )}
 
           <p className="mt-2 text-xs text-muted-foreground">
-            Prázdne pole = predvolené z{" "}
+            {t("Prázdne pole = predvolené z")}{" "}
             <Link to="/uctovnictvo/predkontacie" className="underline">
-              nastavení predkontácií
+              {t("nastavení predkontácií")}
             </Link>
-            . Do Pohody ide faktúra konektorom alebo mesačným balíkom; hneď ju stiahnete tlačidlom.
+            {t(
+              ". Do Pohody ide faktúra konektorom alebo mesačným balíkom; hneď ju stiahnete tlačidlom.",
+            )}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {!zauctovana && (
@@ -417,7 +427,7 @@ export function ZauctovanieVystavenejPanel({
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-                Zaúčtovať
+                {t("Zaúčtovať")}
               </button>
             )}
             <button
@@ -425,15 +435,15 @@ export function ZauctovanieVystavenejPanel({
               disabled={busy}
               className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              Uložiť bez zaúčtovania
+              {t("Uložiť bez zaúčtovania")}
             </button>
             <button
               onClick={() => void Promise.resolve(onStiahnut()).then(obnov)}
               disabled={busy}
-              title="Stiahne XML na import do Pohody a zapíše faktúru ako odovzdanú."
+              title={t("Stiahne XML na import do Pohody a zapíše faktúru ako odovzdanú.")}
               className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> Stiahnuť XML pre Pohodu
+              <Download className="h-4 w-4" /> {t("Stiahnuť XML pre Pohodu")}
             </button>
             {zauctovana && (
               <button
@@ -446,7 +456,7 @@ export function ZauctovanieVystavenejPanel({
                 disabled={busy}
                 className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
               >
-                Zrušiť zaúčtovanie
+                {t("Zrušiť zaúčtovanie")}
               </button>
             )}
           </div>

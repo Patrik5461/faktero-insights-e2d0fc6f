@@ -5,6 +5,7 @@ import { FileUp, Loader2 } from "lucide-react";
 import { spustiCitanieZmluvyFn, stavCitaniaZmluvyFn } from "@/lib/faktero/financovanie.functions";
 import { spojPrecitane, type PrecitanaZmluva } from "@/lib/faktero/financovanie-citanie";
 import type { SplatkaZoZmluvy, ZmluvaNaUpravu } from "./FormularZmluvy";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Nahratie zmluvy alebo splátkového kalendára a jeho vyčítanie.
@@ -50,6 +51,7 @@ export function NahratieZmluvy({
   companyId: string;
   onPrecitane: (d: PrecitanyDokument) => void;
 }) {
+  const { t } = useT();
   const spusti = useServerFn(spustiCitanieZmluvyFn);
   const stav = useServerFn(stavCitaniaZmluvyFn);
   const vstup = useRef<HTMLInputElement>(null);
@@ -59,8 +61,8 @@ export function NahratieZmluvy({
 
   useEffect(() => {
     if (!pracujem) return;
-    const t = setInterval(() => setSekundy((s) => s + 1), 1000);
-    return () => clearInterval(t);
+    const casovac = setInterval(() => setSekundy((s) => s + 1), 1000);
+    return () => clearInterval(casovac);
   }, [pracujem]);
 
   /** Pýta sa servera, kým výsledok nie je na svete. */
@@ -70,10 +72,10 @@ export function NahratieZmluvy({
       await new Promise((r) => setTimeout(r, KROK_MS));
       const s: any = await stav({ data: { company_id: companyId, document_path: cesta } });
       if (!s?.hotovo) continue;
-      if (!s.ok) throw new Error(s.chyba ?? "Dokument sa nepodarilo prečítať.");
+      if (!s.ok) throw new Error(s.chyba ? t(s.chyba) : t("Dokument sa nepodarilo prečítať."));
       return s.zmluva as PrecitanaZmluva;
     }
-    throw new Error("Čítanie trvá príliš dlho. Súbor je uložený, údaje vyplňte ručne.");
+    throw new Error(t("Čítanie trvá príliš dlho. Súbor je uložený, údaje vyplňte ručne."));
   }
 
   async function spracuj(subory: File[]) {
@@ -95,12 +97,14 @@ export function NahratieZmluvy({
         } catch (e: unknown) {
           // Jeden nečitateľný dokument nesmie zahodiť aj ten, ktorý sa
           // prečítal — kalendár býva ten druhý a je z nich cennejší.
-          zlyhane.push(`${f.name}: ${e instanceof Error ? e.message : "nepodarilo sa prečítať"}`);
+          zlyhane.push(
+            `${f.name}: ${e instanceof Error ? t(e.message) : t("nepodarilo sa prečítať")}`,
+          );
         }
         setKolko((k) => ({ ...k, hotovych: k.hotovych + 1 }));
       }
       if (precitane.length === 0) {
-        throw new Error(zlyhane[0] ?? "Dokument sa nepodarilo prečítať.");
+        throw new Error(zlyhane[0] ?? t("Dokument sa nepodarilo prečítať."));
       }
 
       const r = spojPrecitane(precitane.map((p) => p.zmluva));
@@ -147,13 +151,17 @@ export function NahratieZmluvy({
       });
       toast.success(
         r.kind === "kontokorent"
-          ? "Prečítané — je to kontokorentný úver (rámec na účte, bez splátkového kalendára). Skontrolujte údaje a uložte."
+          ? t(
+              "Prečítané — je to kontokorentný úver (rámec na účte, bez splátkového kalendára). Skontrolujte údaje a uložte.",
+            )
           : r.splatky.length
-            ? `Prečítané, kalendár má ${r.splatky.length} splátok. Skontrolujte údaje a uložte.`
-            : "Údaje sú prečítané. Kalendár v dokumente nebol — Faktero ho dopočíta.",
+            ? t("Prečítané, kalendár má {n} splátok. Skontrolujte údaje a uložte.", {
+                n: r.splatky.length,
+              })
+            : t("Údaje sú prečítané. Kalendár v dokumente nebol — Faktero ho dopočíta."),
       );
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Dokument sa nepodarilo prečítať.");
+      toast.error(e instanceof Error ? t(e.message) : t("Dokument sa nepodarilo prečítať."));
     } finally {
       setPracujem(false);
       if (vstup.current) vstup.current.value = "";
@@ -164,11 +172,11 @@ export function NahratieZmluvy({
     <div className="mb-6 rounded-xl border border-dashed bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="text-sm font-medium">Máte zmluvu v PDF?</h2>
+          <h2 className="text-sm font-medium">{t("Máte zmluvu v PDF?")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Nahrajte zmluvu aj splátkový kalendár — pokojne naraz, aj keď sú to dva súbory. Faktero
-            z nich vyčíta údaje a kalendár prevezme riadok po riadku, presne tak, ako ho predpísala
-            banka. Zmluvu o kontokorente spozná samo — tá kalendár nemá.
+            {t(
+              "Nahrajte zmluvu aj splátkový kalendár — pokojne naraz, aj keď sú to dva súbory. Faktero z nich vyčíta údaje a kalendár prevezme riadok po riadku, presne tak, ako ho predpísala banka. Zmluvu o kontokorente spozná samo — tá kalendár nemá.",
+            )}
           </p>
         </div>
         <button
@@ -177,7 +185,7 @@ export function NahratieZmluvy({
           className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
           {pracujem ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
-          {pracujem ? "Čítam dokument…" : "Nahrať zmluvu"}
+          {pracujem ? t("Čítam dokument…") : t("Nahrať zmluvu")}
         </button>
         <input
           ref={vstup}
@@ -190,8 +198,12 @@ export function NahratieZmluvy({
       </div>
       {pracujem && (
         <p className="mt-3 text-xs text-muted-foreground">
-          {kolko.spolu > 1 ? `Dokument ${kolko.hotovych + 1} z ${kolko.spolu}. ` : ""}
-          Čítam už {sekundy} s — viacstranový kalendár trvá aj minútu. Stránku nezatvárajte.
+          {kolko.spolu > 1
+            ? `${t("Dokument {n} z {spolu}.", { n: kolko.hotovych + 1, spolu: kolko.spolu })} `
+            : ""}
+          {t("Čítam už {s} s — viacstranový kalendár trvá aj minútu. Stránku nezatvárajte.", {
+            s: sekundy,
+          })}
         </p>
       )}
     </div>

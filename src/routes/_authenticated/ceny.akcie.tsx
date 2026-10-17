@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,14 +9,14 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { deletePriceAction, listPriceActions, savePriceAction } from "@/lib/faktero/ceny.functions";
 import { akciaPlati, cislo } from "@/lib/faktero/ceny";
 import { ArrowLeft, Plus, Pencil, Trash2, X } from "lucide-react";
-import { PRODUKTY, sPoctom } from "@/lib/faktero/mnozne";
+import { PRODUKTY, mnozne } from "@/lib/faktero/mnozne";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/ceny/akcie")({
-  head: () => ({ meta: [{ title: "Cenové akcie — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenové akcie — Faktero") }] }),
   component: AkciePage,
 });
 
@@ -42,6 +44,7 @@ const popis = "mb-1 block text-xs font-medium text-muted-foreground";
 type Polozka = { product_id: string; unit_price: string };
 
 function AkciePage() {
+  const { t } = useT();
   const nacitajAkcie = useServerFn(listPriceActions);
   const ulozAkciu = useServerFn(savePriceAction);
   const zmazAkciu = useServerFn(deletePriceAction);
@@ -136,9 +139,9 @@ function AkciePage() {
       });
       setForm(null);
       nacitaj();
-      toast.success("Cenová akcia uložená");
+      toast.success(t("Cenová akcia uložená"));
     } catch (err: any) {
-      setChyba(err?.message ?? "Akciu sa nepodarilo uložiť");
+      setChyba(err?.message ?? t("Akciu sa nepodarilo uložiť"));
     }
   }
 
@@ -149,32 +152,32 @@ function AkciePage() {
   return (
     <>
       <PageHeader
-        title="Cenové akcie"
-        description="Časovo ohraničená zľava alebo akciová cena. Doklad ju použije len vtedy, keď je pre odberateľa výhodnejšia než jeho dohodnutá cena."
+        title={t("Cenové akcie")}
+        description={t("Časovo ohraničená zľava alebo akciová cena. Doklad ju použije len vtedy, keď je pre odberateľa výhodnejšia než jeho dohodnutá cena.")}
         action={
           <div className="flex gap-2">
             <Link
               to="/ceny"
               className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
             >
-              <ArrowLeft className="h-4 w-4" /> Cenník
+              <ArrowLeft className="h-4 w-4" /> {t("Cenník")}
             </Link>
             <button
               type="button"
               onClick={novaAkcia}
               className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              <Plus className="h-4 w-4" /> Nová akcia
+              <Plus className="h-4 w-4" /> {t("Nová akcia")}
             </button>
           </div>
         }
       />
       <PageBody>
         {loading ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : akcie.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
-            Zatiaľ žiadna cenová akcia.
+            {t("Zatiaľ žiadna cenová akcia.")}
           </div>
         ) : (
           <div className="space-y-3">
@@ -199,7 +202,7 @@ function AkciePage() {
                                 : "bg-blue-500/10 text-blue-600"
                           }`}
                         >
-                          {bezi ? "beží" : skoncila ? "skončila" : !a.active ? "vypnutá" : "čaká"}
+                          {bezi ? t("beží") : skoncila ? t("skončila") : !a.active ? t("vypnutá") : t("čaká")}
                         </span>
                         {cislo(a.discount_percent) > 0 && (
                           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
@@ -208,10 +211,10 @@ function AkciePage() {
                         )}
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {formatDatum(a.valid_from)} – {formatDatum(a.valid_to)} ·{" "}
+                        {formatDatum(a.valid_from)} – {t(formatDatum(a.valid_to))} ·{" "}
                         {a.applies_to_all
-                          ? "celý sortiment"
-                          : sPoctom((a.price_action_products ?? []).length, PRODUKTY)}
+                          ? t("celý sortiment")
+                          : `${(a.price_action_products ?? []).length} ${t(mnozne((a.price_action_products ?? []).length, PRODUKTY))}`}
                       </p>
                       {!a.applies_to_all && (a.price_action_products ?? []).length > 0 && (
                         <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
@@ -232,12 +235,12 @@ function AkciePage() {
                                   )}
                                 </>
                               ) : (
-                                <> — zľava akcie</>
+                                <> — {t("zľava akcie")}</>
                               )}
                             </li>
                           ))}
                           {(a.price_action_products ?? []).length > 6 && (
-                            <li>a ďalších {(a.price_action_products ?? []).length - 6}…</li>
+                            <li>{t("a ďalších {n}…", { n: (a.price_action_products ?? []).length - 6 })}</li>
                           )}
                         </ul>
                       )}
@@ -245,7 +248,7 @@ function AkciePage() {
                     <div className="flex shrink-0 gap-1">
                       <button
                         type="button"
-                        aria-label="Upraviť akciu"
+                        aria-label={t("Upraviť akciu")}
                         onClick={() => upravAkciu(a)}
                         className="rounded p-1.5 text-muted-foreground hover:bg-muted"
                       >
@@ -253,9 +256,9 @@ function AkciePage() {
                       </button>
                       <button
                         type="button"
-                        aria-label="Zmazať akciu"
+                        aria-label={t("Zmazať akciu")}
                         onClick={async () => {
-                          if (!(await potvrd(`Zmazať akciu „${a.name}"?`))) return;
+                          if (!(await potvrd(t("Zmazať akciu „{nazov}\"?", { nazov: a.name })))) return;
                           await zmazAkciu({ data: { company_id: cid!, id: a.id } });
                           nacitaj();
                         }}
@@ -280,12 +283,12 @@ function AkciePage() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Cenová akcia"
+            aria-label={t("Cenová akcia")}
             className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">
-              {form.id ? "Upraviť cenovú akciu" : "Nová cenová akcia"}
+              {form.id ? t("Upraviť cenovú akciu") : t("Nová cenová akcia")}
             </h2>
             <form onSubmit={uloz} className="mt-4 space-y-4">
               {chyba && (
@@ -294,19 +297,19 @@ function AkciePage() {
                 </div>
               )}
               <div>
-                <label className={popis}>Názov akcie</label>
+                <label className={popis}>{t("Názov akcie")}</label>
                 <input
                   className={pole}
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Napríklad Letný výpredaj"
+                  placeholder={t("Napríklad Letný výpredaj")}
                   required
                   autoFocus
                 />
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
-                  <label className={popis}>Platí od</label>
+                  <label className={popis}>{t("Platí od")}</label>
                   <input
                     type="date"
                     className={pole}
@@ -316,17 +319,17 @@ function AkciePage() {
                   />
                 </div>
                 <div>
-                  <label className={popis}>Platí do</label>
+                  <label className={popis}>{t("Platí do")}</label>
                   <input
                     type="date"
                     className={pole}
                     value={form.valid_to}
                     onChange={(e) => setForm({ ...form, valid_to: e.target.value })}
                   />
-                  <p className="mt-1 text-xs text-muted-foreground">Prázdne = bez konca.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t("Prázdne = bez konca.")}</p>
                 </div>
                 <div>
-                  <label className={popis}>Zľava (%)</label>
+                  <label className={popis}>{t("Zľava (%)")}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -345,7 +348,7 @@ function AkciePage() {
                   checked={!!form.applies_to_all}
                   onChange={(e) => setForm({ ...form, applies_to_all: e.target.checked })}
                 />
-                Akcia platí na celý sortiment
+                {t("Akcia platí na celý sortiment")}
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -353,15 +356,15 @@ function AkciePage() {
                   checked={!!form.active}
                   onChange={(e) => setForm({ ...form, active: e.target.checked })}
                 />
-                Akcia je zapnutá
+                {t("Akcia je zapnutá")}
               </label>
 
               {!form.applies_to_all && (
                 <div className="rounded-lg border border-border p-3">
-                  <div className="mb-2 text-sm font-medium">Produkty v akcii</div>
+                  <div className="mb-2 text-sm font-medium">{t("Produkty v akcii")}</div>
                   {form.polozky.length === 0 && (
                     <p className="mb-2 text-xs text-muted-foreground">
-                      Zatiaľ žiadny. Bez produktov by akcia nemala na čo platiť.
+                      {t("Zatiaľ žiadny. Bez produktov by akcia nemala na čo platiť.")}
                     </p>
                   )}
                   <div className="space-y-2">
@@ -379,7 +382,7 @@ function AkciePage() {
                             type="number"
                             step={KROK_CENY}
                             min="0"
-                            placeholder="akciová cena"
+                            placeholder={t("akciová cena")}
                             className="w-36 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
                             value={p.unit_price}
                             onChange={(e) => {
@@ -390,7 +393,7 @@ function AkciePage() {
                           />
                           <button
                             type="button"
-                            aria-label="Odobrať produkt"
+                            aria-label={t("Odobrať produkt")}
                             onClick={() =>
                               setForm({
                                 ...form,
@@ -420,7 +423,7 @@ function AkciePage() {
                         });
                       }}
                     >
-                      <option value="">+ pridať produkt do akcie</option>
+                      <option value="">{t("+ pridať produkt do akcie")}</option>
                       {volneProdukty.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name} — {suma(p.unit_price)}
@@ -429,7 +432,7 @@ function AkciePage() {
                     </select>
                   )}
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Prázdna akciová cena znamená, že na produkt platí zľava akcie v percentách.
+                    {t("Prázdna akciová cena znamená, že na produkt platí zľava akcie v percentách.")}
                   </p>
                 </div>
               )}
@@ -440,13 +443,13 @@ function AkciePage() {
                   onClick={() => setForm(null)}
                   className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
                 >
-                  Zrušiť
+                  {t("Zrušiť")}
                 </button>
                 <button
                   type="submit"
                   className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
-                  Uložiť akciu
+                  {t("Uložiť akciu")}
                 </button>
               </div>
             </form>

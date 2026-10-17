@@ -9,6 +9,7 @@ import {
   type SmtpPrehlad,
 } from "@/lib/faktero/smtp-firmy.functions";
 import { potvrd } from "@/lib/potvrdenie";
+import { useT } from "@/lib/i18n/useT";
 
 const vstup = "mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm";
 
@@ -36,6 +37,7 @@ const PREDVOLBY: { nazov: string; host: string; port: number; zabezpecenie: "ssl
  * ponuky prídu odberateľovi z faktury@firma.sk, nie z Faktera.
  */
 export function VlastnySmtp({ companyId }: { companyId: string }) {
+  const { t, jazyk } = useT();
   const nacitaj = useServerFn(nacitajSmtpFn);
   const uloz = useServerFn(ulozSmtpFn);
   const vypni = useServerFn(vypniSmtpFn);
@@ -83,12 +85,15 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
     try {
       const r = await uloz({ data: { company_id: companyId, ...f } });
       toast.success(
-        `Funguje — skúšobný mail odišiel na ${r.komu}. Maily firmy odteraz idú z ${f.od_email}.`,
+        t("Funguje — skúšobný mail odišiel na {komu}. Maily firmy odteraz idú z {od}.", {
+          komu: r.komu,
+          od: f.od_email,
+        }),
       );
       setUprava(false);
       await obnov();
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa", { duration: 12000 });
+      toast.error(t(e?.message ?? "Nepodarilo sa"), { duration: 12000 });
       await obnov();
     } finally {
       setBusy(false);
@@ -99,12 +104,14 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
     if (
       zmazat &&
       !(await potvrd(
-        "Zmazať nastavenie vlastného servera?\nMaily firmy budú znova chodiť cez Faktero.",
+        t("Zmazať nastavenie vlastného servera?\nMaily firmy budú znova chodiť cez Faktero."),
       ))
     )
       return;
     await vypni({ data: { company_id: companyId, zmazat } });
-    toast.success(zmazat ? "Nastavenie zmazané" : "Vlastný server vypnutý — maily idú cez Faktero");
+    toast.success(
+      zmazat ? t("Nastavenie zmazané") : t("Vlastný server vypnutý — maily idú cez Faktero"),
+    );
     await obnov();
   }
 
@@ -114,39 +121,41 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
       <div className="flex items-start gap-3">
         <Mail className="mt-0.5 h-5 w-5 text-primary" />
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-semibold">Odosielanie z vlastnej adresy</h2>
+          <h2 className="text-lg font-semibold">{t("Odosielanie z vlastnej adresy")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Faktúry, upomienky, cenové ponuky a podklady pre účtovníka môžu odberateľom chodiť z
-            vašej firemnej adresy (napr. faktury@vasafirma.sk) cez váš poštový server. Bez
-            nastavenia chodia z adresy Faktera s vaším menom.
+            {t(
+              "Faktúry, upomienky, cenové ponuky a podklady pre účtovníka môžu odberateľom chodiť z vašej firemnej adresy (napr. faktury@vasafirma.sk) cez váš poštový server. Bez nastavenia chodia z adresy Faktera s vaším menom.",
+            )}
           </p>
           {stav === undefined ? (
             <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Načítavam…
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
             </div>
           ) : stav && !uprava ? (
             <div className="mt-3 space-y-2 text-sm">
               <div>
                 {stav.aktivne ? (
                   <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                    zapnuté
+                    {t("zapnuté")}
                   </span>
                 ) : (
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium">
-                    vypnuté
+                    {t("vypnuté")}
                   </span>
                 )}{" "}
-                {stav.od_meno ? `${stav.od_meno} ` : ""}&lt;{stav.od_email}&gt; cez {stav.host}:
-                {stav.port}
+                {stav.od_meno ? `${stav.od_meno} ` : ""}&lt;{stav.od_email}&gt; {t("cez")}{" "}
+                {stav.host}:{stav.port}
               </div>
               {stav.posledna_chyba ? (
                 <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-900 dark:text-amber-100">
-                  Posledná chyba (
+                  {t("Posledná chyba")} (
                   {stav.posledna_chyba_at
-                    ? new Date(stav.posledna_chyba_at).toLocaleString("sk-SK")
+                    ? new Date(stav.posledna_chyba_at).toLocaleString(
+                        jazyk === "de" ? "de-DE" : "sk-SK",
+                      )
                     : ""}
                   ): {stav.posledna_chyba}
-                  {stav.aktivne ? " — ten mail odišiel cez Faktero." : ""}
+                  {stav.aktivne ? ` ${t("— ten mail odišiel cez Faktero.")}` : ""}
                 </p>
               ) : null}
               <div className="flex flex-wrap gap-2">
@@ -155,7 +164,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   onClick={() => setUprava(true)}
                   className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                 >
-                  Upraviť
+                  {t("Upraviť")}
                 </button>
                 {stav.aktivne ? (
                   <button
@@ -163,7 +172,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                     onClick={() => void vypnut(false)}
                     className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                   >
-                    Vypnúť
+                    {t("Vypnúť")}
                   </button>
                 ) : null}
                 <button
@@ -171,7 +180,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   onClick={() => void vypnut(true)}
                   className="rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
                 >
-                  Zmazať
+                  {t("Zmazať")}
                 </button>
               </div>
             </div>
@@ -199,7 +208,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
               </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">Adresa odosielateľa</span>
+                  <span className="text-xs text-muted-foreground">{t("Adresa odosielateľa")}</span>
                   <input
                     value={f.od_email}
                     onChange={(e) => setF({ ...f, od_email: e.target.value })}
@@ -208,11 +217,11 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">Meno odosielateľa</span>
+                  <span className="text-xs text-muted-foreground">{t("Meno odosielateľa")}</span>
                   <input
                     value={f.od_meno}
                     onChange={(e) => setF({ ...f, od_meno: e.target.value })}
-                    placeholder="Vaša firma s.r.o."
+                    placeholder={t("Vaša firma s.r.o.")}
                     className={vstup}
                   />
                 </label>
@@ -238,45 +247,46 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                     />
                   </label>
                   <label className="block text-sm">
-                    <span className="text-xs text-muted-foreground">Zabezpečenie</span>
+                    <span className="text-xs text-muted-foreground">{t("Zabezpečenie")}</span>
                     <select
                       value={f.zabezpecenie}
                       onChange={(e) => setF({ ...f, zabezpecenie: e.target.value as any })}
                       className={vstup}
                     >
                       <option value="starttls">STARTTLS (587)</option>
-                      <option value="ssl">SSL/TLS (465 — od nás často nedostupný)</option>
-                      <option value="ziadne">Bez šifrovania</option>
+                      <option value="ssl">{t("SSL/TLS (465 — od nás často nedostupný)")}</option>
+                      <option value="ziadne">{t("Bez šifrovania")}</option>
                     </select>
                   </label>
                 </div>
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">Prihlasovacie meno</span>
+                  <span className="text-xs text-muted-foreground">{t("Prihlasovacie meno")}</span>
                   <input
                     value={f.pouzivatel}
                     onChange={(e) => setF({ ...f, pouzivatel: e.target.value })}
                     autoComplete="off"
-                    placeholder="zvyčajne celá adresa"
+                    placeholder={t("zvyčajne celá adresa")}
                     className={vstup}
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">Heslo</span>
+                  <span className="text-xs text-muted-foreground">{t("Heslo")}</span>
                   <input
                     type="password"
                     value={f.heslo}
                     onChange={(e) => setF({ ...f, heslo: e.target.value })}
                     autoComplete="new-password"
-                    placeholder={stav?.maHeslo ? "ponechať uložené" : ""}
+                    placeholder={stav?.maHeslo ? t("ponechať uložené") : ""}
                     className={vstup}
                   />
                 </label>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Pri Gmaile a Microsoft 365 s dvojfaktorovým overením použite{" "}
-                <strong>heslo aplikácie</strong>, nie bežné heslo. Heslo je uložené zašifrované a už
-                sa nezobrazí. Po uložení pošleme skúšobný mail na vašu adresu — zapne sa, len keď
-                prejde.
+                {t("Pri Gmaile a Microsoft 365 s dvojfaktorovým overením použite")}{" "}
+                <strong>{t("heslo aplikácie")}</strong>
+                {t(
+                  ", nie bežné heslo. Heslo je uložené zašifrované a už sa nezobrazí. Po uložení pošleme skúšobný mail na vašu adresu — zapne sa, len keď prejde.",
+                )}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
@@ -285,7 +295,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   disabled={busy || !f.host || !f.od_email}
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  {busy && <Loader2 className="h-4 w-4 animate-spin" />} Uložiť a otestovať
+                  {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Uložiť a otestovať")}
                 </button>
                 {stav ? (
                   <button
@@ -293,7 +303,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                     onClick={() => setUprava(false)}
                     className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
                   >
-                    Zrušiť
+                    {t("Zrušiť")}
                   </button>
                 ) : null}
               </div>

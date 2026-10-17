@@ -1,16 +1,21 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { DetailPage } from "@/components/faktero/MarketingSectionPage";
 import { uctovnici, getItem } from "@/lib/faktero/marketing-content";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/uctovnici/$slug")({
-  head: ({ params }) => {
+  head: ({ match, params }) => {
+    const j = match.context.jazyk;
     const item = getItem(uctovnici, params.slug);
     return {
       meta: [
-        { title: `${item?.label ?? "Účtovníci"} — Faktero` },
-        { name: "description", content: item?.summary ?? uctovnici.hubDescription },
-        { property: "og:title", content: `${item?.label ?? "Účtovníci"} — Faktero` },
-        { property: "og:description", content: item?.summary ?? uctovnici.hubDescription },
+        { title: `${preloz(j, item?.label ?? "Účtovníci")} — Faktero` },
+        { name: "description", content: preloz(j, item?.summary ?? uctovnici.hubDescription) },
+        { property: "og:title", content: `${preloz(j, item?.label ?? "Účtovníci")} — Faktero` },
+        {
+          property: "og:description",
+          content: preloz(j, item?.summary ?? uctovnici.hubDescription),
+        },
       ],
     };
   },

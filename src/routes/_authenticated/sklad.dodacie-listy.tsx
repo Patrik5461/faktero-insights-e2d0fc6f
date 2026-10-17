@@ -9,13 +9,20 @@ import {
 } from "@/lib/faktero/ai-delivery-note.functions";
 import { FileText, ExternalLink, ScanLine } from "lucide-react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/dodacie-listy")({
-  head: () => ({ meta: [{ title: "História naskenovaných dodacích listov — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [
+      { title: preloz(match.context.jazyk, "História naskenovaných dodacích listov — Faktero") },
+    ],
+  }),
   component: DeliveryNoteHistoryPage,
 });
 
 function DeliveryNoteHistoryPage() {
+  const { t } = useT();
   const listFn = useServerFn(listDeliveryNoteImportsFn);
   const signFn = useServerFn(getDeliveryNoteSignedUrlFn);
   const [rows, setRows] = useState<any[]>([]);
@@ -29,7 +36,7 @@ function DeliveryNoteHistoryPage() {
     }
     listFn({ data: { company_id: cid, limit: 100 } })
       .then((r) => setRows(r.rows))
-      .catch((e) => toast.error(e?.message ?? "Nepodarilo sa načítať."))
+      .catch((e) => toast.error(e?.message ?? t("Nepodarilo sa načítať.")))
       .finally(() => setLoading(false));
   }, [listFn]);
 
@@ -38,30 +45,30 @@ function DeliveryNoteHistoryPage() {
       const { url } = await signFn({ data: { storage_path: path } });
       window.open(url, "_blank");
     } catch (e: any) {
-      toast.error(e?.message ?? "Nepodarilo sa otvoriť dokument.");
+      toast.error(e?.message ?? t("Nepodarilo sa otvoriť dokument."));
     }
   }
 
   return (
     <>
       <PageHeader
-        title="História dodacích listov"
-        description="Prehľad AI importov zo naskenovaných dokumentov."
+        title={t("História dodacích listov")}
+        description={t("Prehľad AI importov zo naskenovaných dokumentov.")}
         action={
           <Link
             to="/sklad/dodaci-list"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <ScanLine className="h-4 w-4" /> Nový sken
+            <ScanLine className="h-4 w-4" /> {t("Nový sken")}
           </Link>
         }
       />
       <PageBody>
         {loading ? (
-          <div className="text-sm text-muted-foreground">Načítavam…</div>
+          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            Zatiaľ žiadne AI importy dodacích listov.
+            {t("Zatiaľ žiadne AI importy dodacích listov.")}
           </div>
         ) : (
           <>
@@ -86,7 +93,7 @@ function DeliveryNoteHistoryPage() {
                     </div>
                     <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                       <span>
-                        Položiek {items} · pohybov {c.movements ?? "—"}
+                        {t("Položiek {n} · pohybov {p}", { n: items, p: c.movements ?? "—" })}
                       </span>
                       {m.storage_path && (
                         <button
@@ -94,7 +101,7 @@ function DeliveryNoteHistoryPage() {
                           className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline"
                         >
                           <FileText className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">{m.source_filename ?? "otvoriť"}</span>
+                          <span className="truncate">{m.source_filename ?? t("otvoriť")}</span>
                           <ExternalLink className="h-3 w-3 shrink-0" />
                         </button>
                       )}
@@ -107,12 +114,12 @@ function DeliveryNoteHistoryPage() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-xs text-muted-foreground">
                   <tr>
-                    <th className="p-2 text-left">Dátum</th>
-                    <th className="p-2 text-left">Dodávateľ</th>
-                    <th className="p-2 text-left">Číslo DL</th>
-                    <th className="p-2 text-right">Položiek</th>
-                    <th className="p-2 text-right">Pohybov</th>
-                    <th className="p-2 text-left">Dokument</th>
+                    <th className="p-2 text-left">{t("Dátum")}</th>
+                    <th className="p-2 text-left">{t("Dodávateľ")}</th>
+                    <th className="p-2 text-left">{t("Číslo DL")}</th>
+                    <th className="p-2 text-right">{t("Položiek")}</th>
+                    <th className="p-2 text-right">{t("Pohybov")}</th>
+                    <th className="p-2 text-left">{t("Dokument")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -135,7 +142,8 @@ function DeliveryNoteHistoryPage() {
                               onClick={() => openDoc(m.storage_path)}
                               className="inline-flex items-center gap-1 text-primary hover:underline"
                             >
-                              <FileText className="h-3.5 w-3.5" /> {m.source_filename ?? "otvoriť"}{" "}
+                              <FileText className="h-3.5 w-3.5" />{" "}
+                              {m.source_filename ?? t("otvoriť")}{" "}
                               <ExternalLink className="h-3 w-3" />
                             </button>
                           ) : (

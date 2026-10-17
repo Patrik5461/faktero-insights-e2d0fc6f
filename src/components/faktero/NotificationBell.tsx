@@ -10,6 +10,7 @@ import {
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listNotifications, markNotificationsRead } from "@/lib/faktero/notifications.functions";
 import type { AppNotification, NotificationSeverity } from "@/lib/faktero/notifications";
+import { useT } from "@/lib/i18n/useT";
 
 const IKONA: Record<NotificationSeverity, typeof Info> = {
   danger: AlertCircle,
@@ -31,6 +32,7 @@ const OBNOVA_MS = 5 * 60 * 1000;
  * musí byť zvonček biely a sivá farba by sa na nej stratila.
  */
 export function NotificationBell({ className = "" }: { className?: string } = {}) {
+  const { t } = useT();
   const nacitaj = useServerFn(listNotifications);
   const oznac = useServerFn(markNotificationsRead);
   const [items, setItems] = useState<AppNotification[]>([]);
@@ -57,8 +59,8 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
 
   useEffect(() => {
     obnov();
-    const t = setInterval(obnov, OBNOVA_MS);
-    return () => clearInterval(t);
+    const casovac = setInterval(obnov, OBNOVA_MS);
+    return () => clearInterval(casovac);
   }, [obnov]);
 
   async function oznacVsetko() {
@@ -95,7 +97,7 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
       }}
     >
       <DropdownMenuTrigger
-        aria-label={unread > 0 ? `Notifikácie (${unread} neprečítaných)` : "Notifikácie"}
+        aria-label={unread > 0 ? t("Notifikácie ({n} neprečítaných)", { n: unread }) : t("Notifikácie")}
         className={`relative grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-secondary ${className}`}
       >
         <Bell className="h-4 w-4" />
@@ -108,24 +110,24 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
 
       <DropdownMenuContent align="end" className="w-[min(22rem,calc(100vw-1.5rem))] p-0">
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
-          <span className="text-sm font-medium">Notifikácie</span>
+          <span className="text-sm font-medium">{t("Notifikácie")}</span>
           {unread > 0 && (
             <button
               type="button"
               onClick={oznacVsetko}
               className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
-              <Check className="h-3 w-3" /> Označiť ako prečítané
+              <Check className="h-3 w-3" /> {t("Označiť ako prečítané")}
             </button>
           )}
         </div>
 
         <div className="max-h-[min(24rem,60vh)] overflow-y-auto">
           {loading ? (
-            <p className="px-3 py-6 text-center text-sm text-muted-foreground">Načítavam…</p>
+            <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t("Načítavam…")}</p>
           ) : items.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-              Nič nové. Všetko je vybavené.
+              {t("Nič nové. Všetko je vybavené.")}
             </p>
           ) : (
             items.map((n) => {
@@ -144,8 +146,8 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
                 >
                   <Ikona className={`mt-0.5 h-4 w-4 shrink-0 ${FARBA[n.severity]}`} />
                   <span className="min-w-0">
-                    <span className="block truncate text-sm text-foreground">{n.title}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{n.detail}</span>
+                    <span className="block truncate text-sm text-foreground">{t(n.title)}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{t(n.detail)}</span>
                   </span>
                   {!n.read && (
                     <span
@@ -164,7 +166,7 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
           onClick={() => setOpen(false)}
           className="block border-t border-border px-3 py-2 text-center text-xs font-medium text-primary hover:bg-secondary"
         >
-          Všetky moje úlohy →
+          {t("Všetky moje úlohy →")}
         </Link>
       </DropdownMenuContent>
     </DropdownMenu>

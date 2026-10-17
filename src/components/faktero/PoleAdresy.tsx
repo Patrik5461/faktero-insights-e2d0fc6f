@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { napovedzAdresu } from "@/lib/faktero/trasa.server";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Pole na adresu, ktoré počas písania napovedá obce a ulice.
@@ -24,6 +25,7 @@ export function PoleAdresy({
   placeholder?: string;
   disabled?: boolean;
 }) {
+  const { t } = useT();
   const idZoznamu = useId();
   const napovedz = useServerFn(napovedzAdresu);
   const [navrhy, setNavrhy] = useState<string[]>([]);
@@ -50,7 +52,7 @@ export function PoleAdresy({
       <input
         value={hodnota}
         onChange={(e) => onZmena(e.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder ? t(placeholder) : placeholder}
         disabled={disabled}
         list={idZoznamu}
         autoComplete="off"

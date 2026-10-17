@@ -5,6 +5,7 @@ import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nahrajPrijatuFakturuFn } from "@/lib/faktero/prijata-nahratie.functions";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Nahratie prijatého dokladu súborom.
@@ -23,6 +24,7 @@ export function NahratDoklad({
   druh?: "auto" | "regular" | "proforma";
   label?: string;
 }) {
+  const { t } = useT();
   const vstup = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   const nahraj = useServerFn(nahrajPrijatuFakturuFn);
@@ -31,11 +33,11 @@ export function NahratDoklad({
   async function vyber(subor: File | null) {
     if (!subor) return;
     const cid = getActiveCompanyId();
-    if (!cid) return toast.error("Vyberte firmu.");
-    if (subor.size > 15 * 1024 * 1024) return toast.error("Súbor je väčší než 15 MB.");
+    if (!cid) return toast.error(t("Vyberte firmu."));
+    if (subor.size > 15 * 1024 * 1024) return toast.error(t("Súbor je väčší než 15 MB."));
 
     setBusy(true);
-    const cakanie = toast.loading("Čítam doklad…");
+    const cakanie = toast.loading(t("Čítam doklad…"));
     try {
       const base64 = await naBase64(subor);
       const v: any = await nahraj({
@@ -49,12 +51,15 @@ export function NahratDoklad({
       });
       toast.dismiss(cakanie);
       // Ako v Doklado: doklad čaká v Nespracovaných — rovno sa otvorí na zaradenie.
-      if (v.prazdny) toast.warning("Doklad je v Nespracovaných, ale nič sa z neho nedalo prečítať — doplňte údaje.");
-      else toast.success("Doklad je v Nespracovaných — skontrolujte, zaraďte a zaúčtujte ho.");
+      if (v.prazdny)
+        toast.warning(
+          t("Doklad je v Nespracovaných, ale nič sa z neho nedalo prečítať — doplňte údaje."),
+        );
+      else toast.success(t("Doklad je v Nespracovaných — skontrolujte, zaraďte a zaúčtujte ho."));
       navigate({ to: "/nespracovane/$id", params: { id: v.id } } as any);
     } catch (e: any) {
       toast.dismiss(cakanie);
-      toast.error(e?.message ?? "Doklad sa nepodarilo nahrať.");
+      toast.error(t(e?.message ?? "Doklad sa nepodarilo nahrať."));
     } finally {
       setBusy(false);
       if (vstup.current) vstup.current.value = "";
@@ -77,7 +82,7 @@ export function NahratDoklad({
         className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-        {busy ? "Čítam…" : label}
+        {busy ? t("Čítam…") : t(label)}
       </button>
     </>
   );

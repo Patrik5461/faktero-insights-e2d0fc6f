@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listJobOptions } from "@/lib/faktero/jobs.functions";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Výber zákazky na doklade.
@@ -32,6 +33,7 @@ export function JobPicker({
   disabled?: boolean;
   className?: string;
 }) {
+  const { t } = useT();
   const fetchJobs = useServerFn(listJobOptions);
   const [jobs, setJobs] = useState<any[] | null>(null);
 
@@ -72,14 +74,14 @@ export function JobPicker({
 
   return (
     <label className={`block ${className ?? ""}`}>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium">{t(label)}</span>
       <select
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
       >
-        <option value="">— bez zákazky —</option>
+        <option value="">{t("— bez zákazky —")}</option>
         {jobs.map((j) => (
           <option key={j.id} value={j.id}>
             {j.job_number} — {j.name}

@@ -5,6 +5,7 @@ import { AlertTriangle, ShieldAlert } from "lucide-react";
 import { terminSlovom } from "@/lib/faktero/ucet-zrusenie";
 import { prelozit, type Kluc } from "@/lib/mobile/preklady";
 import { locale, type Jazyk } from "@/lib/mobile/jazyk";
+import { useT } from "@/lib/i18n/useT";
 
 /**
  * Zrušenie účtu — spoločné pre web aj pre mobilnú aplikáciu.
@@ -34,7 +35,7 @@ type Stav = {
 
 export function ZrusenieUctu({
   onZmena,
-  jazyk = "sk",
+  jazyk: jazykAppky,
 }: {
   /**
    * Termín zmazania sa zmenil — po žiadosti aj po odvolaní (`null`). Obrazovka
@@ -45,6 +46,9 @@ export function ZrusenieUctu({
   onZmena?: (zrusiSa: string | null) => void;
   jazyk?: Jazyk;
 }) {
+  // Appka podáva vlastný jazyk; web berie jazyk zvolený vpravo hore (sk/de).
+  const { jazyk: jazykWebu } = useT();
+  const jazyk: Jazyk = jazykAppky ?? jazykWebu;
   const t = (kluc: Kluc, premenne?: Record<string, string | number>) =>
     prelozit(jazyk, kluc, premenne);
   const nacitaj = useOperacia("ucet-stav-zrusenia");

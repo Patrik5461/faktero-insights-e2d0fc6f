@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 import { VideoNavodPlayer } from "@/components/faktero/VideoNavodPlayer";
 import { videoJsonLd, videoNavod } from "@/lib/faktero/video-navody";
 
@@ -7,15 +9,21 @@ const VIDEO_PRVA_FAKTURA = videoNavod("vytvorenie-prvej-faktury");
 const VIDEO_UHRADENA = videoNavod("oznacenie-uhradenej-faktury");
 
 export const Route = createFileRoute("/pomoc/faktury")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Faktúry — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Faktúry — Faktero") },
       {
         name: "description",
-        content: "Ako vytvoriť, vygenerovať PDF, odoslať a označiť faktúru za uhradenú vo Faktere.",
+        content: preloz(
+          match.context.jazyk,
+          "Ako vytvoriť, vygenerovať PDF, odoslať a označiť faktúru za uhradenú vo Faktere.",
+        ),
       },
-      { property: "og:title", content: "Pomoc — Faktúry — Faktero" },
-      { property: "og:description", content: "Návod na vystavovanie a správu faktúr vo Faktere." },
+      { property: "og:title", content: preloz(match.context.jazyk, "Pomoc — Faktúry — Faktero") },
+      {
+        property: "og:description",
+        content: preloz(match.context.jazyk, "Návod na vystavovanie a správu faktúr vo Faktere."),
+      },
       { property: "og:url", content: "https://faktero.sk/pomoc/faktury" },
     ],
     links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/faktury" }],
@@ -240,11 +248,15 @@ const sections: HelpSection[] = [
           aj vo výkazoch k DPH sa oba doklady spárujú.
         </p>
         <p>
-          Alebo v zozname <Link to="/faktury" search={{ type: "credit" } as any}>Dobropisy</Link>{" "}
-          tlačidlom <strong>Vystaviť dobropis</strong>. V rámčeku <em>Opravovaná faktúra</em> zadajte
-          jej <strong>číslo alebo variabilný symbol</strong> a kliknite na Priradiť (prázdny dobropis
-          si rovno vezme jej položky so mínusom), alebo ju vyberte zo zoznamu. Keď väzbu nevyplníte,
-          vznikne <strong>samostatný dobropis</strong> — napríklad zľava za celé obdobie.
+          Alebo v zozname{" "}
+          <Link to="/faktury" search={{ type: "credit" } as any}>
+            Dobropisy
+          </Link>{" "}
+          tlačidlom <strong>Vystaviť dobropis</strong>. V rámčeku <em>Opravovaná faktúra</em>{" "}
+          zadajte jej <strong>číslo alebo variabilný symbol</strong> a kliknite na Priradiť (prázdny
+          dobropis si rovno vezme jej položky so mínusom), alebo ju vyberte zo zoznamu. Keď väzbu
+          nevyplníte, vznikne <strong>samostatný dobropis</strong> — napríklad zľava za celé
+          obdobie.
         </p>
       </>
     ),
@@ -255,20 +267,21 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Keď sa po vystavení faktúry cena <strong>zvýši</strong> (doúčtovanie, chyba v cene, dohodnutý
-          príplatok), vystavte ťarchopis: na detaile faktúry tlačidlo{" "}
+          Keď sa po vystavení faktúry cena <strong>zvýši</strong> (doúčtovanie, chyba v cene,
+          dohodnutý príplatok), vystavte ťarchopis: na detaile faktúry tlačidlo{" "}
           <strong>Vystaviť ťarchopis</strong>. Otvorí sa doklad s rovnakým odberateľom, menou a
           režimom DPH a s väzbou na pôvodnú faktúru.
         </p>
         <p>
-          Položky zadajte <strong>kladne</strong> — len o koľko sa cena zvyšuje, nie celú faktúru znova.
-          Ťarchopis bez väzby na faktúru ani so zápornou sumou vystaviť nejde (to je dobropis).
+          Položky zadajte <strong>kladne</strong> — len o koľko sa cena zvyšuje, nie celú faktúru
+          znova. Ťarchopis bez väzby na faktúru ani so zápornou sumou vystaviť nejde (to je
+          dobropis).
         </p>
         <p>
-          Na PDF je nadpis Ťarchopis a číslo opravovanej faktúry. Do priznania k DPH ide do r. 24 a 25
-          so znamienkom plus, do kontrolného výkazu do časti C.1, do Pohody ako „vydaný ťarchopis“
-          spárovaný s pôvodnou faktúrou a do eFaktúry ako doklad 383. Sklad sa ním nehýbe. Ťarchopis
-          sa platí ako bežná faktúra.
+          Na PDF je nadpis Ťarchopis a číslo opravovanej faktúry. Do priznania k DPH ide do r. 24 a
+          25 so znamienkom plus, do kontrolného výkazu do časti C.1, do Pohody ako „vydaný
+          ťarchopis“ spárovaný s pôvodnou faktúrou a do eFaktúry ako doklad 383. Sklad sa ním
+          nehýbe. Ťarchopis sa platí ako bežná faktúra.
         </p>
       </>
     ),
@@ -280,8 +293,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           Na detaile vystavenej faktúry je časť <strong>Zaúčtovanie</strong>: predkontácia (napr.{" "}
-          <code>3Fv</code>), členenie DPH, členenie kontrolného výkazu, stredisko, činnosť a
-          interná poznámka pre účtovníčku. Kódy sa vyberajú z{" "}
+          <code>3Fv</code>), členenie DPH, členenie kontrolného výkazu, stredisko, činnosť a interná
+          poznámka pre účtovníčku. Kódy sa vyberajú z{" "}
           <Link to="/uctovnictvo/predkontacie">číselníka predkontácií</Link>; prázdne pole znamená
           predvolený kód pre vydané faktúry, zálohy či dobropisy z toho istého číselníka.
         </p>
@@ -293,8 +306,9 @@ const sections: HelpSection[] = [
         <p>
           Viac faktúr naraz zaúčtujete v <Link to="/faktury">zozname faktúr</Link>: označte ich a
           kliknite na <strong>Zaúčtovať</strong>. Zaúčtovaná faktúra má v zozname značku{" "}
-          <em>Zaúčtovaná</em>. Na detaile sa dá rovno <strong>stiahnuť XML pre Pohodu</strong>, alebo
-          ju odovzdanú <strong>vrátiť z Pohody</strong> na opravu — v Pohode ju predtým zmažte.
+          <em>Zaúčtovaná</em>. Na detaile sa dá rovno <strong>stiahnuť XML pre Pohodu</strong>,
+          alebo ju odovzdanú <strong>vrátiť z Pohody</strong> na opravu — v Pohode ju predtým
+          zmažte.
         </p>
         <p>
           Do Pohody ide aj text nad položkami faktúry a popis položiek, zľavy, spôsob úhrady a
@@ -666,7 +680,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Faktúry"
       title="Faktúry vo Faktere"
       intro={<p>Všetko, čo potrebujete vedieť o vystavovaní, odosielaní a evidencii faktúr.</p>}

@@ -1,4 +1,6 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useT } from "@/lib/i18n/useT";
 import { ColneUdajePolozky } from "@/components/faktero/ColneUdajePolozky";
 import { colneUdajeNaZapis } from "@/lib/faktero/colny-kod";
 import { KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
@@ -34,7 +36,7 @@ import {
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { sadzbyDoVyberu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/faktury/$id/upravit")({
-  head: () => ({ meta: [{ title: "Upraviť faktúru — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Upraviť faktúru — Faktero") }] }),
   component: EditInvoice,
 });
 
@@ -72,6 +74,7 @@ const EMPTY: Item = {
 };
 
 function EditInvoice() {
+  const { t } = useT();
   const { id } = Route.useParams();
   const navigate = useNavigate();
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
@@ -119,14 +122,14 @@ function EditInvoice() {
         supabase.from("invoice_items").select("*").eq("invoice_id", id).order("position"),
       ]);
       if (!i) {
-        toast.error("Faktúra nenájdená");
+        toast.error(t("Faktúra nenájdená"));
         navigate({ to: "/faktury" });
         return;
       }
       // Opraviť sa dá aj uhradená faktúra — preklep v adrese sa nájde často až
       // po zaplatení. Stornovaná ostáva zamknutá, tá sa už len archivuje.
       if (i.status === "cancelled") {
-        toast.error("Stornovanú faktúru už upraviť nemožno.");
+        toast.error(t("Stornovanú faktúru už upraviť nemožno."));
         navigate({ to: "/faktury/$id", params: { id } });
         return;
       }
@@ -244,14 +247,14 @@ function EditInvoice() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (saving) return;
-    if (!form.invoice_number.trim()) return toast.error("Číslo faktúry nesmie byť prázdne.");
+    if (!form.invoice_number.trim()) return toast.error(t("Číslo faktúry nesmie byť prázdne."));
     /* Povinný je text nad položkami, samotné položky nie. */
     if (!form.intro_note.trim()) {
-      return toast.error("Vyplňte text nad položkami — hovorí, čo sa fakturuje.");
+      return toast.error(t("Vyplňte text nad položkami — hovorí, čo sa fakturuje."));
     }
-    if (!odberatel?.customer_name.trim()) return toast.error("Odberateľ musí mať názov.");
+    if (!odberatel?.customer_name.trim()) return toast.error(t("Odberateľ musí mať názov."));
     const bezNazvu = riadkyDokladu.find((it) => !it.name.trim());
-    if (bezNazvu) return toast.error("Položka so sumou musí mať názov.");
+    if (bezNazvu) return toast.error(t("Položka so sumou musí mať názov."));
     // Lock: stock-linked lines cannot be removed or modified after sent/paid
     if ((inv?.status as string) === "sent") {
       const violation = originalLocked.some((orig) => {
@@ -264,7 +267,7 @@ function EditInvoice() {
         );
       });
       if (violation) {
-        toast.error("Položky ovplyvňujúce sklad nie je možné meniť po odoslaní faktúry.");
+        toast.error(t("Položky ovplyvňujúce sklad nie je možné meniť po odoslaní faktúry."));
         return;
       }
     }
@@ -346,31 +349,31 @@ function EditInvoice() {
               series_id: inv?.number_series_id ?? null,
             },
           });
-          toast.success(`Ďalšie doklady pokračujú v rade ${v.format}.`);
+          toast.success(t("Ďalšie doklady pokračujú v rade {format}.", { format: v.format }));
         } catch (e: any) {
-          toast.warning(e?.message ?? "Číselný rad sa nepodarilo zmeniť.");
+          toast.warning(e?.message ?? t("Číselný rad sa nepodarilo zmeniť."));
         }
       }
       toast.success(
         inv?.status === "draft" && vystavitRef.current
-          ? `Faktúra ${form.invoice_number.trim()} je vystavená.`
-          : "Faktúra upravená. PDF treba pregenerovať.",
+          ? t("Faktúra {cislo} je vystavená.", { cislo: form.invoice_number.trim() })
+          : t("Faktúra upravená. PDF treba pregenerovať."),
       );
       navigate({ to: "/faktury/$id", params: { id } });
     } catch (err: any) {
-      toast.error(zrozumitelnaChyba(err?.message));
+      toast.error(t(zrozumitelnaChyba(err?.message)));
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading || !inv) return <PageBody>Načítavam…</PageBody>;
+  if (loading || !inv) return <PageBody>{t("Načítavam…")}</PageBody>;
 
   return (
     <>
       <PageHeader
-        title={`Upraviť faktúru ${inv.invoice_number}`}
-        description="Po uložení sa PDF pregeneruje pri ďalšom otvorení."
+        title={t("Upraviť faktúru {cislo}", { cislo: inv.invoice_number })}
+        description={t("Po uložení sa PDF pregeneruje pri ďalšom otvorení.")}
       />
       <PageBody>
         <form onSubmit={submit} className="mx-auto max-w-6xl space-y-6">
@@ -380,22 +383,20 @@ function EditInvoice() {
           */}
           {inv.status === "draft" && (
             <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
-              <strong>Toto je koncept.</strong> Skontrolujte odberateľa, položky a dátumy a
-              tlačidlom <strong>Vystaviť faktúru</strong> ho vystavíte. Kým je to koncept, odberateľ
-              ho nemá a do prehľadov sa nepočíta.
+              <strong>{t("Toto je koncept.")}</strong>{" "}
+              {t("Skontrolujte odberateľa, položky a dátumy a tlačidlom „Vystaviť faktúru“ ho vystavíte. Kým je to koncept, odberateľ ho nemá a do prehľadov sa nepočíta.")}
             </div>
           )}
           {inv.status !== "draft" && (
             <div className="rounded-xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
               <strong>
                 {(inv.status as string) === "paid"
-                  ? "Opravujete už uhradenú faktúru."
-                  : "Opravujete už vystavenú faktúru."}
+                  ? t("Opravujete už uhradenú faktúru.")
+                  : t("Opravujete už vystavenú faktúru.")}
               </strong>{" "}
-              Odberateľ ju mohol dostať, preto mu po oprave pošlite nové PDF. Ak je obdobie
-              uzamknuté uzávierkou, dátumy ani sumy sa zmeniť nedajú.
+              {t("Odberateľ ju mohol dostať, preto mu po oprave pošlite nové PDF. Ak je obdobie uzamknuté uzávierkou, dátumy ani sumy sa zmeniť nedajú.")}
               {(inv.status as string) === "sent" && (
-                <> Riadky naviazané na sklad sa už meniť nedajú, aby sedel stav zásob.</>
+                <> {t("Riadky naviazané na sklad sa už meniť nedajú, aby sedel stav zásob.")}</>
               )}
             </div>
           )}
@@ -423,7 +424,7 @@ function EditInvoice() {
                   if (z?.customer_id && z.customer_id !== c.id) {
                     setForm((f) => ({ ...f, job_id: "" }));
                     toast.info(
-                      "Zákazka patrila pôvodnému odberateľovi, tak sa z faktúry odobrala.",
+                      t("Zákazka patrila pôvodnému odberateľovi, tak sa z faktúry odobrala."),
                     );
                   }
                 }
@@ -437,10 +438,10 @@ function EditInvoice() {
           */}
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="rounded-2xl border border-border bg-card p-5">
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">Základné údaje</h3>
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">{t("Základné údaje")}</h3>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-                  <Lbl label="Číslo faktúry">
+                  <Lbl label={t("Číslo faktúry")}>
                     <input
                       required
                       value={form.invoice_number}
@@ -457,13 +458,13 @@ function EditInvoice() {
                         className="mt-0.5 h-4 w-4 rounded border-input"
                       />
                       <span>
-                        Pokračovať v tomto číselnom rade
+                        {t("Pokračovať v tomto číselnom rade")}
                         <span className="block text-xs text-muted-foreground">
                           {(() => {
                             const v = sablonaZCisla(form.invoice_number.trim(), form.issue_date);
                             return v
-                              ? `Ďalšie doklady tohto druhu budú číslované ${v.format} — najbližší dostane ${ukazkaCisla(v.format, v.poradie + 1, new Date(form.issue_date))}.`
-                              : "Z tohto čísla sa rad odvodiť nedá — potrebuje poradie aspoň o dvoch číslach na konci. Doklad sa uloží, číslovanie ostane pôvodné.";
+                              ? t("Ďalšie doklady tohto druhu budú číslované {format} — najbližší dostane {cislo}.", { format: v.format, cislo: ukazkaCisla(v.format, v.poradie + 1, new Date(form.issue_date)) })
+                              : t("Z tohto čísla sa rad odvodiť nedá — potrebuje poradie aspoň o dvoch číslach na konci. Doklad sa uloží, číslovanie ostane pôvodné.");
                           })()}
                         </span>
                       </span>
@@ -471,14 +472,11 @@ function EditInvoice() {
                   )}
                   {form.invoice_number.trim() !== (inv?.invoice_number ?? "") && (
                     <p className="mt-1 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
-                      Číslo sa mení z <strong>{inv?.invoice_number}</strong> na{" "}
-                      <strong>{form.invoice_number.trim() || "—"}</strong>. Odberateľ mohol starý
-                      doklad dostať, tak mu pošlite nové PDF. Variabilný symbol sa nemení sám — keď
-                      má sedieť s číslom, prepíšte ho tiež.
+                      {t("Číslo sa mení z {stare} na {nove}. Odberateľ mohol starý doklad dostať, tak mu pošlite nové PDF. Variabilný symbol sa nemení sám — keď má sedieť s číslom, prepíšte ho tiež.", { stare: inv?.invoice_number ?? "", nove: form.invoice_number.trim() || "—" })}
                     </p>
                   )}
                 </div>
-                <Lbl label="Dátum vystavenia">
+                <Lbl label={t("Dátum vystavenia")}>
                   <input
                     type="date"
                     required
@@ -487,7 +485,7 @@ function EditInvoice() {
                     className={inputCls}
                   />
                 </Lbl>
-                <Lbl label="Splatnosť">
+                <Lbl label={t("Splatnosť")}>
                   <input
                     type="date"
                     required
@@ -496,7 +494,7 @@ function EditInvoice() {
                     className={inputCls}
                   />
                 </Lbl>
-                <Lbl label="Dátum dodania">
+                <Lbl label={t("Dátum dodania")}>
                   <input
                     type="date"
                     value={form.delivery_date}
@@ -516,10 +514,10 @@ function EditInvoice() {
 
             <section className="rounded-2xl border border-border bg-card p-5">
               <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">
-                Platobné údaje a symboly
+                {t("Platobné údaje a symboly")}
               </h3>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                <Lbl label="Spôsob platby">
+                <Lbl label={t("Spôsob platby")}>
                   <select
                     value={form.payment_method}
                     onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
@@ -527,19 +525,19 @@ function EditInvoice() {
                   >
                     {PAYMENT_METHODS.map((m) => (
                       <option key={m.value} value={m.value}>
-                        {m.label}
+                        {t(m.label)}
                       </option>
                     ))}
                   </select>
                 </Lbl>
-                <Lbl label="Mena">
+                <Lbl label={t("Mena")}>
                   <input
                     value={form.currency}
                     onChange={(e) => setForm({ ...form, currency: e.target.value })}
                     className={inputCls}
                   />
                 </Lbl>
-                <Lbl label="Variabilný symbol">
+                <Lbl label={t("Variabilný symbol")}>
                   <input
                     value={form.variable_symbol}
                     onChange={(e) => setForm({ ...form, variable_symbol: e.target.value })}
@@ -552,31 +550,31 @@ function EditInvoice() {
 
           <section className="rounded-2xl border border-border bg-card p-5">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-              Text nad položkami <span className="text-destructive">*</span>
+              {t("Text nad položkami")} <span className="text-destructive">*</span>
             </h3>
             <textarea
               rows={2}
               required
               value={form.intro_note}
               onChange={(e) => setForm({ ...form, intro_note: e.target.value })}
-              placeholder="Text, ktorý sa vytlačí nad tabuľkou položiek"
+              placeholder={t("Text, ktorý sa vytlačí nad tabuľkou položiek")}
               className={inputCls}
             />
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">Položky</h3>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">{t("Položky")}</h3>
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-foreground">
-                    <th className="py-2 font-medium">Názov</th>
-                    <th className="py-2 pl-3 font-medium">Mn.</th>
-                    <th className="py-2 pl-3 font-medium">MJ</th>
-                    <th className="py-2 pl-3 font-medium text-right">Cena</th>
-                    <th className="py-2 pl-3 font-medium text-right">Zľava %</th>
-                    <th className="py-2 pl-3 font-medium">DPH</th>
-                    <th className="py-2 pl-3 font-medium text-right">Spolu s DPH</th>
+                    <th className="py-2 font-medium">{t("Názov")}</th>
+                    <th className="py-2 pl-3 font-medium">{t("Mn.")}</th>
+                    <th className="py-2 pl-3 font-medium">{t("MJ")}</th>
+                    <th className="py-2 pl-3 font-medium text-right">{t("Cena")}</th>
+                    <th className="py-2 pl-3 font-medium text-right">{t("Zľava %")}</th>
+                    <th className="py-2 pl-3 font-medium">{t("DPH")}</th>
+                    <th className="py-2 pl-3 font-medium text-right">{t("Spolu s DPH")}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -591,7 +589,7 @@ function EditInvoice() {
                           value={it.name}
                           disabled={it._locked}
                           onChange={(e) => setItem(idx, { name: e.target.value })}
-                          placeholder="Názov položky"
+                          placeholder={t("Názov položky")}
                           className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         />
                         <PoznamkaPolozky
@@ -673,12 +671,12 @@ function EditInvoice() {
                                   </option>
                                 ))}
                                 {/* Prenesenie len na túto položku. */}
-                                {rezim.platitel && <option value="pdp">PDP (prenesenie)</option>}
+                                {rezim.platitel && <option value="pdp">{t("PDP (prenesenie)")}</option>}
                                 {v.historicke.length > 0 && (
-                                  <optgroup label="Historické sadzby">
+                                  <optgroup label={t("Historické sadzby")}>
                                     {v.historicke.map((h) => (
                                       <option key={h.sadzba} value={h.sadzba}>
-                                        {h.sadzba}% (do {h.doRoku})
+                                        {t("{sadzba}% (do {rok})", { sadzba: h.sadzba, rok: h.doRoku })}
                                       </option>
                                     ))}
                                   </optgroup>
@@ -705,7 +703,7 @@ function EditInvoice() {
                           disabled={it._locked}
                           title={
                             it._locked
-                              ? "Položky ovplyvňujúce sklad nie je možné meniť po odoslaní faktúry."
+                              ? t("Položky ovplyvňujúce sklad nie je možné meniť po odoslaní faktúry.")
                               : ""
                           }
                           onClick={() => !it._locked && setItems(items.filter((_, i) => i !== idx))}
@@ -721,8 +719,7 @@ function EditInvoice() {
             </div>
 
             <p className="mt-3 text-xs text-muted-foreground md:mt-0">
-              Do stĺpca <strong>Spolu s DPH</strong> sa dá napísať suma, na ktorej ste sa dohodli —
-              jednotková cena bez dane sa dopočíta sama.
+              {t("Do stĺpca „Spolu s DPH“ sa dá napísať suma, na ktorej ste sa dohodli — jednotková cena bez dane sa dopočíta sama.")}
             </p>
 
             <div className="space-y-3 md:hidden">
@@ -735,7 +732,7 @@ function EditInvoice() {
                     value={it.name}
                     disabled={it._locked}
                     onChange={(e) => setItem(idx, { name: e.target.value })}
-                    placeholder="Názov položky"
+                    placeholder={t("Názov položky")}
                     className="mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                   <PoznamkaPolozky
@@ -779,7 +776,7 @@ function EditInvoice() {
                       step="0.01"
                       min="0"
                       max="100"
-                      title="Zľava v %"
+                      title={t("Zľava v %")}
                       value={Number(it.discount_percent ?? 0) === 0 ? "" : it.discount_percent}
                       placeholder="0"
                       disabled={it._locked}
@@ -808,12 +805,12 @@ function EditInvoice() {
                               </option>
                             ))}
                             {/* Prenesenie len na túto položku. */}
-                            {rezim.platitel && <option value="pdp">PDP (prenesenie)</option>}
+                            {rezim.platitel && <option value="pdp">{t("PDP (prenesenie)")}</option>}
                             {v.historicke.length > 0 && (
-                              <optgroup label="Historické sadzby">
+                              <optgroup label={t("Historické sadzby")}>
                                 {v.historicke.map((h) => (
                                   <option key={h.sadzba} value={h.sadzba}>
-                                    {h.sadzba}% (do {h.doRoku})
+                                    {t("{sadzba}% (do {rok})", { sadzba: h.sadzba, rok: h.doRoku })}
                                   </option>
                                 ))}
                               </optgroup>
@@ -825,7 +822,7 @@ function EditInvoice() {
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
-                      <span className="text-[13px] font-semibold text-foreground">Spolu s DPH</span>
+                      <span className="text-[13px] font-semibold text-foreground">{t("Spolu s DPH")}</span>
                       <CellSpolu
                         hodnota={
                           zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
@@ -848,7 +845,7 @@ function EditInvoice() {
                   </div>
                   {it._locked && (
                     <div className="mt-2 text-[11px] text-muted-foreground">
-                      🔒 Položka ovplyvňujúca sklad — nemožno meniť po odoslaní.
+                      🔒 {t("Položka ovplyvňujúca sklad — nemožno meniť po odoslaní.")}
                     </div>
                   )}
                 </div>
@@ -860,7 +857,7 @@ function EditInvoice() {
               onClick={() => setItems([...items, { ...EMPTY }])}
               className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground"
             >
-              <Plus className="h-3.5 w-3.5" /> Pridať položku
+              <Plus className="h-3.5 w-3.5" /> {t("Pridať položku")}
             </button>
           </section>
 
@@ -868,7 +865,7 @@ function EditInvoice() {
             <div className="ml-auto max-w-sm space-y-2 text-sm">
               {/* Zľava na celý doklad — rozpočíta sa pomerne medzi sadzby DPH. */}
               <div className="flex items-center justify-between gap-2 pb-1">
-                <span className="text-[13px] font-semibold text-foreground">Zľava na doklad</span>
+                <span className="text-[13px] font-semibold text-foreground">{t("Zľava na doklad")}</span>
                 <span className="flex items-center gap-1">
                   <input
                     type="number"
@@ -902,13 +899,13 @@ function EditInvoice() {
               {totals.zlava > 0 && (
                 <>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Medzisúčet</span>
+                    <span>{t("Medzisúčet")}</span>
                     <span className="tabular-nums">
                       {totals.medzisucet.toFixed(2)} {form.currency}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Zľava</span>
+                    <span>{t("Zľava")}</span>
                     <span className="tabular-nums">
                       −{totals.zlava.toFixed(2)} {form.currency}
                     </span>
@@ -916,19 +913,19 @@ function EditInvoice() {
                 </>
               )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Bez DPH</span>
+                <span className="text-muted-foreground">{t("Bez DPH")}</span>
                 <span className="tabular-nums">
                   {totals.subtotal.toFixed(2)} {form.currency}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">DPH</span>
+                <span className="text-muted-foreground">{t("DPH")}</span>
                 <span className="tabular-nums">
                   {totals.vat_total.toFixed(2)} {form.currency}
                 </span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
-                <span>Spolu</span>
+                <span>{t("Spolu")}</span>
                 <span className="tabular-nums text-primary">
                   {totals.total.toFixed(2)} {form.currency}
                 </span>
@@ -937,7 +934,7 @@ function EditInvoice() {
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">Poznámka</h3>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">{t("Poznámka")}</h3>
             <textarea
               rows={3}
               value={form.notes}
@@ -954,7 +951,7 @@ function EditInvoice() {
               params={{ id }}
               className="rounded-md border border-border bg-card px-4 py-2 text-center text-sm font-medium hover:bg-secondary"
             >
-              Zrušiť
+              {t("Zrušiť")}
             </Link>
             {inv.status === "draft" ? (
               <>
@@ -965,7 +962,7 @@ function EditInvoice() {
                   className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-60"
                 >
                   <Save className="h-4 w-4" />
-                  Uložiť koncept
+                  {t("Uložiť koncept")}
                 </button>
                 <button
                   type="submit"
@@ -978,7 +975,7 @@ function EditInvoice() {
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  Vystaviť faktúru
+                  {t("Vystaviť faktúru")}
                 </button>
               </>
             ) : (
@@ -992,7 +989,7 @@ function EditInvoice() {
                 ) : (
                   <Save className="h-4 w-4" />
                 )}
-                Uložiť zmeny
+                {t("Uložiť zmeny")}
               </button>
             )}
           </div>
@@ -1020,6 +1017,7 @@ function CellSpolu({
   disabled?: boolean;
   w?: string;
 }) {
+  const { t } = useT();
   const [rozpisane, setRozpisane] = useState<string | null>(null);
   return (
     <input
@@ -1027,7 +1025,7 @@ function CellSpolu({
       step="0.01"
       inputMode="decimal"
       disabled={disabled}
-      title="Suma s DPH — cena bez dane sa dopočíta"
+      title={t("Suma s DPH — cena bez dane sa dopočíta")}
       placeholder="0.00"
       // Nulová suma sa nepíše do poľa, je len nápovedou — klik a hneď sa píše.
       value={rozpisane ?? (Number.isFinite(hodnota) && hodnota !== 0 ? hodnota.toFixed(2) : "")}
@@ -1092,6 +1090,7 @@ function OdberatelSekcia({
   onVyber: (c: any) => void;
   onNovy: (c: any) => void;
 }) {
+  const { t } = useT();
   const pole = (k: keyof OdberatelFaktury, label: string, extra = "") => (
     <Lbl label={label}>
       <input
@@ -1112,19 +1111,19 @@ function OdberatelSekcia({
   return (
     <section className="rounded-2xl border border-border bg-card p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wide">Odberateľ</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide">{t("Odberateľ")}</h3>
         {zmeneny && (
           <button
             type="button"
             onClick={() => onZmena(povodny)}
             className="text-xs text-muted-foreground underline hover:text-foreground"
           >
-            Vrátiť pôvodného ({povodny.customer_name || "bez názvu"})
+            {t("Vrátiť pôvodného ({nazov})", { nazov: povodny.customer_name || t("bez názvu") })}
           </button>
         )}
       </div>
       <div className="max-w-xl">
-        <span className="text-xs font-medium text-muted-foreground">Vybrať iného z adresára</span>
+        <span className="text-xs font-medium text-muted-foreground">{t("Vybrať iného z adresára")}</span>
         <CustomerSearch
           customers={customers}
           value={odberatel.customer_id ?? ""}
@@ -1139,24 +1138,23 @@ function OdberatelSekcia({
         />
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        Údaje nižšie sú tie, ktoré sú na faktúre. Opravíte ich len na tomto doklade — v adresári
-        ostanú, ako sú.
+        {t("Údaje nižšie sú tie, ktoré sú na faktúre. Opravíte ich len na tomto doklade — v adresári ostanú, ako sú.")}
       </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="sm:col-span-2">{pole("customer_name", "Názov / meno")}</div>
-        {pole("customer_ico", "IČO")}
-        {pole("customer_dic", "DIČ")}
-        {pole("customer_ic_dph", "IČ DPH")}
-        <div className="sm:col-span-2">{pole("customer_street", "Ulica a číslo")}</div>
-        {pole("customer_zip", "PSČ")}
-        {pole("customer_city", "Mesto")}
-        {pole("customer_country", "Krajina (kód)", "uppercase")}
-        <div className="sm:col-span-2">{pole("customer_email", "E-mail")}</div>
+        <div className="sm:col-span-2">{pole("customer_name", t("Názov / meno"))}</div>
+        {pole("customer_ico", t("IČO"))}
+        {pole("customer_dic", t("DIČ"))}
+        {pole("customer_ic_dph", t("IČ DPH"))}
+        <div className="sm:col-span-2">{pole("customer_street", t("Ulica a číslo"))}</div>
+        {pole("customer_zip", t("PSČ"))}
+        {pole("customer_city", t("Mesto"))}
+        {pole("customer_country", t("Krajina (kód)"), "uppercase")}
+        <div className="sm:col-span-2">{pole("customer_email", t("E-mail"))}</div>
       </div>
       {upozornenia.length > 0 && (
         <ul className="mt-4 space-y-1 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
           {upozornenia.map((u) => (
-            <li key={u}>{u}</li>
+            <li key={u}>{t(u)}</li>
           ))}
         </ul>
       )}

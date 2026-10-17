@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -28,7 +30,7 @@ import { PodporaStav } from "@/components/faktero/PodporaStav";
 import { hladajVManualoch, type Clanok, type Vysledok } from "@/lib/faktero/pomoc-hladanie";
 
 export const Route = createFileRoute("/_authenticated/podpora/")({
-  head: () => ({ meta: [{ title: "Pomoc a podpora — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Pomoc a podpora — Faktero") }] }),
   component: PodporaPage,
 });
 
@@ -55,6 +57,7 @@ type RiadokPoziadavky = {
 };
 
 function PodporaPage() {
+  const { t } = useT();
   const [otazka, setOtazka] = useState("");
   const [clanky, setClanky] = useState<Clanok[] | null>(null);
   const [poziadavky, setPoziadavky] = useState<RiadokPoziadavky[] | null>(null);
@@ -93,8 +96,8 @@ function PodporaPage() {
   return (
     <>
       <PageHeader
-        title="Pomoc a podpora"
-        description="Nájdite odpoveď v manuáloch, opýtajte sa Faktero AI alebo napíšte nám — odpoveď uvidíte tu aj v e‑maile."
+        title={t("Pomoc a podpora")}
+        description={t("Nájdite odpoveď v manuáloch, opýtajte sa Faktero AI alebo napíšte nám — odpoveď uvidíte tu aj v e‑maile.")}
         help="/pomoc/podpora"
       />
       <PageBody>
@@ -105,8 +108,8 @@ function PodporaPage() {
               <input
                 value={otazka}
                 onChange={(e) => setOtazka(e.target.value)}
-                placeholder="S čím potrebujete pomôcť? Napríklad „dobropis“ alebo „párovanie platieb“"
-                aria-label="Hľadať v pomoci"
+                placeholder={t("S čím potrebujete pomôcť? Napríklad „dobropis“ alebo „párovanie platieb“")}
+                aria-label={t("Hľadať v pomoci")}
                 className="h-11 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm"
               />
             </label>
@@ -115,10 +118,10 @@ function PodporaPage() {
               <div className="mt-4 space-y-2">
                 {!clanky ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Hľadám v manuáloch…
+                    <Loader2 className="h-4 w-4 animate-spin" /> {t("Hľadám v manuáloch…")}
                   </div>
                 ) : vysledky.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">V manuáloch sme nič nenašli.</p>
+                  <p className="text-sm text-muted-foreground">{t("V manuáloch sme nič nenašli.")}</p>
                 ) : (
                   vysledky.map((v, i) => (
                     <a
@@ -141,13 +144,13 @@ function PodporaPage() {
                     search={{ otazka: otazka.trim() }}
                     className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                   >
-                    <Sparkles className="h-4 w-4 text-primary" /> Opýtať sa Faktero AI
+                    <Sparkles className="h-4 w-4 text-primary" /> {t("Opýtať sa Faktero AI")}
                   </Link>
                   <button
                     onClick={() => setNova(true)}
                     className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                   >
-                    <MessageSquarePlus className="h-4 w-4 text-primary" /> Napísať podpore
+                    <MessageSquarePlus className="h-4 w-4 text-primary" /> {t("Napísať podpore")}
                   </button>
                 </div>
               </div>
@@ -161,7 +164,7 @@ function PodporaPage() {
                     rel="noopener"
                     className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary/60"
                   >
-                    {c.nazov} <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    {t(c.nazov)} <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </a>
                 ))}
               </div>
@@ -176,9 +179,9 @@ function PodporaPage() {
               className="rounded-2xl border border-border bg-card p-4 hover:bg-secondary/40"
             >
               <BookOpen className="h-5 w-5 text-primary" />
-              <div className="mt-2 font-medium">Všetky manuály</div>
+              <div className="mt-2 font-medium">{t("Všetky manuály")}</div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Návody ku každej agende, krok za krokom.
+                {t("Návody ku každej agende, krok za krokom.")}
               </p>
             </a>
             <Link
@@ -188,7 +191,7 @@ function PodporaPage() {
               <Sparkles className="h-5 w-5 text-primary" />
               <div className="mt-2 font-medium">Faktero AI</div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Odpovie na otázky o vašich faktúrach aj o tom, ako čo vo Fakteri spraviť.
+                {t("Odpovie na otázky o vašich faktúrach aj o tom, ako čo vo Fakteri spraviť.")}
               </p>
             </Link>
             <button
@@ -196,30 +199,30 @@ function PodporaPage() {
               className="rounded-2xl border border-border bg-card p-4 text-left hover:bg-secondary/40"
             >
               <LifeBuoy className="h-5 w-5 text-primary" />
-              <div className="mt-2 font-medium">Napísať podpore</div>
+              <div className="mt-2 font-medium">{t("Napísať podpore")}</div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Otázka, chyba alebo nápad — odpovieme v pracovné dni spravidla do 24 hodín.
+                {t("Otázka, chyba alebo nápad — odpovieme v pracovné dni spravidla do 24 hodín.")}
               </p>
             </button>
           </div>
 
           <div className="rounded-2xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border p-4">
-              <h2 className="font-semibold">Moje požiadavky</h2>
+              <h2 className="font-semibold">{t("Moje požiadavky")}</h2>
               <button
                 onClick={() => setNova(true)}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                <MessageSquarePlus className="h-4 w-4" /> Nová požiadavka
+                <MessageSquarePlus className="h-4 w-4" /> {t("Nová požiadavka")}
               </button>
             </div>
             {poziadavky === null ? (
               <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Načítavam…
+                <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
               </div>
             ) : poziadavky.length === 0 ? (
               <p className="p-6 text-center text-sm text-muted-foreground">
-                Zatiaľ ste nám nepísali. Keď niečo nebude jasné, napíšte — odpoveď nájdete tu.
+                {t("Zatiaľ ste nám nepísali. Keď niečo nebude jasné, napíšte — odpoveď nájdete tu.")}
               </p>
             ) : (
               <ul>
@@ -242,7 +245,7 @@ function PodporaPage() {
                         </span>
                         {nove && (
                           <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
-                            Nová odpoveď
+                            {t("Nová odpoveď")}
                           </span>
                         )}
                         <PodporaStav stav={p.stav} />
@@ -297,6 +300,7 @@ function NovaPoziadavka({
   onZavri: () => void;
   onZalozena: () => void;
 }) {
+  const { t } = useT();
   useZatvorNaEscape(onZavri);
   const zaloz = useServerFn(zalozPoziadavkuFn);
   const [kategoria, setKategoria] = useState<KategoriaPoziadavky>("otazka");
@@ -305,7 +309,7 @@ function NovaPoziadavka({
   const [posielam, setPosielam] = useState(false);
 
   async function odosli() {
-    if (text.trim().length < 5) return toast.error("Napíšte aspoň vetu, nech vieme, s čím pomôcť.");
+    if (text.trim().length < 5) return toast.error(t("Napíšte aspoň vetu, nech vieme, s čím pomôcť."));
     setPosielam(true);
     try {
       const r = await zaloz({
@@ -319,7 +323,7 @@ function NovaPoziadavka({
         },
       });
       toast.success(
-        `Požiadavka ${cisloPoziadavky(r.cislo)} je založená. Odpoveď príde aj e‑mailom.`,
+        t("Požiadavka {cislo} je založená. Odpoveď príde aj e‑mailom.", { cislo: cisloPoziadavky(r.cislo) }),
       );
       onZalozena();
     } catch (e) {
@@ -335,13 +339,13 @@ function NovaPoziadavka({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Nová požiadavka"
+        aria-label={t("Nová požiadavka")}
         className="w-full max-w-lg rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold">Napísať podpore</h3>
+        <h3 className="text-lg font-semibold">{t("Napísať podpore")}</h3>
         <label className="mt-4 block text-sm">
-          <span className="text-xs font-medium text-muted-foreground">O čo ide</span>
+          <span className="text-xs font-medium text-muted-foreground">{t("O čo ide")}</span>
           <select
             value={kategoria}
             onChange={(e) => setKategoria(e.target.value as KategoriaPoziadavky)}
@@ -349,41 +353,41 @@ function NovaPoziadavka({
           >
             {KATEGORIE.map((k) => (
               <option key={k.kod} value={k.kod}>
-                {k.nazov}
+                {t(k.nazov)}
               </option>
             ))}
           </select>
         </label>
         <label className="mt-3 block text-sm">
-          <span className="text-xs font-medium text-muted-foreground">Predmet (nepovinné)</span>
+          <span className="text-xs font-medium text-muted-foreground">{t("Predmet (nepovinné)")}</span>
           <input
             value={predmet}
             onChange={(e) => setPredmet(e.target.value)}
             maxLength={200}
-            placeholder="Krátko, napríklad „Nejde odoslať faktúru e-mailom“"
+            placeholder={t("Krátko, napríklad „Nejde odoslať faktúru e-mailom“")}
             className={`${pole} h-9`}
           />
         </label>
         <label className="mt-3 block text-sm">
-          <span className="text-xs font-medium text-muted-foreground">Správa</span>
+          <span className="text-xs font-medium text-muted-foreground">{t("Správa")}</span>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={6}
             maxLength={10000}
-            placeholder="Čo ste robili, čo ste čakali a čo sa stalo. Číslo faktúry alebo dokladu nám veľmi pomôže."
+            placeholder={t("Čo ste robili, čo ste čakali a čo sa stalo. Číslo faktúry alebo dokladu nám veľmi pomôže.")}
             className={`${pole} py-2`}
           />
         </label>
         <p className="mt-2 text-xs text-muted-foreground">
-          Pripojíme aj firmu, stránku a prehliadač — nemusíte ich vypisovať.
+          {t("Pripojíme aj firmu, stránku a prehliadač — nemusíte ich vypisovať.")}
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button
             onClick={onZavri}
             className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
           >
-            Zrušiť
+            {t("Zrušiť")}
           </button>
           <button
             onClick={() => void odosli()}
@@ -391,7 +395,7 @@ function NovaPoziadavka({
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {posielam && <Loader2 className="h-4 w-4 animate-spin" />}
-            Odoslať
+            {t("Odoslať")}
           </button>
         </div>
       </div>

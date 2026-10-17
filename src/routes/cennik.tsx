@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, ArrowRight, FileText, Car, RefreshCw, ShieldCheck, Mail, Lock } from "lucide-react";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 const INVOICING_PLANS = [
   {
@@ -107,21 +109,29 @@ const FAQ = [
 ];
 
 export const Route = createFileRoute("/cennik")({
-  head: () => ({
-    meta: [
-      { title: "Cenník — Faktero" },
-      {
-        name: "description",
-        content: "Fakturačný systém od 9 €/mes a Kniha jázd od 5 €/mes. 30 dní zdarma bez karty.",
-      },
-      { property: "og:title", content: "Cenník Faktero" },
-      {
-        property: "og:description",
-        content:
-          "Dva samostatné produkty: Fakturačný systém a Kniha jázd. Vyberte si jeden alebo oba.",
-      },
-    ],
-  }),
+  head: ({ match }) => {
+    const j = match.context.jazyk;
+    return {
+      meta: [
+        { title: preloz(j, "Cenník — Faktero") },
+        {
+          name: "description",
+          content: preloz(
+            j,
+            "Fakturačný systém od 9 €/mes a Kniha jázd od 5 €/mes. 30 dní zdarma bez karty.",
+          ),
+        },
+        { property: "og:title", content: preloz(j, "Cenník Faktero") },
+        {
+          property: "og:description",
+          content: preloz(
+            j,
+            "Dva samostatné produkty: Fakturačný systém a Kniha jázd. Vyberte si jeden alebo oba.",
+          ),
+        },
+      ],
+    };
+  },
   component: CennikPage,
 });
 
@@ -132,6 +142,7 @@ function PlanCard({
   p: (typeof INVOICING_PLANS)[number];
   naVyziadanie?: boolean;
 }) {
+  const { t } = useT();
   return (
     <div
       className={`flex flex-col rounded-2xl border p-6 ${
@@ -141,34 +152,34 @@ function PlanCard({
       }`}
     >
       <div className="flex items-baseline justify-between">
-        <h3 className="text-lg font-semibold">{p.name}</h3>
+        <h3 className="text-lg font-semibold">{t(p.name)}</h3>
         {p.featured && (
           <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
-            Najobľúbenejšie
+            {t("Najobľúbenejšie")}
           </span>
         )}
       </div>
       <div className="mt-3 flex items-baseline gap-1">
-        <span className="text-4xl font-bold tracking-tight">{p.price}</span>
-        <span className="text-sm text-muted-foreground">{p.period}</span>
+        <span className="text-4xl font-bold tracking-tight">{t(p.price)}</span>
+        <span className="text-sm text-muted-foreground">{p.period && t(p.period)}</span>
       </div>
       {p.price !== "Individuálne" ? (
         <p className="mt-1 text-xs text-muted-foreground">
-          Ceny sú uvedené bez DPH. S DPH 23 %:{" "}
+          {t("Ceny sú uvedené bez DPH. S DPH 23 %:")}{" "}
           <span className="font-medium text-foreground">
             {(parseFloat(p.price.replace(/[^\d.]/g, "")) * 1.23).toFixed(2).replace(".", ",")} €
           </span>
         </p>
       ) : (
-        <p className="mt-1 text-xs text-muted-foreground">Cena podľa rozsahu, bez DPH.</p>
+        <p className="mt-1 text-xs text-muted-foreground">{t("Cena podľa rozsahu, bez DPH.")}</p>
       )}
-      <p className="mt-2 text-sm text-muted-foreground">{p.tagline}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{t(p.tagline)}</p>
 
       <ul className="mb-6 mt-5 space-y-2 text-sm">
         {p.features.map((f) => (
           <li key={f} className="flex gap-2">
             <Check className="h-4 w-4 text-primary mt-0.5" />
-            <span>{f}</span>
+            <span>{t(f)}</span>
           </li>
         ))}
       </ul>
@@ -180,23 +191,28 @@ function PlanCard({
             : "border border-border bg-background hover:bg-secondary"
         }`}
       >
-        {naVyziadanie ? "Napíšte nám" : "Vyskúšať zdarma"} <ArrowRight className="h-4 w-4" />
+        {t(naVyziadanie ? "Napíšte nám" : "Vyskúšať zdarma")} <ArrowRight className="h-4 w-4" />
       </Link>
     </div>
   );
 }
 
 function CennikPage() {
+  const { t } = useT();
   return (
     <MarketingShell>
       <section className="border-b border-border/60 bg-gradient-to-b from-primary/5 to-transparent">
         <div className="mx-auto max-w-6xl px-6 py-16 text-center">
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Cenník</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+            {t("Cenník")}
+          </p>
           <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
-            Dva produkty. Jeden účet.
+            {t("Dva produkty. Jeden účet.")}
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Vyberte si Fakturačný systém, Knihu jázd alebo oboje. 30 dní zdarma bez platobnej karty.
+            {t(
+              "Vyberte si Fakturačný systém, Knihu jázd alebo oboje. 30 dní zdarma bez platobnej karty.",
+            )}
           </p>
         </div>
       </section>
@@ -208,26 +224,29 @@ function CennikPage() {
             <div className="flex-1 space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-200 px-3 py-1 text-sm font-semibold text-amber-900 dark:text-amber-100">
                 <RefreshCw className="h-4 w-4" />
-                Opakované platby — automatické obnovovanie
+                {t("Opakované platby — automatické obnovovanie")}
               </div>
               <p className="max-w-2xl text-base leading-relaxed text-amber-950 md:text-lg">
-                Predplatné Faktero sa automaticky obnovuje každý mesiac. Platba je strhnutá z vašej
-                platobnej karty cez bezpečnú bránu GoPay (Visa / Mastercard / 3D Secure).
+                {t(
+                  "Predplatné Faktero sa automaticky obnovuje každý mesiac. Platba je strhnutá z vašej platobnej karty cez bezpečnú bránu GoPay (Visa / Mastercard / 3D Secure).",
+                )}
               </p>
               <ul className="space-y-2 text-sm text-amber-900/80">
                 <li className="flex items-start gap-2">
                   <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
                   <span>
-                    Zrušiť môžete kedykoľvek — bez poplatkov, okamžite v nastaveniach vášho účtu
+                    {t(
+                      "Zrušiť môžete kedykoľvek — bez poplatkov, okamžite v nastaveniach vášho účtu",
+                    )}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Mail className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
-                  <span>Pred každou obnovou vám pošleme emailové upozornenie</span>
+                  <span>{t("Pred každou obnovou vám pošleme emailové upozornenie")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
-                  <span>Plná kontrola nad predplatným kedykoľvek</span>
+                  <span>{t("Plná kontrola nad predplatným kedykoľvek")}</span>
                 </li>
               </ul>
               <div>
@@ -235,27 +254,27 @@ function CennikPage() {
                   to="/pravne/opakovane-platby"
                   className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-800 hover:underline dark:text-amber-200"
                 >
-                  Podmienky opakovaných platieb <ArrowRight className="h-4 w-4" />
+                  {t("Podmienky opakovaných platieb")} <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>
             <div className="flex flex-col items-start gap-3 md:items-end md:pt-8">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-md bg-[#1A4DB5] px-3 py-1.5 text-xs font-bold text-white">
-                  GoPay
+                  {t("GoPay")}
                 </span>
                 <span className="rounded-md bg-[#1A1F71] px-3 py-1.5 text-xs font-bold text-white">
-                  VISA
+                  {t("VISA")}
                 </span>
                 <span className="rounded-md bg-[#EB001B] px-3 py-1.5 text-xs font-bold text-white">
-                  Mastercard
+                  {t("Mastercard")}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground border border-border">
-                  <ShieldCheck className="h-3.5 w-3.5" /> 3D Secure
+                  <ShieldCheck className="h-3.5 w-3.5" /> {t("3D Secure")}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Bezpečné platby cez certifikovanú platobnú bránu.
+                {t("Bezpečné platby cez certifikovanú platobnú bránu.")}
               </p>
             </div>
           </div>
@@ -268,9 +287,9 @@ function CennikPage() {
             <FileText className="h-5 w-5" />
           </span>
           <div>
-            <h2 className="text-2xl font-bold">Fakturačný systém</h2>
+            <h2 className="text-2xl font-bold">{t("Fakturačný systém")}</h2>
             <p className="text-sm text-muted-foreground">
-              Faktúry, eFaktúra, API, bankové párovanie, sklad.
+              {t("Faktúry, eFaktúra, API, bankové párovanie, sklad.")}
             </p>
           </div>
         </div>
@@ -287,15 +306,15 @@ function CennikPage() {
             <Car className="h-5 w-5" />
           </span>
           <div>
-            <h2 className="text-2xl font-bold">Kniha jázd</h2>
+            <h2 className="text-2xl font-bold">{t("Kniha jázd")}</h2>
             <p className="text-sm text-muted-foreground">
-              Jazdy, vozidlá, Commander GPS a Tesla Fleet API.
+              {t("Jazdy, vozidlá, Commander GPS a Tesla Fleet API.")}
             </p>
             {/* V aplikácii sa tieto plány aktivujú na vyžiadanie, nie samoobslužne.
                 Kým to platí, musí to byť vidieť aj tu — inak si človek vyberie plán
                 a zistí to až po registrácii. */}
             <p className="mt-1 text-sm text-muted-foreground">
-              Tieto plány zatiaľ aktivujeme na vyžiadanie — napíšte nám a zapneme vám ich.
+              {t("Tieto plány zatiaľ aktivujeme na vyžiadanie — napíšte nám a zapneme vám ich.")}
             </p>
           </div>
         </div>
@@ -307,34 +326,36 @@ function CennikPage() {
       </section>
 
       <section className="mx-auto max-w-3xl px-6 pb-20">
-        <h2 className="text-2xl font-bold">Časté otázky</h2>
+        <h2 className="text-2xl font-bold">{t("Časté otázky")}</h2>
         <dl className="mt-6 divide-y divide-border rounded-2xl border border-border bg-card">
           {FAQ.map((item) => (
             <div key={item.q} className="p-5">
-              <dt className="font-semibold">{item.q}</dt>
-              <dd className="mt-1.5 text-sm text-muted-foreground">{item.a}</dd>
+              <dt className="font-semibold">{t(item.q)}</dt>
+              <dd className="mt-1.5 text-sm text-muted-foreground">{t(item.a)}</dd>
             </div>
           ))}
         </dl>
         <div className="mt-8 rounded-xl border border-border bg-card p-5 text-xs text-muted-foreground space-y-1">
           <p>
-            <strong className="text-foreground">Ceny a DPH:</strong> Všetky ceny sú uvedené bez DPH.
-            Platná sadzba DPH v SR je 23 %. Predplatné sa účtuje mesačne a automaticky sa obnovuje,
-            kým ho nezrušíte v sekcii Predplatné.
+            <strong className="text-foreground">{t("Ceny a DPH:")}</strong>{" "}
+            {t(
+              "Všetky ceny sú uvedené bez DPH. Platná sadzba DPH v SR je 23 %. Predplatné sa účtuje mesačne a automaticky sa obnovuje, kým ho nezrušíte v sekcii Predplatné.",
+            )}
           </p>
           <p>
-            <strong className="text-foreground">Platba:</strong> Bezpečne cez GoPay — platobnou
-            kartou (Visa, Mastercard) alebo okamžitým bankovým prevodom. Údaje karty spracúva
-            výhradne GoPay.
+            <strong className="text-foreground">{t("Platba:")}</strong>{" "}
+            {t(
+              "Bezpečne cez GoPay — platobnou kartou (Visa, Mastercard) alebo okamžitým bankovým prevodom. Údaje karty spracúva výhradne GoPay.",
+            )}
           </p>
           <p>
-            Podrobnosti:{" "}
+            {t("Podrobnosti:")}{" "}
             <a href="/pravne/obchodne-podmienky" className="underline">
-              Obchodné podmienky
+              {t("Obchodné podmienky")}
             </a>{" "}
             ·{" "}
             <a href="/pravne/gopay-podmienky" className="underline">
-              GoPay podmienky
+              {t("GoPay podmienky")}
             </a>
             .
           </p>

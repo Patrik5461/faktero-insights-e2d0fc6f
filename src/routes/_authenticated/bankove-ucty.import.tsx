@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 import { Upload, FileText } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -10,13 +12,14 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { rozberVypisFn, importujVypisFn } from "@/lib/faktero/import-vypisu.functions";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/import")({
-  head: () => ({ meta: [{ title: "Nahrať výpis — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Nahrať výpis — Faktero") }] }),
   component: ImportVypisuPage,
 });
 
 const NOVY = "__novy__";
 
 function ImportVypisuPage() {
+  const { t } = useT();
   const navigate = useNavigate();
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [ucty, setUcty] = useState<any[]>([]);
@@ -77,8 +80,8 @@ function ImportVypisuPage() {
       });
       toast.success(
         r.preskocenych
-          ? `Nahraných ${r.vlozenych} pohybov, ${r.preskocenych} už v evidencii bolo.`
-          : `Nahraných ${r.vlozenych} pohybov.`,
+          ? t("Nahraných {n} pohybov, {m} už v evidencii bolo.", { n: r.vlozenych, m: r.preskocenych })
+          : t("Nahraných {n} pohybov.", { n: r.vlozenych }),
       );
       navigate({ to: "/bankove-ucty" });
     } catch (e) {
@@ -93,16 +96,16 @@ function ImportVypisuPage() {
   return (
     <>
       <PageHeader
-        title="Nahrať bankový výpis"
-        description="Pre banky, ktoré Faktero nepripojí priamo. Pohyby sa potom párujú rovnako ako tie načítané automaticky."
+        title={t("Nahrať bankový výpis")}
+        description={t("Pre banky, ktoré Faktero nepripojí priamo. Pohyby sa potom párujú rovnako ako tie načítané automaticky.")}
       />
       <PageBody>
         <div className="mx-auto max-w-2xl space-y-4">
           <div className="rounded-xl border border-border bg-card p-4">
-            <span className="block text-sm font-medium">Súbor s výpisom</span>
+            <span className="block text-sm font-medium">{t("Súbor s výpisom")}</span>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-within:ring-2 focus-within:ring-ring">
-                <Upload className="h-4 w-4" /> Vybrať súbor
+                <Upload className="h-4 w-4" /> {t("Vybrať súbor")}
                 <input
                   type="file"
                   accept=".xml,text/xml,application/xml,.csv,text/csv"
@@ -111,18 +114,16 @@ function ImportVypisuPage() {
                 />
               </label>
               <span className="min-w-0 break-words text-sm text-muted-foreground">
-                {nazovSuboru || "Nie je vybraný žiadny súbor"}
+                {nazovSuboru || t("Nie je vybraný žiadny súbor")}
               </span>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              XML vo formáte camt.053 — v internetbankingu býva ako „SEPA XML“, „XML výpis“ alebo
-              „ISO 20022“. Z PDF sa suma ani symboly spoľahlivo prečítať nedajú.
+              {t("XML vo formáte camt.053 — v internetbankingu býva ako „SEPA XML“, „XML výpis“ alebo „ISO 20022“. Z PDF sa suma ani symboly spoľahlivo prečítať nedajú.")}
               <br />
-              Funguje aj <strong>CSV export platobnej brány</strong> (Stripe, PayPal, GoPay,
-              Comgate, Barion): brána sa založí ako ďalší účet, platby sa spárujú s faktúrami a
-              poplatky aj výbery na bankový účet budú vo výpise zvlášť.
+              {t("Funguje aj")} <strong>{t("CSV export platobnej brány")}</strong>{" "}
+              {t("(Stripe, PayPal, GoPay, Comgate, Barion): brána sa založí ako ďalší účet, platby sa spárujú s faktúrami a poplatky aj výbery na bankový účet budú vo výpise zvlášť.")}
             </p>
-            {citam && <p className="mt-2 text-sm text-muted-foreground">Čítam výpis…</p>}
+            {citam && <p className="mt-2 text-sm text-muted-foreground">{t("Čítam výpis…")}</p>}
           </div>
 
           {nahlad && (
@@ -134,21 +135,21 @@ function ImportVypisuPage() {
 
               <dl className="mt-3 grid gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
                 <div>
-                  <dt className="text-xs text-muted-foreground">Účet vo výpise</dt>
-                  <dd className="font-mono text-xs">{nahlad.ucetVoVypise ?? "neuvedený"}</dd>
+                  <dt className="text-xs text-muted-foreground">{t("Účet vo výpise")}</dt>
+                  <dd className="font-mono text-xs">{nahlad.ucetVoVypise ?? t("neuvedený")}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">Obdobie</dt>
+                  <dt className="text-xs text-muted-foreground">{t("Obdobie")}</dt>
                   <dd>
                     {nahlad.odDna} – {nahlad.doDna}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">Pohybov</dt>
+                  <dt className="text-xs text-muted-foreground">{t("Pohybov")}</dt>
                   <dd className="font-medium">{nahlad.pocet}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">Príjem / výdaj</dt>
+                  <dt className="text-xs text-muted-foreground">{t("Príjem / výdaj")}</dt>
                   <dd className="tabular-nums">
                     {formatujMenu(nahlad.prijem, mena)} / {formatujMenu(nahlad.vydaj, mena)}
                   </dd>
@@ -162,14 +163,14 @@ function ImportVypisuPage() {
               )}
 
               <label className="mt-4 block">
-                <span className="text-sm font-medium">Nahrať do účtu</span>
+                <span className="text-sm font-medium">{t("Nahrať do účtu")}</span>
                 <select
                   value={cielovyUcet}
                   onChange={(e) => setCielovyUcet(e.target.value)}
                   className="input mt-1"
                 >
                   <option value={NOVY}>
-                    Založiť nový účet {nahlad.ucetVoVypise ? `(${nahlad.ucetVoVypise})` : ""}
+                    {t("Založiť nový účet")} {nahlad.ucetVoVypise ? `(${nahlad.ucetVoVypise})` : ""}
                   </option>
                   {ucty.map((u) => (
                     <option key={u.id} value={u.id}>
@@ -188,13 +189,12 @@ function ImportVypisuPage() {
                 nahlad.navrhnutyUcetId &&
                 cielovyUcet !== nahlad.navrhnutyUcetId && (
                   <p className="mt-2 text-xs text-destructive">
-                    Vybraný účet nezodpovedá číslu vo výpise. Skontrolujte to, prosím.
+                    {t("Vybraný účet nezodpovedá číslu vo výpise. Skontrolujte to, prosím.")}
                   </p>
                 )}
               {cielovyUcet === NOVY && nahlad.navrhnutyUcetNazov && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Účet {nahlad.navrhnutyUcetNazov} už v evidencii je — vyberte ho, nech pohyby
-                  neskončia na dvoch účtoch.
+                  {t("Účet {nazov} už v evidencii je — vyberte ho, nech pohyby neskončia na dvoch účtoch.", { nazov: nahlad.navrhnutyUcetNazov })}
                 </p>
               )}
 
@@ -204,10 +204,10 @@ function ImportVypisuPage() {
                 className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
                 <Upload className="h-4 w-4" />
-                {zapisujem ? "Nahrávam…" : `Nahrať ${nahlad.pocet} pohybov`}
+                {zapisujem ? t("Nahrávam…") : t("Nahrať {n} pohybov", { n: nahlad.pocet })}
               </button>
               <p className="mt-2 text-xs text-muted-foreground">
-                Ten istý výpis sa dá nahrať znova — pohyby, ktoré už v evidencii sú, sa nezdvoja.
+                {t("Ten istý výpis sa dá nahrať znova — pohyby, ktoré už v evidencii sú, sa nezdvoja.")}
               </p>
             </div>
           )}

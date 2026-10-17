@@ -7,6 +7,10 @@ describe("preklad webu", () => {
     expect(preloz("de", "Uložiť")).toBe("Speichern");
     expect(preloz("de", "Text, ktorý nikto nepreložil")).toBe("Text, ktorý nikto nepreložil");
   });
+  it("kľúč s kontextom: slovensky časť za ::, bez kontextového prekladu holé slovo", () => {
+    expect(preloz("sk", "pozvanka::Uložiť")).toBe("Uložiť");
+    expect(preloz("de", "pozvanka::Uložiť")).toBe("Speichern");
+  });
   it("dosadí parametre", () => {
     expect(preloz("sk", "Spolu {n} faktúr", { n: 5 })).toBe("Spolu 5 faktúr");
   });

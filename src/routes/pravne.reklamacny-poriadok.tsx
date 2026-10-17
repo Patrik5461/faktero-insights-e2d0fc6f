@@ -4,15 +4,21 @@ import {
   LEGAL_VERSION,
   LEGAL_UPDATED,
   LEGAL_COMPANY,
+  DeUpozornenie,
 } from "@/components/faktero/LegalShell";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/pravne/reklamacny-poriadok")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Reklamačný poriadok — Faktero" },
+      { title: preloz(match.context.jazyk, "Reklamačný poriadok — Faktero") },
       {
         name: "description",
-        content: "Postup pri reklamácii služby Faktero, lehoty a kontaktné údaje.",
+        content: preloz(
+          match.context.jazyk,
+          "Postup pri reklamácii služby Faktero, lehoty a kontaktné údaje.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pravne/reklamacny-poriadok" },
     ],
@@ -22,8 +28,17 @@ export const Route = createFileRoute("/pravne/reklamacny-poriadok")({
 });
 
 function Page() {
+  const { jazyk, t } = useT();
   return (
-    <LegalShell title="Reklamačný poriadok" updated={LEGAL_UPDATED} version={LEGAL_VERSION}>
+    <LegalShell title={t("Reklamačný poriadok")} updated={LEGAL_UPDATED} version={LEGAL_VERSION}>
+      {jazyk === "de" ? <De /> : <Sk />}
+    </LegalShell>
+  );
+}
+
+function Sk() {
+  return (
+    <>
       <p>
         Tento reklamačný poriadok upravuje postup pri uplatňovaní reklamácií zo strany používateľov
         služby Faktero prevádzkovanej spoločnosťou <strong>{LEGAL_COMPANY.name}</strong>, IČO{" "}
@@ -99,6 +114,96 @@ function Page() {
         <br />
         Telefón: {LEGAL_COMPANY.phone}
       </p>
-    </LegalShell>
+    </>
+  );
+}
+
+function De() {
+  return (
+    <>
+      <DeUpozornenie />
+      <p>
+        Diese Reklamationsordnung regelt das Verfahren bei der Geltendmachung von Reklamationen
+        durch Nutzer des Dienstes Faktero, der von der Gesellschaft{" "}
+        <strong>{LEGAL_COMPANY.name}</strong>, Firmen-ID (IČO) {LEGAL_COMPANY.ico}, betrieben wird.
+      </p>
+
+      <h2>1. Wie man eine Reklamation einreicht</h2>
+      <p>Eine Reklamation können Sie einreichen:</p>
+      <ul>
+        <li>
+          per E-Mail an <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>,
+        </li>
+        <li>schriftlich an die Sitzadresse: {LEGAL_COMPANY.address},</li>
+        <li>telefonisch unter {LEGAL_COMPANY.phone} (anschließend per E-Mail bestätigen).</li>
+      </ul>
+      <p>
+        Die Reklamation muss die Identifikationsdaten des Nutzers, eine Beschreibung des Problems,
+        das Datum seines Auftretens und die gewünschte Art der Erledigung enthalten.
+      </p>
+
+      <h2>2. Frist für die Bearbeitung</h2>
+      <p>
+        Wir bearbeiten die Reklamation unverzüglich, spätestens innerhalb von{" "}
+        <strong>30 Tagen</strong> nach ihrem Zugang. Über die Erledigung informieren wir Sie per
+        E-Mail.
+      </p>
+
+      <h2>3. Reklamation des Dienstes</h2>
+      <p>
+        Reklamieren können Sie insbesondere eine Nichtverfügbarkeit des Dienstes über den
+        angegebenen Umfang hinaus, Fehler der Anwendung, die die übliche Nutzung unmöglich machen,
+        oder eine fehlerhafte Funktion bezahlter Funktionen.
+      </p>
+
+      <h2>4. Reklamation einer Zahlung</h2>
+      <p>
+        Reklamationen falsch verbuchter Zahlungen für das Faktero-Abonnement bearbeitet der
+        Betreiber. Reklamationen von Zahlungen, die Kunden des Nutzers über GoPay geleistet haben,
+        bearbeitet direkt der Anbieter des Zahlungsgateways bzw. der Händler (Nutzer), auf dessen
+        Konto die Zahlungen eingegangen sind. Faktero ist in diesem Prozess keine Vertragspartei der
+        Zahlung.
+      </p>
+
+      <h2>5. Digitaler Dienst</h2>
+      <p>
+        Faktero ist ein online bereitgestellter digitaler Dienst. Nach der Bereitstellung der
+        digitalen Inhalte (Aktivierung der Zahlung) nimmt der Nutzer zur Kenntnis, dass er kein
+        Recht auf Rücktritt vom Vertrag gemäß § 7 Abs. 6 Buchst. l) des Gesetzes Nr. 102/2014 Slg.
+        (zákon č. 102/2014 Z. z.) hat, sofern er der Erfüllung ausdrücklich zugestimmt hat.
+      </p>
+
+      <h2>6. Ausschlüsse von der Reklamation</h2>
+      <ul>
+        <li>
+          Fehler, die durch unsachgemäße Nutzung des Dienstes durch den Nutzer verursacht wurden.
+        </li>
+        <li>
+          Ausfälle Dritter (Supabase, GoPay, Resend, Bank-APIs) außerhalb der Kontrolle des
+          Betreibers.
+        </li>
+        <li>Vom Nutzer selbst eingegebene Daten und Inhalte.</li>
+        <li>Im Voraus angekündigte geplante Ausfallzeiten.</li>
+      </ul>
+
+      <h2>7. Alternative Streitbeilegung</h2>
+      <p>
+        Der Verbraucher hat das Recht, sich an eine Stelle zur alternativen Streitbeilegung zu
+        wenden (z. B. die Slowakische Handelsinspektion, Slovenská obchodná inšpekcia) oder die
+        OS-Plattform (RSO) zu nutzen (ec.europa.eu/consumers/odr). Der Dienst Faktero ist vorrangig
+        für Unternehmer bestimmt.
+      </p>
+
+      <h2>Kontakt</h2>
+      <p>
+        {LEGAL_COMPANY.name}
+        <br />
+        {LEGAL_COMPANY.address}
+        <br />
+        E-Mail: <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>
+        <br />
+        Telefon: {LEGAL_COMPANY.phone}
+      </p>
+    </>
   );
 }

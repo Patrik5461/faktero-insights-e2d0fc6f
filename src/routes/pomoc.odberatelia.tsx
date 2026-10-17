@@ -1,18 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { preloz } from "@/lib/i18n/jazyk";
+import type { HelpSection } from "@/components/faktero/HelpArticle";
+import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
 import { VideoNavodPlayer } from "@/components/faktero/VideoNavodPlayer";
 import { videoJsonLd, videoNavod } from "@/lib/faktero/video-navody";
 
 const VIDEO_ODBERATEL = videoNavod("pridanie-odberatela");
 
 export const Route = createFileRoute("/pomoc/odberatelia")({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
-      { title: "Pomoc — Odberatelia — Faktero" },
+      { title: preloz(match.context.jazyk, "Pomoc — Odberatelia — Faktero") },
       {
         name: "description",
-        content:
+        content: preloz(
+          match.context.jazyk,
           "Karta odberateľa vo Faktere: doplnenie údajov podľa IČO, cenová skupina, zľava, predvolená zákazka a mazanie.",
+        ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/odberatelia" },
     ],
@@ -201,7 +205,7 @@ const sections: HelpSection[] = [
 
 function Page() {
   return (
-    <HelpArticle
+    <PrelozenyManual
       category="Pomoc · Kontakty"
       title="Odberatelia"
       intro={<p>Karta odberateľa, jeho ceny a zľavy a predvolená zákazka.</p>}
