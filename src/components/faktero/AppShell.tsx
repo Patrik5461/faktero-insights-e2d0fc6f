@@ -77,6 +77,7 @@ import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { useIsNative } from "@/hooks/useIsNative";
 import { initNativePlatform } from "@/lib/mobile/native-init";
 import { PrepinacMotivu } from "@/components/faktero/PrepinacMotivu";
+import { PrepinacJazyka } from "@/components/faktero/PrepinacJazyka";
 import {
   BocnyPanel,
   SekcieNavigacie,
@@ -556,6 +557,7 @@ export function AppShell({
 
             {/* Right cluster */}
             <div className="ml-auto flex items-center gap-1.5">
+              <PrepinacJazyka className="max-md:border-white/30 max-md:[&_button[aria-pressed=false]]:text-primary-foreground/80" />
               <NotificationBell className="max-md:text-primary-foreground max-md:hover:bg-white/15" />
 
               {/* Quick create — the only filled element */}

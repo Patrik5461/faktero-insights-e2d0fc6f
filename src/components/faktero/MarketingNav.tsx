@@ -1,3 +1,4 @@
+import { PrepinacJazyka } from "@/components/faktero/PrepinacJazyka";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, Rocket, Menu, X } from "lucide-react";
 import { useState } from "react";
@@ -131,6 +132,7 @@ export function MarketingNav() {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
+            <PrepinacJazyka className="hidden sm:inline-flex" />
             <span className="hidden md:inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               30 dní zdarma
@@ -161,6 +163,9 @@ export function MarketingNav() {
         {mobileOpen && (
           <div className="lg:hidden border-t border-border bg-card">
             <div className="mx-auto max-w-6xl px-4 py-3">
+              <div className="mb-2 flex justify-end sm:hidden">
+                <PrepinacJazyka />
+              </div>
               {menus.map((menu) => {
                 const isOpen = openMenu === menu.label;
                 return (

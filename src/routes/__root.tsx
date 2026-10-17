@@ -17,6 +17,8 @@ import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
 import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
 import { listSeoPagesPublic } from "@/lib/seo.functions";
 import { SKRIPT_DO_HLAVICKY } from "@/lib/faktero/motiv";
+import { zistiJazyk } from "@/lib/i18n/jazyk";
+import { JazykProvider } from "@/lib/i18n/useT";
 import { SKRIPT_DIZAJNU } from "@/lib/faktero/dizajn";
 import { SKRIPT_SUHLASU, SKRIPT_GTM, GTM_NOSCRIPT_SRC } from "@/lib/faktero/gtm";
 
@@ -81,6 +83,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  // Jazyk webu z cookie — server tak vykreslí stránku hneď v zvolenom jazyku.
+  beforeLoad: async () => ({ jazyk: await zistiJazyk() }),
   loader: async () => {
     try {
       const rows = await listSeoPagesPublic();
@@ -181,6 +185,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const { jazyk } = Route.useRouteContext();
   return (
     /*
       `suppressHydrationWarning` kvôli motívu: skript v hlavičke nastaví na
@@ -194,7 +199,7 @@ function RootShell({ children }: { children: ReactNode }) {
       českým prehliadačom vyskakoval český kalendár. Web je po slovensky, tak
       to má stáť aj tu; appka si `lang` prepisuje podľa zvoleného jazyka.
     */
-    <html lang="sk" suppressHydrationWarning>
+    <html lang={jazyk ?? "sk"} suppressHydrationWarning>
       <head>
         <HeadContent />
         {/*
@@ -229,16 +234,18 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
+  const { queryClient, jazyk } = Route.useRouteContext();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <NativeRouteGuard />
-      <Outlet />
-      <Toaster />
-      <PotvrdzovacieOkno />
-      <CookieConsentBanner />
-    </QueryClientProvider>
+    <JazykProvider jazyk={jazyk ?? "sk"}>
+      <QueryClientProvider client={queryClient}>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <NativeRouteGuard />
+        <Outlet />
+        <Toaster />
+        <PotvrdzovacieOkno />
+        <CookieConsentBanner />
+      </QueryClientProvider>
+    </JazykProvider>
   );
 }
