@@ -2,17 +2,17 @@
 export default {
   "Pomoc — Faktero AI — Faktero": "Hilfe — Faktero AI — Faktero",
   "Faktero AI odpovedá na otázky nad vašimi faktúrami: kto dlží, čo je po splatnosti, čo poslať účtovníčke. Číta, nemení.":
-    "Faktero AI beantwortet Fragen zu Ihren Rechnungen: wer schuldet, was überfällig ist, was an die Buchhaltung geht. Liest, ändert nichts.",
+    "Faktero AI beantwortet Fragen zu Ihren Rechnungen: wer schuldet, was überfällig ist, was an die Buchhalterin geht. Liest, ändert nichts.",
   "Otázky nad vlastnými dátami — a čo asistent nevie a nesmie.":
     "Fragen zu Ihren eigenen Daten — und was der Assistent nicht kann und nicht darf.",
   "Pomoc · Faktero AI": "Hilfe · Faktero AI",
   "Otázky nad vlastnými faktúrami — kto dlží, čo je po splatnosti a čo poslať účtovníčke. Asistent číta vaše dáta, ale nič v nich nemení.":
-    "Fragen zu Ihren eigenen Rechnungen — wer schuldet, was überfällig ist und was an die Buchhaltung geht. Der Assistent liest Ihre Daten, ändert darin aber nichts.",
+    "Fragen zu Ihren eigenen Rechnungen — wer schuldet, was überfällig ist und was an die Buchhalterin geht. Der Assistent liest Ihre Daten, ändert darin aber nichts.",
   "<0>Faktero AI</0> je pomocník, ktorý sa pozerá na <1>vaše vlastné dáta</1> a odpovedá slovom. Namiesto preklikávania zoznamov a filtrov sa spýtate tak, ako by ste sa spýtali kolegu:":
     "<0>Faktero AI</0> ist ein Helfer, der sich <1>Ihre eigenen Daten</1> ansieht und in Worten antwortet. Statt sich durch Listen und Filter zu klicken, fragen Sie so, wie Sie einen Kollegen fragen würden:",
   "„Ktoré faktúry sú po splatnosti?“": "„Welche Rechnungen sind überfällig?“",
   "„Ktorí zákazníci mi dlhujú najviac?“": "„Welche Kunden schulden mir am meisten?“",
-  "„Čo mám poslať účtovníčke?“": "„Was muss ich an die Buchhaltung schicken?“",
+  "„Čo mám poslať účtovníčke?“": "„Was soll ich an meine Buchhalterin senden?“",
   "„Navrhni mi opakované faktúry.“": "„Schlag mir wiederkehrende Rechnungen vor.“",
   "Odpovedá vždy za <0>vybranú firmu</0> — tú, ktorá je prepnutá hore v lište. Keď máte firiem viac, prepnite sa skôr, než sa spýtate.":
     "Er antwortet immer für das <0>ausgewählte Unternehmen</0> — das oben in der Leiste eingestellte. Wenn Sie mehrere Unternehmen haben, wechseln Sie, bevor Sie fragen.",

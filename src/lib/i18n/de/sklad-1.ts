@@ -142,7 +142,7 @@ export default {
   "Pridajte vozidlo": "Fügen Sie ein Fahrzeug hinzu",
   "a potom môžete spustiť GPS jazdu.": "und starten Sie dann die GPS-Fahrt.",
   "Cena PHM {cena}/l z posledného tankovania.": "Kraftstoffpreis {cena}/l aus der letzten Tankung.",
-  "Nahrávam…": "Aufzeichnung läuft…",
+  "Nahrávam…": "Wird hochgeladen…",
   Pripravené: "Bereit",
   "Spustiť sledovanie": "Aufzeichnung starten",
   "Ukončiť a uložiť": "Beenden und speichern",

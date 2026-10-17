@@ -292,7 +292,7 @@ function TxPage() {
                 <dl className="mt-3 space-y-1.5 text-sm">
                   <div className="flex items-baseline justify-between gap-3">
                     <dt className="text-muted-foreground">
-                      {t("Prijaté")} <span className="text-xs">({s.pocetPrijatych})</span>
+                      {t("smer::Prijaté")} <span className="text-xs">({s.pocetPrijatych})</span>
                     </dt>
                     <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-300">
                       {fmtMoney(s.prijate, s.currency)}
@@ -300,7 +300,7 @@ function TxPage() {
                   </div>
                   <div className="flex items-baseline justify-between gap-3">
                     <dt className="text-muted-foreground">
-                      {t("Odoslané")} <span className="text-xs">({s.pocetOdoslanych})</span>
+                      {t("smer::Odoslané")} <span className="text-xs">({s.pocetOdoslanych})</span>
                     </dt>
                     <dd className="tabular-nums font-medium text-destructive">
                       {fmtMoney(s.odoslane, s.currency)}

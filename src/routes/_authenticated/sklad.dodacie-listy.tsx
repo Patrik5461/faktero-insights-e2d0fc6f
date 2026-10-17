@@ -118,7 +118,7 @@ function DeliveryNoteHistoryPage() {
                     <th className="p-2 text-left">{t("Dodávateľ")}</th>
                     <th className="p-2 text-left">{t("Číslo DL")}</th>
                     <th className="p-2 text-right">{t("Položiek")}</th>
-                    <th className="p-2 text-right">{t("Pohybov")}</th>
+                    <th className="p-2 text-right">{t("sklad::Pohybov")}</th>
                     <th className="p-2 text-left">{t("Dokument")}</th>
                   </tr>
                 </thead>

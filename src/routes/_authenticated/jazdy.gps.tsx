@@ -171,7 +171,7 @@ function GpsTripPage() {
               <span className="text-2xl text-muted-foreground">km</span>
             </div>
             <div className="mt-2 text-sm text-muted-foreground">
-              {tracking ? t("Nahrávam…") : t("Pripravené")}
+              {tracking ? t("zaznam::Nahrávam…") : t("Pripravené")}
             </div>
           </div>
 

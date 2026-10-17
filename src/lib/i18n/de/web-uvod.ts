@@ -83,7 +83,7 @@ export default {
   "Leasingy a úvery": "Leasing und Kredite",
   "Splátkový kalendár s rozpadom na istinu, úrok a DPH. Zmluvu načítate z PDF a splátky si Faktero páruje s platbami z banky.":
     "Ratenplan mit Aufteilung in Tilgung, Zinsen und MwSt. Den Vertrag lesen Sie aus dem PDF ein, und die Raten gleicht Faktero mit den Bankzahlungen ab.",
-  Samofakturácia: "Gutschriftverfahren",
+  Samofakturácia: "Selbstfakturierung",
   "Faktúru za dodávateľa vyhotovíte vy podľa § 72 ods. 4, on ju odsúhlasí jedným klikom z e-mailu. Potom ide rovno do DPH a na úhradu.":
     "Die Rechnung für den Lieferanten erstellen Sie nach § 72 Abs. 4, er bestätigt sie mit einem Klick aus der E-Mail. Danach geht sie direkt in die MwSt. und zur Zahlung.",
   "Bločky a faktúry, ktoré zaplatil zamestnanec zo zálohy, vlastnými peniazmi či firemnou kartou — súhrn, doplatok a PDF na podpis.":
@@ -406,4 +406,6 @@ export default {
   "Bez platobnej karty": "Ohne Kreditkarte",
   Firma: "Unternehmen",
   "Vytvorte firmu": "Unternehmen anlegen",
+  "Web design": "Webdesign",
+  "API status": "API-Status",
 } satisfies Record<string, string>;

@@ -97,7 +97,7 @@ export default {
   "Vyberte odberateľa": "Wählen Sie einen Kunden",
   "Vybraté šablóny budú skryté a prestanú generovať faktúry.":
     "Die ausgewählten Vorlagen werden ausgeblendet und erzeugen keine Rechnungen mehr.",
-  "Vymazaných {n}": "Gelöscht: {n}",
+  "Vymazaných {n}": "{n} gelöscht",
   Vymazať: "Löschen",
   "Vymazať natrvalo": "Endgültig löschen",
   "Vymazať {n} šablón?": "{n} Vorlagen löschen?",

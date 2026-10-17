@@ -80,7 +80,7 @@ function DiagnostikaPage() {
             onClick={load}
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted/60"
           >
-            <RefreshCw className="h-3.5 w-3.5" /> {t("Obnoviť")}
+            <RefreshCw className="h-3.5 w-3.5" /> {t("nacitat::Obnoviť")}
           </button>
         </div>
 

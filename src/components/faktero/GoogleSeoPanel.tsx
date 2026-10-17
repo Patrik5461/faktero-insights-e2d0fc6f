@@ -197,7 +197,7 @@ function GscDashboard() {
         <h3 className="font-semibold text-sm">{t("Search Console — posledných 28 dní")}</h3>
         <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
           <RefreshCcw className={`h-3 w-3 mr-1 ${isFetching ? "animate-spin" : ""}`} />{" "}
-          {t("Obnoviť")}
+          {t("nacitat::Obnoviť")}
         </Button>
       </div>
 
@@ -268,7 +268,7 @@ function Ga4Dashboard() {
         <h3 className="font-semibold text-sm">{t("Analytics 4 — posledných 28 dní")}</h3>
         <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
           <RefreshCcw className={`h-3 w-3 mr-1 ${isFetching ? "animate-spin" : ""}`} />{" "}
-          {t("Obnoviť")}
+          {t("nacitat::Obnoviť")}
         </Button>
       </div>
 

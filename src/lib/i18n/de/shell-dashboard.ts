@@ -19,8 +19,8 @@ export default {
   // Mesiace v grafe
   Mar: "Mär",
   Máj: "Mai",
-  Jún: "Jun",
-  Júl: "Jul",
+  Jún: "Juni",
+  Júl: "Juli",
   Dec: "Dez",
 
   // KPI
@@ -165,4 +165,6 @@ export default {
   "Vystavte prvú faktúru a prehľad sa naplní obratom, pohľadávkami a cash flow predikciou.":
     "Stellen Sie Ihre erste Rechnung aus — die Übersicht füllt sich dann mit Umsatz, Forderungen und Cashflow-Prognose.",
   "Vytvoriť faktúru": "Rechnung erstellen",
+  "kratko::Jún": "Jun",
+  "kratko::Júl": "Jul",
 } satisfies Record<string, string>;

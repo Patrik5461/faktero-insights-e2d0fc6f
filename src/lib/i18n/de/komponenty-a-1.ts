@@ -96,15 +96,15 @@ export default {
     "Wird für seine Rechnungen voreingestellt; übersetzt werden die Beschriftungen im PDF, nicht die Positionsnamen.",
   Poznámky: "Notizen",
   "+ Dohoda o samofakturácii (faktúry za tohto dodávateľa vyhotovujete vy)":
-    "+ Gutschriftsvereinbarung (Sie erstellen die Rechnungen für diesen Lieferanten)",
-  "Dohoda o samofakturácii": "Gutschriftsvereinbarung",
+    "+ Vereinbarung über die Selbstfakturierung (Sie erstellen die Rechnungen für diesen Lieferanten)",
+  "Dohoda o samofakturácii": "Vereinbarung über die Selbstfakturierung",
   "Faktúry za tohto dodávateľa vyhotovujete vy a on ich odsúhlasí. Zákon chce písomnú dohodu uzavretú vopred — zapíšte, od kedy platí.":
     "Sie erstellen die Rechnungen für diesen Lieferanten, und er bestätigt sie. Gesetzlich ist eine im Voraus geschlossene schriftliche Vereinbarung erforderlich – tragen Sie ein, ab wann sie gilt.",
   "Platí od": "Gültig ab",
   "Platí do (nepovinné)": "Gültig bis (optional)",
   "Dohoda (číslo, dátum podpisu, poznámka)": "Vereinbarung (Nummer, Unterschriftsdatum, Notiz)",
   "napr. Zmluva o samofakturácii č. 3/2026 zo dňa 1. 10. 2026":
-    "z. B. Gutschriftsvereinbarung Nr. 3/2026 vom 1. 10. 2026",
+    "z. B. Vereinbarung über die Selbstfakturierung Nr. 3/2026 vom 1. 10. 2026",
   "Bez dohody": "Ohne Vereinbarung",
 
   /* FormularZmluvy */

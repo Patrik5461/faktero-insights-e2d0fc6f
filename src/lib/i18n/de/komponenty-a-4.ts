@@ -306,7 +306,7 @@ export default {
   "Balíček stiahnutý — pošlite ho účtovníčke.":
     "Paket heruntergeladen — senden Sie es an Ihre Buchhalterin.",
   "Balíček sa nepodarilo pripraviť.": "Das Paket konnte nicht vorbereitet werden.",
-  "Priame prepojenie s Pohodou": "Direkte Verbindung mit Pohoda",
+  "Priame prepojenie s Pohodou": "Direkte Anbindung an Pohoda",
   "Namiesto posielania súborov mailom si Pohoda vezme doklady sama — raz denne v noci a späť nám povie, aké čísla im pridelila. Účtovníčka nič neinštaluje: stiahnutý priečinok skopíruje k Pohode, vyplní v ňom cestu a názov databázy a spustí druhý súbor, ktorý založí naplánovanú úlohu. Keď vedie viac firiem, ďalšiu pridá jedným riadkom do":
     "Statt Dateien per E-Mail zu versenden, holt sich Pohoda die Belege selbst — einmal täglich in der Nacht — und meldet zurück, welche Nummern sie vergeben hat. Ihre Buchhalterin installiert nichts: Sie kopiert den heruntergeladenen Ordner zu Pohoda, trägt darin Pfad und Datenbanknamen ein und startet die zweite Datei, die eine geplante Aufgabe anlegt. Betreut sie mehrere Unternehmen, fügt sie ein weiteres mit einer Zeile hinzu in",
   "priečinok ani úlohu už nezakladá znova.": "Ordner und Aufgabe legt sie dabei nicht erneut an.",
@@ -315,7 +315,7 @@ export default {
     "Jedes Unternehmen erhält einen eigenen Schlüssel und eine eigene Zeile in firmy.txt. So legt die Buchhalterin Ordner und geplante Aufgabe nur einmal an.",
   "Pripravujem…": "Wird vorbereitet…",
   "Stiahnuť balíček pre {n} firmy": "Paket für {n} Unternehmen herunterladen",
-  "Stiahnuť balíček pre účtovníčku": "Paket für die Buchhaltung herunterladen",
+  "Stiahnuť balíček pre účtovníčku": "Paket für die Buchhalterin herunterladen",
   "Naposledy sa ozval {kedy}": "Zuletzt gemeldet: {kedy}",
   "Balíček je vydaný, zatiaľ sa neozval.": "Das Paket wurde ausgegeben, bisher keine Rückmeldung.",
   "Naposledy potvrdené Pohodou": "Zuletzt von Pohoda bestätigt",
@@ -329,7 +329,7 @@ export default {
   "ozval sa {kedy}": "gemeldet am {kedy}",
   // CreateCompanyDialog
   "Zadajte názov firmy.": "Geben Sie den Namen des Unternehmens ein.",
-  "Nepodarilo sa vytvoriť firmu.": "Das Unternehmen konnte nicht erstellt werden.",
+  "Nepodarilo sa vytvoriť firmu.": "Das Unternehmen konnte nicht angelegt werden.",
   "Firma bola vytvorená.": "Das Unternehmen wurde erstellt.",
   "Pridať firmu": "Unternehmen hinzufügen",
   "Vytvorte ďalšiu firmu, ku ktorej budete mať prístup ako vlastník.":

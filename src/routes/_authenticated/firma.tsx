@@ -693,7 +693,7 @@ function TeamSection({ companyId }: { companyId: string }) {
             <tbody className="divide-y divide-border">
               {invs.map((r) => {
                 const expired = new Date(r.expires_at) < new Date();
-                const status = r.accepted_at ? "Prijaté" : expired ? "Expirované" : "Čaká sa";
+                const status = r.accepted_at ? "pozvanka::Prijaté" : expired ? "Expirované" : "Čaká sa";
                 return (
                   <tr key={r.id}>
                     <td className="p-3">{r.email}</td>

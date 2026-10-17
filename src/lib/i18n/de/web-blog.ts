@@ -88,7 +88,7 @@ export default {
     "CSV oder XLSX, wenn Ihr System nicht in der Liste ist",
   Postup: "Vorgehen",
   "V starom systéme si vyexportujte agendu — odberateľov a vystavené faktúry. Vo Fakteri otvorte Účtovníctvo → Importy, vyberte svoj systém a nahrajte súbor. Faktero rozpozná stĺpce a ukáže, čo z nich prečítalo. Až potom sa rozhodujete, čo sa naozaj zapíše.":
-    "Exportieren Sie im alten System den Mandanten — Kunden und Ausgangsrechnungen. Öffnen Sie in Faktero Buchhaltung → Importe, wählen Sie Ihr System und laden Sie die Datei hoch. Faktero erkennt die Spalten und zeigt, was es daraus gelesen hat. Erst dann entscheiden Sie, was tatsächlich gespeichert wird.",
+    "Exportieren Sie im alten System den Mandanten — Kunden und Ausgangsrechnungen. Öffnen Sie in Faktero Buchhaltung → Buchhaltungsimporte, wählen Sie Ihr System und laden Sie die Datei hoch. Faktero erkennt die Spalten und zeigt, was es daraus gelesen hat. Erst dann entscheiden Sie, was tatsächlich gespeichert wird.",
   "Prečo importovať po častiach": "Warum in Teilen importieren",
   "Odporúčame začať odberateľmi. Skontrolujete si na nich, či sedia IČO, adresy a e-maily, a až potom pustíte faktúry — tie sa na hotový adresár naviažu. Keby ste išli naraz a niečo v adresári nesedelo, opravovali by ste to na dvoch miestach.":
     "Wir empfehlen, mit den Kunden zu beginnen. An ihnen prüfen Sie, ob Firmen-IDs, Adressen und E-Mails stimmen, und erst dann importieren Sie die Rechnungen — diese werden mit den fertigen Kontakten verknüpft. Würden Sie alles auf einmal importieren und in den Kontakten stimmte etwas nicht, müssten Sie es an zwei Stellen korrigieren.",

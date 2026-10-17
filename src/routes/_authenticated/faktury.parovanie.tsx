@@ -169,7 +169,7 @@ function ParovaniePage() {
               disabled={loading || busy}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> {t("Obnoviť")}
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> {t("nacitat::Obnoviť")}
             </button>
             <button
               onClick={spustAutomat}

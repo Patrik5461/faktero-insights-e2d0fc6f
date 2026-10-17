@@ -459,7 +459,7 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
               <label className={popis} htmlFor="k-status">{t("Stav")}</label>
               <select id="k-status" className={pole} value={forma.status} onChange={nastav("status")}>
                 <option value="active">{t("Platná")}</option>
-                <option value="draft">{t("Návrh")}</option>
+                <option value="draft">{t("zamestnanec::Návrh")}</option>
                 <option value="ended">{t("Ukončená")}</option>
               </select>
             </div>

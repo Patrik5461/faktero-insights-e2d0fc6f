@@ -57,5 +57,5 @@ export default {
   "Koľko ľudí môžete pozvať, závisí od plánu — pozri <0>Predplatné</0>.":
     "Wie viele Personen Sie einladen können, hängt vom Tarif ab — siehe <0>Abonnement</0>.",
   "Prístup sa dá zosilniť overením kódom z aplikácie. Je dobrovoľné a zapína si ho každý sám v <0>Nastaveniach → Zabezpečenie</0>; podrobnosti sú v <1>manuáli k zabezpečeniu účtu</1>.":
-    "Der Zugang lässt sich durch die Bestätigung mit einem Code aus einer App verstärken. Sie ist freiwillig und wird von jedem selbst unter <0>Einstellungen → Sicherheit</0> aktiviert; Details finden Sie im <1>Handbuch zur Kontosicherheit</1>.",
+    "Der Zugang lässt sich durch die Bestätigung mit einem Code aus einer App verstärken. Sie ist freiwillig und wird von jedem selbst unter <0>Einstellungen → Kontosicherheit</0> aktiviert; Details finden Sie im <1>Handbuch zur Kontosicherheit</1>.",
 } satisfies Record<string, string>;

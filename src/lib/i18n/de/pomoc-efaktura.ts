@@ -22,7 +22,7 @@ export default {
   "Keď je registrácia hotová, eFaktúra sa vo Fakteri zapne sama pri firme s rovnakým DIČ. Ak vo Fakteri ešte účet nemáte, príde vám e-mailom pozvánka — po registrácii s tým istým DIČ sa eFaktúra k firme pripojí automaticky.":
     "Sobald die Registrierung abgeschlossen ist, wird die E-Rechnung in Faktero für das Unternehmen mit derselben Steuernummer (DIČ) automatisch aktiviert. Wenn Sie noch kein Konto in Faktero haben, erhalten Sie eine Einladung per E-Mail — nach der Registrierung mit derselben DIČ wird die E-Rechnung automatisch mit dem Unternehmen verknüpft.",
   "Stav nájdete v <0>eFaktúra → Prehľad eFaktúry</0>. Ak tam firma spárovaná nie je, hoci registrácia prebehla, kliknite na <1>Spárovať</1> — Faktero ju nájde podľa IČO.":
-    "Den Status finden Sie unter <0>E-Rechnung → E-Rechnung-Übersicht</0>. Ist das Unternehmen dort trotz erfolgter Registrierung nicht zugeordnet, klicken Sie auf <1>Zuordnen</1> — Faktero findet es anhand der Firmen-ID (IČO).",
+    "Den Status finden Sie unter <0>E-Rechnung → E-Rechnung – Übersicht</0>. Ist das Unternehmen dort trotz erfolgter Registrierung nicht zugeordnet, klicken Sie auf <1>Zuordnen</1> — Faktero findet es anhand der Firmen-ID (IČO).",
   "Odoslanie eFaktúry": "E-Rechnung senden",
   "Faktúru vystavíte ako doteraz a na jej detaile kliknete na <0>Odoslať eFaktúru</0>. Faktero z nej vytvorí XML, skontroluje ho podľa normy a pošle odberateľovi.":
     "Sie stellen die Rechnung wie gewohnt aus und klicken in ihrer Detailansicht auf <0>E-Rechnung senden</0>. Faktero erzeugt daraus das XML, prüft es nach der Norm und sendet es an den Kunden.",
@@ -31,7 +31,7 @@ export default {
   "Odoslané doklady sú v <0>eFaktúra → Odoslané eFaktúry</0> a v <1>Doručeniach</1> vidíte, kedy si ich odberateľ prevzal.":
     "Gesendete Belege finden Sie unter <0>E-Rechnung → Gesendete E-Rechnungen</0>, und unter <1>Zustellungen</1> sehen Sie, wann der Kunde sie abgerufen hat.",
   "eFaktúry od dodávateľov pribúdajú v <0>eFaktúra → Prijaté eFaktúry</0> samy; tlačidlom <1>Stiahnuť nové</1> ich načítate hneď.":
-    "E-Rechnungen von Lieferanten erscheinen automatisch unter <0>E-Rechnung → Eingegangene E-Rechnungen</0>; mit der Schaltfläche <1>Neue abrufen</1> laden Sie sie sofort.",
+    "E-Rechnungen von Lieferanten erscheinen automatisch unter <0>E-Rechnung → Empfangene E-Rechnungen</0>; mit der Schaltfläche <1>Neue abrufen</1> laden Sie sie sofort.",
   "<0>Náhľad</0> ukáže eFaktúru ako bežnú faktúru v PDF. Ak dodávateľ priložil vlastné PDF, uvidíte jeho; inak ju Faktero vykreslí z údajov eFaktúry.":
     "Die <0>Vorschau</0> zeigt die E-Rechnung als gewöhnliche Rechnung im PDF. Hat der Lieferant ein eigenes PDF beigefügt, sehen Sie dieses; andernfalls erstellt Faktero es aus den Daten der E-Rechnung.",
   "<0>Zaevidovať</0> z nej spraví <1>prijatú faktúru</1> aj s PDF v prílohe — netreba nič prepisovať. Potom ju zaúčtujete, uhradíte alebo pošlete do Pohody ako každú inú.":
@@ -48,7 +48,7 @@ export default {
     "Eine eingegangene Gutschrift wird beim Erfassen unter den Eingangsrechnungen mit negativem Betrag und mit der Nummer der korrigierten Rechnung gespeichert — in der MwSt.-Erklärung erscheint sie so als Korrektur des Vorsteuerabzugs, nicht als weiterer Einkauf.",
   "Odsúhlasenú <0>samofaktúru</0> pošlete dodávateľovi aj cez eFaktúru tlačidlom <1>Poslať cez eFaktúru</1> na jej detaile (typ self-billing).":
     "Eine bestätigte <0>Selbstfakturierung</0> senden Sie dem Lieferanten auch per E-Rechnung über die Schaltfläche <1>Per E-Rechnung senden</1> in ihrer Detailansicht (Typ self-billing).",
-  "Skóre pripravenosti": "Bereitschafts-Score",
+  "Skóre pripravenosti": "Bereitschaftswert",
   "V <0>eFaktúra → Prehľad eFaktúry</0> vidíte <1>skóre pripravenosti</1> a zoznam toho, čo ešte chýba — napríklad vyplnené údaje firmy, IČ DPH pri platiteľovi DPH alebo Peppol ID. Čím vyššie skóre, tým menej prekvapení pri prvej eFaktúre.":
-    "Unter <0>E-Rechnung → E-Rechnung-Übersicht</0> sehen Sie den <1>Bereitschafts-Score</1> und eine Liste dessen, was noch fehlt — zum Beispiel ausgefüllte Unternehmensdaten, die USt-IdNr. bei umsatzsteuerpflichtigen Unternehmen oder die Peppol-ID. Je höher der Score, desto weniger Überraschungen bei der ersten E-Rechnung.",
+    "Unter <0>E-Rechnung → E-Rechnung – Übersicht</0> sehen Sie den <1>Bereitschafts-Score</1> und eine Liste dessen, was noch fehlt — zum Beispiel ausgefüllte Unternehmensdaten, die USt-IdNr. bei umsatzsteuerpflichtigen Unternehmen oder die Peppol-ID. Je höher der Score, desto weniger Überraschungen bei der ersten E-Rechnung.",
 } satisfies Record<string, string>;

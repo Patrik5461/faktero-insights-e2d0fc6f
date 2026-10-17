@@ -107,7 +107,7 @@ export default {
   "PDF sa nepodarilo vygenerovať.": "Das PDF konnte nicht erstellt werden.",
   "PDF vygenerované.": "PDF erstellt.",
   "PDF zatiaľ neexistuje.": "Das PDF existiert noch nicht.",
-  PDP: "RC",
+  PDP: "Reverse-Charge",
   Platba: "Zahlung",
   "Platba prebehla. Faktúra označená ako uhradená.":
     "Die Zahlung ist eingegangen. Rechnung als bezahlt markiert.",

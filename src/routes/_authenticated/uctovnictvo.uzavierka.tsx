@@ -170,7 +170,7 @@ function UzavierkaPage() {
                 )}
               </li>
               <li>
-                {t("Zákaz platí aj na presun nového dokladu")} <em>{t("do")}</em>{" "}
+                {t("Zákaz platí aj na presun nového dokladu")} <em>{t("uzavierka::do")}</em>{" "}
                 {t("uzavretého obdobia.")}
               </li>
             </ul>

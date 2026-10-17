@@ -52,7 +52,7 @@ export default {
     "Ein Kassenbeleg ist ein steuerlicher Datensatz wie eine Rechnung, daher gilt auch für ihn die <0>Periodensperre</0>. Nach dem Sperren lassen sich Datum, Betrag und Beschreibung nicht mehr ändern.",
   "Pokladňa pre účtovníčku": "Kasse für die Buchhalterin",
   "Pokladničné doklady sú súčasťou mesačných podkladov aj priameho prepojenia s Pohodou — idú ako príjmové a výdavkové doklady. Pozrite si <0>manuál k Pohode</0>.":
-    "Kassenbelege sind Teil der monatlichen Unterlagen und auch der direkten Pohoda-Anbindung — sie gehen als Einnahme- und Ausgabebelege hinüber. Siehe das <0>Handbuch zu Pohoda</0>.",
+    "Kassenbelege sind Teil der monatlichen Unterlagen und auch der direkten Anbindung an Pohoda — sie gehen als Einnahme- und Ausgabebelege hinüber. Siehe das <0>Handbuch zu Pohoda</0>.",
   "Rozpis DPH sa k nim <0>nedopĺňa</0>: pohyb v pokladni sadzbu nemá a vymyslená by bola tichá chyba v priznaní. Doklady s DPH sú prijaté doklady a faktúry.":
     "Eine MwSt.-Aufschlüsselung wird bei ihnen <0>nicht ergänzt</0>: Eine Kassenbewegung hat keinen Steuersatz, und ein erfundener wäre ein stiller Fehler in der Steuererklärung. Belege mit MwSt. sind Eingangsbelege und Rechnungen.",
   "Zaokrúhľovanie na päť centov": "Rundung auf fünf Cent",

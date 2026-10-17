@@ -72,7 +72,7 @@ export default {
   "História synchronizácií": "Synchronisierungsverlauf",
   "Žiadne záznamy.": "Keine Einträge.",
   "V poriadku": "In Ordnung",
-  Čaká: "Wartet",
+  Čaká: "Ausstehend",
   Čiastočne: "Teilweise",
   Pripojené: "Verbunden",
   Prebieha: "Läuft",

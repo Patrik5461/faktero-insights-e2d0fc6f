@@ -8,8 +8,8 @@ export const Route = createFileRoute("/_authenticated/efaktura")({
 
 const TABS = [
   { to: "/efaktura", label: "Prehľad" },
-  { to: "/efaktura/odoslane", label: "Odoslané" },
-  { to: "/efaktura/prijate", label: "Prijaté" },
+  { to: "/efaktura/odoslane", label: "smer::Odoslané" },
+  { to: "/efaktura/prijate", label: "smer::Prijaté" },
   { to: "/efaktura/dorucenia", label: "Doručenia" },
 ] as const;
 

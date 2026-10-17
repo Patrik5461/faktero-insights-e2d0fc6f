@@ -51,7 +51,7 @@ export default {
   "Adresár sa dá posielať do Pohody, takže tam odberateľ je aj vtedy, keď mu tento mesiac nič nefakturujete. Zmenený kontakt sa <0>prepíše</0>, nezaloží sa druhý.":
     "Das Adressbuch lässt sich an Pohoda senden, sodass der Kunde dort auch dann vorhanden ist, wenn Sie ihm diesen Monat nichts in Rechnung stellen. Ein geänderter Kontakt wird <0>überschrieben</0>, es wird kein zweiter angelegt.",
   "Zapína sa to v <0>Účtovníctvo → Prepojenie s Pohodou</0> — viac v <1>manuáli k Pohode</1>.":
-    "Aktiviert wird das unter <0>Buchhaltung → Pohoda-Anbindung</0> — mehr im <1>Handbuch zu Pohoda</1>.",
+    "Aktiviert wird das unter <0>Buchhaltung → Anbindung an Pohoda</0> — mehr im <1>Handbuch zu Pohoda</1>.",
   "Overenie IČ DPH vo VIES": "Prüfung der USt-IdNr. in VIES",
   "Pri odberateľovi z iného členského štátu je vedľa poľa IČ DPH tlačidlo <0>Overiť vo VIES</0>. Register Európskej komisie povie, či je číslo platné, a doplní názov firmy.":
     "Bei einem Kunden aus einem anderen Mitgliedstaat gibt es neben dem Feld USt-IdNr. die Schaltfläche <0>In VIES prüfen</0>. Das Register der Europäischen Kommission sagt, ob die Nummer gültig ist, und ergänzt den Firmennamen.",

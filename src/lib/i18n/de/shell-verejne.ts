@@ -140,7 +140,7 @@ export default {
   "Nastaveniach účtu": "Kontoeinstellungen",
   "Odkaz je neúplný — chýba v ňom token.": "Der Link ist unvollständig – das Token fehlt.",
   "Každé ráno vám posielame e-mail, keď na vás vo Fakteri niečo čaká — doklady na schválenie, komentáre, nespracované doklady a faktúry po splatnosti. Chcete ho prestať dostávať?":
-    "Jeden Morgen senden wir Ihnen eine E-Mail, wenn in Faktero etwas auf Sie wartet – Belege zur Freigabe, Kommentare, unbearbeitete Belege und überfällige Rechnungen. Möchten Sie diese E-Mail nicht mehr erhalten?",
+    "Jeden Morgen senden wir Ihnen eine E-Mail, wenn in Faktero etwas auf Sie wartet – Belege zur Freigabe, Kommentare, unverarbeitete Belege und überfällige Rechnungen. Möchten Sie diese E-Mail nicht mehr erhalten?",
   "Odhlásiť sa z denného súhrnu": "Von der täglichen Zusammenfassung abmelden",
 
   // Pozvánka do firmy

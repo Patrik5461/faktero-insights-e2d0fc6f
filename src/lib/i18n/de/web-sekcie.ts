@@ -219,20 +219,20 @@ export default {
   "Odberateľ dostane faktúru z vašej firemnej adresy, nie z cudzej služby. Nastavíte to raz v údajoch firmy.":
     "Der Kunde erhält die Rechnung von Ihrer Firmenadresse, nicht von einem fremden Dienst. Sie richten das einmal in den Unternehmensdaten ein.",
   "Faktúry, upomienky, cenové ponuky, samofaktúry aj podklady pre účtovníka":
-    "Rechnungen, Mahnungen, Angebote, Gutschriften im Gutschriftverfahren und Unterlagen für den Buchhalter",
+    "Rechnungen, Mahnungen, Angebote, Selbstfakturierungen und Unterlagen für den Buchhalter",
   "Gmail, Microsoft 365, WebSupport, Seznam či server vašej domény":
     "Gmail, Microsoft 365, WebSupport, Seznam oder der Server Ihrer Domain",
   "Zapne sa až po úspešnom skúšobnom maile; heslo je uložené zašifrované":
     "Wird erst nach einer erfolgreichen Test-E-Mail aktiviert; das Passwort wird verschlüsselt gespeichert",
   "Keď váš server zlyhá, mail aj tak odíde a chyba sa ukáže v nastaveniach":
     "Wenn Ihr Server ausfällt, geht die E-Mail trotzdem hinaus und der Fehler erscheint in den Einstellungen",
-  Samofakturácia: "Gutschriftverfahren",
+  Samofakturácia: "Selbstfakturierung",
   "Faktúru za dodávateľa vyhotovíte vy, on ju jedným klikom odsúhlasí.":
     "Die Rechnung für den Lieferanten erstellen Sie, er bestätigt sie mit einem Klick.",
   "Výkup od drobných dodávateľov, provízie obchodných zástupcov, honoráre autorov — faktúru vyhotovíte za dodávateľa podľa § 72 ods. 4 zákona o DPH a on ju odsúhlasí cez odkaz v e-maile, bez registrácie.":
     "Ankauf von kleinen Lieferanten, Provisionen von Handelsvertretern, Autorenhonorare — Sie erstellen die Rechnung für den Lieferanten nach § 72 Abs. 4 des slowakischen MwSt.-Gesetzes und er bestätigt sie über einen Link in der E-Mail, ohne Registrierung.",
   "Dohoda o samofakturácii pri kontakte v adresári — bez platnej dohody faktúru vyhotoviť nedá":
-    "Vereinbarung über das Gutschriftverfahren beim Kontakt in den Kontakten — ohne gültige Vereinbarung lässt sich keine Rechnung erstellen",
+    "Vereinbarung über die Selbstfakturierung beim Kontakt im Adressbuch — ohne gültige Vereinbarung lässt sich keine Rechnung erstellen",
   "Vlastný číselný rad SF, v hlavičke dodávateľ s jeho IČ DPH a sadzbami, veta „Vyhotovenie faktúry odberateľom“":
     "Eigener Nummernkreis SF, im Kopf der Lieferant mit seiner USt-IdNr. und seinen Sätzen, der Vermerk „Gutschrift“",
   "Dodávateľ dostane PDF a odkaz: Súhlasím, alebo vráti s poznámkou na opravu":
@@ -489,7 +489,7 @@ export default {
   "Detail s položkami a dočasným odkazom na sken":
     "Detail mit Positionen und temporärem Link zum Scan",
   "Nahratie dokladu (PDF, fotka, XML) — Faktero ho prečíta a zaradí do Nespracovaných":
-    "Hochladen eines Belegs (PDF, Foto, XML) — Faktero liest ihn aus und legt ihn unter Unbearbeitete Belege ab",
+    "Hochladen eines Belegs (PDF, Foto, XML) — Faktero liest ihn aus und legt ihn unter Unverarbeitete Belege ab",
   "Skúšobné prostredie": "Testumgebung",
   "Interaktívne vyskúšanie API priamo z prehliadača.":
     "Probieren Sie die API interaktiv direkt im Browser aus.",
@@ -521,7 +521,7 @@ export default {
   "Doručenie cez Peppol sieť alebo Digitálny poštár Finančnej správy SR":
     "Zustellung über das Peppol-Netzwerk oder den Digitalen Postboten der slowakischen Finanzverwaltung",
   "Dobropis ako CreditNote 381 s číslom pôvodnej faktúry (BT-25), samofaktúra cez Peppol":
-    "Gutschrift als CreditNote 381 mit der Nummer der ursprünglichen Rechnung (BT-25), Gutschriftverfahren über Peppol",
+    "Gutschrift als CreditNote 381 mit der Nummer der ursprünglichen Rechnung (BT-25), Selbstfakturierung über Peppol",
   "PDF už nebude stačiť na uplatnenie nákladu a odpočtu DPH":
     "Ein PDF reicht dann nicht mehr für den Kostenansatz und den Vorsteuerabzug",
   "Automatické párovanie s objednávkou a skladom":

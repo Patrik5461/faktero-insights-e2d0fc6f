@@ -510,7 +510,7 @@ function JobDetail() {
         <Zoznam
           titulok="Materiál zo skladu"
           prazdne="Zo skladu sa na zákazku zatiaľ nič nevydalo."
-          hlavicka={["Položka", "Pohyb", "Množstvo", "Vážená cena", "Hodnota"]}
+          hlavicka={["Položka", "sklad::Pohyb", "Množstvo", "Vážená cena", "Hodnota"]}
           riadky={data.pohyby.map((p: any) => [
             p.nazov,
             t(pohybNazov(p.type)),

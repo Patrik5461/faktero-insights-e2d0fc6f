@@ -23,7 +23,7 @@ export default {
   Názov: "Name",
   "Čiarový kód": "Barcode",
   Jednotka: "Einheit",
-  Stav: "Bestand",
+  Stav: "Status",
   Min: "Min.",
   Nákup: "Einkauf",
   Predaj: "Verkauf",
@@ -43,7 +43,7 @@ export default {
   "Žiadne dáta na export.": "Keine Daten zum Exportieren.",
   "Skladové položky": "Artikel",
   "Karty tovaru, ktorý sa počíta na sklade — stav, pohyby, nákupná cena a minimum. Služby kartu nemajú, tie sú len v Produktoch a službách.":
-    "Artikel für Waren mit Bestandsführung — Bestand, Bewegungen, Einkaufspreis und Mindestbestand. Dienstleistungen haben keinen Artikel, sie gibt es nur unter Produkte und Dienstleistungen.",
+    "Artikel für Waren mit Bestandsführung — Bestand, Bewegungen, Einkaufspreis und Mindestbestand. Dienstleistungen haben keinen Artikel, sie gibt es nur unter Produkte und Leistungen.",
   "Export skladu": "Lagerexport",
   "Import skladu": "Lagerimport",
   "Pridať tovar": "Ware hinzufügen",

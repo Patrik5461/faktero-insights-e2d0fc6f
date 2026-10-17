@@ -1,7 +1,7 @@
 // Zoznam faktúr, oprava faktúry, rýchla faktúra, skener a párovanie platieb.
 export default {
   "Ak máte doklady odovzdané účtovníčke, radšej ich nechajte v koši.":
-    "Wenn Sie die Belege bereits an Ihre Buchhaltung übergeben haben, lassen Sie sie besser im Papierkorb.",
+    "Wenn Sie die Belege bereits an Ihre Buchhalterin übergeben haben, lassen Sie sie besser im Papierkorb.",
   "Ako párovanie rozhoduje a čo robiť s platbami bez variabilného symbolu, je v":
     "Wie der Zahlungsabgleich entscheidet und was mit Zahlungen ohne Verwendungszweck (VS) zu tun ist, steht im",
   "Bankový prevod": "Banküberweisung",
@@ -23,7 +23,7 @@ export default {
   Dobropis: "Gutschrift",
   "Dobropisy a ťarchopisy": "Gutschriften und Belastungsanzeigen",
   "Doklad je v Nespracovaných — číta sa":
-    "Der Beleg liegt in „Unbearbeitete Belege“ — er wird gelesen",
+    "Der Beleg liegt in „Unverarbeitete Belege“ — er wird gelesen",
   "Doklad je zaevidovaný v systéme eKasa, údaje sedia s tým, čo predajca odoslal.":
     "Der Beleg ist im System eKasa erfasst, die Daten stimmen mit den vom Verkäufer übermittelten überein.",
   "Doklad načítaný z Finančnej správy": "Beleg von der Finanzverwaltung geladen",
@@ -55,7 +55,7 @@ export default {
     "Die Rechnung wurde bereits als E-Rechnung an den ursprünglichen Kunden gesendet — in seinem System bleibt sie bestehen. Richtig ist, eine Gutschrift und eine neue Rechnung auszustellen.",
   "Faktúra vymazaná": "Rechnung gelöscht",
   "Faktúra za dodávateľa podľa dohody o samofakturácii — uloží sa medzi prijaté faktúry":
-    "Rechnung im Namen des Lieferanten gemäß Gutschriftvereinbarung — wird unter den Eingangsrechnungen gespeichert",
+    "Rechnung im Namen des Lieferanten gemäß der Vereinbarung über die Selbstfakturierung — wird unter den Eingangsrechnungen gespeichert",
   "Faktúra {cislo} bude skrytá z rozhrania. Môžete ju neskôr obnoviť.":
     "Die Rechnung {cislo} wird ausgeblendet. Sie können sie später wiederherstellen.",
   "Faktúra {cislo} je vystavená.": "Die Rechnung {cislo} ist ausgestellt.",
@@ -79,7 +79,7 @@ export default {
   "IČ DPH": "USt-IdNr.",
   IČO: "Firmen-ID (IČO)",
   "Je to faktúra — uložiť do Nespracovaných dokladov":
-    "Das ist eine Rechnung — unter „Unbearbeitete Belege“ speichern",
+    "Das ist eine Rechnung — unter „Unverarbeitete Belege“ speichern",
   "K otvoreným faktúram sa nenašla žiadna zodpovedajúca platba. Skúste najprv stiahnuť nové pohyby v bankových účtoch.":
     "Zu den offenen Rechnungen wurde keine passende Zahlung gefunden. Rufen Sie zuerst neue Umsätze in den Bankkonten ab.",
   Karta: "Karte",
@@ -118,7 +118,7 @@ export default {
   "Načítavam…": "Wird geladen…",
   "Nebolo z čoho čítať — chýba QR kód aj fotka.": "Nichts zum Lesen — QR-Code und Foto fehlen.",
   "Nepodarilo sa načítať platby.": "Die Zahlungen konnten nicht geladen werden.",
-  "Nepodarilo sa prečítať nič": "Es konnte nichts gelesen werden",
+  "Nepodarilo sa prečítať nič": "Es konnte nichts ausgelesen werden",
   "Nepodarilo sa uložiť": "Speichern fehlgeschlagen",
   "Neuhradené faktúry": "Offene Rechnungen",
   "Nezapísalo sa nič.": "Es wurde nichts erfasst.",
@@ -186,7 +186,7 @@ export default {
   Položky: "Positionen",
   "Položky ({n})": "Positionen ({n})",
   "Položky ovplyvňujúce sklad nie je možné meniť po odoslaní faktúry.":
-    "Lagerrelevante Positionen können nach dem Senden der Rechnung nicht geändert werden.",
+    "Lagerrelevante Positionen können nach dem Senden der Rechnung nicht mehr geändert werden.",
   "Poslať upomienku": "Mahnung senden",
   Povinné: "Pflichtfeld",
   Poznámka: "Notiz",
@@ -247,7 +247,7 @@ export default {
   "Suma a popis": "Betrag und Beschreibung",
   "Suma s DPH — cena bez dane sa dopočíta": "Betrag inkl. MwSt. — der Nettopreis wird berechnet",
   "Suma, dátum a predajca sú z QR kódu, položky sú prečítané z fotky.":
-    "Betrag, Datum und Verkäufer stammen aus dem QR-Code, die Positionen wurden aus dem Foto gelesen.",
+    "Betrag, Datum und Verkäufer stammen aus dem QR-Code, die Positionen wurden aus dem Foto ausgelesen.",
   Súhrn: "Zusammenfassung",
   "Text nad položkami": "Text über den Positionen",
   "Text, ktorý sa vytlačí nad tabuľkou položiek":

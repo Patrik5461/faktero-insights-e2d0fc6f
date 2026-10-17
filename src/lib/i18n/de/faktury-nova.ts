@@ -10,7 +10,7 @@ export default {
   "Bez osobitnej úpravy": "Ohne Sonderregelung",
   "Bežne sa fakturuje so slovenskou DPH. Prepnite len vtedy, keď daň odvedie odberateľ alebo predávate spotrebiteľovi v inom štáte EÚ.":
     "Üblicherweise wird mit slowakischer MwSt. abgerechnet. Wechseln Sie nur, wenn der Kunde die Steuer abführt oder Sie an einen Verbraucher in einem anderen EU-Staat verkaufen.",
-  Celkom: "Gesamtbetrag",
+  Celkom: "Gesamt",
   Cena: "Preis",
   "Cena bez DPH": "Preis ohne MwSt.",
   DPH: "MwSt.",
@@ -120,7 +120,7 @@ export default {
     "Beschreiben Sie die Rechnung in normaler Sprache — die KI füllt Positionen, Preise und MwSt. aus.",
   "Osobitná úprava (nepovinné)": "Sonderregelung (optional)",
   Osobne: "Persönlich",
-  PDP: "RC",
+  PDP: "Reverse-Charge",
   "PDP (prenesenie)": "RC (Reverse-Charge)",
   "Platobné údaje a symboly": "Zahlungsdaten und Symbole",
   "Po položkách (zaokrúhli každú položku zvlášť)": "Pro Position (jede Position einzeln runden)",

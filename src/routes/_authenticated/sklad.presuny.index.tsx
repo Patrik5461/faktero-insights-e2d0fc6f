@@ -92,7 +92,7 @@ function TransfersListPage() {
                 <tr>
                   <th className="px-3 py-2">{t("Vytvorený")}</th>
                   <th className="px-3 py-2">{t("Zo skladu")}</th>
-                  <th className="px-3 py-2">{t("Do")}</th>
+                  <th className="px-3 py-2">{t("presun::Do")}</th>
                   <th className="px-3 py-2">{t("Stav")}</th>
                   <th className="px-3 py-2">{t("Poznámka")}</th>
                   <th className="px-3 py-2"></th>

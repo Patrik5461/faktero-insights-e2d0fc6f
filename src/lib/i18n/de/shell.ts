@@ -64,7 +64,7 @@ export default {
   "Daňové doklady": "Steuerbelege",
   "Zálohové faktúry": "Anzahlungsrechnungen",
   "Prijaté faktúry": "Eingangsrechnungen",
-  "Prijaté zálohové faktúry": "Erhaltene Anzahlungsrechnungen",
+  "Prijaté zálohové faktúry": "Eingehende Anzahlungsrechnungen",
   "Cenové ponuky": "Angebote",
   Objednávky: "Bestellungen",
   "Opakované faktúry": "Wiederkehrende Rechnungen",
@@ -75,7 +75,7 @@ export default {
   "Odoslané eFaktúry": "Gesendete E-Rechnungen",
   "Prijaté eFaktúry": "Empfangene E-Rechnungen",
   "Doručenia eFaktúr": "Zustellungen von E-Rechnungen",
-  "Nespracované doklady": "Unbearbeitete Belege",
+  "Nespracované doklady": "Unverarbeitete Belege",
   Bločky: "Kassenbons",
   "Vystavené faktúry": "Ausgangsrechnungen",
   "Iné doklady": "Sonstige Belege",
@@ -164,9 +164,9 @@ export default {
   "Kolega vás označil v komentári": "Ein Kollege hat Sie in einem Kommentar erwähnt",
   "List, predpis alebo zmluva čaká na účtovníka.":
     "Ein Schreiben, Bescheid oder Vertrag wartet auf den Buchhalter.",
-  "1 nespracovaný doklad": "1 unbearbeiteter Beleg",
+  "1 nespracovaný doklad": "1 unverarbeiteter Beleg",
   "Čaká na kontrolu a označenie ako spracovaný.":
-    "Wartet auf Prüfung und Markierung als bearbeitet.",
+    "Wartet auf Prüfung und Markierung als verarbeitet.",
   "Do Pohody a na úhradu pôjdu až po schválení.":
     "Erst nach der Freigabe gehen sie an Pohoda und zur Zahlung.",
 

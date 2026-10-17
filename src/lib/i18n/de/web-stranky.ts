@@ -223,4 +223,5 @@ export default {
   "/ mesiac": "/ Monat",
   "Zadajte meno": "Geben Sie Ihren Namen ein",
   "{cena} / mesiac ({sDph} s DPH)": "{cena} / Monat ({sDph} inkl. MwSt.)",
+  "Kontakt — Faktero": "Kontakt — Faktero",
 } satisfies Record<string, string>;

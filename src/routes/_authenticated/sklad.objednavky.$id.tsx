@@ -230,7 +230,7 @@ function PurchaseOrderDetail() {
                 <tr>
                   <th className="p-3">{t("Položka")}</th>
                   <th className="p-3 text-right">{t("Objednané")}</th>
-                  <th className="p-3 text-right">{t("Prijaté")}</th>
+                  <th className="p-3 text-right">{t("sklad::Prijaté")}</th>
                   <th className="p-3 text-right">{t("Zostáva")}</th>
                   <th className="p-3 text-right">{t("Cena / MJ")}</th>
                   {otvorena && <th className="p-3 text-right">{t("Prijať teraz")}</th>}

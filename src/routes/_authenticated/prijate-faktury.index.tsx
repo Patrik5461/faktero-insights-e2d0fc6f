@@ -100,7 +100,7 @@ function monthOptions(t: (s: string) => string): { value: string; label: string 
     const m = String(d.getMonth() + 1).padStart(2, "0");
     opts.push({
       value: `${y}-${m}`,
-      label: `${t(["Jan", "Feb", "Mar", "Apr", "Máj", "Jún", "Júl", "Aug", "Sep", "Okt", "Nov", "Dec"][d.getMonth()])} ${y}`,
+      label: `${t(["Jan", "Feb", "Mar", "Apr", "Máj", "kratko::Jún", "kratko::Júl", "Aug", "Sep", "Okt", "Nov", "Dec"][d.getMonth()])} ${y}`,
     });
   }
   return opts;

@@ -5,9 +5,9 @@ export default {
     "Zwei-Faktor-Authentifizierung, vertrauenswürdige Geräte, Anmeldung, vergessenes Passwort und Kontolöschung in Faktero.",
   "Pomoc · Účet": "Hilfe · Konto",
   "Dvojfaktorové overenie, heslá, prístupy a zrušenie účtu.":
-    "Zwei-Faktor-Authentifizierung, Passwörter, Zugriffe und Kontolöschung.",
+    "Zwei-Faktor-Authentifizierung, Passwörter, Zugänge und Kontolöschung.",
   "V <0>Nastaveniach → Zabezpečenie</0> sa dá zapnúť overenie kódom z aplikácie (Google Authenticator, 1Password a podobne). Je <1>dobrovoľné</1> — kto ho nechce, prihlasuje sa ako doteraz.":
-    "Unter <0>Einstellungen → Sicherheit</0> lässt sich die Bestätigung per Code aus einer App (Google Authenticator, 1Password und ähnliche) aktivieren. Sie ist <1>freiwillig</1> — wer sie nicht möchte, meldet sich wie bisher an.",
+    "Unter <0>Einstellungen → Kontosicherheit</0> lässt sich die Bestätigung per Code aus einer App (Google Authenticator, 1Password und ähnliche) aktivieren. Sie ist <1>freiwillig</1> — wer sie nicht möchte, meldet sich wie bisher an.",
   "Po zapnutí sa pri prihlásení pýta šesťmiestny kód. Zariadenie sa dá označiť za dôveryhodné, aby sa kód na ňom nepýtal zakaždým.":
     "Nach der Aktivierung wird bei der Anmeldung ein sechsstelliger Code abgefragt. Ein Gerät lässt sich als vertrauenswürdig markieren, damit der Code dort nicht jedes Mal abgefragt wird.",
   "Keď je dvojfaktor zapnutý, chráni celý účet vrátane dokladov — aj keby niekto poznal heslo, bez kódu sa k dátam nedostane.":

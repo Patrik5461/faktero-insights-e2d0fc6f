@@ -212,8 +212,8 @@ function EmailTemplatesPage() {
                   {t("Uložiť")}
                 </button>
                 <button
-                  aria-label={t("Obnoviť")}
-                  title={t("Obnoviť")}
+                  aria-label={t("sablona::Obnoviť")}
+                  title={t("sablona::Obnoviť")}
                   onClick={() => onReset(r)}
                   disabled={busy === r.template_type || !r.customized}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-50"

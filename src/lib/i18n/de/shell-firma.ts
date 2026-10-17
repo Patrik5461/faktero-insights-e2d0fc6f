@@ -45,7 +45,7 @@ export default {
   "Vlastný prístup": "Individueller Zugriff",
 
   // Onboarding
-  "Zadajte názov firmy.": "Bitte geben Sie den Firmennamen ein.",
+  "Zadajte názov firmy.": "Geben Sie den Namen des Unternehmens ein.",
   "Chýba prihlásenie. Prihláste sa znova.":
     "Sie sind nicht angemeldet. Bitte melden Sie sich erneut an.",
   "Nepodarilo sa vytvoriť firmu.": "Das Unternehmen konnte nicht angelegt werden.",
@@ -53,7 +53,7 @@ export default {
   "Vytvorte si firmu": "Legen Sie Ihr Unternehmen an",
   "Tieto údaje sa zobrazia na faktúrach. Môžete ich kedykoľvek upraviť.":
     "Diese Angaben erscheinen auf Ihren Rechnungen. Sie können sie jederzeit ändern.",
-  "Vytváram...": "Wird angelegt...",
+  "Vytváram...": "Wird erstellt...",
   "Vytvoriť firmu a pokračovať": "Unternehmen anlegen und fortfahren",
 
   // Správa firiem
@@ -146,7 +146,7 @@ export default {
     "Wählen Sie, auf welche Bereiche der Eingeladene Zugriff haben soll:",
   "Odkaz na pozvánku": "Einladungslink",
   "Odkaz skopírovaný": "Link kopiert",
-  Prijaté: "Angenommen",
+  Prijaté: "Empfangen",
   Expirované: "Abgelaufen",
   "Čaká sa": "Ausstehend",
 
@@ -274,4 +274,5 @@ export default {
   "Tesla Fleet API": "Tesla Fleet API",
   "Automatické importy jázd": "Automatischer Fahrtenimport",
   "Pokročilé reporty": "Erweiterte Berichte",
+  "pozvanka::Prijaté": "Angenommen",
 } satisfies Record<string, string>;

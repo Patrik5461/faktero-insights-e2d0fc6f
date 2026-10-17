@@ -58,7 +58,7 @@ export default {
     "<0>Löschen lässt sich nur ein Projekt ohne Belege.</0> Sind Rechnungen oder Bewegungen damit verknüpft, lehnt Faktero das Löschen ab — sonst verlören diese Belege ihren Zusammenhang.",
   "Zákazky v Pohode": "Projekte in Pohoda",
   "Zákazky sa dajú posielať aj do Pohody a faktúra tam potom nesie zákazku, takže je z účtovníctva vidieť výnos po zákazkách. Zapína sa to vo <0>Účtovníctvo → Prepojenie s Pohodou</0>, podrobnosti sú v <1>manuáli k Pohode</1>.":
-    "Projekte lassen sich auch an Pohoda übertragen; die Rechnung trägt dort dann das Projekt, sodass in der Buchhaltung der Erlös je Projekt sichtbar ist. Aktiviert wird das unter <0>Buchhaltung → Verbindung mit Pohoda</0>, Details finden Sie im <1>Handbuch zu Pohoda</1>.",
+    "Projekte lassen sich auch an Pohoda übertragen; die Rechnung trägt dort dann das Projekt, sodass in der Buchhaltung der Erlös je Projekt sichtbar ist. Aktiviert wird das unter <0>Buchhaltung → Anbindung an Pohoda</0>, Details finden Sie im <1>Handbuch zu Pohoda</1>.",
   "Zákazka odchádza <0>raz</0> — Pohoda ju vie založiť, ale nie prepísať. Keď jej neskôr zmeníte názov, prepíšte ho aj tam.":
     "Ein Projekt wird <0>einmal</0> übertragen — Pohoda kann es anlegen, aber nicht überschreiben. Wenn Sie später seinen Namen ändern, ändern Sie ihn auch dort.",
 } satisfies Record<string, string>;

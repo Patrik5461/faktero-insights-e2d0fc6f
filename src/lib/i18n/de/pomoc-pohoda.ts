@@ -1,6 +1,6 @@
 // Nemecký preklad manuálu v Pomoci (src/routes/pomoc.pohoda.tsx). Kľúče vyrába pomoc-preklad.test.tsx.
 export default {
-  "Pomoc — Prepojenie s Pohodou — Faktero": "Hilfe — Pohoda-Anbindung — Faktero",
+  "Pomoc — Prepojenie s Pohodou — Faktero": "Hilfe — Anbindung an Pohoda — Faktero",
   "Ako dostať doklady z Faktera do programu POHODA: mesačné podklady mailom, automatické odosielanie a priame prepojenie, pri ktorom si Pohoda doklady vezme sama.":
     "So gelangen Belege aus Faktero in das Programm POHODA: monatliche Unterlagen per E-Mail, automatischer Versand und eine direkte Anbindung, bei der Pohoda die Belege selbst abholt.",
   "Od stiahnutého súboru až po prepojenie, pri ktorom si Pohoda doklady vezme sama a povie späť, aké čísla im pridelila.":
@@ -9,7 +9,7 @@ export default {
   "Doklady sa dajú do Pohody dostať tromi spôsobmi. Líšia sa len tým, kto nesie súbor:":
     "Belege gelangen auf drei Wegen in Pohoda. Sie unterscheiden sich nur darin, wer die Datei überbringt:",
   "<0>Stiahnem a pošlem sám</0> — v <1>Účtovníctvo → Účtovné exporty</1> vyberiete mesiac a stiahnete ZIP.":
-    "<0>Selbst herunterladen und senden</0> — unter <1>Buchhaltung → Buchhaltungsexporte</1> wählen Sie den Monat und laden eine ZIP-Datei herunter.",
+    "<0>Selbst herunterladen und senden</0> — unter <1>Buchhaltung → Export an die Buchhaltung</1> wählen Sie den Monat und laden eine ZIP-Datei herunter.",
   "<0>Odíde mailom samo</0> — 5. v mesiaci, keď si to zapnete.":
     "<0>Automatisch per E-Mail</0> — am 5. des Monats, sobald Sie es aktivieren.",
   "<0>Pohoda si to vezme sama</0> — priame prepojenie, žiadne súbory ani maily.":
@@ -43,9 +43,9 @@ export default {
   "Bez predkontácií Pohoda doklady naimportuje bez chyby, ale zaúčtovanie si ku každému doklikáva ručne — teda presne tú prácu, ktorú mal export ušetriť.":
     "Ohne Vorkontierungen importiert Pohoda die Belege zwar fehlerfrei, die Buchung muss aber bei jedem Beleg manuell ergänzt werden — also genau die Arbeit, die der Export ersparen sollte.",
   "<0>E-mail účtovníčky</0>, na ktorý chodia mesačné podklady, je v <1>Účtovníctvo → Prepojenie s Pohodou</1>.":
-    "Die <0>E-Mail-Adresse der Buchhalterin</0>, an die die monatlichen Unterlagen gehen, finden Sie unter <1>Buchhaltung → Pohoda-Anbindung</1>.",
+    "Die <0>E-Mail-Adresse der Buchhalterin</0>, an die die monatlichen Unterlagen gehen, finden Sie unter <1>Buchhaltung → Anbindung an Pohoda</1>.",
   "V <0>Účtovných exportoch</0> vyberiete mesiac a Faktero povie, koľko z neho ešte neodišlo. Vznikne jeden ZIP:":
-    "In den <0>Buchhaltungsexporten</0> wählen Sie den Monat, und Faktero zeigt an, wie viel davon noch nicht übergeben wurde. Es entsteht eine ZIP-Datei:",
+    "Unter <0>Export an die Buchhaltung</0> wählen Sie den Monat, und Faktero zeigt an, wie viel davon noch nicht übergeben wurde. Es entsteht eine ZIP-Datei:",
   "XML na priamy import do Pohody — vydané faktúry, prijaté doklady, pokladňa":
     "XML für den direkten Import in Pohoda — Ausgangsrechnungen, Eingangsbelege, Kasse",
   "súpisky v CSV na kontrolu": "Listen im CSV-Format zur Kontrolle",
@@ -58,7 +58,7 @@ export default {
     "Beim Versand per E-Mail gilt eine Größenbegrenzung für Anhänge. Passen PDFs und Scans nicht hinein, wird das Paket ohne sie gesendet, und die E-Mail enthält einen Hinweis darauf — die Buchungsdaten sind wichtiger als die Bilder, und die Belege bleiben in Faktero.",
   "Automatické odosielanie 5. v mesiaci": "Automatischer Versand am 5. des Monats",
   "V <0>Účtovníctvo → Prepojenie s Pohodou</0> zaškrtnite <1>Posielať automaticky</1>. Podklady za minulý mesiac potom odídu 5. ráno samy na adresu účtovníčky.":
-    "Aktivieren Sie unter <0>Buchhaltung → Pohoda-Anbindung</0> die Option <1>Automatisch senden</1>. Die Unterlagen für den Vormonat werden dann am 5. morgens automatisch an die Adresse der Buchhalterin gesendet.",
+    "Aktivieren Sie unter <0>Buchhaltung → Anbindung an Pohoda</0> die Option <1>Automatisch senden</1>. Die Unterlagen für den Vormonat werden dann am 5. morgens automatisch an die Adresse der Buchhalterin gesendet.",
   "Piaty preto, že dovtedy bývajú doklady doplnené a zároveň ostáva čas do daňových termínov.":
     "Der 5., weil die Belege bis dahin meist vollständig sind und zugleich noch Zeit bis zu den Steuerfristen bleibt.",
   "Je to <0>vypnuté, kým to nezapnete</0> — e-mail odchádza v mene vašej firmy, takže to musí byť vedomé rozhodnutie. Posiela sa vždy len to, čo ešte neodišlo.":
@@ -73,7 +73,7 @@ export default {
     "Pohoda muss nicht einmal laufen; die Batchdatei öffnet sie und schließt sie nach Abschluss wieder. Der Computer muss zu dieser Zeit jedoch eingeschaltet sein — ist er es nicht, entfällt die Übertragung, und die Belege kommen in der nächsten Nacht.",
   "Ako prepojenie zapnúť": "So aktivieren Sie die Anbindung",
   "V <0>Účtovníctvo → Prepojenie s Pohodou</0> dole kliknite na <1>Stiahnuť balíček pre účtovníčku</1> a pošlite jej ho.":
-    "Klicken Sie unter <0>Buchhaltung → Pohoda-Anbindung</0> unten auf <1>Paket für die Buchhalterin herunterladen</1> und senden Sie es ihr.",
+    "Klicken Sie unter <0>Buchhaltung → Anbindung an Pohoda</0> unten auf <1>Paket für die Buchhalterin herunterladen</1> und senden Sie es ihr.",
   "Účtovníčka priečinok skopíruje na počítač, kde je POHODA — ideálne <0>C:\\Faktero</0>, teda cesta bez medzier a diakritiky.":
     "Die Buchhalterin kopiert den Ordner auf den Computer, auf dem POHODA läuft — idealerweise nach <0>C:\\Faktero</0>, also in einen Pfad ohne Leerzeichen und Sonderzeichen.",
   "V súbore <0>faktero-pohoda.cmd</0> vyplní tri riadky: cestu k Pohode a prihlasovacie meno a heslo do nej. V súbore <1>firmy.txt</1> skontroluje názov databázy účtovnej jednotky (nájde ho v Pohode v <2>Súbor → Účtovné jednotky</2>, stĺpec Databáza).":
@@ -102,7 +102,7 @@ export default {
     "<0>Eingangsrechnungen</0> — der Konnektor sendet diejenigen, die Sie in Faktero <1>verbucht</1> haben, mit Vorkontierung, MwSt.-Kennzeichen, Rechnungsnummer des Lieferanten und Leistungsdatum. Bei der monatlichen Übergabe an die Buchhalterin gehen alle Eingangsrechnungen des Monats mit.",
   "<0>pokladňa</0> — príjmové a výdavkové doklady": "<0>Kasse</0> — Einnahme- und Ausgabebelege",
   "Naviac, keď si ich zapnete v Účtovníctvo → Prepojenie s Pohodou:":
-    "Zusätzlich, wenn Sie sie unter Buchhaltung → Pohoda-Anbindung aktivieren:",
+    "Zusätzlich, wenn Sie sie unter Buchhaltung → Anbindung an Pohoda aktivieren:",
   "<0>adresár</0> — odberatelia idú do Pohody aj vtedy, keď im ten mesiac nič nefakturujete. Zmenený kontakt sa prepíše, nezaloží sa druhý.":
     "<0>Kontakte</0> — Kunden gehen auch dann an Pohoda, wenn Sie ihnen in dem Monat nichts in Rechnung stellen. Ein geänderter Kontakt wird überschrieben, es entsteht kein zweiter.",
   "<0>skladové karty</0> — číselník zásob. Potrebuje vyplnené členenie skladu.":
@@ -187,7 +187,7 @@ export default {
   "<0>predkontáciu pre zaokrúhlenie</0> — rozdiel medzi položkami a sumou pôjde ako samostatná položka s touto predkontáciou,":
     "die <0>Vorkontierung für Rundungen</0> — die Differenz zwischen Positionen und Betrag geht als separate Position mit dieser Vorkontierung,",
   "či bločky s QR kódom idú najprv do Nespracovaných dokladov,":
-    "ob Kassenbons mit QR-Code zuerst in die Unbearbeiteten Belege gehen,",
+    "ob Kassenbons mit QR-Code zuerst in die Unverarbeiteten Belege gehen,",
   "povinnú zákazku, stredisko alebo činnosť pri spracovaní dokladu.":
     "Pflichtangabe von Projekt, Kostenstelle oder Tätigkeit bei der Belegverarbeitung.",
   "Prijatá faktúra nesie do Pohody aj konštantný a špecifický symbol a číslo objednávky. Prenesenie daňovej povinnosti na položkách ide s členením „Prijatá faktúra — prenesenie daňovej povinnosti“ a kontrolným výkazom B.1. Daňový doklad k prijatej platbe ide medzi interné doklady. Z Pohody sa okrem predkontácií načítajú aj <0>zákazky</0> (založia sa aj vo Fakteri s rovnakým číslom) a <1>bankové účty</1>.":
@@ -201,7 +201,7 @@ export default {
     "<0>Rechnungen in Fremdwährung ohne Kurs.</0> Eine Rechnung in Fremdwährung geht mit Beträgen in der Währung und dem EZB-Kurs an Pohoda — die Beträge in Inlandswährung rechnet Pohoda selbst um. Fehlt der Kurs, wird die Rechnung übersprungen, wir weisen darauf hin, und sie steht in der Liste zur manuellen Erfassung. Kassenbons in Fremdwährung haben keinen Kurs und werden immer übersprungen.",
   "Aby v Pohode sedeli aj stavy skladu": "Damit in Pohoda auch die Lagerbestände stimmen",
   "Skladové karty samy o sebe idú do Pohody s nulovým stavom. Množstvá tam vznikajú príjemkami a výdajkami — a tie vieme posielať tiež, keď vo <0>Účtovníctvo → Prepojenie s Pohodou</0> zapnete <1>skladové pohyby</1>.":
-    "Artikel allein gehen mit Nullbestand an Pohoda. Die Mengen entstehen dort durch Wareneingänge und Warenausgänge — und auch diese können wir senden, wenn Sie unter <0>Buchhaltung → Pohoda-Anbindung</0> die <1>Lagerbewegungen</1> aktivieren.",
+    "Artikel allein gehen mit Nullbestand an Pohoda. Die Mengen entstehen dort durch Wareneingänge und Warenausgänge — und auch diese können wir senden, wenn Sie unter <0>Buchhaltung → Anbindung an Pohoda</0> die <1>Lagerbewegungen</1> aktivieren.",
   "Pohyby z jedného dňa sa zlejú do jedného dokladu, takže z väčšieho príjmu nevznikne stovka príjemiek. Manko z inventúry odíde ako výdajka, prebytok ako príjemka.":
     "Bewegungen eines Tages werden zu einem Beleg zusammengefasst, sodass aus einem größeren Eingang nicht hundert Wareneingänge entstehen. Ein Fehlbestand aus der Inventur geht als Warenausgang, ein Überschuss als Wareneingang.",
   "<0>Príjemka sa nezaúčtuje</0> — nesie príznak „neúčtovať“. Náklad je totiž už na prijatom doklade a pri sklade vedenom spôsobom A by ho príjemka zaúčtovala druhýkrát. Výdajka taký príznak nemá a nepotrebuje ho: úbytok zásob proti výnosu na faktúre nič nezdvojí.":
@@ -220,13 +220,13 @@ export default {
   "<0>Môže sa doklad naimportovať dvakrát?</0> Nie. Každý doklad má stály identifikátor a Pohoda má zapnutú kontrolu duplicity, takže druhý pokus odmietne — aj keby ten istý doklad prišiel raz konektorom a raz z mailu.":
     "<0>Kann ein Beleg doppelt importiert werden?</0> Nein. Jeder Beleg hat eine feste Kennung, und in Pohoda ist die Duplikatprüfung aktiviert, sodass ein zweiter Versuch abgewiesen wird — selbst wenn derselbe Beleg einmal über den Konnektor und einmal per E-Mail kommt.",
   "<0>Čo keď Pohoda doklad odmietne?</0> Dôvod uvidíte v Účtovníctvo → Prepojenie s Pohodou a doklad sa vráti do fronty — príde znova, keď sa chyba opraví. Nezmizne.":
-    "<0>Was, wenn Pohoda einen Beleg ablehnt?</0> Den Grund sehen Sie unter Buchhaltung → Pohoda-Anbindung, und der Beleg kehrt in die Warteschlange zurück — er wird erneut gesendet, sobald der Fehler behoben ist. Er geht nicht verloren.",
+    "<0>Was, wenn Pohoda einen Beleg ablehnt?</0> Den Grund sehen Sie unter Buchhaltung → Anbindung an Pohoda, und der Beleg kehrt in die Warteschlange zurück — er wird erneut gesendet, sobald der Fehler behoben ist. Er geht nicht verloren.",
   "<0>Zmenil som zákazke názov, prepíše sa?</0> Nie. Pohoda vie zákazku založiť, ale nie prepísať, takže zmenu treba urobiť aj tam. Pri odberateľoch a skladových kartách sa zmena prepíše sama.":
     "<0>Ich habe den Namen eines Projekts geändert – wird er überschrieben?</0> Nein. Pohoda kann ein Projekt anlegen, aber nicht überschreiben, die Änderung muss also auch dort vorgenommen werden. Bei Kunden und Artikeln wird die Änderung automatisch überschrieben.",
   "<0>Opravil som už odovzdanú faktúru.</0> Oprava sa do Pohody neprenesie — doklad tam ostane v pôvodnej podobe. Ak treba, zrušte faktúru (vtedy pošleme storno) a vystavte novú, alebo rozdiel doriešte dobropisom.":
     "<0>Ich habe eine bereits übergebene Rechnung korrigiert.</0> Die Korrektur wird nicht an Pohoda übertragen — der Beleg bleibt dort in der ursprünglichen Form. Stornieren Sie bei Bedarf die Rechnung (dann senden wir ein Storno) und stellen Sie eine neue aus, oder gleichen Sie die Differenz mit einer Gutschrift aus.",
   "<0>Pohoda XML nenačíta alebo hlási chybu.</0> Najčastejšie nesedí <1>IČO</1> — Pohoda prijme súbor len do účtovnej jednotky s rovnakým IČO, aké má firma vo Fakteri. Ďalej skontrolujte, či skratky v predkontáciách, číselných radoch, pokladni a bankovom účte (Účtovníctvo → Predkontácie a Prepojenie s Pohodou) naozaj v Pohode existujú; neznámu skratku Pohoda odmietne. Výsledok importu ukáže Pohoda v okne XML importu, pri konektore je aj v <2>protokol.txt</2>.":
-    "<0>Pohoda liest das XML nicht ein oder meldet einen Fehler.</0> Am häufigsten stimmt die <1>IČO</1> nicht — Pohoda akzeptiert die Datei nur in einer Buchhaltungseinheit mit derselben Firmen-ID (IČO), die das Unternehmen in Faktero hat. Prüfen Sie außerdem, ob die Kürzel in Vorkontierungen, Nummernkreisen, Kasse und Bankkonto (Buchhaltung → Vorkontierungen und Pohoda-Anbindung) in Pohoda tatsächlich existieren; ein unbekanntes Kürzel lehnt Pohoda ab. Das Importergebnis zeigt Pohoda im Fenster des XML-Imports, beim Konnektor steht es auch in <2>protokol.txt</2>.",
+    "<0>Pohoda liest das XML nicht ein oder meldet einen Fehler.</0> Am häufigsten stimmt die <1>IČO</1> nicht — Pohoda akzeptiert die Datei nur in einer Buchhaltungseinheit mit derselben Firmen-ID (IČO), die das Unternehmen in Faktero hat. Prüfen Sie außerdem, ob die Kürzel in Vorkontierungen, Nummernkreisen, Kasse und Bankkonto (Buchhaltung → Vorkontierungen und Anbindung an Pohoda) in Pohoda tatsächlich existieren; ein unbekanntes Kürzel lehnt Pohoda ab. Das Importergebnis zeigt Pohoda im Fenster des XML-Imports, beim Konnektor steht es auch in <2>protokol.txt</2>.",
   "<0>Funguje to s mojou radou Pohody?</0> Áno, aj so základnou. Nepoužívame mServer, ktorý býva obmedzený.":
     "<0>Funktioniert das mit meiner Pohoda-Edition?</0> Ja, auch mit der Basisversion. Wir verwenden nicht den mServer, der oft eingeschränkt ist.",
   "<0>Používame mPohodu.</0> Tá je iná aplikácia a doklady si do desktopovej Pohody sťahuje sama; naše XML čítať nepotrebuje. Import <1>z</1> mPohody do Faktera zvládame — nájdete ho v <2>exportoch a importoch</2>.":

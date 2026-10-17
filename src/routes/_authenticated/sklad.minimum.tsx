@@ -69,7 +69,7 @@ function LowStockPage() {
                 <tr>
                   <th className="p-3">{t("Produkt")}</th>
                   <th className="p-3">{t("Kód")}</th>
-                  <th className="p-3 text-right">{t("Stav")}</th>
+                  <th className="p-3 text-right">{t("sklad::Stav")}</th>
                   <th className="p-3 text-right">{t("Rezervované")}</th>
                   <th className="p-3 text-right">{t("Na ceste")}</th>
                   <th className="p-3 text-right">{t("Minimum")}</th>

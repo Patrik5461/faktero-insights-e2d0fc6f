@@ -70,7 +70,7 @@ export default {
   "Karty, zmluvy zo šablón, dochádzka a lehoty.":
     "Personalakten, Verträge aus Vorlagen, Anwesenheit und Fristen.",
   "Dvojfaktorové overenie, heslá, prístupy a zrušenie účtu.":
-    "Zwei-Faktor-Authentifizierung, Passwörter, Zugänge und Löschung des Kontos.",
+    "Zwei-Faktor-Authentifizierung, Passwörter, Zugänge und Kontolöschung.",
   "Role a prístupy": "Rollen und Zugriffsrechte",
   "Kto vo firme čo smie — majiteľ, administrátor, účtovník, zamestnanec.":
     "Wer im Unternehmen was darf — Inhaber, Administrator, Buchhalter, Mitarbeiter.",
@@ -84,7 +84,7 @@ export default {
   "Údaje firmy, číslovanie dokladov, logo a farba na faktúre, e-mailové šablóny.":
     "Unternehmensdaten, Belegnummerierung, Logo und Farbe auf der Rechnung, E-Mail-Vorlagen.",
   "Otázky nad vlastnými dátami — kto dlží, čo je po splatnosti, čo poslať účtovníčke.":
-    "Fragen zu Ihren eigenen Daten — wer schuldet, was überfällig ist, was an die Buchhaltung geht.",
+    "Fragen zu Ihren eigenen Daten — wer schuldet, was überfällig ist, was an die Buchhalterin geht.",
   "Obchodné podmienky, GDPR, GoPay podmienky a ďalšie nájdete v sekcii":
     "AGB, DSGVO, GoPay-Bedingungen und weitere Dokumente finden Sie im Bereich",
   Pripravujeme: "In Vorbereitung",

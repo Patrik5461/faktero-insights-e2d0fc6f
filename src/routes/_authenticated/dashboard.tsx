@@ -129,7 +129,7 @@ function monthKey(d: Date) {
 }
 function monthLabel(key: string) {
   const [, m] = key.split("-");
-  return ["Jan", "Feb", "Mar", "Apr", "Máj", "Jún", "Júl", "Aug", "Sep", "Okt", "Nov", "Dec"][
+  return ["Jan", "Feb", "Mar", "Apr", "Máj", "kratko::Jún", "kratko::Júl", "Aug", "Sep", "Okt", "Nov", "Dec"][
     Number(m) - 1
   ];
 }

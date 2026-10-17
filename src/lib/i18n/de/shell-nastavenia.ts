@@ -22,7 +22,7 @@ export default {
   "Používa sa predvolený text": "Standardtext wird verwendet",
   Predmet: "Betreff",
   "Telo e-mailu": "E-Mail-Text",
-  Obnoviť: "Zurücksetzen",
+  Obnoviť: "Wiederherstellen",
   "Obnoviť predvolené": "Standard wiederherstellen",
   "Odoslať testovací email": "Test-E-Mail senden",
   "Odoslanie faktúry": "Rechnungsversand",
@@ -76,7 +76,7 @@ export default {
   "Zásielkovňa pripojená — zásielku vytvoríte na detaile faktúry.":
     "Zásielkovňa verbunden — Sendungen erstellen Sie im Rechnungsdetail.",
   "Na detaile faktúry vytvoríte zásielku na výdajné miesto alebo na adresu, aj s dobierkou vo výške faktúry, a vytlačíte štítok. Vybrané dobierky potom nahráte ako výpis z brány (Účtovníctvo → Výpis z platobnej brány).":
-    "Im Rechnungsdetail erstellen Sie eine Sendung an eine Abholstelle oder an eine Adresse, auch per Nachnahme in Höhe des Rechnungsbetrags, und drucken das Etikett. Eingezogene Nachnahmen laden Sie anschließend als Auszug des Zahlungsanbieters hoch (Buchhaltung → Auszug des Zahlungsanbieters).",
+    "Im Rechnungsdetail erstellen Sie eine Sendung an eine Abholstelle oder an eine Adresse, auch per Nachnahme in Höhe des Rechnungsbetrags, und drucken das Etikett. Eingezogene Nachnahmen laden Sie anschließend als Auszug vom Zahlungsanbieter hoch (Buchhaltung → Auszug vom Zahlungsanbieter).",
   "API heslo (klientská sekcia Zásielkovne → Nastavenia API)":
     "API-Passwort (Kundenbereich von Zásielkovňa → API-Einstellungen)",
   "Označenie odosielateľa (e-shop v klientskej sekcii)":
@@ -110,11 +110,11 @@ export default {
   "E-mailové upozornenia": "E-Mail-Benachrichtigungen",
   "Denný súhrn úloh": "Tägliche Aufgabenübersicht",
   "Každé ráno o 7:00 e-mail s tým, čo na vás čaká v každej vašej firme — doklady na schválenie, komentáre, v ktorých vás označili, nespracované doklady a faktúry po splatnosti. Keď nič nečaká, e-mail nepríde.":
-    "Jeden Morgen um 7:00 Uhr eine E-Mail mit allem, was in jedem Ihrer Unternehmen auf Sie wartet — Belege zur Freigabe, Kommentare, in denen Sie erwähnt wurden, unbearbeitete Belege und überfällige Rechnungen. Wenn nichts ansteht, kommt keine E-Mail.",
+    "Jeden Morgen um 7:00 Uhr eine E-Mail mit allem, was in jedem Ihrer Unternehmen auf Sie wartet — Belege zur Freigabe, Kommentare, in denen Sie erwähnt wurden, unverarbeitete Belege und überfällige Rechnungen. Wenn nichts ansteht, kommt keine E-Mail.",
   "Rozloženie aplikácie": "Layout der Anwendung",
   "Klasické Faktero, alebo kompaktné — úzky pás ikon, záložky sekcie a popisy polí v rámčeku. Farby ostávajú rovnaké. Voľba platí pre váš účet na každom zariadení a dá sa prepnúť aj v ponuke pod vaším menom.":
     "Klassisches Faktero oder kompakt — schmale Symbolleiste, Registerkarten pro Bereich und Feldbeschriftungen im Rahmen. Die Farben bleiben gleich. Die Auswahl gilt für Ihr Konto auf jedem Gerät und lässt sich auch im Menü unter Ihrem Namen umschalten.",
-  "Rozloženie nespracovaných dokladov": "Layout der unbearbeiteten Belege",
+  "Rozloženie nespracovaných dokladov": "Layout der unverarbeiteten Belege",
   "Klasické, alebo kompaktné (veľký náhľad, úzky panel s údajmi).":
     "Klassisch oder kompakt (große Vorschau, schmales Datenfeld).",
   "Používané produkty": "Genutzte Produkte",
@@ -290,4 +290,5 @@ export default {
   "Stratili ste telefón alebo ste sa prihlásili na cudzom počítači? Odhláste všetky ostatné zariadenia naraz. Ak máte podozrenie, že niekto pozná vaše heslo, zmeňte ho aj vyššie.":
     "Telefon verloren oder an einem fremden Computer angemeldet? Melden Sie alle anderen Geräte auf einmal ab. Wenn Sie vermuten, dass jemand Ihr Passwort kennt, ändern Sie es zusätzlich oben.",
   "Odhlásiť ostatné zariadenia": "Andere Geräte abmelden",
+  "sablona::Obnoviť": "Zurücksetzen",
 } satisfies Record<string, string>;

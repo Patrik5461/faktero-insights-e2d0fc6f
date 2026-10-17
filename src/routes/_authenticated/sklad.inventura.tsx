@@ -194,7 +194,7 @@ function InventoryPage() {
               onClick={onStart}
               className="mt-4 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {busy ? t("Spúšťam…") : t("Začať inventúru")}
+              {busy ? t("inventura::Spúšťam…") : t("Začať inventúru")}
             </button>
           </div>
         ) : (
@@ -249,7 +249,7 @@ function InventoryPage() {
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="p-3">{t("Položka")}</th>
-                    <th className="p-3 text-right">{t("Očakávané")}</th>
+                    <th className="p-3 text-right">{t("inventura::Očakávané")}</th>
                     <th className="p-3 text-right">{t("Spočítané")}</th>
                     <th className="p-3 text-right">{t("Rozdiel")}</th>
                   </tr>

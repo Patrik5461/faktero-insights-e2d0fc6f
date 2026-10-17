@@ -90,7 +90,7 @@ export default {
   "Podklady pre priznanie k jednému kontaktnému miestu: predaj spotrebiteľom v EÚ podľa štátov a sadzieb, vrátane sledovania hranice 10 000 €.":
     "Unterlagen für die Erklärung zum One-Stop-Shop: Verkäufe an Verbraucher in der EU nach Staaten und Steuersätzen, inklusive Überwachung der Schwelle von 10 000 €.",
   "Prehľad sa nepodarilo zostaviť.": "Die Übersicht konnte nicht erstellt werden.",
-  "OSS — predaj spotrebiteľom v EÚ": "OSS — Verkäufe an Verbraucher in der EU",
+  "OSS — predaj spotrebiteľom v EÚ": "OSS — Verkauf an Verbraucher in der EU",
   "Podklady pre priznanie k jednému kontaktnému miestu za štvrťrok.":
     "Unterlagen für die OSS-Erklärung für das Quartal.",
   Štvrťrok: "Quartal",
@@ -111,8 +111,8 @@ export default {
   "{n} faktúr v režime OSS ({od} – {do})": "{n} Rechnungen im OSS-Verfahren ({od} – {do})",
   "V tomto štvrťroku nie je žiadny predaj spotrebiteľom v EÚ. Faktúru doň zaradíte zaškrtnutím „Predaj spotrebiteľovi v EÚ (OSS)“ pri jej vystavení.":
     "In diesem Quartal gibt es keine Verkäufe an Verbraucher in der EU. Eine Rechnung ordnen Sie zu, indem Sie beim Ausstellen „Verkauf an Verbraucher in der EU (OSS)“ ankreuzen.",
-  "Štát spotreby": "Verbrauchsstaat",
-  Sadzba: "Steuersatz",
+  "Štát spotreby": "Verbrauchsland",
+  Sadzba: "Satz",
   Daň: "Steuer",
   "Priznanie OSS sa podáva do konca mesiaca po skončení štvrťroka cez portál finančnej správy; údaje z tejto tabuľky sa doň prepíšu podľa štátov a sadzieb. Predaj v režime OSS nevstupuje do":
     "Die OSS-Erklärung wird bis zum Ende des Monats nach Quartalsende über das Portal der Finanzverwaltung abgegeben; die Daten dieser Tabelle werden nach Staaten und Steuersätzen übernommen. Verkäufe im OSS-Verfahren fließen nicht ein in die",
@@ -129,15 +129,15 @@ export default {
   "alebo konektorom dole na tejto stránke. Celé je to popísané v":
     "oder über den Konnektor unten auf dieser Seite. Alles ist beschrieben im",
   manuáli: "Handbuch",
-  Účtovníčka: "Buchhalter",
-  "E-mail účtovníčky": "E-Mail des Buchhalters",
+  Účtovníčka: "Buchhalterin",
+  "E-mail účtovníčky": "E-Mail der Buchhalterin",
   "kam chodí mesačné odovzdanie": "Empfänger der monatlichen Übergabe",
   "Posielať automaticky": "Automatisch senden",
   "Podklady za minulý mesiac odídu 5. v mesiaci samy. Posiela sa len to, čo ešte neodišlo.":
     "Die Unterlagen des Vormonats werden am 5. des Monats automatisch gesendet. Gesendet wird nur, was noch nicht verschickt wurde.",
   Účtovanie: "Buchung",
   "Skratky pokladne, bankového účtu a skladu z Pohody vašej účtovníčky.":
-    "Kürzel für Kasse, Bankkonto und Lager aus der Pohoda Ihres Buchhalters.",
+    "Kürzel für Kasse, Bankkonto und Lager aus der Pohoda Ihrer Buchhalterin.",
   "Predkontácie a členenia DPH": "Vorkontierungen und MwSt.-Kennzeichen",
   "— aj ich načítanie z Pohody — sú na stránke":
     "— auch deren Import aus Pohoda — finden Sie auf der Seite",
@@ -148,7 +148,7 @@ export default {
   "napr. {x}": "z. B. {x}",
   "Čo sa do Pohody posiela": "Was an Pohoda gesendet wird",
   "Faktúry, prijaté doklady a pokladňa idú vždy. Ostatné si zapnite podľa toho, čo má účtovníčka viesť.":
-    "Rechnungen, Eingangsbelege und Kasse werden immer gesendet. Den Rest aktivieren Sie je nachdem, was Ihr Buchhalter führen soll.",
+    "Rechnungen, Eingangsbelege und Kasse werden immer gesendet. Den Rest aktivieren Sie je nachdem, was Ihre Buchhalterin führen soll.",
   "Posielať adresár": "Kontakte senden",
   "Odberatelia idú do Pohody aj vtedy, keď im tento mesiac nič nefakturujeme. Zmenený kontakt sa prepíše, nezaloží sa druhý.":
     "Kunden werden auch dann an Pohoda gesendet, wenn sie diesen Monat keine Rechnung erhalten. Ein geänderter Kontakt wird überschrieben, kein zweiter angelegt.",
@@ -199,7 +199,7 @@ export default {
     "eine ältere Rechnung als bezahlt markieren, sie senden, eine Notiz hinzufügen oder ein Projekt zuordnen. Diese Dinge geschehen erst nach dem Abschluss und ändern die Erklärung nicht.",
   "Zákaz platí aj na presun nového dokladu":
     "Die Sperre gilt auch für das Verschieben eines neuen Belegs",
-  do: "in",
+  do: "bis",
   "uzavretého obdobia.": "den abgeschlossenen Zeitraum.",
   "Vo firme je {f} vydaných faktúr, {p} prijatých a {j} jázd.":
     "Im Unternehmen gibt es {f} Ausgangsrechnungen, {p} Eingangsrechnungen und {j} Fahrten.",
@@ -247,7 +247,7 @@ export default {
   "Priznanie k DPH": "MwSt.-Erklärung",
   "Vzor DPH2025 (od 07/2025)": "Formular DPH2025 (ab 07/2025)",
   "Vzor DPHv21 (do 06/2025)": "Formular DPHv21 (bis 06/2025)",
-  Podané: "Abgegeben",
+  Podané: "Eingereicht",
   "Riadky, ktoré z dokladov nevyplývajú": "Zeilen, die sich nicht aus den Belegen ergeben",
   "Kontrolný výkaz": "Kontrollmeldung (KV DPH)",
   "Schéma KVDPH 2025": "Schema KVDPH 2025",
@@ -542,7 +542,7 @@ export default {
   Ťarchopis: "Belastungsanzeige",
   "Daňový doklad k platbe": "Steuerbeleg zur Zahlung",
   "Spôsob úhrady": "Zahlungsart",
-  Hotovosť: "Bargeld",
+  Hotovosť: "Bar",
   Karta: "Karte",
   Prevod: "Überweisung",
   "Faktúru vystavil": "Rechnung ausgestellt von",
@@ -560,7 +560,7 @@ export default {
   "Režijný materiál": "Gemeinkostenmaterial",
   "Drobný hmotný majetok": "Geringwertige Wirtschaftsgüter",
   "Materiál a tovar": "Material und Waren",
-  "Nákup tovaru na predaj": "Wareneinkauf zum Verkauf",
+  "Nákup tovaru na predaj": "Wareneinkauf zum Weiterverkauf",
   "Vozidlo a servis": "Fahrzeug und Service",
   "Parkovné, mýto a diaľničná známka": "Parken, Maut und Vignette",
   "Opravy a údržba": "Reparaturen und Wartung",
@@ -586,7 +586,7 @@ export default {
     "B.1 — Eingangsrechnungen, Steuer schuldet der Empfänger (Reverse-Charge, EU)",
   "B.3 — zjednodušené faktúry, bločky (ERP)": "B.3 — vereinfachte Rechnungen, Kassenbons (ERP)",
   "C.1 — vydané opravné faktúry": "C.1 — ausgestellte Korrekturrechnungen",
-  "C.2 — prijaté opravné faktúry": "C.2 — empfangene Korrekturrechnungen",
+  "C.2 — prijaté opravné faktúry": "C.2 — erhaltene Korrekturrechnungen",
   "D.1 — tržby z ERP": "D.1 — Umsätze aus ERP",
   "D.2 — ostatné vydané": "D.2 — sonstige ausgestellte",
   "Nezahŕňať do kontrolného výkazu": "Nicht in die Kontrollmeldung aufnehmen",
@@ -607,4 +607,5 @@ export default {
     "Die Kürzel für Vorkontierung und Kennzeichen sind die aus Ihrer Pohoda — Faktero sendet sie genau so, wie Sie sie eingeben.",
   "Pravidlo je zapnuté": "Regel ist aktiv",
   "Zo súčasných dokladov by sedelo na": "Von den aktuellen Belegen würde sie passen auf",
+  "uzavierka::do": "in",
 } satisfies Record<string, string>;

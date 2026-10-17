@@ -186,7 +186,7 @@ function TransferDetailPage() {
               </div>
               <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
               <div>
-                <div className="text-xs text-muted-foreground">{t("Do")}</div>
+                <div className="text-xs text-muted-foreground">{t("presun::Do")}</div>
                 <div className="font-medium">
                   {transfer.warehouse_to_id ? (whMap[transfer.warehouse_to_id]?.name ?? "—") : "—"}
                 </div>

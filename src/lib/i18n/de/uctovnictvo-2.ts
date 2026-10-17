@@ -48,7 +48,7 @@ export default {
   "Keď je vyplnená, rozdiel medzi položkami a sumou dokladu ide ako samostatná položka s touto predkontáciou.":
     "Wenn ausgefüllt, wird die Differenz zwischen Positionen und Belegsumme als eigene Position mit dieser Vorkontierung übertragen.",
   "Bločky s QR kódom ukladať do Nespracovaných dokladov":
-    "Kassenbons mit QR-Code unter Unbearbeitete Belege ablegen",
+    "Kassenbons mit QR-Code unter Unverarbeitete Belege ablegen",
   "Inak idú rovno medzi bločky, lebo údaje z Finančnej správy sú úradné.":
     "Sonst landen sie direkt bei den Kassenbons, da die Daten der Finanzverwaltung amtlich sind.",
   "Povinné pri spracovaní dokladu": "Pflichtfelder bei der Belegverarbeitung",
@@ -210,7 +210,7 @@ export default {
   "Nákup tovaru na predaj": "Wareneinkauf zum Weiterverkauf",
   "Vozidlo a servis": "Fahrzeug und Service",
   "Parkovné, mýto a diaľničná známka": "Parken, Maut und Vignette",
-  "Opravy a údržba": "Reparatur und Wartung",
+  "Opravy a údržba": "Reparaturen und Wartung",
   "Služby a subdodávky": "Dienstleistungen und Fremdleistungen",
   "Kancelária a réžia": "Büro und Gemeinkosten",
   "Softvér a telekomunikácie": "Software und Telekommunikation",
@@ -316,7 +316,7 @@ export default {
     "Gebühr, Steuer und Rechnungszahlung werden jeweils anders verbucht. Wenn Sie hier Vorkontierungen aus Pohoda eintragen, kommt der Beleg direkt verbucht an; was Sie leer lassen, erhält die gemeinsame Vorkontierung oben.",
   "Zapísať ich k firme môže len jej správca — zatiaľ si ich pamätá len tento prehliadač. Natrvalo patria do":
     "Beim Unternehmen speichern kann sie nur dessen Administrator — vorerst merkt sie sich nur dieser Browser. Dauerhaft gehören sie in",
-  "Účtovníctvo → Prepojenie s Pohodou": "Buchhaltung → Verbindung mit Pohoda",
+  "Účtovníctvo → Prepojenie s Pohodou": "Buchhaltung → Anbindung an Pohoda",
   "Ukladajú sa k firme, takže ich má každý; nastaviť sa dajú aj v":
     "Sie werden beim Unternehmen gespeichert, sodass sie jeder hat; einstellen lassen sie sich auch unter",
   Dátum: "Datum",
@@ -390,7 +390,7 @@ export default {
   Všetky: "Alle",
   Úspešné: "Erfolgreich",
   Neúspešné: "Fehlgeschlagen",
-  Obnoviť: "Aktualisieren",
+  Obnoviť: "Wiederherstellen",
   "Žiadne záznamy": "Keine Einträge",
   "Skúste zmeniť filtre alebo počkajte na ďalšie doručenia.":
     "Ändern Sie die Filter oder warten Sie auf weitere Zustellungen.",
@@ -404,7 +404,7 @@ export default {
   Odpoveď: "Antwort",
   Pokusov: "Versuche",
   "(prázdne telo odpovede)": "(leerer Antworttext)",
-  Úspech: "Erfolg",
+  Úspech: "Erfolgreich",
   Zlyhalo: "Fehlgeschlagen",
-  Čaká: "Wartet",
+  Čaká: "Ausstehend",
 } satisfies Record<string, string>;

@@ -10,7 +10,7 @@ export default {
   "História importov — Faktero": "Importverlauf — Faktero",
   "Import zo SuperFaktúry — Faktero": "Import aus SuperFaktúra — Faktero",
   "Import prijatých dokladov — Faktero": "Import von Eingangsbelegen — Faktero",
-  "Účtovné exporty — Faktero": "Buchhaltungsexporte — Faktero",
+  "Účtovné exporty — Faktero": "Export an die Buchhaltung — Faktero",
 
   // Nový import
   "Odkiaľ importujete": "Woher importieren Sie?",
@@ -47,7 +47,7 @@ export default {
   "Stiahnuť pôvodný súbor": "Originaldatei herunterladen",
   "Zobraziť logy": "Protokoll anzeigen",
   Typ: "Typ",
-  Správa: "Meldung",
+  Správa: "Nachricht",
   "Žiadne logy.": "Keine Protokolleinträge.",
 
   // Import zo SuperFaktúry
@@ -59,7 +59,7 @@ export default {
   "Importom sa vytvoria nové záznamy vo vašej firme. Pokračovať?":
     "Der Import legt neue Datensätze in Ihrem Unternehmen an. Fortfahren?",
   "Importovaných {faktury} faktúr a {odberatelia} odberateľov.":
-    "Importiert: {faktury} Rechnungen und {odberatelia} Kunden.",
+    "{faktury} Rechnungen und {odberatelia} Kunden importiert.",
   "Import zlyhal.": "Import fehlgeschlagen.",
   "Import zo SuperFaktúry": "Import aus SuperFaktúra",
   "Nahrajte ZIP z Export agendy alebo Excel/CSV. Faktero rozpozná stĺpce samo, ručné mapovanie je len záloha.":
@@ -165,7 +165,7 @@ export default {
   "Import sa nepodarilo spustiť.": "Der Import konnte nicht gestartet werden.",
   "Import prijatých dokladov": "Import von Eingangsbelegen",
   "Prechod z Doklado alebo inej aplikácie: prijaté faktúry, bločky a skeny dokladov.":
-    "Wechsel von Doklado oder einer anderen Anwendung: Eingangsrechnungen, Kassenbons und Belegscans.",
+    "Umstieg von Doklado oder einer anderen Anwendung: Eingangsrechnungen, Kassenbons und Belegscans.",
   "1. Nahrajte export": "1. Export hochladen",
   "XML pre Pohodu, CSV/XLSX alebo ZIP so skenmi (PDF, fotky) — aj viac súborov naraz. Najlepšie je nahrať XML a k nemu ZIP s PDF: údaje sa vezmú presne z XML a skeny sa priradia k dokladom.":
     "XML für Pohoda, CSV/XLSX oder ZIP mit Scans (PDF, Fotos) — auch mehrere Dateien gleichzeitig. Am besten laden Sie das XML und dazu ein ZIP mit PDFs hoch: Die Daten werden exakt aus dem XML übernommen und die Scans den Belegen zugeordnet.",
@@ -188,8 +188,8 @@ export default {
   "iná aplikácia": "andere Anwendung",
   "Stav po importe": "Status nach dem Import",
   "Odovzdané účtovníkovi (už zaúčtované)": "An den Buchhalter übergeben (bereits verbucht)",
-  Spracované: "Bearbeitet",
-  "Nespracované — účtovník ich ešte prejde": "Unbearbeitet — der Buchhalter prüft sie noch",
+  Spracované: "Verarbeitet",
+  "Nespracované — účtovník ich ešte prejde": "Unverarbeitet — der Buchhalter prüft sie noch",
   "Skeny bez páru prečítať cez AI a založiť z nich doklady":
     "Scans ohne Zuordnung per KI auslesen und daraus Belege anlegen",
   "Najprv sa skúsia priradiť k dokladom z XML podľa sumy, dátumu a dodávateľa. Listy, predpisy a exekúcie pôjdu do Iných dokladov.":
@@ -228,7 +228,7 @@ export default {
   "Do súboru sa nedostali: {zoznam}": "Nicht in der Datei enthalten: {zoznam}",
   "Export zlyhal": "Export fehlgeschlagen",
   "Stiahnutie zlyhalo": "Download fehlgeschlagen",
-  "Účtovné exporty": "Buchhaltungsexporte",
+  "Účtovné exporty": "Export an die Buchhaltung",
   "Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, do ISDOC-u alebo ako súpisku pre Excel.":
     "Exportieren Sie Rechnungen nach Pohoda, Omega, Money S3, ABRA Flexi, als ISDOC oder als Liste für Excel.",
   Od: "Von",
@@ -249,7 +249,7 @@ export default {
   // Formáty
   "Pohoda XML": "Pohoda XML",
   "Predkontácie a členenie DPH sa vypĺňajú v Účtovníctvo → Prepojenie s Pohodou; bez nich si ich účtovníčka doklikáva sama.":
-    "Vorkontierungen und MwSt.-Kennzeichen werden unter Buchhaltung → Verbindung mit Pohoda ausgefüllt; ohne sie muss die Buchhalterin sie selbst nachtragen.",
+    "Vorkontierungen und MwSt.-Kennzeichen werden unter Buchhaltung → Anbindung an Pohoda ausgefüllt; ohne sie muss die Buchhalterin sie selbst nachtragen.",
   "KROS Omega (TXT)": "KROS Omega (TXT)",
   "Ten istý súbor číta aj ALFA plus — Evidencie → Pohľadávky → Import faktúr z Omegy.":
     "Dieselbe Datei liest auch ALFA plus — Evidencie → Pohľadávky → Import faktúr z Omegy.",
@@ -289,7 +289,7 @@ export default {
   "Balík obsahuje: {obsah}": "Das Paket enthält: {obsah}",
   "Odovzdanie zlyhalo": "Übergabe fehlgeschlagen",
   "E-mail účtovníčky\nUloží sa v Účtovníctvo → Prepojenie s Pohodou.":
-    "E-Mail der Buchhalterin\nWird unter Buchhaltung → Verbindung mit Pohoda gespeichert.",
+    "E-Mail der Buchhalterin\nWird unter Buchhaltung → Anbindung an Pohoda gespeichert.",
   "Poslať podklady": "Unterlagen senden",
   "Odoslané na {prijemca} — {obsah}": "Gesendet an {prijemca} — {obsah}",
   "Odoslanie zlyhalo": "Senden fehlgeschlagen",

@@ -84,7 +84,7 @@ export function MarketingNav() {
             <Logo className="h-8 w-[124px] sm:h-9 sm:w-[144px] md:h-10 md:w-[160px]" />
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-1 text-sm">
+          <nav className="hidden xl:flex items-center gap-0.5 text-sm">
             {menus.map((menu) => (
               <div
                 key={menu.label}
@@ -94,7 +94,7 @@ export function MarketingNav() {
               >
                 <Link
                   to={menu.href}
-                  className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
                   onClick={() => setOpenMenu(null)}
                 >
                   {t(menu.label)}
@@ -126,7 +126,7 @@ export function MarketingNav() {
               <Link
                 key={l.label}
                 to={l.href}
-                className="rounded-md px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                className="whitespace-nowrap rounded-md px-2.5 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
               >
                 {t(l.label)}
               </Link>
@@ -135,7 +135,7 @@ export function MarketingNav() {
 
           <div className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
             <PrepinacJazyka className="hidden sm:inline-flex" />
-            <span className="hidden md:inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <span className="hidden 2xl:inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               {t("30 dní zdarma")}
             </span>
@@ -154,7 +154,7 @@ export function MarketingNav() {
             <button
               type="button"
               onClick={() => setMobileOpen((v) => !v)}
-              className="lg:hidden inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary"
+              className="xl:hidden inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary"
               aria-label={t("Otvoriť menu")}
             >
               {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -163,7 +163,7 @@ export function MarketingNav() {
         </div>
 
         {mobileOpen && (
-          <div className="lg:hidden border-t border-border bg-card">
+          <div className="xl:hidden border-t border-border bg-card">
             <div className="mx-auto max-w-6xl px-4 py-3">
               <div className="mb-2 flex justify-end sm:hidden">
                 <PrepinacJazyka />

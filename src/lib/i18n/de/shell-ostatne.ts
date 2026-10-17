@@ -25,7 +25,7 @@ export default {
   "Nastavenia → Schvaľovanie dokladov": "Einstellungen → Belegfreigabe",
   "Nič nečaká na vaše schválenie.": "Nichts wartet auf Ihre Freigabe.",
   "Poznámka (pri zamietnutí a vrátení povinná)":
-    "Notiz (bei Ablehnung und Zurückweisung erforderlich)",
+    "Notiz (bei Ablehnung und Rückgabe Pflicht)",
   "Schváliť ({n})": "Freigeben ({n})",
   Vrátiť: "Zurückweisen",
   Zamietnuť: "Ablehnen",
@@ -42,7 +42,7 @@ export default {
   "Čaká na schválenie": "Wartet auf Freigabe",
   Schválený: "Freigegeben",
   Zamietnutý: "Abgelehnt",
-  "Vrátený na opravu": "Zur Korrektur zurückgewiesen",
+  "Vrátený na opravu": "Zur Korrektur zurückgegeben",
 
   // Diagnostika
   "Diagnostika — Faktero": "Diagnose — Faktero",
@@ -52,7 +52,7 @@ export default {
   "Stav automatického spúšťania opakovaných faktúr":
     "Status der automatischen Ausführung wiederkehrender Rechnungen",
   "Opakované faktúry": "Wiederkehrende Rechnungen",
-  Obnoviť: "Aktualisieren",
+  Obnoviť: "Wiederherstellen",
   "Cron nie je nakonfigurovaný.": "Cron ist nicht konfiguriert.",
   "Zatiaľ žiadne spustenie.": "Noch keine Ausführung.",
   "neúspešných generovaní": "fehlgeschlagene Erstellungen",
@@ -144,15 +144,15 @@ export default {
     "Kein offener Kommentar, in dem Sie erwähnt wurden.",
   "Doklad už nie je dostupný": "Beleg ist nicht mehr verfügbar",
   Vyriešiť: "Erledigen",
-  "Všetko je spracované.": "Alles ist bearbeitet.",
+  "Všetko je spracované.": "Alles ist verarbeitet.",
   "Dodávateľ neurčený": "Lieferant unbestimmt",
   Bloček: "Kassenbon",
   "Druh neurčený": "Art unbestimmt",
   "…a ďalších {n} v": "…und {n} weitere in",
-  "Nespracovaných dokladoch": "Unbearbeitete Belege",
+  "Nespracovaných dokladoch": "Unverarbeitete Belege",
   "Schvaľovať všetky": "Alle freigeben",
   "Komentáre, kde ste označený": "Kommentare mit Erwähnung",
-  "Nespracované doklady na kontrolu": "Unbearbeitete Belege zur Prüfung",
+  "Nespracované doklady na kontrolu": "Unverarbeitete Belege zur Prüfung",
   "Celý zoznam": "Gesamte Liste",
   "Číta sa…": "Wird ausgelesen…",
   "Doplniť ručne": "Manuell ergänzen",
@@ -161,7 +161,7 @@ export default {
   "Prijatá zálohová faktúra": "Eingehende Anzahlungsrechnung",
   "Prijatý dobropis": "Eingehende Gutschrift",
   "Bloček / pokladničný doklad": "Kassenbon / Kassenbeleg",
-  "Iný doklad (zmluva, list, predpis…)": "Sonstiger Beleg (Vertrag, Brief, Bescheid…)",
+  "Iný doklad (zmluva, list, predpis…)": "Sonstiger Beleg (Vertrag, Schreiben, Bescheid…)",
 
   // Podpora — detail
   "Požiadavka — Faktero": "Anfrage — Faktero",
@@ -258,7 +258,7 @@ export default {
   "Ktorí zákazníci mi dlhujú najviac?": "Welche Kunden schulden mir am meisten?",
   "Skontroluj moje predplatné faktúry.": "Prüfe meine Abonnement-Rechnungen.",
   "Ako pripraviť firmu na eFaktúru?": "Wie bereite ich mein Unternehmen auf die E-Rechnung vor?",
-  "Čo mám poslať účtovníčke?": "Was soll ich an die Buchhaltung senden?",
+  "Čo mám poslať účtovníčke?": "Was soll ich an meine Buchhalterin senden?",
   "{suma} nezaplatených": "{suma} offen",
   "Posledných 30 dní": "Letzte 30 Tage",
   "Všetko vyplnené": "Alles ausgefüllt",
@@ -276,4 +276,6 @@ export default {
   IČO: "Firmen-ID (IČO)",
   DIČ: "Steuernummer (DIČ)",
   Adresa: "Adresse",
+  "nacitat::Obnoviť": "Aktualisieren",
+  "zaznam::Nahrávam…": "Aufzeichnung läuft…",
 } satisfies Record<string, string>;

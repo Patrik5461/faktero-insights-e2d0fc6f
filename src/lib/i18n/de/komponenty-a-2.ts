@@ -214,8 +214,8 @@ export default {
   Bločky: "Kassenbons",
   "Detail bločku s odkazom na súbor": "Kassenbon-Detail mit Link zur Datei",
   "Označiť ako odovzdaný": "Als übergeben markieren",
-  "Nahrať doklad do Nespracovaných": "Beleg in Unbearbeitete Belege hochladen",
-  "Nespracované doklady a stav čítania": "Unbearbeitete Belege und Erkennungsstatus",
+  "Nahrať doklad do Nespracovaných": "Beleg in Unverarbeitete Belege hochladen",
+  "Nespracované doklady a stav čítania": "Unverarbeitete Belege und Erkennungsstatus",
   "Pohyby na bankových účtoch": "Umsätze auf Bankkonten",
   "Filtre zoznamu": "Listenfilter",
   "len zmenené od (ISO 8601); zoznam je zoradený podľa":
@@ -234,7 +234,7 @@ export default {
     "hebt die Markierung auf (der Beleg kann wieder bearbeitet werden).",
   "Nahratie dokladu": "Beleg hochladen",
   "PDF, JPEG, PNG, WEBP, HEIC alebo XML do 14 MB. Doklad sa prečíta na pozadí (desiatky sekúnd) a čaká v Nespracovaných na kontrolu; stav (":
-    "PDF, JPEG, PNG, WEBP, HEIC oder XML bis 14 MB. Der Beleg wird im Hintergrund erkannt (einige Dutzend Sekunden) und wartet unter Unbearbeitete Belege auf die Prüfung; den Status (",
+    "PDF, JPEG, PNG, WEBP, HEIC oder XML bis 14 MB. Der Beleg wird im Hintergrund erkannt (einige Dutzend Sekunden) und wartet unter Unverarbeitete Belege auf die Prüfung; den Status (",
   "vráti GET.": "liefert GET.",
   "Webhooky vás v reálnom čase informujú o udalostiach vo Faktero. Endpoint nastavíte v sekcii Webhooky vo vašom účte, kde získate aj signing secret.":
     "Webhooks informieren Sie in Echtzeit über Ereignisse in Faktero. Den Endpoint legen Sie im Bereich Webhooks Ihres Kontos fest, wo Sie auch das Signing Secret erhalten.",

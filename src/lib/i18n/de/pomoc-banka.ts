@@ -10,10 +10,10 @@ export default {
   "Aby ste nemuseli ručne označovať, ktorá faktúra je zaplatená. Faktero stiahne pohyby z účtu a spáruje ich s faktúrami podľa variabilného symbolu a sumy.":
     "Damit Sie nicht manuell markieren müssen, welche Rechnung bezahlt ist. Faktero ruft die Umsätze vom Konto ab und gleicht sie anhand von Verwendungszweck (VS) und Betrag mit den Rechnungen ab.",
   "Účty sa spravujú v <0>Účtovníctvo → Bankové účty</0>.":
-    "Konten werden unter <0>Buchhaltung → Bankkonten</0> verwaltet.",
+    "Konten werden unter <0>Bank → Bankkonten</0> verwaltet.",
   "Pripojenie účtu": "Konto anbinden",
   "V <0>Pripojiť banku</0> vyberte banku a prejdite jej prihlásením. Súhlas na prístup k účtu má obmedzenú platnosť — po jej uplynutí ho treba obnoviť, Faktero na to upozorní.":
-    "Wählen Sie unter <0>Bank anbinden</0> die Bank aus und durchlaufen Sie deren Anmeldung. Die Zustimmung zum Kontozugriff ist zeitlich begrenzt — nach Ablauf muss sie erneuert werden, Faktero weist Sie darauf hin.",
+    "Wählen Sie unter <0>Bank verbinden</0> die Bank aus und durchlaufen Sie deren Anmeldung. Die Zustimmung zum Kontozugriff ist zeitlich begrenzt — nach Ablauf muss sie erneuert werden, Faktero weist Sie darauf hin.",
   "<0>Ktoré banky.</0> Priamo Tatra banka, ďalej Wise, Wallester a Revolut Business. Ak máte účet v inej banke a v internetbankingu Tatra banky ho máte pripojený cez <1>multibanking</1> (Slovenská sporiteľňa, VÚB, ČSOB a ďalšie), natiahne sa spolu s ostatnými — zostatky aj pohyby. Oficiálne výpisy na stiahnutie ale banka vydá len pre účty vedené v Tatra banke.":
     "<0>Welche Banken.</0> Direkt Tatra banka, außerdem Wise, Wallester und Revolut Business. Haben Sie ein Konto bei einer anderen Bank und ist es im Internetbanking der Tatra banka über <1>Multibanking</1> angebunden (Slovenská sporiteľňa, VÚB, ČSOB und weitere), wird es zusammen mit den übrigen abgerufen — Salden und Umsätze. Offizielle Kontoauszüge zum Herunterladen stellt die Bank jedoch nur für Konten aus, die bei der Tatra banka geführt werden.",
   "Účet sa dá viesť aj <0>bez pripojenia</0>, len ako číslo účtu na faktúrach.":
@@ -27,7 +27,7 @@ export default {
     "Jede Währung ist in Faktero ein eigenes Konto, weil Wise sie ebenfalls so führt. Beträge in verschiedenen Währungen werden nie addiert.",
   "Fio banka": "Fio banka",
   "Fio sa pripája <0>tokenom</0> z internetbankingu: <1>Nastavení → API → Přidat nový token</1>, vyberte účet a oprávnenie <2>Pouze sledovat účet</2>. Token vložte v Bankové účty → Pripojiť banku.":
-    "Fio wird über einen <0>Token</0> aus dem Internetbanking angebunden: <1>Nastavení → API → Přidat nový token</1>, wählen Sie das Konto und die Berechtigung <2>Pouze sledovat účet</2>. Fügen Sie den Token unter Bankkonten → Bank anbinden ein.",
+    "Fio wird über einen <0>Token</0> aus dem Internetbanking angebunden: <1>Nastavení → API → Přidat nový token</1>, wählen Sie das Konto und die Berechtigung <2>Pouze sledovat účet</2>. Fügen Sie den Token unter Bankkonten → Bank verbinden ein.",
   "Jeden token patrí jednému účtu — ak máte korunový aj eurový účet, pridajte dva tokeny. Pri pripojení sa hneď stiahnu pohyby za posledných 90 dní (staršie Fio bez ďalšej autorizácie nevydá), potom sa sťahujú každú noc.":
     "Ein Token gehört zu einem Konto — wenn Sie ein Kronen- und ein Eurokonto haben, fügen Sie zwei Tokens hinzu. Beim Anbinden werden sofort die Umsätze der letzten 90 Tage abgerufen (ältere gibt Fio ohne weitere Autorisierung nicht heraus), danach jede Nacht.",
   "Fio pustí na jeden token len jedno stiahnutie za 30 sekúnd; keď tlačidlo stlačíte dvakrát rýchlo po sebe, Faktero povie, nech chvíľu počkáte.":
@@ -38,7 +38,7 @@ export default {
   "Prístup k ich rozhraniu <0>nie je samoobslužný</0>: treba oň požiadať Wallester (podpora alebo váš kontakt). Postup je potom takýto:":
     "Der Zugang zu ihrer Schnittstelle ist <0>nicht als Self-Service verfügbar</0>: Sie müssen ihn bei Wallester beantragen (Support oder Ihr Ansprechpartner). Danach gehen Sie so vor:",
   "V <0>Pripojiť banku</0> kliknite na <1>Vyrobiť verejný kľúč</1> a stiahnite si ho ako súbor.":
-    "Klicken Sie unter <0>Bank anbinden</0> auf <1>Öffentlichen Schlüssel erzeugen</1> und laden Sie ihn als Datei herunter.",
+    "Klicken Sie unter <0>Bank verbinden</0> auf <1>Öffentlichen Schlüssel erzeugen</1> und laden Sie ihn als Datei herunter.",
   "Pošlite ten súbor Wallesteru.": "Senden Sie diese Datei an Wallester.",
   "Oni vám vrátia <0>issuer ID</0>, <1>audience ID</1>, kód produktu a maximálnu platnosť tokenu.":
     "Wallester schickt Ihnen <0>issuer ID</0>, <1>audience ID</1>, den Produktcode und die maximale Gültigkeit des Tokens zurück.",
@@ -52,7 +52,7 @@ export default {
   "Revolut sa pripája certifikátom a potvrdením v prehliadači. Postup má tri kroky, v takomto poradí ich vyžaduje Revolut:":
     "Revolut wird über ein Zertifikat und eine Bestätigung im Browser angebunden. Der Ablauf hat drei Schritte, in dieser Reihenfolge verlangt sie Revolut:",
   "V <0>Pripojiť banku</0> kliknite na <1>Vyrobiť certifikát</1> a stiahnite si ho.":
-    "Klicken Sie unter <0>Bank anbinden</0> auf <1>Zertifikat erzeugen</1> und laden Sie es herunter.",
+    "Klicken Sie unter <0>Bank verbinden</0> auf <1>Zertifikat erzeugen</1> und laden Sie es herunter.",
   "V Revolut Business otvorte <0>Settings → APIs → Business API</0>, nahrajte certifikát a ako návratovú adresu zadajte <1>presne tú</1>, ktorú Faktero na obrazovke ukazuje. Musí sedieť na znak.":
     "Öffnen Sie in Revolut Business <0>Settings → APIs → Business API</0>, laden Sie das Zertifikat hoch und geben Sie als Rücksprungadresse <1>genau die</1> ein, die Faktero auf dem Bildschirm anzeigt. Sie muss Zeichen für Zeichen übereinstimmen.",
   "Portál vám ukáže <0>client ID</0>. Vložte ho do Faktera, kliknite na <1>Potvrdiť prístup</1> a v Revolute potvrďte, čo Fakteru dovolíte. Stačí čítanie.":

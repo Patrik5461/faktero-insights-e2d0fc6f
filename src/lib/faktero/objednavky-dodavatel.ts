@@ -94,6 +94,6 @@ export const STAV_POPIS: Record<StavObjednavky, string> = {
   draft: "Rozpracovaná",
   sent: "Odoslaná",
   partially_received: "Čiastočne prijatá",
-  received: "Prijatá",
+  received: "objednavka::Prijatá",
   cancelled: "Zrušená",
 };
