@@ -1,4 +1,5 @@
-import { JAZYKY_DOKLADU } from "@/lib/faktero/faktura-jazyk";
+import { JAZYKY_DOKLADU, predvolenyJazykFirmy } from "@/lib/faktero/faktura-jazyk";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +68,8 @@ type Customer = {
   dodavatel?: boolean;
   /** Účet dodávateľa — doplní sa do prijatej faktúry. */
   iban?: string | null;
+  /** Leitweg-ID nemeckého úradu — ide do XRechnung ako Buyer reference (BT-10). */
+  leitweg_id?: string | null;
   swift?: string | null;
 };
 
@@ -181,6 +184,8 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
         nevyčistili, ostali by na karte skryté a vyšli by na faktúre.
       */
       ...(jeFyzicka(c) ? { ico: null, dic: null, ic_dph: null } : {}),
+      // Prázdne Leitweg-ID ako NULL; kľúč len keď ho formulár pozná (stĺpec existuje).
+      ...("leitweg_id" in c ? { leitweg_id: c.leitweg_id?.trim() || null } : {}),
     };
     if (c.id) {
       const { error } = await supabase.from("customers").update(payload).eq("id", c.id);
@@ -510,7 +515,22 @@ function CustomerDialog({
 }) {
   useZatvorNaEscape(onClose);
   const { t: tr } = useT();
+  const krajinaFirmy = useKrajinaDane();
+  const jazykFirmy = predvolenyJazykFirmy(krajinaFirmy);
   const [c, setC] = useState<Customer>(initial);
+  /*
+    Leitweg-ID len pre nemeckú firmu — a až keď stĺpec v databáze existuje
+    (migrácia PENDING_erechnung), inak by uloženie kontaktu zlyhalo.
+  */
+  const [maLeitweg, setMaLeitweg] = useState(false);
+  useEffect(() => {
+    if (krajinaFirmy !== "DE") return;
+    (supabase as any)
+      .from("customers")
+      .select("leitweg_id")
+      .limit(1)
+      .then(({ error }: { error: unknown }) => setMaLeitweg(!error));
+  }, [krajinaFirmy]);
   const [dup, setDup] = useState<null | { id: string; name: string }>(null);
   const findDup = useServerFn(findCustomerByIcoFn);
 
@@ -707,6 +727,13 @@ function CustomerDialog({
           <In label={tr("Krajina")} value={c.country ?? "SK"} onChange={(v) => f("country", v)} />
           <In label={tr("Email")} type="email" value={c.email ?? ""} onChange={(v) => f("email", v)} />
           <In label={tr("Telefón")} value={c.phone ?? ""} onChange={(v) => f("phone", v)} />
+          {maLeitweg && c.odberatel !== false && !jeFyzicka(c) && (
+            <In
+              label={tr("Leitweg-ID (len pre úrady — do XRechnung)")}
+              value={c.leitweg_id ?? ""}
+              onChange={(v) => f("leitweg_id", v)}
+            />
+          )}
           {c.dodavatel && (
             <>
               <label className="block">
@@ -785,10 +812,11 @@ function CustomerDialog({
               </label>
               <label className="block">
                 <span className="text-sm font-medium">{tr("Jazyk dokladov")}</span>
+                {/* Prázdne = jazyk podľa krajiny firmy (nemecká firma po nemecky, inak slovensky). */}
                 <select
-                  value={c.invoice_language ?? "sk"}
+                  value={c.invoice_language ?? jazykFirmy}
                   onChange={(e) =>
-                    f("invoice_language", e.target.value === "sk" ? null : e.target.value)
+                    f("invoice_language", e.target.value === jazykFirmy ? null : e.target.value)
                   }
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >

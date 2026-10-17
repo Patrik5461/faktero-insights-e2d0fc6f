@@ -76,6 +76,8 @@ import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { sendReminderFn, previewReminderFn } from "@/lib/faktero/reminders.functions";
 
 import { isdocFakturyFn } from "@/lib/faktero/isdoc.functions";
+import { xrechnungFakturyFn } from "@/lib/faktero/xrechnung.functions";
+import { hodnotyMailu, jazykFaktury, predvolenyMailFaktury } from "@/lib/faktero/email-jazyk";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
@@ -261,6 +263,8 @@ function InvoiceDetail() {
   const [xmlBusy, setXmlBusy] = useState(false);
   const [isdocBusy, setIsdocBusy] = useState(false);
   const stiahniIsdoc = useServerFn(isdocFakturyFn);
+  const [xrechnungBusy, setXrechnungBusy] = useState(false);
+  const stiahniXrechnung = useServerFn(xrechnungFakturyFn);
   const krajina = useKrajinaDane();
   const efakturaQuery = useQuery({
     queryKey: ["efaktura-doc", id, inv?.company_id],
@@ -344,6 +348,42 @@ function InvoiceDetail() {
       toast.error((e as Error).message);
     } finally {
       setIsdocBusy(false);
+    }
+  }
+
+  /*
+    XRechnung je nemecká e-faktúra (UBL) — ponúka sa len nemeckej firme.
+    Keď faktúre niečo chýba, server XML nevydá a povie čo; neplatnú
+    e-faktúru by príjemca aj tak odmietol.
+  */
+  async function handleXrechnung() {
+    if (!inv?.company_id) return;
+    setXrechnungBusy(true);
+    try {
+      const r = await stiahniXrechnung({ data: { company_id: inv.company_id, invoice_id: id } });
+      if (!r.xml) {
+        toast.error(
+          t("XRechnung sa nedá vystaviť: {chyby}", {
+            chyby: r.chyby.map((c) => t(c.sprava)).join(" "),
+          }),
+          { duration: 12000 },
+        );
+        return;
+      }
+      // Blob a atribút `download` — rovnako ako ISDOC vyššie, aby ostal názov súboru.
+      const blob = new Blob([r.xml], { type: "application/xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = r.nazovSuboru;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (e) {
+      toast.error(t((e as Error).message));
+    } finally {
+      setXrechnungBusy(false);
     }
   }
 
@@ -773,16 +813,24 @@ function InvoiceDetail() {
         .maybeSingle();
       adresa = (data?.email as string | null) ?? null;
     }
+    /*
+      Predvolený mail je v jazyku dokladu (nemecká faktúra → nemecký mail),
+      nie v jazyku, v ktorom má človek prepnutý web. Vlastný predvolený
+      predmet a text firmy sa berie tak, ako ho firma napísala.
+    */
+    const jazykMailu = jazykFaktury(inv, company);
+    const predvoleny = predvolenyMailFaktury(jazykMailu);
+    const hodnoty = hodnotyMailu(inv, jazykMailu);
     setEmailForm({
       recipient_email: adresa ?? "",
-      subject: (company?.email_default_subject ?? t("Faktúra {invoice_number}")).replaceAll(
+      subject: (company?.email_default_subject ?? predvoleny.predmet).replaceAll(
         "{invoice_number}",
         inv.invoice_number,
       ),
-      message: (company?.email_default_message ?? t("V prílohe posielame faktúru {invoice_number}."))
+      message: (company?.email_default_message ?? predvoleny.text)
         .replaceAll("{invoice_number}", inv.invoice_number)
-        .replaceAll("{due_date}", datumNaDoklade(inv.due_date))
-        .replaceAll("{total}", formatujMenu(inv.total, inv.currency))
+        .replaceAll("{due_date}", hodnoty.due_date)
+        .replaceAll("{total}", hodnoty.total)
         .replaceAll("{company_name}", company?.name ?? ""),
     });
     setEmailOpen(true);
@@ -1047,6 +1095,12 @@ function InvoiceDetail() {
                 {efakturaDoc && (
                   <DropdownMenuItem onClick={handleDownloadXml} disabled={xmlBusy}>
                     <Download className="mr-2 h-4 w-4" /> {t("Stiahnuť eFaktúru XML")}
+                  </DropdownMenuItem>
+                )}
+                {krajina === "DE" && inv.type !== "proforma" && (
+                  <DropdownMenuItem onClick={handleXrechnung} disabled={xrechnungBusy}>
+                    <Download className="mr-2 h-4 w-4" />
+                    {xrechnungBusy ? t("Pripravujem…") : t("Stiahnuť XRechnung (XML)")}
                   </DropdownMenuItem>
                 )}
                 {krajina === "CZ" && (

@@ -17,19 +17,15 @@ import {
   popisky,
   datumNaDoklade,
   vetyPreneseniaCz,
+  vetyDe,
+  vetaPreneseniaDe,
+  predvolenyJazykFirmy,
   type JazykDokladu,
 } from "./faktura-jazyk";
+import { pataFirmyDe } from "./firma-de";
 import { krajinaDane } from "./vat-rates";
 import { popisColnychUdajov } from "./colny-kod";
 
-/** Úvod vety o prenesení, keď sa týka len položiek označených PDP. */
-const PRI_POLOZKACH_PDP: Record<string, string> = {
-  sk: "Položky označené PDP:",
-  cs: "Položky označené PDP:",
-  en: "Items marked PDP:",
-  de: "Mit PDP gekennzeichnete Positionen:",
-  hu: "A PDP jelölésű tételek:",
-};
 
 /** Popisky colných údajov pod položkou v jazyku dokladu. */
 const POPIS_COLNYCH: Record<string, { kod: string; povod: string; hmotnost: string }> = {
@@ -152,8 +148,23 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     popisky, nie údaje; názvy položiek a poznámky ostávajú tak, ako ich firma
     napísala.
   */
-  const jazyk = jazykDokladu((invoice as any).language ?? (input as any).language);
+  /* Bez jazyka na faktúre aj odberateľovi rozhoduje krajina firmy — nemecká fakturuje po nemecky. */
+  const jazyk = jazykDokladu(
+    (invoice as any).language || (input as any).language || predvolenyJazykFirmy(company.country),
+  );
   const t = popisky(jazyk);
+  /*
+    Kleinunternehmer (§ 19 UStG) prenesenie neuplatňuje — ani § 13b, ani
+    oslobodené dodanie do EÚ. Faktúra označená ako prenesenie sa preto
+    netlačí s „RC“; výnimkou je služba podnikateľovi v EÚ, kde daň platí
+    odberateľ v svojom štáte.
+  */
+  const kuFirma =
+    krajinaDane(company.country) === "DE" &&
+    rezimFirmy(company as FirmaDph).schema === "de_kleinunternehmer";
+  const rcNaDoklade =
+    Boolean(invoice.reverse_charge) &&
+    (!kuFirma || (invoice.reverse_charge_type === "eu_b2b" && invoice.eu_plnenie === "sluzba"));
   const fmt = (n: number, currency = "EUR") => sumaVJazyku(n, currency, jazyk);
   const fmtCenaJ = (n: number, currency = "EUR") => cenaVJazyku(n, currency, jazyk);
   /* Spôsob úhrady číta odberateľ, nie účtovník — preto v jeho jazyku. */
@@ -175,7 +186,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   // Doklad podľa § 25a nie je opravná faktúra (§ 71 ods. 2) — vlastný nadpis.
   const docLabel =
     input.documentLabel ??
-    ((invoice as any).oprava_25a ? "OPRAVNÝ DOKLAD" : undefined) ??
+    ((invoice as any).oprava_25a ? t.opravnyDoklad : undefined) ??
     podlaTypu[String((invoice as any).type ?? "")] ??
     t.faktura;
   const numberLabel =
@@ -519,7 +530,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawAligned(
       cur,
       font,
-      invoice.reverse_charge || (it as any).prenesenie ? "PDP" : `${Number(it.vat_rate)}%`,
+      rcNaDoklade || (it as any).prenesenie ? t.pdp : `${Number(it.vat_rate)}%`,
       cols.vat.x + cols.vat.w - PAD,
       numBaseline,
       10,
@@ -568,7 +579,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const rozpisDph = (() => {
     const skupiny = new Map<string, { label: string; zaklad: number; dph: number; pdp: boolean; sadzba: number }>();
     for (const it of riadkySoZlavou(items as any[], discount)) {
-      const pdp = Boolean(invoice.reverse_charge || (it as any).prenesenie);
+      const pdp = Boolean(rcNaDoklade || (it as any).prenesenie);
       const sadzba = pdp ? 0 : Number(it.vat_rate ?? 0);
       const kluc = pdp ? "pdp" : String(sadzba);
       const s0 = skupiny.get(kluc) ?? { label: "", zaklad: 0, dph: 0, pdp, sadzba };
@@ -641,7 +652,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawAligned(cur, font, san(t.dph), pravy, ty, 8, sub, "right");
     ty -= 13;
     for (const r of rozpisDph) {
-      const nazov = r.pdp ? "PDP" : `${String(r.sadzba).replace(".", ",")}\u00A0%`;
+      const nazov = r.pdp ? t.pdp : `${String(r.sadzba).replace(".", ",")}\u00A0%`;
       cur.drawText(san(nazov), { x: totalsX, y: ty, size: 9.5, font, color: sub });
       drawAligned(cur, font, san(fmt(r.zaklad, invoice.currency)), stlpecZaklad, ty, 9.5, ink, "right");
       drawAligned(
@@ -658,7 +669,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     }
     ty -= 4;
   }
-  if (!invoice.reverse_charge) {
+  if (!rcNaDoklade) {
     drawTotalRow(
       cur,
       font,
@@ -675,8 +686,8 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawTotalRow(
       cur,
       font,
-      `${t.dph} (PDP)`,
-      "0,00\u00A0" + invoice.currency,
+      t.dphPdp,
+      fmt(0, invoice.currency),
       totalsX,
       ty,
       totalsBlockW,
@@ -757,7 +768,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     "right",
   );
   if (isPaid) {
-    const paidNote = `Uhradené ${paidDate ?? "—"} · ${sposobUhrady(invoice.payment_method)}`;
+    const paidNote = `${t.uhradeneDna} ${datumNaDoklade(paidDate, jazyk)} · ${sposobUhrady(invoice.payment_method)}`;
     cur.drawText(san(paidNote), {
       x: totalsX,
       y: ty - heroH - 14,
@@ -815,12 +826,26 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   // Česká firma cituje český zákon o DPH (235/2004 Sb.), nie slovenský 222/2004.
   const vetyCz =
     !cudziVystavovatel && krajinaDane(company.country) === "CZ" ? vetyPreneseniaCz(jazyk) : null;
+  // Nemecká firma cituje UStG (§ 13b, § 4 Nr. 1a/1b, § 3a Abs. 2).
+  const jeDe = !cudziVystavovatel && krajinaDane(company.country) === "DE";
+  const kuDe = jeDe && kuFirma;
   // Zmiešaná faktúra: prenesenie len pri niektorých položkách — veta o tuzemskom prenesení.
   const pdpPolozky = !invoice.reverse_charge && items.some((x: any) => x.prenesenie);
   const textPrenesenia = !invoice.reverse_charge
     ? pdpPolozky
-      ? `${PRI_POLOZKACH_PDP[jazyk] ?? PRI_POLOZKACH_PDP.sk} ${vetyCz ? vetyCz.tuzemsko : t.prenosTuzemsko}`
+      ? `${t.polozkyPdp} ${vetyCz ? vetyCz.tuzemsko : jeDe ? vetyDe(jazyk).tuzemsko : t.prenosTuzemsko}`
       : null
+    : kuDe
+      ? /*
+          Kleinunternehmer oslobodené dodanie do EÚ ani prenesenie podľa § 13b
+          neuplatňuje (§ 19 Abs. 1 UStG) — na doklade je len veta § 19 nižšie.
+          Výnimkou je služba podnikateľovi v EÚ: daň tam platí odberateľ.
+        */
+        invoice.reverse_charge_type === "eu_b2b" && invoice.eu_plnenie === "sluzba"
+        ? vetyDe(jazyk).euSluzba
+        : null
+    : jeDe
+      ? (vetaPreneseniaDe(invoice.reverse_charge_type, invoice.eu_plnenie, jazyk) ?? vetyDe(jazyk).tuzemsko)
     : vetyCz
       ? invoice.reverse_charge_type === "eu_b2b"
         ? invoice.eu_plnenie === "sluzba"
@@ -874,8 +899,13 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     danZPrijatejPlatby: (company as any).dan_z_prijatej_platby,
     osobitnaUprava: invoice.osobitna_uprava,
   });
+  const rezimVystavovatela = rezimFirmy(company as FirmaDph);
   const textDph =
-    Number(invoice.vat_total ?? 0) > 0 ? null : rezimFirmy(company as FirmaDph).textNaDoklad;
+    Number(invoice.vat_total ?? 0) > 0
+      ? null
+      : rezimVystavovatela.schema === "de_kleinunternehmer"
+        ? vetyDe(jazyk).kleinunternehmer
+        : rezimVystavovatela.textNaDoklad;
   let poznamkyHotove = false;
   if (!kresliPeciatku && !prenesenieHotove) {
     const sirka = totalsX - margin - 20;
@@ -928,7 +958,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       Number(invoice.exchange_rate),
       String(invoice.exchange_rate_date ?? invoice.delivery_date ?? invoice.issue_date),
       Number(invoice.vat_total_eur),
-      krajinaDane(company.country) === "CZ" ? "cz" : "sk",
+      krajinaDane(company.country) === "CZ" ? "cz" : krajinaDane(company.country) === "DE" ? "de" : "sk",
       krajinaKurzu(company.country),
     );
     const lines = wrapLines(text, font, 9, innerW);
@@ -1023,9 +1053,10 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
             suma: naUhradu,
             mena: invoice.currency,
             vs: invoice.variable_symbol,
-            sprava: `Faktura ${invoice.invoice_number}`,
+            sprava: `${t.spravaQr} ${invoice.invoice_number}`,
             splatnost: invoice.due_date,
             prijemca: company.name,
+            bic: company.swift,
           },
           company.country,
         );
@@ -1054,7 +1085,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
                 suma: naUhradu,
                 mena: invoice.currency,
                 vs: invoice.variable_symbol,
-                sprava: `Faktura ${invoice.invoice_number}`,
+                sprava: `${t.spravaQr} ${invoice.invoice_number}`,
                 splatnost: invoice.due_date,
                 prijemca: company.name,
               })
@@ -1245,6 +1276,12 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
 
   // ── Footer on every page ──
   const footerText = company.invoice_footer ?? t.vystaveneCez;
+  /*
+    Nemecká firma: Registergericht, HRB a Geschäftsführer patria na obchodné
+    listy (§ 35a GmbHG, § 37a HGB) — riadok pod pätičkou, keď sú vyplnené.
+  */
+  const pataDe = krajinaDane(company.country) === "DE" ? pataFirmyDe(company as any) : null;
+  const strana = ({ sk: "Strana", cs: "Strana", en: "Page", de: "Seite", hu: "Oldal" } as Record<string, string>)[jazyk] ?? "Strana";
   pages.forEach((p, i) => {
     p.drawLine({
       start: { x: margin, y: 52 },
@@ -1253,7 +1290,9 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       thickness: 0.5,
     });
     p.drawText(footerText, { x: margin, y: 38, size: 7.5, font, color: muted });
-    const pageLabel = `Strana ${i + 1} / ${pages.length}`;
+    if (pataDe)
+      p.drawText(ellipsize(pataDe, font, 7.5, innerW), { x: margin, y: 28, size: 7.5, font, color: muted });
+    const pageLabel = `${strana} ${i + 1} / ${pages.length}`;
     const plw = font.widthOfTextAtSize(pageLabel, 7.5);
     p.drawText(pageLabel, { x: width - margin - plw, y: 38, size: 7.5, font, color: muted });
   });

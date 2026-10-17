@@ -1,7 +1,9 @@
 /*
   Stiahnutie súboru v prehliadači v správnom kódovaní — Omega a súpiska CSV
-  chcú Windows-1250, ISDOC ZIP prichádza ako base64.
+  chcú Windows-1250, DATEV Windows-1252, ISDOC ZIP prichádza ako base64.
 */
+
+import { doCp1252 } from "./cp1252";
 
 /**
  * Windows-1250. Omega slovenskú diakritiku v UTF-8 neprečíta a v súbore by
@@ -156,14 +158,16 @@ export function downloadFile(
   name: string,
   content: string,
   mime = "application/xml",
-  encoding: "utf-8" | "windows-1250" | "base64" = "utf-8",
+  encoding: "utf-8" | "windows-1250" | "windows-1252" | "base64" = "utf-8",
 ) {
   const data: BlobPart =
     encoding === "windows-1250"
       ? (doCp1250(content) as BlobPart)
-      : encoding === "base64"
-        ? (zBase64(content) as BlobPart)
-        : content;
+      : encoding === "windows-1252"
+        ? (doCp1252(content) as BlobPart)
+        : encoding === "base64"
+          ? (zBase64(content) as BlobPart)
+          : content;
   const blob = new Blob([data], {
     type: encoding === "base64" ? mime : `${mime};charset=${encoding}`,
   });

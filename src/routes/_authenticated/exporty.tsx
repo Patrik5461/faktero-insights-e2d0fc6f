@@ -168,7 +168,7 @@ function ExportsPage() {
       <PageHeader
         title={t("Účtovné exporty")}
         description={t(
-          "Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, do ISDOC-u alebo ako súpisku pre Excel.",
+          "Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, DATEV, do ISDOC-u alebo ako súpisku pre Excel.",
         )}
       />
       <PageBody>
@@ -683,9 +683,9 @@ function OdovzdanieZaMesiac() {
 
 /**
  * Zaúčtované doklady do iného programu než Pohoda (Omega, Money S3, ABRA
- * Flexi, súpiska CSV) — vystavené faktúry, prijaté faktúry aj bločky
+ * Flexi, DATEV, súpiska CSV) — vystavené faktúry, prijaté faktúry aj bločky
  * s predkontáciou, členením, strediskom a zákazkou. Program si firma vyberie
- * raz a pamätá sa.
+ * raz a pamätá sa; nemecká firma bez voľby dostane DATEV.
  */
 function ZauctovaneDoProgramu() {
   const { t } = useT();
@@ -924,6 +924,14 @@ function ZauctovaneDoProgramu() {
               {t("Nastavenia pre {program}", { program: kratkyNazov })}
             </button>
           </div>
+
+          {program === "datev" && (
+            <p className="mt-3 rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+              {t(
+                "Súbor EXTF_Buchungsstapel… (Windows-1252) načíta DATEV Rechnungswesen cez Bestand → Importieren → ASCII-Daten / DATEV-Format, prípadne ho pošlite poradcovi do DATEV Unternehmen online. Jeden súbor smie obsahovať len doklady z jedného hospodárskeho roka. Pred prvým exportom vyplňte v nastaveniach Beraternummer a Mandantennummer.",
+              )}
+            </p>
+          )}
 
           {otvoreneNastavenia && (
             <NastaveniaProgramu

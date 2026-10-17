@@ -5,7 +5,8 @@ import { domacaMena, krajinaKurzu, textPrepoctu } from "@/lib/faktero/kurzy";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { formatujMenu } from "@/lib/faktero/mena";
-import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { datumNaDoklade, localeDokladu, popisky } from "@/lib/faktero/faktura-jazyk";
+import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -26,7 +27,7 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     const { data: f } = await supabaseAdmin
       .from("invoices")
       .select(
-        "id, company_id, invoice_number, type, status, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, osobitna_uprava, deleted_at, payment_iban, payment_swift",
+        "id, company_id, invoice_number, type, status, language, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, osobitna_uprava, deleted_at, payment_iban, payment_swift",
       )
       .eq("public_token", data.token)
       .maybeSingle();
@@ -64,7 +65,10 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     const { rezimFirmy } = await import("@/lib/faktero/dph-rezim");
     const textDph = Number((f as any).vat_total ?? 0) > 0 ? null : rezimFirmy(firma).textNaDoklad;
     const { vetyNaDoklad } = await import("@/lib/faktero/faktura-nalezitosti");
+    // Stránka hovorí jazykom dokladu — nemeckú faktúru odberateľ otvorí po nemecky.
+    const { jazykFaktury } = await import("@/lib/faktero/email-jazyk");
     return {
+      jazyk: jazykFaktury(f as any, firma),
       doklad,
       vetyUprav: vetyNaDoklad({
         danZPrijatejPlatby: (firma as any)?.dan_z_prijatej_platby,
@@ -87,7 +91,11 @@ export const Route = createFileRoute("/faktura/$token")({
   head: ({ loaderData, match }) => ({
     meta: [
       {
-        title: `${preloz(match.context.jazyk, "Faktúra")} ${loaderData?.doklad?.invoice_number ?? ""} — Faktero`,
+        title: `${
+          loaderData?.jazyk && loaderData.jazyk !== "sk"
+            ? velkymPrve(popisky(loaderData.jazyk).faktura)
+            : preloz(match.context.jazyk, "Faktúra")
+        } ${loaderData?.doklad?.invoice_number ?? ""} — Faktero`,
       },
       // Doklad nepatrí do vyhľadávačov, aj keď je odkaz verejný.
       { name: "robots", content: "noindex, nofollow" },
@@ -136,15 +144,51 @@ function Riadok({ k, v }: { k: string; v: React.ReactNode }) {
   );
 }
 
+/** „BEZAHLT“ → „Bezahlt“ — popisky dokladu sú na PDF verzálkami. */
+function velkymPrve(s: string): string {
+  return s.charAt(0) + s.slice(1).toLocaleLowerCase();
+}
+
 function VerejnaFaktura() {
-  const { t } = useT();
-  const { doklad, polozky, firma, textDph, vetyUprav } = Route.useLoaderData();
+  const { t: tWebu } = useT();
+  const { doklad, polozky, firma, textDph, vetyUprav, jazyk } = Route.useLoaderData();
+  /*
+    Slovenský doklad ostáva v jazyku webu (návštevník si ho môže prepnúť);
+    doklad v inom jazyku sa ukáže v jazyku dokladu, s popiskami z PDF.
+  */
+  const P = popisky(jazyk);
+  const cudzi = jazyk !== "sk";
+  const POPISKY_STRANKY: Record<string, string> = {
+    Dobropis: velkymPrve(P.dobropis),
+    Ťarchopis: velkymPrve(P.tarchopis),
+    "Zálohová faktúra": velkymPrve(P.zalohovaFaktura),
+    Faktúra: velkymPrve(P.faktura),
+    "Na úhradu": velkymPrve(P.spoluKUhrade),
+    Uhradené: velkymPrve(P.uhradene),
+    Dodávateľ: velkymPrve(P.dodavatel),
+    Odberateľ: velkymPrve(P.odberatel),
+    IČO: P.ico,
+    Položka: velkymPrve(P.polozka),
+    Množstvo: velkymPrve(P.mnozstvo),
+    Cena: velkymPrve(P.cena),
+    DPH: P.dph,
+    "DPH (PDP)": P.dphPdp,
+    Celkom: velkymPrve(P.celkom),
+    Základ: P.zakladDane,
+    Spolu: P.spolu,
+    "Dátum vystavenia": P.datumVystavenia,
+    "Dátum dodania": P.datumDodania,
+    Splatnosť: P.datumSplatnosti,
+    "Variabilný symbol": P.variabilnySymbol,
+    IBAN: P.iban,
+  };
+  const t = (text: string) => (cudzi ? (POPISKY_STRANKY[text] ?? tWebu(text)) : tWebu(text));
 
   // Doklad pre zákazníka je vždy svetlý — tmavý podľa jeho prehliadača vyzerá
   // ako chyba a horšie sa tlačí.
   useEffect(() => vynutSvetlyMotiv(), []);
   const mena = doklad.currency ?? "EUR";
-  const suma = (n: unknown) => formatujMenu(n, mena);
+  const suma = (n: unknown) => formatujMenu(n, mena, localeDokladu(jazyk));
   const nazov =
     doklad.type === "credit_note"
       ? "Dobropis"
@@ -257,9 +301,9 @@ function VerejnaFaktura() {
       </div>
 
       <div className="mt-6 rounded-xl border border-border bg-muted/30 p-4">
-        <Riadok k={t("Dátum vystavenia")} v={datumNaDoklade(doklad.issue_date)} />
-        <Riadok k={t("Dátum dodania")} v={datumNaDoklade(doklad.delivery_date)} />
-        <Riadok k={t("Splatnosť")} v={datumNaDoklade(doklad.due_date)} />
+        <Riadok k={t("Dátum vystavenia")} v={datumNaDoklade(doklad.issue_date, jazyk)} />
+        <Riadok k={t("Dátum dodania")} v={datumNaDoklade(doklad.delivery_date, jazyk)} />
+        <Riadok k={t("Splatnosť")} v={datumNaDoklade(doklad.due_date, jazyk)} />
         <Riadok k={t("Variabilný symbol")} v={doklad.variable_symbol} />
         <Riadok k={t("IBAN")} v={firma?.iban} />
       </div>
@@ -273,7 +317,11 @@ function VerejnaFaktura() {
               Number(doklad.exchange_rate),
               String(doklad.exchange_rate_date ?? doklad.delivery_date ?? doklad.issue_date),
               Number(doklad.vat_total_eur),
-              krajinaKurzu(firma?.country) === "CZ" ? "cz" : "sk",
+              krajinaKurzu(firma?.country) === "CZ"
+                ? "cz"
+                : krajinaDane(firma?.country) === "DE"
+                  ? "de"
+                  : "sk",
               krajinaKurzu(firma?.country),
             )}
           </p>
@@ -290,7 +338,13 @@ function VerejnaFaktura() {
       {doklad.notes && <p className="mt-4 text-sm text-muted-foreground">{doklad.notes}</p>}
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        {t("Vystavené cez")} <span className="font-medium">{t("Faktero")}</span>
+        {cudzi ? (
+          P.vystaveneCez
+        ) : (
+          <>
+            {t("Vystavené cez")} <span className="font-medium">{t("Faktero")}</span>
+          </>
+        )}
       </p>
     </Obal>
   );

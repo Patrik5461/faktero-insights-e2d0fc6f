@@ -35,8 +35,13 @@ export function VyberRezimuDph({
   const vybrana = zosuladSchemu(schema as SchemaDph | null, k, platitel);
   const moznosti = schemyKrajiny(k, platitel);
   const maIc = Boolean(String(icDph ?? "").trim());
-  const chybaIc = maMatIcDph(vybrana) && !maIc;
-  const icNavyse = !maMatIcDph(vybrana) && maIc;
+  /*
+    Nemecká firma: USt-IdNr. nie je znakom platiteľa (Regelbesteuerung vystačí
+    so Steuernummer, Kleinunternehmer ju môže mať kvôli nákupom z EÚ), tak sa
+    na ňu neupozorňuje.
+  */
+  const chybaIc = k !== "DE" && maMatIcDph(vybrana) && !maIc;
+  const icNavyse = k !== "DE" && !maMatIcDph(vybrana) && maIc;
 
   return (
     <div className="sm:col-span-2">

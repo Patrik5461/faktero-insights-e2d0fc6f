@@ -12,8 +12,10 @@ import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 
 import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
 import { VyberRezimuDph } from "@/components/faktero/VyberRezimuDph";
+import { UpozornenieKleinunternehmer } from "@/components/faktero/UpozornenieKleinunternehmer";
 import { zosuladSchemu } from "@/lib/faktero/dph-rezim";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
+import { chybyIdentifikatorovDe, popiskyIdentifikatorov } from "@/lib/faktero/firma-de";
 import { zabudniKrajinuDane, zabudniRezimDph } from "@/lib/faktero/krajina-firmy";
 import { BankoveUctyFirmy } from "@/components/faktero/banka/BankoveUctyFirmy";
 import { EditorOpravneni, VysvetlenieRoli } from "@/components/faktero/pristupy/Opravnenia";
@@ -59,6 +61,13 @@ function CompanyPage() {
   }
 
   const f = (k: string) => (v: string) => setC({ ...c, [k]: v });
+  /*
+    Nemecká firma: Steuernummer ide do `dic`, USt-IdNr. do `ic_dph`, IČO je
+    nepovinné a vyhľadanie v registri (FinStat/ARES) pre ňu nemá zmysel.
+  */
+  const jeDe = krajinaDane(c.country) === "DE";
+  const popisky = popiskyIdentifikatorov(c.country);
+  const chybyDe = jeDe ? chybyIdentifikatorovDe(c) : [];
   return (
     <>
       <PageHeader title={t("Firma")} description={t("Údaje, ktoré sa zobrazia na faktúrach.")} />
@@ -84,27 +93,70 @@ function CompanyPage() {
             </div>
           </label>
           <label className="block">
-            <span className="text-sm font-medium">{t("IČO")}</span>
+            <span className="text-sm font-medium">{t(popisky.ico)}</span>
             <div className="mt-1 flex -space-x-px items-start">
               <input
                 value={c.ico ?? ""}
                 onChange={(e) => f("ico")(e.target.value)}
-                className="w-full rounded-l-md border border-input bg-background px-3 py-2 text-sm focus:z-10"
+                className={`w-full border border-input bg-background px-3 py-2 text-sm focus:z-10 ${jeDe ? "rounded-md" : "rounded-l-md"}`}
               />
-              <IcoLookupButton
-                ico={c.ico ?? ""}
-                onResult={(d, { auto }) =>
-                  setC((prev: any) =>
-                    mergeCompanyAutofill(prev ?? {}, d, {
-                      mode: auto ? "fill-empty" : "overwrite",
-                    }),
-                  )
-                }
-              />
+              {!jeDe && (
+                <IcoLookupButton
+                  ico={c.ico ?? ""}
+                  onResult={(d, { auto }) =>
+                    setC((prev: any) =>
+                      mergeCompanyAutofill(prev ?? {}, d, {
+                        mode: auto ? "fill-empty" : "overwrite",
+                      }),
+                    )
+                  }
+                />
+              )}
             </div>
           </label>
-          <In label="DIČ" value={c.dic ?? ""} onChange={f("dic")} />
-          <In label="IČ DPH" value={c.ic_dph ?? ""} onChange={f("ic_dph")} />
+          <In
+            label={popisky.dic}
+            value={c.dic ?? ""}
+            onChange={f("dic")}
+            placeholder={jeDe ? "12/345/67890" : undefined}
+          />
+          <In
+            label={popisky.icDph}
+            value={c.ic_dph ?? ""}
+            onChange={f("ic_dph")}
+            placeholder={jeDe ? "DE123456789" : undefined}
+          />
+          {jeDe && (
+            <>
+              <In
+                label="Registergericht"
+                value={c.registergericht ?? ""}
+                onChange={f("registergericht")}
+                placeholder="Amtsgericht München"
+              />
+              <In
+                label="Handelsregister-Nr."
+                value={c.handelsregister_nr ?? ""}
+                onChange={f("handelsregister_nr")}
+                placeholder="HRB 123456"
+              />
+              <In
+                label="Geschäftsführer"
+                value={c.geschaeftsfuehrer ?? ""}
+                onChange={f("geschaeftsfuehrer")}
+              />
+              <p className="self-end text-xs text-muted-foreground">
+                {t("Registergericht, číslo HRB a konateľ sa vytlačia do päty faktúry.")}
+              </p>
+              {chybyDe.length > 0 && (
+                <ul className="sm:col-span-2 space-y-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                  {chybyDe.map((ch) => (
+                    <li key={ch}>{t(ch)}</li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
           <In label="Email" value={c.email ?? ""} onChange={f("email")} />
           <In full label="Ulica" value={c.street ?? ""} onChange={f("street")} />
           <In label="Mesto" value={c.city ?? ""} onChange={f("city")} />
@@ -134,7 +186,11 @@ function CompanyPage() {
               setC((prev: any) => ({ ...prev, vat_payer: platitel, vat_scheme: schema }))
             }
           />
-          {Boolean(c.vat_payer) && (
+          <div className="sm:col-span-2 empty:hidden">
+            <UpozornenieKleinunternehmer firma={c} />
+          </div>
+          {/* § 68d je slovenská/česká veta; nemecká Ist-Versteuerung vetu na faktúre nemá. */}
+          {Boolean(c.vat_payer) && !jeDe && (
             <label className="flex items-start gap-2 sm:col-span-2">
               <input
                 type="checkbox"
@@ -693,7 +749,11 @@ function TeamSection({ companyId }: { companyId: string }) {
             <tbody className="divide-y divide-border">
               {invs.map((r) => {
                 const expired = new Date(r.expires_at) < new Date();
-                const status = r.accepted_at ? "pozvanka::Prijaté" : expired ? "Expirované" : "Čaká sa";
+                const status = r.accepted_at
+                  ? "pozvanka::Prijaté"
+                  : expired
+                    ? "Expirované"
+                    : "Čaká sa";
                 return (
                   <tr key={r.id}>
                     <td className="p-3">{r.email}</td>

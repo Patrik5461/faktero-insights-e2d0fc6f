@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { ProgramUctovania } from "@/lib/faktero/uctovanie-programy";
+import { UCTY_DATEV, type KlucUctu } from "@/lib/faktero/export-datev";
 import { useT } from "@/lib/i18n/useT";
 
-type Pole = { kluc: string; nazov: string; napoveda?: string; placeholder?: string };
+type Pole = {
+  kluc: string;
+  nazov: string;
+  napoveda?: string;
+  placeholder?: string;
+  /** Výber namiesto voľného textu — [hodnota, popis]. */
+  moznosti?: [string, string][];
+};
 type Skupina = { nazov: string; polia: Pole[] };
 
 /**
@@ -133,6 +141,72 @@ const POLIA: Record<ProgramUctovania, Skupina[]> = {
       ],
     },
   ],
+  datev: [
+    {
+      nazov: "Mandant v DATEV",
+      polia: [
+        {
+          kluc: "beraternummer",
+          nazov: "Beraternummer",
+          placeholder: "napr. 29098",
+          napoveda: "Číslo daňového poradcu v DATEV (1001–9999999).",
+        },
+        { kluc: "mandantennummer", nazov: "Mandantennummer", placeholder: "napr. 55003" },
+        {
+          kluc: "osnova",
+          nazov: "Účtová osnova",
+          moznosti: [
+            ["SKR03", "SKR03"],
+            ["SKR04", "SKR04"],
+          ],
+        },
+        { kluc: "dlzkaUctov", nazov: "Dĺžka Sachkonten", placeholder: "4" },
+        {
+          kluc: "zaciatokRoka",
+          nazov: "Hospodársky rok začína v mesiaci",
+          placeholder: "1 = január",
+        },
+        {
+          kluc: "osobneUcty",
+          nazov: "Debitori a kreditori",
+          moznosti: [
+            ["zberne", "Zberné účty (10000 / 70000)"],
+            ["osobne", "Osobné účty podľa partnera"],
+          ],
+        },
+        { kluc: "diktat", nazov: "Diktatkürzel", placeholder: "napr. FA" },
+        {
+          kluc: "automatickeUcty",
+          nazov: "Ďalšie automatické účty (bez BU-Schlüssel)",
+          placeholder: "napr. 3400, 8401",
+        },
+      ],
+    },
+    {
+      nazov: "Prepis účtov (prázdne = predvolený účet osnovy)",
+      polia: (Object.keys(UCTY_DATEV) as KlucUctu[]).map((k) => ({
+        kluc: `ucty.${k}`,
+        nazov: UCTY_DATEV[k].popis,
+        placeholder: `SKR03 ${UCTY_DATEV[k].SKR03} · SKR04 ${UCTY_DATEV[k].SKR04}`,
+      })),
+    },
+    {
+      nazov: "BU-Schlüssel pri bežnom účte",
+      polia: [
+        { kluc: "bu.vstup19", nazov: "Vorsteuer 19 %", placeholder: "9" },
+        { kluc: "bu.vstup7", nazov: "Vorsteuer 7 %", placeholder: "8" },
+        { kluc: "bu.vystup19", nazov: "Umsatzsteuer 19 %", placeholder: "3" },
+        { kluc: "bu.vystup7", nazov: "Umsatzsteuer 7 %", placeholder: "2" },
+        { kluc: "bu.rcTuzemsko19", nazov: "§ 13b 19 % (tuzemsko)", placeholder: "94" },
+        { kluc: "bu.rcEu19", nazov: "§ 13b 19 % (služba z EÚ)", placeholder: "46" },
+        {
+          kluc: "bu.nadobudnutie19",
+          nazov: "Innergemeinschaftlicher Erwerb 19 %",
+          placeholder: "19",
+        },
+      ],
+    },
+  ],
   csv: [],
 };
 
@@ -143,6 +217,8 @@ const NAPOVEDA: Record<ProgramUctovania, string> = {
     "Predkontácie a členenia DPH zadajte v Účtovníctvo → Predkontácie s rovnakými skratkami, aké máte v Money S3.",
   flexi:
     "Predkontácie (predpisy zaúčtovania) a členenia DPH zadajte v Účtovníctvo → Predkontácie s kódmi z ABRA Flexi — napr. členenie „40-41“, nie pohodové PD.",
+  datev:
+    "Beraternummer a Mandantennummer vám dá daňový poradca. Daň si DATEV rozpočíta sám: výnosy a nákupy v prenesení idú na automatické účty, bežné náklady s BU-Schlüssel. Účet z predkontácie (Účtovníctvo → Predkontácie, MD pri nákupe, Dal pri predaji) má prednosť pred predvoleným.",
   csv: "Súpiska nemá čo nastavovať — obsahuje kódy aj účty z Účtovníctvo → Predkontácie.",
 };
 
@@ -198,12 +274,29 @@ export function NastaveniaProgramu({
             {s.polia.map((p) => (
               <label key={p.kluc} className="block">
                 <span className="text-xs text-muted-foreground">{t(p.nazov)}</span>
-                <input
-                  value={h[p.kluc] ?? ""}
-                  placeholder={p.placeholder ? t(p.placeholder) : undefined}
-                  onChange={(e) => setH({ ...h, [p.kluc]: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
+                {p.moznosti ? (
+                  <select
+                    value={h[p.kluc] ?? p.moznosti[0]![0]}
+                    onChange={(e) => setH({ ...h, [p.kluc]: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    {p.moznosti.map(([v, n]) => (
+                      <option key={v} value={v}>
+                        {t(n)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={h[p.kluc] ?? ""}
+                    placeholder={p.placeholder ? t(p.placeholder) : undefined}
+                    onChange={(e) => setH({ ...h, [p.kluc]: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  />
+                )}
+                {p.napoveda && (
+                  <span className="mt-1 block text-xs text-muted-foreground">{t(p.napoveda)}</span>
+                )}
               </label>
             ))}
           </div>

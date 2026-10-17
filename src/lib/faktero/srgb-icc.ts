@@ -1,0 +1,10 @@
+/**
+ * Profil farieb sRGB (ICC v2, 456 bajtov) pre OutputIntent PDF/A.
+ *
+ * Zdroj: „sRGB-v2-micro.icc“ z projektu Compact-ICC-Profiles (Clinton Ingram,
+ * https://github.com/saucecontrol/Compact-ICC-Profiles), licencia CC0 — voľné
+ * dielo. Rovnaký autor dodáva profily aj do pdfjs-dist. Je tu ako base64, aby
+ * sa nemusel čítať zo súboru (server beží zo zbaleného buildu).
+ */
+export const SRGB_ICC_BASE64 =
+  "AAAByGxjbXMCEAAAbW50clJHQiBYWVogB+IAAwAUAAkADgAdYWNzcE1TRlQAAAAAc2F3c2N0cmwAAAAAAAAAAAAAAAAAAPbWAAEAAAAA0y1oYW5knZEAPUCAsD1AdCyBnqUijgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJZGVzYwAAAPAAAABfY3BydAAAAQwAAAAMd3RwdAAAARgAAAAUclhZWgAAASwAAAAUZ1hZWgAAAUAAAAAUYlhZWgAAAVQAAAAUclRSQwAAAWgAAABgZ1RSQwAAAWgAAABgYlRSQwAAAWgAAABgZGVzYwAAAAAAAAAFdVJHQgAAAAAAAAAAAAAAAHRleHQAAAAAQ0MwAFhZWiAAAAAAAADzVAABAAAAARbJWFlaIAAAAAAAAG+gAAA48gAAA49YWVogAAAAAAAAYpYAALeJAAAY2lhZWiAAAAAAAAAkoAAAD4UAALbEY3VydgAAAAAAAAAqAAAAfAD4AZwCdQODBMkGTggSChgMYg70Ec8U9hhqHC4gQySsKWoufjPrObM/1kZXTTZUdlwXZB1shnVWfo2ILJI2nKunjLLbvpnKx9dl5Hfx+f//";

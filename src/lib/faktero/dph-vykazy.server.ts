@@ -344,7 +344,13 @@ export async function nacitajVstup(
       });
     }
     const tuzemske = prenesene.length ? rozpisP.filter((x) => !x.pdp) : null;
-    const rezimP = (p.dph_rezim as PrijataFaktura["rezim"]) ?? odvodRezimPrijatej(p.supplier_ic_dph, dan);
+    const rezimP =
+      (p.dph_rezim as PrijataFaktura["rezim"]) ??
+      odvodRezimPrijatej(
+        p.supplier_ic_dph,
+        dan,
+        String(krajinaDane((firmaKody as any)?.country)) === "DE" ? "DE" : "SK",
+      );
     // Celá prenesená faktúra už ide vyššie; druhý, prázdny záznam by KV zdvojil.
     if (tuzemske && !tuzemske.length) continue;
     prijate.push({

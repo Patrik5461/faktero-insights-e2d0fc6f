@@ -13,7 +13,7 @@
  * zmeny — dobropis k faktúre z roku 2024 nesie sadzbu, ktorá vtedy platila.
  */
 
-export type KrajinaDane = "SK" | "CZ";
+export type KrajinaDane = "SK" | "CZ" | "DE";
 
 /** Tabuľka sadzieb platná od daného dňa. `third` má len krajina s treťou sadzbou. */
 type Tabulka = { od: string; high: number; low: number; third: number | null };
@@ -24,6 +24,9 @@ type Tabulka = { od: string; high: number; low: number; third: number | null };
 
   SK: do 2024 20/10, od 1. 1. 2025 23/19/5 (§ 27 zákona č. 222/2004 Z. z.).
   CZ: do 2023 21/15/10, od 1. 1. 2024 sa obe znížené zlúčili na 12 %.
+  DE: od 1. 1. 2007 19/7 (§ 12 UStG), predtým 16/7. Dočasne od 1. 7. do
+      31. 12. 2020 16/5 (Zweites Corona-Steuerhilfegesetz) — opravné doklady
+      k plneniam z druhého polroka 2020 tú sadzbu potrebujú.
 */
 const TABULKY: Record<KrajinaDane, Tabulka[]> = {
   SK: [
@@ -34,9 +37,15 @@ const TABULKY: Record<KrajinaDane, Tabulka[]> = {
     { od: "2024-01-01", high: 21, low: 12, third: null },
     { od: "0000-01-01", high: 21, low: 15, third: 10 },
   ],
+  DE: [
+    { od: "2021-01-01", high: 19, low: 7, third: null },
+    { od: "2020-07-01", high: 16, low: 5, third: null },
+    { od: "2007-01-01", high: 19, low: 7, third: null },
+    { od: "0000-01-01", high: 16, low: 7, third: null },
+  ],
 };
 
-const NAZVY: Record<KrajinaDane, string> = { SK: "Slovensko", CZ: "Česko" };
+const NAZVY: Record<KrajinaDane, string> = { SK: "Slovensko", CZ: "Česko", DE: "Nemecko" };
 
 /**
  * Krajina dane z poľa `country`.
@@ -50,6 +59,12 @@ export function krajinaDane(country?: string | null): KrajinaDane {
     .trim()
     .toUpperCase();
   if (/^(CZ|CZE|ČESK|CESK|CZECH)/.test(s)) return "CZ";
+  /*
+    Nemecko len celým kódom alebo názvom — predpona „DE" by chytila aj
+    „Denmark" a dánsku firmu by ticho prepla na nemecké sadzby.
+  */
+  if (s === "DE" || s === "DEU" || /^(DEUTSCHLAND|NEMECK|NĚMECK|GERMANY|BUNDESREPUBLIK)/.test(s))
+    return "DE";
   return "SK";
 }
 
@@ -61,6 +76,7 @@ export function nazovKrajinyDane(krajina: KrajinaDane): string {
 export const KRAJINY_DANE: { kod: KrajinaDane; nazov: string }[] = [
   { kod: "SK", nazov: "Slovensko" },
   { kod: "CZ", nazov: "Česko" },
+  { kod: "DE", nazov: "Nemecko" },
 ];
 
 function dnes(): string {

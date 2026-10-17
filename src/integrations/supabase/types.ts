@@ -1288,6 +1288,9 @@ export type Database = {
           zip: string | null
           vat_payer: boolean
           vat_scheme: string | null
+          registergericht: string | null
+          handelsregister_nr: string | null
+          geschaeftsfuehrer: string | null
           dan_z_prijatej_platby: boolean
           pohoda_blocky_agenda: string
           pohoda_rad_prijate: string | null
@@ -1387,6 +1390,9 @@ export type Database = {
           zip?: string | null
           vat_payer?: boolean
           vat_scheme?: string | null
+          registergericht?: string | null
+          handelsregister_nr?: string | null
+          geschaeftsfuehrer?: string | null
           dan_z_prijatej_platby?: boolean
           pohoda_blocky_agenda?: string
           pohoda_rad_prijate?: string | null
@@ -1486,6 +1492,9 @@ export type Database = {
           zip?: string | null
           vat_payer?: boolean
           vat_scheme?: string | null
+          registergericht?: string | null
+          handelsregister_nr?: string | null
+          geschaeftsfuehrer?: string | null
           dan_z_prijatej_platby?: boolean
           pohoda_blocky_agenda?: string
           pohoda_rad_prijate?: string | null
@@ -1762,6 +1771,7 @@ export type Database = {
           discount_percent: number | null
           dodavatel: boolean
           iban: string | null
+          leitweg_id: string | null
           odberatel: boolean
           swift: string | null
           email: string | null
@@ -1796,6 +1806,7 @@ export type Database = {
           discount_percent?: number | null
           dodavatel?: boolean
           iban?: string | null
+          leitweg_id?: string | null
           odberatel?: boolean
           swift?: string | null
           email?: string | null
@@ -1830,6 +1841,7 @@ export type Database = {
           discount_percent?: number | null
           dodavatel?: boolean
           iban?: string | null
+          leitweg_id?: string | null
           odberatel?: boolean
           swift?: string | null
           email?: string | null

@@ -1,6 +1,6 @@
 /** Účtovné programy, do ktorých Faktero vie poslať zaúčtované doklady. */
 
-export type ProgramUctovania = "omega" | "money_s3" | "flexi" | "csv";
+export type ProgramUctovania = "omega" | "money_s3" | "flexi" | "csv" | "datev";
 export type AgendaExportu = "vystavena" | "prijata" | "doklad";
 
 export const PROGRAMY_UCTOVANIA: {
@@ -9,7 +9,7 @@ export const PROGRAMY_UCTOVANIA: {
   format: string;
   pripona: string;
   mime: string;
-  encoding: "utf-8" | "windows-1250";
+  encoding: "utf-8" | "windows-1250" | "windows-1252";
 }[] = [
   {
     program: "pohoda",
@@ -42,6 +42,15 @@ export const PROGRAMY_UCTOVANIA: {
     pripona: "xml",
     mime: "application/xml",
     encoding: "utf-8",
+  },
+  {
+    // DATEV-Format „Buchungsstapel“ (EXTF 700) — ANSI, teda Windows-1252.
+    program: "datev",
+    nazov: "DATEV (Buchungsstapel)",
+    format: "datev_extf",
+    pripona: "csv",
+    mime: "text/csv",
+    encoding: "windows-1252",
   },
   {
     program: "csv",

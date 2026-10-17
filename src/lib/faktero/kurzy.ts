@@ -73,16 +73,26 @@ export function textPrepoctu(
   kurz: number,
   den: string,
   danDomaca: number,
-  jazyk: "sk" | "cz" = "sk",
+  jazyk: "sk" | "cz" | "de" = "sk",
   krajina: KrajinaKurzu = "SK",
 ): string {
   const [r, m, d] = den.split("-");
-  const datum = `${Number(d)}. ${Number(m)}. ${r}`;
-  const loc = jazyk === "cz" ? "cs-CZ" : "sk-SK";
+  const datum = jazyk === "de" ? `${d}.${m}.${r}` : `${Number(d)}. ${Number(m)}. ${r}`;
+  const loc = jazyk === "cz" ? "cs-CZ" : jazyk === "de" ? "de-DE" : "sk-SK";
   const suma = danDomaca.toLocaleString(loc, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+  /*
+    Nemecká firma vedie daň v eurách ako slovenská (kurz ECB). § 16 Abs. 6
+    UStG predpisuje mesačný priemer BMF; denný kurz smie firma použiť len
+    s povolením Finanzamtu — veta preto hovorí, odkiaľ kurz je. (Mesačný
+    priemer BMF zatiaľ Faktero nevie.)
+  */
+  if (jazyk === "de" && krajina !== "CZ") {
+    const k = kurz.toLocaleString(loc, { maximumFractionDigits: 6 });
+    return `USt. umgerechnet: ${suma} EUR (EZB-Referenzkurs vom ${datum}: 1 EUR = ${k} ${mena})`;
+  }
   const uvod = jazyk === "cz" ? "DPH v přepočtu" : "DPH v prepočte";
   if (krajina === "CZ") {
     const k = kurz.toLocaleString(loc, { maximumFractionDigits: 4 });

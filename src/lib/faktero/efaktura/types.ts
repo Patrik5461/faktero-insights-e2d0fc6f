@@ -41,9 +41,17 @@ export type EN16931Invoice = {
   documentNumber: string;
   issueDate: string; // YYYY-MM-DD
   dueDate: string; // YYYY-MM-DD
-  documentType: "380" | "381" | "383" | "384" | "389"; // UNCL1001: 380=invoice, 381=credit, 383=debit (ťarchopis), 384=corrected, 389=self-billed
+  documentType: "380" | "381" | "383" | "384" | "386" | "389"; // UNCL1001: 380=invoice, 381=credit, 383=debit (ťarchopis), 384=corrected, 386=prepayment, 389=self-billed
   currency: string;
   buyerReference?: string;
+  /** BT-13 — číslo objednávky odberateľa. */
+  orderReference?: string;
+  /** BT-72 — dátum dodania (nemecká faktúra ho musí niesť, § 14 Abs. 4 Nr. 6 UStG). */
+  deliveryDate?: string;
+  /** BG-15 — kam sa dodalo (dodanie tovaru do EÚ ho musí mať, BR-IC-12). */
+  deliveryAddress?: EN16931Party["address"];
+  /** BT-20 — platobné podmienky textom. */
+  paymentTerms?: string;
   /** BT-25/BT-26 — pôvodná faktúra, ktorú dobropis opravuje (povinné pri 381). */
   precedingInvoice?: { id: string; issueDate?: string | null };
   seller: EN16931Party;
@@ -64,6 +72,8 @@ export type EN16931Invoice = {
     taxAmount: number;
     /** Nezdanená záloha (BT-113). */
     prepaidAmount?: number;
+    /** BT-114 — zaokrúhlenie sumy na úhradu (napr. hotovosť na 5 centov). */
+    roundingAmount?: number;
     payableAmount: number;
   };
   note?: string;
@@ -73,6 +83,14 @@ export type EN16931Party = {
   name: string;
   vatId?: string; // IČ DPH
   taxId?: string; // DIČ
+  /**
+   * BT-32 — daňové registračné číslo iné než IČ DPH (nemecká Steuernummer).
+   * V UBL ide do druhého `PartyTaxScheme` so schémou „FC“, v CII do
+   * `SpecifiedTaxRegistration` so `schemeID="FC"`. Slovenský Peppol ho nepíše.
+   */
+  taxRegistrationId?: string;
+  /** BT-33 — doplňujúce právne údaje (Registergericht, Geschäftsführer). */
+  legalInfo?: string;
   registrationId?: string; // IČO
   endpointId?: string; // Peppol participant id
   endpointScheme?: string; // iso6523 scheme
@@ -107,6 +125,8 @@ export type EN16931TaxSubtotal = {
   vatCategory: EN16931Line["vatCategory"];
   vatPercent: number;
   exemptionReason?: string;
+  /** BT-121 — kód dôvodu oslobodenia (VATEX). */
+  exemptionReasonCode?: string;
 };
 
 /** Result returned from XML generation pipeline. */

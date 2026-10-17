@@ -4,6 +4,7 @@ import { overIcDphFn } from "@/lib/faktero/vies.functions";
 import { jeCerstve, jeEuIcDph, jeTuzemske, type VysledokVies } from "@/lib/faktero/vies";
 import { BadgeCheck, Loader2, ShieldAlert, ShieldQuestion } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 
 /**
  * Overenie IČ DPH v registri VIES.
@@ -30,10 +31,12 @@ export function OverenieVies({
   const over = useServerFn(overIcDphFn);
   const [bezi, setBezi] = useState(false);
   const [vysledok, setVysledok] = useState<VysledokVies | null>(null);
+  const krajinaFirmy = useKrajinaDane();
 
   const ic = String(icDph ?? "").trim();
   if (!ic) return null;
-  if (jeTuzemske(ic)) return null;
+  // Nemecká firma nemá čo overovať pri nemeckom odberateľovi; SK a CZ ostávajú, ako boli.
+  if (jeTuzemske(ic, krajinaFirmy === "DE" ? "DE" : "SK")) return null;
   if (!jeEuIcDph(ic)) {
     return (
       <p className="mt-1 text-xs text-muted-foreground">

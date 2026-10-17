@@ -29,7 +29,9 @@ export type SchemaDph =
   | "sk_7a"
   | "cz_neplatce"
   | "cz_platce"
-  | "cz_identifikovana";
+  | "cz_identifikovana"
+  | "de_regel"
+  | "de_kleinunternehmer";
 
 type Zaznam = {
   kod: SchemaDph;
@@ -129,6 +131,31 @@ const ZAZNAMY: Zaznam[] = [
     platitel: false,
     maIcDph: false,
     textNaDoklad: "Dodavatel není plátcem DPH.",
+  },
+  /*
+    Nemecko rozlišuje len dve postavenia. USt-IdNr. pri nich nie je znakom
+    platiteľa: Regelbesteuerung sa môže zaobísť len so Steuernummer a
+    Kleinunternehmer ju môže mať kvôli nákupom z EÚ — preto `maIcDph: false`
+    a upozornenia na chýbajúce IČ DPH sa pre DE nezobrazujú.
+  */
+  {
+    kod: "de_regel",
+    krajina: "DE",
+    nazov: "Regelbesteuerung (platiteľ USt)",
+    popis: "Bežné zdaňovanie podľa UStG — faktúry sa vystavujú s DPH (USt) 19 % alebo 7 %.",
+    platitel: true,
+    maIcDph: false,
+    textNaDoklad: null,
+  },
+  {
+    kod: "de_kleinunternehmer",
+    krajina: "DE",
+    nazov: "Kleinunternehmer (§ 19 UStG)",
+    popis:
+      "Malý podnikateľ podľa § 19 UStG — faktúry sa vystavujú bez DPH a s povinnou vetou o oslobodení.",
+    platitel: false,
+    maIcDph: false,
+    textNaDoklad: "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.",
   },
 ];
 

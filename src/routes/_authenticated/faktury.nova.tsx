@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nezuctovaneZalohyFn, type NezuctovanaZaloha } from "@/lib/faktero/zalohy-odberatela.functions";
-import { JAZYKY_DOKLADU, jazykDokladu } from "@/lib/faktero/faktura-jazyk";
+import { JAZYKY_DOKLADU, jazykDokladu, predvolenyJazykFirmy } from "@/lib/faktero/faktura-jazyk";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import {
   getSalesOrderForInvoice,
@@ -525,8 +525,26 @@ function NewInvoice() {
     if (!form.customer_id) return;
     const odb = customers.find((c) => c.id === form.customer_id) as any;
     if (!odb) return;
-    setForm((f) => ({ ...f, language: jazykDokladu(odb.invoice_language) }));
+    setForm((f) => ({
+      ...f,
+      language: odb.invoice_language
+        ? jazykDokladu(odb.invoice_language)
+        : predvolenyJazykFirmy(krajina),
+    }));
   }, [form.customer_id, customers]);
+
+  /*
+    Bez jazyka pri odberateľovi rozhoduje krajina firmy — nemecká fakturuje po
+    nemecky. Krajina sa načíta až po otvorení formulára; prepíše sa len jazyk,
+    ktorý ešte nikto nezmenil (rovná sa predchádzajúcemu predvolenému).
+  */
+  const predvolenyJazykRef = useRef<string>(predvolenyJazykFirmy(krajina));
+  useEffect(() => {
+    const novy = predvolenyJazykFirmy(krajina);
+    const stary = predvolenyJazykRef.current;
+    predvolenyJazykRef.current = novy;
+    if (novy !== stary) setForm((f) => (f.language === stary ? { ...f, language: novy } : f));
+  }, [krajina]);
 
   /*
     Nezúčtované zálohy odberateľa. Bez upozornenia sa na zaplatenú zálohu ľahko
@@ -1740,7 +1758,7 @@ function NewInvoice() {
                       }
                       className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
-                      {SADZBY_EU.filter((x) => x.kod !== "SK").map((x) => (
+                      {SADZBY_EU.filter((x) => x.kod !== krajina).map((x) => (
                         <option key={x.kod} value={x.kod}>
                           {x.nazov} — {t("základná {n} %", { n: x.zakladna })}
                         </option>

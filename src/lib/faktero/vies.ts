@@ -63,9 +63,12 @@ export function jeEuIcDph(v: string | null | undefined): boolean {
   return Boolean(r && (KRAJINY_EU as readonly string[]).includes(r.kod));
 }
 
-/** Slovenské IČ DPH sa vo VIES overiť dá, ale pri dodaní do EÚ nedáva zmysel. */
-export function jeTuzemske(v: string | null | undefined): boolean {
-  return rozdelIcDph(v)?.kod === "SK";
+/**
+ * Tuzemské IČ DPH (krajiny firmy) sa vo VIES overiť dá, ale pri dodaní do EÚ
+ * nedáva zmysel. Predvolene slovenské, ako doteraz.
+ */
+export function jeTuzemske(v: string | null | undefined, krajinaFirmy: string = "SK"): boolean {
+  return rozdelIcDph(v)?.kod === krajinaFirmy;
 }
 
 export type VysledokVies = {

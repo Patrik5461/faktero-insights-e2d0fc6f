@@ -15,6 +15,7 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useServerFn } from "@tanstack/react-start";
 import { getRecurringWidgetStats } from "@/lib/faktero/recurring.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { UpozornenieKleinunternehmer } from "@/components/faktero/UpozornenieKleinunternehmer";
 import { BankWidget } from "@/components/faktero/BankWidget";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
@@ -425,6 +426,8 @@ function Dashboard() {
         */
       />
       <PageBody>
+        {/* Nemecký Kleinunternehmer: obrat blízko hranice § 19 UStG. */}
+        <UpozornenieKleinunternehmer firma={company} />
         {isEmpty ? (
           <EmptyDashboard />
         ) : (

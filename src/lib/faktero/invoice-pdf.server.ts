@@ -182,6 +182,42 @@ export async function ensureInvoicePdf(
     paymentLinkUrl,
   });
 
+  /*
+    Nemecká firma: do PDF sa vloží ZUGFeRD / Factur-X (CII XML, profil
+    EN 16931) — PDF je tak zároveň e-faktúrou podľa § 14 UStG. Vloží sa len
+    XML bez chýb; keď niečo chýba alebo zlyhá, ostane obyčajné PDF a faktúra
+    sa vystaví tak či tak.
+  */
+  let pdfBajty: Uint8Array = bytes;
+  const { krajinaDane } = await import("./vat-rates");
+  const { maMatZugferd } = await import("./zugferd.server");
+  if (krajinaDane(company.country) === "DE" && maMatZugferd(invoice)) {
+    try {
+      const { nacitajPodkladyFaktury } = await import("./efaktura-de-podklady.server");
+      const { zugferdXml, vlozFacturX } = await import("./zugferd.server");
+      const podklady = await nacitajPodkladyFaktury(supabaseAdmin, invoice.company_id, invoice.id, {
+        invoice,
+        items: items ?? [],
+        company,
+      });
+      const { xml, chyby } = zugferdXml(podklady);
+      if (chyby.length) {
+        console.warn(
+          "[pdf] ZUGFeRD sa nevložil, faktúre chýbajú údaje:",
+          invoice.id,
+          chyby.map((c) => c.code).join(", "),
+        );
+      } else {
+        pdfBajty = await vlozFacturX(bytes, xml, {
+          cislo: String((invoice as any).invoice_number ?? ""),
+          firma: String(company.name ?? ""),
+        });
+      }
+    } catch (e) {
+      console.warn("[pdf] ZUGFeRD zlyhal:", invoice.id, String((e as Error)?.message ?? e));
+    }
+  }
+
   // Drop the stale cached object before writing the fresh one.
   try {
     await supabaseAdmin.storage.from("invoice-pdfs").remove([path]);
@@ -189,7 +225,7 @@ export async function ensureInvoicePdf(
     /* ignore */
   }
 
-  const { error: upErr } = await supabaseAdmin.storage.from("invoice-pdfs").upload(path, bytes, {
+  const { error: upErr } = await supabaseAdmin.storage.from("invoice-pdfs").upload(path, pdfBajty, {
     contentType: "application/pdf",
     upsert: true,
   });

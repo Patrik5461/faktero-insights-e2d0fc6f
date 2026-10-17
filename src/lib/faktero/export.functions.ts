@@ -204,6 +204,7 @@ export const getExportContentFn = createServerFn({ method: "POST" })
       encoding: (strategia?.encoding ?? program?.encoding ?? "utf-8") as
         | "utf-8"
         | "windows-1250"
+        | "windows-1252"
         | "base64",
     };
   });

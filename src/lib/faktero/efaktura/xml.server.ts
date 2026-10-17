@@ -7,7 +7,7 @@
 import { createHash } from "crypto";
 import type { EN16931Invoice, EN16931Party, XmlGenerationResult } from "./types";
 
-function esc(value: unknown): string {
+export function esc(value: unknown): string {
   if (value === null || value === undefined) return "";
   return String(value)
     .replace(/&/g, "&amp;")
@@ -29,15 +29,37 @@ function partyXml(
     party.endpointId && party.endpointScheme
       ? `      <cbc:EndpointID schemeID="${esc(party.endpointScheme)}">${esc(party.endpointId)}</cbc:EndpointID>`
       : "";
-  const taxScheme = party.vatId
-    ? `      <cac:PartyTaxScheme>
+  const taxScheme = [
+    party.vatId
+      ? `      <cac:PartyTaxScheme>
         <cbc:CompanyID>${esc(party.vatId)}</cbc:CompanyID>
         <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
       </cac:PartyTaxScheme>`
-    : "";
+      : "",
+    // BT-32 (nemecká Steuernummer) — druhý PartyTaxScheme so schémou „FC“.
+    party.taxRegistrationId
+      ? `      <cac:PartyTaxScheme>
+        <cbc:CompanyID>${esc(party.taxRegistrationId)}</cbc:CompanyID>
+        <cac:TaxScheme><cbc:ID>FC</cbc:ID></cac:TaxScheme>
+      </cac:PartyTaxScheme>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
   const legalEntity = `      <cac:PartyLegalEntity>
         <cbc:RegistrationName>${esc(party.name)}</cbc:RegistrationName>
-${party.registrationId ? `        <cbc:CompanyID>${esc(party.registrationId)}</cbc:CompanyID>\n` : ""}      </cac:PartyLegalEntity>`;
+${party.registrationId ? `        <cbc:CompanyID>${esc(party.registrationId)}</cbc:CompanyID>\n` : ""}${party.legalInfo ? `        <cbc:CompanyLegalForm>${esc(party.legalInfo)}</cbc:CompanyLegalForm>\n` : ""}      </cac:PartyLegalEntity>`;
+  /*
+    Kontakt (BG-6 / BG-9). Nemecká XRechnung ho pri predávajúcom vyžaduje
+    celý — meno, telefón aj e-mail (BR-DE-2, BR-DE-5 až 7); v Peppole je
+    nepovinný a nevadí.
+  */
+  const k = party.contact;
+  const contact =
+    k && (k.name || k.phone || k.email)
+      ? `      <cac:Contact>
+${k.name ? `        <cbc:Name>${esc(k.name)}</cbc:Name>\n` : ""}${k.phone ? `        <cbc:Telephone>${esc(k.phone)}</cbc:Telephone>\n` : ""}${k.email ? `        <cbc:ElectronicMail>${esc(k.email)}</cbc:ElectronicMail>\n` : ""}      </cac:Contact>`
+      : "";
   return `  <cac:${role}>
     <cac:Party>
 ${endpoint}
@@ -47,11 +69,12 @@ ${party.address.street ? `        <cbc:StreetName>${esc(party.address.street)}</
       </cac:PostalAddress>
 ${taxScheme}
 ${legalEntity}
+${contact}
     </cac:Party>
   </cac:${role}>`;
 }
 
-function validate(inv: EN16931Invoice): XmlGenerationResult["validationErrors"] {
+export function validate(inv: EN16931Invoice): XmlGenerationResult["validationErrors"] {
   const errors: XmlGenerationResult["validationErrors"] = [];
   const need = (cond: boolean, code: string, message: string, path?: string) => {
     if (!cond) errors.push({ code, message, path });
@@ -79,7 +102,11 @@ function validate(inv: EN16931Invoice): XmlGenerationResult["validationErrors"] 
   }
   const expectedPayable =
     Math.round(
-      (inv.totals.taxExclusiveAmount + inv.totals.taxAmount - (inv.totals.prepaidAmount ?? 0)) * 100,
+      (inv.totals.taxExclusiveAmount +
+        inv.totals.taxAmount -
+        (inv.totals.prepaidAmount ?? 0) +
+        (inv.totals.roundingAmount ?? 0)) *
+        100,
     ) / 100;
   if (Math.abs(expectedPayable - inv.totals.payableAmount) > 0.02) {
     errors.push({
@@ -129,7 +156,7 @@ ${inv.taxSubtotals
       <cbc:TaxAmount currencyID="${esc(inv.currency)}">${fmt(t.taxAmount)}</cbc:TaxAmount>
       <cac:TaxCategory>
         <cbc:ID>${esc(t.vatCategory)}</cbc:ID>
-${t.vatCategory === "O" ? "" : `        <cbc:Percent>${t.vatPercent}</cbc:Percent>\n`}${t.exemptionReason ? `        <cbc:TaxExemptionReason>${esc(t.exemptionReason)}</cbc:TaxExemptionReason>\n` : ""}        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+${t.vatCategory === "O" ? "" : `        <cbc:Percent>${t.vatPercent}</cbc:Percent>\n`}${t.exemptionReasonCode ? `        <cbc:TaxExemptionReasonCode>${esc(t.exemptionReasonCode)}</cbc:TaxExemptionReasonCode>\n` : ""}${t.exemptionReason ? `        <cbc:TaxExemptionReason>${esc(t.exemptionReason)}</cbc:TaxExemptionReason>\n` : ""}        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
       </cac:TaxCategory>
     </cac:TaxSubtotal>`,
   )
@@ -147,6 +174,24 @@ ${inv.paymentMeans.accountName ? `      <cbc:Name>${esc(inv.paymentMeans.account
           : ""
       }  </cac:PaymentMeans>`
     : "";
+  const termsXml = inv.paymentTerms
+    ? `  <cac:PaymentTerms><cbc:Note>${esc(inv.paymentTerms)}</cbc:Note></cac:PaymentTerms>`
+    : "";
+  // BT-72 — dátum dodania; patrí medzi odberateľa a platobné údaje.
+  const da = inv.deliveryAddress;
+  const deliveryXml =
+    inv.deliveryDate || da
+      ? `  <cac:Delivery>
+${inv.deliveryDate ? `    <cbc:ActualDeliveryDate>${esc(inv.deliveryDate)}</cbc:ActualDeliveryDate>\n` : ""}${
+          da
+            ? `    <cac:DeliveryLocation>
+      <cac:Address>
+${da.street ? `        <cbc:StreetName>${esc(da.street)}</cbc:StreetName>\n` : ""}${da.city ? `        <cbc:CityName>${esc(da.city)}</cbc:CityName>\n` : ""}${da.postalCode ? `        <cbc:PostalZone>${esc(da.postalCode)}</cbc:PostalZone>\n` : ""}        <cac:Country><cbc:IdentificationCode>${esc(da.countryCode)}</cbc:IdentificationCode></cac:Country>
+      </cac:Address>
+    </cac:DeliveryLocation>\n`
+            : ""
+        }  </cac:Delivery>`
+      : "";
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <${koren} xmlns="urn:oasis:names:specification:ubl:schema:xsd:${koren}-2"
@@ -158,7 +203,7 @@ ${inv.paymentMeans.accountName ? `      <cbc:Name>${esc(inv.paymentMeans.account
   <cbc:IssueDate>${esc(inv.issueDate)}</cbc:IssueDate>
 ${dobropis ? "" : `  <cbc:DueDate>${esc(inv.dueDate)}</cbc:DueDate>\n`}  <cbc:${koren}TypeCode>${esc(inv.documentType)}</cbc:${koren}TypeCode>
 ${inv.note ? `  <cbc:Note>${esc(inv.note)}</cbc:Note>\n` : ""}  <cbc:DocumentCurrencyCode>${esc(inv.currency)}</cbc:DocumentCurrencyCode>
-${inv.buyerReference ? `  <cbc:BuyerReference>${esc(inv.buyerReference)}</cbc:BuyerReference>\n` : ""}${
+${inv.buyerReference ? `  <cbc:BuyerReference>${esc(inv.buyerReference)}</cbc:BuyerReference>\n` : ""}${inv.orderReference ? `  <cac:OrderReference><cbc:ID>${esc(inv.orderReference)}</cbc:ID></cac:OrderReference>\n` : ""}${
     inv.precedingInvoice
       ? `  <cac:BillingReference>
     <cac:InvoiceDocumentReference>
@@ -168,13 +213,15 @@ ${inv.precedingInvoice.issueDate ? `      <cbc:IssueDate>${esc(inv.precedingInvo
       : ""
   }${partyXml(inv.seller, "AccountingSupplierParty")}
 ${partyXml(inv.buyer, "AccountingCustomerParty")}
+${deliveryXml}
 ${paymentXml}
+${termsXml}
 ${taxXml}
   <cac:LegalMonetaryTotal>
     <cbc:LineExtensionAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.lineExtensionAmount)}</cbc:LineExtensionAmount>
     <cbc:TaxExclusiveAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.taxExclusiveAmount)}</cbc:TaxExclusiveAmount>
     <cbc:TaxInclusiveAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.taxInclusiveAmount)}</cbc:TaxInclusiveAmount>
-${inv.totals.prepaidAmount ? `    <cbc:PrepaidAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.prepaidAmount)}</cbc:PrepaidAmount>\n` : ""}    <cbc:PayableAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.payableAmount)}</cbc:PayableAmount>
+${inv.totals.prepaidAmount ? `    <cbc:PrepaidAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.prepaidAmount)}</cbc:PrepaidAmount>\n` : ""}${inv.totals.roundingAmount ? `    <cbc:PayableRoundingAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.roundingAmount)}</cbc:PayableRoundingAmount>\n` : ""}    <cbc:PayableAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.payableAmount)}</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
 ${linesXml}
 </${koren}>

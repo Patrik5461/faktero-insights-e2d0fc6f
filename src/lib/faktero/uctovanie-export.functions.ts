@@ -4,7 +4,8 @@ import { z } from "zod";
 
 /*
   Export zaúčtovaných dokladov do iných programov než Pohoda: KROS Omega
-  (účtovné doklady EUD), Money S3, ABRA Flexi a zaúčtovaná súpiska CSV.
+  (účtovné doklady EUD), Money S3, ABRA Flexi, DATEV (Buchungsstapel pre
+  nemeckých poradcov) a zaúčtovaná súpiska CSV.
   Vystavené faktúry, prijaté faktúry aj bločky — s predkontáciou,
   členením, strediskom, zákazkou a činnosťou, ako ich nastavila firma.
 */
@@ -17,7 +18,7 @@ import {
 
 const Vstup = z.object({
   company_id: z.string().uuid(),
-  program: z.enum(["omega", "money_s3", "flexi", "csv"]),
+  program: z.enum(["omega", "money_s3", "flexi", "csv", "datev"]),
   agenda: z.enum(["vystavena", "prijata", "doklad"]),
   ids: z.array(z.string().uuid()).min(1).max(1000),
   /** Zapísať doklady ako odovzdané (zamknú sa, konektor ich už nepošle). */
@@ -90,6 +91,8 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
       ((firma.uctovanie_nastavenia ?? {}) as Record<string, any>)[data.program] ?? {};
     let obsah: string;
     let vynechane: string[] = [];
+    // Doklad v súbore je, len ho treba skontrolovať — nevylučuje sa z označenia.
+    let upozornenia: string[] = [];
     if (data.program === "omega") {
       const { buildOmegaUctovanie } = await import("./export-omega-uctovanie");
       const r = buildOmegaUctovanie({ firma, doklady: ok, kody, nastavenia });
@@ -105,6 +108,12 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
       const r = buildFlexiUctovanie({ firma, doklady: ok, kody, nastavenia });
       obsah = r.xml;
       vynechane = r.preskocene;
+    } else if (data.program === "datev") {
+      const { buildDatevBuchungsstapel } = await import("./export-datev");
+      const r = buildDatevBuchungsstapel({ firma, doklady: ok, kody, nastavenia });
+      obsah = r.obsah;
+      vynechane = r.preskocene;
+      upozornenia = r.upozornenia;
     } else {
       const { buildCsvUctovanie } = await import("./export-csv-uctovanie");
       obsah = buildCsvUctovanie({ doklady: ok, kody });
@@ -117,7 +126,11 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
 
     const def = PROGRAMY_UCTOVANIA.find((p) => p.program === data.program)!;
     const den = new Date().toISOString().slice(0, 10);
-    const fileName = `${data.program}-${NAZOV_AGENDY[data.agenda]}-${den}.${def.pripona}`;
+    // DATEV ponúkne na import len súbor, ktorého názov začína „EXTF_“.
+    const fileName =
+      data.program === "datev"
+        ? `EXTF_Buchungsstapel_${NAZOV_AGENDY[data.agenda]}-${den}.${def.pripona}`
+        : `${data.program}-${NAZOV_AGENDY[data.agenda]}-${den}.${def.pripona}`;
     const datumy = vyvezene
       .map((d) => d.datumVystavenia)
       .filter(Boolean)
@@ -170,7 +183,7 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
       mime: def.mime,
       encoding: def.encoding,
       pocet: vyvezene.length,
-      preskocene: [...preskocene, ...vynechane],
+      preskocene: [...preskocene, ...vynechane, ...upozornenia],
     };
   });
 
@@ -181,7 +194,7 @@ export const programUctovaniaFn = createServerFn({ method: "POST" })
     z
       .object({
         company_id: z.string().uuid(),
-        program: z.enum(["pohoda", "omega", "money_s3", "flexi", "csv"]).optional(),
+        program: z.enum(["pohoda", "omega", "money_s3", "flexi", "csv", "datev"]).optional(),
         nastavenia: z.record(z.string(), z.unknown()).optional(),
       })
       .parse(d),
@@ -190,10 +203,17 @@ export const programUctovaniaFn = createServerFn({ method: "POST" })
     const supabase = context.supabase as any;
     const { data: f, error } = await supabase
       .from("companies")
-      .select("uctovny_program, uctovanie_nastavenia")
+      .select("uctovny_program, uctovanie_nastavenia, country")
       .eq("id", data.company_id)
       .single();
     if (error) throw new Error(error.message);
+    /*
+      Nemecká firma, ktorá si program ešte nevybrala (v stĺpci je predvolená
+      Pohoda), dostane DATEV — Pohodu ani Omegu nemecký poradca nepoužíva.
+    */
+    const { krajinaDane } = await import("./vat-rates");
+    if (f.uctovny_program === "pohoda" && String(krajinaDane(f.country)) === "DE")
+      f.uctovny_program = "datev";
     if (data.program || data.nastavenia) {
       const program = data.program ?? f.uctovny_program;
       const zmena: Record<string, unknown> = {};

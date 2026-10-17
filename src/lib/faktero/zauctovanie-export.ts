@@ -116,6 +116,21 @@ export type DokladUctovania = {
   dokladKPlatbe?: boolean;
   /** Odpočet zdanenej zálohy je zapísaný ako záporné riadky (so zálohovou predkontáciou). */
   odpocetVRiadkoch?: boolean;
+  /**
+   * Druh prenesenia na vystavenej faktúre (`domestic_69`, `eu_b2b`, `export`)
+   * a čo sa do EÚ dodáva (tovar, služba, trojstranný obchod). DATEV podľa
+   * toho volí výnosový účet — dodanie tovaru a služba do EÚ majú iný.
+   */
+  prenosTyp?: string | null;
+  euPlnenie?: string | null;
+  /** Predaj spotrebiteľovi v EÚ s daňou cez OSS. */
+  oss?: boolean;
+  /**
+   * Režim DPH prijatej faktúry z formulára (`tuzemsko`, `samozdanenie`,
+   * `nadobudnutie`, `dovoz`, `bez_dane`) — nadobudnutie tovaru z EÚ sa
+   * v DATEV účtuje inak než služba v prenesení.
+   */
+  dphRezim?: string | null;
   polozky: PolozkaUctovania[];
 };
 
@@ -400,6 +415,7 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     prenesenieDph: prenesenie,
     odpocetZalohy: Math.abs(Number(p?.advance_amount ?? 0)),
     dokladKPlatbe: false,
+    dphRezim: t(p?.dph_rezim),
     polozky: items
       .filter((x) => t(x?.name))
       .map((x) => ({
@@ -545,6 +561,9 @@ export function vystavenaNaUctovanie(
     odpocetZalohy: kPlatbe ? 0 : Math.abs(Number(inv?.advance_amount ?? 0)),
     dokladKPlatbe: kPlatbe,
     odpocetVRiadkoch: Boolean(odpocty),
+    prenosTyp: t(inv?.reverse_charge_type),
+    euPlnenie: t(inv?.eu_plnenie),
+    oss: Boolean(inv?.oss),
     polozky,
   };
 }

@@ -18,6 +18,7 @@ import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
 import { VyberRezimuDph } from "@/components/faktero/VyberRezimuDph";
 import { zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
+import { jeUstIdNr, popiskyIdentifikatorov } from "@/lib/faktero/firma-de";
 import { domacaMena } from "@/lib/faktero/kurzy";
 import { useT } from "@/lib/i18n/useT";
 type Props = {
@@ -70,6 +71,10 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
       setErrorMsg(t("Zadajte názov firmy."));
       return;
     }
+    if (krajinaDane(form.country) === "DE" && form.ic_dph.trim() && !jeUstIdNr(form.ic_dph)) {
+      setErrorMsg(t("USt-IdNr. má tvar DE a 9 číslic, napríklad DE123456789."));
+      return;
+    }
     setLoading(true);
     try {
       const { data: companyId, error } = await supabase.rpc("create_company_with_owner", {
@@ -107,6 +112,10 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
       setLoading(false);
     }
   }
+
+  // Nemecká firma: Steuernummer a USt-IdNr. namiesto DIČ a IČ DPH, IČO nepovinné.
+  const jeDe = krajinaDane(form.country) === "DE";
+  const popisky = popiskyIdentifikatorov(form.country);
 
   return (
     <Dialog
@@ -150,25 +159,27 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
           </label>
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="block">
-              <span className="text-sm font-medium">{t("IČO")}</span>
+              <span className="text-sm font-medium">{t(popisky.ico)}</span>
               <div className="mt-1 flex -space-x-px items-start">
                 <input
                   value={form.ico}
                   onChange={(e) => set("ico", e.target.value)}
-                  className="w-full rounded-l-md border border-input bg-background px-3 py-2 text-sm focus:z-10"
+                  className={`w-full border border-input bg-background px-3 py-2 text-sm focus:z-10 ${jeDe ? "rounded-md" : "rounded-l-md"}`}
                 />
-                <IcoLookupButton
-                  ico={form.ico}
-                  onResult={(d, { auto }) =>
-                    setForm((f) =>
-                      mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }),
-                    )
-                  }
-                />
+                {!jeDe && (
+                  <IcoLookupButton
+                    ico={form.ico}
+                    onResult={(d, { auto }) =>
+                      setForm((f) =>
+                        mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }),
+                      )
+                    }
+                  />
+                )}
               </div>
             </label>
-            <Field label="DIČ" value={form.dic} onChange={(v) => set("dic", v)} />
-            <Field label="IČ DPH" value={form.ic_dph} onChange={(v) => set("ic_dph", v)} />
+            <Field label={popisky.dic} value={form.dic} onChange={(v) => set("dic", v)} />
+            <Field label={popisky.icDph} value={form.ic_dph} onChange={(v) => set("ic_dph", v)} />
           </div>
           <VyberRezimuDph
             krajina={form.country}

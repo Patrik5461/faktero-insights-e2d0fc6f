@@ -1,7 +1,7 @@
 import { sUctomFaktury } from "./platobny-ucet";
 import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { formatujMenu } from "@/lib/faktero/mena";
+import { hodnotyMailu, jazykFaktury, predvolenyMailFaktury } from "./email-jazyk";
 
 export type SendInvoiceEmailInput = {
   company_id: string;
@@ -14,10 +14,11 @@ export type SendInvoiceEmailInput = {
 };
 
 function applyVars(s: string, inv: any, company: any) {
-  const total = formatujMenu(inv.total, inv.currency);
+  // Suma a dátum v zvyklostiach jazyka dokladu (nemecky „1.297,00 €“, „29.10.2026“).
+  const { total, due_date } = hodnotyMailu(inv, jazykFaktury(inv, company));
   const pairs: Array<[string, string]> = [
     ["invoice_number", inv.invoice_number ?? ""],
-    ["due_date", inv.due_date ?? ""],
+    ["due_date", due_date],
     ["total", total],
     ["company_name", company?.name ?? ""],
     ["customer_name", inv.customer_name ?? ""],
@@ -74,7 +75,10 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       company_id: input.company_id,
       invoice_id: invoice.id,
       recipient_email: input.recipient_email,
-      subject: `Faktúra ${invoice.invoice_number}`,
+      subject: predvolenyMailFaktury(jazykFaktury(invoice, company)).predmet.replace(
+        "{invoice_number}",
+        String(invoice.invoice_number ?? ""),
+      ),
       status: "pending",
     })
     .select("id")
@@ -128,13 +132,15 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       /* ignore */
     }
 
+    /*
+      Poradie: text z formulára, šablóna firmy, predvolený text firmy — tie sa
+      nemenia. Až keď firma nemá nič vlastné, ide predvolený mail v jazyku
+      dokladu (nemecká faktúra → nemecký mail).
+    */
+    const predvoleny = predvolenyMailFaktury(jazykFaktury(invoice, company));
     const subject =
-      input.subject ?? tplSubject ?? company?.email_default_subject ?? "Faktúra {invoice_number}";
-    const message =
-      input.message ??
-      tplBody ??
-      company?.email_default_message ??
-      "V prílohe posielame faktúru {invoice_number}.";
+      input.subject ?? tplSubject ?? company?.email_default_subject ?? predvoleny.predmet;
+    const message = input.message ?? tplBody ?? company?.email_default_message ?? predvoleny.text;
     const finalSubject = applyVars(subject, invoice, company);
     const finalMessage = applyVars(message, invoice, company);
 

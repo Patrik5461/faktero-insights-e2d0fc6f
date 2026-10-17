@@ -1,3 +1,5 @@
+import { krajinaDane } from "./vat-rates";
+
 /**
  * Jazyk dokladu.
  *
@@ -89,6 +91,18 @@ type Popisky = {
   prenosEu: string;
   prenosVyvoz: string;
   prenosTuzemsko: string;
+  /** Skratka prenesenia daňovej povinnosti v stĺpci DPH („PDP“, „RC“). */
+  pdp: string;
+  /** Riadok dane v súčtoch pri prenesení („DPH (PDP)“, „USt. (Reverse-Charge)“). */
+  dphPdp: string;
+  /** Úvod vety, keď sa prenesenie týka len označených položiek. */
+  polozkyPdp: string;
+  /** Pred dátumom úhrady na zaplatenej faktúre („Uhradené 11. 10. 2026“). */
+  uhradeneDna: string;
+  /** Nadpis dokladu podľa § 25a (oprava základu pri nevymožiteľnej pohľadávke). */
+  opravnyDoklad: string;
+  /** Správa pre príjemcu v platobnom QR („Faktura 2026001“) — bez diakritiky kvôli bankám. */
+  spravaQr: string;
   /** Spôsoby úhrady — na doklade ich číta odberateľ, nie účtovník. */
   uhradaPrevod: string;
   uhradaKarta: string;
@@ -97,6 +111,12 @@ type Popisky = {
 
 const SK: Popisky = {
   mj: "MJ",
+  pdp: "PDP",
+  dphPdp: "DPH (PDP)",
+  polozkyPdp: "Položky označené PDP:",
+  uhradeneDna: "Uhradené",
+  opravnyDoklad: "OPRAVNÝ DOKLAD",
+  spravaQr: "Faktura",
   uhradaPrevod: "Bankový prevod",
   uhradaKarta: "Karta",
   uhradaHotovost: "Hotovosť",
@@ -155,6 +175,10 @@ const SK: Popisky = {
 
 const CS: Popisky = {
   ...SK,
+  dphPdp: "DPH (PDP)",
+  polozkyPdp: "Položky označené PDP:",
+  uhradeneDna: "Uhrazeno",
+  opravnyDoklad: "OPRAVNÝ DAŇOVÝ DOKLAD",
   uhradaPrevod: "Bankovní převod",
   uhradaHotovost: "Hotovost",
   faktura: "FAKTURA",
@@ -204,6 +228,12 @@ const CS: Popisky = {
 
 const EN: Popisky = {
   mj: "UNIT",
+  pdp: "RC",
+  dphPdp: "VAT (reverse charge)",
+  polozkyPdp: "Items marked RC:",
+  uhradeneDna: "Paid on",
+  opravnyDoklad: "CORRECTIVE TAX DOCUMENT",
+  spravaQr: "Invoice",
   uhradaPrevod: "Bank transfer",
   uhradaKarta: "Card",
   uhradaHotovost: "Cash",
@@ -262,6 +292,12 @@ const EN: Popisky = {
 
 const DE: Popisky = {
   mj: "EINHEIT",
+  pdp: "RC",
+  dphPdp: "USt. (Reverse-Charge)",
+  polozkyPdp: "Mit RC gekennzeichnete Positionen:",
+  uhradeneDna: "Bezahlt am",
+  opravnyDoklad: "BERICHTIGUNGSBELEG",
+  spravaQr: "Rechnung",
   uhradaPrevod: "Überweisung",
   uhradaKarta: "Karte",
   uhradaHotovost: "Bar",
@@ -321,6 +357,12 @@ const DE: Popisky = {
 const HU: Popisky = {
   ...EN,
   mj: "M.E.",
+  pdp: "FAD",
+  dphPdp: "ÁFA (fordított adózás)",
+  polozkyPdp: "A FAD jelölésű tételek:",
+  uhradeneDna: "Kifizetve:",
+  opravnyDoklad: "HELYESBÍTŐ BIZONYLAT",
+  spravaQr: "Szamla",
   uhradaPrevod: "Banki átutalás",
   uhradaKarta: "Kártya",
   uhradaHotovost: "Készpénz",
@@ -434,6 +476,85 @@ const VETY_CZ: Record<JazykDokladu, VetyPreneseniaCz> = {
 
 export function vetyPreneseniaCz(jazyk: unknown): VetyPreneseniaCz {
   return VETY_CZ[jazykDokladu(jazyk)];
+}
+
+/**
+ * Zákonné vety, keď faktúru vystavuje **nemecká** firma (UStG).
+ *
+ * - `kleinunternehmer` — § 19 UStG, faktúra bez dane;
+ * - `tuzemsko` — tuzemské prenesenie (Reverse-Charge, § 13b UStG);
+ * - `euTovar` — oslobodené intrakomunitárne dodanie tovaru (§ 4 Nr. 1b
+ *   v spojení s § 6a UStG), na doklade musí byť aj USt-IdNr. odberateľa;
+ * - `euSluzba` — služba podnikateľovi z EÚ s miestom plnenia u neho
+ *   (§ 3a Abs. 2 UStG), daň platí odberateľ (§ 14a Abs. 1 UStG);
+ * - `vyvoz` — vývoz mimo EÚ (§ 4 Nr. 1a v spojení s § 6 UStG).
+ *
+ * Znenie je nemecké aj na doklade v inom jazyku okrem angličtiny: nemecký
+ * Finanzamt číta nemecký text a § 14a UStG vyžaduje práve tieto formulácie.
+ */
+export type VetyDe = {
+  kleinunternehmer: string;
+  /** § 25b UStG — prostredná osoba v trojstrannom obchode, daň platí posledný odberateľ. */
+  trojstranny: string;
+  tuzemsko: string;
+  euTovar: string;
+  euSluzba: string;
+  vyvoz: string;
+};
+
+const VETY_DE_DE: VetyDe = {
+  kleinunternehmer: "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.",
+  trojstranny:
+    "Innergemeinschaftliches Dreiecksgeschäft gemäß § 25b UStG. Die Steuer schuldet der letzte Abnehmer.",
+  tuzemsko: "Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).",
+  euTovar: "Steuerfreie innergemeinschaftliche Lieferung gemäß § 4 Nr. 1b UStG.",
+  euSluzba: "Nicht im Inland steuerbare Leistung – Steuerschuldnerschaft des Leistungsempfängers.",
+  vyvoz: "Steuerfreie Ausfuhrlieferung gemäß § 4 Nr. 1a UStG.",
+};
+
+/* Angličtina s nemeckým znením v zátvorke — zákonná formulácia nesmie chýbať. */
+const VETY_DE_EN: VetyDe = {
+  kleinunternehmer:
+    "No VAT is charged under the small business scheme (Gemäß § 19 UStG wird keine Umsatzsteuer berechnet).",
+  trojstranny:
+    "Intra-Community triangular transaction – VAT is due from the final customer (Innergemeinschaftliches Dreiecksgeschäft gemäß § 25b UStG. Die Steuer schuldet der letzte Abnehmer).",
+  tuzemsko: "Reverse charge – VAT liability of the recipient (Steuerschuldnerschaft des Leistungsempfängers, § 13b UStG).",
+  euTovar: "Tax-exempt intra-Community supply of goods (Steuerfreie innergemeinschaftliche Lieferung gemäß § 4 Nr. 1b UStG).",
+  euSluzba:
+    "Reverse charge – service not taxable in Germany (Nicht im Inland steuerbare Leistung – Steuerschuldnerschaft des Leistungsempfängers).",
+  vyvoz: "Tax-exempt export delivery (Steuerfreie Ausfuhrlieferung gemäß § 4 Nr. 1a UStG).",
+};
+
+export function vetyDe(jazyk: unknown = "de"): VetyDe {
+  return jazykDokladu(jazyk) === "en" ? VETY_DE_EN : VETY_DE_DE;
+}
+
+/**
+ * Veta k preneseniu / oslobodeniu na doklade nemeckej firmy podľa situácie,
+ * ktorú rozlišuje faktúra (`reverse_charge_type` + `eu_plnenie`). Trojstranný
+ * obchod má vlastnú vetu podľa § 25b Abs. 4 UStG — bez nej by daň za
+ * posledného odberateľa neprešla. Bez prenesenia `null`.
+ */
+export function vetaPreneseniaDe(
+  typ: string | null | undefined,
+  euPlnenie: string | null | undefined,
+  jazyk: unknown = "de",
+): string | null {
+  const v = vetyDe(jazyk);
+  if (typ === "eu_b2b")
+    return euPlnenie === "sluzba" ? v.euSluzba : euPlnenie === "trojstranny" ? v.trojstranny : v.euTovar;
+  if (typ === "export") return v.vyvoz;
+  if (typ === "domestic_69") return v.tuzemsko;
+  return null;
+}
+
+/**
+ * Predvolený jazyk dokladu podľa krajiny firmy, keď ho nedá faktúra ani
+ * odberateľ. Nemecká firma fakturuje po nemecky; ostatné ostávajú pri
+ * slovenčine, ako doteraz.
+ */
+export function predvolenyJazykFirmy(country: string | null | undefined): JazykDokladu {
+  return krajinaDane(country) === "DE" ? "de" : VYCHODZI_JAZYK;
 }
 
 /**

@@ -30,8 +30,8 @@ export type OcrBlocek = {
  * eurá, takže český bloček s 12 % DPH sa čítal so sadzbou 0 % a v eurách —
  * doklad potom sadol do DPH priznania s nulou a nikto si to nevšimol.
  */
-const KDE: Record<KrajinaDane, string> = { SK: "na Slovensku", CZ: "v Česku" };
-const MENA: Record<KrajinaDane, string> = { SK: "EUR", CZ: "CZK" };
+const KDE: Record<KrajinaDane, string> = { SK: "na Slovensku", CZ: "v Česku", DE: "v Nemecku" };
+const MENA: Record<KrajinaDane, string> = { SK: "EUR", CZ: "CZK", DE: "EUR" };
 
 function pokyn(krajina: KrajinaDane): string {
   const sadzby = sadzbyKrajiny(krajina);

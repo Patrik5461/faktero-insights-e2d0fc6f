@@ -10,6 +10,7 @@ import { verziaPriznania } from "@/lib/faktero/dph-vykazy";
 import { AlertTriangle, Download, Loader2, CheckCircle2 } from "lucide-react";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { CzVykazyDph } from "@/components/faktero/CzVykazyDph";
+import { DeUstva } from "@/components/faktero/DeUstva";
 import { slovoPodlaPoctu } from "@/lib/faktero/sklonovanie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -30,9 +31,15 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/vykazy")({
   component: VykazyStranka,
 });
 
-/** Česká firma podáva iné tlačivá (DPHDP3, DPHKH1) — vlastná obrazovka. */
+/**
+ * Česká firma podáva iné tlačivá (DPHDP3, DPHKH1), nemecká UStVA — každá má
+ * vlastnú obrazovku.
+ */
 function VykazyStranka() {
-  return useKrajinaDane() === "CZ" ? <CzVykazyDph /> : <VykazyPage />;
+  const krajina = String(useKrajinaDane());
+  if (krajina === "CZ") return <CzVykazyDph />;
+  if (krajina === "DE") return <DeUstva />;
+  return <VykazyPage />;
 }
 
 type Vysledok = Awaited<ReturnType<typeof zostavVykazyFn>>;

@@ -790,13 +790,20 @@ export function vytky(vstup: Vstup): Vytka[] {
 export function odvodRezimPrijatej(
   dodavatelIcDph: string | null | undefined,
   danSpolu: number,
+  /**
+   * Predpona tuzemského IČ DPH. Nemecká firma ju má „DE“ — inak by sa
+   * faktúra od nemeckého dodávateľa s daňou tvárila ako samozdanenie.
+   * Česká firma ostáva pri „SK“ zámerne: jej výkazy rátajú s tým, že český
+   * dodávateľ bez dane je prenesenie § 92a.
+   */
+  domaci: string = "SK",
 ): PrijataFaktura["rezim"] {
   const ic = String(dodavatelIcDph ?? "")
     .replace(/\s/g, "")
     .toUpperCase();
   // Dobropis nesie zápornú daň — aj ten je tuzemská faktúra (oprava odpočtu, C.2).
   const sDanou = Math.abs(Number(danSpolu) || 0) > 0;
-  if (ic.startsWith("SK")) return sDanou ? "tuzemsko" : "bez_dane";
+  if (ic.startsWith(domaci)) return sDanou ? "tuzemsko" : "bez_dane";
   if (/^[A-Z]{2}/.test(ic)) return "samozdanenie";
   return sDanou ? "tuzemsko" : "bez_dane";
 }
