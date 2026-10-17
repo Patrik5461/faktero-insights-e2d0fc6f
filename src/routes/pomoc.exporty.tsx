@@ -106,6 +106,11 @@ const sections: HelpSection[] = [
           namiesto „XML pre Pohodu“.
         </p>
         <p>
+          Nemecká firma vyváža zaúčtované doklady do <strong>DATEV</strong> (Buchungsstapel) —
+          nastavenie a import u poradcu popisuje manuál{" "}
+          <Link to="/pomoc/nemecko">Firmy v Nemecku → Export do DATEV</Link>.
+        </p>
+        <p>
           Zoznamy Doklady a Prijaté faktúry majú aj tlačidlo <strong>Excel</strong> — stiahne to, čo
           práve vidíte (s filtrami aj zoradením), v dvoch hárkoch: doklady a ich položky.
         </p>

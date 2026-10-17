@@ -30,6 +30,7 @@ import {
   ArrowLeftRight,
   ListChecks,
   Send,
+  Flag,
   type LucideIcon,
 } from "lucide-react";
 
@@ -45,6 +46,8 @@ export type DetailItem = {
   summary: string;
   icon: LucideIcon;
   blocks: ContentBlock[];
+  /** Manuál v Pomoci k tejto funkcii — na stránke sa ukáže tlačidlo „Manuál“. */
+  manual?: string;
 };
 
 export type HubContent = {
@@ -750,6 +753,39 @@ export const funkcie: HubContent = {
         },
       ],
     },
+    {
+      slug: "nemecko",
+      label: "Firmy v Nemecku",
+      summary:
+        "Nemecká faktúra, ZUGFeRD a XRechnung, export do DATEV a prehľad UStVA pre firmy so sídlom v Nemecku.",
+      icon: Flag,
+      manual: "/pomoc/nemecko",
+      blocks: [
+        {
+          type: "lead",
+          text: "Pri založení firmy vyberiete krajinu Nemecko a Faktero sa prispôsobí: sadzby 19 % a 7 %, Steuernummer a USt-IdNr. namiesto DIČ a IČ DPH a doklady po nemecky.",
+        },
+        {
+          type: "bullets",
+          title: "Čo dostanete",
+          items: [
+            "Regelbesteuerung alebo Kleinunternehmer (§ 19 UStG) s upozornením, keď sa obrat blíži k hranici 25 000 € alebo 100 000 €",
+            "Faktúra s náležitosťami podľa § 14 UStG a zákonnými vetami pre § 19, § 13b, dodanie do EÚ, vývoz a trojstranný obchod",
+            "Registergericht, HRB a Geschäftsführer v päte faktúry",
+            "Platobný QR kód GiroCode na faktúrach v eurách",
+            "ZUGFeRD / Factur-X (EN 16931) vložené v PDF každej faktúry a XRechnung 3.0 na stiahnutie, s Leitweg-ID pre úrady",
+            "E-mail s faktúrou a stránka faktúry pre odberateľa v jazyku dokladu",
+            "Export zaúčtovaných dokladov do DATEV (Buchungsstapel, SKR03 alebo SKR04)",
+            "Prehľad UStVA za mesiac alebo štvrťrok v CSV a PDF",
+          ],
+        },
+        {
+          type: "section",
+          title: "Čo zatiaľ nie je",
+          body: "Faktero UStVA ani iné priznania do ELSTER neodosiela a nezostavuje Zusammenfassende Meldung. Daň z faktúr v cudzej mene prepočíta denným kurzom ECB, nie mesačným kurzom BMF. Nemecké banky sa zatiaľ pripojiť nedajú a e-faktúry sa neodosielajú cez Peppol — XML a PDF odošlete sami. Účty pre DATEV a prvé priznania odporúčame prejsť s daňovým poradcom.",
+        },
+      ],
+    },
   ],
 };
 
@@ -1020,6 +1056,33 @@ export const efakturacia: HubContent = {
         },
       ],
     },
+    {
+      slug: "nemecko-xrechnung-zugferd",
+      label: "Nemecko: XRechnung a ZUGFeRD",
+      summary: "E-faktúra pre firmy so sídlom v Nemecku — PDF s vloženým XML aj čisté XRechnung.",
+      icon: Flag,
+      manual: "/pomoc/nemecko",
+      blocks: [
+        {
+          type: "lead",
+          text: "V Nemecku musí od roku 2025 každá firma vedieť e-faktúru prijať a povinnosť ju vystavovať nabieha postupne do roku 2028. Pre firmu so sídlom v Nemecku vyrobí Faktero oba bežné formáty.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "ZUGFeRD / Factur-X (profil EN 16931): XML vložené do PDF každej faktúry, nič sa nezapína",
+            "XRechnung 3.0 (UBL) na stiahnutie z detailu faktúry",
+            "Leitweg-ID pri odberateľovi pre faktúry úradom",
+            "Kontrola pred vydaním — keď niečo povinné chýba, Faktero povie čo",
+          ],
+        },
+        {
+          type: "section",
+          title: "Odoslanie",
+          body: "Faktero nemecké e-faktúry nevysiela cez Peppol ani na portály úradov. PDF so ZUGFeRD pošlete e-mailom ako doteraz, XRechnung odošlete alebo nahráte sami.",
+        },
+      ],
+    },
   ],
 };
 
@@ -1034,7 +1097,7 @@ export const uctovnici: HubContent = {
   hubTitle: "Pre účtovníkov",
   hubHeadline: "Účtovné podklady jedným klikom",
   hubDescription:
-    "Pohoda export aj konektor, šesť formátov exportu, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.",
+    "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.",
   hubLead:
     "Spolupracujte so svojimi klientmi efektívnejšie. Faktero generuje účtovné podklady jedným klikom.",
   items: [
@@ -1085,8 +1148,9 @@ export const uctovnici: HubContent = {
     },
     {
       slug: "uctovne-exporty",
-      label: "Šesť účtovných exportov",
-      summary: "Pohoda, Omega, Money S3, ABRA Flexi, ISDOC a CSV — vyberiete program a stiahnete.",
+      label: "Sedem účtovných exportov",
+      summary:
+        "Pohoda, Omega, Money S3, ABRA Flexi, DATEV, ISDOC a CSV — vyberiete program a stiahnete.",
       icon: Upload,
       blocks: [
         {
@@ -1099,6 +1163,7 @@ export const uctovnici: HubContent = {
             "Pohoda XML a priame prepojenie, ktoré si doklady berie samo",
             "KROS Omega (TXT) a Money S3 (XML) vrátane faktúr v cudzej mene",
             "ISDOC pre české programy a ABRA Flexi XML",
+            "DATEV Buchungsstapel pre klientov so sídlom v Nemecku — SKR03 alebo SKR04, menej bežné účty treba overiť s daňovým poradcom",
             "CSV súpiska pre MRP, Helios, Premier alebo Excel",
             "Zálohové faktúry, dobropisy a zľavy rozpočítané správne v každom formáte",
           ],
@@ -1192,7 +1257,7 @@ export const uctovnici: HubContent = {
             "SuperFaktúra — ZIP s ISDOC dokladmi",
             "Pohoda — export XML aj konektor a bankový výpis",
             "Doklado — prijaté doklady zo XML, CSV aj ZIP so skenmi",
-            "Export do Pohody, Omegy, Money S3, ABRA Flexi, ISDOC a CSV",
+            "Export do Pohody, Omegy, Money S3, ABRA Flexi, DATEV, ISDOC a CSV",
             "WooCommerce — doplnok, ktorý vystaví faktúru z každej objednávky",
             "Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta — výpisy z platobných brán",
             "Vlastné integrácie cez REST API",

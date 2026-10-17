@@ -206,6 +206,10 @@ const sections: HelpSection[] = [
           Predaj spotrebiteľom v EÚ cez <Link to="/pomoc/oss">režim OSS</Link> do priznania ani do
           kontrolného výkazu nevstupuje — má vlastné priznanie.
         </p>
+        <p>
+          Nemecká firma má namiesto týchto výkazov prehľad UStVA a sadzby 19 % a 7 % — pozri manuál{" "}
+          <Link to="/pomoc/nemecko">Firmy v Nemecku</Link>.
+        </p>
       </>
     ),
   },

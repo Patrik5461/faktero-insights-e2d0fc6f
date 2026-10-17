@@ -86,6 +86,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/pomoc/dph", priority: 0.6 },
           { path: "/pomoc/vykazy-dph", priority: 0.6 },
           { path: "/pomoc/oss", priority: 0.6 },
+          { path: "/pomoc/nemecko", priority: 0.6 },
           { path: "/pomoc/zabezpecenie", priority: 0.6 },
           { path: "/pomoc/zamestnanci", priority: 0.6 },
           { path: "/pomoc/uzavierka", priority: 0.6 },

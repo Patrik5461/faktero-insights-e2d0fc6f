@@ -19,6 +19,7 @@ import {
   Database,
   FileSpreadsheet,
   FileText,
+  Flag,
   HardHat,
   Landmark,
   Mail,
@@ -175,7 +176,9 @@ const features = [
   {
     icon: Send,
     title: "E-mailové šablóny",
-    text: "Vlastné texty emailov pre faktúry, upomienky aj schvaľovanie. Slovenčina aj angličtina.",
+    /* Spojené s kartou „Z vašej e-mailovej adresy“ — uvoľnilo miesto pre
+       Firmy v Nemecku a mriežka ostala po 4. */
+    text: "Vlastné texty e-mailov pre faktúry, upomienky aj schvaľovanie. Ak chcete, chodia odberateľom z faktury@vasafirma.sk cez váš poštový server.",
   },
   {
     icon: Blocks,
@@ -273,9 +276,9 @@ const features = [
     text: "Bločky a faktúry, ktoré zaplatil zamestnanec zo zálohy, vlastnými peniazmi či firemnou kartou — súhrn, doplatok a PDF na podpis.",
   },
   {
-    icon: Mail,
-    title: "Z vašej e-mailovej adresy",
-    text: "Faktúry, upomienky a ponuky môžu odberateľom chodiť z faktury@vasafirma.sk cez váš poštový server.",
+    icon: Flag,
+    title: "Firmy v Nemecku",
+    text: "Nemecká faktúra s vetami podľa UStG a GiroCode, ZUGFeRD v každom PDF, XRechnung, export do DATEV a prehľad UStVA.",
   },
   {
     icon: Quote,
@@ -339,6 +342,16 @@ const accounting = [
     icon: Code2,
     title: "API pre prijaté doklady",
     text: "Prijaté faktúry a bločky so zaúčtovaním, zmeny od posledného stiahnutia a nahratie dokladov — pre váš vlastný program.",
+  },
+  {
+    icon: Download,
+    title: "Export do DATEV",
+    text: "Pre klientov z Nemecka: Buchungsstapel so SKR03 alebo SKR04, Beraternummer a Mandantennummer a účty, ktoré sa dajú prepísať.",
+  },
+  {
+    icon: Calculator,
+    title: "UStVA pre nemecké firmy",
+    text: "Kennzahlen za mesiac či štvrťrok zostavené z dokladov — v CSV a PDF na prepis do ELSTER.",
   },
 ] as const;
 
@@ -1185,7 +1198,7 @@ function AccountingSection() {
             </h2>
             <p className="mt-5 max-w-md text-muted-foreground">
               {t(
-                "Pohoda konektor aj XML, šesť formátov exportu, výkazy k DPH, pravidlá účtovania a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.",
+                "Pohoda konektor aj XML, sedem formátov exportu vrátane DATEV, výkazy k DPH, pravidlá účtovania a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.",
               )}
             </p>
             <Link

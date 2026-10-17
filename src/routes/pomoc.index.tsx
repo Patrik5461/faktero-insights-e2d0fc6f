@@ -37,6 +37,7 @@ import {
   Briefcase,
   UserCog,
   CalendarCheck,
+  Flag,
 } from "lucide-react";
 import { VIDEO_NAVODY } from "@/lib/faktero/video-navody";
 
@@ -203,6 +204,14 @@ const CATS: Cat[] = [
     label: "OSS — predaj do EÚ",
     desc: "Hranica 10 000 €, sadzby štátu zákazníka a štvrťročné podklady.",
     icon: Globe,
+    available: true,
+    skupina: "Účtovníctvo",
+  },
+  {
+    to: "/pomoc/nemecko",
+    label: "Firmy v Nemecku",
+    desc: "Kleinunternehmer, nemecká faktúra, ZUGFeRD a XRechnung, DATEV a UStVA.",
+    icon: Flag,
     available: true,
     skupina: "Účtovníctvo",
   },

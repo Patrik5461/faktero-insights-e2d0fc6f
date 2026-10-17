@@ -110,6 +110,14 @@ export function DetailPage({ hub, item }: { hub: HubContent; item: DetailItem })
           >
             {t("Začať zdarma")} <ArrowRight className="h-4 w-4" />
           </Link>
+          {item.manual && (
+            <a
+              href={item.manual}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-secondary"
+            >
+              {t("Manuál")}
+            </a>
+          )}
           <a
             href={`/${hub.hubSlug}`}
             className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-secondary"
