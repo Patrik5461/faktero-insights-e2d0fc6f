@@ -10,8 +10,6 @@
  * Voľba jazyka je v cookie, aby server vykreslil stránku hneď v správnom
  * jazyku (bez bliknutia slovenčiny). Neskôr sa doplní aj do nastavení firmy.
  */
-import { createIsomorphicFn } from "@tanstack/react-start";
-
 export type Jazyk = "sk" | "de";
 export const JAZYKY: { kod: Jazyk; nazov: string; skratka: string }[] = [
   { kod: "sk", nazov: "Slovenčina", skratka: "SK" },
@@ -21,18 +19,11 @@ export const COOKIE_JAZYKA = "faktero_jazyk";
 
 export const jeJazyk = (v: unknown): v is Jazyk => v === "sk" || v === "de";
 
-function zCookie(cookie: string | null | undefined): Jazyk {
+/** Jazyk z hodnoty hlavičky Cookie; čítanie požiadavky je v `zisti-jazyk.ts`. */
+export function jazykZCookie(cookie: string | null | undefined): Jazyk {
   const m = (cookie ?? "").match(new RegExp(`(?:^|;\\s*)${COOKIE_JAZYKA}=([a-z]{2})`));
   return m && jeJazyk(m[1]) ? m[1] : "sk";
 }
-
-/** Jazyk z cookie — na serveri z požiadavky, v prehliadači z `document.cookie`. */
-export const zistiJazyk = createIsomorphicFn()
-  .server(async (): Promise<Jazyk> => {
-    const { getRequestHeader } = await import("@tanstack/react-start/server");
-    return zCookie(getRequestHeader("cookie"));
-  })
-  .client(async (): Promise<Jazyk> => zCookie(document.cookie));
 
 /** Uloží voľbu na rok a načíta stránku znova — prekreslí sa všetko vrátane servera. */
 export function nastavJazyk(j: Jazyk) {
