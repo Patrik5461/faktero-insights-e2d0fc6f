@@ -1,3 +1,5 @@
+import { agendaPreKrajinu } from "./agendy-krajiny";
+import type { KrajinaDane } from "./vat-rates";
 /**
  * Faktero Knowledge Base v1
  * Single source of truth for AI assistants (internal + public) describing
@@ -394,9 +396,26 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
 ];
 
 /** Compact markdown string suitable for injecting into LLM system prompts. */
-export function getProductCapabilitiesMarkdown(): string {
+export function getProductCapabilitiesMarkdown(krajina?: KrajinaDane | null): string {
   const lines: string[] = [`# ${FAKTERO_KB_VERSION}`, ""];
-  for (const m of PRODUCT_CAPABILITIES) {
+  /*
+    Nemecká firma nemá pokladňu, knihu jázd ani zamestnancov (agendy-krajiny.ts).
+    Asistent by ich inak ponúkal a posielal na stránku, ktorá ich odmietne.
+  */
+  const moduly = PRODUCT_CAPABILITIES.filter(
+    (m) => !m.routes?.length || m.routes.some((r) => agendaPreKrajinu(r, krajina)),
+  );
+  const skryte = PRODUCT_CAPABILITIES.filter((m) => !moduly.includes(m));
+  if (skryte.length) {
+    lines.push("## Pre túto (nemeckú) firmu nie je");
+    lines.push(
+      `Tieto agendy sú postavené na slovenských predpisoch a nemecká firma ich vo Faktere nemá: ${skryte
+        .map((m) => m.name)
+        .join(", ")}. Neponúkaj ich a neodkazuj na ne.`,
+    );
+    lines.push("");
+  }
+  for (const m of moduly) {
     lines.push(`## ${m.name}`);
     lines.push(m.summary);
     for (const f of m.features) lines.push(`- ${f}`);

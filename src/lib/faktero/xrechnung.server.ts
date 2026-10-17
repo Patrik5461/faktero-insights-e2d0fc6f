@@ -28,6 +28,14 @@
  *  - **Druh dokladu** len z povoleného zoznamu (BR-DE-17): ťarchopis 383 sa
  *    píše ako opravná faktúra 384 s odkazom na pôvodnú (BR-DE-26).
  *  - **Zaokrúhlenie** sumy na úhradu ide do BT-114, aby sedelo BR-CO-16.
+ *  - **Differenzbesteuerung** (§ 25a UStG) a cestovné kancelárie (§ 25 UStG):
+ *    daň sa na faktúre neuvádza (§ 14a Abs. 6 S. 2), položky sú so sadzbou 0 %.
+ *    V EN 16931 sú to kategória **E** s kódmi VATEX-EU-F/I/J (použitý tovar,
+ *    umenie, zberateľské predmety) a VATEX-EU-D (cestovné kancelárie); dôvod je
+ *    veta § 14a Abs. 6 („Gebrauchtgegenstände/Sonderregelung“…). Slovenské UBL
+ *    (ePošták) osobitnú úpravu do XML nepíše — tam ostáva len na PDF.
+ *  - **Upozornenie na uchovanie** (§ 14 Abs. 4 Nr. 9 / § 14b Abs. 1 S. 5) ide
+ *    do poznámky BT-22 rovnakým znením ako na PDF.
  */
 import type {
   EN16931Invoice,
@@ -42,6 +50,7 @@ import { krajinaDane } from "./vat-rates";
 import { pataFirmyDe } from "./firma-de";
 import { datumNaDoklade, vetyDe } from "./faktura-jazyk";
 import { platnyIban } from "./vyber-z-dokladu";
+import { VETA_AUFBEWAHRUNG_DE, vetaUpravyDe, type OsobitnaUprava } from "./faktura-nalezitosti";
 import type { OdpocetZalohy } from "./zalohy-odpocty";
 
 export const XRECHNUNG_CUSTOMIZATION_ID =
@@ -106,6 +115,18 @@ function kodPlatby(metoda: unknown, iban: string | undefined): string {
   if (iban && /^[A-Z]{2}/.test(iban)) return "58";
   return "30";
 }
+
+/**
+ * VATEX kódy osobitných úprav (CEF VATEX code list): D = cestovné kancelárie
+ * (§ 25 UStG, čl. 306 smernice), F = použitý tovar, I = umelecké diela,
+ * J = zberateľské predmety a starožitnosti (§ 25a UStG, čl. 311 a n.).
+ */
+export const VATEX_OSOBITNEJ_UPRAVY: Record<OsobitnaUprava, string> = {
+  "65": "VATEX-EU-D",
+  "66_tovar": "VATEX-EU-F",
+  "66_umenie": "VATEX-EU-I",
+  "66_starozitnosti": "VATEX-EU-J",
+};
 
 /** Kategória, kód VATEX a dôvod oslobodenia pre nemeckú firmu. */
 function dphScenar(
@@ -232,6 +253,24 @@ export function mapToEN16931De(
         exemptionReasonCode: s.kod,
       };
     });
+    /*
+      Osobitná úprava (§ 25 / § 25a UStG): položky bez dane (0 %) idú ako E s
+      kódom VATEX a vetou § 14a Abs. 6. Položky so sadzbou ostávajú S — na jednej
+      faktúre môže byť ojazdené auto (rozdiel) aj nový diel (bežne zdanený).
+      Pri prenesení daňovej povinnosti sa úprava neuplatňuje (formulár ju nedovolí).
+    */
+    const vetaUpravy = vetaUpravyDe(invoice.osobitna_uprava);
+    if (vetaUpravy && !invoice.reverse_charge) {
+      const kodUpravy = VATEX_OSOBITNEJ_UPRAVY[invoice.osobitna_uprava as OsobitnaUprava];
+      dto.lines = dto.lines.map((l) =>
+        l.vatCategory === "Z" ? { ...l, vatCategory: "E", vatPercent: 0 } : l,
+      );
+      dto.taxSubtotals = dto.taxSubtotals.map((t) =>
+        t.vatCategory === "Z"
+          ? { ...t, vatCategory: "E", exemptionReasonCode: kodUpravy, exemptionReason: vetaUpravy }
+          : t,
+      );
+    }
     // Služba do EÚ a trojstranný obchod sú prenesenie (AE), nie dodanie tovaru (K).
     if (
       invoice.reverse_charge_type === "eu_b2b" &&
@@ -265,6 +304,16 @@ export function mapToEN16931De(
   const vety: string[] = [];
   for (const t of dto.taxSubtotals)
     if (t.exemptionReason && !vety.includes(t.exemptionReason)) vety.push(t.exemptionReason);
+  /*
+    Tie isté vety ako na PDF (`vetyNaDoklad` pre DE): osobitná úprava § 14a
+    Abs. 6 (aj keď je na faktúre len zdanená položka a dôvod oslobodenia preto
+    nevznikol) a upozornenie na dvojročné uchovanie § 14b Abs. 1 S. 5.
+  */
+  const vetaUpravyPozn =
+    ku || invoice.reverse_charge ? null : vetaUpravyDe(invoice.osobitna_uprava);
+  if (vetaUpravyPozn && !vety.includes(vetaUpravyPozn)) vety.push(vetaUpravyPozn);
+  if (invoice.de_hinweis_aufbewahrung && !vety.includes(VETA_AUFBEWAHRUNG_DE))
+    vety.push(VETA_AUFBEWAHRUNG_DE);
   if (txt(invoice.notes)) vety.push(txt(invoice.notes));
   dto.note = vety.join(" | ") || undefined;
 

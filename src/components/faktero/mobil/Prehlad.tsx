@@ -104,7 +104,8 @@ export function Prehlad({
   oznamy?: ReactNode;
   onNovaFaktura: () => void;
   onSkener: () => void;
-  onJazda: () => void;
+  /** Chýba pri firme, ktorá knihu jázd nemá (nemecká) — rýchla akcia Jazda sa vynechá. */
+  onJazda?: () => void;
   /** Banka nemá miesto v spodnej lište — preto je tu ako rýchla akcia. */
   onBanka?: () => void;
   onFaktury: () => void;
@@ -215,7 +216,7 @@ export function Prehlad({
     })}`;
 
   const nacitava = faktury === null || doklady === null;
-  const maCoVybavit = poSplatnosti.pocet > 0 || naKontrolu > 0 || jazdaBezi;
+  const maCoVybavit = poSplatnosti.pocet > 0 || naKontrolu > 0 || (jazdaBezi && !!onJazda);
 
   /* Len čísla, ktoré sa dali spočítať — chýbajúce sa vynechajú, nehádajú. */
   const stlpce = mesiac
@@ -318,10 +319,14 @@ export function Prehlad({
         )}
 
         <section aria-label={t("ph.rychleAkcie")}>
-          <div className={`grid gap-2.5 ${onBanka ? "grid-cols-4" : "grid-cols-3"}`}>
+          <div
+            className={`grid gap-2.5 ${
+              onBanka && onJazda ? "grid-cols-4" : onBanka || onJazda ? "grid-cols-3" : "grid-cols-2"
+            }`}
+          >
             <QuickAction icon={FilePlus2} label={t("ph.faktura")} onClick={onNovaFaktura} />
             <QuickAction icon={Camera} label={t("ph.skenovat")} onClick={onSkener} />
-            <QuickAction icon={Car} label={t("ph.jazda")} onClick={onJazda} />
+            {onJazda && <QuickAction icon={Car} label={t("ph.jazda")} onClick={onJazda} />}
             {onBanka && <QuickAction icon={Landmark} label={t("tab.banka")} onClick={onBanka} />}
           </div>
         </section>
@@ -351,7 +356,7 @@ export function Prehlad({
                   onClick={onDoklady}
                 />
               )}
-              {jazdaBezi && (
+              {jazdaBezi && onJazda && (
                 <ListRow icon={Car} title={t("ph.jazdaNeukoncena")} chevron onClick={onJazda} />
               )}
             </ListCard>

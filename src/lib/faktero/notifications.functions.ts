@@ -8,6 +8,8 @@ import {
   type NotificationInput,
 } from "./notifications";
 import { pripomienkyZamestnancov } from "./zamestnanci";
+import { agendaPreKrajinu } from "./agendy-krajiny";
+import { krajinaDane } from "./vat-rates";
 
 const CompanyInput = z.object({ company_id: z.string().uuid() });
 
@@ -382,15 +384,27 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
     ktorým prístup má — rovnaké pravidlo ako menu (podľa stránky, kam vedú).
   */
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: clen } = await supabaseAdmin
-    .from("company_users")
-    .select("role, permissions")
-    .eq("company_id", companyId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (clen?.role !== "custom") return zoznam;
+  const [{ data: clen }, { data: firma }] = await Promise.all([
+    supabaseAdmin
+      .from("company_users")
+      .select("role, permissions")
+      .eq("company_id", companyId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabaseAdmin.from("companies").select("country").eq("id", companyId).maybeSingle(),
+  ]);
+  /*
+    Nemecká firma nemá pokladňu, knihu jázd ani zamestnancov (agendy-krajiny.ts) —
+    upozornenie s odkazom na ne (pripomienka zmluvy, komentár k jazde) by viedlo
+    na stránku s vysvetlením, že agenda pre ňu nie je.
+  */
+  const krajina = krajinaDane(firma?.country);
+  const preKrajinu = zoznam.filter((n) =>
+    agendaPreKrajinu(String(n.to ?? "").split("?")[0]!, krajina),
+  );
+  if (clen?.role !== "custom") return preKrajinu;
   const { oblastPodlaCesty, vidiOblast } = await import("./opravnenia");
-  return zoznam.filter((n) => {
+  return preKrajinu.filter((n) => {
     const o = oblastPodlaCesty(String(n.to ?? "").split("?")[0]!);
     return !o || vidiOblast(clen.role, clen.permissions, o);
   });

@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
 import { nacitajUlozenuRelaciu } from "@/lib/mobile/relacia";
 import { vyberFirmy } from "@/lib/mobile/start";
 import { zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
@@ -303,6 +304,13 @@ function ObsahApky() {
   const [zachyt, setZachyt] = useState<Zachyt>("blocek");
   const [email, setEmail] = useState<string | null>(null);
   const [panel, setPanel] = useState(false);
+  /*
+    Nemecká firma knihu jázd nemá (Fahrtenbuch musí byť nemenné, agendy-krajiny.ts) —
+    rovnaké pravidlo ako menu na webe. Bez `onJazda` panel, prehľad aj domov
+    položku Jazda vynechajú.
+  */
+  const krajinaFirmy = useKrajinaDane();
+  const naJazdu = agendaPreKrajinu("/jazdy", krajinaFirmy) ? () => setKrok("jazda") : undefined;
   const [zamknute, setZamknute] = useState(false);
   const [zrusiSa, setZrusiSa] = useState<string | null>(null);
   const [novsia, setNovsia] = useState<{ peciatka: string; odkaz: string } | null>(null);
@@ -870,7 +878,7 @@ function ObsahApky() {
     if (z === "doklady") return setKrok("doklady");
     if (z === "skener") return setKrok("skener");
     if (z === "banka") return setKrok("banka");
-    setKrok("jazda");
+    if (naJazdu) naJazdu();
   }
   const naNovuFakturu = () => setKrok("novaFaktura");
   /** Otvorí zachytávanie dokladu a zapamätá si, kam sa z neho vrátiť. */
@@ -900,7 +908,7 @@ function ObsahApky() {
       onFaktury={() => setKrok("faktury")}
       onPonuky={() => setKrok("ponuky")}
       onBanka={() => setKrok("banka")}
-      onJazda={() => setKrok("jazda")}
+      onJazda={naJazdu}
       onUcet={() => {
         setPanel(false);
         setKrok("ucet");
@@ -965,7 +973,7 @@ function ObsahApky() {
               }
               onNovaFaktura={naNovuFakturu}
               onSkener={() => setKrok("skener")}
-              onJazda={() => setKrok("jazda")}
+              onJazda={naJazdu}
               onBanka={() => setKrok("banka")}
               onFaktury={() => setKrok("faktury")}
               onDoklady={() => setKrok("doklady")}
@@ -1196,7 +1204,7 @@ function ObsahApky() {
         onDoklady={() => setKrok("doklady")}
         onNovaFaktura={() => setKrok("novaFaktura")}
         onFaktury={() => setKrok("faktury")}
-        onJazda={() => setKrok("jazda")}
+        onJazda={naJazdu}
         onBanka={() => setKrok("banka")}
         onZmenitFirmu={() => setKrok("firma")}
         onPanel={() => setPanel(true)}
@@ -1311,7 +1319,8 @@ function Domov({
   onDoklady: () => void;
   onNovaFaktura: () => void;
   onFaktury: () => void;
-  onJazda: () => void;
+  /** Chýba pri firme, ktorá knihu jázd nemá (nemecká). */
+  onJazda?: () => void;
   onBanka: () => void;
   onUcet: () => void;
   onZmenitFirmu: () => void;
@@ -1499,13 +1508,17 @@ function Domov({
           onClick={onBanka}
         />
 
-        <Skupina nazov={t("domov.skupina.jazdy")} />
-        <VelkeTlacidlo
-          icon={Car}
-          label={t("domov.novaJazda")}
-          hint={t("domov.novaJazdaPopis")}
-          onClick={onJazda}
-        />
+        {onJazda && (
+          <>
+            <Skupina nazov={t("domov.skupina.jazdy")} />
+            <VelkeTlacidlo
+              icon={Car}
+              label={t("domov.novaJazda")}
+              hint={t("domov.novaJazdaPopis")}
+              onClick={onJazda}
+            />
+          </>
+        )}
       </main>
 
       <div style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }} />

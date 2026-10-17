@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getProductCapabilitiesMarkdown } from "./product-capabilities";
+import { krajinaDane } from "./vat-rates";
 
 const SYSTEM_PROMPT = `Si Faktero AI — asistent pre slovenských živnostníkov a firmy používajúcich Faktero (fakturačný systém).
 Odpovedaj VŽDY v slovenčine, stručne, prakticky, vo formáte markdown.
@@ -243,7 +244,10 @@ ${JSON.stringify(ctx, null, 2)}`;
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "system", content: getProductCapabilitiesMarkdown() },
+      {
+        role: "system",
+        content: getProductCapabilitiesMarkdown(krajinaDane(ctx.company?.country)),
+      },
       { role: "system", content: znalostiKOtazke(String(poslednaOtazka)) },
       { role: "system", content: contextMsg },
       ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),

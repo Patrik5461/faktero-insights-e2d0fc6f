@@ -1,6 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, FileText, Camera, Car, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
+import { agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 type Tab = { to: string; label: string; icon: any; match: string[] };
@@ -37,6 +39,9 @@ const MORE_LINKS: { to: string; label: string }[] = [
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [moreOpen, setMoreOpen] = useState(false);
+  // Nemecká firma nemá pokladňu ani knihu jázd — rovnaké pravidlo ako bočné menu.
+  const krajina = useKrajinaDane();
+  const odkazy = MORE_LINKS.filter((l) => agendaPreKrajinu(l.to, krajina));
 
   const isActive = (m: string[]) => m.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
@@ -83,7 +88,7 @@ export function MobileBottomNav() {
                 <SheetTitle>Viac</SheetTitle>
               </SheetHeader>
               <div className="mt-4 grid grid-cols-2 gap-2">
-                {MORE_LINKS.map((l) => (
+                {odkazy.map((l) => (
                   <Link
                     key={l.to}
                     to={l.to as any}

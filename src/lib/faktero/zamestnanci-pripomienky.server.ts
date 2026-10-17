@@ -13,6 +13,8 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { pripomienkyZamestnancov, datumSk, type Pripomienka } from "./zamestnanci";
+import { agendaPreKrajinu } from "./agendy-krajiny";
+import { krajinaDane } from "./vat-rates";
 
 function escapeHtml(s: string) {
   return String(s).replace(
@@ -55,14 +57,18 @@ export function textPripomienok(firma: string, pripomienky: Pripomienka[]) {
 export async function runEmployeeReminders() {
   const { data: firmy, error } = await supabaseAdmin
     .from("companies")
-    .select("id, name, email, created_by")
+    .select("id, name, email, created_by, country")
     .eq("module_employees", true);
   if (error) throw new Error(error.message);
+  // Nemecká firma agendu zamestnancov nemá (agendy-krajiny.ts) — e-mail by ju posielal na stránku, ktorá ju odmietne.
+  const preKrajinu = (firmy ?? []).filter((f) =>
+    agendaPreKrajinu("/zamestnanci", krajinaDane((f as { country?: string | null }).country)),
+  );
 
   const dnesnyDen = dnes();
   const vysledky: { company_id: string; pripomienok: number; odoslanych: number; chyba?: string }[] = [];
 
-  for (const f of firmy ?? []) {
+  for (const f of preKrajinu) {
     try {
       const [zam, zml, log] = await Promise.all([
         supabaseAdmin

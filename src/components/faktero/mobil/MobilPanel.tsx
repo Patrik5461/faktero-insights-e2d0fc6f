@@ -29,6 +29,8 @@ import {
   isBiometricEnabled,
 } from "@/lib/mobile/biometric";
 import { JE_KNIHA_JAZD } from "@/lib/mobile/apka";
+import { agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { VERZIA_APKY } from "@/lib/mobile/brand";
 import { mojaPeciatka } from "@/lib/mobile/verzia";
 import { AppHeader } from "@/components/faktero/mobil/MobilChrome";
@@ -90,6 +92,7 @@ export function MobilPanel({
   onOdhlasit: () => void;
 }) {
   const { t, jazyk, nastavJazyk } = usePreklad();
+  const krajina = useKrajinaDane();
   /* Okno na nahlásenie chyby — otvára sa z tohto panela. */
   const [nahlasenie, setNahlasenie] = useState(false);
   /* Voľba sa číta až v efekte — na serveri `localStorage` neexistuje. */
@@ -365,7 +368,8 @@ export function MobilPanel({
             hint={t("panel.otvoriVPrehliadaci")}
             onClick={() => otvorNaWebe(JE_KNIHA_JAZD ? "/pomoc/jazdy" : "/pomoc")}
           />
-          {!JE_KNIHA_JAZD && (
+          {/* Návod k pokladni a eKase je slovenský — nemecká firma pokladňu nemá. */}
+          {!JE_KNIHA_JAZD && agendaPreKrajinu("/pokladna", krajina) && (
             <Polozka
               icon={Receipt}
               label={t("panel.blocky")}

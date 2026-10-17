@@ -19,6 +19,7 @@ import { UpozornenieKleinunternehmer } from "@/components/faktero/UpozornenieKle
 import { BankWidget } from "@/components/faktero/BankWidget";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
 import {
   Plus,
   FileText,
@@ -769,6 +770,8 @@ function Dashboard() {
               </div>
             </Link>
           </div>
+          {/* Nemecká firma knihu jázd nemá (agendy-krajiny.ts). */}
+          {agendaPreKrajinu("/jazdy", krajina) && (
           <div className="mb-6">
             <Link
               to="/jazdy"
@@ -802,6 +805,7 @@ function Dashboard() {
               </div>
             </Link>
           </div>
+          )}
           <div className="mb-6 grid gap-6 lg:grid-cols-2">
             <Panel title="Opakované faktúry" icon={Repeat}>
               <div className="mb-3 grid grid-cols-3 gap-2 text-xs">

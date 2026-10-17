@@ -24,6 +24,8 @@ import { upravyNaVyber, VETA_AUFBEWAHRUNG_DE, VETA_68D, vetyNaDoklad } from "./f
 import { popisky } from "./faktura-jazyk";
 import { predvolenyMailFaktury } from "./email-jazyk";
 import { filterNav, nedostupneAgendy } from "@/components/faktero/nav";
+import { agendaPreKrajinu } from "./agendy-krajiny";
+import { getProductCapabilitiesMarkdown } from "./product-capabilities";
 
 /* Klient bez databázy: vráti riadky podľa tabuľky, filtre ignoruje. */
 function klient(tabulky: Record<string, any[]>) {
@@ -435,5 +437,25 @@ describe("agendy podľa slovenských predpisov pre nemeckú firmu", () => {
     expect(nedostupneAgendy("/jazdyx", "DE")).toBeNull();
     expect(nedostupneAgendy("/pokladna", "SK")).toBeNull();
     expect(nedostupneAgendy("/faktury", "DE")).toBeNull();
+  });
+
+  it("jedno pravidlo aj pre nástenku, zvonček a e-mail (agendaPreKrajinu)", () => {
+    expect(agendaPreKrajinu("/jazdy", "DE")).toBe(false);
+    expect(agendaPreKrajinu("/zamestnanci/abc", "DE")).toBe(false);
+    expect(agendaPreKrajinu("/pokladna", "DE")).toBe(false);
+    expect(agendaPreKrajinu("/faktury/1", "DE")).toBe(true);
+    expect(agendaPreKrajinu("/jazdy", "SK")).toBe(true);
+    expect(agendaPreKrajinu("/pokladna", null)).toBe(true);
+  });
+
+  it("AI asistent nemeckej firme pokladňu, knihu jázd ani zamestnancov neponúka", () => {
+    const de = getProductCapabilitiesMarkdown("DE");
+    const sk = getProductCapabilitiesMarkdown("SK");
+    expect(sk).toContain("Cesty: /pokladna");
+    expect(de).not.toContain("Cesty: /pokladna");
+    expect(de).not.toContain("Cesty: /jazdy");
+    expect(de).not.toContain("Cesty: /zamestnanci");
+    expect(de).toContain("nemecká firma ich vo Faktere nemá");
+    expect(de).toContain("Cesty: /faktury");
   });
 });

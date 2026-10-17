@@ -88,6 +88,11 @@ const VETY_UPRAV_DE: Record<OsobitnaUprava, string> = {
   "66_starozitnosti": "Sammlungsstücke und Antiquitäten/Sonderregelung",
 };
 
+/** Veta § 14a Abs. 6 UStG pre nemeckú firmu — aj do e-faktúry (XRechnung, ZUGFeRD). */
+export function vetaUpravyDe(kod: string | null | undefined): string | null {
+  return (kod && VETY_UPRAV_DE[kod as OsobitnaUprava]) || null;
+}
+
 /** Popisky na výber vo formulári pre nemeckú firmu (slovenský kľúč pre `t`). */
 const NAZVY_UPRAV_DE: Record<OsobitnaUprava, string> = {
   "65": "Cestovné kancelárie (§ 25 UStG)",

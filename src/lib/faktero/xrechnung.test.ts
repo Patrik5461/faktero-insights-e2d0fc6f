@@ -298,6 +298,79 @@ describe("XRechnung 3.0 (UBL)", () => {
     expect(parser.parse(z.xml).Invoice.PaymentMeans.PaymentMeansCode).toBe(10);
     expect(z.validationErrors).toEqual([]);
   });
+
+  /*
+    Differenzbesteuerung: položka so sadzbou 0 % ide ako E s VATEX a vetou
+    § 14a Abs. 6; zdanená položka na tej istej faktúre ostáva S.
+  */
+  const auto = {
+    id: "i3",
+    position: 1,
+    name: "Gebrauchtwagen VW Golf",
+    quantity: 1,
+    unit: "ks",
+    unit_price: 8000,
+    vat_rate: 0,
+    subtotal: 8000,
+    vat_amount: 0,
+    total: 8000,
+  };
+  it.each([
+    ["66_tovar", "VATEX-EU-F", "Gebrauchtgegenstände/Sonderregelung"],
+    ["66_umenie", "VATEX-EU-I", "Kunstgegenstände/Sonderregelung"],
+    ["66_starozitnosti", "VATEX-EU-J", "Sammlungsstücke und Antiquitäten/Sonderregelung"],
+    ["65", "VATEX-EU-D", "Sonderregelung für Reisebüros"],
+  ])("osobitná úprava %s = kategória E s %s, veta v poznámke aj v dôvode", (kod, vatex, veta) => {
+    const d = generateXRechnung({
+      company: firma,
+      invoice: { ...faktura, osobitna_uprava: kod, subtotal: 9000, vat_total: 190, total: 9190 },
+      items: [auto, { ...polozky[0], position: 2 }],
+    });
+    expect(platne(UBL_INVOICE, d.xml)).toBeNull();
+    expect(d.validationErrors).toEqual([]);
+    const inv = parser.parse(d.xml).Invoice;
+    expect(String(inv.Note)).toContain(veta);
+    const sub = [inv.TaxTotal.TaxSubtotal].flat();
+    const e = sub.find((t: any) => t.TaxCategory.ID === "E");
+    expect(e.TaxCategory.Percent).toBe(0);
+    expect(e.TaxCategory.TaxExemptionReasonCode).toBe(vatex);
+    expect(e.TaxCategory.TaxExemptionReason).toBe(veta);
+    expect(sub.find((t: any) => t.TaxCategory.ID === "S").TaxCategory.Percent).toBe(19);
+    const riadky = [inv.InvoiceLine].flat();
+    expect(riadky[0].Item.ClassifiedTaxCategory.ID).toBe("E");
+    expect(riadky[1].Item.ClassifiedTaxCategory.ID).toBe("S");
+  });
+
+  it("upozornenie na uchovanie § 14b Abs. 1 S. 5 ide do poznámky; bez neho tam nie je", () => {
+    const d = generateXRechnung({
+      company: firma,
+      invoice: { ...faktura, de_hinweis_aufbewahrung: true, notes: "Danke!" },
+      items: polozky,
+    });
+    expect(d.validationErrors).toEqual([]);
+    const note = String(parser.parse(d.xml).Invoice.Note);
+    expect(note).toContain("zwei Jahre lang aufzubewahren (§ 14b Abs. 1 Satz 5 UStG)");
+    expect(note).toContain("Danke!");
+    expect(String(x.Note ?? "")).not.toContain("aufzubewahren");
+  });
+
+  it("osobitná úprava sa slovenskej vete ani Kleinunternehmerovi nepridá", () => {
+    const ku = { ...firma, vat_payer: false, vat_scheme: "de_kleinunternehmer", ic_dph: "" };
+    const k = generateXRechnung({
+      company: ku,
+      invoice: {
+        ...faktura,
+        osobitna_uprava: "66_tovar",
+        subtotal: 8000,
+        vat_total: 0,
+        total: 8000,
+      },
+      items: [auto],
+    });
+    const t = parser.parse(k.xml).Invoice.TaxTotal.TaxSubtotal.TaxCategory;
+    expect(t.TaxExemptionReason).toContain("§ 19 UStG");
+    expect(String(parser.parse(k.xml).Invoice.Note)).not.toContain("Gebrauchtgegenstände");
+  });
 });
 
 describe("Buyer reference (BT-10)", () => {
@@ -391,6 +464,44 @@ describe("ZUGFeRD / Factur-X (CII)", () => {
     expect(ku.chyby).toEqual([]);
     expect(platne(CII, ku.xml)).toBeNull();
     expect(dokladZXml(ku.xml)!.vat_amount).toBe(0);
+  });
+
+  it("CII: osobitná úprava = E s VATEX-EU-F a ExemptionReason, uchovanie v IncludedNote", () => {
+    const z = zugferdXml({
+      company: firma,
+      invoice: {
+        ...faktura,
+        osobitna_uprava: "66_tovar",
+        de_hinweis_aufbewahrung: true,
+        subtotal: 2000,
+        vat_total: 0,
+        total: 2000,
+      },
+      items: [
+        {
+          id: "i3",
+          position: 1,
+          name: "Gebrauchte Küche",
+          quantity: 1,
+          unit: "ks",
+          unit_price: 2000,
+          vat_rate: 0,
+          subtotal: 2000,
+          vat_amount: 0,
+          total: 2000,
+        },
+      ],
+    });
+    expect(z.chyby).toEqual([]);
+    expect(platne(CII, z.xml)).toBeNull();
+    expect(z.xml).toContain("<ram:CategoryCode>E</ram:CategoryCode>");
+    expect(z.xml).toContain("<ram:ExemptionReasonCode>VATEX-EU-F</ram:ExemptionReasonCode>");
+    expect(z.xml).toContain(
+      "<ram:ExemptionReason>Gebrauchtgegenstände/Sonderregelung</ram:ExemptionReason>",
+    );
+    const pozn = z.xml.match(/<ram:IncludedNote>[\s\S]*?<\/ram:IncludedNote>/)?.[0] ?? "";
+    expect(pozn).toContain("Gebrauchtgegenstände/Sonderregelung");
+    expect(pozn).toContain("§ 14b Abs. 1 Satz 5 UStG");
   });
 
   it("PDF faktúry s vloženým factur-x.xml: príloha v EmbeddedFiles aj AF, XMP Factur-X, čítač ju nájde", async () => {

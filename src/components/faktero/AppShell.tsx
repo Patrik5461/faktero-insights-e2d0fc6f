@@ -178,7 +178,10 @@ export function AppShell({
   }, []);
 
   const krajina = useKrajinaDane();
-  const view = resolveView(productMode, activeProduct);
+  /* Nemecká firma Knihu jázd nemá: kto má z inej firmy zvolený produkt „Kniha jázd",
+     by po prepnutí na nemeckú firmu ostal v prázdnej lište s logom vedúcim na /jazdy. */
+  const view =
+    krajina === "DE" && productMode === "both" ? "invoicing" : resolveView(productMode, activeProduct);
   const isCompanyAdmin = active?.role === "owner" || active?.role === "admin";
   const nav = filterNav(
     view,
