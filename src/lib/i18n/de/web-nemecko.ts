@@ -58,4 +58,14 @@ export default {
     "DATEV-Buchungsstapel für Mandanten mit Sitz in Deutschland — SKR03 oder SKR04; weniger gängige Konten sind mit der Steuerberatung abzustimmen",
   "Export do Pohody, Omegy, Money S3, ABRA Flexi, DATEV, ISDOC a CSV":
     "Export nach Pohoda, Omega, Money S3, ABRA Flexi, DATEV, ISDOC und CSV",
+  "Prehľad UStVA za mesiac alebo štvrťrok v CSV a PDF, so Soll- aj Ist-Versteuerung a termínom podania":
+    "UStVA-Übersicht für Monat oder Quartal als CSV und PDF, mit Soll- und Ist-Versteuerung und Abgabetermin",
+  "Zusammenfassende Meldung ako CSV pre BZStOnline-Portal":
+    "Zusammenfassende Meldung als CSV für das BZStOnline-Portal",
+  "Prepočet cudzej meny mesačným kurzom BMF podľa § 16 Abs. 6 UStG":
+    "Umrechnung von Fremdwährungen mit dem BMF-Monatskurs nach § 16 Abs. 6 UStG",
+  "Rechnungskorrektur, upomienky s úrokmi podľa § 288 BGB a vety § 25a a § 14 Abs. 4 Nr. 9 UStG":
+    "Rechnungskorrektur, Mahnungen mit Verzugszinsen nach § 288 BGB und Hinweise nach § 25a und § 14 Abs. 4 Nr. 9 UStG",
+  "Faktero UStVA ani ZM do ELSTER a BZSt neodosiela. Pokladňu (bez TSE), knihu jázd a mzdy zamestnancov pre nemecké firmy nemá. Nemecké banky sa zatiaľ pripojiť nedajú a e-faktúry sa neodosielajú cez Peppol — XML a PDF odošlete sami. Účty pre DATEV a prvé priznania odporúčame prejsť s daňovým poradcom.":
+    "Faktero übermittelt weder die UStVA noch die ZM an ELSTER bzw. das BZSt. Eine Kasse (ohne TSE), ein Fahrtenbuch und die Lohnabrechnung gibt es für deutsche Unternehmen nicht. Deutsche Banken lassen sich noch nicht anbinden, und E-Rechnungen werden nicht über Peppol versendet — XML und PDF versenden Sie selbst. Die Konten für DATEV und die ersten Voranmeldungen gehen Sie am besten mit Ihrer Steuerberatung durch.",
 } satisfies Record<string, string>;

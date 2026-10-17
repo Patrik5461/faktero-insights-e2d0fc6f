@@ -579,23 +579,34 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "zm-a-kurz",
+    title: "Zusammenfassende Meldung a kurz BMF",
+    body: (
+      <>
+        <p>
+          V Účtovníctve → Výkazy je pod prehľadom UStVA aj Zusammenfassende Meldung (§ 18a UStG) —
+          súčty dodaní do EÚ podľa USt-IdNr. odberateľa, rozdelené na tovar (L), trojstranný obchod
+          (D) a služby (S). Stiahnete ju ako CSV na nahratie do BZStOnline-Portal. Kleinunternehmer
+          ZM nepodáva.
+        </p>
+        <p>
+          Daň z faktúry v cudzej mene Faktero prepočíta mesačným kurzom BMF (§ 16 Abs. 6 UStG),
+          ktorý si samo sťahuje z dátového portálu BMF. Kým kurz mesiaca nevyjde, použije predbežne
+          kurz ECB a doklad potom prepočíta samo. Ak vám Finanzamt povolil denný kurz, prepnete to v
+          Nastaveniach firmy.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "co-nie-je",
     title: "Čo zatiaľ nie je",
     body: (
       <>
         <ul>
           <li>
-            <strong>Mesačný kurz BMF.</strong> Daň z faktúry v cudzej mene Faktero prepočíta denným
-            kurzom ECB. § 16 Abs. 6 UStG predpisuje mesačný priemerný kurz BMF; denný kurz smiete
-            použiť len s povolením Finanzamtu.
-          </li>
-          <li>
             <strong>Podanie cez ELSTER.</strong> UStVA ani iné priznania Faktero do ELSTER
             neodosiela.
-          </li>
-          <li>
-            <strong>Zusammenfassende Meldung (ZM).</strong> Súhrnný výkaz dodaní do EÚ pre BZSt
-            Faktero pre nemeckú firmu nezostavuje.
           </li>
           <li>
             <strong>Vyhľadanie v Handelsregister.</strong> Údaje nemeckej firmy ani odberateľa sa

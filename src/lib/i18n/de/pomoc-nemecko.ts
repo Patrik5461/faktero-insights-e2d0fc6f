@@ -221,4 +221,9 @@ export default {
     "<0>Mitarbeiter.</0> Der Bereich ist auf slowakisches Arbeitsrecht und Lohnabrechnung ausgelegt; deutsche Lohnabrechnung (Lohnsteuer, Sozialversicherung) kennt er nicht.",
   "Bločky a prijaté doklady nemecká firma používa normálne — fotku bločku Faktero prečíta s nemeckými sadzbami 19 % a 7 %.":
     "Kassenbons und Eingangsbelege nutzt ein deutsches Unternehmen ganz normal — ein Foto des Kassenbons liest Faktero mit den deutschen Steuersätzen 19 % und 7 %.",
+  "Zusammenfassende Meldung a kurz BMF": "Zusammenfassende Meldung und BMF-Kurs",
+  "V Účtovníctve → Výkazy je pod prehľadom UStVA aj Zusammenfassende Meldung (§ 18a UStG) — súčty dodaní do EÚ podľa USt-IdNr. odberateľa, rozdelené na tovar (L), trojstranný obchod (D) a služby (S). Stiahnete ju ako CSV na nahratie do BZStOnline-Portal. Kleinunternehmer ZM nepodáva.":
+    "Unter Buchhaltung → Berichte finden Sie unter der UStVA-Übersicht auch die Zusammenfassende Meldung (§ 18a UStG) – Summen der EU-Umsätze je USt-IdNr. des Kunden, getrennt nach Lieferungen (L), Dreiecksgeschäften (D) und sonstigen Leistungen (S). Sie laden sie als CSV für den Upload ins BZStOnline-Portal herunter. Kleinunternehmer geben keine ZM ab.",
+  "Daň z faktúry v cudzej mene Faktero prepočíta mesačným kurzom BMF (§ 16 Abs. 6 UStG), ktorý si samo sťahuje z dátového portálu BMF. Kým kurz mesiaca nevyjde, použije predbežne kurz ECB a doklad potom prepočíta samo. Ak vám Finanzamt povolil denný kurz, prepnete to v Nastaveniach firmy.":
+    "Die Steuer aus Rechnungen in Fremdwährung rechnet Faktero mit dem monatlichen Umsatzsteuer-Umrechnungskurs des BMF um (§ 16 Abs. 6 UStG), den es selbst aus dem Datenportal des BMF lädt. Solange der Monatskurs noch nicht veröffentlicht ist, wird vorläufig der EZB-Kurs verwendet und der Beleg danach automatisch umgerechnet. Hat Ihnen das Finanzamt den Tageskurs genehmigt, stellen Sie das in den Firmeneinstellungen um.",
 } satisfies Record<string, string>;
