@@ -28,7 +28,7 @@ export default {
   Výdaj: "Warenausgang",
   Oprava: "Korrektur",
   Faktúra: "Rechnung",
-  Dobropis: "Gutschrift",
+  Dobropis: "Rechnungskorrektur",
   "História naskenovaných dodacích listov — Faktero": "Verlauf gescannter Lieferscheine — Faktero",
   "Nepodarilo sa načítať.": "Laden fehlgeschlagen.",
   "Nepodarilo sa otvoriť dokument.": "Dokument konnte nicht geöffnet werden.",

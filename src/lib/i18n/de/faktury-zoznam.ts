@@ -20,8 +20,8 @@ export default {
   "Do ZIPu pridaných {ok}, zlyhalo {fail}": "Zum ZIP hinzugefügt: {ok}, fehlgeschlagen: {fail}",
   "Do stĺpca „Spolu s DPH“ sa dá napísať suma, na ktorej ste sa dohodli — jednotková cena bez dane sa dopočíta sama.":
     "In die Spalte „Gesamt inkl. MwSt.“ können Sie den vereinbarten Betrag eintragen — der Nettoeinzelpreis wird automatisch berechnet.",
-  Dobropis: "Gutschrift",
-  "Dobropisy a ťarchopisy": "Gutschriften und Belastungsanzeigen",
+  Dobropis: "Rechnungskorrektur",
+  "Dobropisy a ťarchopisy": "Rechnungskorrekturen und Belastungsanzeigen",
   "Doklad je v Nespracovaných — číta sa":
     "Der Beleg liegt in „Unverarbeitete Belege“ — er wird gelesen",
   "Doklad je zaevidovaný v systéme eKasa, údaje sedia s tým, čo predajca odoslal.":
@@ -52,7 +52,7 @@ export default {
   "Faktúra upravená. PDF treba pregenerovať.":
     "Rechnung geändert. Das PDF muss neu erstellt werden.",
   "Faktúra už odišla cez eFaktúru pôvodnému odberateľovi — v jeho systéme ostane. Správne je vystaviť dobropis a novú faktúru.":
-    "Die Rechnung wurde bereits als E-Rechnung an den ursprünglichen Kunden gesendet — in seinem System bleibt sie bestehen. Richtig ist, eine Gutschrift und eine neue Rechnung auszustellen.",
+    "Die Rechnung wurde bereits als E-Rechnung an den ursprünglichen Kunden gesendet — in seinem System bleibt sie bestehen. Richtig ist, eine Rechnungskorrektur und eine neue Rechnung auszustellen.",
   "Faktúra vymazaná": "Rechnung gelöscht",
   "Faktúra za dodávateľa podľa dohody o samofakturácii — uloží sa medzi prijaté faktúry":
     "Rechnung im Namen des Lieferanten gemäß der Vereinbarung über die Selbstfakturierung — wird unter den Eingangsrechnungen gespeichert",
@@ -92,7 +92,7 @@ export default {
   "Kôš vyprázdnený — natrvalo vymazaných {n} faktúr":
     "Papierkorb geleert — endgültig gelöschte Rechnungen: {n}",
   "Len faktúry — bez zálohových, dobropisov a daňových dokladov.":
-    "Nur Rechnungen — ohne Anzahlungsrechnungen, Gutschriften und Steuerbelege.",
+    "Nur Rechnungen — ohne Anzahlungsrechnungen, Rechnungskorrekturen und Steuerbelege.",
   "Len z QR kódu": "Nur aus dem QR-Code",
   MJ: "ME",
   "Maže sa to, čo je práve zobrazené na tejto stránke koša.":
@@ -290,8 +290,8 @@ export default {
     "Ausgestellte und gesendete Rechnungen, deren Fälligkeit abgelaufen ist und die nicht bezahlt sind.",
   "Vystavené faktúry": "Ausgangsrechnungen",
   "Vystavené opravné faktúry — dobropisy cenu znižujú, ťarchopisy zvyšujú.":
-    "Ausgestellte Korrekturrechnungen — Gutschriften senken den Preis, Belastungsanzeigen erhöhen ihn.",
-  "Vystaviť dobropis": "Gutschrift ausstellen",
+    "Ausgestellte Korrekturrechnungen — Rechnungskorrekturen senken den Preis, Belastungsanzeigen erhöhen ihn.",
+  "Vystaviť dobropis": "Rechnungskorrektur ausstellen",
   "Vystaviť faktúru": "Rechnung ausstellen",
   "Vystaviť pre ďalší mesiac": "Für den nächsten Monat ausstellen",
   "Vystaviť zo zálohovej faktúry": "Aus Anzahlungsrechnung ausstellen",

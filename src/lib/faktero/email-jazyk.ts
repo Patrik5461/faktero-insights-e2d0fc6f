@@ -53,9 +53,24 @@ export function jazykFaktury(
   return jazykDokladu(invoice?.language || predvolenyJazykFirmy(company?.country));
 }
 
+/*
+  Opravná faktúra (dobropis) po nemecky: „Rechnungskorrektur“, nie
+  „Rechnung … zahlbar bis“ — peniaze idú opačným smerom. „Gutschrift“ je
+  v Nemecku samofaktúra (§ 14 Abs. 2 S. 2 UStG), preto sa to slovo nepoužíva.
+  Ostatné jazyky ostávajú, ako boli.
+*/
+const MAILY_DOBROPIS: Partial<Record<JazykDokladu, Mail>> = {
+  de: {
+    predmet: "Rechnungskorrektur {invoice_number}",
+    text: "Guten Tag,\n\nanbei erhalten Sie unsere Rechnungskorrektur {invoice_number} über {total}.\n\nMit freundlichen Grüßen\n{company_name}",
+  },
+};
+
 /** Predvolený predmet a text mailu s faktúrou (so zástupnými poliami). */
-export function predvolenyMailFaktury(jazyk: unknown): Mail {
-  return MAILY[jazykDokladu(jazyk)];
+export function predvolenyMailFaktury(jazyk: unknown, typ?: string | null): Mail {
+  const j = jazykDokladu(jazyk);
+  if (typ === "credit_note" && MAILY_DOBROPIS[j]) return MAILY_DOBROPIS[j]!;
+  return MAILY[j];
 }
 
 /** Hodnoty zástupných polí v jazyku dokladu — dátum „29.10.2026“, suma „1.297,00 €“. */

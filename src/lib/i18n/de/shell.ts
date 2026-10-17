@@ -68,7 +68,7 @@ export default {
   "Cenové ponuky": "Angebote",
   Objednávky: "Bestellungen",
   "Opakované faktúry": "Wiederkehrende Rechnungen",
-  Dobropisy: "Gutschriften",
+  Dobropisy: "Rechnungskorrekturen",
   Koncepty: "Entwürfe",
   "Skener dokladov": "Belegscanner",
   "Prehľad eFaktúry": "E-Rechnung – Übersicht",

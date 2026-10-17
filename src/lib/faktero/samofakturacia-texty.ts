@@ -208,7 +208,7 @@ const EN: TextyDodavatela = {
 
 const DE: TextyDodavatela = {
   faktura: "Rechnung",
-  dobropis: "Stornorechnung",
+  dobropis: "Rechnungskorrektur",
   naOdsuhlasenie: "zur Freigabe",
   vyhotovenieOdberatelom: "Gutschrift",
   uvod: (o) =>

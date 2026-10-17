@@ -111,7 +111,7 @@ export default {
   Oprava: "Korrektur",
   Inventúra: "Inventur",
   Faktúra: "Rechnung",
-  Dobropis: "Gutschrift",
+  Dobropis: "Rechnungskorrektur",
   Koncept: "Entwurf",
   Vystavená: "Ausgestellt",
   Odoslaná: "Gesendet",

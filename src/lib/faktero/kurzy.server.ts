@@ -7,7 +7,19 @@
  */
 
 import { XMLParser } from "fast-xml-parser";
-import { denKurzu, kurzKDatumu, naDomacu, type KrajinaKurzu, type Kurz } from "./kurzy";
+import {
+  denKurzu,
+  kurzKDatumu,
+  kurzyZBmfCsv,
+  mesiacBmf,
+  naDomacu,
+  nastavenieKurzuDe,
+  type KrajinaKurzu,
+  type Kurz,
+  type KurzBmf,
+  type NastavenieKurzuDe,
+  type ZdrojKurzu,
+} from "./kurzy";
 
 const DENNE = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
 const POSLEDNYCH_90 = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml";
@@ -64,11 +76,25 @@ export async function kurzPreDoklad(
   mena: string,
   datumDodania: string,
   krajina: KrajinaKurzu = "SK",
+  /** Nemecká firma — jej voľba kurzu (`companies.kurz_de_zdroj`); null = nie je DE. */
+  nastavenieDe: NastavenieKurzuDe | null = null,
+): Promise<{ kurz: number; den: string; zdroj: ZdrojKurzu } | null> {
+  if (krajina === "CZ") {
+    const k = await kurzCnb(mena, datumDodania);
+    return k ? { ...k, zdroj: "cnb" } : null;
+  }
+  if (nastavenieDe) return kurzPreDokladDe(mena, datumDodania, nastavenieDe);
+  const k = await kurzEcb(mena, denKurzu(datumDodania));
+  return k ? { ...k, zdroj: "ecb" } : null;
+}
+
+/** Posledný kurz ECB najneskôr v deň `hranica` — z pamäte, inak z ECB. */
+async function kurzEcb(
+  mena: string,
+  hranica: string,
 ): Promise<{ kurz: number; den: string } | null> {
-  if (krajina === "CZ") return kurzCnb(mena, datumDodania);
   const m = String(mena).toUpperCase();
   if (!m || m === "EUR") return null;
-  const hranica = denKurzu(datumDodania);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   const zDb = async () => {
@@ -120,12 +146,21 @@ export async function prepocitajDoklad(
   datumDodania: string,
   sumy: { zaklad: number; dan: number; celkom: number },
   krajina: KrajinaKurzu = "SK",
-): Promise<{ kurz: number; den: string; zaklad: number; dan: number; celkom: number } | null> {
-  const k = await kurzPreDoklad(mena, datumDodania, krajina);
+  nastavenieDe: NastavenieKurzuDe | null = null,
+): Promise<{
+  kurz: number;
+  den: string;
+  zdroj: ZdrojKurzu;
+  zaklad: number;
+  dan: number;
+  celkom: number;
+} | null> {
+  const k = await kurzPreDoklad(mena, datumDodania, krajina, nastavenieDe);
   if (!k) return null;
   return {
     kurz: k.kurz,
     den: k.den,
+    zdroj: k.zdroj,
     zaklad: naDomacu(sumy.zaklad, k.kurz, krajina),
     dan: naDomacu(sumy.dan, k.kurz, krajina),
     celkom: naDomacu(sumy.celkom, k.kurz, krajina),
@@ -142,6 +177,193 @@ export async function krajinaFirmy(companyId: string): Promise<KrajinaKurzu> {
     .maybeSingle();
   const { krajinaKurzu } = await import("./kurzy");
   return krajinaKurzu(data?.country);
+}
+
+/**
+ * Pravidlo kurzu firmy: krajina (SK/CZ — podľa nej domáca mena a zápis kurzu)
+ * a pri nemeckej firme jej voľba BMF / denný kurz ECB. Doklady nemeckej
+ * firmy sú v eurách ako slovenské, preto `krajina` ostáva „SK“.
+ */
+export async function pravidloKurzuFirmy(
+  companyId: string,
+): Promise<{ krajina: KrajinaKurzu; nastavenieDe: NastavenieKurzuDe | null }> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await (supabaseAdmin as any)
+    .from("companies")
+    .select("country, kurz_de_zdroj")
+    .eq("id", companyId)
+    .maybeSingle();
+  const { krajinaKurzu } = await import("./kurzy");
+  const { krajinaDane } = await import("./vat-rates");
+  return {
+    krajina: krajinaKurzu(data?.country),
+    nastavenieDe:
+      krajinaDane(data?.country) === "DE" ? nastavenieKurzuDe(data?.kurz_de_zdroj) : null,
+  };
+}
+
+/* ─── BMF (nemecké firmy) ─────────────────────────────────────────────── */
+
+/*
+  Dátový portál BMF má ročný CSV so všetkými mesiacmi roka („Monatlich
+  fortgeschriebene Übersicht“), dopĺňa sa začiatkom každého mesiaca. Adresa
+  je stála; parameter `v` v odkazoch na webe je len verzia a dá sa vynechať.
+  Kódovanie je ISO-8859-1 (hlavička servera tvrdí UTF-8) — kódy mien a čísla
+  sú ASCII, takže na tom nezáleží.
+*/
+const BMF_CSV = (rok: number) =>
+  `https://www.bundesfinanzministerium.de/Datenportal/Daten/offene-daten/steuern-zoelle/umsatzsteuer-umrechnungskurse/datensaetze/uu-kurse-${rok}-csv.csv?__blob=publicationFile`;
+
+export async function stiahniKurzyBmf(rok: number): Promise<KurzBmf[]> {
+  const res = await fetch(BMF_CSV(rok), { signal: AbortSignal.timeout(20_000) });
+  if (!res.ok) throw new Error(`BMF ${res.status}`);
+  const text = new TextDecoder("latin1").decode(await res.arrayBuffer());
+  return kurzyZBmfCsv(text, rok);
+}
+
+async function ulozBmf(kurzy: KurzBmf[]): Promise<void> {
+  if (!kurzy.length) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await (supabaseAdmin as any)
+    .from("kurzy_bmf")
+    .upsert(kurzy, { onConflict: "mesiac,mena" });
+  if (error) console.warn("[kurzy-bmf] zápis zlyhal:", error.message);
+}
+
+async function kurzBmfZDb(mena: string, mesiac: string): Promise<number | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await (supabaseAdmin as any)
+    .from("kurzy_bmf")
+    .select("kurz")
+    .eq("mena", mena)
+    .eq("mesiac", mesiac)
+    .maybeSingle();
+  const k = Number(data?.kurz);
+  return k > 0 ? k : null;
+}
+
+/** Nemecká firma: BMF za mesiac dodania, inak ECB z dňa dodania. */
+async function kurzPreDokladDe(
+  mena: string,
+  datumDodania: string,
+  nastavenie: NastavenieKurzuDe,
+): Promise<{ kurz: number; den: string; zdroj: ZdrojKurzu } | null> {
+  const m = String(mena).toUpperCase();
+  if (!m || m === "EUR") return null;
+  if (nastavenie === "bmf") {
+    const mesiac = mesiacBmf(datumDodania);
+    let k = await kurzBmfZDb(m, mesiac);
+    // Mesiac už skončil, ale v pamäti nie je — skúsi sa portál BMF.
+    if (!k && mesiac < mesiacBmf(new Date().toISOString().slice(0, 10))) {
+      try {
+        const stiahnute = await stiahniKurzyBmf(Number(mesiac.slice(0, 4)));
+        await ulozBmf(stiahnute);
+        k = stiahnute.find((x) => x.mesiac === mesiac && x.mena === m)?.kurz ?? null;
+      } catch (e) {
+        console.warn("[kurzy-bmf] BMF nedostupné:", String((e as Error)?.message ?? e));
+      }
+    }
+    if (k) return { kurz: k, den: mesiac, zdroj: "bmf" };
+  }
+  const e = await kurzEcb(m, datumDodania);
+  if (!e) return null;
+  return { ...e, zdroj: nastavenie === "bmf" ? "ecb_predbezne" : "ecb_tageskurs" };
+}
+
+/**
+ * Kurzy BMF do pamäte — z denného cronu kurzov (hook `kurzy-ecb`). Súbor je
+ * malý (jeden riadok na menu), sťahuje sa celý bežný rok, v januári aj
+ * predošlý (decembrový kurz vychádza až v januári). Po uložení prepočíta
+ * doklady, ktoré čakali na kurz BMF.
+ */
+export async function stiahniKurzyBmfDoPamate(): Promise<{ kurzov: number; prepocitane: number }> {
+  const teraz = new Date();
+  const roky = [teraz.getUTCFullYear()];
+  if (teraz.getUTCMonth() === 0) roky.unshift(teraz.getUTCFullYear() - 1);
+  let kurzov = 0;
+  for (const rok of roky) {
+    const k = await stiahniKurzyBmf(rok);
+    await ulozBmf(k);
+    kurzov += k.length;
+  }
+  const prepocitane = await prepocitajPredbezneNaBmf().catch((e) => {
+    console.warn("[kurzy-bmf] prepočet dokladov:", String(e?.message ?? e));
+    return 0;
+  });
+  return { kurzov, prepocitane };
+}
+
+/**
+ * Doklady nemeckých firiem prepočítané predbežne kurzom ECB (`ecb_predbezne`)
+ * dostanú kurz BMF, len čo je zverejnený. Mení sa iba prepočet do eur
+ * (kurz, dátum kurzu, `*_eur`) — sumy v mene dokladu ostávajú. Doklad v
+ * uzamknutom období zámok odmietne; ten ostane na ECB a vypíše sa do logu.
+ */
+export async function prepocitajPredbezneNaBmf(): Promise<number> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const db = supabaseAdmin as any;
+  const cache = new Map<string, number | null>();
+  const kurzBmf = async (mena: string, mesiac: string) => {
+    const kluc = `${mena}|${mesiac}`;
+    if (!cache.has(kluc)) cache.set(kluc, await kurzBmfZDb(mena, mesiac));
+    return cache.get(kluc) ?? null;
+  };
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  let pocet = 0;
+  // Len doklady z mesiacov, ktoré už skončili — za bežný mesiac kurz BMF ešte nie je.
+  const zaciatokMesiaca = mesiacBmf(new Date().toISOString().slice(0, 10));
+  const skonceny = `delivery_date.lt.${zaciatokMesiaca},and(delivery_date.is.null,issue_date.lt.${zaciatokMesiaca})`;
+
+  const { data: faktury } = await db
+    .from("invoices")
+    .select("id, currency, issue_date, delivery_date, subtotal, vat_total, total")
+    .eq("exchange_rate_source", "ecb_predbezne")
+    .or(skonceny)
+    .limit(1000);
+  for (const f of (faktury ?? []) as any[]) {
+    const mesiac = mesiacBmf(String(f.delivery_date || f.issue_date));
+    const k = await kurzBmf(String(f.currency).toUpperCase(), mesiac);
+    if (!k) continue;
+    const { error } = await db
+      .from("invoices")
+      .update({
+        exchange_rate: k,
+        exchange_rate_date: mesiac,
+        exchange_rate_source: "bmf",
+        subtotal_eur: r2(Number(f.subtotal ?? 0) / k),
+        vat_total_eur: r2(Number(f.vat_total ?? 0) / k),
+        total_eur: r2(Number(f.total ?? 0) / k),
+      })
+      .eq("id", f.id)
+      .eq("exchange_rate_source", "ecb_predbezne");
+    if (error) console.warn("[kurzy-bmf] faktúra", f.id, error.message);
+    else pocet++;
+  }
+
+  const { data: prijate } = await db
+    .from("purchase_invoices")
+    .select("id, currency, issue_date, delivery_date, amount_without_vat, vat_amount")
+    .eq("exchange_rate_source", "ecb_predbezne")
+    .or(skonceny)
+    .limit(1000);
+  for (const f of (prijate ?? []) as any[]) {
+    const mesiac = mesiacBmf(String(f.delivery_date || f.issue_date));
+    const k = await kurzBmf(String(f.currency).toUpperCase(), mesiac);
+    if (!k) continue;
+    const { error } = await db
+      .from("purchase_invoices")
+      .update({
+        exchange_rate: k,
+        exchange_rate_source: "bmf",
+        amount_without_vat_eur: r2(Number(f.amount_without_vat ?? 0) / k),
+        vat_amount_eur: r2(Number(f.vat_amount ?? 0) / k),
+      })
+      .eq("id", f.id)
+      .eq("exchange_rate_source", "ecb_predbezne");
+    if (error) console.warn("[kurzy-bmf] prijatá faktúra", f.id, error.message);
+    else pocet++;
+  }
+  return pocet;
 }
 
 /* ─── ČNB ─────────────────────────────────────────────────────────────── */

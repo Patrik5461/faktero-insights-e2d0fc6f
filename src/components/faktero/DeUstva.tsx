@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AlertTriangle, Download, FileText, Info, Loader2 } from "lucide-react";
+import { AlertTriangle, CalendarClock, Download, FileText, Info, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { ustvaPdfFn, zostavUstvaFn } from "@/lib/faktero/ustva.functions";
@@ -9,6 +10,14 @@ import { RIADKY_USTVA, ustvaNaCsv, type KzUstva } from "@/lib/faktero/ustva";
 import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { formatujCislo } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import {
+  maSondervorauszahlung,
+  nastaveniaUstva,
+  terminSondervorauszahlung,
+  terminUstva,
+  type NastaveniaUstva,
+} from "@/lib/faktero/ustva-terminy";
 
 /*
   Nemecká firma: prehľad Umsatzsteuer-Voranmeldung (UStVA) za mesiac alebo
@@ -60,6 +69,30 @@ export function DeUstva() {
   const [nacitavam, setNacitavam] = useState(false);
   const [pdfBezi, setPdfBezi] = useState(false);
   const [chyba, setChyba] = useState<string | null>(null);
+  /*
+    Obdobie (mesačne / štvrťročne) a Dauerfristverlängerung sú nastavenia
+    firmy — prehľad ponúka obdobia podľa nich. Kým sa nenačítajú, platí mesiac.
+  */
+  const [nast, setNast] = useState<(NastaveniaUstva & { ist: boolean }) | null>(null);
+  useEffect(() => {
+    const id = getActiveCompanyId();
+    if (!id) return;
+    let zrusene = false;
+    void (async () => {
+      const { data: f } = await supabase
+        .from("companies")
+        .select("de_ustva_obdobie, de_dauerfrist, de_versteuerung")
+        .eq("id", id)
+        .maybeSingle();
+      if (zrusene || !f) return;
+      const n = { ...nastaveniaUstva(f as any), ist: (f as any).de_versteuerung === "ist" };
+      setNast(n);
+      setRezim(n.obdobie === "stvrtrocne" ? "stvrtrok" : "mesiac");
+    })();
+    return () => {
+      zrusene = true;
+    };
+  }, []);
 
   const vstup = () => {
     const companyId = getActiveCompanyId();
@@ -104,6 +137,16 @@ export function DeUstva() {
     rezim === "mesiac"
       ? `${String(mesiac).padStart(2, "0")}/${rok}`
       : t("{q}. štvrťrok {rok}", { q: stvrtrok, rok });
+  const dauerfrist = nast?.dauerfrist ?? false;
+  const termin = terminUstva(
+    {
+      rok,
+      mesiac: rezim === "mesiac" ? mesiac : null,
+      stvrtrok: rezim === "stvrtrok" ? stvrtrok : null,
+    },
+    dauerfrist,
+  );
+  const datum = (d: string) => datumNaDoklade(d, jazyk === "de" ? "de" : "sk");
   const eur = (n: number | undefined) =>
     n == null ? "" : `${formatujCislo(n, 2, 2, jazyk === "de" ? "de-DE" : "sk-SK")} €`;
 
@@ -163,6 +206,13 @@ export function DeUstva() {
               <option value="mesiac">{t("Mesiac")}</option>
               <option value="stvrtrok">{t("Štvrťrok")}</option>
             </select>
+            {nast && (nast.obdobie === "stvrtrocne") !== (rezim === "stvrtrok") && (
+              <span className="mt-1 block text-xs text-amber-700 dark:text-amber-400">
+                {nast.obdobie === "stvrtrocne"
+                  ? t("V Nastaveniach firmy je štvrťročné podávanie.")
+                  : t("V Nastaveniach firmy je mesačné podávanie.")}
+              </span>
+            )}
           </label>
           <label className="block">
             <span className={popis}>{t("Obdobie")}</span>
@@ -192,6 +242,45 @@ export function DeUstva() {
               </select>
             )}
           </label>
+        </div>
+
+        <div className="mb-4 flex gap-3 rounded-xl border border-border bg-card p-4 text-sm">
+          <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <div className="font-medium">
+              {t("Termín podania a zaplatenia: {datum}", { datum: datum(termin.termin) })}
+            </div>
+            <p className="mt-1 text-muted-foreground">
+              {dauerfrist
+                ? t(
+                    "S Dauerfristverlängerung — 10. deň druhého mesiaca po skončení obdobia (§ 46 UStDV).",
+                  )
+                : t("10. deň po skončení obdobia (§ 18 Abs. 1 UStG).")}{" "}
+              {termin.termin !== termin.zakonny &&
+                t("Pripadol na víkend alebo sviatok, posúva sa na pracovný deň (§ 108 Abs. 3 AO).")}
+            </p>
+            {nast && maSondervorauszahlung(nast) && (
+              <p className="mt-2 text-muted-foreground">
+                {rezim === "mesiac" && mesiac === 12
+                  ? t(
+                      "December: do KZ 39 zapíšte Sondervorauszahlung zaplatenú za tento rok — odpočíta sa od dane.",
+                    )
+                  : t(
+                      "Mesačne s Dauerfristverlängerung: Sondervorauszahlung (1/11 súčtu záloh za minulý rok) prihláste a zaplaťte do {datum} (tlačivo USt 1 H) a odpočítajte ju v decembrovej UStVA v KZ 39.",
+                      {
+                        datum: datum(terminSondervorauszahlung(rok)),
+                      },
+                    )}
+              </p>
+            )}
+            {nast?.ist && (
+              <p className="mt-2 text-muted-foreground">
+                {t(
+                  "Zdaňovanie podľa prijatých platieb (Ist, § 20 UStG): daň z vystavených faktúr ide do obdobia, v ktorom prišla úhrada — pri čiastočnej úhrade pomerne. Odpočet dane (KZ 66) ostáva podľa prijatých faktúr.",
+                )}
+              </p>
+            )}
+          </div>
         </div>
 
         {chyba && (
@@ -317,7 +406,7 @@ export function DeUstva() {
                               <span className="block text-xs font-normal text-muted-foreground">
                                 {(zaklad ?? 0) < 0
                                   ? t("Nadmerný odpočet — finančný úrad vráti")
-                                  : t("Na úhradu do 10. dňa po skončení obdobia")}
+                                  : t("Na úhradu do {datum}", { datum: datum(termin.termin) })}
                               </span>
                             )}
                           </td>

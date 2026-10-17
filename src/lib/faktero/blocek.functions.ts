@@ -87,7 +87,7 @@ const Vstup = z.object({
    * sade sadzieb prečítal ako nulový. Keď nepríde, ostáva Slovensko; český QR
    * kód si krajinu povie sám.
    */
-  krajina: z.enum(["SK", "CZ"]).optional(),
+  krajina: z.enum(["SK", "CZ", "DE"]).optional(),
 });
 
 /**

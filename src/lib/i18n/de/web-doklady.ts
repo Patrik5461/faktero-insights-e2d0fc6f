@@ -120,7 +120,7 @@ export default {
     "Testmodus — es wird kein echtes Geld abgebucht.",
   "Platba prebieha priamo cez GoPay. Peniaze idú na účet príjemcu — nie cez Faktero.":
     "Die Zahlung läuft direkt über GoPay. Das Geld geht auf das Konto des Empfängers — nicht über Faktero.",
-  Dobropis: "Gutschrift",
+  Dobropis: "Rechnungskorrektur",
   "DPH (PDP)": "MwSt. (Reverse-Charge)",
   "Neplatný odkaz — ponuka sa nenašla.": "Ungültiger Link — das Angebot wurde nicht gefunden.",
   "Neplatný odkaz.": "Ungültiger Link.",

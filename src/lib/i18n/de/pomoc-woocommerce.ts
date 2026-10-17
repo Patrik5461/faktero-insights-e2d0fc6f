@@ -39,7 +39,7 @@ export default {
   "<0>Zaplatené objednávky</0> — faktúra zaplatenej objednávky je hneď uhradená a splatná dňom vystavenia. Nezaplatená dostane nastavenú splatnosť.":
     "<0>Bezahlte Bestellungen</0> — die Rechnung einer bezahlten Bestellung ist sofort bezahlt und am Rechnungsdatum fällig. Eine unbezahlte erhält die eingestellte Fälligkeit.",
   "<0>Zrušená objednávka</0> — môže stornovať svoju faktúru, ak ešte nie je zaplatená. Zaplatenú treba opraviť dobropisom vo Fakteri.":
-    "<0>Stornierte Bestellung</0> — kann ihre Rechnung stornieren, sofern sie noch nicht bezahlt ist. Eine bezahlte muss in Faktero per Gutschrift korrigiert werden.",
+    "<0>Stornierte Bestellung</0> — kann ihre Rechnung stornieren, sofern sie noch nicht bezahlt ist. Eine bezahlte muss in Faktero per Rechnungskorrektur korrigiert werden.",
   "<0>Odkaz v e-maile</0> a <1>E-mail z Faktera</1> — zákazník dostane odkaz na PDF v e-maile z obchodu, prípadne aj samostatný e-mail s faktúrou z Faktera.":
     "<0>Link in der E-Mail</0> und <1>E-Mail von Faktero</1> — der Kunde erhält den Link zum PDF in der E-Mail des Shops, gegebenenfalls auch eine separate E-Mail mit der Rechnung von Faktero.",
   "<0>Poznámka na faktúre</0> — predvolene „Objednávka č. {cislo}“. Číslo objednávky sa navyše ukladá do faktúry samostatne a ide aj do eFaktúry.":

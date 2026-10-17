@@ -898,6 +898,9 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const vetyPodSuctami = vetyNaDoklad({
     danZPrijatejPlatby: (company as any).dan_z_prijatej_platby,
     osobitnaUprava: invoice.osobitna_uprava,
+    // Nemecká firma: § 14a Abs. 6 (Differenzbesteuerung) a § 14 Abs. 4 Nr. 9 UStG.
+    krajina: cudziVystavovatel ? null : krajinaDane(company.country),
+    upozornenieUschova: (invoice as any).de_hinweis_aufbewahrung,
   });
   const rezimVystavovatela = rezimFirmy(company as FirmaDph);
   const textDph =
@@ -960,6 +963,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       Number(invoice.vat_total_eur),
       krajinaDane(company.country) === "CZ" ? "cz" : krajinaDane(company.country) === "DE" ? "de" : "sk",
       krajinaKurzu(company.country),
+      (invoice as any).exchange_rate_source,
     );
     const lines = wrapLines(text, font, 9, innerW);
     ensureSpace(14 + lines.length * 11 + 8);

@@ -14,7 +14,7 @@ export default {
     "Nach dem Import erstellt POHODA eine Meldung zu jedem Beleg. Dadurch weiß Faktero, welche Belege tatsächlich angelegt wurden und welche Nummern sie erhalten haben — bei der Rechnung sehen Sie also auch, wie sie in der Buchhaltung heißt. Und vor allem: Ein Beleg, den POHODA ablehnt, kehrt samt Begründung in die Warteschlange zurück und kommt erneut, sobald der Fehler behoben ist. Es kann nicht passieren, dass er bei Ihnen als übergeben gilt und in der Buchhaltung nicht existiert.",
   "Čo do POHODY chodí": "Was an POHODA geht",
   "Vydané faktúry, zálohové faktúry a dobropisy":
-    "Ausgangsrechnungen, Anzahlungsrechnungen und Gutschriften",
+    "Ausgangsrechnungen, Anzahlungsrechnungen und Rechnungskorrekturen",
   "Prijaté doklady — bločky aj faktúry, s rozpisom DPH po sadzbách":
     "Eingangsbelege — Kassenbons und Rechnungen, mit MwSt.-Aufschlüsselung nach Sätzen",
   "Pokladňa: príjmové a výdavkové doklady": "Kasse: Einnahme- und Ausgabebelege",
@@ -122,7 +122,7 @@ export default {
     "Den Kunden inklusive Firmen-ID (IČO), Steuernummer (DIČ) und USt-IdNr.",
   "Položky s množstvom, cenou a sadzbou DPH": "Positionen mit Menge, Preis und MwSt.-Satz",
   "Rozlíšenie dobropisu a zálohovej faktúry, aby sa nezaúčtovali ako bežné plnenie":
-    "Unterscheidung von Gutschrift und Anzahlungsrechnung, damit sie nicht als normale Leistung verbucht werden",
+    "Unterscheidung von Rechnungskorrektur und Anzahlungsrechnung, damit sie nicht als normale Leistung verbucht werden",
   "Celý balík naraz": "Das ganze Paket auf einmal",
   "K XML sa hodia dve veci: PDF všetkých faktúr v jednom ZIP archíve a prehľad DPH za obdobie s rozpisom po sadzbách. Oboje je v Fakteri na jedno kliknutie, takže účtovníčka dostane jednu správu a nie sériu otázok, čo kde chýba.":
     "Zum XML passen zwei Dinge: die PDFs aller Rechnungen in einem ZIP-Archiv und die MwSt.-Übersicht für den Zeitraum mit Aufschlüsselung nach Sätzen. Beides gibt es in Faktero mit einem Klick, sodass die Buchhalterin eine Nachricht erhält und nicht eine Reihe von Fragen, was wo fehlt.",

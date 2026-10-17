@@ -27,7 +27,7 @@ export default {
   "Pokračovať od {dalsie}": "Fortsetzen ab {dalsie}",
   Faktúry: "Rechnungen",
   "Zálohové faktúry": "Anzahlungsrechnungen",
-  Dobropisy: "Gutschriften",
+  Dobropisy: "Rechnungskorrekturen",
   Ťarchopisy: "Belastungsanzeigen",
   "Doklady k prijatej platbe": "Steuerbelege zur Zahlung",
   "Cenové ponuky": "Angebote",
@@ -71,7 +71,7 @@ export default {
   Ručne: "Manuell",
   Faktúra: "Rechnung",
   Zálohová: "Anzahlungsrechnung",
-  Dobropis: "Gutschrift",
+  Dobropis: "Rechnungskorrektur",
   Ťarchopis: "Belastungsanzeige",
   // JobPicker
   Zákazka: "Projekt",

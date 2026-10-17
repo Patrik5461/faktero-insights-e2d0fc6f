@@ -185,7 +185,7 @@ export function mapToEN16931De(
   dto.deliveryDate = txt(invoice.delivery_date) || txt(invoice.issue_date) || undefined;
   dto.paymentTerms =
     dto.documentType === "381"
-      ? "Gutschrift – der Betrag wird erstattet."
+      ? "Rechnungskorrektur – der Betrag wird erstattet."
       : invoice.due_date
         ? `Zahlbar ohne Abzug bis ${datumNaDoklade(invoice.due_date, "de")}.`
         : undefined;

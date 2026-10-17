@@ -189,7 +189,7 @@ describe("DATEV Buchungsstapel — zápisy", () => {
     const r = riadky(obsah)[2]!;
     expect(stlpec(r, "Soll/Haben-Kennzeichen")).toBe('"H"');
     expect(stlpec(r, "Umsatz (ohne Soll/Haben-Kz)")).toBe("119,00");
-    expect(stlpec(r, "Buchungstext")).toBe('"Gutschrift Kunde AG"');
+    expect(stlpec(r, "Buchungstext")).toBe('"Rechnungskorrektur Kunde AG"');
   });
 
   it("reverse charge: služba do EÚ na 8336, tovar do EÚ na 8125 s IČ DPH, netto", () => {

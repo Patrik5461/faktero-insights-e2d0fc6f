@@ -1212,6 +1212,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          kurz_de_zdroj: string
           pohoda_clenenie_dph_prijata_pdp: string | null
           uctovny_program: string
           uctovanie_nastavenia: Json
@@ -1292,6 +1293,9 @@ export type Database = {
           handelsregister_nr: string | null
           geschaeftsfuehrer: string | null
           dan_z_prijatej_platby: boolean
+          de_dauerfrist: boolean
+          de_ustva_obdobie: string
+          de_versteuerung: string
           pohoda_blocky_agenda: string
           pohoda_rad_prijate: string | null
           pohoda_rad_doklady: string | null
@@ -1314,6 +1318,7 @@ export type Database = {
           povinne_polia_dokladu: string[]
         }
         Insert: {
+          kurz_de_zdroj?: string
           pohoda_clenenie_dph_prijata_pdp?: string | null
           uctovny_program?: string
           uctovanie_nastavenia?: Json
@@ -1394,6 +1399,9 @@ export type Database = {
           handelsregister_nr?: string | null
           geschaeftsfuehrer?: string | null
           dan_z_prijatej_platby?: boolean
+          de_dauerfrist?: boolean
+          de_ustva_obdobie?: string
+          de_versteuerung?: string
           pohoda_blocky_agenda?: string
           pohoda_rad_prijate?: string | null
           pohoda_rad_doklady?: string | null
@@ -1416,6 +1424,7 @@ export type Database = {
           povinne_polia_dokladu?: string[]
         }
         Update: {
+          kurz_de_zdroj?: string
           pohoda_clenenie_dph_prijata_pdp?: string | null
           uctovny_program?: string
           uctovanie_nastavenia?: Json
@@ -1496,6 +1505,9 @@ export type Database = {
           handelsregister_nr?: string | null
           geschaeftsfuehrer?: string | null
           dan_z_prijatej_platby?: boolean
+          de_dauerfrist?: boolean
+          de_ustva_obdobie?: string
+          de_versteuerung?: string
           pohoda_blocky_agenda?: string
           pohoda_rad_prijate?: string | null
           pohoda_rad_doklady?: string | null
@@ -2910,6 +2922,24 @@ export type Database = {
           den?: string
           kurz?: number
           mena?: string
+        }
+        Relationships: []
+      }
+      kurzy_bmf: {
+        Row: {
+          kurz: number
+          mena: string
+          mesiac: string
+        }
+        Insert: {
+          kurz: number
+          mena: string
+          mesiac: string
+        }
+        Update: {
+          kurz?: number
+          mena?: string
+          mesiac?: string
         }
         Relationships: []
       }
@@ -4656,6 +4686,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          exchange_rate_source: string | null
           advance_amount: number | null
           advance_invoice_id: string | null
           approval_note: string | null
@@ -4683,6 +4714,7 @@ export type Database = {
           customer_name: string | null
           customer_street: string | null
           customer_zip: string | null
+          de_hinweis_aufbewahrung: boolean
           deferred_stock_issue: boolean
           deleted_at: string | null
           delivery_date: string | null
@@ -4756,6 +4788,7 @@ export type Database = {
           zasielkovna_stav_at: string | null
         }
         Insert: {
+          exchange_rate_source?: string | null
           advance_amount?: number | null
           advance_invoice_id?: string | null
           approval_note?: string | null
@@ -4783,6 +4816,7 @@ export type Database = {
           customer_name?: string | null
           customer_street?: string | null
           customer_zip?: string | null
+          de_hinweis_aufbewahrung?: boolean
           deferred_stock_issue?: boolean
           deleted_at?: string | null
           delivery_date?: string | null
@@ -4856,6 +4890,7 @@ export type Database = {
           zasielkovna_stav_at?: string | null
         }
         Update: {
+          exchange_rate_source?: string | null
           advance_amount?: number | null
           advance_invoice_id?: string | null
           approval_note?: string | null
@@ -4883,6 +4918,7 @@ export type Database = {
           customer_name?: string | null
           customer_street?: string | null
           customer_zip?: string | null
+          de_hinweis_aufbewahrung?: boolean
           deferred_stock_issue?: boolean
           deleted_at?: string | null
           delivery_date?: string | null
@@ -5931,6 +5967,7 @@ export type Database = {
       }
       purchase_invoices: {
         Row: {
+          exchange_rate_source: string | null
           polozky_vypnute: Json | null
           amount_total: number
           amount_without_vat: number
@@ -6030,6 +6067,7 @@ export type Database = {
           vyuctovanie_id: string | null
         }
         Insert: {
+          exchange_rate_source?: string | null
           polozky_vypnute?: Json | null
           amount_total?: number
           amount_without_vat?: number
@@ -6129,6 +6167,7 @@ export type Database = {
           vyuctovanie_id?: string | null
         }
         Update: {
+          exchange_rate_source?: string | null
           polozky_vypnute?: Json | null
           amount_total?: number
           amount_without_vat?: number

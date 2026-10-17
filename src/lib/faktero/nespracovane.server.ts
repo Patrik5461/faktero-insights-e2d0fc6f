@@ -232,9 +232,9 @@ export async function vytvorDoklad(
     /* Doklad v cudzej mene potrebuje kurz (SK ECB, CZ ČNB); bez neho by chýbal vo výkaze k DPH. */
     {
       try {
-        const { prepocitajDoklad, krajinaFirmy } = await import("./kurzy.server");
+        const { prepocitajDoklad, pravidloKurzuFirmy } = await import("./kurzy.server");
         const { domacaMena } = await import("./kurzy");
-        const krajinaKurzu = await krajinaFirmy(r.company_id);
+        const { krajina: krajinaKurzu, nastavenieDe } = await pravidloKurzuFirmy(r.company_id);
         const p =
           zakl.currency !== domacaMena(krajinaKurzu)
             ? await prepocitajDoklad(
@@ -246,12 +246,18 @@ export async function vytvorDoklad(
                   celkom: zakl.amount_total,
                 },
                 krajinaKurzu,
+                nastavenieDe,
               )
             : null;
         if (p)
           await supabase
             .from("purchase_invoices")
-            .update({ exchange_rate: p.kurz, amount_without_vat_eur: p.zaklad, vat_amount_eur: p.dan })
+            .update({
+              exchange_rate: p.kurz,
+              exchange_rate_source: p.zdroj,
+              amount_without_vat_eur: p.zaklad,
+              vat_amount_eur: p.dan,
+            })
             .eq("id", data.id);
       } catch {
         /* Kurz je doplnok — doklad je uložený. */

@@ -74,6 +74,45 @@ export const UPRAVY_NA_VYBER: { kod: OsobitnaUprava; nazov: string }[] = (
   Object.keys(VETY_UPRAV) as OsobitnaUprava[]
 ).map((kod) => ({ kod, nazov: VETY_UPRAV[kod] }));
 
+/**
+ * Tie isté úpravy pre **nemeckú** firmu — znenie podľa § 14a Abs. 6 UStG:
+ * použitý tovar, umelecké diela a zberateľské predmety idú podľa § 25a
+ * (Differenzbesteuerung), cestovné kancelárie podľa § 25. Daň sa pri nich na
+ * faktúre samostatne neuvádza (§ 14a Abs. 6 S. 2 UStG) — zdaňuje sa rozdiel
+ * medzi predajnou a nákupnou cenou a ten odberateľ nevidí.
+ */
+const VETY_UPRAV_DE: Record<OsobitnaUprava, string> = {
+  "65": "Sonderregelung für Reisebüros",
+  "66_tovar": "Gebrauchtgegenstände/Sonderregelung",
+  "66_umenie": "Kunstgegenstände/Sonderregelung",
+  "66_starozitnosti": "Sammlungsstücke und Antiquitäten/Sonderregelung",
+};
+
+/** Popisky na výber vo formulári pre nemeckú firmu (slovenský kľúč pre `t`). */
+const NAZVY_UPRAV_DE: Record<OsobitnaUprava, string> = {
+  "65": "Cestovné kancelárie (§ 25 UStG)",
+  "66_tovar": "Použitý tovar — Differenzbesteuerung (§ 25a UStG)",
+  "66_umenie": "Umelecké diela — Differenzbesteuerung (§ 25a UStG)",
+  "66_starozitnosti": "Zberateľské predmety a starožitnosti — Differenzbesteuerung (§ 25a UStG)",
+};
+
+/** Osobitné úpravy na výber podľa krajiny firmy. */
+export function upravyNaVyber(krajina?: string | null): { kod: OsobitnaUprava; nazov: string }[] {
+  if (krajina !== "DE") return UPRAVY_NA_VYBER;
+  return (Object.keys(NAZVY_UPRAV_DE) as OsobitnaUprava[]).map((kod) => ({
+    kod,
+    nazov: NAZVY_UPRAV_DE[kod],
+  }));
+}
+
+/**
+ * § 14 Abs. 4 Nr. 9 UStG: pri stavebnom plnení alebo plnení v súvislosti s
+ * pozemkom pre nepodnikateľa (alebo pre podnikateľa do súkromia) musí faktúra
+ * upozorniť na povinnosť uchovať ju dva roky. Znenie podľa § 14b Abs. 1 S. 5.
+ */
+export const VETA_AUFBEWAHRUNG_DE =
+  "Sie sind gesetzlich verpflichtet, diese Rechnung zwei Jahre lang aufzubewahren (§ 14b Abs. 1 Satz 5 UStG).";
+
 /** Veta podľa § 68d — platí pre celú firmu, nie pre jednotlivý doklad. */
 export const VETA_68D = "Daň sa uplatňuje na základe prijatia platby";
 
@@ -89,11 +128,24 @@ export function vetyNaDoklad(vstup: {
   osobitnaUprava?: string | null;
   /** Faktúru vyhotovil odberateľ za dodávateľa (§ 72 ods. 4, § 74 ods. 1 písm. n). */
   samofakturacia?: boolean | null;
+  /** Krajina firmy (`krajinaDane`) — nemecká firma dostane vety podľa UStG. */
+  krajina?: string | null;
+  /** DE: stavebné plnenie / plnenie s pozemkom pre súkromnú osobu (§ 14 Abs. 4 Nr. 9 UStG). */
+  upozornenieUschova?: boolean | null;
 }): string[] {
   const von: string[] = [];
+  const u = vstup.osobitnaUprava as OsobitnaUprava | null | undefined;
+  if (vstup.krajina === "DE") {
+    /*
+      Ist-Versteuerung (§ 20 UStG) sa na nemeckú faktúru nepíše — veta § 68d
+      je slovenská. Samofaktúru („Gutschrift“) označuje tlač pod číslom.
+    */
+    if (u && VETY_UPRAV_DE[u]) von.push(VETY_UPRAV_DE[u]);
+    if (vstup.upozornenieUschova) von.push(VETA_AUFBEWAHRUNG_DE);
+    return von;
+  }
   if (vstup.samofakturacia) von.push(VETA_SAMOFAKTURACIA);
   if (vstup.danZPrijatejPlatby) von.push(VETA_68D);
-  const u = vstup.osobitnaUprava as OsobitnaUprava | null | undefined;
   if (u && VETY_UPRAV[u]) von.push(VETY_UPRAV[u]);
   return von;
 }

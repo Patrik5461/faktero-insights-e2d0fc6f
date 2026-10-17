@@ -61,10 +61,22 @@ function riadkyZPoloziek(
   }));
 }
 
+/** Voľby načítania — dnes ich používa len nemecká UStVA. */
+export type MoznostiVstupu = {
+  /**
+   * Ist-Versteuerung (§ 20 UStG): zdaniteľné riadky vystavených faktúr idú do
+   * obdobia podľa prijatých platieb, pomerne pri čiastočnej úhrade. Pozri `ust-ist.ts`.
+   */
+  ist?: boolean;
+  /** Výtka pri platbe na zálohovú faktúru bez dokladu k prijatej platbe (Mindest-Ist). */
+  kontrolaZaloh?: boolean;
+};
+
 export async function nacitajVstup(
   supabase: Klient,
   companyId: string,
   obdobie: Obdobie,
+  moznosti: MoznostiVstupu = {},
 ): Promise<{ vstup: Vstup; vytky: Vytka[] }> {
   const { od, do: doDna } = hraniceObdobia(obdobie);
   const vytky: Vytka[] = [];
@@ -74,7 +86,7 @@ export async function nacitajVstup(
       supabase
         .from("invoices")
         .select(
-          "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_dic, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, invoice_items(vat_rate, subtotal, quantity, unit_price, prenesenie)",
+          "id, invoice_number, type, status, issue_date, delivery_date, paid_at, total, currency, customer_ic_dph, customer_dic, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, invoice_items(vat_rate, subtotal, quantity, unit_price, prenesenie)",
         )
         .eq("company_id", companyId)
         .is("deleted_at", null)
@@ -171,6 +183,33 @@ export async function nacitajVstup(
     odpoctyFaktury.set(r.invoice_id, zoz);
   }
 
+  /*
+    Úhrady vystavených faktúr — len keď ich treba (Ist-Versteuerung, kontrola
+    záloh). Načítajú sa všetky, lebo pri Ist rozhoduje aj to, koľko bolo
+    zaplatené pred obdobím (preplatok sa nezdaní dvakrát).
+  */
+  const { platbyFaktury, podielUhradyVObdobi, riadkyPodielom, uhradeneDo } = await import("./ust-ist");
+  const platbyPodlaFaktury = new Map<string, { suma: number; datum: string }[]>();
+  if (moznosti.ist || moznosti.kontrolaZaloh) {
+    const { data: platbyRiadky } = await vsetkoAkoData((zac, kon) =>
+      supabase
+        .from("payments")
+        .select("id, invoice_id, amount, paid_at")
+        .eq("company_id", companyId)
+        .order("id")
+        .range(zac, kon),
+    );
+    for (const p of (platbyRiadky ?? []) as any[]) {
+      if (!p.invoice_id || !p.paid_at) continue;
+      const zoz = platbyPodlaFaktury.get(p.invoice_id) ?? [];
+      zoz.push({ suma: Number(p.amount ?? 0), datum: String(p.paid_at).slice(0, 10) });
+      platbyPodlaFaktury.set(p.invoice_id, zoz);
+    }
+  }
+  const platbyF = (f: any) => platbyFaktury(f, platbyPodlaFaktury.get(f.id) ?? []);
+  const fakturaPodlaId = new Map<string, any>();
+  for (const f of (fakturyRes.data ?? []) as any[]) fakturaPodlaId.set(f.id, f);
+
   const zdaneneZalohy = new Map<string, SadzbovyRiadok[]>();
   for (const f of (fakturyRes.data ?? []) as any[]) {
     if (f.type !== "advance_payment" || !f.advance_invoice_id) continue;
@@ -189,8 +228,47 @@ export async function nacitajVstup(
     */
     const opravna = f.type === "credit_note" || f.type === "debit_note" || Boolean(f.opravuje_fakturu_id);
     const den = opravna ? f.issue_date || f.delivery_date : f.delivery_date || f.issue_date;
-    if (!vDobe(den)) continue;
     if (NEPLATNE_STAVY.includes(String(f.status))) continue;
+    /*
+      Mindest-Ist-Versteuerung (§ 13 Abs. 1 Nr. 1 Buchst. a S. 4 UStG): daň
+      zo zálohy vzniká jej prijatím. Nesie ju doklad k prijatej platbe; keď
+      na zálohovú faktúru prišli peniaze a doklad chýba, vo výkaze by daň chýbala.
+    */
+    if (moznosti.kontrolaZaloh && f.type === "proforma" && !zdaneneZalohy.has(f.id)) {
+      if (platbyF(f).some((p) => vDobe(p.datum)))
+        vytky.push({
+          doklad: String(f.invoice_number),
+          text: "Na zálohovú faktúru prišla v období platba, ale doklad k prijatej platbe k nej nie je. Daň zo zálohy vzniká už jej prijatím (§ 13 Abs. 1 Nr. 1 Buchst. a Satz 4 UStG) — vystavte doklad k prijatej platbe, inak v prehľade chýba.",
+        });
+      continue;
+    }
+    // Ist: ostrá faktúra a ťarchopis sa zdania podľa úhrad, nie podľa dodania.
+    const podlaUhrad =
+      Boolean(moznosti.ist) && (f.type === "regular" || f.type === "debit_note") && !f.oss;
+    const soll = vDobe(den);
+    if (!soll && !podlaUhrad) continue;
+    // Mimo obdobia dodania a bez úhrady v období — pri Ist sem nepatrí.
+    if (!soll && !platbyF(f).some((p) => vDobe(p.datum))) continue;
+    /*
+      Ist a opravná faktúra: keď pôvodná ešte nebola celá zaplatená, zníženie
+      sa prejaví samo — zdaňuje sa len to, čo odberateľ naozaj zaplatí. Do
+      výkazu ide len oprava už zaplatenej faktúry (vrátenie peňazí).
+    */
+    if (moznosti.ist && soll && f.type === "credit_note" && f.opravuje_fakturu_id) {
+      const povodna = fakturaPodlaId.get(f.opravuje_fakturu_id);
+      if (povodna) {
+        const zaplatene = uhradeneDo(platbyF(povodna), String(f.issue_date || den));
+        const suma = Number(povodna.total ?? 0);
+        if (zaplatene < suma - 0.01) {
+          if (zaplatene > 0.01)
+            vytky.push({
+              doklad: String(f.invoice_number),
+              text: "Rechnungskorrektur k čiastočne zaplatenej faktúre pri Ist-Versteuerung — do prehľadu nevošla (zníženie sa prejaví na ďalších úhradách). Ak ste časť peňazí vracali, doplňte opravu ručne.",
+            });
+          continue;
+        }
+      }
+    }
     /*
       Do výkazu patrí domáca mena. Keď je faktúra v cudzej mene, berú sa prepočítané
       sumy (SK kurz ECB zo dňa pred dodaním, CZ kurz ČNB) a riadky po sadzbách sa prepočítajú
@@ -250,7 +328,7 @@ export async function nacitajVstup(
       }
     }
 
-    vystavene.push({
+    const zaznam = (r: SadzbovyRiadok[]): VystavenaFaktura => ({
       cislo: String(f.invoice_number),
       typ: String(f.type),
       datumDodania: String(den),
@@ -264,8 +342,30 @@ export async function nacitajVstup(
       ossStat: f.oss_country,
       opravujeCislo: f.opravuje_fakturu_id ? (cisla.get(f.opravuje_fakturu_id) ?? null) : null,
       oprava25a: Boolean(f.oprava_25a),
-      riadky,
+      riadky: r,
     });
+    if (podlaUhrad) {
+      /*
+        Ist (§ 20 UStG): riadky s daňou idú do obdobia podľa úhrad, pomerom
+        zaplatenej hrubej sumy (platba je v mene faktúry, prepočíta sa rovnakým
+        kurzom ako riadky). Prenesenie a nulové riadky ostávajú podľa dodania.
+      */
+      const zaJednu = cudzia ? domacejZaJednotku(f.exchange_rate, (firmaKody as any)?.country) : 1;
+      const hruba = [...riadky, ...riadkyPdp].reduce((a, r) => a + r.zaklad + r.dan, 0);
+      const podielObdobia = podielUhradyVObdobi(
+        platbyF(f).map((p) => ({ suma: p.suma * (zaJednu > 0 ? zaJednu : 1), datum: p.datum })),
+        Math.round(hruba * 100) / 100,
+        od,
+        doDna,
+      );
+      const sDanou = f.reverse_charge ? [] : riadky.filter((r) => Number(r.sadzba) > 0);
+      const bezDane = f.reverse_charge ? riadky : riadky.filter((r) => !(Number(r.sadzba) > 0));
+      if (soll && bezDane.length) vystavene.push(zaznam(bezDane));
+      if (podielObdobia > 0 && sDanou.length) vystavene.push(zaznam(riadkyPodielom(sDanou, podielObdobia)));
+      if (!soll) continue;
+    } else {
+      vystavene.push(zaznam(riadky));
+    }
     if (riadkyPdp.length) {
       vystavene.push({
         cislo: String(f.invoice_number),

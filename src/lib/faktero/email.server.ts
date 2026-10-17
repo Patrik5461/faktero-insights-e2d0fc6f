@@ -75,10 +75,10 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       company_id: input.company_id,
       invoice_id: invoice.id,
       recipient_email: input.recipient_email,
-      subject: predvolenyMailFaktury(jazykFaktury(invoice, company)).predmet.replace(
-        "{invoice_number}",
-        String(invoice.invoice_number ?? ""),
-      ),
+      subject: predvolenyMailFaktury(
+        jazykFaktury(invoice, company),
+        (invoice as any).type,
+      ).predmet.replace("{invoice_number}", String(invoice.invoice_number ?? "")),
       status: "pending",
     })
     .select("id")
@@ -137,7 +137,7 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       nemenia. Až keď firma nemá nič vlastné, ide predvolený mail v jazyku
       dokladu (nemecká faktúra → nemecký mail).
     */
-    const predvoleny = predvolenyMailFaktury(jazykFaktury(invoice, company));
+    const predvoleny = predvolenyMailFaktury(jazykFaktury(invoice, company), (invoice as any).type);
     const subject =
       input.subject ?? tplSubject ?? company?.email_default_subject ?? predvoleny.predmet;
     const message = input.message ?? tplBody ?? company?.email_default_message ?? predvoleny.text;

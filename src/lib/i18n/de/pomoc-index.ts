@@ -15,7 +15,7 @@ export default {
   "{n} videá": "{n} Videos",
   "{n} videí": "{n} Videos",
   "Vystavovanie, PDF, odosielanie, dobropisy a zálohové faktúry.":
-    "Ausstellen, PDF, Versand, Gutschriften und Anzahlungsrechnungen.",
+    "Ausstellen, PDF, Versand, Rechnungskorrekturen und Anzahlungsrechnungen.",
   "Od návrhu k podpisu a premena na objednávku alebo faktúru.":
     "Vom Entwurf zur Unterschrift und Umwandlung in eine Bestellung oder Rechnung.",
   "Čo si u vás objednali, rezervácia tovaru a fakturovanie po častiach.":

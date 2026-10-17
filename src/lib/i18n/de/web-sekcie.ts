@@ -16,7 +16,7 @@ export default {
   "PDF faktúry s logom firmy, IBAN, BIC a QR platbou (PAY by square)":
     "PDF-Rechnungen mit Firmenlogo, IBAN, BIC und QR-Zahlung (PAY by square)",
   "Automatické číselné rady pre faktúry, dobropisy a zálohové faktúry":
-    "Automatische Nummernkreise für Rechnungen, Gutschriften und Anzahlungsrechnungen",
+    "Automatische Nummernkreise für Rechnungen, Rechnungskorrekturen und Anzahlungsrechnungen",
   "Viacero sadzieb DPH na jednej faktúre vrátane reverse-charge":
     "Mehrere MwSt.-Sätze auf einer Rechnung inklusive Reverse-Charge",
   "Odoslanie e-mailom z vašej adresy a sledovanie doručenia":
@@ -56,7 +56,7 @@ export default {
   "Podklady odídu mailom 5. v mesiaci, alebo si ich Pohoda stiahne sama každú noc. Účtovníčka pritom nič neinštaluje.":
     "Die Unterlagen gehen am 5. des Monats per E-Mail hinaus, oder Pohoda lädt sie jede Nacht selbst herunter. Die Buchhalterin muss dafür nichts installieren.",
   "Vydané aj zálohové faktúry, dobropisy, prijaté doklady a pokladňa":
-    "Ausgangs- und Anzahlungsrechnungen, Gutschriften, Eingangsbelege und Kasse",
+    "Ausgangs- und Anzahlungsrechnungen, Rechnungskorrekturen, Eingangsbelege und Kasse",
   "Voliteľne adresár, skladové karty, pohyby aj zákazky — faktúra potom nesie zákazku":
     "Optional Kontakte, Artikel, Lagerbewegungen und Projekte — die Rechnung trägt dann das Projekt",
   "Späť sa vracajú čísla, ktoré doklady dostali v Pohode":
@@ -242,7 +242,7 @@ export default {
   "Neodsúhlasená do výkazov ani do príkazu na úhradu nepustí":
     "Eine nicht bestätigte kommt weder in die Meldungen noch in den Zahlungsauftrag",
   "Prenesenie DPH (šrot, stavebné práce, dodávateľ z EÚ), cudzia mena s kurzom ECB, zľavy, zúčtovanie zálohy a dobropis":
-    "Reverse-Charge (Schrott, Bauleistungen, Lieferant aus der EU), Fremdwährung mit EZB-Kurs, Rabatte, Verrechnung der Anzahlung und Gutschrift",
+    "Reverse-Charge (Schrott, Bauleistungen, Lieferant aus der EU), Fremdwährung mit EZB-Kurs, Rabatte, Verrechnung der Anzahlung und Rechnungskorrektur",
   "Výkup tovaru jedným klikom na sklad, dodávateľ odsúhlasuje v slovenčine, češtine, angličtine, nemčine aj maďarčine":
     "Warenankauf mit einem Klick ins Lager, der Lieferant bestätigt auf Slowakisch, Tschechisch, Englisch, Deutsch oder Ungarisch",
   "Banka a párovanie úhrad": "Bank und Zahlungsabgleich",
@@ -328,7 +328,7 @@ export default {
   "Rozpis po sadzbách 23 / 19 / 5 / 0 % vrátane prenosu daňovej povinnosti":
     "Aufschlüsselung nach den Sätzen 23 / 19 / 5 / 0 % inklusive Reverse-Charge",
   "Dobropis daň znižuje, zálohová faktúra do priznania nevstupuje":
-    "Eine Gutschrift mindert die Steuer, eine Anzahlungsrechnung geht nicht in die Erklärung ein",
+    "Eine Rechnungskorrektur mindert die Steuer, eine Anzahlungsrechnung geht nicht in die Erklärung ein",
   "DPH na vstupe z prijatých faktúr": "Vorsteuer aus Eingangsrechnungen",
   "Nezaplatené faktúry: oprava odpočtu po 101. dni (§ 53b) doplnená sama, opravný doklad pri nevymožiteľnej pohľadávke (§ 25a) jedným klikom":
     "Unbezahlte Rechnungen: Korrektur des Vorsteuerabzugs nach dem 101. Tag (§ 53b) wird automatisch ergänzt, Korrekturbeleg bei uneinbringlicher Forderung (§ 25a) mit einem Klick",
@@ -362,7 +362,8 @@ export default {
   "Príjemky, výdajky a inventúry": "Wareneingänge, Warenausgänge und Inventuren",
   "Automatický skladový pohyb pri vystavení faktúry":
     "Automatische Lagerbewegung beim Ausstellen einer Rechnung",
-  "Dobropisy a reverzie skladových pohybov": "Gutschriften und Stornierung von Lagerbewegungen",
+  "Dobropisy a reverzie skladových pohybov":
+    "Rechnungskorrekturen und Stornierung von Lagerbewegungen",
   "Reálny stav skladu v reálnom čase": "Echter Lagerbestand in Echtzeit",
   "Kniha jázd + Commander GPS": "Fahrtenbuch + Commander GPS",
   "Jazdy a tankovania z Commander GPS sa sťahujú automaticky do knihy jázd.":
@@ -475,7 +476,7 @@ export default {
   "Autentifikácia, chyby, stránkovanie": "Authentifizierung, Fehler, Paginierung",
   "Príklady v cURL, Node.js, PHP a Pythone": "Beispiele in cURL, Node.js, PHP und Python",
   "Recepty: opakované faktúry, dobropisy, párovanie platieb":
-    "Rezepte: wiederkehrende Rechnungen, Gutschriften, Zahlungsabgleich",
+    "Rezepte: wiederkehrende Rechnungen, Rechnungskorrekturen, Zahlungsabgleich",
   "Changelog a verziovanie API": "Changelog und API-Versionierung",
   "API pre prijaté doklady": "API für Eingangsbelege",
   "Prijaté faktúry a bločky so zaúčtovaním pre váš účtovný program.":
@@ -521,7 +522,7 @@ export default {
   "Doručenie cez Peppol sieť alebo Digitálny poštár Finančnej správy SR":
     "Zustellung über das Peppol-Netzwerk oder den Digitalen Postboten der slowakischen Finanzverwaltung",
   "Dobropis ako CreditNote 381 s číslom pôvodnej faktúry (BT-25), samofaktúra cez Peppol":
-    "Gutschrift als CreditNote 381 mit der Nummer der ursprünglichen Rechnung (BT-25), Selbstfakturierung über Peppol",
+    "Rechnungskorrektur als CreditNote 381 mit der Nummer der ursprünglichen Rechnung (BT-25), Selbstfakturierung über Peppol",
   "PDF už nebude stačiť na uplatnenie nákladu a odpočtu DPH":
     "Ein PDF reicht dann nicht mehr für den Kostenansatz und den Vorsteuerabzug",
   "Automatické párovanie s objednávkou a skladom":
@@ -606,7 +607,7 @@ export default {
   "Dátový balík pre XML import v Pohode — overený proti oficiálnej schéme Stormware, nie len „nejako poskladaný“.":
     "Datenpaket für den XML-Import in Pohoda — geprüft gegen das offizielle Schema von Stormware, nicht nur „irgendwie zusammengesetzt“.",
   "Zálohová faktúra ako zálohová, dobropis so zápornými sumami":
-    "Anzahlungsrechnung als Anzahlungsrechnung, Gutschrift mit negativen Beträgen",
+    "Anzahlungsrechnung als Anzahlungsrechnung, Rechnungskorrektur mit negativen Beträgen",
   "Sadzba DPH podľa dňa plnenia, nie podľa dneška":
     "MwSt.-Satz nach dem Leistungsdatum, nicht nach dem heutigen Tag",
   "Predkontácie a členenia DPH z vašej Pohody":
@@ -642,7 +643,7 @@ export default {
   "CSV súpiska pre MRP, Helios, Premier alebo Excel":
     "CSV-Liste für MRP, Helios, Premier oder Excel",
   "Zálohové faktúry, dobropisy a zľavy rozpočítané správne v každom formáte":
-    "Anzahlungsrechnungen, Gutschriften und Rabatte in jedem Format richtig aufgeteilt",
+    "Anzahlungsrechnungen, Rechnungskorrekturen und Rabatte in jedem Format richtig aufgeteilt",
   "Automatické účtovanie": "Automatische Buchung",
   "Bloček, prijatá aj vystavená faktúra či pohyb v banke sa zaúčtuje sám — predkontácia, členenie DPH aj KV.":
     "Kassenbon, Eingangs- und Ausgangsrechnung oder Bankbewegung werden von selbst verbucht — Vorkontierung, MwSt.-Kennzeichen und KV.",

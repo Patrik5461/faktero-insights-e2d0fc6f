@@ -305,7 +305,7 @@ const DE: Popisky = {
   faktura: "RECHNUNG",
   zalohovaFaktura: "ANZAHLUNGSRECHNUNG",
   dokladKPlatbe: "STEUERBELEG ÜBER DIE ERHALTENE ZAHLUNG",
-  dobropis: "GUTSCHRIFT",
+  dobropis: "RECHNUNGSKORREKTUR",
   tarchopis: "LASTSCHRIFT",
   prenosEuTovarSmernica: "Steuerfreie innergemeinschaftliche Lieferung – Art. 138 Richtlinie 2006/112/EG. Die Steuer schuldet der Leistungsempfänger.",
   prenosEuSluzbaSmernica: "Steuerschuldnerschaft des Leistungsempfängers – Art. 196 Richtlinie 2006/112/EG.",

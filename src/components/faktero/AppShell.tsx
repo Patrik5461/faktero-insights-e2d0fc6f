@@ -42,6 +42,7 @@ import {
   manualPre,
   NAV,
   QUICK_CREATE,
+  nedostupneAgendy,
   ACCOUNT_API_LINKS,
   ACCOUNT_SETTINGS_LINKS,
   activeChildKey,
@@ -188,7 +189,9 @@ export function AppShell({
     active?.permissions ?? null,
   );
   const homePath = landingPathFor(view);
-  const canSwitch = productMode === "both";
+  // Nemecká firma knihu jázd nemá (Fahrtenbuch musí byť nemenné) — prepínač produktov by viedol do prázdna.
+  const canSwitch = productMode === "both" && krajina !== "DE";
+  const nedostupne = nedostupneAgendy(pathname, krajina);
 
   function switchProduct() {
     const next: ActiveProduct = view === "invoicing" ? "logbook" : "invoicing";
@@ -710,7 +713,28 @@ export function AppShell({
               {t("ako účtovník — doklady vediete v plnom rozsahu. Napojenie banky, platby, API kľúče a správu používateľov má na starosti majiteľ alebo administrátor.")}
             </div>
           )}
-          {children}
+          {nedostupne ? (
+            /* Priamy vstup na agendu podľa slovenských predpisov (pokladňa, kniha
+               jázd, zamestnanci) — nemecká firma dostane vysvetlenie, nie agendu. */
+            <PageBody>
+              <div
+                role="status"
+                className="mx-auto mt-6 max-w-2xl rounded-xl border border-border bg-card p-6 text-sm"
+              >
+                <h1 className="text-lg font-semibold">
+                  {t("{nazov} pre firmy v Nemecku zatiaľ nie je", { nazov: t(nedostupne.nazov) })}
+                </h1>
+                <p className="mt-2 text-muted-foreground">{t(nedostupne.dovod)}</p>
+                <p className="mt-4">
+                  <a href="/pomoc/nemecko" className="text-primary underline underline-offset-2">
+                    {t("Čo Faktero pre firmy v Nemecku robí a čo nie")}
+                  </a>
+                </p>
+              </div>
+            </PageBody>
+          ) : (
+            children
+          )}
         </main>
       </div>
       <CreateCompanyDialog open={createOpen} onOpenChange={setCreateOpen} />

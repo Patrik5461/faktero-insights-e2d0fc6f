@@ -44,15 +44,16 @@ export async function pdfSamofaktury(
   const mena = sf.currency || "EUR";
 
   let kurz: { kurz: number; den: string; dan: number } | null = null;
-  const { prepocitajDoklad, krajinaFirmy } = await import("./kurzy.server");
+  const { prepocitajDoklad, pravidloKurzuFirmy } = await import("./kurzy.server");
   const { domacaMena } = await import("./kurzy");
-  const krajinaKurzu = await krajinaFirmy(sf.company_id);
+  const { krajina: krajinaKurzu, nastavenieDe } = await pravidloKurzuFirmy(sf.company_id);
   if (mena !== domacaMena(krajinaKurzu) && dan !== 0) {
     const p = await prepocitajDoklad(
       mena,
       String(sf.delivery_date || sf.issue_date),
       { zaklad: sumy.zaklad, dan, celkom: sumy.zaklad + dan },
       krajinaKurzu,
+      nastavenieDe,
     );
     if (p) kurz = { kurz: p.kurz, den: p.den, dan: p.dan };
   }

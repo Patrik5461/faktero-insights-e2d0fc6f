@@ -26,21 +26,47 @@ type VstupUstva = z.infer<typeof Vstup>;
 async function zostav(supabase: any, data: VstupUstva) {
   const { data: firma } = await supabase
     .from("companies")
-    .select("name, country, vat_payer, vat_scheme, ic_dph, dic")
+    .select(
+      "name, country, vat_payer, vat_scheme, ic_dph, dic, de_versteuerung, de_ustva_obdobie, de_dauerfrist",
+    )
     .eq("id", data.company_id)
     .maybeSingle();
   if (!firma) throw new Error("Firma sa nenašla.");
   const obdobie = { rok: data.rok, mesiac: data.mesiac ?? null, stvrtrok: data.stvrtrok ?? null };
+  const { nastaveniaUstva, terminUstva } = await import("./ustva-terminy");
+  const nastavenia = {
+    ...nastaveniaUstva(firma),
+    versteuerung: (firma.de_versteuerung === "ist" ? "ist" : "soll") as "soll" | "ist",
+  };
+  const termin = terminUstva(obdobie, nastavenia.dauerfrist);
   // Kleinunternehmer (§ 19 UStG) UStVA nepodáva — nie je čo počítať.
   if (firma.vat_scheme === "de_kleinunternehmer" || firma.vat_payer === false)
-    return { obdobie, firma, kleinunternehmer: true as const, ustva: null, vytky: [], pocty: null };
+    return {
+      obdobie,
+      firma,
+      nastavenia,
+      termin,
+      kleinunternehmer: true as const,
+      ustva: null,
+      vytky: [],
+      pocty: null,
+    };
   const { nacitajVstup } = await import("./dph-vykazy.server");
   const { ustva } = await import("./ustva");
-  const { vstup, vytky } = await nacitajVstup(supabase, data.company_id, obdobie);
+  /*
+    Ist-Versteuerung (§ 20 UStG): výstupná daň podľa prijatých platieb.
+    Kontrola záloh (Mindest-Ist) platí pri Soll aj Ist.
+  */
+  const { vstup, vytky } = await nacitajVstup(supabase, data.company_id, obdobie, {
+    ist: nastavenia.versteuerung === "ist",
+    kontrolaZaloh: true,
+  });
   const u = ustva(vstup, (data.rucne ?? {}) as any);
   return {
     obdobie,
     firma,
+    nastavenia,
+    termin,
     kleinunternehmer: false as const,
     ustva: u,
     vytky: [...vytky, ...u.vytky],

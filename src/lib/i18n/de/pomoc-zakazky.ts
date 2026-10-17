@@ -32,7 +32,7 @@ export default {
     "Einem <0>abgeschlossenen</0> Projekt können keine neuen Belege zugeordnet werden. Ausgenommen ist eine Bewegung, die aus einer Rechnung entstanden ist — sie geht immer durch, damit die Rechnung nicht hängen bleibt.",
   "Ako sa počíta zisk": "So wird der Gewinn berechnet",
   "<0>Výnosy</0> sú sumy bez DPH z vydaných faktúr priradených k zákazke. Dobropis sa odpočítava. <1>Zálohová faktúra sa nepočíta</1> — záloha nie je výnos, výnosom sa stane až vyúčtovacia faktúra. Koncepty a zrušené faktúry sa preskakujú.":
-    "<0>Erlöse</0> sind die Nettobeträge (ohne MwSt.) der dem Projekt zugeordneten Ausgangsrechnungen. Gutschriften werden abgezogen. <1>Anzahlungsrechnungen werden nicht gezählt</1> — eine Anzahlung ist kein Erlös, zum Erlös wird erst die Schlussrechnung. Entwürfe und stornierte Rechnungen werden übersprungen.",
+    "<0>Erlöse</0> sind die Nettobeträge (ohne MwSt.) der dem Projekt zugeordneten Ausgangsrechnungen. Rechnungskorrekturen werden abgezogen. <1>Anzahlungsrechnungen werden nicht gezählt</1> — eine Anzahlung ist kein Erlös, zum Erlös wird erst die Schlussrechnung. Entwürfe und stornierte Rechnungen werden übersprungen.",
   "<0>Náklady</0> sú tri:": "Es gibt drei Arten von <0>Kosten</0>:",
   "<0>materiál zo skladu</0> — výdaje ocenené váženou nákupnou cenou, nie predajnou,":
     "<0>Material aus dem Lager</0> — Warenausgänge, bewertet zum gewogenen Einkaufspreis, nicht zum Verkaufspreis,",

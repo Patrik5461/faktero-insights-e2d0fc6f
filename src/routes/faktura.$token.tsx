@@ -27,7 +27,7 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     const { data: f } = await supabaseAdmin
       .from("invoices")
       .select(
-        "id, company_id, invoice_number, type, status, language, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, osobitna_uprava, deleted_at, payment_iban, payment_swift",
+        "id, company_id, invoice_number, type, status, language, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, exchange_rate_source, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, osobitna_uprava, de_hinweis_aufbewahrung, deleted_at, payment_iban, payment_swift",
       )
       .eq("public_token", data.token)
       .maybeSingle();
@@ -73,6 +73,8 @@ const nacitajFakturu = createServerFn({ method: "POST" })
       vetyUprav: vetyNaDoklad({
         danZPrijatejPlatby: (firma as any)?.dan_z_prijatej_platby,
         osobitnaUprava: (f as any).osobitna_uprava,
+        krajina: krajinaDane((firma as any)?.country),
+        upozornenieUschova: (f as any).de_hinweis_aufbewahrung,
       }),
       polozky: polozky ?? [],
       firma: firma ? sUctomFaktury(firma, f as any) : null,
@@ -323,6 +325,7 @@ function VerejnaFaktura() {
                   ? "de"
                   : "sk",
               krajinaKurzu(firma?.country),
+              (doklad as any).exchange_rate_source,
             )}
           </p>
         )}

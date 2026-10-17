@@ -18,9 +18,10 @@ export const prepocitajFakturuFn = createServerFn({ method: "POST" })
       .eq("id", data.invoice_id)
       .maybeSingle();
     if (!f) throw new Error("Faktúra sa nenašla.");
-    const { prepocitajDoklad, krajinaFirmy } = await import("./kurzy.server");
+    const { prepocitajDoklad, pravidloKurzuFirmy } = await import("./kurzy.server");
     const { domacaMena } = await import("./kurzy");
-    const krajina = await krajinaFirmy(f.company_id);
+    // Nemecká firma: mesačný kurz BMF alebo denný ECB podľa nastavenia (§ 16 Abs. 6 UStG).
+    const { krajina, nastavenieDe } = await pravidloKurzuFirmy(f.company_id);
     // Doklad v domácej mene firmy (SK → EUR, CZ → CZK) sa neprepočítava.
     if (!f.currency || f.currency === domacaMena(krajina)) return { prepocitane: false as const };
 
@@ -33,6 +34,7 @@ export const prepocitajFakturuFn = createServerFn({ method: "POST" })
         celkom: Number(f.total ?? 0),
       },
       krajina,
+      nastavenieDe,
     );
     if (!p) return { prepocitane: false as const };
 
@@ -41,6 +43,7 @@ export const prepocitajFakturuFn = createServerFn({ method: "POST" })
       .update({
         exchange_rate: p.kurz,
         exchange_rate_date: p.den,
+        exchange_rate_source: p.zdroj,
         subtotal_eur: p.zaklad,
         vat_total_eur: p.dan,
         total_eur: p.celkom,
@@ -62,9 +65,10 @@ export const prepocitajPrijatuFn = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!f) throw new Error("Faktúra sa nenašla.");
-    const { prepocitajDoklad, krajinaFirmy } = await import("./kurzy.server");
+    const { prepocitajDoklad, pravidloKurzuFirmy } = await import("./kurzy.server");
     const { domacaMena } = await import("./kurzy");
-    const krajina = await krajinaFirmy(f.company_id);
+    // Nemecká firma: mesačný kurz BMF alebo denný ECB podľa nastavenia (§ 16 Abs. 6 UStG).
+    const { krajina, nastavenieDe } = await pravidloKurzuFirmy(f.company_id);
     if (!f.currency || f.currency === domacaMena(krajina)) return { prepocitane: false as const };
 
     const p = await prepocitajDoklad(
@@ -76,6 +80,7 @@ export const prepocitajPrijatuFn = createServerFn({ method: "POST" })
         celkom: Number(f.amount_total ?? 0),
       },
       krajina,
+      nastavenieDe,
     );
     if (!p) return { prepocitane: false as const };
 
@@ -83,6 +88,7 @@ export const prepocitajPrijatuFn = createServerFn({ method: "POST" })
       .from("purchase_invoices")
       .update({
         exchange_rate: p.kurz,
+        exchange_rate_source: p.zdroj,
         amount_without_vat_eur: p.zaklad,
         vat_amount_eur: p.dan,
       })
@@ -103,7 +109,11 @@ export const kurzKuDnuFn = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const { kurzPreDoklad, krajinaFirmy } = await import("./kurzy.server");
-    const krajina = data.company_id ? await krajinaFirmy(data.company_id) : "SK";
-    return (await kurzPreDoklad(data.mena, data.den, krajina)) ?? null;
+    const { kurzPreDoklad, pravidloKurzuFirmy } = await import("./kurzy.server");
+    const pravidlo = data.company_id
+      ? await pravidloKurzuFirmy(data.company_id)
+      : { krajina: "SK" as const, nastavenieDe: null };
+    return (
+      (await kurzPreDoklad(data.mena, data.den, pravidlo.krajina, pravidlo.nastavenieDe)) ?? null
+    );
   });

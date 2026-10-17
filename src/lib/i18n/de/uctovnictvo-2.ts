@@ -166,7 +166,7 @@ export default {
   "Vydaná faktúra": "Ausgangsrechnung",
   "Vydaná faktúra — prenesenie daňovej povinnosti": "Ausgangsrechnung — Reverse-Charge",
   "Zálohová faktúra": "Anzahlungsrechnung",
-  Dobropis: "Gutschrift",
+  Dobropis: "Rechnungskorrektur",
   "Prijatá faktúra": "Eingangsrechnung",
   "Prijatá faktúra — prenesenie daňovej povinnosti": "Eingangsrechnung — Reverse-Charge",
   "Bloček a výdavkový doklad": "Kassenbon und Ausgabenbeleg",

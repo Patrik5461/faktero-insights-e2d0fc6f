@@ -11,7 +11,7 @@ export const Route = createFileRoute("/pomoc/nemecko")({
         name: "description",
         content: preloz(
           match.context.jazyk,
-          "Firma so sídlom v Nemecku: Regelbesteuerung a Kleinunternehmer, nemecká faktúra s GiroCode, ZUGFeRD a XRechnung, export do DATEV a prehľad UStVA.",
+          "Firma so sídlom v Nemecku: Regelbesteuerung a Kleinunternehmer, Soll a Ist, nemecká faktúra s GiroCode, ZUGFeRD a XRechnung, export do DATEV, prehľad UStVA s termínmi a upomienky podľa BGB.",
         ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/nemecko" },
@@ -198,6 +198,68 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "rechnungskorrektur",
+    title: "Opravná faktúra: Rechnungskorrektur, nie Gutschrift",
+    body: (
+      <>
+        <p>
+          Dobropis nemeckej firmy sa na doklade volá <strong>Rechnungskorrektur</strong>. Slovo{" "}
+          <strong>Gutschrift</strong> má v Nemecku iný, zákonom daný význam — je to faktúra, ktorú
+          za dodávateľa vyhotovil odberateľ (samofakturácia, § 14 Abs. 2 S. 2 UStG). Keby opravná
+          faktúra niesla nadpis „Gutschrift“, odberateľ alebo jeho účtovník by ju mohli zameniť za
+          samofaktúru — preto sa pri opravnej faktúre používa Rechnungskorrektur.
+        </p>
+        <ul>
+          <li>
+            Nadpis PDF, predvolený e-mail aj stránka faktúry pre odberateľa hovoria{" "}
+            <em>Rechnungskorrektur</em>; v e-faktúre (XRechnung, ZUGFeRD) ostáva typ dokladu 381 s
+            číslom pôvodnej faktúry.
+          </li>
+          <li>
+            <strong>Samofaktúra</strong> ostáva označená ako <em>Gutschrift</em>, ako to žiada § 14
+            Abs. 4 Nr. 10 UStG.
+          </li>
+          <li>
+            Úplné storno faktúry Faktero samostatným dokladom nerieši — nevystavenú faktúru
+            stornujete, vystavenú opravíte Rechnungskorrektur na celú sumu.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: "osobitne-vety",
+    title: "Differenzbesteuerung (§ 25a) a stavebné plnenia pre súkromné osoby",
+    body: (
+      <>
+        <p>
+          <strong>Differenzbesteuerung.</strong> Pri predaji použitého tovaru, umeleckých diel alebo
+          zberateľských predmetov sa zdaňuje len rozdiel medzi predajnou a nákupnou cenou (§ 25a
+          UStG). Na faktúre v poli <strong>Osobitná úprava</strong> vyberte druh tovaru a na doklad
+          sa vytlačí veta podľa § 14a Abs. 6 UStG — <em>Gebrauchtgegenstände/Sonderregelung</em>,{" "}
+          <em>Kunstgegenstände/Sonderregelung</em> alebo{" "}
+          <em>Sammlungsstücke und Antiquitäten/Sonderregelung</em>; pri cestovných službách (§ 25
+          UStG) <em>Sonderregelung für Reisebüros</em>. Daň sa na takej faktúre samostatne neuvádza
+          — položky zadajte so sadzbou 0 % a daň z rozdielu (marže) doplňte do UStVA sami.
+        </p>
+        <p>
+          <strong>Stavebné plnenie pre súkromnú osobu.</strong> Keď firma robí stavebné práce alebo
+          iné plnenie v súvislosti s pozemkom (napríklad oprava strechy, záhradné práce, upratovanie
+          domu) pre súkromnú osobu, musí na faktúre upozorniť, že odberateľ ju musí uchovať dva roky
+          (§ 14 Abs. 4 Nr. 9 UStG). Na faktúre zaškrtnite{" "}
+          <strong>Stavebné plnenie alebo plnenie v súvislosti s pozemkom pre súkromnú osobu</strong>{" "}
+          a vytlačí sa veta{" "}
+          <em>
+            Sie sind gesetzlich verpflichtet, diese Rechnung zwei Jahre lang aufzubewahren (§ 14b
+            Abs. 1 Satz 5 UStG).
+          </em>{" "}
+          Zaškrtnutie je pri faktúre, nie pri položke — povinnosť sa týka celého dokladu a Faktero z
+          položiek nevie rozoznať, čo je stavebné plnenie.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "efaktura",
     title: "E-faktúra: ZUGFeRD a XRechnung",
     body: (
@@ -354,6 +416,164 @@ const sections: HelpSection[] = [
           Kleinunternehmer UStVA nepodáva a prehľad to tak aj ukáže. Výnimkou je daň, ktorú dlhuje
           ako príjemca (§ 13b, napríklad služba od podnikateľa z EÚ) — tú prehľad pre
           Kleinunternehmer zatiaľ nepočíta.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "ist-soll",
+    title: "Soll a Ist — kedy vzniká daň",
+    body: (
+      <>
+        <p>
+          V <Link to="/firma">Nastaveniach firmy</Link> nemecký platiteľ vyberie{" "}
+          <strong>Spôsob zdaňovania</strong>:
+        </p>
+        <ul>
+          <li>
+            <strong>Versteuerung nach vereinbarten Entgelten (Soll)</strong> — predvolené. Daň z
+            faktúry patrí do obdobia, v ktorom bolo plnenie dodané, bez ohľadu na to, kedy odberateľ
+            zaplatí.
+          </li>
+          <li>
+            <strong>Versteuerung nach vereinnahmten Entgelten (Ist)</strong> — len s povolením
+            Finanzamtu (§ 20 UStG, napríklad pri obrate za minulý rok do 800 000 € alebo pri
+            slobodnom povolaní). Daň z faktúry patrí do obdobia, v ktorom prišli peniaze.
+          </li>
+        </ul>
+        <p>Pri Ist počíta prehľad UStVA takto:</p>
+        <ul>
+          <li>
+            Daň z vystavených faktúr (KZ 81, 86, 35/36) sa berie podľa dátumu úhrady — z platieb
+            spárovaných s bankou, zapísaných ručne alebo z platobnej brány. Faktúra označená ako
+            uhradená bez zapísanej platby sa berie celá k dátumu úhrady.
+          </li>
+          <li>
+            Pri <strong>čiastočnej úhrade</strong> ide do obdobia pomerná časť dane: zaplatená
+            polovica faktúry znamená polovicu základu aj dane. Preplatok daň nezvýši.
+          </li>
+          <li>
+            Plnenia bez dane — dodanie do EÚ, vývoz, prenesenie podľa § 13b — ostávajú v období
+            dodania.
+          </li>
+          <li>
+            <strong>Odpočet dane (KZ 66) ostáva podľa prijatých faktúr</strong>, nie podľa toho,
+            kedy ste dodávateľovi zaplatili — nárok na odpočet vzniká dodaním a faktúrou (§ 15 Abs.
+            1 Nr. 1 UStG) aj pri Ist.
+          </li>
+          <li>
+            Rechnungskorrektur k faktúre, ktorá ešte nie je zaplatená, sa do prehľadu nedáva —
+            zníženie sa prejaví samo na nižšej úhrade. Oprava už zaplatenej faktúry (vrátenie
+            peňazí) ide do obdobia, v ktorom bola vystavená.
+          </li>
+        </ul>
+        <p>
+          <strong>Zálohy</strong> sa zdaňujú prijatím pri Soll aj pri Ist (Mindest-Ist-Versteuerung,
+          § 13 Abs. 1 Nr. 1 Buchst. a S. 4 UStG). Daň zo zálohy nesie{" "}
+          <strong>doklad k prijatej platbe</strong>, ktorý je datovaný dňom platby; ostrá faktúra si
+          ho potom odpočíta. Keď na zálohovú faktúru prišli peniaze a doklad k prijatej platbe k nej
+          nie je, prehľad UStVA na to upozorní.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "obdobie-ustva",
+    title: "Obdobie UStVA, termín a Dauerfristverlängerung",
+    body: (
+      <>
+        <p>
+          V <Link to="/firma">Nastaveniach firmy</Link> v časti{" "}
+          <strong>Umsatzsteuer-Voranmeldung</strong> nastavíte:
+        </p>
+        <ul>
+          <li>
+            <strong>Voranmeldungszeitraum</strong> — mesačne alebo štvrťročne, podľa toho, čo vám
+            určil Finanzamt. Mesačne podáva firma, ktorej daň za minulý rok bola vyššia než 9 000 €;
+            prehľad UStVA potom ponúkne mesiace alebo štvrťroky podľa tohto nastavenia.
+          </li>
+          <li>
+            <strong>Dauerfristverlängerung</strong> — ak vám ju Finanzamt povolil, termín sa posúva
+            o mesiac (§ 46 UStDV).
+          </li>
+        </ul>
+        <p>
+          Prehľad UStVA ukáže <strong>termín podania a zaplatenia</strong> za vybrané obdobie: 10.
+          deň po skončení obdobia, s Dauerfristverlängerung 10. deň druhého mesiaca. Keď termín
+          padne na víkend alebo celoštátny sviatok, posúva sa na najbližší pracovný deň (§ 108 Abs.
+          3 AO); krajinské sviatky Faktero nepočíta.
+        </p>
+        <p>
+          Pri <strong>mesačnom podávaní s Dauerfristverlängerung</strong> platí firma{" "}
+          <strong>Sondervorauszahlung</strong> — jednu jedenástinu súčtu záloh za minulý rok.
+          Prihlási ju a zaplatí do 10. februára (tlačivo USt 1 H) a v decembrovej UStVA ju odpočíta
+          v KZ 39. Prehľad to pripomenie; sumu do KZ 39 zapíšete ručne. Pri štvrťročnom podávaní sa
+          Sondervorauszahlung neplatí.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "upomienky",
+    title: "Upomienky, úroky z omeškania a paušál 40 €",
+    body: (
+      <>
+        <p>
+          Nemecká firma posiela upomienky po nemecky: prvá je zdvorilá <em>Zahlungserinnerung</em>,
+          druhá <em>Mahnung</em> a tretia <em>Letzte Mahnung</em>. Druhá a tretia vyčíslia podľa §
+          288 BGB:
+        </p>
+        <ul>
+          <li>
+            <strong>úroky z omeškania</strong> — pri podnikateľovi základná sadzba Bundesbank + 9
+            percentuálnych bodov, pri spotrebiteľovi + 5 bodov, počítané po dňoch,
+          </li>
+          <li>
+            <strong>paušál 40 €</strong> (§ 288 Abs. 5 BGB) — len keď odberateľ nie je spotrebiteľ.
+          </li>
+        </ul>
+        <p>
+          Omeškanie (§ 286 BGB) sa počíta od dňa po odoslaní prvej upomienky; podnikateľ je v
+          omeškaní najneskôr 30 dní po splatnosti aj bez upomienky. Za podnikateľa Faktero považuje
+          odberateľa s IČO, Steuernummer alebo USt-IdNr. na faktúre. Základnú sadzbu (Basiszinssatz)
+          vyhlasuje Bundesbank k 1. januáru a 1. júlu — Faktero ju má zapísanú, novú hodnotu
+          dopĺňame po vyhlásení.
+        </p>
+        <p>
+          Upomienku si pred odoslaním pozriete a môžete ju upraviť. Ak máte v nastaveniach vlastnú
+          šablónu upomienky, Faktero ju použije tak, ako je, a úroky do nej nedopĺňa.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "nie-pre-de",
+    title: "Čo pre firmy v Nemecku nie je",
+    body: (
+      <>
+        <p>
+          Niektoré agendy stoja na slovenských predpisoch a v Nemecku by firme skôr uškodili. Pre
+          nemeckú firmu ich Faktero v menu neukazuje a na ich adrese vysvetlí prečo:
+        </p>
+        <ul>
+          <li>
+            <strong>Pokladňa.</strong> Elektronická pokladnica musí mať v Nemecku certifikovaný
+            bezpečnostný modul TSE a byť nahlásená Finanzamtu (§ 146a AO, KassenSichV). Pokladňa vo
+            Fakture je postavená na slovenskej eKase a TSE nemá.
+          </li>
+          <li>
+            <strong>Kniha jázd.</strong> Nemecký Finanzamt uzná Fahrtenbuch len vedené priebežne a
+            tak, aby sa zápisy nedali dodatočne nepozorovane meniť. Kniha jázd vo Fakture jazdy
+            opraviť dovoľuje, preto by ju Finanzamt mohol odmietnuť.
+          </li>
+          <li>
+            <strong>Zamestnanci.</strong> Agenda je stavaná na slovenské pracovné právo a mzdy;
+            nemecké mzdy (Lohnsteuer, sociálne poistenie) nepozná.
+          </li>
+        </ul>
+        <p>
+          Bločky a prijaté doklady nemecká firma používa normálne — fotku bločku Faktero prečíta s
+          nemeckými sadzbami 19 % a 7 %.
         </p>
       </>
     ),

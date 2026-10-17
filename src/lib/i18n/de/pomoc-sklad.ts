@@ -18,7 +18,7 @@ export default {
   "počítať <0>váženú nákupnú cenu</0>, takže viete, akú maržu ste na predaji naozaj dosiahli,":
     "den <0>gewichteten Einkaufspreis</0> berechnen, sodass Sie wissen, welche Marge Sie beim Verkauf tatsächlich erzielt haben,",
   "odpisovať tovar automaticky pri odoslaní faktúry a vracať ho pri dobropise,":
-    "Ware beim Senden der Rechnung automatisch abbuchen und bei einer Gutschrift zurückbuchen,",
+    "Ware beim Senden der Rechnung automatisch abbuchen und bei einer Rechnungskorrektur zurückbuchen,",
   "rezervovať tovar na ponuku alebo prijatú objednávku,":
     "Ware für ein Angebot oder eine eingegangene Bestellung reservieren,",
   "presúvať tovar medzi viacerými skladmi,": "Ware zwischen mehreren Lagern umlagern,",
@@ -55,7 +55,7 @@ export default {
   "<0>Oprava</0> — ručná úprava so znamienkom, keď sa niečo zaevidovalo zle.":
     "<0>Korrektur</0> — manuelle Anpassung mit Vorzeichen, wenn etwas falsch erfasst wurde.",
   "<0>Faktúra</0> a <1>dobropis</1> — tieto vytvára Faktero samo, ručne sa nezadávajú.":
-    "<0>Rechnung</0> und <1>Gutschrift</1> — diese erstellt Faktero selbst, sie werden nicht manuell erfasst.",
+    "<0>Rechnung</0> und <1>Rechnungskorrektur</1> — diese erstellt Faktero selbst, sie werden nicht manuell erfasst.",
   "Pri výdaji môžete vybrať <0>zákazku</0>. Tovar sa potom objaví v jej nákladoch a vo vyhodnotení marže.":
     "Beim Warenausgang können Sie ein <0>Projekt</0> auswählen. Die Ware erscheint dann in dessen Kosten und in der Margenauswertung.",
   "Vážená nákupná cena": "Gewichteter Einkaufspreis",
@@ -69,7 +69,7 @@ export default {
   "Keď na faktúru vyberiete položku, ktorá má skladovú kartu, a faktúra prejde do stavu <0>Odoslaná</0> alebo <1>Uhradená</1>, Faktero vytvorí pohyb typu <2>faktúra</2> a stav skladu sa zníži.":
     "Wenn Sie auf der Rechnung eine Position mit Artikel wählen und die Rechnung in den Status <0>Gesendet</0> oder <1>Bezahlt</1> wechselt, erstellt Faktero eine Bewegung vom Typ <2>Rechnung</2> und der Lagerbestand sinkt.",
   "Pri <0>dobropise</0> sa vytvorí opačný pohyb a tovar sa vráti na sklad — vrátane zákazky, na ktorú bol pôvodne vydaný.":
-    "Bei einer <0>Gutschrift</0> wird die Gegenbewegung erstellt und die Ware kommt zurück ins Lager — einschließlich des Projekts, für das sie ursprünglich ausgegeben wurde.",
+    "Bei einer <0>Rechnungskorrektur</0> wird die Gegenbewegung erstellt und die Ware kommt zurück ins Lager — einschließlich des Projekts, für das sie ursprünglich ausgegeben wurde.",
   "Kým je faktúra <0>koncept</0>, sklad sa nehýbe. Až odoslanie je moment, keď tovar odišiel.":
     "Solange die Rechnung ein <0>Entwurf</0> ist, bewegt sich im Lager nichts. Erst das Senden ist der Moment, in dem die Ware das Haus verlassen hat.",
   "Skladové položky odoslanej faktúry sa už nedajú meniť. Keby sa dali, stav skladu by prestal zodpovedať dokladom.":

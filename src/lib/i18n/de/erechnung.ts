@@ -11,7 +11,7 @@ export default {
 
   // Kontroly pred vydaním XRechnung / ZUGFeRD
   "Dobropis aj opravná faktúra musia obsahovať číslo pôvodnej faktúry.":
-    "Gutschrift und Rechnungskorrektur müssen die Nummer der ursprünglichen Rechnung enthalten.",
+    "Rechnungskorrektur und korrigierte Rechnung müssen die Nummer der ursprünglichen Rechnung enthalten.",
   "Doplňte mesto firmy.": "Bitte den Ort Ihres Unternehmens ergänzen.",
   "Doplňte PSČ firmy.": "Bitte die Postleitzahl Ihres Unternehmens ergänzen.",
   "Doplňte mesto odberateľa.": "Bitte den Ort des Kunden ergänzen.",

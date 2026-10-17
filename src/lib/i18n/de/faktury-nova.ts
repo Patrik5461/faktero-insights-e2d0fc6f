@@ -19,14 +19,14 @@ export default {
   "Daňový režim": "Steuerverfahren",
   "Do stĺpca „Spolu s DPH“ sa dá napísať suma, na ktorej ste sa dohodli — jednotková cena bez dane sa dopočíta sama.":
     "In die Spalte „Gesamt inkl. MwSt.“ können Sie den vereinbarten Betrag eintragen — der Nettoeinzelpreis wird automatisch berechnet.",
-  Dobropis: "Gutschrift",
+  Dobropis: "Rechnungskorrektur",
   "Dobropis k faktúre {cislo} — upravte, čo sa vracia":
-    "Gutschrift zur Rechnung {cislo} — passen Sie an, was zurückgegeben wird",
-  "Dobropis opravuje faktúru": "Die Gutschrift korrigiert die Rechnung",
-  "Dobropis opravuje faktúru {cislo}": "Die Gutschrift korrigiert die Rechnung {cislo}",
+    "Rechnungskorrektur zur Rechnung {cislo} — passen Sie an, was zurückgegeben wird",
+  "Dobropis opravuje faktúru": "Die Rechnungskorrektur korrigiert die Rechnung",
+  "Dobropis opravuje faktúru {cislo}": "Die Rechnungskorrektur korrigiert die Rechnung {cislo}",
   "Dobropis sa vystavuje k bežnej faktúre, nie k zálohovej ani k opravnej.":
-    "Eine Gutschrift wird zu einer regulären Rechnung ausgestellt, nicht zu einer Anzahlungs- oder Korrekturrechnung.",
-  "Dobropis vytvorený": "Gutschrift erstellt",
+    "Eine Rechnungskorrektur wird zu einer regulären Rechnung ausgestellt, nicht zu einer Anzahlungs- oder Korrekturrechnung.",
+  "Dobropis vytvorený": "Rechnungskorrektur erstellt",
   "Dodanie služby (§ 15 ods. 1)": "Erbringung einer Dienstleistung (§ 15 Abs. 1)",
   "Dodanie tovaru": "Warenlieferung",
   "Doplňte dátum dodania — na faktúre platiteľa je povinný (§ 74 ods. 1 zákona o DPH) a určuje aj obdobie DPH.":
@@ -46,7 +46,7 @@ export default {
     "Die Rechnung wurde erstellt, aber die Bestellung konnte nicht als abgewickelt markiert werden: {chyba}",
   "Faktúra z dokumentu": "Rechnung aus Dokument",
   "Faktúru na dobropis sa nepodarilo načítať":
-    "Die Rechnung für die Gutschrift konnte nicht geladen werden",
+    "Die Rechnung für die Rechnungskorrektur konnte nicht geladen werden",
   "Faktúru na ťarchopis sa nepodarilo načítať":
     "Die Rechnung für die Belastungsanzeige konnte nicht geladen werden",
   "Historické sadzby": "Historische Sätze",
@@ -64,7 +64,7 @@ export default {
   "K úhrade": "Zu zahlen",
   Karta: "Karte",
   "Konštantný symbol": "Konstantes Symbol (KS)",
-  "Ktorú faktúru dobropis opravuje": "Welche Rechnung die Gutschrift korrigiert",
+  "Ktorú faktúru dobropis opravuje": "Welche Rechnung die Rechnungskorrektur korrigiert",
   Kuriér: "Kurier",
   "Kurz sa nepodarilo načítať — prepočet dane doplňte pred podaním DPH.":
     "Der Wechselkurs konnte nicht geladen werden — ergänzen Sie die Steuerumrechnung vor Abgabe der MwSt.-Erklärung.",
@@ -86,12 +86,12 @@ export default {
   "Načítať jej položky (so mínusom)": "Ihre Positionen laden (mit Minus)",
   "Načítať položky z dokladu": "Positionen aus Beleg laden",
   "Nechajte prázdne pre samostatný dobropis bez väzby na faktúru (napr. zľava za obdobie). Sumy zadávajte so mínusom.":
-    "Leer lassen für eine eigenständige Gutschrift ohne Bezug zu einer Rechnung (z. B. Rabatt für einen Zeitraum). Beträge mit Minus eingeben.",
+    "Leer lassen für eine eigenständige Rechnungskorrektur ohne Bezug zu einer Rechnung (z. B. Rabatt für einen Zeitraum). Beträge mit Minus eingeben.",
   "Nepodarilo sa vygenerovať číslo faktúry.": "Die Rechnungsnummer konnte nicht erzeugt werden.",
   "Nová faktúra": "Neue Rechnung",
   "Nová faktúra — Faktero": "Neue Rechnung — Faktero",
   "Nová zálohová faktúra": "Neue Anzahlungsrechnung",
-  "Nový dobropis": "Neue Gutschrift",
+  "Nový dobropis": "Neue Rechnungskorrektur",
   "Nový ťarchopis": "Neue Belastungsanzeige",
   Názov: "Name",
   "Názov položky": "Positionsbezeichnung",
@@ -114,7 +114,7 @@ export default {
   "Opravná faktúra, ktorá zvyšuje cenu už vystavenej faktúry (§ 25) — položky zadajte kladne, len o koľko sa cena zvyšuje.":
     "Korrekturrechnung, die den Preis einer bereits ausgestellten Rechnung erhöht (§ 25) — geben Sie die Positionen positiv ein, nur um wie viel sich der Preis erhöht.",
   "Opravný doklad k vystavenej faktúre — priraďte ju podľa čísla alebo VS, alebo nechajte dobropis samostatný.":
-    "Korrekturbeleg zu einer ausgestellten Rechnung — ordnen Sie sie nach Nummer oder Verwendungszweck (VS) zu oder lassen Sie die Gutschrift eigenständig.",
+    "Korrekturbeleg zu einer ausgestellten Rechnung — ordnen Sie sie nach Nummer oder Verwendungszweck (VS) zu oder lassen Sie die Rechnungskorrektur eigenständig.",
   "Opravovaná faktúra": "Korrigierte Rechnung",
   "Opíšte faktúru bežnou rečou — AI vyplní položky, ceny a DPH.":
     "Beschreiben Sie die Rechnung in normaler Sprache — die KI füllt Positionen, Preise und MwSt. aus.",
@@ -153,7 +153,7 @@ export default {
   "Sadzba DPH": "MwSt.-Satz",
   "Sadzba štátu zákazníka; daň sa odvádza cez jedno kontaktné miesto, nie v slovenskom priznaní.":
     "Satz des Kundenlandes; die Steuer wird über die einzige Anlaufstelle (OSS) abgeführt, nicht in der slowakischen Erklärung.",
-  "Samostatný dobropis": "Eigenständige Gutschrift",
+  "Samostatný dobropis": "Eigenständige Rechnungskorrektur",
   "Sklad:": "Lager:",
   Splatnosť: "Fälligkeit",
   Spolu: "Gesamt",
@@ -186,7 +186,7 @@ export default {
   Vygenerovať: "Erzeugen",
   "Vyplňte text nad položkami — hovorí, čo sa fakturuje.":
     "Füllen Sie den Text über den Positionen aus — er beschreibt, was berechnet wird.",
-  "Vystaviť dobropis": "Gutschrift ausstellen",
+  "Vystaviť dobropis": "Rechnungskorrektur ausstellen",
   "Vystaviť faktúru": "Rechnung ausstellen",
   "Vystaviť zálohovú faktúru": "Anzahlungsrechnung ausstellen",
   "Vystaviť ťarchopis": "Belastungsanzeige ausstellen",

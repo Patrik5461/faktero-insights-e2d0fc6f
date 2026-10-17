@@ -4,6 +4,9 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { podpisHtml, podpisText } from "./email-podpis";
 import { sUctomFaktury } from "./platobny-ucet";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { krajinaDane } from "./vat-rates";
+import { jePodnikatel, omeskanieDe, upomienkaDe } from "./upomienky-de";
+import { datumNaDoklade } from "./faktura-jazyk";
 
 export type ReminderNumber = 1 | 2 | 3;
 
@@ -60,6 +63,10 @@ export type BuildReminderInput = {
   reminderNumber: ReminderNumber;
   overrideSubject?: string;
   overrideMessage?: string;
+  /** Kedy odišla prvá upomienka (ISO) — nemecká firma od nej počíta omeškanie (§ 286 BGB). */
+  prvaUpomienka?: string | null;
+  /** Dnešný deň (ISO) — v testoch pevný. */
+  dnes?: string;
 };
 
 export function buildReminderContent({
@@ -68,45 +75,99 @@ export function buildReminderContent({
   reminderNumber,
   overrideSubject,
   overrideMessage,
+  prvaUpomienka,
+  dnes = new Date().toISOString().slice(0, 10),
 }: BuildReminderInput) {
+  /*
+    Nemecká firma: predvolený text je nemecký a podľa § 286/288 BGB (úroky
+    z omeškania, paušál 40 € pri podnikateľovi). Vlastnú šablónu firmy
+    (override, stĺpce reminder_*, tabuľka email_templates) Faktero nemení.
+  */
+  const jeDe = krajinaDane(company?.country) === "DE";
+  const de = jeDe
+    ? upomienkaDe({
+        cislo: reminderNumber,
+        invoice,
+        firma: String(company?.name ?? ""),
+        omeskanie: omeskanieDe({
+          suma: Number(invoice?.total ?? 0),
+          splatnost: invoice?.due_date,
+          prvaUpomienka: reminderNumber > 1 ? prvaUpomienka : null,
+          b2b: jePodnikatel(invoice ?? {}),
+          dnes,
+        }),
+      })
+    : null;
   const subjectTpl =
     overrideSubject ??
     (company as any)?.[`reminder_subject_${reminderNumber}`] ??
+    de?.predmet ??
     DEFAULT_SUBJECTS[reminderNumber];
   const messageTpl =
     overrideMessage ??
     (company as any)?.[`reminder_message_${reminderNumber}`] ??
+    de?.text ??
     DEFAULT_MESSAGES[reminderNumber];
 
   const subject = applyVars(subjectTpl, invoice, company);
   const message = applyVars(messageTpl, invoice, company);
+  const L = jeDe
+    ? {
+        suma: "Betrag",
+        splatnost: "Ursprünglich fällig am",
+        udaje: "Zahlungsdaten",
+        vs: "Verwendungszweck",
+      }
+    : { suma: "Suma", splatnost: "Pôvodná splatnosť", udaje: "Platobné údaje", vs: "VS" };
 
   const paymentDetails = [
     sUctomFaktury(company ?? {}, invoice).iban
       ? `IBAN: ${sUctomFaktury(company ?? {}, invoice).iban}`
       : null,
     invoice?.variable_symbol
-      ? `VS: ${invoice.variable_symbol}`
-      : `VS: ${invoice.invoice_number ?? ""}`,
-    `Suma: ${formatujMenu(invoice.total ?? 0, invoice.currency ?? "EUR")}`,
-    invoice?.due_date ? `Pôvodná splatnosť: ${invoice.due_date}` : null,
+      ? `${L.vs}: ${invoice.variable_symbol}`
+      : `${L.vs}: ${invoice.invoice_number ?? ""}`,
+    `${L.suma}: ${formatujMenu(invoice.total ?? 0, invoice.currency ?? "EUR", jeDe ? "de-DE" : undefined)}`,
+    invoice?.due_date
+      ? `${L.splatnost}: ${jeDe ? datumNaDoklade(invoice.due_date, "de") : invoice.due_date}`
+      : null,
   ]
     .filter(Boolean)
     .join("\n");
 
   // Podpis odosielateľa — upomienka bez kontaktu je pre príjemcu slepá ulička.
-  const plain = `${message}\n\nPlatobné údaje:\n${paymentDetails}${podpisText(company ?? {})}`;
+  const plain = `${message}\n\n${L.udaje}:\n${paymentDetails}${podpisText(company ?? {})}`;
 
   const html = `
     <div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;white-space:pre-wrap">${escapeHtml(message)}</div>
     <div style="margin-top:24px;padding:16px 20px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#111">
-      <div style="font-weight:600;margin-bottom:8px">Platobné údaje</div>
+      <div style="font-weight:600;margin-bottom:8px">${L.udaje}</div>
       <div style="white-space:pre-wrap">${escapeHtml(paymentDetails)}</div>
     </div>
     ${podpisHtml(company ?? {})}
   `;
 
   return { subject, plain, html };
+}
+
+/** Dátum prvej odoslanej upomienky k faktúre (ISO deň) — od nej beží omeškanie v DE. */
+export async function prvaOdoslanaUpomienka(
+  klient: any,
+  invoiceId: string,
+): Promise<string | null> {
+  try {
+    const { data } = await klient
+      .from("invoice_reminders")
+      .select("sent_at")
+      .eq("invoice_id", invoiceId)
+      .eq("status", "sent")
+      .order("sent_at", { ascending: true })
+      .limit(1);
+    const d = data?.[0]?.sent_at;
+    return d ? String(d).slice(0, 10) : null;
+  } catch {
+    return null;
+  }
 }
 
 export type SendReminderInput = {
@@ -168,6 +229,7 @@ export async function sendReminder(input: SendReminderInput) {
     reminderNumber: input.reminderNumber,
     overrideSubject: input.overrideSubject ?? dbSubject,
     overrideMessage: input.overrideMessage ?? dbBody,
+    prvaUpomienka: await prvaOdoslanaUpomienka(supabaseAdmin, invoice.id),
   });
 
   const senderName = menoOdosielatela(company?.email_sender_name || company?.name);

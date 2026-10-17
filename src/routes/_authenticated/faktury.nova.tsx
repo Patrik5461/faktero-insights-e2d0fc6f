@@ -58,7 +58,7 @@ import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { prepocitajFakturuFn } from "@/lib/faktero/kurzy.functions";
 import { jeHotovost, prekrocenyStrop } from "@/lib/faktero/hotovost";
-import { skontrolujDatumy, UPRAVY_NA_VYBER } from "@/lib/faktero/faktura-nalezitosti";
+import { skontrolujDatumy, upravyNaVyber } from "@/lib/faktero/faktura-nalezitosti";
 import { OverenieVies } from "@/components/faktero/OverenieVies";
 import { SADZBY_EU, sadzbyStatu, zakladnaSadzbaStatu } from "@/lib/faktero/sadzby-eu";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
@@ -214,6 +214,8 @@ function NewInvoice() {
     oss_country: "",
     /* Úprava zdaňovania prirážky — cestovné kancelárie a použitý tovar. */
     osobitna_uprava: "",
+    /* DE: upozornenie na úschovu 2 roky (§ 14 Abs. 4 Nr. 9 UStG) — stavba/pozemok pre súkromnú osobu. */
+    de_hinweis_aufbewahrung: false,
     /* Jazyk PDF dokladu; predvolí sa z odberateľa. */
     language: "sk",
     advance_invoice_id: "" as string | "",
@@ -948,6 +950,8 @@ function NewInvoice() {
           oss: form.oss,
           oss_country: form.oss ? form.oss_country : null,
           osobitna_uprava: form.osobitna_uprava || null,
+          // Stĺpec sa posiela len keď je zaškrtnutý — inak by ho vkladala každá faktúra.
+          ...(krajina === "DE" && form.de_hinweis_aufbewahrung ? { de_hinweis_aufbewahrung: true } : {}),
           language: form.language || null,
           reverse_charge_type: form.reverse_charge
             ? form.reverse_charge_type || "domestic_69"
@@ -1777,18 +1781,44 @@ function NewInvoice() {
                       className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value="">{t("Bez osobitnej úpravy")}</option>
-                      {UPRAVY_NA_VYBER.map((u) => (
+                      {upravyNaVyber(krajina).map((u) => (
                         <option key={u.kod} value={u.kod}>
-                          {u.nazov}
+                          {t(u.nazov)}
                         </option>
                       ))}
                     </select>
                     <span className="mt-1 block text-xs text-muted-foreground">
-                      {t("Veta sa vytlačí na faktúru; zdaňuje sa len prirážka, nie celá cena.")}
+                      {krajina === "DE"
+                        ? t("Na faktúru sa vytlačí veta podľa § 14a Abs. 6 UStG. Daň sa na takej faktúre samostatne neuvádza — položky zadajte so sadzbou 0 %, daň z rozdielu priznáte sami (KZ 81/86).")
+                        : t("Veta sa vytlačí na faktúru; zdaňuje sa len prirážka, nie celá cena.")}
                     </span>
                   </label>
                 )}
               </div>
+            )}
+            {/*
+              § 14 Abs. 4 Nr. 9 UStG: stavebné plnenie alebo plnenie s pozemkom
+              pre súkromnú osobu — faktúra musí upozorniť na úschovu 2 roky. Ako
+              zaškrtnutie na faktúre: z položiek sa to rozoznať nedá a pole na
+              každej položke by bolo zbytočne jemné (stačí, že sa jej týka faktúra).
+            */}
+            {krajina === "DE" && !form.reverse_charge && (
+              <label className="mt-4 flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.de_hinweis_aufbewahrung}
+                  onChange={(e) => setForm({ ...form, de_hinweis_aufbewahrung: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 rounded border-input"
+                />
+                <span className="text-sm">
+                  {t("Stavebné plnenie alebo plnenie v súvislosti s pozemkom pre súkromnú osobu")}
+                  <span className="block text-xs text-muted-foreground">
+                    {t(
+                      "Na faktúru sa vytlačí povinné upozornenie, že odberateľ ju musí uchovať dva roky (§ 14 Abs. 4 Nr. 9 UStG).",
+                    )}
+                  </span>
+                </span>
+              </label>
             )}
           </section>
 

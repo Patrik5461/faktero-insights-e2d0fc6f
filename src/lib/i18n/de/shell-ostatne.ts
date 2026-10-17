@@ -159,7 +159,7 @@ export default {
   Vyťažené: "Ausgelesen",
   "Prijatá faktúra": "Eingangsrechnung",
   "Prijatá zálohová faktúra": "Eingehende Anzahlungsrechnung",
-  "Prijatý dobropis": "Eingehende Gutschrift",
+  "Prijatý dobropis": "Eingehende Rechnungskorrektur",
   "Bloček / pokladničný doklad": "Kassenbon / Kassenbeleg",
   "Iný doklad (zmluva, list, predpis…)": "Sonstiger Beleg (Vertrag, Schreiben, Bescheid…)",
 
@@ -191,7 +191,7 @@ export default {
   "Nájdite odpoveď v manuáloch, opýtajte sa Faktero AI alebo napíšte nám — odpoveď uvidíte tu aj v e‑maile.":
     "Finden Sie die Antwort in den Handbüchern, fragen Sie Faktero AI oder schreiben Sie uns — die Antwort sehen Sie hier und per E‑Mail.",
   "S čím potrebujete pomôcť? Napríklad „dobropis“ alebo „párovanie platieb“":
-    "Wobei brauchen Sie Hilfe? Zum Beispiel „Gutschrift“ oder „Zahlungsabgleich“",
+    "Wobei brauchen Sie Hilfe? Zum Beispiel „Rechnungskorrektur“ oder „Zahlungsabgleich“",
   "Hľadať v pomoci": "In der Hilfe suchen",
   "Hľadám v manuáloch…": "Suche in den Handbüchern…",
   "V manuáloch sme nič nenašli.": "In den Handbüchern wurde nichts gefunden.",

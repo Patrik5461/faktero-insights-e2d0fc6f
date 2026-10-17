@@ -819,7 +819,7 @@ function InvoiceDetail() {
       predmet a text firmy sa berie tak, ako ho firma napísala.
     */
     const jazykMailu = jazykFaktury(inv, company);
-    const predvoleny = predvolenyMailFaktury(jazykMailu);
+    const predvoleny = predvolenyMailFaktury(jazykMailu, (inv as any)?.type);
     const hodnoty = hodnotyMailu(inv, jazykMailu);
     setEmailForm({
       recipient_email: adresa ?? "",

@@ -808,7 +808,7 @@ export function buildDatevBuchungsstapel(opts: {
         belegfeld1: belegfeld1(d.cislo),
         belegfeld2: d.agenda === "doklad" ? "" : datumTtmmjj(d.datumSplatnosti),
         buchungstext:
-          (d.druh === "dobropis" ? "Gutschrift " : "") +
+          (d.druh === "dobropis" ? "Rechnungskorrektur " : "") +
           (r.text && d.odpocetVRiadkoch && r.zaklad < 0 ? r.text : d.partner.nazov || d.text),
         kost1: d.stredisko,
         kost2: d.zakazka,

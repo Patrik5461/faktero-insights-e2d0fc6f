@@ -11,6 +11,7 @@ import { AlertTriangle, Download, Loader2, CheckCircle2 } from "lucide-react";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { CzVykazyDph } from "@/components/faktero/CzVykazyDph";
 import { DeUstva } from "@/components/faktero/DeUstva";
+import { DeZm } from "@/components/faktero/DeZm";
 import { slovoPodlaPoctu } from "@/lib/faktero/sklonovanie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/vykazy")({
 function VykazyStranka() {
   const krajina = String(useKrajinaDane());
   if (krajina === "CZ") return <CzVykazyDph />;
-  if (krajina === "DE") return <DeUstva />;
+  if (krajina === "DE") return (<><DeUstva /><DeZm /></>);
   return <VykazyPage />;
 }
 

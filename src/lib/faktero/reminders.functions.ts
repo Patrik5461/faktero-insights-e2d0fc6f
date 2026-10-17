@@ -61,11 +61,12 @@ export const previewReminderFn = createServerFn({ method: "POST" })
         .maybeSingle();
       recipient = c?.email ?? "";
     }
-    const { buildReminderContent } = await import("./reminders.server");
+    const { buildReminderContent, prvaOdoslanaUpomienka } = await import("./reminders.server");
     const built = buildReminderContent({
       invoice: inv,
       company,
       reminderNumber: data.reminderNumber as 1 | 2 | 3,
+      prvaUpomienka: await prvaOdoslanaUpomienka(context.supabase, inv.id),
     });
     return {
       recipient_email: recipient,

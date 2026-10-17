@@ -78,7 +78,7 @@ export default {
     "Dem Projekt ist noch keine Rechnung zugeordnet.",
   Dátum: "Datum",
   Typ: "Typ",
-  Dobropis: "Gutschrift",
+  Dobropis: "Rechnungskorrektur",
   Ťarchopis: "Belastungsanzeige",
   Zálohová: "Anzahlungsrechnung",
   Faktúra: "Rechnung",

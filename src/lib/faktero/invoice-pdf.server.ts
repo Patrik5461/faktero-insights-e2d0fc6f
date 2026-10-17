@@ -114,8 +114,14 @@ export async function ensureInvoicePdf(
     doklad z importu alebo z času, keď sa kurz neukladal), dotiahne sa teraz —
     inak by na tlači chýbal údaj, ktorý zákon vyžaduje.
   */
-  const { domacaMena, krajinaKurzu } = await import("./kurzy");
+  const { domacaMena, krajinaKurzu, nastavenieKurzuDe } = await import("./kurzy");
   const krajinaKurzuFirmy = krajinaKurzu(company.country);
+  const { krajinaDane: krajinaDanePdf } = await import("./vat-rates");
+  // Nemecká firma: mesačný kurz BMF alebo denný ECB (§ 16 Abs. 6 UStG).
+  const nastavenieDe =
+    krajinaDanePdf(company.country) === "DE"
+      ? nastavenieKurzuDe((company as any).kurz_de_zdroj)
+      : null;
   if (
     invoice.currency &&
     invoice.currency !== domacaMena(company.country) &&
@@ -132,11 +138,13 @@ export async function ensureInvoicePdf(
           celkom: Number(invoice.total ?? 0),
         },
         krajinaKurzuFirmy,
+        nastavenieDe,
       );
       if (p) {
         Object.assign(invoice, {
           exchange_rate: p.kurz,
           exchange_rate_date: p.den,
+          exchange_rate_source: p.zdroj,
           subtotal_eur: p.zaklad,
           vat_total_eur: p.dan,
           total_eur: p.celkom,
@@ -146,6 +154,7 @@ export async function ensureInvoicePdf(
           .update({
             exchange_rate: p.kurz,
             exchange_rate_date: p.den,
+            exchange_rate_source: p.zdroj,
             subtotal_eur: p.zaklad,
             vat_total_eur: p.dan,
             total_eur: p.celkom,

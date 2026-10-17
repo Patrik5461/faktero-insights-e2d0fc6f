@@ -15,7 +15,7 @@ export default {
   "Daňový doklad k prijatej platbe": "Steuerbeleg zur erhaltenen Zahlung",
   "Detail faktúry — Faktero": "Rechnungsdetail — Faktero",
   "Do mailu sa nezmestili: {subory}": "Nicht in die E-Mail gepasst haben: {subory}",
-  Dobropis: "Gutschrift",
+  Dobropis: "Rechnungskorrektur",
   "Dodatočné zvýšenie ceny k tejto faktúre — opravná faktúra so zvýšením základu dane":
     "Nachträgliche Preiserhöhung zu dieser Rechnung — Korrekturrechnung mit Erhöhung der Bemessungsgrundlage",
   Dodávateľ: "Lieferant",
@@ -175,7 +175,7 @@ export default {
   "Vystavená {datum} · splatná {splatnost}": "Ausgestellt am {datum} · fällig am {splatnost}",
   "Vystavený doklad {cislo}": "Beleg {cislo} ausgestellt",
   "Vystaviť daňový doklad": "Steuerbeleg ausstellen",
-  "Vystaviť dobropis": "Gutschrift ausstellen",
+  "Vystaviť dobropis": "Rechnungskorrektur ausstellen",
   "Vystaviť faktúru": "Rechnung ausstellen",
   "Vystaviť ťarchopis": "Belastungsanzeige ausstellen",
   "Vystavujem…": "Wird ausgestellt…",

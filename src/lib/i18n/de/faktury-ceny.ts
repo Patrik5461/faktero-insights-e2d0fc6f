@@ -23,7 +23,7 @@ export default {
   "Cenové ponuky": "Angebote",
   "Cenové skupiny": "Preisgruppen",
   "Cenu sa nepodarilo uložiť": "Der Preis konnte nicht gespeichert werden",
-  Dobropisy: "Gutschriften",
+  Dobropisy: "Rechnungskorrekturen",
   "Dodávatelia — Faktero": "Lieferanten — Faktero",
   Dohodnutá: "Vereinbart",
   "Dohodnuté ceny": "Vereinbarte Preise",

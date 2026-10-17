@@ -210,6 +210,85 @@ function CompanyPage() {
               </span>
             </label>
           )}
+          {/*
+            Nemecký platiteľ: spôsob zdaňovania (§ 13/§ 20 UStG) a obdobie UStVA
+            (§ 18 UStG, § 46 UStDV). Kleinunternehmer UStVA nepodáva, tak sa mu to neponúka.
+          */}
+          {jeDe && Boolean(c.vat_payer) && c.vat_scheme !== "de_kleinunternehmer" && (
+            <fieldset className="grid gap-4 rounded-lg border border-border p-4 sm:col-span-2 sm:grid-cols-2">
+              <legend className="px-1 text-sm font-medium">{t("Umsatzsteuer-Voranmeldung")}</legend>
+              <label className="block">
+                <span className="text-sm font-medium">{t("Spôsob zdaňovania")}</span>
+                <select
+                  value={c.de_versteuerung === "ist" ? "ist" : "soll"}
+                  onChange={(e) => f("de_versteuerung")(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="soll">
+                    {t("Versteuerung nach vereinbarten Entgelten (Soll)")}
+                  </option>
+                  <option value="ist">
+                    {t("Versteuerung nach vereinnahmten Entgelten (Ist)")}
+                  </option>
+                </select>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {t(
+                    "Ist len s povolením Finanzamtu (§ 20 UStG) — daň z faktúr sa priznáva až v období, keď prišla platba.",
+                  )}
+                </span>
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium">{t("Voranmeldungszeitraum")}</span>
+                <select
+                  value={c.de_ustva_obdobie === "stvrtrocne" ? "stvrtrocne" : "mesacne"}
+                  onChange={(e) => f("de_ustva_obdobie")(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="mesacne">{t("Mesačne")}</option>
+                  <option value="stvrtrocne">{t("Štvrťročne")}</option>
+                </select>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {t("Určuje Finanzamt — mesačne pri dani za minulý rok nad 9 000 €.")}
+                </span>
+              </label>
+              <label className="flex items-start gap-2 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={Boolean(c.de_dauerfrist)}
+                  onChange={(e) =>
+                    setC((prev: any) => ({ ...prev, de_dauerfrist: e.target.checked }))
+                  }
+                  className="mt-0.5 h-4 w-4 rounded border-input"
+                />
+                <span className="text-sm">
+                  {t("Dauerfristverlängerung")}
+                  <span className="block text-xs text-muted-foreground">
+                    {t(
+                      "Termín UStVA sa posúva o mesiac (§ 46 UStDV). Pri mesačnom podávaní k nej patrí Sondervorauszahlung — 1/11 záloh za minulý rok, odpočíta sa v decembri (KZ 39).",
+                    )}
+                  </span>
+                </span>
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-sm font-medium">{t("Kurz pri faktúre v cudzej mene")}</span>
+                <select
+                  value={c.kurz_de_zdroj === "ecb_tageskurs" ? "ecb_tageskurs" : "bmf"}
+                  onChange={(e) => f("kurz_de_zdroj")(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="bmf">{t("BMF-Monatskurs (§ 16 Abs. 6 UStG)")}</option>
+                  <option value="ecb_tageskurs">
+                    {t("Tageskurs EZB (mit Genehmigung des Finanzamts)")}
+                  </option>
+                </select>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {t(
+                    "Kým BMF kurz mesiaca nezverejní, použije sa predbežne kurz ECB a doklad sa potom prepočíta sám.",
+                  )}
+                </span>
+              </label>
+            </fieldset>
+          )}
           <In label="Telefón" value={c.phone ?? ""} onChange={f("phone")} />
           <In label="Web" value={c.website ?? ""} onChange={f("website")} />
           {/* Predvolená mena firmy sa dedí do každého nového dokladu, takže

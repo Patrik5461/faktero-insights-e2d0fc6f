@@ -264,7 +264,7 @@ export default {
     "Import in ABRA Flexi: Nástroje → Import → XML. Anzahlungsrechnungen und Belege in Fremdwährung werden ausgelassen.",
   "Súpiska CSV (Excel, MRP, Premier…)": "CSV-Liste (Excel, MRP, Premier…)",
   "Jeden riadok na doklad s rozpisom po sadzbách DPH, oddeľovač bodkočiarka, kódovanie Windows-1250. Dobropis je záporný, aby sa dal rovno sčítať.":
-    "Eine Zeile pro Beleg mit Aufschlüsselung nach MwSt.-Sätzen, Trennzeichen Semikolon, Kodierung Windows-1250. Gutschriften sind negativ, damit sie sich direkt summieren lassen.",
+    "Eine Zeile pro Beleg mit Aufschlüsselung nach MwSt.-Sätzen, Trennzeichen Semikolon, Kodierung Windows-1250. Rechnungskorrekturen sind negativ, damit sie sich direkt summieren lassen.",
 
   // Odovzdanie za mesiac
   "Do XML sa nedostali: {zoznam}": "Nicht im XML enthalten: {zoznam}",
