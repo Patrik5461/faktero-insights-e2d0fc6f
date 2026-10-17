@@ -86,7 +86,7 @@ export default {
   "<0>Odpočítanie dane</0> — keď si daň neodpočítavate, faktúra do časti B.2 nepatrí.":
     "<0>Vorsteuerabzug</0> — wenn Sie die Steuer nicht abziehen, gehört die Rechnung nicht in Teil B.2.",
   "<0>Opravuje faktúru číslo</0> — dobropis bez čísla pôvodnej faktúry sa do časti C.2 zapísať nedá.":
-    "<0>Korrigiert Rechnung Nr.</0> — eine Rechnungskorrektur ohne die Nummer der ursprünglichen Rechnung lässt sich nicht in Teil C.2 eintragen.",
+    "<0>Korrigiert Rechnung Nr.</0> — eine Gutschrift ohne die Nummer der ursprünglichen Rechnung lässt sich nicht in Teil C.2 eintragen.",
   "Faktúra v cudzej mene sa po uložení prepočíta kurzom ECB — do priznania totiž vstupuje v eurách. Zostavenie výkazov popisuje <0>manuál k výkazom k DPH</0>.":
     "Eine Rechnung in Fremdwährung wird nach dem Speichern zum EZB-Kurs umgerechnet — in die Steuererklärung geht sie nämlich in Euro ein. Die Erstellung der Meldungen beschreibt das <0>Handbuch zu den MwSt.-Meldungen</0>.",
   "Zaúčtovanie — predkontácia a členenie DPH": "Verbuchung — Vorkontierung und MwSt.-Kennzeichen",

@@ -159,7 +159,7 @@ export default {
   Vyťažené: "Ausgelesen",
   "Prijatá faktúra": "Eingangsrechnung",
   "Prijatá zálohová faktúra": "Eingehende Anzahlungsrechnung",
-  "Prijatý dobropis": "Eingehende Rechnungskorrektur",
+  "Prijatý dobropis": "Eingehende Gutschrift",
   "Bloček / pokladničný doklad": "Kassenbon / Kassenbeleg",
   "Iný doklad (zmluva, list, predpis…)": "Sonstiger Beleg (Vertrag, Schreiben, Bescheid…)",
 

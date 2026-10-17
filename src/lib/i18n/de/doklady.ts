@@ -7,7 +7,7 @@ export default {
   ", takže pokojne pošlite aj celý mesiac faktúr naraz. Jedna príloha môže mať najviac":
     ", Sie können also gern die Rechnungen eines ganzen Monats auf einmal senden. Ein Anhang darf höchstens",
   ". AI navrhne druh — faktúra, zálohová, dobropis, bloček, alebo exekúcia, predpis poistného, list z úradu či zmluva (tie pôjdu do":
-    ". Die KI schlägt die Art vor — Rechnung, Anzahlungsrechnung, Rechnungskorrektur, Kassenbon oder Pfändung, Beitragsbescheid, Behördenschreiben bzw. Vertrag (diese landen unter",
+    ". Die KI schlägt die Art vor — Rechnung, Anzahlungsrechnung, Gutschrift, Kassenbon oder Pfändung, Beitragsbescheid, Behördenschreiben bzw. Vertrag (diese landen unter",
   ". Doklad vo vyúčtovaní ide do Pohody ako interný doklad (nie z firemnej pokladne) a prijatá faktúra sa už neponúkne v hromadnom príkaze na úhradu.":
     ". Ein Beleg in einer Abrechnung geht als interner Beleg an Pohoda (nicht aus der Firmenkasse), und die Eingangsrechnung wird im Sammelzahlungsauftrag nicht mehr angeboten.",
   ". Doklad zaplatený kartou alebo prevodom hotovosť neuberá.":
@@ -596,7 +596,7 @@ export default {
   "Prijaté faktúry: {n}": "Eingangsrechnungen: {n}",
   "Prijaté zálohové faktúry": "Eingehende Anzahlungsrechnungen",
   "Prijaté zálohové faktúry — Faktero": "Eingangs-Anzahlungsrechnungen — Faktero",
-  "Prijatý dobropis": "Eingehende Rechnungskorrektur",
+  "Prijatý dobropis": "Eingehende Gutschrift",
   "Prijatých faktúr": "Eingangsrechnungen",
   "Pripravená na podpis": "Bereit zur Unterschrift",
   Pripravujeme: "In Vorbereitung",
@@ -723,7 +723,7 @@ export default {
     "Betrag, Datum und Verkäufer stammen aus dem QR-Code, die Positionen wurden aus dem Foto ausgelesen.",
   "Sumy podľa sadzieb DPH": "Beträge nach MwSt.-Sätzen",
   "Sumy zadajte kladne — dobropis ich odpočíta sám.":
-    "Geben Sie die Beträge positiv ein — die Rechnungskorrektur zieht sie selbst ab.",
+    "Geben Sie die Beträge positiv ein — die Gutschrift zieht sie selbst ab.",
   Sumár: "Zusammenfassung",
   súbor: "Datei",
   "Súbor sa nepodarilo načítať.": "Die Datei konnte nicht geladen werden.",

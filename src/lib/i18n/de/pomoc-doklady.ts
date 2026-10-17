@@ -20,7 +20,7 @@ export default {
   "Kliknite na doklad — vľavo uvidíte samotný doklad, vpravo vyťažené údaje.":
     "Klicken Sie auf einen Beleg — links sehen Sie den Beleg selbst, rechts die ausgelesenen Daten.",
   "Vyberte <0>druh dokladu</0>: prijatá faktúra, zálohová faktúra, dobropis, bloček alebo iný doklad (zmluva, list, predpis).":
-    "Wählen Sie die <0>Belegart</0>: Eingangsrechnung, Anzahlungsrechnung, Rechnungskorrektur, Kassenbon oder sonstiger Beleg (Vertrag, Schreiben, Bescheid).",
+    "Wählen Sie die <0>Belegart</0>: Eingangsrechnung, Anzahlungsrechnung, Gutschrift, Kassenbon oder sonstiger Beleg (Vertrag, Schreiben, Bescheid).",
   "Skontrolujte údaje. Povinné polia, ktoré chýbajú, sú <0>červené</0> — pri faktúre číslo a splatnosť, pri bločku spôsob úhrady, pri dobropise opravovaná faktúra.":
     "Prüfen Sie die Daten. Fehlende Pflichtfelder sind <0>rot</0> — bei einer Rechnung Nummer und Fälligkeit, beim Kassenbon die Zahlungsart, bei einer Rechnungskorrektur die korrigierte Rechnung.",
   "Rovno <0>zaúčtujte</0>: predkontácia, členenie DPH a kontrolného výkazu, stredisko, činnosť, kategória.":
