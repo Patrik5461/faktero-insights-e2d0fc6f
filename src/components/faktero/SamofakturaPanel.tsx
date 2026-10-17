@@ -254,7 +254,7 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
               search={{ opravuje: row.id }}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              <Pencil className="h-4 w-4" /> {t("Vystaviť dobropis")}
+              <Pencil className="h-4 w-4" /> {t("samofaktura::Vystaviť dobropis")}
             </Link>
           )}
           {stav !== "odsuhlasena" && (

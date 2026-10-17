@@ -38,7 +38,9 @@ export async function fetchMyCompanies() {
   if (!uid) return [];
   const { data, error } = await supabase
     .from("company_users")
-    .select("role, permissions, company:companies(id, name, ico, logo_url, module_employees)")
+    .select(
+      "role, permissions, company:companies(id, name, ico, logo_url, module_employees, country)",
+    )
     .eq("user_id", uid)
     .order("created_at", { ascending: true });
   if (error) throw error;

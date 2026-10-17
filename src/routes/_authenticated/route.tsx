@@ -25,7 +25,8 @@ import {
   setActiveProduct,
   type ActiveProduct,
 } from "@/lib/faktero/active-product";
-import { useT } from "@/lib/i18n/useT";
+import { KrajinaFirmyProvider, useT } from "@/lib/i18n/useT";
+import { krajinaDane } from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -191,27 +192,31 @@ function AuthedLayout() {
   // Pass the effective mode to AppShell so the switcher appears immediately
   // (without waiting for the DB round-trip above).
   const shellProductMode: ProductMode = effectiveMode ?? productMode;
+  /* Nemecké názvoslovie dobropisu (Rechnungskorrektur) len pre firmu z Nemecka. */
+  const aktivna = companies.find((c: any) => c.id === activeId) ?? companies[0];
 
   return (
-    <AppShell
-      companies={companies}
-      activeId={activeId}
-      productMode={shellProductMode}
-      activeProduct={shellActiveProduct}
-      onChangeCompany={(id) => {
-        setActiveCompanyId(id);
-        setActiveId(id);
-        /*
+    <KrajinaFirmyProvider krajina={krajinaDane(aktivna?.country)}>
+      <AppShell
+        companies={companies}
+        activeId={activeId}
+        productMode={shellProductMode}
+        activeProduct={shellActiveProduct}
+        onChangeCompany={(id) => {
+          setActiveCompanyId(id);
+          setActiveId(id);
+          /*
           Po prepnutí na prehľad, nie na otvorenú stránku — detail faktúry či
           rozpracovaný formulár patria predchádzajúcej firme a v novej by
           ukazovali „nenájdené“ alebo by sa uložili do nesprávnej firmy.
         */
-        window.location.assign(landingPathFor(shellActiveProduct));
-      }}
-    >
-      {zrusiSa && <ZrusenieBanner zrusiSa={zrusiSa} />}
-      <PlanGateBanner companyId={activeId} />
-      <Outlet />
-    </AppShell>
+          window.location.assign(landingPathFor(shellActiveProduct));
+        }}
+      >
+        {zrusiSa && <ZrusenieBanner zrusiSa={zrusiSa} />}
+        <PlanGateBanner companyId={activeId} />
+        <Outlet />
+      </AppShell>
+    </KrajinaFirmyProvider>
   );
 }

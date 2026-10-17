@@ -29,6 +29,7 @@ import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { pomenovanieDobropisu } from "@/lib/i18n/dobropis-de";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { SectionHeader, StepIndicator } from "./ui";
 import {
@@ -1401,6 +1402,8 @@ function KrokSuhrn({
   uprava?: { invoice_number: string };
 }) {
   const { t, locale: loc, mnozne } = usePreklad();
+  // „Rechnungskorrektur“ len pre firmu z Nemecka, inak „Gutschrift“ (dobropis-de.ts).
+  const krajinaFirmy = useKrajinaDane();
   const dni = Math.round(
     (new Date(`${splatnost}T00:00:00`).getTime() - new Date(`${vystavenie}T00:00:00`).getTime()) /
       86400000,
@@ -1429,7 +1432,7 @@ function KrokSuhrn({
             {upozornenia.map((u) => (
               <li key={u.kod}>
                 {u.kod === "efaktura"
-                  ? t("nf.upozornenieEfaktura")
+                  ? pomenovanieDobropisu(t("nf.upozornenieEfaktura"), krajinaFirmy)
                   : u.kod === "pdf"
                     ? t("nf.upozorneniePdf")
                     : u.kod === "krajina"

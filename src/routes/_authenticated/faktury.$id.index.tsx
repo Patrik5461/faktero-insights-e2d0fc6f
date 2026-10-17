@@ -78,6 +78,7 @@ import { sendReminderFn, previewReminderFn } from "@/lib/faktero/reminders.funct
 import { isdocFakturyFn } from "@/lib/faktero/isdoc.functions";
 import { xrechnungFakturyFn } from "@/lib/faktero/xrechnung.functions";
 import { hodnotyMailu, jazykFaktury, predvolenyMailFaktury } from "@/lib/faktero/email-jazyk";
+import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
@@ -819,7 +820,11 @@ function InvoiceDetail() {
       predmet a text firmy sa berie tak, ako ho firma napísala.
     */
     const jazykMailu = jazykFaktury(inv, company);
-    const predvoleny = predvolenyMailFaktury(jazykMailu, (inv as any)?.type);
+    const predvoleny = predvolenyMailFaktury(
+      jazykMailu,
+      (inv as any)?.type,
+      krajinaDane((company as any)?.country),
+    );
     const hodnoty = hodnotyMailu(inv, jazykMailu);
     setEmailForm({
       recipient_email: adresa ?? "",

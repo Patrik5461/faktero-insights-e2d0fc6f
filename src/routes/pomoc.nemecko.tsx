@@ -220,6 +220,11 @@ const sections: HelpSection[] = [
             Abs. 4 Nr. 10 UStG.
           </li>
           <li>
+            Platí to len pre firmu so sídlom v Nemecku. <strong>Slovenská alebo česká firma</strong>{" "}
+            s dokladom alebo rozhraním v nemčine má dobropis označený ako <em>Gutschrift</em> —
+            nemecký zákon o DPH sa jej netýka.
+          </li>
+          <li>
             Úplné storno faktúry Faktero samostatným dokladom nerieši — nevystavenú faktúru
             stornujete, vystavenú opravíte Rechnungskorrektur na celú sumu.
           </li>

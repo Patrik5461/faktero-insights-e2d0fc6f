@@ -2,6 +2,7 @@ import { sUctomFaktury } from "./platobny-ucet";
 import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { hodnotyMailu, jazykFaktury, predvolenyMailFaktury } from "./email-jazyk";
+import { krajinaDane } from "./vat-rates";
 
 export type SendInvoiceEmailInput = {
   company_id: string;
@@ -78,6 +79,7 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       subject: predvolenyMailFaktury(
         jazykFaktury(invoice, company),
         (invoice as any).type,
+        krajinaDane(company?.country),
       ).predmet.replace("{invoice_number}", String(invoice.invoice_number ?? "")),
       status: "pending",
     })
@@ -137,7 +139,11 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       nemenia. Až keď firma nemá nič vlastné, ide predvolený mail v jazyku
       dokladu (nemecká faktúra → nemecký mail).
     */
-    const predvoleny = predvolenyMailFaktury(jazykFaktury(invoice, company), (invoice as any).type);
+    const predvoleny = predvolenyMailFaktury(
+      jazykFaktury(invoice, company),
+      (invoice as any).type,
+      krajinaDane(company?.country),
+    );
     const subject =
       input.subject ?? tplSubject ?? company?.email_default_subject ?? predvoleny.predmet;
     const message = input.message ?? tplBody ?? company?.email_default_message ?? predvoleny.text;

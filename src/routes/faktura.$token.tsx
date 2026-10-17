@@ -9,6 +9,7 @@ import { datumNaDoklade, localeDokladu, popisky } from "@/lib/faktero/faktura-ja
 import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { pomenovanieDobropisu } from "@/lib/i18n/dobropis-de";
 
 /**
  * Faktúra otvorená z QR kódu na doklade.
@@ -158,7 +159,9 @@ function VerejnaFaktura() {
     Slovenský doklad ostáva v jazyku webu (návštevník si ho môže prepnúť);
     doklad v inom jazyku sa ukáže v jazyku dokladu, s popiskami z PDF.
   */
-  const P = popisky(jazyk);
+  // „Rechnungskorrektur“ len pri firme z Nemecka, inak „Gutschrift“ (dobropis-de.ts).
+  const krajinaFirmy = krajinaDane(firma?.country);
+  const P = popisky(jazyk, krajinaFirmy);
   const cudzi = jazyk !== "sk";
   const POPISKY_STRANKY: Record<string, string> = {
     Dobropis: velkymPrve(P.dobropis),
@@ -184,7 +187,11 @@ function VerejnaFaktura() {
     "Variabilný symbol": P.variabilnySymbol,
     IBAN: P.iban,
   };
-  const t = (text: string) => (cudzi ? (POPISKY_STRANKY[text] ?? tWebu(text)) : tWebu(text));
+  const t = (text: string) =>
+    pomenovanieDobropisu(
+      cudzi ? (POPISKY_STRANKY[text] ?? tWebu(text)) : tWebu(text),
+      krajinaFirmy,
+    );
 
   // Doklad pre zákazníka je vždy svetlý — tmavý podľa jeho prehliadača vyzerá
   // ako chyba a horšie sa tlačí.

@@ -30,6 +30,8 @@
 import { naAnsi } from "./cp1252";
 import { domacaMena, domacejZaJednotku } from "./kurzy";
 import { jeEuIcDph, rozdelIcDph } from "./vies";
+import { krajinaDane } from "./vat-rates";
+import { pomenovanieDobropisu } from "@/lib/i18n/dobropis-de";
 import type { DokladUctovania, KodUctovania, RiadokUctovania } from "./zauctovanie-export";
 
 export type OsnovaDatev = "SKR03" | "SKR04";
@@ -576,6 +578,16 @@ const AGENDA_NAZOV: Record<DokladUctovania["agenda"], string> = {
   doklad: "Belege",
 };
 
+/**
+ * Názov dobropisu v Buchungstext: vystavený dobropis nemeckej firmy je
+ * „Rechnungskorrektur“, prijatý dobropis a dobropis firmy mimo Nemecka
+ * „Gutschrift“ (`dobropis-de.ts`).
+ */
+function nazovDobropisu(agenda: string, country: string | null | undefined): string {
+  if (agenda !== "vystavena") return "Gutschrift";
+  return pomenovanieDobropisu("Rechnungskorrektur", krajinaDane(country));
+}
+
 export function buildDatevBuchungsstapel(opts: {
   firma: FirmaDatev;
   doklady: DokladUctovania[];
@@ -808,7 +820,7 @@ export function buildDatevBuchungsstapel(opts: {
         belegfeld1: belegfeld1(d.cislo),
         belegfeld2: d.agenda === "doklad" ? "" : datumTtmmjj(d.datumSplatnosti),
         buchungstext:
-          (d.druh === "dobropis" ? "Rechnungskorrektur " : "") +
+          (d.druh === "dobropis" ? `${nazovDobropisu(d.agenda, opts.firma?.country)} ` : "") +
           (r.text && d.odpocetVRiadkoch && r.zaklad < 0 ? r.text : d.partner.nazov || d.text),
         kost1: d.stredisko,
         kost2: d.zakazka,

@@ -152,7 +152,8 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const jazyk = jazykDokladu(
     (invoice as any).language || (input as any).language || predvolenyJazykFirmy(company.country),
   );
-  const t = popisky(jazyk);
+  // Nemecké „RECHNUNGSKORREKTUR“ len pre firmu z Nemecka, inak „GUTSCHRIFT“ (dobropis-de.ts).
+  const t = popisky(jazyk, krajinaDane(company.country));
   /*
     Kleinunternehmer (§ 19 UStG) prenesenie neuplatňuje — ani § 13b, ani
     oslobodené dodanie do EÚ. Faktúra označená ako prenesenie sa preto
@@ -180,7 +181,12 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const podlaTypu: Record<string, string> = {
     proforma: t.zalohovaFaktura,
     advance_payment: t.dokladKPlatbe,
-    credit_note: t.dobropis,
+    /*
+      Oprava samofaktúry je po nemecky Gutschrift ako samofaktúra sama
+      (§ 14 Abs. 2 S. 2 UStG) — nie Rechnungskorrektur, ktorú vystavuje dodávateľ.
+    */
+    credit_note:
+      invoice.samofakturacia && jazyk === "de" ? t.vyhotovenieOdberatelom.toUpperCase() : t.dobropis,
     debit_note: t.tarchopis,
   };
   // Doklad podľa § 25a nie je opravná faktúra (§ 71 ods. 2) — vlastný nadpis.
@@ -265,7 +271,8 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     dvojpoložkovej faktúry odsunula na druhú stranu, preto čo najmenej.
   */
   const podCislom: string[] = [];
-  if (invoice.samofakturacia) podCislom.push(t.vyhotovenieOdberatelom);
+  if (invoice.samofakturacia && docLabel !== t.vyhotovenieOdberatelom.toUpperCase())
+    podCislom.push(t.vyhotovenieOdberatelom);
   if (invoice.opravuje_cislo) podCislom.push(`${t.opravujeFakturu} ${invoice.opravuje_cislo}`);
   // § 25a ods. 9 — presné znenie, po slovensky bez ohľadu na jazyk dokladu.
   if (invoice.oprava_25a) podCislom.push(VETA_25A);

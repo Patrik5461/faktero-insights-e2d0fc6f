@@ -208,7 +208,11 @@ const EN: TextyDodavatela = {
 
 const DE: TextyDodavatela = {
   faktura: "Rechnung",
-  dobropis: "Rechnungskorrektur",
+  /*
+    Oprava samofaktúry je opäť Gutschrift (§ 14 Abs. 2 S. 2 UStG) — vyhotovuje
+    ju odberateľ, nie dodávateľ, preto nie „Rechnungskorrektur“.
+  */
+  dobropis: "Korrektur der Gutschrift",
   naOdsuhlasenie: "zur Freigabe",
   vyhotovenieOdberatelom: "Gutschrift",
   uvod: (o) =>
@@ -250,7 +254,7 @@ const DE: TextyDodavatela = {
   predmet: (d, c, o) => `${d} ${c} zur Freigabe — ausgestellt von ${o}`,
   pozdrav: "Guten Tag,",
   mailTelo: (d, c, s, op) =>
-    `gemäß unserer Gutschriftvereinbarung haben wir in Ihrem Namen ${d} ${c} über ${s} ausgestellt${op ? ` (Berichtigung zu Rechnung ${op})` : ""}. Sie finden sie im Anhang.`,
+    `gemäß unserer Gutschriftvereinbarung haben wir in Ihrem Namen die ${d} ${c} über ${s} ausgestellt${op ? ` (Berichtigung zu Rechnung ${op})` : ""}. Sie finden sie im Anhang.`,
   mailProsba: "Die Rechnung ist Ihre und Sie sind für die Umsatzsteuer verantwortlich — bitte bestätigen Sie sie.",
   mailAkNesedi: "Falls etwas nicht stimmt, geben Sie sie auf derselben Seite mit einer Anmerkung zurück und wir korrigieren sie.",
   mailOtvorit: "Oder sehen Sie sie zuerst an:",

@@ -17,6 +17,8 @@ import {
   type JazykDokladu,
 } from "./faktura-jazyk";
 import { formatujMenu } from "./mena";
+import type { KrajinaDane } from "./vat-rates";
+import { pomenovanieDobropisuVObjekte } from "@/lib/i18n/dobropis-de";
 
 type Mail = { predmet: string; text: string };
 
@@ -57,7 +59,8 @@ export function jazykFaktury(
   Opravná faktúra (dobropis) po nemecky: „Rechnungskorrektur“, nie
   „Rechnung … zahlbar bis“ — peniaze idú opačným smerom. „Gutschrift“ je
   v Nemecku samofaktúra (§ 14 Abs. 2 S. 2 UStG), preto sa to slovo nepoužíva.
-  Ostatné jazyky ostávajú, ako boli.
+  Platí to len pre firmu z Nemecka — slovenská či česká firma píše
+  „Gutschrift“ (`dobropis-de.ts`). Ostatné jazyky ostávajú, ako boli.
 */
 const MAILY_DOBROPIS: Partial<Record<JazykDokladu, Mail>> = {
   de: {
@@ -67,9 +70,15 @@ const MAILY_DOBROPIS: Partial<Record<JazykDokladu, Mail>> = {
 };
 
 /** Predvolený predmet a text mailu s faktúrou (so zástupnými poliami). */
-export function predvolenyMailFaktury(jazyk: unknown, typ?: string | null): Mail {
+export function predvolenyMailFaktury(
+  jazyk: unknown,
+  typ?: string | null,
+  /** Daňová krajina firmy — `krajinaDane(company.country)`. */
+  krajina?: KrajinaDane | null,
+): Mail {
   const j = jazykDokladu(jazyk);
-  if (typ === "credit_note" && MAILY_DOBROPIS[j]) return MAILY_DOBROPIS[j]!;
+  if (typ === "credit_note" && MAILY_DOBROPIS[j])
+    return pomenovanieDobropisuVObjekte(MAILY_DOBROPIS[j]!, krajina);
   return MAILY[j];
 }
 

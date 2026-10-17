@@ -97,7 +97,7 @@ export default {
   "Do pokladne vstupujú pokladničné doklady a": "In die Kasse fließen Kassenbelege und",
   "Do priečinka": "In Ordner",
   Dobropis: "Rechnungskorrektur",
-  "Dobropis (samofaktúra)": "Rechnungskorrektur (Selbstfakturierung)",
+  "Dobropis (samofaktúra)": "Korrektur der Gutschrift (Selbstfakturierung)",
   "Dobré vedieť": "Gut zu wissen",
   "Dodanie (daňové plnenie)": "Lieferung (Steuertatbestand)",
   "Dodanie (DUZP)": "Lieferung (DUZP)",

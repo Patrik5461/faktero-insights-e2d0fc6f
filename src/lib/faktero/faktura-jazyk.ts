@@ -1,4 +1,5 @@
-import { krajinaDane } from "./vat-rates";
+import { krajinaDane, type KrajinaDane } from "./vat-rates";
+import { pomenovanieDobropisuVObjekte } from "@/lib/i18n/dobropis-de";
 
 /**
  * Jazyk dokladu.
@@ -412,8 +413,14 @@ const HU: Popisky = {
 
 const SLOVNIKY: Record<JazykDokladu, Popisky> = { sk: SK, cs: CS, en: EN, de: DE, hu: HU };
 
-export function popisky(jazyk: unknown): Popisky {
-  return SLOVNIKY[jazykDokladu(jazyk)];
+/**
+ * Popisky dokladu v jazyku. `krajina` = daňová krajina vystavujúcej firmy:
+ * nemecký nadpis dobropisu „RECHNUNGSKORREKTUR“ platí len pre firmu z Nemecka,
+ * slovenská či česká firma má na nemeckom doklade „GUTSCHRIFT“
+ * (`dobropis-de.ts`). Bez krajiny ostáva nemecké názvoslovie.
+ */
+export function popisky(jazyk: unknown, krajina?: KrajinaDane | null): Popisky {
+  return pomenovanieDobropisuVObjekte(SLOVNIKY[jazykDokladu(jazyk)], krajina);
 }
 
 /**

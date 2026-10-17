@@ -1386,19 +1386,19 @@ export default {
   "Pridajte aspoň jednu položku.": "Fügen Sie mindestens eine Position hinzu.",
   "Samofaktúra je uložená": "Die Selbstfakturierung ist gespeichert",
   "Dobropis {cislo} k faktúre {faktura} je vyhotovený":
-    "Rechnungskorrektur {cislo} zur Rechnung {faktura} wurde erstellt",
+    "Korrektur der Gutschrift {cislo} zur Rechnung {faktura} wurde erstellt",
   "Samofaktúra {cislo} je vyhotovená": "Selbstfakturierung {cislo} wurde erstellt",
   "Samofaktúru {cislo} dodávateľ už odsúhlasil, takže sa meniť nedá.":
     "Der Lieferant hat die Selbstfakturierung {cislo} bereits bestätigt, daher kann sie nicht geändert werden.",
   "Chybu na nej opravíte dobropisom, ako pri každej faktúre.":
-    "Einen Fehler darin korrigieren Sie mit einer Rechnungskorrektur, wie bei jeder Rechnung.",
+    "Einen Fehler darin korrigieren Sie mit einer Korrektur der Gutschrift, wie bei jeder Rechnung.",
   "Späť na faktúru": "Zurück zur Rechnung",
-  "Úprava dobropisu {cislo}": "Rechnungskorrektur {cislo} bearbeiten",
+  "Úprava dobropisu {cislo}": "Korrektur der Gutschrift {cislo} bearbeiten",
   "Úprava samofaktúry {cislo}": "Selbstfakturierung {cislo} bearbeiten",
-  "Dobropis k samofaktúre {cislo}": "Rechnungskorrektur zur Selbstfakturierung {cislo}",
+  "Dobropis k samofaktúre {cislo}": "Korrektur der Gutschrift {cislo}",
   "Nová samofaktúra": "Neue Selbstfakturierung",
   "Opravný doklad k odsúhlasenej samofaktúre. Množstvá sú záporné — upravte ich na to, čo sa vracia alebo zľavuje. Aj dobropis musí dodávateľ odsúhlasiť.":
-    "Korrekturbeleg zu einer bestätigten Selbstfakturierung. Die Mengen sind negativ – passen Sie sie an das an, was zurückgegeben oder rabattiert wird. Auch die Rechnungskorrektur muss der Lieferant bestätigen.",
+    "Korrekturbeleg zu einer bestätigten Selbstfakturierung. Die Mengen sind negativ – passen Sie sie an das an, was zurückgegeben oder rabattiert wird. Auch die Korrektur der Gutschrift muss der Lieferant bestätigen.",
   "Faktúru za dodávateľa vyhotovujete vy podľa dohody o samofakturácii. Dodávateľ ju potom odsúhlasí — až potom vstupuje do DPH a na úhradu.":
     "Sie erstellen die Rechnung für den Lieferanten gemäß der Vereinbarung über die Selbstfakturierung. Der Lieferant bestätigt sie anschließend – erst dann fließt sie in die MwSt. und in die Zahlungen ein.",
   "Faktúra čaká na odsúhlasenie. Po uložení zmien prestane platiť odkaz, ktorý dostal dodávateľ — treba mu ju poslať znova.":
@@ -1476,7 +1476,8 @@ export default {
   Spolu: "Gesamt",
   Zákazka: "Projekt",
   "Poznámka na faktúre": "Notiz auf der Rechnung",
-  "Vyhotoviť dobropis": "Rechnungskorrektur erstellen",
+  "Vyhotoviť dobropis": "Korrektur der Gutschrift erstellen",
+  "samofaktura::Vystaviť dobropis": "Gutschrift korrigieren",
   "Vyhotoviť samofaktúru": "Selbstfakturierung erstellen",
   "Z cenníka / skladu": "Aus Preisliste / Lager",
   "Hľadať položku…": "Position suchen…",
