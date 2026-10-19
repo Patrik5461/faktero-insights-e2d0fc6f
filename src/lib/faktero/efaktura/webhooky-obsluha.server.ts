@@ -130,6 +130,16 @@ async function zapniProfil(companyId: string, op: { firmId: string | null; peppo
   if (error) throw new Error(error.message);
 }
 
+/** Chyba operácie ePoštáka ako text; SMP_REGISTRATION_NOT_FOUND vysvetlí, čo s tým. */
+export function popisChybyOperacie(chyba: unknown): string | null {
+  if (!chyba || typeof chyba !== "object") return typeof chyba === "string" ? chyba : null;
+  const { code, message } = chyba as { code?: string; message?: string };
+  if (code === "SMP_REGISTRATION_NOT_FOUND") {
+    return "SMP_REGISTRATION_NOT_FOUND — ePošták registráciu v SMP nedokončil. Firma musí na portáli Finančnej správy znova vybrať Faktero ako poskytovateľa (vznikne nový overovací token); ak je registrovaná u iného poskytovateľa, treba migračný kód.";
+  }
+  return [code, message].filter(Boolean).join(" — ") || null;
+}
+
 function stavZOperacie(s: string): string {
   if (s === "succeeded") return "registrovana";
   if (s === "manual_review") return "na_kontrolu";
@@ -285,10 +295,14 @@ export async function dokonciRozbehnuteRegistracie(): Promise<void> {
         const { stavWhiteLabel } = await import("./epostak.server");
         const op = await stavWhiteLabel(z.epostak_operacia_id);
         const stav = stavZOperacie(op.status);
+        // Dôvod zamietnutia treba vidieť v admine aj v e-maile — inak ostane
+        // len „zamietnutá“ a nikto nevie, či má firma znova vybrať poskytovateľa.
+        const chyba = popisChybyOperacie(op.error);
         const zmena: Record<string, unknown> = {
           stav,
           epostak_firm_id: op.firmId,
           peppol_id: op.peppolId,
+          ...(chyba ? { chyba } : {}),
         };
         if (stav === "registrovana" || stav === "zamietnuta") zmena.token_sifrovany = null;
         await db.from("efaktura_pds_ziadosti").update(zmena).eq("id", z.id);
@@ -300,6 +314,7 @@ export async function dokonciRozbehnuteRegistracie(): Promise<void> {
             email: z.email,
             telefon: z.telefon,
             stav,
+            chyba,
             maFirmu: Boolean(z.company_id),
           });
         }
