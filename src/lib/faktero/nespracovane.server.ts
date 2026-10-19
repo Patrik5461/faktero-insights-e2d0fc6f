@@ -194,6 +194,13 @@ export async function vytvorDoklad(
   const ucenie = await import("./ucenie-z-oprav.server");
   const { jeDruhUcenia, volbyZUdajov, hodnotaPola } = await import("./ucenie-z-oprav");
   const povodneU = u;
+  /*
+    Nepotvrdený návrh AI do dokladu nejde — doklad by sa ním zaúčtoval bez
+    človeka. Prenesie sa k vytvorenému dokladu, kde ho človek potvrdí.
+  */
+  const { nepotvrdeneAi, bezNepotvrdenehoAi } = await import("./ai-predkontacia");
+  const nepotvrdeneNavrhy = nepotvrdeneAi(u);
+  u = bezNepotvrdenehoAi(u);
   if (jeDruhUcenia(druh))
     u = await ucenie.pripravNaZapis(supabase, { companyId: r.company_id, druh, udaje: u, createdBy: autor, predmetMailu });
 
@@ -337,6 +344,18 @@ export async function vytvorDoklad(
       volby,
       dokladId: vysledok.id,
       userId,
+    });
+  }
+
+  {
+    // Nepotvrdený návrh AI počká na prijatej faktúre v zaúčtovaní; inak sa pamäť zmaže.
+    const { prenesNavrh } = await import("./ai-predkontacia.server");
+    await prenesNavrh(supabase, {
+      companyId: r.company_id,
+      nespracovanyId: r.id,
+      typ: vysledok.agenda === "prijata" ? "prijata" : "doklad",
+      id: vysledok.id,
+      preniest: vysledok.agenda === "prijata" && nepotvrdeneNavrhy.length > 0,
     });
   }
 

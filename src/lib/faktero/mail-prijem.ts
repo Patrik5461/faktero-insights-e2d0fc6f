@@ -131,6 +131,9 @@ export function overVlastnyLocalPart(vstup: string): OverenieAdresy {
   // „podpora-…" patrí odpovediam na požiadavky v help desku.
   if (upravene.startsWith("podpora-"))
     return { ok: false, chyba: "Toto meno je vyhradené, zvoľte si iné." };
+  // „banka-…" patrí e-mailovým notifikáciám banky (banka-notifikacie.ts).
+  if (upravene.startsWith("banka-"))
+    return { ok: false, chyba: "Toto meno je vyhradené, zvoľte si iné." };
 
   return { ok: true, hodnota: upravene };
 }

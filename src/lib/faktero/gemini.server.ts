@@ -36,7 +36,12 @@ export async function geminiVision(
  */
 export async function geminiText(
   prompt: string,
-  nastavenie?: { maxOutputTokens?: number; json?: boolean; bezUvazovania?: boolean },
+  nastavenie?: {
+    maxOutputTokens?: number;
+    json?: boolean;
+    bezUvazovania?: boolean;
+    schema?: Record<string, unknown>;
+  },
   merac?: MeracTokenov,
 ): Promise<string> {
   return volaj([{ text: prompt }], nastavenie, merac);
@@ -44,7 +49,12 @@ export async function geminiText(
 
 async function volaj(
   parts: unknown[],
-  nastavenie?: { maxOutputTokens?: number; json?: boolean; bezUvazovania?: boolean },
+  nastavenie?: {
+    maxOutputTokens?: number;
+    json?: boolean;
+    bezUvazovania?: boolean;
+    schema?: Record<string, unknown>;
+  },
   merac?: MeracTokenov,
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
@@ -71,6 +81,10 @@ async function volaj(
                   ? { maxOutputTokens: nastavenie.maxOutputTokens }
                   : {}),
                 ...(nastavenie.json ? { responseMimeType: "application/json" } : {}),
+                // Schéma odpovede — model vráti presne tieto polia.
+                ...(nastavenie.json && nastavenie.schema
+                  ? { responseSchema: nastavenie.schema }
+                  : {}),
                 /*
                   Model s uvažovaním minie na premýšľanie aj šesťsto tokenov
                   navyše. Pri čítaní dokumentu sa to oplatí, pri rozhovore nie:

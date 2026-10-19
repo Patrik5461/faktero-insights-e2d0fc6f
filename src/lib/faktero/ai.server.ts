@@ -27,6 +27,11 @@ export type AiNastavenie = {
   firma?: string | null;
   /** Rozhovor nepotrebuje, aby model najprv premýšľal — len by minul strop. */
   bezUvazovania?: boolean;
+  /**
+   * Schéma JSON odpovede (podmnožina OpenAPI). Gemini ju dodrží priamo;
+   * OpenAI dostane len `json_object` — volajúci odpoveď aj tak overuje.
+   */
+  schema?: Record<string, unknown>;
 };
 
 /**

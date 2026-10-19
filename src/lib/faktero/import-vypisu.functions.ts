@@ -203,11 +203,35 @@ export const importujVypisFn = createServerFn({ method: "POST" })
     const r = precitaj(data.obsah, ucet.currency);
     if (r.pohyby.length === 0) throw new Error("Vo výpise nie je ani jeden pohyb.");
 
-    const riadky = r.pohyby.map((p) => ({
+    const vsetkyRiadky = r.pohyby.map((p) => ({
       company_id: data.company_id,
       bank_account_id: ucet.id,
       ...p,
     }));
+    /*
+      Pohyby, ktoré na účet už prišli z e-mailových notifikácií banky, majú inú
+      referenciu než vo výpise — jedinečný index ich nezastaví. Bez tejto
+      kontroly by sa platba zapísala dvakrát (a raz by mohla byť spárovaná).
+    */
+    const { bezPohybovZMailu } = await import("./banka-notifikacie");
+    let zMailov: any[] = [];
+    if (r.odDna && r.doDna) {
+      const posun = (d: string, dni: number) =>
+        new Date(Date.parse(d) + dni * 86_400_000).toISOString().slice(0, 10);
+      const { data: zm } = await vsetkoAkoData((zac, kon) =>
+        supabaseAdmin
+          .from("bank_transactions")
+          .select("id, booking_date, amount, variable_symbol, counterparty")
+          .eq("bank_account_id", ucet.id)
+          .eq("zdroj", "email")
+          .gte("booking_date", posun(r.odDna!, -1))
+          .lte("booking_date", posun(r.doDna!, 1))
+          .order("id")
+          .range(zac, kon),
+      );
+      zMailov = zm ?? [];
+    }
+    const riadky = zMailov.length ? bezPohybovZMailu(vsetkyRiadky, zMailov) : vsetkyRiadky;
     // Ten istý zápis, aký používa nočná synchronizácia: preskočí duplicity a
     // nezhodí celý import kvôli jednému pohybu, ktorý tam už je.
     const vlozenych = await vlozPohyby(supabaseAdmin, riadky);
@@ -221,7 +245,7 @@ export const importujVypisFn = createServerFn({ method: "POST" })
 
     return {
       vlozenych,
-      preskocenych: riadky.length - vlozenych,
+      preskocenych: vsetkyRiadky.length - vlozenych,
       ucetId: ucet.id,
       odDna: r.odDna,
       doDna: r.doDna,

@@ -105,6 +105,50 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "notifikacie",
+    title: "Iná banka: párovanie cez e-mailové notifikácie",
+    body: (
+      <>
+        <p>
+          Banku, ktorú Faktero nevie pripojiť priamo (VÚB, Slovenská sporiteľňa, ČSOB, Prima banka,
+          Česká spořitelna, Komerční banka, Air Bank a ďalšie), spárujete cez{" "}
+          <strong>e-maily, ktoré banka posiela o každej platbe</strong>. V{" "}
+          <Link to="/bankove-ucty/notifikacie">Bankové účty → E-mailové notifikácie</Link> vyberte
+          banku a účet (alebo zadajte IBAN) a Faktero vytvorí tajnú adresu v tvare{" "}
+          <em>banka-…@doklady.faktero.sk</em>.
+        </p>
+        <p>
+          Adresu skopírujte do internetbankingu do nastavenia notifikácií (avíz, upozornení) o
+          pohyboch na účte a zapnite prijaté aj odoslané platby. Pri bankách, kde to vieme, je na
+          stránke návod krok za krokom.
+        </p>
+        <p>
+          <strong>Banka dovolí len jednu adresu?</strong> Nechajte notifikácie chodiť vám a v Gmaile
+          si nastavte automatické preposielanie na adresu z Faktera. Gmail najprv pošle overovací
+          kód — Faktero ho zachytí a ukáže pri účte, odkiaľ ho potvrdíte.
+        </p>
+        <p>
+          <strong>Čo sa s e-mailom stane.</strong> Faktero z neho prečíta sumu, smer, dátum,
+          symboly, protistranu a správu a založí pohyb označený „z e-mailu“. Faktúra sa označí ako
+          zaplatená automaticky len vtedy, keď sedí variabilný symbol aj suma; inak uvidíte návrh v
+          párovaní.
+        </p>
+        <p>
+          <strong>Na kontrolu.</strong> Pohyb sa sám založí len z e-mailu, ktorý banka elektronicky
+          podpísala. Ručne preposlaný e-mail, e-mail z neznámej adresy alebo taký, ktorému Faktero
+          celkom nerozumie, čaká v zozname na kontrolu — údaje skontrolujete, prípadne opravíte, a
+          pohyb založíte jedným klikom, alebo e-mail zahodíte. Ten istý e-mail ani ten istý pohyb sa
+          dvakrát nezaloží.
+        </p>
+        <p>
+          Adresu nikomu nedávajte. Ak unikne, vytvorte pri účte novú — stará prestane fungovať hneď.
+          Keď na ten istý účet nahráte aj výpis, pohyby, ktoré už prišli z e-mailov, sa preskočia a
+          nezdvoja sa.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "wallester",
     title: "Wallester",
     body: (

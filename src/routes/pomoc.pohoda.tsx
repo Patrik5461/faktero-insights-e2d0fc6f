@@ -489,6 +489,50 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "navrh-ai",
+    title: "Návrh AI pre nového dodávateľa",
+    body: (
+      <>
+        <p>
+          Keď doklad nemá predkontáciu či členenie DPH a nevyplní ich ani pravidlo účtovania, ani
+          naučená voľba pri dodávateľovi, navrhne ich AI — podľa dodávateľa, položiek, sumy, sadzieb
+          DPH, prenesenia daňovej povinnosti a druhu dokladu.
+        </p>
+        <ul>
+          <li>
+            Vyberá <strong>len z vášho číselníka predkontácií</strong> a z kódov, ktoré už máte na
+            iných dokladoch. Kód, ktorý v nich nie je, sa zahodí. Bez číselníka sa namiesto návrhu
+            ukáže odkaz na <Link to="/uctovnictvo/predkontacie">nastavenie predkontácií</Link>.
+          </li>
+          <li>
+            Poradie je vždy: <strong>pravidlo účtovania</strong>, potom{" "}
+            <strong>naučená voľba</strong> dodávateľa a až potom AI.
+          </li>
+          <li>
+            Navrhnuté polia sú označené <em>Návrh AI</em> aj so zdôvodnením (napríklad
+            „telekomunikačné služby → 518“). Je to len návrh: na prijatej faktúre ho potvrdíte
+            tlačidlom <em>Zaúčtovať</em>, v Nespracovaných dokladoch tlačidlom{" "}
+            <em>Potvrdiť návrh</em> — alebo kód zmeníte. Nepotvrdený návrh sa do dokladu nezapíše a
+            doklad sa podľa AI nikdy nezaúčtuje sám.
+          </li>
+          <li>
+            V zozname prijatých faktúr označte faktúry a zvoľte <em>Navrhnúť AI pre vybrané</em>.
+            Návrhy sa ukážu v okne a zaúčtujú sa až tlačidlom <em>Zaúčtovať označené</em>.
+          </li>
+          <li>
+            Návrh sa počíta raz a pamätá sa pri doklade; znova sa spýta, len keď sa zmení dodávateľ,
+            sumy alebo položky. Čo potvrdíte alebo zmeníte, si Faktero zapamätá pri dodávateľovi —
+            pri ďalšom doklade už AI netreba.
+          </li>
+          <li>
+            Robí sa pre slovenské a české firmy; keď AI práve neodpovedá, návrh sa jednoducho
+            neukáže.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  {
     id: "volby-exportu",
     title: "Voľby exportu a nastavenia prenosu",
     body: (

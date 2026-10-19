@@ -32,6 +32,7 @@ import {
   Upload,
   BookCheck,
   Download,
+  Sparkles,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
@@ -46,6 +47,7 @@ import { toast } from "sonner";
 import { formatovacMeny, formatujMenu } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
+import { NavrhyAiOkno } from "@/components/faktero/NavrhyAiOkno";
 import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
@@ -175,6 +177,7 @@ function PurchaseInvoicesPage() {
   const [hromadneBusy, setHromadneBusy] = useState(false);
   const [mazanie, setMazanie] = useState(false);
   const [prikaz, setPrikaz] = useState(false);
+  const [navrhyAi, setNavrhyAi] = useState(false);
   /** Meno k `created_by`; profily číta server, RLS pustí každého len k sebe. */
   const [mena, setMena] = useState<Record<string, string>>({});
   const nacitajMena = useServerFn(menaClenovFirmy);
@@ -779,6 +782,14 @@ function PurchaseInvoicesPage() {
               <BookCheck className="h-3.5 w-3.5" /> {t("Zaúčtovať")}
             </button>
             <button
+              onClick={() => setNavrhyAi(true)}
+              disabled={hromadneBusy}
+              title={t("AI navrhne predkontáciu a členenie z vášho číselníka — zaúčtujete až po kontrole.")}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> {t("Navrhnúť AI pre vybrané")}
+            </button>
+            <button
               onClick={hromadneXml}
               disabled={hromadneBusy}
               title={t("Zaúčtované faktúry pre {program}; označia sa ako odovzdané", {
@@ -1183,6 +1194,17 @@ function PurchaseInvoicesPage() {
             </div>
           </div>
         </div>
+      )}
+      {navrhyAi && getActiveCompanyId() && (
+        <NavrhyAiOkno
+          companyId={getActiveCompanyId()!}
+          ids={[...selected]}
+          onClose={() => setNavrhyAi(false)}
+          onHotovo={() => {
+            setSelected(new Set());
+            void load();
+          }}
+        />
       )}
       {prikaz && getActiveCompanyId() && (
         <HromadnyPrikaz

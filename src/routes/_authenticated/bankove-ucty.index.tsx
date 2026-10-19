@@ -39,6 +39,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ShieldCheck,
+  Mail,
 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 
@@ -285,6 +286,13 @@ function BankAccountsPage() {
             >
               <Upload className="h-4 w-4" /> {t("Nahrať výpis")}
             </Link>
+            {/* Banky bez API: pohyby z e-mailových notifikácií banky. */}
+            <Link
+              to="/bankove-ucty/notifikacie"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+            >
+              <Mail className="h-4 w-4" /> {t("E-mailové notifikácie")}
+            </Link>
             <Link
               to="/bankove-ucty/pripojit"
               className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
@@ -349,7 +357,7 @@ function BankAccountsPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 font-medium capitalize">
-                    {c.provider}
+                    {c.provider === "email" ? t("E-mailové notifikácie") : c.provider}
                     {c.status === "connected" ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                         <CheckCircle2 className="h-3 w-3" /> {t("Pripojené")}
@@ -377,7 +385,12 @@ function BankAccountsPage() {
                   hoci s Wise nemá nič spoločné. Wise nemá ani súhlas, ktorý by
                   sa dal obnovovať.
                 */}
-                {c.provider === "fio" ? (
+                {c.provider === "email" ? (
+                  /* Účet z e-mailových notifikácií: nie je čo sťahovať ani obnovovať. */
+                  <Link to="/bankove-ucty/notifikacie" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary">
+                    <Mail className="h-3.5 w-3.5" /> {t("Nastavenie notifikácií")}
+                  </Link>
+                ) : c.provider === "fio" ? (
                   <>
                     <button
                       onClick={() => onFio(c.id, "sync")}

@@ -5,6 +5,8 @@ import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
 import { NauceneZDodavatela } from "@/components/faktero/NauceneZDodavatela";
+import { NavrhAiNespracovaneho, useNavrhZauctovania } from "@/components/faktero/NavrhAi";
+import { doplnNavrhDoUdajov, oznaceniaZUdajov } from "@/lib/faktero/ai-predkontacia";
 import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -104,6 +106,18 @@ function Detail() {
       .catch(() => setNavrhy(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d?.companyId, druh]);
+
+  /*
+    Návrh zaúčtovania (pravidlo > návyk > AI) — lenivo pri otvorení, server
+    si ho pamätá. Doplní sa len do prázdnych polí; AI hodnoty sú označené
+    a do dokladu idú, až keď ich človek potvrdí.
+  */
+  const druhNavrhu = druh === "faktura" || druh === "zalohova" || druh === "dobropis" || druh === "blocek" ? druh : null;
+  const navrhAi = useNavrhZauctovania("nespracovany", d?.id, Boolean(d && d.stav !== "cita" && druhNavrhu), druhNavrhu);
+  useEffect(() => {
+    if (navrhAi?.stav !== "navrh") return;
+    setU((p) => (p ? doplnNavrhDoUdajov(p, navrhAi.polia, navrhAi.dovod) : p));
+  }, [navrhAi]);
 
   const chyby = useMemo(() => (u ? chybajuce(druh || null, u, d?.povinne ?? []) : []), [u, druh, d?.povinne]);
   const zle = (k: string) => chyby.includes(k);
@@ -288,6 +302,7 @@ function Detail() {
             u={u}
             setU={setU}
             navrhy={navrhy}
+            stavNavrhuAi={navrhAi?.stav ?? null}
             chyby={chyby}
             sucty={s}
             sadzby={sadzby}
@@ -617,6 +632,7 @@ function Detail() {
                   <PoliaZauctovania
                     navrhy={navrhy}
                     hodnoty={hodnotyKodov}
+                    oznacenia={oznaceniaZUdajov(u)}
                     setHodnoty={(h: any) =>
                       setU({
                         ...u,
@@ -634,6 +650,7 @@ function Detail() {
                     }
                   />
                   <NauceneZDodavatela u={u} />
+                  <NavrhAiNespracovaneho u={u} setU={setU} stav={navrhAi?.stav} />
                   <p className="mt-2 text-xs text-muted-foreground">
                     {t("Prázdne pole = predvolené z")}{" "}
                     <Link to="/uctovnictvo/predkontacie" className="underline">

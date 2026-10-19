@@ -231,4 +231,20 @@ export default {
     "<0>Funktioniert das mit meiner Pohoda-Edition?</0> Ja, auch mit der Basisversion. Wir verwenden nicht den mServer, der oft eingeschränkt ist.",
   "<0>Používame mPohodu.</0> Tá je iná aplikácia a doklady si do desktopovej Pohody sťahuje sama; naše XML čítať nepotrebuje. Import <1>z</1> mPohody do Faktera zvládame — nájdete ho v <2>exportoch a importoch</2>.":
     "<0>Wir verwenden mPohoda.</0> Das ist eine andere Anwendung, die Belege selbst in die Desktop-Pohoda überträgt; unser XML braucht sie nicht. Den Import <1>aus</1> mPohoda in Faktero unterstützen wir — Sie finden ihn unter <2>Exporte und Importe</2>.",
+  // sekcia „Návrh AI pre nového dodávateľa“ (ai-predkontacia)
+  "Návrh AI pre nového dodávateľa": "KI-Vorschlag für einen neuen Lieferanten",
+  "Keď doklad nemá predkontáciu či členenie DPH a nevyplní ich ani pravidlo účtovania, ani naučená voľba pri dodávateľovi, navrhne ich AI — podľa dodávateľa, položiek, sumy, sadzieb DPH, prenesenia daňovej povinnosti a druhu dokladu.":
+    "Hat ein Beleg keine Vorkontierung oder kein MwSt.-Kennzeichen und füllt sie weder eine Buchungsregel noch eine gelernte Auswahl beim Lieferanten aus, schlägt sie die KI vor — anhand von Lieferant, Positionen, Betrag, MwSt.-Sätzen, Umkehr der Steuerschuld und Belegart.",
+  "Vyberá <0>len z vášho číselníka predkontácií</0> a z kódov, ktoré už máte na iných dokladoch. Kód, ktorý v nich nie je, sa zahodí. Bez číselníka sa namiesto návrhu ukáže odkaz na <1>nastavenie predkontácií</1>.":
+    "Sie wählt <0>nur aus Ihrer Liste der Vorkontierungen</0> und aus Codes, die Sie bereits auf anderen Belegen haben. Ein Code, der dort nicht vorkommt, wird verworfen. Ohne Liste erscheint statt eines Vorschlags ein Link zu den <1>Einstellungen der Vorkontierungen</1>.",
+  "Poradie je vždy: <0>pravidlo účtovania</0>, potom <1>naučená voľba</1> dodávateľa a až potom AI.":
+    "Die Reihenfolge ist immer: <0>Buchungsregel</0>, dann die <1>gelernte Auswahl</1> beim Lieferanten und erst dann die KI.",
+  "Navrhnuté polia sú označené <0>Návrh AI</0> aj so zdôvodnením (napríklad „telekomunikačné služby → 518“). Je to len návrh: na prijatej faktúre ho potvrdíte tlačidlom <1>Zaúčtovať</1>, v Nespracovaných dokladoch tlačidlom <2>Potvrdiť návrh</2> — alebo kód zmeníte. Nepotvrdený návrh sa do dokladu nezapíše a doklad sa podľa AI nikdy nezaúčtuje sám.":
+    "Vorgeschlagene Felder sind mit <0>KI-Vorschlag</0> und einer Begründung gekennzeichnet (zum Beispiel „Telekommunikationsdienste → 518“). Es ist nur ein Vorschlag: Bei einer Eingangsrechnung bestätigen Sie ihn mit <1>Verbuchen</1>, bei unbearbeiteten Belegen mit <2>Vorschlag bestätigen</2> — oder Sie ändern den Code. Ein unbestätigter Vorschlag wird nicht in den Beleg geschrieben, und nach der KI wird ein Beleg nie von selbst verbucht.",
+  "V zozname prijatých faktúr označte faktúry a zvoľte <0>Navrhnúť AI pre vybrané</0>. Návrhy sa ukážu v okne a zaúčtujú sa až tlačidlom <1>Zaúčtovať označené</1>.":
+    "Markieren Sie in der Liste der Eingangsrechnungen die Rechnungen und wählen Sie <0>KI-Vorschlag für Ausgewählte</0>. Die Vorschläge erscheinen in einem Fenster und werden erst mit <1>Markierte verbuchen</1> verbucht.",
+  "Návrh sa počíta raz a pamätá sa pri doklade; znova sa spýta, len keď sa zmení dodávateľ, sumy alebo položky. Čo potvrdíte alebo zmeníte, si Faktero zapamätá pri dodávateľovi — pri ďalšom doklade už AI netreba.":
+    "Der Vorschlag wird einmal berechnet und beim Beleg gespeichert; neu gefragt wird nur, wenn sich Lieferant, Beträge oder Positionen ändern. Was Sie bestätigen oder ändern, merkt sich Faktero beim Lieferanten — beim nächsten Beleg ist die KI nicht mehr nötig.",
+  "Robí sa pre slovenské a české firmy; keď AI práve neodpovedá, návrh sa jednoducho neukáže.":
+    "Das gibt es für slowakische und tschechische Unternehmen; antwortet die KI gerade nicht, erscheint einfach kein Vorschlag.",
 } satisfies Record<string, string>;

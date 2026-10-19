@@ -24,6 +24,14 @@ import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
+import {
+  NavrhAiInfo,
+  NavrhBezCiselnika,
+  StitokNavrhu,
+  useNavrhZauctovania,
+  type OznaceniaNavrhu,
+} from "./NavrhAi";
+import type { PoleNavrhu } from "@/lib/faktero/ai-predkontacia";
 
 export type Navrhy = {
   predkontacie: MoznostKodu[];
@@ -61,6 +69,7 @@ export function PoliaZauctovania({
   setHodnoty,
   hromadne,
   kvAuto,
+  oznacenia,
 }: {
   navrhy: Navrhy | null;
   hodnoty: Hodnoty;
@@ -68,8 +77,12 @@ export function PoliaZauctovania({
   /** Ktorá sadzba členenia KV sa dá automaticky — ukáže sa v ponuke. */
   kvAuto?: string;
   hromadne?: boolean;
+  /** Polia predvyplnené návrhom (AI alebo naučené) — ukáže sa pri nich štítok. */
+  oznacenia?: OznaceniaNavrhu;
 }) {
   const { t } = useT();
+  const stitok = (pole: PoleNavrhu) =>
+    oznacenia?.[pole] ? <StitokNavrhu zdroj={oznacenia[pole]!} /> : null;
   const vstup =
     "mt-1 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm";
   const zKategorie = navrhy?.podlaKategorie?.[hodnoty.kategoria];
@@ -78,7 +91,10 @@ export function PoliaZauctovania({
       className={`grid grid-cols-1 gap-3 [&>*]:min-w-0 ${hodnoty.kv !== undefined ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
     >
       <label className="block">
-        <span className="text-xs text-muted-foreground">{t("Predkontácia (Pohoda)")}</span>
+        <span className="text-xs text-muted-foreground">
+          {t("Predkontácia (Pohoda)")}
+          {stitok("predkontacia")}
+        </span>
         <KodPohody
           odkazNaCiselnik
           value={hodnoty.predkontacia}
@@ -94,7 +110,10 @@ export function PoliaZauctovania({
         />
       </label>
       <label className="block">
-        <span className="text-xs text-muted-foreground">{t("Členenie DPH (plnenie)")}</span>
+        <span className="text-xs text-muted-foreground">
+          {t("Členenie DPH (plnenie)")}
+          {stitok("clenenie")}
+        </span>
         <KodPohody
           value={hodnoty.clenenie}
           placeholder={
@@ -109,7 +128,10 @@ export function PoliaZauctovania({
         />
       </label>
       <label className="block">
-        <span className="text-xs text-muted-foreground">{t("Kategória nákladu")}</span>
+        <span className="text-xs text-muted-foreground">
+          {t("Kategória nákladu")}
+          {stitok("kategoria")}
+        </span>
         <select
           value={hodnoty.kategoria}
           onChange={(e) => setHodnoty({ ...hodnoty, kategoria: e.target.value })}
@@ -125,7 +147,10 @@ export function PoliaZauctovania({
       </label>
       {hodnoty.kv !== undefined && (
         <label className="block">
-          <span className="text-xs text-muted-foreground">{t("Členenie KV DPH")}</span>
+          <span className="text-xs text-muted-foreground">
+            {t("Členenie KV DPH")}
+            {stitok("kv")}
+          </span>
           <select
             value={hodnoty.kv}
             onChange={(e) => setHodnoty({ ...hodnoty, kv: e.target.value })}
@@ -256,6 +281,55 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
 
   const odovzdana = Boolean(row.exported_at);
   const zauctovana = Boolean(row.zauctovane_at);
+
+  /*
+    Návrh pre doklad bez predkontácie či členenia (pravidlo > návyk > AI).
+    Predvyplní sa len do prázdnych polí a len do stavu formulára — uloží
+    ho až človek tlačidlom; doklad sa podľa AI nikdy nezaúčtuje sám.
+  */
+  const navrh = useNavrhZauctovania(
+    "prijata",
+    row.id,
+    !odovzdana && !zauctovana && (!row.pohoda_predkontacia || !row.pohoda_clenenie_dph),
+  );
+  const [predvyplnene, setPredvyplnene] = useState<
+    Partial<Record<PoleNavrhu, { hodnota: string; zdroj: "ai" | "navyk" }>>
+  >({});
+  useEffect(() => {
+    if (!navrh) {
+      // Doklad je zaúčtovaný či vyplnený — štítky návrhu už nepatria k ničomu.
+      setPredvyplnene({});
+      return;
+    }
+    if (navrh.stav !== "navrh") return;
+    const nove: Partial<Record<PoleNavrhu, { hodnota: string; zdroj: "ai" | "navyk" }>> = {};
+    let h2 = h;
+    for (const [pole, n] of Object.entries(navrh.polia) as [PoleNavrhu, any][]) {
+      if (!n || (n.zdroj !== "ai" && n.zdroj !== "navyk")) continue;
+      if (String((h2 as any)[pole] ?? "").trim()) continue;
+      h2 = { ...h2, [pole]: n.hodnota };
+      nove[pole] = { hodnota: n.hodnota, zdroj: n.zdroj };
+    }
+    if (!Object.keys(nove).length) return;
+    setH(h2);
+    setPredvyplnene(nove);
+    // Len pri príchode návrhu — ďalšie úpravy formulára sú už človeka.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navrh]);
+  const oznacenia: OznaceniaNavrhu = {};
+  for (const [pole, n] of Object.entries(predvyplnene) as [
+    PoleNavrhu,
+    { hodnota: string; zdroj: "ai" | "navyk" },
+  ][])
+    if (n && (h as any)[pole] === n.hodnota) oznacenia[pole] = n.zdroj;
+  const aktivneAi = Object.values(oznacenia).includes("ai");
+  function zahodNavrh() {
+    let h2 = h;
+    for (const [pole, z] of Object.entries(oznacenia) as [PoleNavrhu, string][])
+      if (z === "ai") h2 = { ...h2, [pole]: "" };
+    setH(h2);
+    setPredvyplnene({});
+  }
   const exportuj = useServerFn(exportPrijatychPohodaFn);
   const vrat = useServerFn(vratZPohodyFn);
   const presun = useServerFn(presunPrijatuDoDokladovFn);
@@ -422,11 +496,14 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
               navrhy={navrhy}
               hodnoty={h}
               setHodnoty={setH}
+              oznacenia={oznacenia}
               kvAuto={kvAutomaticky({
                 opravny: Number(row.amount_total ?? 0) < 0 || !!row.opravuje_cislo,
                 prenesenie: row.dph_rezim === "samozdanenie" || row.dph_rezim === "nadobudnutie",
               })}
             />
+            {aktivneAi && <NavrhAiInfo dovod={navrh?.dovod ?? null} onZahod={zahodNavrh} />}
+            {navrh?.stav === "bez_ciselnika" && <NavrhBezCiselnika />}
             <VyberPravidla
               companyId={row.company_id}
               doklad={row}

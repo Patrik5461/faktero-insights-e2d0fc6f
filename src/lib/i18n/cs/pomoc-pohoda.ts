@@ -231,4 +231,20 @@ export default {
     "<0>Funguje to s mou řadou Pohody?</0> Ano, i se základní. Nepoužíváme mServer, který bývá omezený.",
   "<0>Používame mPohodu.</0> Tá je iná aplikácia a doklady si do desktopovej Pohody sťahuje sama; naše XML čítať nepotrebuje. Import <1>z</1> mPohody do Faktera zvládame — nájdete ho v <2>exportoch a importoch</2>.":
     "<0>Používáme mPohodu.</0> Ta je jiná aplikace a doklady si do desktopové Pohody stahuje sama; naše XML číst nepotřebuje. Import <1>z</1> mPohody do Faktera zvládáme — najdete ho v <2>exportech a importech</2>.",
+  // sekcia „Návrh AI pre nového dodávateľa“ (ai-predkontacia)
+  "Návrh AI pre nového dodávateľa": "Návrh AI pro nového dodavatele",
+  "Keď doklad nemá predkontáciu či členenie DPH a nevyplní ich ani pravidlo účtovania, ani naučená voľba pri dodávateľovi, navrhne ich AI — podľa dodávateľa, položiek, sumy, sadzieb DPH, prenesenia daňovej povinnosti a druhu dokladu.":
+    "Když doklad nemá předkontaci či členění DPH a nevyplní je ani pravidlo účtování, ani naučená volba u dodavatele, navrhne je AI — podle dodavatele, položek, částky, sazeb DPH, přenesení daňové povinnosti a druhu dokladu.",
+  "Vyberá <0>len z vášho číselníka predkontácií</0> a z kódov, ktoré už máte na iných dokladoch. Kód, ktorý v nich nie je, sa zahodí. Bez číselníka sa namiesto návrhu ukáže odkaz na <1>nastavenie predkontácií</1>.":
+    "Vybírá <0>jen z vašeho číselníku předkontací</0> a z kódů, které už máte na jiných dokladech. Kód, který v nich není, se zahodí. Bez číselníku se místo návrhu ukáže odkaz na <1>nastavení předkontací</1>.",
+  "Poradie je vždy: <0>pravidlo účtovania</0>, potom <1>naučená voľba</1> dodávateľa a až potom AI.":
+    "Pořadí je vždy: <0>pravidlo účtování</0>, potom <1>naučená volba</1> dodavatele a teprve potom AI.",
+  "Navrhnuté polia sú označené <0>Návrh AI</0> aj so zdôvodnením (napríklad „telekomunikačné služby → 518“). Je to len návrh: na prijatej faktúre ho potvrdíte tlačidlom <1>Zaúčtovať</1>, v Nespracovaných dokladoch tlačidlom <2>Potvrdiť návrh</2> — alebo kód zmeníte. Nepotvrdený návrh sa do dokladu nezapíše a doklad sa podľa AI nikdy nezaúčtuje sám.":
+    "Navržená pole jsou označena <0>Návrh AI</0> i se zdůvodněním (například „telekomunikační služby → 518“). Je to jen návrh: u přijaté faktury ho potvrdíte tlačítkem <1>Zaúčtovat</1>, v Nezpracovaných dokladech tlačítkem <2>Potvrdit návrh</2> — nebo kód změníte. Nepotvrzený návrh se do dokladu nezapíše a doklad se podle AI nikdy nezaúčtuje sám.",
+  "V zozname prijatých faktúr označte faktúry a zvoľte <0>Navrhnúť AI pre vybrané</0>. Návrhy sa ukážu v okne a zaúčtujú sa až tlačidlom <1>Zaúčtovať označené</1>.":
+    "V seznamu přijatých faktur označte faktury a zvolte <0>Navrhnout AI pro vybrané</0>. Návrhy se ukážou v okně a zaúčtují se až tlačítkem <1>Zaúčtovat označené</1>.",
+  "Návrh sa počíta raz a pamätá sa pri doklade; znova sa spýta, len keď sa zmení dodávateľ, sumy alebo položky. Čo potvrdíte alebo zmeníte, si Faktero zapamätá pri dodávateľovi — pri ďalšom doklade už AI netreba.":
+    "Návrh se počítá jednou a pamatuje se u dokladu; znovu se zeptá, jen když se změní dodavatel, částky nebo položky. Co potvrdíte nebo změníte, si Faktero zapamatuje u dodavatele — u dalšího dokladu už AI není potřeba.",
+  "Robí sa pre slovenské a české firmy; keď AI práve neodpovedá, návrh sa jednoducho neukáže.":
+    "Dělá se pro slovenské a české firmy; když AI zrovna neodpovídá, návrh se prostě neukáže.",
 } satisfies Record<string, string>;

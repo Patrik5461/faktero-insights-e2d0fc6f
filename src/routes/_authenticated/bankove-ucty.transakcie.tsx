@@ -37,6 +37,7 @@ const NAZVY_BANK: Record<string, string> = {
   wise: "Wise",
   revolut: "Revolutu",
   wallester: "Wallesteru",
+  email: "e-mailových notifikácií",
 };
 
 /** Podnadpis podľa toho, čo je naozaj pripojené — nie natvrdo Tatra banka. */
@@ -348,7 +349,18 @@ function TxPage() {
                   )}
                   <td className="px-3 py-2">{tx.counterparty ?? "—"}</td>
                   <td className="px-3 py-2 font-mono text-xs">{tx.variable_symbol ?? "—"}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{tx.description ?? "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {/* Pohyb z e-mailovej notifikácie banky — nie z banky samotnej. */}
+                    {tx.zdroj === "email" && (
+                      <span
+                        className="mr-1.5 inline-flex rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+                        title={t("Pohyb vznikol z e-mailovej notifikácie banky.")}
+                      >
+                        {t("z e-mailu")}
+                      </span>
+                    )}
+                    {tx.description ?? "—"}
+                  </td>
                   <td className="px-3 py-2">
                     {tx.matched_invoice_id ? (
                       <span className="inline-flex items-center gap-1.5">

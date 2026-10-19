@@ -352,6 +352,39 @@ export async function spracujPrijatyMail(
     if (!localPart) return { stav: "neznama_adresa", vytvorenych: 0 };
 
     /*
+      Notifikácia banky o pohybe na účte (`banka-<token>@…`). Nie je to doklad —
+      ide do bankových pohybov, nie do Nespracovaných.
+    */
+    const { tokenNotifikacii } = await import("./banka-notifikacie");
+    const tokenBanky = tokenNotifikacii(localPart);
+    if (tokenBanky) {
+      const { prijmiBankovuNotifikaciu } = await import("./banka-notifikacie.server");
+      const stav = await prijmiBankovuNotifikaciu({
+        emailId: mail.email_id,
+        token: tokenBanky,
+        from: mail.from ?? null,
+        subject: mail.subject ?? null,
+        naseAdresy: [
+          celaAdresa(localPart, podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA)),
+          ...(mail.to ?? []),
+          ...(mail.received_for ?? []),
+        ],
+      });
+      return {
+        stav:
+          stav === "neznama_adresa"
+            ? "neznama_adresa"
+            : stav === "potvrdenie"
+              ? "potvrdenie"
+              : stav === "chyba"
+                ? "chyba"
+                : "hotovo",
+        vytvorenych: stav === "spracovane" ? 1 : 0,
+        detail: stav,
+      };
+    }
+
+    /*
     Odpoveď na požiadavku v help desku (`podpora-<token>@…`). Nie je to doklad
     a s adresami firiem nemá nič spoločné — ide rovno do vlákna.
   */

@@ -179,6 +179,50 @@ export type Database = {
           },
         ]
       }
+      ai_navrhy_zauctovania: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          doklad_id: string
+          doklad_typ: string
+          navrh: Json
+          odtlacok: string
+          stav: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          doklad_id: string
+          doklad_typ: string
+          navrh?: Json
+          odtlacok: string
+          stav: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          doklad_id?: string
+          doklad_typ?: string
+          navrh?: Json
+          odtlacok?: string
+          stav?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_navrhy_zauctovania_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_actions: {
         Row: {
           action_type: string
@@ -776,6 +820,7 @@ export type Database = {
           matched_purchase_invoice_id: string | null
           transaction_reference: string | null
           variable_symbol: string | null
+          zdroj: string | null
         }
         Insert: {
           amount: number
@@ -793,6 +838,7 @@ export type Database = {
           matched_purchase_invoice_id?: string | null
           transaction_reference?: string | null
           variable_symbol?: string | null
+          zdroj?: string | null
         }
         Update: {
           amount?: number
@@ -810,6 +856,7 @@ export type Database = {
           matched_purchase_invoice_id?: string | null
           transaction_reference?: string | null
           variable_symbol?: string | null
+          zdroj?: string | null
         }
         Relationships: [
           {
@@ -900,6 +947,152 @@ export type Database = {
           source_ip?: string | null
         }
         Relationships: []
+      }
+      banka_notifikacie_adresy: {
+        Row: {
+          active: boolean
+          bank_account_id: string
+          banka: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          last_received_at: string | null
+          token: string
+        }
+        Insert: {
+          active?: boolean
+          bank_account_id: string
+          banka?: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_received_at?: string | null
+          token: string
+        }
+        Update: {
+          active?: boolean
+          bank_account_id?: string
+          banka?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_received_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banka_notifikacie_adresy_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banka_notifikacie_adresy_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      banka_notifikacie_maily: {
+        Row: {
+          adresa_id: string | null
+          bank_account_id: string | null
+          bank_transaction_id: string | null
+          banka: string | null
+          company_id: string
+          dovod: string | null
+          from_email: string | null
+          id: string
+          message_id: string | null
+          overenie: string | null
+          provider_email_id: string | null
+          received_at: string
+          sposob: string | null
+          stav: string
+          subject: string | null
+          text_mailu: string | null
+          udaje: Json
+          vyriesene_at: string | null
+          vyriesil: string | null
+        }
+        Insert: {
+          adresa_id?: string | null
+          bank_account_id?: string | null
+          bank_transaction_id?: string | null
+          banka?: string | null
+          company_id: string
+          dovod?: string | null
+          from_email?: string | null
+          id?: string
+          message_id?: string | null
+          overenie?: string | null
+          provider_email_id?: string | null
+          received_at?: string
+          sposob?: string | null
+          stav?: string
+          subject?: string | null
+          text_mailu?: string | null
+          udaje?: Json
+          vyriesene_at?: string | null
+          vyriesil?: string | null
+        }
+        Update: {
+          adresa_id?: string | null
+          bank_account_id?: string | null
+          bank_transaction_id?: string | null
+          banka?: string | null
+          company_id?: string
+          dovod?: string | null
+          from_email?: string | null
+          id?: string
+          message_id?: string | null
+          overenie?: string | null
+          provider_email_id?: string | null
+          received_at?: string
+          sposob?: string | null
+          stav?: string
+          subject?: string | null
+          text_mailu?: string | null
+          udaje?: Json
+          vyriesene_at?: string | null
+          vyriesil?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banka_notifikacie_maily_adresa_id_fkey"
+            columns: ["adresa_id"]
+            isOneToOne: false
+            referencedRelation: "banka_notifikacie_adresy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banka_notifikacie_maily_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banka_notifikacie_maily_bank_transaction_id_fkey"
+            columns: ["bank_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "bank_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banka_notifikacie_maily_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       billing_events: {
         Row: {

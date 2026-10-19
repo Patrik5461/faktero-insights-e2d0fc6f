@@ -134,10 +134,12 @@ export const NAZOV_UCELU: Record<string, string> = {
   financovanie: "Leasingy a úvery",
   "ostatny-doklad": "Iné doklady",
   "bankovy-vypis": "Bankové výpisy",
+  banka_notifikacia: "Bankové notifikácie (e-mail)",
   "import-dokladov": "Import dokladov",
   asistent: "AI asistent",
   "faktura-z-textu": "Faktúra z textu",
   "vyber-z-dokladu": "Výber z náhľadu dokladu",
+  ai_predkontacia: "Návrh zaúčtovania",
   podpora: "Podpora na webe",
   neznáme: "Neurčené",
 };

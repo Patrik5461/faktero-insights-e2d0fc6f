@@ -92,6 +92,13 @@ export type UdajeNespracovaneho = {
    * ukazuje „naučené"; po zmene ju človek prevzal za svoju.
    */
   naucene?: Record<string, string>;
+  /**
+   * Nepotvrdený návrh zaúčtovania od AI (pole → hodnota), pozri
+   * `ai-predkontacia.ts`. Kým ho človek nepotvrdí, do dokladu nejde.
+   */
+  navrhAi?: Record<string, string>;
+  /** Krátke zdôvodnenie návrhu AI („telekomunikačné služby → 518"). */
+  navrhAiDovod?: string;
 };
 
 const r2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;

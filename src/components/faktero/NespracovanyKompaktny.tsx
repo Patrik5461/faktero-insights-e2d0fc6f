@@ -20,6 +20,8 @@ import {
 import { NahladPdf } from "./NahladPdf";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
 import { NauceneZDodavatela } from "./NauceneZDodavatela";
+import { NavrhAiNespracovaneho } from "./NavrhAi";
+import { oznaceniaZUdajov } from "@/lib/faktero/ai-predkontacia";
 import {
   DRUHY_NESPRACOVANYCH,
   NAZVY_POLI,
@@ -109,6 +111,7 @@ export function NespracovanyKompaktny({
   u,
   setU,
   navrhy,
+  stavNavrhuAi,
   chyby,
   sucty,
   sadzby,
@@ -126,6 +129,8 @@ export function NespracovanyKompaktny({
   u: UdajeNespracovaneho;
   setU: (u: UdajeNespracovaneho) => void;
   navrhy: Navrhy | null;
+  /** Stav návrhu zaúčtovania (AI) — „bez_ciselnika" ukáže odkaz na číselník. */
+  stavNavrhuAi?: string | null;
   chyby: string[];
   sucty: { zaklad: number; dph: number; celkom: number };
   sadzby: number[];
@@ -604,6 +609,7 @@ export function NespracovanyKompaktny({
             <Sekcia nadpis="Zaúčtovanie">
               <PoliaZauctovania
                 navrhy={navrhy}
+                oznacenia={oznaceniaZUdajov(u)}
                 hodnoty={{
                   predkontacia: u.kody.predkontacia,
                   clenenie: u.kody.clenenie,
@@ -630,6 +636,7 @@ export function NespracovanyKompaktny({
                 }
               />
               <NauceneZDodavatela u={u} />
+              <NavrhAiNespracovaneho u={u} setU={setU} stav={stavNavrhuAi} />
               <p className="text-xs text-muted-foreground">
                 {t("Prázdne = predvolené z")}{" "}
                 <Link to="/uctovnictvo/predkontacie" className="underline">

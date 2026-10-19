@@ -36,6 +36,7 @@ import {
   Download,
   CreditCard,
   Landmark,
+  Mail,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/pripojit")({
@@ -130,6 +131,29 @@ function ConnectPage() {
           <WallesterPripojenie />
           <RevolutPripojenie />
           {!ceska && <FioPripojenie />}
+          {/* Ktorákoľvek iná banka: pohyby z e-mailových notifikácií. */}
+          <div className="rounded-2xl border border-border bg-card p-8 shadow-sm lg:col-span-2">
+            <div className="flex items-center gap-3">
+              <div className="grid h-12 w-12 place-items-center rounded-xl bg-sky-600 text-white">
+                <Mail className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">{t("Iná banka — e-mailové notifikácie")}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {t("VÚB, Slovenská sporiteľňa, ČSOB, Prima banka, Česká spořitelna, KB, Air Bank a ďalšie.")}
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-foreground/80">
+              {t("V internetbankingu si zapnete posielanie e-mailu o každej platbe na tajnú adresu, ktorú vám Faktero vytvorí. Z každého e-mailu vznikne pohyb na účte a spáruje sa s faktúrou.")}
+            </p>
+            <Link
+              to="/bankove-ucty/notifikacie"
+              className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
+            >
+              <Mail className="h-4 w-4" /> {t("Nastaviť e-mailové notifikácie")}
+            </Link>
+          </div>
         </div>
       </PageBody>
     </>
