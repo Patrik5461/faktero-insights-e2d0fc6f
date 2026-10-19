@@ -26,4 +26,6 @@ export default {
   Prílohy: "Přílohy",
   Stiahnuť: "Stáhnout",
   Zavrieť: "Zavřít",
+  "Prílohy sa odošlú s faktúrou e-mailom aj s eFaktúrou — pri odoslaní si vyberiete, ktoré. eFaktúra prijme PDF, PNG, JPG, CSV, XLSX a ODS, každý súbor do 10 MB a spolu do 15 MB.":
+    "Přílohy se odešlou s fakturou e-mailem i s eFakturou — při odeslání si vyberete, které. eFaktura přijme PDF, PNG, JPG, CSV, XLSX a ODS, každý soubor do 10 MB a celkem do 15 MB.",
 } satisfies Record<string, string>;

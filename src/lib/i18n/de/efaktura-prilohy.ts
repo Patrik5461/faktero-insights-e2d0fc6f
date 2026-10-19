@@ -26,4 +26,6 @@ export default {
   Prílohy: "Anhänge",
   Stiahnuť: "Herunterladen",
   Zavrieť: "Schließen",
+  "Prílohy sa odošlú s faktúrou e-mailom aj s eFaktúrou — pri odoslaní si vyberiete, ktoré. eFaktúra prijme PDF, PNG, JPG, CSV, XLSX a ODS, každý súbor do 10 MB a spolu do 15 MB.":
+    "Anhänge werden mit der Rechnung per E-Mail und mit der E-Rechnung versendet – beim Senden wählen Sie, welche. Die E-Rechnung akzeptiert PDF, PNG, JPG, CSV, XLSX und ODS, je Datei bis 10 MB und insgesamt bis 15 MB.",
 } satisfies Record<string, string>;

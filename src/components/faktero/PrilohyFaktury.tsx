@@ -160,6 +160,14 @@ export function PrilohyFaktury({
         )}
       </div>
 
+      {druh === "invoice" && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {t(
+            "Prílohy sa odošlú s faktúrou e-mailom aj s eFaktúrou — pri odoslaní si vyberiete, ktoré. eFaktúra prijme PDF, PNG, JPG, CSV, XLSX a ODS, každý súbor do 10 MB a spolu do 15 MB.",
+          )}
+        </p>
+      )}
+
       <input
         ref={vstup}
         type="file"
