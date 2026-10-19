@@ -2,7 +2,15 @@ import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-r
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PageBody } from "@/components/faktero/AppShell";
+import {
+  DocumentDetailHeader,
+  MenuAkcia,
+  MenuSkupina,
+  MetaRiadok,
+  PrimarnaAkcia,
+  StavOdznak,
+} from "@/components/faktero/DocumentDetailHeader";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { deleteJob, getJob, setJobStatus, updateJob } from "@/lib/faktero/jobs.functions";
 import { nastavenieSchvalovaniaFn } from "@/lib/faktero/schvalovanie.functions";
@@ -21,6 +29,12 @@ export const Route = createFileRoute("/_authenticated/zakazky/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zákazka — Faktero") }] }),
   component: JobDetail,
 });
+
+const FARBA_STAVU: Record<StavZakazky, string> = {
+  active: "bg-blue-500/10 text-blue-600",
+  closed: "bg-emerald-500/10 text-emerald-600",
+  cancelled: "bg-muted text-muted-foreground line-through",
+};
 
 function suma(n: number) {
   return formatovacMeny("EUR", "sk-SK")(n || 0);
@@ -176,52 +190,50 @@ function JobDetail() {
 
   return (
     <>
-      <PageHeader
-        title={`${j.job_number} — ${j.name}`}
-        description={[
-          j.customer_name,
-          j.start_date && t("od {datum}", { datum: datumNaDoklade(j.start_date) }),
-          j.end_date && t("do {datum}", { datum: datumNaDoklade(j.end_date) }),
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-        action={
-          <div className="flex flex-wrap gap-2">
-            {otvorena && (
-              <>
-                <button
-                  type="button"
-                  onClick={zacniUpravu}
-                  disabled={busy}
-                  className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
-                >
-                  <Pencil className="h-4 w-4" /> {t("Upraviť")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    akcia(() => doStatus({ data: { company_id: cid!, id, status: "closed" } }))
-                  }
-                  disabled={busy}
-                  className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                >
-                  <Lock className="h-4 w-4" /> {t("Uzavrieť")}
-                </button>
-              </>
-            )}
-            {!otvorena && (
-              <button
-                type="button"
-                onClick={() =>
-                  akcia(() => doStatus({ data: { company_id: cid!, id, status: "active" } }))
-                }
-                disabled={busy}
-                className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
-              >
-                <Unlock className="h-4 w-4" /> {t("Znovu otvoriť")}
-              </button>
-            )}
-          </div>
+      <DocumentDetailHeader
+        title={t("Zákazka")}
+        number={j.job_number}
+        status={
+          <StavOdznak className={FARBA_STAVU[j.status as StavZakazky]}>
+            {t(STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status)}
+          </StavOdznak>
+        }
+        meta={
+          <MetaRiadok
+            polozky={[
+              j.name,
+              j.customer_name,
+              j.start_date && t("od {datum}", { datum: datumNaDoklade(j.start_date) }),
+              j.end_date && t("do {datum}", { datum: datumNaDoklade(j.end_date) }),
+            ]}
+          />
+        }
+        primaryAction={
+          otvorena ? (
+            <PrimarnaAkcia
+              onClick={() => akcia(() => doStatus({ data: { company_id: cid!, id, status: "closed" } }))}
+              disabled={busy}
+            >
+              <Lock /> {t("Uzavrieť")}
+            </PrimarnaAkcia>
+          ) : (
+            <PrimarnaAkcia
+              variant="outline"
+              onClick={() => akcia(() => doStatus({ data: { company_id: cid!, id, status: "active" } }))}
+              disabled={busy}
+            >
+              <Unlock /> {t("Znovu otvoriť")}
+            </PrimarnaAkcia>
+          )
+        }
+        menuActions={
+          otvorena ? (
+            <MenuSkupina label={t("Úpravy")}>
+              <MenuAkcia ikona={Pencil} onClick={zacniUpravu} disabled={busy}>
+                {t("Upraviť")}
+              </MenuAkcia>
+            </MenuSkupina>
+          ) : null
         }
       />
       <PageBody>

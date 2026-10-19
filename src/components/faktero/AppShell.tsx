@@ -905,6 +905,40 @@ function MobileNav({
 }
 
 /**
+ * Späť tam, odkiaľ človek prišiel. Keď stránku otvoril priamo (odkaz z
+ * mailu, obnovenie), história v aplikácii nie je — vtedy o úroveň vyššie, na
+ * prvú nadradenú cestu, ktorá ako stránka existuje. Zdieľa ho `PageHeader`
+ * aj hlavička detailu dokladu (`DocumentDetailHeader`).
+ */
+export function useSpat() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const router = useRouter();
+  const navigate = useNavigate();
+  // Späť je všade okrem úvodného prehľadu — aj na stránkach z kategórií menu
+  // (Pokladňa, Exporty…), ktoré majú v adrese len jednu úroveň.
+  const podstranka = !["", "/dashboard", "/onboarding"].includes(pathname.replace(/\/+$/, ""));
+
+  function spat() {
+    if (router.history.canGoBack()) {
+      router.history.back();
+      return;
+    }
+    const casti = pathname.replace(/\/+$/, "").split("/").filter(Boolean);
+    const trasy = router.routesByPath as unknown as Record<string, unknown>;
+    for (let i = casti.length - 1; i > 0; i--) {
+      const cesta = "/" + casti.slice(0, i).join("/");
+      if (trasy[cesta] || trasy[cesta + "/"]) {
+        navigate({ to: cesta as never });
+        return;
+      }
+    }
+    navigate({ to: "/dashboard" as never });
+  }
+
+  return { podstranka, spat };
+}
+
+/**
  * Ku ktorej stránke patrí ktorý manuál. Odkaz sa vykreslí v hlavičke sám —
  * inak by ho bolo treba dopísať do osemdesiatich súborov a pri každej novej
  * stránke naň znova zabudnúť.
@@ -927,33 +961,7 @@ export function PageHeader({
   const { t } = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const manual = help === false ? null : (help ?? manualPre(pathname));
-  const router = useRouter();
-  const navigate = useNavigate();
-  // Späť je všade okrem úvodného prehľadu — aj na stránkach z kategórií menu
-  // (Pokladňa, Exporty…), ktoré majú v adrese len jednu úroveň.
-  const podstranka = !["", "/dashboard", "/onboarding"].includes(pathname.replace(/\/+$/, ""));
-
-  /*
-    Späť tam, odkiaľ človek prišiel. Keď stránku otvoril priamo (odkaz z
-    mailu, obnovenie), história v aplikácii nie je — vtedy o úroveň vyššie, na
-    prvú nadradenú cestu, ktorá ako stránka existuje.
-  */
-  function spat() {
-    if (router.history.canGoBack()) {
-      router.history.back();
-      return;
-    }
-    const casti = pathname.replace(/\/+$/, "").split("/").filter(Boolean);
-    const trasy = router.routesByPath as unknown as Record<string, unknown>;
-    for (let i = casti.length - 1; i > 0; i--) {
-      const cesta = "/" + casti.slice(0, i).join("/");
-      if (trasy[cesta] || trasy[cesta + "/"]) {
-        navigate({ to: cesta as never });
-        return;
-      }
-    }
-    navigate({ to: "/dashboard" as never });
-  }
+  const { podstranka, spat } = useSpat();
 
   return (
     /*

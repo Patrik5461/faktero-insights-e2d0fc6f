@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Mail, X } from "lucide-react";
 import { zdrojovyMailFn, type ZdrojovyMail } from "@/lib/faktero/zdrojovy-mail.functions";
@@ -62,6 +62,39 @@ export function ZdrojovyMailTlacidlo({
       {otvorene && <OknoMailu mail={mail} onClose={() => setOtvorene(false)} />}
     </>
   );
+}
+
+/**
+ * Okno so zdrojovým e-mailom bez vlastného tlačidla — pre položku v ponuke
+ * „…“ v hlavičke dokladu. Ponuka sa po kliknutí zatvorí, preto okno musí
+ * žiť v stránke, nie v položke. Text sa načíta pri otvorení.
+ */
+export function OknoZdrojovehoMailu({
+  druh,
+  id,
+  onClose,
+}: {
+  druh: Druh;
+  id: string;
+  onClose: () => void;
+}) {
+  const nacitaj = useServerFn(zdrojovyMailFn);
+  const [mail, setMail] = useState<ZdrojovyMail | null | undefined>(undefined);
+  useEffect(() => {
+    let zrusene = false;
+    nacitaj({ data: { druh, id } })
+      .then((m) => {
+        if (!zrusene) setMail(m);
+      })
+      .catch(() => {
+        if (!zrusene) setMail(null);
+      });
+    return () => {
+      zrusene = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [druh, id]);
+  return <OknoMailu mail={mail} onClose={onClose} />;
 }
 
 function OknoMailu({

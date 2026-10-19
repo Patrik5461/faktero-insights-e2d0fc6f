@@ -1,7 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PageBody } from "@/components/faktero/AppShell";
+import {
+  DocumentDetailHeader,
+  MenuAkcia,
+  MenuSkupina,
+  MetaRiadok,
+  PoTermine,
+  PrimarnaAkcia,
+  StavOdznak,
+} from "@/components/faktero/DocumentDetailHeader";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listWarehousesForCompany } from "@/lib/faktero/stock.functions";
 import {
@@ -23,6 +32,14 @@ export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Objednávka — Faktero") }] }),
   component: PurchaseOrderDetail,
 });
+
+const FARBA_STAVU: Record<StavObjednavky, string> = {
+  draft: "bg-muted text-muted-foreground",
+  sent: "bg-blue-500/10 text-blue-600",
+  partially_received: "bg-amber-500/10 text-amber-600",
+  received: "bg-emerald-500/10 text-emerald-600",
+  cancelled: "bg-muted text-muted-foreground line-through",
+};
 
 function suma(n: number, mena = "EUR") {
   return formatovacMeny(mena, "sk-SK")(n || 0);
@@ -115,13 +132,84 @@ function PurchaseOrderDetail() {
   const o = data.order;
   const stav = o.status as StavObjednavky;
   const otvorena = stav === "sent" || stav === "partially_received";
+  const meskaDodanie =
+    otvorena &&
+    !!o.expected_date &&
+    new Date(o.expected_date) < new Date(new Date().toDateString());
   const riadkyNaPrijem = (data.items ?? []).filter((it: any) => it.zostava > 0);
 
   return (
     <>
-      <PageHeader
-        title={t("Objednávka {cislo}", { cislo: o.order_number })}
-        description={`${o.supplier_name ?? t("Bez dodávateľa")} · ${t(STAV_POPIS[stav] ?? stav)}`}
+      <DocumentDetailHeader
+        title={t("Objednávka")}
+        number={o.order_number}
+        status={
+          <StavOdznak className={FARBA_STAVU[stav]}>{t(STAV_POPIS[stav] ?? stav)}</StavOdznak>
+        }
+        meta={
+          <MetaRiadok
+            polozky={[
+              o.supplier_name ?? t("Bez dodávateľa"),
+              t("Vystavená {datum}", { datum: datumNaDoklade(o.order_date) }),
+              o.expected_date ? (
+                <PoTermine aktivne={meskaDodanie}>
+                  {t("dodanie {datum}", { datum: datumNaDoklade(o.expected_date) })}
+                </PoTermine>
+              ) : null,
+            ]}
+          />
+        }
+        primaryAction={
+          stav === "draft" ? (
+            <PrimarnaAkcia
+              disabled={busy}
+              onClick={() =>
+                akcia(
+                  () => doSend({ data: { company_id: cid!, id } }),
+                  t("Objednávka je odoslaná — od teraz sa počíta ako tovar na ceste."),
+                )
+              }
+            >
+              <Send /> {t("Označiť ako odoslanú")}
+            </PrimarnaAkcia>
+          ) : null
+        }
+        menuActions={
+          <MenuSkupina>
+            {otvorena && (
+              <MenuAkcia
+                ikona={X}
+                disabled={busy}
+                onClick={() =>
+                  akcia(
+                    () => doCancel({ data: { company_id: cid!, id } }),
+                    t("Objednávka je zrušená."),
+                  )
+                }
+              >
+                {t("Zrušiť objednávku")}
+              </MenuAkcia>
+            )}
+            {/* Zrušená objednávka je len riadok v zozname — nech sa dá upratať.
+                Či z nej neprišiel tovar, dozerá server. */}
+            {(stav === "draft" || stav === "cancelled") && (
+              <MenuAkcia
+                ikona={Trash2}
+                nebezpecna
+                disabled={busy}
+                onClick={async () => {
+                  if (!(await potvrd(t("Naozaj zmazať objednávku?")))) return;
+                  akcia(async () => {
+                    await doDelete({ data: { company_id: cid!, id } });
+                    nav({ to: "/sklad/objednavky" });
+                  });
+                }}
+              >
+                {t("Zmazať")}
+              </MenuAkcia>
+            )}
+          </MenuSkupina>
+        }
       />
       <PageBody>
         <div className="space-y-4">
@@ -170,57 +258,6 @@ function PurchaseOrderDetail() {
                 <div className="text-xs text-muted-foreground">{t("Poznámka")}</div>
                 <div>{o.note}</div>
               </div>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {stav === "draft" && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  akcia(
-                    () => doSend({ data: { company_id: cid!, id } }),
-                    t("Objednávka je odoslaná — od teraz sa počíta ako tovar na ceste."),
-                  )
-                }
-                className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-              >
-                <Send className="h-4 w-4" /> {t("Označiť ako odoslanú")}
-              </button>
-            )}
-            {/* Zrušená objednávka je len riadok v zozname — nech sa dá upratať.
-                Či z nej neprišiel tovar, dozerá server. */}
-            {(stav === "draft" || stav === "cancelled") && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={async () => {
-                  if (!(await potvrd(t("Naozaj zmazať objednávku?")))) return;
-                  akcia(async () => {
-                    await doDelete({ data: { company_id: cid!, id } });
-                    nav({ to: "/sklad/objednavky" });
-                  });
-                }}
-                className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
-              >
-                <Trash2 className="h-4 w-4" /> {t("Zmazať")}
-              </button>
-            )}
-            {otvorena && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  akcia(
-                    () => doCancel({ data: { company_id: cid!, id } }),
-                    t("Objednávka je zrušená."),
-                  )
-                }
-                className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
-              >
-                <X className="h-4 w-4" /> {t("Zrušiť objednávku")}
-              </button>
             )}
           </div>
 

@@ -5,7 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Download, Loader2, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PageBody } from "@/components/faktero/AppShell";
+import {
+  DocumentDetailHeader,
+  MenuAkcia,
+  MenuSkupina,
+  SekundarnaAkcia,
+  StavOdznak,
+} from "@/components/faktero/DocumentDetailHeader";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
 import { KodPohody } from "@/components/faktero/KodPohody";
@@ -256,33 +263,40 @@ function Detail() {
 
   return (
     <>
-      <PageHeader
+      <DocumentDetailHeader
         title={f.id ? f.nazov : t("Nové vyúčtovanie výdavkov")}
-        description={
+        status={
+          f.id ? (
+            uzavrete ? (
+              <StavOdznak className="bg-primary/15 text-primary">{t("Uzavreté")}</StavOdznak>
+            ) : (
+              <StavOdznak>{t("Rozpracované")}</StavOdznak>
+            )
+          ) : null
+        }
+        meta={
           uzavrete
             ? t("Uzavreté — na úpravu ho otvorte.")
             : t("Zamestnanec, obdobie, doklady a výsledok na podpis.")
         }
-        action={
-          <div className="flex flex-wrap gap-2">
-            {f.id ? (
-              <button
-                onClick={() => void stiahnutPdf()}
-                disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
-              >
-                <Download className="h-4 w-4" /> {t("PDF vyúčtovania")}
-              </button>
-            ) : null}
-            {f.id ? (
-              <button
-                onClick={() => void zmazat()}
-                className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4" /> {t("Zmazať")}
-              </button>
-            ) : null}
-          </div>
+        secondaryActions={
+          f.id ? (
+            <SekundarnaAkcia
+              ikona={Download}
+              label={t("PDF vyúčtovania")}
+              onClick={() => void stiahnutPdf()}
+              disabled={busy}
+            />
+          ) : null
+        }
+        menuActions={
+          f.id ? (
+            <MenuSkupina>
+              <MenuAkcia ikona={Trash2} nebezpecna onClick={() => void zmazat()}>
+                {t("Zmazať")}
+              </MenuAkcia>
+            </MenuSkupina>
+          ) : null
         }
       />
       <PageBody>

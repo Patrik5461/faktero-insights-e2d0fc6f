@@ -1,19 +1,29 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
+import { OknoZdrojovehoMailu } from "@/components/faktero/ZdrojovyMail";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PageBody } from "@/components/faktero/AppShell";
+import {
+  DocumentDetailHeader,
+  MenuAkcia,
+  MenuSkupina,
+  MetaRiadok,
+  PoTermine,
+  PrimarnaAkcia,
+  SekundarnaAkcia,
+  StavOdznak,
+} from "@/components/faktero/DocumentDetailHeader";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
 import { ZauctovaniePanel } from "@/components/faktero/ZauctovaniePanel";
-import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
+import { skocNaZauctovanie } from "@/components/faktero/TlacidloZauctovat";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { KomentarePanel } from "@/components/faktero/KomentarePanel";
 import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
@@ -40,16 +50,10 @@ import {
   Lock,
   LockOpen,
   Undo2,
-  MoreHorizontal,
+  BookCheck,
+  Mail,
   Paperclip,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
@@ -107,6 +111,7 @@ function PurchaseInvoiceDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [presunPrilohy, setPresunPrilohy] = useState(false);
+  const [zdrojovyMail, setZdrojovyMail] = useState(false);
   const [row, setRow] = useState<any | null>(null);
   // Náhľad prílohy priamo na stránke — podpísaný odkaz platí 10 minút.
   const [nahlad, setNahlad] = useState<string | null>(null);
@@ -368,121 +373,116 @@ function PurchaseInvoiceDetail() {
   */
   const samo = Boolean(row.samofakturacia);
   const navrh = !zapocitatelna(row);
+  const poSplatnosti =
+    !navrh &&
+    row.status !== "paid" &&
+    row.status !== "cancelled" &&
+    !!row.due_date &&
+    new Date(row.due_date) < new Date(new Date().toDateString());
 
   return (
     <>
-      <PageHeader
-        title={`${t(samo ? (row.opravuje_cislo ? "Dobropis (samofaktúra)" : "Samofaktúra") : (row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra")} ${row.invoice_number}`}
-        description={
-          (row as any).type === "proforma"
-            ? t(
-                "Dodávateľ: {dodavatel} · Vystavená {datum} · Nie je daňový doklad — daň prinesie ostrá faktúra.",
-                { dodavatel: row.supplier_name, datum: datumNaDoklade(row.issue_date) },
-              )
-            : t("Dodávateľ: {dodavatel} · Vystavená {datum}", {
-                dodavatel: row.supplier_name,
-                datum: datumNaDoklade(row.issue_date),
-              })
+      {zdrojovyMail && (
+        <OknoZdrojovehoMailu druh="prijata" id={row.id} onClose={() => setZdrojovyMail(false)} />
+      )}
+      <DocumentDetailHeader
+        title={t(samo ? (row.opravuje_cislo ? "Dobropis (samofaktúra)" : "Samofaktúra") : (row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra")}
+        number={row.invoice_number}
+        status={
+          <StavOdznak className={STATUS_CLASS[row.status] ?? undefined}>
+            {t(STATUS_LABEL[row.status] ?? row.status)}
+          </StavOdznak>
         }
-        action={
-          <div className="flex flex-wrap gap-2">
-            <ZdrojovyMailTlacidlo
-              druh="prijata"
-              id={row.id}
-              inboxMessageId={(row as any).inbox_message_id}
-            />
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASS[row.status] ?? ""}`}
-            >
-              {t(STATUS_LABEL[row.status] ?? row.status)}
-            </span>
-            {row.status !== "cancelled" && !samo && (
-              <Link
-                to="/prijate-faktury/$id/upravit"
-                params={{ id }}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-              >
-                <Pencil className="h-4 w-4" /> {t("Upraviť")}
-              </Link>
-            )}
-            {(row as any).type === "regular" && !navrh && (
-              <TlacidloZauctovat zauctovane={Boolean(row.zauctovane_at)} />
-            )}
-            {!navrh && row.status !== "paid" && row.status !== "cancelled" && (
-              <button
-                onClick={markPaid}
-                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
-              >
-                <CheckCircle2 className="h-4 w-4" /> {t("Označiť ako zaplatené")}
-              </button>
-            )}
-            {row.file_path && (
-              <button
-                onClick={downloadPdf}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-              >
-                <Download className="h-4 w-4" /> {t("Stiahnuť PDF")}
-              </button>
-            )}
-            {/* Menej časté akcie sú v ponuke — jedenásť tlačidiel lámalo nadpis do troch riadkov. */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background hover:bg-secondary"
-                  aria-label={t("Ďalšie akcie")}
-                  title={t("Ďalšie akcie")}
+        meta={
+          <MetaRiadok
+            polozky={[
+              t("Dodávateľ: {dodavatel}", { dodavatel: row.supplier_name }),
+              t("Vystavená {datum}", { datum: datumNaDoklade(row.issue_date) }),
+              row.due_date ? (
+                <PoTermine aktivne={poSplatnosti}>
+                  {t("splatná {splatnost}", { splatnost: popisSplatnosti(row) })}
+                </PoTermine>
+              ) : null,
+              (row as any).type === "proforma"
+                ? t("Nie je daňový doklad — daň prinesie ostrá faktúra.")
+                : null,
+            ]}
+          />
+        }
+        primaryAction={
+          !navrh && row.status !== "paid" && row.status !== "cancelled" ? (
+            <PrimarnaAkcia onClick={markPaid}>
+              <CheckCircle2 /> {t("Označiť ako zaplatené")}
+            </PrimarnaAkcia>
+          ) : null
+        }
+        secondaryActions={
+          row.file_path ? (
+            <SekundarnaAkcia ikona={Download} label={t("Stiahnuť PDF")} onClick={downloadPdf} />
+          ) : null
+        }
+        menuActions={
+          <>
+            <MenuSkupina label={t("Úpravy a zaúčtovanie")}>
+              {row.status !== "cancelled" && !samo && (
+                <MenuAkcia asChild>
+                  <Link to="/prijate-faktury/$id/upravit" params={{ id }}>
+                    <Pencil className="h-4 w-4" /> {t("Upraviť")}
+                  </Link>
+                </MenuAkcia>
+              )}
+              {(row as any).type === "regular" && !navrh && (
+                <MenuAkcia ikona={BookCheck} onClick={skocNaZauctovanie}>
+                  {row.zauctovane_at ? t("Zaúčtovanie") : t("Zaúčtovať")}
+                </MenuAkcia>
+              )}
+              {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
+                <MenuAkcia ikona={CheckCircle2} onClick={() => setStatus("received")}>
+                  {t("Označiť ako prijaté")}
+                </MenuAkcia>
+              )}
+              {!row.exported_at && !samo && (
+                <MenuAkcia ikona={(row as any).locked_at ? LockOpen : Lock} onClick={prepniZamok}>
+                  {(row as any).locked_at ? t("Odomknúť úpravy") : t("Zamknúť proti úpravám")}
+                </MenuAkcia>
+              )}
+            </MenuSkupina>
+            <MenuSkupina label={t("Ostatné")}>
+              {(row as any).inbox_message_id && (
+                <MenuAkcia ikona={Mail} onClick={() => setZdrojovyMail(true)}>
+                  {t("Zdrojový e-mail")}
+                </MenuAkcia>
+              )}
+              {row.file_path && !row.exported_at && !samo && (
+                <MenuAkcia
+                  ikona={Paperclip}
+                  onClick={() => setPresunPrilohy(true)}
+                  title={t("Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha")}
                 >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
-                  <DropdownMenuItem onClick={() => setStatus("received")}>
-                    <CheckCircle2 className="mr-2 h-4 w-4" /> {t("Označiť ako prijaté")}
-                  </DropdownMenuItem>
-                )}
-                {row.file_path && !row.exported_at && !samo && (
-                  <DropdownMenuItem
-                    onClick={() => setPresunPrilohy(true)}
-                    title={t("Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha")}
-                  >
-                    <Paperclip className="mr-2 h-4 w-4" /> {t("Presunúť ako prílohu")}
-                  </DropdownMenuItem>
-                )}
-                {!row.exported_at && !samo && (
-                  <DropdownMenuItem onClick={prepniZamok}>
-                    {(row as any).locked_at ? (
-                      <LockOpen className="mr-2 h-4 w-4" />
-                    ) : (
-                      <Lock className="mr-2 h-4 w-4" />
-                    )}
-                    {(row as any).locked_at ? t("Odomknúť úpravy") : t("Zamknúť proti úpravám")}
-                  </DropdownMenuItem>
-                )}
-                {!row.exported_at && !(row as any).locked_at && !samo && (
-                  <DropdownMenuItem
-                    onClick={vratitDoNespracovanych}
-                    title={t("Zle zaradená faktúra — spracuje sa znova v Nespracovaných dokladoch")}
-                  >
-                    <Undo2 className="mr-2 h-4 w-4" /> {t("Vrátiť do Nespracovaných")}
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                {row.status !== "cancelled" && (
-                  <DropdownMenuItem
-                    onClick={() => setStatus("cancelled")}
-                    className="text-rose-700 focus:text-rose-700"
-                  >
-                    <Ban className="mr-2 h-4 w-4" /> {t("Storno")}
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={del} className="text-destructive focus:text-destructive">
-                  <Trash2 className="mr-2 h-4 w-4" /> {t("Vymazať")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                  {t("Presunúť ako prílohu")}
+                </MenuAkcia>
+              )}
+              {!row.exported_at && !(row as any).locked_at && !samo && (
+                <MenuAkcia
+                  ikona={Undo2}
+                  onClick={vratitDoNespracovanych}
+                  title={t("Zle zaradená faktúra — spracuje sa znova v Nespracovaných dokladoch")}
+                >
+                  {t("Vrátiť do Nespracovaných")}
+                </MenuAkcia>
+              )}
+            </MenuSkupina>
+            <MenuSkupina>
+              {row.status !== "cancelled" && (
+                <MenuAkcia ikona={Ban} onClick={() => setStatus("cancelled")} nebezpecna>
+                  {t("Storno")}
+                </MenuAkcia>
+              )}
+              <MenuAkcia ikona={Trash2} onClick={del} nebezpecna>
+                {t("Vymazať")}
+              </MenuAkcia>
+            </MenuSkupina>
+          </>
         }
       />
       <PageBody>

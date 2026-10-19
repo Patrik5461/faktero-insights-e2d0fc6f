@@ -4,13 +4,23 @@ import { useT } from "@/lib/i18n/useT";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PageBody } from "@/components/faktero/AppShell";
+import {
+  DocumentDetailHeader,
+  MenuAkcia,
+  MenuSkupina,
+  MetaRiadok,
+  PoTermine,
+  SekundarnaAkcia,
+  SplitAkcia,
+  StavOdznak,
+} from "@/components/faktero/DocumentDetailHeader";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { OdoslanieEfakturyOkno } from "@/components/faktero/OdoslanieEfakturyOkno";
 import { Oprava25aPanel } from "@/components/faktero/Oprava25aPanel";
 import { ZauctovanieVystavenejPanel } from "@/components/faktero/ZauctovanieVystavenejPanel";
 import { ZasielkovnaFaktury } from "@/components/faktero/ZasielkovnaFaktury";
-import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
+import { skocNaZauctovanie } from "@/components/faktero/TlacidloZauctovat";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { KomentarePanel } from "@/components/faktero/KomentarePanel";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
@@ -40,21 +50,13 @@ import {
   CheckCircle2,
   XCircle,
   Clock as ClockIcon,
-  MoreHorizontal,
+  BookCheck,
   Ban,
   AlertTriangle,
   Undo2,
   Plus,
   Eye,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { requestInvoiceApproval } from "@/lib/faktero/invoice-approval.functions";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import {
@@ -870,268 +872,232 @@ function InvoiceDetail() {
           onClose={() => setNahladUrl(null)}
         />
       )}
-      <PageHeader
-        title={`${inv.oprava_25a ? t("Opravný doklad (§ 25a)") : t(NAZOV_TYPU[inv.type as string] ?? "Faktúra")} ${inv.invoice_number}`}
-        description={`${t("Vystavená {datum} · splatná {splatnost}", { datum: datumNaDoklade(inv.issue_date), splatnost: popisSplatnosti(inv) })}${predlzena(inv) && inv.predlzenie_poznamka ? ` — ${inv.predlzenie_poznamka}` : ""}`}
-        action={
-          <div className="flex flex-wrap items-center gap-2">
+      <DocumentDetailHeader
+        title={inv.oprava_25a ? t("Opravný doklad (§ 25a)") : t(NAZOV_TYPU[inv.type as string] ?? "Faktúra")}
+        number={inv.invoice_number}
+        status={
+          <>
             <StatusBadge status={inv.status} />
             {inv.approval_status === "pending" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
+              <StavOdznak className="bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
                 <ClockIcon className="h-3 w-3" /> {t("Čaká na schválenie")}
-              </span>
+              </StavOdznak>
             )}
             {inv.approval_status === "approved" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400">
+              <StavOdznak className="bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400">
                 <CheckCircle2 className="h-3 w-3" /> {t("Schválené")}
-              </span>
+              </StavOdznak>
             )}
             {inv.approval_status === "rejected" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800 dark:bg-red-500/15 dark:text-red-400">
+              <StavOdznak className="bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400">
                 <XCircle className="h-3 w-3" /> {t("Zamietnuté")}
-              </span>
+              </StavOdznak>
             )}
-
-            {/* Primárne akcie */}
-            <button
-              onClick={openEmail}
-              disabled={inv.status === "cancelled"}
-              className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-            >
-              <Mail className="h-4 w-4" /> {t("Odoslať e-mailom")}
-            </button>
-            {/*
-              eFaktúra hneď vedľa e-mailu — v ponuke „Ďalšie akcie“ ju ľudia
-              nehľadali. Po odoslaní namiesto tlačidla ukáže stav; opakované
-              odoslanie ostáva v ponuke.
-            */}
+            {/* Odoslaná eFaktúra: namiesto tlačidla stav (opakované odoslanie je v „Odoslať“). */}
+            {inv.status !== "draft" && inv.status !== "cancelled" && inv.type !== "proforma" && efakturaOdoslana && (
+              <StavOdznak
+                className="bg-emerald-600/10 text-emerald-700 dark:text-emerald-400"
+                title={
+                  dorucenie?.delivered_at
+                    ? t("Doručená {kedy}", { kedy: new Date(dorucenie.delivered_at).toLocaleString("sk-SK") })
+                    : dorucenie?.sent_at
+                      ? t("Odoslaná {kedy}", { kedy: new Date(dorucenie.sent_at).toLocaleString("sk-SK") })
+                      : undefined
+                }
+              >
+                <CheckCircle2 className="h-3 w-3" />
+                {dorucenie?.delivered_at || dorucenie?.status === "delivered"
+                  ? t("eFaktúra doručená")
+                  : t("eFaktúra odoslaná")}
+                {efakturaTest ? ` (${t("test")})` : ""}
+              </StavOdznak>
+            )}
+          </>
+        }
+        meta={
+          <MetaRiadok
+            polozky={[
+              t("Vystavená {datum}", { datum: datumNaDoklade(inv.issue_date) }),
+              <PoTermine aktivne={isOverdue}>{t("splatná {splatnost}", { splatnost: popisSplatnosti(inv) })}</PoTermine>,
+              predlzena(inv) && inv.predlzenie_poznamka ? inv.predlzenie_poznamka : null,
+            ]}
+          />
+        }
+        primaryAction={
+          /*
+            Jedno hlavné tlačidlo: e-mail priamo, eFaktúra pod šípkou. eFaktúra
+            sa predtým ponúkala dvakrát (tlačidlo + ponuka) — tu je jedna
+            položka s podmienkami z ponuky, ktoré tlačidlo pokrývali celé.
+          */
+          <SplitAkcia
+            ikona={Send}
+            label={t("Odoslať")}
+            title={t("Odoslať e-mailom")}
+            onClick={openEmail}
+            disabled={inv.status === "cancelled"}
+            menuLabel={t("Spôsob odoslania")}
+          >
+            <MenuAkcia ikona={Mail} onClick={openEmail} disabled={inv.status === "cancelled"}>
+              {t("E-mailom")}
+            </MenuAkcia>
             {/* Zálohová faktúra nie je daňový doklad — cez eFaktúru sa neposiela. */}
-            {inv.status !== "draft" &&
-              inv.status !== "cancelled" &&
-              inv.type !== "proforma" &&
-              (efakturaOdoslana ? (
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600/10 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400"
-                  title={
-                    dorucenie?.delivered_at
-                      ? t("Doručená {kedy}", { kedy: new Date(dorucenie.delivered_at).toLocaleString("sk-SK") })
-                      : dorucenie?.sent_at
-                        ? t("Odoslaná {kedy}", { kedy: new Date(dorucenie.sent_at).toLocaleString("sk-SK") })
-                        : undefined
-                  }
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  {dorucenie?.delivered_at || dorucenie?.status === "delivered"
-                    ? t("eFaktúra doručená")
-                    : t("eFaktúra odoslaná")}
-                  {efakturaTest ? ` (${t("test")})` : ""}
-                </span>
-              ) : (
-                <button
-                  onClick={handleSendEfaktura}
-                  disabled={efakturaOkno}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                >
-                  <Send className="h-4 w-4" />
-                  {efakturaTest ? t("Odoslať eFaktúru (test)") : t("Odoslať eFaktúru")}
-                </button>
-              ))}
-            <button
-              onClick={handleNahlad}
-              disabled={pdfBusy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            <MenuAkcia
+              ikona={FileCheck2}
+              onClick={handleSendEfaktura}
+              disabled={efakturaOkno || inv.type === "proforma"}
+              title={
+                inv.type === "proforma"
+                  ? t("Zálohová faktúra nie je daňový doklad — pošlite ju e-mailom.")
+                  : undefined
+              }
             >
-              <Eye className="h-4 w-4" /> {t("Náhľad")}
-            </button>
-            <button
+              {efakturaTest ? t("Ako eFaktúru (test)") : t("Ako eFaktúru")}
+            </MenuAkcia>
+          </SplitAkcia>
+        }
+        secondaryActions={
+          <>
+            <SekundarnaAkcia ikona={Eye} label={t("Náhľad")} onClick={handleNahlad} disabled={pdfBusy} />
+            <SekundarnaAkcia
+              ikona={inv.pdf_url ? Download : FileText}
+              label={pdfBusy ? "…" : inv.pdf_url ? t("Stiahnuť PDF") : t("Vygenerovať PDF")}
               onClick={inv.pdf_url ? handleDownload : handleGenerate}
               disabled={pdfBusy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
-            >
-              {inv.pdf_url ? <Download className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-              {pdfBusy ? "…" : inv.pdf_url ? t("Stiahnuť PDF") : t("Vygenerovať PDF")}
-            </button>
-            {/*
-              Upraviť sa dá aj vystavená a odoslaná faktúra — formulár to vždy
-              vedel, chýbalo len tlačidlo, takže sa k oprave nedalo dostať.
-              Stornovaná faktúra sa už len archivuje, preto pri nej tlačidlo nie je.
-            */}
-            {inv.status !== "cancelled" && (
-              <Link
-                to="/faktury/$id/upravit"
-                params={{ id }}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
-              >
-                <Pencil className="h-4 w-4" />
-                {inv.status === "draft" ? t("Upraviť") : t("Opraviť faktúru")}
-              </Link>
-            )}
-            {inv.status !== "cancelled" && (
-              <TlacidloZauctovat zauctovane={Boolean(inv.zauctovane_at)} />
-            )}
-            {/* Dobropis sa vystavuje k bežnej vystavenej faktúre; formulár si
-                odberateľa, väzbu aj položky (so záporným množstvom) predvyplní. */}
-            {inv.type === "regular" && inv.status !== "draft" && inv.status !== "cancelled" && (
-              <Link
-                to="/faktury/nova"
-                search={{ type: "credit_note", opravuje: id } as any}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
-              >
-                <Undo2 className="h-4 w-4" />
-                {t("Vystaviť dobropis")}
-              </Link>
-            )}
-            {/* Ťarchopis — dodatočné zvýšenie ceny k tej istej faktúre (§ 25). */}
-            {inv.type === "regular" && inv.status !== "draft" && inv.status !== "cancelled" && (
-              <Link
-                to="/faktury/nova"
-                search={{ type: "debit_note", opravuje: id } as any}
-                title={t("Dodatočné zvýšenie ceny k tejto faktúre — opravná faktúra so zvýšením základu dane")}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
-              >
-                <Plus className="h-4 w-4" />
-                {t("Vystaviť ťarchopis")}
-              </Link>
-            )}
-
-            {/* Ďalšie akcie */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-sm hover:bg-secondary"
-                  aria-label={t("Ďalšie akcie")}
-                  title={t("Ďalšie akcie")}
+            />
+          </>
+        }
+        menuActions={
+          <>
+            <MenuSkupina label={t("Úpravy a zaúčtovanie")}>
+              {/*
+                Upraviť sa dá aj vystavená a odoslaná faktúra — formulár to vždy
+                vedel. Stornovaná faktúra sa už len archivuje.
+              */}
+              {inv.status !== "cancelled" && (
+                <MenuAkcia asChild>
+                  <Link to="/faktury/$id/upravit" params={{ id }}>
+                    <Pencil className="h-4 w-4" />
+                    {inv.status === "draft" ? t("Upraviť") : t("Opraviť faktúru")}
+                  </Link>
+                </MenuAkcia>
+              )}
+              {inv.status !== "cancelled" && (
+                <MenuAkcia ikona={BookCheck} onClick={skocNaZauctovanie}>
+                  {inv.zauctovane_at ? t("Zaúčtovanie") : t("Zaúčtovať")}
+                </MenuAkcia>
+              )}
+              {inv.status !== "sent" && inv.status !== "paid" && (
+                <MenuAkcia
+                  ikona={Send}
+                  onClick={() => setStatus("sent")}
+                  title={t("Použite, ak ste faktúru odoslali mimo Faktera (poštou, osobne). Po odoslaní emailom sa stav nastaví automaticky.")}
                 >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel>{t("Stav faktúry")}</DropdownMenuLabel>
-                {inv.status !== "sent" && inv.status !== "paid" && (
-                  <DropdownMenuItem
-                    onClick={() => setStatus("sent")}
-                    title={t("Použite, ak ste faktúru odoslali mimo Faktera (poštou, osobne). Po odoslaní emailom sa stav nastaví automaticky.")}
+                  {t("Odoslané iným spôsobom")}
+                </MenuAkcia>
+              )}
+              {inv.status !== "paid" && (
+                <MenuAkcia ikona={CheckCircle2} onClick={() => setStatus("paid")}>
+                  {t("Označiť ako uhradenú")}
+                </MenuAkcia>
+              )}
+            </MenuSkupina>
+
+            {/* Dobropis a ťarchopis k bežnej vystavenej faktúre; formulár si
+                odberateľa, väzbu aj položky predvyplní. */}
+            <MenuSkupina label={t("Nadväzné doklady")}>
+              {inv.type === "regular" && inv.status !== "draft" && inv.status !== "cancelled" && (
+                <MenuAkcia asChild>
+                  <Link to="/faktury/nova" search={{ type: "credit_note", opravuje: id } as any}>
+                    <Undo2 className="h-4 w-4" />
+                    {t("Vystaviť dobropis")}
+                  </Link>
+                </MenuAkcia>
+              )}
+              {/* Ťarchopis — dodatočné zvýšenie ceny k tej istej faktúre (§ 25). */}
+              {inv.type === "regular" && inv.status !== "draft" && inv.status !== "cancelled" && (
+                <MenuAkcia asChild>
+                  <Link
+                    to="/faktury/nova"
+                    search={{ type: "debit_note", opravuje: id } as any}
+                    title={t("Dodatočné zvýšenie ceny k tejto faktúre — opravná faktúra so zvýšením základu dane")}
                   >
-                    <Send className="mr-2 h-4 w-4" /> {t("Odoslané iným spôsobom")}
-                  </DropdownMenuItem>
-                )}
-                {inv.status !== "paid" && (
-                  <DropdownMenuItem onClick={() => setStatus("paid")}>
-                    <CheckCircle2 className="mr-2 h-4 w-4" /> {t("Označiť ako uhradenú")}
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={handleGenerate} disabled={pdfBusy}>
-                  <RefreshCw className="mr-2 h-4 w-4" /> {t("Pregenerovať PDF")}
-                </DropdownMenuItem>
-                {inv.status !== "cancelled" && (
-                  <DropdownMenuItem
-                    onClick={() => setStatus("cancelled")}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Ban className="mr-2 h-4 w-4" /> {t("Stornovať")}
-                  </DropdownMenuItem>
-                )}
+                    <Plus className="h-4 w-4" />
+                    {t("Vystaviť ťarchopis")}
+                  </Link>
+                </MenuAkcia>
+              )}
+              <MenuAkcia ikona={Copy} onClick={handleClone} disabled={cloneBusy}>
+                {t("Klonovať")}
+              </MenuAkcia>
+            </MenuSkupina>
 
-                {(inv.status === "draft" || inv.status === "issued") &&
-                  inv.approval_status !== "approved" && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel>{t("Schvaľovanie")}</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={handleRequestApproval} disabled={approvalBusy}>
-                        <Send className="mr-2 h-4 w-4" />
-                        {inv.approval_status === "pending"
-                          ? t("Poslať znova na schválenie")
-                          : t("Poslať na schválenie")}
-                      </DropdownMenuItem>
-                    </>
-                  )}
+            {(inv.status === "draft" || inv.status === "issued") && inv.approval_status !== "approved" && (
+              <MenuSkupina label={t("Schvaľovanie")}>
+                <MenuAkcia ikona={Send} onClick={handleRequestApproval} disabled={approvalBusy}>
+                  {inv.approval_status === "pending" ? t("Poslať znova na schválenie") : t("Poslať na schválenie")}
+                </MenuAkcia>
+              </MenuSkupina>
+            )}
 
-                {isOverdue && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>{t("Upomienky")}</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={openReminder}>
-                      <Mail className="mr-2 h-4 w-4" /> {t("Poslať upomienku")}
-                    </DropdownMenuItem>
-                  </>
+            {isOverdue && (
+              <MenuSkupina label={t("Upomienky")}>
+                <MenuAkcia ikona={Mail} onClick={openReminder}>
+                  {t("Poslať upomienku")}
+                </MenuAkcia>
+              </MenuSkupina>
+            )}
+
+            {company?.online_payments_enabled && inv.status !== "paid" && inv.status !== "cancelled" && (
+              <MenuSkupina label={t("Online platba")}>
+                <MenuAkcia ikona={CreditCard} onClick={handleCreatePayLink} disabled={payBusy}>
+                  {t("Vytvoriť platobný odkaz")}
+                </MenuAkcia>
+                {hasPayLink && (
+                  <MenuAkcia ikona={RotateCw} onClick={handleSyncPayment} disabled={syncBusy}>
+                    {t("Synchronizovať platbu")}
+                  </MenuAkcia>
                 )}
+              </MenuSkupina>
+            )}
 
-                {company?.online_payments_enabled &&
-                  inv.status !== "paid" &&
-                  inv.status !== "cancelled" && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel>{t("Online platba")}</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={handleCreatePayLink} disabled={payBusy}>
-                        <CreditCard className="mr-2 h-4 w-4" /> {t("Vytvoriť platobný odkaz")}
-                      </DropdownMenuItem>
-                      {hasPayLink && (
-                        <DropdownMenuItem onClick={handleSyncPayment} disabled={syncBusy}>
-                          <RotateCw className="mr-2 h-4 w-4" /> {t("Synchronizovať platbu")}
-                        </DropdownMenuItem>
-                      )}
-                    </>
-                  )}
+            <MenuSkupina label={t("Export")}>
+              <MenuAkcia ikona={RefreshCw} onClick={handleGenerate} disabled={pdfBusy}>
+                {t("Pregenerovať PDF")}
+              </MenuAkcia>
+              <MenuAkcia ikona={FileCode2} onClick={handlePohodaExport} disabled={exportBusy}>
+                {t("Export do Pohody XML")}
+              </MenuAkcia>
+              <MenuAkcia ikona={FileCheck2} onClick={handleGenerateXml} disabled={xmlBusy}>
+                {efakturaDoc ? t("Pregenerovať eFaktúru XML") : t("Vygenerovať eFaktúru XML")}
+              </MenuAkcia>
+              {efakturaDoc && (
+                <MenuAkcia ikona={Download} onClick={handleDownloadXml} disabled={xmlBusy}>
+                  {t("Stiahnuť eFaktúru XML")}
+                </MenuAkcia>
+              )}
+              {krajina === "DE" && inv.type !== "proforma" && (
+                <MenuAkcia ikona={Download} onClick={handleXrechnung} disabled={xrechnungBusy}>
+                  {xrechnungBusy ? t("Pripravujem…") : t("Stiahnuť XRechnung (XML)")}
+                </MenuAkcia>
+              )}
+              {krajina === "CZ" && (
+                <MenuAkcia ikona={Download} onClick={handleIsdoc} disabled={isdocBusy}>
+                  {isdocBusy ? t("Pripravujem…") : t("Stiahnuť ISDOC")}
+                </MenuAkcia>
+              )}
+            </MenuSkupina>
 
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>{t("Export")}</DropdownMenuLabel>
-                <DropdownMenuItem onClick={handlePohodaExport} disabled={exportBusy}>
-                  <FileCode2 className="mr-2 h-4 w-4" /> {t("Export do Pohody XML")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleGenerateXml} disabled={xmlBusy}>
-                  <FileCheck2 className="mr-2 h-4 w-4" />
-                  {efakturaDoc ? t("Pregenerovať eFaktúru XML") : t("Vygenerovať eFaktúru XML")}
-                </DropdownMenuItem>
-                {efakturaDoc && (
-                  <DropdownMenuItem onClick={handleDownloadXml} disabled={xmlBusy}>
-                    <Download className="mr-2 h-4 w-4" /> {t("Stiahnuť eFaktúru XML")}
-                  </DropdownMenuItem>
-                )}
-                {krajina === "DE" && inv.type !== "proforma" && (
-                  <DropdownMenuItem onClick={handleXrechnung} disabled={xrechnungBusy}>
-                    <Download className="mr-2 h-4 w-4" />
-                    {xrechnungBusy ? t("Pripravujem…") : t("Stiahnuť XRechnung (XML)")}
-                  </DropdownMenuItem>
-                )}
-                {krajina === "CZ" && (
-                  <DropdownMenuItem onClick={handleIsdoc} disabled={isdocBusy}>
-                    <Download className="mr-2 h-4 w-4" />
-                    {isdocBusy ? t("Pripravujem…") : t("Stiahnuť ISDOC")}
-                  </DropdownMenuItem>
-                )}
-                {/*
-                  Odoslanie patrí sem, k faktúre — nie len do zoznamu odoslaných
-                  eFaktúr. Ten je prázdny, kým sa XML nevygeneruje, takže tam
-                  tlačidlo nemal kto nájsť.
-                */}
-                <DropdownMenuItem
-                  onClick={handleSendEfaktura}
-                  disabled={efakturaOkno || inv.type === "proforma"}
-                  title={
-                    inv.type === "proforma"
-                      ? t("Zálohová faktúra nie je daňový doklad — pošlite ju e-mailom.")
-                      : undefined
-                  }
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  {efakturaTest ? t("Odoslať cez eFaktúru (test)") : t("Odoslať cez eFaktúru")}
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>{t("Ostatné")}</DropdownMenuLabel>
-                <DropdownMenuItem onClick={handleClone} disabled={cloneBusy}>
-                  <Copy className="mr-2 h-4 w-4" /> {t("Klonovať")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setDeleteOpen(true)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> {t("Vymazať")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-          </div>
+            <MenuSkupina>
+              {inv.status !== "cancelled" && (
+                <MenuAkcia ikona={Ban} onClick={() => setStatus("cancelled")} nebezpecna>
+                  {t("Stornovať")}
+                </MenuAkcia>
+              )}
+              <MenuAkcia ikona={Trash2} onClick={() => setDeleteOpen(true)} nebezpecna>
+                {t("Vymazať")}
+              </MenuAkcia>
+            </MenuSkupina>
+          </>
         }
       />
       <PageBody>

@@ -3,7 +3,15 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PageBody } from "@/components/faktero/AppShell";
+import {
+  DocumentDetailHeader,
+  MenuAkcia,
+  MenuSkupina,
+  PrimarnaAkcia,
+  SekundarnaAkcia,
+  StavOdznak,
+} from "@/components/faktero/DocumentDetailHeader";
 import { useServerFn } from "@tanstack/react-start";
 import { runRecurringNow, toggleRecurring } from "@/lib/faktero/recurring.functions";
 import { Play, Save, Power, PowerOff, Plus, Trash2 } from "lucide-react";
@@ -162,45 +170,33 @@ function RecurringDetail() {
 
   return (
     <>
-      <PageHeader
+      <DocumentDetailHeader
         title={rec.name}
-        description={t("{frekvencia} · Odberateľ: {odberatel} · Ďalší beh {datum}", { frekvencia: t(FREQ_LABEL[rec.frequency] ?? rec.frequency), odberatel: rec.customer_name ?? "—", datum: datumNaDoklade(rec.next_run) })}
-        action={
-          <div className="flex flex-wrap gap-2">
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${rec.active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}
-            >
-              {rec.active ? t("Aktívna") : t("Pozastavená")}
-            </span>
-            <button
-              onClick={runNow}
-              disabled={!rec.active || busy === "run"}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            >
-              <Play className="h-4 w-4" /> {busy === "run" ? t("Spúšťam…") : t("Spustiť teraz")}
-            </button>
-            <button
-              onClick={toggle}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-            >
-              {rec.active ? (
-                <>
-                  <PowerOff className="h-4 w-4" /> {t("Pozastaviť")}
-                </>
-              ) : (
-                <>
-                  <Power className="h-4 w-4" /> {t("Aktivovať")}
-                </>
-              )}
-            </button>
-            <button
-              onClick={save}
-              disabled={busy === "save"}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              <Save className="h-4 w-4" /> {busy === "save" ? t("Ukladám…") : t("Uložiť")}
-            </button>
-          </div>
+        status={
+          <StavOdznak className={rec.active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}>
+            {rec.active ? t("Aktívna") : t("Pozastavená")}
+          </StavOdznak>
+        }
+        meta={t("{frekvencia} · Odberateľ: {odberatel} · Ďalší beh {datum}", { frekvencia: t(FREQ_LABEL[rec.frequency] ?? rec.frequency), odberatel: rec.customer_name ?? "—", datum: datumNaDoklade(rec.next_run) })}
+        primaryAction={
+          <PrimarnaAkcia onClick={runNow} disabled={!rec.active || busy === "run"}>
+            <Play /> {busy === "run" ? t("Spúšťam…") : t("Spustiť teraz")}
+          </PrimarnaAkcia>
+        }
+        secondaryActions={
+          <SekundarnaAkcia
+            ikona={Save}
+            label={busy === "save" ? t("Ukladám…") : t("Uložiť")}
+            onClick={save}
+            disabled={busy === "save"}
+          />
+        }
+        menuActions={
+          <MenuSkupina>
+            <MenuAkcia ikona={rec.active ? PowerOff : Power} onClick={toggle}>
+              {rec.active ? t("Pozastaviť") : t("Aktivovať")}
+            </MenuAkcia>
+          </MenuSkupina>
         }
       />
       <PageBody>

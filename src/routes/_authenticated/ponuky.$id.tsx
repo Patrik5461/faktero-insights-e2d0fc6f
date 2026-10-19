@@ -3,7 +3,17 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PageBody } from "@/components/faktero/AppShell";
+import {
+  DocumentDetailHeader,
+  MenuAkcia,
+  MenuSkupina,
+  MetaRiadok,
+  PoTermine,
+  PrimarnaAkcia,
+  SekundarnaAkcia,
+  StavOdznak,
+} from "@/components/faktero/DocumentDetailHeader";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { useServerFn } from "@tanstack/react-start";
 import { generateQuotePdf, getQuotePdfSignedUrl } from "@/lib/faktero/quote-pdf.functions";
@@ -205,103 +215,113 @@ function QuoteDetail() {
   if (!q) return <PageBody>{t("Načítavam…")}</PageBody>;
 
   const converted = q.status === "converted";
+  const primarnaKonverzia = q.status === "accepted";
+  const propadla =
+    !!q.valid_until &&
+    !["accepted", "converted", "rejected"].includes(q.status) &&
+    new Date(q.valid_until) < new Date(new Date().toDateString());
 
   return (
     <>
-      <PageHeader
-        title={t("Ponuka {cislo}", { cislo: q.quote_number })}
-        description={t("Vystavená {datum} · platná do {platnost}", { datum: datumNaDoklade(q.issue_date), platnost: datumNaDoklade(q.valid_until) })}
-        action={
-          <div className="flex flex-wrap gap-2">
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLS[q.status] ?? "bg-muted"}`}
-            >
-              {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
-            </span>
-            <button
-              onClick={openEmail}
-              disabled={converted}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            >
-              <Mail className="h-4 w-4" /> {t("Poslať e-mailom")}
-            </button>
-            {!q.pdf_url ? (
-              <button
-                onClick={handleGenerate}
-                disabled={pdfBusy}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+      <DocumentDetailHeader
+        title={t("Ponuka")}
+        number={q.quote_number}
+        status={
+          <StavOdznak className={STATUS_CLS[q.status] ?? "bg-muted"}>
+            {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
+          </StavOdznak>
+        }
+        meta={
+          <MetaRiadok
+            polozky={[
+              t("Vystavená {datum}", { datum: datumNaDoklade(q.issue_date) }),
+              <PoTermine aktivne={propadla}>
+                {t("platná do {platnost}", { platnost: datumNaDoklade(q.valid_until) })}
+              </PoTermine>,
+            ]}
+          />
+        }
+        primaryAction={
+          /* Akceptovaná ponuka čaká na faktúru, inak sa ponuka posiela odberateľovi. */
+          primarnaKonverzia ? (
+            <PrimarnaAkcia onClick={handleConvert} disabled={converted || busy === "conv"}>
+              <ArrowRightLeft /> {converted ? t("Konvertovaná") : t("Konvertovať na faktúru")}
+            </PrimarnaAkcia>
+          ) : (
+            <PrimarnaAkcia onClick={openEmail} disabled={converted}>
+              <Mail /> {t("Poslať e-mailom")}
+            </PrimarnaAkcia>
+          )
+        }
+        secondaryActions={
+          !q.pdf_url ? (
+            <SekundarnaAkcia
+              ikona={FileText}
+              label={pdfBusy ? t("Generujem…") : t("Vygenerovať PDF")}
+              onClick={handleGenerate}
+              disabled={pdfBusy}
+            />
+          ) : (
+            <SekundarnaAkcia ikona={Download} label={t("Stiahnuť PDF")} onClick={handleDownload} />
+          )
+        }
+        menuActions={
+          <>
+            <MenuSkupina label={t("Stav ponuky")}>
+              {!converted && q.status !== "accepted" && (
+                <MenuAkcia ikona={CheckCircle2} onClick={() => setStatus("accepted")}>
+                  {t("Akceptovaná")}
+                </MenuAkcia>
+              )}
+              {!converted && q.status !== "rejected" && (
+                <MenuAkcia ikona={XCircle} onClick={() => setStatus("rejected")} nebezpecna>
+                  {t("Zamietnutá")}
+                </MenuAkcia>
+              )}
+            </MenuSkupina>
+            <MenuSkupina label={t("Nadväzné doklady")}>
+              {!primarnaKonverzia && (
+                <MenuAkcia ikona={ArrowRightLeft} onClick={handleConvert} disabled={converted || busy === "conv"}>
+                  {converted ? t("Konvertovaná") : t("Konvertovať na faktúru")}
+                </MenuAkcia>
+              )}
+              <MenuAkcia
+                ikona={ClipboardList}
+                onClick={async () => {
+                  const cid = getActiveCompanyId();
+                  if (!cid) return;
+                  if (!(await potvrd(t("Vytvoriť z ponuky prijatú objednávku?")))) return;
+                  setBusy("obj");
+                  try {
+                    const r: any = await naObjednavku({ data: { company_id: cid, quote_id: id } });
+                    navigate({ to: "/objednavky/$id", params: { id: r.id } });
+                  } catch (e: any) {
+                    toast.error(e?.message ?? t("Objednávku sa nepodarilo vytvoriť"));
+                  } finally {
+                    setBusy(null);
+                  }
+                }}
+                disabled={busy === "obj"}
               >
-                <FileText className="h-4 w-4" /> {pdfBusy ? t("Generujem…") : t("Vygenerovať PDF")}
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={handleDownload}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
-                >
-                  <Download className="h-4 w-4" /> {t("Stiahnuť PDF")}
-                </button>
-                <button
-                  onClick={handleGenerate}
-                  disabled={pdfBusy}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-                >
-                  <RefreshCw className="h-4 w-4" /> {pdfBusy ? "…" : t("Pregenerovať")}
-                </button>
-              </>
-            )}
-            <button
-              onClick={handleDuplicate}
-              disabled={busy === "dup"}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              <Copy className="h-4 w-4" /> {t("Duplikovať")}
-            </button>
-            <button
-              onClick={async () => {
-                const cid = getActiveCompanyId();
-                if (!cid) return;
-                if (!(await potvrd(t("Vytvoriť z ponuky prijatú objednávku?")))) return;
-                setBusy("obj");
-                try {
-                  const r: any = await naObjednavku({ data: { company_id: cid, quote_id: id } });
-                  navigate({ to: "/objednavky/$id", params: { id: r.id } });
-                } catch (e: any) {
-                  toast.error(e?.message ?? t("Objednávku sa nepodarilo vytvoriť"));
-                } finally {
-                  setBusy(null);
-                }
-              }}
-              disabled={busy === "obj"}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              <ClipboardList className="h-4 w-4" /> {t("Vytvoriť objednávku")}
-            </button>
-            <button
-              onClick={handleConvert}
-              disabled={converted || busy === "conv"}
-              className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
-            >
-              <ArrowRightLeft className="h-4 w-4" />{" "}
-              {converted ? t("Konvertovaná") : t("Konvertovať na faktúru")}
-            </button>
-            {!converted && q.status !== "accepted" && (
-              <button
-                onClick={() => setStatus("accepted")}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-              >
-                <CheckCircle2 className="h-4 w-4" /> {t("Akceptovaná")}
-              </button>
-            )}
-            {!converted && q.status !== "rejected" && (
-              <button
-                onClick={() => setStatus("rejected")}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
-              >
-                <XCircle className="h-4 w-4" /> {t("Zamietnutá")}
-              </button>
-            )}
-          </div>
+                {t("Vytvoriť objednávku")}
+              </MenuAkcia>
+              <MenuAkcia ikona={Copy} onClick={handleDuplicate} disabled={busy === "dup"}>
+                {t("Duplikovať")}
+              </MenuAkcia>
+            </MenuSkupina>
+            <MenuSkupina label={t("Ostatné")}>
+              {primarnaKonverzia && (
+                <MenuAkcia ikona={Mail} onClick={openEmail} disabled={converted}>
+                  {t("Poslať e-mailom")}
+                </MenuAkcia>
+              )}
+              {q.pdf_url && (
+                <MenuAkcia ikona={RefreshCw} onClick={handleGenerate} disabled={pdfBusy}>
+                  {pdfBusy ? "…" : t("Pregenerovať PDF")}
+                </MenuAkcia>
+              )}
+            </MenuSkupina>
+          </>
         }
       />
       <PageBody>

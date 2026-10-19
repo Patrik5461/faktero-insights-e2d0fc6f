@@ -3,7 +3,16 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PageBody } from "@/components/faktero/AppShell";
+import {
+  DocumentDetailHeader,
+  MenuAkcia,
+  MenuSkupina,
+  MetaRiadok,
+  PoTermine,
+  PrimarnaAkcia,
+  StavOdznak,
+} from "@/components/faktero/DocumentDetailHeader";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
@@ -120,43 +129,82 @@ function OrderDetail() {
 
   return (
     <>
-      <PageHeader
-        title={`${o.order_number} — ${o.customers?.name ?? o.customer_name ?? t("bez odberateľa")}`}
-        description={
-          o.customer_order_number
-            ? t("Objednávka odberateľa č. {cislo}", { cislo: o.customer_order_number })
-            : t("Prijatá objednávka od odberateľa")
+      <DocumentDetailHeader
+        title={t("Objednávka")}
+        number={o.order_number}
+        status={<StavOdznak className={FARBA[stav]}>{t(STAV_POPIS[stav])}</StavOdznak>}
+        meta={
+          <MetaRiadok
+            polozky={[
+              o.customers?.name ?? o.customer_name ?? t("bez odberateľa"),
+              o.customer_order_number
+                ? t("Objednávka odberateľa č. {cislo}", { cislo: o.customer_order_number })
+                : t("Prijatá objednávka od odberateľa"),
+              o.order_date ? t("Objednané {datum}", { datum: datum(o.order_date) }) : null,
+              o.requested_date ? (
+                <PoTermine aktivne={meska}>{t("termín {datum}", { datum: datum(o.requested_date) })}</PoTermine>
+              ) : null,
+            ]}
+          />
         }
-        action={
-          <div className="flex flex-wrap gap-2">
+        primaryAction={
+          /* Potvrdenie a fakturácia sa nikdy neukazujú naraz (fakturovať sa dá až potvrdenú). */
+          stav === "draft" ? (
+            <PrimarnaAkcia onClick={() => nastav("confirmed")}>
+              <Check /> {t("Potvrdiť")}
+            </PrimarnaAkcia>
+          ) : daSaFakturovat ? (
+            <PrimarnaAkcia asChild>
+              <Link to="/faktury/nova" search={{ sales_order: id }}>
+                <FileText /> {t("Vyfakturovať")}
+              </Link>
+            </PrimarnaAkcia>
+          ) : null
+        }
+        menuActions={
+          <>
             {stav !== "completed" && stav !== "cancelled" && (
-              <Link
-                to="/objednavky/nova"
-                search={{ id }}
-                className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
-              >
-                <Pencil className="h-4 w-4" /> {t("Upraviť")}
-              </Link>
+              <MenuSkupina label={t("Úpravy")}>
+                <MenuAkcia asChild>
+                  <Link to="/objednavky/nova" search={{ id }}>
+                    <Pencil className="h-4 w-4" /> {t("Upraviť")}
+                  </Link>
+                </MenuAkcia>
+              </MenuSkupina>
             )}
-            {stav === "draft" && (
-              <button
-                type="button"
-                onClick={() => nastav("confirmed")}
-                className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-              >
-                <Check className="h-4 w-4" /> {t("Potvrdiť")}
-              </button>
-            )}
-            {daSaFakturovat && (
-              <Link
-                to="/faktury/nova"
-                search={{ sales_order: id }}
-                className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-              >
-                <FileText className="h-4 w-4" /> {t("Vyfakturovať")}
-              </Link>
-            )}
-          </div>
+            <MenuSkupina>
+              {stav !== "cancelled" && stav !== "completed" && (
+                <MenuAkcia
+                  ikona={Ban}
+                  onClick={() =>
+                    nastav(
+                      "cancelled",
+                      t("Zrušiť objednávku? Rezervácie tovaru sa uvoľnia, objednávka ostane v zozname."),
+                    )
+                  }
+                >
+                  {t("Zrušiť objednávku")}
+                </MenuAkcia>
+              )}
+              {saDaZmazat(stav) && (
+                <MenuAkcia
+                  ikona={Trash2}
+                  nebezpecna
+                  onClick={async () => {
+                    if (!(await potvrd(t("Zmazať rozpracovanú objednávku?")))) return;
+                    try {
+                      await zmaz({ data: { company_id: cid!, id } });
+                      nav({ to: "/objednavky" });
+                    } catch (e: any) {
+                      toast.error(e?.message ?? t("Objednávku sa nepodarilo zmazať"));
+                    }
+                  }}
+                >
+                  {t("Zmazať")}
+                </MenuAkcia>
+              )}
+            </MenuSkupina>
+          </>
         }
       />
       <PageBody>
@@ -300,40 +348,6 @@ function OrderDetail() {
 
           <PrilohyFaktury druh="sales_order" dokladId={id} mozeMenit={stav !== "cancelled"} />
 
-          {/* Nebezpečné akcie */}
-          <div className="flex flex-wrap gap-2">
-            {stav !== "cancelled" && stav !== "completed" && (
-              <button
-                type="button"
-                onClick={() =>
-                  nastav(
-                    "cancelled",
-                    t("Zrušiť objednávku? Rezervácie tovaru sa uvoľnia, objednávka ostane v zozname."),
-                  )
-                }
-                className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
-              >
-                <Ban className="h-4 w-4" /> {t("Zrušiť objednávku")}
-              </button>
-            )}
-            {saDaZmazat(stav) && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!(await potvrd(t("Zmazať rozpracovanú objednávku?")))) return;
-                  try {
-                    await zmaz({ data: { company_id: cid!, id } });
-                    nav({ to: "/objednavky" });
-                  } catch (e: any) {
-                    toast.error(e?.message ?? t("Objednávku sa nepodarilo zmazať"));
-                  }
-                }}
-                className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4" /> {t("Zmazať")}
-              </button>
-            )}
-          </div>
         </div>
       </PageBody>
     </>
