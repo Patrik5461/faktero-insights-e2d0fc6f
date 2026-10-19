@@ -99,8 +99,8 @@ export function popisPola(el: Element | null): string | null {
 }
 
 /**
- * Pole podľa popisu — aj keď je formulár preložený do nemčiny. Popisy polí
- * v `POLIA_VYBERU` sú slovenské; nemecký popis sa preto najprv vráti na
+ * Pole podľa popisu — aj keď je formulár preložený do nemčiny či češtiny. Popisy
+ * polí v `POLIA_VYBERU` sú slovenské; preložený popis sa preto najprv vráti na
  * slovenský (dlhší preklad má prednosť) a až potom sa porovná.
  */
 function poleZPopisu(popis: string | null): KlucPola | null {
@@ -109,16 +109,17 @@ function poleZPopisu(popis: string | null): KlucPola | null {
   const text = popis.trim().toLowerCase();
   let najlepsie: { sk: string; de: string } | null = null;
   for (const p of POLIA_VYBERU)
-    for (const sk of p.popisy) {
-      const de = preloz("de", sk);
-      if (de === sk) continue;
-      const z = de.toLowerCase();
-      if (
-        (text === z || (text.startsWith(z) && !/[\p{L}\d]/u.test(text[z.length] ?? ""))) &&
-        (!najlepsie || de.length > najlepsie.de.length)
-      )
-        najlepsie = { sk, de };
-    }
+    for (const sk of p.popisy)
+      for (const jazyk of ["de", "cs"] as const) {
+        const de = preloz(jazyk, sk);
+        if (de === sk) continue;
+        const z = de.toLowerCase();
+        if (
+          (text === z || (text.startsWith(z) && !/[\p{L}\d]/u.test(text[z.length] ?? ""))) &&
+          (!najlepsie || de.length > najlepsie.de.length)
+        )
+          najlepsie = { sk, de };
+      }
   return najlepsie ? polePodlaPopisu(najlepsie.sk + popis.trim().slice(najlepsie.de.length)) : null;
 }
 

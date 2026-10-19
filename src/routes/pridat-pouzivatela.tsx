@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getInvitationByTokenFn, acceptInvitationFn } from "@/lib/faktero/invitations.functions";
+import { registrujPozvanehoFn } from "@/lib/faktero/registracia.functions";
 import { setActiveCompanyId } from "@/lib/faktero/active-company";
 import { toast } from "sonner";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
@@ -41,11 +42,12 @@ function Obal({ children, className = "" }: { children: React.ReactNode; classNa
 }
 
 function AcceptInvitationPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const { token } = Route.useSearch();
   const navigate = useNavigate();
   const getInv = useServerFn(getInvitationByTokenFn);
   const acceptInv = useServerFn(acceptInvitationFn);
+  const registrujPozvaneho = useServerFn(registrujPozvanehoFn);
   const [inv, setInv] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -92,27 +94,37 @@ function AcceptInvitationPage() {
           setBusy(false);
           return;
         }
-        const { data: reg, error: signUpErr } = await supabase.auth.signUp({
-          email: inv.email,
-          password: pwd,
-          options: {
-            emailRedirectTo: `${window.location.origin}/pridat-pouzivatela?token=${token}`,
-          },
-        });
-        if (signUpErr) {
-          // Try signing in (user might exist)
+        /*
+          Účet zakladá server — overí token pozvánky a adresu vezme z nej.
+          Priamy `signUp` z prehliadača by po vypnutí verejnej registrácie
+          v Supabase prestal fungovať.
+        */
+        const reg = await registrujPozvaneho({ data: { token, heslo: pwd, jazyk } });
+        if (!reg.ok) throw new Error(t(reg.sprava, reg.parametre));
+        if (reg.existuje) {
+          // Adresa už účet má — pripojí sa ním, ak heslo sedí.
           const { error: signInErr } = await supabase.auth.signInWithPassword({
             email: inv.email,
             password: pwd,
           });
-          if (signInErr) throw new Error(t(prelozAuthChybu(signInErr.message).sprava));
-        } else if (!reg.session) {
+          if (signInErr) {
+            const p = prelozAuthChybu(signInErr.message);
+            throw new Error(
+              p.nepotvrdeny
+                ? t(p.sprava)
+                : t("S touto adresou už účet existuje. Zadajte jeho heslo, alebo si ho obnovte cez „Zabudnuté heslo“."),
+            );
+          }
+        } else {
           /*
             Nový účet musí najprv potvrdiť e-mail. Bez prihlásenia server
             pozvánku prijať nevie — predtým tu vyskočilo anglické
             „Unauthorized“. Odkaz z e-mailu vráti človeka sem a pozvánka sa
             prijme sama.
           */
+          if (!reg.emailOdoslany) {
+            toast.error(t("Účet je vytvorený, ale potvrdzovací e-mail sa nepodarilo odoslať. Skúste to o chvíľu znova."));
+          }
           setCakaNaPotvrdenie(true);
           return;
         }

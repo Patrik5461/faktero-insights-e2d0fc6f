@@ -4,6 +4,7 @@ import { Loader2, Mail, X } from "lucide-react";
 import { zdrojovyMailFn, type ZdrojovyMail } from "@/lib/faktero/zdrojovy-mail.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 type Druh = "nespracovany" | "prijata" | "doklad" | "ostatny";
 
@@ -105,7 +106,7 @@ function OknoMailu({
                 <dt className="text-muted-foreground">{t("Prijaté")}</dt>
                 <dd>
                   {mail.prijate
-                    ? new Date(mail.prijate).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK", {
+                    ? new Date(mail.prijate).toLocaleString(lokalJazyka(jazyk), {
                         dateStyle: "medium",
                         timeStyle: "short",
                       })

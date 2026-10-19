@@ -9,7 +9,7 @@
  * v balíčku tak neostane ani riadok zo serverového jadra TanStacku.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { SERVER, type Operacia } from "./operacie";
+import { OPERACIE_BEZ_PRIHLASENIA, SERVER, type Operacia } from "./operacie";
 import { BEZ_VYZVY_NA_NAKUP, jeBlokPlanu } from "@/lib/faktero/plan-error";
 
 async function token(): Promise<string | null> {
@@ -18,14 +18,15 @@ async function token(): Promise<string | null> {
 }
 
 export async function volajOperaciu<T = any>(kluc: Operacia, data: any): Promise<T> {
-  const jwt = await token();
-  if (!jwt) throw new Error("Nie ste prihlásený.");
+  const bezPrihlasenia = OPERACIE_BEZ_PRIHLASENIA.includes(kluc);
+  const jwt = bezPrihlasenia ? null : await token();
+  if (!jwt && !bezPrihlasenia) throw new Error("Nie ste prihlásený.");
 
   const r = await fetch(`${SERVER}/api/mobil/${kluc}`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${jwt}`,
+      ...(jwt ? { authorization: `Bearer ${jwt}` } : {}),
     },
     body: JSON.stringify({ data }),
   });

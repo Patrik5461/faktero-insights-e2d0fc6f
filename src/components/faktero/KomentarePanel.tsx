@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { nastavenieSchvalovaniaFn } from "@/lib/faktero/schvalovanie.functions";
 import type { AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 type Komentar = { id: string; user_id: string; text: string; upozornit: string[]; created_at: string };
 
@@ -101,7 +102,7 @@ export function KomentarePanel({
               <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>
                   <span className="font-medium text-foreground">{meno(k.user_id)}</span> ·{" "}
-                  {new Date(k.created_at).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK", { dateStyle: "short", timeStyle: "short" })}
+                  {new Date(k.created_at).toLocaleString(lokalJazyka(jazyk), { dateStyle: "short", timeStyle: "short" })}
                   {k.upozornit?.length
                     ? ` · ${t("pre {komu}", { komu: k.upozornit.map(meno).join(", ") })}`
                     : ""}

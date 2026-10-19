@@ -27,7 +27,7 @@ import {
 } from "@/lib/faktero/revolut.functions";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { zostatkyPodlaMien, formatujSumu, zobrazitZauctovany } from "@/lib/faktero/zostatky";
 import {
   Building2,
@@ -364,7 +364,7 @@ function BankAccountsPage() {
                     {c.last_synced_at
                       ? t("Posledná synchronizácia: {cas}", {
                           cas: new Date(c.last_synced_at).toLocaleString(
-                            jazyk === "de" ? "de-DE" : "sk-SK",
+                            lokalJazyka(jazyk),
                           ),
                         })
                       : t("Ešte nesynchronizované")}

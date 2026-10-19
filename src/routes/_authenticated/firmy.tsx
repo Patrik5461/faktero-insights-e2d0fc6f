@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { zmazFirmuFn } from "@/lib/faktero/firma-zmazanie.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 
 export const Route = createFileRoute("/_authenticated/firmy")({
@@ -24,7 +24,7 @@ type Row = { id: string; name: string; role: string; created_at: string };
 
 function CompanyManagementPage() {
   const { t, jazyk } = useT();
-  const datum = (d: string) => new Date(d).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK");
+  const datum = (d: string) => new Date(d).toLocaleDateString(lokalJazyka(jazyk));
   const [rows, setRows] = useState<Row[] | null>(null);
   const [activeId, setAid] = useState<string | null>(getActiveCompanyId());
   const [open, setOpen] = useState(false);

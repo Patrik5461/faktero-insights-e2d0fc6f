@@ -6,7 +6,7 @@ import { CheckCircle2, XCircle, Loader2, FileText } from "lucide-react";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/schvalit/$token")({
   head: ({ match }) => {
@@ -268,7 +268,7 @@ function ApprovalPage() {
                   : "Táto faktúra už bola zamietnutá",
               )}
               {inv.approval_responded_at
-                ? ` (${new Date(inv.approval_responded_at).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK")})`
+                ? ` (${new Date(inv.approval_responded_at).toLocaleString(lokalJazyka(jazyk))})`
                 : ""}
               .
               {inv.approval_note && (

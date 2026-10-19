@@ -4,7 +4,7 @@ import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { BlogBlock } from "@/components/faktero/MarketingSectionPage";
 import { getPost, postsByDate } from "@/lib/faktero/blog-content";
 import { BlogCover } from "@/components/faktero/BlogCover";
-import { preloz, type Jazyk } from "@/lib/i18n/jazyk";
+import { preloz, type Jazyk, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 
 export const Route = createFileRoute("/blog/$slug")({
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/blog/$slug")({
 });
 
 function datum(iso: string, jazyk: Jazyk): string {
-  return new Date(iso).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK", {
+  return new Date(iso).toLocaleDateString(lokalJazyka(jazyk), {
     day: "numeric",
     month: "long",
     year: "numeric",

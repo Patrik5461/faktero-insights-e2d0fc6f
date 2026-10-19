@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { AlertTriangle } from "lucide-react";
 import { dniDoZrusenia, terminSlovom } from "@/lib/faktero/ucet-zrusenie";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 /**
  * Pripomienka, že účet má naplánované zrušenie.
@@ -17,7 +18,7 @@ export function ZrusenieBanner({ zrusiSa }: { zrusiSa: string }) {
       <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
       <span className="min-w-0">
         {t("Účet je naplánovaný na zrušenie")}{" "}
-        <strong>{terminSlovom(zrusiSa, jazyk === "de" ? "de-DE" : "sk-SK")}</strong>{" "}
+        <strong>{terminSlovom(zrusiSa, lokalJazyka(jazyk))}</strong>{" "}
         {t(
           dni === 1
             ? "— o {n} deň. Do vtedy sa nič nemaže."

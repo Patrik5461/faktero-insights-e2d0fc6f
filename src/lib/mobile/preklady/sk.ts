@@ -465,6 +465,10 @@ export const sk = {
   "reg.chyba.email": "Zadajte platný e-mail.",
   "reg.chyba.heslo": "Heslo musí mať aspoň 8 znakov.",
   "reg.chyba.suhlasy": "Potvrďte obidva súhlasy.",
+  "reg.captchaPopis": "Overenie, že nie ste robot",
+  "reg.captchaChyba": "Overenie sa nenačítalo. Registrovať sa dá aj tak, len s menším počtom pokusov za hodinu.",
+  "reg.captchaCakaj": "Počkajte, kým sa dokončí overenie, že nie ste robot.",
+  "reg.emailNeodisiel": "Účet je vytvorený, ale potvrdzovací e-mail sa nepodarilo odoslať. Ťuknite na „Poslať e-mail znova“.",
 
   /* cenové ponuky */
   "ponuky.bezEmailu": "Odberateľ nemá e-mail. Doplňte ho na jeho karte.",

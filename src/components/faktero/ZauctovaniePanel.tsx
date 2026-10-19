@@ -23,6 +23,7 @@ import { RozuctovaniePanel } from "./RozuctovaniePanel";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 export type Navrhy = {
   predkontacie: MoznostKodu[];
@@ -209,7 +210,7 @@ const kedy = (iso: string | null, loc = "sk-SK") =>
  */
 export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => void }) {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const zauctuj = useServerFn(zauctujPrijateFn);
   const zrus = useServerFn(zrusZauctovanieFn);

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { pripravKonektorFn, stavKonektoraFn } from "@/lib/faktero/pohoda-konektor.functions";
 import { fetchMyCompanies } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 /**
  * Priame prepojenie s Pohodou.
@@ -31,7 +32,7 @@ type MojaFirma = { id: string; name: string; role: string };
 
 export function KonektorPohody({ companyId }: { companyId: string }) {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const [stav, setStav] = useState<StavKonektora | null>(null);
   const [pracuje, setPracuje] = useState(false);
   /*
@@ -194,7 +195,7 @@ function StavFirmyPopis({ stav }: { stav?: StavFirmy }) {
   return (
     <span className="shrink-0 text-[11px] text-muted-foreground">
       {t("ozval sa {kedy}", {
-        kedy: new Date(stav.naposledy).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK"),
+        kedy: new Date(stav.naposledy).toLocaleDateString(lokalJazyka(jazyk)),
       })}
     </span>
   );

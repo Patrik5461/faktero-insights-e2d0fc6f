@@ -1,13 +1,13 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { useServerFn } from "@tanstack/react-start";
-import { overEmailRegistracieFn } from "@/lib/faktero/overenie-emailu.functions";
-import { recordLegalAcceptance } from "@/lib/legal.functions";
-import { odlozSuhlasy, zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
+import { nastavenieRegistracieFn, registrujUcetFn } from "@/lib/faktero/registracia.functions";
+import { odlozSuhlasy } from "@/lib/faktero/pravne-suhlasy";
+import { TurnstileWidget } from "@/components/faktero/TurnstileWidget";
 import { Logo } from "@/components/faktero/Logo";
 import { MailCheck } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
@@ -27,6 +27,8 @@ export const Route = createFileRoute("/registracia")({
   validateSearch: (s: Record<string, unknown>): { plan?: string } => ({
     plan: typeof s.plan === "string" && s.plan ? s.plan : undefined,
   }),
+  /* Verejný kľúč captchy je v env servera (ecosystem), nie v builde. */
+  loader: () => nastavenieRegistracieFn(),
   component: RegisterPage,
 });
 
@@ -34,9 +36,9 @@ export const Route = createFileRoute("/registracia")({
 export const PLAN_PENDING_KEY = "faktero_plan_pending";
 
 function RegisterPage() {
-  const { t } = useT();
-  const navigate = useNavigate();
+  const { t, jazyk } = useT();
   const { plan } = Route.useSearch();
+  const { siteKey } = Route.useLoaderData();
 
   /** Voľbu plánu si odložíme rovnako ako súhlasy — prežije presmerovanie z Googlu. */
   function stashPlan() {
@@ -51,7 +53,10 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const overEmail = useServerFn(overEmailRegistracieFn);
+  const registruj = useServerFn(registrujUcetFn);
+  /* Token captchy; jednorazový, po každom odoslaní sa widget resetuje. */
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [resetCaptchy, setResetCaptchy] = useState(0);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptGdpr, setAcceptGdpr] = useState(false);
   /* Účet vznikol, ale čaká na potvrdenie e-mailu — bez neho sa ďalej nedostane. */
@@ -64,53 +69,55 @@ function RegisterPage() {
       toast.error(t("Pre pokračovanie potvrďte obidva súhlasy."));
       return;
     }
-    setLoading(true);
-    /*
-      Jednorazová doména alebo doména bez MX — povie sa hneď a zrozumiteľne.
-      Hrádzu proti jednorazovým doménam drží aj spúšťač v databáze; keď táto
-      kontrola nedobehne (sieť), registrácia pokračuje a rozhodne databáza.
-    */
-    try {
-      const overenie = await overEmail({ data: { email } });
-      if (!overenie.ok) {
-        setLoading(false);
-        return toast.error(t(overenie.sprava, { domena: overenie.domena }));
-      }
-    } catch {
-      // kontrola nedobehla — nechá sa na databázu
-    }
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: fullName },
-      },
-    });
-    setLoading(false);
-    if (error) return toast.error(t(prelozAuthChybu(error.message).sprava));
-    /*
-      Súhlas sa odloží vždy a zapíše sa hneď, ako je relácia. Bez potvrdeného
-      e-mailu ju Supabase nevydá, takže zápis by inak spadol do prázdna —
-      dovtedy počká a vybaví ho prvé prihlásenie.
-    */
-    odlozSuhlasy();
-    if (data.session) await zapisOdlozeneSuhlasy(recordLegalAcceptance);
-    stashPlan();
-
-    /*
-     * Bez potvrdeného e-mailu Supabase reláciu nevydá. Doteraz sa aj tak
-     * pokračovalo na /onboarding, odkiaľ človeka ochrana trás vyhodila späť na
-     * prihlásenie — po úspešnej registrácii, s hláškou „Účet vytvorený".
-     * Vyzeralo to ako pokazená aplikácia. Preto sa to teraz povie rovno.
-     */
-    if (!data.session) {
-      setCakaNaPotvrdenie(true);
+    if (!captcha) {
+      toast.error(t("Počkajte, kým sa dokončí overenie, že nie ste robot."));
       return;
     }
+    setLoading(true);
+    /*
+      Účet zakladá server: overí captchu, limit pokusov, jednorazovú doménu
+      a MX a pošle potvrdzovací e-mail (odkaz na /auth/potvrdenie). Priamy
+      `signUp` z prehliadača sa nepoužíva — verejná registrácia v Supabase
+      sa dá potom vypnúť a falošné účty nemajú kade vznikať.
+    */
+    let vysledok: Awaited<ReturnType<typeof registruj>>;
+    try {
+      vysledok = await registruj({
+        data: {
+          email,
+          heslo: password,
+          meno: fullName,
+          jazyk,
+          token: captcha,
+          podmienky: acceptTerms,
+          gdpr: acceptGdpr,
+        },
+      });
+    } catch (e: any) {
+      setLoading(false);
+      setResetCaptchy((x) => x + 1);
+      return toast.error(t(prelozAuthChybu(e?.message).sprava));
+    }
+    setLoading(false);
+    // Token je spotrebovaný v každom prípade — aj po úspechu (späť na formulár).
+    setResetCaptchy((x) => x + 1);
+    if (!vysledok.ok) return toast.error(t(vysledok.sprava, vysledok.parametre));
 
-    toast.success(t("Účet vytvorený. Pokračujte do nastavenia firmy."));
-    navigate({ to: "/onboarding" });
+    /*
+      Súhlasy zapisuje server hneď pri založení účtu. Keď sa to nepodarí
+      (alebo účet s adresou už existoval), odložia sa a zapíše ich prvé
+      prihlásenie ako doteraz.
+    */
+    if (!vysledok.suhlasyZapisane) odlozSuhlasy();
+    stashPlan();
+    if (!vysledok.emailOdoslany) {
+      toast.error(t("Účet je vytvorený, ale potvrdzovací e-mail sa nepodarilo odoslať. Kliknite na „Poslať e-mail znova“."));
+    }
+    /*
+     * Bez potvrdeného e-mailu Supabase reláciu nevydá — účet z registrácie
+     * je vždy nepotvrdený, takže sa vždy čaká na odkaz z e-mailu.
+     */
+    setCakaNaPotvrdenie(true);
   }
 
   async function posliPotvrdenieZnova() {
@@ -251,6 +258,16 @@ function RegisterPage() {
               </span>
             </label>
           </div>
+          <TurnstileWidget
+            siteKey={siteKey}
+            jazyk={jazyk}
+            akcia="registracia"
+            onToken={setCaptcha}
+            reset={resetCaptchy}
+            popis={t("Overenie, že nie ste robot")}
+            chybaNacitania={t("Overenie sa nenačítalo — skontrolujte blokovanie reklám alebo obnovte stránku.")}
+            className="pt-2"
+          />
           <button
             type="submit"
             disabled={loading || !acceptTerms || !acceptGdpr}

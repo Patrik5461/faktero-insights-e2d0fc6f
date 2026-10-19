@@ -10,6 +10,7 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 const STAVY: Record<string, { text: string; trieda: string }> = {
   caka: { text: "Čaká na priradenie", trieda: "text-amber-700" },
@@ -144,9 +145,7 @@ export function RozdelovacMailov() {
                         <li key={n.id} className="rounded-md border border-border p-3 text-sm">
                           <div className="flex flex-wrap items-baseline gap-x-2">
                             <span className="text-muted-foreground">
-                              {new Date(n.received_at).toLocaleString(
-                                jazyk === "de" ? "de-DE" : "sk-SK",
-                              )}
+                              {new Date(n.received_at).toLocaleString(lokalJazyka(jazyk))}
                             </span>
                             <span className="font-medium">{n.from_email ?? t("neznámy")}</span>
                             <span className="min-w-0 truncate text-muted-foreground">

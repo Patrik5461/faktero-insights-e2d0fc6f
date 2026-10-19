@@ -19,6 +19,7 @@ import {
   sumySamofaktury,
 } from "@/lib/faktero/samofakturacia";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 const FARBY: Record<string, string> = {
   koncept: "border-border bg-muted/40",
@@ -46,7 +47,7 @@ export function stiahniBase64(base64: string, fileName: string) {
 /** Stav samofaktúry a kroky k odsúhlaseniu — na detaile prijatej faktúry. */
 export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => void }) {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const stav = stavSamofaktury(row);
   const odosli = useServerFn(odoslatSamofakturuFn);
   const odsuhlas = useServerFn(oznacitOdsuhlasenuFn);

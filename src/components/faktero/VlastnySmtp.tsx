@@ -10,6 +10,7 @@ import {
 } from "@/lib/faktero/smtp-firmy.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 const vstup = "mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm";
 
@@ -150,9 +151,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                 <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-900 dark:text-amber-100">
                   {t("Posledná chyba")} (
                   {stav.posledna_chyba_at
-                    ? new Date(stav.posledna_chyba_at).toLocaleString(
-                        jazyk === "de" ? "de-DE" : "sk-SK",
-                      )
+                    ? new Date(stav.posledna_chyba_at).toLocaleString(lokalJazyka(jazyk))
                     : ""}
                   ): {stav.posledna_chyba}
                   {stav.aktivne ? ` ${t("— ten mail odišiel cez Faktero.")}` : ""}

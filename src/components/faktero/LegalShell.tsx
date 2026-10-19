@@ -75,6 +75,24 @@ export function DeUpozornenie() {
   );
 }
 
+/**
+ * Česká verzia právnych textov nie je — návštevník s češtinou dostane
+ * slovenské znenie (Čech mu rozumie) s touto poznámkou nad ním.
+ */
+export function CsUpozornenie() {
+  return (
+    <p
+      lang="cs"
+      className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"
+    >
+      <strong>
+        Tento dokument je k dispozici pouze ve slovenském jazyce. Závazné znění je ve slovenském
+        jazyce.
+      </strong>
+    </p>
+  );
+}
+
 export { LEGAL_VERSION } from "@/lib/faktero/legal-verzia";
 export const LEGAL_UPDATED = "13.06.2026";
 export const LEGAL_COMPANY = {

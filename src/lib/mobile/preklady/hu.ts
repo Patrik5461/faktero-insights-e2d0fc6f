@@ -453,6 +453,10 @@ export const hu: Partial<Record<Kluc, string>> = {
   "reg.chyba.email": "Adjon meg érvényes e-mailt.",
   "reg.chyba.heslo": "A jelszónak legalább 8 karakterből kell állnia.",
   "reg.chyba.suhlasy": "Erősítse meg mindkét hozzájárulást.",
+  "reg.captchaPopis": "Annak ellenőrzése, hogy nem robot",
+  "reg.captchaChyba": "Az ellenőrzés nem töltődött be. Így is regisztrálhat, csak óránként kevesebb próbálkozással.",
+  "reg.captchaCakaj": "Várjon, amíg az ellenőrzés befejeződik.",
+  "reg.emailNeodisiel": "A fiók létrejött, de a megerősítő e-mailt nem sikerült elküldeni. Koppintson az „E-mail újraküldése” gombra.",
 
   /* cenové ponuky */
   "ponuky.bezEmailu": "Az ügyfélnek nincs e-mail-címe. Adja meg az adatlapján.",

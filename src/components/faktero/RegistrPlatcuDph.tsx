@@ -5,6 +5,7 @@ import { overPlatceDphFn } from "@/lib/faktero/cz-registr-dph.functions";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { dicPreRegister } from "@/lib/faktero/cz-registr-dph";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 type Vysledok = Awaited<ReturnType<typeof overPlatceDphFn>>;
 
@@ -64,7 +65,7 @@ export function RegistrPlatcuDph({
     ) : null;
   }
 
-  const datum = new Date(v.overene_at).toLocaleString(jazyk === "de" ? "de-DE" : "cs-CZ");
+  const datum = new Date(v.overene_at).toLocaleString(lokalJazyka(jazyk));
   const zle = v.nespolehlivy || v.ucetZverejneny === false;
   const ton = v.chyba
     ? "border-border bg-card"

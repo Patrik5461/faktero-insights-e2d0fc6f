@@ -69,7 +69,7 @@ import {
 import { PartneriPas } from "@/components/faktero/PartneriPas";
 import { zoznamPartnerovPublic } from "@/lib/partneri.functions";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/")({
   /*
@@ -1375,7 +1375,7 @@ function ComparisonSection() {
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">
           {t("Údaje k {datum}. Funkcie konkurencie sa môžu meniť.", {
-            datum: new Date().toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK", {
+            datum: new Date().toLocaleDateString(lokalJazyka(jazyk), {
               month: "long",
               year: "numeric",
             }),

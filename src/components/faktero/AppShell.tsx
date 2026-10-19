@@ -565,7 +565,10 @@ export function AppShell({
 
             {/* Right cluster */}
             <div className="ml-auto flex items-center gap-1.5">
-              <PrepinacJazyka className="max-md:border-white/30 max-md:[&_button[aria-pressed=false]]:text-primary-foreground/80" />
+              <PrepinacJazyka
+                className="max-md:border-white/30 max-md:[&_button[aria-pressed=false]]:text-primary-foreground/80"
+                kompaktnyClassName="max-md:border-white/30 max-md:text-primary-foreground"
+              />
               <NotificationBell className="max-md:text-primary-foreground max-md:hover:bg-white/15" />
 
               {/* Quick create — the only filled element */}

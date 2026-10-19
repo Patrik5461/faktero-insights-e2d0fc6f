@@ -14,6 +14,7 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 const SRC_LABEL: Record<string, string> = {
   quote: "Ponuka",
@@ -118,7 +119,7 @@ export function ReservationsPanel({
                 <td className="p-2 text-xs">{t(STATUS_LABEL[r.status] ?? r.status)}</td>
                 <td className="p-2 text-xs text-muted-foreground">
                   {r.expires_at
-                    ? new Date(r.expires_at).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK")
+                    ? new Date(r.expires_at).toLocaleDateString(lokalJazyka(jazyk))
                     : "—"}
                 </td>
                 <td className="p-2 text-xs text-muted-foreground">{r.note ?? "—"}</td>

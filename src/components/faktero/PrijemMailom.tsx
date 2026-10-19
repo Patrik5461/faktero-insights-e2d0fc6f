@@ -18,6 +18,7 @@ import { PotvrdeniePreposielania } from "./PotvrdeniePreposielania";
 import { RozdelovacMailov } from "./RozdelovacMailov";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 const STAVY: Record<string, { text: string; trieda: string }> = {
   hotovo: { text: "Založené", trieda: "text-emerald-700" },
@@ -339,9 +340,7 @@ export function PrijemMailom({
                             <div className="flex items-baseline gap-2">
                               <span className="min-w-0 flex-1 truncate">
                                 <span className="text-muted-foreground">
-                                  {new Date(s.received_at).toLocaleString(
-                                    jazyk === "de" ? "de-DE" : "sk-SK",
-                                  )}
+                                  {new Date(s.received_at).toLocaleString(lokalJazyka(jazyk))}
                                 </span>{" "}
                                 <span className="font-medium">{s.from_email ?? t("neznámy")}</span>
                               </span>

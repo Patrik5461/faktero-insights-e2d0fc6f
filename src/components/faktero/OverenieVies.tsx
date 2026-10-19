@@ -4,6 +4,7 @@ import { overIcDphFn } from "@/lib/faktero/vies.functions";
 import { jeCerstve, jeEuIcDph, jeTuzemske, type VysledokVies } from "@/lib/faktero/vies";
 import { BadgeCheck, Loader2, ShieldAlert, ShieldQuestion } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 
 /**
@@ -95,7 +96,7 @@ export function OverenieVies({
           {stav.platne ? t("Platné") : t("Neplatné")}
           {stav.overene && (
             <span className="text-muted-foreground">
-              · {new Date(stav.overene).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK")}
+              · {new Date(stav.overene).toLocaleDateString(lokalJazyka(jazyk))}
               {!cerstve && ` ${t("(staršie než 30 dní)")}`}
             </span>
           )}

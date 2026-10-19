@@ -7,6 +7,7 @@ import { HRANICA_STVRTROCNEJ_ZM, suctyZm, zmNaCsv, type DruhZm } from "@/lib/fak
 import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { formatujCislo } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 /*
   Nemecká firma: Zusammenfassende Meldung (§ 18a UStG) — súčty dodaní do EÚ
@@ -82,7 +83,7 @@ export function DeZm() {
 
   const oznacenie =
     rezim === "mesiac" ? `${rok}-${String(mesiac).padStart(2, "0")}` : `${rok}-Q${stvrtrok}`;
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const eur = (n: number, des = 0) => `${formatujCislo(n, des, des, loc)} €`;
   const zm = data?.zm ?? null;
 

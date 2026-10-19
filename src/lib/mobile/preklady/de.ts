@@ -455,6 +455,10 @@ export const de: Partial<Record<Kluc, string>> = {
   "reg.chyba.email": "Geben Sie eine gültige E-Mail ein.",
   "reg.chyba.heslo": "Das Passwort muss mindestens 8 Zeichen haben.",
   "reg.chyba.suhlasy": "Bestätigen Sie beide Einwilligungen.",
+  "reg.captchaPopis": "Bestätigung, dass Sie kein Roboter sind",
+  "reg.captchaChyba": "Die Überprüfung wurde nicht geladen. Sie können sich trotzdem registrieren, nur mit weniger Versuchen pro Stunde.",
+  "reg.captchaCakaj": "Bitte warten Sie, bis die Überprüfung abgeschlossen ist.",
+  "reg.emailNeodisiel": "Das Konto wurde erstellt, aber die Bestätigungs-E-Mail konnte nicht gesendet werden. Tippen Sie auf „E-Mail erneut senden“.",
 
   /* cenové ponuky */
   "ponuky.bezEmailu": "Der Kunde hat keine E-Mail. Ergänzen Sie sie in seinem Datensatz.",

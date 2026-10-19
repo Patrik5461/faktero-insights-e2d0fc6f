@@ -17,6 +17,7 @@ import type { Navrhy } from "./ZauctovaniePanel";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 const KV_VYDANE = KV_CLENENIA.filter((k) => ["A1", "A2", "C1", "D1", "D2", "X"].includes(k.kod));
 const kedy = (iso: string | null | undefined, loc = "sk-SK") =>
@@ -47,7 +48,7 @@ export function ZauctovanieVystavenejPanel({
   onStiahnut: () => Promise<void> | void;
 }) {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const nacitajStav = useServerFn(stavVystavenejFn);
   const zauctuj = useServerFn(zauctujVystavenuFn);

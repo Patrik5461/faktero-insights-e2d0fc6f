@@ -4,6 +4,7 @@ import { History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 type Zaznam = { id: string; pole: string; pred: unknown; po: unknown; kto: string | null; kedy: string };
 
@@ -52,7 +53,7 @@ function hodnota(pole: string, v: unknown, t: (s: string) => string, loc: string
 /** Kto, kedy a čo na doklade zmenil — zapisuje spúšťač v databáze. */
 export function HistoriaDokladu({ companyId, agenda, id }: { companyId: string; agenda: "prijata" | "doklad"; id: string }) {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const nacitajMena = useServerFn(menaClenovFirmy);
   const [zaznamy, setZaznamy] = useState<Zaznam[] | null>(null);
   const [mena, setMena] = useState<Record<string, string>>({});

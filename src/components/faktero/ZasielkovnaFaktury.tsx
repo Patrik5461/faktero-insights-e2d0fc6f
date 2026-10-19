@@ -192,7 +192,7 @@ function OknoZasielky({
           if (p)
             setMiesto({ id: String(p.id), nazov: [p.name, p.city].filter(Boolean).join(", ") });
         },
-        { country: krajina, language: jazyk === "de" ? "de" : "sk" },
+        { country: krajina, language: jazyk },
       );
     } catch (e: any) {
       toast.error(t(e?.message ?? "Mapa sa nenačítala"));

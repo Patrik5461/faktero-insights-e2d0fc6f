@@ -17,7 +17,8 @@ export function PoznamkaRezimuDph() {
   return (
     <p className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
       {t("Firma je vedená ako {schema}, doklady sa preto vystavujú bez DPH.", {
-        schema: jazyk === "de" ? t(schema) : schema.toLowerCase(),
+        // Nemčina píše podstatné mená s veľkým písmenom, slovenčina a čeština nie.
+        schema: jazyk === "de" ? t(schema) : t(schema).toLowerCase(),
       })}{" "}
       <Link to="/firma" className="underline">
         {t("Zmeniť v nastaveniach firmy")}

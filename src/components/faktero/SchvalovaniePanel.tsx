@@ -13,6 +13,7 @@ import {
   type StavSchvalovania,
 } from "@/lib/faktero/schvalovanie";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 const AKCIE: Record<string, string> = {
   schvalil: "schválil",
@@ -184,7 +185,7 @@ export function SchvalovaniePanel({
             <ul className="mt-3 space-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
               {d.historia.map((h: any, i: number) => (
                 <li key={i}>
-                  {new Date(h.created_at).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK", {
+                  {new Date(h.created_at).toLocaleString(lokalJazyka(jazyk), {
                     dateStyle: "short",
                     timeStyle: "short",
                   })}{" "}

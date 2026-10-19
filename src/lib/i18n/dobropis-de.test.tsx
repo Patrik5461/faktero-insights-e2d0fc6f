@@ -127,7 +127,7 @@ describe("useT s krajinou firmy", () => {
     const { t } = useT();
     return <span>{t("Vystaviť dobropis")}</span>;
   }
-  const html = (krajina: KrajinaDane | null, jazyk: "sk" | "de" = "de") =>
+  const html = (krajina: KrajinaDane | null, jazyk: "sk" | "cs" | "de" = "de") =>
     renderToString(
       <JazykProvider jazyk={jazyk}>
         <KrajinaFirmyProvider krajina={krajina}>
@@ -142,6 +142,14 @@ describe("useT s krajinou firmy", () => {
     expect(html("DE")).toContain("Rechnungskorrektur ausstellen");
     expect(html(null)).toContain("Rechnungskorrektur ausstellen");
     expect(html("SK", "sk")).toContain("Vystaviť dobropis");
+  });
+
+  it("čeština nemecké názvoslovie nepreberá", () => {
+    for (const k of ["SK", "CZ", "DE", null] as const) {
+      const h = html(k, "cs");
+      expect(h).not.toContain("Gutschrift");
+      expect(h).not.toContain("Rechnungskorrektur");
+    }
   });
 
   it("tlačidlo opravy samofaktúry", () => {

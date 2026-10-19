@@ -8,6 +8,7 @@ import { potvrd } from "@/lib/potvrdenie";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 type Polozka = {
   id: string;
@@ -111,7 +112,7 @@ export function KosDokladovOkno({
                   <div className="text-xs text-muted-foreground">
                     {p.datum ? datumNaDoklade(p.datum) : t("bez dátumu")}
                     {p.suma != null ? ` · ${formatujMenu(p.suma, p.mena)}` : ""} · {t("zmazané")}{" "}
-                    {new Date(p.zmazaneAt).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK", { dateStyle: "medium", timeStyle: "short" })}
+                    {new Date(p.zmazaneAt).toLocaleString(lokalJazyka(jazyk), { dateStyle: "medium", timeStyle: "short" })}
                   </div>
                 </div>
                 <button

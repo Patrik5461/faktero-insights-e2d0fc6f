@@ -36,7 +36,8 @@ export function useKrajinaFirmyKontext(): KrajinaDane | null {
 /**
  * `const { t } = useT()` a potom `t("Slovenský text")` alebo
  * `t("Spolu {n} faktúr", { n })`. Kľúč je slovenský text, preklad je
- * v `src/lib/i18n/de/*.ts`.
+ * v `src/lib/i18n/de/*.ts` a `src/lib/i18n/cs/*.ts`. Prevod „Rechnungskorrektur“ →
+ * „Gutschrift“ (`dobropis-de.ts`) sa týka len nemčiny.
  */
 export function useT() {
   const jazyk = useContext(KontextJazyka);

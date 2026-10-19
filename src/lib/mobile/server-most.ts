@@ -58,6 +58,7 @@ import {
   odkazNaPrilohuFn,
   zmazPrilohuFn,
 } from "@/lib/faktero/faktura-prilohy.functions";
+import { nastavenieRegistracieFn, registrujUcetFn } from "@/lib/faktero/registracia.functions";
 import type { Operacia } from "./operacie";
 
 /** Jediné miesto, kde sa kľúč operácie stretáva so serverovou funkciou. */
@@ -108,6 +109,8 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "priloha-nahraj": nahrajPrilohuFn,
   "priloha-odkaz": odkazNaPrilohuFn,
   "priloha-zmaz": zmazPrilohuFn,
+  registracia: registrujUcetFn,
+  "registracia-nastavenie": nastavenieRegistracieFn,
 };
 
 export function useOperacia<T = any>(kluc: Operacia): (vstup: { data: any }) => Promise<T> {

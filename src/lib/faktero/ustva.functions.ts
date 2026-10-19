@@ -87,7 +87,7 @@ export const zostavUstvaFn = createServerFn({ method: "POST" })
 export const ustvaPdfFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
-    z.object({ vstup: z.unknown(), jazyk: z.enum(["sk", "de"]).optional() }).parse(input),
+    z.object({ vstup: z.unknown(), jazyk: z.enum(["sk", "cs", "de"]).optional() }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const v = Vstup.parse(data.vstup);

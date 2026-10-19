@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CreditCard, ShieldCheck, Lock } from "lucide-react";
-import { LegalShell, LEGAL_COMPANY, DeUpozornenie } from "@/components/faktero/LegalShell";
+import {
+  LegalShell,
+  LEGAL_COMPANY,
+  DeUpozornenie,
+  CsUpozornenie,
+} from "@/components/faktero/LegalShell";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -33,7 +38,14 @@ function Page() {
   const { jazyk, t } = useT();
   return (
     <LegalShell title={t("Opakované platby")} updated="09.07.2026" version="1.0">
-      {jazyk === "de" ? <De /> : <Sk />}
+      {jazyk === "de" ? (
+        <De />
+      ) : (
+        <>
+          {jazyk === "cs" && <CsUpozornenie />}
+          <Sk />
+        </>
+      )}
     </LegalShell>
   );
 }

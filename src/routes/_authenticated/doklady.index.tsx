@@ -1,4 +1,4 @@
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
@@ -108,7 +108,7 @@ const STLPCE_DOKLADOV: StlpecZoznamu[] = [
 function nazovMesiaca(m: string, jazyk: string = "sk"): string {
   const [r, me] = m.split("-").map(Number);
   if (!r || !me) return m;
-  return new Date(r, me - 1, 1).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK", {
+  return new Date(r, me - 1, 1).toLocaleDateString(lokalJazyka(jazyk), {
     month: "long",
     year: "numeric",
   });

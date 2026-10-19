@@ -7,7 +7,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import {
   fakturujShoptetFn,
   nastavAutoImportFn,
@@ -82,7 +82,7 @@ function ShoptetPanel({
   onZmena: () => void;
 }) {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const pripoj = useServerFn(pripojShoptetFn);
   const odpoj = useServerFn(odpojNapojenieFn);
   const objednavky = useServerFn(objednavkyShoptetFn);
@@ -474,7 +474,7 @@ function AutoImport({
   onZmena: () => void;
 }) {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const nastav = useServerFn(nastavAutoImportFn);
   const stavy = (Array.isArray(stav.stavy) ? stav.stavy : []) as { id: number; name: string }[];
   const [zapnut, setZapnut] = useState(Boolean(stav.auto_import));

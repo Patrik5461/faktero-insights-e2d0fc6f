@@ -28,7 +28,7 @@ import { pripojFio, stavFio, synchronizujFio, odpojFio } from "@/lib/faktero/fio
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import {
   Building2,
   ExternalLink,
@@ -164,7 +164,7 @@ function stiahniKluc(pem: string, nazov = "faktero-wise-public-key.pem") {
  */
 function FioPripojenie() {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const pripoj = useServerFn(pripojFio);
   const stavFn = useServerFn(stavFio);
   const syncFn = useServerFn(synchronizujFio);
@@ -309,7 +309,7 @@ function FioPripojenie() {
  */
 function WisePripojenie() {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const pripoj = useServerFn(pripojWise);
   const stavFn = useServerFn(stavWise);
   const uctyFn = useServerFn(synchronizujWiseUcty);
@@ -478,7 +478,7 @@ function WisePripojenie() {
  */
 function WallesterPripojenie() {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const zacni = useServerFn(zacniWallester);
   const dokonci = useServerFn(dokonciWallester);
   const stavFn = useServerFn(stavWallester);
@@ -694,7 +694,7 @@ function WallesterPripojenie() {
  */
 function RevolutPripojenie() {
   const { t, jazyk } = useT();
-  const loc = jazyk === "de" ? "de-DE" : "sk-SK";
+  const loc = lokalJazyka(jazyk);
   const zacni = useServerFn(zacniRevolut);
   const ulozId = useServerFn(ulozClientIdRevolut);
   const stavFn = useServerFn(stavRevolut);

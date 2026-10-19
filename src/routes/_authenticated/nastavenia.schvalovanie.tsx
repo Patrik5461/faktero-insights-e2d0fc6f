@@ -15,7 +15,7 @@ import { NAZVY_AGEND, type AgendaSchvalovania } from "@/lib/faktero/schvalovanie
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 
 /**
  * Nastavenie schvaľovania dokladov — ako v Doklado: zapnutie, agendy,
@@ -167,7 +167,7 @@ function Stranka() {
                 {d.nastavenie.od
                   ? " " +
                     t("Zapnuté od {datum}.", {
-                      datum: new Date(d.nastavenie.od).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK", {
+                      datum: new Date(d.nastavenie.od).toLocaleString(lokalJazyka(jazyk), {
                         dateStyle: "medium",
                         timeStyle: "short",
                       }),

@@ -68,9 +68,21 @@ export const OPERACIE = [
   "priloha-nahraj",
   "priloha-odkaz",
   "priloha-zmaz",
+  /*
+    Registrácia účtu — server overí captchu (keď sa vo WebView načíta) a limit
+    pokusov a založí účet. Bez prihlásenia: človek ešte účet nemá.
+  */
+  "registracia",
+  "registracia-nastavenie",
 ] as const;
 
 export type Operacia = (typeof OPERACIE)[number];
+
+/** Operácie, ktoré sa volajú bez prihlásenia (most nepýta token). */
+export const OPERACIE_BEZ_PRIHLASENIA: readonly Operacia[] = [
+  "registracia",
+  "registracia-nastavenie",
+];
 
 export function jeOperacia(hodnota: string): hodnota is Operacia {
   return (OPERACIE as readonly string[]).includes(hodnota);

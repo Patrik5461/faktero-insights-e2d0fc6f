@@ -452,6 +452,10 @@ export const cs: Partial<Record<Kluc, string>> = {
   "reg.chyba.email": "Zadejte platný e-mail.",
   "reg.chyba.heslo": "Heslo musí mít alespoň 8 znaků.",
   "reg.chyba.suhlasy": "Potvrďte oba souhlasy.",
+  "reg.captchaPopis": "Ověření, že nejste robot",
+  "reg.captchaChyba": "Ověření se nenačetlo. Registrovat se lze i tak, jen s menším počtem pokusů za hodinu.",
+  "reg.captchaCakaj": "Počkejte, než se dokončí ověření, že nejste robot.",
+  "reg.emailNeodisiel": "Účet je vytvořen, ale potvrzovací e-mail se nepodařilo odeslat. Klepněte na „Poslat e-mail znovu“.",
 
   /* cenové ponuky */
   "ponuky.bezEmailu": "Odběratel nemá e-mail. Doplňte ho na jeho kartě.",

@@ -22,7 +22,7 @@ import { EditorOpravneni, VysvetlenieRoli } from "@/components/faktero/pristupy/
 import { suhrnOpravneni, type Opravnenia } from "@/lib/faktero/opravnenia";
 import { potvrd } from "@/lib/potvrdenie";
 import { domacaMena } from "@/lib/faktero/kurzy";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 export const Route = createFileRoute("/_authenticated/firma")({
   head: ({ match }) => ({
@@ -529,7 +529,7 @@ const ROLA_POPIS: Record<string, string> = {
 
 function TeamSection({ companyId }: { companyId: string }) {
   const { t, jazyk } = useT();
-  const datum = (d: string) => new Date(d).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK");
+  const datum = (d: string) => new Date(d).toLocaleDateString(lokalJazyka(jazyk));
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "accountant" | "employee" | "custom">("employee");
   /** Oblasti pri pozvánke s vlastným prístupom. */

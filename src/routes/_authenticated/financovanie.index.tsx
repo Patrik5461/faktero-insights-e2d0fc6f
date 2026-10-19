@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { zoznamZmluvFn } from "@/lib/faktero/financovanie.functions";
@@ -36,7 +36,7 @@ type Zmluva = {
 };
 
 function datum(d: string, jazyk: string = "sk"): string {
-  return new Date(`${d}T00:00:00`).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK");
+  return new Date(`${d}T00:00:00`).toLocaleDateString(lokalJazyka(jazyk));
 }
 
 function Stranka() {

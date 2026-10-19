@@ -36,7 +36,7 @@ import { getActiveProduct } from "@/lib/faktero/active-product";
 import { potvrd } from "@/lib/potvrdenie";
 import { mozePrenesenieDph } from "@/lib/faktero/predplatne-cena";
 import { formatujMenu } from "@/lib/faktero/mena";
-import { preloz, type Jazyk } from "@/lib/i18n/jazyk";
+import { preloz, type Jazyk, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 
 type ProductMode = "invoicing" | "logbook" | "both";
@@ -108,7 +108,7 @@ function NenajdenePredplatne() {
 function fmtDate(s: string | null | undefined, jazyk: Jazyk = "sk") {
   if (!s) return "—";
   try {
-    return new Date(s).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK");
+    return new Date(s).toLocaleDateString(lokalJazyka(jazyk));
   } catch {
     return "—";
   }

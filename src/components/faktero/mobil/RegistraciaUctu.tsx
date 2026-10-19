@@ -5,6 +5,7 @@ import { useOperacia } from "@/lib/mobile/server-most";
 import { SERVER } from "@/lib/mobile/operacie";
 import { adresaPotvrdenia, overRegistraciu } from "@/lib/mobile/registracia";
 import { odlozSuhlasy, zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
+import { TurnstileWidget, type StavCaptchy } from "@/components/faktero/TurnstileWidget";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { Logo } from "@/components/faktero/Logo";
 import { JE_KNIHA_JAZD } from "@/lib/mobile/apka";
@@ -32,7 +33,7 @@ export function RegistraciaUctu({
   onHotovo: () => void;
   onSpat: () => void;
 }) {
-  const { t } = usePreklad();
+  const { t, jazyk } = usePreklad();
   const [meno, setMeno] = useState("");
   const [email, setEmail] = useState("");
   const [heslo, setHeslo] = useState("");
@@ -43,6 +44,30 @@ export function RegistraciaUctu({
   const [posielamZnova, setPosielamZnova] = useState(false);
   const [overujem, setOverujem] = useState(false);
   const zapisSuhlasy = useOperacia("pravne-suhlasy");
+  const registraciaNaServeri = useOperacia<any>("registracia");
+  const nastavenie = useOperacia<{ siteKey: string | null }>("registracia-nastavenie");
+  /*
+    Captcha aj v appke. Vo WebView (pôvod capacitor://localhost, na Androide
+    https://localhost — hostname „localhost“ je vo widgete povolený) sa načítať
+    nemusí; vtedy sa registrácia pošle bez tokenu a server pre appku uplatní
+    prísnejší limit pokusov.
+  */
+  const [siteKey, setSiteKey] = useState<string | null | undefined>(undefined);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [stavCaptchy, setStavCaptchy] = useState<StavCaptchy>("nacitavam");
+  const [resetCaptchy, setResetCaptchy] = useState(0);
+  const nastavenieRef = useRef(nastavenie);
+  nastavenieRef.current = nastavenie;
+  useEffect(() => {
+    let zruseny = false;
+    nastavenieRef
+      .current({ data: {} })
+      .then((n) => !zruseny && setSiteKey(n?.siteKey ?? null))
+      .catch(() => !zruseny && setSiteKey(null));
+    return () => {
+      zruseny = true;
+    };
+  }, []);
 
   const presmerovanie = adresaPotvrdenia(
     Capacitor.isNativePlatform(),
@@ -53,28 +78,43 @@ export function RegistraciaUctu({
   async function registruj() {
     const chyba = overRegistraciu({ meno, email, heslo, podmienky, gdpr });
     if (chyba) return toast.error(t(chyba));
+    // Kým sa overenie ešte načítava, počká sa naň; keď zlyhalo, ide sa bez neho.
+    if (!captcha && stavCaptchy === "nacitavam" && siteKey !== null) {
+      return toast.error(t("reg.captchaCakaj"));
+    }
     setBusy(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password: heslo,
-        options: { emailRedirectTo: presmerovanie, data: { full_name: meno.trim() } },
+      /*
+        Účet zakladá server (rovnako ako na webe) — verejná registrácia
+        v Supabase sa tak dá vypnúť. Potvrdzovací e-mail pošle server.
+      */
+      const v = await registraciaNaServeri({
+        data: {
+          email: email.trim(),
+          heslo,
+          meno: meno.trim(),
+          jazyk,
+          token: captcha,
+          podmienky,
+          gdpr,
+        },
       });
-      if (error) throw new Error(prelozAuthChybu(error.message).sprava);
-
-      // Súhlas sa odloží vždy. Keď relácia je, zapíše sa hneď; keď účet čaká na
-      // potvrdenie e-mailu, zapíše sa pri prvom prihlásení — inak by sa
-      // nezaznamenal nikdy, hoci ho človek udelil.
-      odlozSuhlasy();
-      if (data.session) {
-        await zapisOdlozeneSuhlasy(zapisSuhlasy);
-        toast.success(t("reg.ucetJeVytvoreny"));
-        onHotovo();
-        return;
+      setResetCaptchy((x) => x + 1);
+      if (!v?.ok) {
+        // Hláška servera je po slovensky (ako hlášky prihlasovania); doplnia sa premenné.
+        let sprava: string = v?.sprava ?? t("reg.registraciaZlyhala");
+        for (const [k, x] of Object.entries(v?.parametre ?? {})) sprava = sprava.split(`{${k}}`).join(String(x));
+        throw new Error(sprava);
       }
+      if (!v.emailOdoslany) toast.error(t("reg.emailNeodisiel"));
+
+      // Súhlasy zapisuje server; keď sa to nepodarilo, odložia sa a zapíše
+      // ich prvé prihlásenie — inak by sa nezaznamenali nikdy.
+      if (!v.suhlasyZapisane) odlozSuhlasy();
       setCakaNaPotvrdenie(true);
     } catch (e: any) {
-      toast.error(e?.message ?? t("reg.registraciaZlyhala"));
+      setResetCaptchy((x) => x + 1);
+      toast.error(e?.message ? prelozAuthChybu(e.message).sprava : t("reg.registraciaZlyhala"));
     } finally {
       setBusy(false);
     }
@@ -265,6 +305,20 @@ export function RegistraciaUctu({
             </SOdkazom>
           </Suhlas>
         </div>
+
+        {siteKey !== undefined && (
+        <TurnstileWidget
+          siteKey={siteKey}
+          jazyk={jazyk}
+          akcia="registracia-apka"
+          onToken={setCaptcha}
+          onStav={setStavCaptchy}
+          reset={resetCaptchy}
+          popis={t("reg.captchaPopis")}
+          chybaNacitania={t("reg.captchaChyba")}
+          className="mt-4"
+        />
+        )}
 
         <button
           onClick={registruj}

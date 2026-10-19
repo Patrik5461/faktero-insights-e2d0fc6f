@@ -10,6 +10,7 @@ import { RIADKY_USTVA, ustvaNaCsv, type KzUstva } from "@/lib/faktero/ustva";
 import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { formatujCislo } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import {
   maSondervorauszahlung,
@@ -146,9 +147,9 @@ export function DeUstva() {
     },
     dauerfrist,
   );
-  const datum = (d: string) => datumNaDoklade(d, jazyk === "de" ? "de" : "sk");
+  const datum = (d: string) => datumNaDoklade(d, jazyk);
   const eur = (n: number | undefined) =>
-    n == null ? "" : `${formatujCislo(n, 2, 2, jazyk === "de" ? "de-DE" : "sk-SK")} €`;
+    n == null ? "" : `${formatujCislo(n, 2, 2, lokalJazyka(jazyk))} €`;
 
   function stiahniCsv() {
     if (!data?.ustva) return;

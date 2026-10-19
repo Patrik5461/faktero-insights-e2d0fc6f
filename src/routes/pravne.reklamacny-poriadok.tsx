@@ -5,6 +5,7 @@ import {
   LEGAL_UPDATED,
   LEGAL_COMPANY,
   DeUpozornenie,
+  CsUpozornenie,
 } from "@/components/faktero/LegalShell";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -31,7 +32,14 @@ function Page() {
   const { jazyk, t } = useT();
   return (
     <LegalShell title={t("Reklamačný poriadok")} updated={LEGAL_UPDATED} version={LEGAL_VERSION}>
-      {jazyk === "de" ? <De /> : <Sk />}
+      {jazyk === "de" ? (
+        <De />
+      ) : (
+        <>
+          {jazyk === "cs" && <CsUpozornenie />}
+          <Sk />
+        </>
+      )}
     </LegalShell>
   );
 }

@@ -3,7 +3,7 @@ import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { Calendar, Clock } from "lucide-react";
 import { postsByDate } from "@/lib/faktero/blog-content";
 import { BlogCover } from "@/components/faktero/BlogCover";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 
 export const Route = createFileRoute("/blog/")({
@@ -61,7 +61,7 @@ function BlogPage() {
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />
-                      {new Date(p.date).toLocaleDateString(jazyk === "de" ? "de-DE" : "sk-SK", {
+                      {new Date(p.date).toLocaleDateString(lokalJazyka(jazyk), {
                         day: "numeric",
                         month: "long",
                         year: "numeric",

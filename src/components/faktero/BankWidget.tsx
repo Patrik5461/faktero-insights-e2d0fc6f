@@ -4,6 +4,7 @@ import { Landmark, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { zostatkyPodlaMien, formatujSumu } from "@/lib/faktero/zostatky";
 
 export function BankWidget() {
@@ -69,7 +70,7 @@ export function BankWidget() {
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
             {t("Posledná synchronizácia:")}{" "}
-            {lastSync ? new Date(lastSync).toLocaleString(jazyk === "de" ? "de-DE" : "sk-SK") : t("nikdy")}
+            {lastSync ? new Date(lastSync).toLocaleString(lokalJazyka(jazyk)) : t("nikdy")}
           </div>
         </>
       )}
