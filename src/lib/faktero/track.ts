@@ -10,7 +10,8 @@ export type TrackEvent =
   | "contact_click"
   | "trial_start"
   | "faq_open"
-  | "floating_cta_click";
+  | "floating_cta_click"
+  | "faktura_zadarmo_click";
 
 export function track(event: TrackEvent, props?: Record<string, unknown>) {
   if (typeof window === "undefined") return;

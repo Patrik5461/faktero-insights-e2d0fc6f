@@ -530,6 +530,16 @@ function Hero() {
                 <Code2 className="h-4 w-4" /> {t("Pozrieť API")}
               </a>
             </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              {t("Potrebujete len jednu faktúru?")}{" "}
+              <Link
+                to="/faktura-zadarmo"
+                onClick={() => track("faktura_zadarmo_click", { source: "hero" })}
+                className="font-medium text-primary hover:underline"
+              >
+                {t("Vystavte ju zadarmo bez registrácie")} →
+              </Link>
+            </p>
             <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
               {["30 dní zdarma", "Bezpečné platby cez GoPay", "Zrušenie kedykoľvek"].map((x) => (
                 <li key={x} className="inline-flex items-center gap-1.5">

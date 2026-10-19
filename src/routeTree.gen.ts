@@ -19,6 +19,7 @@ import { Route as AppJazdyRouteImport } from './routes/app-jazdy'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as CennikRouteImport } from './routes/cennik'
 import { Route as EfakturaciaRouteImport } from './routes/efakturacia'
+import { Route as FakturaZadarmoRouteImport } from './routes/faktura-zadarmo'
 import { Route as FunkcieRouteImport } from './routes/funkcie'
 import { Route as KontaktRouteImport } from './routes/kontakt'
 import { Route as NoveHesloRouteImport } from './routes/nove-heslo'
@@ -380,6 +381,11 @@ const CennikRoute = CennikRouteImport.update({
 const EfakturaciaRoute = EfakturaciaRouteImport.update({
   id: '/efakturacia',
   path: '/efakturacia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FakturaZadarmoRoute = FakturaZadarmoRouteImport.update({
+  id: '/faktura-zadarmo',
+  path: '/faktura-zadarmo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FunkcieRoute = FunkcieRouteImport.update({
@@ -2099,6 +2105,7 @@ export interface FileRoutesByFullPath {
   '/blog': typeof BlogRouteWithChildren
   '/cennik': typeof CennikRoute
   '/efakturacia': typeof EfakturaciaRouteWithChildren
+  '/faktura-zadarmo': typeof FakturaZadarmoRoute
   '/funkcie': typeof FunkcieRouteWithChildren
   '/kontakt': typeof KontaktRoute
   '/nove-heslo': typeof NoveHesloRoute
@@ -2420,6 +2427,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/app-jazdy': typeof AppJazdyRoute
   '/cennik': typeof CennikRoute
+  '/faktura-zadarmo': typeof FakturaZadarmoRoute
   '/kontakt': typeof KontaktRoute
   '/nove-heslo': typeof NoveHesloRoute
   '/objednavka': typeof ObjednavkaRoute
@@ -2740,6 +2748,7 @@ export interface FileRoutesById {
   '/blog': typeof BlogRouteWithChildren
   '/cennik': typeof CennikRoute
   '/efakturacia': typeof EfakturaciaRouteWithChildren
+  '/faktura-zadarmo': typeof FakturaZadarmoRoute
   '/funkcie': typeof FunkcieRouteWithChildren
   '/kontakt': typeof KontaktRoute
   '/nove-heslo': typeof NoveHesloRoute
@@ -3066,6 +3075,7 @@ export interface FileRouteTypes {
     | '/blog'
     | '/cennik'
     | '/efakturacia'
+    | '/faktura-zadarmo'
     | '/funkcie'
     | '/kontakt'
     | '/nove-heslo'
@@ -3387,6 +3397,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app-jazdy'
     | '/cennik'
+    | '/faktura-zadarmo'
     | '/kontakt'
     | '/nove-heslo'
     | '/objednavka'
@@ -3706,6 +3717,7 @@ export interface FileRouteTypes {
     | '/blog'
     | '/cennik'
     | '/efakturacia'
+    | '/faktura-zadarmo'
     | '/funkcie'
     | '/kontakt'
     | '/nove-heslo'
@@ -4032,6 +4044,7 @@ export interface RootRouteChildren {
   BlogRoute: typeof BlogRouteWithChildren
   CennikRoute: typeof CennikRoute
   EfakturaciaRoute: typeof EfakturaciaRouteWithChildren
+  FakturaZadarmoRoute: typeof FakturaZadarmoRoute
   FunkcieRoute: typeof FunkcieRouteWithChildren
   KontaktRoute: typeof KontaktRoute
   NoveHesloRoute: typeof NoveHesloRoute
@@ -4231,6 +4244,13 @@ declare module '@tanstack/react-router' {
       path: '/efakturacia'
       fullPath: '/efakturacia'
       preLoaderRoute: typeof EfakturaciaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faktura-zadarmo': {
+      id: '/faktura-zadarmo'
+      path: '/faktura-zadarmo'
+      fullPath: '/faktura-zadarmo'
+      preLoaderRoute: typeof FakturaZadarmoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/funkcie': {
@@ -7066,6 +7086,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlogRoute: BlogRouteWithChildren,
   CennikRoute: CennikRoute,
   EfakturaciaRoute: EfakturaciaRouteWithChildren,
+  FakturaZadarmoRoute: FakturaZadarmoRoute,
   FunkcieRoute: FunkcieRouteWithChildren,
   KontaktRoute: KontaktRoute,
   NoveHesloRoute: NoveHesloRoute,

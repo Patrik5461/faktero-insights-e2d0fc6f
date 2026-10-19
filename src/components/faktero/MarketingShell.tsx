@@ -83,6 +83,9 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
               <Link to="/funkcie" className="hover:text-foreground">
                 {t("Funkcie")}
               </Link>
+              <Link to="/faktura-zadarmo" className="hover:text-foreground">
+                {t("Faktúra zadarmo")}
+              </Link>
               <Link to="/vyvojari" className="hover:text-foreground">
                 API
               </Link>

@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { setActiveCompanyId } from "@/lib/faktero/active-company";
 import { toast } from "sonner";
@@ -17,6 +19,14 @@ import { MENY } from "@/lib/faktero/mena";
 import { domacaMena } from "@/lib/faktero/kurzy";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import {
+  firmaZPrenosu,
+  nacitajPrenos,
+  zmazPrenos,
+  type FakturaZadarmo,
+} from "@/lib/faktero/faktura-zadarmo";
+import { vytvorKonceptZPrenosu } from "@/lib/faktero/faktura-zadarmo-prenos";
+import { vystavFakturuFn } from "@/lib/faktero/faktura-vystavenie.functions";
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Nastavenie firmy — Faktero") }],
@@ -45,6 +55,24 @@ function Onboarding() {
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  /*
+    Faktúra z verejnej stránky „Faktúra zadarmo“ (localStorage). Údaje
+    dodávateľa predvyplnia firmu; po založení z odberateľa bude kontakt
+    v adresári a z faktúry koncept.
+  */
+  const [prenos, setPrenos] = useState<FakturaZadarmo | null>(null);
+  const [prenosPouzity, setPrenosPouzity] = useState(false);
+  const [vytvoritKoncept, setVytvoritKoncept] = useState(true);
+  const vystav = useServerFn(vystavFakturuFn);
+  useEffect(() => {
+    setPrenos(nacitajPrenos());
+  }, []);
+
+  function pouziPrenos() {
+    if (!prenos) return;
+    setForm((f) => ({ ...f, ...firmaZPrenosu(prenos) }));
+    setPrenosPouzity(true);
+  }
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((f) => {
@@ -109,6 +137,22 @@ function Onboarding() {
       }
       setActiveCompanyId(companyId as string);
       toast.success(t("Firma vytvorená"));
+      let konceptId: string | null = null;
+      if (prenos && prenosPouzity) {
+        if (vytvoritKoncept) {
+          try {
+            konceptId = (await vytvorKonceptZPrenosu(prenos, companyId as string, vystav as any))
+              .invoiceId;
+            zmazPrenos();
+          } catch (e: any) {
+            // Firma už je; koncept sa dá vytvoriť z karty na nástenke.
+            console.warn("[onboarding] koncept z faktúry zadarmo", e?.message ?? e);
+            toast.error(t("Koncept faktúry sa nepodarilo vytvoriť — nájdete ho na nástenke."));
+          }
+        } else {
+          zmazPrenos();
+        }
+      }
       // Keď používateľ prišiel z objednávky s vybraným plánom, dokončíme, čo začal —
       // firmu už má, takže platba má kam patriť.
       let pendingPlan: string | null = null;
@@ -120,7 +164,11 @@ function Onboarding() {
       }
       // Hard reload so the authed layout re-reads memberships fresh.
       window.location.assign(
-        pendingPlan ? `/predplatne?plan=${encodeURIComponent(pendingPlan)}` : "/dashboard",
+        pendingPlan
+          ? `/predplatne?plan=${encodeURIComponent(pendingPlan)}`
+          : konceptId
+            ? `/faktury/${konceptId}`
+            : "/dashboard",
       );
     } catch (err: any) {
       const msg = err?.message ?? t("Nepodarilo sa vytvoriť firmu.");
@@ -140,6 +188,27 @@ function Onboarding() {
       <p className="mt-2 text-muted-foreground">
         {t("Tieto údaje sa zobrazia na faktúrach. Môžete ich kedykoľvek upraviť.")}
       </p>
+
+      {prenos && !prenosPouzity && (
+        <div className="mt-6 flex flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center">
+          <FileText className="hidden h-5 w-5 shrink-0 text-primary sm:block" />
+          <p className="min-w-0 flex-1 text-sm">
+            {t(
+              "Pred registráciou ste vytvorili faktúru za {firma}. Údaje dodávateľa môžeme použiť pre vašu firmu.",
+              {
+                firma: prenos.dodavatel.nazov,
+              },
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={pouziPrenos}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            {t("Použiť údaje z faktúry, ktorú ste vytvorili")}
+          </button>
+        </div>
+      )}
 
       <form
         onSubmit={onSubmit}
@@ -240,6 +309,31 @@ function Onboarding() {
             </select>
           </label>
         </div>
+
+        {prenos && prenosPouzity && (
+          <label className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={vytvoritKoncept}
+              onChange={(e) => setVytvoritKoncept(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              {t(
+                "Po založení firmy pridať odberateľa {odberatel} do adresára a faktúru {cislo} uložiť ako koncept.",
+                {
+                  odberatel: prenos.odberatel.nazov,
+                  cislo: prenos.cislo,
+                },
+              )}
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {t(
+                  "Koncept dostane číslo z vášho číselného radu. Pred vystavením ho môžete upraviť.",
+                )}
+              </span>
+            </span>
+          </label>
+        )}
 
         <button
           type="submit"

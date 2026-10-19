@@ -39,3 +39,39 @@ export function menoOdosielatela(v: unknown, predvolene = "Faktero"): string {
     .slice(0, 80);
   return s || predvolene;
 }
+
+/**
+ * Text od neprihláseného človeka (verejná „Faktúra zadarmo“) pred tlačou do
+ * PDF. Vyhodí riadiace znaky, znaky mimo základnej roviny Unicode (emoji —
+ * písmo dokladu ich nemá a pdf-lib by ich nakreslil ako štvorčeky) a znaky,
+ * ktoré otáčajú smer textu alebo sú neviditeľné (U+202E a spol. — nimi sa na
+ * doklade dá schovať iný IBAN či názov). Medzery zlúči a dĺžku oreže.
+ *
+ * `riadky: true` ponechá zalomenia riadkov (poznámka), najviac `maxRiadkov`.
+ */
+export function cistyText(
+  v: unknown,
+  max: number,
+  o: { riadky?: boolean; maxRiadkov?: number } = {},
+): string {
+  const s = String(v ?? "")
+    .normalize("NFC")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\u{10000}-\u{10FFFF}]/gu, "")
+    .replace(/[​-‏‪-‮⁠-⁩﻿￰-￿]/g, "")
+    .replace(/[\uD800-\uDFFF]/g, "");
+  const riadok = (r: string) =>
+    r
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  if (!o.riadky) return riadok(s).slice(0, max).trim();
+  return s
+    .split("\n")
+    .map(riadok)
+    .slice(0, o.maxRiadkov ?? 30)
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .slice(0, max)
+    .trim();
+}

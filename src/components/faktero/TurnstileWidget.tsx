@@ -83,7 +83,7 @@ export function TurnstileWidget({
   siteKey: string | null | undefined;
   jazyk: string;
   /** `action` — server ho porovnáva (`AKCIE_TURNSTILE`). */
-  akcia: "registracia" | "registracia-apka";
+  akcia: "registracia" | "registracia-apka" | "faktura-zadarmo";
   onToken: (token: string | null) => void;
   onStav?: (stav: StavCaptchy) => void;
   /** Zmena hodnoty widget resetuje (token je jednorazový). */

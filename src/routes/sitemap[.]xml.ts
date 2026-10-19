@@ -47,6 +47,8 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/kontakt", priority: 0.7 },
           { path: "/android", priority: 0.6 },
           { path: "/funkcie", priority: 0.7 },
+          // Verejný nástroj bez registrácie — vstupná stránka pre „faktúra zadarmo / vzor“.
+          { path: "/faktura-zadarmo", priority: 0.9 },
           { path: "/objednavka", priority: 0.7 },
           /*
             `/predplatne` tu zámerne nie je: je za prihlásením, takže robot
