@@ -12,7 +12,7 @@ import {
   MetaRiadok,
   PoTermine,
   SekundarnaAkcia,
-  SplitAkcia,
+  PrimarnaAkcia,
   StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
@@ -925,38 +925,41 @@ function InvoiceDetail() {
         }
         primaryAction={
           /*
-            Jedno hlavné tlačidlo: e-mail priamo, eFaktúra pod šípkou. eFaktúra
-            sa predtým ponúkala dvakrát (tlačidlo + ponuka) — tu je jedna
-            položka s podmienkami z ponuky, ktoré tlačidlo pokrývali celé.
+            Hlavné je odoslanie eFaktúrou, e-mail je vedľa ako obrysové tlačidlo.
+            Zálohová faktúra nie je daňový doklad — cez eFaktúru sa neposiela,
+            preto pri nej je hlavný e-mail a eFaktúra ostane vypnutá s vysvetlením.
           */
-          <SplitAkcia
-            ikona={Send}
-            label={t("Odoslať")}
-            title={t("Odoslať e-mailom")}
-            onClick={openEmail}
-            disabled={inv.status === "cancelled"}
-            menuLabel={t("Spôsob odoslania")}
-          >
-            <MenuAkcia ikona={Mail} onClick={openEmail} disabled={inv.status === "cancelled"}>
-              {t("E-mailom")}
-            </MenuAkcia>
-            {/* Zálohová faktúra nie je daňový doklad — cez eFaktúru sa neposiela. */}
-            <MenuAkcia
-              ikona={FileCheck2}
-              onClick={handleSendEfaktura}
-              disabled={efakturaOkno || inv.type === "proforma"}
-              title={
-                inv.type === "proforma"
-                  ? t("Zálohová faktúra nie je daňový doklad — pošlite ju e-mailom.")
-                  : undefined
-              }
-            >
-              {efakturaTest ? t("Ako eFaktúru (test)") : t("Ako eFaktúru")}
-            </MenuAkcia>
-          </SplitAkcia>
+          inv.type === "proforma" ? (
+            <PrimarnaAkcia onClick={openEmail} disabled={inv.status === "cancelled"}>
+              <Mail className="h-4 w-4" />
+              {t("Odoslať e-mailom")}
+            </PrimarnaAkcia>
+          ) : (
+            <PrimarnaAkcia onClick={handleSendEfaktura} disabled={efakturaOkno}>
+              <Send className="h-4 w-4" />
+              {efakturaTest ? t("Odoslať eFaktúru (test)") : t("Odoslať eFaktúru")}
+            </PrimarnaAkcia>
+          )
         }
         secondaryActions={
           <>
+            {inv.type === "proforma" ? (
+              <SekundarnaAkcia
+                ikona={FileCheck2}
+                label={t("eFaktúra")}
+                onClick={handleSendEfaktura}
+                disabled
+                title={t("Zálohová faktúra nie je daňový doklad — pošlite ju e-mailom.")}
+              />
+            ) : (
+              <SekundarnaAkcia
+                ikona={Mail}
+                label={t("E-mailom")}
+                title={t("Odoslať e-mailom")}
+                onClick={openEmail}
+                disabled={inv.status === "cancelled"}
+              />
+            )}
             <SekundarnaAkcia ikona={Eye} label={t("Náhľad")} onClick={handleNahlad} disabled={pdfBusy} />
             <SekundarnaAkcia
               ikona={inv.pdf_url ? Download : FileText}
