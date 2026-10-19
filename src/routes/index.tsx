@@ -1057,9 +1057,7 @@ function EFakturaSection() {
               {t("eFaktúra")} <span className="text-primary">{t("zadarmo")}</span>{" "}
               {t("v každom pláne")}
             </h2>
-            {/* Odosielanie beží proti testovacej prevádzke ePoštáka — ostrý kanál
-                zapneme pred 1.1.2027. Cenový sľub platí už dnes, tvrdiť ale, že
-                faktúry už dnes odchádzajú cez Peppol, by nebola pravda. */}
+            {/* Od 13. 10. 2026 beží odosielanie cez ePoštáka naostro. */}
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
               {t(
                 "Faktúry vo formáte eFaktúry pripraví Faktero za vás a odošle ich cez Peppol. Žiadna extra registrácia, žiadne skryté poplatky —",
@@ -1067,11 +1065,11 @@ function EFakturaSection() {
               <span className="font-semibold text-foreground">
                 {t("eFaktúra je zahrnutá v cene")}
               </span>
-              {t(". Kanál je v testovacej prevádzke a naostro ho zapneme pred termínom.")}
+              {t(". Odosielanie cez Peppol beží naostro od októbra 2026.")}
             </p>
             <ul className="mt-8 space-y-3 text-sm">
               {[
-                "Odoslanie cez sieť Peppol bez extra krokov — spúšťame pred 1.1.2027.",
+                "Odoslanie cez sieť Peppol bez extra krokov — s PDF faktúry a prílohami.",
                 "Žiadne poplatky za odoslanú eFaktúru, v každom pláne.",
                 "Strojovo čitateľný XML formát (UBL 2.1) namiesto PDF prílohy.",
                 "Pripravené na povinnosť pre B2B a B2G od 1.1.2027.",
@@ -1307,20 +1305,43 @@ function ComparisonSection() {
     ine: boolean | string;
     manual: boolean | string;
   }> = [
+    // Overené proti SuperFaktúre 19. 10. 2026 — tvrdiť, že konkurencia nemá
+    // sklad, knihu jázd či bankové párovanie, by nebola pravda.
     { label: "REST API", faktero: true, ine: "Obmedzene", manual: false },
     { label: "Webhooky", faktero: true, ine: "Obmedzene", manual: false },
-    { label: "eFaktúra 2027 pripravenosť", faktero: true, ine: "Plánované", manual: false },
+    {
+      label: "eFaktúra bez poplatku za odoslanú faktúru",
+      faktero: true,
+      ine: "Často za poplatok",
+      manual: false,
+    },
+    {
+      label: "Výkazy k DPH (priznanie, kontrolný a súhrnný výkaz)",
+      faktero: true,
+      ine: "Obmedzene",
+      manual: false,
+    },
+    {
+      label: "Zaúčtovanie a export do Pohody s predkontáciou",
+      faktero: true,
+      ine: "Obmedzene",
+      manual: false,
+    },
     { label: "Opakované faktúry", faktero: true, ine: true, manual: false },
     { label: "QR platba na faktúre", faktero: true, ine: true, manual: false },
-    { label: "FinStat integrácia", faktero: true, ine: false, manual: false },
-    { label: "Bankové párovanie", faktero: true, ine: "Obmedzene", manual: false },
+    { label: "Bankové párovanie", faktero: true, ine: true, manual: false },
     { label: "Prijaté faktúry", faktero: true, ine: true, manual: false },
-    // Na iPhone je appka v App Store; Android ešte nie, tak ho nesľubujeme ako hotový.
-    { label: "Mobilná aplikácia", faktero: "iPhone", ine: "Rôzne", manual: false },
-    { label: "Upomienky po splatnosti", faktero: true, ine: "Obmedzene", manual: false },
+    { label: "Mobilná aplikácia", faktero: "iPhone, Android", ine: "Rôzne", manual: false },
+    { label: "Upomienky po splatnosti", faktero: true, ine: true, manual: false },
     { label: "Schvaľovanie faktúr zákazníkom", faktero: true, ine: false, manual: false },
-    { label: "Skladové hospodárstvo", faktero: true, ine: false, manual: false },
-    { label: "Kniha jázd + Commander GPS", faktero: true, ine: false, manual: false },
+    { label: "Skladové hospodárstvo", faktero: true, ine: true, manual: false },
+    {
+      label: "Kniha jázd s GPS a automatickým rozpoznaním jazdy",
+      faktero: true,
+      ine: "Bez GPS",
+      manual: false,
+    },
+    { label: "Zákazky, leasingy a úvery", faktero: true, ine: false, manual: false },
   ];
   const cell = (v: boolean | string) => {
     if (v === true) return <CheckCircle2 className="mx-auto h-5 w-5 text-primary" />;

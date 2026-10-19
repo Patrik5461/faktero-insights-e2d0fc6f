@@ -91,7 +91,7 @@ const LOGBOOK_PLANS = [
 const FAQ = [
   {
     q: "Koľko stojí odoslanie eFaktúry?",
-    a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero a nikdy si za odoslanú faktúru nepripočítame poplatok. Odosielací kanál je zatiaľ v testovacej prevádzke; naostro ho zapneme pred termínom 1.1.2027.",
+    a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero a nikdy si za odoslanú faktúru nepripočítame poplatok. Odosielanie cez Peppol beží naostro od októbra 2026, pred povinnosťou od 1.1.2027.",
   },
   {
     q: "Je naozaj 30 dní zdarma bez karty?",
