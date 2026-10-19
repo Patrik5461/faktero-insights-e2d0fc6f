@@ -74,6 +74,27 @@ ${contact}
   </cac:${role}>`;
 }
 
+/**
+ * BG-24 — prílohy. V UBL 2.1 Invoice ide AdditionalDocumentReference za
+ * BillingReference (a Despatch/Receipt/Statement/Originator/Contract, ktoré
+ * Faktero nepíše) a pred ProjectReference/AccountingSupplierParty; v CreditNote
+ * za BillingReference/ContractDocumentReference a pred Statement/Originator.
+ * Obe poradia splní miesto hneď za BillingReference.
+ */
+export function prilohyXml(inv: Pick<EN16931Invoice, "prilohy">): string {
+  return (inv.prilohy ?? [])
+    .map(
+      (p) => `  <cac:AdditionalDocumentReference>
+    <cbc:ID>${esc(p.id)}</cbc:ID>
+${p.popis ? `    <cbc:DocumentDescription>${esc(p.popis)}</cbc:DocumentDescription>\n` : ""}    <cac:Attachment>
+      <cbc:EmbeddedDocumentBinaryObject mimeCode="${esc(p.mime)}" filename="${esc(p.nazov)}">${p.obsah}</cbc:EmbeddedDocumentBinaryObject>
+    </cac:Attachment>
+  </cac:AdditionalDocumentReference>
+`,
+    )
+    .join("");
+}
+
 export function validate(inv: EN16931Invoice): XmlGenerationResult["validationErrors"] {
   const errors: XmlGenerationResult["validationErrors"] = [];
   const need = (cond: boolean, code: string, message: string, path?: string) => {
@@ -211,7 +232,7 @@ ${inv.buyerReference ? `  <cbc:BuyerReference>${esc(inv.buyerReference)}</cbc:Bu
 ${inv.precedingInvoice.issueDate ? `      <cbc:IssueDate>${esc(inv.precedingInvoice.issueDate)}</cbc:IssueDate>\n` : ""}    </cac:InvoiceDocumentReference>
   </cac:BillingReference>\n`
       : ""
-  }${partyXml(inv.seller, "AccountingSupplierParty")}
+  }${prilohyXml(inv)}${partyXml(inv.seller, "AccountingSupplierParty")}
 ${partyXml(inv.buyer, "AccountingCustomerParty")}
 ${deliveryXml}
 ${paymentXml}

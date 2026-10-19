@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
+import { OdoslanieEfakturyOkno } from "@/components/faktero/OdoslanieEfakturyOkno";
 import { Oprava25aPanel } from "@/components/faktero/Oprava25aPanel";
 import { ZauctovanieVystavenejPanel } from "@/components/faktero/ZauctovanieVystavenejPanel";
 import { ZasielkovnaFaktury } from "@/components/faktero/ZasielkovnaFaktury";
@@ -60,7 +61,6 @@ import {
   generateEfakturaXmlFn,
   getEfakturaXmlUrlFn,
   getInvoiceEfakturaDocFn,
-  posliEfakturuFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
 import {
   deriveEfakturaUiStatus,
@@ -223,41 +223,30 @@ function InvoiceDetail() {
     }
   }
   const genXml = useServerFn(generateEfakturaXmlFn);
-  const posliEfakturu = useServerFn(posliEfakturuFn);
-  const [efakturaBusy, setEfakturaBusy] = useState(false);
   const efakturaTest = useEfakturaTestovaciRezim();
 
   /**
-   * Odoslanie faktúry cez Peppol.
-   *
-   * XML sa v prípade potreby vygeneruje samo — človek, ktorý chce faktúru
-   * poslať, nemá dôvod vedieť, že najprv musí kliknúť na „Vygenerovať".
+   * Odoslanie faktúry cez Peppol — okno s potvrdením, PDF faktúry a výberom
+   * príloh dokladu (BG-24). XML ePošták vyrobí sám z údajov faktúry.
    */
-  async function handleSendEfaktura() {
+  const [efakturaOkno, setEfakturaOkno] = useState(false);
+  function handleSendEfaktura() {
     if (!inv?.company_id) return;
-    /* V testovacom režime doklad do siete Peppol nejde — potvrdenie aj hláška
-       to musia povedať, inak človek verí, že odberateľ faktúru dostal. */
-    const otazka = efakturaTest
-      ? t("eFaktúra beží v TESTOVACOM režime.\n\nFaktúra {cislo} odíde len do skúšobného prostredia — odberateľovi nepríde nič. Pošlite mu ju aj e-mailom.\n\nPokračovať v skúšobnom odoslaní?", { cislo: inv.invoice_number ?? "" })
-      : t("Odoslať faktúru {cislo} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.", { cislo: inv.invoice_number ?? "" });
-    if (!(await potvrd(otazka))) return;
-    setEfakturaBusy(true);
-    try {
-      const r: any = await posliEfakturu({ data: { company_id: inv.company_id, invoice_id: id } });
-      if (efakturaTest) {
-        toast.warning(t("Odoslané len do testovacieho prostredia — odberateľovi nepríde."), {
-          duration: 10000,
-        });
-      } else {
-        toast.success(t("Odoslané cez eFaktúru — stav {stav}.", { stav: r.status }));
-      }
-      efakturaQuery.refetch();
-      dorucenieQuery.refetch();
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setEfakturaBusy(false);
+    setEfakturaOkno(true);
+  }
+  function poOdoslaniEfaktury(r: { status: string }) {
+    setEfakturaOkno(false);
+    /* V testovacom režime doklad do siete Peppol nejde — hláška to musí
+       povedať, inak človek verí, že odberateľ faktúru dostal. */
+    if (efakturaTest) {
+      toast.warning(t("Odoslané len do testovacieho prostredia — odberateľovi nepríde."), {
+        duration: 10000,
+      });
+    } else {
+      toast.success(t("Odoslané cez eFaktúru — stav {stav}.", { stav: r.status }));
     }
+    efakturaQuery.refetch();
+    dorucenieQuery.refetch();
   }
   const getXml = useServerFn(getEfakturaXmlUrlFn);
   const getDocFn = useServerFn(getInvoiceEfakturaDocFn);
@@ -940,15 +929,11 @@ function InvoiceDetail() {
               ) : (
                 <button
                   onClick={handleSendEfaktura}
-                  disabled={efakturaBusy}
+                  disabled={efakturaOkno}
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
                   <Send className="h-4 w-4" />
-                  {efakturaBusy
-                    ? t("Odosielam…")
-                    : efakturaTest
-                      ? t("Odoslať eFaktúru (test)")
-                      : t("Odoslať eFaktúru")}
+                  {efakturaTest ? t("Odoslať eFaktúru (test)") : t("Odoslať eFaktúru")}
                 </button>
               ))}
             <button
@@ -1121,7 +1106,7 @@ function InvoiceDetail() {
                 */}
                 <DropdownMenuItem
                   onClick={handleSendEfaktura}
-                  disabled={efakturaBusy || inv.type === "proforma"}
+                  disabled={efakturaOkno || inv.type === "proforma"}
                   title={
                     inv.type === "proforma"
                       ? t("Zálohová faktúra nie je daňový doklad — pošlite ju e-mailom.")
@@ -1129,11 +1114,7 @@ function InvoiceDetail() {
                   }
                 >
                   <Send className="mr-2 h-4 w-4" />
-                  {efakturaBusy
-                    ? t("Odosielam…")
-                    : efakturaTest
-                      ? t("Odoslať cez eFaktúru (test)")
-                      : t("Odoslať cez eFaktúru")}
+                  {efakturaTest ? t("Odoslať cez eFaktúru (test)") : t("Odoslať cez eFaktúru")}
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
@@ -1681,6 +1662,16 @@ function InvoiceDetail() {
           </aside>
         </div>
       </PageBody>
+      {efakturaOkno && inv?.company_id && (
+        <OdoslanieEfakturyOkno
+          companyId={inv.company_id}
+          invoiceId={id}
+          cislo={inv.invoice_number ?? ""}
+          test={efakturaTest}
+          onClose={() => setEfakturaOkno(false)}
+          onOdoslane={poOdoslaniEfaktury}
+        />
+      )}
       {emailOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"

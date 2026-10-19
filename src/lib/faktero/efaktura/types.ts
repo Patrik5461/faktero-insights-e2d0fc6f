@@ -77,6 +77,11 @@ export type EN16931Invoice = {
     payableAmount: number;
   };
   note?: string;
+  /**
+   * BG-24 — prílohy (`cac:AdditionalDocumentReference`): PDF faktúry a ďalšie
+   * podklady. `obsah` je base64 bez `data:` prefixu.
+   */
+  prilohy?: { id: string; popis?: string | null; mime: string; nazov: string; obsah: string }[];
 };
 
 export type EN16931Party = {

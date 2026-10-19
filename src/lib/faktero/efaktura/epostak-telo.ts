@@ -60,6 +60,16 @@ export type DokladNaOdoslanie = {
    */
   zalohy?: OdpocetZalohy[] | null;
   polozky: PolozkaNaOdoslanie[];
+  /** Prílohy (BG-24) — PDF faktúry prvé; pripravené cez `prilohy-efaktury`. */
+  prilohy?: PrilohaNaOdoslanie[] | null;
+};
+
+/** Príloha v tvare `DocumentAttachment` ePoštáka — obsah base64 bez `data:`. */
+export type PrilohaNaOdoslanie = {
+  fileName: string;
+  mimeType: string;
+  content: string;
+  description?: string | null;
 };
 
 import type { OdpocetZalohy } from "../zalohy-odpocty";
@@ -168,6 +178,14 @@ export function teloOdoslania(d: DokladNaOdoslanie): Record<string, unknown> {
   if (dobropis || d.druh === "debit_note") body.precedingInvoiceRef = String(d.povodneCislo).trim();
   if (d.zlavaDokladuPercent && d.zlavaDokladuPercent > 0) {
     body.documentDiscountPercent = r6(Math.min(d.zlavaDokladuPercent, 100));
+  }
+  if (d.prilohy?.length) {
+    body.attachments = d.prilohy.map((a) => ({
+      fileName: a.fileName.slice(0, 255),
+      mimeType: a.mimeType,
+      content: a.content,
+      ...(a.description ? { description: a.description } : {}),
+    }));
   }
   if (!dobropis && d.druh !== "advance_payment") {
     const prepayments = zalohyNaOdoslanie(d.zalohy);

@@ -217,6 +217,11 @@ export type SendEfakturaResult = {
 export async function sendEfaktura(
   invoiceId: string,
   firmEpostakId: string,
+  /**
+   * Prílohy (BG-24). Bez volieb ide PDF faktúry vždy — aj z automatických
+   * ciest; vlastné prílohy dokladu len vybrané v okne odoslania.
+   */
+  volbyPriloh: import("./prilohy-efaktury.server").VolbyPriloh = {},
 ): Promise<SendEfakturaResult> {
   // 1) Load invoice + items + company
   const { data: invoice, error: invErr } = await supabaseAdmin
@@ -295,6 +300,8 @@ export async function sendEfaktura(
   const zakladPredZlavou = (items ?? []).reduce((s: number, it: any) => s + Number(it.subtotal ?? 0), 0);
   const { nacitajOdpocty } = await import("../zalohy-odpocty.server");
   const zalohy = (await nacitajOdpocty(supabaseAdmin, invoice.company_id, [invoiceId]))[invoiceId] ?? null;
+  const { pripravPrilohyEfaktury, odtlacokTela } = await import("./prilohy-efaktury.server");
+  const prilohy = await pripravPrilohyEfaktury(invoice as any, company as any, volbyPriloh);
 
   const body = teloOdoslania({
     druh,
@@ -328,6 +335,7 @@ export async function sendEfaktura(
       colny_kod: it.colny_kod ?? null,
       prenesenie: Boolean(it.prenesenie),
     })),
+    prilohy,
   });
 
   const response = await epostakFetch<{
@@ -344,8 +352,9 @@ export async function sendEfaktura(
       kde mu ho mohla zabrať iná firma s tými istými údajmi, a kľúč po zlyhanej
       požiadavke ostal „v spracovaní" — opravenú faktúru už nepustil. Preto ID
       faktúry a odtlačok obsahu: rovnaká požiadavka má rovnaký kľúč, opravená nový.
+      Prílohy vstupujú do odtlačku hashom obsahu — iný výber príloh je iná požiadavka.
     */
-    idempotencyKey: `${invoice.id}:${createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 16)}`,
+    idempotencyKey: `${invoice.id}:${odtlacokTela(body)}`,
     body,
   });
 

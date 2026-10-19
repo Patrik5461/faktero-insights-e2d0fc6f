@@ -30,24 +30,94 @@ const num = (v: any): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
-/** Priložené PDF z eFaktúry, ak ho odosielateľ poslal. */
-export function prilozenePdf(xml: string): Uint8Array | null {
+export type PrilohaEfaktury = {
+  /** Poradie v XML — podľa neho sa príloha sťahuje. */
+  index: number;
+  id: string | null;
+  nazov: string;
+  mime: string | null;
+  popis: string | null;
+  /** Veľkosť po dekódovaní; `null` pri odkaze na externú adresu. */
+  velkost: number | null;
+  /** Externý odkaz (`ExternalReference/URI`), keď súbor nie je vložený. */
+  odkaz: string | null;
+};
+
+function surovePrilohy(xml: string): { meta: PrilohaEfaktury; b64: string | null }[] {
   try {
     const d = parser.parse(xml);
     const koren = d.Invoice ?? d.CreditNote;
-    for (const ref of pole(koren?.AdditionalDocumentReference)) {
+    return pole(koren?.AdditionalDocumentReference).map((ref: any, index: number) => {
       const obj = ref?.Attachment?.EmbeddedDocumentBinaryObject;
-      if (!obj) continue;
-      const mime = String(obj["@mimeCode"] ?? "").toLowerCase();
-      const meno = String(obj["@filename"] ?? "").toLowerCase();
-      if (mime !== "application/pdf" && !meno.endsWith(".pdf")) continue;
-      const b64 = txt(obj);
-      if (b64) return new Uint8Array(Buffer.from(b64.replace(/\s/g, ""), "base64"));
-    }
+      const b64 = obj ? (txt(obj)?.replace(/\s/g, "") ?? null) : null;
+      const id = txt(ref?.ID);
+      const nazov = obj ? String(obj["@filename"] ?? "").trim() : "";
+      return {
+        meta: {
+          index,
+          id,
+          nazov: nazov || id || `priloha-${index + 1}`,
+          mime: obj ? String(obj["@mimeCode"] ?? "").toLowerCase() || null : null,
+          popis: pole(ref?.DocumentDescription).map(txt).filter(Boolean).join(" ") || null,
+          velkost: b64
+            ? Math.floor((b64.length * 3) / 4) -
+              (b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0)
+            : null,
+          odkaz: txt(ref?.Attachment?.ExternalReference?.URI),
+        },
+        b64,
+      };
+    });
   } catch {
-    /* poškodené XML — náhľad sa skúsi vykresliť */
+    return [];
   }
-  return null;
+}
+
+/** Všetky prílohy eFaktúry (BG-24) — bez obsahu, na zoznam v rozhraní. */
+export function prilohyZXml(xml: string): PrilohaEfaktury[] {
+  return surovePrilohy(xml).map((p) => p.meta);
+}
+
+/** Obsah jednej prílohy podľa poradia; `null`, keď nie je vložená. */
+export function obsahPrilohy(
+  xml: string,
+  index: number,
+): { meta: PrilohaEfaktury; bajty: Uint8Array } | null {
+  const p = surovePrilohy(xml)[index];
+  if (!p?.b64) return null;
+  return { meta: p.meta, bajty: new Uint8Array(Buffer.from(p.b64, "base64")) };
+}
+
+const jePdf = (m: PrilohaEfaktury) =>
+  m.mime === "application/pdf" || m.nazov.toLowerCase().endsWith(".pdf");
+
+/**
+ * Priložené PDF faktúry, ak ho odosielateľ poslal.
+ *
+ * Pri viacerých prílohách nemusí byť PDF faktúry prvé — výkaz prác alebo
+ * dodací list býva tiež PDF. Prednosť má PDF, ktoré sa k faktúre hlási
+ * (číslo dokladu, „faktúra/invoice/Rechnung" v názve alebo popise); inak prvé.
+ */
+export function prilozenePdf(xml: string): Uint8Array | null {
+  const vsetky = surovePrilohy(xml).filter((p) => p.b64 && jePdf(p.meta));
+  if (!vsetky.length) return null;
+  let cislo = "";
+  try {
+    const d = parser.parse(xml);
+    cislo = String(txt((d.Invoice ?? d.CreditNote)?.ID) ?? "").toLowerCase();
+  } catch {
+    /* bez čísla */
+  }
+  const hlasiSa = (m: PrilohaEfaktury) => {
+    const t = `${m.nazov} ${m.popis ?? ""} ${m.id ?? ""}`.toLowerCase();
+    const bezZnakov = (x: string) => x.replace(/[^a-z0-9]/g, "");
+    return (
+      (cislo && bezZnakov(t).includes(bezZnakov(cislo))) ||
+      /fakt|invoice|rechnung|számla|szamla|dobropis|credit/.test(t)
+    );
+  };
+  const vybrane = vsetky.find((p) => hlasiSa(p.meta)) ?? vsetky[0]!;
+  return new Uint8Array(Buffer.from(vybrane.b64!, "base64"));
 }
 
 function strana(party: any) {

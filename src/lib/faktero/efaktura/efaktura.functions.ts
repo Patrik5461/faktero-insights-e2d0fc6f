@@ -195,6 +195,31 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
       zalohy,
     });
     const result = generatePeppolBisXml(dto);
+    /*
+      PDF faktúry ako príloha (BG-24) — to isté PDF, ktoré pri odoslaní
+      priloží ePošták. Do súboru na stiahnutie ide s PDF; v `xml_payload`
+      ostáva XML bez base64, inak by zoznam odoslaných ťahal všetky PDF naraz.
+    */
+    let xmlNaUlozenie = result.xml;
+    try {
+      const { pdfFakturyNaPrilohu } = await import("./prilohy-efaktury.server");
+      const pdf = await pdfFakturyNaPrilohu(invoice as any, company as any);
+      xmlNaUlozenie = generatePeppolBisXml({
+        ...dto,
+        prilohy: [
+          {
+            // Ako ePošták: ID prílohy je názov súboru.
+            id: pdf.nazov,
+            popis: pdf.popis,
+            mime: "application/pdf",
+            nazov: pdf.nazov,
+            obsah: pdf.bajty.toString("base64"),
+          },
+        ],
+      }).xml;
+    } catch (e) {
+      console.warn("[efaktura] PDF sa do XML nepriložilo:", String((e as Error)?.message ?? e));
+    }
 
     // Extra Faktero-side validation (basic completeness).
     const extra: { code: string; message: string }[] = [];
@@ -228,7 +253,7 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const upload = await supabaseAdmin.storage
       .from("efaktura-xml")
-      .upload(storagePath, new Blob([result.xml], { type: "application/xml" }), {
+      .upload(storagePath, new Blob([xmlNaUlozenie], { type: "application/xml" }), {
         upsert: true,
         contentType: "application/xml",
       });
@@ -457,9 +482,24 @@ export const overPrijemcuFn = createServerFn({ method: "POST" })
 export const posliEfakturuFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => {
-    const v = d as { company_id?: string; invoice_id?: string };
+    const v = d as {
+      company_id?: string;
+      invoice_id?: string;
+      s_pdf?: boolean;
+      prilohy?: unknown;
+    };
     if (!v?.company_id || !v?.invoice_id) throw new Error("Chýba company_id alebo invoice_id.");
-    return { company_id: v.company_id, invoice_id: v.invoice_id };
+    const prilohy = Array.isArray(v.prilohy) ? v.prilohy : [];
+    if (prilohy.length > 20 || prilohy.some((x) => typeof x !== "string" || !/^[0-9a-f-]{36}$/i.test(x))) {
+      throw new Error("Neplatný zoznam príloh.");
+    }
+    return {
+      company_id: v.company_id,
+      invoice_id: v.invoice_id,
+      // Bez voľby ide PDF faktúry vždy (staré volania, iné obrazovky).
+      s_pdf: v.s_pdf !== false,
+      prilohy: prilohy as string[],
+    };
   })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as { supabase: Sb; userId: string };
@@ -484,7 +524,10 @@ export const posliEfakturuFn = createServerFn({ method: "POST" })
     }
 
     const { sendEfaktura } = await import("./epostak.server");
-    const vysledok = await sendEfaktura(data.invoice_id, profil.epostak_firm_id);
+    const vysledok = await sendEfaktura(data.invoice_id, profil.epostak_firm_id, {
+      sPdf: data.s_pdf,
+      prilohyIds: data.prilohy,
+    });
     // Surová odpoveď poskytovateľa sa neposiela do stránky — je uložená
     // v `efaktura_deliveries.raw_response` a v prehliadači nemá čo robiť.
     return { documentId: vysledok.documentId, status: vysledok.status };
@@ -733,5 +776,61 @@ export const nahladPrijatejEfakturyFn = createServerFn({ method: "POST" })
       pdf: Buffer.from(bajty).toString("base64"),
       prilozene,
       nazov: `efaktura-${String(doklad.document_number ?? data.received_id).replace(/[^\w.-]+/g, "_")}.pdf`,
+    };
+  });
+
+/**
+ * Prílohy prijatej eFaktúry (BG-24) — zoznam bez obsahu. Dáta sú v uloženom
+ * XML; okrem PDF faktúry tam býva výkaz prác, dodací list či tabuľka.
+ */
+export const prilohyPrijatejEfakturyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string; received_id?: string };
+    if (!v?.company_id || !v?.received_id) throw new Error("Chýba company_id alebo received_id.");
+    return { company_id: v.company_id, received_id: v.received_id };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+    const { data: doklad } = await supabase
+      .from("efaktura_received_documents")
+      .select("xml_payload")
+      .eq("id", data.received_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!doklad?.xml_payload) return { prilohy: [] };
+    const { prilohyZXml } = await import("./nahlad.server");
+    return { prilohy: prilohyZXml(String(doklad.xml_payload)) };
+  });
+
+/** Jedna príloha prijatej eFaktúry na stiahnutie (base64). */
+export const prilohaPrijatejEfakturyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string; received_id?: string; index?: unknown };
+    const index = Number(v?.index);
+    if (!v?.company_id || !v?.received_id || !Number.isInteger(index) || index < 0) {
+      throw new Error("Chýba company_id, received_id alebo poradie prílohy.");
+    }
+    return { company_id: v.company_id, received_id: v.received_id, index };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+    const { data: doklad } = await supabase
+      .from("efaktura_received_documents")
+      .select("xml_payload")
+      .eq("id", data.received_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!doklad?.xml_payload) throw new Error("eFaktúra nemá uložené XML.");
+    const { obsahPrilohy } = await import("./nahlad.server");
+    const p = obsahPrilohy(String(doklad.xml_payload), data.index);
+    if (!p) throw new Error("Táto príloha nie je vložená v eFaktúre — je len odkazom na externú adresu.");
+    return {
+      nazov: p.meta.nazov.replace(/[\\/:*?"<>|]+/g, "_"),
+      mime: p.meta.mime ?? "application/octet-stream",
+      obsah: Buffer.from(p.bajty).toString("base64"),
     };
   });

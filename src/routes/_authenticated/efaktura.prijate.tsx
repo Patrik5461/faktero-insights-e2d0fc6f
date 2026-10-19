@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Inbox, RefreshCw, FileInput, ExternalLink, Eye, Download, X } from "lucide-react";
+import { Inbox, RefreshCw, FileInput, ExternalLink, Eye, Download, X, Paperclip } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -13,10 +13,14 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import {
   listPrijateEfakturyFn,
   nahladPrijatejEfakturyFn,
+  prilohaPrijatejEfakturyFn,
+  prilohyPrijatejEfakturyFn,
   stiahniPrijateEfakturyFn,
   zaevidujPrijatuEfakturuFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { velkost } from "@/lib/faktero/faktura-prilohy";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 
 export const Route = createFileRoute("/_authenticated/efaktura/prijate")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté eFaktúry — Faktero") }] }),
@@ -41,6 +45,132 @@ function StavDokladu({ stav }: { stav: string | null }) {
 
 type Nahlad = { url: string; nazov: string; prilozene: boolean };
 
+type PrilohaPrijatej = {
+  index: number;
+  nazov: string;
+  mime: string | null;
+  popis: string | null;
+  velkost: number | null;
+  odkaz: string | null;
+};
+
+/**
+ * Prílohy prijatej eFaktúry (BG-24) — PDF faktúry, výkazy, dodacie listy.
+ * Sú len v uloženom XML, tak sa načítajú až po otvorení okna.
+ */
+function PrilohyPrijatejOkno({
+  companyId,
+  receivedId,
+  cislo,
+  onClose,
+}: {
+  companyId: string;
+  receivedId: string;
+  cislo: string;
+  onClose: () => void;
+}) {
+  const { t } = useT();
+  const zoznamFn = useServerFn(prilohyPrijatejEfakturyFn);
+  const stiahniFn = useServerFn(prilohaPrijatejEfakturyFn);
+  const [prilohy, setPrilohy] = useState<PrilohaPrijatej[] | null>(null);
+  const [stahujem, setStahujem] = useState<number | null>(null);
+  useZatvorNaEscape(onClose);
+
+  useEffect(() => {
+    let zive = true;
+    zoznamFn({ data: { company_id: companyId, received_id: receivedId } })
+      .then((r: any) => zive && setPrilohy(r.prilohy as PrilohaPrijatej[]))
+      .catch((e) => {
+        if (!zive) return;
+        toast.error((e as Error).message);
+        setPrilohy([]);
+      });
+    return () => {
+      zive = false;
+    };
+  }, [companyId, receivedId]);
+
+  async function stiahni(p: PrilohaPrijatej) {
+    setStahujem(p.index);
+    try {
+      const r: any = await stiahniFn({
+        data: { company_id: companyId, received_id: receivedId, index: p.index },
+      });
+      const bajty = Uint8Array.from(atob(r.obsah), (c) => c.charCodeAt(0));
+      const url = URL.createObjectURL(new Blob([bajty], { type: r.mime }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = r.nazov;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setStahujem(null);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Prílohy eFaktúry")}
+        className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-lg font-semibold">
+            {t("Prílohy eFaktúry")} {cislo}
+          </h3>
+          <button onClick={onClose} aria-label={t("Zavrieť")} className="rounded-md p-1 hover:bg-secondary">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        {prilohy === null ? (
+          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
+        ) : prilohy.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("Dodávateľ k eFaktúre nič nepriložil.")}</p>
+        ) : (
+          <ul className="divide-y divide-border rounded-md border border-border">
+            {prilohy.map((p) => (
+              <li key={p.index} className="flex items-center justify-between gap-3 p-3 text-sm">
+                <div className="min-w-0">
+                  <div className="break-all font-medium">{p.nazov}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {[p.popis, p.mime, velkost(p.velkost)].filter(Boolean).join(" · ")}
+                  </div>
+                </div>
+                {p.velkost != null ? (
+                  <button
+                    onClick={() => stiahni(p)}
+                    disabled={stahujem === p.index}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+                  >
+                    <Download className="h-3.5 w-3.5" />{" "}
+                    {stahujem === p.index ? t("Sťahujem…") : t("Stiahnuť")}
+                  </button>
+                ) : p.odkaz && /^https?:\/\//i.test(p.odkaz) ? (
+                  <a
+                    href={p.odkaz}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť odkaz")}
+                  </a>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ReceivedPage() {
   const { t } = useT();
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -54,6 +184,7 @@ function ReceivedPage() {
   const nahladFn = useServerFn(nahladPrijatejEfakturyFn);
   const [nacitavamNahlad, setNacitavamNahlad] = useState<string | null>(null);
   const [nahlad, setNahlad] = useState<Nahlad | null>(null);
+  const [prilohyOkno, setPrilohyOkno] = useState<{ id: string; cislo: string } | null>(null);
 
   async function otvorNahlad(receivedId: string) {
     if (!companyId) return;
@@ -221,6 +352,12 @@ function ReceivedPage() {
                           <Eye className="h-3.5 w-3.5" />{" "}
                           {nacitavamNahlad === r.id ? t("Načítavam…") : t("Náhľad")}
                         </button>
+                        <button
+                          onClick={() => setPrilohyOkno({ id: r.id, cislo: r.document_number ?? "" })}
+                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                        >
+                          <Paperclip className="h-3.5 w-3.5" /> {t("Prílohy")}
+                        </button>
                         {r.matched_supplier_invoice_id ? (
                           <a
                             href={`/prijate-faktury/${r.matched_supplier_invoice_id}`}
@@ -247,6 +384,14 @@ function ReceivedPage() {
           </div>
         )}
       </PageBody>
+      {prilohyOkno && companyId && (
+        <PrilohyPrijatejOkno
+          companyId={companyId}
+          receivedId={prilohyOkno.id}
+          cislo={prilohyOkno.cislo}
+          onClose={() => setPrilohyOkno(null)}
+        />
+      )}
       {nahlad && (
         <NahladPdfOkno
           url={nahlad.url}

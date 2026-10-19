@@ -12,7 +12,6 @@ import {
   listEfakturaDocumentsFn,
   getEfakturaXmlUrlFn,
   generateEfakturaXmlFn,
-  posliEfakturuFn,
   listEfakturaDeliveriesFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
 import {
@@ -22,7 +21,8 @@ import {
   stavDorucenia,
   typDokladuEfaktury,
 } from "@/components/faktero/EfakturaStatusBadge";
-import { potvrd } from "@/lib/potvrdenie";
+import { OdoslanieEfakturyOkno } from "@/components/faktero/OdoslanieEfakturyOkno";
+import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 
 export const Route = createFileRoute("/_authenticated/efaktura/odoslane")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Odoslané eFaktúry — Faktero") }] }),
@@ -40,9 +40,8 @@ function SentPage() {
   const listFn = useServerFn(listEfakturaDocumentsFn);
   const getUrl = useServerFn(getEfakturaXmlUrlFn);
   const regen = useServerFn(generateEfakturaXmlFn);
-  const posli = useServerFn(posliEfakturuFn);
   const listDorucenia = useServerFn(listEfakturaDeliveriesFn);
-  const [odosielam, setOdosielam] = useState<string | null>(null);
+  const efakturaTest = useEfakturaTestovaciRezim();
 
   const q = useQuery({
     queryKey: ["efaktura-documents", companyId],
@@ -66,28 +65,17 @@ function SentPage() {
     if (!dorucenia.has(d.document_id)) dorucenia.set(d.document_id, d);
   }
 
-  async function odosli(invoiceId: string, cislo: string) {
+  /* Odoslanie ide cez to isté okno ako z detailu faktúry — PDF a prílohy. */
+  const [okno, setOkno] = useState<{ invoiceId: string; cislo: string } | null>(null);
+  function odosli(invoiceId: string, cislo: string) {
     if (!companyId) return;
-    if (
-      !(await potvrd(
-        t(
-          "Odoslať faktúru {cislo} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.",
-          { cislo },
-        ),
-      ))
-    )
-      return;
-    setOdosielam(invoiceId);
-    try {
-      const r: any = await posli({ data: { company_id: companyId, invoice_id: invoiceId } });
-      toast.success(t("Odoslané — stav: {stav}.", { stav: t(stavDorucenia(r.status)).toLowerCase() }));
-      q.refetch();
-      qd.refetch();
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setOdosielam(null);
-    }
+    setOkno({ invoiceId, cislo });
+  }
+  function poOdoslani(r: { status: string }) {
+    setOkno(null);
+    toast.success(t("Odoslané — stav: {stav}.", { stav: t(stavDorucenia(r.status)).toLowerCase() }));
+    q.refetch();
+    qd.refetch();
   }
 
   async function handleDownload(invoiceId: string) {
@@ -173,13 +161,13 @@ function SentPage() {
         </button>
         {/* Odoslanie je nevratné, tak je až za validáciou a pýta sa. */}
         <button
-          disabled={odosielam === row.invoice_id}
+          disabled={okno?.invoiceId === row.invoice_id}
           onClick={() =>
             row.invoice_id && odosli(row.invoice_id, row.document_number ?? row.invoice_id)
           }
           className={btn}
         >
-          <Send className="h-3.5 w-3.5" /> {odosielam === row.invoice_id ? t("Odosielam…") : t("Odoslať")}
+          <Send className="h-3.5 w-3.5" /> {t("Odoslať")}
         </button>
         <button
           onClick={() => row.invoice_id && handleDownload(row.invoice_id)}
@@ -292,6 +280,16 @@ function SentPage() {
           </table>
         </div>
       </PageBody>
+      {okno && companyId && (
+        <OdoslanieEfakturyOkno
+          companyId={companyId}
+          invoiceId={okno.invoiceId}
+          cislo={okno.cislo}
+          test={efakturaTest}
+          onClose={() => setOkno(null)}
+          onOdoslane={poOdoslani}
+        />
+      )}
     </>
   );
 }
