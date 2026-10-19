@@ -67,10 +67,10 @@ export const ANDROID_FAKTERO = apk(
 
 export const ANDROID_KNIHA_JAZD = apk(
   "Kniha jázd",
-  "1.0.2",
-  "kniha-jazd-1.0.2.apk",
-  7,
-  "6c0c5cce29584d037da617a273ce6ffe915ccedc827aa9f241adb9929a59f449",
+  "1.0.3",
+  "kniha-jazd-1.0.3.apk",
+  8,
+  "22a28113d75e396fdc855f4ed2a6b148dc8730ea28c7743aee266e5a4c46156e",
 );
 
 /** Odtlačok podpisového certifikátu — rovnaký pre obe appky. */
