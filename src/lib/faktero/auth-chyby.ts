@@ -56,6 +56,17 @@ export function prelozAuthChybu(surova: string | null | undefined): AuthChyba {
   if (n.includes("unable to validate email address") || n.includes("invalid email")) {
     return { sprava: "E-mailová adresa nie je platná.", nepotvrdeny: false };
   }
+  /*
+    Registráciu (alebo zmenu e-mailu) odmietol spúšťač v databáze — dnes je to
+    jednorazová e-mailová adresa. Supabase vráti len všeobecnú vetu.
+  */
+  if (n.includes("database error saving new user") || n.includes("database error updating user")) {
+    return {
+      sprava:
+        "Túto e-mailovú adresu nemožno použiť. Jednorazové (dočasné) adresy neprijímame — použite trvalú, napríklad firemnú. Ak ide o omyl, napíšte nám na podpora@faktero.sk.",
+      nepotvrdeny: false,
+    };
+  }
   // „For security purposes, you can only request this after 47 seconds."
   const sekundy = /after (\d+) seconds?/i.exec(t);
   if (sekundy) {

@@ -12,6 +12,8 @@ export type SendInvoiceEmailInput = {
   message?: string;
   /** Priložiť k mailu aj súbory, ktoré visia na doklade. */
   s_prilohami?: boolean;
+  /** Kto odosiela — pre strážcu odosielania; `null` pri verejnom API. */
+  user_id?: string | null;
 };
 
 function applyVars(s: string, inv: any, company: any) {
@@ -195,6 +197,12 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       text: finalPlain,
       html: bodyHtml,
       attachments: [{ filename: `${invoice.invoice_number}.pdf`, content: pdfB64 }, ...prilohy],
+      ochrana: {
+        userId: input.user_id ?? null,
+        druh: "faktura",
+        dokladId: invoice.id,
+        sprava: finalMessage,
+      },
     });
     const json = { id: odoslane.id };
     await supabaseAdmin

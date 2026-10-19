@@ -147,7 +147,7 @@ export function buildReminderContent({
     ${podpisHtml(company ?? {})}
   `;
 
-  return { subject, plain, html };
+  return { subject, plain, html, sprava: message };
 }
 
 /** Dátum prvej odoslanej upomienky k faktúre (ISO deň) — od nej beží omeškanie v DE. */
@@ -178,6 +178,8 @@ export type SendReminderInput = {
   overrideSubject?: string;
   overrideMessage?: string;
   triggeredBy?: "auto" | "manual";
+  /** Kto odosiela — pre strážcu odosielania; `null` pri automatických upomienkach. */
+  userId?: string | null;
 };
 
 export async function sendReminder(input: SendReminderInput) {
@@ -239,6 +241,7 @@ export async function sendReminder(input: SendReminderInput) {
   let providerId: string | null = null;
   let errorMessage: string | null = null;
   let status: "sent" | "failed" = "sent";
+  let zastavene = false;
   try {
     // Upomienka ide z vlastného SMTP firmy, keď ho má zapnutý.
     const { posliMailFirmy } = await import("./odoslanie-mailu.server");
@@ -250,11 +253,18 @@ export async function sendReminder(input: SendReminderInput) {
       reply_to: company?.email_reply_to || undefined,
       text: built.plain,
       html: built.html,
+      ochrana: {
+        userId: input.userId ?? null,
+        druh: "upomienka",
+        dokladId: invoice.id,
+        sprava: built.sprava,
+      },
     });
     providerId = r.id;
   } catch (e: any) {
     status = "failed";
     errorMessage = e?.message ?? "unknown";
+    zastavene = e?.name === "OdosielanieZastavene";
   }
 
   await supabaseAdmin.from("invoice_reminders").insert({
@@ -270,7 +280,10 @@ export async function sendReminder(input: SendReminderInput) {
     provider_message_id: providerId,
   });
 
-  if (status === "failed") throw new Error(`Odoslanie upomienky zlyhalo: ${errorMessage}`);
+  if (status === "failed")
+    throw new Error(
+      zastavene ? String(errorMessage) : `Odoslanie upomienky zlyhalo: ${errorMessage}`,
+    );
   return { ok: true, provider_message_id: providerId, recipient };
 }
 

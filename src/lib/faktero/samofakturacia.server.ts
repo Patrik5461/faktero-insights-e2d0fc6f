@@ -165,6 +165,8 @@ export async function posliDodavatelovi(opts: {
   komu: string;
   token: string;
   sprava?: string | null;
+  /** Kto odosiela — pre strážcu odosielania. */
+  userId?: string | null;
 }): Promise<void> {
   const { sf, komu, token } = opts;
   const { data: firma } = await supabaseAdmin
@@ -238,6 +240,12 @@ export async function posliDodavatelovi(opts: {
       text,
       html,
       attachments: [{ filename: fileName, content: Buffer.from(bytes).toString("base64") }],
+      ochrana: {
+        userId: opts.userId ?? null,
+        druh: "samofaktura",
+        dokladId: sf.id,
+        sprava,
+      },
     },
     sf.company_id,
   );

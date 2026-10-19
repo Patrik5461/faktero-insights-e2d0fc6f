@@ -350,7 +350,13 @@ export const odoslatSamofakturuFn = createServerFn({ method: "POST" })
 
     const { posliDodavatelovi } = await import("./samofakturacia.server");
     try {
-      await posliDodavatelovi({ sf, komu: data.email, token, sprava: data.sprava });
+      await posliDodavatelovi({
+        sf,
+        komu: data.email,
+        token,
+        sprava: data.sprava,
+        userId: context.userId,
+      });
     } catch (e) {
       // Nič neodišlo — stav vrátiť, nech faktúra netvrdí, že na niekoho čaká.
       await supabase

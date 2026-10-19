@@ -22,12 +22,14 @@ import {
   Gift,
   LifeBuoy,
   Send,
+  MailWarning,
 } from "lucide-react";
 
 const NAV = [
   { to: "/admin", label: "Prehľad", icon: LayoutDashboard, exact: true },
   { to: "/admin/podpora", label: "Podpora", icon: LifeBuoy },
   { to: "/admin/efaktura", label: "eFaktúra", icon: Send },
+  { to: "/admin/odosielanie", label: "Odosielanie e-mailov", icon: MailWarning },
   { to: "/admin/health", label: "Health check", icon: HeartPulse },
   { to: "/admin/companies", label: "Firmy", icon: Building2 },
   { to: "/admin/users", label: "Používatelia", icon: Users },

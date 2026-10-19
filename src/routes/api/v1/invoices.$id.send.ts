@@ -50,6 +50,9 @@ export const Route = createFileRoute("/api/v1/invoices/$id/send")({
             });
             return ok({ status: "sent", message_id: r.message_id });
           } catch (e: any) {
+            // Strážca odosielania (strop adresátov, podozrivý obsah, pozastavenie).
+            if (e?.name === "OdosielanieZastavene")
+              return err("sending_blocked", e.message, 429, { reason: e.dovod ?? null });
             return err("send_failed", e?.message ?? "Odoslanie zlyhalo.", 502);
           }
         });

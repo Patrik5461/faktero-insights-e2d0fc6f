@@ -68,7 +68,13 @@ export const posliOdovzdanieMailomFn = createServerFn({ method: "POST" })
     });
 
     const prijemca = (data.email || company.uctovnik_email || "").trim();
-    await posliBalikMailom({ company, balik, prijemca, poznamka: data.poznamka });
+    await posliBalikMailom({
+      company,
+      balik,
+      prijemca,
+      poznamka: data.poznamka,
+      userId: context.userId,
+    });
 
     // Adresa zadaná pri odosielaní sa zapamätá, aby ju človek nemusel písať
     // každý mesiac znovu — presne to sľubuje aj výzva v rozhraní.

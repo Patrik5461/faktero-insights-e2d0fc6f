@@ -2,10 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, PauseCircle, PlayCircle, UserCog } from "lucide-react";
+import { ArrowLeft, MailCheck, MailX, PauseCircle, PlayCircle, UserCog } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveDialog } from "@/components/faktero/ResponsiveDialog";
-import { getAdminCompany, suspendCompany, reactivateCompany } from "@/lib/faktero/admin.functions";
+import {
+  adminNastavOdosielanie,
+  getAdminCompany,
+  suspendCompany,
+  reactivateCompany,
+} from "@/lib/faktero/admin.functions";
+import { useT } from "@/lib/i18n/useT";
 import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/admin/companies/$id")({
@@ -38,6 +44,8 @@ function AdminCompanyDetailPage() {
   const fetchDetail = useServerFn(getAdminCompany);
   const doSuspend = useServerFn(suspendCompany);
   const doReactivate = useServerFn(reactivateCompany);
+  const doOdosielanie = useServerFn(adminNastavOdosielanie);
+  const { t } = useT();
 
   const [data, setData] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,6 +97,16 @@ function AdminCompanyDetailPage() {
       setNonce((n) => n + 1);
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba");
+    }
+  }
+
+  async function nastavOdosielanie(akcia: "overit" | "zrusit_overenie" | "pozastavit" | "obnovit") {
+    try {
+      await doOdosielanie({ data: { id, akcia } });
+      toast.success(t("Uložené"));
+      setNonce((n) => n + 1);
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Chyba"));
     }
   }
 
@@ -157,6 +175,58 @@ function AdminCompanyDetailPage() {
         }
       />
       <AdminPageBody>
+        <section className="mb-4 rounded-xl border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("Odosielanie e-mailov")}
+              </h2>
+              <p className="mt-1 text-sm">
+                {c.odosielanie_pozastavene
+                  ? t("Pozastavené od {kedy}", { kedy: fmtDateTime(c.odosielanie_pozastavene_at) })
+                  : c.odosielanie_overene
+                    ? t("Overená firma — stropy staršej firmy")
+                    : t("Bežné stropy podľa veku firmy")}
+                {c.odosielanie_pozastavene && c.odosielanie_pozastavene_dovod
+                  ? ` — ${c.odosielanie_pozastavene_dovod}`
+                  : ""}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {c.odosielanie_overene ? (
+                <button
+                  onClick={() => nastavOdosielanie("zrusit_overenie")}
+                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+                >
+                  <MailX className="h-4 w-4" /> {t("Zrušiť overenie")}
+                </button>
+              ) : (
+                <button
+                  onClick={() => nastavOdosielanie("overit")}
+                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+                >
+                  <MailCheck className="h-4 w-4" /> {t("Overiť odosielanie")}
+                </button>
+              )}
+              {c.odosielanie_pozastavene ? (
+                <button
+                  onClick={() => nastavOdosielanie("obnovit")}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                >
+                  <PlayCircle className="h-4 w-4" /> {t("Zrušiť pozastavenie")}
+                </button>
+              ) : (
+                <button
+                  onClick={() => nastavOdosielanie("pozastavit")}
+                  className="inline-flex items-center gap-2 rounded-md bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90"
+                >
+                  <PauseCircle className="h-4 w-4" /> {t("Pozastaviť odosielanie")}
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
         {isSuspended && (
           <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
             <strong>Pozastavená</strong> od {fmtDateTime(c.suspended_at)}

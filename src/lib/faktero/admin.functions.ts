@@ -291,6 +291,10 @@ export const getAdminCompany = createServerFn({ method: "POST" })
         created_at: c.created_at,
         suspended_at: c.suspended_at,
         suspended_reason: c.suspended_reason,
+        odosielanie_overene: !!c.odosielanie_overene,
+        odosielanie_pozastavene: !!c.odosielanie_pozastavene,
+        odosielanie_pozastavene_at: c.odosielanie_pozastavene_at ?? null,
+        odosielanie_pozastavene_dovod: c.odosielanie_pozastavene_dovod ?? null,
       },
       subscription: sub.data
         ? {
@@ -346,6 +350,100 @@ export const reactivateCompany = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (error) throw error;
     await logAudit(supabaseAdmin, context.userId, "reactivate_company", "company", data.id, {});
+    return { ok: true };
+  });
+
+// ── Odosielanie e-mailov (strážca) ──────────────────────────────────────
+/**
+ * Pozastavené firmy, zastavené pokusy a výstrahy strážcu odosielania
+ * (ochrana-odosielania.server.ts). Vidí každý admin platformy.
+ */
+export const listOdosielanieAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: { lenVystrahy?: boolean } | undefined) =>
+    z.object({ lenVystrahy: z.boolean().optional() }).parse(input ?? {}),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabaseAdmin, role } = await getAdmin(context);
+    const [pozastavene, overene, pokusy] = await Promise.all([
+      supabaseAdmin
+        .from("companies")
+        .select(
+          "id, name, ico, created_at, odosielanie_pozastavene_at, odosielanie_pozastavene_dovod",
+        )
+        .eq("odosielanie_pozastavene", true)
+        .order("odosielanie_pozastavene_at", { ascending: false })
+        .limit(200),
+      supabaseAdmin
+        .from("companies")
+        .select("id, name, ico")
+        .eq("odosielanie_overene", true)
+        .order("name")
+        .limit(500),
+      supabaseAdmin
+        .from("odosielanie_zablokovane")
+        .select(
+          "id, company_id, user_id, druh, dovod, detail, predmet, adresati_pocet, ukazka, len_vystraha, created_at",
+        )
+        .eq("len_vystraha", !!data.lenVystrahy)
+        .order("created_at", { ascending: false })
+        .limit(300),
+    ]);
+    if (pozastavene.error) throw new Error(pozastavene.error.message);
+    if (pokusy.error) throw new Error(pokusy.error.message);
+    const idFiriem = [...new Set((pokusy.data ?? []).map((p: any) => p.company_id))];
+    const { data: mena } = idFiriem.length
+      ? await supabaseAdmin.from("companies").select("id, name, ico").in("id", idFiriem)
+      : { data: [] as any[] };
+    const menoFirmy = new Map<string, any>(((mena as any) ?? []).map((c: any) => [c.id, c]));
+    return {
+      smieMenit: role === "superadmin",
+      pozastavene: pozastavene.data ?? [],
+      overene: overene.data ?? [],
+      pokusy: (pokusy.data ?? []).map((p: any) => ({
+        ...p,
+        firma: menoFirmy.get(p.company_id)?.name ?? null,
+        ico: menoFirmy.get(p.company_id)?.ico ?? null,
+      })),
+    };
+  });
+
+/** Overenie / pozastavenie odosielania firmy — len superadmin, zapisuje sa do auditu. */
+export const adminNastavOdosielanie = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: { id: string; akcia: string; dovod?: string }) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        akcia: z.enum(["overit", "zrusit_overenie", "pozastavit", "obnovit"]),
+        dovod: z.string().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabaseAdmin } = await getSuperadmin(context);
+    const teraz = new Date().toISOString();
+    const zmena =
+      data.akcia === "overit"
+        ? { odosielanie_overene: true }
+        : data.akcia === "zrusit_overenie"
+          ? { odosielanie_overene: false }
+          : data.akcia === "pozastavit"
+            ? {
+                odosielanie_pozastavene: true,
+                odosielanie_pozastavene_at: teraz,
+                odosielanie_pozastavene_dovod: `Admin: ${data.dovod?.trim() || "—"}`,
+              }
+            : {
+                odosielanie_pozastavene: false,
+                odosielanie_pozastavene_at: null,
+                odosielanie_pozastavene_dovod: null,
+              };
+    const { error } = await supabaseAdmin.from("companies").update(zmena).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    await logAudit(supabaseAdmin, context.userId, `odosielanie_${data.akcia}`, "company", data.id, {
+      dovod: data.dovod ?? null,
+    });
     return { ok: true };
   });
 

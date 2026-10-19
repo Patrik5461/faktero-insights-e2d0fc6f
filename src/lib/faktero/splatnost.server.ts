@@ -11,6 +11,8 @@ export async function posliOznamenieSplatnosti(v: {
   f: { company_id: string; invoice_number: string; due_date: string; total: number; currency: string; customer_email: string };
   nova: string;
   poznamka: string | null;
+  /** Kto odosiela — pre strážcu odosielania. */
+  userId?: string | null;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("Odosielanie e-mailov nie je nastavené.");
@@ -43,8 +45,11 @@ export async function posliOznamenieSplatnosti(v: {
         <p style="color:#6b7280;font-size:13px">Faktúra sa nemení — platí doklad, ktorý ste dostali, len s novým dátumom splatnosti.</p>
         <p>${escapeHtml(nazov)}</p>
       </div>`,
+      ochrana: { userId: v.userId ?? null, druh: "splatnost", sprava: v.poznamka ?? "" },
     });
-  } catch {
+  } catch (e: any) {
+    if (e?.name === "OdosielanieZastavene")
+      throw new Error(`Splatnosť je zmenená, ale e-mail odberateľovi neodišiel: ${e.message}`);
     throw new Error("Splatnosť je zmenená, ale e-mail odberateľovi sa nepodarilo odoslať.");
   }
 }

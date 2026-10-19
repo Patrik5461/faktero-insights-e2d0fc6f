@@ -47,6 +47,8 @@ export async function sendApprovalRequestEmail(params: {
   company: any;
   recipientEmail: string;
   token: string;
+  /** Kto žiadosť posiela — pre strážcu odosielania. */
+  userId?: string | null;
 }) {
   const { invoice, company, recipientEmail, token } = params;
   const link = `${baseUrl()}/schvalit/${token}`;
@@ -89,14 +91,31 @@ Odkaz je platný 7 dní.`;
     <p style="color:#6b7280;font-size:12px;margin-top:24px">Suma faktúry: <strong>${escapeHtml(total)}</strong></p>
   </div>`;
 
-  await sendMail({
-    to: recipientEmail,
-    subject,
-    html,
-    text,
-    from,
-    reply_to: company?.email_reply_to,
+  // Adresát aj text (šablóna firmy) sú v rukách firmy — rovnaký strážca ako pri faktúre.
+  const { strazOdoslanie } = await import("./ochrana-odosielania.server");
+  const povolenie = await strazOdoslanie({
+    companyId: company?.id ?? invoice.company_id,
+    userId: params.userId ?? null,
+    druh: "schvalenie",
+    dokladId: invoice.id,
+    adresati: [recipientEmail],
+    predmet: subject,
+    sprava: bodyText,
   });
+  try {
+    await sendMail({
+      to: recipientEmail,
+      subject,
+      html,
+      text,
+      from,
+      reply_to: company?.email_reply_to,
+    });
+    await povolenie.hotovo(true);
+  } catch (e) {
+    await povolenie.hotovo(false);
+    throw e;
+  }
 }
 
 export async function sendApprovalResultEmail(params: {

@@ -7,7 +7,23 @@
   neodoslaná — chyba sa zapíše k nastaveniu a firma ju uvidí v Nastaveniach.
 */
 
+import type { DruhMailu } from "./ochrana-odosielania.server";
+
 export type PrilohaMailu = { filename: string; content: string /* base64 */ };
+
+/**
+ * Údaje pre strážcu odosielania (ochrana-odosielania.server.ts). Povinné, aby
+ * sa nová cesta odosielania nedala pridať bez kontroly.
+ */
+export type OchranaMailu = {
+  /** Kto odosiela; `null` pre cron a verejné API. */
+  userId: string | null;
+  druh: DruhMailu;
+  /** Doklad, ku ktorému mail patrí (strop adresátov na doklad). */
+  dokladId?: string | null;
+  /** Vlastný text správy bez podpisu a tlačidiel Faktera; inak sa vezme `text`. */
+  sprava?: string | null;
+};
 
 export type MailFirmy = {
   /** Odosielateľ pre Resend, napr. `Firma <faktury@faktero.sk>`. */
@@ -20,6 +36,7 @@ export type MailFirmy = {
   html?: string;
   reply_to?: string | null;
   attachments?: PrilohaMailu[];
+  ochrana: OchranaMailu;
 };
 
 export type VysledokMailu = { id: string | null; cez: "smtp" | "resend"; smtpChyba?: string };
@@ -83,7 +100,10 @@ export async function overVerejnyServer(host: string): Promise<string> {
 }
 
 /** Odošle cez SMTP podľa nastavenia; vráti Message-ID. */
-export async function posliCezSmtp(n: NastavenieSmtp, m: MailFirmy): Promise<string | null> {
+export async function posliCezSmtp(
+  n: NastavenieSmtp,
+  m: Omit<MailFirmy, "ochrana">,
+): Promise<string | null> {
   // Pripája sa na overenú adresu, nie znova na meno — DNS by medzitým mohol vrátiť inú.
   const ip = await overVerejnyServer(n.host);
   const nodemailer = (await import("nodemailer")).default;
@@ -119,7 +139,7 @@ export async function posliCezSmtp(n: NastavenieSmtp, m: MailFirmy): Promise<str
   return info.messageId ?? null;
 }
 
-async function posliCezResend(m: MailFirmy): Promise<string | null> {
+async function posliCezResend(m: Omit<MailFirmy, "ochrana">): Promise<string | null> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY nie je nastavený");
   const res = await fetch("https://api.resend.com/emails", {
@@ -147,6 +167,29 @@ async function posliCezResend(m: MailFirmy): Promise<string | null> {
 }
 
 export async function posliMailFirmy(companyId: string, m: MailFirmy): Promise<VysledokMailu> {
+  // Strážca: stropy adresátov, kontrola obsahu, pozastavenie. Keď mail
+  // neprejde, vyhodí OdosielanieZastavene a nič neodíde.
+  const { strazOdoslanie } = await import("./ochrana-odosielania.server");
+  const povolenie = await strazOdoslanie({
+    companyId,
+    userId: m.ochrana.userId,
+    druh: m.ochrana.druh,
+    dokladId: m.ochrana.dokladId ?? null,
+    adresati: m.to,
+    predmet: m.subject,
+    sprava: m.ochrana.sprava ?? m.text ?? null,
+  });
+  try {
+    const v = await posliMailFirmyBezStraze(companyId, m);
+    await povolenie.hotovo(true);
+    return v;
+  } catch (e) {
+    await povolenie.hotovo(false);
+    throw e;
+  }
+}
+
+async function posliMailFirmyBezStraze(companyId: string, m: MailFirmy): Promise<VysledokMailu> {
   const n = await nastavenieSmtp(companyId).catch(() => null);
   if (n?.aktivne) {
     try {

@@ -866,7 +866,7 @@ function InvoiceDetail() {
       setEmailOpen(false);
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? t("Odoslanie zlyhalo"));
+      toast.error(e?.message ? t(e.message) : t("Odoslanie zlyhalo"));
     } finally {
       setEmailBusy(false);
     }

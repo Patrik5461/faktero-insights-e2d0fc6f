@@ -1,0 +1,9 @@
+# Domény jednorazových e-mailov, ktoré nie sú vo verejnom zozname (alebo do neho
+# prišli neskoro). Útok 17. 10. 2026: falošné účty na týchto doménach posielali
+# cez odoslanie faktúry phishing. Riadok = doména; poddomény sa blokujú tiež.
+beta.pendulum.cyou
+pendulum.cyou
+kuromee.com
+mikrotikx.com
+app.gozora.site
+gozora.site

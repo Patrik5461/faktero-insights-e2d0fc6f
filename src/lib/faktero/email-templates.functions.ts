@@ -129,6 +129,16 @@ export const sendTestEmailTemplateFn = createServerFn({ method: "POST" })
       );
     const html = `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;white-space:pre-wrap">${escape(bodyText)}</div>
       <p style="margin-top:24px;font-size:12px;color:#6b7280">Toto je testovací email z Faktero — v ostrej prevádzke sa nahradia reálnymi údajmi.</p>`;
+    // Skúšobný mail ide na adresu, ktorú zadá človek, s textom šablóny — strážca ako pri faktúre.
+    const { strazOdoslanie } = await import("./ochrana-odosielania.server");
+    const povolenie = await strazOdoslanie({
+      companyId: data.companyId,
+      userId: context.userId,
+      druh: "test_sablony",
+      adresati: [data.recipient_email],
+      predmet: subject,
+      sprava: bodyText,
+    });
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
@@ -141,6 +151,7 @@ export const sendTestEmailTemplateFn = createServerFn({ method: "POST" })
         html,
       }),
     });
+    await povolenie.hotovo(res.ok);
     if (!res.ok) {
       const t = await res.text();
       throw new Error(`Resend error: ${t.slice(0, 500)}`);

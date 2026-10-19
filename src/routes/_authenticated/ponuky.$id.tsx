@@ -185,7 +185,7 @@ function QuoteDetail() {
       setEmailOpen(false);
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? t("Chyba"));
+      toast.error(e?.message ? t(e.message) : t("Chyba"));
     } finally {
       setBusy(null);
     }

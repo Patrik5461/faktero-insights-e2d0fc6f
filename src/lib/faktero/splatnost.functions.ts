@@ -49,7 +49,12 @@ export const predlzSplatnostFn = createServerFn({ method: "POST" })
     if (data.druh === "vydana" && data.oznamit) {
       if (!f.customer_email) throw new Error("Splatnosť je zmenená, ale odberateľ nemá e-mail — oznámte mu to inak.");
       const { posliOznamenieSplatnosti } = await import("./splatnost.server");
-      await posliOznamenieSplatnosti({ f, nova: data.nova, poznamka: data.poznamka ?? null });
+      await posliOznamenieSplatnosti({
+        f,
+        nova: data.nova,
+        poznamka: data.poznamka ?? null,
+        userId: context.userId,
+      });
       oznamene = true;
     }
     const { data: ef } = data.druh === "vydana"

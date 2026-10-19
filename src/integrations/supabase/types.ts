@@ -1210,6 +1210,121 @@ export type Database = {
           },
         ]
       }
+      blokovane_domeny: {
+        Row: {
+          created_at: string
+          domena: string
+          zdroj: string
+        }
+        Insert: {
+          created_at?: string
+          domena: string
+          zdroj?: string
+        }
+        Update: {
+          created_at?: string
+          domena?: string
+          zdroj?: string
+        }
+        Relationships: []
+      }
+      odosielanie_mailov: {
+        Row: {
+          adresati: string[]
+          company_id: string
+          created_at: string
+          doklad_id: string | null
+          druh: string
+          id: string
+          pocet: number
+          predmet: string | null
+          stav: string
+          user_id: string | null
+        }
+        Insert: {
+          adresati: string[]
+          company_id: string
+          created_at?: string
+          doklad_id?: string | null
+          druh: string
+          id?: string
+          pocet: number
+          predmet?: string | null
+          stav?: string
+          user_id?: string | null
+        }
+        Update: {
+          adresati?: string[]
+          company_id?: string
+          created_at?: string
+          doklad_id?: string | null
+          druh?: string
+          id?: string
+          pocet?: number
+          predmet?: string | null
+          stav?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "odosielanie_mailov_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      odosielanie_zablokovane: {
+        Row: {
+          adresati_pocet: number
+          company_id: string
+          created_at: string
+          detail: string | null
+          dovod: string
+          druh: string | null
+          id: string
+          len_vystraha: boolean
+          predmet: string | null
+          ukazka: string | null
+          user_id: string | null
+        }
+        Insert: {
+          adresati_pocet?: number
+          company_id: string
+          created_at?: string
+          detail?: string | null
+          dovod: string
+          druh?: string | null
+          id?: string
+          len_vystraha?: boolean
+          predmet?: string | null
+          ukazka?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          adresati_pocet?: number
+          company_id?: string
+          created_at?: string
+          detail?: string | null
+          dovod?: string
+          druh?: string | null
+          id?: string
+          len_vystraha?: boolean
+          predmet?: string | null
+          ukazka?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "odosielanie_zablokovane_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           kurz_de_zdroj: string
@@ -1241,6 +1356,10 @@ export type Database = {
           logo_url: string | null
           module_employees: boolean
           name: string
+          odosielanie_overene: boolean
+          odosielanie_pozastavene: boolean
+          odosielanie_pozastavene_at: string | null
+          odosielanie_pozastavene_dovod: string | null
           odovzdanie_automaticky: boolean
           online_payments_enabled: boolean
           phone: string | null
@@ -1347,6 +1466,10 @@ export type Database = {
           logo_url?: string | null
           module_employees?: boolean
           name: string
+          odosielanie_overene?: boolean
+          odosielanie_pozastavene?: boolean
+          odosielanie_pozastavene_at?: string | null
+          odosielanie_pozastavene_dovod?: string | null
           odovzdanie_automaticky?: boolean
           online_payments_enabled?: boolean
           phone?: string | null
@@ -1453,6 +1576,10 @@ export type Database = {
           logo_url?: string | null
           module_employees?: boolean
           name?: string
+          odosielanie_overene?: boolean
+          odosielanie_pozastavene?: boolean
+          odosielanie_pozastavene_at?: string | null
+          odosielanie_pozastavene_dovod?: string | null
           odovzdanie_automaticky?: boolean
           online_payments_enabled?: boolean
           phone?: string | null
@@ -9640,6 +9767,36 @@ export type Database = {
       }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       next_platform_invoice_number: { Args: never; Returns: string }
+      je_blokovana_domena: { Args: { p_email: string }; Returns: boolean }
+      odosielanie_rezervuj: {
+        Args: {
+          p_adresati: string[]
+          p_company: string
+          p_doklad: string | null
+          p_druh: string
+          p_max_den: number
+          p_max_doklad: number
+          p_max_hodina: number
+          p_predmet: string
+          p_user: string | null
+        }
+        Returns: Json
+      }
+      odosielanie_zapis_blok: {
+        Args: {
+          p_company: string
+          p_detail: string
+          p_dovod: string
+          p_druh: string
+          p_len_vystraha: boolean
+          p_pocet: number
+          p_prah: number
+          p_predmet: string
+          p_ukazka: string
+          p_user: string | null
+        }
+        Returns: Json
+      }
       prune_operational_logs: {
         Args: never
         Returns: {

@@ -138,6 +138,8 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
     // Ponuka ide z vlastného SMTP firmy, keď ho má zapnutý; inak Resend.
     let json: any = {};
     let chybaOdoslania: string | null = null;
+    /** Mail zastavil strážca odosielania — hláška je pre človeka, bez „Resend error". */
+    let zastavene = false;
     try {
       const { posliMailFirmy } = await import("./odoslanie-mailu.server");
       const r = await posliMailFirmy(q.company_id, {
@@ -153,10 +155,12 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
           ${podpisHtml(company ?? {})}
         </div>`,
         attachments: [{ filename: `${q.quote_number}.pdf`, content: pdfB64 }, ...prilohy],
+        ochrana: { userId: context.userId, druh: "ponuka", dokladId: q.id, sprava: message },
       });
       json = { id: r.id };
     } catch (e: any) {
       chybaOdoslania = String(e?.message ?? e);
+      zastavene = e?.name === "OdosielanieZastavene";
       json = { message: chybaOdoslania };
     }
     const res = { ok: !chybaOdoslania };
@@ -172,7 +176,7 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
         status: "failed",
         error_message: errMsg,
       });
-      throw new Error(`Resend error: ${errMsg}`);
+      throw new Error(zastavene ? errMsg : `Resend error: ${errMsg}`);
     }
 
     await supabaseAdmin.from("quote_email_logs" as any).insert({

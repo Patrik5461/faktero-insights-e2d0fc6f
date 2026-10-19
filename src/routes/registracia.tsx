@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
+import { useServerFn } from "@tanstack/react-start";
+import { overEmailRegistracieFn } from "@/lib/faktero/overenie-emailu.functions";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
 import { odlozSuhlasy, zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
 import { Logo } from "@/components/faktero/Logo";
@@ -49,6 +51,7 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const overEmail = useServerFn(overEmailRegistracieFn);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptGdpr, setAcceptGdpr] = useState(false);
   /* Účet vznikol, ale čaká na potvrdenie e-mailu — bez neho sa ďalej nedostane. */
@@ -62,6 +65,20 @@ function RegisterPage() {
       return;
     }
     setLoading(true);
+    /*
+      Jednorazová doména alebo doména bez MX — povie sa hneď a zrozumiteľne.
+      Hrádzu proti jednorazovým doménam drží aj spúšťač v databáze; keď táto
+      kontrola nedobehne (sieť), registrácia pokračuje a rozhodne databáza.
+    */
+    try {
+      const overenie = await overEmail({ data: { email } });
+      if (!overenie.ok) {
+        setLoading(false);
+        return toast.error(t(overenie.sprava, { domena: overenie.domena }));
+      }
+    } catch {
+      // kontrola nedobehla — nechá sa na databázu
+    }
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

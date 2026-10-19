@@ -63,6 +63,7 @@ import { Route as AdminGopayRouteImport } from './routes/admin.gopay'
 import { Route as AdminHealthRouteImport } from './routes/admin.health'
 import { Route as AdminIntegrationsRouteImport } from './routes/admin.integrations'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
+import { Route as AdminOdosielanieRouteImport } from './routes/admin.odosielanie'
 import { Route as AdminPartneriRouteImport } from './routes/admin.partneri'
 import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.payment-providers'
 import { Route as AdminPlatformInvoicesRouteImport } from './routes/admin.platform-invoices'
@@ -605,6 +606,11 @@ const AdminIntegrationsRoute = AdminIntegrationsRouteImport.update({
 const AdminLegalRoute = AdminLegalRouteImport.update({
   id: '/legal',
   path: '/legal',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOdosielanieRoute = AdminOdosielanieRouteImport.update({
+  id: '/odosielanie',
+  path: '/odosielanie',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPartneriRoute = AdminPartneriRouteImport.update({
@@ -2129,6 +2135,7 @@ export interface FileRoutesByFullPath {
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
+  '/admin/odosielanie': typeof AdminOdosielanieRoute
   '/admin/partneri': typeof AdminPartneriRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
@@ -2443,6 +2450,7 @@ export interface FileRoutesByTo {
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
+  '/admin/odosielanie': typeof AdminOdosielanieRoute
   '/admin/partneri': typeof AdminPartneriRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
@@ -2766,6 +2774,7 @@ export interface FileRoutesById {
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
+  '/admin/odosielanie': typeof AdminOdosielanieRoute
   '/admin/partneri': typeof AdminPartneriRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
@@ -3090,6 +3099,7 @@ export interface FileRouteTypes {
     | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
+    | '/admin/odosielanie'
     | '/admin/partneri'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
@@ -3404,6 +3414,7 @@ export interface FileRouteTypes {
     | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
+    | '/admin/odosielanie'
     | '/admin/partneri'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
@@ -3726,6 +3737,7 @@ export interface FileRouteTypes {
     | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
+    | '/admin/odosielanie'
     | '/admin/partneri'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
@@ -4514,6 +4526,13 @@ declare module '@tanstack/react-router' {
       path: '/legal'
       fullPath: '/admin/legal'
       preLoaderRoute: typeof AdminLegalRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/odosielanie': {
+      id: '/admin/odosielanie'
+      path: '/odosielanie'
+      fullPath: '/admin/odosielanie'
+      preLoaderRoute: typeof AdminOdosielanieRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/partneri': {
@@ -6732,6 +6751,7 @@ interface AdminRouteChildren {
   AdminHealthRoute: typeof AdminHealthRoute
   AdminIntegrationsRoute: typeof AdminIntegrationsRoute
   AdminLegalRoute: typeof AdminLegalRoute
+  AdminOdosielanieRoute: typeof AdminOdosielanieRoute
   AdminPartneriRoute: typeof AdminPartneriRoute
   AdminPaymentProvidersRoute: typeof AdminPaymentProvidersRoute
   AdminPlatformInvoicesRoute: typeof AdminPlatformInvoicesRoute
@@ -6757,6 +6777,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminHealthRoute: AdminHealthRoute,
   AdminIntegrationsRoute: AdminIntegrationsRoute,
   AdminLegalRoute: AdminLegalRoute,
+  AdminOdosielanieRoute: AdminOdosielanieRoute,
   AdminPartneriRoute: AdminPartneriRoute,
   AdminPaymentProvidersRoute: AdminPaymentProvidersRoute,
   AdminPlatformInvoicesRoute: AdminPlatformInvoicesRoute,

@@ -18,7 +18,6 @@ export const requestInvoiceApproval = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    void userId;
 
     const { data: inv, error } = await supabase
       .from("invoices")
@@ -63,6 +62,7 @@ export const requestInvoiceApproval = createServerFn({ method: "POST" })
       company,
       recipientEmail: data.recipientEmail,
       token,
+      userId,
     });
 
     return { ok: true, token };

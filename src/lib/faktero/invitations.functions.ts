@@ -73,6 +73,17 @@ export const createInvitationFn = createServerFn({ method: "POST" })
         const url = odkaz;
         const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
         const companyName = menoOdosielatela((inv as any)?.companies?.name);
+        // Pozvánka nesie názov firmy na ľubovoľnú adresu — strážca ako pri faktúre.
+        // Keď ju zastaví, pozvánka platí a pozývajúci dostane odkaz s hláškou.
+        const { strazOdoslanie } = await import("./ochrana-odosielania.server");
+        const povolenie = await strazOdoslanie({
+          companyId: data.company_id,
+          userId: context.userId,
+          druh: "pozvanka",
+          adresati: [email],
+          predmet: `Pozvánka do firmy ${companyName} vo Faktero`,
+          sprava: "",
+        });
         const odpoved = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
@@ -88,6 +99,7 @@ export const createInvitationFn = createServerFn({ method: "POST" })
             </div>`,
           }),
         });
+        await povolenie.hotovo(odpoved.ok);
         if (odpoved.ok) emailOdoslany = true;
         else chybaEmailu = `Poštová služba odmietla e-mail (${odpoved.status}).`;
       }

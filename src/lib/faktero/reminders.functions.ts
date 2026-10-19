@@ -29,6 +29,7 @@ export const sendReminderFn = createServerFn({ method: "POST" })
       overrideSubject: data.subject,
       overrideMessage: data.message,
       triggeredBy: "manual",
+      userId: context.userId,
     });
   });
 

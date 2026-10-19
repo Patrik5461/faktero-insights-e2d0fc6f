@@ -32,6 +32,7 @@ export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
       subject: data.subject,
       message: data.message,
       s_prilohami: data.s_prilohami,
+      user_id: context.userId,
     });
   });
 

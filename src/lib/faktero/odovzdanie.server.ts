@@ -795,6 +795,8 @@ export async function posliBalikMailom(opts: {
   balik: Balik;
   prijemca: string;
   poznamka?: string;
+  /** Kto odosiela — pre strážcu odosielania; `null` pri mesačnom crone. */
+  userId?: string | null;
 }): Promise<void> {
   const { company, balik, poznamka } = opts;
   const prijemca = (opts.prijemca ?? "").trim();
@@ -851,8 +853,10 @@ export async function posliBalikMailom(opts: {
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")}</div>`,
       attachments: [{ filename: balik.fileName, content: balik.base64 }],
+      ochrana: { userId: opts.userId ?? null, druh: "podklady", sprava: poznamka ?? "" },
     });
   } catch (e: any) {
+    if (e?.name === "OdosielanieZastavene") throw e;
     throw new Error(`Odoslanie zlyhalo: ${String(e?.message ?? e).replace(/^Resend error: /, "").slice(0, 300)}`);
   }
 }
