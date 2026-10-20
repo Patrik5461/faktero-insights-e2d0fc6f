@@ -1,6 +1,7 @@
 /**
  * Cron: denné kurzy ECB do pamäte (`exchange_rates`), k nim ČNB (`kurzy_cnb`)
- * a mesačné kurzy BMF (`kurzy_bmf`) s prepočtom dokladov, ktoré na ne čakali.
+ * a mesačné kurzy BMF (`kurzy_bmf`) s prepočtom dokladov, ktoré na ne čakali,
+ * a referenčné úrokové sadzby (`referencne_sadzby`) pre pohyblivé sadzby zmlúv.
  * Volaný cez pg_cron s hlavičkou `x-faktero-cron-token: <FAKTERO_CRON_TOKEN>`.
  *
  * Bez neho sa pamäť dopĺňala len pri doklade v cudzej mene, a keď ECB práve
@@ -36,9 +37,27 @@ export const Route = createFileRoute("/api/public/hooks/kurzy-ecb")({
             console.warn("[kurzy-bmf]", String(e?.message ?? e));
             return { kurzov: 0, prepocitane: 0 };
           });
+          // Referenčné úrokové sadzby (EURIBOR, €STR, PRIBOR) pre pohyblivé
+          // sadzby zmlúv o financovaní — ani tie nesmú zhodiť kurzy.
+          const ref = await (async () => {
+            const { stiahniReferencneSadzby, aktualizujSadzbyZmluv } =
+              await import("@/lib/faktero/referencne-sadzby.server");
+            const r = await stiahniReferencneSadzby();
+            if (r.chyby.length) console.warn("[referencne-sadzby]", r.chyby.join("; "));
+            const zmluv = await aktualizujSadzbyZmluv().catch((e) => {
+              console.warn("[referencne-sadzby] zmluvy", String(e?.message ?? e));
+              return 0;
+            });
+            return { sadzieb: r.ulozenych, zmluv };
+          })().catch((e) => {
+            console.warn("[referencne-sadzby]", String(e?.message ?? e));
+            return { sadzieb: 0, zmluv: 0 };
+          });
           return new Response(
             JSON.stringify({
               ok: true,
+              referencnychSadzieb: ref.sadzieb,
+              aktualizovanychSadziebZmluv: ref.zmluv,
               kurzov: pocet,
               kurzovCnb: cnb,
               kurzovBmf: bmf.kurzov,

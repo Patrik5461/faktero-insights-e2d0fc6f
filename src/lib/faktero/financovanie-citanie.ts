@@ -42,12 +42,31 @@ export type PrecitanaZmluva = {
   interest_period: "mesacne" | "stvrtrocne" | null;
   /** IBAN účtu, ku ktorému je rámec — podľa neho sa priradí napojený účet. */
   account_iban: string | null;
-  /** Popis, ktorý patrí do poznámky zmluvy — napr. pohyblivá sadzba. */
+  /** Popis, ktorý patrí do poznámky zmluvy (poplatok v %, nerozpoznaný index…). */
   note: string | null;
+  /*
+   * Pohyblivá sadzba — index + marža. Pri pevnej `rate_type = "pevna"` a
+   * ostatné null. `day_count` platí pre oboje (null = v zmluve nie je).
+   */
+  rate_type: "pevna" | "pohybliva";
+  reference_index: ReferencnyIndex | null;
+  rate_margin: number | null;
+  index_floor: number | null;
+  fixing_rule: PravidloFixingu | null;
+  fixing_offset_days: number | null;
+  rate_reset: FrekvenciaZmeny | null;
+  day_count: "ACT/365" | "ACT/360" | "30E/360" | null;
   splatky: PrecitanaSplatka[];
   /** Čo v dokumente nesedelo — ukáže sa človeku, nie je to chyba. */
   vyhrady: string[];
 };
+
+import {
+  predvolenaFrekvencia,
+  type FrekvenciaZmeny,
+  type PravidloFixingu,
+  type ReferencnyIndex,
+} from "./pohybliva-sadzba";
 
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -229,12 +248,112 @@ function percento(n: number): string {
 }
 
 /**
- * Údaje kontokorentu z odpovede modelu. Sadzba býva pohyblivá („3M EURIBOR +
- * 2,5 %") — keď výsledná v zmluve nie je, uloží sa súčet referenčnej a marže,
- * a keď nie je ani hodnota referenčnej, aspoň marža. Popis ide do poznámky,
- * nech je jasné, čo to číslo znamená.
+ * Názov referenčnej sadzby zo zmluvy → index, ktorý Faktero vie dopĺňať.
+ * „EURIBOR 1-mesačný", „1M EURIBOR", „one-month EURIBOR", „3M PRIBOR",
+ * „€STR"… Nerozpoznaný názov vráti null — vtedy sa sadzba berie postaru.
  */
-function udajeKontokorentu(parsed: any): {
+export function rozpoznajIndex(v: unknown): ReferencnyIndex | null {
+  const s = holy(v).replace(/[-_]/g, " ");
+  if (!s.trim()) return null;
+  if (/€str|\bestr\b|euro short term/.test(s)) return "ESTR";
+  const euribor = /euribor/.test(s);
+  const pribor = /pribor/.test(s);
+  if (!euribor && !pribor) return null;
+  const splatnost =
+    /\b12 ?m\b|\b1 ?y\b|\b1 ?r\b|12 ?mesa|12 ?mesi|rocn|ročn|\bone year|1 ?rok|12 month|\b1 ?year/.test(
+      s,
+    )
+      ? "12"
+      : /\b6 ?m\b|6 ?mesa|6 ?mesi|polroc|pololet|six month|6 month/.test(s)
+        ? "6"
+        : /\b3 ?m\b|3 ?mesa|3 ?mesi|stvrtroc|ctvrtlet|three month|3 month/.test(s)
+          ? "3"
+          : /\b1 ?m\b|1 ?mesa|1 ?mesi|jednomesa|jednomesi|one month|1 month|mesacn|mesicni/.test(s)
+            ? "1"
+            : null;
+  if (!splatnost) return null;
+  if (euribor) return `EURIBOR_${splatnost}M` as ReferencnyIndex;
+  return (splatnost === "12" ? "PRIBOR_1R" : `PRIBOR_${splatnost}M`) as ReferencnyIndex;
+}
+
+function konvenciaDni(v: unknown): PrecitanaZmluva["day_count"] {
+  const s = holy(v).replace(/\s/g, "");
+  if (!s) return null;
+  if (/30e?\/360|30\/360/.test(s)) return "30E/360";
+  if (/360/.test(s)) return "ACT/360";
+  if (/365/.test(s)) return "ACT/365";
+  return null;
+}
+
+function frekvencia(v: unknown): FrekvenciaZmeny | null {
+  const s = holy(v);
+  if (/mesac|month|mesic/.test(s)) return "mesacne";
+  if (/stvrt|quarter|ctvrt/.test(s)) return "stvrtrocne";
+  if (/polro|pololet|semi|half/.test(s)) return "polrocne";
+  if (/rocn|year|annual|rok/.test(s)) return "rocne";
+  return null;
+}
+
+type PohyblivaZOdpovede = Pick<
+  PrecitanaZmluva,
+  | "rate_type"
+  | "reference_index"
+  | "rate_margin"
+  | "index_floor"
+  | "fixing_rule"
+  | "fixing_offset_days"
+  | "rate_reset"
+>;
+
+const PEVNA: PohyblivaZOdpovede = {
+  rate_type: "pevna",
+  reference_index: null,
+  rate_margin: null,
+  index_floor: null,
+  fixing_rule: null,
+  fixing_offset_days: null,
+  rate_reset: null,
+};
+
+/**
+ * Pohyblivá sadzba z odpovede modelu. Keď index Faktero pozná, vyplnia sa
+ * polia zmluvy a výslednú sadzbu dopočíta Faktero z ECB/ČNB; keď nie, vráti
+ * sa `pevna` a o sadzbu sa postará pôvodná cesta (marža + poznámka).
+ */
+function udajePohyblivej(parsed: any): PohyblivaZOdpovede {
+  const index = rozpoznajIndex(parsed?.reference_rate_name);
+  const marza = cislo(parsed?.interest_margin);
+  if (!index || marza === null) return PEVNA;
+  const pravidlo: PravidloFixingu = /priemer|average|prumer/.test(holy(parsed?.fixing_rule))
+    ? "mesacny_priemer"
+    : "pred_zaciatkom_obdobia";
+  const posun = cislo(parsed?.fixing_offset_days);
+  return {
+    rate_type: "pohybliva",
+    reference_index: index,
+    rate_margin: marza,
+    index_floor: cislo(parsed?.index_floor),
+    fixing_rule: pravidlo,
+    fixing_offset_days:
+      pravidlo === "pred_zaciatkom_obdobia"
+        ? posun !== null && posun >= 0 && posun <= 10
+          ? Math.round(posun)
+          : 2
+        : null,
+    rate_reset: frekvencia(parsed?.rate_reset_period) ?? predvolenaFrekvencia(index),
+  };
+}
+
+/**
+ * Údaje kontokorentu z odpovede modelu. Sadzba býva pohyblivá („3M EURIBOR +
+ * 2,5 %"). Keď index Faktero pozná, uloží sa ako pohyblivá (index + marža) a
+ * výslednú sadzbu dopočíta Faktero; inak sa uloží súčet referenčnej a marže,
+ * a keď nie je ani hodnota referenčnej, aspoň marža — s popisom v poznámke.
+ */
+function udajeKontokorentu(
+  parsed: any,
+  pohybliva: PohyblivaZOdpovede,
+): {
   credit_limit: number | null;
   interest_rate: number | null;
   limit_fee_yearly: number | null;
@@ -243,21 +362,41 @@ function udajeKontokorentu(parsed: any): {
 } {
   const vyhrady: string[] = [];
   const limit = cislo(parsed?.credit_limit) ?? cislo(parsed?.principal);
+  const poplatky = poplatokZaRamec(parsed, limit);
+  const sadzba = sadzbaAPoznamka(parsed, pohybliva, vyhrady);
+  return {
+    credit_limit: limit ? centy(limit) : null,
+    interest_rate: sadzba.interest_rate,
+    limit_fee_yearly: poplatky.poplatok,
+    note: [sadzba.note, poplatky.poznamka].filter(Boolean).join(" ") || null,
+    vyhrady,
+  };
+}
+
+function sadzbaAPoznamka(
+  parsed: any,
+  pohybliva: PohyblivaZOdpovede,
+  vyhrady: string[],
+): { interest_rate: number | null; note: string | null } {
   const marza = cislo(parsed?.interest_margin);
   const refNazov = text(parsed?.reference_rate_name, 60);
   const refHodnota = cislo(parsed?.reference_rate_value);
   let sadzba = cislo(parsed?.interest_rate);
-  const poznamky: string[] = [];
 
+  if (pohybliva.rate_type === "pohybliva") {
+    // Výslednú sadzbu dopočíta Faktero z indexu pri uložení; tu len náhľad.
+    if (sadzba === null && refHodnota !== null) sadzba = centy(refHodnota + pohybliva.rate_margin!);
+    return { interest_rate: sadzba, note: null };
+  }
+
+  let note: string | null = null;
   if (refNazov || marza !== null) {
-    poznamky.push(
-      `Pohyblivá sadzba: ${[
-        refNazov ?? "referenčná sadzba",
-        marza !== null ? `marža ${percento(marza)}` : null,
-      ]
-        .filter(Boolean)
-        .join(" + ")} p. a.`,
-    );
+    note = `Pohyblivá sadzba: ${[
+      refNazov ?? "referenčná sadzba",
+      marza !== null ? `marža ${percento(marza)}` : null,
+    ]
+      .filter(Boolean)
+      .join(" + ")} p. a.`;
   }
   if (sadzba === null && marza !== null) {
     if (refHodnota !== null) {
@@ -269,27 +408,31 @@ function udajeKontokorentu(parsed: any): {
       );
     }
   }
+  return { interest_rate: sadzba, note };
+}
 
-  let poplatok: number | null = null;
+function poplatokZaRamec(
+  parsed: any,
+  limit: number | null,
+): { poplatok: number | null; poznamka: string | null } {
   const fee = cislo(parsed?.limit_fee);
   const feePct = cislo(parsed?.limit_fee_percent);
   if (fee !== null) {
     const p = holy(parsed?.limit_fee_period);
-    poplatok = centy(
-      /mesac|month|mesic/.test(p) ? fee * 12 : /stvrt|quarter|ctvrt/.test(p) ? fee * 4 : fee,
-    );
-  } else if (feePct !== null && limit) {
-    poplatok = centy((limit * feePct) / 100);
-    poznamky.push(`Poplatok za rámec ${percento(feePct)} z limitu ročne.`);
+    return {
+      poplatok: centy(
+        /mesac|month|mesic/.test(p) ? fee * 12 : /stvrt|quarter|ctvrt/.test(p) ? fee * 4 : fee,
+      ),
+      poznamka: null,
+    };
   }
-
-  return {
-    credit_limit: limit ? centy(limit) : null,
-    interest_rate: sadzba,
-    limit_fee_yearly: poplatok,
-    note: poznamky.length ? poznamky.join(" ") : null,
-    vyhrady,
-  };
+  if (feePct !== null && limit) {
+    return {
+      poplatok: centy((limit * feePct) / 100),
+      poznamka: `Poplatok za rámec ${percento(feePct)} z limitu ročne.`,
+    };
+  }
+  return { poplatok: null, poznamka: null };
 }
 
 /**
@@ -330,6 +473,8 @@ export function spojPrecitane(dokumenty: PrecitanaZmluva[]): PrecitanaZmluva {
       interest_period: skalar("interest_period"),
       account_iban: skalar("account_iban"),
       note: skalar("note"),
+      ...pohyblivaZoSpojenych(dokumenty),
+      day_count: skalar("day_count"),
     };
     // Chýbajúce údaje sa počítajú nanovo zo spojeného — druhý dokument ich
     // mohol doplniť. Výhrada o pohyblivej sadzbe sa z dokumentov prenáša.
@@ -361,6 +506,8 @@ export function spojPrecitane(dokumenty: PrecitanaZmluva[]): PrecitanaZmluva {
     interest_period: null,
     account_iban: skalar("account_iban"),
     note: skalar("note"),
+    ...pohyblivaZoSpojenych(dokumenty),
+    day_count: skalar("day_count"),
     splatky: riadky,
     vyhrady: [],
   };
@@ -376,6 +523,21 @@ export function spojPrecitane(dokumenty: PrecitanaZmluva[]): PrecitanaZmluva {
     spojena.vyhrady.push(VYHRADA_BEZ_SPLATNOSTI);
   }
   return spojena;
+}
+
+/** Pohyblivú sadzbu berie celú z prvého dokumentu, ktorý ju má — polia sa nemiešajú. */
+function pohyblivaZoSpojenych(dokumenty: PrecitanaZmluva[]): PohyblivaZOdpovede {
+  const d = dokumenty.find((x) => x.rate_type === "pohybliva");
+  if (!d) return PEVNA;
+  return {
+    rate_type: d.rate_type,
+    reference_index: d.reference_index,
+    rate_margin: d.rate_margin,
+    index_floor: d.index_floor,
+    fixing_rule: d.fixing_rule,
+    fixing_offset_days: d.fixing_offset_days,
+    rate_reset: d.rate_reset,
+  };
 }
 
 /** Kontokorent nemá kalendár — všetko, čo k nemu patrí, je prázdne. */
@@ -402,15 +564,19 @@ function vyhradyKontokorentu(z: PrecitanaZmluva): string[] {
   if (!z.account_iban) {
     v.push("Číslo účtu, ku ktorému je rámec, sa v dokumente nenašlo — vyberte účet ručne.");
   }
-  if (z.interest_rate === null) v.push("Úroková sadzba sa v dokumente nenašla — doplňte ju.");
+  if (z.interest_rate === null && z.rate_type !== "pohybliva") {
+    v.push("Úroková sadzba sa v dokumente nenašla — doplňte ju.");
+  }
   return v;
 }
 
 export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
   const kind = rozpoznajDruh(parsed);
+  const pohybliva = udajePohyblivej(parsed);
+  const dayCount = konvenciaDni(parsed?.day_count);
 
   if (kind === "kontokorent") {
-    const k = udajeKontokorentu(parsed);
+    const k = udajeKontokorentu(parsed, pohybliva);
     const zmluva = prazdnyKalendar({
       kind,
       provider_name: text(parsed?.provider_name),
@@ -432,6 +598,8 @@ export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
       interest_period: obdobie(parsed?.interest_period),
       account_iban: iban(parsed?.account_iban),
       note: k.note,
+      ...pohybliva,
+      day_count: dayCount,
       splatky: [],
       vyhrady: [],
     });
@@ -443,6 +611,9 @@ export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
   const principal = cislo(parsed?.principal);
   const term = cislo(parsed?.term_months);
 
+  const vyhradySadzby: string[] = [];
+  const sadzbaUveru =
+    cislo(parsed?.interest_rate) ?? sadzbaAPoznamka(parsed, pohybliva, vyhradySadzby).interest_rate;
   const zmluva: PrecitanaZmluva = {
     kind,
     provider_name: text(parsed?.provider_name),
@@ -450,7 +621,7 @@ export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
     variable_symbol: text(parsed?.variable_symbol, 30),
     currency: text(parsed?.currency, 3) ?? "EUR",
     principal,
-    interest_rate: cislo(parsed?.interest_rate),
+    interest_rate: sadzbaUveru,
     // Počet mesiacov z kalendára je spoľahlivejší než veta v zmluve.
     term_months: riadky.length || (term ? Math.round(term) : null),
     first_due_date: riadky[0]?.due_date ?? datum(parsed?.first_due_date),
@@ -467,15 +638,20 @@ export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
     // kontokorentu, keď je IBAN len v druhom súbore.
     account_iban: iban(parsed?.account_iban),
     note: null,
+    ...pohybliva,
+    day_count: dayCount,
     splatky: riadky,
     vyhrady: [],
   };
 
-  zmluva.vyhrady = vyhradyKuKalendaru({
-    principal: zmluva.principal,
-    splatky: riadky,
-    term_months: term ? Math.round(term) : null,
-  });
+  zmluva.vyhrady = [
+    ...vyhradySadzby,
+    ...vyhradyKuKalendaru({
+      principal: zmluva.principal,
+      splatky: riadky,
+      term_months: term ? Math.round(term) : null,
+    }),
+  ];
   if (!zmluva.first_due_date) {
     zmluva.vyhrady.push(VYHRADA_BEZ_SPLATNOSTI);
   }

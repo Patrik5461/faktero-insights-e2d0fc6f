@@ -225,13 +225,13 @@ const sections: HelpSection[] = [
           Pri novej zmluve zvoľte druh <strong>Kontokorentný úver</strong>. Polia splátkového
           kalendára sa skryjú a vyplníte <strong>úverový rámec</strong>, <strong>účet</strong>, na
           ktorom rámec je, <strong>úrok % p. a.</strong>, <strong>poplatok za rámec ročne</strong>,
-          dokedy rámec platí a ako často banka úrok strhne. Pri pohyblivej sadzbe (napr. 3M EURIBOR
-          + marža) zadajte aktuálnu výslednú sadzbu a zloženie si poznačte do poznámky.
+          dokedy rámec platí a ako často banka úrok strhne. Pri pohyblivej sadzbe (napr. 1M EURIBOR
+          + marža) zvoľte <strong>Pohyblivá</strong> — pozri časť Pohyblivá úroková sadzba nižšie.
         </p>
         <p>
           Nahratú zmluvu o kontokorente Faktero spozná samo — aj keď ju banka nazve „úver“: úver bez
           splátkového kalendára s rámcom k bežnému účtu je kontokorent. Vyčíta limit, sadzbu (aj
-          referenčnú sadzbu a maržu), poplatok, platnosť a IBAN účtu a podľa IBAN zmluvu priradí k
+          referenčný index a maržu), poplatok, platnosť a IBAN účtu a podľa IBAN zmluvu priradí k
           napojenému účtu.
         </p>
         <p>
@@ -254,6 +254,80 @@ const sections: HelpSection[] = [
           <em>Bankový poplatok</em> a dostanú predkontáciu, ktorú pre tieto označenia nastavíte.
           Čerpaný kontokorent je krátkodobý bankový úver (231) — to je stav účtu, nie platba, takže
           sa ako splátka nevyváža.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "pohybliva-sadzba",
+    title: "Pohyblivá úroková sadzba",
+    body: (
+      <>
+        <p>
+          Veľa úverov a kontokorentov nemá pevný úrok, ale <strong>referenčný index + maržu</strong>{" "}
+          — napríklad „1M EURIBOR + 4,3 % p. a.“. Index sa mení raz za obdobie fixácie (mesačne,
+          štvrťročne…) a s ním aj úrok. Keby ste do zmluvy zapísali len maržu, Faktero by úrok
+          počítalo príliš nízky.
+        </p>
+        <p>
+          V zmluve preto pri úrokovej sadzbe zvoľte <strong>Pohyblivá</strong> a vyplňte:
+        </p>
+        <ul>
+          <li>
+            <strong>Referenčný index</strong> — 1M, 3M, 6M alebo 12M EURIBOR, €STR, alebo PRIBOR
+            (1M, 3M, 6M, 1R) pri českých úveroch.
+          </li>
+          <li>
+            <strong>Marža</strong> — prirážka banky tak, ako je v zmluve (po prípadnom zvýhodnení).
+          </li>
+          <li>
+            <strong>Dolná hranica indexu</strong> — keď zmluva hovorí, že záporný index sa považuje
+            za nulu, zadajte 0. Bez hranice nechajte prázdne.
+          </li>
+          <li>
+            <strong>Sadzba sa mení</strong> a <strong>index sa určuje</strong> — napríklad mesačne,
+            „2 pracovné dni pred začiatkom obdobia fixácie“ (to je najčastejšie znenie), alebo ako
+            priemer za predchádzajúci mesiac.
+          </li>
+          <li>
+            <strong>Výpočet úroku</strong> — pri úveroch s EURIBORom banky takmer vždy počítajú „rok
+            s 360 dňami a skutočný počet dní“, teda ACT/360. Pri rovnakej sadzbe vychádza úrok o 1,4
+            % vyšší než pri ACT/365.
+          </li>
+        </ul>
+        <p>
+          Nahratú zmluvu Faktero prečíta samo — index, maržu, dolnú hranicu, fixing aj spôsob
+          výpočtu vyplní do týchto polí.
+        </p>
+        <p>
+          Hodnoty indexov si Faktero každé ráno stiahne: <strong>EURIBOR</strong> z Európskej
+          centrálnej banky, <strong>€STR</strong> tiež z ECB a <strong>PRIBOR</strong> z ČNB. Na
+          detaile zmluvy uvidíte napríklad „Aktuálna sadzba: 1M EURIBOR 1,920 % (priemer za
+          september 2026) + marža 4,30 % = 6,22 % p. a.“ a pod tým históriu sadzby po obdobiach.
+        </p>
+        <p>
+          <strong>Pozor, pri EURIBORe je to odhad.</strong> Denný EURIBOR sa zadarmo strojovo získať
+          nedá — verejne dostupný je len mesačný priemer. Zmluva však index berie k presnému dňu
+          fixingu, takže sa vypočítaná sadzba môže od skutočnej líšiť o pár stotín percenta.
+          Skutočný úrok vždy určuje banka. Keď index k dňu fixingu ešte nie je zverejnený, Faktero
+          použije posledný známy a označí výsledok ako predbežný.
+        </p>
+        <p>
+          Preto sa dá sadzba za každé obdobie <strong>zadať ručne</strong> (ceruzka v histórii
+          sadzby) — keď vám banka sadzbu oznámi, alebo keď ju chcete zosúladiť so skutočne strhnutým
+          úrokom. Ručná sadzba prepíše vypočítanú za celé obdobie fixácie a dá sa vrátiť späť.
+        </p>
+        <p>
+          Pri kontokorente Faktero počíta aj <strong>vypočítaný úrok</strong> za každý mesiac — z
+          čerpania na konci každého dňa (zostatok účtu a pohyby z banky) — a porovná ho s úrokom,
+          ktorý banka naozaj strhla. Rozdiel je najlepšia kontrola: keď sedí na pár centov, sadzba
+          aj fixing sú v poriadku. Keď nesedí, tlačidlom <strong>Prevziať sadzbu</strong> si uložíte
+          sadzbu, ktorá zo strhnutého úroku vyplýva.
+        </p>
+        <p>
+          Pri splátkovom úvere s pohyblivou sadzbou sa kalendár počíta so sadzbou platnou pri
+          uložení zmluvy. Keď banka po zmene indexu oznámi novú splátku, zmluvu otvorte a uložte —
+          nezaplatené splátky sa prepočítajú s dnešnou sadzbou.
         </p>
       </>
     ),

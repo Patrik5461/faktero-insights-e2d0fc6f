@@ -147,6 +147,15 @@ export function NahratieZmluvy({
           valid_until: r.valid_until,
           interest_period: r.interest_period,
           note: r.note,
+          // Pohyblivá sadzba — index + marža; výslednú dopočíta Faktero z ECB/ČNB.
+          rate_type: r.rate_type,
+          reference_index: r.reference_index,
+          rate_margin: r.rate_margin,
+          index_floor: r.index_floor,
+          fixing_rule: r.fixing_rule,
+          fixing_offset_days: r.fixing_offset_days,
+          rate_reset: r.rate_reset,
+          ...(r.day_count ? { day_count: r.day_count } : {}),
         },
       });
       toast.success(

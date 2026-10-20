@@ -3,6 +3,7 @@ import {
   jePouzitelna,
   normalizujOdpoved,
   normalizujSplatky,
+  rozpoznajIndex,
   spojPrecitane,
   vyhradyKuKalendaru,
 } from "./financovanie-citanie";
@@ -361,27 +362,96 @@ describe("kontokorent", () => {
     expect(z.kind).toBe("leasing");
   });
 
-  it("pohyblivú sadzbu sčíta z referenčnej a marže a popis dá do poznámky", () => {
+  it("pohyblivú sadzbu so známym indexom uloží do polí zmluvy, nie do poznámky", () => {
+    const z = normalizujOdpoved({
+      ...kontokorent,
+      interest_rate: null,
+      reference_rate_name: "EURIBOR 1-mesačný",
+      interest_margin: 4.3,
+      fixing_rule: "vždy dva pracovné dni pred začiatkom príslušného obdobia fixácie",
+      fixing_offset_days: 2,
+      rate_reset_period: "mesacne",
+      day_count: "ACT/360",
+    });
+    expect(z).toMatchObject({
+      rate_type: "pohybliva",
+      reference_index: "EURIBOR_1M",
+      rate_margin: 4.3,
+      index_floor: null,
+      fixing_rule: "pred_zaciatkom_obdobia",
+      fixing_offset_days: 2,
+      rate_reset: "mesacne",
+      day_count: "ACT/360",
+      note: null,
+    });
+    // Výslednú sadzbu dopočíta Faktero z ECB — nechýba, a len marža to nie je.
+    expect(z.interest_rate).toBeNull();
+    expect(z.vyhrady.join(" ")).not.toMatch(/sadzba/i);
+  });
+
+  it("so známou hodnotou referenčnej ju na náhľad sčíta s maržou, floor aj frekvenciu podľa indexu", () => {
     const z = normalizujOdpoved({
       ...kontokorent,
       interest_rate: null,
       reference_rate_name: "3M EURIBOR",
       reference_rate_value: 2.05,
       interest_margin: 2.5,
+      index_floor: 0,
     });
     expect(z.interest_rate).toBe(4.55);
-    expect(z.note).toMatch(/3M EURIBOR \+ marža 2,5 %/);
+    expect(z).toMatchObject({
+      reference_index: "EURIBOR_3M",
+      rate_reset: "stvrtrocne",
+      index_floor: 0,
+    });
   });
 
-  it("bez hodnoty referenčnej uloží maržu a povie to", () => {
+  it("rozpozná indexy podľa rôznych pomenovaní", () => {
+    expect(rozpoznajIndex("1M EURIBOR")).toBe("EURIBOR_1M");
+    expect(rozpoznajIndex("EURIBOR 6-mesačný")).toBe("EURIBOR_6M");
+    expect(rozpoznajIndex("12M EURIBOR")).toBe("EURIBOR_12M");
+    expect(rozpoznajIndex("3M PRIBOR")).toBe("PRIBOR_3M");
+    expect(rozpoznajIndex("PRIBOR 1R")).toBe("PRIBOR_1R");
+    expect(rozpoznajIndex("€STR")).toBe("ESTR");
+    expect(rozpoznajIndex("EURIBOR")).toBeNull();
+    expect(rozpoznajIndex("základná sadzba banky")).toBeNull();
+  });
+
+  it("nerozpoznaný index — sadzba postaru: marža s výhradou a popis v poznámke", () => {
     const z = normalizujOdpoved({
       ...kontokorent,
       interest_rate: null,
-      reference_rate_name: "1M EURIBOR",
+      reference_rate_name: "Referenčná sadzba banky",
       interest_margin: 3,
     });
+    expect(z.rate_type).toBe("pevna");
     expect(z.interest_rate).toBe(3);
+    expect(z.note).toMatch(/Referenčná sadzba banky \+ marža 3 %/);
     expect(z.vyhrady.join(" ")).toMatch(/len marža 3 %/);
+  });
+
+  it("pohyblivú sadzbu spozná aj pri úvere a spojenie dokumentov ju nestratí", () => {
+    const uver = normalizujOdpoved({
+      kind: "uver",
+      principal: 50000,
+      term_months: 60,
+      first_due_date: "2026-11-20",
+      reference_rate_name: "3M EURIBOR",
+      interest_margin: 2,
+      day_count: "rok s 360 dňami",
+    });
+    expect(uver).toMatchObject({
+      rate_type: "pohybliva",
+      reference_index: "EURIBOR_3M",
+      day_count: "ACT/360",
+    });
+    const kalendar = normalizujOdpoved({ kind: "uver", principal: 50000, splatky: [] });
+    const z = spojPrecitane([kalendar, uver]);
+    expect(z).toMatchObject({
+      rate_type: "pohybliva",
+      reference_index: "EURIBOR_3M",
+      rate_margin: 2,
+    });
   });
 
   it("mesačný poplatok prepočíta na rok, percento z limitu tiež", () => {

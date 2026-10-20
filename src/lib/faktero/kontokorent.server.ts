@@ -12,6 +12,24 @@
  */
 import { zaokruhli } from "./financovanie";
 import {
+  historiaSadzby,
+  jePohybliva,
+  odhadUrokov,
+  porovnajSoSkutocnymi,
+  pridajDni,
+  pridajMesiace,
+  sadzbaKDnu,
+  stlpceSadzby,
+  zostatkyPoDnoch,
+  type NastavenieSadzby,
+  type ReferencnaSadzba,
+  type RiadokPorovnania,
+  type RucnaSadzba,
+  type SadzbaObdobia,
+  type StlpceSadzby,
+} from "./pohybliva-sadzba";
+import { nacitajReferencneSadzby, nacitajRucneSadzby } from "./referencne-sadzby.server";
+import {
   jeIban,
   normIban,
   sparujPoplatkyKontokorentu,
@@ -58,7 +76,11 @@ export type KontokorentNaUlozenie = {
   interest_period?: "mesacne" | "stvrtrocne" | null;
   document_path?: string | null;
   note?: string | null;
-};
+  /** Spôsob výpočtu úroku — pri EURIBOR kontokorentoch býva ACT/360. */
+  day_count?: "ACT/365" | "ACT/360" | "30E/360" | null;
+  /** Odkedy rámec platí — od toho dňa sa počíta odhad úrokov. */
+  interest_from?: string | null;
+} & Partial<StlpceSadzby>;
 
 /**
  * Uloží kontokorent. Kalendár sa nerobí žiadny — a keď zmluva predtým bola
@@ -111,13 +133,15 @@ export async function ulozKontokorent(
     currency: data.currency,
     principal: null,
     interest_rate: data.interest_rate,
+    ...stlpceSadzby(data),
+    day_count: data.day_count ?? "ACT/365",
     term_months: null,
     first_due_date: null,
     payment_amount: null,
     vat_rate: 0,
     down_payment: 0,
     residual_value: 0,
-    interest_from: null,
+    interest_from: data.interest_from || null,
     vehicle_id: null,
     document_path: data.document_path || null,
     note: data.note || null,
@@ -303,4 +327,121 @@ export async function sparujKontokorentyFirmyAutomaticky(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { zapisanych } = await sparujPoplatkyFirmy(supabaseAdmin, companyId, "auto", null);
   return { zapisanych };
+}
+
+/* ------------------------------------------------------------------ *
+ * Sadzba a vypočítaný úrok
+ * ------------------------------------------------------------------ */
+
+/** Koľko mesiacov dozadu sa úrok počíta — dlhšiu históriu banky aj tak nedajú. */
+const MESIACOV_ODHADU = 12;
+
+export type PodkladySadzby = {
+  aktualna: SadzbaObdobia;
+  historia: SadzbaObdobia[];
+  rucne: (RucnaSadzba & { id: string })[];
+};
+
+/** Aktuálna sadzba, história po obdobiach fixácie a ručné sadzby zmluvy. */
+export async function sadzbaZmluvy(
+  klient: any,
+  companyId: string,
+  zmluva: NastavenieSadzby & {
+    id: string;
+    interest_from?: string | null;
+    created_at?: string | null;
+  },
+  dnes = new Date().toISOString().slice(0, 10),
+): Promise<PodkladySadzby & { sadzby: ReferencnaSadzba[]; od: string }> {
+  let od = pridajMesiace(dnes, -(MESIACOV_ODHADU - 1));
+  if (zmluva.interest_from && zmluva.interest_from > od) od = zmluva.interest_from;
+
+  const rucne = await nacitajRucneSadzby(klient, companyId, zmluva.id);
+  const sadzby = jePohybliva(zmluva)
+    ? await nacitajReferencneSadzby(klient, zmluva.reference_index, pridajDni(od, -200))
+    : [];
+  const historia = historiaSadzby(zmluva, od, dnes, sadzby, rucne);
+  const aktualna = sadzbaKDnu(zmluva, dnes, sadzby, rucne);
+  return { aktualna, historia, rucne, sadzby, od };
+}
+
+export type OdhadUrokov =
+  | { ok: true; od: string; riadky: RiadokPorovnania[] }
+  | { ok: false; dovod: "bez_uctu" | "bez_zostatku" | "bez_pohybov" };
+
+/**
+ * Vypočítaný úrok po úrokových obdobiach a porovnanie s tým, čo banka naozaj
+ * strhla. Čerpanie sa skladá zo zaúčtovaného zostatku účtu a pohybov —
+ * disponibilný zostatok sa nepoužije, banky v ňom uvádzajú aj nevyčerpaný rámec.
+ */
+export async function odhadUrokovKontokorentu(
+  klient: any,
+  companyId: string,
+  zmluva: NastavenieSadzby & {
+    id: string;
+    bank_account_id: string | null;
+    interest_period: string | null;
+  },
+  podklady: { sadzby: ReferencnaSadzba[]; rucne: RucnaSadzba[]; od: string },
+  dnes = new Date().toISOString().slice(0, 10),
+): Promise<OdhadUrokov> {
+  if (!zmluva.bank_account_id) return { ok: false, dovod: "bez_uctu" };
+  const { data: ucet } = await klient
+    .from("bank_accounts")
+    .select("id, booked_balance")
+    .eq("id", zmluva.bank_account_id)
+    .eq("company_id", companyId)
+    .maybeSingle();
+  const zostatok = ucet?.booked_balance;
+  if (zostatok === null || zostatok === undefined || !Number.isFinite(Number(zostatok))) {
+    return { ok: false, dovod: "bez_zostatku" };
+  }
+
+  // Skôr než prvý stiahnutý pohyb sa zostatok spätne zistiť nedá.
+  const { data: prvy } = await klient
+    .from("bank_transactions")
+    .select("booking_date")
+    .eq("company_id", companyId)
+    .eq("bank_account_id", zmluva.bank_account_id)
+    .order("booking_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!prvy?.booking_date) return { ok: false, dovod: "bez_pohybov" };
+  const od = prvy.booking_date > podklady.od ? (prvy.booking_date as string) : podklady.od;
+
+  const [pohyby, uroky] = await Promise.all([
+    vsetkyRiadky((a, b) =>
+      klient
+        .from("bank_transactions")
+        .select("id, booking_date, amount")
+        .eq("company_id", companyId)
+        .eq("bank_account_id", zmluva.bank_account_id)
+        .gte("booking_date", od)
+        .order("id", { ascending: true })
+        .range(a, b),
+    ),
+    vsetkyRiadky((a, b) =>
+      klient
+        .from("financing_charges")
+        .select("id, charged_on, amount")
+        .eq("company_id", companyId)
+        .eq("contract_id", zmluva.id)
+        .eq("kind", "urok")
+        .order("id", { ascending: true })
+        .range(a, b),
+    ),
+  ]);
+
+  const zostatokDna = zostatkyPoDnoch(Number(zostatok), pohyby);
+  const riadky = odhadUrokov({
+    nast: zmluva,
+    obdobieUrocenia: zmluva.interest_period,
+    od,
+    do: dnes,
+    cerpanie: (d) => Math.max(0, -zostatokDna(d)),
+    sadzby: podklady.sadzby,
+    rucne: podklady.rucne,
+    dnes,
+  });
+  return { ok: true, od, riadky: porovnajSoSkutocnymi(riadky, uroky) };
 }

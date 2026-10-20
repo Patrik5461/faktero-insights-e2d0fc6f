@@ -71,6 +71,27 @@ const Zmluva_ = z
     limit_fee_yearly: z.number().min(0).max(10_000_000).optional().nullable(),
     valid_until: z.string().regex(DATUM).optional().nullable(),
     interest_period: z.enum(["mesacne", "stvrtrocne"]).optional().nullable(),
+    /* Pohyblivá sadzba — index + marža. Pri pevnej sa ignoruje. */
+    rate_type: z.enum(["pevna", "pohybliva"]).default("pevna"),
+    reference_index: z
+      .enum([
+        "EURIBOR_1M",
+        "EURIBOR_3M",
+        "EURIBOR_6M",
+        "EURIBOR_12M",
+        "ESTR",
+        "PRIBOR_1M",
+        "PRIBOR_3M",
+        "PRIBOR_6M",
+        "PRIBOR_1R",
+      ])
+      .optional()
+      .nullable(),
+    rate_margin: z.number().min(-20).max(50).optional().nullable(),
+    index_floor: z.number().min(-5).max(20).optional().nullable(),
+    fixing_rule: z.enum(["pred_zaciatkom_obdobia", "mesacny_priemer"]).optional().nullable(),
+    fixing_offset_days: z.number().int().min(0).max(10).optional().nullable(),
+    rate_reset: z.enum(["mesacne", "stvrtrocne", "polrocne", "rocne"]).optional().nullable(),
     /**
      * Kalendár prečítaný z nahratého dokumentu. Keď príde, je záväzný a nič sa
      * nedopočítava — sú to sumy, ktoré banka naozaj stiahne.
@@ -91,6 +112,18 @@ const Zmluva_ = z
       .optional(),
   })
   .superRefine((d, ctx) => {
+    if (d.rate_type === "pohybliva") {
+      if (!d.reference_index) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["reference_index"],
+          message: "Vyberte referenčný index.",
+        });
+      }
+      if (d.rate_margin === null || d.rate_margin === undefined) {
+        ctx.addIssue({ code: "custom", path: ["rate_margin"], message: "Zadajte maržu." });
+      }
+    }
     if (d.kind === "kontokorent") {
       if (!d.credit_limit) {
         ctx.addIssue({ code: "custom", path: ["credit_limit"], message: "Zadajte úverový rámec." });
@@ -126,9 +159,30 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await overClena(context, data.company_id);
 
+    /*
+     * Pohyblivá sadzba: `interest_rate` je posledná známa celková sadzba
+     * (index + marža). Dopočíta sa z indexu tu, nech kalendár úveru aj zoznam
+     * počítajú s celým číslom, nie len s maržou. Keď index ešte nie je
+     * načítaný, ostáva sadzba z formulára.
+     */
+    const { stlpceSadzby } = await import("./pohybliva-sadzba");
+    const sadzbaStlpce = stlpceSadzby(data);
+    if (sadzbaStlpce.rate_type === "pohybliva") {
+      const { dnesnaSadzba, nacitajRucneSadzby } = await import("./referencne-sadzby.server");
+      const rucne = data.id ? await nacitajRucneSadzby(supabase, data.company_id, data.id) : [];
+      const dnes = await dnesnaSadzba(
+        supabase,
+        { ...sadzbaStlpce, day_count: data.day_count },
+        rucne,
+      );
+      if (dnes?.sadzba !== null && dnes?.sadzba !== undefined) {
+        data.interest_rate = Math.max(0, dnes.sadzba);
+      }
+    }
+
     if (data.kind === "kontokorent") {
       const { ulozKontokorent } = await import("./kontokorent.server");
-      return await ulozKontokorent(supabase, userId, data);
+      return await ulozKontokorent(supabase, userId, { ...data, ...sadzbaStlpce });
     }
 
     /*
@@ -158,6 +212,7 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
       currency: data.currency,
       principal: data.principal!,
       interest_rate: data.interest_rate,
+      ...sadzbaStlpce,
       term_months: data.term_months!,
       first_due_date: data.first_due_date!,
       payment_amount: data.payment_amount ?? null,

@@ -11,6 +11,8 @@ import {
 import { formatujSumu } from "@/lib/faktero/zostatky";
 import { OBDOBIA_UROCENIA, type StavRamca } from "@/lib/faktero/kontokorent";
 import { useT } from "@/lib/i18n/useT";
+import { SadzbaZmluvy } from "./SadzbaZmluvy";
+import { nazovIndexu } from "@/lib/faktero/pohybliva-sadzba";
 
 /**
  * Detail kontokorentného úveru.
@@ -76,6 +78,11 @@ export function DetailKontokorentu({
     account_iban: string | null;
     bank_account_id: string | null;
     note: string | null;
+    rate_type?: string | null;
+    reference_index?: string | null;
+    rate_margin?: number | string | null;
+    index_floor?: number | string | null;
+    day_count?: string | null;
   };
 }) {
   const { t } = useT();
@@ -155,10 +162,18 @@ export function DetailKontokorentu({
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">{t("Úrok")}</dt>
-            <dd className="tabular-nums">
-              {zmluva.interest_rate !== null && zmluva.interest_rate !== ""
-                ? t("{sadzba} % p. a.", { sadzba: String(zmluva.interest_rate).replace(".", ",") })
-                : "—"}
+            <dd className="text-right tabular-nums">
+              {zmluva.rate_type === "pohybliva"
+                ? t("{index} + marža {marza} % p. a.", {
+                    index: nazovIndexu(zmluva.reference_index),
+                    marza: String(Number(zmluva.rate_margin)).replace(".", ","),
+                  })
+                : zmluva.interest_rate !== null && zmluva.interest_rate !== ""
+                  ? t("{sadzba} % p. a.", {
+                      sadzba: String(Number(zmluva.interest_rate)).replace(".", ","),
+                    })
+                  : "—"}
+              {zmluva.day_count ? `, ${zmluva.day_count}` : ""}
               {obdobie ? t(", strháva sa {obdobie}", { obdobie: t(obdobie) }) : ""}
             </dd>
           </div>
@@ -198,6 +213,15 @@ export function DetailKontokorentu({
           </p>
         )}
       </div>
+
+      <SadzbaZmluvy
+        cid={cid}
+        contractId={zmluva.id}
+        mena={mena}
+        pohybliva={zmluva.rate_type === "pohybliva"}
+        dayCount={zmluva.day_count ?? null}
+        indexFloor={zmluva.index_floor ?? null}
+      />
 
       {(d?.navrhy.length ?? 0) > 0 && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-5">

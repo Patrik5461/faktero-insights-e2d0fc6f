@@ -1,3 +1,4 @@
+import { formatujCislo } from "@/lib/faktero/mena";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -17,6 +18,17 @@ import { formatujSumu } from "@/lib/faktero/zostatky";
 import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { poslednaHodnotaIndexuFn } from "@/lib/faktero/pohybliva-sadzba.functions";
+import {
+  FREKVENCIE_ZMENY,
+  PRAVIDLA_FIXINGU,
+  REFERENCNE_INDEXY,
+  predvolenaFrekvencia,
+  zaokruhliSadzbu,
+  type FrekvenciaZmeny,
+  type PravidloFixingu,
+  type ReferencnyIndex,
+} from "@/lib/faktero/pohybliva-sadzba";
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -61,6 +73,14 @@ export type ZmluvaNaUpravu = {
   limit_fee_yearly?: number | string | null;
   valid_until?: string | null;
   interest_period?: string | null;
+  /* Pohyblivá sadzba */
+  rate_type?: string | null;
+  reference_index?: string | null;
+  rate_margin?: number | string | null;
+  index_floor?: number | string | null;
+  fixing_rule?: string | null;
+  fixing_offset_days?: number | string | null;
+  rate_reset?: string | null;
 };
 
 type UcetFirmy = {
@@ -152,6 +172,70 @@ export function FormularZmluvy({
   );
   const [ucty, setUcty] = useState<UcetFirmy[] | null>(null);
 
+  /* Pohyblivá sadzba */
+  const nacitajIndex = useServerFn(poslednaHodnotaIndexuFn);
+  const [typSadzby, setTypSadzby] = useState<"pevna" | "pohybliva">(
+    zmluva?.rate_type === "pohybliva" ? "pohybliva" : "pevna",
+  );
+  const pohybliva = typSadzby === "pohybliva";
+  const [refIndex, setRefIndex] = useState<ReferencnyIndex>(
+    (REFERENCNE_INDEXY.find((i) => i.kluc === zmluva?.reference_index)?.kluc ?? "EURIBOR_1M") as ReferencnyIndex,
+  );
+  const [marza, setMarza] = useState(text(zmluva?.rate_margin));
+  const [floor, setFloor] = useState(text(zmluva?.index_floor));
+  const [pravidlo, setPravidlo] = useState<PravidloFixingu>(
+    zmluva?.fixing_rule === "mesacny_priemer" ? "mesacny_priemer" : "pred_zaciatkom_obdobia",
+  );
+  const [posunFixingu, setPosunFixingu] = useState(
+    zmluva?.fixing_offset_days !== null && zmluva?.fixing_offset_days !== undefined
+      ? String(zmluva.fixing_offset_days)
+      : "2",
+  );
+  const [frekvencia, setFrekvencia] = useState<FrekvenciaZmeny>(
+    (FREKVENCIE_ZMENY.find((f) => f.kluc === zmluva?.rate_reset)?.kluc ??
+      predvolenaFrekvencia(zmluva?.reference_index)) as FrekvenciaZmeny,
+  );
+  const [poslednyIndex, setPoslednyIndex] = useState<{
+    hodnota: number;
+    datum: string;
+    druh: "denna" | "mesacny_priemer";
+  } | null>(null);
+  const [ramecOd, setRamecOd] = useState(text(zmluva?.interest_from));
+
+  useEffect(() => {
+    if (!pohybliva) return;
+    let zruseny = false;
+    nacitajIndex({ data: { index: refIndex } })
+      .then((r) => !zruseny && setPoslednyIndex(r))
+      .catch(() => !zruseny && setPoslednyIndex(null));
+    return () => {
+      zruseny = true;
+    };
+  }, [pohybliva, refIndex, nacitajIndex]);
+
+  /** Sadzba na náhľad a do `interest_rate` — pri pohyblivej ju server prepočíta z indexu. */
+  const efektivnaSadzba = useMemo(() => {
+    if (!pohybliva) return cislo(rate);
+    const m = cislo(marza);
+    if (!poslednyIndex) return m;
+    const f = floor.trim() ? cislo(floor) : -Infinity;
+    return zaokruhliSadzbu(Math.max(poslednyIndex.hodnota, f) + m);
+  }, [pohybliva, rate, marza, floor, poslednyIndex]);
+
+  const polaSadzby = () =>
+    pohybliva
+      ? {
+          rate_type: "pohybliva" as const,
+          reference_index: refIndex,
+          rate_margin: cislo(marza),
+          index_floor: floor.trim() ? cislo(floor) : null,
+          fixing_rule: pravidlo,
+          fixing_offset_days:
+            pravidlo === "pred_zaciatkom_obdobia" ? Math.max(0, Math.min(10, Math.floor(cislo(posunFixingu)))) : null,
+          rate_reset: frekvencia,
+        }
+      : { rate_type: "pevna" as const };
+
   // Účty sa načítajú až pri kontokorente — leasing ani úver ich nepotrebujú.
   useEffect(() => {
     if (!kontokorent || ucty !== null) return;
@@ -184,7 +268,7 @@ export function FormularZmluvy({
     }
     const z = {
       principal: cislo(principal),
-      interest_rate: cislo(rate),
+      interest_rate: Math.max(0, efektivnaSadzba),
       term_months: Math.floor(cislo(months)),
       first_due_date: firstDue,
       payment_amount: payment ? cislo(payment) : null,
@@ -210,13 +294,23 @@ export function FormularZmluvy({
     interestFrom,
     riadkyZoZmluvy,
     kontokorent,
+    efektivnaSadzba,
   ]);
+
+  function sadzbaJeVyplnena(): boolean {
+    if (pohybliva && !marza.trim()) {
+      toast.error(t("Zadajte maržu pohyblivej sadzby."));
+      return false;
+    }
+    return true;
+  }
 
   async function odosliKontokorent() {
     if (cislo(limit) <= 0) {
       toast.error(t("Zadajte úverový rámec (limit)."));
       return;
     }
+    if (!sadzbaJeVyplnena()) return;
     setUkladam(true);
     try {
       const r = await uloz({
@@ -229,7 +323,10 @@ export function FormularZmluvy({
           contract_number: contractNumber.trim() || null,
           counterparty_hint: provider.trim() || null,
           currency: ucty?.find((u) => u.id === ucetId)?.currency ?? zmluva?.currency ?? "EUR",
-          interest_rate: cislo(rate),
+          interest_rate: Math.max(0, efektivnaSadzba),
+          ...polaSadzby(),
+          day_count: dayCount,
+          interest_from: DATUM.test(ramecOd) ? ramecOd : null,
           credit_limit: cislo(limit),
           bank_account_id: ucetId || null,
           account_iban: iban.trim() ? normIban(iban) : null,
@@ -265,6 +362,7 @@ export function FormularZmluvy({
       toast.error(t("Doplňte splatnosť prvej splátky — bez nej sa kalendár nedá zapísať."));
       return;
     }
+    if (!sadzbaJeVyplnena()) return;
     setUkladam(true);
     try {
       const r = await uloz({
@@ -279,7 +377,8 @@ export function FormularZmluvy({
           counterparty_hint: provider.trim() || null,
           currency: "EUR",
           principal: cislo(principal),
-          interest_rate: cislo(rate),
+          interest_rate: Math.max(0, efektivnaSadzba),
+          ...polaSadzby(),
           term_months: Math.floor(cislo(months)),
           first_due_date: firstDue,
           payment_amount: payment ? cislo(payment) : null,
@@ -303,6 +402,25 @@ export function FormularZmluvy({
 
   const pole = "w-full rounded-lg border bg-background px-3 py-2 text-sm";
   const popis = "mb-1 block text-sm font-medium";
+
+  /** Spôsob výpočtu úroku pri kontokorente (pri úvere je v poliach kalendára). */
+  const poleVypoctu = (
+    <div>
+      <label className={popis}>{t("Výpočet úroku")}</label>
+      <select
+        className={pole}
+        value={dayCount}
+        onChange={(e) => setDayCount(e.target.value as "ACT/365")}
+      >
+        <option value="ACT/360">{t("ACT/360 – skutočné dni")}</option>
+        <option value="ACT/365">{t("ACT/365 – skutočné dni")}</option>
+        <option value="30E/360">{t("30E/360 – mesiac 30 dní")}</option>
+      </select>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("Pri úveroch s EURIBORom banky takmer vždy počítajú „rok s 360 dňami“ (ACT/360) — skontrolujte zmluvu.")}
+      </p>
+    </div>
+  );
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
@@ -441,16 +559,15 @@ export function FormularZmluvy({
               </div>
             )}
             <div>
-              <label className={popis}>{t("Úrok % p. a.")}</label>
+              <label className={popis}>{t("Rámec platí od")}</label>
               <input
+                type="date"
                 className={pole}
-                inputMode="decimal"
-                value={rate}
-                onChange={(e) => setRate(e.target.value)}
-                placeholder="7,5"
+                value={ramecOd}
+                onChange={(e) => setRamecOd(e.target.value)}
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                {t("Pri pohyblivej sadzbe (napr. 3M EURIBOR + marža) zadajte aktuálnu výslednú a zloženie si poznačte do poznámky.")}
+                {t("Deň podpisu alebo sprístupnenia rámca — od neho Faktero počíta úrok z čerpania.")}
               </p>
             </div>
             <div>
@@ -506,16 +623,6 @@ export function FormularZmluvy({
                   value={principal}
                   onChange={(e) => setPrincipal(e.target.value)}
                   placeholder="20000"
-                />
-              </div>
-              <div>
-                <label className={popis}>{t("Úrok % p. a.")}</label>
-                <input
-                  className={pole}
-                  inputMode="decimal"
-                  value={rate}
-                  onChange={(e) => setRate(e.target.value)}
-                  placeholder="5"
                 />
               </div>
               <div>
@@ -626,6 +733,162 @@ export function FormularZmluvy({
           </>
         )}
 
+        <div className="space-y-4 rounded-lg border p-4">
+          <div>
+            <span className={popis}>{t("Úroková sadzba")}</span>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ["pevna", "Pevná"],
+                  ["pohybliva", "Pohyblivá"],
+                ] as const
+              ).map(([k, l]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setTypSadzby(k)}
+                  className={`rounded-lg border px-4 py-2 text-sm ${
+                    typSadzby === k ? "border-primary bg-primary/10 font-medium" : ""
+                  }`}
+                >
+                  {t(l)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {!pohybliva ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={popis}>{t("Úrok % p. a.")}</label>
+                <input
+                  className={pole}
+                  inputMode="decimal"
+                  value={rate}
+                  onChange={(e) => setRate(e.target.value)}
+                  placeholder={kontokorent ? "7,5" : "5"}
+                />
+              </div>
+              {kontokorent && poleVypoctu}
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={popis}>{t("Referenčný index")}</label>
+                  <select
+                    className={pole}
+                    value={refIndex}
+                    onChange={(e) => {
+                      const i = e.target.value as ReferencnyIndex;
+                      setRefIndex(i);
+                      setFrekvencia(predvolenaFrekvencia(i));
+                    }}
+                  >
+                    {REFERENCNE_INDEXY.map((i) => (
+                      <option key={i.kluc} value={i.kluc}>
+                        {i.nazov}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={popis}>{t("Marža % p. a.")}</label>
+                  <input
+                    className={pole}
+                    inputMode="decimal"
+                    value={marza}
+                    onChange={(e) => setMarza(e.target.value)}
+                    placeholder="4,3"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("Prirážka banky k indexu — tak, ako je v zmluve (po prípadnom zvýhodnení).")}
+                  </p>
+                </div>
+                <div>
+                  <label className={popis}>{t("Dolná hranica indexu %")}</label>
+                  <input
+                    className={pole}
+                    inputMode="decimal"
+                    value={floor}
+                    onChange={(e) => setFloor(e.target.value)}
+                    placeholder={t("bez hranice")}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("Napr. 0, keď zmluva hovorí, že záporný index sa považuje za nulu. Prázdne = bez hranice.")}
+                  </p>
+                </div>
+                <div>
+                  <label className={popis}>{t("Sadzba sa mení")}</label>
+                  <select
+                    className={pole}
+                    value={frekvencia}
+                    onChange={(e) => setFrekvencia(e.target.value as FrekvenciaZmeny)}
+                  >
+                    {FREKVENCIE_ZMENY.map((f) => (
+                      <option key={f.kluc} value={f.kluc}>
+                        {t(f.nazov)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={popis}>{t("Index sa určuje")}</label>
+                  <div className="flex gap-2">
+                    {pravidlo === "pred_zaciatkom_obdobia" && (
+                      <input
+                        className={`${pole} w-16 shrink-0`}
+                        inputMode="numeric"
+                        value={posunFixingu}
+                        onChange={(e) => setPosunFixingu(e.target.value)}
+                        aria-label={t("Počet pracovných dní")}
+                      />
+                    )}
+                    <select
+                      className={pole}
+                      value={pravidlo}
+                      onChange={(e) => setPravidlo(e.target.value as PravidloFixingu)}
+                    >
+                      {PRAVIDLA_FIXINGU.map((p) => (
+                        <option key={p.kluc} value={p.kluc}>
+                          {t(p.nazov)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("Bežne „dva pracovné dni pred začiatkom obdobia fixácie“.")}
+                  </p>
+                </div>
+                {kontokorent && poleVypoctu}
+              </div>
+              <p className="text-sm">
+                {poslednyIndex
+                  ? t("Dnes: {index} {hodnota} % ({k}) + marža {marza} % = {sadzba} % p. a.", {
+                      index: REFERENCNE_INDEXY.find((i) => i.kluc === refIndex)?.nazov ?? refIndex,
+                      hodnota: formatujCislo(poslednyIndex.hodnota, 2, 3),
+                      k:
+                        poslednyIndex.druh === "mesacny_priemer"
+                          ? t("priemer za {mesiac}", {
+                              mesiac: `${poslednyIndex.datum.slice(5, 7)}/${poslednyIndex.datum.slice(0, 4)}`,
+                            })
+                          : t("k {datum}", {
+                              datum: poslednyIndex.datum.split("-").reverse().join(". "),
+                            }),
+                      marza: formatujCislo(cislo(marza), 2, 3),
+                      sadzba: formatujCislo(efektivnaSadzba, 2, 2),
+                    })
+                  : t("Hodnota indexu sa načíta denne z ECB a ČNB; sadzba sa dopočíta pri uložení.")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  "EURIBOR je verejne zadarmo len ako mesačný priemer, takže vypočítaná sadzba je odhad — skutočnú určuje banka. Na detaile zmluvy sa dá za každé obdobie zadať ručne.",
+                )}
+              </p>
+            </>
+          )}
+        </div>
+
         <div>
           <label className={popis}>{t("Poznámka")}</label>
           <textarea
@@ -658,7 +921,7 @@ export function FormularZmluvy({
                 <dt className="text-muted-foreground">{t("Úrok pri plnom čerpaní za mesiac")}</dt>
                 <dd className="tabular-nums">
                   {formatujSumu(
-                    Math.round(((cislo(limit) * cislo(rate)) / 100 / 12) * 100) / 100,
+                    Math.round(((cislo(limit) * Math.max(0, efektivnaSadzba)) / 100 / 12) * 100) / 100,
                     "EUR",
                   )}
                 </dd>

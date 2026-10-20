@@ -3693,6 +3693,13 @@ export type Database = {
           payment_amount: number | null
           principal: number | null
           provider_name: string | null
+          fixing_offset_days: number | null
+          fixing_rule: string | null
+          index_floor: number | null
+          rate_margin: number | null
+          rate_reset: string | null
+          rate_type: string
+          reference_index: string | null
           residual_value: number
           schedule_source: string
           status: string
@@ -3728,6 +3735,13 @@ export type Database = {
           payment_amount?: number | null
           principal?: number | null
           provider_name?: string | null
+          fixing_offset_days?: number | null
+          fixing_rule?: string | null
+          index_floor?: number | null
+          rate_margin?: number | null
+          rate_reset?: string | null
+          rate_type?: string
+          reference_index?: string | null
           residual_value?: number
           schedule_source?: string
           status?: string
@@ -3763,6 +3777,13 @@ export type Database = {
           payment_amount?: number | null
           principal?: number | null
           provider_name?: string | null
+          fixing_offset_days?: number | null
+          fixing_rule?: string | null
+          index_floor?: number | null
+          rate_margin?: number | null
+          rate_reset?: string | null
+          rate_type?: string
+          reference_index?: string | null
           residual_value?: number
           schedule_source?: string
           status?: string
@@ -3796,6 +3817,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      financing_rate_periods: {
+        Row: {
+          company_id: string
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          period_start: string
+          rate: number
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          period_start: string
+          rate: number
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          period_start?: string
+          rate?: number
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financing_rate_periods_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financing_rate_periods_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "financing_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referencne_sadzby: {
+        Row: {
+          datum: string
+          druh: string
+          hodnota: number
+          index: string
+          nacitane: string
+          zdroj: string
+        }
+        Insert: {
+          datum: string
+          druh: string
+          hodnota: number
+          index: string
+          nacitane?: string
+          zdroj: string
+        }
+        Update: {
+          datum?: string
+          druh?: string
+          hodnota?: number
+          index?: string
+          nacitane?: string
+          zdroj?: string
+        }
+        Relationships: []
       }
       financing_installments: {
         Row: {

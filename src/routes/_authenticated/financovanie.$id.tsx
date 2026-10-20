@@ -21,6 +21,7 @@ import { Check, FileText, Link2, Pencil, RefreshCw, Trash2, Undo2 } from "lucide
 import { supabase } from "@/integrations/supabase/client";
 import { FormularZmluvy } from "@/components/faktero/FormularZmluvy";
 import { DetailKontokorentu } from "@/components/faktero/DetailKontokorentu";
+import { SadzbaZmluvy } from "@/components/faktero/SadzbaZmluvy";
 import { nazovDruhuFinancovania } from "@/lib/faktero/kontokorent";
 import { potvrd as potvrdAkciu } from "@/lib/potvrdenie";
 
@@ -270,6 +271,25 @@ function Stranka() {
                 </div>
               ))}
             </div>
+
+            {z.rate_type === "pohybliva" && (
+              <div className="mb-6">
+                <SadzbaZmluvy
+                  key={z.updated_at}
+                  cid={cid}
+                  contractId={z.id}
+                  mena={z.currency || "EUR"}
+                  pohybliva
+                  dayCount={z.day_count ?? null}
+                  indexFloor={z.index_floor ?? null}
+                />
+                <p className="mt-2 px-1 text-xs text-muted-foreground">
+                  {t(
+                    "Splátkový kalendár je spočítaný so sadzbou platnou pri uložení zmluvy. Keď banka po zmene indexu oznámi novú splátku, zmluvu upravte a uložte — nezaplatené splátky sa prepočítajú s dnešnou sadzbou.",
+                  )}
+                </p>
+              </div>
+            )}
 
             {navrhy.length > 0 && (
               <div className="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-5">
