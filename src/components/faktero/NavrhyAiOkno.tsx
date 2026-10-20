@@ -27,11 +27,15 @@ const POPIS_STAVU: Record<string, string> = {
   nedostupny: "AI teraz neodpovedá — skúste neskôr",
   nepodporovane: "pre túto krajinu firmy sa návrh nerobí",
   bez_prava: "bez oprávnenia",
+  // Návrh bez AI a návyku — kódy dáva pravidlo účtovania, ktoré na doklad ešte nedobehlo.
+  navrh: "kódy z pravidla účtovania",
 };
 
 const maNavrh = (r: Riadok) =>
   r.stav === "navrh" &&
-  Object.values(r.polia).some((h) => h && (h.zdroj === "ai" || h.zdroj === "navyk"));
+  Object.values(r.polia).some(
+    (h) => h && (h.zdroj === "ai" || h.zdroj === "navyk" || h.zdroj === "pravidlo"),
+  );
 
 /**
  * „Navrhnúť AI pre vybrané" v zozname prijatých faktúr. Návrhy sa počítajú

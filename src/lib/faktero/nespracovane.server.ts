@@ -193,7 +193,6 @@ export async function vytvorDoklad(
   */
   const ucenie = await import("./ucenie-z-oprav.server");
   const { jeDruhUcenia, volbyZUdajov, hodnotaPola } = await import("./ucenie-z-oprav");
-  const povodneU = u;
   /*
     Nepotvrdený návrh AI do dokladu nejde — doklad by sa ním zaúčtoval bez
     človeka. Prenesie sa k vytvorenému dokladu, kde ho človek potvrdí.
@@ -221,7 +220,8 @@ export async function vytvorDoklad(
         created_by: autor,
         predmet_mailu: predmetMailu,
         inbox_message_id: r.inbox_message_id ?? null,
-        status: "received",
+        // Zaúčtovaná faktúra je „booked“ ako po zaúčtovaní v paneli.
+        status: zauctovat ? "booked" : "received",
         source: ZDROJ_PRIJATEJ[r.zdroj] ?? "nahrate",
         file_path: cesta,
         file_mime: cesta ? mime : null,
@@ -334,9 +334,11 @@ export async function vytvorDoklad(
   // Čo človek pri dodávateľovi zvolil — návrh pre ďalší doklad.
   if (jeDruhUcenia(druh)) {
     const volby = volbyZUdajov(u, druh);
-    // Naučené pole vyprázdnené kvôli pravidlu nie je voľba človeka.
+    // Prázdne pole nie je voľba človeka — buď ho vyprázdnilo pravidlo (kódy doplní
+    // spúšťač až po zápise), alebo ho nikto nevyplnil. Zapísané „“ by z histórie
+    // vytlačilo skutočne naučenú hodnotu.
     for (const k of Object.keys(volby) as (keyof typeof volby)[])
-      if (!hodnotaPola(u, k) && hodnotaPola(povodneU, k)) delete volby[k];
+      if (!hodnotaPola(u, k)) delete volby[k];
     await ucenie.zaznamenajVolby(supabase, {
       companyId: r.company_id,
       druh,

@@ -34,4 +34,5 @@ export default {
   "Navrhnúť AI pre vybrané": "KI-Vorschlag für Ausgewählte",
   "Na zaúčtovanie dokladov nemáte v tejto firme oprávnenie.":
     "Sie haben in diesem Unternehmen keine Berechtigung, Belege zu verbuchen.",
+  "kódy z pravidla účtovania": "Codes aus der Kontierungsregel",
 } satisfies Record<string, string>;

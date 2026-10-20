@@ -49,7 +49,14 @@ export function ZauctovanieFakturOkno({
             vynechane: r.preskocene.join(" · "),
           }),
         );
-      else toast.success(t("Zaúčtovaných {n} faktúr", { n: r.zauctovanych }));
+      else
+        toast.success(
+          r.zauctovanych === 1
+            ? t("Zaúčtovaná 1 faktúra")
+            : r.zauctovanych < 5
+              ? t("Zaúčtované {n} faktúry", { n: r.zauctovanych })
+              : t("Zaúčtovaných {n} faktúr", { n: r.zauctovanych }),
+        );
       onHotovo();
       onClose();
     } catch (e: any) {

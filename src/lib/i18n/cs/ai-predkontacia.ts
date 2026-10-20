@@ -33,4 +33,5 @@ export default {
   "Navrhnúť AI pre vybrané": "Navrhnout AI pro vybrané",
   "Na zaúčtovanie dokladov nemáte v tejto firme oprávnenie.":
     "K zaúčtování dokladů nemáte v této firmě oprávnění.",
+  "kódy z pravidla účtovania": "kódy z pravidla zaúčtování",
 } satisfies Record<string, string>;
