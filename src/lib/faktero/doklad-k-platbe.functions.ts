@@ -70,13 +70,20 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
     const celok = Number(zf.total ?? 0);
     const prijate = Math.min(data.suma ?? celok, celok);
     if (!(prijate > 0)) throw new Error("Prijatá suma musí byť kladná.");
-    // Čiastočná platba: položky sa zmenšia rovnakým pomerom, nech sedí rozpis
-    // po sadzbách aj celok.
-    const pomer = celok > 0 ? prijate / celok : 1;
-
-    const { nextInvoiceNumberDetailed, computeInvoiceTotals } = await import(
-      "./invoice-numbering.server"
+    // Daň sa počíta z prijatej sumy s DPH (nie zo základu zálohy), a pri
+    // čiastočnej platbe sa suma rozdelí podľa položiek — súčet sedí na halier.
+    const { rozpisDokladuKPlatbe } = await import("./doklad-k-platbe");
+    const rozpis = rozpisDokladuKPlatbe(
+      polozky.map((p: any) => ({
+        quantity: Number(p.quantity),
+        unit_price: Number(p.unit_price),
+        vat_rate: Number(p.vat_rate),
+        total: p.total == null ? null : Number(p.total),
+      })),
+      prijate,
     );
+
+    const { nextInvoiceNumberDetailed } = await import("./invoice-numbering.server");
     const cislo = await nextInvoiceNumberDetailed(
       zf.company_id,
       data.datum_platby,
@@ -96,21 +103,20 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
     const novePolozky: NovaPolozka[] = polozky.map((p: any, i: number) => ({
       name: p.name,
       description: p.description ?? null,
-      quantity: Number(p.quantity),
+      quantity: rozpis.riadky[i].quantity,
       unit: p.unit || "ks",
-      unit_price: Math.round(Number(p.unit_price) * pomer * 100000) / 100000,
+      unit_price: rozpis.riadky[i].unit_price,
       vat_rate: Number(p.vat_rate),
       position: i,
       product_id: p.product_id ?? null,
       // Zo zálohy sa tovar zo skladu neodpisuje — ten odíde až dodaním.
     }));
-    const sumy = computeInvoiceTotals(
-      novePolozky.map((p) => ({
-        quantity: p.quantity,
-        unit_price: p.unit_price,
-        vat_rate: p.vat_rate,
-      })),
-    );
+    const sumy = {
+      subtotal: rozpis.subtotal,
+      vat_total: rozpis.vat_total,
+      total: rozpis.total,
+      enriched: rozpis.riadky,
+    };
 
     const { data: doklad, error: chyba } = await supabase
       .from("invoices")
