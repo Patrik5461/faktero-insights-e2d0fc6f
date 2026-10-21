@@ -10,15 +10,18 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2, RefreshCw, TriangleAlert, Webhook } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, Loader2, RefreshCw, TriangleAlert, Webhook } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 import {
   adminEfakturaPrehladFn,
+  adminMigrujZiadostFn,
   adminPriradZiadostFn,
   adminSchvalZiadostFn,
   adminZamietniZiadostFn,
   adminZapniWebhookyFn,
   adminZmazWebhookFn,
   adminZopakujZiadostFn,
+  type ZiadostFsAdmin,
 } from "@/lib/faktero/efaktura-admin.functions";
 
 export const Route = createFileRoute("/admin/efaktura")({ component: Page });
@@ -31,7 +34,11 @@ const STAVY: Record<string, { text: string; cls: string }> = {
   na_kontrolu: { text: "Kontrola u ePoštáka", cls: "bg-amber-100 text-amber-800" },
   zamietnuta: { text: "Zamietnutá", cls: "bg-rose-100 text-rose-800" },
   chyba: { text: "Chyba", cls: "bg-rose-100 text-rose-800" },
+  cudzi_poskytovatel: { text: "U iného poskytovateľa", cls: "bg-violet-100 text-violet-800" },
 };
+
+/** Stavy, z ktorých sa dá firma prevziať migračným kódom (rovnaké ako na serveri). */
+const STAVY_PRE_MIGRACIU = new Set(["cudzi_poskytovatel", "chyba", "zamietnuta"]);
 
 const kedy = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("sk-SK", { dateStyle: "short", timeStyle: "short" }) : "—";
@@ -132,6 +139,14 @@ function Page() {
                         {STAVY[z.stav]?.text ?? z.stav}
                       </span>
                       {z.chyba && <div className="mt-1 max-w-xs text-xs text-rose-700">{z.chyba}</div>}
+                      {z.cudzi_poskytovatel && (
+                        <div className="mt-1 max-w-xs text-xs font-medium">Firma je u: {z.cudzi_poskytovatel}</div>
+                      )}
+                      {z.migracia_bezi && (
+                        <div className="mt-1 max-w-xs text-xs text-amber-800">
+                          Prevzatie migračným kódom beží (spustené {kedy(z.migracia_at)})
+                        </div>
+                      )}
                       {!z.podpis_overeny && (
                         <div className="mt-1 max-w-xs text-xs text-muted-foreground">
                           Podpis neoverený · {z.via ? `prišla cez ${z.via}` : "bez hlavičky Via"}
@@ -182,6 +197,13 @@ function Page() {
                             Zamietnuť
                           </button>
                         </div>
+                      )}
+                      {STAVY_PRE_MIGRACIU.has(z.stav) && !z.migracia_bezi && (
+                        <Prevzatie
+                          ziadost={z}
+                          smie={Boolean(data?.smieMigrovat)}
+                          poHotove={obnov}
+                        />
                       )}
                       {z.ma_token && z.stav !== "registrovana" && z.stav !== "na_schvalenie" && (
                         <button
@@ -310,6 +332,90 @@ function Page() {
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * Prevzatie firmy od iného poskytovateľa migračným kódom. Kód drží len toto
+ * políčko (type=password) — po odoslaní sa vymaže; späť zo servera nikdy nepríde.
+ */
+function Prevzatie({
+  ziadost,
+  smie,
+  poHotove,
+}: {
+  ziadost: ZiadostFsAdmin;
+  smie: boolean;
+  poHotove: () => void;
+}) {
+  const migruj = useServerFn(adminMigrujZiadostFn);
+  const [kod, setKod] = useState("");
+  const [bezi, setBezi] = useState(false);
+  const meno = ziadost.nazov ?? `DIČ ${ziadost.dic}`;
+
+  const prevezmi = async () => {
+    if (!kod.trim()) return toast.error("Zadaj migračný kód.");
+    const ok = await potvrd(
+      `Prevziať ${meno} od ${ziadost.cudzi_poskytovatel ?? "súčasného poskytovateľa"}? ` +
+        "Po prevzatí budú eFaktúry firmy chodiť do Faktera a u pôvodného poskytovateľa sa firma odpojí.",
+      { potvrdit: "Prevziať firmu" },
+    );
+    if (!ok) return;
+    setBezi(true);
+    try {
+      const r = await migruj({ data: { id: ziadost.id, kod } });
+      setKod("");
+      if (r.stav === "registrovana") toast.success(`${meno} je prevzatá — eFaktúry idú cez Faktero.`);
+      else if (r.bezi) toast.info("Prevzatie beží u ePoštáka — výsledok príde e-mailom a ukáže sa tu.");
+      else toast.error(r.chyba ?? "Prevzatie neprešlo.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    } finally {
+      setBezi(false);
+      poHotove();
+    }
+  };
+
+  if (!smie) {
+    return (
+      <p className="mb-2 max-w-[16rem] text-xs text-muted-foreground">
+        Prevziať firmu migračným kódom smie len superadmin.
+      </p>
+    );
+  }
+  return (
+    <form
+      className="mb-2 flex w-64 flex-col gap-1"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void prevezmi();
+      }}
+    >
+      <label className="text-xs font-medium" htmlFor={`kod-${ziadost.id}`}>
+        Migračný kód
+      </label>
+      <input
+        id={`kod-${ziadost.id}`}
+        type="password"
+        autoComplete="off"
+        spellCheck={false}
+        value={kod}
+        onChange={(e) => setKod(e.target.value)}
+        className="rounded border border-input bg-background px-2 py-1 text-xs"
+      />
+      <p className="text-[11px] leading-snug text-muted-foreground">
+        Kód vydá firme jej súčasný poskytovateľ a firma ho pošle nám. Po prevzatí jej eFaktúry chodia
+        do Faktera a u pôvodného poskytovateľa sa odpojí.
+      </p>
+      <button
+        type="submit"
+        disabled={bezi || !kod.trim()}
+        className="inline-flex items-center justify-center gap-1 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+      >
+        {bezi ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRightLeft className="h-3.5 w-3.5" />}
+        Prevziať firmu
+      </button>
+    </form>
   );
 }
 

@@ -796,6 +796,82 @@ export async function registrujWhiteLabel(v: {
   });
 }
 
+/**
+ * Prevezme firmu, ktorú v SMP drží iný poskytovateľ, migračným kódom od neho.
+ *
+ * Kód je tajný: ide len v tele požiadavky (`epostakFetch` pri chybe vypisuje
+ * odpoveď, nie telo) a do `Idempotency-Key` sa dáva len jeho hash. Odpoveď je
+ * rovnaká operácia ako pri registrácii — 202 sa dopytuje cez `stavWhiteLabel`.
+ */
+export async function migrujWhiteLabel(v: {
+  customerRef: string;
+  dic: string;
+  companyEmail: string;
+  migrationCode: string;
+  idempotencyKey: string;
+}): Promise<WhiteLabelOperacia> {
+  return epostakFetch<WhiteLabelOperacia>("/api/v1/white-label/participants/migrations", {
+    method: "POST",
+    idempotencyKey: v.idempotencyKey,
+    body: {
+      customerRef: v.customerRef,
+      dic: v.dic,
+      companyEmail: v.companyEmail,
+      migrationCode: v.migrationCode,
+    },
+  });
+}
+
+/** Kľúč opakovania migrácie: rovnaký pre ten istý kód, nový pre nový kód. Kód sám v ňom nie je. */
+export function klucMigracie(ziadostId: string, kod: string): string {
+  const hash = createHash("sha256").update(`faktero-migracia:${kod}`).digest("hex").slice(0, 32);
+  return `faktero-pds-migracia:${ziadostId}:${hash}`;
+}
+
+/** `O=` z predmetu certifikátu, napr. „CN=POP000123, O=Doklado s.r.o., C=SK“ → „Doklado s.r.o.“. */
+export function organizaciaZCertifikatu(subject: unknown): string | null {
+  if (typeof subject !== "string") return null;
+  const m = subject.match(/(?:^|[,/]\s*)O\s*=\s*("(?:[^"\\]|\\.)*"|(?:[^,/\\]|\\.)+)/);
+  if (!m) return null;
+  const o = m[1].trim().replace(/^"|"$/g, "").replace(/\\(.)/g, "$1").trim();
+  return o ? o.slice(0, 200) : null;
+}
+
+/**
+ * Kto firmu v Peppole drží — podľa certifikátu prístupového bodu v SMP.
+ *
+ * SMP lookup chce `X-Firm-Id` firmy, ktorá je u nás aktívna v produkcii
+ * (testovacie firmy vracajú 401). V pieskovisku sa nepýta vôbec. Keď to
+ * nevyjde, vráti null — je to len doplnková informácia pre admina.
+ */
+export async function zistiPoskytovatelaVSmp(dic: string): Promise<string | null> {
+  if (jeTestovaciRezim() || !/^[0-9]{10}$/.test(dic)) return null;
+  try {
+    const { data } = await (supabaseAdmin as any)
+      .from("efaktura_profiles")
+      .select("epostak_firm_id")
+      .eq("enabled", true)
+      .eq("test_mode", false)
+      .not("epostak_firm_id", "is", null)
+      .order("activated_at", { ascending: true })
+      .limit(3);
+    for (const p of data ?? []) {
+      try {
+        const r = await epostakFetch<any>(`/api/v1/peppol/participants/0245/${dic}`, {
+          firmId: p.epostak_firm_id,
+        });
+        return organizaciaZCertifikatu(r?.certificate?.subject);
+      } catch (e: any) {
+        // 401/403 = táto firma lookup nesmie, skúsi sa ďalšia; iné nemá zmysel opakovať.
+        if (e?.status !== 401 && e?.status !== 403) return null;
+      }
+    }
+  } catch {
+    /* doplnková informácia — nič sa nedeje */
+  }
+  return null;
+}
+
 /** Stav rozbehnutej registrácie (odpoveď 202 → dopytuje sa neskôr). */
 export async function stavWhiteLabel(operaciaId: string): Promise<WhiteLabelOperacia> {
   return epostakFetch<WhiteLabelOperacia>(

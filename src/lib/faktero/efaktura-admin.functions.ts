@@ -8,7 +8,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
   preto sa najprv overí `platform_admins`. Token z FS sa von nikdy nevracia.
 */
 
-async function admin(userId: string) {
+async function overAdmina(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("platform_admins")
@@ -16,7 +16,11 @@ async function admin(userId: string) {
     .eq("user_id", userId)
     .maybeSingle();
   if (!data) throw new Error("Forbidden: not a platform admin");
-  return supabaseAdmin as any;
+  return { db: supabaseAdmin as any, role: data.role as "admin" | "superadmin" };
+}
+
+async function admin(userId: string) {
+  return (await overAdmina(userId)).db;
 }
 
 export type ZiadostFsAdmin = {
@@ -37,6 +41,11 @@ export type ZiadostFsAdmin = {
   /** false = podpis FS nesedel, žiadosť prešla len na ručné schválenie. */
   podpis_overeny: boolean;
   via: string | null;
+  /** Kto firmu v Peppole drží (O= z certifikátu v SMP), ak sa to zistilo. */
+  cudzi_poskytovatel: string | null;
+  /** Rozbehnuté prevzatie migračným kódom (kód je uložený zašifrovaný). */
+  migracia_bezi: boolean;
+  migracia_at: string | null;
 };
 
 export type WebhookAdmin = {
@@ -52,6 +61,8 @@ export type WebhookAdmin = {
 
 export type EfakturaPrehlad = {
   nastavene: { pdsTajomstvo: boolean; epostakProdukcia: boolean };
+  /** Prevzatie firmy migračným kódom smie len superadmin. */
+  smieMigrovat: boolean;
   ziadosti: ZiadostFsAdmin[];
   odmietnute: OdmietnutaFsAdmin[];
   webhooky: WebhookAdmin[];
@@ -70,12 +81,12 @@ export type OdmietnutaFsAdmin = {
 export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<EfakturaPrehlad> => {
-    const db = await admin((context as { userId: string }).userId);
+    const { db, role } = await overAdmina((context as { userId: string }).userId);
     const [{ data: ziadosti }, { data: webhooky }, { data: odmietnute }] = await Promise.all([
       db
         .from("efaktura_pds_ziadosti")
         .select(
-          "id, prijate_at, dic, nazov, email, telefon, stav, company_id, peppol_id, chyba, pokusov, pozvanka_odoslana_at, token_sifrovany, podpis_overeny, via, companies(name)",
+          "id, prijate_at, dic, nazov, email, telefon, stav, company_id, peppol_id, chyba, pokusov, pozvanka_odoslana_at, token_sifrovany, podpis_overeny, via, cudzi_poskytovatel, migracny_kod_sifrovany, migracia_at, companies(name)",
         )
         .order("prijate_at", { ascending: false })
         .limit(300),
@@ -95,6 +106,7 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
         pdsTajomstvo: Boolean(process.env.EFAKTURA_PDS_SECRET),
         epostakProdukcia: (process.env.EPOSTAK_ENV ?? "sandbox").toLowerCase() === "production",
       },
+      smieMigrovat: role === "superadmin",
       ziadosti: (ziadosti ?? []).map(
         (z: any): ZiadostFsAdmin => ({
           id: z.id,
@@ -113,6 +125,10 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
           ma_token: Boolean(z.token_sifrovany),
           podpis_overeny: z.podpis_overeny !== false,
           via: z.via ?? null,
+          cudzi_poskytovatel: z.cudzi_poskytovatel ?? null,
+          // Kód sám sa von nevracia — len to, že je uložený.
+          migracia_bezi: Boolean(z.migracny_kod_sifrovany),
+          migracia_at: z.migracia_at ?? null,
         }),
       ),
       odmietnute: (odmietnute ?? []) as OdmietnutaFsAdmin[],
@@ -154,6 +170,29 @@ export const adminSchvalZiadostFn = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const { spracujZiadost } = await import("./efaktura/webhooky-obsluha.server");
     return { stav: await spracujZiadost(data.id) };
+  });
+
+/**
+ * Prevezme firmu od iného poskytovateľa migračným kódom (ePošták White Label
+ * migrácia). Len superadmin. Kód sa uloží zašifrovaný, kým migrácia nedobehne
+ * (cron ju dopytuje), po konečnom výsledku sa zmaže; do auditu ani logu nejde.
+ */
+export const adminMigrujZiadostFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        kod: z.string().trim().min(1, "Zadaj migračný kód.").max(4096),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const userId = (context as { userId: string }).userId;
+    const { db, role } = await overAdmina(userId);
+    if (role !== "superadmin") throw new Error("Prevziať firmu smie len superadmin.");
+    const { prevezmiMigracnymKodom } = await import("./efaktura/migracia.server");
+    return prevezmiMigracnymKodom(db, { id: data.id, kod: data.kod, adminUserId: userId });
   });
 
 /** Zamietne neoverenú žiadosť — token sa zahodí. */

@@ -88,16 +88,38 @@ const POPIS_STAVU: Record<string, string> = {
   chyba: "registrácia zlyhala — skúsi sa znova v noci",
   zamietnuta: "registráciu zamietli — opakovanie nepomôže",
   na_kontrolu: "ePošták ju dal na ručnú kontrolu",
+  cudzi_poskytovatel: "firma je v Peppole u iného poskytovateľa — treba migračný kód",
 };
 
 /** 2) Výsledok registrácie — len pri zmene stavu, nie pri každom pokuse. */
 export function upozorniVysledokRegistracie(
-  f: Firma & { stav: string; chyba?: string | null; pokusov?: number | null; maFirmu: boolean },
+  f: Firma & {
+    stav: string;
+    chyba?: string | null;
+    pokusov?: number | null;
+    maFirmu: boolean;
+    /** Kto firmu v SMP drží (z certifikátu), ak sa to podarilo zistiť. */
+    poskytovatel?: string | null;
+    /** Výsledok prevzatia migračným kódom, nie registrácie z tokenu FS. */
+    migracia?: boolean;
+  },
 ) {
-  const popis = POPIS_STAVU[f.stav];
-  if (!popis) return Promise.resolve(false);
+  const zaklad = POPIS_STAVU[f.stav];
+  if (!zaklad) return Promise.resolve(false);
+  const popis =
+    f.migracia && f.stav === "registrovana"
+      ? "prevzatie od iného poskytovateľa je hotové"
+      : f.migracia && f.stav === "cudzi_poskytovatel"
+        ? "prevzatie migračným kódom neprešlo"
+        : zaklad;
   const riadky = [`${popisFirmy(f)}: ${popis}.`];
   if (f.chyba) riadky.push("", `Dôvod: ${f.chyba}`);
+  if (f.poskytovatel) riadky.push(`Firma je u: ${f.poskytovatel}`);
+  if (f.stav === "cudzi_poskytovatel")
+    riadky.push(
+      "",
+      "Automaticky sa to už neopakuje. Firma si u súčasného poskytovateľa vypýta migračný kód a pošle ho nám; v Admin → eFaktúra ho zadaj pri žiadosti (Prevziať firmu).",
+    );
   if (f.stav === "chyba" && f.pokusov) riadky.push(`Pokus č. ${f.pokusov}.`);
   if (f.stav === "registrovana")
     riadky.push(

@@ -147,7 +147,39 @@ function stavZOperacie(s: string): string {
   return "registruje_sa";
 }
 
-/** Jedna žiadosť FS → registrácia u ePoštáka → firma alebo pozvánka. */
+/** Text pre admina aj e-mail, keď firmu v SMP drží niekto iný. */
+export const CHYBA_CUDZI_POSKYTOVATEL =
+  "Firma je v Peppole u iného poskytovateľa — na prechod treba migračný kód od neho.";
+
+/**
+ * Registrácia narazila na firmu, ktorú v SMP drží iný poskytovateľ. ePošták
+ * to hlási kódom PARTICIPANT_ALREADY_REGISTERED — buď v chybe požiadavky,
+ * alebo v `error` operácie, ktorá skončila neskôr.
+ */
+export function jeCudziPoskytovatel(chyba: unknown): boolean {
+  if (!chyba) return false;
+  const e = chyba as any;
+  const kody = [e?.code, e?.error?.code, e?.response?.error?.code, e?.response?.code];
+  if (kody.includes("PARTICIPANT_ALREADY_REGISTERED")) return true;
+  const text = typeof chyba === "string" ? chyba : String(e?.message ?? "");
+  return text.includes("PARTICIPANT_ALREADY_REGISTERED");
+}
+
+/** Chyba migrácie (409/422/…) ako hláška pre admina. Kód v nej nikdy nie je — ePošták ho nevracia. */
+export function popisChybyMigracie(status: number, sprava: string): string {
+  const detail = sprava ? ` (ePošták: ${sprava})` : "";
+  if (status === 422)
+    return `Migračný kód neprešiel — je zlý, expirovaný alebo už použitý, prípadne firma nesedí s DIČ. Firma si musí u súčasného poskytovateľa vypýtať nový kód.${detail}`;
+  if (status === 409)
+    return `Prevzatie je v konflikte — firmu už preberá iná operácia alebo ju medzičasom prevzal niekto iný. Pozri stav u ePoštáka; ak treba, vypýtaj nový kód.${detail}`;
+  if (status === 403)
+    return `ePošták nemá pre Faktero povolenú migráciu (oprávnenie participants:migrate) — treba to vybaviť s ePoštákom.${detail}`;
+  if (status === 400)
+    return `ePošták požiadavku odmietol ako neplatnú — DIČ musí mať 10 číslic a e-mail firmy musí byť platný.${detail}`;
+  return `Prevzatie zlyhalo${status ? ` (HTTP ${status})` : ""} — skúsi sa znova.${detail}`;
+}
+
+/** Jedna žiadosť FS → registrácia (alebo migrácia kódom) u ePoštáka → firma alebo pozvánka. */
 export async function spracujZiadost(id: string): Promise<string> {
   const { data: z } = await db.from("efaktura_pds_ziadosti").select("*").eq("id", id).maybeSingle();
   if (!z) throw new Error("Žiadosť sa nenašla.");
@@ -155,6 +187,8 @@ export async function spracujZiadost(id: string): Promise<string> {
   // Neoverená žiadosť ide ďalej až po schválení v admine.
   if (z.stav === "na_schvalenie") return z.stav;
 
+  // Admin zadal migračný kód — firma sa preberá od iného poskytovateľa.
+  const migracia = Boolean(z.migracny_kod_sifrovany);
   const firma = z.company_id ? { id: z.company_id, email: null } : await firmaPodlaDic(z.dic);
   const email = z.email || firma?.email;
   const zmena: Record<string, unknown> = {
@@ -162,49 +196,94 @@ export async function spracujZiadost(id: string): Promise<string> {
     posledny_pokus_at: new Date().toISOString(),
     company_id: firma?.id ?? null,
   };
+  let poskytovatel: string | null = z.cudzi_poskytovatel ?? null;
 
-  if (!z.token_sifrovany) {
+  if (!migracia && !z.token_sifrovany) {
     zmena.stav = "chyba";
     zmena.chyba = "Chýba verification_token — FS musí žiadosť poslať znova.";
   } else if (!email) {
     zmena.stav = "chyba";
     zmena.chyba = "FS neposlala e-mail firmy a firmu vo Fakteri nepoznáme — ePošták ho vyžaduje.";
+    if (migracia) zmena.migracny_kod_sifrovany = null;
   } else {
     try {
       const { decryptSecret } = await import("../payment-crypto.server");
-      const { registrujWhiteLabel } = await import("./epostak.server");
-      const op = await registrujWhiteLabel({
-        // ePošták povolí len písmená, číslice, bodku, podčiarkovník a pomlčku.
-        customerRef: `dic-${z.dic}`,
-        dic: z.dic,
-        companyEmail: email,
-        verificationToken: decryptSecret(z.token_sifrovany),
-        // Rovnaký kľúč pri každom pokuse, kým nepríde konečný výsledok.
-        idempotencyKey: `faktero-pds:${z.id}`,
-      });
+      const ep = await import("./epostak.server");
+      let op;
+      if (migracia) {
+        const kod = decryptSecret(z.migracny_kod_sifrovany);
+        op = await ep.migrujWhiteLabel({
+          customerRef: `dic-${z.dic}`,
+          dic: z.dic,
+          companyEmail: email,
+          migrationCode: kod,
+          // Rovnaký kľúč pre ten istý kód, kým nepríde konečný výsledok; v kľúči je len hash.
+          idempotencyKey: ep.klucMigracie(z.id, kod),
+        });
+      } else {
+        op = await ep.registrujWhiteLabel({
+          // ePošták povolí len písmená, číslice, bodku, podčiarkovník a pomlčku.
+          customerRef: `dic-${z.dic}`,
+          dic: z.dic,
+          companyEmail: email,
+          verificationToken: decryptSecret(z.token_sifrovany),
+          // Rovnaký kľúč pri každom pokuse, kým nepríde konečný výsledok.
+          idempotencyKey: `faktero-pds:${z.id}`,
+        });
+      }
       zmena.stav = stavZOperacie(op.status);
       zmena.epostak_operacia_id = op.id;
       zmena.epostak_firm_id = op.firmId;
       zmena.peppol_id = op.peppolId;
-      zmena.chyba = null;
+      zmena.chyba = popisChybyOperacie(op.error);
+      if (!migracia && zmena.stav === "zamietnuta" && jeCudziPoskytovatel(op.error)) {
+        zmena.stav = "cudzi_poskytovatel";
+        zmena.chyba = CHYBA_CUDZI_POSKYTOVATEL;
+      }
       if (zmena.stav === "registrovana" || zmena.stav === "zamietnuta") {
-        // Token už nie je potrebný — ePošták ho žiada nikde nedržať.
+        // Token ani kód už nie sú potrebné — ePošták ich žiada nikde nedržať.
         zmena.token_sifrovany = null;
+        zmena.migracny_kod_sifrovany = null;
       }
       if (zmena.stav === "registrovana" && firma?.id) await zapniProfil(firma.id, op);
     } catch (e: any) {
       const status = Number(e?.status ?? 0);
-      zmena.chyba = String(e?.message ?? e).slice(0, 500);
-      if (status === 422) {
-        // Firmu alebo podpis SMP odmietol — opakovanie nepomôže.
-        zmena.stav = "zamietnuta";
-        zmena.token_sifrovany = null;
+      const sprava = String(e?.message ?? e).slice(0, 500);
+      if (migracia) {
+        if ([400, 403, 409, 422].includes(status)) {
+          // Rovnaký kód znova neprejde — admin zadá nový, cron to neskúša.
+          zmena.stav = "cudzi_poskytovatel";
+          zmena.migracny_kod_sifrovany = null;
+        } else {
+          zmena.stav = "chyba";
+          // Posledný automatický pokus — kód sa ďalej nedrží.
+          if ((zmena.pokusov as number) >= MAX_POKUSOV) zmena.migracny_kod_sifrovany = null;
+        }
+        const { chybaEPostaka } = await import("./epostak.server");
+        const detail = e?.response ? chybaEPostaka(e.response, status) : sprava;
+        zmena.chyba = popisChybyMigracie(status, detail).slice(0, 500);
+      } else if (jeCudziPoskytovatel(e)) {
+        // Opakovanie nepomôže, kým firmu pôvodný poskytovateľ nepustí.
+        zmena.stav = "cudzi_poskytovatel";
+        zmena.chyba = CHYBA_CUDZI_POSKYTOVATEL;
+        if (!poskytovatel) {
+          const { zistiPoskytovatelaVSmp } = await import("./epostak.server");
+          poskytovatel = await zistiPoskytovatelaVSmp(z.dic).catch(() => null);
+          if (poskytovatel) zmena.cudzi_poskytovatel = poskytovatel;
+        }
       } else {
-        zmena.stav = "chyba";
-        if (status === 403) {
-          zmena.chyba =
-            "ePošták nemá pre Faktero povolený White Label (403) — treba to vybaviť s ePoštákom. " +
-            zmena.chyba;
+        zmena.chyba = sprava;
+        if (status === 422) {
+          // Firmu alebo podpis SMP odmietol — opakovanie nepomôže.
+          zmena.stav = "zamietnuta";
+          zmena.token_sifrovany = null;
+        } else {
+          zmena.stav = "chyba";
+          if (status === 403) {
+            zmena.chyba =
+              "ePošták nemá pre Faktero povolený White Label (403) — treba to vybaviť s ePoštákom. " +
+              zmena.chyba;
+          }
         }
       }
     }
@@ -213,6 +292,7 @@ export async function spracujZiadost(id: string): Promise<string> {
   await db.from("efaktura_pds_ziadosti").update(zmena).eq("id", id);
 
   // Ohlási sa zmena stavu; ďalší neúspešný pokus s tým istým stavom už nie.
+  // Prevzatie z adminu začína v „prijata“, takže jeho výsledok sa ohlási vždy.
   if (zmena.stav !== z.stav) {
     await upozorniVysledokRegistracie({
       nazov: z.nazov,
@@ -223,6 +303,8 @@ export async function spracujZiadost(id: string): Promise<string> {
       chyba: (zmena.chyba as string | null) ?? null,
       pokusov: zmena.pokusov as number,
       maFirmu: Boolean(firma?.id),
+      poskytovatel,
+      migracia,
     });
   }
 
@@ -336,7 +418,9 @@ async function posliPozvanku(v: { id: string; email: string; nazov: string | nul
 export async function dokonciRozbehnuteRegistracie(): Promise<void> {
   const { data: rozbehnute } = await db
     .from("efaktura_pds_ziadosti")
-    .select("id, epostak_operacia_id, company_id, stav, pokusov, dic, nazov, email, telefon, pozvanka_odoslana_at")
+    .select(
+      "id, epostak_operacia_id, company_id, stav, pokusov, dic, nazov, email, telefon, pozvanka_odoslana_at, migracny_kod_sifrovany",
+    )
     .in("stav", ["prijata", "registruje_sa", "chyba", "na_kontrolu"])
     .limit(200);
   for (const z of rozbehnute ?? []) {
@@ -344,17 +428,26 @@ export async function dokonciRozbehnuteRegistracie(): Promise<void> {
       if ((z.stav === "registruje_sa" || z.stav === "na_kontrolu") && z.epostak_operacia_id) {
         const { stavWhiteLabel } = await import("./epostak.server");
         const op = await stavWhiteLabel(z.epostak_operacia_id);
-        const stav = stavZOperacie(op.status);
+        let stav = stavZOperacie(op.status);
         // Dôvod zamietnutia treba vidieť v admine aj v e-maile — inak ostane
         // len „zamietnutá“ a nikto nevie, či má firma znova vybrať poskytovateľa.
-        const chyba = popisChybyOperacie(op.error);
+        let chyba = popisChybyOperacie(op.error);
         const zmena: Record<string, unknown> = {
           stav,
           epostak_firm_id: op.firmId,
           peppol_id: op.peppolId,
           ...(chyba ? { chyba } : {}),
         };
-        if (stav === "registrovana" || stav === "zamietnuta") zmena.token_sifrovany = null;
+        // Registrácia (nie migrácia) zamietnutá, lebo firmu drží iný poskytovateľ.
+        if (stav === "zamietnuta" && !z.migracny_kod_sifrovany && jeCudziPoskytovatel(op.error)) {
+          stav = "cudzi_poskytovatel";
+          zmena.stav = stav;
+          zmena.chyba = chyba = CHYBA_CUDZI_POSKYTOVATEL;
+        }
+        if (stav === "registrovana" || stav === "zamietnuta") {
+          zmena.token_sifrovany = null;
+          zmena.migracny_kod_sifrovany = null;
+        }
         await db.from("efaktura_pds_ziadosti").update(zmena).eq("id", z.id);
         if (stav === "registrovana" && z.company_id) await zapniProfil(z.company_id, op);
         // Registrácia dokončená až po kontrole u ePoštáka — firma sa to dozvie tiež.
@@ -376,6 +469,7 @@ export async function dokonciRozbehnuteRegistracie(): Promise<void> {
             stav,
             chyba,
             maFirmu: Boolean(z.company_id),
+            migracia: Boolean(z.migracny_kod_sifrovany),
           });
         }
       } else if ((z.stav === "prijata" || z.stav === "chyba") && (z.pokusov ?? 0) < MAX_POKUSOV) {

@@ -78,6 +78,37 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "prechod",
+    title: "Prechod od iného poskytovateľa (migračný kód)",
+    body: (
+      <>
+        <p>
+          Ak je vaša firma v sieti Peppol už zaregistrovaná u <strong>iného poskytovateľa</strong>,
+          výber Faktera na Portáli finančnej správy sám nestačí — firmu v sieti drží pôvodný
+          poskytovateľ. Na prechod treba <strong>migračný kód</strong>.
+        </p>
+        <ol>
+          <li>
+            Migračný kód si vypýtajte u <strong>súčasného poskytovateľa</strong> eFaktúr (v jeho
+            aplikácii alebo na jeho podpore). Vydá ho len vám ako vlastníkovi firmy.
+          </li>
+          <li>
+            Kód pošlite na <Link to="/podpora">podporu Faktera</Link> spolu s názvom firmy a DIČ.
+            Kód je dôverný — nikomu inému ho neposielajte.
+          </li>
+          <li>
+            Firmu prevezmeme a dáme vám vedieť. Od tej chvíle vám eFaktúry chodia do Faktera a u
+            pôvodného poskytovateľa sa firma zo siete Peppol odpojí.
+          </li>
+        </ol>
+        <p>
+          Kód má obmedzenú platnosť. Ak vyprší alebo ho poskytovateľ odmietne, treba si vypýtať
+          nový.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "odoslanie",
     title: "Odoslanie eFaktúry",
     body: (
