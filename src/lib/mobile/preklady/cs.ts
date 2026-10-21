@@ -1097,4 +1097,18 @@ export const cs: Partial<Record<Kluc, string>> = {
   "rd.preskocit": "Přeskočit",
   "rd.dokladZ": "Doklad {n} z {spolu}",
   "sken.kategoriaTlacidlo": "Kategorie",
+  /* oznam o e-fakturácii 2027 (Prehľad) */
+  "efo.nadpis": "Připravte se na e-Fakturu",
+  "efo.text": "Od 1. 1. 2027 je e-fakturace na Slovensku povinná. Ve Fakteru budete e-faktury vystavovat i automaticky přijímat — stačí ji aktivovat.",
+  "efo.aktivovat": "Aktivovat na webu",
+  "efo.uctovnik": "Zapojit účetního",
+  "efo.emailUctovnika": "E-mail účetního",
+  "efo.poslat": "Poslat pozvánku",
+  "efo.odoslane": "Pozvánka odešla na {email}.",
+  "efo.neodislo": "E-mail neodešel, pozvánka ale platí. Pošlete účetnímu tento odkaz:",
+  "efo.kopirovat": "Kopírovat odkaz",
+  "efo.skopirovane": "Zkopírováno",
+  "efo.zavriet": "Zavřít",
+  "efo.cakame": "Čekáme na aktivaci e-fakturace vaším účetním",
+  "efo.zlyEmail": "Zadejte platný e-mail účetního.",
 };

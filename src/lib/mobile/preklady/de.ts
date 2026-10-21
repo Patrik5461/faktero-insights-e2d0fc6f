@@ -1121,4 +1121,18 @@ export const de: Partial<Record<Kluc, string>> = {
   "rd.preskocit": "Überspringen",
   "rd.dokladZ": "Beleg {n} von {spolu}",
   "sken.kategoriaTlacidlo": "Kategorie",
+  /* oznam o e-fakturácii 2027 (Prehľad) */
+  "efo.nadpis": "Bereit für die E-Rechnung",
+  "efo.text": "Ab 1. 1. 2027 ist die E-Rechnung in der Slowakei Pflicht. Sie stellen E-Rechnungen direkt hier aus und empfangen sie automatisch — Sie müssen sie nur aktivieren.",
+  "efo.aktivovat": "Im Web aktivieren",
+  "efo.uctovnik": "Steuerberater einbinden",
+  "efo.emailUctovnika": "E-Mail des Steuerberaters",
+  "efo.poslat": "Einladung senden",
+  "efo.odoslane": "Einladung an {email} gesendet.",
+  "efo.neodislo": "Die E-Mail wurde nicht gesendet, die Einladung gilt aber. Senden Sie Ihrem Steuerberater diesen Link:",
+  "efo.kopirovat": "Link kopieren",
+  "efo.skopirovane": "Kopiert",
+  "efo.zavriet": "Schließen",
+  "efo.cakame": "Wir warten auf die Aktivierung der E-Rechnung durch Ihren Steuerberater",
+  "efo.zlyEmail": "Geben Sie eine gültige E-Mail-Adresse ein.",
 };

@@ -1109,4 +1109,18 @@ export const en: Partial<Record<Kluc, string>> = {
   "rd.preskocit": "Skip",
   "rd.dokladZ": "Document {n} of {spolu}",
   "sken.kategoriaTlacidlo": "Category",
+  /* oznam o e-fakturácii 2027 (Prehľad) */
+  "efo.nadpis": "Get ready for e-invoicing",
+  "efo.text": "From 1 Jan 2027 e-invoicing is mandatory in Slovakia. You will issue and automatically receive e-invoices right here — you just need to activate it.",
+  "efo.aktivovat": "Activate on the web",
+  "efo.uctovnik": "Involve my accountant",
+  "efo.emailUctovnika": "Accountant’s e-mail",
+  "efo.poslat": "Send invitation",
+  "efo.odoslane": "Invitation sent to {email}.",
+  "efo.neodislo": "The e-mail was not sent, but the invitation is valid. Send your accountant this link:",
+  "efo.kopirovat": "Copy link",
+  "efo.skopirovane": "Copied",
+  "efo.zavriet": "Close",
+  "efo.cakame": "Waiting for your accountant to activate e-invoicing",
+  "efo.zlyEmail": "Enter a valid e-mail address.",
 };

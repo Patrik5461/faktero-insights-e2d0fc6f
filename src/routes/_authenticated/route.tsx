@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { EfakturaOznam } from "@/components/faktero/EfakturaOznam";
 import { AppShell, type ProductMode } from "@/components/faktero/AppShell";
 import {
   getActiveCompanyId,
@@ -215,6 +216,12 @@ function AuthedLayout() {
       >
         {zrusiSa && <ZrusenieBanner zrusiSa={zrusiSa} />}
         <PlanGateBanner companyId={activeId} />
+        {/* Oznam o e-fakturácii 2027 — okno alebo pás; rozhoduje efaktura-oznam.ts. */}
+        <EfakturaOznam
+          companyId={aktivna?.id ?? null}
+          rola={aktivna?.role ?? null}
+          krajina={krajinaDane(aktivna?.country)}
+        />
         <Outlet />
       </AppShell>
     </KrajinaFirmyProvider>

@@ -72,6 +72,7 @@ import { Route as AdminSeoRouteImport } from './routes/admin.seo'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminUctyZdarmaRouteImport } from './routes/admin.ucty-zdarma'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
+import { Route as AktivaciaEfakturyTokenRouteImport } from './routes/aktivacia-efaktury.$token'
 import { Route as AuthPotvrdenieRouteImport } from './routes/auth.potvrdenie'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
@@ -654,6 +655,11 @@ const AdminUsageRoute = AdminUsageRouteImport.update({
   id: '/usage',
   path: '/usage',
   getParentRoute: () => AdminRoute,
+} as any)
+const AktivaciaEfakturyTokenRoute = AktivaciaEfakturyTokenRouteImport.update({
+  id: '/aktivacia-efaktury/$token',
+  path: '/aktivacia-efaktury/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthPotvrdenieRoute = AuthPotvrdenieRouteImport.update({
   id: '/auth/potvrdenie',
@@ -2157,6 +2163,7 @@ export interface FileRoutesByFullPath {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/ucty-zdarma': typeof AdminUctyZdarmaRoute
   '/admin/usage': typeof AdminUsageRoute
+  '/aktivacia-efaktury/$token': typeof AktivaciaEfakturyTokenRoute
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
@@ -2474,6 +2481,7 @@ export interface FileRoutesByTo {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/ucty-zdarma': typeof AdminUctyZdarmaRoute
   '/admin/usage': typeof AdminUsageRoute
+  '/aktivacia-efaktury/$token': typeof AktivaciaEfakturyTokenRoute
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
@@ -2800,6 +2808,7 @@ export interface FileRoutesById {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/ucty-zdarma': typeof AdminUctyZdarmaRoute
   '/admin/usage': typeof AdminUsageRoute
+  '/aktivacia-efaktury/$token': typeof AktivaciaEfakturyTokenRoute
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
@@ -3127,6 +3136,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/ucty-zdarma'
     | '/admin/usage'
+    | '/aktivacia-efaktury/$token'
     | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
@@ -3444,6 +3454,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/ucty-zdarma'
     | '/admin/usage'
+    | '/aktivacia-efaktury/$token'
     | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
@@ -3769,6 +3780,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/ucty-zdarma'
     | '/admin/usage'
+    | '/aktivacia-efaktury/$token'
     | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
@@ -4058,6 +4070,7 @@ export interface RootRouteChildren {
   UctovniciRoute: typeof UctovniciRouteWithChildren
   VyvojariRoute: typeof VyvojariRouteWithChildren
   ZabudnuteHesloRoute: typeof ZabudnuteHesloRoute
+  AktivaciaEfakturyTokenRoute: typeof AktivaciaEfakturyTokenRoute
   AuthPotvrdenieRoute: typeof AuthPotvrdenieRoute
   DanovyDokladTokenRoute: typeof DanovyDokladTokenRoute
   DennySuhrnOdhlasenieRoute: typeof DennySuhrnOdhlasenieRoute
@@ -4616,6 +4629,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/usage'
       preLoaderRoute: typeof AdminUsageRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/aktivacia-efaktury/$token': {
+      id: '/aktivacia-efaktury/$token'
+      path: '/aktivacia-efaktury/$token'
+      fullPath: '/aktivacia-efaktury/$token'
+      preLoaderRoute: typeof AktivaciaEfakturyTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/potvrdenie': {
       id: '/auth/potvrdenie'
@@ -7100,6 +7120,7 @@ const rootRouteChildren: RootRouteChildren = {
   UctovniciRoute: UctovniciRouteWithChildren,
   VyvojariRoute: VyvojariRouteWithChildren,
   ZabudnuteHesloRoute: ZabudnuteHesloRoute,
+  AktivaciaEfakturyTokenRoute: AktivaciaEfakturyTokenRoute,
   AuthPotvrdenieRoute: AuthPotvrdenieRoute,
   DanovyDokladTokenRoute: DanovyDokladTokenRoute,
   DennySuhrnOdhlasenieRoute: DennySuhrnOdhlasenieRoute,

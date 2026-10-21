@@ -74,6 +74,10 @@ export const OPERACIE = [
   */
   "registracia",
   "registracia-nastavenie",
+  // Oznam o e-fakturácii 2027 na Prehľade — tie isté funkcie ako okno na webe.
+  "efaktura-oznam-stav",
+  "efaktura-oznam-akcia",
+  "efaktura-pozvi-uctovnika",
 ] as const;
 
 export type Operacia = (typeof OPERACIE)[number];

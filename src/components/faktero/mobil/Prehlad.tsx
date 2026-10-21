@@ -36,6 +36,7 @@ import {
   type Ton,
 } from "./ui";
 import { PrebiehaJazda } from "./PrebiehaJazda";
+import { OznamEfaktury } from "./OznamEfaktury";
 
 /**
  * Úvodná obrazovka appky (smer „A · Svetlý a pokojný").
@@ -261,6 +262,9 @@ export function Prehlad({
       </header>
 
       {oznamy && <div className="space-y-2 px-4 pt-2">{oznamy}</div>}
+      <div className="px-4 pt-2 empty:hidden">
+        <OznamEfaktury firmaId={firma.id} />
+      </div>
 
       <main className="flex-1 space-y-5 px-4 pb-6 pt-3">
         <PrebiehaJazda onOtvor={onJazda} />

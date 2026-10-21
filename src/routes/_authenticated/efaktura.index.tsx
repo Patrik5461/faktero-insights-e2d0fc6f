@@ -9,6 +9,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { CheckCircle2, Circle, Clock, Info, Mail, AlertTriangle, Link2 } from "lucide-react";
 import { toast } from "sonner";
+import { AktivaciaEfakturyKroky } from "@/components/faktero/AktivaciaEfakturyKroky";
+import { dicPrePortal, jeEfakturaAktivovana } from "@/lib/faktero/efaktura-oznam";
 import {
   getEfakturaReadinessFn,
   sparujEpostakFirmuFn,
@@ -174,6 +176,15 @@ function EFakturaPage() {
   });
 
   const profil = readinessQuery.data?.profile ?? null;
+  const aktivovana = jeEfakturaAktivovana(profil);
+
+  /* Z okna „Pripravte sa na e-Faktúru" sa sem prichádza s #prepojenie —
+     sekcia sa vykreslí až po načítaní profilu, preto sa posúva až potom. */
+  useEffect(() => {
+    if (typeof window === "undefined" || window.location.hash !== "#prepojenie") return;
+    if (!readinessQuery.data) return;
+    document.getElementById("prepojenie")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [readinessQuery.data]);
   const checklist = useMemo(() => {
     const has = (v: any) => typeof v === "string" && v.trim().length > 0;
     const hasCompanyDetails =
@@ -242,6 +253,26 @@ function EFakturaPage() {
           ich API chce identifikátor firmy pri každom volaní. Preto je nad
           skóre pripravenosti, nie zapadnuté v nastaveniach.
         */}
+        {/*
+          Aktivácia nie je nastavenie vo Fakteri — robí sa výberom poskytovateľa
+          na Portáli finančnej správy. Sem vedie aj „Pokračovať na prepojenie“
+          z oznamu o e-fakturácii 2027.
+        */}
+        {readinessQuery.data && !aktivovana && (
+          <div
+            id="prepojenie"
+            className="mb-6 scroll-mt-20 rounded-xl border border-primary/30 bg-card p-6"
+          >
+            <h2 className="text-lg font-semibold">{t("Ako zapnúť eFaktúru")}</h2>
+            <p className="mt-1 mb-4 text-sm text-muted-foreground">
+              {t("Faktero vyberiete ako poskytovateľa eFaktúry na Portáli finančnej správy. Ak tam prístup nemáte, urobí to za vás účtovník so splnomocnením.")}
+            </p>
+            <AktivaciaEfakturyKroky
+              dic={dicPrePortal(company?.dic) ?? company?.dic ?? null}
+              nazovFirmy={company?.name ?? null}
+            />
+          </div>
+        )}
         <SparovanieSPostakom companyId={companyId} profil={profil} />
         {readinessQuery.data && (
           <div className="mb-6 rounded-xl border border-border bg-card p-6">

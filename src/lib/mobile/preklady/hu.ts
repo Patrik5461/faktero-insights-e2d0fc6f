@@ -1106,4 +1106,18 @@ export const hu: Partial<Record<Kluc, string>> = {
   "rd.preskocit": "Kihagyás",
   "rd.dokladZ": "{n}. bizonylat / {spolu}",
   "sken.kategoriaTlacidlo": "Kategória",
+  /* oznam o e-fakturácii 2027 (Prehľad) */
+  "efo.nadpis": "Készüljön fel az e-számlára",
+  "efo.text": "2027. 1. 1-től Szlovákiában kötelező az e-számlázás. A Fakteróban e-számlát állíthat ki és automatikusan fogadhat — csak aktiválni kell.",
+  "efo.aktivovat": "Aktiválás a weben",
+  "efo.uctovnik": "Könyvelő bevonása",
+  "efo.emailUctovnika": "A könyvelő e-mail címe",
+  "efo.poslat": "Meghívó küldése",
+  "efo.odoslane": "A meghívó elküldve: {email}.",
+  "efo.neodislo": "Az e-mail nem ment el, de a meghívó érvényes. Küldje el a könyvelőnek ezt a linket:",
+  "efo.kopirovat": "Link másolása",
+  "efo.skopirovane": "Másolva",
+  "efo.zavriet": "Bezárás",
+  "efo.cakame": "Várjuk, hogy a könyvelője aktiválja az e-számlázást",
+  "efo.zlyEmail": "Adjon meg érvényes e-mail címet.",
 };

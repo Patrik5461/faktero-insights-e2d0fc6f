@@ -1115,6 +1115,20 @@ export const sk = {
   "rd.preskocit": "Preskočiť",
   "rd.dokladZ": "Doklad {n} z {spolu}",
   "sken.kategoriaTlacidlo": "Kategória",
+  /* oznam o e-fakturácii 2027 (Prehľad) */
+  "efo.nadpis": "Pripravte sa na e-Faktúru",
+  "efo.text": "Od 1. 1. 2027 je e-fakturácia povinná. Vo Fakteri budete e-faktúry vystavovať aj automaticky prijímať — stačí ju aktivovať.",
+  "efo.aktivovat": "Aktivovať na webe",
+  "efo.uctovnik": "Zapojiť účtovníka",
+  "efo.emailUctovnika": "E-mail účtovníka",
+  "efo.poslat": "Poslať pozvánku",
+  "efo.odoslane": "Pozvánka odišla na {email}.",
+  "efo.neodislo": "E-mail neodišiel, pozvánka však platí. Pošlite účtovníkovi tento odkaz:",
+  "efo.kopirovat": "Kopírovať odkaz",
+  "efo.skopirovane": "Skopírované",
+  "efo.zavriet": "Zavrieť",
+  "efo.cakame": "Čakáme na aktiváciu e-fakturácie vaším účtovníkom",
+  "efo.zlyEmail": "Zadajte platný e-mail účtovníka.",
 } as const;
 
 export type Kluc = keyof typeof sk;

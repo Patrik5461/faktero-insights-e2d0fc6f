@@ -2341,6 +2341,59 @@ export type Database = {
           },
         ]
       }
+      efaktura_aktivacia_pozvanky: {
+        Row: {
+          company_id: string
+          created_at: string
+          email: string
+          email_chyba: string | null
+          email_odoslany_at: string | null
+          expires_at: string
+          hotovo_at: string | null
+          id: string
+          invited_by: string | null
+          otvorena_at: string | null
+          token: string
+          zrusena_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email: string
+          email_chyba?: string | null
+          email_odoslany_at?: string | null
+          expires_at?: string
+          hotovo_at?: string | null
+          id?: string
+          invited_by?: string | null
+          otvorena_at?: string | null
+          token: string
+          zrusena_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email?: string
+          email_chyba?: string | null
+          email_odoslany_at?: string | null
+          expires_at?: string
+          hotovo_at?: string | null
+          id?: string
+          invited_by?: string | null
+          otvorena_at?: string | null
+          token?: string
+          zrusena_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "efaktura_aktivacia_pozvanky_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       efaktura_deliveries: {
         Row: {
           attempt_count: number
@@ -2522,6 +2575,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "efaktura_interest_signups_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      efaktura_oznam: {
+        Row: {
+          accountant_invited_at: string | null
+          company_id: string
+          created_at: string
+          cta_clicked: boolean
+          cta_clicked_at: string | null
+          dismissed_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accountant_invited_at?: string | null
+          company_id: string
+          created_at?: string
+          cta_clicked?: boolean
+          cta_clicked_at?: string | null
+          dismissed_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accountant_invited_at?: string | null
+          company_id?: string
+          created_at?: string
+          cta_clicked?: boolean
+          cta_clicked_at?: string | null
+          dismissed_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "efaktura_oznam_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"

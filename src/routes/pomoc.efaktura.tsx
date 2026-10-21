@@ -78,6 +78,85 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "krok-za-krokom",
+    title: "Aktivácia krok za krokom",
+    body: (
+      <>
+        <p>
+          Aktivácia sa nerobí vo Fakteri, ale na Portáli finančnej správy — tam si firma vyberá, kto
+          jej bude eFaktúry doručovať. Zaberie to pár minút.
+        </p>
+        <p>
+          <strong>Pripravte si:</strong> prístup do osobnej internetovej zóny na Portáli finančnej
+          správy (prihlásenie občianskym preukazom s čipom alebo prihlasovacím menom a heslom) a DIČ
+          firmy. DIČ nájdete vo Fakteri v <Link to="/efaktura">eFaktúra → Prehľad eFaktúry</Link> aj
+          s tlačidlom na skopírovanie.
+        </p>
+        <ol>
+          <li>
+            Prihláste sa na <strong>Portál finančnej správy</strong> (financnasprava.sk) do osobnej
+            internetovej zóny.
+          </li>
+          <li>Ak spravujete viac subjektov, prepnite sa na firmu, za ktorú eFaktúru zapínate.</li>
+          <li>
+            Otvorte časť <strong>eFaktúra</strong> a zvoľte výber poskytovateľa doručovacej služby.
+          </li>
+          <li>
+            Zo zoznamu poskytovateľov vyberte <strong>Faktero</strong> a výber potvrďte.
+          </li>
+          <li>
+            Finančná správa nám pošle údaje firmy a Faktero ju zaregistruje v sieti Peppol —
+            zvyčajne do niekoľkých minút. Po registrácii vám príde e-mail.
+          </li>
+          <li>
+            Vo Fakteri sa eFaktúra zapne sama. V{" "}
+            <Link to="/efaktura">eFaktúra → Prehľad eFaktúry</Link> uvidíte Peppol ID firmy a od tej
+            chvíle môžete eFaktúry posielať aj prijímať.
+          </li>
+        </ol>
+        <p>
+          Názvy položiek sa na portáli môžu mierne líšiť. Ak výber Faktera portál nedovolí, lebo
+          firmu v sieti Peppol drží iný poskytovateľ, pokračujte časťou o migračnom kóde nižšie.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "ucetnik",
+    title: "Za firmu to urobí účtovník",
+    body: (
+      <>
+        <p>
+          Ak na Portál finančnej správy prístup nemáte, výber poskytovateľa za vás urobí účtovník,
+          ktorý má od firmy splnomocnenie na zastupovanie (to isté, s ktorým podáva priznania).
+        </p>
+        <ol>
+          <li>
+            Po prihlásení do Faktera sa ukáže okno <strong>Pripravte sa na e-Faktúru</strong>. V
+            oranžovej karte kliknite na <strong>Zapojiť účtovníka</strong> a zadajte jeho e-mail.
+          </li>
+          <li>
+            Účtovník dostane odkaz s návodom, názvom firmy a DIČ. Odkaz platí 30 dní a funguje bez
+            prihlásenia do Faktera.
+          </li>
+          <li>
+            Kým účtovník aktiváciu nedokončí, vidíte hore pás{" "}
+            <strong>Čakáme na aktiváciu e-fakturácie vaším účtovníkom</strong>. Cez{" "}
+            <strong>Podrobnosti</strong> odkaz skopírujete alebo pozvánku zrušíte.
+          </li>
+          <li>
+            Keď Finančná správa výber potvrdí, eFaktúra sa vo Fakteri zapne sama a pás zmizne.
+          </li>
+        </ol>
+        <p>
+          Ak e-mail s pozvánkou neodíde, pozvánka platí ďalej — odkaz sa zobrazí priamo v okne a
+          pošlete ho účtovníkovi sami. Zaškrtnutím <em>Pozvať ho aj do Faktera</em> dostane účtovník
+          aj prístup k dokladom firmy v roli účtovníka.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "prechod",
     title: "Prechod od iného poskytovateľa (migračný kód)",
     body: (
