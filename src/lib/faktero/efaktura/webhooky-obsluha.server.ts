@@ -115,6 +115,7 @@ async function firmaPodlaDic(dic: string): Promise<{ id: string; email: string |
 
 async function zapniProfil(companyId: string, op: { firmId: string | null; peppolId: string | null }) {
   if (!op.firmId) return;
+  const { jeTestovaciRezim } = await import("./epostak.server");
   const { error } = await db.from("efaktura_profiles").upsert(
     {
       company_id: companyId,
@@ -123,6 +124,9 @@ async function zapniProfil(companyId: string, op: { firmId: string | null; peppo
       peppol_participant_id: op.peppolId,
       peppol_scheme: op.peppolId?.split(":")[0] ?? "0245",
       enabled: true,
+      // Registrácia v ostrom Peppole — profil nesmie ostať v testovacom režime
+      // (predvolená hodnota stĺpca je true), inak ho ostatné časti berú ako skúšobný.
+      test_mode: jeTestovaciRezim(),
       activated_at: new Date().toISOString(),
     },
     { onConflict: "company_id" },

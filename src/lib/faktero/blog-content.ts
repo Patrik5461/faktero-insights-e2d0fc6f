@@ -111,7 +111,7 @@ export const POSTS: BlogPost[] = [
         title: "Čo treba stihnúť do konca roka 2026",
         items: [
           "Mať softvér, ktorý vygeneruje validný XML podľa Peppol BIS 3.0 — ručne sa to spraviť nedá",
-          "Vyriešiť doručovanie: Peppol Access Point alebo Digitálny poštár Finančnej správy",
+          "Vybrať si poskytovateľa doručovacej služby (digitálneho poštára) na Portáli finančnej správy",
           "Vedieť eFaktúry aj prijímať a spracovať — povinnosť platí na oboch stranách",
           "Zabezpečiť archiváciu 10 rokov v pôvodnom XML, nie v PDF",
           "Skontrolovať údaje odberateľov: bez správneho IČ DPH sa faktúra nedoručí",

@@ -42,8 +42,14 @@ const sections: HelpSection[] = [
           faktúrach medzi firmami.
         </p>
         <p>
-          Faktero je napojené na sieť Peppol cez certifikovaný prístupový bod. eFaktúry vystavujete,
-          posielate aj prijímate priamo vo Fakteri — žiadny ďalší program netreba.
+          Neplatiteľ DPH eFaktúry vystavovať nemusí, no prijať ich vedieť musí — aj na to stačí
+          zapnúť eFaktúru vo Fakteri.
+        </p>
+        <p>
+          Faktero je váš <strong>digitálny poštár</strong> — tak finančná správa volá poskytovateľa
+          doručovacej služby. eFaktúry cez sieť Peppol odosielame aj prijímame naostro od{" "}
+          <strong>13. 10. 2026</strong>. Vystavujete, posielate aj prijímate ich priamo vo Fakteri,
+          bez ďalšieho programu a <strong>bez poplatku za odoslanú eFaktúru</strong>.
         </p>
       </>
     ),
@@ -64,11 +70,15 @@ const sections: HelpSection[] = [
             zvyčajne do niekoľkých minút.
           </li>
           <li>
-            Keď je registrácia hotová, eFaktúra sa vo Fakteri zapne sama pri firme s rovnakým DIČ.
-            Ak vo Fakteri ešte účet nemáte, príde vám e-mailom pozvánka — po registrácii s tým istým
-            DIČ sa eFaktúra k firme pripojí automaticky.
+            Po registrácii vám príde e-mail. Ak vo Fakteri už máte firmu s rovnakým DIČ, eFaktúra
+            sa pri nej zapne sama a e-mail to len potvrdí. Ak účet ešte nemáte, e-mail je pozvánka —
+            po registrácii s tým istým DIČ sa eFaktúra k firme pripojí sama.
           </li>
         </ol>
+        <p>
+          Niektoré žiadosti od finančnej správy kontrolujeme ručne. Vtedy registrácia trvá dlhšie,
+          no robiť nemusíte nič — e-mail príde, keď je hotová.
+        </p>
         <p>
           Stav nájdete v <Link to="/efaktura">eFaktúra → Prehľad eFaktúry</Link>. Ak tam firma
           spárovaná nie je, hoci registrácia prebehla, kliknite na <strong>Spárovať</strong> —
@@ -91,6 +101,12 @@ const sections: HelpSection[] = [
           správy (prihlásenie občianskym preukazom s čipom alebo prihlasovacím menom a heslom) a DIČ
           firmy. DIČ nájdete vo Fakteri v <Link to="/efaktura">eFaktúra → Prehľad eFaktúry</Link> aj
           s tlačidlom na skopírovanie.
+        </p>
+        <p>
+          Kým eFaktúra nie je zapnutá, je na prehľade eFaktúry časť{" "}
+          <strong>Ako zapnúť eFaktúru</strong> s týmito krokmi, DIČ na skopírovanie a tlačidlom{" "}
+          <strong>Otvoriť Portál finančnej správy</strong>. Dostanete sa tam aj z okna po
+          prihlásení: <em>Mám prístup na Finančnú správu</em> → <em>Pokračovať na prepojenie</em>.
         </p>
         <ol>
           <li>
@@ -132,17 +148,24 @@ const sections: HelpSection[] = [
         </p>
         <ol>
           <li>
-            Po prihlásení do Faktera sa ukáže okno <strong>Pripravte sa na e-Faktúru</strong>. V
-            oranžovej karte kliknite na <strong>Zapojiť účtovníka</strong> a zadajte jeho e-mail.
+            Po prihlásení do Faktera sa ukáže okno{" "}
+            <strong>Pripravte sa na e-Faktúru s Fakterom</strong>. V karte{" "}
+            <em>Nemám prístup na Finančnú správu</em> kliknite na{" "}
+            <strong>Zapojiť účtovníka</strong> a zadajte jeho e-mail.
           </li>
           <li>
-            Účtovník dostane odkaz s návodom, názvom firmy a DIČ. Odkaz platí 30 dní a funguje bez
-            prihlásenia do Faktera.
+            Účtovník dostane odkaz na stránku s návodom a údajmi firmy (názov, IČO, DIČ, IČ DPH,
+            adresa). Odkaz platí 30 dní a funguje bez prihlásenia do Faktera.
           </li>
           <li>
-            Kým účtovník aktiváciu nedokončí, vidíte hore pás{" "}
+            Keď účtovník na portáli Faktero vyberie, klikne na stránke na{" "}
+            <strong>Hotovo, vybral som Faktero</strong> — vy to uvidíte v podrobnostiach pozvánky.
+          </li>
+          <li>
+            Kým aktivácia nie je dokončená, vidíte hore pás{" "}
             <strong>Čakáme na aktiváciu e-fakturácie vaším účtovníkom</strong>. Cez{" "}
-            <strong>Podrobnosti</strong> odkaz skopírujete alebo pozvánku zrušíte.
+            <strong>Podrobnosti</strong> odkaz skopírujete, pozvánku zrušíte alebo zvolíte{" "}
+            <em>Aktivujem sám</em>.
           </li>
           <li>
             Keď Finančná správa výber potvrdí, eFaktúra sa vo Fakteri zapne sama a pás zmizne.
@@ -150,8 +173,8 @@ const sections: HelpSection[] = [
         </ol>
         <p>
           Ak e-mail s pozvánkou neodíde, pozvánka platí ďalej — odkaz sa zobrazí priamo v okne a
-          pošlete ho účtovníkovi sami. Zaškrtnutím <em>Pozvať ho aj do Faktera</em> dostane účtovník
-          aj prístup k dokladom firmy v roli účtovníka.
+          pošlete ho účtovníkovi sami. Zaškrtnutím <em>Pozvať ho aj do Faktera ako účtovníka</em>{" "}
+          dostane účtovník aj prístup k dokladom firmy.
         </p>
       </>
     ),
@@ -162,9 +185,10 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Ak je vaša firma v sieti Peppol už zaregistrovaná u <strong>iného poskytovateľa</strong>,
-          výber Faktera na Portáli finančnej správy sám nestačí — firmu v sieti drží pôvodný
-          poskytovateľ. Na prechod treba <strong>migračný kód</strong>.
+          V sieti Peppol môže byť firma len u <strong>jedného poskytovateľa</strong> — u toho jej
+          eFaktúry chodia. Ak je vaša firma už zaregistrovaná u{" "}
+          <strong>iného poskytovateľa</strong>, výber Faktera na Portáli finančnej správy sám nestačí: registrácia sa nedokončí a
+          eFaktúra sa vo Fakteri nezapne. Na prechod treba <strong>migračný kód</strong>.
         </p>
         <ol>
           <li>
@@ -193,19 +217,59 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Faktúru vystavíte ako doteraz a na jej detaile kliknete na{" "}
-          <strong>Odoslať eFaktúru</strong>. Faktero z nej vytvorí XML, skontroluje ho podľa normy a
-          pošle odberateľovi.
+          Faktúru vystavíte ako doteraz. Na jej detaile je hlavné tlačidlo{" "}
+          <strong>Odoslať eFaktúru</strong> (e-mail je vedľa neho). Otvorí sa okno, v ktorom
+          vyberiete, čo pôjde s faktúrou:
         </p>
+        <ul>
+          <li>
+            <strong>Priložiť PDF faktúry</strong> — zapnuté vopred, odberateľ uvidí faktúru tak, ako
+            ju poznáte.
+          </li>
+          <li>
+            <strong>Prílohy dokladu</strong> — súbory nahraté k faktúre (výkaz práce, dodací list…)
+            zaškrtnete jednotlivo. Prejdú PDF, PNG, JPG, CSV, XLSX a ODS, najviac 20 súborov, 10 MB
+            na súbor a 15 MB spolu. Čo sa poslať nedá, okno povie hneď.
+          </li>
+        </ul>
         <p>
           Pred odoslaním overí, či je <strong>odberateľ v sieti Peppol</strong>. Ak nie je, povie to
           hneď — faktúra by inak odišla do prázdna. Odberateľ potrebuje vyplnené DIČ alebo IČ DPH,
           podľa nich sa v sieti hľadá.
         </p>
         <p>
-          Odoslané doklady sú v <Link to="/efaktura/odoslane">eFaktúra → Odoslané eFaktúry</Link> a
-          v <Link to="/efaktura/dorucenia">Doručeniach</Link> vidíte, kedy si ich odberateľ prevzal.
+          Odoslanie sa nedá vziať späť. Chybu na odoslanej faktúre opravíte dobropisom alebo
+          ťarchopisom, ktoré tiež odídu ako eFaktúra.
         </p>
+        <p>
+          Cez eFaktúru sa neposielajú <strong>zálohové faktúry</strong> (nie sú daňovým dokladom —
+          pošlite ich e-mailom, daňový doklad k prijatej platbe už áno) ani faktúry{" "}
+          <strong>súkromným osobám</strong> bez IČO a DIČ.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "stav",
+    title: "Kde vidím, či eFaktúra odišla",
+    body: (
+      <>
+        <ul>
+          <li>
+            V <Link to="/faktury">zozname faktúr</Link> má faktúra štítok <strong>eFaktúra</strong>.
+            Po prejdení myšou ukáže, či je odoslaná, doručená (aj kedy), alebo či odoslanie zlyhalo.
+          </li>
+          <li>
+            Na detaile faktúry je namiesto tlačidla stav <em>eFaktúra odoslaná</em> alebo{" "}
+            <em>eFaktúra doručená</em>.
+          </li>
+          <li>
+            Všetky odoslané doklady sú v{" "}
+            <Link to="/efaktura/odoslane">eFaktúra → Odoslané eFaktúry</Link> a v{" "}
+            <Link to="/efaktura/dorucenia">Doručeniach</Link> vidíte, kedy si ich odberateľ
+            prevzal.
+          </li>
+        </ul>
       </>
     ),
   },
@@ -225,6 +289,10 @@ const sections: HelpSection[] = [
             vlastné PDF, uvidíte jeho; inak ju Faktero vykreslí z údajov eFaktúry.
           </li>
           <li>
+            <strong>Prílohy</strong> ukážu, čo dodávateľ k eFaktúre priložil (PDF, výkazy, dodacie
+            listy), a každú si stiahnete.
+          </li>
+          <li>
             <strong>Zaevidovať</strong> z nej spraví{" "}
             <Link to="/prijate-faktury">prijatú faktúru</Link> aj s PDF v prílohe — netreba nič
             prepisovať. Potom ju zaúčtujete, uhradíte alebo pošlete do Pohody ako každú inú.
@@ -234,6 +302,28 @@ const sections: HelpSection[] = [
           Ak tá istá faktúra prišla aj inou cestou (napríklad e-mailom), Faktero ju nezaloží druhý
           raz, ale eFaktúru pripojí k existujúcej.
         </p>
+      </>
+    ),
+  },
+  {
+    id: "xml",
+    title: "XML na stiahnutie a kontrola",
+    body: (
+      <>
+        <p>
+          Na odoslanie XML nepotrebujete — Faktero ho pripraví samo. Ak ho chcete vidieť alebo
+          poslať účtovníkovi, na detaile faktúry otvorte ponuku <strong>…</strong> (Ďalšie akcie):
+        </p>
+        <ul>
+          <li>
+            <strong>Vygenerovať eFaktúru XML</strong> pripraví XML a skontroluje ho podľa normy. Ak
+            niečo chýba, povie, koľko chýb našiel.
+          </li>
+          <li>
+            <strong>Stiahnuť eFaktúru XML</strong> stiahne súbor vo formáte UBL aj s PDF faktúry
+            vloženým vo vnútri.
+          </li>
+        </ul>
       </>
     ),
   },
@@ -259,7 +349,11 @@ const sections: HelpSection[] = [
           Dobropis odchádza ako samostatný doklad <strong>CreditNote (typ 381)</strong> a nesie
           číslo pôvodnej faktúry (pole BT-25) — finančná správa to vyžaduje. Bez vyplnenej pôvodnej
           faktúry ho Faktero neodošle. Opravný doklad s kladnou sumou (napríklad vrátenie opravy
-          podľa § 25a) ide ako ťarchopis (typ 383).
+          podľa § 25a) ide ako ťarchopis (typ 383).
+        </p>
+        <p>
+          Opravný doklad pri nezaplatenej faktúre podľa <Link to="/pomoc/vykazy-dph">§ 25a</Link>{" "}
+          pošlete odberateľovi aj cez eFaktúru — odíde ako dobropis s číslom pôvodnej faktúry.
         </p>
         <p>
           Prijatý dobropis sa pri zaevidovaní uloží medzi prijaté faktúry so zápornou sumou a s
@@ -269,6 +363,19 @@ const sections: HelpSection[] = [
         <p>
           Odsúhlasenú <Link to="/pomoc/prijate-faktury">samofaktúru</Link> pošlete dodávateľovi aj
           cez eFaktúru tlačidlom <em>Poslať cez eFaktúru</em> na jej detaile (typ self-billing).
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "nemecko",
+    title: "Firma v Nemecku",
+    body: (
+      <>
+        <p>
+          Nemecká firma má vo Fakteri vlastné e-faktúry — <strong>ZUGFeRD</strong> v PDF a{" "}
+          <strong>XRechnung</strong> na stiahnutie. Tie Faktero cez sieť Peppol neodosiela. Všetko
+          o nich je v manuáli <Link to="/pomoc/nemecko">Nemecko</Link>.
         </p>
       </>
     ),
@@ -284,6 +391,24 @@ const sections: HelpSection[] = [
           údaje firmy, IČ DPH pri platiteľovi DPH alebo Peppol ID. Čím vyššie skóre, tým menej
           prekvapení pri prvej eFaktúre.
         </p>
+      </>
+    ),
+  },
+  {
+    id: "co-nevie",
+    title: "Čo Faktero nerobí",
+    body: (
+      <>
+        <ul>
+          <li>
+            Neodošle ani neprijme eFaktúru za firmu, ktorá je v sieti Peppol u iného poskytovateľa.
+            Najprv treba prechod migračným kódom (pozri vyššie).
+          </li>
+          <li>
+            Neposiela cez eFaktúru zálohové faktúry a faktúry súkromným osobám — tie idú e-mailom.
+          </li>
+          <li>Odoslanú eFaktúru nevie vziať späť ani zmeniť; opravuje sa dobropisom.</li>
+        </ul>
       </>
     ),
   },

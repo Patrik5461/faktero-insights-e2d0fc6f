@@ -48,8 +48,6 @@ export default {
   "Prejdite na Faktero bez straty histórie faktúr, odberateľov a číselných radov.":
     "Přejděte na Faktero bez ztráty historie faktur, odběratelů a číselných řad.",
   "eFaktúra 2027": "eFaktura 2027",
-  "Štruktúrované XML, Peppol a Digitálny poštár. Sme pripravení, aby ste nemuseli vy.":
-    "Strukturované XML, Peppol a Digitálny poštár. Jsme připraveni, abyste nemuseli vy.",
   "Skener bločkov": "Skener účtenek",
   "Naskenujte QR kód z bločku a doklad sa načíta z Finančnej správy aj s položkami.":
     "Naskenujte QR kód z účtenky a doklad se načte z Finanční správy SR i s položkami.",
@@ -364,9 +362,6 @@ export default {
   "Máte API?": "Máte API?",
   "Áno. REST API s test / live režimom, Bearer autentifikáciou, idempotenciou cez external_id a real-time webhookmi. Dostupné v pláne Business a Enterprise.":
     "Ano. REST API s test / live režimem, Bearer autentizací, idempotencí přes external_id a real-time webhooky. Dostupné v plánu Business a Enterprise.",
-  "Budete podporovať eFaktúru?": "Budete podporovat e-fakturu?",
-  "Áno. Pripravujeme štruktúrované XML (UBL 2.1), Peppol identifikátor a integráciu s Digitálnym poštárom tak, aby ste boli pripravení na 1.1.2027.":
-    "Ano. Připravujeme strukturované XML (UBL 2.1), identifikátor Peppol a integraci s Digitálnym poštárom tak, abyste byli připraveni na 1.1.2027.",
   "Koľko stojí odoslanie eFaktúry?": "Kolik stojí odeslání e-faktury?",
   "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru.":
     "Nic navíc — e-faktura přes Peppol je zahrnuta v ceně každého plánu Faktero. Žádné skryté poplatky za odeslanou fakturu.",
@@ -404,4 +399,10 @@ export default {
   "Vytvorte firmu": "Vytvořte firmu",
   "Web design": "Webdesign",
   "API status": "Stav API",
+  "Odosielanie aj príjem eFaktúr cez Peppol naostro od októbra 2026 — bez poplatku za kus.":
+    "Odesílání i příjem eFaktur přes Peppol naostro od října 2026 — bez poplatku za kus.",
+  "Podporujete eFaktúru?":
+    "Podporujete eFakturu?",
+  "Áno, naostro od 13. 10. 2026. Faktero je digitálny poštár — eFaktúry (UBL 2.1) odosiela aj prijíma cez sieť Peppol. Zapnete si ju na Portáli finančnej správy výberom Faktera, registráciu urobíme za vás.":
+    "Ano, naostro od 13. 10. 2026. Faktero je digitální pošťák — eFaktury (UBL 2.1) odesílá i přijímá přes síť Peppol. Zapnete si ji na Portálu Finanční správy SR výběrem Faktera, registraci uděláme za vás.",
 } satisfies Record<string, string>;

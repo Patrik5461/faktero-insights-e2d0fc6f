@@ -108,14 +108,10 @@ export default {
   "Za firmu to urobí účtovník": "Za firmu to udělá účetní",
   "Ak na Portál finančnej správy prístup nemáte, výber poskytovateľa za vás urobí účtovník, ktorý má od firmy splnomocnenie na zastupovanie (to isté, s ktorým podáva priznania).":
     "Pokud na Portál Finanční správy SR přístup nemáte, výběr poskytovatele za vás udělá účetní, který má od firmy plnou moc k zastupování (tutéž, se kterou podává přiznání).",
-  "Po prihlásení do Faktera sa ukáže okno <0>Pripravte sa na e-Faktúru</0>. V oranžovej karte kliknite na <1>Zapojiť účtovníka</1> a zadajte jeho e-mail.":
-    "Po přihlášení do Faktera se ukáže okno <0>Připravte se na e-Fakturu</0>. V oranžové kartě klikněte na <1>Zapojit účetního</1> a zadejte jeho e-mail.",
-  "Účtovník dostane odkaz s návodom, názvom firmy a DIČ. Odkaz platí 30 dní a funguje bez prihlásenia do Faktera.":
-    "Účetní dostane odkaz s návodem, názvem firmy a DIČ. Odkaz platí 30 dní a funguje bez přihlášení do Faktera.",
-  "Kým účtovník aktiváciu nedokončí, vidíte hore pás <0>Čakáme na aktiváciu e-fakturácie vaším účtovníkom</0>. Cez <1>Podrobnosti</1> odkaz skopírujete alebo pozvánku zrušíte.":
-    "Dokud účetní aktivaci nedokončí, vidíte nahoře pruh <0>Čekáme na aktivaci e-fakturace vaším účetním</0>. Přes <1>Podrobnosti</1> odkaz zkopírujete nebo pozvánku zrušíte.",
   "Keď Finančná správa výber potvrdí, eFaktúra sa vo Fakteri zapne sama a pás zmizne.":
     "Až Finanční správa výběr potvrdí, eFaktura se ve Fakteru zapne sama a pruh zmizí.",
-  "Ak e-mail s pozvánkou neodíde, pozvánka platí ďalej — odkaz sa zobrazí priamo v okne a pošlete ho účtovníkovi sami. Zaškrtnutím <0>Pozvať ho aj do Faktera</0> dostane účtovník aj prístup k dokladom firmy v roli účtovníka.":
-    "Pokud e-mail s pozvánkou neodejde, pozvánka platí dál — odkaz se zobrazí přímo v okně a pošlete ho účetnímu sami. Zaškrtnutím <0>Pozvat ho i do Faktera</0> dostane účetní i přístup k dokladům firmy v roli účetního.",
+  "Pošleme vám e-mail pri každom dôležitom kroku — termíny povinnosti, zmeny pravidiel a novinky vo Fakteri.":
+    "Pošleme vám e-mail při každém důležitém kroku — termíny povinnosti, změny pravidel a novinky ve Fakteru.",
+  "Vybrať si poskytovateľa doručovacej služby (digitálneho poštára) na Portáli finančnej správy":
+    "Vybrat si poskytovatele doručovací služby (digitálního pošťáka) na Portálu finanční správy SR",
 };

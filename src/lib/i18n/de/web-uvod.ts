@@ -47,8 +47,6 @@ export default {
   "Prejdite na Faktero bez straty histórie faktúr, odberateľov a číselných radov.":
     "Wechseln Sie zu Faktero ohne Verlust des Verlaufs von Rechnungen, Kunden und Nummernkreisen.",
   "eFaktúra 2027": "E-Rechnung 2027",
-  "Štruktúrované XML, Peppol a Digitálny poštár. Sme pripravení, aby ste nemuseli vy.":
-    "Strukturiertes XML, Peppol und Digitaler Postbote. Wir sind bereit, damit Sie es nicht sein müssen.",
   "Skener bločkov": "Kassenbon-Scanner",
   "Naskenujte QR kód z bločku a doklad sa načíta z Finančnej správy aj s položkami.":
     "Scannen Sie den QR-Code vom Kassenbon und der Beleg wird samt Positionen von der Finanzverwaltung geladen.",
@@ -368,9 +366,6 @@ export default {
   "Máte API?": "Haben Sie eine API?",
   "Áno. REST API s test / live režimom, Bearer autentifikáciou, idempotenciou cez external_id a real-time webhookmi. Dostupné v pláne Business a Enterprise.":
     "Ja. REST-API mit Test-/Live-Modus, Bearer-Authentifizierung, Idempotenz über external_id und Echtzeit-Webhooks. Verfügbar im Tarif Business und Enterprise.",
-  "Budete podporovať eFaktúru?": "Werden Sie die E-Rechnung unterstützen?",
-  "Áno. Pripravujeme štruktúrované XML (UBL 2.1), Peppol identifikátor a integráciu s Digitálnym poštárom tak, aby ste boli pripravení na 1.1.2027.":
-    "Ja. Wir bereiten strukturiertes XML (UBL 2.1), die Peppol-Kennung und die Integration mit dem Digitalen Postboten vor, damit Sie zum 1.1.2027 bereit sind.",
   "Koľko stojí odoslanie eFaktúry?": "Was kostet der Versand einer E-Rechnung?",
   "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru.":
     "Nichts extra — die E-Rechnung über Peppol ist im Preis jedes Faktero-Tarifs enthalten. Keine versteckten Gebühren pro gesendeter Rechnung.",
@@ -408,4 +403,10 @@ export default {
   "Vytvorte firmu": "Unternehmen anlegen",
   "Web design": "Webdesign",
   "API status": "API-Status",
+  "Odosielanie aj príjem eFaktúr cez Peppol naostro od októbra 2026 — bez poplatku za kus.":
+    "Versand und Empfang von E-Rechnungen über Peppol im Echtbetrieb seit Oktober 2026 — ohne Gebühr pro Stück.",
+  "Podporujete eFaktúru?":
+    "Unterstützen Sie die E-Rechnung?",
+  "Áno, naostro od 13. 10. 2026. Faktero je digitálny poštár — eFaktúry (UBL 2.1) odosiela aj prijíma cez sieť Peppol. Zapnete si ju na Portáli finančnej správy výberom Faktera, registráciu urobíme za vás.":
+    "Ja, im Echtbetrieb seit dem 13. 10. 2026. Faktero ist ein digitaler Postbote — E-Rechnungen (UBL 2.1) versendet und empfängt es über das Peppol-Netzwerk. Sie aktivieren sie im Portal der slowakischen Finanzverwaltung, indem Sie Faktero wählen; die Registrierung übernehmen wir.",
 } satisfies Record<string, string>;

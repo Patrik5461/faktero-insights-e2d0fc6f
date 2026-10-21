@@ -111,14 +111,10 @@ export default {
   "Za firmu to urobí účtovník": "Ihr Buchhalter erledigt das für das Unternehmen",
   "Ak na Portál finančnej správy prístup nemáte, výber poskytovateľa za vás urobí účtovník, ktorý má od firmy splnomocnenie na zastupovanie (to isté, s ktorým podáva priznania).":
     "Haben Sie keinen Zugang zum Portal der Finanzverwaltung, wählt der Buchhalter mit Vertretungsvollmacht des Unternehmens den Anbieter für Sie aus (dieselbe Vollmacht, mit der er Erklärungen einreicht).",
-  "Po prihlásení do Faktera sa ukáže okno <0>Pripravte sa na e-Faktúru</0>. V oranžovej karte kliknite na <1>Zapojiť účtovníka</1> a zadajte jeho e-mail.":
-    "Nach der Anmeldung bei Faktero erscheint das Fenster <0>Bereit für die E-Rechnung</0>. Klicken Sie in der orangefarbenen Karte auf <1>Buchhalter einbinden</1> und geben Sie seine E-Mail ein.",
-  "Účtovník dostane odkaz s návodom, názvom firmy a DIČ. Odkaz platí 30 dní a funguje bez prihlásenia do Faktera.":
-    "Der Buchhalter erhält einen Link mit Anleitung, Firmenname und DIČ. Der Link gilt 30 Tage und funktioniert ohne Anmeldung bei Faktero.",
-  "Kým účtovník aktiváciu nedokončí, vidíte hore pás <0>Čakáme na aktiváciu e-fakturácie vaším účtovníkom</0>. Cez <1>Podrobnosti</1> odkaz skopírujete alebo pozvánku zrušíte.":
-    "Bis der Buchhalter die Aktivierung abschließt, sehen Sie oben den Hinweis <0>Wir warten auf die Aktivierung der E-Rechnung durch Ihren Buchhalter</0>. Über <1>Details</1> kopieren Sie den Link oder widerrufen die Einladung.",
   "Keď Finančná správa výber potvrdí, eFaktúra sa vo Fakteri zapne sama a pás zmizne.":
     "Sobald die Finanzverwaltung die Auswahl bestätigt, wird die E-Rechnung in Faktero automatisch aktiviert und der Hinweis verschwindet.",
-  "Ak e-mail s pozvánkou neodíde, pozvánka platí ďalej — odkaz sa zobrazí priamo v okne a pošlete ho účtovníkovi sami. Zaškrtnutím <0>Pozvať ho aj do Faktera</0> dostane účtovník aj prístup k dokladom firmy v roli účtovníka.":
-    "Wird die Einladungs-E-Mail nicht gesendet, gilt die Einladung weiter — der Link erscheint direkt im Fenster und Sie senden ihn selbst. Mit dem Häkchen <0>Auch zu Faktero einladen</0> erhält der Buchhalter zusätzlich Zugriff auf die Belege des Unternehmens in der Rolle Buchhalter.",
+  "Pošleme vám e-mail pri každom dôležitom kroku — termíny povinnosti, zmeny pravidiel a novinky vo Fakteri.":
+    "Wir senden Ihnen eine E-Mail bei jedem wichtigen Schritt – Fristen der Pflicht, Regeländerungen und Neuigkeiten in Faktero.",
+  "Vybrať si poskytovateľa doručovacej služby (digitálneho poštára) na Portáli finančnej správy":
+    "Einen Zustelldienst-Anbieter (digitalen Postboten) im Portal der slowakischen Finanzverwaltung wählen",
 };

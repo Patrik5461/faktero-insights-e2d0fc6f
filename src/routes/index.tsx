@@ -203,7 +203,7 @@ const features = [
   {
     icon: ShieldCheck,
     title: "eFaktúra 2027",
-    text: "Štruktúrované XML, Peppol a Digitálny poštár. Sme pripravení, aby ste nemuseli vy.",
+    text: "Odosielanie aj príjem eFaktúr cez Peppol naostro od októbra 2026 — bez poplatku za kus.",
   },
   {
     icon: ScanLine,
@@ -2244,8 +2244,8 @@ function FaqSection() {
       a: "Áno. REST API s test / live režimom, Bearer autentifikáciou, idempotenciou cez external_id a real-time webhookmi. Dostupné v pláne Business a Enterprise.",
     },
     {
-      q: "Budete podporovať eFaktúru?",
-      a: "Áno. Pripravujeme štruktúrované XML (UBL 2.1), Peppol identifikátor a integráciu s Digitálnym poštárom tak, aby ste boli pripravení na 1.1.2027.",
+      q: "Podporujete eFaktúru?",
+      a: "Áno, naostro od 13. 10. 2026. Faktero je digitálny poštár — eFaktúry (UBL 2.1) odosiela aj prijíma cez sieť Peppol. Zapnete si ju na Portáli finančnej správy výberom Faktera, registráciu urobíme za vás.",
     },
     {
       q: "Koľko stojí odoslanie eFaktúry?",

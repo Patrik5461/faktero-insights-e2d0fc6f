@@ -501,8 +501,6 @@ export default {
   "Generovanie ukážkového kódu": "Generierung von Beispielcode",
   "História volaní a odpovedí": "Verlauf der Aufrufe und Antworten",
   "eFaktúra 2027": "E-Rechnung 2027",
-  "Od 1.1.2027 bude eFaktúra povinná pre B2B transakcie na Slovensku. Faktero je pripravené včas.":
-    "Ab 1.1.2027 wird die E-Rechnung für B2B-Transaktionen in der Slowakei Pflicht. Faktero ist rechtzeitig bereit.",
   "Štrukturovaná elektronická faktúra (eFaktúra), Peppol sieť a Digitálny poštár — všetko, čo o tom potrebujete vedieť.":
     "Strukturierte elektronische Rechnung (E-Rechnung), Peppol-Netzwerk und Digitaler Postbote — alles, was Sie darüber wissen müssen.",
   "Čo je eFaktúra, koho sa týka a od kedy bude povinná.":
@@ -513,46 +511,29 @@ export default {
   "eFaktúra (elektronická faktúra) nie je PDF poslané emailom ani naskenovaný papier. Je to štruktúrovaný XML dokument podľa európskej normy EN 16931, ktorý dokáže automaticky spracovať účtovný softvér príjemcu — bez prepisovania, bez OCR, bez chýb. Faktúra obsahuje rovnaké informácie ako papierová (dodávateľ, odberateľ, položky, DPH, IBAN), ale v presne definovanej dátovej štruktúre.":
     "Eine E-Rechnung (elektronische Rechnung) ist kein per E-Mail verschicktes PDF und kein eingescanntes Papier. Sie ist ein strukturiertes XML-Dokument nach der europäischen Norm EN 16931, das die Buchhaltungssoftware des Empfängers automatisch verarbeiten kann — ohne Abtippen, ohne OCR, ohne Fehler. Die Rechnung enthält dieselben Angaben wie die Papierrechnung (Lieferant, Kunde, Positionen, MwSt., IBAN), aber in einer genau definierten Datenstruktur.",
   "Koho sa povinnosť týka?": "Wen betrifft die Pflicht?",
-  "Od 1.1.2027 musí každý platiteľ DPH usadený na Slovensku vystavovať a prijímať eFaktúry pri tuzemských B2B transakciách (firma firme) a B2G (firma štátu). Rozhoduje registrácia na DPH, nie veľkosť firmy — týka sa to rovnako SZČO-platiteľa ako korporácie, neplatiteľa DPH zatiaľ nie. Faktúry pre koncových spotrebiteľov (B2C) ostávajú v pôvodnom režime. Prechodné obdobie trvá do 30.6.2030; od 1.7.2030 sa podľa európskych pravidiel ViDA pridajú aj cezhraničné dodania v rámci EÚ.":
-    "Ab 1.1.2027 muss jeder in der Slowakei ansässige umsatzsteuerpflichtige Unternehmer bei inländischen B2B-Transaktionen (Unternehmen an Unternehmen) und B2G (Unternehmen an Staat) E-Rechnungen ausstellen und empfangen. Entscheidend ist die MwSt.-Registrierung, nicht die Größe des Unternehmens — das betrifft den umsatzsteuerpflichtigen Einzelunternehmer genauso wie einen Konzern, nicht umsatzsteuerpflichtige Unternehmer vorerst nicht. Rechnungen an Endverbraucher (B2C) bleiben im bisherigen Verfahren. Die Übergangsfrist läuft bis 30.6.2030; ab 1.7.2030 kommen nach den europäischen ViDA-Regeln auch grenzüberschreitende Lieferungen innerhalb der EU hinzu.",
   "Kľúčové fakty v kocke": "Die wichtigsten Fakten auf einen Blick",
   "Povinnosť B2B aj B2G od 1. januára 2027": "Pflicht für B2B und B2G ab 1. Januar 2027",
   "Štandard: UBL 2.1 / Peppol BIS 3.0 podľa EN 16931":
     "Standard: UBL 2.1 / Peppol BIS 3.0 nach EN 16931",
-  "Doručenie cez Peppol sieť alebo Digitálny poštár Finančnej správy SR":
-    "Zustellung über das Peppol-Netzwerk oder den Digitalen Postboten der slowakischen Finanzverwaltung",
   "Dobropis ako CreditNote 381 s číslom pôvodnej faktúry (BT-25), samofaktúra cez Peppol":
     "Rechnungskorrektur als CreditNote 381 mit der Nummer der ursprünglichen Rechnung (BT-25), Selbstfakturierung über Peppol",
   "PDF už nebude stačiť na uplatnenie nákladu a odpočtu DPH":
     "Ein PDF reicht dann nicht mehr für den Kostenansatz und den Vorsteuerabzug",
-  "Automatické párovanie s objednávkou a skladom":
-    "Automatischer Abgleich mit Bestellung und Lager",
   "Hlásenie v reálnom čase do Finančnej správy": "Meldung in Echtzeit an die Finanzverwaltung",
   "Prečo to štát zavádza?": "Warum führt der Staat das ein?",
   "Cieľom je zníženie DPH medzery (VAT gap), boj proti karuselovým podvodom a digitalizácia ekonomiky. EÚ smernica ViDA (VAT in the Digital Age) zavádza povinné eFaktúry naprieč celou Úniou. Slovensko je medzi prvými krajinami, ktoré štandard prijímajú — vďaka tomu budú slovenské firmy pripravené na cezhraničný obchod skôr.":
     "Ziel ist die Verringerung der MwSt.-Lücke (VAT gap), der Kampf gegen Karussellbetrug und die Digitalisierung der Wirtschaft. Die EU-Richtlinie ViDA (VAT in the Digital Age) führt verpflichtende E-Rechnungen in der ganzen Union ein. Die Slowakei gehört zu den ersten Ländern, die den Standard übernehmen — dadurch sind slowakische Unternehmen früher für den grenzüberschreitenden Handel gerüstet.",
   "Čo to znamená pre vašu firmu?": "Was bedeutet das für Ihr Unternehmen?",
-  "Potrebujete softvér, ktorý vie vygenerovať validný XML podľa Peppol BIS 3.0, podpísať ho a odoslať cez akreditovaný Peppol Access Point alebo Digitálneho poštára. Rovnako musíte byť schopní eFaktúry prijímať, automaticky spracovať a archivovať 10 rokov v pôvodnom XML formáte. Excel a ručné PDF skončili.":
-    "Sie brauchen Software, die ein valides XML nach Peppol BIS 3.0 erzeugen, signieren und über einen akkreditierten Peppol Access Point oder den Digitalen Postboten senden kann. Ebenso müssen Sie E-Rechnungen empfangen, automatisch verarbeiten und 10 Jahre im ursprünglichen XML-Format archivieren können. Excel und manuelle PDFs haben ausgedient.",
-  "Faktero je pripravené včas": "Faktero ist rechtzeitig bereit",
-  "Pracujeme na podpore Peppol BIS 3.0 a integrácii s Digitálnym poštárom tak, aby ste boli pripravení mesiace pred legislatívnym termínom. Vaše dáta migrujeme automaticky — nemusíte riešiť nič.":
-    "Wir arbeiten an der Unterstützung von Peppol BIS 3.0 und der Integration mit dem Digitalen Postboten, damit Sie Monate vor dem gesetzlichen Termin bereit sind. Ihre Daten migrieren wir automatisch — Sie müssen sich um nichts kümmern.",
   Peppol: "Peppol",
   "Európska sieť pre doručovanie eFaktúr medzi firmami.":
     "Europäisches Netzwerk für die Zustellung von E-Rechnungen zwischen Unternehmen.",
   "Peppol (Pan-European Public Procurement OnLine) je celoeurópska sieť, cez ktorú si firmy a inštitúcie vymieňajú eFaktúry v štandarde Peppol BIS 3.0 — bezpečne, rýchlo a kompatibilne naprieč hranicami.":
     "Peppol (Pan-European Public Procurement OnLine) ist ein europaweites Netzwerk, über das Unternehmen und Institutionen E-Rechnungen im Standard Peppol BIS 3.0 austauschen — sicher, schnell und grenzüberschreitend kompatibel.",
   "Ako Peppol funguje?": "Wie funktioniert Peppol?",
-  "Peppol funguje podobne ako emailová sieť, ale pre štruktúrované obchodné dokumenty. Každá firma má v sieti svoju jedinečnú adresu — Peppol ID (napríklad 9914:SK12345678 pre slovenský IČ DPH). Faktúru odošlete cez svojho Access Point providera, ten ju doručí Access Pointu príjemcu, a ten ju vloží do účtovného systému príjemcu. Celý prenos trvá sekundy a je end-to-end šifrovaný.":
-    "Peppol funktioniert ähnlich wie ein E-Mail-Netz, aber für strukturierte Geschäftsdokumente. Jedes Unternehmen hat im Netz eine eindeutige Adresse — die Peppol-ID (zum Beispiel 9914:SK12345678 für eine slowakische USt-IdNr.). Sie senden die Rechnung über Ihren Access-Point-Provider, dieser stellt sie dem Access Point des Empfängers zu, und dieser legt sie im Buchhaltungssystem des Empfängers ab. Die gesamte Übertragung dauert Sekunden und ist Ende-zu-Ende verschlüsselt.",
   "Štyrhranný model (4-corner model)": "Vier-Ecken-Modell (4-corner model)",
-  "Peppol využíva tzv. 4-corner model: odosielateľ (1) → odosielateľov Access Point (2) → príjemcov Access Point (3) → príjemca (4). Firmy si vyberú akreditovaného providera a neriešia technické detaily protokolu. Faktero plánuje vlastný Access Point, takže nebudete odkázaní na tretiu stranu.":
-    "Peppol nutzt das sogenannte 4-corner model: Absender (1) → Access Point des Absenders (2) → Access Point des Empfängers (3) → Empfänger (4). Unternehmen wählen einen akkreditierten Provider und kümmern sich nicht um technische Details des Protokolls. Faktero plant einen eigenen Access Point, sodass Sie nicht auf Dritte angewiesen sind.",
   "Výhody Peppolu": "Vorteile von Peppol",
   "Identifikácia firiem cez jednotné Peppol ID":
     "Identifikation von Unternehmen über eine einheitliche Peppol-ID",
-  "End-to-end doručenie cez akreditovaného Access Point providera":
-    "Ende-zu-Ende-Zustellung über einen akkreditierten Access-Point-Provider",
   "Kompatibilné s eFaktúrou na Slovensku, v ČR aj v celej EÚ":
     "Kompatibel mit der E-Rechnung in der Slowakei, in Tschechien und in der ganzen EU",
   "Bezpečný prenos s digitálnym podpisom a šifrovaním":
@@ -567,34 +548,6 @@ export default {
   "Najmä pre firmy, ktoré obchodujú s partnermi v EÚ alebo s veľkými korporáciami a štátnymi inštitúciami. V krajinách ako Belgicko, Nórsko alebo Nemecko je Peppol už štandardom — Slovensko sa pripája v roku 2027.":
     "Vor allem für Unternehmen, die mit Partnern in der EU oder mit großen Konzernen und staatlichen Einrichtungen handeln. In Ländern wie Belgien, Norwegen oder Deutschland ist Peppol bereits Standard — die Slowakei schließt sich 2027 an.",
   "Digitálny poštár": "Digitaler Postbote",
-  "Doručovateľ eFaktúr Finančnej správy SR.":
-    "Zustelldienst für E-Rechnungen der slowakischen Finanzverwaltung.",
-  "Digitálny poštár je národný doručovací systém Finančnej správy SR, ktorý zabezpečí výmenu eFaktúr medzi slovenskými firmami — alternatíva k medzinárodnej sieti Peppol pre tuzemské B2B transakcie.":
-    "Der Digitale Postbote (Digitálny poštár) ist das nationale Zustellsystem der slowakischen Finanzverwaltung, das den Austausch von E-Rechnungen zwischen slowakischen Unternehmen sicherstellt — eine Alternative zum internationalen Peppol-Netzwerk für inländische B2B-Transaktionen.",
-  "Čo je Digitálny poštár?": "Was ist der Digitale Postbote?",
-  "Ide o štátom prevádzkovanú platformu, ktorá funguje ako centrálny hub pre slovenské eFaktúry. Každá vystavená faktúra prechádza cez Digitálneho poštára, ktorý ju validuje, archivuje a doručí príjemcovi. Finančná správa zároveň získava dáta pre svoje priebežné sledovanie DPH v reálnom čase bez potreby samostatného Kontrolného výkazu.":
-    "Es ist eine staatlich betriebene Plattform, die als zentraler Hub für slowakische E-Rechnungen dient. Jede ausgestellte Rechnung läuft über den Digitalen Postboten, der sie validiert, archiviert und dem Empfänger zustellt. Die Finanzverwaltung erhält dabei die Daten für ihre laufende MwSt.-Überwachung in Echtzeit, ohne dass eine separate Kontrollmeldung nötig ist.",
-  "Peppol vs. Digitálny poštár — čo si vybrať?": "Peppol oder Digitaler Postbote — was wählen?",
-  "Pre tuzemské B2B (slovenská firma → slovenská firma) môžete použiť oba kanály. Digitálny poštár je lacnejší a jednoduchší pre menšie firmy, Peppol je nutnosťou pre obchod s EÚ. Faktero podporí oba — vy si jednoducho zvolíte preferenciu a my smerujeme faktúru správnym kanálom automaticky podľa krajiny príjemcu.":
-    "Für inländisches B2B (slowakisches Unternehmen → slowakisches Unternehmen) können Sie beide Kanäle nutzen. Der Digitale Postbote ist günstiger und einfacher für kleinere Unternehmen, Peppol ist für den Handel mit der EU unverzichtbar. Faktero unterstützt beide — Sie wählen einfach Ihre Präferenz und wir leiten die Rechnung automatisch je nach Land des Empfängers über den richtigen Kanal.",
-  "Čo Digitálny poštár prinesie": "Was der Digitale Postbote bringt",
-  "Centrálne registrovaný príjem aj odoslanie eFaktúr":
-    "Zentral registrierter Empfang und Versand von E-Rechnungen",
-  "Bezplatné základné použitie pre platiteľov DPH":
-    "Kostenlose Grundnutzung für umsatzsteuerpflichtige Unternehmen",
-  "Štátna archivácia 10 rokov v zákonom požadovanom formáte":
-    "Staatliche Archivierung für 10 Jahre im gesetzlich vorgeschriebenen Format",
-  "Validácia XML voči slovenskému CIUS pred doručením":
-    "Validierung des XML gegen die slowakische CIUS vor der Zustellung",
-  "Náhrada Kontrolného výkazu DPH (hlásenie v reálnom čase)":
-    "Ersatz der MwSt.-Kontrollmeldung (Meldung in Echtzeit)",
-  "API pre účtovné systémy ako Faktero": "API für Buchhaltungssysteme wie Faktero",
-  "Kedy bude k dispozícii?": "Wann wird er verfügbar sein?",
-  "Finančná správa SR plánuje pilotnú prevádzku v priebehu roku 2026 a plné spustenie k 1.1.2027 spolu s povinnosťou eFaktúry. Technické špecifikácie sú postupne zverejňované — Faktero pripraví integráciu hneď, ako budú finálne.":
-    "Die slowakische Finanzverwaltung plant einen Pilotbetrieb im Laufe des Jahres 2026 und den vollen Start zum 1.1.2027 zusammen mit der E-Rechnungspflicht. Die technischen Spezifikationen werden schrittweise veröffentlicht — Faktero bereitet die Integration vor, sobald sie final sind.",
-  "Faktero pripraví integráciu": "Faktero bereitet die Integration vor",
-  "Akonáhle Finančná správa zverejní finálne API, integrujeme Digitálneho poštára do Faktera. Vy nebudete musieť riešiť nič — len kliknete na 'Odoslať' a faktúra sa doručí správnym kanálom.":
-    "Sobald die Finanzverwaltung die finale API veröffentlicht, integrieren wir den Digitalen Postboten in Faktero. Sie müssen sich um nichts kümmern — Sie klicken einfach auf „Senden“ und die Rechnung wird über den richtigen Kanal zugestellt.",
   "Pre účtovníkov": "Für Buchhalter",
   "Účtovné podklady jedným klikom": "Buchhaltungsunterlagen mit einem Klick",
   "Pohoda export aj konektor, šesť formátov exportu, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
@@ -710,4 +663,52 @@ export default {
   "Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta — výpisy z platobných brán":
     "Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta — Auszüge von Zahlungsanbietern",
   "Vlastné integrácie cez REST API": "Eigene Integrationen über die REST-API",
+  "Od 1.1.2027 bude eFaktúra povinná pre B2B transakcie na Slovensku. Vo Fakteri beží naostro už od októbra 2026.":
+    "Ab dem 1.1.2027 wird die E-Rechnung in der Slowakei für B2B-Geschäfte Pflicht. In Faktero läuft sie bereits seit Oktober 2026 im Echtbetrieb.",
+  "Od 1.1.2027 musí každý platiteľ DPH usadený na Slovensku vystavovať a prijímať eFaktúry pri tuzemských B2B transakciách (firma firme) a B2G (firma štátu). Rozhoduje registrácia na DPH, nie veľkosť firmy — týka sa to rovnako SZČO-platiteľa ako korporácie. Neplatiteľ DPH eFaktúry vystavovať nemusí, no prijať ich vedieť musí. Faktúry pre koncových spotrebiteľov (B2C) ostávajú v pôvodnom režime. Prechodné obdobie trvá do 30.6.2030; od 1.7.2030 sa podľa európskych pravidiel ViDA pridajú aj cezhraničné dodania v rámci EÚ.":
+    "Ab 1.1.2027 muss jeder in der Slowakei ansässige umsatzsteuerpflichtige Unternehmer bei inländischen B2B-Transaktionen (Unternehmen an Unternehmen) und B2G (Unternehmen an Staat) E-Rechnungen ausstellen und empfangen. Entscheidend ist die MwSt.-Registrierung, nicht die Größe des Unternehmens — das betrifft den umsatzsteuerpflichtigen Einzelunternehmer genauso wie einen Konzern, ein nicht umsatzsteuerpflichtiger Unternehmer muss E-Rechnungen nicht ausstellen, aber empfangen können. Rechnungen an Endverbraucher (B2C) bleiben im bisherigen Verfahren. Die Übergangsfrist läuft bis 30.6.2030; ab 1.7.2030 kommen nach den europäischen ViDA-Regeln auch grenzüberschreitende Lieferungen innerhalb der EU hinzu.",
+  "Doručenie cez sieť Peppol prostredníctvom digitálneho poštára — poskytovateľa doručovacej služby":
+    "Zustellung über das Peppol-Netzwerk durch einen digitalen Postboten — den Anbieter des Zustelldienstes",
+  "Potrebujete softvér, ktorý vie vygenerovať validný XML podľa Peppol BIS 3.0, a digitálneho poštára — certifikovaného poskytovateľa doručovacej služby, ktorého si vyberiete na Portáli finančnej správy. Rovnako musíte byť schopní eFaktúry prijímať, spracovať a archivovať 10 rokov v pôvodnom XML formáte. Excel a ručné PDF skončili.":
+    "Sie brauchen eine Software, die gültiges XML nach Peppol BIS 3.0 erzeugt, und einen digitalen Postboten — einen zertifizierten Anbieter des Zustelldienstes, den Sie im Portal der Finanzverwaltung wählen. Ebenso müssen Sie E-Rechnungen empfangen, verarbeiten und 10 Jahre im ursprünglichen XML-Format archivieren können. Excel und manuelle PDFs haben ausgedient.",
+  "eFaktúra vo Fakteri beží naostro":
+    "E-Rechnung in Faktero läuft im Echtbetrieb",
+  "Od 13. 10. 2026 Faktero eFaktúry odosiela aj prijíma cez sieť Peppol. Zapnete si ju na Portáli finančnej správy výberom Faktera ako poskytovateľa doručovacej služby — registráciu v sieti urobíme za vás. Za odoslanú eFaktúru neplatíte nič navyše.":
+    "Seit dem 13. 10. 2026 versendet und empfängt Faktero E-Rechnungen über das Peppol-Netzwerk. Sie aktivieren sie im Portal der Finanzverwaltung, indem Sie Faktero als Anbieter des Zustelldienstes wählen — die Registrierung im Netzwerk übernehmen wir. Für eine gesendete E-Rechnung zahlen Sie nichts extra.",
+  "Peppol funguje podobne ako emailová sieť, ale pre štruktúrované obchodné dokumenty. Každá firma má v sieti svoju jedinečnú adresu — Peppol ID. Slovenská firma ho má zo schémy 0245 a svojho DIČ (napríklad 0245:2120123456). Faktúru odošlete cez svojho poskytovateľa, ten ju doručí poskytovateľovi príjemcu a ten ju vloží do účtovného systému príjemcu. Celý prenos trvá sekundy a je šifrovaný.":
+    "Peppol funktioniert ähnlich wie ein E-Mail-Netz, aber für strukturierte Geschäftsdokumente. Jedes Unternehmen hat im Netzwerk eine eindeutige Adresse — die Peppol-ID. Ein slowakisches Unternehmen hat sie aus dem Schema 0245 und seiner Steuernummer DIČ (zum Beispiel 0245:2120123456). Die Rechnung senden Sie über Ihren Anbieter, dieser stellt sie dem Anbieter des Empfängers zu, und der übergibt sie an das Buchhaltungssystem des Empfängers. Die Übertragung dauert Sekunden und ist verschlüsselt.",
+  "Peppol využíva tzv. 4-corner model: odosielateľ (1) → odosielateľov Access Point (2) → príjemcov Access Point (3) → príjemca (4). Firmy si vyberú certifikovaného poskytovateľa a neriešia technické detaily protokolu. Faktero je napojené na certifikovaný prístupový bod — technickú stránku za vás rieši Faktero.":
+    "Peppol nutzt das sogenannte 4-Corner-Modell: Absender (1) → Access Point des Absenders (2) → Access Point des Empfängers (3) → Empfänger (4). Unternehmen wählen einen zertifizierten Anbieter und kümmern sich nicht um die technischen Details des Protokolls. Faktero ist an einen zertifizierten Zugangspunkt angebunden — die technische Seite übernimmt Faktero für Sie.",
+  "Doručenie cez certifikovaného poskytovateľa (Access Point)":
+    "Zustellung über einen zertifizierten Anbieter (Access Point)",
+  "Kto vám doručuje eFaktúry a ako si ho vyberiete.":
+    "Wer Ihnen E-Rechnungen zustellt und wie Sie ihn wählen.",
+  "Digitálny poštár je pomenovanie Finančnej správy SR pre certifikovaného poskytovateľa doručovacej služby — toho, kto vaše eFaktúry cez sieť Peppol odosiela a prijíma. Faktero je takým poskytovateľom.":
+    "„Digitaler Postbote“ (Digitálny poštár) nennt die slowakische Finanzverwaltung den zertifizierten Anbieter des Zustelldienstes — denjenigen, der Ihre E-Rechnungen über das Peppol-Netzwerk versendet und empfängt. Faktero ist ein solcher Anbieter.",
+  "Ako si digitálneho poštára vyberiete?":
+    "Wie wählen Sie Ihren digitalen Postboten?",
+  "Výber sa robí na Portáli finančnej správy v časti eFaktúra: zo zoznamu poskytovateľov zvolíte Faktero a potvrdíte. Finančná správa nám pošle údaje firmy a Faktero ju zaregistruje v sieti Peppol — zvyčajne do niekoľkých minút. Ak na portál prístup nemáte, urobí to za vás účtovník so splnomocnením; pozvánku mu pošlete priamo z Faktera.":
+    "Die Auswahl erfolgt im Portal der Finanzverwaltung im Bereich eFaktúra: Sie wählen Faktero aus der Anbieterliste und bestätigen. Die Finanzverwaltung sendet uns die Unternehmensdaten und Faktero registriert das Unternehmen im Peppol-Netzwerk — meist innerhalb weniger Minuten. Haben Sie keinen Zugang zum Portal, erledigt das Ihr Buchhalter mit Vollmacht; die Einladung senden Sie ihm direkt aus Faktero.",
+  "Jeden poskytovateľ na firmu":
+    "Ein Anbieter pro Unternehmen",
+  "V sieti Peppol môže byť firma len u jedného poskytovateľa. Ak už máte iného, prechod do Faktera urobíme s migračným kódom, ktorý vám vydá súčasný poskytovateľ.":
+    "Im Peppol-Netzwerk kann ein Unternehmen nur bei einem Anbieter sein. Haben Sie bereits einen anderen, übernehmen wir den Wechsel zu Faktero mit dem Migrationscode, den Ihnen Ihr bisheriger Anbieter ausstellt.",
+  "Čo Faktero ako digitálny poštár robí":
+    "Was Faktero als digitaler Postbote macht",
+  "Odosiela eFaktúry odberateľom cez sieť Peppol — s PDF faktúry aj prílohami":
+    "Versendet E-Rechnungen über das Peppol-Netzwerk an Kunden — mit dem PDF der Rechnung und Anhängen",
+  "Pred odoslaním overí, či je odberateľ v sieti Peppol":
+    "Prüft vor dem Versand, ob der Kunde im Peppol-Netzwerk ist",
+  "Ukáže, kedy bola eFaktúra doručená":
+    "Zeigt, wann die E-Rechnung zugestellt wurde",
+  "Prijíma eFaktúry od dodávateľov a zaeviduje ich bez prepisovania":
+    "Empfängt E-Rechnungen von Lieferanten und erfasst sie ohne Abtippen",
+  "Dobropisy, ťarchopisy aj samofaktúry posiela ako eFaktúru":
+    "Versendet Gutschriften, Belastungsanzeigen und Selbstfakturierungen als E-Rechnung",
+  "Bez poplatku za odoslanú eFaktúru":
+    "Ohne Gebühr pro gesendeter E-Rechnung",
+  "Naostro od októbra 2026":
+    "Im Echtbetrieb seit Oktober 2026",
+  "Faktero ako digitálny poštár beží naostro od 13. 10. 2026 — pred povinnosťou od 1. 1. 2027. Ako eFaktúru zapnúť, nájdete v Pomoci.":
+    "Faktero läuft als digitaler Postbote seit dem 13. 10. 2026 im Echtbetrieb — vor der Pflicht ab dem 1. 1. 2027. Wie Sie die E-Rechnung aktivieren, finden Sie in der Hilfe.",
 } satisfies Record<string, string>;

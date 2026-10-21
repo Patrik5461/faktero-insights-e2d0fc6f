@@ -495,8 +495,6 @@ export default {
   "Generovanie ukážkového kódu": "Generování ukázkového kódu",
   "História volaní a odpovedí": "Historie volání a odpovědí",
   "eFaktúra 2027": "eFaktura 2027",
-  "Od 1.1.2027 bude eFaktúra povinná pre B2B transakcie na Slovensku. Faktero je pripravené včas.":
-    "Od 1.1.2027 bude e-faktura povinná pro B2B transakce na Slovensku. Faktero je připraveno včas.",
   "Štrukturovaná elektronická faktúra (eFaktúra), Peppol sieť a Digitálny poštár — všetko, čo o tom potrebujete vedieť.":
     "Strukturovaná elektronická faktura (e-faktura), síť Peppol a Digitálny poštár — vše, co o tom potřebujete vědět.",
   "Čo je eFaktúra, koho sa týka a od kedy bude povinná.":
@@ -507,44 +505,28 @@ export default {
   "eFaktúra (elektronická faktúra) nie je PDF poslané emailom ani naskenovaný papier. Je to štruktúrovaný XML dokument podľa európskej normy EN 16931, ktorý dokáže automaticky spracovať účtovný softvér príjemcu — bez prepisovania, bez OCR, bez chýb. Faktúra obsahuje rovnaké informácie ako papierová (dodávateľ, odberateľ, položky, DPH, IBAN), ale v presne definovanej dátovej štruktúre.":
     "e-Faktura (elektronická faktura) není PDF poslané e-mailem ani naskenovaný papír. Je to strukturovaný dokument XML podle evropské normy EN 16931, který dokáže automaticky zpracovat účetní software příjemce — bez přepisování, bez OCR, bez chyb. Faktura obsahuje stejné informace jako papírová (dodavatel, odběratel, položky, DPH, IBAN), ale v přesně definované datové struktuře.",
   "Koho sa povinnosť týka?": "Koho se povinnost týká?",
-  "Od 1.1.2027 musí každý platiteľ DPH usadený na Slovensku vystavovať a prijímať eFaktúry pri tuzemských B2B transakciách (firma firme) a B2G (firma štátu). Rozhoduje registrácia na DPH, nie veľkosť firmy — týka sa to rovnako SZČO-platiteľa ako korporácie, neplatiteľa DPH zatiaľ nie. Faktúry pre koncových spotrebiteľov (B2C) ostávajú v pôvodnom režime. Prechodné obdobie trvá do 30.6.2030; od 1.7.2030 sa podľa európskych pravidiel ViDA pridajú aj cezhraničné dodania v rámci EÚ.":
-    "Od 1.1.2027 musí každý plátce DPH usazený na Slovensku vystavovat a přijímat e-faktury u tuzemských B2B transakcí (firma firmě) a B2G (firma státu). Rozhoduje registrace k DPH, ne velikost firmy — týká se to stejně OSVČ-plátce jako korporace, neplátce DPH zatím ne. Faktury pro koncové spotřebitele (B2C) zůstávají v původním režimu. Přechodné období trvá do 30.6.2030; od 1.7.2030 se podle evropských pravidel ViDA přidají i přeshraniční dodání v rámci EU.",
   "Kľúčové fakty v kocke": "Klíčová fakta v kostce",
   "Povinnosť B2B aj B2G od 1. januára 2027": "Povinnost B2B i B2G od 1. ledna 2027",
   "Štandard: UBL 2.1 / Peppol BIS 3.0 podľa EN 16931":
     "Standard: UBL 2.1 / Peppol BIS 3.0 podle EN 16931",
-  "Doručenie cez Peppol sieť alebo Digitálny poštár Finančnej správy SR":
-    "Doručení přes síť Peppol nebo Digitálny poštár Finanční správy SR",
   "Dobropis ako CreditNote 381 s číslom pôvodnej faktúry (BT-25), samofaktúra cez Peppol":
     "Dobropis jako CreditNote 381 s číslem původní faktury (BT-25), samofaktura přes Peppol",
   "PDF už nebude stačiť na uplatnenie nákladu a odpočtu DPH":
     "PDF už nebude stačit k uplatnění nákladu a odpočtu DPH",
-  "Automatické párovanie s objednávkou a skladom": "Automatické párování s objednávkou a skladem",
   "Hlásenie v reálnom čase do Finančnej správy": "Hlášení v reálném čase Finanční správě SR",
   "Prečo to štát zavádza?": "Proč to stát zavádí?",
   "Cieľom je zníženie DPH medzery (VAT gap), boj proti karuselovým podvodom a digitalizácia ekonomiky. EÚ smernica ViDA (VAT in the Digital Age) zavádza povinné eFaktúry naprieč celou Úniou. Slovensko je medzi prvými krajinami, ktoré štandard prijímajú — vďaka tomu budú slovenské firmy pripravené na cezhraničný obchod skôr.":
     "Cílem je snížení mezery DPH (VAT gap), boj proti karuselovým podvodům a digitalizace ekonomiky. Směrnice EU ViDA (VAT in the Digital Age) zavádí povinné e-faktury napříč celou Unií. Slovensko je mezi prvními zeměmi, které standard přijímají — díky tomu budou slovenské firmy připravené na přeshraniční obchod dříve.",
   "Čo to znamená pre vašu firmu?": "Co to znamená pro vaši firmu?",
-  "Potrebujete softvér, ktorý vie vygenerovať validný XML podľa Peppol BIS 3.0, podpísať ho a odoslať cez akreditovaný Peppol Access Point alebo Digitálneho poštára. Rovnako musíte byť schopní eFaktúry prijímať, automaticky spracovať a archivovať 10 rokov v pôvodnom XML formáte. Excel a ručné PDF skončili.":
-    "Potřebujete software, který umí vygenerovat validní XML podle Peppol BIS 3.0, podepsat ho a odeslat přes akreditovaný Peppol Access Point nebo Digitálny poštár. Stejně tak musíte být schopni e-faktury přijímat, automaticky zpracovat a archivovat 10 let v původním formátu XML. Excel a ruční PDF skončily.",
-  "Faktero je pripravené včas": "Faktero je připraveno včas",
-  "Pracujeme na podpore Peppol BIS 3.0 a integrácii s Digitálnym poštárom tak, aby ste boli pripravení mesiace pred legislatívnym termínom. Vaše dáta migrujeme automaticky — nemusíte riešiť nič.":
-    "Pracujeme na podpoře Peppol BIS 3.0 a integraci s Digitálnym poštárom tak, abyste byli připraveni měsíce před legislativním termínem. Vaše data migrujeme automaticky — nemusíte řešit nic.",
   Peppol: "Peppol",
   "Európska sieť pre doručovanie eFaktúr medzi firmami.":
     "Evropská síť pro doručování e-faktur mezi firmami.",
   "Peppol (Pan-European Public Procurement OnLine) je celoeurópska sieť, cez ktorú si firmy a inštitúcie vymieňajú eFaktúry v štandarde Peppol BIS 3.0 — bezpečne, rýchlo a kompatibilne naprieč hranicami.":
     "Peppol (Pan-European Public Procurement OnLine) je celoevropská síť, přes kterou si firmy a instituce vyměňují e-faktury ve standardu Peppol BIS 3.0 — bezpečně, rychle a kompatibilně napříč hranicemi.",
   "Ako Peppol funguje?": "Jak Peppol funguje?",
-  "Peppol funguje podobne ako emailová sieť, ale pre štruktúrované obchodné dokumenty. Každá firma má v sieti svoju jedinečnú adresu — Peppol ID (napríklad 9914:SK12345678 pre slovenský IČ DPH). Faktúru odošlete cez svojho Access Point providera, ten ju doručí Access Pointu príjemcu, a ten ju vloží do účtovného systému príjemcu. Celý prenos trvá sekundy a je end-to-end šifrovaný.":
-    "Peppol funguje podobně jako e-mailová síť, ale pro strukturované obchodní dokumenty. Každá firma má v síti svou jedinečnou adresu — Peppol ID (například 9914:SK12345678 pro slovenské IČ DPH). Fakturu odešlete přes svého poskytovatele Access Pointu, ten ji doručí Access Pointu příjemce a ten ji vloží do účetního systému příjemce. Celý přenos trvá sekundy a je end-to-end šifrovaný.",
   "Štyrhranný model (4-corner model)": "Čtyřrohý model (4-corner model)",
-  "Peppol využíva tzv. 4-corner model: odosielateľ (1) → odosielateľov Access Point (2) → príjemcov Access Point (3) → príjemca (4). Firmy si vyberú akreditovaného providera a neriešia technické detaily protokolu. Faktero plánuje vlastný Access Point, takže nebudete odkázaní na tretiu stranu.":
-    "Peppol využívá tzv. 4-corner model: odesílatel (1) → Access Point odesílatele (2) → Access Point příjemce (3) → příjemce (4). Firmy si vyberou akreditovaného poskytovatele a neřeší technické detaily protokolu. Faktero plánuje vlastní Access Point, takže nebudete odkázáni na třetí stranu.",
   "Výhody Peppolu": "Výhody Peppolu",
   "Identifikácia firiem cez jednotné Peppol ID": "Identifikace firem přes jednotné Peppol ID",
-  "End-to-end doručenie cez akreditovaného Access Point providera":
-    "End-to-end doručení přes akreditovaného poskytovatele Access Pointu",
   "Kompatibilné s eFaktúrou na Slovensku, v ČR aj v celej EÚ":
     "Kompatibilní s e-fakturou na Slovensku, v ČR i v celé EU",
   "Bezpečný prenos s digitálnym podpisom a šifrovaním":
@@ -559,32 +541,6 @@ export default {
   "Najmä pre firmy, ktoré obchodujú s partnermi v EÚ alebo s veľkými korporáciami a štátnymi inštitúciami. V krajinách ako Belgicko, Nórsko alebo Nemecko je Peppol už štandardom — Slovensko sa pripája v roku 2027.":
     "Zejména pro firmy, které obchodují s partnery v EU nebo s velkými korporacemi a státními institucemi. V zemích jako Belgie, Norsko nebo Německo je Peppol už standardem — Slovensko se připojuje v roce 2027.",
   "Digitálny poštár": "Digitálny poštár",
-  "Doručovateľ eFaktúr Finančnej správy SR.": "Doručovatel e-faktur Finanční správy SR.",
-  "Digitálny poštár je národný doručovací systém Finančnej správy SR, ktorý zabezpečí výmenu eFaktúr medzi slovenskými firmami — alternatíva k medzinárodnej sieti Peppol pre tuzemské B2B transakcie.":
-    "Digitálny poštár je národní doručovací systém Finanční správy SR, který zajistí výměnu e-faktur mezi slovenskými firmami — alternativa k mezinárodní síti Peppol pro tuzemské B2B transakce.",
-  "Čo je Digitálny poštár?": "Co je Digitálny poštár?",
-  "Ide o štátom prevádzkovanú platformu, ktorá funguje ako centrálny hub pre slovenské eFaktúry. Každá vystavená faktúra prechádza cez Digitálneho poštára, ktorý ju validuje, archivuje a doručí príjemcovi. Finančná správa zároveň získava dáta pre svoje priebežné sledovanie DPH v reálnom čase bez potreby samostatného Kontrolného výkazu.":
-    "Jde o státem provozovanou platformu, která funguje jako centrální hub pro slovenské e-faktury. Každá vystavená faktura prochází přes Digitálny poštár, který ji validuje, archivuje a doručí příjemci. Finanční správa SR zároveň získává data pro své průběžné sledování DPH v reálném čase bez potřeby samostatného kontrolního výkazu (KV DPH).",
-  "Peppol vs. Digitálny poštár — čo si vybrať?": "Peppol vs. Digitálny poštár — co si vybrat?",
-  "Pre tuzemské B2B (slovenská firma → slovenská firma) môžete použiť oba kanály. Digitálny poštár je lacnejší a jednoduchší pre menšie firmy, Peppol je nutnosťou pre obchod s EÚ. Faktero podporí oba — vy si jednoducho zvolíte preferenciu a my smerujeme faktúru správnym kanálom automaticky podľa krajiny príjemcu.":
-    "Pro tuzemské B2B (slovenská firma → slovenská firma) můžete použít oba kanály. Digitálny poštár je levnější a jednodušší pro menší firmy, Peppol je nutností pro obchod s EU. Faktero podpoří oba — vy si jednoduše zvolíte preferenci a my směrujeme fakturu správným kanálem automaticky podle země příjemce.",
-  "Čo Digitálny poštár prinesie": "Co Digitálny poštár přinese",
-  "Centrálne registrovaný príjem aj odoslanie eFaktúr":
-    "Centrálně registrovaný příjem i odeslání e-faktur",
-  "Bezplatné základné použitie pre platiteľov DPH": "Bezplatné základní použití pro plátce DPH",
-  "Štátna archivácia 10 rokov v zákonom požadovanom formáte":
-    "Státní archivace 10 let v zákonem požadovaném formátu",
-  "Validácia XML voči slovenskému CIUS pred doručením":
-    "Validace XML vůči slovenskému CIUS před doručením",
-  "Náhrada Kontrolného výkazu DPH (hlásenie v reálnom čase)":
-    "Náhrada kontrolního výkazu DPH (hlášení v reálném čase)",
-  "API pre účtovné systémy ako Faktero": "API pro účetní systémy jako Faktero",
-  "Kedy bude k dispozícii?": "Kdy bude k dispozici?",
-  "Finančná správa SR plánuje pilotnú prevádzku v priebehu roku 2026 a plné spustenie k 1.1.2027 spolu s povinnosťou eFaktúry. Technické špecifikácie sú postupne zverejňované — Faktero pripraví integráciu hneď, ako budú finálne.":
-    "Finanční správa SR plánuje pilotní provoz v průběhu roku 2026 a plné spuštění k 1.1.2027 spolu s povinností e-faktury. Technické specifikace jsou postupně zveřejňovány — Faktero připraví integraci hned, jak budou finální.",
-  "Faktero pripraví integráciu": "Faktero připraví integraci",
-  "Akonáhle Finančná správa zverejní finálne API, integrujeme Digitálneho poštára do Faktera. Vy nebudete musieť riešiť nič — len kliknete na 'Odoslať' a faktúra sa doručí správnym kanálom.":
-    "Jakmile Finanční správa SR zveřejní finální API, integrujeme Digitálny poštár do Faktera. Vy nebudete muset řešit nic — jen kliknete na 'Odeslat' a faktura se doručí správným kanálem.",
   "Pre účtovníkov": "Pro účetní",
   "Účtovné podklady jedným klikom": "Účetní podklady jedním kliknutím",
   "Pohoda export aj konektor, šesť formátov exportu, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
@@ -696,4 +652,52 @@ export default {
   "Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta — výpisy z platobných brán":
     "Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta — výpisy z platebních bran",
   "Vlastné integrácie cez REST API": "Vlastní integrace přes REST API",
+  "Od 1.1.2027 bude eFaktúra povinná pre B2B transakcie na Slovensku. Vo Fakteri beží naostro už od októbra 2026.":
+    "Od 1.1.2027 bude eFaktura na Slovensku povinná pro B2B transakce. Ve Fakteru běží naostro už od října 2026.",
+  "Od 1.1.2027 musí každý platiteľ DPH usadený na Slovensku vystavovať a prijímať eFaktúry pri tuzemských B2B transakciách (firma firme) a B2G (firma štátu). Rozhoduje registrácia na DPH, nie veľkosť firmy — týka sa to rovnako SZČO-platiteľa ako korporácie. Neplatiteľ DPH eFaktúry vystavovať nemusí, no prijať ich vedieť musí. Faktúry pre koncových spotrebiteľov (B2C) ostávajú v pôvodnom režime. Prechodné obdobie trvá do 30.6.2030; od 1.7.2030 sa podľa európskych pravidiel ViDA pridajú aj cezhraničné dodania v rámci EÚ.":
+    "Od 1.1.2027 musí každý plátce DPH usazený na Slovensku vystavovat a přijímat e-faktury u tuzemských B2B transakcí (firma firmě) a B2G (firma státu). Rozhoduje registrace k DPH, ne velikost firmy — týká se to stejně OSVČ-plátce jako korporace, neplátce DPH eFaktury vystavovat nemusí, ale přijmout je umět musí. Faktury pro koncové spotřebitele (B2C) zůstávají v původním režimu. Přechodné období trvá do 30.6.2030; od 1.7.2030 se podle evropských pravidel ViDA přidají i přeshraniční dodání v rámci EU.",
+  "Doručenie cez sieť Peppol prostredníctvom digitálneho poštára — poskytovateľa doručovacej služby":
+    "Doručení přes síť Peppol prostřednictvím digitálního pošťáka — poskytovatele doručovací služby",
+  "Potrebujete softvér, ktorý vie vygenerovať validný XML podľa Peppol BIS 3.0, a digitálneho poštára — certifikovaného poskytovateľa doručovacej služby, ktorého si vyberiete na Portáli finančnej správy. Rovnako musíte byť schopní eFaktúry prijímať, spracovať a archivovať 10 rokov v pôvodnom XML formáte. Excel a ručné PDF skončili.":
+    "Potřebujete software, který umí vygenerovat validní XML podle Peppol BIS 3.0, a digitálního pošťáka — certifikovaného poskytovatele doručovací služby, kterého si vyberete na Portálu Finanční správy SR. Stejně tak musíte umět eFaktury přijímat, zpracovat a archivovat 10 let v původním formátu XML. Excel a ruční PDF skončily.",
+  "eFaktúra vo Fakteri beží naostro":
+    "eFaktura ve Fakteru běží naostro",
+  "Od 13. 10. 2026 Faktero eFaktúry odosiela aj prijíma cez sieť Peppol. Zapnete si ju na Portáli finančnej správy výberom Faktera ako poskytovateľa doručovacej služby — registráciu v sieti urobíme za vás. Za odoslanú eFaktúru neplatíte nič navyše.":
+    "Od 13. 10. 2026 Faktero eFaktury odesílá i přijímá přes síť Peppol. Zapnete si ji na Portálu Finanční správy SR výběrem Faktera jako poskytovatele doručovací služby — registraci v síti uděláme za vás. Za odeslanou eFakturu neplatíte nic navíc.",
+  "Peppol funguje podobne ako emailová sieť, ale pre štruktúrované obchodné dokumenty. Každá firma má v sieti svoju jedinečnú adresu — Peppol ID. Slovenská firma ho má zo schémy 0245 a svojho DIČ (napríklad 0245:2120123456). Faktúru odošlete cez svojho poskytovateľa, ten ju doručí poskytovateľovi príjemcu a ten ju vloží do účtovného systému príjemcu. Celý prenos trvá sekundy a je šifrovaný.":
+    "Peppol funguje podobně jako e-mailová síť, ale pro strukturované obchodní dokumenty. Každá firma má v síti svou jedinečnou adresu — Peppol ID. Slovenská firma ho má ze schématu 0245 a svého DIČ (například 0245:2120123456). Fakturu odešlete přes svého poskytovatele, ten ji doručí poskytovateli příjemce a ten ji vloží do účetního systému příjemce. Celý přenos trvá sekundy a je šifrovaný.",
+  "Peppol využíva tzv. 4-corner model: odosielateľ (1) → odosielateľov Access Point (2) → príjemcov Access Point (3) → príjemca (4). Firmy si vyberú certifikovaného poskytovateľa a neriešia technické detaily protokolu. Faktero je napojené na certifikovaný prístupový bod — technickú stránku za vás rieši Faktero.":
+    "Peppol využívá tzv. 4-corner model: odesílatel (1) → Access Point odesílatele (2) → Access Point příjemce (3) → příjemce (4). Firmy si vyberou certifikovaného poskytovatele a neřeší technické detaily protokolu. Faktero je napojené na certifikovaný přístupový bod — technickou stránku za vás řeší Faktero.",
+  "Doručenie cez certifikovaného poskytovateľa (Access Point)":
+    "Doručení přes certifikovaného poskytovatele (Access Point)",
+  "Kto vám doručuje eFaktúry a ako si ho vyberiete.":
+    "Kdo vám doručuje eFaktury a jak si ho vyberete.",
+  "Digitálny poštár je pomenovanie Finančnej správy SR pre certifikovaného poskytovateľa doručovacej služby — toho, kto vaše eFaktúry cez sieť Peppol odosiela a prijíma. Faktero je takým poskytovateľom.":
+    "Digitální pošťák (Digitálny poštár) je název, kterým slovenská finanční správa označuje certifikovaného poskytovatele doručovací služby — toho, kdo vaše eFaktury přes síť Peppol odesílá a přijímá. Faktero je takovým poskytovatelem.",
+  "Ako si digitálneho poštára vyberiete?":
+    "Jak si digitálního pošťáka vyberete?",
+  "Výber sa robí na Portáli finančnej správy v časti eFaktúra: zo zoznamu poskytovateľov zvolíte Faktero a potvrdíte. Finančná správa nám pošle údaje firmy a Faktero ju zaregistruje v sieti Peppol — zvyčajne do niekoľkých minút. Ak na portál prístup nemáte, urobí to za vás účtovník so splnomocnením; pozvánku mu pošlete priamo z Faktera.":
+    "Výběr se dělá na Portálu Finanční správy SR v části eFaktúra: ze seznamu poskytovatelů zvolíte Faktero a potvrdíte. Finanční správa nám pošle údaje firmy a Faktero ji zaregistruje v síti Peppol — obvykle během několika minut. Pokud na portál přístup nemáte, udělá to za vás účetní s plnou mocí; pozvánku mu pošlete přímo z Faktera.",
+  "Jeden poskytovateľ na firmu":
+    "Jeden poskytovatel na firmu",
+  "V sieti Peppol môže byť firma len u jedného poskytovateľa. Ak už máte iného, prechod do Faktera urobíme s migračným kódom, ktorý vám vydá súčasný poskytovateľ.":
+    "V síti Peppol může být firma jen u jednoho poskytovatele. Pokud už máte jiného, přechod do Faktera uděláme s migračním kódem, který vám vydá současný poskytovatel.",
+  "Čo Faktero ako digitálny poštár robí":
+    "Co Faktero jako digitální pošťák dělá",
+  "Odosiela eFaktúry odberateľom cez sieť Peppol — s PDF faktúry aj prílohami":
+    "Odesílá eFaktury odběratelům přes síť Peppol — s PDF faktury i přílohami",
+  "Pred odoslaním overí, či je odberateľ v sieti Peppol":
+    "Před odesláním ověří, zda je odběratel v síti Peppol",
+  "Ukáže, kedy bola eFaktúra doručená":
+    "Ukáže, kdy byla eFaktura doručena",
+  "Prijíma eFaktúry od dodávateľov a zaeviduje ich bez prepisovania":
+    "Přijímá eFaktury od dodavatelů a zaeviduje je bez přepisování",
+  "Dobropisy, ťarchopisy aj samofaktúry posiela ako eFaktúru":
+    "Dobropisy, vrubopisy i samofaktury posílá jako eFakturu",
+  "Bez poplatku za odoslanú eFaktúru":
+    "Bez poplatku za odeslanou eFakturu",
+  "Naostro od októbra 2026":
+    "Naostro od října 2026",
+  "Faktero ako digitálny poštár beží naostro od 13. 10. 2026 — pred povinnosťou od 1. 1. 2027. Ako eFaktúru zapnúť, nájdete v Pomoci.":
+    "Faktero jako digitální pošťák běží naostro od 13. 10. 2026 — před povinností od 1. 1. 2027. Jak eFakturu zapnout, najdete v Nápovědě.",
 } satisfies Record<string, string>;

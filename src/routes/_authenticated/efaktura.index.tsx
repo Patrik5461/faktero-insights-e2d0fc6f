@@ -420,7 +420,7 @@ function EFakturaPage() {
               <div className="flex-1">
                 <h2 className="font-semibold">{t("Chcem dostávať novinky k eFaktúre")}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {t("Pošleme vám e-mail, keď bude eFaktúra v Faktero k dispozícii a pri každom dôležitom kroku.")}
+                  {t("Pošleme vám e-mail pri každom dôležitom kroku — termíny povinnosti, zmeny pravidiel a novinky vo Fakteri.")}
                 </p>
                 <form onSubmit={onSignup} className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <input
