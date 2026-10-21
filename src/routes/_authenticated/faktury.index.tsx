@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeZapnute } from "@/lib/faktero/search-parametre";
 import { jeOtvorena } from "@/lib/faktero/faktury-sumy";
+import { sumaNaZobrazenie } from "@/lib/faktero/dobropis-zobrazenie";
 import { DNI_PAROVANIA, MAX_PAROVANIA } from "@/lib/faktero/parovanie-limity";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
@@ -885,7 +886,7 @@ function InvoicesPage() {
               subtitle={i.customer_name ?? "—"}
               status={<StatusBadge status={i.status} />}
               meta={`${datumNaDoklade(i.issue_date)} · ${t("splat.")} ${datumNaDoklade(i.due_date)}`}
-              amount={formatujMenu(i.total, i.currency)}
+              amount={formatujMenu(sumaNaZobrazenie(i, i.total), i.currency)}
               actions={
                 list.showDeleted ? (
                   <button
@@ -1008,7 +1009,8 @@ function InvoicesPage() {
                         )}
                       </td>
                       <td className="p-3 text-right">
-                        {formatujMenu(i.total, i.currency)}
+                        {/* Dobropis bez mínusu — že znižuje, hovorí štítok Dobropis. */}
+                        {formatujMenu(sumaNaZobrazenie(i, i.total), i.currency)}
                       </td>
                       <td className="p-3">
                         <StatusBadge status={i.status} />

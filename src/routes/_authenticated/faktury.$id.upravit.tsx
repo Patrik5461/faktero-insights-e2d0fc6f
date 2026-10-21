@@ -3,6 +3,7 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { ColneUdajePolozky } from "@/components/faktero/ColneUdajePolozky";
 import { colneUdajeNaZapis } from "@/lib/faktero/colny-kod";
+import { riadkyNaZapis, sumaFormulara, znamienkoFormulara } from "@/lib/faktero/dobropis-zobrazenie";
 import { KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
 import { useServerFn } from "@tanstack/react-start";
 import { druhPodlaTypuFaktury, sablonaZCisla, ukazkaCisla } from "@/lib/faktero/ciselne-rady";
@@ -163,12 +164,14 @@ function EditInvoice() {
         discount_type: (i.discount_type as TypZlavy | null) ?? "",
         discount_value: Number(i.discount_value ?? 0),
       });
+      // Dobropis sa vo formulári ukazuje kladne, pri uložení sa otočí späť.
+      const znNacitania = znamienkoFormulara(i.type, i);
       setItems(
         (its ?? []).map((r: any) => ({
           id: r.id,
           name: r.name,
           description: r.description,
-          quantity: Number(r.quantity),
+          quantity: znNacitania * Number(r.quantity) || 0,
           unit: r.unit ?? "ks",
           unit_price: Number(r.unit_price),
           vat_rate: Number(r.vat_rate),
@@ -206,10 +209,16 @@ function EditInvoice() {
     () => items.filter((it) => it.name.trim() !== "" || Number(it.unit_price) !== 0),
     [items],
   );
+  /*
+    Dobropis: riadky vo formulári sú kladné, súčty a zápis idú z riadkov so
+    znamienkom databázy — uložené hodnoty sú tak rovnaké ako predtým.
+  */
+  const znForm = znamienkoFormulara(inv?.type, inv);
+  const riadkyZapis = useMemo(() => riadkyNaZapis(riadkyDokladu, znForm), [riadkyDokladu, znForm]);
   const totals = useMemo(() => {
     let sub = 0,
       vat = 0;
-    for (const it of riadkyDokladu) {
+    for (const it of riadkyZapis) {
       const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
       sub += s;
       vat += it.prenesenie ? 0 : s * (Number(it.vat_rate) / 100);
@@ -225,7 +234,14 @@ function EditInvoice() {
     sub = sub * k;
     vat = vat * k;
     return { subtotal: sub, vat_total: vat, total: sub + vat, medzisucet, zlava };
-  }, [riadkyDokladu, form.discount_type, form.discount_value]);
+  }, [riadkyZapis, form.discount_type, form.discount_value]);
+  /** Súčty, ako ich vidí človek — dobropis bez mínusu. */
+  const zobrazene = {
+    medzisucet: sumaFormulara(totals.medzisucet, znForm),
+    subtotal: sumaFormulara(totals.subtotal, znForm),
+    vat_total: sumaFormulara(totals.vat_total, znForm),
+    total: sumaFormulara(totals.total, znForm),
+  };
 
   /** Suma s DPH napísaná do stĺpca Spolu dopočíta jednotkovú cenu bez dane. */
   function nastavSpolu(idx: number, spolu: number) {
@@ -255,13 +271,15 @@ function EditInvoice() {
     if (!odberatel?.customer_name.trim()) return toast.error(t("Odberateľ musí mať názov."));
     const bezNazvu = riadkyDokladu.find((it) => !it.name.trim());
     if (bezNazvu) return toast.error(t("Položka so sumou musí mať názov."));
+    if (znForm === -1 && totals.total > 0)
+      return toast.error(t("Dobropis cenu znižuje — sumy zadajte kladne, mínus doplní Faktero samo."));
     // Lock: stock-linked lines cannot be removed or modified after sent/paid
     if ((inv?.status as string) === "sent") {
       const violation = originalLocked.some((orig) => {
         const cur = items.find((it) => it.id === orig.id);
         if (!cur) return true; // removed
         return (
-          Number(cur.quantity) !== orig.quantity ||
+          znForm * Number(cur.quantity) !== orig.quantity ||
           (cur.stock_item_id ?? null) !== orig.stock_item_id ||
           cur.name !== orig.name
         );
@@ -305,7 +323,7 @@ function EditInvoice() {
       const { error: delErr } = await supabase.from("invoice_items").delete().eq("invoice_id", id);
       if (delErr) throw delErr;
 
-      const rows = riadkyDokladu.map((it, idx) => {
+      const rows = riadkyZapis.map((it, idx) => {
         const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
         const v = it.prenesenie ? 0 : s * (Number(it.vat_rate) / 100);
         return {
@@ -901,7 +919,7 @@ function EditInvoice() {
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("Medzisúčet")}</span>
                     <span className="tabular-nums">
-                      {totals.medzisucet.toFixed(2)} {form.currency}
+                      {zobrazene.medzisucet.toFixed(2)} {form.currency}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
@@ -915,19 +933,19 @@ function EditInvoice() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("Bez DPH")}</span>
                 <span className="tabular-nums">
-                  {totals.subtotal.toFixed(2)} {form.currency}
+                  {zobrazene.subtotal.toFixed(2)} {form.currency}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("DPH")}</span>
                 <span className="tabular-nums">
-                  {totals.vat_total.toFixed(2)} {form.currency}
+                  {zobrazene.vat_total.toFixed(2)} {form.currency}
                 </span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
                 <span>{t("Spolu")}</span>
                 <span className="tabular-nums text-primary">
-                  {totals.total.toFixed(2)} {form.currency}
+                  {zobrazene.total.toFixed(2)} {form.currency}
                 </span>
               </div>
             </div>

@@ -71,6 +71,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { maZuctovanuZalohu, zostavaUhradit } from "@/lib/faktero/zaloha";
+import { jeDobropisNaZobrazenie, polozkaNaZobrazenie, sumaNaZobrazenie } from "@/lib/faktero/dobropis-zobrazenie";
 import { createInvoicePaymentLink, syncInvoicePayment } from "@/lib/faktero/payments.functions";
 import { paymentMethodLabel } from "@/lib/faktero/payment-method";
 import { adresaRiadky } from "@/lib/faktero/adresa";
@@ -1271,7 +1272,8 @@ function InvoiceDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {items.map((it) => (
+                  {/* Dobropis je v databáze záporný, na detaile sa ukazuje kladne. */}
+                  {items.map((it0) => polozkaNaZobrazenie(inv, it0)).map((it) => (
                     <tr key={it.id}>
                       <td className="p-3">
                         <div className="font-medium">{it.name}</div>
@@ -1350,8 +1352,8 @@ function InvoiceDetail() {
                     />
                   </>
                 )}
-                <Row label={t("Bez DPH")} value={formatujMenu(inv.subtotal, inv.currency)} />
-                <Row label={t("DPH")} value={formatujMenu(inv.vat_total, inv.currency)} />
+                <Row label={t("Bez DPH")} value={formatujMenu(sumaNaZobrazenie(inv, inv.subtotal), inv.currency)} />
+                <Row label={t("DPH")} value={formatujMenu(sumaNaZobrazenie(inv, inv.vat_total), inv.currency)} />
                 {maZuctovanuZalohu(inv.advance_amount) && (
                   <>
                     <Row label={t("Spolu")} value={formatujMenu(inv.total, inv.currency)} />
@@ -1364,10 +1366,17 @@ function InvoiceDetail() {
               </div>
               <div className="mt-3 border-t border-border pt-3">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {inv.status === "paid" ? t("Uhradené") : t("Spolu k úhrade")}
+                  {inv.status === "paid"
+                    ? t("Uhradené")
+                    : jeDobropisNaZobrazenie(inv)
+                      ? t("Spolu")
+                      : t("Spolu k úhrade")}
                 </div>
                 <div className="text-lg font-semibold tabular-nums">
-                  {formatujMenu(zostavaUhradit(inv.total, inv.advance_amount), inv.currency)}
+                  {formatujMenu(
+                    sumaNaZobrazenie(inv, zostavaUhradit(inv.total, inv.advance_amount)),
+                    inv.currency,
+                  )}
                 </div>
               </div>
             </div>

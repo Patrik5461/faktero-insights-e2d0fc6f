@@ -9,6 +9,7 @@
  * (Nastavenia → E-mailové šablóny, alebo predvolený predmet a text firmy),
  * Faktero nemení — firma ju napísala tak, ako ju chce mať.
  */
+import { sumaNaZobrazenie } from "./dobropis-zobrazenie";
 import {
   datumNaDoklade,
   jazykDokladu,
@@ -89,11 +90,18 @@ export function hodnotyMailu(
     total?: unknown;
     currency?: string | null;
     due_date?: string | null;
+    type?: string | null;
+    oprava_25a?: boolean | null;
   },
   jazyk: unknown,
 ): { total: string; due_date: string } {
   return {
-    total: formatujMenu(invoice.total, invoice.currency ?? "EUR", localeDokladu(jazyk)),
+    // Dobropis je v databáze záporný, v maili sa píše bez mínusu.
+    total: formatujMenu(
+      sumaNaZobrazenie(invoice, invoice.total),
+      invoice.currency ?? "EUR",
+      localeDokladu(jazyk),
+    ),
     due_date: invoice.due_date ? datumNaDoklade(invoice.due_date, jazyk) : "",
   };
 }

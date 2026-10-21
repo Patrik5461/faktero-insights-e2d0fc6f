@@ -36,6 +36,7 @@ const POPIS_COLNYCH: Record<string, { kod: string; povod: string; hmotnost: stri
   hu: { kod: "KN", povod: "származás", hmotnost: "tömeg" },
 };
 import { sUctomFaktury } from "./platobny-ucet";
+import { dokladNaZobrazenie, jeDobropisNaZobrazenie, polozkaNaZobrazenie } from "./dobropis-zobrazenie";
 
 function b64ToBytes(b64: string): Uint8Array {
   const bin =
@@ -134,7 +135,15 @@ function san(s: any): string {
 }
 
 export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<Uint8Array> {
-  const { invoice, items } = input;
+  /*
+    Dobropis je v databáze záporný; na doklade sa sumy píšu bez mínusu, že ide
+    o zníženie, hovorí nadpis DOBROPIS a odkaz na opravovanú faktúru. Kreslí
+    sa z kópií — `input.invoice` potom ešte číta ZUGFeRD (invoice-pdf.server),
+    ktorý potrebuje znamienka podľa EN 16931.
+  */
+  const invoice = dokladNaZobrazenie(input.invoice);
+  const items = (input.items ?? []).map((it) => polozkaNaZobrazenie(input.invoice, it));
+  const dobropis = jeDobropisNaZobrazenie(input.invoice);
   // Účet, na ktorý majú prísť peniaze, je ten z faktúry (ak ho má).
   const company = sUctomFaktury(input.company, invoice);
   /*
@@ -757,7 +766,8 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     platobných údajov, inak by odberateľa naviedol zaplatiť ešte raz.
   */
   const lenOprava = Boolean((invoice as any).oprava_25a);
-  cur.drawText(isPaid ? t.uhradene : lenOprava ? t.celkom : t.spoluKUhrade, {
+  // Dobropis sa neuhrádza — kladná suma pod „K úhrade“ by vyzerala ako výzva zaplatiť.
+  cur.drawText(isPaid ? t.uhradene : lenOprava || dobropis ? t.celkom : t.spoluKUhrade, {
     x: totalsX + 16,
     y: ty - 22,
     size: 9,
@@ -988,7 +998,8 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       140 bodov s QR v strede nechávalo prázdny pás, pre ktorý sa faktúra s
       textom nad položkami a prenesením nezmestila na jednu stranu.
     */
-    const kresliQr = Boolean(company.iban) && naUhradu > 0;
+    // Dobropis QR nemá nikdy (ani starší, kladne uložený) — pozri nižšie.
+    const kresliQr = Boolean(company.iban) && naUhradu > 0 && !dobropis;
     /*
       Keď sa plná karta na stranu tesne nezmestí, nakreslí sa kompaktná
       (menší QR, hustejšie riadky) — inak by platobné údaje osamoteli na

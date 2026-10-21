@@ -28,7 +28,7 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     const { data: f } = await supabaseAdmin
       .from("invoices")
       .select(
-        "id, company_id, invoice_number, type, status, language, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, exchange_rate_source, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, osobitna_uprava, de_hinweis_aufbewahrung, deleted_at, payment_iban, payment_swift",
+        "id, company_id, invoice_number, type, status, language, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, exchange_rate_source, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, osobitna_uprava, de_hinweis_aufbewahrung, deleted_at, payment_iban, payment_swift, oprava_25a",
       )
       .eq("public_token", data.token)
       .maybeSingle();
@@ -68,16 +68,19 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     const { vetyNaDoklad } = await import("@/lib/faktero/faktura-nalezitosti");
     // Stránka hovorí jazykom dokladu — nemeckú faktúru odberateľ otvorí po nemecky.
     const { jazykFaktury } = await import("@/lib/faktero/email-jazyk");
+    // Dobropis je v databáze záporný — odberateľ ho vidí bez mínusu ako v PDF.
+    const { dokladNaZobrazenie, polozkaNaZobrazenie } =
+      await import("@/lib/faktero/dobropis-zobrazenie");
     return {
       jazyk: jazykFaktury(f as any, firma),
-      doklad,
+      doklad: dokladNaZobrazenie(doklad),
       vetyUprav: vetyNaDoklad({
         danZPrijatejPlatby: (firma as any)?.dan_z_prijatej_platby,
         osobitnaUprava: (f as any).osobitna_uprava,
         krajina: krajinaDane((firma as any)?.country),
         upozornenieUschova: (f as any).de_hinweis_aufbewahrung,
       }),
-      polozky: polozky ?? [],
+      polozky: (polozky ?? []).map((p) => polozkaNaZobrazenie(f as any, p)),
       firma: firma ? sUctomFaktury(firma, f as any) : null,
       textDph,
     };
@@ -216,7 +219,8 @@ function VerejnaFaktura() {
         </div>
         <div className="text-right">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">
-            {t("Na úhradu")}
+            {/* Dobropis sa neuhrádza — suma je jeho celková hodnota. */}
+            {t(doklad.type === "credit_note" && !doklad.oprava_25a ? "Celkom" : "Na úhradu")}
           </div>
           <div className="text-2xl font-semibold tabular-nums">{suma(doklad.total)}</div>
           {doklad.status === "paid" && (

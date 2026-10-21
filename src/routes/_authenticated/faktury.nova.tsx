@@ -67,6 +67,14 @@ import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { ColneUdajePolozky } from "@/components/faktero/ColneUdajePolozky";
 import { colneUdajeNaZapis } from "@/lib/faktero/colny-kod";
+import {
+  riadkyNaZapis,
+  sumaFormulara,
+  sumaNaZobrazenie,
+  znamienkoFormulara,
+  znamienkoZobrazenia,
+} from "@/lib/faktero/dobropis-zobrazenie";
+import { riadokNaZapis, sumyFormulara, sumyNaZapis } from "@/lib/faktero/faktura-formular-sumy";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová faktúra — Faktero") }] }),
@@ -339,8 +347,9 @@ function NewInvoice() {
 
   /*
     Dobropis z detailu faktúry: odberateľ, mena, režim DPH, väzba na faktúru a
-    položky so záporným množstvom. Človek potom len zmaže, čo sa nevracia —
-    kladný dobropis by eFaktúra poslala ako ťarchopis.
+    položky pôvodnej faktúry. Človek potom len zmaže, čo sa nevracia. Vo
+    formulári sú množstvá kladné, záporné sa z nich stanú až pri zápise
+    (`riadkyNaZapis`) — kladný dobropis by eFaktúra poslala ako ťarchopis.
   */
   const [opravujeCislo, setOpravujeCislo] = useState("");
   const [hladajOpravovanu, setHladajOpravovanu] = useState("");
@@ -429,7 +438,8 @@ function NewInvoice() {
             ...EMPTY_ITEM,
             name: p.name,
             description: p.description ?? "",
-            quantity: -Math.abs(Number(p.quantity)),
+            // Kladne — pri zápise dobropisu sa množstvo otočí na záporné.
+            quantity: Math.abs(Number(p.quantity)),
             unit: p.unit ?? "ks",
             unit_price: Number(p.unit_price),
             vat_rate: Number(p.vat_rate),
@@ -587,7 +597,8 @@ function NewInvoice() {
         const r = cenaZPodkladov(
           podklady,
           { id: it.product_id, unit_price: produkt.unit_price },
-          Number(it.quantity) || 0,
+          // So znamienkom zápisu (dobropis záporne), ako predtým.
+          znamienkoFormulara(form.type) * Number(it.quantity) || 0,
         );
         return {
           ...it,
@@ -697,61 +708,32 @@ function NewInvoice() {
     () => items.filter((it) => it.name.trim() !== "" || Number(it.unit_price) !== 0),
     [items],
   );
-  const totals = useMemo(() => {
-    const mode = form.rounding_mode;
-    const rc = form.reverse_charge;
-    const r2 = (n: number) => Math.round(n * 100) / 100;
-    let sub = 0,
-      vat = 0;
-    for (const it of riadkyDokladu) {
-      // Riadková zľava je už v základe; jednotková cena ostáva pôvodná, nech
-      // je na doklade vidieť, z čoho sa zľavovalo.
-      let s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
-      let v = rc || it.prenesenie ? 0 : s * (Number(it.vat_rate) / 100);
-      if (mode === "per_item") {
-        s = r2(s);
-        v = r2(v);
-      }
-      sub += s;
-      vat += v;
-    }
-    /*
-      Zľava na celý doklad sa nerozdeľuje po riadkoch — prenásobí základ aj
-      daň tým istým koeficientom. Pomer medzi sadzbami tak ostane a DPH vyjde
-      rovnako, ako keby bola dohodnutá nižšia cena od začiatku.
-    */
-    const medzisucet = r2(sub);
-    const zlava = sumaZlavyDokladu(sub, {
-      typ: form.discount_type || null,
-      hodnota: Number(form.discount_value),
-    });
-    if (zlava > 0) {
-      const k = koeficientZlavy(sub, zlava);
-      sub = sub * k;
-      vat = vat * k;
-    }
-    let total = sub + vat;
-    if (mode === "per_document") {
-      sub = r2(sub);
-      vat = r2(vat);
-      total = r2(sub + vat);
-    }
-    if (mode === "retail") {
-      sub = r2(sub);
-      vat = r2(vat);
-      total = Math.round((sub + vat) * 20) / 20;
-    }
-    const advance = Math.round(odpocty.reduce((a, z) => a + z.suma, 0) * 100) / 100;
-    const payable = r2(total - advance);
-    return { subtotal: sub, vat_total: vat, total, advance, payable, medzisucet, zlava };
-  }, [
-    riadkyDokladu,
-    form.rounding_mode,
-    odpocty,
-    form.reverse_charge,
-    form.discount_type,
-    form.discount_value,
-  ]);
+  /*
+    Dobropis sa vo formulári zadáva kladne; do databázy ide so záporným
+    množstvom ako doteraz. Súčty sa preto počítajú z riadkov na zápis
+    (zaokrúhľuje sa zo zápornej sumy) a na zobrazenie sa len otočia.
+  */
+  const znForm = znamienkoFormulara(form.type);
+  const riadkyZapis = useMemo(() => riadkyNaZapis(riadkyDokladu, znForm), [riadkyDokladu, znForm]);
+  const totals = useMemo(
+    () =>
+      sumyFormulara(riadkyZapis, {
+        rounding_mode: form.rounding_mode,
+        reverse_charge: form.reverse_charge,
+        discount_type: form.discount_type,
+        discount_value: Number(form.discount_value),
+        zalohy: odpocty.map((z) => z.suma),
+      }),
+    [riadkyZapis, form.rounding_mode, odpocty, form.reverse_charge, form.discount_type, form.discount_value],
+  );
+  /** Súčty, ako ich vidí človek — dobropis bez mínusu. */
+  const zobrazene = {
+    medzisucet: sumaFormulara(totals.medzisucet, znForm),
+    subtotal: sumaFormulara(totals.subtotal, znForm),
+    vat_total: sumaFormulara(totals.vat_total, znForm),
+    total: sumaFormulara(totals.total, znForm),
+    payable: sumaFormulara(totals.payable, znForm),
+  };
 
   /**
    * Cena z riadku sa počíta z podkladov cenníka, nie na serveri — množstevná
@@ -799,7 +781,8 @@ function NewInvoice() {
         const novy = { ...it, ...patch };
         // Zmena množstva môže preklopiť riadok do inej množstevnej ceny.
         if (patch.quantity !== undefined && patch.unit_price === undefined) {
-          return { ...novy, ...cenaRiadku(novy, Number(patch.quantity) || 0) };
+          // Cenník dostane množstvo so znamienkom zápisu, ako predtým.
+          return { ...novy, ...cenaRiadku(novy, znForm * Number(patch.quantity) || 0) };
         }
         return novy;
       }),
@@ -881,6 +864,9 @@ function NewInvoice() {
       if (!form.opravuje_fakturu_id) return toast.error(t("Ťarchopis musí opravovať konkrétnu faktúru — priraďte ju."));
       if (!(totals.total > 0)) return toast.error(t("Ťarchopis cenu zvyšuje — sumy zadajte kladne."));
     }
+    // Dobropis sa zadáva kladne; záporný vstup by sa otočil na kladný dobropis.
+    if (form.type === "credit_note" && totals.total > 0)
+      return toast.error(t("Dobropis cenu znižuje — sumy zadajte kladne, mínus doplní Faktero samo."));
     // Dátum dodania je na faktúre platiteľa povinný a určuje obdobie DPH.
     const datumy = skontrolujDatumy({
       platitel: rezim.platitel,
@@ -909,7 +895,7 @@ function NewInvoice() {
     // Block submit if any stock-tracked line exceeds available
     const offending = items.find(
       (it) =>
-        it.stock_item_id && it._track_stock && Number(it.quantity) > Number(it._available ?? 0),
+        it.stock_item_id && it._track_stock && znForm * Number(it.quantity) > Number(it._available ?? 0),
     );
     if (offending) {
       toast.error(
@@ -980,9 +966,7 @@ function NewInvoice() {
           customer_zip: cust.zip,
           customer_country: cust.country,
           customer_email: cust.email,
-          subtotal: Number(totals.subtotal.toFixed(2)),
-          vat_total: Number(totals.vat_total.toFixed(2)),
-          total: Number(totals.total.toFixed(2)),
+          ...sumyNaZapis(totals),
           notes: form.notes,
           intro_note: form.intro_note.trim() || null,
           // Zľava na doklad: typ a zadaná hodnota kvôli doúčtovaniu a PDF,
@@ -1000,12 +984,10 @@ function NewInvoice() {
         return;
       }
 
-      const rows = riadkyDokladu.map((it, idx) => {
+      const rows = riadkyZapis.map((it, idx) => {
         // Sumy riadku sú po jeho vlastnej zľave; zľava na doklad sa do
         // riadkov nepremieta, tá sedí v hlavičke.
-        const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
-        const effRate = form.reverse_charge || it.prenesenie ? 0 : Number(it.vat_rate);
-        const v = s * (effRate / 100);
+        const cisla = riadokNaZapis(it, form.reverse_charge);
         return {
           invoice_id: inv.id,
           position: idx,
@@ -1016,14 +998,14 @@ function NewInvoice() {
           ...colneUdajeNaZapis(it),
           // Prenesenie po položke má zmysel len bez celofaktúrového prenesenia.
           prenesenie: !form.reverse_charge && Boolean(it.prenesenie),
-          quantity: it.quantity,
+          quantity: cisla.quantity,
           unit: it.unit,
-          unit_price: it.unit_price,
-          discount_percent: percentoZlavy(it.discount_percent),
-          vat_rate: effRate,
-          subtotal: Number(s.toFixed(2)),
-          vat_amount: Number(v.toFixed(2)),
-          total: Number((s + v).toFixed(2)),
+          unit_price: cisla.unit_price,
+          discount_percent: cisla.discount_percent,
+          vat_rate: cisla.vat_rate,
+          subtotal: cisla.subtotal,
+          vat_amount: cisla.vat_amount,
+          total: cisla.total,
         };
       });
       const { error: e2 } = rows.length
@@ -1087,7 +1069,7 @@ function NewInvoice() {
                 .map((it) => ({
                   name: it.name.trim(),
                   product_id: it.product_id ?? null,
-                  quantity: Number(it.quantity) || 0,
+                  quantity: znForm * Number(it.quantity) || 0,
                 })),
             },
           });
@@ -1280,7 +1262,7 @@ function NewInvoice() {
                           </>
                         ) : (
                           <>
-                            {t("Nechajte prázdne pre samostatný dobropis bez väzby na faktúru (napr. zľava za obdobie). Sumy zadávajte so mínusom.")}
+                            {t("Nechajte prázdne pre samostatný dobropis bez väzby na faktúru (napr. zľava za obdobie). Množstvá a ceny zadávajte kladne — dobropis ich od faktúry odpočíta sám.")}
                           </>
                         )}
                       </p>
@@ -1917,7 +1899,7 @@ function NewInvoice() {
                         />
                         <PoznamkaPolozky value={it.description} onChange={(v) => setItem(idx, { description: v })} />
                         <ColneUdajePolozky value={it} onChange={(v) => setItem(idx, v)} />
-                        <StockHint item={it} warehouseName={warehouseName} />
+                        <StockHint item={it} warehouseName={warehouseName} znamienko={znForm} />
                       </td>
                       <td className="py-2 pl-3">
                         <CellNum
@@ -2042,7 +2024,7 @@ function NewInvoice() {
                     <PoznamkaPolozky mobil value={it.description} onChange={(v) => setItem(idx, { description: v })} />
                     <ColneUdajePolozky mobil value={it} onChange={(v) => setItem(idx, v)} />
                   </div>
-                  <StockHint item={it} warehouseName={warehouseName} />
+                  <StockHint item={it} warehouseName={warehouseName} znamienko={znForm} />
                   {/* Päť polí v jednom riadku sa na telefóne nezmestilo (DPH ostala „2…“) — dva stĺpce s popiskami. */}
                   <div className="grid grid-cols-2 gap-2">
                     <label className="min-w-0 text-xs text-muted-foreground">
@@ -2201,7 +2183,7 @@ function NewInvoice() {
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("Medzisúčet")}</span>
                     <span className="tabular-nums">
-                      {formatujMenu(totals.medzisucet, form.currency)}
+                      {formatujMenu(zobrazene.medzisucet, form.currency)}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
@@ -2215,19 +2197,19 @@ function NewInvoice() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("Bez DPH")}</span>
                 <span className="tabular-nums">
-                  {formatujMenu(totals.subtotal, form.currency)}
+                  {formatujMenu(zobrazene.subtotal, form.currency)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("DPH")}</span>
                 <span className="tabular-nums">
-                  {formatujMenu(totals.vat_total, form.currency)}
+                  {formatujMenu(zobrazene.vat_total, form.currency)}
                 </span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
                 <span>{t("Celkom")}</span>
                 <span className="tabular-nums">
-                  {formatujMenu(totals.total, form.currency)}
+                  {formatujMenu(zobrazene.total, form.currency)}
                 </span>
               </div>
               {totals.advance > 0 && (
@@ -2241,16 +2223,17 @@ function NewInvoice() {
                   <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
                     <span>{t("K úhrade")}</span>
                     <span className="tabular-nums text-primary">
-                      {formatujMenu(totals.payable, form.currency)}
+                      {formatujMenu(zobrazene.payable, form.currency)}
                     </span>
                   </div>
                 </>
               )}
-              {totals.advance === 0 && (
+              {/* Dobropis nikto neuhrádza — stačí riadok Celkom nad tým. */}
+              {totals.advance === 0 && form.type !== "credit_note" && (
                 <div className="flex justify-between text-lg font-bold">
                   <span>{t("K úhrade")}</span>
                   <span className="tabular-nums text-primary">
-                    {formatujMenu(totals.total, form.currency)}
+                    {formatujMenu(zobrazene.total, form.currency)}
                   </span>
                 </div>
               )}
@@ -2573,11 +2556,20 @@ function ProductSearch({
   );
 }
 
-function StockHint({ item, warehouseName }: { item: Item; warehouseName: string }) {
+function StockHint({
+  item,
+  warehouseName,
+  znamienko = 1,
+}: {
+  item: Item;
+  warehouseName: string;
+  /** Pri dobropise −1 — kladné množstvo vo formulári tovar na sklad vracia. */
+  znamienko?: 1 | -1;
+}) {
   const { t } = useT();
   if (!item.stock_item_id || !item._track_stock) return null;
   const available = Number(item._available ?? 0);
-  const insufficient = Number(item.quantity) > available;
+  const insufficient = znamienko * Number(item.quantity) > available;
   return (
     <div
       className={`mt-1 inline-flex items-center gap-1 text-[11px] ${insufficient ? "text-destructive" : "text-muted-foreground"}`}
@@ -2698,7 +2690,7 @@ function InvoicePickerModal({
     if (!cid) return;
     let query = supabase
       .from("invoices")
-      .select("id, invoice_number, variable_symbol, customer_name, total, currency, issue_date, type, status")
+      .select("id, invoice_number, variable_symbol, customer_name, total, currency, issue_date, type, status, oprava_25a")
       .eq("company_id", cid)
       .order("issue_date", { ascending: false })
       .limit(50);
@@ -2729,7 +2721,11 @@ function InvoicePickerModal({
       .select("name, description, quantity, unit, unit_price, vat_rate")
       .eq("invoice_id", inv.id)
       .order("position");
-    onPickCopy((data ?? []) as Partial<Item>[]);
+    // Z dobropisu sa položky preberú tak, ako ich ukazuje — kladne.
+    const zn = znamienkoZobrazenia(inv);
+    onPickCopy(
+      (data ?? []).map((r: any) => ({ ...r, quantity: zn * Number(r.quantity) || 0 })) as Partial<Item>[],
+    );
   }
 
   return (
@@ -2789,7 +2785,7 @@ function InvoicePickerModal({
                   </div>
                 </div>
                 <div className="tabular-nums font-medium">
-                  {formatujMenu(Number(inv.total), inv.currency)}
+                  {formatujMenu(sumaNaZobrazenie(inv, inv.total), inv.currency)}
                 </div>
               </button>
             </li>

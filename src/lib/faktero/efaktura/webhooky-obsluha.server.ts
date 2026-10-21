@@ -226,10 +226,60 @@ export async function spracujZiadost(id: string): Promise<string> {
     });
   }
 
-  if (zmena.stav === "registrovana" && !zmena.company_id && !z.pozvanka_odoslana_at && email) {
-    await posliPozvanku({ id, email, nazov: z.nazov, dic: z.dic });
+  if (zmena.stav === "registrovana" && !z.pozvanka_odoslana_at && email) {
+    await oznamRegistraciuFirme({ id, email, nazov: z.nazov, dic: z.dic, maFirmu: Boolean(zmena.company_id) });
   }
   return String(zmena.stav);
+}
+
+/**
+ * Oznámenie firme po úspešnej registrácii v Peppole. Firma s účtom vo Fakteri
+ * dostane potvrdenie, že eFaktúry idú cez Faktero; bez účtu pozvánku.
+ * `pozvanka_odoslana_at` drží, že oznámenie (ktorékoľvek) už odišlo.
+ */
+async function oznamRegistraciuFirme(v: {
+  id: string;
+  email: string;
+  nazov: string | null;
+  dic: string;
+  maFirmu: boolean;
+}) {
+  if (!v.maFirmu) return posliPozvanku(v);
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+  const { escapeHtml } = await import("../ponuka-odpoved.server");
+  const odkaz = `${web()}/efaktura`;
+  const meno = v.nazov || `DIČ ${v.dic}`;
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      from: `Faktero <${process.env.RESEND_FROM_NOREPLY || "noreply@faktero.sk"}>`,
+      to: [v.email],
+      subject: `eFaktúra: ${meno} je napojená na Faktero`,
+      text: [
+        "Dobrý deň,",
+        "",
+        `firma ${meno} (DIČ ${v.dic}) je odteraz napojená na Faktero ako poskytovateľa doručovacej služby pre eFaktúry (digitálneho poštára) v sieti Peppol.`,
+        "eFaktúry vám dodávatelia môžu posielať a vy ich môžete odosielať priamo z Faktera. Prijaté eFaktúry nájdete v časti eFaktúra:",
+        `  ${odkaz}`,
+        "",
+        "Tím Faktero",
+      ].join("\n"),
+      html: `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;max-width:560px;line-height:1.5">
+        <p>Dobrý deň,</p>
+        <p>firma <strong>${escapeHtml(meno)}</strong> (DIČ ${escapeHtml(v.dic)}) je odteraz napojená na Faktero ako poskytovateľa doručovacej služby pre eFaktúry (digitálneho poštára) v sieti Peppol.</p>
+        <p>eFaktúry vám dodávatelia môžu posielať a vy ich môžete odosielať priamo z Faktera.</p>
+        <p><a href="${odkaz}" style="display:inline-block;background:#12734f;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Otvoriť eFaktúry vo Fakteri</a></p>
+      </div>`,
+    }),
+  });
+  if (res.ok) {
+    await db
+      .from("efaktura_pds_ziadosti")
+      .update({ pozvanka_odoslana_at: new Date().toISOString() })
+      .eq("id", v.id);
+  }
 }
 
 /**
@@ -286,7 +336,7 @@ async function posliPozvanku(v: { id: string; email: string; nazov: string | nul
 export async function dokonciRozbehnuteRegistracie(): Promise<void> {
   const { data: rozbehnute } = await db
     .from("efaktura_pds_ziadosti")
-    .select("id, epostak_operacia_id, company_id, stav, pokusov, dic, nazov, email, telefon")
+    .select("id, epostak_operacia_id, company_id, stav, pokusov, dic, nazov, email, telefon, pozvanka_odoslana_at")
     .in("stav", ["prijata", "registruje_sa", "chyba", "na_kontrolu"])
     .limit(200);
   for (const z of rozbehnute ?? []) {
@@ -307,6 +357,16 @@ export async function dokonciRozbehnuteRegistracie(): Promise<void> {
         if (stav === "registrovana" || stav === "zamietnuta") zmena.token_sifrovany = null;
         await db.from("efaktura_pds_ziadosti").update(zmena).eq("id", z.id);
         if (stav === "registrovana" && z.company_id) await zapniProfil(z.company_id, op);
+        // Registrácia dokončená až po kontrole u ePoštáka — firma sa to dozvie tiež.
+        if (stav === "registrovana" && z.email && !z.pozvanka_odoslana_at) {
+          await oznamRegistraciuFirme({
+            id: z.id,
+            email: z.email,
+            nazov: z.nazov,
+            dic: z.dic,
+            maFirmu: Boolean(z.company_id),
+          });
+        }
         if (stav !== z.stav) {
           await upozorniVysledokRegistracie({
             nazov: z.nazov,

@@ -19,6 +19,16 @@ async function computeHash(invoiceId: string): Promise<string | null> {
   return (data as string | null) ?? null;
 }
 
+/*
+  Dobropis sa od 2026-10 kreslí s kladnými sumami. Obsah faktúry sa nezmenil,
+  takže hash z databázy je rovnaký a uložené PDF so mínusmi by sa ukazovalo
+  ďalej. Značka v hashi ho pri dobropise raz pregeneruje; ostatné doklady
+  ostávajú v pamäti, ako boli.
+*/
+function hashSVerziou(hash: string | null, invoice: { type?: string | null }): string | null {
+  return hash && invoice?.type === "credit_note" ? `${hash}:dobropis-kladne` : hash;
+}
+
 async function objectExists(companyId: string, invoiceId: string) {
   const { data } = await supabaseAdmin.storage
     .from("invoice-pdfs")
@@ -47,7 +57,7 @@ export async function ensureInvoicePdf(
 
   const fileName = safePdfFileName((invoice as any).invoice_number ?? "faktura");
   const path = invoicePdfPath(invoice.company_id, invoice.id);
-  const hash = await computeHash(invoice.id);
+  const hash = hashSVerziou(await computeHash(invoice.id), invoice);
   const cachedHash = (invoice as any).pdf_source_hash as string | null;
 
   const cacheValid =
@@ -244,7 +254,7 @@ export async function ensureInvoicePdf(
   }
 
   // Re-read the hash: content may have changed while the PDF was rendering.
-  const finalHash = await computeHash(invoice.id);
+  const finalHash = hashSVerziou(await computeHash(invoice.id), invoice);
   await supabaseAdmin
     .from("invoices")
     .update({ pdf_url: path, pdf_source_hash: finalHash } as any)
