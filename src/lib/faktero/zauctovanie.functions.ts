@@ -562,6 +562,9 @@ export const vratVystavenuZPohodyFn = createServerFn({ method: "POST" })
       .update({ zauctovane_at: null, zauctoval: null })
       .eq("company_id", data.company_id)
       .eq("id", data.id);
+    // Oprava pôjde do Pohody pod novým id — inak by ju kontrola duplicity odmietla.
+    const { zvysVerziuPohody } = await import("./pohoda-odoslane-xml.server");
+    await zvysVerziuPohody(supabase, "invoices", [data.id]);
     return { ok: true };
   });
 

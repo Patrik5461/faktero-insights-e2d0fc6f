@@ -1,4 +1,5 @@
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { useT } from "@/lib/i18n/useT";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
@@ -426,6 +427,7 @@ function DokladyPage() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success(t("Exportované doklady: {n}", { n: res.count }));
+      toastNeodovzdane(t, (res as any).preskocene);
       if (markExported) refresh();
     } catch (e: any) {
       toast.error(e?.message ?? t("Export zlyhal"));

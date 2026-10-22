@@ -1,0 +1,63 @@
+// Zámok dokladov odovzdaných do Pohody, kontrola pred odovzdaním,
+// „Poslať opravu do Pohody“ a „Rozdiely oproti Pohode“ (Exporty).
+export default {
+  "Poslať opravu do Pohody": "Korrektur an Pohoda senden",
+  "Faktúra sa vráti z Pohody, aby sa dala opraviť a odovzdať znova":
+    "Die Rechnung wird aus Pohoda zurückgeholt, damit sie korrigiert und erneut übergeben werden kann",
+  "Kontrola pred odovzdaním do Pohody": "Prüfung vor der Übergabe an Pohoda",
+  Skontrolovať: "Prüfen",
+  "Doklady, ktoré by Pohoda zaúčtovala zle, export, balík ani konektor nepošlú — kým ich neopravíte, ostanú neodovzdané.":
+    "Belege, die Pohoda falsch verbuchen würde, senden weder Export, Paket noch Konnektor — bis Sie sie korrigieren, bleiben sie unübergeben.",
+  "Všetko neodovzdané prejde kontrolou.": "Alle nicht übergebenen Belege bestehen die Prüfung.",
+  "Nastaviť pokladňu pre Pohodu": "Kasse für Pohoda einstellen",
+  "Nastaviť členenie pre prenesenie": "Gliederung für Reverse-Charge einstellen",
+  "Rozdiely oproti Pohode": "Abweichungen gegenüber Pohoda",
+  Porovnať: "Vergleichen",
+  "Porovná posledné odoslané XML odovzdaných dokladov s tým, čo by z nich odišlo dnes. Zmenený doklad pošlite znova cez „Poslať opravu“.":
+    "Vergleicht das zuletzt gesendete XML übergebener Belege mit dem, was heute gesendet würde. Einen geänderten Beleg senden Sie über „Korrektur senden“ erneut.",
+  "Porovnaných: {n}": "Verglichen: {n}",
+  "bez uloženého XML: {n}": "ohne gespeichertes XML: {n}",
+  "V Pohode je to isté, čo vo Fakteri.": "In Pohoda steht dasselbe wie in Faktero.",
+  "odoslané {kedy}": "gesendet {kedy}",
+  "Poslať opravu": "Korrektur senden",
+  "Vo Fakteri je zmazaný, v Pohode ostal — zmažte ho aj tam.":
+    "In Faktero gelöscht, in Pohoda noch vorhanden — löschen Sie ihn auch dort.",
+  "Dnes by do Pohody neprešiel:": "Würde heute nicht an Pohoda gehen:",
+  Pole: "Feld",
+  Teraz: "Jetzt",
+  "Poslať opravu do Pohody? Doklad sa vráti z Pohody, takže ho môžete upraviť, a pri ďalšom odovzdaní (konektor, balík alebo export) pôjde znova. Pohoda doklad neprepíše — pôvodný v nej najprv zmažte, inak tam bude dvakrát.":
+    "Korrektur an Pohoda senden? Der Beleg wird aus Pohoda zurückgeholt, Sie können ihn bearbeiten, und bei der nächsten Übergabe (Konnektor, Paket oder Export) geht er erneut. Pohoda überschreibt den Beleg nicht — löschen Sie den ursprünglichen dort zuerst, sonst ist er doppelt vorhanden.",
+  "Vrátiť a opraviť": "Zurückholen und korrigieren",
+  "Vrátené z Pohody — opravte doklad a odovzdajte ho znova":
+    "Aus Pohoda zurückgeholt — korrigieren Sie den Beleg und übergeben Sie ihn erneut",
+  "… a ďalšie ({n})": "… und weitere ({n})",
+  "Neodovzdaný: {n} doklad": "Nicht übergeben: {n} Beleg",
+  "Neodovzdané: {n} doklady": "Nicht übergeben: {n} Belege",
+  "Neodovzdané: {n} dokladov": "Nicht übergeben: {n} Belege",
+  "Číslo dodávateľa": "Lieferantennummer",
+  "Pôvodné číslo dokladu": "Ursprüngliche Belegnummer",
+  "Dátum DPH": "USt-Datum",
+  "Dátum KH DPH": "Datum Kontrollmeldung",
+  "Základ 0 %": "Bemessungsgrundlage 0 %",
+  "Základ 2. znížená": "Bemessungsgrundlage 2. ermäßigter Satz",
+  "DPH 2. znížená": "USt 2. ermäßigter Satz",
+  "Základ znížená": "Bemessungsgrundlage ermäßigter Satz",
+  "DPH znížená": "USt ermäßigter Satz",
+  "Základ základná": "Bemessungsgrundlage Normalsatz",
+  "DPH základná": "USt Normalsatz",
+  Zaokrúhlenie: "Rundung",
+  Kurz: "Wechselkurs",
+  "Spolu v mene": "Summe in Währung",
+  "Počet položiek": "Anzahl Positionen",
+  "Položky — základ": "Positionen — Bemessungsgrundlage",
+  "Položky — DPH": "Positionen — USt",
+  "Položky — sadzby": "Positionen — Steuersätze",
+  "Položky — členenie DPH": "Positionen — USt-Gliederung",
+  "Položky — KV DPH": "Positionen — Kontrollmeldung",
+  "Položky — predkontácia": "Positionen — Vorkontierung",
+  "Faktúra už bola odovzdaná do Pohody — najprv ju vráťte z Pohody (Exporty → Vrátiť), potom ju upravte.":
+    "Die Rechnung wurde bereits an Pohoda übergeben — holen Sie sie zuerst aus Pohoda zurück (Exporte → Zurückholen) und bearbeiten Sie sie dann.",
+  "Doklad je odovzdaný do Pohody — najprv ho vráťte z Pohody, potom ho zmažte.":
+    "Der Beleg wurde an Pohoda übergeben — holen Sie ihn zuerst aus Pohoda zurück und löschen Sie ihn dann.",
+  "Vrátiť z Pohody": "Aus Pohoda zurückholen",
+};

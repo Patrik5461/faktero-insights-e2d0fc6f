@@ -102,6 +102,8 @@ export type Balik = {
   pocetOstatnych: number;
   ostatneIds: string[];
   preskocene: string[];
+  /** Len vynechané vydané faktúry — podľa nich sa značí história faktúr. */
+  preskoceneFaktur?: string[];
   vynechanePrilohy: number;
   fakturyIds: string[];
   dokladyIds: string[];
@@ -112,6 +114,9 @@ export type Balik = {
   ciselniky: { agenda: string; id: string; verzia: string }[];
   pocetCiselnikov: number;
   xmlFaktur: string;
+  /** XML prijatých dokladov (bločkov) a prijatých faktúr — ukladá sa do histórie ako pri faktúrach. */
+  xmlDokladov?: string;
+  xmlPrijatych?: string;
   poslednyDatum: string;
   nazovObdobia: string;
 };
@@ -393,18 +398,28 @@ export async function zostavBalik(
     );
   }
 
+  const preskoceneFaktur = [...preskocene];
+  /*
+    Kontrola pred odovzdaním: doklad, ktorý by Pohoda zaúčtovala zle, do XML
+    nejde ani sa neoznačí — ostane v súpiske a v zozname vynechaných.
+  */
+  const { prekazkaDokladu } = await import("./pohoda-kontrola");
+  let xmlDokladov = "";
+  let dokladyDoXml: Riadok[] = [];
   if (doklady.length) {
-    zip.file(
-      "pohoda-prijate-doklady.xml",
-      buildPohodaExpensesXml({
-        company,
-        doklady,
-        nastavenia: {
-          ...nastavenia,
-          ...(await (await import("./predkontacie.server")).nastaveniaDokladov(supabase, company, doklady)),
-        },
-      }),
-    );
+    const nastDokladov = {
+      ...nastavenia,
+      ...(await (await import("./predkontacie.server")).nastaveniaDokladov(supabase, company, doklady)),
+    };
+    for (const d of doklady) {
+      const dovod = prekazkaDokladu(d, company, nastDokladov);
+      if (dovod) preskocene.push(dovod);
+      else dokladyDoXml.push(d);
+    }
+    if (dokladyDoXml.length) {
+      xmlDokladov = buildPohodaExpensesXml({ company, doklady: dokladyDoXml, nastavenia: nastDokladov });
+      zip.file("pohoda-prijate-doklady.xml", xmlDokladov);
+    }
     zip.file(
       "prijate-doklady.csv",
       csvSubor(
@@ -436,23 +451,31 @@ export async function zostavBalik(
     );
   }
 
+  let xmlPrijatych = "";
+  let prijateDoXml: Riadok[] = [];
   if (prijate.length) {
     const { prijataAkoDoklad } = await import("./prijate-do-pohody");
-    zip.file(
-      "pohoda-prijate-faktury.xml",
-      buildPohodaExpensesXml({
+    const nastPrijatych = {
+      ...nastavenia,
+      ...(await (await import("./predkontacie.server")).nastaveniaDokladov(
+        supabase,
         company,
-        doklady: prijate.map(prijataAkoDoklad),
-        nastavenia: {
-          ...nastavenia,
-          ...(await (await import("./predkontacie.server")).nastaveniaDokladov(
-            supabase,
-            company,
-            prijate.map(prijataAkoDoklad),
-          )),
-        },
-      }),
-    );
+        prijate.map(prijataAkoDoklad),
+      )),
+    };
+    for (const p of prijate) {
+      const dovod = prekazkaDokladu(prijataAkoDoklad(p), company, nastPrijatych);
+      if (dovod) preskocene.push(dovod);
+      else prijateDoXml.push(p);
+    }
+    if (prijateDoXml.length) {
+      xmlPrijatych = buildPohodaExpensesXml({
+        company,
+        doklady: prijateDoXml.map(prijataAkoDoklad),
+        nastavenia: nastPrijatych,
+      });
+      zip.file("pohoda-prijate-faktury.xml", xmlPrijatych);
+    }
     zip.file(
       "prijate-faktury.csv",
       csvSubor(
@@ -656,16 +679,17 @@ export async function zostavBalik(
       base64,
       fileName: `odovzdanie-${vstup.mesiac}.zip`,
       pocetFaktur: vyvezene.length,
-      pocetDokladov: doklady.length,
+      pocetDokladov: dokladyDoXml.length,
       pocetPokladnicnych: pokladnica?.length ?? 0,
       pocetOstatnych: ostatne.length,
       ostatneIds: ostatne.map((d: Riadok) => d.id),
       preskocene,
+      preskoceneFaktur,
       vynechanePrilohy,
       fakturyIds: faktury.map((f: Riadok) => f.id),
-      dokladyIds: doklady.map((d: Riadok) => d.id),
-      prijateIds: prijate.map((p: Riadok) => p.id),
-      pocetPrijatych: prijate.length,
+      dokladyIds: dokladyDoXml.map((d: Riadok) => d.id),
+      prijateIds: prijateDoXml.map((p: Riadok) => p.id),
+      pocetPrijatych: prijateDoXml.length,
       ciselniky: [
         ...zakaznici.map((z: Riadok) => ({
           agenda: "adresar",
@@ -696,6 +720,8 @@ export async function zostavBalik(
       pocetCiselnikov:
         zakaznici.length + zasoby.length + zakazkyNove.length + pohyby.length + storna.length,
       xmlFaktur,
+      xmlDokladov,
+      xmlPrijatych,
       poslednyDatum: faktury[faktury.length - 1]?.issue_date ?? od,
       nazovObdobia: nazov,
     },
@@ -709,7 +735,8 @@ export async function oznacOdovzdane(
   balik: Balik,
   faktury: { id: string; invoice_number: string }[],
 ) {
-  const cislaPreskocenych = new Set(balik.preskocene.map((d) => String(d).split(" — ")[0]));
+  const preskoceneFaktur = balik.preskoceneFaktur ?? balik.preskocene;
+  const cislaPreskocenych = new Set(preskoceneFaktur.map((d) => String(d).split(" — ")[0]));
   const { od } = rozsahMesiaca(vstup.mesiac);
 
   const { data: job, error } = await supabase
@@ -740,24 +767,49 @@ export async function oznacOdovzdane(
         invoice_id: f.id,
         invoice_number: f.invoice_number,
         status: cislaPreskocenych.has(f.invoice_number) ? "skipped" : "ok",
-        error: balik.preskocene.find((d) => d.startsWith(f.invoice_number)) ?? null,
+        error: preskoceneFaktur.find((d) => d.startsWith(f.invoice_number)) ?? null,
       })),
     );
   }
+  /*
+    Prijaté doklady a faktúry majú v histórii vlastný súbor — aby sa dalo
+    neskôr porovnať, čo Pohoda naozaj dostala („Rozdiely oproti Pohode“).
+  */
+  const { ulozOdoslaneXml } = await import("./pohoda-odoslane-xml.server");
   if (job && balik.dokladyIds.length) {
+    const jobDokladov =
+      (await ulozOdoslaneXml(supabase, {
+        companyId: vstup.companyId,
+        userId: vstup.userId,
+        fileName: `pohoda-prijate-doklady-${vstup.mesiac}.xml`,
+        xml: balik.xmlDokladov ?? "",
+        pocet: balik.dokladyIds.length,
+        od,
+        do: balik.poslednyDatum,
+      })) ?? job.id;
     await supabase
       .from("expense_documents")
       .update({
         status: "exported",
         exported_at: new Date().toISOString(),
-        export_job_id: job.id,
+        export_job_id: jobDokladov,
       })
       .in("id", balik.dokladyIds);
   }
   if (job && balik.prijateIds?.length) {
+    const jobPrijatych =
+      (await ulozOdoslaneXml(supabase, {
+        companyId: vstup.companyId,
+        userId: vstup.userId,
+        fileName: `pohoda-prijate-faktury-${vstup.mesiac}.xml`,
+        xml: balik.xmlPrijatych ?? "",
+        pocet: balik.prijateIds.length,
+        od,
+        do: balik.poslednyDatum,
+      })) ?? job.id;
     await supabase
       .from("purchase_invoices")
-      .update({ exported_at: new Date().toISOString(), export_job_id: job.id })
+      .update({ exported_at: new Date().toISOString(), export_job_id: jobPrijatych })
       .in("id", balik.prijateIds);
   }
   if (job && balik.ostatneIds.length) {

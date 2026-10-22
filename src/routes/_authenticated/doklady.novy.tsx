@@ -15,7 +15,7 @@ import { KomentarePanel } from "@/components/faktero/KomentarePanel";
 import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
-import { vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
+import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
 import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
@@ -175,25 +175,13 @@ function NovyDokladPage() {
       .then(setKody)
       .catch(() => {});
   }, [cid, nacitajKody]);
-  const vratFn = useServerFn(vratZPohodyFn);
+  // „Poslať opravu do Pohody“ = vrátenie z Pohody (doklad ide späť medzi nespracované).
+  const poslatOpravu = usePoslatOpravuDoPohody();
   async function vratZPohody() {
     if (!cid || !search.id) return;
-    if (
-      !(await potvrd(
-        t(
-          "Vrátiť doklad z Pohody? Pôjde späť medzi nespracované a pri ďalšom odovzdaní znova — v Pohode ho preto najprv zmažte, inak tam bude dvakrát.",
-        ),
-      ))
-    )
-      return;
-    try {
-      await vratFn({ data: { company_id: cid, druh: "doklad", ids: [search.id] } });
-      toast.success(t("Vrátené medzi nespracované — opravte a spracujte znova"));
-      setStavDokladu("new");
-      await obnovUlozeny();
-    } catch (e: any) {
-      toast.error(e?.message ?? t("Nepodarilo sa"));
-    }
+    if (!(await poslatOpravu("doklad", cid, search.id))) return;
+    setStavDokladu("new");
+    await obnovUlozeny();
   }
   async function prepniZamok() {
     if (!search.id) return;
@@ -1041,7 +1029,7 @@ function NovyDokladPage() {
                       onClick={vratZPohody}
                       className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-white px-2 py-1 text-xs font-medium hover:bg-amber-100"
                     >
-                      {t("Vrátiť z Pohody (opraviť)")}
+                      {t("Poslať opravu do Pohody")}
                     </button>
                   </div>
                 )}

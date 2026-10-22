@@ -52,6 +52,7 @@ import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
 import { exportPrijatychPohodaFn } from "@/lib/faktero/vratenie.functions";
+import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
@@ -404,9 +405,8 @@ function PurchaseInvoicesPage() {
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       }
-      if (r.preskocene.length)
-        toast.warning(t("Vynechané: {zoznam}", { zoznam: r.preskocene.join(" · ") }));
-      else
+      toastNeodovzdane(t, r.preskocene);
+      if (!r.preskocene.length)
         toast.success(
           t("XML pre Pohodu: {n} faktúr", { n: r.pocet }) +
             (r.subory.length > 1

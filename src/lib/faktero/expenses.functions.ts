@@ -653,30 +653,48 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const { buildPohodaExpensesXml, podlaRoka } = await import("./export.server");
     const datumZ = /^\d{4}-\d{2}-\d{2}$/.test(String(data.datum_zauctovania ?? "")) ? String(data.datum_zauctovania) : null;
     // Prelom rokov: každý rok do vlastného súboru (Pohoda importuje do jedného roka).
-    const roky = datumZ ? [{ rok: "", doklady: rows }] : podlaRoka(rows, (r: any) => r.issue_date);
-    for (const r of roky)
-    zip.file(
-      roky.length > 1 ? `pohoda-${r.rok}.xml` : "pohoda.xml",
-      buildPohodaExpensesXml({
-        company: firma ?? {},
-        doklady: r.doklady,
-        nastavenia: {
-          datumZauctovaniaPevny: datumZ,
-          predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
-          clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
-          predkontaciaDoklady: (firma as any)?.pohoda_predkontacia_doklady,
-          clenenieDphDoklady: (firma as any)?.pohoda_clenenie_dph_doklady,
-          predkontaciaRozuctovat: (firma as any)?.pohoda_predkontacia_rozuctovat,
-          blockyPodlaPlatby: (firma as any)?.pohoda_blocky_agenda === "podla_platby",
-          pokladna: (firma as any)?.pohoda_pokladna,
-          ...(await (await import("./predkontacie.server")).nastaveniaDokladov(
-            supabase,
-            { ...(firma ?? {}), id: data.company_id },
-            rows,
-          )),
-        },
-      }),
-    );
+    const nastavenia = {
+      datumZauctovaniaPevny: datumZ,
+      predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
+      clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
+      predkontaciaDoklady: (firma as any)?.pohoda_predkontacia_doklady,
+      clenenieDphDoklady: (firma as any)?.pohoda_clenenie_dph_doklady,
+      predkontaciaRozuctovat: (firma as any)?.pohoda_predkontacia_rozuctovat,
+      blockyPodlaPlatby: (firma as any)?.pohoda_blocky_agenda === "podla_platby",
+      pokladna: (firma as any)?.pohoda_pokladna,
+      ...(await (await import("./predkontacie.server")).nastaveniaDokladov(
+        supabase,
+        { ...(firma ?? {}), id: data.company_id },
+        rows,
+      )),
+    };
+    /*
+      Kontrola pred odovzdaním: doklad, ktorý by Pohoda zaúčtovala zle, do XML
+      nejde a neoznačí sa. Odovzdaný doklad sa druhýkrát neoznačí — v Pohode
+      by bol dvakrát; v ZIP-e (CSV, skeny) ostáva.
+    */
+    const { prekazkaDokladu } = await import("./pohoda-kontrola");
+    const preskocene: string[] = [];
+    const doXml = rows.filter((r: any) => {
+      if (data.mark_exported && r.exported_at) {
+        preskocene.push(
+          `${r.document_number || "bloček"} — už je odovzdaný do Pohody — znova ho pošlete až po vrátení (Vrátiť z Pohody)`,
+        );
+        return false;
+      }
+      const dovod = prekazkaDokladu(r, firma ?? {}, nastavenia);
+      if (dovod) preskocene.push(dovod);
+      return !dovod;
+    });
+    const roky = datumZ ? [{ rok: "", doklady: doXml }] : podlaRoka(doXml, (r: any) => r.issue_date);
+    const xmlPodlaRoka: { xml: string; doklady: any[]; nazov: string }[] = [];
+    for (const r of roky) {
+      if (!r.doklady.length) continue;
+      const nazov = roky.length > 1 ? `pohoda-${r.rok}.xml` : "pohoda.xml";
+      const xml = buildPohodaExpensesXml({ company: firma ?? {}, doklady: r.doklady, nastavenia });
+      zip.file(nazov, xml);
+      xmlPodlaRoka.push({ xml, doklady: r.doklady, nazov });
+    }
 
     // Priložené súbory
     const files = zip.folder("subory")!;
@@ -694,19 +712,32 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const blob = await zip.generateAsync({ type: "base64" });
 
     if (data.mark_exported) {
-      await supabase
-        .from("expense_documents")
-        .update({ status: "exported", exported_at: new Date().toISOString() })
-        .in(
-          "id",
-          rows.map((r) => r.id),
-        );
+      // Čo Pohoda dostala, sa uloží do histórie exportov (porovnanie neskôr).
+      const { ulozOdoslaneXml } = await import("./pohoda-odoslane-xml.server");
+      const mesiac = data.month ?? new Date().toISOString().slice(0, 7);
+      for (const x of xmlPodlaRoka) {
+        const jobId = await ulozOdoslaneXml(supabase as any, {
+          companyId: data.company_id,
+          userId: context.userId as string,
+          fileName: `pohoda-prijate-doklady-${mesiac}${x.nazov === "pohoda.xml" ? "" : "-" + x.nazov.slice(7, 11)}.xml`,
+          xml: x.xml,
+          pocet: x.doklady.length,
+        });
+        await supabase
+          .from("expense_documents")
+          .update({ status: "exported", exported_at: new Date().toISOString(), export_job_id: jobId })
+          .in(
+            "id",
+            x.doklady.map((r: any) => r.id),
+          );
+      }
     }
 
     return {
       base64: blob,
       filename: `doklady-${data.month ?? new Date().toISOString().slice(0, 7)}.zip`,
       count: rows.length,
+      preskocene,
     };
   });
 

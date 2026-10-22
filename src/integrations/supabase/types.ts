@@ -3417,6 +3417,7 @@ export type Database = {
           pravidlo_id: string | null
           inbox_message_id: string | null
           vyuctovanie_id: string | null
+          pohoda_verzia: number
         }
         Insert: {
           processed_at?: string | null
@@ -3471,6 +3472,7 @@ export type Database = {
           pravidlo_id?: string | null
           inbox_message_id?: string | null
           vyuctovanie_id?: string | null
+          pohoda_verzia?: number
         }
         Update: {
           processed_at?: string | null
@@ -3525,6 +3527,7 @@ export type Database = {
           pravidlo_id?: string | null
           inbox_message_id?: string | null
           vyuctovanie_id?: string | null
+          pohoda_verzia?: number
         }
         Relationships: [
           {
@@ -5308,6 +5311,7 @@ export type Database = {
           zasielkovna_cislo: string | null
           zasielkovna_stav: string | null
           zasielkovna_stav_at: string | null
+          pohoda_verzia: number
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -5410,6 +5414,7 @@ export type Database = {
           zasielkovna_cislo?: string | null
           zasielkovna_stav?: string | null
           zasielkovna_stav_at?: string | null
+          pohoda_verzia?: number
         }
         Update: {
           exchange_rate_source?: string | null
@@ -5512,6 +5517,7 @@ export type Database = {
           zasielkovna_cislo?: string | null
           zasielkovna_stav?: string | null
           zasielkovna_stav_at?: string | null
+          pohoda_verzia?: number
         }
         Relationships: [
           {
@@ -6587,6 +6593,7 @@ export type Database = {
           stitky: string[]
           inbox_message_id: string | null
           vyuctovanie_id: string | null
+          pohoda_verzia: number
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -6687,6 +6694,7 @@ export type Database = {
           stitky?: string[]
           inbox_message_id?: string | null
           vyuctovanie_id?: string | null
+          pohoda_verzia?: number
         }
         Update: {
           exchange_rate_source?: string | null
@@ -6787,6 +6795,7 @@ export type Database = {
           stitky?: string[]
           inbox_message_id?: string | null
           vyuctovanie_id?: string | null
+          pohoda_verzia?: number
         }
         Relationships: [
           {

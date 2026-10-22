@@ -50,6 +50,13 @@ const jePdp = (x: any, p: any) =>
  * faktúry (na pár centov). Sumy položiek z čítania bývajú raz bez DPH, raz
  * s DPH; rozhodne, ktorému súčtu faktúry sa súčet položiek rovná. Inak null
  * a faktúra ide súhrnom.
+ *
+ * Sčítava sa **so znamienkom**: zľavy a bonusy sú záporné riadky (Telekom:
+ * „Zľavy -18,51“) a absolútna hodnota by ich pripočítala — súčet by nesedel
+ * a faktúra by spadla na súhrn s vymyslenou sadzbou. Keď majú všetky položky
+ * opačné znamienko než faktúra (dobropis s kladnými riadkami), otočia sa.
+ * Základ sa zaokrúhľuje za sadzbu, nie za riadok — rozdiel padne na
+ * najväčšiu položku sadzby, aby súčet sedel s faktúrou na cent.
  */
 export function polozkyPrijatej(p: any): PolozkaPrijatej[] | null {
   const items: any[] = Array.isArray(p?.items) ? p.items.filter((x: any) => String(x?.name ?? "").trim()) : [];
@@ -62,45 +69,71 @@ export function polozkyPrijatej(p: any): PolozkaPrijatej[] | null {
       ? t
       : (Number(x?.quantity ?? 1) || 1) * Number(x?.unit_price ?? 0);
   };
-  const zn = Number(p?.amount_total ?? 0) < 0 ? -1 : 1;
-  const sucet = items.reduce((a, x) => a + Math.abs(suma(x)), 0);
-  const bezDph = Math.abs(Number(p?.amount_without_vat ?? 0));
-  const sDph = Math.abs(Number(p?.amount_total ?? 0));
+  const sucet = items.reduce((a, x) => a + suma(x), 0);
+  const bezDph = Number(p?.amount_without_vat ?? 0);
+  const sDph = Number(p?.amount_total ?? 0);
   const tol = Math.max(0.03, 0.01 * items.length);
-  const netto = Math.abs(sucet - bezDph) <= tol;
-  const brutto = !netto && Math.abs(sucet - sDph) <= tol;
+  const blizko = (a: number, b: number) => Math.abs(a - b) <= tol;
+  // Smer: položky so znamienkom faktúry, alebo všetky opačne (otočia sa).
+  let otoc = 1;
+  let netto = blizko(sucet, bezDph);
+  let brutto = !netto && blizko(sucet, sDph);
+  if (!netto && !brutto && (blizko(-sucet, bezDph) || blizko(-sucet, sDph))) {
+    otoc = -1;
+    netto = blizko(-sucet, bezDph);
+    brutto = !netto;
+  }
   if (!netto && !brutto) return null;
-  const out: PolozkaPrijatej[] = items.map((x) => {
+  const surove = items.map((x) => {
     const sadzba = Number(x.vat_rate) || 0;
     const pdp = jePdp(x, p);
-    const t = Math.abs(suma(x));
-    const zaklad = r2(netto || pdp ? t : t / (1 + sadzba / 100));
-    const dph = pdp ? 0 : r2(netto ? (zaklad * sadzba) / 100 : t - zaklad);
-    const mnozstvo = Math.abs(Number(x?.quantity ?? 1)) || 1;
-    return {
-      nazov: String(x.name).trim(),
-      mnozstvo,
-      mj: x?.unit ? String(x.unit) : null,
-      cena: r2(zaklad / mnozstvo),
-      sadzba,
-      zaklad,
-      dph,
-      pdp,
-      predkontacia: x?.predkontacia ? String(x.predkontacia) : null,
-      clenenie: x?.clenenie ? String(x.clenenie) : null,
-    };
+    const t = otoc * suma(x);
+    // Nezaokrúhlený základ — zaokrúhli sa až za sadzbu.
+    const zaklad = netto || pdp ? t : t / (1 + sadzba / 100);
+    return { x, sadzba, pdp, t, zaklad };
   });
+  const out: PolozkaPrijatej[] = surove.map(({ x, sadzba, pdp, zaklad }) => ({
+    nazov: String(x.name).trim(),
+    mnozstvo: Math.abs(Number(x?.quantity ?? 1)) || 1,
+    mj: x?.unit ? String(x.unit) : null,
+    cena: 0,
+    sadzba,
+    zaklad: r2(zaklad),
+    dph: 0,
+    pdp,
+    predkontacia: x?.predkontacia ? String(x.predkontacia) : null,
+    clenenie: x?.clenenie ? String(x.clenenie) : null,
+  }));
+  // Súčet základov za sadzbu = zaokrúhlený nezaokrúhlený súčet.
+  const skupiny = new Map<string, number[]>();
+  surove.forEach((s, i) => {
+    const k = `${s.sadzba}|${s.pdp}`;
+    skupiny.set(k, [...(skupiny.get(k) ?? []), i]);
+  });
+  for (const idx of skupiny.values()) {
+    const ciel = r2(idx.reduce((a, i) => a + surove[i].zaklad, 0));
+    const rozdiel = r2(ciel - idx.reduce((a, i) => a + out[i].zaklad, 0));
+    if (rozdiel) {
+      const naj = [...idx].sort((a, b) => Math.abs(out[b].zaklad) - Math.abs(out[a].zaklad))[0];
+      out[naj].zaklad = r2(out[naj].zaklad + rozdiel);
+    }
+  }
+  for (const [i, o] of out.entries()) {
+    const s = surove[i];
+    o.dph = o.pdp ? 0 : r2(netto ? (o.zaklad * o.sadzba) / 100 : s.t - o.zaklad);
+    o.cena = r2(o.zaklad / o.mnozstvo);
+  }
   // Daň dorovná položka s najväčšou daňou — na faktúre je daň zaokrúhlená po sadzbách.
-  const dphFaktury = Math.abs(Number(p?.vat_amount ?? 0));
+  const dphFaktury = Number(p?.vat_amount ?? 0);
   const dphPoloziek = out.reduce((a, x) => a + x.dph, 0);
   const rozdiel = r2(dphFaktury - dphPoloziek);
   if (Math.abs(rozdiel) > Math.max(0.05, 0.01 * out.length)) return null;
   if (rozdiel) {
-    const naj = out.filter((x) => !x.pdp).sort((a, b) => b.dph - a.dph)[0];
+    const naj = out.filter((x) => !x.pdp).sort((a, b) => Math.abs(b.dph) - Math.abs(a.dph))[0];
     if (!naj) return null;
     naj.dph = r2(naj.dph + rozdiel);
   }
-  return out.map((x) => ({ ...x, zaklad: zn * x.zaklad, dph: zn * x.dph, cena: zn * x.cena }));
+  return out;
 }
 
 export function rozpisPrijatej(p: any): { sadzba: number; zaklad: number; dph: number; pdp?: boolean }[] {
@@ -174,6 +207,8 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     kv_clenenie: p.kv_clenenie,
     file_path: p.file_path,
     pdf_token: p.pdf_token,
+    // Verzia opravy — po vrátení z Pohody ide doklad pod novým id (kontrola duplicity).
+    pohoda_verzia: p.pohoda_verzia,
     total_amount: spolu,
     vat_breakdown: rozpisPrijatej(p),
     _povodneCislo: p.invoice_number,
@@ -202,5 +237,7 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     odpocet: p.odpocet,
     // Celá faktúra v prenesení — hlavička dostane členenie pre prenesenie a KV B.1.
     _pdp: celaPdp(p),
+    // Zaúčtovaná vo Fakteri — pred odovzdaním musí mať predkontáciu aj členenie.
+    _zauctovane: Boolean(p.zauctovane_at),
   };
 }

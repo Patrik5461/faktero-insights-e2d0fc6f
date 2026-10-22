@@ -372,7 +372,8 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
 
   it("prenesenie daňovej povinnosti sa dá na doklade spoznať", () => {
     // Z čísel to nevidno — vyzerá to rovnako ako oslobodené plnenie.
-    const h = posli({ ...faktura, reverse_charge: true }).invoiceHeader;
+    const bezDane = polozky.map((x: any) => ({ ...x, vat_amount: 0, total: x.subtotal }));
+    const h = posli({ ...faktura, reverse_charge: true }, bezDane).invoiceHeader;
     expect(String(h.note)).toContain("Prenesenie daňovej povinnosti");
   });
 
@@ -389,9 +390,11 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
       posli({ ...faktura, type: "credit_note" }, polozky, n).invoiceHeader.accounting.ids,
     ).toBe("3Fd");
     // Pri prenesení daňovej povinnosti platí vlastné členenie.
+    const bezDane = polozky.map((x: any) => ({ ...x, vat_amount: 0, total: x.subtotal }));
     expect(
-      posli({ ...faktura, reverse_charge: true }, polozky, n).invoiceHeader.classificationVAT.ids,
-    ).toBe("UDpdp");
+      posli({ ...faktura, reverse_charge: true }, bezDane, { ...n, clenenieDphPdp: "UDpdp9" })
+        .invoiceHeader.classificationVAT.ids,
+    ).toBe("UDpdp9");
     // Bez nastavenia sa nedopĺňa nič — vymyslený kód by import zhodil.
     expect(posli(faktura).invoiceHeader.accounting).toBeUndefined();
   });
@@ -658,12 +661,12 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(datumZauctovania("2026-08-15", null)).toBeNull();
   });
 
-  it("hotovostný bloček bez skratky pokladne ide ako faktúra — Pohoda by ho odmietla", () => {
+  it("hotovostný bloček bez skratky pokladne do Pohody nejde — zastaví ho kontrola", () => {
+    // Predtým odišiel ako prijatá faktúra; firma si ale zvolila pokladňu.
     const x = posli([{ ...bloček, payment_method: "hotovost" }], {
       blockyPodlaPlatby: true,
-    }).dataPackItem;
-    expect(x.voucher).toBeUndefined();
-    expect(x.invoice.invoiceHeader.invoiceType).toBe("receivedInvoice");
+    });
+    expect(x?.dataPackItem).toBeUndefined();
   });
 
   it("prijatá faktúra ostáva faktúrou aj pri bločkoch podľa platby", () => {

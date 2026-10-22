@@ -11,7 +11,18 @@ export type ExportFormat =
 
 export const exportInvoicesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: { companyId: string; invoiceIds: string[]; format: ExportFormat }) => input)
+  .validator(
+    (input: {
+      companyId: string;
+      invoiceIds: string[];
+      format: ExportFormat;
+      /**
+       * Len kópia na stiahnutie („Stiahnuť XML znova“) — nič sa nezapíše do
+       * histórie a odovzdané faktúry sa nevynechajú.
+       */
+      kopia?: boolean;
+    }) => input,
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { EXPORT_STRATEGIES } = await import("./export.server");
@@ -42,89 +53,33 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
     );
     if (!invs.length) throw new Error(`Vybrané faktúry čakajú na schválenie (${cakaju}).`);
 
-    // Po dávkach a stránkach — pri stovkách faktúr je položiek viac než 1 000.
-    const { riadkyPreIds } = await import("./strankovanie");
-    const items = await riadkyPreIds<any>(
-      invs.map((i) => i.id),
-      (kus, zac, kon) =>
-        supabase
-          .from("invoice_items")
-          .select("*")
-          .in("invoice_id", kus)
-          .order("invoice_id")
-          .order("position")
-          .order("id")
-          .range(zac, kon),
-    );
-
-    // Dobropis a ťarchopis nesú len id opravovanej faktúry — formáty chcú jej číslo.
-    const opravovaneIds = [
-      ...new Set(invs.map((i: any) => i.opravuje_fakturu_id).filter(Boolean) as string[]),
-    ];
-    const cislaOpravovanych: Record<string, string> = {};
-    if (opravovaneIds.length) {
-      const { data: povodne } = await supabase
-        .from("invoices")
-        .select("id, invoice_number")
-        .eq("company_id", data.companyId)
-        .in("id", opravovaneIds);
-      for (const r of povodne ?? []) cislaOpravovanych[r.id] = r.invoice_number;
-    }
-
-    // Odpočty záloh na vyúčtovacích faktúrach (väzba v `invoice_advances`).
-    const { nacitajOdpocty } = await import("./zalohy-odpocty.server");
-    const { odpoctyZapisatelne, suhrnOdpoctov } = await import("./zalohy-odpocty");
-    const odpocty = await nacitajOdpocty(
-      supabase,
-      data.companyId,
-      invs.map((i) => i.id),
-    );
-
-    const bundle = invs.map((invoice) => ({
-      invoice: {
-        ...invoice,
-        _opravujeCislo: (invoice as any).opravuje_fakturu_id
-          ? (cislaOpravovanych[(invoice as any).opravuje_fakturu_id] ?? null)
-          : null,
-        _odpocty: odpocty[invoice.id] ?? null,
-      },
-      items: (items ?? []).filter((it) => it.invoice_id === invoice.id),
-    }));
-
     /*
-      Pohoda berie odpočet ako jednu položku s jednou sadzbou — rovnako ako
-      konektor; zálohy v rôznych sadzbách sa vynechajú a ozvú sa.
+      Odovzdaná faktúra ide do Pohody druhýkrát len po vrátení — inak tam
+      pribudne dvakrát (audit 22. 10.: rovnaký súbor dvakrát ako „ok“).
+      Kópiu na stiahnutie dostať možno vždy, len sa nezapíše.
     */
-    const zalohy: Record<string, { cislo: string | null; zaklad: number; dph: number; sadzba: number }> = {};
-    for (const [id, zoz] of Object.entries(odpocty)) {
-      if (!odpoctyZapisatelne(zoz)) continue;
-      const s = suhrnOdpoctov(zoz);
-      if (s.length !== 1) continue;
-      zalohy[id] = {
-        cislo: zoz.length === 1 ? zoz[0].zaloha : null,
-        zaklad: s[0].zaklad,
-        dph: s[0].dph,
-        sadzba: s[0].sadzba,
-      };
+    const uzOdovzdane: string[] = [];
+    if (data.format === "pohoda_xml" && !data.kopia) {
+      for (const i of invs as any[])
+        if (i.exported_at)
+          uzOdovzdane.push(
+            `${i.invoice_number} — už je odovzdaná do Pohody — znova ju pošlete až po vrátení (Vrátiť z Pohody)`,
+          );
+      if (uzOdovzdane.length === invs.length) throw new Error(uzOdovzdane.join(" · "));
+      const ids = new Set(uzOdovzdane.map((d) => d.split(" — ")[0]));
+      invs.splice(0, invs.length, ...(invs as any[]).filter((i) => !ids.has(i.invoice_number)));
     }
 
-    // Predkontácie a členenie DPH sú kódy z Pohody účtovníka; bez nich sa
-    // doklad naimportuje, ale všetko okolo účtovania si musí doklikať sám.
+    // Položky, čísla opravovaných faktúr a odpočty záloh — rovnako ako
+    // prehľad „Rozdiely oproti Pohode“ (`export-priprava.server.ts`).
+    const { pripravFaktury, nastaveniaFaktur } = await import("./export-priprava.server");
+    const { bundle, zalohy } = await pripravFaktury(supabase, data.companyId, invs);
+
     const built = await strategy.build({
       company,
       invoices: bundle,
       zalohy,
-      nastavenia: {
-        predkontacia: company.pohoda_predkontacia,
-        predkontaciaZaloha: company.pohoda_predkontacia_zaloha,
-        predkontaciaDobropis: company.pohoda_predkontacia_dobropis,
-        clenenieDph: company.pohoda_clenenie_dph,
-        clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
-        banka: company.pohoda_banka,
-        stredisko: company.pohoda_stredisko,
-        zamknuteDo: company.locked_until,
-        predkontaciaRozuctovat: company.pohoda_predkontacia_rozuctovat,
-      },
+      nastavenia: nastaveniaFaktur(company),
     });
 
     // Doklad, ktorý do súboru neprešiel, sa nesmie tváriť ako odovzdaný —
@@ -133,6 +88,18 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       (built.preskocene ?? []).map((d) => [String(d).split(" — ")[0], String(d)]),
     );
     const vyvezene = invs.filter((i) => !preskocene.has(i.invoice_number));
+
+    if (data.kopia) {
+      return {
+        jobId: null as string | null,
+        fileName: built.fileName,
+        content: built.content,
+        mime: built.mime,
+        encoding: strategy.encoding,
+        invoiceCount: vyvezene.length,
+        preskocene: built.preskocene ?? [],
+      };
+    }
 
     const dates = vyvezene
       .map((i) => i.issue_date)
@@ -170,14 +137,14 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
     }
 
     return {
-      jobId: job?.id,
+      jobId: (job?.id ?? null) as string | null,
       fileName: built.fileName,
       content: built.content,
       mime: built.mime,
       // Omega chce Windows-1250; prevod robí až sťahovanie v prehliadači.
       encoding: strategy.encoding,
       invoiceCount: vyvezene.length,
-      preskocene: built.preskocene ?? [],
+      preskocene: [...uzOdovzdane, ...(built.preskocene ?? [])],
     };
   });
 

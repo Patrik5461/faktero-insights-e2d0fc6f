@@ -189,6 +189,8 @@ describe("prijatá faktúra v prenesení daňovej povinnosti (§ 69)", () => {
     const xml = buildPohodaExpensesXml({
       company: firma,
       doklady: [prijataAkoDoklad({ ...pdp, supplier_iban: "SK3302000000000098765432" }) as any],
+      // Prenesenie bez členenia pre samozdanenie by do súboru vôbec nešlo.
+      nastavenia: { clenenieDphPdpPrijata: "PDpdp" } as any,
     });
     expect(xml).toContain("<typ:accountNo>SK3302000000000098765432</typ:accountNo><typ:bankCode>0200</typ:bankCode>");
   });

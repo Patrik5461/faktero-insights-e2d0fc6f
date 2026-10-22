@@ -411,17 +411,63 @@ export async function zostavDavku(
   const odkazy = company.pohoda_odkaz_na_pdf ? await odkazyNaPdf(supabase, faktury) : {};
 
   const { buildPohodaDavkaXml, pohodaPrekazka } = await import("./export.server");
+  const polozkyFaktury = (f: Riadok) => (polozky ?? []).filter((p: Riadok) => p.invoice_id === f.id);
   const preskocene = faktury
-    .map((f: Riadok) => pohodaPrekazka(f, company))
+    .map((f: Riadok) => pohodaPrekazka(f, company, { items: polozkyFaktury(f), nastavenia }))
     .filter((d: string | null): d is string => !!d);
+  /*
+    Kontrola pred odovzdaním aj pri prijatých dokladoch: zastavený doklad do
+    dávky nejde a neoznačí sa — počká, kým ho niekto opraví (prehľad v
+    Exportoch → Kontrola pred odovzdaním).
+  */
+  const { prekazkaDokladu } = await import("./pohoda-kontrola");
+  const preskoceneDoklady: string[] = [];
+  const dokladyOk = (doklady ?? []).filter((d: Riadok) => {
+    const dovod = prekazkaDokladu(d, company, nastavenia as any);
+    if (dovod) preskoceneDoklady.push(dovod);
+    return !dovod;
+  });
+  const prijateOk = prijate.filter((p: Riadok) => {
+    const dovod = prekazkaDokladu(prijataAkoDoklad(p), company, nastavenia as any);
+    if (dovod) preskoceneDoklady.push(dovod);
+    return !dovod;
+  });
+  // Všetko zastavila kontrola — prázdny balík by schéma Pohody neprijala.
+  if (
+    preskocene.length === faktury.length &&
+    !dokladyOk.length &&
+    !prijateOk.length &&
+    !pokladnica?.length &&
+    !zakaznici.length &&
+    !zasoby.length &&
+    !zakazkyNove.length &&
+    !pohyby.length &&
+    !storna.length
+  ) {
+    return {
+      xml: "",
+      prazdna: true,
+      jobId: null,
+      faktur: 0,
+      dokladov: 0,
+      prijatych: 0,
+      pokladnicnych: 0,
+      zakaznikov: 0,
+      zasob: 0,
+      zakaziek: 0,
+      pohybov: 0,
+      storien: 0,
+      preskocene: [...preskocene, ...preskoceneDoklady],
+    };
+  }
 
   const davkaXml = buildPohodaDavkaXml({
     company,
     invoices: faktury.map((invoice: Riadok) => ({
       invoice,
-      items: (polozky ?? []).filter((p: Riadok) => p.invoice_id === invoice.id),
+      items: polozkyFaktury(invoice),
     })),
-    doklady: dokladyVsetky,
+    doklady: [...dokladyOk, ...prijateOk.map(prijataAkoDoklad)],
     pohyby: pokladnica ?? [],
     zakaznici,
     zasoby,
@@ -454,8 +500,8 @@ export async function zostavDavku(
       vyvezenePocet: vyvezene.length,
       cislaPreskocenych,
       preskocene,
-      dokladyIds: (doklady ?? []).map((d: Riadok) => d.id),
-      prijateIds: prijate.map((p: Riadok) => p.id),
+      dokladyIds: dokladyOk.map((d: Riadok) => d.id),
+      prijateIds: prijateOk.map((p: Riadok) => p.id),
       pokladnicaIds: (pokladnica ?? []).map((p: Riadok) => p.id),
       zakaznici,
       zasoby,
@@ -470,15 +516,15 @@ export async function zostavDavku(
     prazdna: false,
     jobId,
     faktur: vyvezene.length,
-    dokladov: doklady?.length ?? 0,
-    prijatych: prijate.length,
+    dokladov: dokladyOk.length,
+    prijatych: prijateOk.length,
     pokladnicnych: pokladnica?.length ?? 0,
     zakaznikov: zakaznici.length,
     zasob: zasoby.length,
     zakaziek: zakazkyNove.length,
     pohybov: pohyby.length,
     storien: storna.length,
-    preskocene,
+    preskocene: [...preskocene, ...preskoceneDoklady],
     ciselniky,
   };
 }

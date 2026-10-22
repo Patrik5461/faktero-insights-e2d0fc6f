@@ -37,6 +37,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn, triggerEventFn } from "@/lib/faktero/email.functions";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
+import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { vystavDokladKPlatbeFn } from "@/lib/faktero/doklad-k-platbe.functions";
 import {
   Download,
@@ -60,7 +61,10 @@ import {
   Undo2,
   Plus,
   Eye,
+  SendHorizontal,
 } from "lucide-react";
+import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
+import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { requestInvoiceApproval } from "@/lib/faktero/invoice-approval.functions";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import {
@@ -148,6 +152,7 @@ function InvoiceDetail() {
   const sendEmail = useServerFn(sendInvoiceEmailFn);
   const triggerEvt = useServerFn(triggerEventFn);
   const exportFn = useServerFn(exportInvoicesFn);
+  const poslatOpravu = usePoslatOpravuDoPohody();
   const cloneFn = useServerFn(cloneInvoiceFn);
   const [exportBusy, setExportBusy] = useState(false);
   const [cloneBusy, setCloneBusy] = useState(false);
@@ -742,8 +747,15 @@ function InvoiceDetail() {
     if (!inv?.company_id) return;
     setExportBusy(true);
     try {
+      // Odovzdaná faktúra: len kópia na stiahnutie — do histórie sa nezapíše,
+      // aby nevznikla druhá dávka s tou istou faktúrou.
       const r = await exportFn({
-        data: { companyId: inv.company_id, invoiceIds: [inv.id], format: "pohoda_xml" },
+        data: {
+          companyId: inv.company_id,
+          invoiceIds: [inv.id],
+          format: "pohoda_xml",
+          kopia: Boolean(inv.exported_at),
+        },
       });
       const blob = new Blob([r.content], { type: "application/xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -755,6 +767,7 @@ function InvoiceDetail() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success(t("Pohoda XML stiahnuté"));
+      toastNeodovzdane(t, r.preskocene);
     } catch (e: any) {
       toast.error(e?.message ?? t("Export zlyhal"));
     } finally {
@@ -1011,6 +1024,18 @@ function InvoiceDetail() {
               {inv.status !== "cancelled" && (
                 <MenuAkcia ikona={BookCheck} onClick={skocNaZauctovanie}>
                   {inv.zauctovane_at ? t("Zaúčtovanie") : t("Zaúčtovať")}
+                </MenuAkcia>
+              )}
+              {/* Odovzdaná faktúra je zamknutá — opraviť sa dá až po vrátení z Pohody. */}
+              {inv.exported_at && (
+                <MenuAkcia
+                  ikona={SendHorizontal}
+                  onClick={async () => {
+                    if (await poslatOpravu("faktura", inv.company_id, inv.id)) void load();
+                  }}
+                  title={t("Faktúra sa vráti z Pohody, aby sa dala opraviť a odovzdať znova")}
+                >
+                  {t("Poslať opravu do Pohody")}
                 </MenuAkcia>
               )}
               {inv.status !== "sent" && inv.status !== "paid" && (
@@ -1344,6 +1369,7 @@ function InvoiceDetail() {
               onZmena={() => void load()}
               onStiahnut={handlePohodaExport}
             />
+            <HistoriaDokladu companyId={inv.company_id} agenda="faktura" id={inv.id} />
           </div>
 
           <aside className="space-y-4">

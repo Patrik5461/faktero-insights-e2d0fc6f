@@ -112,6 +112,12 @@ function vsetkySadzby(krajina: KrajinaDane): number[] {
   return [...new Set([...s, 0])];
 }
 
+/** Platila niekedy v krajine táto sadzba (aj historická, aj 0 %)? */
+export function jeZnamaSadzba(sadzba: number, krajina: KrajinaDane = "SK"): boolean {
+  const n = Number(sadzba);
+  return Number.isFinite(n) && vsetkySadzby(krajina).some((r) => Math.abs(r - n) < 0.001);
+}
+
 /**
  * Prilepí dopočítanú sadzbu k najbližšej sadzbe krajiny.
  * Prijaté faktúry majú uložený len základ a daň; podiel preto kvôli

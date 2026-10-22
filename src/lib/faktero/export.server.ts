@@ -17,6 +17,14 @@ import { sadzbyKuDnu as sadzbyKrajinyKuDnu, krajinaDane, type KrajinaDane } from
 import { riadkySoZlavou } from "./zlavy";
 import { polozkyOdpoctu, prekazkaOdpoctu, sumaOdpoctov } from "./zalohy-odpocty";
 import { buildFlexiXml, buildUniverzalCsv } from "./export-dalsie";
+import {
+  clenenieVydanejPdp,
+  idDokladuPohody,
+  jeTuzemskePdp,
+  KV_PDP_VYDANE,
+  prekazkaDokladu,
+  prekazkaVydanej,
+} from "./pohoda-kontrola";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 type InvoiceRow = any;
 type ItemRow = any;
@@ -330,11 +338,21 @@ function odkazIds(element: string, kod: unknown, odsadenie: string): string {
  * nemala z čoho spočítať a odhad by bol tichou chybou v priznaní, preto sa
  * taký doklad vynechá a povie sa to.
  */
-export function pohodaPrekazka(invoice: InvoiceRow, company: CompanyRow): string | null {
+export function pohodaPrekazka(
+  invoice: InvoiceRow,
+  company: CompanyRow,
+  /**
+   * Položky a nastavenia firmy — s nimi aj kontrola pred odovzdaním
+   * (prenesenie bez IČ DPH, DPH nesediaca so základom, zaúčtovanie bez kódov),
+   * pozri `pohoda-kontrola.ts`.
+   */
+  kontrola?: { items: ItemRow[]; nastavenia?: PohodaNastavenia | null },
+): string | null {
   const domaca = domacaMenaFirmy(company);
   const mena = String(invoice?.currency ?? domaca).toUpperCase() || domaca;
   if (mena !== domaca && !(Number((invoice as any)?.exchange_rate) > 0))
     return `${invoice?.invoice_number ?? "?"} — faktúra v mene ${mena} nemá kurz`;
+  if (kontrola) return prekazkaVydanej(invoice as any, kontrola.items as any[], company as any, kontrola.nastavenia as any);
   return null;
 }
 
@@ -462,7 +480,9 @@ export function polozkyFaktur(opts: {
 }): string {
   const { company, nastavenia } = opts;
   const cz = krajinaDane(company?.country) === "CZ";
-  const vsetky = opts.invoices.filter(({ invoice }) => !pohodaPrekazka(invoice, company));
+  const vsetky = opts.invoices.filter(
+    ({ invoice, items }) => !pohodaPrekazka(invoice, company, { items, nastavenia }),
+  );
   /*
     Daňový doklad k prijatej platbe Pohoda SK vedie medzi internými dokladmi
     (typ faktúry preň schéma nemá) — ide preto cez agendu Interné doklady.
@@ -573,11 +593,20 @@ export function polozkyFaktur(opts: {
           : typ === "credit_note"
             ? nastavenia?.predkontaciaDobropis
             : nastavenia?.predkontacia);
+      /*
+        Tuzemské prenesenie (§ 69 ods. 12): členenie pre prenesenie firmy,
+        inak predvolené SK Pohody — bez neho by Pohoda faktúru zaúčtovala ako
+        bežné plnenie a do KV A.2 by nešla. Dodanie do EÚ a vývoz (tiež
+        `reverse_charge`) predvolené tuzemské prenesenie nedostanú.
+      */
+      const tuzemskePdp = jeTuzemskePdp(invoice as any, company as any);
       const clenenieJedno =
         String((invoice as any).pohoda_clenenie_dph ?? "").trim() ||
-        (invoice.reverse_charge
-          ? (nastavenia?.clenenieDphPdp ?? nastavenia?.clenenieDph)
-          : nastavenia?.clenenieDph);
+        (tuzemskePdp
+          ? clenenieVydanejPdp(nastavenia)
+          : invoice.reverse_charge
+            ? (nastavenia?.clenenieDphPdp ?? nastavenia?.clenenieDph)
+            : nastavenia?.clenenieDph);
       // Rozúčtovať treba, len keď položky naozaj vedú na rôzne predkontácie —
       // keď majú všetky ten istý kód, patrí do hlavičky.
       const kodyPoloziek = new Set(
@@ -591,7 +620,16 @@ export function polozkyFaktur(opts: {
       const clenenie = zalohova ? "" : clenenieJedno;
       const kvDokl = String((invoice as any).kv_clenenie ?? "").trim();
       // Členenie KV DPH je len v SK verzii Pohody.
-      const kvHlavicka = !cz && !zalohova && kvDokl && kvDokl !== "X" ? kvDokl : "";
+      const kvHlavicka =
+        cz || zalohova
+          ? ""
+          : kvDokl
+            ? kvDokl !== "X"
+              ? kvDokl
+              : ""
+            : tuzemskePdp
+              ? KV_PDP_VYDANE
+              : "";
       /*
         Colné údaje položky do Pohody: blok `intrastatItem` (kód tovaru KN,
         krajina pôvodu, krajina určenia, vlastná hmotnosť riadku). Hmotnosť
@@ -625,7 +663,7 @@ export function polozkyFaktur(opts: {
         const cl = zalohova
           ? ""
           : String((it as any).pohoda_clenenie_dph ?? "").trim() ||
-            (pdpRiadok ? String(nastavenia?.clenenieDphPdp ?? "").trim() : "");
+            (pdpRiadok ? clenenieVydanejPdp(nastavenia) : "");
         // KV DPH (SK A.2). CZ verzia element nemá — kontrolné hlásenie A.1 si
         // Pohoda odvodí z členenia DPH položky.
         const kvp =
@@ -755,7 +793,7 @@ export function polozkyFaktur(opts: {
         : "";
 
       return `
-  <dat:dataPackItem id="${esc(invoice.id ?? `INV${idx + 1}`)}" version="2.0">
+  <dat:dataPackItem id="${esc(invoice.id ? idDokladuPohody(invoice.id, (invoice as any).pohoda_verzia) : `INV${idx + 1}`)}" version="2.0">
     <inv:invoice version="2.0">${vazba}
       <inv:invoiceHeader>
         <inv:invoiceType>${invoiceType}</inv:invoiceType>
@@ -1208,6 +1246,7 @@ function dokladKPlatbeAkoDoklad(
     cinnost: inv.cinnost,
     int_poznamka: inv.int_poznamka,
     job_id: inv.job_id,
+    pohoda_verzia: inv.pohoda_verzia,
     _agenda: "int",
     _typPohody: "danovyDokladKPlatbe",
     _povodneCislo: inv.invoice_number,
@@ -1249,10 +1288,16 @@ export function polozkyDokladov(opts: {
     v súhrne, domáce sumy si Pohoda prepočíta. Bloček kurz nemá, ten ostáva
     vynechaný.
   */
-  const doklady = opts.doklady.filter(
-    (d) =>
-      (String(d?.currency ?? domaca).toUpperCase() || domaca) === domaca ||
-      (Boolean(d?._typPohody) && Number(d?._kurz) > 0),
+  /*
+    Doklad, ktorý by Pohoda zaúčtovala zle (prenesenie bez členenia, DPH
+    nesediaca so sadzbou, zaúčtovaný bez kódov, hotovosť bez pokladne), do
+    súboru nejde — volajúci ho podľa `prekazkaDokladu` neoznačí ako odovzdaný.
+    Daňový doklad k platbe je náš vystavený; prešiel kontrolou faktúr.
+  */
+  const doklady = opts.doklady.filter((d) =>
+    d?._typPohody === "danovyDokladKPlatbe"
+      ? (String(d?.currency ?? domaca).toUpperCase() || domaca) === domaca || Number(d?._kurz) > 0
+      : !prekazkaDokladu(d as any, company as any, nastavenia as any),
   );
 
   return doklady
@@ -1661,7 +1706,7 @@ export function polozkyDokladov(opts: {
       }`;
 
       return `
-  <dat:dataPackItem id="${esc(d?.id ?? `DOK${idx + 1}`)}" version="2.0">
+  <dat:dataPackItem id="${esc(d?.id ? idDokladuPohody(d.id, d?.pohoda_verzia) : `DOK${idx + 1}`)}" version="2.0">
     <${p}:${koren} version="2.0">
       <${p}:${koren}Header>${typ}${
         rad ? `\n        <${p}:number><typ:ids>${esc(skrat(rad, 10))}</typ:ids></${p}:number>` : ""
@@ -2242,7 +2287,7 @@ export const POHODA_XML: ExportStrategy = {
   mime: "application/xml",
   build({ company, invoices, nastavenia, zalohy, opravovane, povodneCisla, zakazky }) {
     const preskocene = invoices
-      .map(({ invoice }) => pohodaPrekazka(invoice, company))
+      .map(({ invoice, items }) => pohodaPrekazka(invoice, company, { items, nastavenia }))
       .filter((d): d is string => !!d);
     // Prázdny balík schéma Pohody nepripúšťa a účtovníčke by prišiel súbor,
     // ktorý sa tvári ako export, ale nie je v ňom nič.

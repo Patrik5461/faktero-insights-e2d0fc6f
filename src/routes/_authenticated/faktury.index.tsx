@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
+import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
@@ -353,6 +354,7 @@ function InvoicesPage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success(t("Exportované faktúry: {n}", { n: r.invoiceCount }));
+      toastNeodovzdane(t, r.preskocene);
       list.clearSelection();
     } catch (e: any) {
       toast.error(e?.message ?? t("Export zlyhal"));

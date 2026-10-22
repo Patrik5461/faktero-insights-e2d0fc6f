@@ -10,6 +10,7 @@ import {
   presunPrijatuDoDokladovFn,
   vratZPohodyFn,
 } from "@/lib/faktero/vratenie.functions";
+import { toastNeodovzdane } from "./NeodovzdaneDoklady";
 import {
   navrhyKodovFn,
   zauctujPrijateFn,
@@ -347,6 +348,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
       toast.success(
         oznacit ? t("XML stiahnuté, faktúra je označená ako odovzdaná") : t("XML stiahnuté"),
       );
+      toastNeodovzdane(t, r.preskocene);
       onZmena();
     } catch (e: any) {
       toast.error(t(e?.message ?? "Nepodarilo sa"));

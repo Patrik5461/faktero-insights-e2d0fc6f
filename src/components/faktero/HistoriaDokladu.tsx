@@ -40,18 +40,30 @@ const POLIA: Record<string, string> = {
   locked_at: "Zámok",
   deleted_at: "Zmazanie",
   stitky: "Štítky",
+  type: "Typ dokladu",
+  customer_name: "Odberateľ",
+  customer_ico: "IČO",
+  customer_ic_dph: "IČ DPH",
+  subtotal: "Základ",
+  vat_total: "DPH",
+  total: "Suma",
+  exchange_rate: "Kurz",
+  reverse_charge: "Prenesenie daňovej povinnosti",
+  sent_at: "Odoslanie",
+  paid_at: "Úhrada",
 };
 
 function hodnota(pole: string, v: unknown, t: (s: string) => string, loc: string): string {
   if (v == null || v === "") return "—";
   if (Array.isArray(v)) return v.length ? v.join(", ") : "—";
+  if (typeof v === "boolean") return v ? t("áno") : t("nie");
   if (pole.endsWith("_at")) return new Date(String(v)).toLocaleString(loc, { dateStyle: "short", timeStyle: "short" });
   if (pole === "job_id") return t("zmenená");
   return String(v);
 }
 
 /** Kto, kedy a čo na doklade zmenil — zapisuje spúšťač v databáze. */
-export function HistoriaDokladu({ companyId, agenda, id }: { companyId: string; agenda: "prijata" | "doklad"; id: string }) {
+export function HistoriaDokladu({ companyId, agenda, id }: { companyId: string; agenda: "prijata" | "doklad" | "faktura"; id: string }) {
   const { t, jazyk } = useT();
   const loc = lokalJazyka(jazyk);
   const nacitajMena = useServerFn(menaClenovFirmy);

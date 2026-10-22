@@ -25,6 +25,9 @@ import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight, Mail } fro
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
+import { KontrolaPohody } from "@/components/faktero/KontrolaPohody";
+import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
 
 /** Kľúč podľa počtu: 1 / 2–4 / 5 a viac (slovenské tvary, preklad ich zjednotí). */
 const tvar = (n: number, jeden: string, dva: string, pat: string) =>
@@ -88,6 +91,9 @@ function ExportsPage() {
   const [busy, setBusy] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
   const getContent = useServerFn(getExportContentFn);
+  const poslatOpravu = usePoslatOpravuDoPohody();
+  const [aktivnaFirma, setAktivnaFirma] = useState<string | null>(null);
+  useEffect(() => setAktivnaFirma(getActiveCompanyId()), []);
 
   const { tab } = Route.useSearch();
   useEffect(() => {
@@ -107,7 +113,9 @@ function ExportsPage() {
         .limit(50),
       supabase
         .from("invoices")
-        .select("id, invoice_number, customer_name, issue_date, total, currency, status")
+        .select(
+          "id, company_id, invoice_number, customer_name, issue_date, total, currency, status, exported_at",
+        )
         .eq("company_id", cid)
         .gte("issue_date", dateFrom)
         .lte("issue_date", dateTo)
@@ -140,11 +148,7 @@ function ExportsPage() {
       downloadFile(r.fileName, r.content, r.mime, r.encoding);
       toast.success(t("Exportovaných faktúr: {n}", { n: r.invoiceCount }));
       // Vynechaný doklad sa musí povedať nahlas — inak by účtovníčke ticho chýbal.
-      if (r.preskocene?.length) {
-        toast.warning(t("Do súboru sa nedostali: {zoznam}", { zoznam: r.preskocene.join(", ") }), {
-          duration: 10000,
-        });
-      }
+      toastNeodovzdane(t, r.preskocene);
       setPicked({});
       load();
     } catch (e: any) {
@@ -174,6 +178,7 @@ function ExportsPage() {
       <PageBody>
         <ZauctovaneDoProgramu />
         <OdovzdanieZaMesiac />
+        {aktivnaFirma ? <KontrolaPohody companyId={aktivnaFirma} /> : null}
         {/* `min-w-0` na stĺpcoch: bez neho má položka mriežky min-width auto,
             takže široká tabuľka stĺpec roztiahne a na mobile presiahne stránku. */}
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -245,6 +250,23 @@ function ExportsPage() {
                         </td>
                         <td className="p-3 font-medium">
                           <span className="whitespace-nowrap">{i.invoice_number}</span>
+                          {i.exported_at ? (
+                            <span className="ml-2 inline-flex flex-wrap items-center gap-1 align-middle text-xs font-normal">
+                              <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-emerald-800">
+                                {t("V Pohode")}
+                              </span>
+                              {/* Odovzdaná faktúra je zamknutá; „Vrátiť“ ju pustí na opravu. */}
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (await poslatOpravu("faktura", i.company_id, i.id)) load();
+                                }}
+                                className="rounded-md border border-border px-1.5 py-0.5 hover:bg-secondary"
+                              >
+                                {t("Vrátiť z Pohody")}
+                              </button>
+                            </span>
+                          ) : null}
                           <span className="block whitespace-nowrap text-xs font-normal text-muted-foreground md:hidden">
                             {datumNaDoklade(i.issue_date)} · {formatujMenu(i.total, i.currency)}
                           </span>
@@ -314,9 +336,16 @@ function ExportsPage() {
                           {j.file_name ?? `${j.target_system} — ${j.format}`}
                         </div>
                         <div className="mt-0.5 text-xs text-muted-foreground">
-                          {t(tvar(j.invoice_count, "{n} faktúra", "{n} faktúry", "{n} faktúr"), {
-                            n: j.invoice_count,
-                          })}{" "}
+                          {/^pohoda-prijate/.test(String(j.file_name ?? ""))
+                            ? t(
+                                tvar(j.invoice_count, "{n} doklad", "{n} doklady", "{n} dokladov"),
+                                {
+                                  n: j.invoice_count,
+                                },
+                              )
+                            : t(tvar(j.invoice_count, "{n} faktúra", "{n} faktúry", "{n} faktúr"), {
+                                n: j.invoice_count,
+                              })}{" "}
                           · {new Date(j.created_at).toLocaleString("sk-SK")}
                           {j.date_from && j.date_to
                             ? ` · ${datumNaDoklade(j.date_from)} → ${datumNaDoklade(j.date_to)}`
@@ -431,11 +460,7 @@ function OdovzdanieZaMesiac() {
     pocetDokladov: number;
     pocetPokladnicnych: number;
   }) {
-    if (r.preskocene.length) {
-      toast.warning(t("Do XML sa nedostali: {zoznam}", { zoznam: r.preskocene.join(", ") }), {
-        duration: 10000,
-      });
-    }
+    toastNeodovzdane(t, r.preskocene);
     if (r.vynechanePrilohy) {
       toast.warning(
         t("Dokladov bez prílohy: {n} — balík by sa inak nezmestil", { n: r.vynechanePrilohy }),

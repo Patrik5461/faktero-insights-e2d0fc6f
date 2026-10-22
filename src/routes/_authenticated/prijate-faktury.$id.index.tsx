@@ -53,7 +53,9 @@ import {
   BookCheck,
   Mail,
   Paperclip,
+  SendHorizontal,
 } from "lucide-react";
+import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
 import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
@@ -124,6 +126,7 @@ function PurchaseInvoiceDetail() {
   const bankData = useServerFn(listBankData);
   const payInvoice = useServerFn(payPurchaseInvoice);
   const loadPayments = useServerFn(listPayments);
+  const poslatOpravu = usePoslatOpravuDoPohody();
   const refreshPayment = useServerFn(refreshPaymentStatus);
 
   async function load() {
@@ -439,6 +442,17 @@ function PurchaseInvoiceDetail() {
               {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
                 <MenuAkcia ikona={CheckCircle2} onClick={() => setStatus("received")}>
                   {t("Označiť ako prijaté")}
+                </MenuAkcia>
+              )}
+              {row.exported_at && (
+                <MenuAkcia
+                  ikona={SendHorizontal}
+                  onClick={async () => {
+                    if (await poslatOpravu("prijata", row.company_id, row.id)) void load();
+                  }}
+                  title={t("Faktúra sa vráti z Pohody, aby sa dala opraviť a odovzdať znova")}
+                >
+                  {t("Poslať opravu do Pohody")}
                 </MenuAkcia>
               )}
               {!row.exported_at && !samo && (

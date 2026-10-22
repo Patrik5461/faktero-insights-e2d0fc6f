@@ -41,6 +41,8 @@ export const vratZPohodyFn = createServerFn({ method: "POST" })
       const zauct = (r ?? []).filter((x: any) => x.status === "booked").map((x: any) => x.id);
       if (zauct.length)
         await supabase.from("purchase_invoices").update({ status: "received" }).in("id", zauct);
+      const { zvysVerziuPohody } = await import("./pohoda-odoslane-xml.server");
+      await zvysVerziuPohody(supabase, "purchase_invoices", (r ?? []).map((x: any) => x.id));
       return { vratenych: (r ?? []).length };
     }
     // Doklad sa vráti medzi nespracované — po oprave ho človek spracuje znova.
@@ -51,8 +53,11 @@ export const vratZPohodyFn = createServerFn({ method: "POST" })
       .in("id", data.ids)
       .select("id");
     if (error) throw new Error(error.message);
+    const { zvysVerziuPohody } = await import("./pohoda-odoslane-xml.server");
+    await zvysVerziuPohody(supabase, "expense_documents", (r ?? []).map((x: any) => x.id));
     return { vratenych: (r ?? []).length };
   });
+
 
 /**
  * Prijatá faktúra späť medzi doklady (bloček zaradený omylom medzi faktúry).
@@ -202,18 +207,24 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     const kandidati = (riadky ?? []).filter((p: any) => {
       if (!p.zauctovane_at) return preskocene.push(`${p.invoice_number}: nie je zaúčtovaná`), false;
       if (!zapocitatelna(p)) return preskocene.push(`${p.invoice_number}: neodsúhlasená samofaktúra`), false;
-      if (p.exported_at && data.aj_odovzdane === false)
-        return preskocene.push(`${p.invoice_number}: už odovzdaná`), false;
+      // Označiť ako odovzdanú druhýkrát nemožno — v Pohode by bola dvakrát.
+      if (p.exported_at && (data.aj_odovzdane === false || data.oznacit))
+        return (
+          preskocene.push(
+            `${p.invoice_number} — už je odovzdaná do Pohody — znova ju pošlete až po vrátení (Vrátiť z Pohody)`,
+          ),
+          false
+        );
       return true;
     });
-    const { ok, cakaju } = await (await import("./schvalovanie.server")).lenSchvalene(
+    const { ok: schvalene, cakaju } = await (await import("./schvalovanie.server")).lenSchvalene(
       supabase,
       data.company_id,
       "prijata",
       kandidati,
     );
     if (cakaju) preskocene.push(`${cakaju} čaká na schválenie`);
-    if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
+    if (!schvalene.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
 
     const { buildPohodaExpensesXml, podlaRoka } = await import("./export.server");
     const { nastaveniaDokladov } = await import("./predkontacie.server");
@@ -221,9 +232,17 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
       predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
       clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
       predkontaciaRozuctovat: firma?.pohoda_predkontacia_rozuctovat,
-      ...(await nastaveniaDokladov(supabase, firma, ok.map(prijataAkoDoklad))),
+      ...(await nastaveniaDokladov(supabase, firma, schvalene.map(prijataAkoDoklad))),
       datumZauctovaniaPevny: data.datum_zauctovania ?? null,
     };
+    // Kontrola pred odovzdaním — zle zaúčtovateľná faktúra do súboru nejde.
+    const { prekazkaDokladu } = await import("./pohoda-kontrola");
+    const ok = schvalene.filter((p: any) => {
+      const dovod = prekazkaDokladu(prijataAkoDoklad(p), firma ?? {}, nastavenia);
+      if (dovod) preskocene.push(dovod);
+      return !dovod;
+    });
+    if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
     // Prelom rokov: každý rok do vlastného súboru (Pohoda importuje do jedného roka).
     const roky = data.datum_zauctovania ? [{ rok: "", doklady: ok }] : podlaRoka(ok, (p: any) => p.delivery_date || p.issue_date);
     const den0 = new Date().toISOString().slice(0, 10);
@@ -239,13 +258,24 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     }));
     const xml = subory[0].xml;
     if (data.oznacit) {
-      await supabase
-        .from("purchase_invoices")
-        .update({ exported_at: new Date().toISOString() })
-        .in(
-          "id",
-          ok.map((p: any) => p.id),
-        );
+      // Čo Pohoda dostala, sa uloží — inak by sa neskôr nedalo porovnať.
+      const { ulozOdoslaneXml } = await import("./pohoda-odoslane-xml.server");
+      for (const [i, r] of roky.entries()) {
+        const jobId = await ulozOdoslaneXml(supabase, {
+          companyId: data.company_id,
+          userId: context.userId as string,
+          fileName: subory[i].fileName.replace(/^pohoda-(?!prijate)/, "pohoda-prijate-"),
+          xml: subory[i].xml,
+          pocet: r.doklady.length,
+        });
+        await supabase
+          .from("purchase_invoices")
+          .update({ exported_at: new Date().toISOString(), export_job_id: jobId })
+          .in(
+            "id",
+            r.doklady.map((p: any) => p.id),
+          );
+      }
     }
     const den = new Date().toISOString().slice(0, 10);
     return {

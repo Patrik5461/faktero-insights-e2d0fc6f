@@ -1,0 +1,63 @@
+// Zámek dokladů předaných do Pohody, kontrola před předáním,
+// „Poslat opravu do Pohody“ a „Rozdíly oproti Pohodě“ (Exporty).
+export default {
+  "Poslať opravu do Pohody": "Poslat opravu do Pohody",
+  "Faktúra sa vráti z Pohody, aby sa dala opraviť a odovzdať znova":
+    "Faktura se vrátí z Pohody, aby se dala opravit a předat znovu",
+  "Kontrola pred odovzdaním do Pohody": "Kontrola před předáním do Pohody",
+  Skontrolovať: "Zkontrolovat",
+  "Doklady, ktoré by Pohoda zaúčtovala zle, export, balík ani konektor nepošlú — kým ich neopravíte, ostanú neodovzdané.":
+    "Doklady, které by Pohoda zaúčtovala špatně, export, balík ani konektor nepošlou — dokud je neopravíte, zůstanou nepředané.",
+  "Všetko neodovzdané prejde kontrolou.": "Vše nepředané projde kontrolou.",
+  "Nastaviť pokladňu pre Pohodu": "Nastavit pokladnu pro Pohodu",
+  "Nastaviť členenie pre prenesenie": "Nastavit členění pro přenesení",
+  "Rozdiely oproti Pohode": "Rozdíly oproti Pohodě",
+  Porovnať: "Porovnat",
+  "Porovná posledné odoslané XML odovzdaných dokladov s tým, čo by z nich odišlo dnes. Zmenený doklad pošlite znova cez „Poslať opravu“.":
+    "Porovná poslední odeslané XML předaných dokladů s tím, co by z nich odešlo dnes. Změněný doklad pošlete znovu přes „Poslat opravu“.",
+  "Porovnaných: {n}": "Porovnaných: {n}",
+  "bez uloženého XML: {n}": "bez uloženého XML: {n}",
+  "V Pohode je to isté, čo vo Fakteri.": "V Pohodě je totéž co ve Fakteru.",
+  "odoslané {kedy}": "odesláno {kedy}",
+  "Poslať opravu": "Poslat opravu",
+  "Vo Fakteri je zmazaný, v Pohode ostal — zmažte ho aj tam.":
+    "Ve Fakteru je smazaný, v Pohodě zůstal — smažte ho i tam.",
+  "Dnes by do Pohody neprešiel:": "Dnes by do Pohody neprošel:",
+  Pole: "Pole",
+  Teraz: "Nyní",
+  "Poslať opravu do Pohody? Doklad sa vráti z Pohody, takže ho môžete upraviť, a pri ďalšom odovzdaní (konektor, balík alebo export) pôjde znova. Pohoda doklad neprepíše — pôvodný v nej najprv zmažte, inak tam bude dvakrát.":
+    "Poslat opravu do Pohody? Doklad se vrátí z Pohody, takže ho můžete upravit, a při dalším předání (konektor, balík nebo export) půjde znovu. Pohoda doklad nepřepíše — původní v ní nejprve smažte, jinak tam bude dvakrát.",
+  "Vrátiť a opraviť": "Vrátit a opravit",
+  "Vrátené z Pohody — opravte doklad a odovzdajte ho znova":
+    "Vráceno z Pohody — opravte doklad a předejte ho znovu",
+  "… a ďalšie ({n})": "… a další ({n})",
+  "Neodovzdaný: {n} doklad": "Nepředaný: {n} doklad",
+  "Neodovzdané: {n} doklady": "Nepředané: {n} doklady",
+  "Neodovzdané: {n} dokladov": "Nepředaných: {n} dokladů",
+  "Číslo dodávateľa": "Číslo dodavatele",
+  "Pôvodné číslo dokladu": "Původní číslo dokladu",
+  "Dátum DPH": "Datum DPH",
+  "Dátum KH DPH": "Datum KH DPH",
+  "Základ 0 %": "Základ 0 %",
+  "Základ 2. znížená": "Základ 2. snížená",
+  "DPH 2. znížená": "DPH 2. snížená",
+  "Základ znížená": "Základ snížená",
+  "DPH znížená": "DPH snížená",
+  "Základ základná": "Základ základní",
+  "DPH základná": "DPH základní",
+  Zaokrúhlenie: "Zaokrouhlení",
+  Kurz: "Kurz",
+  "Spolu v mene": "Celkem v měně",
+  "Počet položiek": "Počet položek",
+  "Položky — základ": "Položky — základ",
+  "Položky — DPH": "Položky — DPH",
+  "Položky — sadzby": "Položky — sazby",
+  "Položky — členenie DPH": "Položky — členění DPH",
+  "Položky — KV DPH": "Položky — KH DPH",
+  "Položky — predkontácia": "Položky — předkontace",
+  "Faktúra už bola odovzdaná do Pohody — najprv ju vráťte z Pohody (Exporty → Vrátiť), potom ju upravte.":
+    "Faktura už byla předána do Pohody — nejprve ji vraťte z Pohody (Exporty → Vrátit), potom ji upravte.",
+  "Doklad je odovzdaný do Pohody — najprv ho vráťte z Pohody, potom ho zmažte.":
+    "Doklad je předaný do Pohody — nejprve ho vraťte z Pohody, potom ho smažte.",
+  "Vrátiť z Pohody": "Vrátit z Pohody",
+};
