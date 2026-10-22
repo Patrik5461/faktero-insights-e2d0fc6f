@@ -118,6 +118,8 @@ export function DavkaDokladov({
               mime: d.mime,
               subor: d.subor.slice(ciarka + 1),
               zdroj: "apka",
+              // Nastavenie zo skenera sa uloží k dokladu — platí, aj keď ho človek dokončí na webe.
+              predvolby: nastavenie ?? null,
             },
           });
           setDavka((p) => zmen(p, kluc, { stav: "citam", id: r.id, zaciatokCitania: Date.now() }));

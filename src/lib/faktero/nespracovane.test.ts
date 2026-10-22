@@ -9,6 +9,8 @@ import {
   prazdneUdaje,
   rozdielPoloziek,
   udajeZPrijatej,
+  rozdielVTolerancii,
+  hromadnaZmenaUdajov,
 } from "./nespracovane";
 
 describe("nespracované doklady", () => {
@@ -117,5 +119,46 @@ describe("vypnuté položky (zle vyčítané)", () => {
     const { udaje } = udajeZPrijatej({ items: [], polozky_vypnute: [{ name: "X" }] } as any);
     expect(udaje.polozkyVypnute).toBe(true);
     expect(udaje.polozky).toHaveLength(1);
+  });
+});
+
+describe("kontroly podľa nastavení firmy", () => {
+  const zaklad = () => {
+    const u = prazdneUdaje();
+    u.dodavatel.nazov = "Dodávateľ";
+    u.cislo = "F1";
+    u.datumVystavenia = "2026-10-10";
+    u.splatnost = "2026-10-24";
+    u.rozpis = [{ sadzba: 23, zaklad: 100, dph: 23 }];
+    u.polozky = [{ name: "Tovar", quantity: 1, unit: null, unit_price: 122.9, vat_rate: 23, total: 122.9 }];
+    return u;
+  };
+
+  it("rozdiel položiek v tolerancii doklad nezastaví", () => {
+    expect(chybajuce("faktura", zaklad())).toContain("polozky");
+    expect(chybajuce("faktura", zaklad(), [], { toleranciaCenty: 10 })).not.toContain("polozky");
+    expect(chybajuce("faktura", zaklad(), [], { toleranciaCenty: 5 })).toContain("polozky");
+    expect(rozdielVTolerancii(zaklad(), { toleranciaCenty: 10 })).toBe(true);
+  });
+
+  it("vypnutá kontrola splatnosti pustí splatnosť pred vystavením", () => {
+    const u = zaklad();
+    u.polozky = [];
+    u.splatnost = "2026-10-01";
+    expect(chybajuce("faktura", u)).toContain("splatnostPred");
+    expect(chybajuce("faktura", u, [], { kontrolaSplatnosti: false })).not.toContain("splatnostPred");
+  });
+});
+
+describe("hromadnaZmenaUdajov", () => {
+  it("vyplnené polia prepíše, prázdne nechá", () => {
+    const u = prazdneUdaje();
+    u.kody.predkontacia = "518";
+    u.kody.stredisko = "BA";
+    const v = hromadnaZmenaUdajov(u, { predkontacia: "", stredisko: "KE", cinnost: "OBCH", jobId: "j-1" });
+    expect(v.kody.predkontacia).toBe("518");
+    expect(v.kody.stredisko).toBe("KE");
+    expect(v.kody.cinnost).toBe("OBCH");
+    expect(v.jobId).toBe("j-1");
   });
 });

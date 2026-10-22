@@ -8,6 +8,8 @@ import { NauceneZDodavatela } from "@/components/faktero/NauceneZDodavatela";
 import { NavrhAiNespracovaneho, useNavrhZauctovania } from "@/components/faktero/NavrhAi";
 import { doplnNavrhDoUdajov, oznaceniaZUdajov } from "@/lib/faktero/ai-predkontacia";
 import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
+import { PravidloNespracovaneho } from "@/components/faktero/PravidloNespracovaneho";
+import { JobPicker } from "@/components/faktero/JobPicker";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,6 +31,7 @@ import {
   DRUHY_NESPRACOVANYCH,
   NAZVY_POLI,
   chybajuce,
+  rozdielPoloziek,
   sucty,
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
@@ -119,7 +122,16 @@ function Detail() {
     setU((p) => (p ? doplnNavrhDoUdajov(p, navrhAi.polia, navrhAi.dovod) : p));
   }, [navrhAi]);
 
-  const chyby = useMemo(() => (u ? chybajuce(druh || null, u, d?.povinne ?? []) : []), [u, druh, d?.povinne]);
+  const chyby = useMemo(
+    () => (u ? chybajuce(druh || null, u, d?.povinne ?? [], d?.nastavenia) : []),
+    [u, druh, d?.povinne, d?.nastavenia],
+  );
+  // Malý rozdiel položiek v tolerancii firmy — doklad sa vytvorí s vyrovnávacou položkou.
+  const rozdielVyrovna = (() => {
+    const r = u && !chyby.includes("polozky") ? rozdielPoloziek(u) : null;
+    // Hotovostné zaokrúhlenie na 5 centov rieši export samo, vyrovnávacia položka nevznikne.
+    return r && !(u?.platba === "hotovost" && Math.abs(r.rozdiel) <= 0.02) ? r : null;
+  })();
   const zle = (k: string) => chyby.includes(k);
   const ram = (k: string) => (zle(k) ? "border-red-500 ring-1 ring-red-300" : "border-input");
   const s = u ? sucty(u) : { zaklad: 0, dph: 0, celkom: 0 };
@@ -177,7 +189,9 @@ function Detail() {
         data: { id, druh: druh as DruhNespracovaneho, udaje: u as any, ajDuplicitu },
       });
       const kam =
-        r.agenda === "prijata"
+        r.agenda === "prijata" && r.zauctovana === false
+          ? t("Faktúra je vytvorená medzi prijatými faktúrami — čaká na zaúčtovanie (chýba predkontácia alebo členenie DPH)")
+          : r.agenda === "prijata"
           ? t("Doklad je vytvorený a presunutý medzi prijaté faktúry")
           : r.agenda === "doklad"
             ? t("Doklad je vytvorený a presunutý medzi doklady")
@@ -310,6 +324,19 @@ function Detail() {
             onVytvor={() => void vytvorDoklad()}
             onUloz={() => void ulozZmeny()}
             onZmaz={() => void zmazDoklad()}
+            companyId={d.companyId}
+            rozdielVyrovna={rozdielVyrovna?.rozdiel ?? null}
+            pravidlo={
+              <PravidloNespracovaneho
+                companyId={d.companyId}
+                druh={druh}
+                u={u}
+                setU={setU}
+                createdBy={d.createdBy}
+                predmetMailu={d.predmetMailu}
+                aktivne={d.stav !== "cita"}
+              />
+            }
           />
         </PageBody>
       </>
@@ -560,6 +587,12 @@ function Detail() {
                       <span className="text-xs text-muted-foreground">{t("Mena")}</span>
                       <input value={u.mena} maxLength={3} onChange={(e) => set({ mena: e.target.value.toUpperCase() })} className={`${vstup} border-input`} />
                     </label>
+                    {faktura && (
+                      <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                        <input type="checkbox" checked={Boolean(u.uhradene)} onChange={(e) => set({ uhradene: e.target.checked || undefined })} />
+                        {t("Faktúra je už uhradená")}
+                      </label>
+                    )}
                   </div>
                 </section>
 
@@ -649,6 +682,21 @@ function Detail() {
                       })
                     }
                   />
+                  <JobPicker
+                    value={u.jobId}
+                    onChange={(v) => setU((p) => (p ? { ...p, jobId: v } : p))}
+                    companyId={d.companyId}
+                    className={`mt-3 ${zle("zakazka") ? "[&_select]:border-red-500" : ""}`}
+                  />
+                  <PravidloNespracovaneho
+                    companyId={d.companyId}
+                    druh={druh}
+                    u={u}
+                    setU={setU}
+                    createdBy={d.createdBy}
+                    predmetMailu={d.predmetMailu}
+                    aktivne={d.stav !== "cita"}
+                  />
                   <NauceneZDodavatela u={u} />
                   <NavrhAiNespracovaneho u={u} setU={setU} stav={navrhAi?.stav} />
                   <p className="mt-2 text-xs text-muted-foreground">
@@ -682,6 +730,12 @@ function Detail() {
               {chyby.length > 0 && druh ? (
                 <span className="text-xs text-red-600">
                   {t("Chýba: {polia}", { polia: chyby.map((k) => t(NAZVY_POLI[k] ?? k)).join(", ") })}
+                </span>
+              ) : rozdielVyrovna && druh ? (
+                <span className="text-xs text-amber-700 dark:text-amber-300">
+                  {t("Položky nesedia so sumou o {rozdiel} — doplní sa vyrovnávacia položka.", {
+                    rozdiel: rozdielVyrovna.rozdiel.toFixed(2),
+                  })}
                 </span>
               ) : null}
               <button

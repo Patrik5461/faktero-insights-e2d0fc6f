@@ -27,8 +27,6 @@ export default {
     "<0>Rechnungen</0> — Ausstellen und Korrigieren bereits ausgestellter Rechnungen, Angebote, PDF und Versand per E-Mail. Korrigiert wird auf demselben Bildschirm, auf dem auch ausgestellt wird.",
   "<0>Doklady</0> — nahraté a rozpoznané výdavkové doklady.":
     "<0>Belege</0> — hochgeladene und erkannte Ausgabenbelege.",
-  "<0>Skener</0> — odfotíte bloček alebo faktúru a text z nej prečíta server. Pri slovenských pokladničných dokladoch stačí naskenovať QR kód: doklad si Faktero vypýta priamo z Finančnej správy aj s položkami a sadzbami. Viac v <1>manuáli k pokladni</1>.":
-    "<0>Scanner</0> — Sie fotografieren einen Kassenbon oder eine Rechnung, und der Server liest den Text aus. Bei slowakischen Kassenbelegen genügt es, den QR-Code zu scannen: Faktero ruft den Beleg direkt bei der Finanzverwaltung (Finančná správa) ab, samt Positionen und Steuersätzen. Mehr dazu im <1>Handbuch zur Kasse</1>.",
   "<0>Banka</0> — zostatky a posledné pohyby z pripojených účtov.":
     "<0>Bank</0> — Kontostände und die letzten Umsätze der verbundenen Konten.",
   "<0>Jazdy</0> — kniha jázd, vrátane tých, ktoré si telefón všimol sám.":

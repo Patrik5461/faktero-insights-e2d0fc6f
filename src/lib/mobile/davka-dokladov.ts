@@ -161,6 +161,8 @@ export type DetailSkenu = {
   udaje: unknown;
   chyba?: string | null;
   povinne?: string[];
+  /** Kontroly firmy (tolerancia zaokrúhlenia, splatnosť). */
+  nastavenia?: { toleranciaCenty?: number; kontrolaSplatnosti?: boolean };
 };
 
 const DRUHY = new Set<DruhNespracovaneho>(["faktura", "zalohova", "dobropis", "blocek", "ostatny"]);
@@ -184,7 +186,7 @@ export function vyhodnotDetail(
   const povinne = d.povinne ?? [];
   const surove = nacitajUdaje(d.udaje);
   const udaje = druh ? doplnZNastavenia(surove, druh, nastavenie) : surove;
-  const chyba = chybajuce(druh, udaje, povinne);
+  const chyba = chybajuce(druh, udaje, povinne, d.nastavenia);
   return {
     stav: chyba.length === 0 ? "rozpoznane" : "doplnit",
     druh,

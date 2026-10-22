@@ -33,7 +33,7 @@ const sections: HelpSection[] = [
           <Link to="/nespracovane">Doklady → Nespracované doklady</Link>. Faktero doklad prečíta a
           navrhne, čo to je. Kým je doklad tu, nevstupuje do DPH, pokladne ani do účtovníctva.
         </p>
-        <p>Kam sa čo uloží (rovnako ako v Doklado):</p>
+        <p>Kam sa čo uloží:</p>
         <ul>
           <li>
             <strong>Bloček s QR kódom</strong> (eKasa) ide rovno do{" "}
@@ -63,22 +63,37 @@ const sections: HelpSection[] = [
           </li>
           <li>
             Rovno <strong>zaúčtujte</strong>: predkontácia, členenie DPH a kontrolného výkazu,
-            stredisko, činnosť, kategória.
+            stredisko, činnosť, zákazka, kategória. Keď na dodávateľa sedí{" "}
+            <Link to="/uctovnictvo/pravidla">pravidlo účtovania</Link>, jeho kódy sa doplnia samy a
+            pri poli svieti hviezdička. Po zmene dodávateľa sa pravidlo vyhodnotí znova; keď sedí
+            viac pravidiel, iné vyberiete cez <em>Použiť pravidlo</em>.
           </li>
           <li>
             Kliknite na <strong>Vytvoriť</strong> — doklad sa presunie medzi prijaté faktúry,
-            doklady alebo iné doklady (s vyplneným zaúčtovaním) a otvorí sa ďalší nespracovaný.{" "}
-            <strong>Uložiť zmeny</strong> ho nechá rozpracovaný na neskôr.
+            doklady alebo iné doklady a otvorí sa ďalší nespracovaný. <strong>Uložiť zmeny</strong>{" "}
+            ho nechá rozpracovaný na neskôr.
           </li>
         </ol>
+        <p>
+          Vytvorený doklad je <strong>skontrolovaný a pripravený na export</strong>. Bloček je
+          spracovaný, prijatá faktúra zaúčtovaná — keď sa pre ňu dá určiť predkontácia aj členenie
+          DPH (z dokladu, z pravidla, z kategórie alebo predvolené v{" "}
+          <Link to="/uctovnictvo/predkontacie">Predkontáciách</Link>). Bez nich čaká medzi prijatými
+          faktúrami na zaúčtovanie. Zaplatenú faktúru označíte voľbou{" "}
+          <strong>Faktúra je už uhradená</strong>.
+        </p>
+        <p>
+          <strong>Hromadná úprava:</strong> v zozname nespracovaných dokladov označte viac dokladov
+          a nastavte im naraz druh, zákazku, predkontáciu, členenie DPH, stredisko alebo činnosť,
+          prípadne ich presuňte do koša. Prázdne pole sa nemení.
+        </p>
         <p>
           Bločky odfotené v appke alebo zadané vo formulári sú v tom istom zozname — otvoria sa vo
           formulári dokladu, kde ich spracujete tlačidlom Spracovať. Spracovaný bloček sa presunie
           do <Link to="/doklady">Doklady → Bločky</Link>; tam sú len skontrolované bločky, rozdelené
-          na spracované a odovzdané účtovníkovi. Menu Doklady má sekcie ako Doklado: Nespracované
-          doklady, Bločky, Prijaté faktúry, Vystavené faktúry, Iné doklady a{" "}
-          <Link to="/kos">Kôš</Link>, kde sa dajú zmazané doklady obnoviť. Zmazaný nespracovaný
-          doklad ide do koša a dá sa obnoviť.
+          na spracované a odovzdané účtovníkovi. Menu Doklady má sekcie Nespracované doklady,
+          Bločky, Prijaté faktúry, Vystavené faktúry, Iné doklady a <Link to="/kos">Kôš</Link>, kde
+          sa dajú zmazané doklady obnoviť. Zmazaný nespracovaný doklad ide do koša a dá sa obnoviť.
         </p>
       </>
     ),
@@ -97,7 +112,16 @@ const sections: HelpSection[] = [
         <p>
           <strong>Položky</strong> majú pri každej sadzbu DPH a príznak prenesenia daňovej
           povinnosti. Keď súčet položiek nesedí so sumou dokladu, zobrazí sa rozdiel a tlačidlo{" "}
-          <strong>Pridať vyrovnávaciu položku</strong> — bez nej sa doklad nevytvorí.
+          <strong>Pridať vyrovnávaciu položku</strong> — bez nej sa doklad nevytvorí. Drobný rozdiel
+          do tolerancie, ktorú si firma nastaví, doklad nezastaví — vyrovnávacia položka sa doplní
+          sama pri vytvorení.
+        </p>
+        <p>
+          V <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie</Link>, časť{" "}
+          <em>Export a spracovanie dokladov</em>, si nastavíte správanie Nespracovaných dokladov: či
+          je vytvorená faktúra rovno zaúčtovaná, či sa po vytvorení otvorí ďalší doklad, kontrolu
+          splatnosti, toleranciu zaokrúhlenia položiek v centoch, používanie vyťažených položiek
+          faktúr a bločkov a preberanie čísla dodacieho listu.
         </p>
         <p>
           Keď sú položky vyčítané úplne zle, stlačte <strong>Vypnúť položky</strong>. Doklad sa

@@ -40,6 +40,8 @@ type Detail = {
   chyba: string | null;
   povinne: string[];
   varovania: string[];
+  /** Kontroly firmy (tolerancia zaokrúhlenia, splatnosť) — staršie servery ich neposielajú. */
+  nastavenia?: { toleranciaCenty?: number; kontrolaSplatnosti?: boolean };
 };
 
 export const NAZOV_DRUHU: Record<DruhNespracovaneho, Kluc> = {
@@ -162,6 +164,8 @@ export function RozpoznanyDoklad({
           mime: s.mime,
           subor: s.base64,
           zdroj: "apka",
+          // Nastavenie zo skenera sa uloží k dokladu — platí, aj keď ho človek nechá v Nespracovaných.
+          predvolby: nastavenie ?? null,
         },
       });
       setId(r.id);
@@ -243,7 +247,8 @@ export function RozpoznanyDoklad({
     return vyrovnane ? vyrovnajPolozky(u) : u;
   }, [zaklad, upravy, vyrovnane]);
 
-  const chyba = druh && finalne ? chybajuce(druh, finalne, detail?.povinne) : ["druh"];
+  const chyba =
+    druh && finalne ? chybajuce(druh, finalne, detail?.povinne, detail?.nastavenia) : ["druh"];
   const daSaUlozit = !!druh && chyba.length === 0 && !ukladam;
 
   async function uloz(ajDuplicitu = false) {

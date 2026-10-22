@@ -12,11 +12,46 @@ import {
   udajeZAi,
   doplnUdaje,
   type DruhNespracovaneho,
+  type PredvolbySkenu,
   type UdajeNespracovaneho,
 } from "./nespracovane";
 
 type Klient = any;
 export const KOS_NESPRACOVANYCH = "nespracovane";
+
+/** Nastavenia Nespracovaných dokladov firmy (`companies.uctovanie_nastavenia.nespracovane`). */
+export async function nastaveniaNespracovanychFirmy(supabase: Klient, companyId: string) {
+  const { nastaveniaNespracovanych } = await import("./nespracovane-nastavenia");
+  const { data } = await supabase
+    .from("companies")
+    .select("uctovanie_nastavenia")
+    .eq("id", companyId)
+    .maybeSingle();
+  return nastaveniaNespracovanych(data?.uctovanie_nastavenia);
+}
+
+/**
+ * Vyťažené údaje po úprave podľa firmy (vypnuté položky, dodací list) a s
+ * nastavením zo skenera — dopĺňa sa len to, čo doklad nepovedal.
+ */
+async function poNastaveniach(
+  supabase: Klient,
+  companyId: string,
+  druh: DruhNespracovaneho | null,
+  udaje: UdajeNespracovaneho,
+  predvolby?: PredvolbySkenu | null,
+): Promise<UdajeNespracovaneho> {
+  const { upravVytazeneUdaje } = await import("./nespracovane-nastavenia");
+  let u = upravVytazeneUdaje(udaje, druh, await nastaveniaNespracovanychFirmy(supabase, companyId));
+  const p = predvolby ?? u.predvolby;
+  if (p && Object.values(p).some(Boolean)) {
+    // Uplatní sa raz — „Dočítať z dokladu" neskôr neprepíše, čo človek medzitým zmenil.
+    const { doplnZNastavenia } = await import("@/lib/mobile/sken-rozpoznanie");
+    const { predvolby: _p, ...bez } = doplnZNastavenia(u, druh ?? "faktura", p);
+    u = bez as UdajeNespracovaneho;
+  }
+  return u;
+}
 
 export function priponaSuboru(nazov: string | null | undefined, mime: string | null | undefined): string {
   const z = String(nazov ?? "").toLowerCase().split(".").pop() ?? "";
@@ -42,6 +77,8 @@ export async function zalozNespracovany(
     druh?: DruhNespracovaneho | null;
     poznamka?: string | null;
     inboxMessageId?: string | null;
+    /** Nastavenie zo skenera v appke — platí aj pre doklad dokončený na webe. */
+    predvolby?: PredvolbySkenu | null;
   },
 ): Promise<{ id: string; udaje: UdajeNespracovaneho | null }> {
   const id = crypto.randomUUID();
@@ -66,6 +103,9 @@ export async function zalozNespracovany(
       inboxMessageId: args.inboxMessageId,
     });
   }
+  if (udaje) udaje = await poNastaveniach(supabase, args.companyId, druh, udaje, args.predvolby);
+  // Ešte nevyťažený doklad: nastavenie zo skenera počká v údajoch na vyťaženie.
+  const predvolby = args.predvolby && Object.values(args.predvolby).some(Boolean) ? args.predvolby : null;
   const { error } = await supabase.from("nespracovane_doklady").insert({
     id,
     company_id: args.companyId,
@@ -79,7 +119,7 @@ export async function zalozNespracovany(
     file_mime: args.mime,
     file_size: args.bajty.length,
     ai: args.ai ?? null,
-    udaje: udaje ?? {},
+    udaje: udaje ?? (predvolby ? { predvolby } : {}),
     inbox_message_id: args.inboxMessageId ?? null,
   });
   if (error) {
@@ -122,6 +162,8 @@ export async function vytazNespracovany(id: string): Promise<void> {
         createdBy: r.created_by ?? null,
         inboxMessageId: r.inbox_message_id ?? null,
       });
+      // Nastavenia firmy a nastavenie zo skenera (uložené pri nahratí).
+      udaje = await poNastaveniach(supabaseAdmin, r.company_id, druh as DruhNespracovaneho | null, udaje, povodne.predvolby);
     }
     await supabaseAdmin
       .from("nespracovane_doklady")
@@ -168,7 +210,7 @@ export async function vytvorDoklad(
   r: Record<string, any>,
   druh: DruhNespracovaneho,
   u: UdajeNespracovaneho,
-): Promise<{ agenda: "prijata" | "doklad" | "ostatny"; id: string }> {
+): Promise<{ agenda: "prijata" | "doklad" | "ostatny"; id: string; zauctovana?: boolean }> {
   const dnes = new Date().toISOString().slice(0, 10);
   const teraz = new Date().toISOString();
   let bajty: Uint8Array | null = null;
@@ -203,7 +245,48 @@ export async function vytvorDoklad(
   if (jeDruhUcenia(druh))
     u = await ucenie.pripravNaZapis(supabase, { companyId: r.company_id, druh, udaje: u, createdBy: autor, predmetMailu });
 
-  let vysledok: { agenda: "prijata" | "doklad" | "ostatny"; id: string };
+  const nastavenia = await nastaveniaNespracovanychFirmy(supabase, r.company_id);
+  /*
+    Malý rozdiel položiek oproti sume (tolerancia firmy) doplní vyrovnávacia
+    položka, aby export sedel na cent. Hotovostné zaokrúhlenie na 5 centov
+    rieši export bločku sám (predkontácia pre zaokrúhlenie).
+  */
+  {
+    const { rozdielPoloziek, rozdielVTolerancii, vyrovnajPolozky } = await import("./nespracovane");
+    const rozdiel = rozdielPoloziek(u);
+    const hotovostne = u.platba === "hotovost" && rozdiel && Math.abs(rozdiel.rozdiel) <= 0.02;
+    if (rozdiel && !hotovostne && rozdielVTolerancii(u, nastavenia)) u = vyrovnajPolozky(u);
+  }
+
+  /*
+    Pravidlo účtovania zvolené pri spracovaní (alebo doplnené podľa
+    dodávateľa). Doklad ho dostane rovno — spúšťač by inak vzal prvé zhodné
+    pravidlo, nie to, ktoré človek vybral. Odpočet a poznámku pravidla
+    doplníme tu, ako by to urobil spúšťač.
+  */
+  let pravidlo: Record<string, any> | null = null;
+  if (u.pravidloId && /^[0-9a-f-]{36}$/i.test(u.pravidloId) && druh !== "ostatny") {
+    const { data: p } = await supabase
+      .from("pravidla_uctovania")
+      .select("id, odpocet, poznamka, aktivne")
+      .eq("id", u.pravidloId)
+      .eq("company_id", r.company_id)
+      .maybeSingle();
+    pravidlo = p?.aktivne ? p : null;
+  }
+  const zPravidla = async (riadok: { note?: string | null; issue_date?: string | null; odpocet?: boolean }) => {
+    if (!pravidlo) return {};
+    const { premennePoznamky } = await import("./pravidla-uctovania");
+    const pozn = premennePoznamky(String(pravidlo.poznamka ?? ""), riadok.issue_date ?? null).trim();
+    const note = String(riadok.note ?? "");
+    return {
+      pravidlo_id: pravidlo.id as string,
+      ...(typeof pravidlo.odpocet === "boolean" ? { odpocet: pravidlo.odpocet } : {}),
+      ...(pozn && !note.includes(pozn) ? { note: [note.trim(), pozn].filter(Boolean).join(" ") } : {}),
+    };
+  };
+
+  let vysledok: { agenda: "prijata" | "doklad" | "ostatny"; id: string; zauctovana?: boolean };
   if (druh === "faktura" || druh === "zalohova" || druh === "dobropis") {
     const cesta = bajty ? `${r.company_id}/${crypto.randomUUID()}.${pripona}` : null;
     if (cesta && bajty) {
@@ -212,16 +295,19 @@ export async function vytvorDoklad(
     }
     const zakl = prijataZUdajov(druh, u, dnes);
     const zauctovat = Boolean(zakl.pohoda_predkontacia || zakl.pohoda_clenenie_dph);
+    // Zaplatená ostáva zaplatená aj zaúčtovaná (ako po zaúčtovaní v paneli).
+    const stav = (zauct: boolean) => (u.uhradene ? "paid" : zauct ? "booked" : "received");
     const { data, error } = await supabase
       .from("purchase_invoices")
       .insert({
         ...zakl,
+        ...(await zPravidla(zakl)),
         company_id: r.company_id,
         created_by: autor,
         predmet_mailu: predmetMailu,
         inbox_message_id: r.inbox_message_id ?? null,
         // Zaúčtovaná faktúra je „booked“ ako po zaúčtovaní v paneli.
-        status: zauctovat ? "booked" : "received",
+        status: stav(zauctovat),
         source: ZDROJ_PRIJATEJ[r.zdroj] ?? "nahrate",
         file_path: cesta,
         file_mime: cesta ? mime : null,
@@ -230,11 +316,34 @@ export async function vytvorDoklad(
         zauctovane_at: zauctovat ? teraz : null,
         zauctoval: zauctovat ? userId : null,
       })
-      .select("id")
+      .select("id, pohoda_predkontacia, pohoda_clenenie_dph, category, reverse_charge")
       .single();
     if (error) {
       if (cesta) await supabase.storage.from("purchase-invoices").remove([cesta]);
       throw new Error(error.message);
+    }
+    /*
+      Vytvorením je faktúra skontrolovaná — keď sa dá určiť predkontácia aj
+      členenie (vlastné, z pravidla, ktoré doplnil spúšťač, z kategórie alebo
+      predvolené firmy), je zaúčtovaná a pripravená na export. Nepotvrdený
+      návrh AI počká na potvrdenie v zaúčtovaní faktúry.
+    */
+    let zauctovana = zauctovat;
+    if (!zauctovat && nastavenia.zauctovat && !nepotvrdeneNavrhy.length) {
+      const { kodyPrijatejUrcene } = await import("./nespracovane-nastavenia");
+      const { kodyPodlaKategorie } = await import("./predkontacie.server");
+      const { data: firma } = await supabase
+        .from("companies")
+        .select("pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_clenenie_dph_prijata_pdp")
+        .eq("id", r.company_id)
+        .maybeSingle();
+      if (kodyPrijatejUrcene(data, firma, await kodyPodlaKategorie(supabase, r.company_id))) {
+        const { error: eZ } = await supabase
+          .from("purchase_invoices")
+          .update({ zauctovane_at: teraz, zauctoval: userId, status: stav(true) })
+          .eq("id", data.id);
+        if (!eZ) zauctovana = true;
+      }
     }
     /* Doklad v cudzej mene potrebuje kurz (SK ECB, CZ ČNB); bez neho by chýbal vo výkaze k DPH. */
     {
@@ -270,7 +379,7 @@ export async function vytvorDoklad(
         /* Kurz je doplnok — doklad je uložený. */
       }
     }
-    vysledok = { agenda: "prijata", id: data.id };
+    vysledok = { agenda: "prijata", id: data.id, zauctovana };
   } else if (druh === "blocek") {
     const cesta = bajty ? `${r.company_id}/${crypto.randomUUID()}.${pripona}` : null;
     if (cesta && bajty) {
@@ -281,6 +390,7 @@ export async function vytvorDoklad(
       .from("expense_documents")
       .insert({
         ...blocekZUdajov(u),
+        ...(await zPravidla(blocekZUdajov(u))),
         predmet_mailu: predmetMailu,
         inbox_message_id: r.inbox_message_id ?? null,
         company_id: r.company_id,
@@ -339,6 +449,9 @@ export async function vytvorDoklad(
     // vytlačilo skutočne naučenú hodnotu.
     for (const k of Object.keys(volby) as (keyof typeof volby)[])
       if (!hodnotaPola(u, k)) delete volby[k];
+    // Hodnota z pravidla nie je voľba človeka — návyk by pravidlo len zdvojil.
+    for (const k of Object.keys(volby) as (keyof typeof volby)[])
+      if (u.zPravidla?.[k] && u.zPravidla[k] === hodnotaPola(u, k)) delete volby[k];
     await ucenie.zaznamenajVolby(supabase, {
       companyId: r.company_id,
       druh,

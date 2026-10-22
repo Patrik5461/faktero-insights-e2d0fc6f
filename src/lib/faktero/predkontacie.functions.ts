@@ -23,6 +23,7 @@ const STLPCE_FIRMY = [
   "pohoda_predkontacia_zaokruhlenie",
   "qr_blocky_do_nespracovanych",
   "povinne_polia_dokladu",
+  "uctovanie_nastavenia",
 ].join(", ");
 
 export const predkontacieFn = createServerFn({ method: "POST" })
@@ -137,12 +138,33 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
         predkontaciaZaokruhlenie: z.string().max(30).optional().nullable(),
         qrDoNespracovanych: z.boolean().optional(),
         povinnePolia: z.array(z.enum(["zakazka", "stredisko", "cinnost"])).optional(),
+        /** Nastavenia Nespracovaných dokladov (`uctovanie_nastavenia.nespracovane`). */
+        nespracovane: z
+          .object({
+            zauctovat: z.boolean(),
+            dalsi: z.boolean(),
+            kontrolaSplatnosti: z.boolean(),
+            toleranciaCenty: z.number().int().min(0).max(100),
+            polozkyFaktur: z.boolean(),
+            polozkyBlockov: z.boolean(),
+            dodaciList: z.boolean(),
+          })
+          .optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const zmena: Record<string, unknown> = {};
+    if (data.nespracovane) {
+      // Kľúč v JSON-e pre všetky programy — ostatné nastavenia exportu ostanú.
+      const { data: f } = await supabase
+        .from("companies")
+        .select("uctovanie_nastavenia")
+        .eq("id", data.company_id)
+        .maybeSingle();
+      zmena.uctovanie_nastavenia = { ...((f?.uctovanie_nastavenia as object) ?? {}), nespracovane: data.nespracovane };
+    }
     // Prázdne pole je NULL, nie "" — prázdny reťazec by v XML vyzeral ako
     // vyplnená skratka a Pohoda by dostala prázdny element.
     for (const s of STLPCE_PREDVOLENYCH) {

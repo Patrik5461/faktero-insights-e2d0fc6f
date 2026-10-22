@@ -92,7 +92,10 @@ const sections: HelpSection[] = [
             <strong>Skener</strong> — odfotíte bloček alebo faktúru a text z nej prečíta server. Pri
             slovenských pokladničných dokladoch stačí naskenovať QR kód: doklad si Faktero vypýta
             priamo z Finančnej správy aj s položkami a sadzbami. Viac v{" "}
-            <Link to="/pomoc/pokladna">manuáli k pokladni</Link>.
+            <Link to="/pomoc/pokladna">manuáli k pokladni</Link>. Čo nastavíte pred odfotením
+            (úhrada, kategória, zákazka, predkontácia, komentár), sa uloží k dokladu aj vtedy, keď
+            ho necháte v <Link to="/pomoc/doklady">Nespracovaných dokladoch</Link> a dokončíte na
+            webe.
           </li>
           <li>
             <strong>Banka</strong> — zostatky a posledné pohyby z pripojených účtov.

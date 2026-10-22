@@ -1,6 +1,7 @@
 import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PolozkyNespracovaneho } from "./PolozkyNespracovaneho";
+import { JobPicker } from "./JobPicker";
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -119,6 +120,9 @@ export function NespracovanyKompaktny({
   onVytvor,
   onUloz,
   onZmaz,
+  companyId,
+  pravidlo,
+  rozdielVyrovna = null,
 }: {
   subor: { url: string | null; nazov: string | null; mime: string | null };
   stav: string;
@@ -138,6 +142,11 @@ export function NespracovanyKompaktny({
   onVytvor: () => void;
   onUloz: () => void;
   onZmaz: () => void;
+  companyId?: string;
+  /** Pravidlo účtovania (výber a hviezdička) — v sekcii Zaúčtovanie. */
+  pravidlo?: ReactNode;
+  /** Rozdiel položiek v tolerancii, ktorý doplní vyrovnávacia položka. */
+  rozdielVyrovna?: number | null;
 }) {
   const { t } = useT();
   const [otocenie, setOtocenie] = useState(0);
@@ -602,6 +611,14 @@ export function NespracovanyKompaktny({
                   <option value="karta">{t("Karta")}</option>
                 </select>
               </Pole>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={Boolean(u.uhradene)}
+                  onChange={(e) => set({ uhradene: e.target.checked || undefined })}
+                />
+                {t("Faktúra je už uhradená")}
+              </label>
             </Sekcia>
           ) : null}
 
@@ -635,6 +652,13 @@ export function NespracovanyKompaktny({
                   })
                 }
               />
+              <JobPicker
+                value={u.jobId}
+                onChange={(v) => set({ jobId: v })}
+                companyId={companyId}
+                className={zle("zakazka") ? "[&_select]:border-red-500" : ""}
+              />
+              {pravidlo}
               <NauceneZDodavatela u={u} />
               <NavrhAiNespracovaneho u={u} setU={setU} stav={stavNavrhuAi} />
               <p className="text-xs text-muted-foreground">
@@ -697,6 +721,12 @@ export function NespracovanyKompaktny({
           {chyby.length > 0 && druh ? (
             <p className="text-xs text-red-600">
               {t("Chýba: {polia}", { polia: chyby.map((k) => t(NAZVY_POLI[k] ?? k)).join(", ") })}
+            </p>
+          ) : rozdielVyrovna != null && druh ? (
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              {t("Položky nesedia so sumou o {rozdiel} — doplní sa vyrovnávacia položka.", {
+                rozdiel: rozdielVyrovna.toFixed(2),
+              })}
             </p>
           ) : null}
           <button

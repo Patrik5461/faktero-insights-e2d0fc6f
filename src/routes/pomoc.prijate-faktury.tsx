@@ -289,6 +289,12 @@ const sections: HelpSection[] = [
           (napríklad „Orange → predkontácia 5Fp, členenie PD“).
         </p>
         <p>
+          Faktúra vytvorená z <Link to="/nespracovane">Nespracovaných dokladov</Link> je zaúčtovaná
+          už vytvorením, keď sa pre ňu dá určiť predkontácia aj členenie DPH (z dokladu, pravidla,
+          kategórie alebo predvolených). Kto chce každú faktúru zaúčtovať zvlášť, vypne to v
+          Predkontáciách voľbou <em>Vytvorený doklad je zaúčtovaný a pripravený na export</em>.
+        </p>
+        <p>
           Zaúčtované faktúry si berie konektor do Pohody — ako prijatú faktúru s číslom dodávateľa,
           dátumom dodania, splatnosťou a rozpisom DPH. Odovzdaná faktúra je označená{" "}
           <em>V Pohode</em> a vo Fakteri sa jej zaúčtovanie už nemení. Samofaktúra sa dá zaúčtovať

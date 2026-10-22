@@ -329,3 +329,16 @@ describe("návrh v nespracovanom doklade", () => {
     expect(potvrdeny.pohoda_predkontacia).toBe("1Fp");
   });
 });
+
+describe("oznaceniaZUdajov — pravidlo účtovania", () => {
+  it("hodnota z pravidla má hviezdičku pred naučenou aj AI, po zmene zmizne", () => {
+    const u = prazdneUdaje();
+    u.kody.predkontacia = "518";
+    u.kategoria = "telefon";
+    u.naucene = { kategoria: "telefon" };
+    u.zPravidla = { predkontacia: "518", kategoria: "telefon" };
+    expect(oznaceniaZUdajov(u)).toEqual({ predkontacia: "pravidlo", kategoria: "pravidlo" });
+    u.kody.predkontacia = "501";
+    expect(oznaceniaZUdajov(u).predkontacia).toBeUndefined();
+  });
+});

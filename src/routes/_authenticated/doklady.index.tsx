@@ -387,6 +387,17 @@ function DokladyPage() {
   }
 
   const [volbyExportu, setVolbyExportu] = useState(false);
+  // Či firma posiela položky bločkov — predvolená voľba „Exportovať položky dokladu".
+  const [polozkyBlockovFirmy, setPolozkyBlockovFirmy] = useState(false);
+  useEffect(() => {
+    if (!volbyExportu || !cid) return;
+    supabase
+      .from("companies")
+      .select("pohoda_polozky_blockov")
+      .eq("id", cid)
+      .maybeSingle()
+      .then(({ data }) => setPolozkyBlockovFirmy(Boolean((data as any)?.pohoda_polozky_blockov)));
+  }, [volbyExportu, cid]);
   async function handleExport(markExported: boolean, volby?: VolbyExportu) {
     if (!cid) return;
     const vyber = selected.size ? rows.filter((r) => selected.has(r.id)) : rows;
@@ -414,6 +425,8 @@ function DokladyPage() {
           mark_exported: markExported,
           datum_zauctovania: volby?.datumZauctovania ?? null,
           aj_odovzdane: volby ? volby.ajOdovzdane : undefined,
+          radenie: volby?.radenie ?? null,
+          polozky: volby?.polozky ?? null,
         },
       });
       const bin = atob(res.base64);
@@ -695,6 +708,7 @@ function DokladyPage() {
             <VolbyExportuOkno
               pocet={selected.size || rows.length}
               nazov={t("Bločky — ZIP so XML pre Pohodu a skenmi")}
+              ponukaPolozky={{ predvolene: polozkyBlockovFirmy }}
               onClose={() => setVolbyExportu(false)}
               onExport={(v) => handleExport(v.oznacit, v)}
             />

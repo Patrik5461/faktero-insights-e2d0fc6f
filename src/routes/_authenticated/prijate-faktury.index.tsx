@@ -396,6 +396,7 @@ function PurchaseInvoicesPage() {
           oznacit: v.oznacit,
           datum_zauctovania: v.datumZauctovania,
           aj_odovzdane: v.ajOdovzdane,
+          radenie: v.radenie,
         },
       });
       for (const f of r.subory) {

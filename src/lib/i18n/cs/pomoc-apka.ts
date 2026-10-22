@@ -27,8 +27,6 @@ export default {
     "<0>Faktury</0> — vystavení i oprava již vystavené faktury, cenové nabídky, PDF a odeslání e-mailem. Opravuje se na téže obrazovce, na které se vystavuje.",
   "<0>Doklady</0> — nahraté a rozpoznané výdavkové doklady.":
     "<0>Doklady</0> — nahrané a rozpoznané výdajové doklady.",
-  "<0>Skener</0> — odfotíte bloček alebo faktúru a text z nej prečíta server. Pri slovenských pokladničných dokladoch stačí naskenovať QR kód: doklad si Faktero vypýta priamo z Finančnej správy aj s položkami a sadzbami. Viac v <1>manuáli k pokladni</1>.":
-    "<0>Skener</0> — vyfotíte účtenku nebo fakturu a text z ní přečte server. U slovenských pokladních dokladů stačí naskenovat QR kód: doklad si Faktero vyžádá přímo z Finanční správy SR i s položkami a sazbami. Více v <1>manuálu k pokladně</1>.",
   "<0>Banka</0> — zostatky a posledné pohyby z pripojených účtov.":
     "<0>Banka</0> — zůstatky a poslední pohyby z připojených účtů.",
   "<0>Jazdy</0> — kniha jázd, vrátane tých, ktoré si telefón všimol sám.":

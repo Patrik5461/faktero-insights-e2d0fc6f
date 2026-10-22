@@ -186,6 +186,8 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
         datum_zauctovania: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
         /** Aj už odovzdané — inak sa vynechajú, aby ich Pohoda nedostala dvakrát. */
         aj_odovzdane: z.boolean().optional(),
+        /** Poradie faktúr v dávke. */
+        radenie: z.enum(["datum", "cislo", "nahratie"]).nullish(),
       })
       .parse(d),
   )
@@ -237,7 +239,8 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     };
     // Kontrola pred odovzdaním — zle zaúčtovateľná faktúra do súboru nejde.
     const { prekazkaDokladu } = await import("./pohoda-kontrola");
-    const ok = schvalene.filter((p: any) => {
+    const { zoradNaExport } = await import("./export-radenie");
+    const ok = zoradNaExport(schvalene, data.radenie ?? null).filter((p: any) => {
       const dovod = prekazkaDokladu(prijataAkoDoklad(p), firma ?? {}, nastavenia);
       if (dovod) preskocene.push(dovod);
       return !dovod;

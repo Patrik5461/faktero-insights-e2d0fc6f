@@ -11,6 +11,12 @@ import { PomerEditor, type PomerHodnota } from "@/components/faktero/PomerEditor
 import { OZNACENIA } from "@/lib/faktero/vypis-oznacenie";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import {
+  MAX_TOLERANCIA_CENTOV,
+  nastaveniaNespracovanych,
+  PREDVOLENE_NESPRACOVANE,
+  type NastaveniaNespracovanych,
+} from "@/lib/faktero/nespracovane-nastavenia";
+import {
   AGENDY,
   PREDVOLENE,
   STLPCE_PREDVOLENYCH,
@@ -159,9 +165,11 @@ function Predvolene({
     qrDoNespracovanych: false,
     povinnePolia: [] as ("zakazka" | "stredisko" | "cinnost")[],
   });
+  const [nesp, setNesp] = useState<NastaveniaNespracovanych>(PREDVOLENE_NESPRACOVANE);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    setNesp(nastaveniaNespracovanych(firma.uctovanie_nastavenia));
     setH(Object.fromEntries(STLPCE_PREDVOLENYCH.map((s) => [s, String(firma[s] ?? "")])));
     setOznaceni({
       ...((firma.pohoda_predkontacie_oznaceni as Record<string, string> | null) ?? {}),
@@ -194,6 +202,7 @@ function Predvolene({
           odkazNaDoklady,
           polozkyBlockov,
           ...ine,
+          nespracovane: nesp,
         },
       });
       toast.success(t("Uložené"));
@@ -436,6 +445,75 @@ function Predvolene({
             ))}
           </div>
         </div>
+        {(
+          [
+            [
+              "zauctovat",
+              "Vytvorený doklad je zaúčtovaný a pripravený na export",
+              "Prijatá faktúra vytvorená z Nespracovaných dostane predkontáciu a členenie DPH z dokladu, pravidla, kategórie alebo predvolených a rovno ide do Pohody. Vypnuté = každú faktúru treba ešte zaúčtovať.",
+            ],
+            [
+              "dalsi",
+              "Po vytvorení dokladu otvoriť ďalší nespracovaný doklad",
+              "Vypnuté = po vytvorení sa vrátite do zoznamu.",
+            ],
+            [
+              "kontrolaSplatnosti",
+              "Kontrolovať splatnosť pred dátumom vystavenia",
+              "Vypnuté = doklad so splatnosťou skoršou ako vystavenie sa dá vytvoriť.",
+            ],
+            [
+              "polozkyFaktur",
+              "Používať vyťažené položky faktúr",
+              "Vypnuté = faktúra ide do účtovníctva podľa súčtov a rozpisu DPH, položky sa dajú pri doklade zapnúť.",
+            ],
+            [
+              "polozkyBlockov",
+              "Používať vyťažené položky bločkov",
+              "",
+            ],
+            [
+              "dodaciList",
+              "Preberať číslo dodacieho listu z dokladu",
+              "",
+            ],
+          ] as const
+        ).map(([k, n, popis]) => (
+          <label key={k} className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={nesp[k]}
+              onChange={(e) => setNesp({ ...nesp, [k]: e.target.checked })}
+            />
+            <span>
+              {t(n)}
+              {popis ? <span className="block text-xs text-muted-foreground">{t(popis)}</span> : null}
+            </span>
+          </label>
+        ))}
+        <label className="block">
+          <span className="text-xs text-muted-foreground">{t("Tolerancia zaokrúhlenia položiek (v centoch)")}</span>
+          <input
+            type="number"
+            min={0}
+            max={MAX_TOLERANCIA_CENTOV}
+            step={1}
+            value={nesp.toleranciaCenty}
+            onChange={(e) =>
+              setNesp({
+                ...nesp,
+                toleranciaCenty: Math.min(MAX_TOLERANCIA_CENTOV, Math.max(0, Math.round(Number(e.target.value) || 0))),
+              })
+            }
+            className="mt-1 block w-28 rounded-md border border-input bg-background px-2 py-1.5"
+          />
+          <span className="mt-1 block text-xs text-muted-foreground">
+            {t(
+              "Keď súčet položiek nesedí so sumou dokladu najviac o toľko centov, doklad sa dá vytvoriť a rozdiel sa doplní vyrovnávacou položkou.",
+            )}
+          </span>
+        </label>
       </fieldset>
 
       <fieldset className="mt-4 rounded-md border border-border p-3">

@@ -544,6 +544,14 @@ const sections: HelpSection[] = [
             dátum dokladu.
           </li>
           <li>
+            <strong>Radenie dokladov v dávke</strong> — podľa dátumu, čísla dokladu alebo poradia
+            nahratia; v tomto poradí ich Pohoda očísluje.
+          </li>
+          <li>
+            <strong>Exportovať položky dokladu</strong> (bločky) — bloček pôjde po položkách, nie
+            jedným riadkom podľa sadzieb DPH. Predvolene podľa nastavenia firmy.
+          </li>
+          <li>
             <strong>Exportovať aj už odovzdané</strong> — len keď ste ich v Pohode zmazali; inak sa
             odovzdané vynechajú, aby v Pohode neboli dvakrát.
           </li>

@@ -14,6 +14,7 @@
   Čisté funkcie — databáza a volanie modelu sú v `ai-predkontacia.server.ts`.
 */
 
+import { poliaZPravidla } from "./nespracovane-pravidlo";
 import { odpovedNaJson } from "./json-odpoved";
 import type { MoznostKodu } from "./predkontacie";
 import { staleNaucene, type DruhUcenia, type PoleUcenia } from "./ucenie-z-oprav";
@@ -582,10 +583,12 @@ export function bezNepotvrdenehoAi(u: UdajeNespracovaneho): UdajeNespracovaneho 
 /** Štítky pri poliach formulára: nepotvrdený návrh AI a nezmenené naučené hodnoty. */
 export function oznaceniaZUdajov(
   u: UdajeNespracovaneho,
-): Partial<Record<PoleNavrhu, "ai" | "navyk">> {
-  const out: Partial<Record<PoleNavrhu, "ai" | "navyk">> = {};
+): Partial<Record<PoleNavrhu, "ai" | "navyk" | "pravidlo">> {
+  const out: Partial<Record<PoleNavrhu, "ai" | "navyk" | "pravidlo">> = {};
   for (const p of staleNaucene(u))
     if ((POLIA_NAVRHU as string[]).includes(p)) out[p as PoleNavrhu] = "navyk";
   for (const p of nepotvrdeneAi(u)) out[p] = "ai";
+  // Pravidlo má prednosť — hodnota z neho je zaúčtovanie, nie návrh.
+  for (const p of poliaZPravidla(u)) out[p] = "pravidlo";
   return out;
 }

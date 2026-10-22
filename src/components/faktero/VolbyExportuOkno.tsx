@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useT } from "@/lib/i18n/useT";
+import { RADENIA_EXPORTU, type RadenieExportu } from "@/lib/faktero/export-radenie";
 
 export type VolbyExportu = {
   /** Dátum zaúčtovania pre doklady z uzavretého obdobia; prázdny = dátum dokladu. */
@@ -10,6 +11,10 @@ export type VolbyExportu = {
   ajOdovzdane: boolean;
   /** Zapísať doklady ako odovzdané. */
   oznacit: boolean;
+  /** Poradie dokladov v dávke. */
+  radenie: RadenieExportu;
+  /** Bločky: preniesť aj vyťažené položky (`null` = podľa nastavenia firmy). */
+  polozky: boolean | null;
 };
 
 /**
@@ -20,12 +25,15 @@ export function VolbyExportuOkno({
   pocet,
   nazov,
   ponukaOznacit = true,
+  ponukaPolozky,
   onClose,
   onExport,
 }: {
   pocet: number;
   nazov: string;
   ponukaOznacit?: boolean;
+  /** Bločky: ponúknuť „Exportovať položky dokladu" (hodnota = nastavenie firmy). */
+  ponukaPolozky?: { predvolene: boolean };
   onClose: () => void;
   onExport: (v: VolbyExportu) => Promise<void>;
 }) {
@@ -35,6 +43,8 @@ export function VolbyExportuOkno({
     datumZauctovania: null,
     ajOdovzdane: false,
     oznacit: true,
+    radenie: "datum",
+    polozky: null,
   });
   const [busy, setBusy] = useState(false);
 
@@ -80,6 +90,40 @@ export function VolbyExportuOkno({
               )}
             </span>
           </label>
+
+          <label className="block">
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("Radenie dokladov v dávke")}
+            </span>
+            <select
+              value={v.radenie}
+              onChange={(e) => setV({ ...v, radenie: e.target.value as RadenieExportu })}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2"
+            >
+              {RADENIA_EXPORTU.map((r) => (
+                <option key={r.kluc} value={r.kluc}>
+                  {t(r.nazov)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {ponukaPolozky ? (
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={v.polozky ?? ponukaPolozky.predvolene}
+                onChange={(e) => setV({ ...v, polozky: e.target.checked })}
+              />
+              <span>
+                {t("Exportovať položky dokladu")}
+                <span className="block text-xs text-muted-foreground">
+                  {t("Bloček pôjde do Pohody po položkách, nie jedným riadkom podľa sadzieb DPH.")}
+                </span>
+              </span>
+            </label>
+          ) : null}
 
           <label className="flex items-start gap-2">
             <input

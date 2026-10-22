@@ -48,6 +48,18 @@ export const nahrajNespracovaneFn = createServerFn({ method: "POST" })
         subor: z.string().min(16).max(21_000_000),
         /** Odkiaľ doklad prišiel — „apka" posiela jeden skener v mobilnej appke. */
         zdroj: z.enum(["nahratie", "apka"]).optional(),
+        /** Nastavenie zo skenera (úhrada, kategória, zákazka, predkontácia, komentár). */
+        predvolby: z
+          .object({
+            uhrada: z.string().max(20).optional(),
+            kategoria: z.string().max(60).optional(),
+            zakazka: z.string().max(60).optional(),
+            predkontacia: z.string().max(30).optional(),
+            poznamka: z.string().max(1000).optional(),
+          })
+          .partial()
+          .optional()
+          .nullable(),
       })
       .parse(d),
   )
@@ -65,6 +77,7 @@ export const nahrajNespracovaneFn = createServerFn({ method: "POST" })
       bajty,
       nazov: data.nazov,
       mime: data.mime,
+      predvolby: data.predvolby ?? null,
     });
     // Vyťaženie trvá aj desiatky sekúnd — beží na pozadí, zoznam sa doptáva.
     void vytazNespracovany(id);
@@ -87,7 +100,14 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       const { data: s } = await supabase.storage.from("nespracovane").createSignedUrl(r.file_path, 3600);
       url = s?.signedUrl ?? null;
     }
-    // Ďalší v poradí — po vytvorení sa dá rovno pokračovať.
+    const { nastaveniaNespracovanychFirmy } = await import("./nespracovane.server");
+    const nastavenia = await nastaveniaNespracovanychFirmy(supabase, r.company_id);
+    let predmetMailu: string | null = null;
+    if (r.inbox_message_id) {
+      const { data: m } = await supabase.from("inbox_messages").select("subject").eq("id", r.inbox_message_id).maybeSingle();
+      predmetMailu = m?.subject ?? null;
+    }
+    // Ďalší v poradí — po vytvorení sa dá rovno pokračovať (ak to firma nevypla).
     const { data: dalsi } = await supabase
       .from("nespracovane_doklady")
       .select("id")
@@ -116,7 +136,15 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       inboxMessageId: (r.inbox_message_id ?? null) as string | null,
       subor: { url, nazov: r.file_name as string | null, mime: r.file_mime as string | null },
       udaje,
-      dalsiId: (dalsi?.[0]?.id as string | undefined) ?? null,
+      dalsiId: nastavenia.dalsi ? ((dalsi?.[0]?.id as string | undefined) ?? null) : null,
+      /** Kto doklad nahral a predmet mailu — podľa nich vyberajú pravidlá účtovania. */
+      createdBy: (r.created_by ?? null) as string | null,
+      predmetMailu,
+      nastavenia: {
+        toleranciaCenty: nastavenia.toleranciaCenty,
+        kontrolaSplatnosti: nastavenia.kontrolaSplatnosti,
+        zauctovat: nastavenia.zauctovat,
+      },
     };
   });
 
@@ -186,7 +214,13 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
       .select("povinne_polia_dokladu")
       .eq("id", r.company_id)
       .maybeSingle();
-    const chyba = chybajuce(data.druh, u, firma?.povinne_polia_dokladu ?? []);
+    const { nastaveniaNespracovanychFirmy } = await import("./nespracovane.server");
+    const chyba = chybajuce(
+      data.druh,
+      u,
+      firma?.povinne_polia_dokladu ?? [],
+      await nastaveniaNespracovanychFirmy(supabase, r.company_id),
+    );
     if (chyba.length) throw new Error(`Doplňte: ${chyba.map((k) => NAZVY_POLI[k] ?? k).join(", ")}.`);
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(r.company_id);
@@ -315,4 +349,54 @@ export const prijataDoNespracovanychFn = createServerFn({ method: "POST" })
     if (eDel) await supabase.from("purchase_invoices").update({ deleted_at: new Date().toISOString() }).eq("id", p.id);
     else if (p.file_path) await supabase.storage.from("purchase-invoices").remove([p.file_path]);
     return { id };
+  });
+
+/**
+ * Hromadná úprava nespracovaných dokladov — druh, zákazka, stredisko,
+ * činnosť, predkontácia a členenie DPH naraz pre viac dokladov. Prázdne
+ * pole sa neprepisuje; doklady ostávajú v Nespracovaných.
+ */
+export const hromadneNespracovaneFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        ids: z.array(z.string().uuid()).min(1).max(300),
+        zmena: z.object({
+          druh: DRUH.optional(),
+          jobId: z.string().uuid().optional(),
+          stredisko: z.string().trim().max(30).optional(),
+          cinnost: z.string().trim().max(30).optional(),
+          predkontacia: z.string().trim().max(30).optional(),
+          clenenie: z.string().trim().max(30).optional(),
+        }),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: rows, error } = await supabase
+      .from("nespracovane_doklady")
+      .select("id, druh, udaje, stav")
+      .eq("company_id", data.company_id)
+      .in("id", data.ids);
+    if (error) throw new Error(error.message);
+    const { hromadnaZmenaUdajov } = await import("./nespracovane");
+    let zmenene = 0;
+    for (const r of rows ?? []) {
+      // Kým AI číta, údaje by prepísalo vyťaženie.
+      if (r.stav === "cita") continue;
+      const { error: e } = await supabase
+        .from("nespracovane_doklady")
+        .update({
+          druh: data.zmena.druh ?? r.druh,
+          udaje: hromadnaZmenaUdajov(r.udaje, data.zmena),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", r.id);
+      if (e) throw new Error(e.message);
+      zmenene++;
+    }
+    return { zmenene, preskocene: (rows ?? []).length - zmenene };
   });

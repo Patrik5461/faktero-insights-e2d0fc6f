@@ -567,6 +567,10 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       datum_zauctovania?: string | null;
       /** `false` = už odovzdané vynechať. */
       aj_odovzdane?: boolean;
+      /** Poradie dokladov v dávke (`datum`, `cislo`, `nahratie`). */
+      radenie?: "datum" | "cislo" | "nahratie" | null;
+      /** Preniesť položky bločkov — prebije nastavenie firmy pre tento export. */
+      polozky?: boolean | null;
     }) => data,
   )
   .handler(async ({ data, context }) => {
@@ -586,9 +590,11 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       Odovzdanie účtovníkovi berie len schválené (keď je schvaľovanie
       zapnuté); obyčajný ZIP na stiahnutie ostáva archívom všetkého.
     */
-    const { ok: rows, cakaju } = data.mark_exported
+    const { ok: schvalene, cakaju } = data.mark_exported
       ? await (await import("./schvalovanie.server")).lenSchvalene(supabase, data.company_id, "doklad", vsetky)
       : { ok: vsetky, cakaju: 0 };
+    const { zoradNaExport } = await import("./export-radenie");
+    const rows = zoradNaExport(schvalene, data.radenie ?? null);
     if (!rows.length) throw new Error(`Vybrané doklady čakajú na schválenie (${cakaju}).`);
 
     const JSZip = (await import("jszip")).default;
@@ -667,6 +673,7 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
         { ...(firma ?? {}), id: data.company_id },
         rows,
       )),
+      ...(typeof data.polozky === "boolean" ? { polozkyBlockov: data.polozky } : {}),
     };
     /*
       Kontrola pred odovzdaním: doklad, ktorý by Pohoda zaúčtovala zle, do XML

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Star } from "lucide-react";
 import { navrhZauctovaniaFn } from "@/lib/faktero/ai-predkontacia.functions";
 import {
   nepotvrdeneAi,
@@ -15,11 +15,22 @@ import type { UdajeNespracovaneho } from "@/lib/faktero/nespracovane";
 import { useT } from "@/lib/i18n/useT";
 
 /** Pole formulára → zdroj predvyplnenej hodnoty (len kým ju človek nezmení). */
-export type OznaceniaNavrhu = Partial<Record<PoleNavrhu, Extract<ZdrojNavrhu, "ai" | "navyk">>>;
+export type OznaceniaNavrhu = Partial<
+  Record<PoleNavrhu, Extract<ZdrojNavrhu, "ai" | "navyk" | "pravidlo">>
+>;
 
-/** Štítok pri poli: „Návrh AI" alebo „naučené". */
-export function StitokNavrhu({ zdroj }: { zdroj: "ai" | "navyk" }) {
+/** Štítok pri poli: „Návrh AI", „naučené" alebo hviezdička pravidla účtovania. */
+export function StitokNavrhu({ zdroj }: { zdroj: "ai" | "navyk" | "pravidlo" }) {
   const { t } = useT();
+  if (zdroj === "pravidlo")
+    return (
+      <span
+        className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-px text-[10px] font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+        title={t("Doplnilo pravidlo účtovania podľa dodávateľa.")}
+      >
+        <Star className="h-2.5 w-2.5 fill-current" /> {t("pravidlo")}
+      </span>
+    );
   return zdroj === "ai" ? (
     <span
       className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-violet-100 px-1.5 py-px text-[10px] font-medium text-violet-800 dark:bg-violet-500/20 dark:text-violet-200"

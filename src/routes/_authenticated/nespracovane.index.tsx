@@ -8,7 +8,15 @@ import { toast } from "sonner";
 import { Loader2, Upload, AlertTriangle, FileText } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { blocekDoNespracovanychFn, nahrajNespracovaneFn, nespracovaneFn } from "@/lib/faktero/nespracovane.functions";
+import {
+  blocekDoNespracovanychFn,
+  hromadneNespracovaneFn,
+  nahrajNespracovaneFn,
+  nespracovaneFn,
+  zmazNespracovaneFn,
+} from "@/lib/faktero/nespracovane.functions";
+import { JobPicker } from "@/components/faktero/JobPicker";
+import { potvrd } from "@/lib/potvrdenie";
 import { DRUHY_NESPRACOVANYCH } from "@/lib/faktero/nespracovane";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -54,6 +62,12 @@ function Stranka() {
   const [nahravam, setNahravam] = useState(0);
   const [nad, setNad] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const hromadne = useServerFn(hromadneNespracovaneFn);
+  const zmaz = useServerFn(zmazNespracovaneFn);
+  // Hromadné akcie — len doklady čakajúce v Nespracovaných (bločky zo skenu sa najprv otvoria).
+  const [vybrane, setVybrane] = useState<Set<string>>(new Set());
+  const [zmena, setZmena] = useState({ druh: "", jobId: "", stredisko: "", cinnost: "", predkontacia: "", clenenie: "" });
+  const [hromadneBusy, setHromadneBusy] = useState(false);
 
   async function obnov() {
     const cid = getActiveCompanyId();
@@ -106,6 +120,53 @@ function Stranka() {
     // Druh bločka zo skenu nie je istý (aj faktúra sa dá naskenovať) — určí sa po otvorení.
     ...(data?.blocky ?? []).map((b: any) => ({ ...b, kluc: `b-${b.id}`, stav: "vytazene", druh: null, chyba: null, subor: t("zo skenu") })),
   ].sort((a, b) => String(b.vytvorene).localeCompare(String(a.vytvorene)));
+
+  const vyberatelne = riadky.filter((r) => r.typ === "nespracovany" && r.stav !== "cita");
+  const prepniVyber = (id: string) =>
+    setVybrane((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+
+  async function pouziHromadne() {
+    const cid = getActiveCompanyId();
+    if (!cid || !vybrane.size) return;
+    const z = Object.fromEntries(Object.entries(zmena).filter(([, v]) => v.trim())) as Record<string, string>;
+    if (!Object.keys(z).length) return toast.error(t("Vyplňte aspoň jedno pole, ktoré sa má zmeniť."));
+    setHromadneBusy(true);
+    try {
+      const r = await hromadne({ data: { company_id: cid, ids: [...vybrane], zmena: z as any } });
+      toast.success(t("Zmenené doklady: {n}", { n: r.zmenene }));
+      setVybrane(new Set());
+      setZmena({ druh: "", jobId: "", stredisko: "", cinnost: "", predkontacia: "", clenenie: "" });
+      await obnov();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    } finally {
+      setHromadneBusy(false);
+    }
+  }
+
+  async function zmazHromadne() {
+    if (!vybrane.size) return;
+    if (!(await potvrd(t("Presunúť vybrané doklady ({n}) do koša?", { n: vybrane.size })))) return;
+    setHromadneBusy(true);
+    let ok = 0;
+    for (const id of vybrane) {
+      try {
+        await zmaz({ data: { id } });
+        ok++;
+      } catch (e: any) {
+        toast.error(e?.message ?? t("Nepodarilo sa"));
+      }
+    }
+    toast.success(t("V koši: {n}", { n: ok }));
+    setVybrane(new Set());
+    setHromadneBusy(false);
+    await obnov();
+  }
 
   async function otvor(r: any) {
     if (r.typ !== "blocek") return navigate({ to: "/nespracovane/$id", params: { id: r.id } });
@@ -193,10 +254,86 @@ function Stranka() {
           {t("Pretiahnite sem faktúry, zálohové faktúry, bločky či iné doklady (PDF alebo fotky) — aj viac naraz. Faktero ich prečíta a počkajú tu na zaradenie.")}
         </div>
 
+        {vybrane.size > 0 ? (
+          <div
+            role="region"
+            aria-label={t("Hromadná úprava")}
+            className="mb-3 flex flex-wrap items-end gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm"
+          >
+            <span className="font-medium">{t("Vybrané: {n}", { n: vybrane.size })}</span>
+            <label className="block">
+              <span className="text-xs text-muted-foreground">{t("Druh dokladu")}</span>
+              <select
+                value={zmena.druh}
+                onChange={(e) => setZmena({ ...zmena, druh: e.target.value })}
+                className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+              >
+                <option value="">{t("nemeniť")}</option>
+                {DRUHY_NESPRACOVANYCH.map((x) => (
+                  <option key={x.kluc} value={x.kluc}>
+                    {t(x.nazov)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <JobPicker value={zmena.jobId} onChange={(v) => setZmena({ ...zmena, jobId: v })} className="min-w-[12rem]" />
+            {(
+              [
+                ["predkontacia", "Predkontácia"],
+                ["clenenie", "Členenie DPH"],
+                ["stredisko", "Stredisko"],
+                ["cinnost", "Činnosť"],
+              ] as const
+            ).map(([k, n]) => (
+              <label key={k} className="block">
+                <span className="text-xs text-muted-foreground">{t(n)}</span>
+                <input
+                  value={zmena[k]}
+                  maxLength={30}
+                  placeholder={t("nemeniť")}
+                  onChange={(e) => setZmena({ ...zmena, [k]: e.target.value })}
+                  className="mt-1 block w-28 rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                />
+              </label>
+            ))}
+            <button
+              type="button"
+              disabled={hromadneBusy}
+              onClick={() => void pouziHromadne()}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            >
+              {hromadneBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("Zmeniť vybrané")}
+            </button>
+            <button
+              type="button"
+              disabled={hromadneBusy}
+              onClick={() => void zmazHromadne()}
+              className="rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-60"
+            >
+              {t("Do koša")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setVybrane(new Set())}
+              className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary"
+            >
+              {t("Zrušiť výber")}
+            </button>
+          </div>
+        ) : null}
+
         <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
+                <th className="w-8 p-3">
+                  <input
+                    type="checkbox"
+                    aria-label={t("Vybrať všetky")}
+                    checked={vyberatelne.length > 0 && vyberatelne.every((r) => vybrane.has(r.id))}
+                    onChange={(e) => setVybrane(e.target.checked ? new Set(vyberatelne.map((r) => r.id)) : new Set())}
+                  />
+                </th>
                 <th className="p-3">{t("Druh")}</th>
                 <th className="p-3">{t("Dodávateľ")}</th>
                 <th className="p-3">{t("Číslo")}</th>
@@ -209,14 +346,14 @@ function Stranka() {
             <tbody className="divide-y divide-border">
               {!data && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
                     {t("Načítavam…")}
                   </td>
                 </tr>
               )}
               {data && riadky.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
                     <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
                     {t("Všetko je spracované.")}
                   </td>
@@ -228,6 +365,16 @@ function Stranka() {
                   className="cursor-pointer hover:bg-muted/30"
                   onClick={() => void otvor(r)}
                 >
+                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                    {r.typ === "nespracovany" && r.stav !== "cita" ? (
+                      <input
+                        type="checkbox"
+                        aria-label={t("Vybrať doklad")}
+                        checked={vybrane.has(r.id)}
+                        onChange={() => prepniVyber(r.id)}
+                      />
+                    ) : null}
+                  </td>
                   <td className="p-3">
                     {druhText(r)}
                     {r.subor ? <div className="max-w-[16rem] truncate text-xs text-muted-foreground">{r.subor}</div> : null}

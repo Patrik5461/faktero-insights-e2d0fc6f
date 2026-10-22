@@ -99,6 +99,31 @@ export type UdajeNespracovaneho = {
   navrhAi?: Record<string, string>;
   /** Krátke zdôvodnenie návrhu AI („telekomunikačné služby → 518"). */
   navrhAiDovod?: string;
+  /**
+   * Pravidlo účtovania, ktoré doklad zaúčtovalo (doplnené samo podľa
+   * dodávateľa, alebo vybrané človekom). Vytvorený doklad ho dostane ako
+   * `pravidlo_id` — spúšťač potom iné pravidlo nepoužije.
+   */
+  pravidloId?: string;
+  /** Polia vyplnené pravidlom (pole → hodnota) — kým sa nezmenia, svieti pri nich hviezdička. */
+  zPravidla?: Record<string, string>;
+  /** Faktúra je už zaplatená — vytvorí sa ako uhradená. */
+  uhradene?: boolean;
+  /**
+   * Nastavenie zo skenera v appke (úhrada, kategória, zákazka, predkontácia,
+   * komentár). Uloží sa pri nahratí, aby platilo aj pre doklad, ktorý človek
+   * nechá v Nespracovaných a dokončí na webe.
+   */
+  predvolby?: PredvolbySkenu;
+};
+
+/** Nastavenie dokladu zo skenera — rovnaké polia ako `NastavenieSkenu` v appke. */
+export type PredvolbySkenu = {
+  uhrada?: string;
+  kategoria?: string;
+  zakazka?: string;
+  predkontacia?: string;
+  poznamka?: string;
 };
 
 const r2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
@@ -365,12 +390,33 @@ export function vyrovnajPolozky(u: UdajeNespracovaneho): UdajeNespracovaneho {
   };
 }
 
+/** Kontroly, ktoré si firma nastavuje (Nespracované doklady v nastaveniach predkontácií). */
+export type VolbyKontroly = {
+  /** Odchýlka položiek od sumy v centoch, ktorá doklad nezastaví. */
+  toleranciaCenty?: number;
+  /** `false` = splatnosť pred vystavením doklad nezastaví. */
+  kontrolaSplatnosti?: boolean;
+};
+
+/**
+ * Rozdiel položiek, ktorý doklad nezastaví: pri hotovosti zaokrúhlenie na
+ * 5 centov (do 2 centov), inak tolerancia firmy. Doklad sa dá vytvoriť a
+ * rozdiel doplní vyrovnávacia položka.
+ */
+export function rozdielVTolerancii(u: UdajeNespracovaneho, volby: VolbyKontroly = {}): boolean {
+  const r = rozdielPoloziek(u);
+  if (!r) return false;
+  const tol = Math.max(u.platba === "hotovost" ? 0.02 : 0, (Number(volby.toleranciaCenty) || 0) / 100);
+  return Math.abs(r.rozdiel) <= tol + 0.0001;
+}
+
 /** Povinné polia, ktoré chýbajú — zvýraznia sa červenou, bez nich sa doklad nevytvorí. */
 export function chybajuce(
   druh: DruhNespracovaneho | null,
   u: UdajeNespracovaneho,
   /** Polia, ktoré firma vyžaduje: zakazka, stredisko, cinnost. */
   povinne: string[] = [],
+  volby: VolbyKontroly = {},
 ): string[] {
   const out: string[] = [];
   if (!druh) return ["druh"];
@@ -386,14 +432,14 @@ export function chybajuce(
     if (!u.splatnost) out.push("splatnost");
     if (druh === "dobropis" && !u.opravuje.trim()) out.push("opravuje");
     // Splatnosť pred vystavením je takmer vždy preklep v dátume (rok, mesiac).
-    if (u.splatnost && u.datumVystavenia && u.splatnost < u.datumVystavenia) out.push("splatnostPred");
+    if (volby.kontrolaSplatnosti !== false && u.splatnost && u.datumVystavenia && u.splatnost < u.datumVystavenia)
+      out.push("splatnostPred");
   }
   if (povinne.includes("zakazka") && !u.jobId.trim()) out.push("zakazka");
   if (povinne.includes("stredisko") && !u.kody.stredisko.trim()) out.push("stredisko");
   if (povinne.includes("cinnost") && !u.kody.cinnost.trim()) out.push("cinnost");
-  // Položky musia sedieť so sumou; pri hotovosti je rozdiel zaokrúhlenie na 5 centov.
-  const rozdiel = rozdielPoloziek(u);
-  if (rozdiel && !(u.platba === "hotovost" && Math.abs(rozdiel.rozdiel) <= 0.02)) out.push("polozky");
+  // Položky musia sedieť so sumou; malý rozdiel (zaokrúhlenie, tolerancia firmy) doplní vyrovnávacia položka.
+  if (rozdielPoloziek(u) && !rozdielVTolerancii(u, volby)) out.push("polozky");
   return out;
 }
 
@@ -616,4 +662,19 @@ export function zhrnutieBlocku(b: Record<string, any>) {
     mena: (b.currency as string) || "EUR",
     vytvorene: b.created_at as string,
   };
+}
+
+/** Hromadná úprava — vyplnené polia prepíšu údaje dokladu, prázdne nechajú tak. */
+export function hromadnaZmenaUdajov(
+  udaje: unknown,
+  zmena: { jobId?: string; stredisko?: string; cinnost?: string; predkontacia?: string; clenenie?: string },
+): UdajeNespracovaneho {
+  const u = nacitajUdaje(udaje);
+  const h = (v: string | undefined) => (v ?? "").trim();
+  const kody = { ...u.kody };
+  if (h(zmena.stredisko)) kody.stredisko = h(zmena.stredisko);
+  if (h(zmena.cinnost)) kody.cinnost = h(zmena.cinnost);
+  if (h(zmena.predkontacia)) kody.predkontacia = h(zmena.predkontacia);
+  if (h(zmena.clenenie)) kody.clenenie = h(zmena.clenenie);
+  return { ...u, kody, ...(h(zmena.jobId) ? { jobId: h(zmena.jobId) } : {}) };
 }
