@@ -221,7 +221,8 @@ function EditInvoice() {
     for (const it of riadkyZapis) {
       const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
       sub += s;
-      vat += it.prenesenie ? 0 : s * (Number(it.vat_rate) / 100);
+      // Prenesenie na celej faktúre (reverse_charge) — daň neuplatňuje žiadny riadok.
+      vat += inv?.reverse_charge || it.prenesenie ? 0 : s * (Number(it.vat_rate) / 100);
     }
     // Zľava na doklad prenásobí základ aj daň rovnakým koeficientom, takže
     // pomer medzi sadzbami DPH ostane nedotknutý.
@@ -234,7 +235,7 @@ function EditInvoice() {
     sub = sub * k;
     vat = vat * k;
     return { subtotal: sub, vat_total: vat, total: sub + vat, medzisucet, zlava };
-  }, [riadkyZapis, form.discount_type, form.discount_value]);
+  }, [riadkyZapis, form.discount_type, form.discount_value, inv?.reverse_charge]);
   /** Súčty, ako ich vidí človek — dobropis bez mínusu. */
   const zobrazene = {
     medzisucet: sumaFormulara(totals.medzisucet, znForm),
@@ -325,7 +326,9 @@ function EditInvoice() {
 
       const rows = riadkyZapis.map((it, idx) => {
         const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
-        const v = it.prenesenie ? 0 : s * (Number(it.vat_rate) / 100);
+        // Ako pri vystavení (`riadokNaZapis`): prenesenie na celej faktúre aj na riadku = 0 %.
+        const pdp = Boolean(inv?.reverse_charge || it.prenesenie);
+        const v = pdp ? 0 : s * (Number(it.vat_rate) / 100);
         return {
           invoice_id: id,
           position: idx,
@@ -335,7 +338,7 @@ function EditInvoice() {
           unit: it.unit,
           unit_price: it.unit_price,
           discount_percent: percentoZlavy(it.discount_percent),
-          vat_rate: it.prenesenie ? 0 : it.vat_rate,
+          vat_rate: pdp ? 0 : it.vat_rate,
           prenesenie: Boolean(it.prenesenie),
           stock_item_id: it.stock_item_id ?? null,
           // Väzba na cenník sa pri úprave nesmie stratiť (predtým sa zahodila).
