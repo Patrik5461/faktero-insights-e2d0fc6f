@@ -28,6 +28,11 @@ export type NastaveniaNespracovanych = {
   polozkyBlockov: boolean;
   /** Číslo dodacieho listu sa z dokladu preberá. */
   dodaciList: boolean;
+  /**
+   * Doklad so sumami vo viacerých menách (napr. CZK aj EUR, alebo EUR
+   * s prepočtom na CZK) sa vyťaží v domácej mene firmy (SK EUR, CZ CZK).
+   */
+  domacaMena: boolean;
 };
 
 export const PREDVOLENE_NESPRACOVANE: NastaveniaNespracovanych = {
@@ -38,6 +43,7 @@ export const PREDVOLENE_NESPRACOVANE: NastaveniaNespracovanych = {
   polozkyFaktur: true,
   polozkyBlockov: true,
   dodaciList: true,
+  domacaMena: true,
 };
 
 /** Najväčšia povolená tolerancia — viac by už nebolo zaokrúhlenie, ale chyba v sumách. */
@@ -65,6 +71,7 @@ export function nastaveniaNespracovanych(uctovanieNastavenia: unknown): Nastaven
     polozkyFaktur: ano(n.polozkyFaktur, p.polozkyFaktur),
     polozkyBlockov: ano(n.polozkyBlockov, p.polozkyBlockov),
     dodaciList: ano(n.dodaciList, p.dodaciList),
+    domacaMena: ano(n.domacaMena, p.domacaMena),
   };
 }
 

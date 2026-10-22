@@ -1,6 +1,7 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
+import { SpracovalDokladu } from "@/components/faktero/SpracovalDokladu";
 import { jePalivo } from "@/lib/faktero/palivo";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
@@ -994,6 +995,9 @@ function NovyDokladPage() {
                   <SchvalovaniePanel companyId={cid} agenda="doklad" id={search.id} />
                   <div className="mt-3">
                     <KomentarePanel companyId={cid} agenda="doklad" id={search.id} />
+                  </div>
+                  <div className="mt-3">
+                    <SpracovalDokladu companyId={cid} agenda="doklad" row={ulozeny} />
                   </div>
                   <div className="mt-3">
                     <HistoriaDokladu companyId={cid} agenda="doklad" id={search.id} />

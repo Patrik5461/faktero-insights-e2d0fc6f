@@ -20,6 +20,9 @@ import { potvrd } from "@/lib/potvrdenie";
 import { DRUHY_NESPRACOVANYCH } from "@/lib/faktero/nespracovane";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
+import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
+import { nahralDokladu } from "@/lib/faktero/spracoval";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nespracované doklady — Faktero") }] }),
@@ -68,6 +71,11 @@ function Stranka() {
   const [vybrane, setVybrane] = useState<Set<string>>(new Set());
   const [zmena, setZmena] = useState({ druh: "", jobId: "", stredisko: "", cinnost: "", predkontacia: "", clenenie: "" });
   const [hromadneBusy, setHromadneBusy] = useState(false);
+  // Naposledy otvorený doklad — zvýraznený riadok po návrate z detailu.
+  const posledny = usePoslednyOtvoreny("nespracovane");
+  // Mená kolegov pre stĺpec „Nahral“ (profily číta server po overení členstva).
+  const nacitajMena = useServerFn(menaClenovFirmy);
+  const [mena, setMena] = useState<Record<string, string>>({});
 
   async function obnov() {
     const cid = getActiveCompanyId();
@@ -80,6 +88,11 @@ function Stranka() {
   }
   useEffect(() => {
     void obnov();
+    const cid = getActiveCompanyId();
+    if (cid)
+      nacitajMena({ data: { company_id: cid } })
+        .then((m) => setMena(m as Record<string, string>))
+        .catch(() => setMena({}));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -169,6 +182,7 @@ function Stranka() {
   }
 
   async function otvor(r: any) {
+    posledny.zapamataj(r.id);
     if (r.typ !== "blocek") return navigate({ to: "/nespracovane/$id", params: { id: r.id } });
     // Bloček zo skenu sa presunie medzi nespracované, aby sa dal zaradiť ako faktúra.
     try {
@@ -191,6 +205,9 @@ function Stranka() {
   const zdrojText = (r: any) => (
     <span className="inline-flex items-center gap-1">
       {t(ZDROJ[r.zdroj] ?? r.zdroj)}
+      {nahralDokladu(r.zdroj, r.nahral, mena) ? (
+        <span className="text-foreground/80">· {nahralDokladu(r.zdroj, r.nahral, mena)}</span>
+      ) : null}
       {r.typ === "nespracovany" ? (
         <ZdrojovyMailTlacidlo druh="nespracovany" id={r.id} inboxMessageId={r.inboxMessageId} ikona />
       ) : null}
@@ -339,7 +356,7 @@ function Stranka() {
                 <th className="p-3">{t("Číslo")}</th>
                 <th className="p-3">{t("Dátum")}</th>
                 <th className="p-3 text-right">{t("Suma")}</th>
-                <th className="p-3">{t("Zdroj")}</th>
+                <th className="p-3">{t("Nahral")}</th>
                 <th className="p-3">{t("Stav")}</th>
               </tr>
             </thead>
@@ -362,7 +379,8 @@ function Stranka() {
               {riadky.map((r) => (
                 <tr
                   key={r.kluc}
-                  className="cursor-pointer hover:bg-muted/30"
+                  {...posledny.riadok(r.id)}
+                  className={`cursor-pointer hover:bg-muted/30 ${posledny.riadok(r.id).className}`}
                   onClick={() => void otvor(r)}
                 >
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
@@ -405,13 +423,14 @@ function Stranka() {
           {riadky.map((r) => (
             <div
               key={r.kluc}
+              {...posledny.karta(r.id)}
               role="button"
               tabIndex={0}
               onClick={() => void otvor(r)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") void otvor(r);
               }}
-              className="block cursor-pointer rounded-xl border border-border bg-card p-3 hover:bg-muted/30"
+              className={`block cursor-pointer rounded-xl border border-border p-3 hover:bg-muted/30 ${posledny.karta(r.id).className || "bg-card"}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">

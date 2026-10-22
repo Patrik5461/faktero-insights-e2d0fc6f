@@ -17,14 +17,14 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
     const [{ data: rows }, { data: blocky }] = await Promise.all([
       supabase
         .from("nespracovane_doklady")
-        .select("id, zdroj, stav, druh, file_name, udaje, chyba, created_at, inbox_message_id")
+        .select("id, zdroj, stav, druh, file_name, udaje, chyba, created_at, created_by, inbox_message_id")
         .eq("company_id", data.company_id)
         .order("created_at", { ascending: false })
         .limit(300),
       // Bločky z appky a formulára čakajú na kontrolu v Dokladoch — patria sem tiež.
       supabase
         .from("expense_documents")
-        .select("id, supplier_name, document_number, total_amount, currency, issue_date, created_at, source")
+        .select("id, supplier_name, document_number, total_amount, currency, issue_date, created_at, created_by, source")
         .eq("company_id", data.company_id)
         .eq("status", "new")
         .order("created_at", { ascending: false })

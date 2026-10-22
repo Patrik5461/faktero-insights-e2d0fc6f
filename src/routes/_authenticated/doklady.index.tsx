@@ -59,6 +59,9 @@ import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
+import { spracovanieDokladu, menoSpracovatela } from "@/lib/faktero/spracoval";
+import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doklady — Faktero") }] }),
@@ -102,6 +105,7 @@ const STLPCE_DOKLADOV: StlpecZoznamu[] = [
   { kluc: "platba", nazov: "Spôsob úhrady", predvoleny: false },
   { kluc: "stav", nazov: "Stav", povinny: true },
   { kluc: "zdroj", nazov: "Zdroj" },
+  { kluc: "spracoval", nazov: "Spracoval" },
   { kluc: "uhrada", nazov: "Úhrada z účtu" },
 ];
 
@@ -146,6 +150,19 @@ function DokladyPage() {
   /** Počet nespracovaných pre záložku — platí za všetky mesiace. */
   const [nespracovanych, setNespracovanych] = useState<number | null>(null);
   const [menimStav, setMenimStav] = useState(false);
+  // Naposledy otvorený doklad — zvýraznený riadok po návrate z detailu.
+  const posledny = usePoslednyOtvoreny("doklady");
+  // Mená kolegov pre stĺpec „Spracoval“ (profily číta server po overení členstva).
+  const nacitajMena = useServerFn(menaClenovFirmy);
+  const [mena, setMena] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    nacitajMena({ data: { company_id: cid } })
+      .then((m) => setMena(m as Record<string, string>))
+      .catch(() => setMena({}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   /** Ktorý doklad je uhradený z účtu, kedy a ktorým pohybom. */
   const [uhrady, setUhrady] = useState<Record<string, { datum: string; transactionId: string }>>(
     {},
@@ -892,13 +909,18 @@ function DokladyPage() {
                   {je("platba") && <th className="px-3 py-2 text-left">{rad.hlavicka("platba", t("Spôsob úhrady"))}</th>}
                   <th className="px-3 py-2 text-left">{rad.hlavicka("stav", t("Stav"))}</th>
                   {je("zdroj") && <th className="px-3 py-2 text-left">{rad.hlavicka("zdroj", t("Zdroj"))}</th>}
+                  {je("spracoval") && <th className="hidden px-3 py-2 text-left md:table-cell">{t("Spracoval")}</th>}
                   {je("uhrada") && <th className="px-3 py-2 text-left">{t("Úhrada z účtu")}</th>}
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {rad.zoradene.map((r) => (
-                  <tr key={r.id} className="border-t border-border">
+                  <tr
+                    key={r.id}
+                    {...posledny.riadok(r.id)}
+                    className={`border-t border-border ${posledny.riadok(r.id).className}`}
+                  >
                     <td className="px-3 py-2">
                       <input
                         type="checkbox"
@@ -912,7 +934,10 @@ function DokladyPage() {
                     <td className="px-3 py-2">
                       <button
                         onClick={() =>
-                          navigate({ to: "/doklady/novy", search: { id: r.id } as any })
+                          {
+                          posledny.zapamataj(r.id);
+                          navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+                        }
                         }
                         className="text-left hover:underline"
                       >
@@ -1041,7 +1066,10 @@ function DokladyPage() {
                           ) : (
                             <button
                               onClick={() =>
-                                navigate({ to: "/doklady/novy", search: { id: r.id } as any })
+                                {
+                          posledny.zapamataj(r.id);
+                          navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+                        }
                               }
                               className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-secondary"
                             >
@@ -1063,6 +1091,27 @@ function DokladyPage() {
                     {je("zdroj") && (
                       <td className="px-3 py-2 text-xs text-muted-foreground">
                         {t(ZDROJ_DOKLADU[r.source] ?? r.source)}
+                      </td>
+                    )}
+                    {je("spracoval") && (
+                      <td className="hidden px-3 py-2 text-xs md:table-cell">
+                        {(() => {
+                          const sp = spracovanieDokladu(r, "doklad");
+                          if (!sp) return <span className="text-muted-foreground">—</span>;
+                          return (
+                            <span className="block whitespace-nowrap">
+                              {menoSpracovatela(sp, mena) ?? (sp.kto ? t("kolega") : "—")}
+                              {sp.kedy ? (
+                                <span className="block text-muted-foreground">
+                                  {new Date(sp.kedy).toLocaleString(lokalJazyka(jazyk), {
+                                    dateStyle: "short",
+                                    timeStyle: "short",
+                                  })}
+                                </span>
+                              ) : null}
+                            </span>
+                          );
+                        })()}
                       </td>
                     )}
                     {je("uhrada") && (

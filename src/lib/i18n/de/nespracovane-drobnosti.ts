@@ -1,0 +1,13 @@
+// Nespracované doklady — drobnosti: naposledy otvorený doklad, stĺpce „Nahral“ a „Spracoval“,
+// uprednostnenie domácej meny pri vyťažení (Účtovníctvo → Predkontácie) a manuál v Pomoci.
+export default {
+  Nahral: "Hochgeladen von",
+  Spracoval: "Verarbeitet von",
+  "Uprednostniť domácu menu pri vyťažovaní": "Inlandswährung beim Auslesen bevorzugen",
+  "Keď sú na doklade sumy vo viacerých menách (napr. v cudzej mene aj s prepočtom), vyťažia sa sumy v domácej mene firmy. Doklady len v jednej mene sa nemenia.":
+    "Enthält ein Beleg Beträge in mehreren Währungen (z. B. in Fremdwährung mit Umrechnung), werden die Beträge in der Inlandswährung des Unternehmens ausgelesen. Belege in nur einer Währung bleiben unverändert.",
+  "<0>Naposledy otvorený doklad</0> je po návrate z detailu v zozname zvýraznený a zoznam k nemu doroluje — aj keď ste ho medzitým vytvorili a pokračovali ďalším. Rovnako to funguje v Bločkoch a Prijatých faktúrach. Stĺpec <1>Nahral</1> ukazuje, odkiaľ doklad prišiel a kto ho nahral. V zozname bločkov a prijatých faktúr je stĺpec <2>Spracoval</2> — kto doklad vytvoril z Nespracovaných a kedy; to isté je aj v detaile dokladu.":
+    "Der <0>zuletzt geöffnete Beleg</0> ist nach der Rückkehr aus dem Detail in der Liste hervorgehoben, und die Liste scrollt zu ihm — auch wenn Sie ihn inzwischen angelegt und mit dem nächsten weitergemacht haben. Genauso funktioniert es bei Kassenbons und Eingangsrechnungen. Die Spalte <1>Hochgeladen von</1> zeigt, woher der Beleg kam und wer ihn hochgeladen hat. In der Liste der Kassenbons und Eingangsrechnungen gibt es die Spalte <2>Verarbeitet von</2> — wer den Beleg aus den unverarbeiteten Belegen angelegt hat und wann; dasselbe steht auch im Detail des Belegs.",
+  "Voľba <0>Uprednostniť domácu menu pri vyťažovaní</0> je predvolene zapnutá. Keď sú na doklade sumy vo viacerých menách — napríklad faktúra v cudzej mene s prepočtom alebo rekapituláciou DPH v domácej mene — Faktero vyťaží sumy v domácej mene firmy (slovenská firma EUR, česká CZK). Doklad len v jednej mene sa číta ako doteraz. Keď sú ceny položiek len v cudzej mene, položky čakajú vypnuté a doklad ide podľa súčtov.":
+    "Die Option <0>Inlandswährung beim Auslesen bevorzugen</0> ist standardmäßig eingeschaltet. Enthält ein Beleg Beträge in mehreren Währungen — etwa eine Rechnung in Fremdwährung mit Umrechnung oder einer USt-Zusammenfassung in der Inlandswährung —, liest Faktero die Beträge in der Inlandswährung des Unternehmens aus (slowakisches Unternehmen EUR, tschechisches CZK). Ein Beleg in nur einer Währung wird wie bisher gelesen. Sind die Positionspreise nur in der Fremdwährung angegeben, bleiben die Positionen ausgeschaltet und der Beleg wird nach den Summen verbucht.",
+};

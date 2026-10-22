@@ -88,6 +88,14 @@ const sections: HelpSection[] = [
           prípadne ich presuňte do koša. Prázdne pole sa nemení.
         </p>
         <p>
+          <strong>Naposledy otvorený doklad</strong> je po návrate z detailu v zozname zvýraznený a
+          zoznam k nemu doroluje — aj keď ste ho medzitým vytvorili a pokračovali ďalším. Rovnako to
+          funguje v Bločkoch a Prijatých faktúrach. Stĺpec <strong>Nahral</strong> ukazuje, odkiaľ
+          doklad prišiel a kto ho nahral. V zozname bločkov a prijatých faktúr je stĺpec{" "}
+          <strong>Spracoval</strong> — kto doklad vytvoril z Nespracovaných a kedy; to isté je aj v
+          detaile dokladu.
+        </p>
+        <p>
           Bločky odfotené v appke alebo zadané vo formulári sú v tom istom zozname — otvoria sa vo
           formulári dokladu, kde ich spracujete tlačidlom Spracovať. Spracovaný bloček sa presunie
           do <Link to="/doklady">Doklady → Bločky</Link>; tam sú len skontrolované bločky, rozdelené
@@ -122,6 +130,13 @@ const sections: HelpSection[] = [
           je vytvorená faktúra rovno zaúčtovaná, či sa po vytvorení otvorí ďalší doklad, kontrolu
           splatnosti, toleranciu zaokrúhlenia položiek v centoch, používanie vyťažených položiek
           faktúr a bločkov a preberanie čísla dodacieho listu.
+        </p>
+        <p>
+          Voľba <strong>Uprednostniť domácu menu pri vyťažovaní</strong> je predvolene zapnutá. Keď
+          sú na doklade sumy vo viacerých menách — napríklad faktúra v cudzej mene s prepočtom alebo
+          rekapituláciou DPH v domácej mene — Faktero vyťaží sumy v domácej mene firmy (slovenská
+          firma EUR, česká CZK). Doklad len v jednej mene sa číta ako doteraz. Keď sú ceny položiek
+          len v cudzej mene, položky čakajú vypnuté a doklad ide podľa súčtov.
         </p>
         <p>
           Keď sú položky vyčítané úplne zle, stlačte <strong>Vypnúť položky</strong>. Doklad sa

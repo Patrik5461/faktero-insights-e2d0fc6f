@@ -36,6 +36,9 @@ import {
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
+import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
+import { spracovanieDokladu, menoSpracovatela } from "@/lib/faktero/spracoval";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 import {
   navrhniParovaniePrijatych,
   potvrdParovaniePrijatej,
@@ -133,12 +136,15 @@ const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
   { kluc: "suma", nazov: "Suma" },
   { kluc: "predkontacia", nazov: "Predkontácia / členenie", predvoleny: false },
   { kluc: "zapisal", nazov: "Zapísal" },
+  { kluc: "spracoval", nazov: "Spracoval" },
   { kluc: "stav", nazov: "Stav" },
 ];
 
 function PurchaseInvoicesPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const navigate = useNavigate();
+  // Naposledy otvorená faktúra — zvýraznený riadok po návrate z detailu.
+  const posledny = usePoslednyOtvoreny("prijate-faktury");
   const [rows, setRows] = useState<any[]>([]);
   // Tá istá faktúra v zozname dvakrát (prišla mailom znova) — označí sa pri čísle.
   const duplicity = useMemo(() => duplicityVZozname(rows), [rows]);
@@ -898,6 +904,7 @@ function PurchaseInvoicesPage() {
                 {je("suma") && <th className="p-3 text-right">{rad.hlavicka("suma", t("Suma"))}</th>}
                 {je("predkontacia") && <th className="p-3">{rad.hlavicka("predkontacia", t("Predkontácia"))}</th>}
                 {je("zapisal") && <th className="p-3">{t("Zapísal")}</th>}
+                {je("spracoval") && <th className="hidden p-3 md:table-cell">{t("Spracoval")}</th>}
                 {je("stav") && <th className="p-3">{rad.hlavicka("stav", t("Stav"))}</th>}
               </tr>
             </thead>
@@ -931,8 +938,12 @@ function PurchaseInvoicesPage() {
                 */
                 <tr
                   key={r.id}
-                  className="cursor-pointer hover:bg-muted/30"
-                  onClick={() => navigate({ to: "/prijate-faktury/$id", params: { id: r.id } })}
+                  {...posledny.riadok(r.id)}
+                  className={`cursor-pointer hover:bg-muted/30 ${posledny.riadok(r.id).className}`}
+                  onClick={() => {
+                    posledny.zapamataj(r.id);
+                    navigate({ to: "/prijate-faktury/$id", params: { id: r.id } });
+                  }}
                 >
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <input
@@ -1051,6 +1062,11 @@ function PurchaseInvoicesPage() {
                   {je("zapisal") && (
                     <td className="p-3">
                       <Zapisal zdroj={r.source} autor={r.created_by ? mena[r.created_by] : null} />
+                    </td>
+                  )}
+                  {je("spracoval") && (
+                    <td className="hidden p-3 text-xs md:table-cell">
+                      <Spracoval s={spracovanieDokladu(r, "prijata")} mena={mena} loc={lokalJazyka(jazyk)} />
                     </td>
                   )}
                   {je("stav") && (
@@ -1258,6 +1274,30 @@ function Zapisal({ zdroj, autor }: { zdroj?: string | null; autor?: string | nul
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
       <User className="h-3.5 w-3.5" /> {autor || t("Ručne")}
+    </span>
+  );
+}
+
+/** Kto faktúru vytvoril z Nespracovaných dokladov a kedy. */
+function Spracoval({
+  s,
+  mena,
+  loc,
+}: {
+  s: ReturnType<typeof spracovanieDokladu>;
+  mena: Record<string, string>;
+  loc: string;
+}) {
+  const { t } = useT();
+  if (!s) return <span className="text-muted-foreground">—</span>;
+  return (
+    <span className="block whitespace-nowrap">
+      {menoSpracovatela(s, mena) ?? (s.kto ? t("kolega") : "—")}
+      {s.kedy ? (
+        <span className="block text-muted-foreground">
+          {new Date(s.kedy).toLocaleString(loc, { dateStyle: "short", timeStyle: "short" })}
+        </span>
+      ) : null}
     </span>
   );
 }

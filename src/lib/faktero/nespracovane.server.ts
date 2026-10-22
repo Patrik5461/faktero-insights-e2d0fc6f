@@ -31,6 +31,23 @@ export async function nastaveniaNespracovanychFirmy(supabase: Klient, companyId:
 }
 
 /**
+ * Voľby čítania dokladu cez AI podľa firmy — uprednostnená domáca mena
+ * (`nespracovane.domacaMena`, predvolene zapnuté; SK EUR, CZ CZK).
+ */
+export async function volbyCitaniaFirmy(supabase: Klient, companyId: string) {
+  const { nastaveniaNespracovanych } = await import("./nespracovane-nastavenia");
+  const { menaPreVytazenie } = await import("./vytazenie-mena");
+  const { data } = await supabase
+    .from("companies")
+    .select("country, uctovanie_nastavenia")
+    .eq("id", companyId)
+    .maybeSingle();
+  return {
+    domacaMena: menaPreVytazenie(nastaveniaNespracovanych(data?.uctovanie_nastavenia).domacaMena, data?.country),
+  };
+}
+
+/**
  * Vyťažené údaje po úprave podľa firmy (vypnuté položky, dodací list) a s
  * nastavením zo skenera — dopĺňa sa len to, čo doklad nepovedal.
  */
@@ -143,7 +160,11 @@ export async function vytazNespracovany(id: string): Promise<void> {
     if (error || !subor) throw new Error("Súbor sa nepodarilo načítať.");
     const bajty = Buffer.from(await subor.arrayBuffer());
     const { precitajDoklad } = await import("./mail-prijem.server");
-    const ai = await precitajDoklad(bajty.toString("base64"), r.file_mime ?? "application/pdf");
+    const ai = await precitajDoklad(
+      bajty.toString("base64"),
+      r.file_mime ?? "application/pdf",
+      r.company_id ? await volbyCitaniaFirmy(supabaseAdmin, r.company_id) : null,
+    );
     const dnes = new Date().toISOString().slice(0, 10);
     const povodne = nacitajUdaje(r.udaje);
     const druh = r.druh ?? navrhDruhu(ai, r.file_name);
@@ -322,6 +343,11 @@ export async function vytvorDoklad(
       if (cesta) await supabase.storage.from("purchase-invoices").remove([cesta]);
       throw new Error(error.message);
     }
+    /*
+      Kto klikol Vytvoriť (stĺpec „Spracoval“) — `created_by` ostáva ten, kto
+      doklad nahral. Zvlášť, aby chýbajúci stĺpec nezablokoval vytvorenie.
+    */
+    await supabase.from("purchase_invoices").update({ spracoval: userId, spracovane_at: teraz }).eq("id", data.id);
     /*
       Vytvorením je faktúra skontrolovaná — keď sa dá určiť predkontácia aj
       členenie (vlastné, z pravidla, ktoré doplnil spúšťač, z kategórie alebo

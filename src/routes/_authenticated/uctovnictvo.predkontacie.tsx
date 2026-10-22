@@ -477,6 +477,11 @@ function Predvolene({
               "Preberať číslo dodacieho listu z dokladu",
               "",
             ],
+            [
+              "domacaMena",
+              "Uprednostniť domácu menu pri vyťažovaní",
+              "Keď sú na doklade sumy vo viacerých menách (napr. v cudzej mene aj s prepočtom), vyťažia sa sumy v domácej mene firmy. Doklady len v jednej mene sa nemenia.",
+            ],
           ] as const
         ).map(([k, n, popis]) => (
           <label key={k} className="flex items-start gap-2">

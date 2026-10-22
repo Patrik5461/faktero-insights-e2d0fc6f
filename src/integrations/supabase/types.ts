@@ -6544,6 +6544,8 @@ export type Database = {
           pravidlo_id: string | null
           zauctovane_at: string | null
           zauctoval: string | null
+          spracoval: string | null
+          spracovane_at: string | null
           exported_at: string | null
           povodna_splatnost: string | null
           predlzenie_poznamka: string | null
@@ -6645,6 +6647,8 @@ export type Database = {
           pravidlo_id?: string | null
           zauctovane_at?: string | null
           zauctoval?: string | null
+          spracoval?: string | null
+          spracovane_at?: string | null
           exported_at?: string | null
           povodna_splatnost?: string | null
           predlzenie_poznamka?: string | null
@@ -6746,6 +6750,8 @@ export type Database = {
           pravidlo_id?: string | null
           zauctovane_at?: string | null
           zauctoval?: string | null
+          spracoval?: string | null
+          spracovane_at?: string | null
           exported_at?: string | null
           povodna_splatnost?: string | null
           predlzenie_poznamka?: string | null

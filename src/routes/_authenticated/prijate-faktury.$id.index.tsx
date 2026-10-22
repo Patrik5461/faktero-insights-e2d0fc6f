@@ -58,6 +58,7 @@ import {
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
 import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
+import { SpracovalDokladu } from "@/components/faktero/SpracovalDokladu";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
@@ -589,6 +590,7 @@ function PurchaseInvoiceDetail() {
             )}
             {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
             {!navrh && <KomentarePanel companyId={row.company_id} agenda="prijata" id={row.id} />}
+            {!navrh && <SpracovalDokladu companyId={row.company_id} agenda="prijata" row={row} />}
             {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} />}
             <PrilohyFaktury druh="purchase_invoice" dokladId={row.id} mozeMenit={!row.exported_at} />
             {presunPrilohy && (

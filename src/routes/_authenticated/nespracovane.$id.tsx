@@ -40,6 +40,8 @@ import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
 import { potvrd } from "@/lib/potvrdenie";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
+import { zapamatajOtvoreny } from "@/lib/faktero/posledny-otvoreny";
+import { getActiveCompanyId } from "@/lib/faktero/active-company";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nespracovaný doklad — Faktero") }] }),
@@ -88,6 +90,8 @@ function Detail() {
   useEffect(() => {
     setD(null);
     setU(null);
+    // Naposledy otvorený — zoznam ho po návrate zvýrazní (aj po „Vytvoriť“ a prechode na ďalší).
+    zapamatajOtvoreny("nespracovane", getActiveCompanyId(), id);
     void obnov();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

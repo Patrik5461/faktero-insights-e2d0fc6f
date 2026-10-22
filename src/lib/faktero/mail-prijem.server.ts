@@ -142,6 +142,7 @@ položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie s
 export async function precitajDoklad(
   base64: string,
   mimeType: string,
+  volby?: import("./vytazenie-mena").VolbyCitania | null,
 ): Promise<Record<string, unknown> | null> {
   /*
     Faktúra so strojovými údajmi (ISDOC, ZUGFeRD / Factur-X, UBL — vložené v
@@ -157,7 +158,9 @@ export async function precitajDoklad(
   }
   try {
     const { aiVision } = await import("./ai.server");
-    const odpoved = await aiVision(base64, mimeType, PROMPT, { ucel: "doklad-z-posty" });
+    // Uprednostnená domáca mena firmy (nastavenie Nespracovaných) — doplnok pokynu.
+    const { pokynCitania } = await import("./vytazenie-mena");
+    const odpoved = await aiVision(base64, mimeType, pokynCitania(PROMPT, volby), { ucel: "doklad-z-posty" });
     const json = odpoved.match(/\{[\s\S]*\}/)?.[0];
     return json ? JSON.parse(json) : null;
   } catch (e: any) {
@@ -434,9 +437,16 @@ export async function spracujPrijatyMail(
   */
   const { data: firma } = await supabaseAdmin
     .from("companies")
-    .select("mail_povoleni_odosielatelia, ico, ic_dph, name")
+    .select("mail_povoleni_odosielatelia, ico, ic_dph, name, country, uctovanie_nastavenia")
     .eq("id", adresa.company_id)
     .maybeSingle();
+  // Uprednostnená domáca mena pri vyťažení (nastavenie Nespracovaných dokladov).
+  const volbyCitania = await (async () => {
+    const { nastaveniaNespracovanych } = await import("./nespracovane-nastavenia");
+    const { menaPreVytazenie } = await import("./vytazenie-mena");
+    const zapnute = nastaveniaNespracovanych((firma as any)?.uctovanie_nastavenia).domacaMena;
+    return { domacaMena: menaPreVytazenie(zapnute, (firma as any)?.country) };
+  })();
   const firmaUdaje = {
     ico: String((firma as any)?.ico ?? "").replace(/\s/g, ""),
     icDph: String((firma as any)?.ic_dph ?? "")
@@ -630,7 +640,7 @@ export async function spracujPrijatyMail(
       const ai = uz
         ? uz.ai
         : ((await zXmlVedla(priloha).catch(() => null)) ??
-          (await precitajDoklad(bajty.toString("base64"), mime)));
+          (await precitajDoklad(bajty.toString("base64"), mime, volbyCitania)));
 
       /*
         Z prílohy, z ktorej sa nedá prečítať ani dodávateľ, ani číslo, ani

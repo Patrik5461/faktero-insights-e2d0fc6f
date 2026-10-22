@@ -327,6 +327,13 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
       ...(p.reverse_charge === true ? { pdp: true } : {}),
     }));
   u.prenesenie = jePrenesenieZAi(ai, u.polozky);
+  /*
+    Sumy vyťažené v domácej mene, ceny položiek v inej (uprednostnená domáca
+    mena, pozri `vytazenie-mena.ts`): položky by so sumami nesedeli — doklad
+    ide podľa súčtov a položky sa dajú pri doklade zapnúť.
+  */
+  const menaPoloziek = t(ai.items_currency, 3).toUpperCase();
+  if (u.polozky.length && /^[A-Z]{3}$/.test(menaPoloziek) && menaPoloziek !== u.mena) u.polozkyVypnute = true;
   // Spôsob platby z bločku („KARTA“, „HOTOVOSŤ“) — bez neho sa bloček neuloží.
   const platba = t(ai.payment_method, 10).toLowerCase();
   if (platba === "hotovost" || platba === "karta" || platba === "prevod") u.platba = platba;
@@ -645,6 +652,8 @@ export function zhrnutieNespracovaneho(r: Record<string, any>) {
     subor: (r.file_name ?? null) as string | null,
     chyba: (r.chyba ?? null) as string | null,
     inboxMessageId: (r.inbox_message_id ?? null) as string | null,
+    /** Kto doklad nahral (pri maile majiteľ adresy — meno sa preto pri maile neukazuje). */
+    nahral: (r.created_by ?? null) as string | null,
     vytvorene: r.created_at as string,
   };
 }
@@ -660,6 +669,7 @@ export function zhrnutieBlocku(b: Record<string, any>) {
     datum: (b.issue_date ?? null) as string | null,
     suma: b.total_amount == null ? null : Number(b.total_amount),
     mena: (b.currency as string) || "EUR",
+    nahral: (b.created_by ?? null) as string | null,
     vytvorene: b.created_at as string,
   };
 }
