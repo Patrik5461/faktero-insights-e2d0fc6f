@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { CheckCircle2, Circle, Clock, Info, Mail, AlertTriangle, Link2 } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Info, Mail, AlertTriangle, Link2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { AktivaciaEfakturyKroky } from "@/components/faktero/AktivaciaEfakturyKroky";
 import { dicPrePortal, jeEfakturaAktivovana } from "@/lib/faktero/efaktura-oznam";
@@ -15,6 +15,85 @@ import {
   getEfakturaReadinessFn,
   sparujEpostakFirmuFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
+import type { OdosielanieFirmy } from "@/lib/faktero/efaktura/types";
+
+/** Kroky onboardingu „len odosielanie“, ktoré robí firma sama (podľa nextAction ePoštáka). */
+const ROZBEHNUTE_ODOSIELANIE = new Set(["vytvorena", "caka_na_fs", "caka_na_potvrdenie", "aktivuje_sa"]);
+
+/**
+ * eFaktúra „len odosielanie“: firma prijíma u iného poskytovateľa a z Faktera
+ * len odosiela. Keď je zapnutá, povie to štítok; kým sa zapína, kroky pre firmu.
+ */
+function LenOdosielanie({
+  rezim,
+  prijemProfil,
+  odosielanie,
+}: {
+  rezim: string | null | undefined;
+  prijemProfil: string | null | undefined;
+  odosielanie: OdosielanieFirmy | null;
+}) {
+  const { t } = useT();
+  const poskytovatel = prijemProfil || odosielanie?.prijemPoskytovatel || null;
+  if (rezim === "len_odosielanie") {
+    return (
+      <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-6">
+        <div className="flex items-start gap-3">
+          <Send className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <span className="inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+              {poskytovatel
+                ? t("Len odosielanie — prijaté eFaktúry prichádzajú k {poskytovatel}", { poskytovatel })
+                : t("Len odosielanie — prijaté eFaktúry prichádzajú k vášmu poskytovateľovi príjmu")}
+            </span>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("Z Faktera eFaktúry odosielate cez sieť Peppol. Prijaté eFaktúry aj odpovede odberateľov na vaše faktúry ostávajú u poskytovateľa, u ktorého ich prijímate — vo Fakteri sa nezobrazia.")}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (!odosielanie) return null;
+  if (ROZBEHNUTE_ODOSIELANIE.has(odosielanie.stav)) {
+    const naFs = !odosielanie.nextAction || odosielanie.nextAction === "select_provider_on_pfs";
+    const naMail = odosielanie.nextAction === "complete_client_activation";
+    return (
+      <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-6 text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+        <h2 className="text-lg font-semibold">{t("Zapína sa odosielanie eFaktúr z Faktera")}</h2>
+        <p className="mt-1 text-sm">
+          {poskytovatel
+            ? t("Prijaté eFaktúry vám ďalej budú chodiť k {poskytovatel}. Na odosielanie z Faktera ostáva:", { poskytovatel })
+            : t("Prijaté eFaktúry vám ďalej budú chodiť k vášmu poskytovateľovi príjmu. Na odosielanie z Faktera ostáva:")}
+        </p>
+        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm">
+          <li className={naFs || naMail ? "font-semibold" : ""}>
+            {t("Na portáli FS vyberte ePošťák ako poštára na odosielanie a potvrďte e-mail")}
+          </li>
+          <li className={odosielanie.nextAction === "provider_approval" ? "font-semibold" : ""}>
+            {t("Potom sa odosielanie zapne samo a dáme vám vedieť e-mailom.")}
+          </li>
+        </ol>
+        <p className="mt-3 text-xs">
+          {t("Poštára na príjem tým nemeníte — výber na portáli slúži len na overenie, že firma smie používať svoje Peppol ID.")}
+        </p>
+        {odosielanie.sprava && (
+          <p className="mt-2 text-xs opacity-80">
+            {t("Správa od ePoštáka:")} {odosielanie.sprava}
+          </p>
+        )}
+      </div>
+    );
+  }
+  if (odosielanie.stav === "zamietnuta" || odosielanie.stav === "chyba") {
+    return (
+      <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+        {t("Zapnutie odosielania eFaktúr z Faktera sa nedokončilo. Napíšte nám, prosím, cez Pomoc a podporu — žiadosť obnovíme.")}
+      </div>
+    );
+  }
+  return null;
+}
 
 /**
  * Spárovanie firmy s jej záznamom u ePoštáka.
@@ -177,6 +256,9 @@ function EFakturaPage() {
 
   const profil = readinessQuery.data?.profile ?? null;
   const aktivovana = jeEfakturaAktivovana(profil);
+  const odosielanie = readinessQuery.data?.odosielanie ?? null;
+  const lenOdosielanie = profil?.rezim === "len_odosielanie";
+  const odosielanieBezi = !!odosielanie && ROZBEHNUTE_ODOSIELANIE.has(odosielanie.stav);
 
   /* Z okna „Pripravte sa na e-Faktúru" sa sem prichádza s #prepojenie —
      sekcia sa vykreslí až po načítaní profilu, preto sa posúva až potom. */
@@ -242,7 +324,9 @@ function EFakturaPage() {
       <PageHeader
         title={t("eFaktúra")}
         description={
-          profil?.enabled
+          profil?.enabled && lenOdosielanie
+            ? t("eFaktúry z Faktera odosielate cez sieť Peppol; prijímate ich u iného poskytovateľa.")
+            : profil?.enabled
             ? t("eFaktúry posielate a prijímate cez sieť Peppol.")
             : t("Povinná elektronická fakturácia od 1. 1. 2027 — zapnite si ju cez Portál finančnej správy.")
         }
@@ -258,7 +342,14 @@ function EFakturaPage() {
           na Portáli finančnej správy. Sem vedie aj „Pokračovať na prepojenie“
           z oznamu o e-fakturácii 2027.
         */}
-        {readinessQuery.data && !aktivovana && (
+        {readinessQuery.data && (
+          <LenOdosielanie
+            rezim={profil?.rezim}
+            prijemProfil={profil?.prijem_poskytovatel}
+            odosielanie={odosielanie}
+          />
+        )}
+        {readinessQuery.data && !aktivovana && !odosielanieBezi && (
           <div
             id="prepojenie"
             className="mb-6 scroll-mt-20 rounded-xl border border-primary/30 bg-card p-6"
@@ -273,7 +364,10 @@ function EFakturaPage() {
             />
           </div>
         )}
-        <SparovanieSPostakom companyId={companyId} profil={profil} />
+        {/* Firmu „len odosielanie“ páruje onboarding u ePoštáka, nie IČO. */}
+        {!lenOdosielanie && !odosielanieBezi && (
+          <SparovanieSPostakom companyId={companyId} profil={profil} />
+        )}
         {readinessQuery.data && (
           <div className="mb-6 rounded-xl border border-border bg-card p-6">
             <div className="flex items-center justify-between gap-4">

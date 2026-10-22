@@ -212,6 +212,44 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "len-odosielanie",
+    title: "Len odosielanie (príjem u iného poskytovateľa)",
+    body: (
+      <>
+        <p>
+          Ak eFaktúry <strong>prijímate u iného poskytovateľa</strong> a nechcete to meniť, môžete ich
+          z Faktera len <strong>odosielať</strong>. Príjem ostáva tam, kde je — v sieti Peppol sa pre
+          vašu firmu nič neprepisuje a migračný kód netreba.
+        </p>
+        <ol>
+          <li>
+            Napíšte na <Link to="/podpora">podporu Faktera</Link>, že chcete len odosielanie. Žiadosť
+            u nášho partnera ePošták založíme za vás.
+          </li>
+          <li>
+            Na Portáli finančnej správy vyberte <strong>ePošťák</strong> ako poštára na{" "}
+            <strong>odosielanie</strong>. Poštára na príjem nemeníte — výber slúži len na overenie, že
+            firma smie používať svoje Peppol ID.
+          </li>
+          <li>
+            Na kontaktný e-mail z portálu vám príde správa — v nej potvrďte prepojenie s Fakterom.
+          </li>
+          <li>
+            Odosielanie sa potom zapne samo a dáme vám vedieť e-mailom. Na stránke eFaktúra uvidíte
+            štítok <strong>Len odosielanie</strong>.
+          </li>
+        </ol>
+        <p>
+          Čo v tomto režime nejde: <strong>prijaté eFaktúry</strong> sa vo Fakteri nezobrazia a
+          neuvidíte tu ani <strong>odpovede odberateľov</strong> na vaše faktúry (prijatie alebo
+          zamietnutie) — obe dostávate u poskytovateľa príjmu. Stav doručenia odoslaných faktúr vo
+          Fakteri vidíte. Údaje o odoslaných faktúrach hlási finančnej správe náš partner, o
+          prijatých váš poskytovateľ príjmu.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "odoslanie",
     title: "Odoslanie eFaktúry",
     body: (

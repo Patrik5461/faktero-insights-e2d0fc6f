@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { ReadinessReport } from "./types";
+import type { OdosielanieFirmy, ReadinessReport } from "./types";
 import type { Database, Json, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -36,7 +36,9 @@ export const getEfakturaReadinessFn = createServerFn({ method: "POST" })
     async ({
       data,
       context,
-    }): Promise<ReadinessReport & { profile: EfakturaProfileRow | null }> => {
+    }): Promise<
+      ReadinessReport & { profile: EfakturaProfileRow | null; odosielanie: OdosielanieFirmy | null }
+    > => {
       const { supabase, userId } = context;
       await assertCompanyMember(supabase, data.companyId, userId);
       const { computeReadiness } = await import("./readiness.server");
@@ -90,7 +92,27 @@ export const getEfakturaReadinessFn = createServerFn({ method: "POST" })
         await supabase.from("efaktura_profiles").update(update).eq("id", profile.id);
       }
 
-      return { ...report, profile: profile ?? null };
+      /*
+        Onboarding „len odosielanie“ je v tabuľke len pre server — členstvo vo
+        firme je overené vyššie, von ide len stav a text pre firmu.
+      */
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: o } = await (supabaseAdmin as any)
+        .from("efaktura_odosielanie_ziadosti")
+        .select("stav, next_action, client_message_sk, prijem_poskytovatel, aktivovane_at")
+        .eq("company_id", data.companyId)
+        .maybeSingle();
+      const odosielanie: OdosielanieFirmy | null = o
+        ? {
+            stav: o.stav,
+            nextAction: o.next_action ?? null,
+            sprava: o.client_message_sk ?? null,
+            prijemPoskytovatel: o.prijem_poskytovatel ?? null,
+            aktivovaneAt: o.aktivovane_at ?? null,
+          }
+        : null;
+
+      return { ...report, profile: profile ?? null, odosielanie };
     },
   );
 
@@ -562,7 +584,11 @@ export const stiahniPrijateEfakturyFn = createServerFn({ method: "POST" })
     }
 
     const { stiahniPrijate } = await import("./epostak.server");
-    return await stiahniPrijate(data.company_id, profil.epostak_firm_id);
+    const r = await stiahniPrijate(data.company_id, profil.epostak_firm_id);
+    if (r.lenOdosielanie) {
+      throw new Error("Prijaté eFaktúry vám chodia k vášmu poskytovateľovi príjmu — z Faktera eFaktúry len odosielate.");
+    }
+    return r;
   });
 
 /** Zoznam prijatých eFaktúr. */

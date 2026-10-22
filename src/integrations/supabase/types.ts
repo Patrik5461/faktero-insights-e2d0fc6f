@@ -2639,9 +2639,11 @@ export type Database = {
           peppol_provider: string | null
           peppol_scheme: string | null
           preferred_channel: Database["public"]["Enums"]["efaktura_channel"]
+          prijem_poskytovatel: string | null
           readiness_checked_at: string | null
           readiness_details: Json
           readiness_score: number
+          rezim: string
           test_mode: boolean
           updated_at: string
         }
@@ -2660,9 +2662,11 @@ export type Database = {
           peppol_provider?: string | null
           peppol_scheme?: string | null
           preferred_channel?: Database["public"]["Enums"]["efaktura_channel"]
+          prijem_poskytovatel?: string | null
           readiness_checked_at?: string | null
           readiness_details?: Json
           readiness_score?: number
+          rezim?: string
           test_mode?: boolean
           updated_at?: string
         }
@@ -2681,9 +2685,11 @@ export type Database = {
           peppol_provider?: string | null
           peppol_scheme?: string | null
           preferred_channel?: Database["public"]["Enums"]["efaktura_channel"]
+          prijem_poskytovatel?: string | null
           readiness_checked_at?: string | null
           readiness_details?: Json
           readiness_score?: number
+          rezim?: string
           test_mode?: boolean
           updated_at?: string
         }
@@ -9156,6 +9162,137 @@ export type Database = {
           ip?: string | null
           overene?: boolean
           prijate_at?: string
+        }
+        Relationships: []
+      }
+      efaktura_odosielanie_ziadosti: {
+        Row: {
+          id: string
+          company_id: string
+          pds_ziadost_id: string | null
+          dic: string
+          customer_ref: string
+          pokus: number
+          relationship_mode: string
+          contact_email: string | null
+          prijem_poskytovatel: string | null
+          stav: string
+          epostak_request_id: string | null
+          epostak_stav: string | null
+          next_action: string | null
+          client_message_sk: string | null
+          payer_mode: string | null
+          epostak_firm_id: string | null
+          kluc_id: string | null
+          kluc_client_id: string | null
+          kluc_sifrovany: string | null
+          kluc_chyba: string | null
+          kluc_pokusov: number
+          chyba: string | null
+          pokusov: number
+          posledna_udalost_id: string | null
+          oznamenie_odoslane_at: string | null
+          vytvoril: string | null
+          vytvorene_at: string
+          aktualizovane_at: string
+          aktivovane_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          pds_ziadost_id?: string | null
+          dic: string
+          customer_ref: string
+          pokus?: number
+          relationship_mode?: string
+          contact_email?: string | null
+          prijem_poskytovatel?: string | null
+          stav?: string
+          epostak_request_id?: string | null
+          epostak_stav?: string | null
+          next_action?: string | null
+          client_message_sk?: string | null
+          payer_mode?: string | null
+          epostak_firm_id?: string | null
+          kluc_id?: string | null
+          kluc_client_id?: string | null
+          kluc_sifrovany?: string | null
+          kluc_chyba?: string | null
+          kluc_pokusov?: number
+          chyba?: string | null
+          pokusov?: number
+          posledna_udalost_id?: string | null
+          oznamenie_odoslane_at?: string | null
+          vytvoril?: string | null
+          vytvorene_at?: string
+          aktualizovane_at?: string
+          aktivovane_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          pds_ziadost_id?: string | null
+          dic?: string
+          customer_ref?: string
+          pokus?: number
+          relationship_mode?: string
+          contact_email?: string | null
+          prijem_poskytovatel?: string | null
+          stav?: string
+          epostak_request_id?: string | null
+          epostak_stav?: string | null
+          next_action?: string | null
+          client_message_sk?: string | null
+          payer_mode?: string | null
+          epostak_firm_id?: string | null
+          kluc_id?: string | null
+          kluc_client_id?: string | null
+          kluc_sifrovany?: string | null
+          kluc_chyba?: string | null
+          kluc_pokusov?: number
+          chyba?: string | null
+          pokusov?: number
+          posledna_udalost_id?: string | null
+          oznamenie_odoslane_at?: string | null
+          vytvoril?: string | null
+          vytvorene_at?: string
+          aktualizovane_at?: string
+          aktivovane_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "efaktura_odosielanie_ziadosti_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      efaktura_epostak_nastavenie: {
+        Row: {
+          kluc: string
+          url: string | null
+          udalosti: string[]
+          tajomstvo_sifrovane: string | null
+          chyba: string | null
+          aktualizovane_at: string
+        }
+        Insert: {
+          kluc: string
+          url?: string | null
+          udalosti?: string[]
+          tajomstvo_sifrovane?: string | null
+          chyba?: string | null
+          aktualizovane_at?: string
+        }
+        Update: {
+          kluc?: string
+          url?: string | null
+          udalosti?: string[]
+          tajomstvo_sifrovane?: string | null
+          chyba?: string | null
+          aktualizovane_at?: string
         }
         Relationships: []
       }

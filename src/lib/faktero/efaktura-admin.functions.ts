@@ -59,8 +59,34 @@ export type WebhookAdmin = {
   posledna_udalost_at: string | null;
 };
 
+/** Onboarding „len odosielanie“ (send_only) jednej firmy. Kľúč firmy sa von nevracia. */
+export type OdosielanieAdmin = {
+  company_id: string;
+  firma: string | null;
+  pds_ziadost_id: string | null;
+  dic: string;
+  stav: string;
+  epostak_stav: string | null;
+  next_action: string | null;
+  client_message_sk: string | null;
+  relationship_mode: string;
+  payer_mode: string | null;
+  contact_email: string | null;
+  prijem_poskytovatel: string | null;
+  epostak_firm_id: string | null;
+  ma_kluc: boolean;
+  kluc_chyba: string | null;
+  chyba: string | null;
+  pokusov: number;
+  vytvorene_at: string;
+  aktivovane_at: string | null;
+};
+
 export type EfakturaPrehlad = {
   nastavene: { pdsTajomstvo: boolean; epostakProdukcia: boolean };
+  /** Partnerský onboarding webhook ePoštáka (pre „len odosielanie“). */
+  onboardingWebhook: { nastaveny: boolean; url: string | null; chyba: string | null };
+  odosielanie: OdosielanieAdmin[];
   /** Prevzatie firmy migračným kódom smie len superadmin. */
   smieMigrovat: boolean;
   ziadosti: ZiadostFsAdmin[];
@@ -82,7 +108,13 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<EfakturaPrehlad> => {
     const { db, role } = await overAdmina((context as { userId: string }).userId);
-    const [{ data: ziadosti }, { data: webhooky }, { data: odmietnute }] = await Promise.all([
+    const [
+      { data: ziadosti },
+      { data: webhooky },
+      { data: odmietnute },
+      { data: odosielanie },
+      { data: onboardingWebhook },
+    ] = await Promise.all([
       db
         .from("efaktura_pds_ziadosti")
         .select(
@@ -100,6 +132,18 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
         .select("id, prijate_at, dovod, overene, firmy, chyba, ip")
         .order("prijate_at", { ascending: false })
         .limit(100),
+      db
+        .from("efaktura_odosielanie_ziadosti")
+        .select(
+          "company_id, pds_ziadost_id, dic, stav, epostak_stav, next_action, client_message_sk, relationship_mode, payer_mode, contact_email, prijem_poskytovatel, epostak_firm_id, kluc_sifrovany, kluc_chyba, chyba, pokusov, vytvorene_at, aktivovane_at, companies(name)",
+        )
+        .order("vytvorene_at", { ascending: false })
+        .limit(300),
+      db
+        .from("efaktura_epostak_nastavenie")
+        .select("url, tajomstvo_sifrovane, chyba")
+        .eq("kluc", "onboarding_webhook")
+        .maybeSingle(),
     ]);
     return {
       nastavene: {
@@ -107,6 +151,37 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
         epostakProdukcia: (process.env.EPOSTAK_ENV ?? "sandbox").toLowerCase() === "production",
       },
       smieMigrovat: role === "superadmin",
+      onboardingWebhook: {
+        nastaveny: Boolean(
+          onboardingWebhook?.tajomstvo_sifrovane || process.env.EPOSTAK_ONBOARDING_WEBHOOK_SECRET,
+        ),
+        url: onboardingWebhook?.url ?? null,
+        chyba: onboardingWebhook?.chyba ?? null,
+      },
+      odosielanie: (odosielanie ?? []).map(
+        (o: any): OdosielanieAdmin => ({
+          company_id: o.company_id,
+          firma: o.companies?.name ?? null,
+          pds_ziadost_id: o.pds_ziadost_id ?? null,
+          dic: o.dic,
+          stav: o.stav,
+          epostak_stav: o.epostak_stav ?? null,
+          next_action: o.next_action ?? null,
+          client_message_sk: o.client_message_sk ?? null,
+          relationship_mode: o.relationship_mode,
+          payer_mode: o.payer_mode ?? null,
+          contact_email: o.contact_email ?? null,
+          prijem_poskytovatel: o.prijem_poskytovatel ?? null,
+          epostak_firm_id: o.epostak_firm_id ?? null,
+          // Kľúč sám sa von nevracia — len to, že je uložený.
+          ma_kluc: Boolean(o.kluc_sifrovany),
+          kluc_chyba: o.kluc_chyba ?? null,
+          chyba: o.chyba ?? null,
+          pokusov: o.pokusov ?? 0,
+          vytvorene_at: o.vytvorene_at,
+          aktivovane_at: o.aktivovane_at ?? null,
+        }),
+      ),
       ziadosti: (ziadosti ?? []).map(
         (z: any): ZiadostFsAdmin => ({
           id: z.id,
@@ -265,4 +340,109 @@ export const adminZmazWebhookFn = createServerFn({ method: "POST" })
     const db = await admin((context as { userId: string }).userId);
     await db.from("efaktura_webhooky").delete().eq("company_id", data.company_id);
     return { ok: true };
+  });
+
+/**
+ * eFaktúra „len odosielanie“ pre firmu, ktorú v Peppole drží iný poskytovateľ
+ * (žiadosť FS v stave `cudzi_poskytovatel`). Príjem ostáva u neho, Faktero
+ * len odosiela. Len superadmin; zapisuje sa do auditu.
+ */
+export const adminLenOdosielanieFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        relationship_mode: z.enum(["technical_delegation", "managed_service"]).default("technical_delegation"),
+        email: z.string().trim().email().max(255).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const userId = (context as { userId: string }).userId;
+    const { db, role } = await overAdmina(userId);
+    if (role !== "superadmin") throw new Error("Len odosielanie smie zapnúť len superadmin.");
+    const { data: zz } = await db
+      .from("efaktura_pds_ziadosti")
+      .select("id, dic, nazov, email, stav, company_id, cudzi_poskytovatel")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!zz) throw new Error("Žiadosť sa nenašla.");
+    if (zz.stav !== "cudzi_poskytovatel") {
+      throw new Error("Len odosielanie sa zapína pri žiadosti v stave „u iného poskytovateľa“.");
+    }
+    if (!zz.company_id) {
+      throw new Error("Žiadosť nemá firmu vo Fakteri — najprv ju priraď (firma musí mať účet).");
+    }
+    const { data: firma } = await db.from("companies").select("id, dic, email").eq("id", zz.company_id).maybeSingle();
+    if (!firma) throw new Error("Firma sa nenašla.");
+    if (firma.dic && String(firma.dic).replace(/\s+/g, "") !== zz.dic) {
+      throw new Error(`Firma má DIČ ${firma.dic}, žiadosť je pre ${zz.dic}.`);
+    }
+    const email = data.email || zz.email || firma.email;
+    if (!email) throw new Error("Chýba kontaktný e-mail firmy.");
+
+    const { vytvorOnboardingLenOdosielanie } = await import("./efaktura/len-odosielanie.server");
+    const r = await vytvorOnboardingLenOdosielanie(firma.id, email, data.relationship_mode, {
+      pdsZiadostId: zz.id,
+      prijemPoskytovatel: zz.cudzi_poskytovatel ?? null,
+      adminUserId: userId,
+    });
+    await db.from("platform_audit_logs").insert({
+      admin_user_id: userId,
+      action: "efaktura_len_odosielanie",
+      entity_type: "efaktura_pds_ziadosti",
+      entity_id: zz.id,
+      metadata: {
+        dic: zz.dic,
+        nazov: zz.nazov,
+        company_id: firma.id,
+        relationship_mode: data.relationship_mode,
+        prijem_poskytovatel: zz.cudzi_poskytovatel ?? null,
+        vysledok: r.stav,
+        chyba: r.chyba,
+      },
+    });
+    return r;
+  });
+
+/** Dopyt stavu onboardingu „len odosielanie“ u ePoštáka. */
+export const adminObnovOdosielanieFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const db = await admin((context as { userId: string }).userId);
+    const { data: r } = await db
+      .from("efaktura_odosielanie_ziadosti")
+      .select("*")
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!r) throw new Error("Žiadosť o len odosielanie sa nenašla.");
+    const m = await import("./efaktura/len-odosielanie.server");
+    if (r.stav === "active") {
+      if (r.epostak_firm_id) await m.aktivujLenOdosielanie(r);
+      return { stav: r.stav as string };
+    }
+    if (!r.epostak_request_id) throw new Error("Žiadosť u ePoštáka ešte nevznikla — zopakuj ju tlačidlom Len odosielanie.");
+    return m.obnovOnboarding(r);
+  });
+
+/** Nastaví partnerský onboarding webhook u ePoštáka (PUT). Len superadmin. */
+export const adminNastavOnboardingWebhookFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ znova: z.boolean().default(false) }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    const userId = (context as { userId: string }).userId;
+    const { db, role } = await overAdmina(userId);
+    if (role !== "superadmin") throw new Error("Webhook u ePoštáka smie nastaviť len superadmin.");
+    const { nastavWebhookOnboardingu } = await import("./efaktura/len-odosielanie.server");
+    const r = await nastavWebhookOnboardingu(data.znova);
+    await db.from("platform_audit_logs").insert({
+      admin_user_id: userId,
+      action: "efaktura_onboarding_webhook",
+      entity_type: "efaktura_epostak_nastavenie",
+      entity_id: null,
+      metadata: { url: r.url, udalosti: r.udalosti, znova: data.znova },
+    });
+    return r;
   });

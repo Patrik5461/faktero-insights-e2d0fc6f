@@ -50,20 +50,19 @@ function getConfig() {
 // ─── Token cache ─────────────────────────────────────────────────────────────
 
 type TokenCache = { token: string; expiresAt: number };
-let tokenCache: TokenCache | null = null;
-let tokenPromise: Promise<string> | null = null;
+/** JWT podľa `client_id` — hlavný integrátorský kľúč aj kľúče viazané na firmu. */
+const tokeny = new Map<string, TokenCache>();
+const tokenyBeziace = new Map<string, Promise<string>>();
 
-/**
- * Get a valid JWT. Cached in-memory; refreshes ~60 s before expiry.
- */
-export async function getEPostakToken(): Promise<string> {
+async function tokenPreKluc(clientId: string, clientSecret: string): Promise<string> {
   const now = Date.now();
-  if (tokenCache && tokenCache.expiresAt > now + 60_000) return tokenCache.token;
-  if (tokenPromise) return tokenPromise;
+  const ulozeny = tokeny.get(clientId);
+  if (ulozeny && ulozeny.expiresAt > now + 60_000) return ulozeny.token;
+  const bezi = tokenyBeziace.get(clientId);
+  if (bezi) return bezi;
 
-  const { baseUrl, clientId, clientSecret } = getConfig();
-
-  tokenPromise = (async () => {
+  const { baseUrl } = getConfig();
+  const beh = (async () => {
     try {
       const res = await fetch(`${baseUrl}/api/v1/auth/token`, {
         method: "POST",
@@ -86,19 +85,68 @@ export async function getEPostakToken(): Promise<string> {
       const token = json.access_token ?? json.token;
       if (!token) throw new Error("ePošták auth: chýbajúci access_token v odpovedi.");
       const ttlSeconds = json.expires_in ?? 15 * 60;
-      tokenCache = { token, expiresAt: Date.now() + ttlSeconds * 1000 };
+      tokeny.set(clientId, { token, expiresAt: Date.now() + ttlSeconds * 1000 });
       return token;
     } finally {
-      tokenPromise = null;
+      tokenyBeziace.delete(clientId);
     }
   })();
+  tokenyBeziace.set(clientId, beh);
+  return beh;
+}
 
-  return tokenPromise;
+/**
+ * Get a valid JWT for the main integrator key. Cached in-memory; refreshes ~60 s before expiry.
+ */
+export async function getEPostakToken(): Promise<string> {
+  const { clientId, clientSecret } = getConfig();
+  return tokenPreKluc(clientId, clientSecret);
 }
 
 /** Force-invalidate cached token (e.g. after 401). */
-export function resetEPostakToken(): void {
-  tokenCache = null;
+export function resetEPostakToken(clientId?: string): void {
+  if (clientId) tokeny.delete(clientId);
+  else tokeny.clear();
+}
+
+// ─── Kľúče viazané na firmu (eFaktúra „len odosielanie“) ────────────────────
+
+/*
+  Firma s onboardingom „iba odosielanie“ dostane od ePoštáka vlastný kľúč
+  viazaný na ňu (`scopedFirmId`, oprávnenia documents:send a documents:read).
+  Volania za takú firmu idú s ním; hlavný kľúč len pre to, čo kľúč firmy
+  nesmie (napr. webhooky). Bez kľúča firmy sa ide hlavným kľúčom s
+  `X-Firm-Id` ako doteraz.
+*/
+type KlucFirmy = { clientId: string; secret: string };
+const kluceFiriem = new Map<string, { kluc: KlucFirmy | null; platiDo: number }>();
+
+async function klucFirmy(firmId: string): Promise<KlucFirmy | null> {
+  const ulozeny = kluceFiriem.get(firmId);
+  if (ulozeny && ulozeny.platiDo > Date.now()) return ulozeny.kluc;
+  let kluc: KlucFirmy | null = null;
+  try {
+    const { data } = await (supabaseAdmin as any)
+      .from("efaktura_odosielanie_ziadosti")
+      .select("kluc_client_id, kluc_sifrovany")
+      .eq("epostak_firm_id", firmId)
+      .eq("stav", "active")
+      .maybeSingle();
+    if (data?.kluc_client_id && data?.kluc_sifrovany) {
+      const { decryptSecret } = await import("../payment-crypto.server");
+      kluc = { clientId: data.kluc_client_id, secret: decryptSecret(data.kluc_sifrovany) };
+    }
+  } catch {
+    kluc = null;
+  }
+  kluceFiriem.set(firmId, { kluc, platiDo: Date.now() + 5 * 60_000 });
+  return kluc;
+}
+
+/** Po vytvorení alebo zrušení kľúča firmy — nech sa hneď načíta znova. */
+export function zabudniKlucFirmy(firmId?: string): void {
+  if (firmId) kluceFiriem.delete(firmId);
+  else kluceFiriem.clear();
 }
 
 // ─── HTTP helper ─────────────────────────────────────────────────────────────
@@ -109,6 +157,8 @@ type FetchOpts = {
   idempotencyKey?: string;
   body?: unknown;
   query?: Record<string, string | number | undefined>;
+  /** Vždy hlavným integrátorským kľúčom, aj keď má firma vlastný kľúč (webhooky, správa). */
+  hlavnyKluc?: boolean;
 };
 
 /**
@@ -169,12 +219,21 @@ async function epostakFetch<T>(path: string, opts: FetchOpts = {}): Promise<T> {
     });
   };
 
-  let token = await getEPostakToken();
+  const kluc = opts.firmId && !opts.hlavnyKluc ? await klucFirmy(opts.firmId) : null;
+  const ziskaj = () => (kluc ? tokenPreKluc(kluc.clientId, kluc.secret) : getEPostakToken());
+  let token = await ziskaj();
   let res = await doRequest(token);
   if (res.status === 401) {
-    resetEPostakToken();
-    token = await getEPostakToken();
+    resetEPostakToken(kluc?.clientId ?? getConfig().clientId);
+    token = await ziskaj();
     res = await doRequest(token);
+  }
+  /*
+    Kľúč firmy má len documents:send a documents:read. Čo pod ne nespadá
+    (napr. overenie príjemcu mimo /documents), skúsi sa raz hlavným kľúčom.
+  */
+  if (kluc && (res.status === 401 || res.status === 403) && !path.startsWith("/api/v1/documents")) {
+    res = await doRequest(await getEPostakToken());
   }
 
   const text = await res.text();
@@ -685,7 +744,14 @@ type PrijatyDokument = {
 export async function stiahniPrijate(
   companyId: string,
   firmEpostakId: string,
-): Promise<{ novych: number; preskocenych: number; problemy: string[] }> {
+): Promise<{ novych: number; preskocenych: number; problemy: string[]; lenOdosielanie?: boolean }> {
+  /*
+    Firma „len odosielanie“ prijíma u iného poskytovateľa — ePošták pre ňu
+    príjem cez toto napojenie zakazuje, a doklady tu ani nie sú.
+  */
+  if (await jeLenOdosielanie(companyId)) {
+    return { novych: 0, preskocenych: 0, problemy: [], lenOdosielanie: true };
+  }
   const odpoved = await epostakFetch<{ documents?: PrijatyDokument[] }>(
     "/api/v1/inbound/documents",
     { method: "GET", firmId: firmEpostakId },
@@ -891,24 +957,38 @@ export async function stavWhiteLabel(operaciaId: string): Promise<WhiteLabelOper
  * Prihlási odber udalostí o dokladoch firmy na našu adresu. Tajomstvo (HMAC)
  * vráti ePošták len teraz — volajúci ho musí hneď uložiť.
  */
+/** Udalosti o dokladoch pre firmu s plným režimom (odosielanie aj príjem cez Faktero). */
+export const UDALOSTI_PLNY = [
+  "document.sent",
+  "document.received",
+  "document.delivered",
+  "document.delivery_failed",
+  "document.rejected",
+  "document.response_received",
+] as const;
+
+/**
+ * Firma „len odosielanie“: len stavy odoslaných. Prijaté doklady aj odpovede
+ * odberateľov (Invoice Response) chodia jej poskytovateľovi príjmu, nie nám.
+ */
+export const UDALOSTI_LEN_ODOSIELANIE = [
+  "document.sent",
+  "document.delivered",
+  "document.delivery_failed",
+  "document.rejected",
+] as const;
+
 export async function vytvorWebhookFirmy(
   firmId: string,
   url: string,
+  udalosti: readonly string[] = UDALOSTI_PLNY,
 ): Promise<{ id: string; secret: string }> {
   const r = await epostakFetch<any>("/api/v1/webhooks", {
     method: "POST",
     firmId,
-    body: {
-      url,
-      events: [
-        "document.sent",
-        "document.received",
-        "document.delivered",
-        "document.delivery_failed",
-        "document.rejected",
-        "document.response_received",
-      ],
-    },
+    // Kľúč firmy „len odosielanie“ webhooky zakladať nesmie.
+    hlavnyKluc: true,
+    body: { url, events: [...udalosti] },
   });
   const w = r?.webhook ?? r?.data ?? r;
   const id = String(w?.id ?? r?.id ?? "");
@@ -1031,4 +1111,131 @@ export async function sendSamofakturaEfaktura(
   } as any);
 
   return { documentId: providerMessageId ?? doc.id, status: transportStatus, providerResponse: response };
+}
+
+// ─── Onboarding „iba odosielanie“ (Enterprise API, controlled preview) ──────
+
+/** Či firma prijíma eFaktúry inde a cez Faktero len odosiela. */
+export async function jeLenOdosielanie(companyId: string): Promise<boolean> {
+  const { data } = await (supabaseAdmin as any)
+    .from("efaktura_profiles")
+    .select("rezim")
+    .eq("company_id", companyId)
+    .maybeSingle();
+  return data?.rezim === "len_odosielanie";
+}
+
+export type OnboardingOdpoved = {
+  id: string;
+  customerRef: string;
+  serviceMode: "send_only";
+  /** awaiting_pfs | action_required | activating | active | blocked | revoked | expired | (neznámy = konečný) */
+  status: string;
+  firmId: string | null;
+  nextAction: string | null;
+  relationshipMode: "technical_delegation" | "managed_service";
+  payerMode: "firm_billed" | "integrator_billed" | string;
+  keyCreation: {
+    method: "POST";
+    path: string;
+    scopedFirmId: string;
+    scopes: string[];
+  } | null;
+  clientMessage: { sk: string; en: string } | null;
+};
+
+/**
+ * `POST /api/v1/onboarding-requests` — partnerským (hlavným) kľúčom s
+ * `firms:manage`, **bez** `X-Firm-Id`. `Idempotency-Key` musí ostať rovnaký
+ * pri každom opakovaní tej istej žiadosti; iné telo s tým istým kľúčom alebo
+ * `customerRef` vráti 409 ONBOARDING_CONFLICT.
+ */
+export async function vytvorOnboardingRequest(v: {
+  customerRef: string;
+  dic: string;
+  contactEmail: string;
+  relationshipMode: "technical_delegation" | "managed_service";
+  idempotencyKey: string;
+}): Promise<OnboardingOdpoved> {
+  return epostakFetch<OnboardingOdpoved>("/api/v1/onboarding-requests", {
+    method: "POST",
+    idempotencyKey: v.idempotencyKey,
+    body: {
+      serviceMode: "send_only",
+      relationshipMode: v.relationshipMode,
+      customerRef: v.customerRef,
+      dic: v.dic,
+      contactEmail: v.contactEmail,
+    },
+  });
+}
+
+/** `GET /api/v1/onboarding-requests/{id}` — stav vlastnej žiadosti. */
+export async function stavOnboardingRequest(id: string): Promise<OnboardingOdpoved> {
+  return epostakFetch<OnboardingOdpoved>(`/api/v1/onboarding-requests/${encodeURIComponent(id)}`);
+}
+
+/**
+ * `POST /api/v1/integrator/keys` so `scopedFirmId` — kľúč viazaný na jednu
+ * firmu. Hlavný kľúč potrebuje `keys:manage`, vydávanie musí mať ePošták
+ * zapnuté (inak 403 FIRM_KEY_ISSUANCE_DISABLED). Tajomstvo vráti len raz a
+ * POST nie je idempotentný.
+ */
+export async function vytvorKlucFirmy(v: {
+  firmId: string;
+  nazov: string;
+  scopes?: string[];
+}): Promise<{ id: string; clientId: string; key: string; scopes: string[] }> {
+  const r = await epostakFetch<any>("/api/v1/integrator/keys", {
+    method: "POST",
+    body: {
+      name: v.nazov.slice(0, 80),
+      scopes: v.scopes ?? ["documents:send", "documents:read"],
+      scopedFirmId: v.firmId,
+    },
+  });
+  const key = String(r?.key ?? "");
+  const clientId = String(r?.clientId ?? r?.keyPrefix ?? "");
+  if (!key || !clientId) throw new Error("ePošták nevrátil kľúč firmy (key/clientId).");
+  return { id: String(r?.id ?? ""), clientId, key, scopes: Array.isArray(r?.scopes) ? r.scopes : [] };
+}
+
+/** Udalosti partnerského onboarding webhooku, ktoré Faktero spracúva. */
+export const UDALOSTI_ONBOARDINGU = [
+  "onboarding.pfs_received",
+  "onboarding.signed",
+  "onboarding.review_required",
+  "onboarding.active",
+  "onboarding.expired",
+  "onboarding.revoked",
+  "webhook.disabled",
+] as const;
+
+export type OnboardingWebhook = { url: string | null; events: string[]; isActive: boolean } | null;
+
+/** `GET /api/v1/onboarding-requests/webhook` — tajomstvo sa tu nikdy nevracia. */
+export async function citajOnboardingWebhook(): Promise<OnboardingWebhook> {
+  const r = await epostakFetch<{ webhook: OnboardingWebhook }>("/api/v1/onboarding-requests/webhook");
+  return r?.webhook ?? null;
+}
+
+/**
+ * `PUT /api/v1/onboarding-requests/webhook`. Tajomstvo (64 hex) príde len
+ * pri vytvorení (201); pri úprave existujúceho (200) ostáva pôvodné.
+ */
+export async function nastavOnboardingWebhook(
+  url: string,
+  udalosti: readonly string[] = UDALOSTI_ONBOARDINGU,
+): Promise<{ webhook: OnboardingWebhook; secret: string | null }> {
+  const r = await epostakFetch<any>("/api/v1/onboarding-requests/webhook", {
+    method: "PUT",
+    body: { url, events: [...udalosti] },
+  });
+  const secret = typeof r?.secret === "string" && r.secret ? r.secret : null;
+  return { webhook: r?.webhook ?? null, secret };
+}
+
+/** `DELETE /api/v1/onboarding-requests/webhook` — po ňom PUT vytvorí nové tajomstvo. */
+export async function zmazOnboardingWebhook(): Promise<void> {
+  await epostakFetch<unknown>("/api/v1/onboarding-requests/webhook", { method: "DELETE" });
 }

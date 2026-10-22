@@ -497,6 +497,14 @@ export async function dokonciRozbehnuteRegistracie(): Promise<void> {
     await zapniProfil(firma.id, { firmId: z.epostak_firm_id, peppolId: z.peppol_id });
     await db.from("efaktura_pds_ziadosti").update({ company_id: firma.id }).eq("id", z.id);
   }
+
+  // Firmy „len odosielanie“ (onboarding send_only) — záloha za webhook onboarding.active.
+  try {
+    const { dokonciOnboardingyLenOdosielanie } = await import("./len-odosielanie.server");
+    await dokonciOnboardingyLenOdosielanie();
+  } catch (e) {
+    console.warn("[efaktura-odosielanie] dočistenie:", String((e as Error)?.message ?? e));
+  }
 }
 
 // ─── ePošták ─────────────────────────────────────────────────────────────────
@@ -504,17 +512,22 @@ export async function dokonciRozbehnuteRegistracie(): Promise<void> {
 export async function zapniWebhookyFiriem(): Promise<{ zapnutych: number }> {
   const { data: profily } = await db
     .from("efaktura_profiles")
-    .select("company_id, epostak_firm_id")
+    .select("company_id, epostak_firm_id, rezim")
     .not("epostak_firm_id", "is", null);
   const { data: existujuce } = await db.from("efaktura_webhooky").select("company_id");
   const ma = new Set((existujuce ?? []).map((r: any) => r.company_id));
-  const { vytvorWebhookFirmy } = await import("./epostak.server");
+  const { vytvorWebhookFirmy, UDALOSTI_PLNY, UDALOSTI_LEN_ODOSIELANIE } = await import("./epostak.server");
   const { encryptSecret } = await import("../payment-crypto.server");
   let zapnutych = 0;
   for (const p of profily ?? []) {
     if (ma.has(p.company_id)) continue;
     try {
-      const w = await vytvorWebhookFirmy(p.epostak_firm_id, `${web()}/api/public/efaktura/epostak`);
+      // Firma „len odosielanie“ dostane len stavy odoslaných — príjem nie je náš.
+      const w = await vytvorWebhookFirmy(
+        p.epostak_firm_id,
+        `${web()}/api/public/efaktura/epostak`,
+        p.rezim === "len_odosielanie" ? UDALOSTI_LEN_ODOSIELANIE : UDALOSTI_PLNY,
+      );
       await db.from("efaktura_webhooky").insert({
         company_id: p.company_id,
         epostak_firm_id: p.epostak_firm_id,

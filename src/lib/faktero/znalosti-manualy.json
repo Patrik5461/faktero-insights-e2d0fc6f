@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-21",
+ "vytvorene": "2026-10-22",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -328,6 +328,10 @@
      "text": "<>\nV sieti Peppol môže byť firma len u jedného poskytovateľa — u toho jej\neFaktúry chodia. Ak je vaša firma už zaregistrovaná u\niného poskytovateľa , výber Faktera na Portáli finančnej správy sám nestačí: registrácia sa nedokončí a\neFaktúra sa vo Fakteri nezapne. Na prechod treba migračný kód .\n-\nMigračný kód si vypýtajte u súčasného poskytovateľa eFaktúr (v jeho\naplikácii alebo na jeho podpore). Vydá ho len vám ako vlastníkovi firmy.\n-\nKód pošlite na podporu Faktera (/podpora) spolu s názvom firmy a DIČ.\nKód je dôverný — nikomu inému ho neposielajte.\n-\nFirmu prevezmeme a dáme vám vedieť. Od tej chvíle vám eFaktúry chodia do Faktera a u\npôvodného poskytovateľa sa firma zo siete Peppol odpojí.\nKód má obmedzenú platnosť. Ak vyprší alebo ho poskytovateľ odmietne, treba si vypýtať\nnový."
     },
     {
+     "nadpis": "Len odosielanie (príjem u iného poskytovateľa)",
+     "text": "<>\nAk eFaktúry prijímate u iného poskytovateľa a nechcete to meniť, môžete ich\nz Faktera len odosielať . Príjem ostáva tam, kde je — v sieti Peppol sa pre\nvašu firmu nič neprepisuje a migračný kód netreba.\n-\nNapíšte na podporu Faktera (/podpora), že chcete len odosielanie. Žiadosť\nu nášho partnera ePošták založíme za vás.\n-\nNa Portáli finančnej správy vyberte ePošťák ako poštára na\nodosielanie . Poštára na príjem nemeníte — výber slúži len na overenie, že\nfirma smie používať svoje Peppol ID.\n-\nNa kontaktný e-mail z portálu vám príde správa — v nej potvrďte prepojenie s Fakterom.\n-\nOdosielanie sa potom zapne samo a dáme vám vedieť e-mailom. Na stránke eFaktúra uvidíte\nštítok Len odosielanie .\nČo v tomto režime nejde: prijaté eFaktúry sa vo Fakteri nezobrazia a\nneuvidíte tu ani odpovede odberateľov na vaše faktúry (prijatie alebo\nzamietnutie) — obe dostávate u poskytovateľa príjmu. Stav doručenia odoslaných faktúr vo\nFakteri vidíte. Údaje o odoslaných faktúrach hlási finančnej správe náš partner, o\nprijatých váš poskytovateľ príjmu."
+    },
+    {
      "nadpis": "Odoslanie eFaktúry",
      "text": "<>\nFaktúru vystavíte ako doteraz. Na jej detaile je hlavné tlačidlo\nOdoslať eFaktúru (e-mail je vedľa neho). Otvorí sa okno, v ktorom\nvyberiete, čo pôjde s faktúrou:\n-\nPriložiť PDF faktúry — zapnuté vopred, odberateľ uvidí faktúru tak, ako\nju poznáte.\n-\nPrílohy dokladu — súbory nahraté k faktúre (výkaz práce, dodací list…)\nzaškrtnete jednotlivo. Prejdú PDF, PNG, JPG, CSV, XLSX a ODS, najviac 20 súborov, 10 MB\nna súbor a 15 MB spolu. Čo sa poslať nedá, okno povie hneď.\nPred odoslaním overí, či je odberateľ v sieti Peppol . Ak nie je, povie to\nhneď — faktúra by inak odišla do prázdna. Odberateľ potrebuje vyplnené DIČ alebo IČ DPH,\npodľa nich sa v sieti hľadá.\nOdoslanie sa nedá vziať späť. Chybu na odoslanej faktúre opravíte dobropisom alebo\nťarchopisom, ktoré tiež odídu ako eFaktúra.\nCez eFaktúru sa neposielajú zálohové faktúry (nie sú daňovým dokladom —\npošlite ich e-mailom, daňový doklad k prijatej platbe už áno) ani faktúry\nsúkromným osobám bez IČO a DIČ."
     },
@@ -425,7 +429,7 @@
     },
     {
      "nadpis": "Ako odoslať faktúru e-mailom",
-     "text": "<>\n-\nNa detaile faktúry kliknite na Odoslať e-mailom .\n- Upravte predmet a sprievodnú správu (môžete použiť šablónu z nastavení firmy).\n- Faktero priloží PDF a odošle správu cez Resend.\n-\nKeď má doklad prílohy , pribudne voľba\nOdoslať aj prílohy dokladu — pôjdu v tom istom maile ako faktúra.\nV PDF je aj QR kód na platbu , takže zákazník nemusí prepisovať IBAN ani\nvariabilný symbol — naskenuje ho v mobilnom bankovníctve.\nPri prvom odoslaní (e-mailom aj eFaktúrou) musí byť dátum vystavenia\ndnešný. Keď ste faktúru vystavili skôr a posielate ju až dnes, Faktero to oznámi a ponúkne\nZmeniť dátum vystavenia na dnes a odoslať — splatnosť sa posunie o rovnaký\npočet dní, dátum dodania aj číslo faktúry ostávajú. Faktúru z uzamknutého obdobia alebo už\nvyvezenú do účtovníctva zmeniť nemožno; tá sa odošle s pôvodným dátumom až po výslovnom\npotvrdení."
+     "text": "<>\n-\nNa detaile faktúry kliknite na Odoslať e-mailom .\n- Upravte predmet a sprievodnú správu (môžete použiť šablónu z nastavení firmy).\n- Faktero priloží PDF a odošle správu cez Resend.\n-\nKeď má doklad prílohy , pribudne voľba\nOdoslať aj prílohy dokladu — pôjdu v tom istom maile ako faktúra.\nV PDF je aj QR kód na platbu , takže zákazník nemusí prepisovať IBAN ani\nvariabilný symbol — naskenuje ho v mobilnom bankovníctve.\nPri prvom odoslaní (e-mailom aj eFaktúrou) musí byť dátum vystavenia\ndnešný. Keď ste faktúru vystavili skôr a posielate ju až dnes, Faktero to oznámi a ponúkne\nZmeniť dátum vystavenia na dnes a odoslať — splatnosť sa posunie o\nrovnaký počet dní, dátum dodania aj číslo faktúry ostávajú. Faktúru z uzamknutého obdobia\nalebo už vyvezenú do účtovníctva zmeniť nemožno; tá sa odošle s pôvodným dátumom až po\nvýslovnom potvrdení."
     },
     {
      "nadpis": "Prílohy k faktúre",

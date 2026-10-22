@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Inbox, RefreshCw, FileInput, ExternalLink, Eye, Download, X, Paperclip } from "lucide-react";
+import { Inbox, RefreshCw, FileInput, ExternalLink, Eye, Download, X, Paperclip, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -268,12 +269,29 @@ function ReceivedPage() {
 
   const riadky = (q.data ?? []) as any[];
 
+  /* Firma „len odosielanie“ prijíma u iného poskytovateľa — tu nič nepribudne. */
+  const profilQ = useQuery({
+    queryKey: ["efaktura-profil-rezim", companyId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("efaktura_profiles")
+        .select("rezim, prijem_poskytovatel")
+        .eq("company_id", companyId!)
+        .maybeSingle();
+      return data ?? null;
+    },
+    enabled: !!companyId,
+  });
+  const lenOdosielanie = profilQ.data?.rezim === "len_odosielanie";
+  const poskytovatel = profilQ.data?.prijem_poskytovatel ?? null;
+
   return (
     <>
       <PageHeader
         title={t("Prijaté eFaktúry")}
         description={t("eFaktúry doručené od vašich dodávateľov cez sieť Peppol.")}
         action={
+          lenOdosielanie ? undefined : (
           <button
             onClick={stiahniNove}
             disabled={stahujem || !companyId}
@@ -282,10 +300,27 @@ function ReceivedPage() {
             <RefreshCw className={`h-4 w-4 ${stahujem ? "animate-spin" : ""}`} />{" "}
             {stahujem ? t("Sťahujem…") : t("Stiahnuť nové")}
           </button>
+          )
         }
       />
       <PageBody>
+        {lenOdosielanie && (
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
+            <Send className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div>
+              <div className="font-medium">
+                {poskytovatel
+                  ? t("Len odosielanie — prijaté eFaktúry prichádzajú k {poskytovatel}", { poskytovatel })
+                  : t("Len odosielanie — prijaté eFaktúry prichádzajú k vášmu poskytovateľovi príjmu")}
+              </div>
+              <p className="mt-1 text-muted-foreground">
+                {t("Z Faktera eFaktúry len odosielate. Doručené eFaktúry aj odpovede odberateľov nájdete u poskytovateľa, u ktorého ich prijímate.")}
+              </p>
+            </div>
+          </div>
+        )}
         {!q.isLoading && riadky.length === 0 ? (
+          lenOdosielanie ? null : (
           <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
             <div className="rounded-full bg-primary/10 p-4">
               <Inbox className="h-8 w-8 text-primary" />
@@ -295,6 +330,7 @@ function ReceivedPage() {
               {t("Doručené eFaktúry sa sem stiahnu tlačidlom hore. Firma musí byť spárovaná s ePoštákom — spraví sa to na prehľade eFaktúry.")}
             </p>
           </div>
+          )
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">

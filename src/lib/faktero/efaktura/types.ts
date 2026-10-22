@@ -145,3 +145,13 @@ export type XmlGenerationResult = {
   validationErrors: { code: string; message: string; path?: string }[];
   valid: boolean;
 };
+
+/** Stav onboardingu „len odosielanie“ pre zákaznícke rozhranie. */
+export type OdosielanieFirmy = {
+  stav: string;
+  nextAction: string | null;
+  /** Text pre firmu od ePoštáka (clientMessage.sk). */
+  sprava: string | null;
+  prijemPoskytovatel: string | null;
+  aktivovaneAt: string | null;
+};
