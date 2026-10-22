@@ -156,6 +156,7 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     supplier_street: p.supplier_street,
     supplier_city: p.supplier_city,
     supplier_zip: p.supplier_zip,
+    supplier_country: p.supplier_country,
     document_number: p.invoice_number,
     issue_date: p.issue_date,
     currency: p.currency,
@@ -195,6 +196,10 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     _datumDph: p.delivery_date || p.issue_date,
     _splatnost: p.due_date,
     _typPohody: spolu < 0 || p.opravuje_cislo ? "receivedCreditNotice" : "receivedInvoice",
+    // Číslo faktúry, ktorú dobropis opravuje — SK Pohoda ho chce v „Pôvodné číslo dokladu".
+    _opravujeCislo: p.opravuje_cislo,
+    // Nárok na odpočet DPH; `false` = Faktero DPH do výkazu nezapočíta.
+    odpocet: p.odpocet,
     // Celá faktúra v prenesení — hlavička dostane členenie pre prenesenie a KV B.1.
     _pdp: celaPdp(p),
   };

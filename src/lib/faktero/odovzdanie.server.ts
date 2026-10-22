@@ -310,7 +310,7 @@ export async function zostavBalik(
   } = await import("./pohoda-konektor.server");
 
   const cisla = await cislaVPohode(supabase, vstup.companyId);
-  const { zalohy, opravovane } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
+  const { zalohy, opravovane, povodneCisla } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
   const storna = await nacitajStorna(supabase, vstup.companyId, cisla);
 
   const zakaznici = company.pohoda_posielat_adresar
@@ -345,6 +345,7 @@ export async function zostavBalik(
       nastavenia,
       zalohy,
       opravovane,
+      povodneCisla,
       zakazky,
     });
     xmlFaktur = vystup.content;

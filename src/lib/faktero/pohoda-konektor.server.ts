@@ -318,7 +318,7 @@ export async function zostavDavku(
   // pôvodnej faktúre a odpočet zálohy na konečnej.
   const cisla = await cislaVPohode(supabase, vstup.companyId);
   const storna = lenBezny ? await nacitajStorna(supabase, vstup.companyId, cisla) : [];
-  const { zalohy, opravovane } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
+  const { zalohy, opravovane, povodneCisla } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
 
   const prazdna =
     !faktury.length &&
@@ -433,6 +433,7 @@ export async function zostavDavku(
     zakazky,
     zalohy,
     opravovane,
+    povodneCisla,
   });
   const xml = ciselniky
     ? (await import("./predkontacie")).pridajZiadost(davkaXml, company.ico)
@@ -534,9 +535,16 @@ export async function nacitajVazby(
   companyId: string,
   faktury: Riadok[],
   cisla: Map<string, string>,
-): Promise<{ zalohy: Record<string, OdpocetZalohy>; opravovane: Record<string, string> }> {
+): Promise<{
+  zalohy: Record<string, OdpocetZalohy>;
+  opravovane: Record<string, string>;
+  povodneCisla: Record<string, string>;
+}> {
   const zalohy: Record<string, OdpocetZalohy> = {};
   const opravovane: Record<string, string> = {};
+  // Číslo opravovanej faktúry vo Fakteri — SK Pohoda ho chce pri dobropise
+  // aj vtedy, keď pôvodná faktúra v Pohode (zatiaľ) nie je.
+  const povodneCisla: Record<string, string> = {};
 
   /*
     Odpočty zálohy sú vo vlastnej tabuľke — faktúra si ich môže odpočítať viac.
@@ -614,10 +622,12 @@ export async function nacitajVazby(
     if ((f.type === "credit_note" || f.type === "debit_note") && f.opravuje_fakturu_id) {
       const cislo = cisla.get(String(f.opravuje_fakturu_id));
       if (cislo) opravovane[String(f.id)] = cislo;
+      const povodne = cislo ?? podlaId.get(String(f.opravuje_fakturu_id))?.invoice_number;
+      if (povodne) povodneCisla[String(f.id)] = String(povodne);
     }
   }
 
-  return { zalohy, opravovane };
+  return { zalohy, opravovane, povodneCisla };
 }
 
 /**
