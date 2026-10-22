@@ -14,6 +14,11 @@ export type SendInvoiceEmailInput = {
   s_prilohami?: boolean;
   /** Kto odosiela — pre strážcu odosielania; `null` pri verejnom API. */
   user_id?: string | null;
+  /**
+   * Odoslať s pôvodným (starším) dátumom vystavenia. Platí len pre doklad,
+   * ktorý sa zmeniť nedá (uzamknuté obdobie, vyvezený do účtovníctva).
+   */
+  potvrdeny_stary_datum?: boolean;
 };
 
 function applyVars(s: string, inv: any, company: any) {
@@ -58,6 +63,11 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
     .maybeSingle();
   if (error || !invoice) throw new Error("Faktúra nenájdená");
   if (invoice.status === "cancelled") throw new Error("Stornovanú faktúru nemožno odoslať.");
+  // Prvé odoslanie len s dnešným dátumom vystavenia — pred záznamom o pokuse,
+  // odmietnutie nie je zlyhané odoslanie.
+  await (
+    await import("./datum-vystavenia.server")
+  ).overDatumPredOdoslanim(invoice.id, input.company_id, input.potvrdeny_stary_datum);
 
   const { data: company } = await supabaseAdmin
     .from("companies")

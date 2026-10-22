@@ -6,6 +6,7 @@ import { useT } from "@/lib/i18n/useT";
 import { velkost } from "@/lib/faktero/faktura-prilohy";
 import { prilohyFakturyFn } from "@/lib/faktero/faktura-prilohy.functions";
 import { posliEfakturuFn } from "@/lib/faktero/efaktura/efaktura.functions";
+import { useAktualnyDatum } from "@/components/faktero/AktualnyDatumOkno";
 import {
   EF_MAX_SPOLU,
   EF_MAX_SUBOROV,
@@ -28,6 +29,7 @@ export function OdoslanieEfakturyOkno({
   test,
   onClose,
   onOdoslane,
+  onZmenaDatumu,
 }: {
   companyId: string;
   invoiceId: string;
@@ -36,6 +38,8 @@ export function OdoslanieEfakturyOkno({
   test: boolean;
   onClose: () => void;
   onOdoslane: (r: { documentId: string; status: string }) => void;
+  /** Dátum vystavenia sa pred odoslaním zmenil na dnes — nech si volajúci faktúru načíta znova. */
+  onZmenaDatumu?: () => void;
 }) {
   const { t } = useT();
   const nacitaj = useServerFn(prilohyFakturyFn);
@@ -45,7 +49,28 @@ export function OdoslanieEfakturyOkno({
   const [vybrane, setVybrane] = useState<string[]>([]);
   const [odosielam, setOdosielam] = useState(false);
   const [chyba, setChyba] = useState<string | null>(null);
-  useZatvorNaEscape(odosielam ? null : onClose);
+  /*
+    Prvé odoslanie len s dnešným dátumom vystavenia — kým sa to nevyrieši,
+    okno eFaktúry sa neukáže. Zrušenie zavrie celé odosielanie.
+  */
+  const datumOkno = useAktualnyDatum();
+  const [datumVyrieseny, setDatumVyrieseny] = useState(false);
+  const [potvrdenyStaryDatum, setPotvrdenyStaryDatum] = useState(false);
+  useEffect(() => {
+    let zive = true;
+    datumOkno.over(invoiceId).then((v) => {
+      if (!zive) return;
+      if (!v) return onClose();
+      setPotvrdenyStaryDatum(v.potvrdenyStaryDatum);
+      if (v.zmenene) onZmenaDatumu?.();
+      setDatumVyrieseny(true);
+    });
+    return () => {
+      zive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceId]);
+  useZatvorNaEscape(odosielam || !datumVyrieseny ? null : onClose);
 
   useEffect(() => {
     let zive = true;
@@ -81,7 +106,13 @@ export function OdoslanieEfakturyOkno({
     try {
       // Poradie príloh drží server (PDF prvé, potom poradie nahratia).
       const r: any = await posli({
-        data: { company_id: companyId, invoice_id: invoiceId, s_pdf: sPdf, prilohy: vybrane },
+        data: {
+          company_id: companyId,
+          invoice_id: invoiceId,
+          s_pdf: sPdf,
+          prilohy: vybrane,
+          potvrdeny_stary_datum: potvrdenyStaryDatum || undefined,
+        },
       });
       onOdoslane(r);
     } catch (e) {
@@ -90,6 +121,8 @@ export function OdoslanieEfakturyOkno({
       setOdosielam(false);
     }
   }
+
+  if (!datumVyrieseny) return <>{datumOkno.okno}</>;
 
   return (
     <div

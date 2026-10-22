@@ -1111,4 +1111,15 @@ export const cs: Partial<Record<Kluc, string>> = {
   "efo.zavriet": "Zavřít",
   "efo.cakame": "Čekáme na aktivaci e-fakturace vaším účetním",
   "efo.zlyEmail": "Zadejte platný e-mail účetního.",
+  // Dátum vystavenia pred prvým odoslaním.
+  "datum.nadpis": "Datum vystavení je {datum}. Faktura se odesílá dnes — datum vystavení by mělo být aktuální.",
+  "datum.zmena": "Datum vystavení se změní na {dnes}.",
+  "datum.splatnost": "Splatnost se posune na {datum} (lhůta zůstává stejná).",
+  "datum.dodanie": "Datum zdanitelného plnění zůstává {datum}.",
+  "datum.cislo": "Číslo {cislo} zůstává původní.",
+  "datum.zmenitAOdoslat": "Změnit datum vystavení na dnes a odeslat",
+  "datum.nedaSa": "Datum vystavení nelze změnit — období je uzamčené nebo je faktura už v účetnictví.",
+  "datum.odoslatSDatumom": "Odeslat s datem {datum}",
+  "datum.zmeneny": "Datum vystavení je změněno na dnešek.",
+  "datum.chybaZmeny": "Datum vystavení se nepodařilo změnit.",
 };

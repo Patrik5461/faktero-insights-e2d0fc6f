@@ -425,7 +425,7 @@
     },
     {
      "nadpis": "Ako odoslať faktúru e-mailom",
-     "text": "<>\n-\nNa detaile faktúry kliknite na Odoslať e-mailom .\n- Upravte predmet a sprievodnú správu (môžete použiť šablónu z nastavení firmy).\n- Faktero priloží PDF a odošle správu cez Resend.\n-\nKeď má doklad prílohy , pribudne voľba\nOdoslať aj prílohy dokladu — pôjdu v tom istom maile ako faktúra.\nV PDF je aj QR kód na platbu , takže zákazník nemusí prepisovať IBAN ani\nvariabilný symbol — naskenuje ho v mobilnom bankovníctve."
+     "text": "<>\n-\nNa detaile faktúry kliknite na Odoslať e-mailom .\n- Upravte predmet a sprievodnú správu (môžete použiť šablónu z nastavení firmy).\n- Faktero priloží PDF a odošle správu cez Resend.\n-\nKeď má doklad prílohy , pribudne voľba\nOdoslať aj prílohy dokladu — pôjdu v tom istom maile ako faktúra.\nV PDF je aj QR kód na platbu , takže zákazník nemusí prepisovať IBAN ani\nvariabilný symbol — naskenuje ho v mobilnom bankovníctve.\nPri prvom odoslaní (e-mailom aj eFaktúrou) musí byť dátum vystavenia\ndnešný. Keď ste faktúru vystavili skôr a posielate ju až dnes, Faktero to oznámi a ponúkne\nZmeniť dátum vystavenia na dnes a odoslať — splatnosť sa posunie o rovnaký\npočet dní, dátum dodania aj číslo faktúry ostávajú. Faktúru z uzamknutého obdobia alebo už\nvyvezenú do účtovníctva zmeniť nemožno; tá sa odošle s pôvodným dátumom až po výslovnom\npotvrdení."
     },
     {
      "nadpis": "Prílohy k faktúre",

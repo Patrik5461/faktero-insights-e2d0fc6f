@@ -9,6 +9,8 @@ const Input = z.object({
   message: z.string().max(5000).optional(),
   /** Priložiť k mailu aj súbory, ktoré visia na doklade. */
   s_prilohami: z.boolean().optional(),
+  /** Odoslať so starším dátumom vystavenia — len keď sa zmeniť nedá. */
+  potvrdeny_stary_datum: z.boolean().optional(),
 });
 
 export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
@@ -32,6 +34,7 @@ export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
       subject: data.subject,
       message: data.message,
       s_prilohami: data.s_prilohami,
+      potvrdeny_stary_datum: data.potvrdeny_stary_datum,
       user_id: context.userId,
     });
   });

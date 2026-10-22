@@ -1120,4 +1120,15 @@ export const hu: Partial<Record<Kluc, string>> = {
   "efo.zavriet": "Bezárás",
   "efo.cakame": "Várjuk, hogy a könyvelője aktiválja az e-számlázást",
   "efo.zlyEmail": "Adjon meg érvényes e-mail címet.",
+  // Dátum vystavenia pred prvým odoslaním.
+  "datum.nadpis": "A kiállítás dátuma {datum}. A számla ma kerül elküldésre — a kiállítás dátumának aktuálisnak kell lennie.",
+  "datum.zmena": "A kiállítás dátuma {dnes} lesz.",
+  "datum.splatnost": "A fizetési határidő {datum} lesz (a határidő hossza nem változik).",
+  "datum.dodanie": "A teljesítés dátuma marad: {datum}.",
+  "datum.cislo": "A(z) {cislo} sorszám változatlan marad.",
+  "datum.zmenitAOdoslat": "Kiállítás dátumának módosítása mára és küldés",
+  "datum.nedaSa": "A kiállítás dátuma nem módosítható — az időszak le van zárva, vagy a számla már a könyvelésben van.",
+  "datum.odoslatSDatumom": "Küldés {datum} dátummal",
+  "datum.zmeneny": "A kiállítás dátuma mára módosult.",
+  "datum.chybaZmeny": "A kiállítás dátumát nem sikerült módosítani.",
 };

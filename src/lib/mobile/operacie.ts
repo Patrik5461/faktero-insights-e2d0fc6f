@@ -33,6 +33,9 @@ export const OPERACIE = [
   "faktury-zoznam",
   "faktura-pdf",
   "faktura-email",
+  // Dátum vystavenia pred prvým odoslaním — tie isté funkcie ako okno na webe.
+  "faktura-datum-kontrola",
+  "faktura-datum-na-dnes",
   "faktury-uhradene",
   "faktura-upomienka",
   "vydavky-zoznam",

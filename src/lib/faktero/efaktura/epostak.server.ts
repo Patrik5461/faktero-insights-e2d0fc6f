@@ -222,6 +222,8 @@ export async function sendEfaktura(
    * ciest; vlastné prílohy dokladu len vybrané v okne odoslania.
    */
   volbyPriloh: import("./prilohy-efaktury.server").VolbyPriloh = {},
+  /** Odoslať so starším dátumom vystavenia — len keď sa zmeniť nedá (zámok obdobia, export). */
+  volby: { potvrdenyStaryDatum?: boolean } = {},
 ): Promise<SendEfakturaResult> {
   // 1) Load invoice + items + company
   const { data: invoice, error: invErr } = await supabaseAdmin
@@ -233,6 +235,10 @@ export async function sendEfaktura(
   if (!invoice) throw new Error("Faktúra nenájdená.");
   // Schvaľovanie: odoslať až po schválení, ak si to firma zapla.
   await (await import("../schvalovanie.server")).overOdoslanie(invoice.company_id, invoiceId);
+  // Prvé odoslanie len s dnešným dátumom vystavenia (rovnako ako e-mailom).
+  await (
+    await import("../datum-vystavenia.server")
+  ).overDatumPredOdoslanim(invoiceId, invoice.company_id, volby.potvrdenyStaryDatum);
 
   const [{ data: items, error: itemsErr }, { data: company, error: compErr }, { data: profile }] =
     await Promise.all([

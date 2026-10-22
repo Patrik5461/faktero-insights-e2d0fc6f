@@ -487,6 +487,7 @@ export const posliEfakturuFn = createServerFn({ method: "POST" })
       invoice_id?: string;
       s_pdf?: boolean;
       prilohy?: unknown;
+      potvrdeny_stary_datum?: boolean;
     };
     if (!v?.company_id || !v?.invoice_id) throw new Error("Chýba company_id alebo invoice_id.");
     const prilohy = Array.isArray(v.prilohy) ? v.prilohy : [];
@@ -499,6 +500,7 @@ export const posliEfakturuFn = createServerFn({ method: "POST" })
       // Bez voľby ide PDF faktúry vždy (staré volania, iné obrazovky).
       s_pdf: v.s_pdf !== false,
       prilohy: prilohy as string[],
+      potvrdeny_stary_datum: v.potvrdeny_stary_datum === true,
     };
   })
   .handler(async ({ data, context }) => {
@@ -527,7 +529,7 @@ export const posliEfakturuFn = createServerFn({ method: "POST" })
     const vysledok = await sendEfaktura(data.invoice_id, profil.epostak_firm_id, {
       sPdf: data.s_pdf,
       prilohyIds: data.prilohy,
-    });
+    }, { potvrdenyStaryDatum: data.potvrdeny_stary_datum });
     // Surová odpoveď poskytovateľa sa neposiela do stránky — je uložená
     // v `efaktura_deliveries.raw_response` a v prehliadači nemá čo robiť.
     return { documentId: vysledok.documentId, status: vysledok.status };

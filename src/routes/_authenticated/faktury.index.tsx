@@ -36,6 +36,11 @@ import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
+import {
+  kontrolaDatumuVystaveniaFn,
+  zmenDatumVystaveniaNaDnesFn,
+} from "@/lib/faktero/datum-vystavenia.functions";
+import { potvrd } from "@/lib/potvrdenie";
 import { sendReminderFn } from "@/lib/faktero/reminders.functions";
 import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { toast } from "sonner";
@@ -190,6 +195,8 @@ function InvoicesPage() {
   }
   const markPaidFn = useServerFn(bulkMarkPaidFn);
   const emailFn = useServerFn(sendInvoiceEmailFn);
+  const kontrolaDatumuFn = useServerFn(kontrolaDatumuVystaveniaFn);
+  const zmenDatumFn = useServerFn(zmenDatumVystaveniaNaDnesFn);
   const reminderFn = useServerFn(sendReminderFn);
   const pdfFn = useServerFn(generateInvoicePdf);
 
@@ -456,20 +463,60 @@ function InvoicesPage() {
       toast.error(t("Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav)."));
       return;
     }
+    /*
+      Prvé odoslanie len s dnešným dátumom vystavenia. Faktúry so starším
+      dátumom sa po súhlase zmenia na dnes; tie, ktoré sa zmeniť nedajú
+      (uzamknuté obdobie, export), sa hromadne neodošlú — pôvodný dátum sa dá
+      potvrdiť len jednotlivo na detaile.
+    */
+    let kontroly: Record<string, any> = {};
+    try {
+      kontroly = await kontrolaDatumuFn({ data: { invoiceIds: targets.map((r: any) => r.id) } });
+    } catch {
+      /* rozhodne server pri odoslaní */
+    }
+    const naZmenu = targets.filter((r: any) => kontroly[r.id]?.treba && kontroly[r.id]?.mozno);
+    const nemenitelne = targets.filter((r: any) => kontroly[r.id]?.treba && !kontroly[r.id]?.mozno);
+    if (naZmenu.length || nemenitelne.length) {
+      const riadky = [
+        t("Faktúry so starším dátumom vystavenia: {n}. Faktúra sa odosiela dnes — dátum vystavenia by mal byť aktuálny.", {
+          n: naZmenu.length + nemenitelne.length,
+        }),
+        naZmenu.length
+          ? t("Dátum vystavenia sa zmení na dnes pri {n} z nich, splatnosť sa posunie o rovnaký počet dní a dátum dodania ostáva.", { n: naZmenu.length })
+          : "",
+        nemenitelne.length
+          ? t("Faktúry, ktorým sa dátum zmeniť nedá (uzamknuté obdobie alebo export do účtovníctva): {n}. Hromadne sa neodošlú — pošlite ich jednotlivo z detailu faktúry.", { n: nemenitelne.length })
+          : "",
+      ].filter(Boolean);
+      const ano = await potvrd(riadky.join("\n"), {
+        potvrdit: naZmenu.length ? t("Zmeniť dátum vystavenia na dnes a odoslať") : t("Odoslať ostatné"),
+        nebezpecne: false,
+      });
+      if (!ano) return;
+    }
+    const preskocit = new Set(nemenitelne.map((r: any) => r.id));
+    const naOdoslanie = targets.filter((r: any) => !preskocit.has(r.id));
+    if (!naOdoslanie.length) {
+      toast.error(t("Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav)."));
+      return;
+    }
+    const menit = new Set(naZmenu.map((r: any) => r.id));
     setBusy(true);
-    setProgress({ current: 0, total: targets.length });
+    setProgress({ current: 0, total: naOdoslanie.length });
     let ok = 0,
       fail = 0;
-    for (let i = 0; i < targets.length; i++) {
-      const inv = targets[i];
+    for (let i = 0; i < naOdoslanie.length; i++) {
+      const inv = naOdoslanie[i];
       try {
+        if (menit.has(inv.id)) await zmenDatumFn({ data: { invoiceId: inv.id } });
         await emailFn({ data: { invoiceId: inv.id, recipient_email: inv.customer_email } });
         ok++;
       } catch (e) {
         console.error("bulk email failed", inv.id, e);
         fail++;
       }
-      setProgress({ current: i + 1, total: targets.length });
+      setProgress({ current: i + 1, total: naOdoslanie.length });
     }
     setProgress(null);
     setBusy(false);

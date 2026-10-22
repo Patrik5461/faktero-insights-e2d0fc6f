@@ -1135,4 +1135,15 @@ export const de: Partial<Record<Kluc, string>> = {
   "efo.zavriet": "Schließen",
   "efo.cakame": "Wir warten auf die Aktivierung der E-Rechnung durch Ihren Steuerberater",
   "efo.zlyEmail": "Geben Sie eine gültige E-Mail-Adresse ein.",
+  // Dátum vystavenia pred prvým odoslaním.
+  "datum.nadpis": "Das Rechnungsdatum ist der {datum}. Die Rechnung wird heute versendet — das Rechnungsdatum sollte aktuell sein.",
+  "datum.zmena": "Das Rechnungsdatum wird auf den {dnes} geändert.",
+  "datum.splatnost": "Die Fälligkeit verschiebt sich auf den {datum} (die Zahlungsfrist bleibt gleich).",
+  "datum.dodanie": "Das Lieferdatum bleibt der {datum}.",
+  "datum.cislo": "Die Nummer {cislo} bleibt unverändert.",
+  "datum.zmenitAOdoslat": "Rechnungsdatum auf heute ändern und senden",
+  "datum.nedaSa": "Das Rechnungsdatum kann nicht geändert werden — der Zeitraum ist gesperrt oder die Rechnung ist bereits in der Buchhaltung.",
+  "datum.odoslatSDatumom": "Mit Datum {datum} senden",
+  "datum.zmeneny": "Das Rechnungsdatum wurde auf heute geändert.",
+  "datum.chybaZmeny": "Das Rechnungsdatum konnte nicht geändert werden.",
 };

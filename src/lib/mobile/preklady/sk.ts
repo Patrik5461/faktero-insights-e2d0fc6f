@@ -1129,6 +1129,17 @@ export const sk = {
   "efo.zavriet": "Zavrieť",
   "efo.cakame": "Čakáme na aktiváciu e-fakturácie vaším účtovníkom",
   "efo.zlyEmail": "Zadajte platný e-mail účtovníka.",
+  // Dátum vystavenia pred prvým odoslaním.
+  "datum.nadpis": "Dátum vystavenia je {datum}. Faktúra sa odosiela dnes — dátum vystavenia by mal byť aktuálny.",
+  "datum.zmena": "Dátum vystavenia sa zmení na {dnes}.",
+  "datum.splatnost": "Splatnosť sa posunie na {datum} (lehota ostáva rovnaká).",
+  "datum.dodanie": "Dátum dodania ostáva {datum}.",
+  "datum.cislo": "Číslo {cislo} ostáva pôvodné.",
+  "datum.zmenitAOdoslat": "Zmeniť dátum vystavenia na dnes a odoslať",
+  "datum.nedaSa": "Dátum vystavenia sa zmeniť nedá — obdobie je uzamknuté alebo je faktúra už v účtovníctve.",
+  "datum.odoslatSDatumom": "Odoslať s dátumom {datum}",
+  "datum.zmeneny": "Dátum vystavenia je zmenený na dnes.",
+  "datum.chybaZmeny": "Dátum vystavenia sa nepodarilo zmeniť.",
 } as const;
 
 export type Kluc = keyof typeof sk;

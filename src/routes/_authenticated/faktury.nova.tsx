@@ -1,4 +1,6 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
+import { RozpisDph } from "@/components/faktero/RozpisDph";
+import { rozpisPodlaSadzieb } from "@/lib/faktero/rozpis-dph";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -727,6 +729,24 @@ function NewInvoice() {
     [riadkyZapis, form.rounding_mode, odpocty, form.reverse_charge, form.discount_type, form.discount_value],
   );
   /** Súčty, ako ich vidí človek — dobropis bez mínusu. */
+  // Rozpis podľa sadzieb pod súčtami — rovnaké zaokrúhlenie a zľava ako `sumyFormulara`.
+  const rozpisSadzieb = useMemo(() => {
+    const k = totals.zlava > 0 && totals.medzisucet ? koeficientZlavy(totals.medzisucet, totals.zlava) : 1;
+    return rozpisPodlaSadzieb(
+      riadkyZapis.map((it) => {
+        const zaklad = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
+        const pdp = form.reverse_charge || Boolean(it.prenesenie);
+        return {
+          vat_rate: it.vat_rate,
+          subtotal: zaklad * k,
+          vat_amount: pdp ? 0 : zaklad * (Number(it.vat_rate) / 100) * k,
+          prenesenie: pdp,
+        };
+      }),
+      { subtotal: totals.subtotal, vat_total: totals.vat_total },
+    );
+  }, [riadkyZapis, totals, form.reverse_charge]);
+
   const zobrazene = {
     medzisucet: sumaFormulara(totals.medzisucet, znForm),
     subtotal: sumaFormulara(totals.subtotal, znForm),
@@ -2206,6 +2226,11 @@ function NewInvoice() {
                   {formatujMenu(zobrazene.vat_total, form.currency)}
                 </span>
               </div>
+              <RozpisDph
+                skupiny={rozpisSadzieb}
+                mena={form.currency}
+                naZobrazenie={(n) => sumaFormulara(n, znForm)}
+              />
               <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
                 <span>{t("Celkom")}</span>
                 <span className="tabular-nums">

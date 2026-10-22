@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDatumPredOdoslanim } from "./datum-pred-odoslanim";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
@@ -1836,6 +1837,7 @@ function Vystavena({
   const { t, locale: loc } = usePreklad();
   const pdfFn = useOperacia("faktura-pdf");
   const mailFn = useOperacia("faktura-email");
+  const overDatum = useDatumPredOdoslanim();
   const [busy, setBusy] = useState<"pdf" | "mail" | "zdielam" | null>(null);
   const [odoslane, setOdoslane] = useState(false);
 
@@ -1867,10 +1869,17 @@ function Vystavena({
 
   async function posli() {
     if (!faktura.customer_email) return;
+    // Faktúra vystavená so starším dátumom — pred odoslaním ho treba zmeniť na dnes.
+    const datumOk = await overDatum(faktura.id);
+    if (!datumOk) return;
     setBusy("mail");
     try {
       await mailFn({
-        data: { invoiceId: faktura.id, recipient_email: faktura.customer_email },
+        data: {
+          invoiceId: faktura.id,
+          recipient_email: faktura.customer_email,
+          potvrdeny_stary_datum: datumOk.potvrdenyStaryDatum || undefined,
+        },
       });
       setOdoslane(true);
       toast.success(t("nf.odoslaneNa", { email: faktura.customer_email ?? "" }));

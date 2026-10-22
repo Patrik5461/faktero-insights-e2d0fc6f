@@ -117,6 +117,14 @@ const sections: HelpSection[] = [
           V PDF je aj <strong>QR kód na platbu</strong>, takže zákazník nemusí prepisovať IBAN ani
           variabilný symbol — naskenuje ho v mobilnom bankovníctve.
         </p>
+        <p>
+          Pri <strong>prvom odoslaní</strong> (e-mailom aj eFaktúrou) musí byť dátum vystavenia
+          dnešný. Keď ste faktúru vystavili skôr a posielate ju až dnes, Faktero to oznámi a ponúkne{" "}
+          <strong>Zmeniť dátum vystavenia na dnes a odoslať</strong> — splatnosť sa posunie o
+          rovnaký počet dní, dátum dodania aj číslo faktúry ostávajú. Faktúru z uzamknutého obdobia
+          alebo už vyvezenú do účtovníctva zmeniť nemožno; tá sa odošle s pôvodným dátumom až po
+          výslovnom potvrdení.
+        </p>
       </>
     ),
   },

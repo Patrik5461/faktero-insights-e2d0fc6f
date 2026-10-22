@@ -16,6 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import { PrilohyAppka } from "./PrilohyAppka";
+import { useDatumPredOdoslanim } from "./datum-pred-odoslanim";
 import { datum } from "./PrijateDoklady";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
@@ -394,6 +395,7 @@ function DetailFaktury({
   const { t, mnozne, locale: loc } = usePreklad();
   const pdfFn = useOperacia("faktura-pdf");
   const mailFn = useOperacia("faktura-email");
+  const overDatum = useDatumPredOdoslanim();
   const paidFn = useOperacia("faktury-uhradene");
   const upomienkaFn = useOperacia("faktura-upomienka");
   /* Koľká upomienka je na rade — text sa s každou ďalšou pritvrdzuje. */
@@ -477,6 +479,9 @@ function DetailFaktury({
 
   async function posli() {
     if (!faktura.customer_email) return;
+    // Prvé odoslanie len s dnešným dátumom vystavenia.
+    const datumOk = await overDatum(faktura.id);
+    if (!datumOk) return;
     setBusy("mail");
     try {
       /* Prílohy idú s faktúrou rovnako ako na webe, kde je voľba predvolene zapnutá. */
@@ -485,6 +490,7 @@ function DetailFaktury({
           invoiceId: faktura.id,
           recipient_email: faktura.customer_email,
           s_prilohami: true,
+          potvrdeny_stary_datum: datumOk.potvrdenyStaryDatum || undefined,
         },
       });
       toast.success(t("nf.odoslaneNa", { email: faktura.customer_email ?? "" }));

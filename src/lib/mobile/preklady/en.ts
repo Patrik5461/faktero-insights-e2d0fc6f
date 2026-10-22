@@ -1123,4 +1123,15 @@ export const en: Partial<Record<Kluc, string>> = {
   "efo.zavriet": "Close",
   "efo.cakame": "Waiting for your accountant to activate e-invoicing",
   "efo.zlyEmail": "Enter a valid e-mail address.",
+  // Dátum vystavenia pred prvým odoslaním.
+  "datum.nadpis": "The issue date is {datum}. The invoice is being sent today — the issue date should be current.",
+  "datum.zmena": "The issue date will change to {dnes}.",
+  "datum.splatnost": "The due date moves to {datum} (the payment term stays the same).",
+  "datum.dodanie": "The delivery date stays {datum}.",
+  "datum.cislo": "The number {cislo} stays the same.",
+  "datum.zmenitAOdoslat": "Change the issue date to today and send",
+  "datum.nedaSa": "The issue date cannot be changed — the period is locked or the invoice is already in the accounts.",
+  "datum.odoslatSDatumom": "Send dated {datum}",
+  "datum.zmeneny": "The issue date has been changed to today.",
+  "datum.chybaZmeny": "The issue date could not be changed.",
 };

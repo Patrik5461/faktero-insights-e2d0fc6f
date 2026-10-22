@@ -1,4 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { RozpisDph } from "@/components/faktero/RozpisDph";
+import { rozpisPodlaSadzieb } from "@/lib/faktero/rozpis-dph";
+import { riadkySoZlavou } from "@/lib/faktero/zlavy";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
@@ -17,6 +20,7 @@ import {
 } from "@/components/faktero/DocumentDetailHeader";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { OdoslanieEfakturyOkno } from "@/components/faktero/OdoslanieEfakturyOkno";
+import { useAktualnyDatum } from "@/components/faktero/AktualnyDatumOkno";
 import { Oprava25aPanel } from "@/components/faktero/Oprava25aPanel";
 import { ZauctovanieVystavenejPanel } from "@/components/faktero/ZauctovanieVystavenejPanel";
 import { ZasielkovnaFaktury } from "@/components/faktero/ZasielkovnaFaktury";
@@ -233,10 +237,14 @@ function InvoiceDetail() {
    * príloh dokladu (BG-24). XML ePošták vyrobí sám z údajov faktúry.
    */
   const [efakturaOkno, setEfakturaOkno] = useState(false);
+  /* Dátum vystavenia pred prvým odoslaním — rieši ho samo okno eFaktúry. */
   function handleSendEfaktura() {
     if (!inv?.company_id) return;
     setEfakturaOkno(true);
   }
+  const datumOkno = useAktualnyDatum();
+  /** Pôvodný dátum potvrdený pri doklade, ktorý sa zmeniť nedá. */
+  const [potvrdenyStaryDatum, setPotvrdenyStaryDatum] = useState(false);
   function poOdoslaniEfaktury(r: { status: string }) {
     setEfakturaOkno(false);
     /* V testovacom režime doklad do siete Peppol nejde — hláška to musí
@@ -797,12 +805,26 @@ function InvoiceDetail() {
    * tá adresu nemá, dialóg sa otvorí prázdny a adresa sa dá napísať ručne.
    */
   async function openEmail() {
-    let adresa = inv.customer_email as string | null;
-    if (!adresa && inv.customer_id) {
+    /*
+      Prvé odoslanie len s dnešným dátumom vystavenia. Okno sa ukáže ešte pred
+      formulárom mailu — text mailu nesie splatnosť, ktorá sa so zmenou posúva.
+    */
+    const vysledok = await datumOkno.over(id);
+    if (!vysledok) return;
+    setPotvrdenyStaryDatum(vysledok.potvrdenyStaryDatum);
+    let fa: any = inv;
+    if (vysledok.zmenene) {
+      const { data: nova } = await supabase.from("invoices").select("*").eq("id", id).single();
+      if (nova) fa = nova;
+      toast.success(t("Dátum vystavenia je zmenený na dnes."));
+      load();
+    }
+    let adresa = fa.customer_email as string | null;
+    if (!adresa && fa.customer_id) {
       const { data } = await supabase
         .from("customers")
         .select("email")
-        .eq("id", inv.customer_id)
+        .eq("id", fa.customer_id)
         .maybeSingle();
       adresa = (data?.email as string | null) ?? null;
     }
@@ -811,21 +833,21 @@ function InvoiceDetail() {
       nie v jazyku, v ktorom má človek prepnutý web. Vlastný predvolený
       predmet a text firmy sa berie tak, ako ho firma napísala.
     */
-    const jazykMailu = jazykFaktury(inv, company);
+    const jazykMailu = jazykFaktury(fa, company);
     const predvoleny = predvolenyMailFaktury(
       jazykMailu,
-      (inv as any)?.type,
+      (fa as any)?.type,
       krajinaDane((company as any)?.country),
     );
-    const hodnoty = hodnotyMailu(inv, jazykMailu);
+    const hodnoty = hodnotyMailu(fa, jazykMailu);
     setEmailForm({
       recipient_email: adresa ?? "",
       subject: (company?.email_default_subject ?? predvoleny.predmet).replaceAll(
         "{invoice_number}",
-        inv.invoice_number,
+        fa.invoice_number,
       ),
       message: (company?.email_default_message ?? predvoleny.text)
-        .replaceAll("{invoice_number}", inv.invoice_number)
+        .replaceAll("{invoice_number}", fa.invoice_number)
         .replaceAll("{due_date}", hodnoty.due_date)
         .replaceAll("{total}", hodnoty.total)
         .replaceAll("{company_name}", company?.name ?? ""),
@@ -846,6 +868,7 @@ function InvoiceDetail() {
           subject: emailForm.subject,
           message: emailForm.message,
           s_prilohami: pocetPriloh > 0 && posielatPrilohy,
+          potvrdeny_stary_datum: potvrdenyStaryDatum || undefined,
         },
       });
       toast.success(t("E-mail odoslaný"));
@@ -1354,6 +1377,19 @@ function InvoiceDetail() {
                 )}
                 <Row label={t("Bez DPH")} value={formatujMenu(sumaNaZobrazenie(inv, inv.subtotal), inv.currency)} />
                 <Row label={t("DPH")} value={formatujMenu(sumaNaZobrazenie(inv, inv.vat_total), inv.currency)} />
+                <RozpisDph
+                  skupiny={rozpisPodlaSadzieb(
+                    riadkySoZlavou(items, inv.discount_total).map((it: any) => ({
+                      vat_rate: it.vat_rate,
+                      subtotal: it.subtotal,
+                      vat_amount: it.vat_amount,
+                      prenesenie: Boolean(inv.reverse_charge || it.prenesenie),
+                    })),
+                    { subtotal: inv.subtotal, vat_total: inv.vat_total },
+                  )}
+                  mena={inv.currency}
+                  naZobrazenie={(n) => sumaNaZobrazenie(inv, n)}
+                />
                 {maZuctovanuZalohu(inv.advance_amount) && (
                   <>
                     <Row label={t("Spolu")} value={formatujMenu(inv.total, inv.currency)} />
@@ -1648,8 +1684,10 @@ function InvoiceDetail() {
           test={efakturaTest}
           onClose={() => setEfakturaOkno(false)}
           onOdoslane={poOdoslaniEfaktury}
+          onZmenaDatumu={load}
         />
       )}
+      {datumOkno.okno}
       {emailOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"

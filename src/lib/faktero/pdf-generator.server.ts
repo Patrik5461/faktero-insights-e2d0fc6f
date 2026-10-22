@@ -136,6 +136,21 @@ function san(s: any): string {
 
 export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<Uint8Array> {
   /*
+    Veta o prenesení daňovej povinnosti musí byť na prvej strane. Najprv sa
+    skúsi bežné umiestnenie (vedľa súčtov alebo pod nimi); keď by veta
+    skončila až na ďalšej strane, doklad sa nakreslí znova s vetou hore nad
+    položkami. Krátka faktúra tak ostane na jednej strane.
+  */
+  const prvy = await vykresliFakturu(input, false);
+  if (!prvy.prenesenieMimoPrvejStrany) return prvy.bajty;
+  return (await vykresliFakturu(input, true)).bajty;
+}
+
+async function vykresliFakturu(
+  input: InvoicePdfInput,
+  prenesenieHore: boolean,
+): Promise<{ bajty: Uint8Array; prenesenieMimoPrvejStrany: boolean }> {
+  /*
     Dobropis je v databáze záporný; na doklade sa sumy píšu bez mínusu, že ide
     o zníženie, hovorí nadpis DOBROPIS a odkaz na opravovanú faktúru. Kreslí
     sa z kópií — `input.invoice` potom ešte číta ZUGFeRD (invoice-pdf.server),
@@ -435,6 +450,78 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawAligned(p, bold, t.celkom, cols.tot.x + cols.tot.w - PAD, baseY, 8.5, sub, "right");
     return top - headerH;
   };
+
+  // Vystavovateľ mimo Slovenska (samofaktúra za dodávateľa z EÚ): odkaz na smernicu.
+  const cudziVystavovatel =
+    Boolean(invoice.samofakturacia) && String(company.country ?? "SK").toUpperCase() !== "SK";
+  // Česká firma cituje český zákon o DPH (235/2004 Sb.), nie slovenský 222/2004.
+  const vetyCz =
+    !cudziVystavovatel && krajinaDane(company.country) === "CZ" ? vetyPreneseniaCz(jazyk) : null;
+  // Nemecká firma cituje UStG (§ 13b, § 4 Nr. 1a/1b, § 3a Abs. 2).
+  const jeDe = !cudziVystavovatel && krajinaDane(company.country) === "DE";
+  const kuDe = jeDe && kuFirma;
+  // Zmiešaná faktúra: prenesenie len pri niektorých položkách — veta o tuzemskom prenesení.
+  const pdpPolozky = !invoice.reverse_charge && items.some((x: any) => x.prenesenie);
+  const textPrenesenia = !invoice.reverse_charge
+    ? pdpPolozky
+      ? `${t.polozkyPdp} ${vetyCz ? vetyCz.tuzemsko : jeDe ? vetyDe(jazyk).tuzemsko : t.prenosTuzemsko}`
+      : null
+    : kuDe
+      ? /*
+          Kleinunternehmer oslobodené dodanie do EÚ ani prenesenie podľa § 13b
+          neuplatňuje (§ 19 Abs. 1 UStG) — na doklade je len veta § 19 nižšie.
+          Výnimkou je služba podnikateľovi v EÚ: daň tam platí odberateľ.
+        */
+        invoice.reverse_charge_type === "eu_b2b" && invoice.eu_plnenie === "sluzba"
+        ? vetyDe(jazyk).euSluzba
+        : null
+    : jeDe
+      ? (vetaPreneseniaDe(invoice.reverse_charge_type, invoice.eu_plnenie, jazyk) ?? vetyDe(jazyk).tuzemsko)
+    : vetyCz
+      ? invoice.reverse_charge_type === "eu_b2b"
+        ? invoice.eu_plnenie === "sluzba"
+          ? vetyCz.euSluzba
+          : vetyCz.euTovar
+        : invoice.reverse_charge_type === "export"
+          ? vetyCz.vyvoz
+          : vetyCz.tuzemsko
+      : invoice.reverse_charge_type === "eu_b2b"
+      ? cudziVystavovatel
+        ? invoice.eu_plnenie === "sluzba"
+          ? t.prenosEuSluzbaSmernica
+          : t.prenosEuTovarSmernica
+        : t.prenosEu
+      : invoice.reverse_charge_type === "export"
+        ? t.prenosVyvoz
+        : t.prenosTuzemsko;
+
+  /*
+    Veta o prenesení daňovej povinnosti musí byť na prvej strane — pri dlhšej
+    faktúre sa predtým dostala až pod položky na druhú stranu. Kreslí sa
+    preto hneď nad položkami, kde je vždy na prvej strane.
+  */
+  let prenesenieHotove = false;
+  let prenesenieMimoPrvejStrany = false;
+  if (textPrenesenia && prenesenieHore) {
+    const rcLines = wrapLines(textPrenesenia, bold, 9.5, innerW - 16);
+    const vyska = rcLines.length * 12 + 14;
+    cur.drawRectangle({
+      x: margin,
+      y: y - vyska,
+      width: innerW,
+      height: vyska,
+      color: rgb(0.98, 0.94, 0.84),
+      borderColor: rgb(0.85, 0.7, 0.3),
+      borderWidth: 0.7,
+    });
+    let ry = y - 12;
+    for (const ln of rcLines) {
+      cur.drawText(ln, { x: margin + 8, y: ry, size: 9.5, font: bold, color: rgb(0.4, 0.28, 0.05) });
+      ry -= 12;
+    }
+    y -= vyska + 12;
+    prenesenieHotove = true;
+  }
 
   /*
     Text nad položkami. Kreslí sa tesne pred hlavičkou tabuľky, takže sa naň
@@ -837,51 +924,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     (ak tam nesedí pečiatka). Pod platobnými údajmi rámik pridával vlastný
     riadok výšky a faktúra s textom nad položkami kvôli nemu mala dve strany.
   */
-  // Vystavovateľ mimo Slovenska (samofaktúra za dodávateľa z EÚ): odkaz na smernicu.
-  const cudziVystavovatel =
-    Boolean(invoice.samofakturacia) && String(company.country ?? "SK").toUpperCase() !== "SK";
-  // Česká firma cituje český zákon o DPH (235/2004 Sb.), nie slovenský 222/2004.
-  const vetyCz =
-    !cudziVystavovatel && krajinaDane(company.country) === "CZ" ? vetyPreneseniaCz(jazyk) : null;
-  // Nemecká firma cituje UStG (§ 13b, § 4 Nr. 1a/1b, § 3a Abs. 2).
-  const jeDe = !cudziVystavovatel && krajinaDane(company.country) === "DE";
-  const kuDe = jeDe && kuFirma;
-  // Zmiešaná faktúra: prenesenie len pri niektorých položkách — veta o tuzemskom prenesení.
-  const pdpPolozky = !invoice.reverse_charge && items.some((x: any) => x.prenesenie);
-  const textPrenesenia = !invoice.reverse_charge
-    ? pdpPolozky
-      ? `${t.polozkyPdp} ${vetyCz ? vetyCz.tuzemsko : jeDe ? vetyDe(jazyk).tuzemsko : t.prenosTuzemsko}`
-      : null
-    : kuDe
-      ? /*
-          Kleinunternehmer oslobodené dodanie do EÚ ani prenesenie podľa § 13b
-          neuplatňuje (§ 19 Abs. 1 UStG) — na doklade je len veta § 19 nižšie.
-          Výnimkou je služba podnikateľovi v EÚ: daň tam platí odberateľ.
-        */
-        invoice.reverse_charge_type === "eu_b2b" && invoice.eu_plnenie === "sluzba"
-        ? vetyDe(jazyk).euSluzba
-        : null
-    : jeDe
-      ? (vetaPreneseniaDe(invoice.reverse_charge_type, invoice.eu_plnenie, jazyk) ?? vetyDe(jazyk).tuzemsko)
-    : vetyCz
-      ? invoice.reverse_charge_type === "eu_b2b"
-        ? invoice.eu_plnenie === "sluzba"
-          ? vetyCz.euSluzba
-          : vetyCz.euTovar
-        : invoice.reverse_charge_type === "export"
-          ? vetyCz.vyvoz
-          : vetyCz.tuzemsko
-      : invoice.reverse_charge_type === "eu_b2b"
-      ? cudziVystavovatel
-        ? invoice.eu_plnenie === "sluzba"
-          ? t.prenosEuSluzbaSmernica
-          : t.prenosEuTovarSmernica
-        : t.prenosEu
-      : invoice.reverse_charge_type === "export"
-        ? t.prenosVyvoz
-        : t.prenosTuzemsko;
-  let prenesenieHotove = false;
-  if (textPrenesenia && !kresliPeciatku) {
+  if (textPrenesenia && !kresliPeciatku && !prenesenieHotove) {
     const sirka = totalsX - margin - 20;
     const riadky = wrapLines(textPrenesenia, bold, 9, sirka - 16);
     const vyska = riadky.length * 11.5 + 14;
@@ -903,6 +946,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
         ry -= 11.5;
       }
       prenesenieHotove = true;
+      if (cur !== page) prenesenieMimoPrvejStrany = true;
     }
   }
 
@@ -1223,6 +1267,8 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
 
   // ── Reverse charge legal text (keď sa nezmestil vedľa súčtov) ──
   if (textPrenesenia && !prenesenieHotove) {
+    if (cur !== page || y - (18 + wrapLines(textPrenesenia, bold, 9.5, innerW - 16).length * 12 + 16) < BOTTOM_LIMIT)
+      prenesenieMimoPrvejStrany = true;
     const rcText = textPrenesenia;
     const rcLines = wrapLines(rcText, bold, 9.5, innerW - 16);
     const needed = 18 + rcLines.length * 12 + 16;
@@ -1319,7 +1365,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     p.drawText(pageLabel, { x: width - margin - plw, y: 38, size: 7.5, font, color: muted });
   });
 
-  return await doc.save();
+  return { bajty: await doc.save(), prenesenieMimoPrvejStrany };
 }
 
 // Column layout — fixed widths inside innerW (sum = innerW).

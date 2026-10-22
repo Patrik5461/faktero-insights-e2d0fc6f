@@ -15,6 +15,10 @@ import { syncBankTransactions } from "@/lib/faktero/tatrabanka.functions";
 import { vystaveneFakturyFn } from "@/lib/faktero/mobil-faktura.functions";
 import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
+import {
+  kontrolaDatumuVystaveniaFn,
+  zmenDatumVystaveniaNaDnesFn,
+} from "@/lib/faktero/datum-vystavenia.functions";
 import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
 import { sendReminderFn } from "@/lib/faktero/reminders.functions";
 import {
@@ -82,6 +86,8 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "faktury-zoznam": vystaveneFakturyFn,
   "faktura-pdf": generateInvoicePdf,
   "faktura-email": sendInvoiceEmailFn,
+  "faktura-datum-kontrola": kontrolaDatumuVystaveniaFn,
+  "faktura-datum-na-dnes": zmenDatumVystaveniaNaDnesFn,
   "faktury-uhradene": bulkMarkPaidFn,
   "faktura-upomienka": sendReminderFn,
   "vydavky-zoznam": listExpensesFn,

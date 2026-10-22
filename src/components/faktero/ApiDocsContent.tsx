@@ -553,6 +553,32 @@ const { signed_url } = await res.json();
   -H "Content-Type: application/json" \\
   -d '{ "recipient_email": "klient@example.com" }'`}
           />
+          <p className="mt-3 text-sm text-muted-foreground">
+            {t(
+              'Pri prvom odoslaní musí byť dátum vystavenia dnešný. Faktúru so starším dátumom API odmietne odpoveďou 409 s kódom issue_date_in_past (v details je issue_date, today, new_due_date a can_update). Pošlite požiadavku znova s "update_issue_date": true — dátum vystavenia sa zmení na dnes, splatnosť sa posunie o rovnaký počet dní a dátum dodania ostáva. Keď sa dátum zmeniť nedá (can_update: false — uzamknuté obdobie alebo export do účtovníctva), faktúru odošle s pôvodným dátumom až "keep_issue_date": true. Upomienky a opätovné odoslanie sa nekontrolujú.',
+            )}
+          </p>
+          <CodeBlock
+            lang="JSON"
+            code={`HTTP/1.1 409 Conflict
+{
+  "error": {
+    "code": "issue_date_in_past",
+    "message": "Dátum vystavenia nie je dnešný. …",
+    "details": {
+      "issue_date": "2026-10-20",
+      "today": "2026-10-21",
+      "new_due_date": "2026-11-04",
+      "can_update": true
+    }
+  }
+}
+
+curl -X POST https://faktero.sk/api/v1/invoices/inv_123/send \\
+  -H "Authorization: Bearer fk_live_xxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "recipient_email": "klient@example.com", "update_issue_date": true }'`}
+          />
 
           <h3 className="mt-6 font-semibold">{t("Označiť faktúru ako uhradenú")}</h3>
           <CodeBlock
