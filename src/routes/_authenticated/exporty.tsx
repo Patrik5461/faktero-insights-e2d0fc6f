@@ -24,6 +24,7 @@ import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight, Mail } from "lucide-react";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { useT } from "@/lib/i18n/useT";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { KontrolaPohody } from "@/components/faktero/KontrolaPohody";
@@ -88,6 +89,8 @@ function ExportsPage() {
     new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
   );
   const [dateTo, setDateTo] = useState(new Date().toISOString().slice(0, 10));
+  const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
+  const [lenNeexportovane, setLenNeexportovane] = useState(false);
   const [busy, setBusy] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
   const getContent = useServerFn(getExportContentFn);
@@ -111,26 +114,35 @@ function ExportsPage() {
         .eq("company_id", cid)
         .order("created_at", { ascending: false })
         .limit(50),
-      supabase
-        .from("invoices")
-        .select(
-          "id, company_id, invoice_number, customer_name, issue_date, total, currency, status, exported_at",
+      (() => {
+        let q = filtrujObdobie(
+          supabase
+            .from("invoices")
+            .select(
+              "id, company_id, invoice_number, customer_name, issue_date, delivery_date, total, currency, status, exported_at",
+            )
+            .eq("company_id", cid),
+          podla,
+          dateFrom,
+          dateTo,
         )
-        .eq("company_id", cid)
-        .gte("issue_date", dateFrom)
-        .lte("issue_date", dateTo)
-        .neq("status", "draft")
-        .neq("status", "cancelled")
-        // Zmazaná faktúra sa do účtovníctva posielať nesmie.
-        .is("deleted_at", null)
-        .order("issue_date", { ascending: false }),
+          .neq("status", "draft")
+          .neq("status", "cancelled")
+          // Zmazaná faktúra sa do účtovníctva posielať nesmie.
+          .is("deleted_at", null);
+        if (lenNeexportovane) q = q.is("exported_at", null);
+        return q.order(podla === "dodanie" ? "delivery_date" : "issue_date", {
+          ascending: false,
+          nullsFirst: false,
+        });
+      })(),
     ]);
     setJobs(js ?? []);
     setInvoices(inv ?? []);
   }
   useEffect(() => {
     load();
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, podla, lenNeexportovane]);
 
   const selectedIds = Object.entries(picked)
     .filter(([, v]) => v)
@@ -204,6 +216,28 @@ function ExportsPage() {
                     className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                 </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground" htmlFor="exp-podla">
+                    {t("Obdobie podľa")}
+                  </label>
+                  <select
+                    id="exp-podla"
+                    value={podla}
+                    onChange={(e) => setPodla(e.target.value as DatumObdobia)}
+                    className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="vystavenie">{t("dátumu vystavenia")}</option>
+                    <option value="dodanie">{t("dátumu dodania")}</option>
+                  </select>
+                </div>
+                <label className="flex items-center gap-2 pb-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={lenNeexportovane}
+                    onChange={(e) => setLenNeexportovane(e.target.checked)}
+                  />
+                  {t("Len ešte neexportované")}
+                </label>
                 <div className="ml-auto flex gap-2">
                   <button
                     onClick={() => setPicked(Object.fromEntries(invoices.map((i) => [i.id, true])))}
@@ -228,13 +262,14 @@ function ExportsPage() {
                       <th className="p-3">{t("Číslo")}</th>
                       <th className="p-3">{t("Odberateľ")}</th>
                       <th className="hidden p-3 md:table-cell">{t("Vystavená")}</th>
+                      <th className="hidden p-3 md:table-cell">{t("Dodaná")}</th>
                       <th className="hidden p-3 text-right md:table-cell">{t("Suma")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {invoices.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="p-6 text-center text-sm text-muted-foreground">
+                        <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
                           {t("Žiadne faktúry v zvolenom období.")}
                         </td>
                       </tr>
@@ -268,12 +303,21 @@ function ExportsPage() {
                             </span>
                           ) : null}
                           <span className="block whitespace-nowrap text-xs font-normal text-muted-foreground md:hidden">
-                            {datumNaDoklade(i.issue_date)} · {formatujMenu(i.total, i.currency)}
+                            {datumNaDoklade(i.issue_date)}
+                            {i.delivery_date && i.delivery_date !== i.issue_date
+                              ? ` · ${t("dodaná")} ${datumNaDoklade(i.delivery_date)}`
+                              : ""}{" "}
+                            · {formatujMenu(i.total, i.currency)}
                           </span>
                         </td>
                         <td className="p-3">{i.customer_name ?? "—"}</td>
                         <td className="hidden whitespace-nowrap p-3 md:table-cell">
                           {datumNaDoklade(i.issue_date)}
+                        </td>
+                        <td
+                          className={`hidden whitespace-nowrap p-3 md:table-cell ${i.delivery_date && i.delivery_date !== i.issue_date ? "font-medium" : "text-muted-foreground"}`}
+                        >
+                          {datumNaDoklade(datumDodania(i))}
                         </td>
                         <td className="hidden whitespace-nowrap p-3 text-right tabular-nums md:table-cell">
                           {formatujMenu(i.total, i.currency)}
@@ -727,6 +771,7 @@ function ZauctovaneDoProgramu() {
   const [vyber, setVyber] = useState<Record<string, boolean>>({});
   const [oznacit, setOznacit] = useState(true);
   const [lenNove, setLenNove] = useState(true);
+  const [podlaZ, setPodlaZ] = useState<DatumObdobia>("vystavenie");
   const [busy, setBusy] = useState(false);
   const [otvoreneNastavenia, setOtvoreneNastavenia] = useState(false);
 
@@ -747,12 +792,17 @@ function ZauctovaneDoProgramu() {
     if (!cid) return;
     let data: any[] = [];
     if (agenda === "vystavena") {
-      const r = await supabase
-        .from("invoices")
-        .select("id, invoice_number, customer_name, issue_date, total, currency, zauctovane_at")
-        .eq("company_id", cid)
-        .gte("issue_date", od)
-        .lte("issue_date", doDna)
+      const r = await filtrujObdobie(
+        supabase
+          .from("invoices")
+          .select(
+            "id, invoice_number, customer_name, issue_date, delivery_date, total, currency, zauctovane_at",
+          )
+          .eq("company_id", cid),
+        podlaZ,
+        od,
+        doDna,
+      )
         .neq("status", "draft")
         .is("deleted_at", null)
         .order("issue_date", { ascending: false });
@@ -761,20 +811,24 @@ function ZauctovaneDoProgramu() {
         cislo: x.invoice_number,
         partner: x.customer_name,
         datum: x.issue_date,
+        dodanie: x.delivery_date,
         suma: x.total,
         mena: x.currency,
         zauctovany: Boolean(x.zauctovane_at),
         odovzdany: false,
       }));
     } else if (agenda === "prijata") {
-      const r = await supabase
-        .from("purchase_invoices")
-        .select(
-          "id, invoice_number, supplier_name, issue_date, amount_total, currency, zauctovane_at, exported_at, type",
-        )
-        .eq("company_id", cid)
-        .gte("issue_date", od)
-        .lte("issue_date", doDna)
+      const r = await filtrujObdobie(
+        supabase
+          .from("purchase_invoices")
+          .select(
+            "id, invoice_number, supplier_name, issue_date, delivery_date, amount_total, currency, zauctovane_at, exported_at, type",
+          )
+          .eq("company_id", cid),
+        podlaZ,
+        od,
+        doDna,
+      )
         .eq("type", "regular")
         .is("deleted_at", null)
         .order("issue_date", { ascending: false });
@@ -783,6 +837,7 @@ function ZauctovaneDoProgramu() {
         cislo: x.invoice_number,
         partner: x.supplier_name,
         datum: x.issue_date,
+        dodanie: x.delivery_date,
         suma: x.amount_total,
         mena: x.currency,
         zauctovany: Boolean(x.zauctovane_at),
@@ -816,7 +871,7 @@ function ZauctovaneDoProgramu() {
   useEffect(() => {
     if (program !== "pohoda") void nacitaj();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agenda, od, doDna, program]);
+  }, [agenda, od, doDna, program, podlaZ]);
 
   async function zmenProgram(p: string) {
     const cid = getActiveCompanyId();
@@ -931,6 +986,19 @@ function ZauctovaneDoProgramu() {
                 className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
               />
             </label>
+            {agenda !== "doklad" && (
+              <label className="text-xs text-muted-foreground">
+                {t("Obdobie podľa")}
+                <select
+                  value={podlaZ}
+                  onChange={(e) => setPodlaZ(e.target.value as DatumObdobia)}
+                  className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+                >
+                  <option value="vystavenie">{t("dátumu vystavenia")}</option>
+                  <option value="dodanie">{t("dátumu dodania")}</option>
+                </select>
+              </label>
+            )}
             {agenda !== "vystavena" && (
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -1025,6 +1093,11 @@ function ZauctovaneDoProgramu() {
                     <td className="p-2">{r.partner ?? "—"}</td>
                     <td className="hidden whitespace-nowrap p-2 md:table-cell">
                       {datumNaDoklade(r.datum)}
+                      {r.dodanie && r.dodanie !== r.datum ? (
+                        <span className="block text-xs text-muted-foreground">
+                          {t("dodaná")} {datumNaDoklade(r.dodanie)}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="hidden whitespace-nowrap p-2 text-right tabular-nums md:table-cell">
                       {formatujMenu(r.suma ?? 0, r.mena)}
