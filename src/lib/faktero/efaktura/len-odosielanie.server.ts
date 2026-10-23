@@ -161,7 +161,7 @@ async function riadokFirmy(companyId: string): Promise<any | null> {
 export async function vytvorOnboardingLenOdosielanie(
   companyId: string,
   kontaktEmail: string,
-  relationshipMode: VztahOdosielania = "technical_delegation",
+  relationshipMode: VztahOdosielania = "managed_service",
   v: {
     pdsZiadostId?: string | null;
     prijemPoskytovatel?: string | null;

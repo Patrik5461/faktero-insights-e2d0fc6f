@@ -10,7 +10,15 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowRightLeft, CheckCircle2, Loader2, RefreshCw, Send, TriangleAlert, Webhook } from "lucide-react";
+import {
+  ArrowRightLeft,
+  CheckCircle2,
+  Loader2,
+  RefreshCw,
+  Send,
+  TriangleAlert,
+  Webhook,
+} from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import {
   adminEfakturaPrehladFn,
@@ -97,7 +105,8 @@ function Page() {
       <div>
         <h1 className="text-2xl font-semibold">eFaktúra</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Firmy, ktoré si na Portáli finančnej správy vybrali Faktero, a odbery udalostí od ePoštáka.
+          Firmy, ktoré si na Portáli finančnej správy vybrali Faktero, a odbery udalostí od
+          ePoštáka.
         </p>
       </div>
 
@@ -149,7 +158,9 @@ function Page() {
                     <td className="p-3">
                       <div className="font-medium">{z.nazov ?? "—"}</div>
                       <div className="text-xs text-muted-foreground">DIČ {z.dic}</div>
-                      {z.peppol_id && <div className="text-xs text-muted-foreground">{z.peppol_id}</div>}
+                      {z.peppol_id && (
+                        <div className="text-xs text-muted-foreground">{z.peppol_id}</div>
+                      )}
                     </td>
                     <td className="p-3 text-xs">
                       <div>{z.email ?? "—"}</div>
@@ -161,9 +172,13 @@ function Page() {
                       >
                         {STAVY[z.stav]?.text ?? z.stav}
                       </span>
-                      {z.chyba && <div className="mt-1 max-w-xs text-xs text-rose-700">{z.chyba}</div>}
+                      {z.chyba && (
+                        <div className="mt-1 max-w-xs text-xs text-rose-700">{z.chyba}</div>
+                      )}
                       {z.cudzi_poskytovatel && (
-                        <div className="mt-1 max-w-xs text-xs font-medium">Firma je u: {z.cudzi_poskytovatel}</div>
+                        <div className="mt-1 max-w-xs text-xs font-medium">
+                          Firma je u: {z.cudzi_poskytovatel}
+                        </div>
                       )}
                       {z.migracia_bezi && (
                         <div className="mt-1 max-w-xs text-xs text-amber-800">
@@ -185,13 +200,17 @@ function Page() {
                           <input
                             placeholder="id firmy"
                             value={priradenie[z.id] ?? ""}
-                            onChange={(e) => setPriradenie((p) => ({ ...p, [z.id]: e.target.value }))}
+                            onChange={(e) =>
+                              setPriradenie((p) => ({ ...p, [z.id]: e.target.value }))
+                            }
                             className="w-40 rounded border border-input bg-background px-2 py-1"
                           />
                           <button
                             onClick={() =>
                               akcia.mutate(() =>
-                                prirad({ data: { id: z.id, company_id: (priradenie[z.id] ?? "").trim() } }),
+                                prirad({
+                                  data: { id: z.id, company_id: (priradenie[z.id] ?? "").trim() },
+                                }),
                               )
                             }
                             className="rounded border border-border px-2 py-1 hover:bg-secondary"
@@ -201,7 +220,9 @@ function Page() {
                         </div>
                       )}
                       {z.pozvanka_odoslana_at && (
-                        <div className="mt-1 text-muted-foreground">pozvánka {kedy(z.pozvanka_odoslana_at)}</div>
+                        <div className="mt-1 text-muted-foreground">
+                          pozvánka {kedy(z.pozvanka_odoslana_at)}
+                        </div>
                       )}
                     </td>
                     <td className="p-3">
@@ -233,7 +254,9 @@ function Page() {
                           ziadost={z}
                           odosielanie={
                             data?.odosielanie.find(
-                              (o) => o.pds_ziadost_id === z.id || (z.company_id && o.company_id === z.company_id),
+                              (o) =>
+                                o.pds_ziadost_id === z.id ||
+                                (z.company_id && o.company_id === z.company_id),
                             ) ?? null
                           }
                           smie={Boolean(data?.smieMigrovat)}
@@ -291,7 +314,9 @@ function Page() {
                     <td className="p-3 whitespace-nowrap">{kedy(o.prijate_at)}</td>
                     <td className="p-3">
                       <div className="font-medium text-rose-700">{DOVODY[o.dovod] ?? o.dovod}</div>
-                      {o.chyba && <div className="mt-1 max-w-sm text-xs text-muted-foreground">{o.chyba}</div>}
+                      {o.chyba && (
+                        <div className="mt-1 max-w-sm text-xs text-muted-foreground">{o.chyba}</div>
+                      )}
                     </td>
                     <td className="p-3 text-xs">
                       {o.firmy.length ? (
@@ -348,7 +373,9 @@ function Page() {
                   <tr key={w.company_id} className="border-t border-border align-top">
                     <td className="p-3">
                       <div className="font-medium">{w.firma ?? w.company_id}</div>
-                      <div className="text-xs text-muted-foreground">ePošták {w.epostak_firm_id}</div>
+                      <div className="text-xs text-muted-foreground">
+                        ePošták {w.epostak_firm_id}
+                      </div>
                     </td>
                     <td className="p-3 text-xs">
                       {w.stav === "aktivny" ? (
@@ -360,7 +387,9 @@ function Page() {
                     <td className="p-3 text-xs">{kedy(w.posledna_udalost_at)}</td>
                     <td className="p-3">
                       <button
-                        onClick={() => akcia.mutate(() => zmaz({ data: { company_id: w.company_id } }))}
+                        onClick={() =>
+                          akcia.mutate(() => zmaz({ data: { company_id: w.company_id } }))
+                        }
                         className="rounded border border-border px-2 py-1 text-xs hover:bg-secondary"
                       >
                         Zmazať záznam
@@ -407,8 +436,10 @@ function Prevzatie({
     try {
       const r = await migruj({ data: { id: ziadost.id, kod } });
       setKod("");
-      if (r.stav === "registrovana") toast.success(`${meno} je prevzatá — eFaktúry idú cez Faktero.`);
-      else if (r.bezi) toast.info("Prevzatie beží u ePoštáka — výsledok príde e-mailom a ukáže sa tu.");
+      if (r.stav === "registrovana")
+        toast.success(`${meno} je prevzatá — eFaktúry idú cez Faktero.`);
+      else if (r.bezi)
+        toast.info("Prevzatie beží u ePoštáka — výsledok príde e-mailom a ukáže sa tu.");
       else toast.error(r.chyba ?? "Prevzatie neprešlo.");
     } catch (e: any) {
       toast.error(e?.message ?? "Nepodarilo sa");
@@ -446,15 +477,19 @@ function Prevzatie({
         className="rounded border border-input bg-background px-2 py-1 text-xs"
       />
       <p className="text-[11px] leading-snug text-muted-foreground">
-        Kód vydá firme jej súčasný poskytovateľ a firma ho pošle nám. Po prevzatí jej eFaktúry chodia
-        do Faktera a u pôvodného poskytovateľa sa odpojí.
+        Kód vydá firme jej súčasný poskytovateľ a firma ho pošle nám. Po prevzatí jej eFaktúry
+        chodia do Faktera a u pôvodného poskytovateľa sa odpojí.
       </p>
       <button
         type="submit"
         disabled={bezi || !kod.trim()}
         className="inline-flex items-center justify-center gap-1 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {bezi ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRightLeft className="h-3.5 w-3.5" />}
+        {bezi ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <ArrowRightLeft className="h-3.5 w-3.5" />
+        )}
         Prevziať firmu
       </button>
     </form>
@@ -477,7 +512,6 @@ function LenOdosielanie({
   poHotove: () => void;
 }) {
   const zapni = useServerFn(adminLenOdosielanieFn);
-  const [vztah, setVztah] = useState<"technical_delegation" | "managed_service">("technical_delegation");
   const [bezi, setBezi] = useState(false);
   const meno = ziadost.nazov ?? `DIČ ${ziadost.dic}`;
   const prijemU = ziadost.cudzi_poskytovatel ?? "súčasného poskytovateľa";
@@ -496,10 +530,14 @@ function LenOdosielanie({
     if (!ok) return;
     setBezi(true);
     try {
-      const r = await zapni({ data: { id: ziadost.id, relationship_mode: vztah } });
+      const r = await zapni({ data: { id: ziadost.id, relationship_mode: "managed_service" } });
       if (r.stav === "active") toast.success(`${meno} môže odosielať eFaktúry z Faktera.`);
-      else if (r.stav === "chyba" || r.stav === "zamietnuta") toast.error(r.chyba ?? "Nepodarilo sa.");
-      else toast.info(r.clientMessage ?? "Žiadosť vytvorená — firma musí dokončiť kroky na portáli FS.");
+      else if (r.stav === "chyba" || r.stav === "zamietnuta")
+        toast.error(r.chyba ?? "Nepodarilo sa.");
+      else
+        toast.info(
+          r.clientMessage ?? "Žiadosť vytvorená — firma musí dokončiť kroky na portáli FS.",
+        );
     } catch (e: any) {
       toast.error(e?.message ?? "Nepodarilo sa");
     } finally {
@@ -518,20 +556,9 @@ function LenOdosielanie({
   return (
     <div className="mt-2 flex w-64 flex-col gap-1 border-t border-border pt-2">
       {odosielanie && <StavOdosielania o={odosielanie} />}
-      <label className="text-xs font-medium" htmlFor={`vztah-${ziadost.id}`}>
-        Kto platí ePoštákovi
-      </label>
-      <select
-        id={`vztah-${ziadost.id}`}
-        value={vztah}
-        onChange={(e) => setVztah(e.target.value as typeof vztah)}
-        className="rounded border border-input bg-background px-2 py-1 text-xs"
-      >
-        <option value="technical_delegation">Firma (technical_delegation)</option>
-        <option value="managed_service">Faktero (managed_service)</option>
-      </select>
       <p className="text-[11px] leading-snug text-muted-foreground">
         Firma ostane prijímať u {prijemU}; z Faktera bude len odosielať. V SMP sa nič nemení.
+        Odosielanie platí Faktero (managed_service).
       </p>
       <button
         type="button"
@@ -600,7 +627,11 @@ function OdosielanieSekcia({
       { potvrdit: znova ? "Vytvoriť nanovo" : "Nastaviť webhook" },
     );
     if (!ok) return;
-    await spusti("webhook", () => webhookFn({ data: { znova } }), "Webhook onboardingu je nastavený.");
+    await spusti(
+      "webhook",
+      () => webhookFn({ data: { znova } }),
+      "Webhook onboardingu je nastavený.",
+    );
   };
 
   return (
@@ -614,7 +645,8 @@ function OdosielanieSekcia({
               disabled={bezi === "webhook"}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <Webhook className="h-4 w-4" /> {webhook?.nastaveny ? "Obnoviť webhook" : "Nastaviť webhook"}
+              <Webhook className="h-4 w-4" />{" "}
+              {webhook?.nastaveny ? "Obnoviť webhook" : "Nastaviť webhook"}
             </button>
             {webhook?.nastaveny && (
               <button
@@ -634,7 +666,9 @@ function OdosielanieSekcia({
         {webhook?.nastaveny ? (
           <span className="text-emerald-700">Webhook onboardingu je nastavený.</span>
         ) : (
-          <span className="text-amber-800">Webhook onboardingu nie je nastavený — stav sa len dopytuje.</span>
+          <span className="text-amber-800">
+            Webhook onboardingu nie je nastavený — stav sa len dopytuje.
+          </span>
         )}
         {webhook?.chyba && <span className="ml-1 text-rose-700">{webhook.chyba}</span>}
       </p>
@@ -669,7 +703,9 @@ function OdosielanieSekcia({
                   <td className="p-3">
                     <StavOdosielania o={o} />
                     {o.client_message_sk && (
-                      <div className="mt-1 max-w-xs text-xs text-muted-foreground">ePošták: {o.client_message_sk}</div>
+                      <div className="mt-1 max-w-xs text-xs text-muted-foreground">
+                        ePošták: {o.client_message_sk}
+                      </div>
                     )}
                     <div className="mt-1 text-xs text-muted-foreground">
                       vytvorená {kedy(o.vytvorene_at)}
@@ -685,17 +721,26 @@ function OdosielanieSekcia({
                     ) : (
                       "—"
                     )}
-                    {o.epostak_firm_id && <div className="text-muted-foreground">ePošták {o.epostak_firm_id}</div>}
+                    {o.epostak_firm_id && (
+                      <div className="text-muted-foreground">ePošták {o.epostak_firm_id}</div>
+                    )}
                   </td>
                   <td className="p-3">
                     <button
                       onClick={() =>
-                        void spusti(o.company_id, () => obnovFn({ data: { company_id: o.company_id } }), "Stav obnovený.")
+                        void spusti(
+                          o.company_id,
+                          () => obnovFn({ data: { company_id: o.company_id } }),
+                          "Stav obnovený.",
+                        )
                       }
                       disabled={bezi === o.company_id}
                       className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
                     >
-                      <RefreshCw className={`h-3.5 w-3.5 ${bezi === o.company_id ? "animate-spin" : ""}`} /> Obnoviť stav
+                      <RefreshCw
+                        className={`h-3.5 w-3.5 ${bezi === o.company_id ? "animate-spin" : ""}`}
+                      />{" "}
+                      Obnoviť stav
                     </button>
                   </td>
                 </tr>
@@ -720,7 +765,11 @@ function Stav({ ok, ano, nie }: { ok: boolean; ano: string; nie: string }) {
     <div
       className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}
     >
-      {ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />}
+      {ok ? (
+        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+      ) : (
+        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+      )}
       <span>{ok ? ano : nie}</span>
     </div>
   );

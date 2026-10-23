@@ -124,7 +124,9 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
         .limit(300),
       db
         .from("efaktura_webhooky")
-        .select("company_id, epostak_firm_id, webhook_id, stav, chyba, vytvorene_at, posledna_udalost_at, companies(name)")
+        .select(
+          "company_id, epostak_firm_id, webhook_id, stav, chyba, vytvorene_at, posledna_udalost_at, companies(name)",
+        )
         .order("vytvorene_at", { ascending: false })
         .limit(300),
       db
@@ -158,54 +160,50 @@ export const adminEfakturaPrehladFn = createServerFn({ method: "POST" })
         url: onboardingWebhook?.url ?? null,
         chyba: onboardingWebhook?.chyba ?? null,
       },
-      odosielanie: (odosielanie ?? []).map(
-        (o: any): OdosielanieAdmin => ({
-          company_id: o.company_id,
-          firma: o.companies?.name ?? null,
-          pds_ziadost_id: o.pds_ziadost_id ?? null,
-          dic: o.dic,
-          stav: o.stav,
-          epostak_stav: o.epostak_stav ?? null,
-          next_action: o.next_action ?? null,
-          client_message_sk: o.client_message_sk ?? null,
-          relationship_mode: o.relationship_mode,
-          payer_mode: o.payer_mode ?? null,
-          contact_email: o.contact_email ?? null,
-          prijem_poskytovatel: o.prijem_poskytovatel ?? null,
-          epostak_firm_id: o.epostak_firm_id ?? null,
-          // Kľúč sám sa von nevracia — len to, že je uložený.
-          ma_kluc: Boolean(o.kluc_sifrovany),
-          kluc_chyba: o.kluc_chyba ?? null,
-          chyba: o.chyba ?? null,
-          pokusov: o.pokusov ?? 0,
-          vytvorene_at: o.vytvorene_at,
-          aktivovane_at: o.aktivovane_at ?? null,
-        }),
-      ),
-      ziadosti: (ziadosti ?? []).map(
-        (z: any): ZiadostFsAdmin => ({
-          id: z.id,
-          prijate_at: z.prijate_at,
-          dic: z.dic,
-          nazov: z.nazov,
-          email: z.email,
-          telefon: z.telefon,
-          stav: z.stav,
-          company_id: z.company_id,
-          firma: z.companies?.name ?? null,
-          peppol_id: z.peppol_id,
-          chyba: z.chyba,
-          pokusov: z.pokusov ?? 0,
-          pozvanka_odoslana_at: z.pozvanka_odoslana_at,
-          ma_token: Boolean(z.token_sifrovany),
-          podpis_overeny: z.podpis_overeny !== false,
-          via: z.via ?? null,
-          cudzi_poskytovatel: z.cudzi_poskytovatel ?? null,
-          // Kód sám sa von nevracia — len to, že je uložený.
-          migracia_bezi: Boolean(z.migracny_kod_sifrovany),
-          migracia_at: z.migracia_at ?? null,
-        }),
-      ),
+      odosielanie: (odosielanie ?? []).map((o: any): OdosielanieAdmin => ({
+        company_id: o.company_id,
+        firma: o.companies?.name ?? null,
+        pds_ziadost_id: o.pds_ziadost_id ?? null,
+        dic: o.dic,
+        stav: o.stav,
+        epostak_stav: o.epostak_stav ?? null,
+        next_action: o.next_action ?? null,
+        client_message_sk: o.client_message_sk ?? null,
+        relationship_mode: o.relationship_mode,
+        payer_mode: o.payer_mode ?? null,
+        contact_email: o.contact_email ?? null,
+        prijem_poskytovatel: o.prijem_poskytovatel ?? null,
+        epostak_firm_id: o.epostak_firm_id ?? null,
+        // Kľúč sám sa von nevracia — len to, že je uložený.
+        ma_kluc: Boolean(o.kluc_sifrovany),
+        kluc_chyba: o.kluc_chyba ?? null,
+        chyba: o.chyba ?? null,
+        pokusov: o.pokusov ?? 0,
+        vytvorene_at: o.vytvorene_at,
+        aktivovane_at: o.aktivovane_at ?? null,
+      })),
+      ziadosti: (ziadosti ?? []).map((z: any): ZiadostFsAdmin => ({
+        id: z.id,
+        prijate_at: z.prijate_at,
+        dic: z.dic,
+        nazov: z.nazov,
+        email: z.email,
+        telefon: z.telefon,
+        stav: z.stav,
+        company_id: z.company_id,
+        firma: z.companies?.name ?? null,
+        peppol_id: z.peppol_id,
+        chyba: z.chyba,
+        pokusov: z.pokusov ?? 0,
+        pozvanka_odoslana_at: z.pozvanka_odoslana_at,
+        ma_token: Boolean(z.token_sifrovany),
+        podpis_overeny: z.podpis_overeny !== false,
+        via: z.via ?? null,
+        cudzi_poskytovatel: z.cudzi_poskytovatel ?? null,
+        // Kód sám sa von nevracia — len to, že je uložený.
+        migracia_bezi: Boolean(z.migracny_kod_sifrovany),
+        migracia_at: z.migracia_at ?? null,
+      })),
       odmietnute: (odmietnute ?? []) as OdmietnutaFsAdmin[],
       webhooky: (webhooky ?? []).map((w: any): WebhookAdmin => ({
         company_id: w.company_id as string,
@@ -299,7 +297,11 @@ export const adminPriradZiadostFn = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!zz) throw new Error("Žiadosť sa nenašla.");
-    const { data: firma } = await db.from("companies").select("id, dic").eq("id", data.company_id).maybeSingle();
+    const { data: firma } = await db
+      .from("companies")
+      .select("id, dic")
+      .eq("id", data.company_id)
+      .maybeSingle();
     if (!firma) throw new Error("Firma sa nenašla.");
     if (firma.dic && firma.dic !== zz.dic) {
       throw new Error(`Firma má DIČ ${firma.dic}, žiadosť je pre ${zz.dic}.`);
@@ -353,7 +355,7 @@ export const adminLenOdosielanieFn = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        relationship_mode: z.enum(["technical_delegation", "managed_service"]).default("technical_delegation"),
+        relationship_mode: z.literal("managed_service").default("managed_service"),
         email: z.string().trim().email().max(255).optional(),
       })
       .parse(d),
@@ -374,7 +376,11 @@ export const adminLenOdosielanieFn = createServerFn({ method: "POST" })
     if (!zz.company_id) {
       throw new Error("Žiadosť nemá firmu vo Fakteri — najprv ju priraď (firma musí mať účet).");
     }
-    const { data: firma } = await db.from("companies").select("id, dic, email").eq("id", zz.company_id).maybeSingle();
+    const { data: firma } = await db
+      .from("companies")
+      .select("id, dic, email")
+      .eq("id", zz.company_id)
+      .maybeSingle();
     if (!firma) throw new Error("Firma sa nenašla.");
     if (firma.dic && String(firma.dic).replace(/\s+/g, "") !== zz.dic) {
       throw new Error(`Firma má DIČ ${firma.dic}, žiadosť je pre ${zz.dic}.`);
@@ -423,7 +429,8 @@ export const adminObnovOdosielanieFn = createServerFn({ method: "POST" })
       if (r.epostak_firm_id) await m.aktivujLenOdosielanie(r);
       return { stav: r.stav as string };
     }
-    if (!r.epostak_request_id) throw new Error("Žiadosť u ePoštáka ešte nevznikla — zopakuj ju tlačidlom Len odosielanie.");
+    if (!r.epostak_request_id)
+      throw new Error("Žiadosť u ePoštáka ešte nevznikla — zopakuj ju tlačidlom Len odosielanie.");
     return m.obnovOnboarding(r);
   });
 
