@@ -6,4 +6,9 @@ export default {
   "Len ešte neexportované": "Nur noch nicht exportierte",
   Dodaná: "Geliefert",
   dodaná: "geliefert",
+  "podľa dátumu vystavenia": "nach Rechnungsdatum",
+  "podľa dátumu dodania": "nach Leistungsdatum",
+  "Zrušiť obdobie": "Zeitraum zurücksetzen",
+  "Dátum dodania zostupne": "Leistungsdatum absteigend",
+  "Dátum dodania vzostupne": "Leistungsdatum aufsteigend",
 };

@@ -61,6 +61,7 @@ import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté faktúry — Faktero") }] }),
@@ -129,7 +130,7 @@ const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
   { kluc: "ico", nazov: "IČO dodávateľa", predvoleny: false },
   { kluc: "vs", nazov: "VS" },
   { kluc: "vystavena", nazov: "Vystavená" },
-  { kluc: "duzp", nazov: "Dátum dodania (DUZP)", predvoleny: false },
+  { kluc: "duzp", nazov: "Dátum dodania (DUZP)" },
   { kluc: "splatnost", nazov: "Splatnosť" },
   { kluc: "zaklad", nazov: "Základ", predvoleny: false },
   { kluc: "dph", nazov: "DPH", predvoleny: false },
@@ -157,6 +158,10 @@ function PurchaseInvoicesPage() {
   const [status, setStatus] = useState<string>("");
   const [month, setMonth] = useState<string>("");
   const [supplier, setSupplier] = useState<string>("");
+  // Mesiac podľa dátumu vystavenia alebo dodania — faktúra vystavená 1. 10.
+  // s dodaním 30. 9. patrí do DPH za september.
+  const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
+  const [lenNeexportovane, setLenNeexportovane] = useState(false);
   const zobrazenie = useNastaveniaZoznamu("prijate-faktury", STLPCE_PRIJATYCH);
   const je = zobrazenie.je;
   const pocetStlpcov = zobrazenie.viditelne.length + 1;
@@ -549,10 +554,10 @@ function PurchaseInvoicesPage() {
     if (month) {
       const [y, m] = month.split("-").map(Number);
       const from = `${y}-${String(m).padStart(2, "0")}-01`;
-      const toDate = new Date(y, m, 1);
-      const to = `${toDate.getFullYear()}-${String(toDate.getMonth() + 1).padStart(2, "0")}-01`;
-      q = q.gte("issue_date", from).lt("issue_date", to);
+      const to = `${y}-${String(m).padStart(2, "0")}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
+      q = filtrujObdobie(q, podla, from, to);
     }
+    if (lenNeexportovane) q = q.is("exported_at", null).neq("status", "cancelled");
     if (supplier.trim()) q = q.ilike("supplier_name", `%${supplier.trim()}%`);
     const { data, error } = await q;
     if (cislo !== poslednyDotaz.current) return;
@@ -574,7 +579,7 @@ function PurchaseInvoicesPage() {
   }
   useEffect(() => {
     load();
-  }, [status, month, supplier]);
+  }, [status, month, supplier, podla, lenNeexportovane]);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -671,6 +676,23 @@ function PurchaseInvoicesPage() {
               </option>
             ))}
           </select>
+          <select
+            aria-label={t("Obdobie podľa")}
+            value={podla}
+            onChange={(e) => setPodla(e.target.value as DatumObdobia)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="vystavenie">{t("podľa dátumu vystavenia")}</option>
+            <option value="dodanie">{t("podľa dátumu dodania")}</option>
+          </select>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={lenNeexportovane}
+              onChange={(e) => setLenNeexportovane(e.target.checked)}
+            />
+            {t("Len ešte neexportované")}
+          </label>
           <input
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}
@@ -991,7 +1013,7 @@ function PurchaseInvoicesPage() {
                   {je("vystavena") && (
                     <td className="p-3">
                       {datumNaDoklade(r.issue_date)}
-                      {r.delivery_date && r.delivery_date !== r.issue_date ? (
+                      {!je("duzp") && r.delivery_date && r.delivery_date !== r.issue_date ? (
                         <div
                           className="text-xs text-muted-foreground"
                           title={t("Dátum dodania (daňového plnenia)")}
@@ -1001,7 +1023,13 @@ function PurchaseInvoicesPage() {
                       ) : null}
                     </td>
                   )}
-                  {je("duzp") && <td className="p-3">{r.delivery_date ?? "—"}</td>}
+                  {je("duzp") && (
+                    <td
+                      className={`p-3 ${r.delivery_date && r.delivery_date !== r.issue_date ? "font-medium" : "text-muted-foreground"}`}
+                    >
+                      {datumNaDoklade(datumDodania(r))}
+                    </td>
+                  )}
                   {je("splatnost") && (
                     <td className="p-3">
                       {datumNaDoklade(r.due_date)}

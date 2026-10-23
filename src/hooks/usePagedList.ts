@@ -17,6 +17,12 @@ export type PagedListOptions = {
   pageSizeKey?: string; // localStorage key suffix
   /** Pole hodnôt = ktorákoľvek z nich (`in`). */
   equals?: Record<string, string | number | boolean | null | string[]>;
+  /**
+   * Ďalšie podmienky dotazu (obdobie, len neexportované…). Dotaz sa
+   * prepočíta, keď sa zmení `filterKey` — funkcia sama sa porovnávať nedá.
+   */
+  upravDotaz?: (q: any) => any;
+  filterKey?: string;
 };
 
 /** Zapamätané zoradenie zoznamu — nech si to klient nemusí prestavovať zakaždým. */
@@ -41,6 +47,8 @@ export function usePagedList({
   sortKey,
   pageSizeKey,
   equals,
+  upravDotaz,
+  filterKey,
 }: PagedListOptions) {
   const [pageSize, setPageSize] = useStoredPageSize(pageSizeKey ?? resource);
   const vychodzieZoradenie = orderBy ?? { column: "created_at", ascending: false };
@@ -73,11 +81,11 @@ export function usePagedList({
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, showDeleted, pageSize]);
+  }, [search, showDeleted, pageSize, filterKey]);
   // Clear selection when page / filter / deleted toggle changes
   useEffect(() => {
     setSelected({});
-  }, [page, pageSize, search, showDeleted, nonce]);
+  }, [page, pageSize, search, showDeleted, nonce, filterKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,11 +110,13 @@ export function usePagedList({
         }
       }
       q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
+      if (upravDotaz) q = upravDotaz(q);
       if (search.trim() && searchColumns.length) {
         const term = search.trim().replace(/[%_,]/g, "");
         q = q.or(searchColumns.map((c) => `${c}.ilike.%${term}%`).join(","));
       }
-      q = q.order(sort.column, { ascending: !!sort.ascending });
+      // Prázdne hodnoty (napr. faktúra bez dátumu dodania) vždy na koniec.
+      q = q.order(sort.column, { ascending: !!sort.ascending, nullsFirst: false });
       // Druhé kritérium drží poradie stabilné, keď má viac dokladov rovnaký
       // dátum — pri importe majú všetky rovnaký `created_at` až na mikrosekundy.
       if (sort.column !== "created_at") q = q.order("created_at", { ascending: false });
@@ -137,6 +147,7 @@ export function usePagedList({
     sort.ascending,
     searchColumns.join(","),
     JSON.stringify(equals ?? {}),
+    filterKey,
   ]);
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);

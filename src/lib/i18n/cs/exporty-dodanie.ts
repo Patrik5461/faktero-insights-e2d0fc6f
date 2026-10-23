@@ -6,4 +6,9 @@ export default {
   "Len ešte neexportované": "Jen dosud neexportované",
   Dodaná: "DUZP",
   dodaná: "DUZP",
+  "podľa dátumu vystavenia": "podle data vystavení",
+  "podľa dátumu dodania": "podle DUZP",
+  "Zrušiť obdobie": "Zrušit období",
+  "Dátum dodania zostupne": "DUZP sestupně",
+  "Dátum dodania vzostupne": "DUZP vzestupně",
 };

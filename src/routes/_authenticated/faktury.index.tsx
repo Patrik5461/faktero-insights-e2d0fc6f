@@ -4,7 +4,7 @@ import { useT } from "@/lib/i18n/useT";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeZapnute } from "@/lib/faktero/search-parametre";
 import { jeOtvorena } from "@/lib/faktero/faktury-sumy";
@@ -62,6 +62,7 @@ import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 
 type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 
@@ -69,6 +70,8 @@ type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 const ZORADENIE_FAKTUR: MoznostZoradenia[] = [
   { label: "Najnovšie prvé", column: "issue_date" },
   { label: "Najstaršie prvé", column: "issue_date", ascending: true },
+  { label: "Dátum dodania zostupne", column: "delivery_date" },
+  { label: "Dátum dodania vzostupne", column: "delivery_date", ascending: true },
   { label: "Číslo zostupne", column: "invoice_number" },
   { label: "Číslo vzostupne", column: "invoice_number", ascending: true },
   { label: "Najbližšia splatnosť", column: "due_date", ascending: true },
@@ -153,6 +156,22 @@ function InvoicesPage() {
     }),
     [type, status],
   );
+  // Obdobie a „len neexportované“ filtruje databáza, nie načítaná stránka —
+  // inak by na druhej strane chýbali faktúry, ktoré na prvú nevošli.
+  const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
+  const [obdobieOd, setObdobieOd] = useState("");
+  const [obdobieDo, setObdobieDo] = useState("");
+  const [lenNeexportovane, setLenNeexportovane] = useState(false);
+  const upravDotaz = useCallback(
+    (dotaz: any) => {
+      let d = filtrujObdobie(dotaz, podla, obdobieOd || null, obdobieDo || null);
+      // Koncept ani stornovaná sa do účtovníctva neexportujú, tak tu nepatria.
+      if (lenNeexportovane) d = d.is("exported_at", null).not("status", "in", "(draft,cancelled)");
+      return d;
+    },
+    [podla, obdobieOd, obdobieDo, lenNeexportovane],
+  );
+  const maObdobie = Boolean(obdobieOd || obdobieDo || lenNeexportovane);
   const list = usePagedList({
     resource: "invoices",
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
@@ -162,6 +181,8 @@ function InvoicesPage() {
     // vyzeral zoradený odzadu.
     orderBy: { column: "issue_date", ascending: false },
     sortKey: "faktury",
+    upravDotaz,
+    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${lenNeexportovane}`,
   });
   // Hľadanie z hlavičky príde ako `?q=`. Prepíšeme ním hľadacie pole zoznamu,
   // aby bolo vidieť, čo sa hľadá, a dalo sa to odtiaľ upraviť.
@@ -848,6 +869,58 @@ function InvoicesPage() {
             </Link>
           </div>
         </div>
+        <div className="mb-3 flex flex-wrap items-end gap-3 text-sm">
+          <label className="text-xs text-muted-foreground">
+            {t("Obdobie podľa")}
+            <select
+              value={podla}
+              onChange={(e) => setPodla(e.target.value as DatumObdobia)}
+              className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+            >
+              <option value="vystavenie">{t("dátumu vystavenia")}</option>
+              <option value="dodanie">{t("dátumu dodania")}</option>
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground">
+            {t("Od")}
+            <input
+              type="date"
+              value={obdobieOd}
+              onChange={(e) => setObdobieOd(e.target.value)}
+              className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            {t("Do")}
+            <input
+              type="date"
+              value={obdobieDo}
+              onChange={(e) => setObdobieDo(e.target.value)}
+              className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+            />
+          </label>
+          <label className="flex items-center gap-2 pb-2">
+            <input
+              type="checkbox"
+              checked={lenNeexportovane}
+              onChange={(e) => setLenNeexportovane(e.target.checked)}
+            />
+            {t("Len ešte neexportované")}
+          </label>
+          {maObdobie && (
+            <button
+              type="button"
+              onClick={() => {
+                setObdobieOd("");
+                setObdobieDo("");
+                setLenNeexportovane(false);
+              }}
+              className="mb-0.5 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs hover:bg-secondary"
+            >
+              <X className="h-3.5 w-3.5" /> {t("Zrušiť obdobie")}
+            </button>
+          )}
+        </div>
         <BulkBar
           onHardDelete={() => setBulkHardDelete(true)}
           count={list.selectedIds.length}
@@ -934,7 +1007,7 @@ function InvoicesPage() {
               }
               subtitle={i.customer_name ?? "—"}
               status={<StatusBadge status={i.status} />}
-              meta={`${datumNaDoklade(i.issue_date)} · ${t("splat.")} ${datumNaDoklade(i.due_date)}`}
+              meta={`${datumNaDoklade(i.issue_date)}${i.delivery_date && i.delivery_date !== i.issue_date ? ` · ${t("dodaná")} ${datumNaDoklade(i.delivery_date)}` : ""} · ${t("splat.")} ${datumNaDoklade(i.due_date)}`}
               amount={formatujMenu(sumaNaZobrazenie(i, i.total), i.currency)}
               actions={
                 list.showDeleted ? (
@@ -987,6 +1060,7 @@ function InvoicesPage() {
                     <th className="p-3">{t("Číslo")}</th>
                     <th className="p-3">{t("Odberateľ")}</th>
                     <th className="p-3">{t("Vystavená")}</th>
+                    <th className="p-3">{t("Dodaná")}</th>
                     <th className="p-3">{t("Splatnosť")}</th>
                     <th className="p-3 text-right">{t("Suma")}</th>
                     <th className="p-3">{t("Stav")}</th>
@@ -996,14 +1070,14 @@ function InvoicesPage() {
                 <tbody className="divide-y divide-border">
                   {list.loading && (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={9} className="p-8 text-center text-muted-foreground">
                         {t("Načítavam…")}
                       </td>
                     </tr>
                   )}
                   {!list.loading && visibleRows.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={9} className="p-8 text-center text-muted-foreground">
                         {list.showDeleted ? t("Žiadne vymazané faktúry.") : t("Žiadne faktúry.")}
                       </td>
                     </tr>
@@ -1049,6 +1123,11 @@ function InvoicesPage() {
 
                       <td className="p-3">{i.customer_name ?? "—"}</td>
                       <td className="p-3">{datumNaDoklade(i.issue_date)}</td>
+                      <td
+                        className={`p-3 ${i.delivery_date && i.delivery_date !== i.issue_date ? "font-medium" : "text-muted-foreground"}`}
+                      >
+                        {datumNaDoklade(datumDodania(i))}
+                      </td>
                       <td className="p-3">
                         {datumNaDoklade(i.due_date)}
                         {i.povodna_splatnost && i.povodna_splatnost !== i.due_date && (

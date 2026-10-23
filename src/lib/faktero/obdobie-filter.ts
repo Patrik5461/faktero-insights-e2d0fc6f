@@ -14,16 +14,24 @@ type SObdobim<Q> = {
   or(podmienka: string): Q;
 };
 
+/** Hranice sú voliteľné — bez `od` aj `do` sa dotaz nemení. */
 export function filtrujObdobie<Q extends SObdobim<Q>>(
   q: Q,
   podla: DatumObdobia,
-  od: string,
-  doDna: string,
+  od?: string | null,
+  doDna?: string | null,
 ): Q {
-  if (podla === "vystavenie") return q.gte("issue_date", od).lte("issue_date", doDna);
+  if (podla === "vystavenie") {
+    if (od) q = q.gte("issue_date", od);
+    if (doDna) q = q.lte("issue_date", doDna);
+    return q;
+  }
+  if (!od && !doDna) return q;
+  const hranice = (stlpec: string) =>
+    [od ? `${stlpec}.gte.${od}` : null, doDna ? `${stlpec}.lte.${doDna}` : null].filter(Boolean);
   return q.or(
-    `and(delivery_date.gte.${od},delivery_date.lte.${doDna}),` +
-      `and(delivery_date.is.null,issue_date.gte.${od},issue_date.lte.${doDna})`,
+    `and(${hranice("delivery_date").join(",")}),` +
+      `and(delivery_date.is.null,${hranice("issue_date").join(",")})`,
   );
 }
 
