@@ -1151,3 +1151,53 @@ export const getAdminAiUsage = createServerFn({ method: "GET" })
       stav: stavAi(),
     };
   });
+
+/**
+ * Kto používa knihu jázd — vozidlá a jazdy po firmách. Súčty počíta
+ * databáza (`admin_kniha_jazd_prehlad`), jázd sú tisíce a PostgREST
+ * by ich vrátil najviac tisíc.
+ */
+export const getAdminKnihaJazd = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await getAdmin(context);
+    const { data: suhrn, error } = await (supabaseAdmin as any).rpc("admin_kniha_jazd_prehlad");
+    if (error) throw new Error(error.message);
+    const ids = ((suhrn ?? []) as any[]).map((r) => r.company_id);
+    const [{ data: firmy }, { data: vozidla }] = await Promise.all([
+      ids.length
+        ? supabaseAdmin.from("companies").select("id, name, ico").in("id", ids)
+        : Promise.resolve({ data: [] as any[] }),
+      ids.length
+        ? supabaseAdmin
+            .from("vehicles")
+            .select("company_id, name, license_plate, active")
+            .in("company_id", ids)
+            .order("name")
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const firma = new Map<string, any>(((firmy as any[]) ?? []).map((f) => [f.id, f]));
+    const rows = ((suhrn ?? []) as any[])
+      .map((r) => ({
+        company_id: r.company_id as string,
+        name: (firma.get(r.company_id)?.name as string) ?? "—",
+        ico: (firma.get(r.company_id)?.ico as string | null) ?? null,
+        vozidiel: Number(r.vozidiel),
+        aktivnych: Number(r.aktivnych),
+        jazd: Number(r.jazd),
+        jazd_30_dni: Number(r.jazd_30_dni),
+        km_30_dni: Math.round(Number(r.km_30_dni)),
+        posledna_jazda: (r.posledna_jazda as string | null) ?? null,
+        z_commanderu: Number(r.z_commanderu),
+        z_appky: Number(r.z_appky),
+        rucne: Number(r.rucne),
+        vozidla: ((vozidla as any[]) ?? [])
+          .filter((v) => v.company_id === r.company_id)
+          .map((v) => ({
+            nazov: v.license_plate ? `${v.name} (${v.license_plate})` : v.name,
+            aktivne: !!v.active,
+          })),
+      }))
+      .sort((a, b) => b.jazd_30_dni - a.jazd_30_dni || b.jazd - a.jazd);
+    return { rows };
+  });

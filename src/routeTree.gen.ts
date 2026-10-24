@@ -63,6 +63,7 @@ import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
 import { Route as AdminGopayRouteImport } from './routes/admin.gopay'
 import { Route as AdminHealthRouteImport } from './routes/admin.health'
 import { Route as AdminIntegrationsRouteImport } from './routes/admin.integrations'
+import { Route as AdminKnihaJazdRouteImport } from './routes/admin.kniha-jazd'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminOdosielanieRouteImport } from './routes/admin.odosielanie'
 import { Route as AdminPartneriRouteImport } from './routes/admin.partneri'
@@ -609,6 +610,11 @@ const AdminHealthRoute = AdminHealthRouteImport.update({
 const AdminIntegrationsRoute = AdminIntegrationsRouteImport.update({
   id: '/integrations',
   path: '/integrations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminKnihaJazdRoute = AdminKnihaJazdRouteImport.update({
+  id: '/kniha-jazd',
+  path: '/kniha-jazd',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminLegalRoute = AdminLegalRouteImport.update({
@@ -2154,6 +2160,7 @@ export interface FileRoutesByFullPath {
   '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
+  '/admin/kniha-jazd': typeof AdminKnihaJazdRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/odosielanie': typeof AdminOdosielanieRoute
   '/admin/partneri': typeof AdminPartneriRoute
@@ -2472,6 +2479,7 @@ export interface FileRoutesByTo {
   '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
+  '/admin/kniha-jazd': typeof AdminKnihaJazdRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/odosielanie': typeof AdminOdosielanieRoute
   '/admin/partneri': typeof AdminPartneriRoute
@@ -2799,6 +2807,7 @@ export interface FileRoutesById {
   '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
+  '/admin/kniha-jazd': typeof AdminKnihaJazdRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/odosielanie': typeof AdminOdosielanieRoute
   '/admin/partneri': typeof AdminPartneriRoute
@@ -3127,6 +3136,7 @@ export interface FileRouteTypes {
     | '/admin/gopay'
     | '/admin/health'
     | '/admin/integrations'
+    | '/admin/kniha-jazd'
     | '/admin/legal'
     | '/admin/odosielanie'
     | '/admin/partneri'
@@ -3445,6 +3455,7 @@ export interface FileRouteTypes {
     | '/admin/gopay'
     | '/admin/health'
     | '/admin/integrations'
+    | '/admin/kniha-jazd'
     | '/admin/legal'
     | '/admin/odosielanie'
     | '/admin/partneri'
@@ -3771,6 +3782,7 @@ export interface FileRouteTypes {
     | '/admin/gopay'
     | '/admin/health'
     | '/admin/integrations'
+    | '/admin/kniha-jazd'
     | '/admin/legal'
     | '/admin/odosielanie'
     | '/admin/partneri'
@@ -4565,6 +4577,13 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/admin/integrations'
       preLoaderRoute: typeof AdminIntegrationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/kniha-jazd': {
+      id: '/admin/kniha-jazd'
+      path: '/kniha-jazd'
+      fullPath: '/admin/kniha-jazd'
+      preLoaderRoute: typeof AdminKnihaJazdRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/legal': {
@@ -6813,6 +6832,7 @@ interface AdminRouteChildren {
   AdminGopayRoute: typeof AdminGopayRoute
   AdminHealthRoute: typeof AdminHealthRoute
   AdminIntegrationsRoute: typeof AdminIntegrationsRoute
+  AdminKnihaJazdRoute: typeof AdminKnihaJazdRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminOdosielanieRoute: typeof AdminOdosielanieRoute
   AdminPartneriRoute: typeof AdminPartneriRoute
@@ -6839,6 +6859,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminGopayRoute: AdminGopayRoute,
   AdminHealthRoute: AdminHealthRoute,
   AdminIntegrationsRoute: AdminIntegrationsRoute,
+  AdminKnihaJazdRoute: AdminKnihaJazdRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminOdosielanieRoute: AdminOdosielanieRoute,
   AdminPartneriRoute: AdminPartneriRoute,
