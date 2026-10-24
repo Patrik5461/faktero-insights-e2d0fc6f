@@ -309,6 +309,7 @@ import { Route as ApiPublicHooksStockAlertsRouteImport } from './routes/api/publ
 import { Route as ApiPublicHooksTrialLifecycleRouteImport } from './routes/api/public/hooks/trial-lifecycle'
 import { Route as ApiPublicHooksUcetZrusenieRouteImport } from './routes/api/public/hooks/ucet-zrusenie'
 import { Route as ApiPublicHooksVozovyParkPripomienkyRouteImport } from './routes/api/public/hooks/vozovy-park-pripomienky'
+import { Route as ApiPublicHooksWebhookOutboxRouteImport } from './routes/api/public/hooks/webhook-outbox'
 import { Route as ApiPublicHooksZamestnanciPripomienkyRouteImport } from './routes/api/public/hooks/zamestnanci-pripomienky'
 import { Route as ApiPublicMailPrijemRouteImport } from './routes/api/public/mail/prijem'
 import { Route as ApiPublicMobilVerziaRouteImport } from './routes/api/public/mobil/verzia'
@@ -1977,6 +1978,12 @@ const ApiPublicHooksVozovyParkPripomienkyRoute =
     path: '/api/public/hooks/vozovy-park-pripomienky',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksWebhookOutboxRoute =
+  ApiPublicHooksWebhookOutboxRouteImport.update({
+    id: '/api/public/hooks/webhook-outbox',
+    path: '/api/public/hooks/webhook-outbox',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksZamestnanciPripomienkyRoute =
   ApiPublicHooksZamestnanciPripomienkyRouteImport.update({
     id: '/api/public/hooks/zamestnanci-pripomienky',
@@ -2445,6 +2452,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
   '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
+  '/api/public/hooks/webhook-outbox': typeof ApiPublicHooksWebhookOutboxRoute
   '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
@@ -2770,6 +2778,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
   '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
+  '/api/public/hooks/webhook-outbox': typeof ApiPublicHooksWebhookOutboxRoute
   '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
@@ -3106,6 +3115,7 @@ export interface FileRoutesById {
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
   '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
+  '/api/public/hooks/webhook-outbox': typeof ApiPublicHooksWebhookOutboxRoute
   '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
@@ -3442,6 +3452,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
     | '/api/public/hooks/vozovy-park-pripomienky'
+    | '/api/public/hooks/webhook-outbox'
     | '/api/public/hooks/zamestnanci-pripomienky'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
@@ -3767,6 +3778,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
     | '/api/public/hooks/vozovy-park-pripomienky'
+    | '/api/public/hooks/webhook-outbox'
     | '/api/public/hooks/zamestnanci-pripomienky'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
@@ -4102,6 +4114,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
     | '/api/public/hooks/vozovy-park-pripomienky'
+    | '/api/public/hooks/webhook-outbox'
     | '/api/public/hooks/zamestnanci-pripomienky'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
@@ -4274,6 +4287,7 @@ export interface RootRouteChildren {
   ApiPublicHooksTrialLifecycleRoute: typeof ApiPublicHooksTrialLifecycleRoute
   ApiPublicHooksUcetZrusenieRoute: typeof ApiPublicHooksUcetZrusenieRoute
   ApiPublicHooksVozovyParkPripomienkyRoute: typeof ApiPublicHooksVozovyParkPripomienkyRoute
+  ApiPublicHooksWebhookOutboxRoute: typeof ApiPublicHooksWebhookOutboxRoute
   ApiPublicHooksZamestnanciPripomienkyRoute: typeof ApiPublicHooksZamestnanciPripomienkyRoute
   ApiPublicMailPrijemRoute: typeof ApiPublicMailPrijemRoute
   ApiPublicMobilVerziaRoute: typeof ApiPublicMobilVerziaRoute
@@ -6393,6 +6407,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksVozovyParkPripomienkyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/webhook-outbox': {
+      id: '/api/public/hooks/webhook-outbox'
+      path: '/api/public/hooks/webhook-outbox'
+      fullPath: '/api/public/hooks/webhook-outbox'
+      preLoaderRoute: typeof ApiPublicHooksWebhookOutboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/zamestnanci-pripomienky': {
       id: '/api/public/hooks/zamestnanci-pripomienky'
       path: '/api/public/hooks/zamestnanci-pripomienky'
@@ -7395,6 +7416,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksUcetZrusenieRoute: ApiPublicHooksUcetZrusenieRoute,
   ApiPublicHooksVozovyParkPripomienkyRoute:
     ApiPublicHooksVozovyParkPripomienkyRoute,
+  ApiPublicHooksWebhookOutboxRoute: ApiPublicHooksWebhookOutboxRoute,
   ApiPublicHooksZamestnanciPripomienkyRoute:
     ApiPublicHooksZamestnanciPripomienkyRoute,
   ApiPublicMailPrijemRoute: ApiPublicMailPrijemRoute,

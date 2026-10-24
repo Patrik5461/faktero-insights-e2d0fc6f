@@ -8,7 +8,8 @@ export type FakteroEvent =
   | "invoice.paid"
   | "invoice.cancelled"
   | "customer.created"
-  | "efaktura.received";
+  | "efaktura.received"
+  | "bank_transaction.created";
 
 const RETRY_DELAYS_MS = [0, 1500, 4000];
 
@@ -51,6 +52,8 @@ export async function triggerEvent(opts: {
   company_id: string;
   event: FakteroEvent;
   data: Record<string, any>;
+  /** Upozornenie do telefónu; vypína ho fronta, keď ho už poslala synchronizácia banky. */
+  push?: boolean;
 }) {
   const { data: hooks } = await supabaseAdmin
     .from("webhooks")
@@ -59,7 +62,7 @@ export async function triggerEvent(opts: {
   // Fire-and-forget push notifikácia (samostatne od webhookov)
   try {
     const { sendPush } = await import("./push.server");
-    if (opts.event === "invoice.paid") {
+    if (opts.event === "invoice.paid" && opts.push !== false) {
       const inv = opts.data as any;
       await sendPush({
         company_id: opts.company_id,

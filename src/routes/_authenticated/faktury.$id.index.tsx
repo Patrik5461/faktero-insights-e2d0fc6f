@@ -622,10 +622,9 @@ function InvoiceDetail() {
         : t("Stav aktualizovaný"),
     );
     // Trigger webhook
+    // invoice.paid posiela fronta webhookov z databázy (aj pri úhrade z banky) — tu by odišiel dvakrát.
     const event =
-      status === "paid"
-        ? "invoice.paid"
-        : status === "cancelled"
+      status === "cancelled"
           ? "invoice.cancelled"
           : status === "sent"
             ? "invoice.sent"

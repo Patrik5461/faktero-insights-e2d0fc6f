@@ -5,8 +5,6 @@ export const Route = createFileRoute("/api/v1/invoices/$id/mark-paid")({
     handlers: {
       POST: async ({ request, params }) => {
         const { handleApi, ok, err } = await import("@/lib/faktero/api-auth.server");
-        const { triggerEvent, invoicePayload } =
-          await import("@/lib/faktero/webhook-trigger.server");
         return handleApi(request, async (ctx) => {
           const { isCompanyActive } = await import("@/lib/faktero/active-check.server");
           if (!(await isCompanyActive(ctx.company_id))) {
@@ -36,11 +34,9 @@ export const Route = createFileRoute("/api/v1/invoices/$id/mark-paid")({
             .maybeSingle();
           if (error) return err("db_error", error.message, 500);
           if (!data) return err("not_found", "Faktúra nenájdená.", 404);
-          await triggerEvent({
-            company_id: ctx.company_id,
-            event: "invoice.paid",
-            data: invoicePayload(data),
-          });
+          // Udalosť zapísal databázový spúšťač do fronty; doručí sa hneď, nie až cronom.
+          const { spracujWebhookOutbox } = await import("@/lib/faktero/webhook-outbox.server");
+          await spracujWebhookOutbox({ entityId: data.id }).catch(() => {});
           return ok(data);
         });
       },

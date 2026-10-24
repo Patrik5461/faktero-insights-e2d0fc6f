@@ -133,12 +133,14 @@ const sections: HelpSection[] = [
           <li>
             <code>invoice.cancelled</code>
           </li>
+          <li>
+            <code>bank_transaction.created</code>
+          </li>
         </ul>
         <p>
-          <code>invoice.paid</code> príde len pri výslovnom označení faktúry ako uhradenej — cez API{" "}
-          <code>mark-paid</code> alebo zmenou stavu v detaile faktúry. Spárovanie s bankovým pohybom
-          ho nespúšťa; úhradu z banky nájdete v <code>/api/v1/bank-transactions</code> (pole{" "}
-          <code>matched_invoice_id</code>).
+          <code>invoice.paid</code> príde pri každej zmene faktúry na uhradenú — aj po spárovaní s
+          bankovým pohybom. Udalosť <code>bank_transaction.created</code> oznámi každý nový pohyb na
+          účte, takže pohyby netreba dopytovať.
         </p>
         <p>
           Každý webhook je podpísaný hlavičkou <code>X-Faktero-Signature</code> (HMAC SHA-256 z tela

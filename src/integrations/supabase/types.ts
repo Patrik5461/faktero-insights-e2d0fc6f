@@ -10368,6 +10368,47 @@ export type Database = {
           }
         ]
       }
+      webhook_outbox: {
+        Row: {
+          id: number
+          company_id: string
+          event: string
+          entity_id: string
+          created_at: string
+          processed_at: string | null
+          attempts: number
+          error: string | null
+        }
+        Insert: {
+          id: number
+          company_id: string
+          event: string
+          entity_id: string
+          created_at?: string
+          processed_at?: string | null
+          attempts?: number
+          error?: string | null
+        }
+        Update: {
+          id?: number
+          company_id?: string
+          event?: string
+          entity_id?: string
+          created_at?: string
+          processed_at?: string | null
+          attempts?: number
+          error?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_outbox_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       stock_items_with_availability: {

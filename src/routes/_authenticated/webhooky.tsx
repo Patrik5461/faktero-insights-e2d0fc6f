@@ -21,6 +21,7 @@ const EVENTS = [
   "invoice.paid",
   "invoice.cancelled",
   "customer.created",
+  "bank_transaction.created",
 ] as const;
 
 function genSecret() {

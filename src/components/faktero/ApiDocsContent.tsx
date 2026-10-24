@@ -453,6 +453,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
               "invoice.paid",
               "invoice.cancelled",
               "customer.created",
+              "bank_transaction.created",
               "quote.created",
               "quote.sent",
               "quote.converted",
@@ -469,9 +470,34 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
           <h3 className="mt-6 font-semibold">{t("Kedy príde invoice.paid")}</h3>
           <p className="mt-2 text-sm text-muted-foreground">
             {t(
-              "Len keď faktúru niekto výslovne označí ako uhradenú: volaním POST /api/v1/invoices/…/mark-paid alebo zmenou stavu na „Uhradená“ v detaile faktúry vo Fakteri. Pri spárovaní bankového pohybu s faktúrou (automaticky ani ručne), pri hromadnom označení v zozname ani pri platbe cez platobnú bránu sa invoice.paid neposiela — úhradu z banky zistíte z /api/v1/bank-transactions (matched_invoice_id).",
+              "Pri každej zmene faktúry na uhradenú — po spárovaní s bankovým pohybom (automaticky aj ručne), po hromadnom označení v zozname, cez POST /api/v1/invoices/…/mark-paid aj zmenou stavu v detaile faktúry. Pri mark-paid príde hneď, inak do minúty. Ak úhradu priniesla banka, payload má bank_transaction_id spárovaného pohybu.",
             )}
           </p>
+          <h3 className="mt-6 font-semibold">bank_transaction.created</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t(
+              "Príde do minúty po tom, čo sa pohyb objaví vo Fakteri (synchronizácia s bankou, import výpisu, bankové notifikácie). Data majú rovnaký tvar ako položka z GET /api/v1/bank-transactions vrátane iban a bank_name, takže pohyby netreba dopytovať. Pri prvom pripojení banky príde udalosť za každý natiahnutý pohyb.",
+            )}
+          </p>
+          <CodeBlock
+            lang="json"
+            code={`{
+  "event": "bank_transaction.created",
+  "created_at": "2026-10-24T18:01:12Z",
+  "data": {
+    "id": "0b6f…",
+    "bank_account_id": "7c9a8242-5b05-4ab6-bc25-f543cf62079b",
+    "iban": "SK1211000000002612345678",
+    "bank_name": "Tatra banka, a.s.",
+    "booking_date": "2026-10-24",
+    "amount": 1230.00,
+    "currency": "EUR",
+    "variable_symbol": "20260042",
+    "counterparty": "Odberateľ s.r.o.",
+    "matched_invoice_id": null
+  }
+}`}
+          />
 
           <h3 className="mt-6 font-semibold">{t("Overovanie podpisu")}</h3>
           <p className="mt-2 text-sm text-muted-foreground">

@@ -45,7 +45,7 @@
     },
     {
      "nadpis": "Webhooky",
-     "text": "<>\nWebhooky pošlú HTTP POST na vašu URL, keď nastane udalosť:\n-\ninvoice.created\n-\ninvoice.sent\n-\ninvoice.paid\n-\ninvoice.cancelled\ninvoice.paid príde len pri výslovnom označení faktúry ako uhradenej — cez API\nmark-paid alebo zmenou stavu v detaile faktúry. Spárovanie s bankovým pohybom\nho nespúšťa; úhradu z banky nájdete v /api/v1/bank-transactions (pole\nmatched_invoice_id ).\nKaždý webhook je podpísaný hlavičkou X-Faktero-Signature (HMAC SHA-256 z tela\nsprávy a tajného kľúča webhooku). Vždy podpis overte pred spracovaním."
+     "text": "<>\nWebhooky pošlú HTTP POST na vašu URL, keď nastane udalosť:\n-\ninvoice.created\n-\ninvoice.sent\n-\ninvoice.paid\n-\ninvoice.cancelled\n-\nbank_transaction.created\ninvoice.paid príde pri každej zmene faktúry na uhradenú — aj po spárovaní s\nbankovým pohybom. Udalosť bank_transaction.created oznámi každý nový pohyb na\núčte, takže pohyby netreba dopytovať.\nKaždý webhook je podpísaný hlavičkou X-Faktero-Signature (HMAC SHA-256 z tela\nsprávy a tajného kľúča webhooku). Vždy podpis overte pred spracovaním."
     },
     {
      "nadpis": "E-shop na WooCommerce",
