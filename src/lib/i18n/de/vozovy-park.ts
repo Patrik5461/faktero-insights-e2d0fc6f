@@ -1,0 +1,170 @@
+// Vozový park — vozidlá, technický preukaz, vlastníctvo, termíny.
+export default {
+  "prepadlo {datum}": "abgelaufen {datum}",
+  "Vozidlo sa nenašlo.": "Fahrzeug nicht gefunden.",
+  "Z preukazu sa doplnilo polí: {n}. Skontrolujte ich a uložte.":
+    "Aus dem Fahrzeugschein wurden {n} Felder ergänzt. Prüfen und speichern Sie sie.",
+  "Z preukazu sa nedoplnilo nič nové — vyplnené polia sa neprepisujú.":
+    "Aus dem Fahrzeugschein wurde nichts Neues ergänzt — ausgefüllte Felder werden nicht überschrieben.",
+  "Preukaz sa nepodarilo prečítať.": "Der Fahrzeugschein konnte nicht gelesen werden.",
+  "Súbor je väčší ako 20 MB.": "Die Datei ist größer als 20 MB.",
+  "Zmazať dokument {nazov}?": "Dokument {nazov} löschen?",
+  "Vyplňte názov vozidla.": "Geben Sie die Fahrzeugbezeichnung ein.",
+  "Vozidlo smie upravovať len majiteľ alebo správca firmy.":
+    "Fahrzeuge dürfen nur Inhaber oder Administratoren des Unternehmens bearbeiten.",
+  "Vozidlo je uložené.": "Das Fahrzeug ist gespeichert.",
+  "Vozidlo smie pridať len majiteľ alebo správca firmy.":
+    "Fahrzeuge dürfen nur Inhaber oder Administratoren des Unternehmens anlegen.",
+  "Vozidlo je uložené, dokumenty nie: {chyba}":
+    "Das Fahrzeug ist gespeichert, die Dokumente nicht: {chyba}",
+  "Vozidlo je pridané.": "Das Fahrzeug wurde angelegt.",
+  "napr. Škoda Octavia — obchod": "z. B. Škoda Octavia — Vertrieb",
+  Nafta: "Diesel",
+  Hybrid: "Hybrid",
+  "žiadna zmluva v Leasingoch a úveroch": "kein Vertrag unter Leasing und Kredite",
+  "Otvoriť splátkový kalendár": "Tilgungsplan öffnen",
+  "Pridať zmluvu do Leasingov a úverov": "Vertrag zu Leasing und Kredite hinzufügen",
+  "Len na podnikanie": "Nur betrieblich",
+  "Zmiešané — aj súkromne": "Gemischt — auch privat",
+  "100 % — len na podnikanie": "100 % — nur betrieblich",
+  "50 % — zmiešané použitie": "50 % — gemischte Nutzung",
+  "Bez odpočtu": "Ohne Vorsteuerabzug",
+  "Pri zmiešanom použití osobného auta sa na Slovensku od roku 2025 odpočítava DPH paušálne 50 % (§ 49 ods. 7 zákona o DPH), ak nevediete knihu jázd preukazujúcu len podnikanie.":
+    "Bei gemischter Nutzung eines Pkw wird in der Slowakei seit 2025 pauschal 50 % der Vorsteuer abgezogen (§ 49 Abs. 7 slowakisches MwSt-Gesetz), sofern kein Fahrtenbuch die ausschließlich betriebliche Nutzung belegt.",
+  "Platí sa daň z motorových vozidiel": "Kraftfahrzeugsteuer wird gezahlt",
+  "Kategória {k} dani podlieha (nákladné a autobusy nad 3,5 t, ťažké prívesy).":
+    "Die Kategorie {k} ist steuerpflichtig (Lkw und Busse über 3,5 t, schwere Anhänger).",
+  "Osobné autá a dodávky do 3,5 t daň z motorových vozidiel na Slovensku od roku 2023 neplatia.":
+    "Pkw und Transporter bis 3,5 t zahlen in der Slowakei seit 2023 keine Kraftfahrzeugsteuer.",
+  "Poznámka a stav": "Notiz und Status",
+  "Vozidlo je vyradené (predané, vrátené z leasingu)":
+    "Das Fahrzeug ist ausgemustert (verkauft, aus dem Leasing zurückgegeben)",
+  "Späť na vozový park": "Zurück zum Fuhrpark",
+  "Technický preukaz, poistky, STK, zmluvy. Z technického preukazu sa údaje vozidla vyčítajú samé.":
+    "Fahrzeugschein, Versicherungen, HU, Verträge. Aus dem Fahrzeugschein werden die Fahrzeugdaten automatisch ausgelesen.",
+  "Druh dokumentu": "Dokumentart",
+  "Platné do (nepovinné)": "Gültig bis (optional)",
+  "Nahrať technický preukaz a vyčítať údaje": "Fahrzeugschein hochladen und Daten auslesen",
+  "Nahrať dokument": "Dokument hochladen",
+  "platné do {datum}": "gültig bis {datum}",
+  "uloží sa s vozidlom": "wird mit dem Fahrzeug gespeichert",
+  "Vyčítať údaje z preukazu": "Daten aus dem Fahrzeugschein auslesen",
+  "Zatiaľ bez termínov — doplňte STK, poistky a známku.":
+    "Noch keine Termine — ergänzen Sie HU, Versicherungen und Vignette.",
+  "To isté vozidlo používa aj Kniha jázd — zmena názvu, ŠPZ či spotreby sa prejaví aj tam. Jazdy sa vo vozovom parku nezobrazujú.":
+    "Dasselbe Fahrzeug nutzt auch das Fahrtenbuch — Änderungen an Bezeichnung, Kennzeichen oder Verbrauch wirken sich auch dort aus. Fahrten werden im Fuhrpark nicht angezeigt.",
+  "Technický preukaz, vlastníctvo, poistky a termíny vozidla.":
+    "Fahrzeugschein, Eigentum, Versicherungen und Termine des Fahrzeugs.",
+  "Vozový park": "Fuhrpark",
+  "Vozidlá firmy s technickým preukazom, vlastníctvom, poistkami a termínmi STK. Tie isté vozidlá používa Kniha jázd.":
+    "Firmenfahrzeuge mit Fahrzeugschein, Eigentum, Versicherungen und HU-Terminen. Dieselben Fahrzeuge nutzt das Fahrtenbuch.",
+  "Vozidiel: {n}": "Fahrzeuge: {n}",
+  "Termíny na riešenie: {n}": "Fällige Termine: {n}",
+  "Zobraziť aj vyradené": "Auch ausgemusterte anzeigen",
+  "Zatiaľ žiadne vozidlo. Pridajte prvé a nahrajte k nemu technický preukaz — údaje sa z neho vyčítajú.":
+    "Noch kein Fahrzeug. Legen Sie das erste an und laden Sie den Fahrzeugschein hoch — die Daten werden daraus ausgelesen.",
+  Vlastníctvo: "Eigentum",
+  vyradené: "ausgemustert",
+  "STK do {datum}": "HU bis {datum}",
+  "bez termínov": "ohne Termine",
+  "Nahrajte technický preukaz vpravo — údaje vozidla sa vyplnia samé. Potom doplňte vlastníctvo a termíny.":
+    "Laden Sie rechts den Fahrzeugschein hoch — die Fahrzeugdaten werden automatisch ausgefüllt. Ergänzen Sie dann Eigentum und Termine.",
+  "Údaje z technického preukazu (osvedčenia o evidencii).":
+    "Daten aus dem Fahrzeugschein (Zulassungsbescheinigung).",
+  "Názov vozidla": "Fahrzeugbezeichnung",
+  "ŠPZ (A)": "Kennzeichen (A)",
+  "VIN (E)": "FIN (E)",
+  "Značka (D.1)": "Marke (D.1)",
+  "Model (D.3)": "Modell (D.3)",
+  "Kategória (J)": "Klasse (J)",
+  "Rok výroby": "Baujahr",
+  "Dátum prvej evidencie (B)": "Datum der Erstzulassung (B)",
+  "Palivo (P.3)": "Kraftstoff (P.3)",
+  "Farba (R)": "Farbe (R)",
+  "Objem motora v cm³ (P.1)": "Hubraum in cm³ (P.1)",
+  "Výkon v kW (P.2)": "Leistung in kW (P.2)",
+  "Celková hmotnosť v kg (F.2)": "Zulässige Gesamtmasse in kg (F.2)",
+  "Počet miest na sedenie (S.1)": "Sitzplätze (S.1)",
+  "Spotreba l/100 km (pre Knihu jázd)": "Verbrauch l/100 km (für das Fahrtenbuch)",
+  "Vlastníctvo a použitie": "Eigentum und Nutzung",
+  "Kto je vlastník podľa technického preukazu a ako sa vozidlo financuje.":
+    "Wer laut Fahrzeugschein Eigentümer ist und wie das Fahrzeug finanziert wird.",
+  "Vlastník (C.2 / C.4)": "Eigentümer (C.2 / C.4)",
+  "IČO vlastníka": "IČO des Eigentümers",
+  "Držiteľ (C.1)": "Halter (C.1)",
+  "Vodič / kto vozidlo používa": "Fahrer / wer das Fahrzeug nutzt",
+  "Dátum obstarania": "Anschaffungsdatum",
+  "Obstarávacia cena bez DPH": "Anschaffungspreis ohne MwSt",
+  "Termíny a poistky": "Termine und Versicherungen",
+  "Blížiace sa termíny (30 dní vopred) uvidíte v zvončeku aj v zozname vozidiel.":
+    "Anstehende Termine (30 Tage vorher) sehen Sie in der Glocke und in der Fahrzeugliste.",
+  "STK platná do": "HU gültig bis",
+  "Emisná kontrola platná do": "Abgasuntersuchung gültig bis",
+  "PZP — poisťovňa": "Kfz-Haftpflicht — Versicherer",
+  "PZP — číslo zmluvy": "Kfz-Haftpflicht — Vertragsnummer",
+  "PZP platné do": "Kfz-Haftpflicht gültig bis",
+  "Havarijné — poisťovňa": "Kasko — Versicherer",
+  "Havarijné — číslo zmluvy": "Kasko — Vertragsnummer",
+  "Havarijné platné do": "Kasko gültig bis",
+  "Diaľničná známka platná do": "Vignette gültig bis",
+  "Najbližší servis — dátum": "Nächster Service — Datum",
+  "Najbližší servis — pri km": "Nächster Service — bei km",
+  "Vyradené dňa": "Ausgemustert am",
+  "Vlastné vozidlo firmy": "Eigenes Firmenfahrzeug",
+  "kúpené, v majetku firmy": "gekauft, im Firmeneigentum",
+  "Finančný leasing": "Finanzierungsleasing",
+  "vlastníkom je leasingová spoločnosť, po splatení prejde na firmu":
+    "Eigentümer ist die Leasinggesellschaft, nach Abzahlung geht es auf die Firma über",
+  "Operatívny leasing": "Operating-Leasing",
+  "dlhodobý prenájom, vozidlo sa vracia": "Langzeitmiete, das Fahrzeug wird zurückgegeben",
+  "Kúpené na úver": "Auf Kredit gekauft",
+  "v majetku firmy, financované úverom": "im Firmeneigentum, über Kredit finanziert",
+  "Krátkodobý prenájom": "Kurzzeitmiete",
+  "požičané vozidlo": "geliehenes Fahrzeug",
+  "Súkromné vozidlo": "Privatfahrzeug",
+  "vozidlo zamestnanca alebo konateľa používané aj na služobné cesty":
+    "Fahrzeug eines Mitarbeiters oder Geschäftsführers, auch für Dienstreisen genutzt",
+  "M1 — osobné vozidlo": "M1 — Pkw",
+  "N1 — úžitkové do 3,5 t": "N1 — Nutzfahrzeug bis 3,5 t",
+  "N2 — nákladné 3,5 – 12 t": "N2 — Lkw 3,5 – 12 t",
+  "N3 — nákladné nad 12 t": "N3 — Lkw über 12 t",
+  "M2 — autobus do 5 t": "M2 — Bus bis 5 t",
+  "M3 — autobus nad 5 t": "M3 — Bus über 5 t",
+  "L — motocykel, štvorkolka": "L — Motorrad, Quad",
+  "O — príves, náves": "O — Anhänger, Auflieger",
+  "T — traktor": "T — Traktor",
+  "Osvedčenie o evidencii — časť I (malý TP)": "Zulassungsbescheinigung — Teil I (Fahrzeugschein)",
+  "Osvedčenie o evidencii — časť II (veľký TP)":
+    "Zulassungsbescheinigung — Teil II (Fahrzeugbrief)",
+  "Povinné zmluvné poistenie (PZP)": "Kfz-Haftpflichtversicherung",
+  "Havarijné poistenie": "Kaskoversicherung",
+  "Technická kontrola (STK)": "Hauptuntersuchung (HU)",
+  "Emisná kontrola (EK)": "Abgasuntersuchung (AU)",
+  "Kúpna / leasingová zmluva": "Kauf- / Leasingvertrag",
+  "Faktúra za vozidlo": "Rechnung für das Fahrzeug",
+  "Iný dokument": "Sonstiges Dokument",
+  STK: "HU",
+  "Emisná kontrola": "Abgasuntersuchung",
+  PZP: "Kfz-Haftpflicht",
+  "Diaľničná známka": "Vignette",
+  Servis: "Service",
+  "Prehľad vozidiel": "Fahrzeugübersicht",
+  "Kniha jázd a vozový park": "Fahrtenbuch und Fuhrpark",
+  "jazdy, vozidlá, tankovanie, technické preukazy a poistky vozidiel":
+    "Fahrten, Fahrzeuge, Tanken, Fahrzeugscheine und Versicherungen",
+  "Jazdy z Commander GPS aj z appky. K vozidlám technický preukaz, leasing, poistky a upozornenie na STK.":
+    "Fahrten aus Commander GPS und aus der App. Zu den Fahrzeugen Fahrzeugschein, Leasing, Versicherungen und HU-Erinnerung.",
+  "Technické preukazy, vlastníctvo, leasing, poistky a termíny STK všetkých vozidiel firmy.":
+    "Fahrzeugscheine, Eigentum, Leasing, Versicherungen und HU-Termine aller Firmenfahrzeuge.",
+  "Všetky papiere k firemným autám na jednom mieste. Nahráte technický preukaz a údaje vozidla sa vyplnia samé.":
+    "Alle Unterlagen zu den Firmenwagen an einem Ort. Sie laden den Fahrzeugschein hoch, und die Fahrzeugdaten werden automatisch ausgefüllt.",
+  "Údaje vozidla vyčítané z fotky technického preukazu":
+    "Fahrzeugdaten aus dem Foto des Fahrzeugscheins ausgelesen",
+  "Vlastníctvo: vlastné, leasing, úver, prenájom alebo súkromné auto":
+    "Eigentum: eigenes Fahrzeug, Leasing, Kredit, Miete oder Privatwagen",
+  "Prepojenie so zmluvou o leasingu a splátkovým kalendárom":
+    "Verknüpfung mit dem Leasingvertrag und dem Tilgungsplan",
+  "Upozornenie na STK, emisnú kontrolu, PZP, havarijné poistenie a diaľničnú známku 30 dní vopred":
+    "Erinnerung an HU, Abgasuntersuchung, Kfz-Haftpflicht, Kasko und Vignette 30 Tage im Voraus",
+  "Tie isté vozidlá ako v Knihe jázd": "Dieselben Fahrzeuge wie im Fahrtenbuch",
+};

@@ -28,7 +28,7 @@ export const OBLASTI: { kluc: Oblast; nazov: string; popis: string }[] = [
   { kluc: "pokladna", nazov: "Pokladňa", popis: "pokladničné doklady a stav hotovosti" },
   { kluc: "sklad", nazov: "Sklad a cenník", popis: "produkty, zásoby, pohyby, inventúry, cenník, objednávky dodávateľom" },
   { kluc: "zakazky", nazov: "Zákazky", popis: "zákazky a ich prehľad" },
-  { kluc: "jazdy", nazov: "Kniha jázd", popis: "jazdy, vozidlá, tankovanie" },
+  { kluc: "jazdy", nazov: "Kniha jázd a vozový park", popis: "jazdy, vozidlá, tankovanie, technické preukazy a poistky vozidiel" },
   { kluc: "zamestnanci", nazov: "Zamestnanci", popis: "personalistika vrátane rodných čísiel a zmlúv" },
   { kluc: "uctovnictvo", nazov: "Účtovníctvo a exporty", popis: "exporty do Pohody, odovzdanie účtovníkovi, importy" },
 ];
@@ -108,6 +108,7 @@ const CESTY: [string, Oblast][] = [
   ["/exporty", "uctovnictvo"],
   ["/importy", "uctovnictvo"],
   ["/jazdy", "jazdy"],
+  ["/vozovy-park", "jazdy"],
 ];
 
 export function oblastPodlaCesty(cesta: string): Oblast | null {

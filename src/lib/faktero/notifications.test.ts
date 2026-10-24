@@ -348,3 +348,31 @@ describe("applyReadState", () => {
     expect(r.items).toEqual([]);
   });
 });
+
+describe("termíny vozového parku", () => {
+  it("prepadnutá STK je nebezpečná, PZP o 10 dní varovanie, vzdialené nič", () => {
+    const n = buildNotifications({
+      today: "2026-10-24",
+      overdueInvoices: [],
+      overduePurchases: [],
+      unmatchedIncoming: [],
+      failedPayments: [],
+      vehicleDeadlines: [
+        {
+          id: "v1",
+          name: "Octavia",
+          license_plate: "BA123XY",
+          stk_do: "2026-10-20",
+          pzp_do: "2026-11-03",
+          havarijne_do: "2027-05-01",
+        },
+      ],
+    });
+    expect(n.map((x) => [x.key, x.severity])).toEqual([
+      ["vehicle_deadline:v1:stk_do:2026-10-20", "danger"],
+      ["vehicle_deadline:v1:pzp_do:2026-11-03", "warning"],
+    ]);
+    expect(n[1].title).toBe("PZP BA123XY končí o 10 dní");
+    expect(n[0].to).toBe("/vozovy-park/v1");
+  });
+});

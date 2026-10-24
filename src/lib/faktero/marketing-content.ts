@@ -656,6 +656,29 @@ export const funkcie: HubContent = {
       ],
     },
     {
+      slug: "vozovy-park",
+      label: "Vozový park",
+      summary:
+        "Technické preukazy, vlastníctvo, leasing, poistky a termíny STK všetkých vozidiel firmy.",
+      icon: MapPin,
+      blocks: [
+        {
+          type: "lead",
+          text: "Všetky papiere k firemným autám na jednom mieste. Nahráte technický preukaz a údaje vozidla sa vyplnia samé.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Údaje vozidla vyčítané z fotky technického preukazu",
+            "Vlastníctvo: vlastné, leasing, úver, prenájom alebo súkromné auto",
+            "Prepojenie so zmluvou o leasingu a splátkovým kalendárom",
+            "Upozornenie na STK, emisnú kontrolu, PZP, havarijné poistenie a diaľničnú známku 30 dní vopred",
+            "Tie isté vozidlá ako v Knihe jázd",
+          ],
+        },
+      ],
+    },
+    {
       slug: "kniha-jazd-commander-gps",
       label: "Kniha jázd + Commander GPS",
       summary: "Jazdy a tankovania z Commander GPS sa sťahujú automaticky do knihy jázd.",

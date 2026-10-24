@@ -166,6 +166,14 @@ const CATS: Cat[] = [
     available: true,
     skupina: "Sklad a ceny",
   },
+  {
+    to: "/pomoc/vozovy-park",
+    label: "Vozový park",
+    desc: "Technické preukazy, vlastníctvo, leasing, poistky a termíny STK vozidiel.",
+    icon: Car,
+    available: true,
+    skupina: "Sklad a ceny",
+  },
 
   {
     to: "/pomoc/pokladna",

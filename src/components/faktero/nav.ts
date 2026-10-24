@@ -176,6 +176,18 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    /* Vozidlá firmy s technickým preukazom, vlastníctvom a termínmi. Tie isté
+       vozidlá ako v Knihe jázd, jazdy sa tu však neukazujú. */
+    key: "vozovy-park",
+    label: "Vozový park",
+    icon: Car,
+    match: ["/vozovy-park"],
+    children: [
+      { to: "/vozovy-park", label: "Prehľad vozidiel" },
+      { to: "/vozovy-park/nove", label: "Nové vozidlo" },
+    ],
+  },
+  {
     key: "sklad",
     label: "Sklad",
     icon: Warehouse,
@@ -356,6 +368,7 @@ export const INVOICING_KEYS = new Set([
   "kontakty",
   "zakazky",
   "zamestnanci",
+  "vozovy-park",
   "sklad",
   "banka",
   "uctovnictvo",
@@ -456,6 +469,7 @@ export const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/efaktura", to: "/pomoc/efaktura" },
   { prefix: "/odberatelia", to: "/pomoc/odberatelia" },
   { prefix: "/zakazky", to: "/pomoc/zakazky" },
+  { prefix: "/vozovy-park", to: "/pomoc/vozovy-park" },
   { prefix: "/sklad", to: "/pomoc/sklad" },
   { prefix: "/sklad/objednavky", to: "/pomoc/objednavky-dodavatel" },
   { prefix: "/produkty", to: "/pomoc/sklad" },

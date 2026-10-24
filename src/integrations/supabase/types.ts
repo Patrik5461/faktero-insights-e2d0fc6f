@@ -8826,6 +8826,41 @@ export type Database = {
           name: string
           updated_at: string
           vehicle_type: string | null
+          vin: string | null
+          znacka: string | null
+          model: string | null
+          rok_vyroby: number | null
+          datum_prvej_evidencie: string | null
+          farba: string | null
+          kategoria: string | null
+          objem_cm3: number | null
+          vykon_kw: number | null
+          celkova_hmotnost_kg: number | null
+          pocet_miest: number | null
+          vlastnictvo: string | null
+          vlastnik_nazov: string | null
+          vlastnik_ico: string | null
+          drzitel_nazov: string | null
+          financing_contract_id: string | null
+          datum_obstarania: string | null
+          obstaravacia_cena: number | null
+          pouzitie: string | null
+          odpocet_dph: string | null
+          vodic: string | null
+          stk_do: string | null
+          ek_do: string | null
+          pzp_poistovna: string | null
+          pzp_cislo: string | null
+          pzp_do: string | null
+          havarijne_poistovna: string | null
+          havarijne_cislo: string | null
+          havarijne_do: string | null
+          dialnicna_znamka_do: string | null
+          servis_datum: string | null
+          servis_km: number | null
+          dmv: boolean
+          poznamka: string | null
+          vyradene_dna: string | null
         }
         Insert: {
           active?: boolean
@@ -8839,6 +8874,41 @@ export type Database = {
           name: string
           updated_at?: string
           vehicle_type?: string | null
+          vin?: string | null
+          znacka?: string | null
+          model?: string | null
+          rok_vyroby?: number | null
+          datum_prvej_evidencie?: string | null
+          farba?: string | null
+          kategoria?: string | null
+          objem_cm3?: number | null
+          vykon_kw?: number | null
+          celkova_hmotnost_kg?: number | null
+          pocet_miest?: number | null
+          vlastnictvo?: string | null
+          vlastnik_nazov?: string | null
+          vlastnik_ico?: string | null
+          drzitel_nazov?: string | null
+          financing_contract_id?: string | null
+          datum_obstarania?: string | null
+          obstaravacia_cena?: number | null
+          pouzitie?: string | null
+          odpocet_dph?: string | null
+          vodic?: string | null
+          stk_do?: string | null
+          ek_do?: string | null
+          pzp_poistovna?: string | null
+          pzp_cislo?: string | null
+          pzp_do?: string | null
+          havarijne_poistovna?: string | null
+          havarijne_cislo?: string | null
+          havarijne_do?: string | null
+          dialnicna_znamka_do?: string | null
+          servis_datum?: string | null
+          servis_km?: number | null
+          dmv?: boolean
+          poznamka?: string | null
+          vyradene_dna?: string | null
         }
         Update: {
           active?: boolean
@@ -8852,6 +8922,41 @@ export type Database = {
           name?: string
           updated_at?: string
           vehicle_type?: string | null
+          vin?: string | null
+          znacka?: string | null
+          model?: string | null
+          rok_vyroby?: number | null
+          datum_prvej_evidencie?: string | null
+          farba?: string | null
+          kategoria?: string | null
+          objem_cm3?: number | null
+          vykon_kw?: number | null
+          celkova_hmotnost_kg?: number | null
+          pocet_miest?: number | null
+          vlastnictvo?: string | null
+          vlastnik_nazov?: string | null
+          vlastnik_ico?: string | null
+          drzitel_nazov?: string | null
+          financing_contract_id?: string | null
+          datum_obstarania?: string | null
+          obstaravacia_cena?: number | null
+          pouzitie?: string | null
+          odpocet_dph?: string | null
+          vodic?: string | null
+          stk_do?: string | null
+          ek_do?: string | null
+          pzp_poistovna?: string | null
+          pzp_cislo?: string | null
+          pzp_do?: string | null
+          havarijne_poistovna?: string | null
+          havarijne_cislo?: string | null
+          havarijne_do?: string | null
+          dialnicna_znamka_do?: string | null
+          servis_datum?: string | null
+          servis_km?: number | null
+          dmv?: boolean
+          poznamka?: string | null
+          vyradene_dna?: string | null
         }
         Relationships: [
           {
@@ -9334,6 +9439,9 @@ export type Database = {
           posledny_pokus_at: string | null
           pozvanka_odoslana_at: string | null
           ip: string | null
+          migracny_kod_sifrovany: string | null
+          migracia_at: string | null
+          cudzi_poskytovatel: string | null
         }
         Insert: {
           id?: string
@@ -9357,6 +9465,9 @@ export type Database = {
           posledny_pokus_at?: string | null
           pozvanka_odoslana_at?: string | null
           ip?: string | null
+          migracny_kod_sifrovany?: string | null
+          migracia_at?: string | null
+          cudzi_poskytovatel?: string | null
         }
         Update: {
           id?: string
@@ -9380,6 +9491,9 @@ export type Database = {
           posledny_pokus_at?: string | null
           pozvanka_odoslana_at?: string | null
           ip?: string | null
+          migracny_kod_sifrovany?: string | null
+          migracia_at?: string | null
+          cudzi_poskytovatel?: string | null
         }
         Relationships: [
           {
@@ -10095,6 +10209,117 @@ export type Database = {
         ]
       }
 
+      colne_kody: {
+        Row: {
+          kod: string
+          rok: number
+          kapitola: string
+          popis_sk: string
+          popis_cs: string | null
+          popis_en: string | null
+          popis_de: string | null
+          popis_hu: string | null
+          hladaj: string
+        }
+        Insert: {
+          kod: string
+          rok?: number
+          kapitola: string
+          popis_sk: string
+          popis_cs?: string | null
+          popis_en?: string | null
+          popis_de?: string | null
+          popis_hu?: string | null
+          hladaj: string
+        }
+        Update: {
+          kod?: string
+          rok?: number
+          kapitola?: string
+          popis_sk?: string
+          popis_cs?: string | null
+          popis_en?: string | null
+          popis_de?: string | null
+          popis_hu?: string | null
+          hladaj?: string
+        }
+        Relationships: []
+      }
+      kurzy_cnb: {
+        Row: {
+          den: string
+          mena: string
+          kurz: number
+        }
+        Insert: {
+          den: string
+          mena: string
+          kurz: number
+        }
+        Update: {
+          den?: string
+          mena?: string
+          kurz?: number
+        }
+        Relationships: []
+      }
+      vehicle_documents: {
+        Row: {
+          id: string
+          company_id: string
+          vehicle_id: string
+          druh: string
+          nazov: string
+          file_path: string
+          file_mime: string | null
+          file_size: number | null
+          platne_do: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          vehicle_id: string
+          druh?: string
+          nazov: string
+          file_path: string
+          file_mime?: string | null
+          file_size?: number | null
+          platne_do?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          vehicle_id?: string
+          druh?: string
+          nazov?: string
+          file_path?: string
+          file_mime?: string | null
+          file_size?: number | null
+          platne_do?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_documents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       stock_items_with_availability: {

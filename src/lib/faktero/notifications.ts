@@ -11,6 +11,7 @@
  */
 
 import { formatujMenu } from "./mena";
+import { terminyNaRiesenie } from "./vozovy-park";
 
 export type NotificationSeverity = "info" | "warning" | "danger";
 
@@ -71,6 +72,8 @@ export type NotificationInput = {
   overduePurchases: OverduePurchase[];
   unmatchedIncoming: UnmatchedIncoming[];
   failedPayments: FailedPayment[];
+  /** Aktívne vozidlá — termíny do 30 dní a prepadnuté. */
+  vehicleDeadlines?: VehicleDeadlines[];
 };
 
 const SEVERITY_ORDER: Record<NotificationSeverity, number> = { danger: 0, warning: 1, info: 2 };
@@ -95,6 +98,19 @@ export function dniText(n: number): string {
   if (n >= 2 && n <= 4) return `${n} dni`;
   return `${n} dní`;
 }
+
+/** Vozidlo z vozového parku s termínmi (STK, poistky, známka, servis). */
+export type VehicleDeadlines = {
+  id: string;
+  name: string | null;
+  license_plate: string | null;
+  stk_do?: string | null;
+  ek_do?: string | null;
+  pzp_do?: string | null;
+  havarijne_do?: string | null;
+  dialnicna_znamka_do?: string | null;
+  servis_datum?: string | null;
+};
 
 export function buildNotifications(input: NotificationInput): AppNotification[] {
   const out: AppNotification[] = [];
@@ -159,6 +175,28 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
       to: p.purchase_invoice_id ? `/prijate-faktury/${p.purchase_invoice_id}` : "/bankove-ucty",
       date,
     });
+  }
+
+  for (const v of input.vehicleDeadlines ?? []) {
+    const vozidlo = v.license_plate || v.name || "vozidla";
+    for (const t of terminyNaRiesenie(v, input.today)) {
+      out.push({
+        // Dátum v kľúči: po predĺžení STK je to nový termín, nie prečítaný starý.
+        key: `vehicle_deadline:${v.id}:${t.kluc}:${t.datum}`,
+        severity: t.stav === "prepadnute" ? "danger" : "warning",
+        title:
+          t.stav === "prepadnute"
+            ? `${t.nazov} ${vozidlo} prepadla`
+            : t.dni === 0
+              ? `${t.nazov} ${vozidlo} končí dnes`
+              : `${t.nazov} ${vozidlo} končí o ${dniText(t.dni)}`,
+        detail: [v.name, `platnosť do ${t.datum.split("-").reverse().join(". ")}`]
+          .filter(Boolean)
+          .join(" · "),
+        to: `/vozovy-park/${v.id}`,
+        date: t.datum,
+      });
+    }
   }
 
   // Najprv to najhoršie. V rámci rovnakej závažnosti platí, že pri dlhoch je

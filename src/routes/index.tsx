@@ -257,8 +257,8 @@ const features = [
   },
   {
     icon: MapPin,
-    title: "Kniha jázd + Commander GPS",
-    text: "Prepojenie na Commander GPS — jazdy a tankovania sa sťahujú automaticky do knihy jázd.",
+    title: "Kniha jázd a vozový park",
+    text: "Jazdy z Commander GPS aj z appky. K vozidlám technický preukaz, leasing, poistky a upozornenie na STK.",
   },
   {
     icon: Banknote,

@@ -116,6 +116,7 @@ import { Route as PomocRoleRouteImport } from './routes/pomoc.role'
 import { Route as PomocSkladRouteImport } from './routes/pomoc.sklad'
 import { Route as PomocUzavierkaRouteImport } from './routes/pomoc.uzavierka'
 import { Route as PomocVideaRouteImport } from './routes/pomoc.videa'
+import { Route as PomocVozovyParkRouteImport } from './routes/pomoc.vozovy-park'
 import { Route as PomocVykazyDphRouteImport } from './routes/pomoc.vykazy-dph'
 import { Route as PomocWoocommerceRouteImport } from './routes/pomoc.woocommerce'
 import { Route as PomocZabezpecenieRouteImport } from './routes/pomoc.zabezpecenie'
@@ -223,6 +224,9 @@ import { Route as AuthenticatedUctovnictvoPredkontacieRouteImport } from './rout
 import { Route as AuthenticatedUctovnictvoUzavierkaRouteImport } from './routes/_authenticated/uctovnictvo.uzavierka'
 import { Route as AuthenticatedUctovnictvoVykazyRouteImport } from './routes/_authenticated/uctovnictvo.vykazy'
 import { Route as AuthenticatedUctovnictvoVypisDoPohodyRouteImport } from './routes/_authenticated/uctovnictvo.vypis-do-pohody'
+import { Route as AuthenticatedVozovyParkIndexRouteImport } from './routes/_authenticated/vozovy-park.index'
+import { Route as AuthenticatedVozovyParkIdRouteImport } from './routes/_authenticated/vozovy-park.$id'
+import { Route as AuthenticatedVozovyParkNoveRouteImport } from './routes/_authenticated/vozovy-park.nove'
 import { Route as AuthenticatedZakazkyIndexRouteImport } from './routes/_authenticated/zakazky.index'
 import { Route as AuthenticatedZakazkyIdRouteImport } from './routes/_authenticated/zakazky.$id'
 import { Route as AuthenticatedZakazkyNovaRouteImport } from './routes/_authenticated/zakazky.nova'
@@ -878,6 +882,11 @@ const PomocVideaRoute = PomocVideaRouteImport.update({
   path: '/pomoc/videa',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PomocVozovyParkRoute = PomocVozovyParkRouteImport.update({
+  id: '/pomoc/vozovy-park',
+  path: '/pomoc/vozovy-park',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PomocVykazyDphRoute = PomocVykazyDphRouteImport.update({
   id: '/pomoc/vykazy-dph',
   path: '/pomoc/vykazy-dph',
@@ -1488,6 +1497,24 @@ const AuthenticatedUctovnictvoVypisDoPohodyRoute =
   AuthenticatedUctovnictvoVypisDoPohodyRouteImport.update({
     id: '/uctovnictvo/vypis-do-pohody',
     path: '/uctovnictvo/vypis-do-pohody',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedVozovyParkIndexRoute =
+  AuthenticatedVozovyParkIndexRouteImport.update({
+    id: '/vozovy-park/',
+    path: '/vozovy-park/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedVozovyParkIdRoute =
+  AuthenticatedVozovyParkIdRouteImport.update({
+    id: '/vozovy-park/$id',
+    path: '/vozovy-park/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedVozovyParkNoveRoute =
+  AuthenticatedVozovyParkNoveRouteImport.update({
+    id: '/vozovy-park/nove',
+    path: '/vozovy-park/nove',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedZakazkyIndexRoute =
@@ -2209,6 +2236,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
+  '/pomoc/vozovy-park': typeof PomocVozovyParkRoute
   '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
   '/pomoc/woocommerce': typeof PomocWoocommerceRoute
   '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
@@ -2302,6 +2330,8 @@ export interface FileRoutesByFullPath {
   '/uctovnictvo/uzavierka': typeof AuthenticatedUctovnictvoUzavierkaRoute
   '/uctovnictvo/vykazy': typeof AuthenticatedUctovnictvoVykazyRoute
   '/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
+  '/vozovy-park/$id': typeof AuthenticatedVozovyParkIdRoute
+  '/vozovy-park/nove': typeof AuthenticatedVozovyParkNoveRoute
   '/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/zamestnanci/$id': typeof AuthenticatedZamestnanciIdRoute
@@ -2350,6 +2380,7 @@ export interface FileRoutesByFullPath {
   '/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
   '/prijate-zalohove/': typeof AuthenticatedPrijateZalohoveIndexRoute
   '/sklad/': typeof AuthenticatedSkladIndexRoute
+  '/vozovy-park/': typeof AuthenticatedVozovyParkIndexRoute
   '/zakazky/': typeof AuthenticatedZakazkyIndexRoute
   '/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/zamestnanci/': typeof AuthenticatedZamestnanciIndexRoute
@@ -2528,6 +2559,7 @@ export interface FileRoutesByTo {
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
+  '/pomoc/vozovy-park': typeof PomocVozovyParkRoute
   '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
   '/pomoc/woocommerce': typeof PomocWoocommerceRoute
   '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
@@ -2620,6 +2652,8 @@ export interface FileRoutesByTo {
   '/uctovnictvo/uzavierka': typeof AuthenticatedUctovnictvoUzavierkaRoute
   '/uctovnictvo/vykazy': typeof AuthenticatedUctovnictvoVykazyRoute
   '/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
+  '/vozovy-park/$id': typeof AuthenticatedVozovyParkIdRoute
+  '/vozovy-park/nove': typeof AuthenticatedVozovyParkNoveRoute
   '/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/zamestnanci/$id': typeof AuthenticatedZamestnanciIdRoute
@@ -2668,6 +2702,7 @@ export interface FileRoutesByTo {
   '/prijate-faktury': typeof AuthenticatedPrijateFakturyIndexRoute
   '/prijate-zalohove': typeof AuthenticatedPrijateZalohoveIndexRoute
   '/sklad': typeof AuthenticatedSkladIndexRoute
+  '/vozovy-park': typeof AuthenticatedVozovyParkIndexRoute
   '/zakazky': typeof AuthenticatedZakazkyIndexRoute
   '/zalohove': typeof AuthenticatedZalohoveIndexRoute
   '/zamestnanci': typeof AuthenticatedZamestnanciIndexRoute
@@ -2856,6 +2891,7 @@ export interface FileRoutesById {
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
+  '/pomoc/vozovy-park': typeof PomocVozovyParkRoute
   '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
   '/pomoc/woocommerce': typeof PomocWoocommerceRoute
   '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
@@ -2949,6 +2985,8 @@ export interface FileRoutesById {
   '/_authenticated/uctovnictvo/uzavierka': typeof AuthenticatedUctovnictvoUzavierkaRoute
   '/_authenticated/uctovnictvo/vykazy': typeof AuthenticatedUctovnictvoVykazyRoute
   '/_authenticated/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
+  '/_authenticated/vozovy-park/$id': typeof AuthenticatedVozovyParkIdRoute
+  '/_authenticated/vozovy-park/nove': typeof AuthenticatedVozovyParkNoveRoute
   '/_authenticated/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/_authenticated/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/_authenticated/zamestnanci/$id': typeof AuthenticatedZamestnanciIdRoute
@@ -2997,6 +3035,7 @@ export interface FileRoutesById {
   '/_authenticated/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
   '/_authenticated/prijate-zalohove/': typeof AuthenticatedPrijateZalohoveIndexRoute
   '/_authenticated/sklad/': typeof AuthenticatedSkladIndexRoute
+  '/_authenticated/vozovy-park/': typeof AuthenticatedVozovyParkIndexRoute
   '/_authenticated/zakazky/': typeof AuthenticatedZakazkyIndexRoute
   '/_authenticated/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/_authenticated/zamestnanci/': typeof AuthenticatedZamestnanciIndexRoute
@@ -3185,6 +3224,7 @@ export interface FileRouteTypes {
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
+    | '/pomoc/vozovy-park'
     | '/pomoc/vykazy-dph'
     | '/pomoc/woocommerce'
     | '/pomoc/zabezpecenie'
@@ -3278,6 +3318,8 @@ export interface FileRouteTypes {
     | '/uctovnictvo/uzavierka'
     | '/uctovnictvo/vykazy'
     | '/uctovnictvo/vypis-do-pohody'
+    | '/vozovy-park/$id'
+    | '/vozovy-park/nove'
     | '/zakazky/$id'
     | '/zakazky/nova'
     | '/zamestnanci/$id'
@@ -3326,6 +3368,7 @@ export interface FileRouteTypes {
     | '/prijate-faktury/'
     | '/prijate-zalohove/'
     | '/sklad/'
+    | '/vozovy-park/'
     | '/zakazky/'
     | '/zalohove/'
     | '/zamestnanci/'
@@ -3504,6 +3547,7 @@ export interface FileRouteTypes {
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
+    | '/pomoc/vozovy-park'
     | '/pomoc/vykazy-dph'
     | '/pomoc/woocommerce'
     | '/pomoc/zabezpecenie'
@@ -3596,6 +3640,8 @@ export interface FileRouteTypes {
     | '/uctovnictvo/uzavierka'
     | '/uctovnictvo/vykazy'
     | '/uctovnictvo/vypis-do-pohody'
+    | '/vozovy-park/$id'
+    | '/vozovy-park/nove'
     | '/zakazky/$id'
     | '/zakazky/nova'
     | '/zamestnanci/$id'
@@ -3644,6 +3690,7 @@ export interface FileRouteTypes {
     | '/prijate-faktury'
     | '/prijate-zalohove'
     | '/sklad'
+    | '/vozovy-park'
     | '/zakazky'
     | '/zalohove'
     | '/zamestnanci'
@@ -3831,6 +3878,7 @@ export interface FileRouteTypes {
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
+    | '/pomoc/vozovy-park'
     | '/pomoc/vykazy-dph'
     | '/pomoc/woocommerce'
     | '/pomoc/zabezpecenie'
@@ -3924,6 +3972,8 @@ export interface FileRouteTypes {
     | '/_authenticated/uctovnictvo/uzavierka'
     | '/_authenticated/uctovnictvo/vykazy'
     | '/_authenticated/uctovnictvo/vypis-do-pohody'
+    | '/_authenticated/vozovy-park/$id'
+    | '/_authenticated/vozovy-park/nove'
     | '/_authenticated/zakazky/$id'
     | '/_authenticated/zakazky/nova'
     | '/_authenticated/zamestnanci/$id'
@@ -3972,6 +4022,7 @@ export interface FileRouteTypes {
     | '/_authenticated/prijate-faktury/'
     | '/_authenticated/prijate-zalohove/'
     | '/_authenticated/sklad/'
+    | '/_authenticated/vozovy-park/'
     | '/_authenticated/zakazky/'
     | '/_authenticated/zalohove/'
     | '/_authenticated/zamestnanci/'
@@ -4118,6 +4169,7 @@ export interface RootRouteChildren {
   PomocSkladRoute: typeof PomocSkladRoute
   PomocUzavierkaRoute: typeof PomocUzavierkaRoute
   PomocVideaRoute: typeof PomocVideaRoute
+  PomocVozovyParkRoute: typeof PomocVozovyParkRoute
   PomocVykazyDphRoute: typeof PomocVykazyDphRoute
   PomocWoocommerceRoute: typeof PomocWoocommerceRoute
   PomocZabezpecenieRoute: typeof PomocZabezpecenieRoute
@@ -4950,6 +5002,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PomocVideaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pomoc/vozovy-park': {
+      id: '/pomoc/vozovy-park'
+      path: '/pomoc/vozovy-park'
+      fullPath: '/pomoc/vozovy-park'
+      preLoaderRoute: typeof PomocVozovyParkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pomoc/vykazy-dph': {
       id: '/pomoc/vykazy-dph'
       path: '/pomoc/vykazy-dph'
@@ -5697,6 +5756,27 @@ declare module '@tanstack/react-router' {
       path: '/uctovnictvo/vypis-do-pohody'
       fullPath: '/uctovnictvo/vypis-do-pohody'
       preLoaderRoute: typeof AuthenticatedUctovnictvoVypisDoPohodyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/vozovy-park/': {
+      id: '/_authenticated/vozovy-park/'
+      path: '/vozovy-park'
+      fullPath: '/vozovy-park/'
+      preLoaderRoute: typeof AuthenticatedVozovyParkIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/vozovy-park/$id': {
+      id: '/_authenticated/vozovy-park/$id'
+      path: '/vozovy-park/$id'
+      fullPath: '/vozovy-park/$id'
+      preLoaderRoute: typeof AuthenticatedVozovyParkIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/vozovy-park/nove': {
+      id: '/_authenticated/vozovy-park/nove'
+      path: '/vozovy-park/nove'
+      fullPath: '/vozovy-park/nove'
+      preLoaderRoute: typeof AuthenticatedVozovyParkNoveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/zakazky/': {
@@ -6659,6 +6739,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUctovnictvoUzavierkaRoute: typeof AuthenticatedUctovnictvoUzavierkaRoute
   AuthenticatedUctovnictvoVykazyRoute: typeof AuthenticatedUctovnictvoVykazyRoute
   AuthenticatedUctovnictvoVypisDoPohodyRoute: typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
+  AuthenticatedVozovyParkIdRoute: typeof AuthenticatedVozovyParkIdRoute
+  AuthenticatedVozovyParkNoveRoute: typeof AuthenticatedVozovyParkNoveRoute
   AuthenticatedZakazkyIdRoute: typeof AuthenticatedZakazkyIdRoute
   AuthenticatedZakazkyNovaRoute: typeof AuthenticatedZakazkyNovaRoute
   AuthenticatedZamestnanciIdRoute: typeof AuthenticatedZamestnanciIdRoute
@@ -6682,6 +6764,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPonukyIndexRoute: typeof AuthenticatedPonukyIndexRoute
   AuthenticatedPrijateFakturyIndexRoute: typeof AuthenticatedPrijateFakturyIndexRoute
   AuthenticatedPrijateZalohoveIndexRoute: typeof AuthenticatedPrijateZalohoveIndexRoute
+  AuthenticatedVozovyParkIndexRoute: typeof AuthenticatedVozovyParkIndexRoute
   AuthenticatedZakazkyIndexRoute: typeof AuthenticatedZakazkyIndexRoute
   AuthenticatedZalohoveIndexRoute: typeof AuthenticatedZalohoveIndexRoute
   AuthenticatedZamestnanciIndexRoute: typeof AuthenticatedZamestnanciIndexRoute
@@ -6782,6 +6865,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUctovnictvoVykazyRoute: AuthenticatedUctovnictvoVykazyRoute,
   AuthenticatedUctovnictvoVypisDoPohodyRoute:
     AuthenticatedUctovnictvoVypisDoPohodyRoute,
+  AuthenticatedVozovyParkIdRoute: AuthenticatedVozovyParkIdRoute,
+  AuthenticatedVozovyParkNoveRoute: AuthenticatedVozovyParkNoveRoute,
   AuthenticatedZakazkyIdRoute: AuthenticatedZakazkyIdRoute,
   AuthenticatedZakazkyNovaRoute: AuthenticatedZakazkyNovaRoute,
   AuthenticatedZamestnanciIdRoute: AuthenticatedZamestnanciIdRoute,
@@ -6806,6 +6891,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPrijateFakturyIndexRoute: AuthenticatedPrijateFakturyIndexRoute,
   AuthenticatedPrijateZalohoveIndexRoute:
     AuthenticatedPrijateZalohoveIndexRoute,
+  AuthenticatedVozovyParkIndexRoute: AuthenticatedVozovyParkIndexRoute,
   AuthenticatedZakazkyIndexRoute: AuthenticatedZakazkyIndexRoute,
   AuthenticatedZalohoveIndexRoute: AuthenticatedZalohoveIndexRoute,
   AuthenticatedZamestnanciIndexRoute: AuthenticatedZamestnanciIndexRoute,
@@ -7177,6 +7263,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocSkladRoute: PomocSkladRoute,
   PomocUzavierkaRoute: PomocUzavierkaRoute,
   PomocVideaRoute: PomocVideaRoute,
+  PomocVozovyParkRoute: PomocVozovyParkRoute,
   PomocVykazyDphRoute: PomocVykazyDphRoute,
   PomocWoocommerceRoute: PomocWoocommerceRoute,
   PomocZabezpecenieRoute: PomocZabezpecenieRoute,

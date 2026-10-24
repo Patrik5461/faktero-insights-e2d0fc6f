@@ -132,6 +132,7 @@ export const NAZOV_UCELU: Record<string, string> = {
   "doklad-z-posty": "Doklady z e-mailu",
   "dodaci-list": "Dodacie listy",
   financovanie: "Leasingy a úvery",
+  vozidlo: "Vozový park (technický preukaz)",
   "ostatny-doklad": "Iné doklady",
   "bankovy-vypis": "Bankové výpisy",
   banka_notifikacia: "Bankové notifikácie (e-mail)",
