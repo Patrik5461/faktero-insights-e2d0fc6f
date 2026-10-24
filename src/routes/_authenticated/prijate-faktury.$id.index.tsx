@@ -533,7 +533,7 @@ function PurchaseInvoiceDetail() {
         <div
           className={
             nahladDetail.zapnuty && row.file_path
-              ? "grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,1fr)_300px]"
+              ? "grid grid-cols-1 gap-6 min-[1800px]:grid-cols-[minmax(0,1fr)_300px]"
               : "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
           }
         >

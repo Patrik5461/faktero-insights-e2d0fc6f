@@ -1280,7 +1280,7 @@ function InvoiceDetail() {
         <div
           className={
             nahladDetail.zapnuty
-              ? "grid gap-6 2xl:grid-cols-[minmax(0,1fr)_300px]"
+              ? "grid gap-6 min-[1800px]:grid-cols-[minmax(0,1fr)_300px]"
               : "grid gap-6 lg:grid-cols-[1fr_320px]"
           }
         >
