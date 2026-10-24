@@ -581,6 +581,25 @@ function DokladyPage() {
             >
               <UploadIcon className="h-4 w-4" /> {t("Import z Doklado")}
             </Link>
+            <button
+              onClick={() => handleExport(false)}
+              disabled={exporting || !rows.length}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : t("všetko")}
+            </button>
+            <button
+              onClick={() => setVolbyExportu(true)}
+              disabled={exporting || !rows.length || (!month && !bezMesiaca && !selected.size)}
+              title={
+                !month && !bezMesiaca && !selected.size
+                  ? t("Vyberte mesiac alebo označte doklady — inak by sa za odovzdané označili všetky.")
+                  : undefined
+              }
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" /> {t("Odovzdať účtovníkovi")}
+            </button>
             <Link
               to="/doklady/novy"
               className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
@@ -773,27 +792,6 @@ function DokladyPage() {
               onExport={(v) => handleExport(v.oznacit, v)}
             />
           ) : null}
-          <div className="flex flex-wrap gap-2 sm:ml-auto">
-            <button
-              onClick={() => handleExport(false)}
-              disabled={exporting || !rows.length}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : t("všetko")}
-            </button>
-            <button
-              onClick={() => setVolbyExportu(true)}
-              disabled={exporting || !rows.length || (!month && !bezMesiaca && !selected.size)}
-              title={
-                !month && !bezMesiaca && !selected.size
-                  ? t("Vyberte mesiac alebo označte doklady — inak by sa za odovzdané označili všetky.")
-                  : undefined
-              }
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" /> {t("Odovzdať účtovníkovi")}
-            </button>
-          </div>
         </div>
 
         {month && !bezMesiaca && mimo.pocet > 0 && (

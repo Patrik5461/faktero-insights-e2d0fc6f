@@ -63,7 +63,7 @@ import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samo
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
-import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
@@ -611,6 +611,56 @@ function PurchaseInvoicesPage() {
     return { total, unpaid, overdueCount, count: rows.length };
   }, [rows]);
 
+  /** Excel s práve vyfiltrovanými a zoradenými faktúrami (aj s položkami). */
+  function stiahniExcelPrijatych() {
+                    const r = rad.zoradene as any[];
+                    void stiahniExcel(`prijate-faktury-${new Date().toISOString().slice(0, 10)}.xlsx`, [
+                      {
+                        nazov: t("Prijaté faktúry"),
+                        data: tabulka(r, [
+                          { nazov: t("Číslo"), hodnota: (x: any) => x.invoice_number },
+                          { nazov: t("Dodávateľ"), hodnota: (x: any) => x.supplier_name },
+                          { nazov: t("IČO"), hodnota: (x: any) => x.supplier_ico },
+                          { nazov: t("IČ DPH"), hodnota: (x: any) => x.supplier_ic_dph },
+                          { nazov: t("VS"), hodnota: (x: any) => x.variable_symbol },
+                          { nazov: t("Vystavená"), hodnota: (x: any) => x.issue_date },
+                          { nazov: t("DUZP"), hodnota: (x: any) => x.delivery_date },
+                          { nazov: t("Splatnosť"), hodnota: (x: any) => x.due_date },
+                          { nazov: t("Základ"), hodnota: (x: any) => Number(x.amount_without_vat ?? 0) },
+                          { nazov: t("DPH"), hodnota: (x: any) => Number(x.vat_amount ?? 0) },
+                          { nazov: t("Spolu"), hodnota: (x: any) => Number(x.amount_total ?? 0) },
+                          { nazov: t("Mena"), hodnota: (x: any) => x.currency },
+                          { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
+                          { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
+                          { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
+                          { nazov: t("Odovzdaná"), hodnota: (x: any) => (x.exported_at ? t("áno") : "") },
+                        ]),
+                      },
+                      {
+                        nazov: t("Položky"),
+                        data: tabulka(
+                          r.flatMap((x: any) =>
+                            (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
+                              doklad: x.invoice_number,
+                              dodavatel: x.supplier_name,
+                              p,
+                            })),
+                          ),
+                          [
+                          { nazov: t("Doklad"), hodnota: (x: any) => x.doklad },
+                          { nazov: t("Dodávateľ"), hodnota: (x: any) => x.dodavatel },
+                          { nazov: t("Položka"), hodnota: (x: any) => x.p?.name },
+                          { nazov: t("Množstvo"), hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
+                          { nazov: t("MJ"), hodnota: (x: any) => x.p?.unit },
+                          { nazov: t("Jedn. cena"), hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
+                          { nazov: t("Sadzba DPH"), hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
+                          { nazov: t("Spolu"), hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
+                        ],
+                        ),
+                      },
+                    ]);
+  }
+
   return (
     <>
       {volbyExportu ? (
@@ -634,6 +684,7 @@ function PurchaseInvoicesPage() {
             >
               <Plus className="h-4 w-4" /> {t("Samofaktúra")}
             </Link>
+            <HlavickaViac akcie={[{ label: "Excel", icon: Download, onClick: stiahniExcelPrijatych }]} />
             <Link
               to="/prijate-faktury/nova"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
@@ -693,60 +744,6 @@ function PurchaseInvoicesPage() {
             previewToggle={bocny}
             extra={
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const r = rad.zoradene as any[];
-                    void stiahniExcel(`prijate-faktury-${new Date().toISOString().slice(0, 10)}.xlsx`, [
-                      {
-                        nazov: t("Prijaté faktúry"),
-                        data: tabulka(r, [
-                          { nazov: t("Číslo"), hodnota: (x: any) => x.invoice_number },
-                          { nazov: t("Dodávateľ"), hodnota: (x: any) => x.supplier_name },
-                          { nazov: t("IČO"), hodnota: (x: any) => x.supplier_ico },
-                          { nazov: t("IČ DPH"), hodnota: (x: any) => x.supplier_ic_dph },
-                          { nazov: t("VS"), hodnota: (x: any) => x.variable_symbol },
-                          { nazov: t("Vystavená"), hodnota: (x: any) => x.issue_date },
-                          { nazov: t("DUZP"), hodnota: (x: any) => x.delivery_date },
-                          { nazov: t("Splatnosť"), hodnota: (x: any) => x.due_date },
-                          { nazov: t("Základ"), hodnota: (x: any) => Number(x.amount_without_vat ?? 0) },
-                          { nazov: t("DPH"), hodnota: (x: any) => Number(x.vat_amount ?? 0) },
-                          { nazov: t("Spolu"), hodnota: (x: any) => Number(x.amount_total ?? 0) },
-                          { nazov: t("Mena"), hodnota: (x: any) => x.currency },
-                          { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
-                          { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
-                          { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
-                          { nazov: t("Odovzdaná"), hodnota: (x: any) => (x.exported_at ? t("áno") : "") },
-                        ]),
-                      },
-                      {
-                        nazov: t("Položky"),
-                        data: tabulka(
-                          r.flatMap((x: any) =>
-                            (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
-                              doklad: x.invoice_number,
-                              dodavatel: x.supplier_name,
-                              p,
-                            })),
-                          ),
-                          [
-                          { nazov: t("Doklad"), hodnota: (x: any) => x.doklad },
-                          { nazov: t("Dodávateľ"), hodnota: (x: any) => x.dodavatel },
-                          { nazov: t("Položka"), hodnota: (x: any) => x.p?.name },
-                          { nazov: t("Množstvo"), hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
-                          { nazov: t("MJ"), hodnota: (x: any) => x.p?.unit },
-                          { nazov: t("Jedn. cena"), hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
-                          { nazov: t("Sadzba DPH"), hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
-                          { nazov: t("Spolu"), hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
-                        ],
-                        ),
-                      },
-                    ]);
-                  }}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
-                >
-                  <Download className="h-4 w-4" /> Excel
-                </button>
                 <NastaveniaZoznamu
                   nastavenia={zobrazenie}
                   stlpce={STLPCE_PRIJATYCH}
