@@ -30,6 +30,7 @@ import {
   BookCheck,
   Eye,
   FileCheck2,
+  Send,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
@@ -62,9 +63,11 @@ import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { posliEfakturuFn } from "@/lib/faktero/efaktura/efaktura.functions";
+import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 
-type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
+type BulkAction = null | "paid" | "email" | "efaktura" | "clone" | "reminder" | "zip";
 
 /** Ponuka zoradenia. Prvá možnosť je predvolená — od najnovšej faktúry. */
 const ZORADENIE_FAKTUR: MoznostZoradenia[] = [
@@ -219,6 +222,8 @@ function InvoicesPage() {
   const markPaidFn = useServerFn(bulkMarkPaidFn);
   const emailFn = useServerFn(sendInvoiceEmailFn);
   const kontrolaDatumuFn = useServerFn(kontrolaDatumuVystaveniaFn);
+  const posliEfakturu = useServerFn(posliEfakturuFn);
+  const efakturaTest = useEfakturaTestovaciRezim();
   const zmenDatumFn = useServerFn(zmenDatumVystaveniaNaDnesFn);
   const reminderFn = useServerFn(sendReminderFn);
   const pdfFn = useServerFn(generateInvoicePdf);
@@ -478,15 +483,12 @@ function InvoicesPage() {
     }
   }
 
-  async function runBulkEmail() {
-    setBulkAction(null);
-    const targets = selectedRows.filter(
-      (r: any) => (r.status === "issued" || r.status === "sent") && r.customer_email,
-    );
-    if (!targets.length) {
-      toast.error(t("Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav)."));
-      return;
-    }
+  /*
+    Spoločné pre hromadný e-mail aj eFaktúru: faktúry so starým dátumom
+    vystavenia sa po súhlase zmenia na dnes, nemeniteľné sa preskočia.
+    Vráti null, keď sa nemá odosielať nič.
+  */
+  async function overDatumy(targets: any[], prazdne: string) {
     /*
       Prvé odoslanie len s dnešným dátumom vystavenia. Faktúry so starším
       dátumom sa po súhlase zmenia na dnes; tie, ktoré sa zmeniť nedajú
@@ -517,15 +519,82 @@ function InvoicesPage() {
         potvrdit: naZmenu.length ? t("Zmeniť dátum vystavenia na dnes a odoslať") : t("Odoslať ostatné"),
         nebezpecne: false,
       });
-      if (!ano) return;
+      if (!ano) return null;
     }
     const preskocit = new Set(nemenitelne.map((r: any) => r.id));
     const naOdoslanie = targets.filter((r: any) => !preskocit.has(r.id));
     if (!naOdoslanie.length) {
+      toast.error(prazdne);
+      return null;
+    }
+    return { naOdoslanie, menit: new Set<string>(naZmenu.map((r: any) => r.id)) };
+  }
+
+  /** Faktúry z výberu, ktoré ešte neodišli ako eFaktúra a dajú sa ňou poslať. */
+  const efakturovatelne = (riadky: any[]) =>
+    riadky.filter(
+      (r: any) =>
+        r.status !== "draft" &&
+        r.status !== "cancelled" &&
+        r.type !== "proforma" &&
+        efakturaMap[r.id]?.stav !== "odoslana" &&
+        efakturaMap[r.id]?.stav !== "dorucena",
+    );
+  const efakturaCount = efakturovatelne(selectedRows).length;
+
+  async function runBulkEfaktura() {
+    setBulkAction(null);
+    const targets = efakturovatelne(selectedRows);
+    const prazdne = t("Žiadne faktúry na odoslanie eFaktúrou (koncept, storno, zálohová alebo už odoslaná).");
+    if (!targets.length) {
+      toast.error(prazdne);
+      return;
+    }
+    const pripravene = await overDatumy(targets, prazdne);
+    if (!pripravene) return;
+    const { naOdoslanie, menit } = pripravene;
+    setBusy(true);
+    setProgress({ current: 0, total: naOdoslanie.length });
+    let ok = 0;
+    const chyby: string[] = [];
+    // Po jednej — ePošták a kontrola dátumu bežia pre každú faktúru zvlášť.
+    for (let i = 0; i < naOdoslanie.length; i++) {
+      const inv = naOdoslanie[i];
+      try {
+        if (menit.has(inv.id)) await zmenDatumFn({ data: { invoiceId: inv.id } });
+        await posliEfakturu({
+          data: { company_id: inv.company_id, invoice_id: inv.id, s_pdf: true, prilohy: [] },
+        });
+        ok++;
+      } catch (e: any) {
+        chyby.push(`${inv.invoice_number}: ${e?.message ?? t("chyba")}`);
+      }
+      setProgress({ current: i + 1, total: naOdoslanie.length });
+    }
+    setProgress(null);
+    setBusy(false);
+    if (!chyby.length) toast.success(t("Odoslané eFaktúry: {n}", { n: ok }));
+    else
+      toast.error(t("Odoslaných {ok}, zlyhalo {fail}", { ok, fail: chyby.length }), {
+        description: chyby.slice(0, 5).join("\n"),
+        duration: 15000,
+      });
+    list.clearSelection();
+    list.reload();
+  }
+
+  async function runBulkEmail() {
+    setBulkAction(null);
+    const targets = selectedRows.filter(
+      (r: any) => (r.status === "issued" || r.status === "sent") && r.customer_email,
+    );
+    if (!targets.length) {
       toast.error(t("Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav)."));
       return;
     }
-    const menit = new Set(naZmenu.map((r: any) => r.id));
+    const pripravene = await overDatumy(targets, t("Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav)."));
+    if (!pripravene) return;
+    const { naOdoslanie, menit } = pripravene;
     setBusy(true);
     setProgress({ current: 0, total: naOdoslanie.length });
     let ok = 0,
@@ -671,6 +740,15 @@ function InvoicesPage() {
       message: t("Odosielajú sa iba vystavené/odoslané faktúry s emailom odberateľa."),
       confirmLabel: t("Odoslať"),
     },
+    efaktura: {
+      title: efakturaTest
+        ? t("Odoslať eFaktúrou {n} faktúr (test)?", { n: efakturaCount })
+        : t("Odoslať eFaktúrou {n} faktúr?", { n: efakturaCount }),
+      message: efakturaTest
+        ? t("eFaktúra beží v testovacom režime — faktúry odídu len do skúšobného prostredia a odberateľom nepríde nič.")
+        : t("Faktúry odídu odberateľom cez sieť Peppol s PDF faktúry a odoslanie sa nedá vziať späť. Koncepty, storná, zálohové a už odoslané eFaktúry sa preskočia. Ďalšie prílohy pošlite jednotlivo z detailu faktúry."),
+      confirmLabel: t("Odoslať eFaktúry"),
+    },
     clone: {
       title: t("Vytvoriť kópie {n} faktúr pre ďalší mesiac?", { n: list.selectedIds.length }),
       message: t("Vytvoria sa nové koncepty s inkrementovaným mesiacom v popisoch."),
@@ -691,6 +769,7 @@ function InvoicesPage() {
   const runners: Record<Exclude<BulkAction, null>, () => Promise<void>> = {
     paid: runBulkPaid,
     email: runBulkEmail,
+    efaktura: runBulkEfaktura,
     clone: runBulkClone,
     reminder: runBulkReminder,
     zip: runBulkZip,
@@ -954,6 +1033,14 @@ function InvoicesPage() {
               >
                 <Mail className="h-3.5 w-3.5" /> {t("Odoslať e-mailom")}{" "}
                 {emailableCount > 0 ? `(${emailableCount})` : ""}
+              </button>
+              <button
+                disabled={busy || efakturaCount === 0}
+                onClick={() => setBulkAction("efaktura")}
+                className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/15 disabled:opacity-50"
+              >
+                <Send className="h-3.5 w-3.5" /> {efakturaTest ? t("Odoslať eFaktúrou (test)") : t("Odoslať eFaktúrou")}{" "}
+                {efakturaCount > 0 ? `(${efakturaCount})` : ""}
               </button>
               <button
                 disabled={busy}
