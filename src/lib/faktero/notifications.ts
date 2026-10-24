@@ -184,12 +184,13 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
         // Dátum v kľúči: po predĺžení STK je to nový termín, nie prečítaný starý.
         key: `vehicle_deadline:${v.id}:${t.kluc}:${t.datum}`,
         severity: t.stav === "prepadnute" ? "danger" : "warning",
+        // „platnosť“ drží rod — STK, PZP aj servis majú rôzny a „prepadla“ by sedelo len na STK.
         title:
           t.stav === "prepadnute"
-            ? `${t.nazov} ${vozidlo} prepadla`
+            ? `${t.nazov} ${vozidlo}: platnosť skončila`
             : t.dni === 0
-              ? `${t.nazov} ${vozidlo} končí dnes`
-              : `${t.nazov} ${vozidlo} končí o ${dniText(t.dni)}`,
+              ? `${t.nazov} ${vozidlo}: platnosť končí dnes`
+              : `${t.nazov} ${vozidlo}: platnosť končí o ${dniText(t.dni)}`,
         detail: [v.name, `platnosť do ${t.datum.split("-").reverse().join(". ")}`]
           .filter(Boolean)
           .join(" · "),

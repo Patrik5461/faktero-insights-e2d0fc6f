@@ -372,7 +372,7 @@ describe("termíny vozového parku", () => {
       ["vehicle_deadline:v1:stk_do:2026-10-20", "danger"],
       ["vehicle_deadline:v1:pzp_do:2026-11-03", "warning"],
     ]);
-    expect(n[1].title).toBe("PZP BA123XY končí o 10 dní");
+    expect(n[1].title).toBe("PZP BA123XY: platnosť končí o 10 dní");
     expect(n[0].to).toBe("/vozovy-park/v1");
   });
 });
