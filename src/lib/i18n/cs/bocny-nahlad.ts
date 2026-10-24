@@ -8,4 +8,6 @@ export default {
   "Kliknite na doklad v zozname a ukáže sa tu. Šípkami hore a dole prejdete na ďalší.":
     "Klikněte na doklad v seznamu a zobrazí se zde. Šipkami nahoru a dolů přejdete na další.",
   "K dokladu nie je súbor na náhľad.": "K dokladu není soubor k náhledu.",
+  "Skryť náhľad": "Skrýt náhled",
+  "Zobraziť vedľa údajov": "Zobrazit vedle údajů",
 };

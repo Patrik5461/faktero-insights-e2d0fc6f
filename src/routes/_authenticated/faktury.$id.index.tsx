@@ -5,6 +5,7 @@ import { riadkySoZlavou } from "@/lib/faktero/zlavy";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
+import { DetailSNahladom, useNahladVDetaile, type SuborNahladu } from "@/components/faktero/BocnyNahlad";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageBody } from "@/components/faktero/AppShell";
@@ -125,6 +126,9 @@ function InvoiceDetail() {
   const [zakazka, setZakazka] = useState<any>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [nahladUrl, setNahladUrl] = useState<string | null>(null);
+  // PDF stále vľavo vedľa údajov — pri účtovaní ho netreba otvárať zvlášť.
+  const nahladDetail = useNahladVDetaile();
+  const [pdfVedla, setPdfVedla] = useState<SuborNahladu | undefined>(undefined);
   const [emailOpen, setEmailOpen] = useState(false);
   /* Koľko príloh doklad má — podľa toho sa v maile ponúkne, či ich priložiť. */
   const [pocetPriloh, setPocetPriloh] = useState(0);
@@ -711,8 +715,23 @@ function InvoiceDetail() {
     }
   }
 
-  /** Náhľad v okne nad stránkou — bez sťahovania súboru. */
+  // Po úprave faktúry (nové PDF) sa náhľad načíta znova.
+  const verziaPdf = inv ? `${inv.id}|${inv.pdf_url ?? ""}|${inv.updated_at ?? ""}` : "";
+  useEffect(() => {
+    if (!verziaPdf || !nahladDetail.zapnuty || !nahladDetail.siroka()) return;
+    let zive = true;
+    odkazNaPdf()
+      .then((u) => zive && setPdfVedla(u ? { url: u } : null))
+      .catch(() => zive && setPdfVedla(null));
+    return () => {
+      zive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verziaPdf, nahladDetail.zapnuty]);
+
+  /** Náhľad v okne nad stránkou — bez sťahovania súboru. Na širokej obrazovke ho zapne vľavo. */
   async function handleNahlad() {
+    if (nahladDetail.siroka() && !nahladDetail.zapnuty) return nahladDetail.prepni(true);
     setPdfBusy(true);
     try {
       const url = await odkazNaPdf();
@@ -1252,8 +1271,20 @@ function InvoiceDetail() {
             </div>
           </div>
         )}
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="space-y-6">
+        <DetailSNahladom
+          zobrazit={nahladDetail.zapnuty}
+          subor={pdfVedla}
+          nazov={inv.invoice_number}
+          onSkryt={() => nahladDetail.prepni(false)}
+        >
+        <div
+          className={
+            nahladDetail.zapnuty
+              ? "grid gap-6 2xl:grid-cols-[minmax(0,1fr)_300px]"
+              : "grid gap-6 lg:grid-cols-[1fr_320px]"
+          }
+        >
+          <div className="min-w-0 space-y-6">
             <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -1701,6 +1732,7 @@ function InvoiceDetail() {
             )}
           </aside>
         </div>
+        </DetailSNahladom>
       </PageBody>
       {efakturaOkno && inv?.company_id && (
         <OdoslanieEfakturyOkno

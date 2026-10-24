@@ -209,3 +209,96 @@ export function useSipkyNahladu(
     return () => window.removeEventListener("keydown", klaves);
   }, [aktivne, idcka, vybrany, setVybrany]);
 }
+
+const KLUC_DETAIL = "faktero.detailNahlad";
+
+/**
+ * Náhľad PDF v detaile dokladu — predvolene zapnutý, kto ho skryje, tomu
+ * ostane skrytý aj pri ďalšej faktúre.
+ */
+export function useNahladVDetaile() {
+  const [zapnuty, setZapnuty] = useState(true);
+  useEffect(() => {
+    try {
+      setZapnuty(window.localStorage.getItem(KLUC_DETAIL) !== "0");
+    } catch {
+      /* súkromný režim — ostáva zapnutý */
+    }
+  }, []);
+  function prepni(on: boolean) {
+    setZapnuty(on);
+    try {
+      window.localStorage.setItem(KLUC_DETAIL, on ? "1" : "0");
+    } catch {
+      /* nič */
+    }
+  }
+  /** Široká obrazovka — len tam sa PDF zmestí vedľa údajov. */
+  const siroka = () =>
+    typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
+  return { zapnuty, prepni, siroka };
+}
+
+/**
+ * Detail dokladu s PDF stále vľavo a údajmi vpravo (len na širokej
+ * obrazovke). Bez náhľadu vráti obsah tak, ako bol.
+ */
+export function DetailSNahladom({
+  zobrazit,
+  subor,
+  nazov,
+  onSkryt,
+  akcie,
+  children,
+}: {
+  zobrazit: boolean;
+  /** `undefined` = ešte sa načítava, `null` = súbor nie je. */
+  subor: SuborNahladu | undefined;
+  nazov?: string | null;
+  onSkryt: () => void;
+  akcie?: ReactNode;
+  children: ReactNode;
+}) {
+  const { t } = useT();
+  if (!zobrazit) return <>{children}</>;
+  return (
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
+      <aside
+        aria-label={t("Náhľad dokladu")}
+        className="sticky top-20 hidden h-[calc(100dvh-6rem)] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card lg:flex"
+      >
+        <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm">
+          <span className="min-w-0 flex-1 truncate font-medium">
+            {nazov ?? t("Náhľad dokladu")}
+          </span>
+          {akcie}
+          <button
+            type="button"
+            aria-label={t("Skryť náhľad")}
+            title={t("Skryť náhľad")}
+            onClick={onSkryt}
+            className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto bg-muted/30">
+          {subor === undefined ? (
+            <div className="flex justify-center p-6 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : subor === null ? (
+            <p className="p-6 text-center text-sm text-muted-foreground">
+              {t("K dokladu nie je súbor na náhľad.")}
+            </p>
+          ) : subor.obrazok ? (
+            <img src={subor.url} alt={nazov ?? ""} className="mx-auto max-w-full" />
+          ) : (
+            <NahladPdf key={subor.url} url={subor.url} />
+          )}
+        </div>
+      </aside>
+      <div className="min-w-0">{children}</div>
+    </div>
+  );
+}

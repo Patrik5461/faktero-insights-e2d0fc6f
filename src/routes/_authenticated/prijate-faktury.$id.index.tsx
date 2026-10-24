@@ -63,6 +63,7 @@ import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { DetailSNahladom, useNahladVDetaile } from "@/components/faktero/BocnyNahlad";
 
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
   ACTC: "Pripravená na podpis",
@@ -118,6 +119,8 @@ function PurchaseInvoiceDetail() {
   const [row, setRow] = useState<any | null>(null);
   // Náhľad prílohy priamo na stránke — podpísaný odkaz platí 10 minút.
   const [nahlad, setNahlad] = useState<string | null>(null);
+  // Doklad stále vľavo vedľa údajov — pri účtovaní ho netreba hľadať pod formulárom.
+  const nahladDetail = useNahladVDetaile();
   // Bez tohto ostal na neexistujúcom doklade navždy nápis „Načítavam…".
   const [nenajdene, setNenajdene] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -511,8 +514,29 @@ function PurchaseInvoiceDetail() {
             />
           </div>
         )}
+        <DetailSNahladom
+          zobrazit={nahladDetail.zapnuty && !!row.file_path}
+          subor={nahlad ? { url: nahlad, obrazok: (row.file_mime ?? "").startsWith("image/") } : undefined}
+          nazov={[row.invoice_number, row.supplier_name].filter(Boolean).join(" · ")}
+          onSkryt={() => nahladDetail.prepni(false)}
+          akcie={
+            <button
+              type="button"
+              onClick={downloadPdf}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+            >
+              <Download className="h-3.5 w-3.5" /> {t("Stiahnuť")}
+            </button>
+          }
+        >
         {/* `grid-cols-1` + `min-w-0`: bez nich stĺpec na mobile rástol podľa najširšej tabuľky a stránka sa orezávala. */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div
+          className={
+            nahladDetail.zapnuty && row.file_path
+              ? "grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,1fr)_300px]"
+              : "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
+          }
+        >
           <div className="min-w-0 space-y-6">
             {samo && <SamofakturaPanel row={row} onZmena={load} />}
             <RegistrPlatcuDph
@@ -623,12 +647,16 @@ function PurchaseInvoiceDetail() {
               }}
             />
 
-            <NahladPrilohy
-              url={nahlad}
-              mime={row.file_mime}
-              maPrilohu={!!row.file_path}
-              stiahni={downloadPdf}
-            />
+            {/* Na širokej obrazovke je doklad vľavo; tu ostáva pre mobil a pre toho, kto ho skryl. */}
+            <div className={nahladDetail.zapnuty ? "lg:hidden" : ""}>
+              <NahladPrilohy
+                url={nahlad}
+                mime={row.file_mime}
+                maPrilohu={!!row.file_path}
+                stiahni={downloadPdf}
+                zobrazitVedla={nahladDetail.zapnuty ? undefined : () => nahladDetail.prepni(true)}
+              />
+            </div>
 
             {row.note && (
               <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">
@@ -796,6 +824,7 @@ function PurchaseInvoiceDetail() {
             )}
           </aside>
         </div>
+        </DetailSNahladom>
       </PageBody>
     </>
   );
@@ -925,11 +954,14 @@ function NahladPrilohy({
   mime,
   maPrilohu,
   stiahni,
+  zobrazitVedla,
 }: {
   url: string | null;
   mime?: string | null;
   maPrilohu: boolean;
   stiahni: () => void;
+  /** Vráti doklad vľavo vedľa údajov (len na širokej obrazovke). */
+  zobrazitVedla?: () => void;
 }) {
   const { t } = useT();
   if (!maPrilohu) return null;
@@ -939,6 +971,15 @@ function NahladPrilohy({
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
         <h2 className="text-sm font-medium">{t("Náhľad dokladu")}</h2>
+        {zobrazitVedla && (
+          <button
+            type="button"
+            onClick={zobrazitVedla}
+            className="ml-auto hidden items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary lg:inline-flex"
+          >
+            {t("Zobraziť vedľa údajov")}
+          </button>
+        )}
         <button
           onClick={stiahni}
           className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
