@@ -249,10 +249,9 @@ export function VozidloKarta({ id }: { id: string | null }) {
 
   /** Doplní z preukazu len prázdne polia — čo človek vyplnil, sa neprepíše. */
   function pouziPreukaz(p: PrecitanyPreukaz) {
-    const nove = new Set<string>();
-    setF((stare) => {
-      if (!stare) return stare;
+    const doplnit = (stare: Formular) => {
       const n = { ...stare };
+      const nove = new Set<string>();
       for (const [k, h] of Object.entries(p)) {
         if (h === null || h === undefined) continue;
         if (String(n[k] ?? "").trim()) continue;
@@ -264,8 +263,11 @@ export function VozidloKarta({ id }: { id: string | null }) {
         nove.add("name");
       }
       if (p.kategoria && podliehaDmv(p.kategoria) && !stare.dmv) n.dmv = true;
-      return n;
-    });
+      return { n, nove };
+    };
+    // Počet na hlášku sa počíta hneď — updater stavu beží až pri ďalšom vykreslení.
+    const { nove } = doplnit(f!);
+    setF((stare) => (stare ? doplnit(stare).n : stare));
     setDoplnene(nove);
     if (nove.size)
       toast.success(
