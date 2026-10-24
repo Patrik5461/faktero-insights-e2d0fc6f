@@ -11,4 +11,7 @@ export default {
   "Zrušiť obdobie": "Zeitraum zurücksetzen",
   "Dátum dodania zostupne": "Leistungsdatum absteigend",
   "Dátum dodania vzostupne": "Leistungsdatum aufsteigend",
+  Exportované: "Exportiert",
+  Neexportované: "Nicht exportiert",
+  "Exportované aj neexportované": "Exportiert und nicht exportiert",
 };

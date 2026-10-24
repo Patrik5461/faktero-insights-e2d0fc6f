@@ -11,4 +11,7 @@ export default {
   "Zrušiť obdobie": "Zrušit období",
   "Dátum dodania zostupne": "DUZP sestupně",
   "Dátum dodania vzostupne": "DUZP vzestupně",
+  Exportované: "Exportované",
+  Neexportované: "Neexportované",
+  "Exportované aj neexportované": "Exportované i neexportované",
 };

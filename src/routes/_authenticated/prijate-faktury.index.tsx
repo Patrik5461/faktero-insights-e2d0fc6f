@@ -161,7 +161,7 @@ function PurchaseInvoicesPage() {
   // Mesiac podľa dátumu vystavenia alebo dodania — faktúra vystavená 1. 10.
   // s dodaním 30. 9. patrí do DPH za september.
   const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
-  const [lenNeexportovane, setLenNeexportovane] = useState(false);
+  const [exportovane, setExportovane] = useState<"" | "ano" | "nie">("");
   const zobrazenie = useNastaveniaZoznamu("prijate-faktury", STLPCE_PRIJATYCH);
   const je = zobrazenie.je;
   const pocetStlpcov = zobrazenie.viditelne.length + 1;
@@ -557,7 +557,8 @@ function PurchaseInvoicesPage() {
       const to = `${y}-${String(m).padStart(2, "0")}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
       q = filtrujObdobie(q, podla, from, to);
     }
-    if (lenNeexportovane) q = q.is("exported_at", null).neq("status", "cancelled");
+    if (exportovane === "ano") q = q.not("exported_at", "is", null);
+    if (exportovane === "nie") q = q.is("exported_at", null).neq("status", "cancelled");
     if (supplier.trim()) q = q.ilike("supplier_name", `%${supplier.trim()}%`);
     const { data, error } = await q;
     if (cislo !== poslednyDotaz.current) return;
@@ -579,7 +580,7 @@ function PurchaseInvoicesPage() {
   }
   useEffect(() => {
     load();
-  }, [status, month, supplier, podla, lenNeexportovane]);
+  }, [status, month, supplier, podla, exportovane]);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -685,14 +686,16 @@ function PurchaseInvoicesPage() {
             <option value="vystavenie">{t("podľa dátumu vystavenia")}</option>
             <option value="dodanie">{t("podľa dátumu dodania")}</option>
           </select>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={lenNeexportovane}
-              onChange={(e) => setLenNeexportovane(e.target.checked)}
-            />
-            {t("Len ešte neexportované")}
-          </label>
+          <select
+            aria-label={t("Export do účtovníctva")}
+            value={exportovane}
+            onChange={(e) => setExportovane(e.target.value as typeof exportovane)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="">{t("Exportované aj neexportované")}</option>
+            <option value="ano">{t("Exportované")}</option>
+            <option value="nie">{t("Neexportované")}</option>
+          </select>
           <input
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}

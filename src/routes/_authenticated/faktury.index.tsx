@@ -161,17 +161,18 @@ function InvoicesPage() {
   const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
   const [obdobieOd, setObdobieOd] = useState("");
   const [obdobieDo, setObdobieDo] = useState("");
-  const [lenNeexportovane, setLenNeexportovane] = useState(false);
+  const [exportovane, setExportovane] = useState<"" | "ano" | "nie">("");
   const upravDotaz = useCallback(
     (dotaz: any) => {
       let d = filtrujObdobie(dotaz, podla, obdobieOd || null, obdobieDo || null);
       // Koncept ani stornovaná sa do účtovníctva neexportujú, tak tu nepatria.
-      if (lenNeexportovane) d = d.is("exported_at", null).not("status", "in", "(draft,cancelled)");
+      if (exportovane === "ano") d = d.not("exported_at", "is", null);
+      if (exportovane === "nie") d = d.is("exported_at", null).not("status", "in", "(draft,cancelled)");
       return d;
     },
-    [podla, obdobieOd, obdobieDo, lenNeexportovane],
+    [podla, obdobieOd, obdobieDo, exportovane],
   );
-  const maObdobie = Boolean(obdobieOd || obdobieDo || lenNeexportovane);
+  const maObdobie = Boolean(obdobieOd || obdobieDo || exportovane);
   const list = usePagedList({
     resource: "invoices",
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
@@ -182,7 +183,7 @@ function InvoicesPage() {
     orderBy: { column: "issue_date", ascending: false },
     sortKey: "faktury",
     upravDotaz,
-    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${lenNeexportovane}`,
+    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${exportovane}`,
   });
   // Hľadanie z hlavičky príde ako `?q=`. Prepíšeme ním hľadacie pole zoznamu,
   // aby bolo vidieť, čo sa hľadá, a dalo sa to odtiaľ upraviť.
@@ -899,13 +900,17 @@ function InvoicesPage() {
               className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
             />
           </label>
-          <label className="flex items-center gap-2 pb-2">
-            <input
-              type="checkbox"
-              checked={lenNeexportovane}
-              onChange={(e) => setLenNeexportovane(e.target.checked)}
-            />
-            {t("Len ešte neexportované")}
+          <label className="text-xs text-muted-foreground">
+            {t("Export do účtovníctva")}
+            <select
+              value={exportovane}
+              onChange={(e) => setExportovane(e.target.value as typeof exportovane)}
+              className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+            >
+              <option value="">{t("Všetky")}</option>
+              <option value="ano">{t("Exportované")}</option>
+              <option value="nie">{t("Neexportované")}</option>
+            </select>
           </label>
           {maObdobie && (
             <button
@@ -913,7 +918,7 @@ function InvoicesPage() {
               onClick={() => {
                 setObdobieOd("");
                 setObdobieDo("");
-                setLenNeexportovane(false);
+                setExportovane("");
               }}
               className="mb-0.5 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs hover:bg-secondary"
             >
