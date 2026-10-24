@@ -63,6 +63,7 @@ import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { PrepinacNahladu, SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
 import { posliEfakturuFn } from "@/lib/faktero/efaktura/efaktura.functions";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
@@ -219,6 +220,8 @@ function InvoicesPage() {
       toast.error(e?.message ?? t("PDF sa nepodarilo pripraviť."));
     }
   }
+  // Náhľad vedľa zoznamu — pri účtovaní netreba otvárať každú faktúru zvlášť.
+  const bocny = useBocnyNahlad("faktury");
   const markPaidFn = useServerFn(bulkMarkPaidFn);
   const emailFn = useServerFn(sendInvoiceEmailFn);
   const kontrolaDatumuFn = useServerFn(kontrolaDatumuVystaveniaFn);
@@ -342,6 +345,13 @@ function InvoicesPage() {
     }
     return riadky;
   }, [list.rows, poSplatnosti, neuhradene, overdueNoReminder, reminderMap, today]);
+
+  useSipkyNahladu(
+    bocny.zapnuty,
+    visibleRows.map((r: any) => r.id),
+    bocny.vybrany,
+    bocny.setVybrany,
+  );
 
   async function cloneRow(invoiceId: string) {
     try {
@@ -940,6 +950,7 @@ function InvoicesPage() {
               trashCount={list.showDeleted ? list.rows.length : 0}
             />
             <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
+            <PrepinacNahladu zapnuty={bocny.zapnuty} prepni={bocny.prepni} />
             <OdkazNaRady />
             <Link
               to="/exporty"
@@ -1138,6 +1149,17 @@ function InvoicesPage() {
             />
           )}
           desktop={
+            <SNahladom
+              zapnuty={bocny.zapnuty}
+              vybrany={bocny.vybrany}
+              nazov={visibleRows.find((r: any) => r.id === bocny.vybrany)?.invoice_number}
+              nacitaj={async (id) => {
+                const r = await pdfUrlFn({ data: { invoiceId: id } });
+                return r?.signedUrl ? { url: r.signedUrl } : null;
+              }}
+              onOtvorit={(id) => navigate({ to: "/faktury/$id", params: { id } })}
+              onZavriet={() => bocny.setVybrany(null)}
+            >
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -1182,8 +1204,14 @@ function InvoicesPage() {
                     */
                     <tr
                       key={i.id}
-                      className="cursor-pointer hover:bg-muted/30"
-                      onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
+                      data-nahlad-id={i.id}
+                      className={`cursor-pointer hover:bg-muted/30 ${bocny.zapnuty && bocny.vybrany === i.id ? "bg-primary/10" : ""}`}
+                      onClick={() =>
+                        bocny.aktivny()
+                          ? bocny.setVybrany(i.id)
+                          : navigate({ to: "/faktury/$id", params: { id: i.id } })
+                      }
+                      onDoubleClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
                     >
                       <td className="p-3" onClick={(e) => e.stopPropagation()}>
                         <input
@@ -1297,6 +1325,7 @@ function InvoicesPage() {
                 </tbody>
               </table>
             </div>
+            </SNahladom>
           }
         />
         <Pagination

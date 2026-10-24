@@ -61,6 +61,7 @@ import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { PrepinacNahladu, SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
@@ -180,6 +181,14 @@ function PurchaseInvoicesPage() {
     stav: (r: any) => r.status,
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Náhľad vedľa zoznamu — pri účtovaní netreba otvárať každú faktúru zvlášť.
+  const bocny = useBocnyNahlad("prijate-faktury");
+  useSipkyNahladu(
+    bocny.zapnuty,
+    rad.zoradene.map((r: any) => r.id),
+    bocny.vybrany,
+    bocny.setVybrany,
+  );
   // Súčty do pätičky zoznamu — vybrané a tie, čo čakajú na odovzdanie.
   const vybrane = rad.zoradene.filter((r: any) => selected.has(r.id));
   const naExport = rad.zoradene.filter(
@@ -703,6 +712,7 @@ function PurchaseInvoicesPage() {
             className="h-9 w-56 rounded-md border border-input bg-background px-3 text-sm"
           />
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            <PrepinacNahladu zapnuty={bocny.zapnuty} prepni={bocny.prepni} />
             <button
               type="button"
               onClick={() => {
@@ -906,7 +916,25 @@ function PurchaseInvoicesPage() {
             {t("Zobrazuje sa 500 najnovších prijatých faktúr. Staršie nájdete výberom mesiaca alebo hľadaním.")}
           </p>
         )}
-        <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="mt-4">
+        <SNahladom
+          zapnuty={bocny.zapnuty}
+          vybrany={bocny.vybrany}
+          nazov={(() => {
+            const r: any = rows.find((x: any) => x.id === bocny.vybrany);
+            return r ? `${r.invoice_number ?? ""} · ${r.supplier_name ?? ""}` : null;
+          })()}
+          nacitaj={async (id) => {
+            const r: any = rows.find((x: any) => x.id === id);
+            if (!r?.file_path) return null;
+            const { data } = await supabase.storage.from("purchase-invoices").createSignedUrl(r.file_path, 600);
+            if (!data?.signedUrl) return null;
+            return { url: data.signedUrl, obrazok: /\.(jpe?g|png|webp|gif|heic)$/i.test(r.file_path) };
+          }}
+          onOtvorit={(id) => navigate({ to: "/prijate-faktury/$id", params: { id } })}
+          onZavriet={() => bocny.setVybrany(null)}
+        >
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -964,11 +992,14 @@ function PurchaseInvoicesPage() {
                 <tr
                   key={r.id}
                   {...posledny.riadok(r.id)}
-                  className={`cursor-pointer hover:bg-muted/30 ${posledny.riadok(r.id).className}`}
+                  data-nahlad-id={r.id}
+                  className={`cursor-pointer hover:bg-muted/30 ${posledny.riadok(r.id).className} ${bocny.zapnuty && bocny.vybrany === r.id ? "bg-primary/10" : ""}`}
                   onClick={() => {
                     posledny.zapamataj(r.id);
-                    navigate({ to: "/prijate-faktury/$id", params: { id: r.id } });
+                    if (bocny.aktivny()) bocny.setVybrany(r.id);
+                    else navigate({ to: "/prijate-faktury/$id", params: { id: r.id } });
                   }}
+                  onDoubleClick={() => navigate({ to: "/prijate-faktury/$id", params: { id: r.id } })}
                 >
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <input
@@ -1185,6 +1216,8 @@ function PurchaseInvoicesPage() {
               </span>
             </div>
           ) : null}
+        </div>
+        </SNahladom>
         </div>
       </PageBody>
 
