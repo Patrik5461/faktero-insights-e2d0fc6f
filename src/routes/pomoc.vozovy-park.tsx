@@ -108,6 +108,28 @@ const sections: HelpSection[] = [
           <strong>v zvončeku</strong> aj v zozname vozidiel; prepadnutý je červený.
         </p>
         <p>Keď STK alebo poistku predĺžite, stačí prepísať dátum — upozornenie zmizne samo.</p>
+        <p>
+          Ráno príde aj <strong>e-mail</strong> na adresu firmy so zoznamom termínov, ktoré sa
+          blížia. Každý termín sa pošle raz; po predĺžení príde pripomienka znova až k novému
+          dátumu.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "naklady",
+    title: "Náklady na vozidlo",
+    body: (
+      <>
+        <p>
+          Pri bločku, prijatej faktúre aj v Nespracovaných dokladoch je pole{" "}
+          <strong>Vozidlo</strong> (ukáže sa, len keď má firma vo vozovom parku aspoň jedno auto).
+          Vyberte ho pri tankovaní, servise, umývaní alebo poistke.
+        </p>
+        <p>
+          Na karte vozidla potom vidíte <strong>náklady za tento rok aj spolu</strong> bez DPH a
+          posledné doklady s odkazom na ne.
+        </p>
       </>
     ),
   },

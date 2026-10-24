@@ -8,6 +8,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
 import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { formatujMenu } from "@/lib/faktero/mena";
 import { precitajTechnickyPreukazFn } from "@/lib/faktero/vozovy-park.functions";
 import {
   DRUHY_DOKUMENTOV,
@@ -756,6 +757,8 @@ export function VozidloKarta({ id }: { id: string | null }) {
           )}
         </section>
 
+        {id && <NakladyVozidla id={id} />}
+
         {id && (
           <p className="px-1 text-xs text-muted-foreground">
             {t(
@@ -765,5 +768,146 @@ export function VozidloKarta({ id }: { id: string | null }) {
         )}
       </aside>
     </div>
+  );
+}
+
+type Naklad = {
+  id: string;
+  druh: "blocek" | "prijata";
+  datum: string | null;
+  dodavatel: string | null;
+  cislo: string | null;
+  bezDph: number;
+  spolu: number;
+  mena: string;
+};
+
+/**
+ * Bločky a prijaté faktúry priradené k vozidlu — palivo, servis, poistky.
+ * Súčet je bez DPH, lebo to je náklad firmy; DPH ide do odpočtu.
+ */
+function NakladyVozidla({ id }: { id: string }) {
+  const { t } = useT();
+  const [naklady, setNaklady] = useState<Naklad[] | null>(null);
+  const rok = new Date().getFullYear();
+
+  useEffect(() => {
+    let zive = true;
+    Promise.all([
+      supabase
+        .from("expense_documents")
+        .select(
+          "id, issue_date, supplier_name, document_number, net_amount, total_amount, currency",
+        )
+        .eq("vehicle_id", id)
+        .order("issue_date", { ascending: false })
+        .limit(500),
+      supabase
+        .from("purchase_invoices")
+        .select(
+          "id, issue_date, supplier_name, invoice_number, amount_without_vat, amount_total, currency",
+        )
+        .eq("vehicle_id", id)
+        .is("deleted_at", null)
+        .order("issue_date", { ascending: false })
+        .limit(500),
+    ]).then(([b, p]) => {
+      if (!zive) return;
+      const vsetky: Naklad[] = [
+        ...(b.data ?? []).map((x: any) => ({
+          id: x.id,
+          druh: "blocek" as const,
+          datum: x.issue_date,
+          dodavatel: x.supplier_name,
+          cislo: x.document_number,
+          bezDph: Number(x.net_amount ?? x.total_amount ?? 0),
+          spolu: Number(x.total_amount ?? 0),
+          mena: x.currency || "EUR",
+        })),
+        ...(p.data ?? []).map((x: any) => ({
+          id: x.id,
+          druh: "prijata" as const,
+          datum: x.issue_date,
+          dodavatel: x.supplier_name,
+          cislo: x.invoice_number,
+          bezDph: Number(x.amount_without_vat ?? x.amount_total ?? 0),
+          spolu: Number(x.amount_total ?? 0),
+          mena: x.currency || "EUR",
+        })),
+      ].sort((a, c) => String(c.datum ?? "").localeCompare(String(a.datum ?? "")));
+      setNaklady(vsetky);
+    });
+    return () => {
+      zive = false;
+    };
+  }, [id]);
+
+  const sucet = (zoznam: Naklad[]) => {
+    const po = new Map<string, number>();
+    for (const n of zoznam) po.set(n.mena, (po.get(n.mena) ?? 0) + n.bezDph);
+    return (
+      [...po.entries()].map(([m, v]) => formatujMenu(Math.round(v * 100) / 100, m)).join(" + ") ||
+      "—"
+    );
+  };
+  const tentoRok = (naklady ?? []).filter((n) => String(n.datum ?? "").startsWith(String(rok)));
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-5">
+      <h2 className="text-base font-semibold">{t("Náklady na vozidlo")}</h2>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {t("Bločky a prijaté faktúry, pri ktorých je vybrané toto vozidlo. Sumy bez DPH.")}
+      </p>
+      {naklady === null ? (
+        <p className="mt-3 text-xs text-muted-foreground">{t("Načítavam…")}</p>
+      ) : naklady.length === 0 ? (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {t(
+            "Zatiaľ žiadne. Vozidlo vyberiete pri bločku, prijatej faktúre alebo v Nespracovaných dokladoch.",
+          )}
+        </p>
+      ) : (
+        <>
+          <dl className="mt-3 space-y-1 text-sm">
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">{t("Tento rok ({rok})", { rok })}</dt>
+              <dd className="font-medium tabular-nums">{sucet(tentoRok)}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">{t("Spolu")}</dt>
+              <dd className="tabular-nums">{sucet(naklady)}</dd>
+            </div>
+          </dl>
+          <ul className="mt-3 divide-y divide-border text-sm">
+            {naklady.slice(0, 10).map((n) => (
+              <li
+                key={`${n.druh}-${n.id}`}
+                className="flex items-start justify-between gap-2 py-1.5"
+              >
+                <Link
+                  to={n.druh === "blocek" ? "/doklady/novy" : "/prijate-faktury/$id"}
+                  {...(n.druh === "blocek"
+                    ? { search: { id: n.id } as any }
+                    : { params: { id: n.id } as any })}
+                  className="min-w-0 hover:underline"
+                >
+                  <span className="block truncate">{n.dodavatel ?? (n.cislo || "—")}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {datumNaDoklade(n.datum)} ·{" "}
+                    {n.druh === "blocek" ? t("bloček") : t("prijatá faktúra")}
+                  </span>
+                </Link>
+                <span className="shrink-0 tabular-nums">{formatujMenu(n.bezDph, n.mena)}</span>
+              </li>
+            ))}
+          </ul>
+          {naklady.length > 10 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t("a ďalších {n}", { n: naklady.length - 10 })}
+            </p>
+          )}
+        </>
+      )}
+    </section>
   );
 }

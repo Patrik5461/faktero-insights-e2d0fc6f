@@ -3418,6 +3418,7 @@ export type Database = {
           inbox_message_id: string | null
           vyuctovanie_id: string | null
           pohoda_verzia: number
+          vehicle_id: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -3473,6 +3474,7 @@ export type Database = {
           inbox_message_id?: string | null
           vyuctovanie_id?: string | null
           pohoda_verzia?: number
+          vehicle_id?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -3528,6 +3530,7 @@ export type Database = {
           inbox_message_id?: string | null
           vyuctovanie_id?: string | null
           pohoda_verzia?: number
+          vehicle_id?: string | null
         }
         Relationships: [
           {
@@ -6596,6 +6599,7 @@ export type Database = {
           inbox_message_id: string | null
           vyuctovanie_id: string | null
           pohoda_verzia: number
+          vehicle_id: string | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -6699,6 +6703,7 @@ export type Database = {
           inbox_message_id?: string | null
           vyuctovanie_id?: string | null
           pohoda_verzia?: number
+          vehicle_id?: string | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -6802,6 +6807,7 @@ export type Database = {
           inbox_message_id?: string | null
           vyuctovanie_id?: string | null
           pohoda_verzia?: number
+          vehicle_id?: string | null
         }
         Relationships: [
           {
@@ -10313,6 +10319,48 @@ export type Database = {
           },
           {
             foreignKeyName: "vehicle_documents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      vehicle_reminder_log: {
+        Row: {
+          id: string
+          company_id: string
+          vehicle_id: string
+          kind: string
+          due_date: string
+          sent_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          vehicle_id: string
+          kind: string
+          due_date: string
+          sent_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          vehicle_id?: string
+          kind?: string
+          due_date?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_reminder_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_reminder_log_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"

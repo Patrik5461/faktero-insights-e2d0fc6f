@@ -306,6 +306,7 @@ import { Route as ApiPublicHooksShoptetImportRouteImport } from './routes/api/pu
 import { Route as ApiPublicHooksStockAlertsRouteImport } from './routes/api/public/hooks/stock-alerts'
 import { Route as ApiPublicHooksTrialLifecycleRouteImport } from './routes/api/public/hooks/trial-lifecycle'
 import { Route as ApiPublicHooksUcetZrusenieRouteImport } from './routes/api/public/hooks/ucet-zrusenie'
+import { Route as ApiPublicHooksVozovyParkPripomienkyRouteImport } from './routes/api/public/hooks/vozovy-park-pripomienky'
 import { Route as ApiPublicHooksZamestnanciPripomienkyRouteImport } from './routes/api/public/hooks/zamestnanci-pripomienky'
 import { Route as ApiPublicMailPrijemRouteImport } from './routes/api/public/mail/prijem'
 import { Route as ApiPublicMobilVerziaRouteImport } from './routes/api/public/mobil/verzia'
@@ -1958,6 +1959,12 @@ const ApiPublicHooksUcetZrusenieRoute =
     path: '/api/public/hooks/ucet-zrusenie',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksVozovyParkPripomienkyRoute =
+  ApiPublicHooksVozovyParkPripomienkyRouteImport.update({
+    id: '/api/public/hooks/vozovy-park-pripomienky',
+    path: '/api/public/hooks/vozovy-park-pripomienky',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksZamestnanciPripomienkyRoute =
   ApiPublicHooksZamestnanciPripomienkyRouteImport.update({
     id: '/api/public/hooks/zamestnanci-pripomienky',
@@ -2423,6 +2430,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
+  '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
   '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
@@ -2745,6 +2753,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
+  '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
   '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
@@ -3078,6 +3087,7 @@ export interface FileRoutesById {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
+  '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
   '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
@@ -3411,6 +3421,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
+    | '/api/public/hooks/vozovy-park-pripomienky'
     | '/api/public/hooks/zamestnanci-pripomienky'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
@@ -3733,6 +3744,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
+    | '/api/public/hooks/vozovy-park-pripomienky'
     | '/api/public/hooks/zamestnanci-pripomienky'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
@@ -4065,6 +4077,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
+    | '/api/public/hooks/vozovy-park-pripomienky'
     | '/api/public/hooks/zamestnanci-pripomienky'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
@@ -4234,6 +4247,7 @@ export interface RootRouteChildren {
   ApiPublicHooksStockAlertsRoute: typeof ApiPublicHooksStockAlertsRoute
   ApiPublicHooksTrialLifecycleRoute: typeof ApiPublicHooksTrialLifecycleRoute
   ApiPublicHooksUcetZrusenieRoute: typeof ApiPublicHooksUcetZrusenieRoute
+  ApiPublicHooksVozovyParkPripomienkyRoute: typeof ApiPublicHooksVozovyParkPripomienkyRoute
   ApiPublicHooksZamestnanciPripomienkyRoute: typeof ApiPublicHooksZamestnanciPripomienkyRoute
   ApiPublicMailPrijemRoute: typeof ApiPublicMailPrijemRoute
   ApiPublicMobilVerziaRoute: typeof ApiPublicMobilVerziaRoute
@@ -6332,6 +6346,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksUcetZrusenieRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/vozovy-park-pripomienky': {
+      id: '/api/public/hooks/vozovy-park-pripomienky'
+      path: '/api/public/hooks/vozovy-park-pripomienky'
+      fullPath: '/api/public/hooks/vozovy-park-pripomienky'
+      preLoaderRoute: typeof ApiPublicHooksVozovyParkPripomienkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/zamestnanci-pripomienky': {
       id: '/api/public/hooks/zamestnanci-pripomienky'
       path: '/api/public/hooks/zamestnanci-pripomienky'
@@ -7330,6 +7351,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksStockAlertsRoute: ApiPublicHooksStockAlertsRoute,
   ApiPublicHooksTrialLifecycleRoute: ApiPublicHooksTrialLifecycleRoute,
   ApiPublicHooksUcetZrusenieRoute: ApiPublicHooksUcetZrusenieRoute,
+  ApiPublicHooksVozovyParkPripomienkyRoute:
+    ApiPublicHooksVozovyParkPripomienkyRoute,
   ApiPublicHooksZamestnanciPripomienkyRoute:
     ApiPublicHooksZamestnanciPripomienkyRoute,
   ApiPublicMailPrijemRoute: ApiPublicMailPrijemRoute,

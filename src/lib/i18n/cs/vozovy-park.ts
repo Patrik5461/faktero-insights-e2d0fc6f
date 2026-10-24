@@ -165,4 +165,13 @@ export default {
   "Upozornenie na STK, emisnú kontrolu, PZP, havarijné poistenie a diaľničnú známku 30 dní vopred":
     "Upozornění na STK, emisní kontrolu, povinné ručení, havarijní pojištění a dálniční známku 30 dní předem",
   "Tie isté vozidlá ako v Knihe jázd": "Stejná vozidla jako v Knize jízd",
+  "Náklady na vozidlo": "Náklady na vozidlo",
+  "Bločky a prijaté faktúry, pri ktorých je vybrané toto vozidlo. Sumy bez DPH.":
+    "Účtenky a přijaté faktury, u kterých je vybrané toto vozidlo. Částky bez DPH.",
+  "Zatiaľ žiadne. Vozidlo vyberiete pri bločku, prijatej faktúre alebo v Nespracovaných dokladoch.":
+    "Zatím žádné. Vozidlo vyberete u účtenky, přijaté faktury nebo v Nezpracovaných dokladech.",
+  "Tento rok ({rok})": "Letos ({rok})",
+  "prijatá faktúra": "přijatá faktura",
+  "a ďalších {n}": "a dalších {n}",
+  "— bez vozidla —": "— bez vozidla —",
 };

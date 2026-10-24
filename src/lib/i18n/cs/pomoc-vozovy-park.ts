@@ -43,4 +43,10 @@ export default {
     "Vozidlo smí přidávat a upravovat vlastník nebo správce firmy. Prodané nebo vrácené auto označte jako <0>vyřazené</0> — z přehledu zmizí, ale historie zůstane.",
   "Technické preukazy, vlastníctvo, leasing, poistky a termíny STK vozidiel.":
     "Technické průkazy, vlastnictví, leasing, pojistky a termíny STK vozidel.",
+  "Ráno príde aj <0>e-mail</0> na adresu firmy so zoznamom termínov, ktoré sa blížia. Každý termín sa pošle raz; po predĺžení príde pripomienka znova až k novému dátumu.":
+    "Ráno přijde i <0>e-mail</0> na adresu firmy se seznamem blížících se termínů. Každý termín se pošle jednou; po prodloužení přijde připomínka znovu až k novému datu.",
+  "Pri bločku, prijatej faktúre aj v Nespracovaných dokladoch je pole <0>Vozidlo</0> (ukáže sa, len keď má firma vo vozovom parku aspoň jedno auto). Vyberte ho pri tankovaní, servise, umývaní alebo poistke.":
+    "U účtenky, přijaté faktury i v Nezpracovaných dokladech je pole <0>Vozidlo</0> (zobrazí se, jen když má firma ve vozovém parku aspoň jedno auto). Vyberte ho při tankování, servisu, mytí nebo pojistce.",
+  "Na karte vozidla potom vidíte <0>náklady za tento rok aj spolu</0> bez DPH a posledné doklady s odkazom na ne.":
+    "Na kartě vozidla pak vidíte <0>náklady za letošek i celkem</0> bez DPH a poslední doklady s odkazem na ně.",
 };

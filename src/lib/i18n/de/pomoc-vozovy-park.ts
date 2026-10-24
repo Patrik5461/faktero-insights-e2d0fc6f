@@ -43,4 +43,10 @@ export default {
     "Fahrzeuge dürfen Inhaber oder Administratoren des Unternehmens anlegen und bearbeiten. Ein verkauftes oder zurückgegebenes Auto markieren Sie als <0>ausgemustert</0> — es verschwindet aus der Übersicht, die Historie bleibt erhalten.",
   "Technické preukazy, vlastníctvo, leasing, poistky a termíny STK vozidiel.":
     "Fahrzeugscheine, Eigentum, Leasing, Versicherungen und HU-Termine der Fahrzeuge.",
+  "Ráno príde aj <0>e-mail</0> na adresu firmy so zoznamom termínov, ktoré sa blížia. Každý termín sa pošle raz; po predĺžení príde pripomienka znova až k novému dátumu.":
+    "Morgens kommt zusätzlich eine <0>E-Mail</0> an die Firmenadresse mit der Liste der anstehenden Termine. Jeder Termin wird einmal gesendet; nach einer Verlängerung kommt die Erinnerung erst zum neuen Datum wieder.",
+  "Pri bločku, prijatej faktúre aj v Nespracovaných dokladoch je pole <0>Vozidlo</0> (ukáže sa, len keď má firma vo vozovom parku aspoň jedno auto). Vyberte ho pri tankovaní, servise, umývaní alebo poistke.":
+    "Beim Kassenbon, bei der Eingangsrechnung und in den unverarbeiteten Belegen gibt es das Feld <0>Fahrzeug</0> (es erscheint nur, wenn das Unternehmen mindestens ein Auto im Fuhrpark hat). Wählen Sie es beim Tanken, Service, Waschen oder bei der Versicherung.",
+  "Na karte vozidla potom vidíte <0>náklady za tento rok aj spolu</0> bez DPH a posledné doklady s odkazom na ne.":
+    "Auf der Fahrzeugkarte sehen Sie dann die <0>Kosten für dieses Jahr und insgesamt</0> ohne MwSt und die letzten Belege mit Link darauf.",
 };

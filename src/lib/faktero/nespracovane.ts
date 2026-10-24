@@ -56,6 +56,8 @@ export type UdajeNespracovaneho = {
   kategoria: string;
   opravuje: string;
   jobId: string;
+  /** Vozidlo z vozového parku — náklad na auto (PHM, servis, poistka). */
+  vehicleId?: string;
   poznamka: string;
   /** Iný doklad. */
   ostatny: { druh: string; predmet: string; lehota: string };
@@ -153,6 +155,7 @@ export function prazdneUdaje(): UdajeNespracovaneho {
     kategoria: "",
     opravuje: "",
     jobId: "",
+    vehicleId: "",
     poznamka: "",
     ostatny: { druh: "ine", predmet: "", lehota: "" },
     kody: { predkontacia: "", clenenie: "", kv: "", stredisko: "", cinnost: "", rad: "", intPoznamka: "" },
@@ -510,6 +513,7 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
   u.polozkyVypnute = !(Array.isArray(p.items) && p.items.length) && Array.isArray(p.polozky_vypnute) && p.polozky_vypnute.length > 0;
   u.opravuje = s(p.opravuje_cislo);
   u.jobId = s(p.job_id);
+  u.vehicleId = s(p.vehicle_id);
   u.prenesenie = p.reverse_charge === true && p.dph_rezim === "samozdanenie" ? true : undefined;
   u.kody = {
     predkontacia: s(p.pohoda_predkontacia),
@@ -570,6 +574,7 @@ export function prijataZUdajov(
     // Celá faktúra v prenesení: odberateľ daň samozdaní (KV B.1).
     ...(u.prenesenie ? { reverse_charge: true, dph_rezim: "samozdanenie" } : {}),
     job_id: prazdne(u.jobId),
+    vehicle_id: prazdne(u.vehicleId ?? ""),
     pohoda_predkontacia: prazdne(u.kody.predkontacia),
     pohoda_clenenie_dph: prazdne(u.kody.clenenie),
     kv_clenenie: prazdne(u.kody.kv),
@@ -601,6 +606,7 @@ export function blocekZUdajov(u: UdajeNespracovaneho) {
     note: prazdne(u.poznamka),
     items: u.polozky.length && !u.polozkyVypnute ? u.polozky : null,
     job_id: prazdne(u.jobId),
+    vehicle_id: prazdne(u.vehicleId ?? ""),
     pohoda_predkontacia: prazdne(u.kody.predkontacia),
     pohoda_clenenie_dph: prazdne(u.kody.clenenie),
     kv_clenenie: prazdne(u.kody.kv),

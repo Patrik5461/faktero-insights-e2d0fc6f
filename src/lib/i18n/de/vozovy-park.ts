@@ -167,4 +167,13 @@ export default {
   "Upozornenie na STK, emisnú kontrolu, PZP, havarijné poistenie a diaľničnú známku 30 dní vopred":
     "Erinnerung an HU, Abgasuntersuchung, Kfz-Haftpflicht, Kasko und Vignette 30 Tage im Voraus",
   "Tie isté vozidlá ako v Knihe jázd": "Dieselben Fahrzeuge wie im Fahrtenbuch",
+  "Náklady na vozidlo": "Fahrzeugkosten",
+  "Bločky a prijaté faktúry, pri ktorých je vybrané toto vozidlo. Sumy bez DPH.":
+    "Kassenbons und Eingangsrechnungen, bei denen dieses Fahrzeug ausgewählt ist. Beträge ohne MwSt.",
+  "Zatiaľ žiadne. Vozidlo vyberiete pri bločku, prijatej faktúre alebo v Nespracovaných dokladoch.":
+    "Noch keine. Das Fahrzeug wählen Sie beim Kassenbon, bei der Eingangsrechnung oder in den unverarbeiteten Belegen aus.",
+  "Tento rok ({rok})": "Dieses Jahr ({rok})",
+  "prijatá faktúra": "Eingangsrechnung",
+  "a ďalších {n}": "und {n} weitere",
+  "— bez vozidla —": "— ohne Fahrzeug —",
 };

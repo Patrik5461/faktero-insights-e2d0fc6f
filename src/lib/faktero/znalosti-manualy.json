@@ -1243,7 +1243,11 @@
     },
     {
      "nadpis": "Termíny a upozornenia",
-     "text": "<>\nPri vozidle zapíšte platnosť STK, emisnej kontroly, PZP, havarijného poistenia, diaľničnej\nznámky a dátum najbližšieho servisu. Termín, ktorý končí do 30 dní, sa ukáže\nv zvončeku aj v zozname vozidiel; prepadnutý je červený.\nKeď STK alebo poistku predĺžite, stačí prepísať dátum — upozornenie zmizne samo."
+     "text": "<>\nPri vozidle zapíšte platnosť STK, emisnej kontroly, PZP, havarijného poistenia, diaľničnej\nznámky a dátum najbližšieho servisu. Termín, ktorý končí do 30 dní, sa ukáže\nv zvončeku aj v zozname vozidiel; prepadnutý je červený.\nKeď STK alebo poistku predĺžite, stačí prepísať dátum — upozornenie zmizne samo.\nRáno príde aj e-mail na adresu firmy so zoznamom termínov, ktoré sa\nblížia. Každý termín sa pošle raz; po predĺžení príde pripomienka znova až k novému\ndátumu."
+    },
+    {
+     "nadpis": "Náklady na vozidlo",
+     "text": "<>\nPri bločku, prijatej faktúre aj v Nespracovaných dokladoch je pole\nVozidlo (ukáže sa, len keď má firma vo vozovom parku aspoň jedno auto).\nVyberte ho pri tankovaní, servise, umývaní alebo poistke.\nNa karte vozidla potom vidíte náklady za tento rok aj spolu bez DPH a\nposledné doklady s odkazom na ne."
     },
     {
      "nadpis": "Dokumenty k vozidlu",

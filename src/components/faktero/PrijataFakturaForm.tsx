@@ -14,6 +14,7 @@ import { Upload, Loader2 } from "lucide-react";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { JobPicker } from "@/components/faktero/JobPicker";
+import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
 import { dicPreRegister, ucetNaIban } from "@/lib/faktero/cz-registr-dph";
@@ -70,6 +71,7 @@ export function PrijataFakturaForm({
     payment_method: "prevod",
     note: "",
     job_id: "",
+    vehicle_id: "",
     status: "received" as "draft" | "received" | "booked" | "paid" | "cancelled",
     /* Výkazy k DPH: kto daň platí, či si ju odpočítavame a čo doklad opravuje. */
     dph_rezim: "" as "" | "tuzemsko" | "samozdanenie" | "nadobudnutie" | "dovoz" | "bez_dane",
@@ -247,6 +249,7 @@ export function PrijataFakturaForm({
         payment_method: data.payment_method ?? "prevod",
         note: data.note ?? "",
         job_id: data.job_id ?? "",
+        vehicle_id: (data as any).vehicle_id ?? "",
         status: (data.status ?? "received") as typeof form.status,
         dph_rezim: (data.dph_rezim ?? "") as typeof form.dph_rezim,
         delivery_date: data.delivery_date ?? "",
@@ -419,6 +422,7 @@ export function PrijataFakturaForm({
         payment_method: form.payment_method || null,
         note: form.note || null,
         job_id: form.job_id || null,
+        vehicle_id: form.vehicle_id || null,
         status: form.status,
         dph_rezim: form.dph_rezim || null,
         delivery_date: form.delivery_date || null,
@@ -832,6 +836,7 @@ export function PrijataFakturaForm({
               onChange={(v) => set("job_id", v)}
               label={t("Zákazka (náklad sa započíta do jej vyhodnotenia)")}
             />
+            <VozidloPicker value={form.vehicle_id} onChange={(v) => set("vehicle_id", v)} />
             <Field label="Režim DPH">
               <select
                 value={form.dph_rezim}

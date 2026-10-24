@@ -2,6 +2,7 @@ import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PolozkyNespracovaneho } from "./PolozkyNespracovaneho";
 import { JobPicker } from "./JobPicker";
+import { VozidloPicker } from "./VozidloPicker";
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -657,6 +658,11 @@ export function NespracovanyKompaktny({
                 onChange={(v) => set({ jobId: v })}
                 companyId={companyId}
                 className={zle("zakazka") ? "[&_select]:border-red-500" : ""}
+              />
+              <VozidloPicker
+                value={u.vehicleId ?? ""}
+                onChange={(v) => set({ vehicleId: v })}
+                companyId={companyId}
               />
               {pravidlo}
               <NauceneZDodavatela u={u} />

@@ -10,6 +10,7 @@ import { doplnNavrhDoUdajov, oznaceniaZUdajov } from "@/lib/faktero/ai-predkonta
 import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
 import { PravidloNespracovaneho } from "@/components/faktero/PravidloNespracovaneho";
 import { JobPicker } from "@/components/faktero/JobPicker";
+import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -692,6 +693,12 @@ function Detail() {
                     onChange={(v) => setU((p) => (p ? { ...p, jobId: v } : p))}
                     companyId={d.companyId}
                     className={`mt-3 ${zle("zakazka") ? "[&_select]:border-red-500" : ""}`}
+                  />
+                  <VozidloPicker
+                    value={u.vehicleId ?? ""}
+                    onChange={(v) => setU((p) => (p ? { ...p, vehicleId: v } : p))}
+                    companyId={d.companyId}
+                    className="mt-3"
                   />
                   <PravidloNespracovaneho
                     companyId={d.companyId}

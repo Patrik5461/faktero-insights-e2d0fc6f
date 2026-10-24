@@ -11,6 +11,7 @@ import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno"
 import { VyberPravidla } from "@/components/faktero/VyberPravidla";
 import { KodPohody } from "@/components/faktero/KodPohody";
 import { JobPicker } from "@/components/faktero/JobPicker";
+import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { KomentarePanel } from "@/components/faktero/KomentarePanel";
 import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
@@ -77,6 +78,7 @@ type Form = {
   pohoda_clenenie_dph: string;
   kv_clenenie: string;
   job_id: string;
+  vehicle_id: string;
   stredisko: string;
   cinnost: string;
   pohoda_rad: string;
@@ -108,6 +110,7 @@ const EMPTY: Form = {
   pohoda_clenenie_dph: "",
   kv_clenenie: "",
   job_id: "",
+  vehicle_id: "",
   stredisko: "",
   cinnost: "",
   pohoda_rad: "",
@@ -234,6 +237,7 @@ function NovyDokladPage() {
         pohoda_clenenie_dph: (data as any).pohoda_clenenie_dph ?? "",
         kv_clenenie: (data as any).kv_clenenie ?? "",
         job_id: (data as any).job_id ?? "",
+        vehicle_id: (data as any).vehicle_id ?? "",
         stredisko: (data as any).stredisko ?? "",
         cinnost: (data as any).cinnost ?? "",
         pohoda_rad: (data as any).pohoda_rad ?? "",
@@ -540,6 +544,7 @@ function NovyDokladPage() {
         pohoda_clenenie_dph: form.pohoda_clenenie_dph.trim() || null,
         kv_clenenie: form.kv_clenenie || null,
         job_id: form.job_id || null,
+        vehicle_id: form.vehicle_id || null,
         stredisko: form.stredisko.trim() || null,
         cinnost: form.cinnost.trim() || null,
         pohoda_rad: form.pohoda_rad.trim() || null,
@@ -1170,6 +1175,10 @@ function NovyDokladPage() {
                     value={form.job_id}
                     onChange={(v) => updateForm("job_id", v)}
                     label={t("Zákazka")}
+                  />
+                  <VozidloPicker
+                    value={form.vehicle_id}
+                    onChange={(v) => updateForm("vehicle_id", v)}
                   />
                   <label className="block">
                     <span className="mb-1 block text-sm font-medium">

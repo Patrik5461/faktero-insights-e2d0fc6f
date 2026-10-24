@@ -67,3 +67,23 @@ describe("normalizujPreukaz", () => {
     expect(normalizujPreukaz({ vin: "WVWZZZ1JZYO000001" }).vin).toBeNull();
   });
 });
+
+describe("e-mail pripomienok vozidiel", async () => {
+  const { popisTerminu, textPripomienokVozidiel } =
+    await import("./vozovy-park-pripomienky.server").catch(() => ({}) as any);
+  it.skipIf(!popisTerminu)("popis a text e-mailu", () => {
+    const p = {
+      kluc: "stk_do",
+      nazov: "STK",
+      datum: "2026-11-05",
+      stav: "coskoro" as const,
+      dni: 12,
+      vehicle_id: "v1",
+      vozidlo: "Octavia · BA123XY",
+    };
+    expect(popisTerminu(p)).toBe("STK: platnosť končí 05. 11. 2026 (o 12 dní)");
+    const { html } = textPripomienokVozidiel("Test <s.r.o.>", [p]);
+    expect(html).toContain("Test &lt;s.r.o.&gt;");
+    expect(html).toContain("/vozovy-park/v1");
+  });
+});
