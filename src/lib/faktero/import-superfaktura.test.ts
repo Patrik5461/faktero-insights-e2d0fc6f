@@ -479,3 +479,41 @@ describe("sadzba DPH na importovanej položke", () => {
     expect(buildItem(riadok("", "2025-06-01"), mapa).vat_rate).toBe(23);
   });
 });
+
+describe("SuperFaktúra xlsx — excelové dátumy a faktúra bez rozpisu DPH", async () => {
+  const { normDate, jednaPolozkaZoSuctov, jeNeplatitelPoznamka } =
+    await import("./import-superfaktura.server");
+  it("číslo dňa z Excelu je dátum", () => {
+    expect(normDate("46251")).toBe("2026-08-17");
+    expect(normDate("46306")).toBe("2026-10-11");
+    expect(normDate("17.08.2026")).toBe("2026-08-17");
+    expect(normDate("12345")).toBeNull();
+  });
+  it("neplatiteľ podľa poznámky", () => {
+    expect(jeNeplatitelPoznamka("Nie sme platiteľmi DPH.")).toBe(true);
+    expect(jeNeplatitelPoznamka("Neplatiteľ DPH")).toBe(true);
+    expect(jeNeplatitelPoznamka("Ďakujeme za nákup")).toBe(false);
+  });
+  it("len celková suma: neplatiteľ bez DPH, platiteľ rozpočíta sadzbou — nikdy DPH = suma", () => {
+    expect(
+      jednaPolozkaZoSuctov({ subtotal: 0, vatTotal: 0, total: 450, bezDph: true, sadzba: 23 }),
+    ).toEqual({
+      vat_rate: 0,
+      subtotal: 450,
+      vat_amount: 0,
+      total: 450,
+    });
+    expect(
+      jednaPolozkaZoSuctov({ subtotal: 0, vatTotal: 0, total: 123, bezDph: false, sadzba: 23 }),
+    ).toEqual({
+      vat_rate: 23,
+      subtotal: 100,
+      vat_amount: 23,
+      total: 123,
+    });
+    expect(
+      jednaPolozkaZoSuctov({ subtotal: 100, vatTotal: 0, total: 123, bezDph: false, sadzba: 23 })
+        .vat_amount,
+    ).toBe(23);
+  });
+});

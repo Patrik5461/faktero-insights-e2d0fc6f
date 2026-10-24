@@ -813,14 +813,68 @@ function sumaSDph(row: Record<string, string>, mapping: Partial<Record<FieldKey,
   return 0;
 }
 
-function normDate(v: string): string | null {
+export function normDate(v: string): string | null {
   if (!v) return null;
+  // Excel uloží dátum ako počet dní od 30. 12. 1899, keď bunka nemá formát dátumu —
+  // SuperFaktúra takto exportuje „Dátum vystavenia“ (46251 = 17. 8. 2026).
+  if (/^\d{5}(\.0+)?$/.test(v.trim())) {
+    const dni = Number(v.trim());
+    if (dni > 20000 && dni < 80000) {
+      return new Date(Date.UTC(1899, 11, 30) + dni * 86_400_000).toISOString().slice(0, 10);
+    }
+  }
   // Accept DD.MM.YYYY, YYYY-MM-DD, DD/MM/YYYY
   let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
   m = /^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/.exec(v);
   if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
   return null;
+}
+
+/** „Nie sme platiteľmi DPH.“ a podobné vety v poznámke faktúry. */
+export function jeNeplatitelPoznamka(poznamka: string | undefined): boolean {
+  return /(nie\s+(sme|som|je)|neplatite)\w*\s*(platite\w*\s+)?dph|neplatite\w*\s+dph/i.test(
+    String(poznamka ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""),
+  );
+}
+
+/**
+ * Jedna položka, keď súbor rozpis nemá — len súčty. Keď chýba aj DPH, celková
+ * suma je s daňou a rozpočíta sa sadzbou; neplatiteľ má DPH nulovú.
+ * Predtým sa pri samotnej sume celá suma zarátala ako DPH (450 € → DPH 450 €).
+ */
+export function jednaPolozkaZoSuctov(v: {
+  subtotal: number;
+  vatTotal: number;
+  total: number;
+  bezDph: boolean;
+  sadzba: number;
+}): { vat_rate: number; subtotal: number; vat_amount: number; total: number } {
+  const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  const total = v.total || r2(v.subtotal + v.vatTotal);
+  if (v.subtotal > 0) {
+    const dan = v.vatTotal || r2(total - v.subtotal);
+    return {
+      vat_rate: dan > 0 ? Math.round((dan / v.subtotal) * 100) : 0,
+      subtotal: v.subtotal,
+      vat_amount: dan,
+      total: total || r2(v.subtotal + dan),
+    };
+  }
+  if (v.vatTotal > 0 && total > v.vatTotal) {
+    const zaklad = r2(total - v.vatTotal);
+    return {
+      vat_rate: Math.round((v.vatTotal / zaklad) * 100),
+      subtotal: zaklad,
+      vat_amount: v.vatTotal,
+      total,
+    };
+  }
+  if (v.bezDph || !v.sadzba) return { vat_rate: 0, subtotal: total, vat_amount: 0, total };
+  const zaklad = r2(total / (1 + v.sadzba / 100));
+  return { vat_rate: v.sadzba, subtotal: zaklad, vat_amount: r2(total - zaklad), total };
 }
 
 export type ImportPreview = {
@@ -1081,6 +1135,19 @@ export async function runImport(args: {
       let vatTotal = num(pick(head, mapping, "vat_total"));
       let total = sumaSDph(head, mapping);
       if (items.length === 0) {
+        const jeden = jednaPolozkaZoSuctov({
+          subtotal,
+          vatTotal,
+          total,
+          // Kto nebol platiteľ, píše to do poznámky; inak sadzba firmy k dátumu vystavenia.
+          bezDph: jeNeplatitelPoznamka(pick(head, mapping, "notes")),
+          sadzba: predvolenaSadzba(normDate(pick(head, mapping, "issue_date"))),
+        });
+        // Prázdny súčet sa dopočíta až z položky — inak by základ ostal nula.
+        if (!subtotal && !vatTotal) {
+          subtotal = jeden.subtotal;
+          vatTotal = jeden.vat_amount;
+        }
         items.push({
           // Súbor nemal rozpis položiek — faktúra príde ako jeden riadok.
           name: pick(head, mapping, "item_description") || `Položky faktúry ${invNo}`,
@@ -1088,12 +1155,8 @@ export async function runImport(args: {
           discount_percent: 0,
           quantity: 1,
           unit: "ks",
-          unit_price: subtotal || total || 0,
-          vat_rate:
-            total > 0 && subtotal > 0 ? Math.round(((total - subtotal) / subtotal) * 100) : 23,
-          subtotal: subtotal || total || 0,
-          vat_amount: vatTotal || total - subtotal || 0,
-          total: total || subtotal || 0,
+          unit_price: jeden.subtotal,
+          ...jeden,
         });
       }
       if (subtotal === 0) subtotal = items.reduce((s, i) => s + i.subtotal, 0);
