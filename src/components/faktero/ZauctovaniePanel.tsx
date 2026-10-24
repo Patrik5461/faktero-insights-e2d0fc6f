@@ -71,7 +71,7 @@ export function PoliaZauctovania({
   hromadne,
   kvAuto,
   oznacenia,
-  siroke,
+  siroke = true,
 }: {
   navrhy: Navrhy | null;
   hodnoty: Hodnoty;

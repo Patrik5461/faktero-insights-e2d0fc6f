@@ -66,7 +66,8 @@ export function ZauctovanieFakturOkno({
     }
   }
 
-  const vstup = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
+  const vstup =
+    "mt-1 h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm";
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -93,9 +94,11 @@ export function ZauctovanieFakturOkno({
           </Link>
           {t("). Kódy po položkách sa nastavujú na detaile faktúry.")}
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <label className="block">
-            <span className="text-xs text-muted-foreground">{t("Predkontácia (Pohoda)")}</span>
+        <div className="@container mt-4 grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
+          <label className="block @lg:col-span-2">
+            <span className="text-sm font-medium text-foreground">
+              {t("Predkontácia (Pohoda)")}
+            </span>
             <KodPohody
               value={h.predkontacia}
               onChange={(v) => setH({ ...h, predkontacia: v })}
@@ -106,7 +109,7 @@ export function ZauctovanieFakturOkno({
             />
           </label>
           <label className="block">
-            <span className="text-xs text-muted-foreground">{t("Členenie DPH")}</span>
+            <span className="text-sm font-medium text-foreground">{t("Členenie DPH")}</span>
             <KodPohody
               value={h.clenenie}
               onChange={(v) => setH({ ...h, clenenie: v })}
@@ -117,7 +120,7 @@ export function ZauctovanieFakturOkno({
             />
           </label>
           <label className="block">
-            <span className="text-xs text-muted-foreground">{t("Členenie KV DPH")}</span>
+            <span className="text-sm font-medium text-foreground">{t("Členenie KV DPH")}</span>
             <select
               value={h.kv}
               onChange={(e) => setH({ ...h, kv: e.target.value })}

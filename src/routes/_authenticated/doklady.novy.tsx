@@ -1057,9 +1057,9 @@ function NovyDokladPage() {
                   />
                   </div>
                 ) : null}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-1 block text-xs text-muted-foreground">{t("Predkontácia")}</span>
+                <div className="@container grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
+                  <label className="block @lg:col-span-2">
+                    <span className="mb-1 block text-sm font-medium">{t("Predkontácia")}</span>
                     <KodPohody
                       ariaLabel={t("Predkontácia")}
                       odkazNaCiselnik
@@ -1071,12 +1071,12 @@ function NovyDokladPage() {
                         kody?.predvolenaPredkontacia ??
                         t("predvolená z nastavení")
                       }
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="h-11 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm"
                       vyber
                     />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-xs text-muted-foreground">{t("Členenie DPH")}</span>
+                    <span className="mb-1 block text-sm font-medium">{t("Členenie DPH")}</span>
                     <KodPohody
                       ariaLabel={t("Členenie DPH")}
                       value={form.pohoda_clenenie_dph}
@@ -1088,18 +1088,17 @@ function NovyDokladPage() {
                         kody?.predvoleneClenenie ??
                         t("predvolené z nastavení")
                       }
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="h-11 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm"
                     />
                   </label>
-                </div>
-                <label className="mt-3 block sm:max-w-sm">
-                  <span className="mb-1 block text-xs text-muted-foreground">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium">
                     {t("Členenie kontrolného výkazu DPH")}
                   </span>
                   <select
                     value={form.kv_clenenie}
                     onChange={(e) => updateForm("kv_clenenie", e.target.value)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    className="h-11 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm"
                   >
                     <option value="">{t("automaticky (B3 — bloček)")}</option>
                     {KV_PRIJATE.map((k) => (
@@ -1109,33 +1108,34 @@ function NovyDokladPage() {
                     ))}
                   </select>
                 </label>
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                </div>
+                <div className="@container mt-3 grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
                   <label className="block">
-                    <span className="mb-1 block text-xs text-muted-foreground">{t("Stredisko")}</span>
+                    <span className="mb-1 block text-sm font-medium">{t("Stredisko")}</span>
                     <KodPohody
                       ariaLabel={t("Stredisko")}
                       value={form.stredisko}
                       onChange={(v) => updateForm("stredisko", v)}
                       moznosti={kody?.strediska ?? []}
                       placeholder={kody?.predvoleneStredisko ?? "—"}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="h-11 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm"
                       vyber
                     />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-xs text-muted-foreground">{t("Činnosť")}</span>
+                    <span className="mb-1 block text-sm font-medium">{t("Činnosť")}</span>
                     <KodPohody
                       ariaLabel={t("Činnosť")}
                       value={form.cinnost}
                       onChange={(v) => updateForm("cinnost", v)}
                       moznosti={kody?.cinnosti ?? []}
                       placeholder="—"
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="h-11 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm"
                       vyber
                     />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-xs text-muted-foreground">
+                    <span className="mb-1 block text-sm font-medium">
                       {t("Číselný rad v Pohode")}
                     </span>
                     <KodPohody
@@ -1144,14 +1144,14 @@ function NovyDokladPage() {
                       onChange={(v) => updateForm("pohoda_rad", v)}
                       moznosti={kody?.rady ?? []}
                       placeholder={kody?.predvolenyRad ?? t("predvolený v Pohode")}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="h-11 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm"
                       vyber
                     />
                   </label>
                 </div>
                 {form.payment_method === "hotovost" && (kody?.pokladne?.length ?? 0) > 0 && (
                   <label className="mt-3 block sm:max-w-xs">
-                    <span className="mb-1 block text-xs text-muted-foreground">
+                    <span className="mb-1 block text-sm font-medium">
                       {t("Pokladňa v Pohode")}
                     </span>
                     <KodPohody
@@ -1160,7 +1160,7 @@ function NovyDokladPage() {
                       onChange={(v) => updateForm("pohoda_pokladna", v)}
                       moznosti={kody?.pokladne ?? []}
                       placeholder={t("predvolená")}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="h-11 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm"
                       vyber
                     />
                   </label>
@@ -1172,14 +1172,14 @@ function NovyDokladPage() {
                     label={t("Zákazka")}
                   />
                   <label className="block">
-                    <span className="mb-1 block text-xs text-muted-foreground">
+                    <span className="mb-1 block text-sm font-medium">
                       {t("Interná poznámka pre účtovníka")}
                     </span>
                     <input
                       value={form.int_poznamka}
                       onChange={(e) => updateForm("int_poznamka", e.target.value)}
                       maxLength={240}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="h-11 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm"
                     />
                   </label>
                 </div>

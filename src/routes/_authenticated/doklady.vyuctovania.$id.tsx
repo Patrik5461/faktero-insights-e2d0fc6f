@@ -51,6 +51,9 @@ export const Route = createFileRoute("/_authenticated/doklady/vyuctovania/$id")(
 });
 
 const vstup = "mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm";
+/** Účtovné polia — väčšie, ako všade inde pri zaúčtovaní. */
+const vstupZauctovania =
+  "mt-1 h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm";
 const prvyDen = () => new Date().toISOString().slice(0, 8) + "01";
 const dnes = () => new Date().toISOString().slice(0, 10);
 const idy = (s?: string) => (s ? s.split(",").filter((x) => /^[0-9a-f-]{36}$/.test(x)) : []);
@@ -491,44 +494,44 @@ function Detail() {
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("Predkontácia a členenie sa doplnia dokladom vo vyúčtovaní, ktoré ich ešte nemajú a neodišli do účtovníctva (napr. náklad voči záväzku zamestnancovi, 5xx/335).")}
               </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">{t("Predkontácia (Pohoda)")}</span>
+              <div className="@container mt-3 grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
+                <label className="block text-sm @lg:col-span-2">
+                  <span className="font-medium">{t("Predkontácia (Pohoda)")}</span>
                   <KodPohody
                     value={f.predkontacia}
                     onChange={(v) => zmen({ predkontacia: v })}
                     moznosti={navrhy?.predkontacie ?? []}
                     placeholder={t("nemeniť")}
-                    className={vstup}
+                    className={vstupZauctovania}
                     vyber
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">{t("Členenie DPH")}</span>
+                  <span className="font-medium">{t("Členenie DPH")}</span>
                   <KodPohody
                     value={f.clenenie_dph}
                     onChange={(v) => zmen({ clenenie_dph: v })}
                     moznosti={navrhy?.clenenia ?? []}
                     placeholder={t("nemeniť")}
-                    className={vstup}
+                    className={vstupZauctovania}
                     vyber
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">{t("Dátum účtovania")}</span>
+                  <span className="font-medium">{t("Dátum účtovania")}</span>
                   <input
                     type="date"
                     value={f.datum_uctovania}
                     onChange={(e) => zmen({ datum_uctovania: e.target.value })}
-                    className={vstup}
+                    className={vstupZauctovania}
                   />
                 </label>
-                <label className="block text-sm sm:col-span-3">
-                  <span className="text-xs text-muted-foreground">{t("Poznámka")}</span>
+                <label className="block text-sm @lg:col-span-2">
+                  <span className="font-medium">{t("Poznámka")}</span>
                   <input
                     value={f.poznamka}
                     onChange={(e) => zmen({ poznamka: e.target.value })}
-                    className={vstup}
+                    className={vstupZauctovania}
                   />
                 </label>
               </div>

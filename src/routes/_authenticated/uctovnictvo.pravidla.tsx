@@ -101,6 +101,9 @@ const NOVE: Pravidlo = {
 };
 
 const vstup = "mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm";
+/** Účtovné polia — väčšie, ako všade inde pri zaúčtovaní. */
+const vstupZauctovania =
+  "mt-1 h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm";
 
 function PravidlaPage() {
   const { t } = useT();
@@ -752,14 +755,14 @@ function UpravaPravidla({
         </p>
 
         <div className="mt-5 text-sm font-medium">{t("…doplní sa")}</div>
-        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+        <div className="mt-2 grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
           {!banka && !vystavena && (
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("Kategória")}</span>
+              <span className="font-medium">{t("Kategória")}</span>
               <select
                 value={p.kategoria ?? ""}
                 onChange={(e) => zmen({ kategoria: e.target.value || null })}
-                className={vstup}
+                className={vstupZauctovania}
               >
                 <option value="">—</option>
                 {KATEGORIE_VYDAVKOV.map((k) => (
@@ -771,36 +774,36 @@ function UpravaPravidla({
             </label>
           )}
           <label className="block text-sm">
-            <span className="text-xs text-muted-foreground">{t("Predkontácia (Pohoda)")}</span>
+            <span className="font-medium">{t("Predkontácia (Pohoda)")}</span>
             <KodPohody
               value={p.predkontacia ?? ""}
               onChange={(v) => zmen({ predkontacia: v })}
               moznosti={kody?.predkontacie ?? []}
               placeholder={t("napr. {x}", { x: "PHM, 1Fp" })}
-              className={vstup}
+              className={vstupZauctovania}
               vyber
             />
           </label>
           {!banka && (
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("Členenie DPH (Pohoda)")}</span>
+              <span className="font-medium">{t("Členenie DPH (Pohoda)")}</span>
               <KodPohody
                 value={p.clenenie_dph ?? ""}
                 onChange={(v) => zmen({ clenenie_dph: v })}
                 moznosti={kody?.clenenia ?? []}
                 vyber
                 placeholder={t("napr. {x}", { x: "PD, PN" })}
-                className={vstup}
+                className={vstupZauctovania}
               />
             </label>
           )}
           {!banka && (
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("Členenie kontrolného výkazu")}</span>
+              <span className="font-medium">{t("Členenie kontrolného výkazu")}</span>
               <select
                 value={p.kv_clenenie ?? ""}
                 onChange={(e) => zmen({ kv_clenenie: e.target.value || null })}
-                className={vstup}
+                className={vstupZauctovania}
               >
                 <option value="">{t("Nemeniť (automaticky)")}</option>
                 {(vystavena ? KV_VYDANE : KV_PRIJATE).map((k) => (
@@ -813,13 +816,13 @@ function UpravaPravidla({
           )}
           {!banka && !vystavena && (
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("Odpočet DPH")}</span>
+              <span className="font-medium">{t("Odpočet DPH")}</span>
               <select
                 value={p.odpocet === null ? "" : p.odpocet ? "ano" : "nie"}
                 onChange={(e) =>
                   zmen({ odpocet: e.target.value === "" ? null : e.target.value === "ano" })
                 }
-                className={vstup}
+                className={vstupZauctovania}
               >
                 <option value="">{t("Nemeniť")}</option>
                 <option value="ano">{t("S odpočtom")}</option>
@@ -829,12 +832,12 @@ function UpravaPravidla({
           )}
           {!banka && !vystavena && (
             <label className="block text-sm sm:col-span-2">
-              <span className="text-xs text-muted-foreground">{t("Poznámka")}</span>
+              <span className="font-medium">{t("Poznámka")}</span>
               <input
                 value={p.poznamka ?? ""}
                 onChange={(e) => zmen({ poznamka: e.target.value })}
                 placeholder={t("napr. Telefón #MM-1/YYYY#")}
-                className={vstup}
+                className={vstupZauctovania}
               />
               <span className="mt-1 block text-xs text-muted-foreground">
                 {t("Premenné podľa dátumu dokladu:")}{" "}

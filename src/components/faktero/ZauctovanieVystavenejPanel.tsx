@@ -114,7 +114,8 @@ export function ZauctovanieVystavenejPanel({
   if (inv.status === "draft") return null;
   const vPohode = stav?.vPohode;
   const zauctovana = Boolean(inv.zauctovane_at);
-  const vstup = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
+  const vstup =
+    "mt-1 h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm";
 
   async function uloz(lenUlozit: boolean) {
     setBusy(true);
@@ -229,9 +230,11 @@ export function ZauctovanieVystavenejPanel({
         </>
       ) : (
         <>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <label className="block">
-              <span className="text-xs text-muted-foreground">{t("Predkontácia (Pohoda)")}</span>
+          <div className="@container mt-3 grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
+            <label className="block @lg:col-span-2">
+              <span className="text-sm font-medium text-foreground">
+                {t("Predkontácia (Pohoda)")}
+              </span>
               <KodPohody
                 odkazNaCiselnik
                 value={h.predkontacia}
@@ -243,7 +246,7 @@ export function ZauctovanieVystavenejPanel({
               />
             </label>
             <label className="block">
-              <span className="text-xs text-muted-foreground">{t("Členenie DPH")}</span>
+              <span className="text-sm font-medium text-foreground">{t("Členenie DPH")}</span>
               <KodPohody
                 value={h.clenenie}
                 onChange={(v) => setH({ ...h, clenenie: v })}
@@ -254,7 +257,7 @@ export function ZauctovanieVystavenejPanel({
               />
             </label>
             <label className="block">
-              <span className="text-xs text-muted-foreground">{t("Členenie KV DPH")}</span>
+              <span className="text-sm font-medium text-foreground">{t("Členenie KV DPH")}</span>
               <select
                 value={h.kv}
                 onChange={(e) => setH({ ...h, kv: e.target.value })}
@@ -289,9 +292,9 @@ export function ZauctovanieVystavenejPanel({
             }
           />
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div className="@container mt-3 grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
             <label className="block">
-              <span className="text-xs text-muted-foreground">{t("Stredisko")}</span>
+              <span className="text-sm font-medium text-foreground">{t("Stredisko")}</span>
               <KodPohody
                 value={h.stredisko}
                 onChange={(v) => setH({ ...h, stredisko: v })}
@@ -302,7 +305,7 @@ export function ZauctovanieVystavenejPanel({
               />
             </label>
             <label className="block">
-              <span className="text-xs text-muted-foreground">{t("Činnosť")}</span>
+              <span className="text-sm font-medium text-foreground">{t("Činnosť")}</span>
               <KodPohody
                 value={h.cinnost}
                 onChange={(v) => setH({ ...h, cinnost: v })}
@@ -312,8 +315,8 @@ export function ZauctovanieVystavenejPanel({
                 vyber
               />
             </label>
-            <label className="block">
-              <span className="text-xs text-muted-foreground">
+            <label className="block @lg:col-span-2">
+              <span className="text-sm font-medium text-foreground">
                 {t("Interná poznámka (do Pohody)")}
               </span>
               <input
