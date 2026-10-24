@@ -6,7 +6,7 @@
  * má dodanie v deň vystavenia — preto náhradný stĺpec, inak by z výberu
  * ticho vypadol.
  */
-export type DatumObdobia = "vystavenie" | "dodanie";
+export type DatumObdobia = "vystavenie" | "dodanie" | "splatnost" | "prijatie";
 
 type SObdobim<Q> = {
   gte(stlpec: string, hodnota: string): Q;
@@ -21,9 +21,16 @@ export function filtrujObdobie<Q extends SObdobim<Q>>(
   od?: string | null,
   doDna?: string | null,
 ): Q {
-  if (podla === "vystavenie") {
-    if (od) q = q.gte("issue_date", od);
-    if (doDna) q = q.lte("issue_date", doDna);
+  // Splatnosť a prijatie (prijaté faktúry) náhradný stĺpec nepotrebujú.
+  const jednoduchy = {
+    vystavenie: "issue_date",
+    splatnost: "due_date",
+    prijatie: "received_date",
+  } as const;
+  if (podla !== "dodanie") {
+    const stlpec = jednoduchy[podla];
+    if (od) q = q.gte(stlpec, od);
+    if (doDna) q = q.lte(stlpec, doDna);
     return q;
   }
   if (!od && !doDna) return q;

@@ -520,3 +520,44 @@ export function SortSelect({
     </label>
   );
 }
+
+/**
+ * Pätička zoznamu — „Zobraziť na stranu“ vedľa stránkovania. Rovnaká na
+ * všetkých zoznamoch dokladov; počet na stranu drží `useListFilters` v adrese.
+ */
+export function ListPagination({
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (p: number) => void;
+  onPageSizeChange: (n: number) => void;
+}) {
+  const { t } = useT();
+  return (
+    <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-1.5">
+      <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+        {t("Zobraziť na stranu:")}
+        <select
+          value={pageSize}
+          onChange={(e) => onPageSizeChange(Number(e.target.value))}
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+        >
+          {[5, 25, 50, 100].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="min-w-0 flex-1">
+        <Pagination page={page} pageSize={pageSize} total={total} onPageChange={onPageChange} />
+      </div>
+    </div>
+  );
+}

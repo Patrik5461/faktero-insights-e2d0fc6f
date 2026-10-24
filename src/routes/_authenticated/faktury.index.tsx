@@ -17,6 +17,7 @@ import {
   FileCode2,
   Loader2,
   Trash2,
+  Hash,
   RotateCcw,
   Copy,
   Bell,
@@ -48,22 +49,20 @@ import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.fu
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
 import {
-  Pagination,
-  PageSizeSelect,
-  SortSelect,
+  ListPagination,
   type MoznostZoradenia,
   ConfirmDialog,
   BulkBar,
-  DeletedToggle,
 } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { supabase } from "@/integrations/supabase/client";
-import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
-import { PrepinacNahladu, SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
+import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
+import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { posliEfakturuFn } from "@/lib/faktero/efaktura/efaktura.functions";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
@@ -137,7 +136,7 @@ export const Route = createFileRoute("/_authenticated/faktury/")({
     // napísaný ručne otvoril nefiltrovaný zoznam — presne to, čo tu opravujeme.
     poSplatnosti: jeZapnute(s.poSplatnosti) ? true : undefined,
     neuhradene: jeZapnute(s.neuhradene) ? true : undefined,
-    q: typeof s.q === "string" && s.q.trim() ? s.q : undefined,
+    ...zoznamSearch(s),
   }),
   component: InvoicesPage,
 });
@@ -146,6 +145,12 @@ function InvoicesPage() {
   const { t } = useT();
   const navigate = useNavigate();
   const { type, status, poSplatnosti, neuhradene, q } = Route.useSearch();
+  // Hľadanie, filtre, zoradenie a strana sú v adrese — `?q=` z hľadania v hlavičke je to isté pole.
+  const lf = useListFilters({ pageSizeKey: "invoices", defaultSort: { column: "issue_date", ascending: false } });
+  const podla = (lf.filter("podla") || "vystavenie") as DatumObdobia;
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
+  const exportovane = lf.filter("export") as "" | "ano" | "nie";
+  const overdueNoReminder = lf.zapnute("bezUpomienky");
   // Opravné faktúry: dobropis `credit_note` a ťarchopis `debit_note`; v adrese je kratšie `credit`.
   const equals = useMemo(
     () => ({
@@ -162,10 +167,6 @@ function InvoicesPage() {
   );
   // Obdobie a „len neexportované“ filtruje databáza, nie načítaná stránka —
   // inak by na druhej strane chýbali faktúry, ktoré na prvú nevošli.
-  const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
-  const [obdobieOd, setObdobieOd] = useState("");
-  const [obdobieDo, setObdobieDo] = useState("");
-  const [exportovane, setExportovane] = useState<"" | "ano" | "nie">("");
   const upravDotaz = useCallback(
     (dotaz: any) => {
       let d = filtrujObdobie(dotaz, podla, obdobieOd || null, obdobieDo || null);
@@ -176,7 +177,6 @@ function InvoicesPage() {
     },
     [podla, obdobieOd, obdobieDo, exportovane],
   );
-  const maObdobie = Boolean(obdobieOd || obdobieDo || exportovane);
   const list = usePagedList({
     resource: "invoices",
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
@@ -185,22 +185,19 @@ function InvoicesPage() {
     // naimportovaných faktúrach čas importu — všetky mali rovnaký a zoznam
     // vyzeral zoradený odzadu.
     orderBy: { column: "issue_date", ascending: false },
-    sortKey: "faktury",
     upravDotaz,
+    riadenie: lf,
     filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${exportovane}`,
   });
-  // Hľadanie z hlavičky príde ako `?q=`. Prepíšeme ním hľadacie pole zoznamu,
-  // aby bolo vidieť, čo sa hľadá, a dalo sa to odtiaľ upraviť.
-  const setListSearch = list.setSearch;
-  useEffect(() => {
-    if (q) setListSearch(q);
-  }, [q, setListSearch]);
+  // „Zobraziť vymazané“ je filter v adrese, kôš však prepína zoznam.
+  const ajVymazane = lf.zapnute("vymazane");
+  const setShowDeleted = list.setShowDeleted;
+  useEffect(() => setShowDeleted(ajVymazane), [ajVymazane, setShowDeleted]);
   const [busy, setBusy] = useState(false);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
   const [reminderMap, setReminderMap] = useState<Record<string, number>>({});
   const [efakturaMap, setEfakturaMap] = useState<Record<string, EfakturaStav>>({});
-  const [overdueNoReminder, setOverdueNoReminder] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
   const [zauctovanie, setZauctovanie] = useState(false);
   const sch = useStavSchvalovania(
@@ -836,7 +833,6 @@ function InvoicesPage() {
               <Link
                 to="/faktury"
                 search={{} as any}
-                onClick={() => list.setSearch("")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
               >
                 <X className="h-4 w-4" /> {t("Zrušiť filter")}
@@ -899,6 +895,13 @@ function InvoicesPage() {
               <Zap className="h-4 w-4" /> {t("Rýchla faktúra")}
             </Link>
             )}
+            <Link
+              to="/exporty"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            >
+              <FileCode2 className="h-4 w-4" /> {t("Účtovné exporty")}
+            </Link>
+            <HlavickaViac akcie={[{ label: "Číselné rady", icon: Hash, to: "/ciselne-rady" }]} />
             {type === "danove" ? (
               <Link
                 to="/zalohove"
@@ -926,96 +929,46 @@ function InvoicesPage() {
         }
       />
       <PageBody>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <input
-            value={list.search}
-            onChange={(e) => list.setSearch(e.target.value)}
-            placeholder={t("Hľadať číslo, odberateľa, IČO…")}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
-          />
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={overdueNoReminder}
-                onChange={(e) => setOverdueNoReminder(e.target.checked)}
-              />
-              {t("Po splatnosti bez upomienky")}
-            </label>
-            <SortSelect moznosti={ZORADENIE_FAKTUR} hodnota={list.sort} onChange={list.setSort} />
-            <DeletedToggle
-              value={list.showDeleted}
-              onChange={list.setShowDeleted}
-              onEmptyTrash={() => setVyprazdnitKos(true)}
-              trashCount={list.showDeleted ? list.rows.length : 0}
-            />
-            <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
-            <PrepinacNahladu zapnuty={bocny.zapnuty} prepni={bocny.prepni} />
-            <OdkazNaRady />
-            <Link
-              to="/exporty"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
-            >
-              <FileCode2 className="h-4 w-4" /> {t("Účtovné exporty")}
-            </Link>
-          </div>
-        </div>
-        <div className="mb-3 flex flex-wrap items-end gap-3 text-sm">
-          <label className="text-xs text-muted-foreground">
-            {t("Obdobie podľa")}
-            <select
-              value={podla}
-              onChange={(e) => setPodla(e.target.value as DatumObdobia)}
-              className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
-            >
-              <option value="vystavenie">{t("dátumu vystavenia")}</option>
-              <option value="dodanie">{t("dátumu dodania")}</option>
-            </select>
-          </label>
-          <label className="text-xs text-muted-foreground">
-            {t("Od")}
-            <input
-              type="date"
-              value={obdobieOd}
-              onChange={(e) => setObdobieOd(e.target.value)}
-              className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            {t("Do")}
-            <input
-              type="date"
-              value={obdobieDo}
-              onChange={(e) => setObdobieDo(e.target.value)}
-              className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            {t("Export do účtovníctva")}
-            <select
-              value={exportovane}
-              onChange={(e) => setExportovane(e.target.value as typeof exportovane)}
-              className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
-            >
-              <option value="">{t("Všetky")}</option>
-              <option value="ano">{t("Exportované")}</option>
-              <option value="nie">{t("Neexportované")}</option>
-            </select>
-          </label>
-          {maObdobie && (
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Hľadať číslo, odberateľa, IČO…"
+          sortOptions={ZORADENIE_FAKTUR}
+          filters={[
+            {
+              key: "obdobie",
+              label: "Obdobie",
+              type: "dateRange",
+              dateFieldOptions: [
+                { value: "vystavenie", label: "dátumu vystavenia" },
+                { value: "dodanie", label: "dátumu dodania" },
+                { value: "splatnost", label: "dátumu splatnosti" },
+              ],
+            },
+            {
+              key: "export",
+              label: "Export do účtovníctva",
+              type: "select",
+              options: [
+                { value: "ano", label: "Exportované" },
+                { value: "nie", label: "Neexportované" },
+              ],
+            },
+            { key: "bezUpomienky", label: "Po splatnosti bez upomienky", type: "checkbox" },
+            { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
+          ]}
+          previewToggle={bocny}
+        />
+        {list.showDeleted && list.rows.length > 0 && (
+          <div className="mb-3 flex justify-end">
             <button
               type="button"
-              onClick={() => {
-                setObdobieOd("");
-                setObdobieDo("");
-                setExportovane("");
-              }}
-              className="mb-0.5 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs hover:bg-secondary"
+              onClick={() => setVyprazdnitKos(true)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-destructive/40 px-3 text-sm text-destructive hover:bg-destructive/10"
             >
-              <X className="h-3.5 w-3.5" /> {t("Zrušiť obdobie")}
+              <Trash2 className="h-4 w-4" /> {t("Vyprázdniť kôš ({n})", { n: list.rows.length })}
             </button>
-          )}
-        </div>
+          </div>
+        )}
         <BulkBar
           onHardDelete={() => setBulkHardDelete(true)}
           count={list.selectedIds.length}
@@ -1328,11 +1281,12 @@ function InvoicesPage() {
             </SNahladom>
           }
         />
-        <Pagination
+        <ListPagination
           page={list.page}
           pageSize={list.pageSize}
           total={list.total}
           onPageChange={list.setPage}
+          onPageSizeChange={list.setPageSize}
         />
         {zauctovanie && getActiveCompanyId() && (
           <ZauctovanieFakturOkno

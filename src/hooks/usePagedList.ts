@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useStoredPageSize } from "@/components/faktero/ListControls";
+import type { ListFilters } from "@/hooks/useListFilters";
 
 type SoftDeletable = "invoices" | "quotes" | "recurring_invoices" | "customers" | "products";
 
@@ -23,6 +24,11 @@ export type PagedListOptions = {
    */
   upravDotaz?: (q: any) => any;
   filterKey?: string;
+  /**
+   * Stav z adresy (`useListFilters`) — strana, počet na stranu, hľadanie
+   * a zoradenie sa potom neriadia vnútorným stavom, ale adresou.
+   */
+  riadenie?: ListFilters;
 };
 
 /** Zapamätané zoradenie zoznamu — nech si to klient nemusí prestavovať zakaždým. */
@@ -49,6 +55,7 @@ export function usePagedList({
   equals,
   upravDotaz,
   filterKey,
+  riadenie,
 }: PagedListOptions) {
   const [pageSize, setPageSize] = useStoredPageSize(pageSizeKey ?? resource);
   const vychodzieZoradenie = orderBy ?? { column: "created_at", ascending: false };
@@ -78,14 +85,28 @@ export function usePagedList({
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [nonce, setNonce] = useState(0);
 
+  // Riadené adresou: hodnoty a nastavovače idú z `useListFilters`.
+  const r = riadenie;
+  const pageV = r ? r.page : page;
+  const setPageV = r ? r.setPage : setPage;
+  const pageSizeV = r ? r.size : pageSize;
+  const setPageSizeV = r ? r.setSize : setPageSize;
+  const searchV = r ? r.q : search;
+  const setSearchV = r ? r.setQ : setSearch;
+  const sortV = r ? (r.sort ?? vychodzieZoradenie) : sort;
+  const setSortV = r ? r.setSort : setSort;
+
   // Reset to page 1 when filters change
+  // Riadený zoznam vracia na prvú stranu sám `useListFilters` — tu by pri
+  // načítaní stránky zahodil stranu z adresy.
   useEffect(() => {
-    setPage(1);
+    if (!r) setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, showDeleted, pageSize, filterKey]);
   // Clear selection when page / filter / deleted toggle changes
   useEffect(() => {
     setSelected({});
-  }, [page, pageSize, search, showDeleted, nonce, filterKey]);
+  }, [pageV, pageSizeV, searchV, showDeleted, nonce, filterKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,8 +119,8 @@ export function usePagedList({
         return;
       }
       setLoading(true);
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
+      const from = (pageV - 1) * pageSizeV;
+      const to = from + pageSizeV - 1;
       let q = supabase
         .from(resource as any)
         .select("*", { count: "exact" })
@@ -111,15 +132,15 @@ export function usePagedList({
       }
       q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
       if (upravDotaz) q = upravDotaz(q);
-      if (search.trim() && searchColumns.length) {
-        const term = search.trim().replace(/[%_,]/g, "");
+      if (searchV.trim() && searchColumns.length) {
+        const term = searchV.trim().replace(/[%_,]/g, "");
         q = q.or(searchColumns.map((c) => `${c}.ilike.%${term}%`).join(","));
       }
       // Prázdne hodnoty (napr. faktúra bez dátumu dodania) vždy na koniec.
-      q = q.order(sort.column, { ascending: !!sort.ascending, nullsFirst: false });
+      q = q.order(sortV.column, { ascending: !!sortV.ascending, nullsFirst: false });
       // Druhé kritérium drží poradie stabilné, keď má viac dokladov rovnaký
       // dátum — pri importe majú všetky rovnaký `created_at` až na mikrosekundy.
-      if (sort.column !== "created_at") q = q.order("created_at", { ascending: false });
+      if (sortV.column !== "created_at") q = q.order("created_at", { ascending: false });
       q = q.range(from, to);
       const { data, error, count } = await q;
       if (cancelled) return;
@@ -138,13 +159,13 @@ export function usePagedList({
     };
   }, [
     resource,
-    page,
-    pageSize,
-    search,
+    pageV,
+    pageSizeV,
+    searchV,
     showDeleted,
     nonce,
-    sort.column,
-    sort.ascending,
+    sortV.column,
+    sortV.ascending,
     searchColumns.join(","),
     JSON.stringify(equals ?? {}),
     filterKey,
@@ -229,14 +250,14 @@ export function usePagedList({
     rows,
     total,
     loading,
-    page,
-    setPage,
-    pageSize,
-    setPageSize,
-    search,
-    setSearch,
-    sort,
-    setSort,
+    page: pageV,
+    setPage: setPageV,
+    pageSize: pageSizeV,
+    setPageSize: setPageSizeV,
+    search: searchV,
+    setSearch: setSearchV,
+    sort: sortV,
+    setSort: setSortV,
     showDeleted,
     setShowDeleted,
     selected,
