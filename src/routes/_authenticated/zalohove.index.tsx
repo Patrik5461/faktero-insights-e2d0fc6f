@@ -1,41 +1,56 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
-import { Plus, Trash2, RotateCcw } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
-import {
-  Pagination,
-  PageSizeSelect,
-  ConfirmDialog,
-  DeletedToggle,
-} from "@/components/faktero/ListControls";
+import { ListPagination, ConfirmDialog } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
-import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
+import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { filtrujObdobie, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/zalohove/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zálohové faktúry — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: ProformaListPage,
 });
 
 function ProformaListPage() {
   const { t } = useT();
   const navigate = useNavigate();
+  // Hľadanie, filtre, strana a počet na stranu sú v adrese.
+  const lf = useListFilters({
+    pageSizeKey: "invoices-proforma",
+    defaultSort: { column: "issue_date", ascending: false },
+  });
+  const podla = (lf.filter("podla") || "vystavenie") as DatumObdobia;
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
+  const upravDotaz = useCallback(
+    (dotaz: any) => filtrujObdobie(dotaz, podla, obdobieOd || null, obdobieDo || null),
+    [podla, obdobieOd, obdobieDo],
+  );
   const list = usePagedList({
     resource: "invoices",
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
     equals: { type: "proforma" },
     pageSizeKey: "invoices-proforma",
     orderBy: { column: "issue_date", ascending: false },
-    sortKey: "zalohove",
+    upravDotaz,
+    riadenie: lf,
+    filterKey: `${podla}|${obdobieOd}|${obdobieDo}`,
   });
+  // „Zobraziť vymazané“ je filter v adrese, kôš však prepína zoznam.
+  const ajVymazane = lf.zapnute("vymazane");
+  const setShowDeleted = list.setShowDeleted;
+  useEffect(() => setShowDeleted(ajVymazane), [ajVymazane, setShowDeleted]);
 
   const [settledMap, setSettledMap] = useState<
     Record<string, { id: string; invoice_number: string }>
@@ -109,7 +124,7 @@ function ProformaListPage() {
         description={t("Proforma / zálohové faktúry. Po prijatí platby ich zúčtujete vo finálnej faktúre.")}
         action={
           <div className="flex flex-wrap gap-2">
-            <OdkazNaRady />
+            <HlavickaViac akcie={[{ label: "Číselné rady", icon: Hash, to: "/ciselne-rady" }]} />
             <Link
               to="/faktury/nova"
               search={{ type: "proforma" } as any}
@@ -121,18 +136,23 @@ function ProformaListPage() {
         }
       />
       <PageBody>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <input
-            value={list.search}
-            onChange={(e) => list.setSearch(e.target.value)}
-            placeholder={t("Hľadať číslo, odberateľa, IČO…")}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
-          />
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <DeletedToggle value={list.showDeleted} onChange={list.setShowDeleted} />
-            <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
-          </div>
-        </div>
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Hľadať číslo, odberateľa, IČO…"
+          filters={[
+            {
+              key: "obdobie",
+              label: "Obdobie",
+              type: "dateRange",
+              dateFieldOptions: [
+                { value: "vystavenie", label: "dátumu vystavenia" },
+                { value: "dodanie", label: "dátumu dodania" },
+                { value: "splatnost", label: "dátumu splatnosti" },
+              ],
+            },
+            { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
+          ]}
+        />
         <ResponsiveTable
           className="mt-3"
           items={list.rows}
@@ -283,11 +303,12 @@ function ProformaListPage() {
             </div>
           }
         />
-        <Pagination
+        <ListPagination
           page={list.page}
           pageSize={list.pageSize}
           total={list.total}
           onPageChange={list.setPage}
+          onPageSizeChange={list.setPageSize}
         />
       </PageBody>
 

@@ -22,11 +22,20 @@ import {
 import { formatujMenu } from "@/lib/faktero/mena";
 import { velkost } from "@/lib/faktero/faktura-prilohy";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/efaktura/prijate")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté eFaktúry — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: ReceivedPage,
 });
+
+/** Deň v miestnom čase — `received_at` je v UTC a po polnoci by patril včerajšku. */
+function denLokalne(ts: string): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function suma(hodnota: unknown, mena: string | null): string {
   const n = Number(hodnota);
@@ -186,6 +195,9 @@ function ReceivedPage() {
   const [nacitavamNahlad, setNacitavamNahlad] = useState<string | null>(null);
   const [nahlad, setNahlad] = useState<Nahlad | null>(null);
   const [prilohyOkno, setPrilohyOkno] = useState<{ id: string; cislo: string } | null>(null);
+  const lf = useListFilters();
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
+  const podla = lf.filter("podla") || "vystavenie";
 
   async function otvorNahlad(receivedId: string) {
     if (!companyId) return;
@@ -269,6 +281,24 @@ function ReceivedPage() {
 
   const riadky = (q.data ?? []) as any[];
 
+  // Hľadanie a obdobie len prechádzajú načítané eFaktúry.
+  const hladane = lf.q.trim().toLowerCase();
+  const zobrazene = riadky.filter((r) => {
+    const datum =
+      podla === "prijatie" ? r.received_at : podla === "splatnost" ? r.due_date : r.issue_date;
+    const den = datum
+      ? podla === "prijatie"
+        ? denLokalne(datum)
+        : String(datum).slice(0, 10)
+      : "";
+    if (obdobieOd && (!den || den < obdobieOd)) return false;
+    if (obdobieDo && (!den || den > obdobieDo)) return false;
+    if (!hladane) return true;
+    return [r.document_number, r.sender_name, r.sender_participant_id]
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(hladane));
+  });
+
   /* Firma „len odosielanie“ prijíma u iného poskytovateľa — tu nič nepribudne. */
   const profilQ = useQuery({
     queryKey: ["efaktura-profil-rezim", companyId],
@@ -319,6 +349,24 @@ function ReceivedPage() {
             </div>
           </div>
         )}
+        {riadky.length > 0 && (
+          <DocumentListToolbar
+            lf={lf}
+            searchPlaceholder="Hľadať dodávateľa alebo číslo"
+            filters={[
+              {
+                key: "obdobie",
+                label: "Obdobie",
+                type: "dateRange",
+                dateFieldOptions: [
+                  { value: "vystavenie", label: "dátumu vystavenia" },
+                  { value: "prijatie", label: "dátumu prijatia" },
+                  { value: "splatnost", label: "dátumu splatnosti" },
+                ],
+              },
+            ]}
+          />
+        )}
         {!q.isLoading && riadky.length === 0 ? (
           lenOdosielanie ? null : (
           <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
@@ -354,7 +402,14 @@ function ReceivedPage() {
                     </td>
                   </tr>
                 )}
-                {riadky.map((r) => (
+                {riadky.length > 0 && zobrazene.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="p-6 text-center text-muted-foreground">
+                      {t("Nič nevyhovuje filtru.")}
+                    </td>
+                  </tr>
+                )}
+                {zobrazene.map((r) => (
                   <tr key={r.id}>
                     <td className="p-3 text-xs text-muted-foreground">
                       {r.received_at ? new Date(r.received_at).toLocaleString("sk-SK") : "—"}

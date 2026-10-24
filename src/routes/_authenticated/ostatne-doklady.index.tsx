@@ -32,11 +32,15 @@ import { toast } from "sonner";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { DocumentListToolbar, PRVOK } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Iné doklady — Faktero") }] }),
-  validateSearch: (s: Record<string, unknown>): { stav?: ZalozkaDokladov } =>
-    jeZalozkaDokladov(s.stav) ? { stav: s.stav } : {},
+  validateSearch: (s: Record<string, unknown>) => ({
+    ...(jeZalozkaDokladov(s.stav) ? { stav: s.stav as ZalozkaDokladov } : {}),
+    ...zoznamSearch(s),
+  }),
   component: OstatneDokladyPage,
 });
 
@@ -63,15 +67,28 @@ function OstatneDokladyPage() {
   /** Nespracované zo všetkých mesiacov — nič nesmie ostať schované. */
   const bezMesiaca = zalozka === "nespracovane";
 
-  const [month, setMonth] = useState<string>(new Date().toISOString().slice(0, 7));
-  const [druh, setDruh] = useState<DruhOstatneho | "">("");
+  const lf = useListFilters();
+  // Mesiac doručenia je v adrese; bez neho platí aktuálny mesiac, „vsetky“ = všetky mesiace.
+  const mesiacZAdresy = lf.filter("mesiac");
+  const month =
+    mesiacZAdresy === "vsetky" ? "" : mesiacZAdresy || new Date().toISOString().slice(0, 7);
+  const setMonth = (m: string) => lf.setFilter("mesiac", m || "vsetky");
+  const druh = lf.filter("druh") as DruhOstatneho | "";
   const [rows, setRows] = useState<any[]>([]);
   // Priečinky (zmluvy, objednávky…) — filtrujú sa na obrazovke z načítaných dokladov.
-  const [priecinok, setPriecinok] = useState("");
+  const priecinok = lf.filter("priecinok");
   const priecinky = [...new Set(rows.map((r) => String(r.priecinok ?? "").trim()).filter(Boolean))].sort();
-  const zobrazene = priecinok
-    ? rows.filter((r) => String(r.priecinok ?? "").trim() === (priecinok === "__bez" ? "" : priecinok))
-    : rows;
+  // Hľadanie len prechádza načítané doklady.
+  const hladane = lf.q.trim().toLowerCase();
+  const zobrazene = rows.filter(
+    (r) =>
+      (!priecinok ||
+        String(r.priecinok ?? "").trim() === (priecinok === "__bez" ? "" : priecinok)) &&
+      (!hladane ||
+        [r.sender, r.subject, r.priecinok]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(hladane))),
+  );
   async function doPriecinka() {
     const nazov = await zadaj(t("Do ktorého priečinka?\nPrázdne = bez priečinka."), {
       predvolene: priecinok && priecinok !== "__bez" ? priecinok : "",
@@ -128,7 +145,12 @@ function OstatneDokladyPage() {
   }, [stav, month, druh]);
 
   function prepniZalozku(kluc: ZalozkaDokladov) {
-    navigate({ to: "/ostatne-doklady", search: { stav: kluc }, replace: true });
+    // Hľadanie a filtre z adresy ostávajú aj na inej záložke.
+    navigate({
+      to: "/ostatne-doklady",
+      search: (prev: Record<string, unknown>) => ({ ...prev, stav: kluc }),
+      replace: true,
+    } as any);
   }
 
   async function zmenStav(ids: string[], novy: "new" | "processed") {
@@ -231,12 +253,28 @@ function OstatneDokladyPage() {
         title={t("Iné doklady")}
         description={t("Listy, predpisy, exekúcie, zmluvy a ďalšie podklady pre účtovníka.")}
         action={
-          <Link
-            to="/ostatne-doklady/novy"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> {t("Pridať doklad")}
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => odovzdaj(false)}
+              disabled={pracujem || !rows.length}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : t("všetko")}
+            </button>
+            <button
+              onClick={() => odovzdaj(true)}
+              disabled={pracujem || !rows.length || zalozka === "odovzdane"}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" /> {t("Odovzdať účtovníkovi")}
+            </button>
+            <Link
+              to="/ostatne-doklady/novy"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> {t("Pridať doklad")}
+            </Link>
+          </div>
         }
       />
       <PageBody>
@@ -273,105 +311,82 @@ function OstatneDokladyPage() {
           </p>
         )}
 
-        <div className="mb-4 flex flex-wrap items-end gap-3">
-          {!bezMesiaca && (
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">{t("Mesiac doručenia")}</label>
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Hľadať odosielateľa alebo predmet…"
+          filters={[
+            {
+              key: "druh",
+              label: "Druh",
+              type: "select",
+              allLabel: "Všetky druhy",
+              options: DRUHY_OSTATNYCH.map((d) => ({ value: d.kluc, label: d.nazov })),
+            },
+            {
+              key: "priecinok",
+              label: "Priečinok",
+              type: "select",
+              allLabel: "Všetky priečinky",
+              options: [
+                ...priecinky.map((p) => ({ value: p, label: p })),
+                { value: "__bez", label: "Bez priečinka" },
+              ],
+            },
+          ]}
+          extra={
+            !bezMesiaca && (
               <div className="flex items-center gap-2">
                 <input
                   type="month"
+                  aria-label={t("Mesiac doručenia")}
+                  title={t("Mesiac doručenia")}
                   value={month}
                   onChange={(e) => setMonth(e.target.value)}
-                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                  className={`${PRVOK} px-2`}
                 />
                 <button
                   type="button"
                   onClick={() => setMonth("")}
                   disabled={!month}
-                  className="rounded-md border border-border bg-card px-2 py-1.5 text-xs hover:bg-secondary disabled:opacity-40"
+                  className={`${PRVOK} px-3 hover:bg-secondary disabled:opacity-40`}
                 >
                   {t("Všetky")}
                 </button>
               </div>
-            </div>
-          )}
-          <div className="w-full sm:w-auto">
-            <label className="mb-1 block text-xs text-muted-foreground">{t("Druh")}</label>
-            <select
-              value={druh}
-              onChange={(e) => setDruh(e.target.value as DruhOstatneho | "")}
-              className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm sm:w-auto"
-            >
-              <option value="">{t("Všetky druhy")}</option>
-              {DRUHY_OSTATNYCH.map((d) => (
-                <option key={d.kluc} value={d.kluc}>
-                  {t(d.nazov)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="w-full sm:w-auto">
-            <label className="mb-1 block text-xs text-muted-foreground">{t("Priečinok")}</label>
-            <select
-              aria-label={t("Priečinok")}
-              value={priecinok}
-              onChange={(e) => setPriecinok(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm sm:w-auto"
-            >
-              <option value="">{t("Všetky priečinky")}</option>
-              {priecinky.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-              <option value="__bez">{t("Bez priečinka")}</option>
-            </select>
-          </div>
-          {selected.size > 0 && (
+            )
+          }
+        />
+
+        {selected.size > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-3">
             <button
               onClick={() => void doPriecinka()}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
             >
               <FolderOpen className="h-4 w-4" /> {t("Do priečinka")} ({selected.size})
             </button>
-          )}
-          {selected.size > 0 && (zalozka === "nespracovane" || zalozka === "spracovane") && (
-            <button
-              onClick={() =>
-                zmenStav(Array.from(selected), zalozka === "nespracovane" ? "processed" : "new")
-              }
-              disabled={pracujem}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
-            >
-              {zalozka === "nespracovane" ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> {t("Označiť ako spracované")} (
-                  {selected.size})
-                </>
-              ) : (
-                <>
-                  <Undo2 className="h-4 w-4" /> {t("Vrátiť medzi nespracované")} ({selected.size})
-                </>
-              )}
-            </button>
-          )}
-          <div className="ml-auto flex gap-2">
-            <button
-              onClick={() => odovzdaj(false)}
-              disabled={pracujem || !rows.length}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : t("všetko")}
-            </button>
-            <button
-              onClick={() => odovzdaj(true)}
-              disabled={pracujem || !rows.length || zalozka === "odovzdane"}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" /> {t("Odovzdať účtovníkovi")}
-            </button>
+            {(zalozka === "nespracovane" || zalozka === "spracovane") && (
+              <button
+                onClick={() =>
+                  zmenStav(Array.from(selected), zalozka === "nespracovane" ? "processed" : "new")
+                }
+                disabled={pracujem}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+              >
+                {zalozka === "nespracovane" ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" /> {t("Označiť ako spracované")} (
+                    {selected.size})
+                  </>
+                ) : (
+                  <>
+                    <Undo2 className="h-4 w-4" /> {t("Vrátiť medzi nespracované")} ({selected.size})
+                  </>
+                )}
+              </button>
+            )}
           </div>
-        </div>
+        )}
 
         <div className="overflow-hidden rounded-2xl border border-border bg-card">
           {loading ? (
@@ -390,6 +405,10 @@ function OstatneDokladyPage() {
                   <Plus className="h-4 w-4" /> {t("Pridať doklad")}
                 </Link>
               </div>
+            </div>
+          ) : zobrazene.length === 0 ? (
+            <div className="p-12 text-center text-sm text-muted-foreground">
+              {t("Nič nevyhovuje filtru.")}
             </div>
           ) : (
             <div className="overflow-x-auto">

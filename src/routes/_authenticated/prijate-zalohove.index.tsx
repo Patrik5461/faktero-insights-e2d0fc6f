@@ -12,9 +12,12 @@ import { ResponsiveTable, MobileListCard } from "@/components/faktero/Responsive
 import { formatovacMeny, formatujMenu } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/prijate-zalohove/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté zálohové faktúry — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: PrijateZalohovePage,
 });
 
@@ -45,6 +48,8 @@ function PrijateZalohovePage() {
   const [zuctovane, setZuctovane] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [mazane, setMazane] = useState<Riadok | null>(null);
+  // Hľadanie a filtre sú v adrese; zoznam sa načíta celý a filtruje sa tu.
+  const lf = useListFilters({ pageSizeKey: "prijate-zalohove" });
 
   async function load() {
     const cid = getActiveCompanyId();
@@ -87,16 +92,39 @@ function PrijateZalohovePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const hladane = lf.q.trim().toLowerCase();
+  const stav = lf.filter("stav");
+  const podla = lf.filter("podla") === "splatnost" ? "due_date" : "issue_date";
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
+  const zobrazene = useMemo(
+    () =>
+      rows.filter((r) => {
+        if (
+          hladane &&
+          !`${r.invoice_number ?? ""} ${r.supplier_name ?? ""}`.toLowerCase().includes(hladane)
+        )
+          return false;
+        // Stav rovnako ako odznak StavZalohy: zúčtovaná > zaplatená > čaká.
+        const s = zuctovane[r.id] ? "zuctovana" : r.payment_date ? "zaplatena" : "caka";
+        if (stav && s !== stav) return false;
+        const d = r[podla];
+        if (obdobieOd && (!d || d < obdobieOd)) return false;
+        if (obdobieDo && (!d || d > obdobieDo)) return false;
+        return true;
+      }),
+    [rows, zuctovane, hladane, stav, podla, obdobieOd, obdobieDo],
+  );
+
   const fmt = useMemo(() => formatovacMeny("EUR"), []);
   const sucty = useMemo(() => {
     let spolu = 0;
     let nezaplatene = 0;
-    for (const r of rows) {
+    for (const r of zobrazene) {
       spolu += Number(r.amount_total ?? 0);
       if (!r.payment_date && r.status !== "cancelled") nezaplatene += Number(r.amount_total ?? 0);
     }
     return { spolu, nezaplatene };
-  }, [rows]);
+  }, [zobrazene]);
 
   async function zmaz() {
     if (!mazane) return;
@@ -130,12 +158,37 @@ function PrijateZalohovePage() {
       />
       <PageBody>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Statistika label={t("Počet záloh")} hodnota={String(rows.length)} />
+          <Statistika label={t("Počet záloh")} hodnota={String(zobrazene.length)} />
           <Statistika label={t("Celková suma")} hodnota={fmt(sucty.spolu)} />
           <Statistika label={t("Nezaplatené")} hodnota={fmt(sucty.nezaplatene)} />
         </div>
 
         <div className="mt-6">
+          <DocumentListToolbar
+            lf={lf}
+            searchPlaceholder="Hľadať dodávateľa alebo číslo"
+            filters={[
+              {
+                key: "stav",
+                label: "Stav",
+                type: "select",
+                options: [
+                  { value: "caka", label: "Čaká na úhradu" },
+                  { value: "zaplatena", label: "Zaplatená" },
+                  { value: "zuctovana", label: "Zúčtovaná" },
+                ],
+              },
+              {
+                key: "obdobie",
+                label: "Obdobie",
+                type: "dateRange",
+                dateFieldOptions: [
+                  { value: "vystavenie", label: "dátumu vystavenia" },
+                  { value: "splatnost", label: "dátumu splatnosti" },
+                ],
+              },
+            ]}
+          />
           {loading ? (
             <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
               {t("Načítavam…")}
@@ -147,9 +200,13 @@ function PrijateZalohovePage() {
                 {t("Zálohovú faktúru od dodávateľa zaevidujete rovnako ako bežnú — pri druhu dokladu vyberiete „Prijatá zálohová faktúra“.")}
               </p>
             </div>
+          ) : zobrazene.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+              {t("Nič sa nenašlo.")}
+            </div>
           ) : (
             <ResponsiveTable
-              items={rows}
+              items={zobrazene}
               loading={loading}
               emptyText={t("Zatiaľ žiadna prijatá záloha.")}
               desktop={
@@ -167,7 +224,7 @@ function PrijateZalohovePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((r) => (
+                      {zobrazene.map((r) => (
                         <tr
                           key={r.id}
                           onClick={() =>

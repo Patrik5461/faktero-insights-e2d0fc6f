@@ -23,9 +23,12 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { nahralDokladu } from "@/lib/faktero/spracoval";
+import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nespracované doklady — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: Stranka,
 });
 
@@ -76,6 +79,8 @@ function Stranka() {
   // Mená kolegov pre stĺpec „Nahral“ (profily číta server po overení členstva).
   const nacitajMena = useServerFn(menaClenovFirmy);
   const [mena, setMena] = useState<Record<string, string>>({});
+  const lf = useListFilters();
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
 
   async function obnov() {
     const cid = getActiveCompanyId();
@@ -134,7 +139,23 @@ function Stranka() {
     ...(data?.blocky ?? []).map((b: any) => ({ ...b, kluc: `b-${b.id}`, stav: "vytazene", druh: null, chyba: null, subor: t("zo skenu") })),
   ].sort((a, b) => String(b.vytvorene).localeCompare(String(a.vytvorene)));
 
-  const vyberatelne = riadky.filter((r) => r.typ === "nespracovany" && r.stav !== "cita");
+  // Hľadanie a obdobie len prechádzajú načítané doklady.
+  const hladane = lf.q.trim().toLowerCase();
+  const zobrazene = riadky.filter((r) => {
+    const den = r.datum ? String(r.datum).slice(0, 10) : "";
+    if (obdobieOd && (!den || den < obdobieOd)) return false;
+    if (obdobieDo && (!den || den > obdobieDo)) return false;
+    if (!hladane) return true;
+    return [r.dodavatel, r.cislo, r.subor]
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(hladane));
+  });
+
+  // Zmena hľadania či obdobia zruší výber, aby hromadná akcia nezasiahla skrytý doklad.
+  useEffect(() => setVybrane(new Set()), [hladane, obdobieOd, obdobieDo]);
+
+  // „Vybrať všetky“ berie len zobrazené — skrytý doklad sa nesmie hromadne zmeniť ani zmazať.
+  const vyberatelne = zobrazene.filter((r) => r.typ === "nespracovany" && r.stav !== "cita");
   const prepniVyber = (id: string) =>
     setVybrane((p) => {
       const n = new Set(p);
@@ -271,6 +292,12 @@ function Stranka() {
           {t("Pretiahnite sem faktúry, zálohové faktúry, bločky či iné doklady (PDF alebo fotky) — aj viac naraz. Faktero ich prečíta a počkajú tu na zaradenie.")}
         </div>
 
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Hľadať dodávateľa alebo číslo"
+          filters={[{ key: "obdobie", label: "Obdobie", type: "dateRange" }]}
+        />
+
         {vybrane.size > 0 ? (
           <div
             role="region"
@@ -376,7 +403,14 @@ function Stranka() {
                   </td>
                 </tr>
               )}
-              {riadky.map((r) => (
+              {riadky.length > 0 && zobrazene.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                    {t("Nič nevyhovuje filtru.")}
+                  </td>
+                </tr>
+              )}
+              {zobrazene.map((r) => (
                 <tr
                   key={r.kluc}
                   {...posledny.riadok(r.id)}
@@ -420,7 +454,12 @@ function Stranka() {
               {t("Všetko je spracované.")}
             </div>
           )}
-          {riadky.map((r) => (
+          {riadky.length > 0 && zobrazene.length === 0 && (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
+              {t("Nič nevyhovuje filtru.")}
+            </div>
+          )}
+          {zobrazene.map((r) => (
             <div
               key={r.kluc}
               {...posledny.karta(r.id)}

@@ -829,7 +829,7 @@ function InvoicesPage() {
           /* Hlavné tlačidlo je posledné a vpravo; Číselné rady a Účtovné exporty sú
              v riadku s filtrami, aby sa hlavička nezalamovala. */
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {(type || status || poSplatnosti || neuhradene || q) && (
+            {(type || status || poSplatnosti || neuhradene) && (
               <Link
                 to="/faktury"
                 search={{} as any}

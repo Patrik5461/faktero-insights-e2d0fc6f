@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -11,6 +11,8 @@ import { FileText, ExternalLink, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/sklad/dodacie-listy")({
   head: ({ match }) => ({
@@ -18,8 +20,15 @@ export const Route = createFileRoute("/_authenticated/sklad/dodacie-listy")({
       { title: preloz(match.context.jazyk, "História naskenovaných dodacích listov — Faktero") },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: DeliveryNoteHistoryPage,
 });
+
+/** Deň importu v miestnom čase — `created_at` je v UTC a po polnoci by patril včerajšku. */
+function denImportu(ts: string): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function DeliveryNoteHistoryPage() {
   const { t } = useT();
@@ -27,6 +36,8 @@ function DeliveryNoteHistoryPage() {
   const signFn = useServerFn(getDeliveryNoteSignedUrlFn);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const lf = useListFilters();
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -39,6 +50,23 @@ function DeliveryNoteHistoryPage() {
       .catch((e) => toast.error(e?.message ?? t("Nepodarilo sa načítať.")))
       .finally(() => setLoading(false));
   }, [listFn]);
+
+  // Hľadanie a obdobie len prechádzajú načítané importy.
+  const hladane = lf.q.trim().toLowerCase();
+  const zobrazene = useMemo(
+    () =>
+      rows.filter((r) => {
+        const den = r.created_at ? denImportu(r.created_at) : "";
+        if (obdobieOd && (!den || den < obdobieOd)) return false;
+        if (obdobieDo && (!den || den > obdobieDo)) return false;
+        if (!hladane) return true;
+        const m = r.metadata ?? {};
+        return [m.supplier, m.delivery_number, m.source_filename]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(hladane));
+      }),
+    [rows, hladane, obdobieOd, obdobieDo],
+  );
 
   async function openDoc(path: string) {
     try {
@@ -64,17 +92,26 @@ function DeliveryNoteHistoryPage() {
         }
       />
       <PageBody>
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Hľadať dodávateľa alebo číslo"
+          filters={[{ key: "obdobie", label: "Obdobie", type: "dateRange" }]}
+        />
         {loading ? (
           <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
             {t("Zatiaľ žiadne AI importy dodacích listov.")}
           </div>
+        ) : zobrazene.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+            {t("Nič nevyhovuje filtru.")}
+          </div>
         ) : (
           <>
             {/* Mobil: karty — šesť stĺpcov sa na úzky displej nezmestí. */}
             <div className="space-y-2 md:hidden">
-              {rows.map((r) => {
+              {zobrazene.map((r) => {
                 const m = r.metadata ?? {};
                 const c = m.counts ?? {};
                 const items = Array.isArray(m.items) ? m.items.length : 0;
@@ -123,7 +160,7 @@ function DeliveryNoteHistoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {rows.map((r) => {
+                  {zobrazene.map((r) => {
                     const m = r.metadata ?? {};
                     const c = m.counts ?? {};
                     const items = Array.isArray(m.items) ? m.items.length : 0;

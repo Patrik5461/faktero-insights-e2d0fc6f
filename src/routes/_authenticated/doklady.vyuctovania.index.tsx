@@ -9,7 +9,9 @@ import { toast } from "sonner";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { zoznamVyuctovaniFn } from "@/lib/faktero/vyuctovanie-vydavkov.functions";
-import { nazovTypu } from "@/lib/faktero/vyuctovanie-vydavkov";
+import { nazovTypu, TYPY_VYUCTOVANIA } from "@/lib/faktero/vyuctovanie-vydavkov";
+import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 /**
  * Súhrnné vyúčtovanie výdavkov zamestnancov (ako modul Vyúčtovanie výdavkov
@@ -17,6 +19,8 @@ import { nazovTypu } from "@/lib/faktero/vyuctovanie-vydavkov";
  */
 export const Route = createFileRoute("/_authenticated/doklady/vyuctovania/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vyúčtovanie výdavkov — Faktero") }] }),
+  // Hľadanie a filtre zoznamu sú v adrese (`q`, `f`).
+  validateSearch: (s: Record<string, unknown>) => zoznamSearch(s),
   component: Zoznam,
 });
 
@@ -50,6 +54,23 @@ function Zoznam() {
         setRows([]);
       });
   }, [cid, nacitaj]);
+  // Vyúčtovaní je málo — načítajú sa všetky a hľadá sa v prehliadači.
+  const lf = useListFilters({ pageSizeKey: "vyuctovania" });
+  const typ = lf.filter("typ");
+  const stav = lf.filter("stav");
+  const zobrazene = useMemo(() => {
+    if (!rows) return rows;
+    const h = lf.q.trim().toLowerCase();
+    return rows.filter(
+      (r) =>
+        (!typ || r.typ === typ) &&
+        (!stav || (stav === "uzavrete" ? r.stav === "uzavrete" : r.stav !== "uzavrete")) &&
+        (!h ||
+          [r.nazov, r.zamestnanec_meno]
+            .filter(Boolean)
+            .some((x) => String(x).toLowerCase().includes(h))),
+    );
+  }, [rows, lf.q, typ, stav]);
 
   return (
     <>
@@ -79,16 +100,42 @@ function Zoznam() {
           {t("— označte doklady a kliknite na")} <em>{t("Vyúčtovanie")}</em>
           {t(". Doklad vo vyúčtovaní ide do Pohody ako interný doklad (nie z firemnej pokladne) a prijatá faktúra sa už neponúkne v hromadnom príkaze na úhradu.")}
         </div>
-        {rows === null ? (
-          <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="mt-6">
+          <DocumentListToolbar
+            lf={lf}
+            filters={[
+              {
+                key: "typ",
+                label: "Typ",
+                type: "select",
+                options: TYPY_VYUCTOVANIA.map((x) => ({ value: x.kod, label: x.nazov })),
+              },
+              {
+                key: "stav",
+                label: "Stav",
+                type: "select",
+                options: [
+                  { value: "otvorene", label: "otvorené" },
+                  { value: "uzavrete", label: "uzavreté" },
+                ],
+              },
+            ]}
+          />
+        </div>
+        {rows === null || zobrazene === null ? (
+          <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
           </div>
         ) : rows.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          <div className="mt-3 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             {t("Zatiaľ žiadne vyúčtovanie.")}
           </div>
+        ) : zobrazene.length === 0 ? (
+          <div className="mt-3 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+            {t("Nič nevyhovuje filtru.")}
+          </div>
         ) : (
-          <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-card">
+          <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
               <thead className="border-b border-border text-left text-xs text-muted-foreground">
                 <tr>
@@ -102,7 +149,7 @@ function Zoznam() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {zobrazene.map((r) => (
                   <tr
                     key={r.id}
                     className="border-b border-border last:border-0 hover:bg-secondary/40"

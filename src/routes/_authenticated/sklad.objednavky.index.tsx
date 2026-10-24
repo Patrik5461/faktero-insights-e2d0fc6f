@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -11,11 +11,14 @@ import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Objednávky u dodávateľov — Faktero") }],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: PurchaseOrdersPage,
 });
 
@@ -36,7 +39,10 @@ function PurchaseOrdersPage() {
   const fetchOrders = useServerFn(listPurchaseOrders);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"vsetky" | "otvorene">("otvorene");
+  const lf = useListFilters();
+  // Predvolene len otvorené; „Všetky“ si načíta zo servera aj prijaté a zrušené.
+  const filter: "vsetky" | "otvorene" = lf.filter("stav") === "vsetky" ? "vsetky" : "otvorene";
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
 
   const nacitaj = useCallback(() => {
     const cid = getActiveCompanyId();
@@ -51,6 +57,21 @@ function PurchaseOrdersPage() {
   }, [fetchOrders, filter]);
 
   useEffect(nacitaj, [nacitaj]);
+
+  // Hľadanie a obdobie len prechádzajú načítané objednávky.
+  const hladane = lf.q.trim().toLowerCase();
+  const zobrazene = useMemo(
+    () =>
+      rows.filter((o) => {
+        if (obdobieOd && (!o.order_date || o.order_date < obdobieOd)) return false;
+        if (obdobieDo && (!o.order_date || o.order_date > obdobieDo)) return false;
+        if (!hladane) return true;
+        return [o.order_number, o.supplier_name]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(hladane));
+      }),
+    [rows, hladane, obdobieOd, obdobieDo],
+  );
 
   return (
     <>
@@ -72,28 +93,27 @@ function PurchaseOrdersPage() {
         }
       />
       <PageBody>
-        <div className="mb-3 inline-flex rounded-md border border-border bg-card p-0.5 text-sm">
-          {(
-            [
-              ["otvorene", "Otvorené"],
-              ["vsetky", "Všetky"],
-            ] as const
-          ).map(([k, label]) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setFilter(k)}
-              className={`rounded px-3 py-1.5 ${
-                filter === k ? "bg-secondary font-medium" : "text-muted-foreground"
-              }`}
-            >
-              {t(label)}
-            </button>
-          ))}
-        </div>
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Hľadať dodávateľa alebo číslo"
+          filters={[
+            {
+              key: "stav",
+              label: "Stav",
+              type: "select",
+              allLabel: "Otvorené",
+              options: [{ value: "vsetky", label: "Všetky" }],
+            },
+            { key: "obdobie", label: "Obdobie", type: "dateRange" },
+          ]}
+        />
 
         {loading ? (
           <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+        ) : rows.length > 0 && zobrazene.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+            {t("Nič nevyhovuje filtru.")}
+          </div>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center">
             <Truck className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
@@ -124,7 +144,7 @@ function PurchaseOrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {rows.map((o) => (
+                {zobrazene.map((o) => (
                   <tr key={o.id} className="hover:bg-muted/30">
                     <td className="p-3 font-medium">
                       <Link

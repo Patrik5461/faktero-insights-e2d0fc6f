@@ -15,9 +15,12 @@ import {
 import { Plus, ClipboardList, AlertTriangle } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
+import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/objednavky/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté objednávky — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: OrdersPage,
 });
 
@@ -50,7 +53,10 @@ function OrdersPage() {
   const nacitaj = useServerFn(listSalesOrders);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"otvorene" | "vsetky">("otvorene");
+  const lf = useListFilters();
+  // Predvolene len otvorené; „Všetky“ si načíta zo servera aj vybavené a zrušené.
+  const filter: "otvorene" | "vsetky" = lf.filter("stav") === "vsetky" ? "vsetky" : "otvorene";
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
   const dnes = useMemo(dnesLokalne, []);
 
   const nacitajZoznam = useCallback(() => {
@@ -67,16 +73,31 @@ function OrdersPage() {
 
   useEffect(nacitajZoznam, [nacitajZoznam]);
 
+  // Hľadanie a obdobie len prechádzajú načítané objednávky.
+  const hladane = lf.q.trim().toLowerCase();
+  const zobrazene = useMemo(
+    () =>
+      rows.filter((o) => {
+        if (obdobieOd && (!o.order_date || o.order_date < obdobieOd)) return false;
+        if (obdobieDo && (!o.order_date || o.order_date > obdobieDo)) return false;
+        if (!hladane) return true;
+        return [o.order_number, o.customer_order_number, o.customers?.name, o.customer_name]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(hladane));
+      }),
+    [rows, hladane, obdobieOd, obdobieDo],
+  );
+
   const spolu = useMemo(
     () =>
-      rows.reduce(
+      zobrazene.reduce(
         (s, r) => ({
           hodnota: s.hodnota + Number(r.total || 0),
           zostava: s.zostava + Number(r.zostava || 0),
         }),
         { hodnota: 0, zostava: 0 },
       ),
-    [rows],
+    [zobrazene],
   );
 
   return (
@@ -97,22 +118,22 @@ function OrdersPage() {
         }
       />
       <PageBody>
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Hľadať číslo, odberateľa…"
+          filters={[
+            {
+              key: "stav",
+              label: "Stav",
+              type: "select",
+              allLabel: "Otvorené",
+              options: [{ value: "vsetky", label: "Všetky" }],
+            },
+            { key: "obdobie", label: "Obdobie", type: "dateRange" },
+          ]}
+        />
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          {(["otvorene", "vsetky"] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={`rounded-full px-3 py-1.5 text-xs ${
-                filter === f
-                  ? "bg-primary/10 font-medium text-primary"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {f === "otvorene" ? t("Otvorené") : t("Všetky")}
-            </button>
-          ))}
-          {rows.length > 0 && (
+          {zobrazene.length > 0 && (
             <span className="ml-auto text-xs text-muted-foreground">
               {t("Hodnota {suma} · nevyfakturované", { suma: suma(spolu.hodnota) })}{" "}
               <span className="font-medium text-foreground">{suma(spolu.zostava)}</span>
@@ -122,6 +143,10 @@ function OrdersPage() {
 
         {loading ? (
           <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+        ) : rows.length > 0 && zobrazene.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+            {t("Nič nevyhovuje filtru.")}
+          </div>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center">
             <ClipboardList className="mx-auto h-8 w-8 text-muted-foreground" />
@@ -147,7 +172,7 @@ function OrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((o) => {
+                {zobrazene.map((o) => {
                   const stav = (o.stav_vypocitany ?? o.status) as StavPrijatejObjednavky;
                   const meska = jePoTermine(o.requested_date, stav, dnes);
                   const percento = percentoVybavenia(o.sales_order_items ?? []);

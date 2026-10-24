@@ -2,23 +2,20 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Plus, Trash2, RotateCcw } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
-import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
-import {
-  Pagination,
-  PageSizeSelect,
-  ConfirmDialog,
-  BulkBar,
-  DeletedToggle,
-} from "@/components/faktero/ListControls";
+import { ListPagination, ConfirmDialog, BulkBar } from "@/components/faktero/ListControls";
+import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { filtrujObdobie } from "@/lib/faktero/obdobie-filter";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/ponuky/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenové ponuky — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: QuotesPage,
 });
 
@@ -42,13 +39,38 @@ const STATUS_CLS: Record<string, string> = {
 function QuotesPage() {
   const { t } = useT();
   const navigate = useNavigate();
+  // Hľadanie, filtre, strana a počet na stranu sú v adrese.
+  const lf = useListFilters({
+    pageSizeKey: "quotes",
+    defaultSort: { column: "issue_date", ascending: false },
+  });
+  // Ponuka má dátum vystavenia a platnosť do (`valid_until`) — iné dátumy nemá.
+  const podla = lf.filter("podla") === "platnost" ? "platnost" : "vystavenie";
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
+  const upravDotaz = useCallback(
+    (dotaz: any) => {
+      if (podla === "vystavenie")
+        return filtrujObdobie(dotaz, "vystavenie", obdobieOd || null, obdobieDo || null);
+      let d = dotaz;
+      if (obdobieOd) d = d.gte("valid_until", obdobieOd);
+      if (obdobieDo) d = d.lte("valid_until", obdobieDo);
+      return d;
+    },
+    [podla, obdobieOd, obdobieDo],
+  );
   const list = usePagedList({
     resource: "quotes",
     searchColumns: ["quote_number", "customer_name"],
     // Od najnovšej — `created_at` je pri importe čas importu, nie dátum dokladu.
     orderBy: { column: "issue_date", ascending: false },
-    sortKey: "ponuky",
+    upravDotaz,
+    riadenie: lf,
+    filterKey: `${podla}|${obdobieOd}|${obdobieDo}`,
   });
+  // „Zobraziť vymazané“ je filter v adrese, kôš však prepína zoznam.
+  const ajVymazane = lf.zapnute("vymazane");
+  const setShowDeleted = list.setShowDeleted;
+  useEffect(() => setShowDeleted(ajVymazane), [ajVymazane, setShowDeleted]);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
   const [bulkHardDelete, setBulkHardDelete] = useState(false);
@@ -94,7 +116,7 @@ function QuotesPage() {
         description={t("Vytvárajte a posielajte cenové ponuky odberateľom.")}
         action={
           <div className="flex flex-wrap gap-2">
-            <OdkazNaRady />
+            <HlavickaViac akcie={[{ label: "Číselné rady", icon: Hash, to: "/ciselne-rady" }]} />
             <Link
               to="/ponuky/nova"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
@@ -105,18 +127,22 @@ function QuotesPage() {
         }
       />
       <PageBody>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <input
-            value={list.search}
-            onChange={(e) => list.setSearch(e.target.value)}
-            placeholder={t("Hľadať číslo, odberateľa…")}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
-          />
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <DeletedToggle value={list.showDeleted} onChange={list.setShowDeleted} />
-            <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
-          </div>
-        </div>
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Hľadať číslo, odberateľa…"
+          filters={[
+            {
+              key: "obdobie",
+              label: "Obdobie",
+              type: "dateRange",
+              dateFieldOptions: [
+                { value: "vystavenie", label: "dátumu vystavenia" },
+                { value: "platnost", label: "dátumu platnosti" },
+              ],
+            },
+            { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
+          ]}
+        />
         <BulkBar
           onHardDelete={() => setBulkHardDelete(true)}
           count={list.selectedIds.length}
@@ -229,16 +255,17 @@ function QuotesPage() {
               ))}
             </tbody>
           </table>
-          {/* Prázdny zoznam už má hlášku v tabuľke — „Žiadne výsledky“ zo stránkovania by ju len zopakovalo. */}
-          {list.total > 0 && (
-            <Pagination
-              page={list.page}
-              pageSize={list.pageSize}
-              total={list.total}
-              onPageChange={list.setPage}
-            />
-          )}
         </div>
+        {/* Prázdny zoznam už má hlášku v tabuľke — „Žiadne výsledky“ zo stránkovania by ju len zopakovalo. */}
+        {list.total > 0 && (
+          <ListPagination
+            page={list.page}
+            pageSize={list.pageSize}
+            total={list.total}
+            onPageChange={list.setPage}
+            onPageSizeChange={list.setPageSize}
+          />
+        )}
       </PageBody>
       <ConfirmDialog
         open={!!rowDelete}

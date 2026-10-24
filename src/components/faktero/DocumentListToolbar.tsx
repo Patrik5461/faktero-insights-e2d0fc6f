@@ -307,7 +307,7 @@ function RozsahDatumu({
         >
           {def.dateFieldOptions.map((o) => (
             <option key={o.value} value={o.value}>
-              {t("podľa: {pole}", { pole: t(o.label) })}
+              {t("podľa {pole}", { pole: t(o.label) })}
             </option>
           ))}
         </select>
@@ -378,7 +378,9 @@ function AktivneFiltre({ filters, lf }: { filters: FilterDef[]; lf: ListFilters 
         : `${r.od ? datumNaDoklade(r.od) : "…"} – ${r.do ? datumNaDoklade(r.do) : "…"}`;
       cipy.push({
         key: d.key,
-        text: pole ? `${t(pole.label)}: ${obdobie}` : `${t(d.label)}: ${obdobie}`,
+        text: pole
+          ? `${t(d.label)} ${t("podľa {pole}", { pole: t(pole.label) })}: ${obdobie}`
+          : `${t(d.label)}: ${obdobie}`,
         zrus: () =>
           lf.setFilters({
             [`${d.key}_od`]: "",

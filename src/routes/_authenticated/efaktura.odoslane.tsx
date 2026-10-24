@@ -23,9 +23,12 @@ import {
 } from "@/components/faktero/EfakturaStatusBadge";
 import { OdoslanieEfakturyOkno } from "@/components/faktero/OdoslanieEfakturyOkno";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
+import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/efaktura/odoslane")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Odoslané eFaktúry — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: SentPage,
 });
 
@@ -42,6 +45,8 @@ function SentPage() {
   const regen = useServerFn(generateEfakturaXmlFn);
   const listDorucenia = useServerFn(listEfakturaDeliveriesFn);
   const efakturaTest = useEfakturaTestovaciRezim();
+  const lf = useListFilters();
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
 
   const q = useQuery({
     queryKey: ["efaktura-documents", companyId],
@@ -181,6 +186,19 @@ function SentPage() {
 
   const cislo = (row: any) => row.document_number ?? row.invoices?.invoice_number ?? "—";
 
+  // Hľadanie a obdobie (dátum vystavenia) len prechádzajú načítané doklady.
+  const hladane = lf.q.trim().toLowerCase();
+  const zobrazene = ((q.data ?? []) as any[]).filter((row) => {
+    const den = row.issue_date ? String(row.issue_date).slice(0, 10) : "";
+    if (obdobieOd && (!den || den < obdobieOd)) return false;
+    if (obdobieDo && (!den || den > obdobieDo)) return false;
+    if (!hladane) return true;
+    return [row.document_number, row.invoices?.invoice_number, row.invoices?.customer_name]
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(hladane));
+  });
+  const nicNevyhovuje = !!q.data && q.data.length > 0 && zobrazene.length === 0;
+
   return (
     <>
       <PageHeader
@@ -188,6 +206,11 @@ function SentPage() {
         description={t("XML dokumenty vygenerované z vašich faktúr.")}
       />
       <PageBody>
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Hľadať číslo, odberateľa…"
+          filters={[{ key: "obdobie", label: "Obdobie", type: "dateRange" }]}
+        />
         {/* Mobil: karty namiesto širokej tabuľky. */}
         <div className="space-y-3 md:hidden">
           {q.isLoading && (
@@ -200,7 +223,12 @@ function SentPage() {
               {t("Zatiaľ žiadne vygenerované eFaktúry.")}
             </div>
           )}
-          {q.data?.map((row: any) => (
+          {nicNevyhovuje && (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+              {t("Nič nevyhovuje filtru.")}
+            </div>
+          )}
+          {zobrazene.map((row: any) => (
             <div key={row.id} className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -255,7 +283,14 @@ function SentPage() {
                   </td>
                 </tr>
               )}
-              {q.data?.map((row: any) => (
+              {nicNevyhovuje && (
+                <tr>
+                  <td colSpan={8} className="p-6 text-center text-muted-foreground">
+                    {t("Nič nevyhovuje filtru.")}
+                  </td>
+                </tr>
+              )}
+              {zobrazene.map((row: any) => (
                 <tr key={row.id} className="align-top">
                   <td className="whitespace-nowrap p-3 font-medium">{cislo(row)}</td>
                   <td className="p-3">{row.invoices?.customer_name ?? "—"}</td>

@@ -62,6 +62,8 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
 import { spracovanieDokladu, menoSpracovatela } from "@/lib/faktero/spracoval";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
+import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch, type ListSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doklady — Faktero") }] }),
@@ -75,10 +77,17 @@ export const Route = createFileRoute("/_authenticated/doklady/")({
    * bloček na kontrolu čaká v Nespracovaných dokladoch a sem príde, až keď
    * ho niekto spracuje (ako v sekcii Bločky v Doklado).
    */
-  validateSearch: (s: Record<string, unknown>): { mesiac?: string; stav?: ZalozkaDokladov } => {
+  /*
+   * Hľadanie a filtre (úhrada, zvolený mesiac) sú v adrese cez `zoznamSearch`.
+   * Mesiac zvolený v zozname sa ukladá do `f.mesiac` („vsetky“ = bez mesiaca);
+   * `?mesiac=` ostáva len ako vstup z odkazu po uložení dokladu.
+   */
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { mesiac?: string; stav?: ZalozkaDokladov } & ListSearch => {
     const m = typeof s.mesiac === "string" && /^\d{4}-\d{2}$/.test(s.mesiac) ? s.mesiac : undefined;
     const stav = jeZalozkaDokladov(s.stav) ? s.stav : undefined;
-    return { ...(m ? { mesiac: m } : {}), ...(stav ? { stav } : {}) };
+    return { ...(m ? { mesiac: m } : {}), ...(stav ? { stav } : {}), ...zoznamSearch(s) };
   },
   component: DokladyPage,
 });
@@ -170,9 +179,11 @@ function DokladyPage() {
   const [navrhy, setNavrhy] = useState<any[]>([]);
   const [parujem, setParujem] = useState<string | null>(null);
   const [vsetkyRiadky, setRows] = useState<any[]>([]);
+  // Hľadanie a filtre sú v adrese — odkaz sa dá poslať a prežije obnovenie stránky.
+  const lf = useListFilters({ pageSizeKey: "doklady" });
   /** Dohľadanie a spôsob úhrady sa filtrujú v prehliadači nad načítaným výberom. */
-  const [hladaj, setHladaj] = useState("");
-  const [platba, setPlatba] = useState("");
+  const hladaj = lf.q;
+  const platba = lf.filter("platba");
   const rows = useMemo(() => {
     const h = hladaj.trim().toLowerCase();
     return vsetkyRiadky.filter(
@@ -212,7 +223,29 @@ function DokladyPage() {
   const status = ZALOZKY_DOKLADOV.find((z) => z.kluc === zalozka)!.stav;
   /** Nespracované sa ukazujú zo všetkých mesiacov — nič nesmie ostať schované. */
   const bezMesiaca = zalozka === "nespracovane";
-  const [month, setMonth] = useState<string>(mesiacZAdresy ?? new Date().toISOString().slice(0, 7));
+  // Mesiac zvolený v zozname (`f.mesiac`) má prednosť pred `?mesiac=` z odkazu;
+  // bez oboch sa zoznam otvára na tomto mesiaci. „vsetky“ = všetky mesiace.
+  const mesiacFiltra = lf.filter("mesiac");
+  const month =
+    mesiacFiltra === "vsetky"
+      ? ""
+      : /^\d{4}-\d{2}$/.test(mesiacFiltra)
+        ? mesiacFiltra
+        : (mesiacZAdresy ?? new Date().toISOString().slice(0, 7));
+  /** Zmena mesiaca — `?mesiac=` z odkazu sa pri tom zahodí, nech v adrese nie sú dva. */
+  function setMonth(m: string) {
+    navigate({
+      to: ".",
+      replace: true,
+      search: (prev: Record<string, unknown>) => {
+        const n: Record<string, unknown> = { ...prev };
+        delete n.mesiac;
+        delete n.page;
+        n.f = { ...((prev.f as Record<string, string>) ?? {}), mesiac: m || "vsetky" };
+        return n;
+      },
+    } as any);
+  }
   /** Koľko dokladov je mimo vybraného mesiaca a kam sa dá skočiť. */
   const [mimo, setMimo] = useState<{ pocet: number; mesiac: string | null }>({
     pocet: 0,
@@ -340,12 +373,13 @@ function DokladyPage() {
     refresh(); /* eslint-disable-next-line */
   }, [status, month]);
 
+  // Záložka mení len `stav` — hľadanie, mesiac a filtre z adresy ostávajú.
   function prepniZalozku(kluc: ZalozkaDokladov) {
     navigate({
       to: "/doklady",
-      search: { ...(mesiacZAdresy ? { mesiac: mesiacZAdresy } : {}), stav: kluc },
+      search: (prev: Record<string, unknown>) => ({ ...prev, stav: kluc }),
       replace: true,
-    });
+    } as any);
   }
 
   async function zmenStav(ids: string[], stav: "new" | "processed") {
@@ -466,6 +500,55 @@ function DokladyPage() {
     }
   }
 
+  /** Excel z toho, čo je na obrazovke — v poradí, ako je zoznam zoradený. */
+  function stiahniExcelDokladov() {
+    const r = rad.zoradene as any[];
+    void stiahniExcel(`doklady-${new Date().toISOString().slice(0, 10)}.xlsx`, [
+      {
+        nazov: t("Doklady"),
+        data: tabulka(r, [
+          { nazov: t("Dátum"), hodnota: (x: any) => x.issue_date },
+          { nazov: t("Dodávateľ"), hodnota: (x: any) => x.supplier_name },
+          { nazov: t("IČO"), hodnota: (x: any) => x.supplier_ico },
+          { nazov: t("IČ DPH"), hodnota: (x: any) => x.supplier_ic_dph },
+          { nazov: t("Číslo"), hodnota: (x: any) => x.document_number },
+          { nazov: t("Kategória"), hodnota: (x: any) => x.category },
+          { nazov: t("Základ"), hodnota: (x: any) => (x.net_amount == null ? null : Number(x.net_amount)) },
+          { nazov: t("DPH"), hodnota: (x: any) => (x.vat_amount == null ? null : Number(x.vat_amount)) },
+          { nazov: t("Spolu"), hodnota: (x: any) => (x.total_amount == null ? null : Number(x.total_amount)) },
+          { nazov: t("Mena"), hodnota: (x: any) => x.currency },
+          { nazov: t("Úhrada"), hodnota: (x: any) => x.payment_method },
+          { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
+          { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
+          { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
+          { nazov: t("Zdroj"), hodnota: (x: any) => t(ZDROJ_DOKLADU[x.source] ?? x.source) },
+        ]),
+      },
+      {
+        nazov: t("Položky"),
+        data: tabulka(
+          r.flatMap((x: any) =>
+            (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
+              doklad: x.document_number,
+              dodavatel: x.supplier_name,
+              p,
+            })),
+          ),
+          [
+            { nazov: t("Doklad"), hodnota: (x: any) => x.doklad },
+            { nazov: t("Dodávateľ"), hodnota: (x: any) => x.dodavatel },
+            { nazov: t("Položka"), hodnota: (x: any) => x.p?.name },
+            { nazov: t("Množstvo"), hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
+            { nazov: t("MJ"), hodnota: (x: any) => x.p?.unit },
+            { nazov: t("Jedn. cena"), hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
+            { nazov: t("Sadzba DPH"), hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
+            { nazov: t("Spolu"), hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
+          ],
+        ),
+      },
+    ]);
+  }
+
   async function openFile(path: string) {
     try {
       const { url } = await urlFn({ data: { file_path: path } });
@@ -491,13 +574,7 @@ function DokladyPage() {
         title={t("Bločky")}
         description={t("Spracované bločky a výdavkové doklady. Nové najprv skontrolujete v Nespracovaných dokladoch.")}
         action={
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setKos(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
-            >
-              <Trash2 className="h-4 w-4" /> {t("Kôš")}
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               to="/importy/doklady"
               className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
@@ -510,6 +587,13 @@ function DokladyPage() {
             >
               <Plus className="h-4 w-4" /> {t("Nový doklad")}
             </Link>
+            {/* Kôš a Excel sa používajú zriedka — patria do „⋯“. */}
+            <HlavickaViac
+              akcie={[
+                { label: "Excel", icon: Download, onClick: stiahniExcelDokladov },
+                { label: "Kôš", icon: Trash2, onClick: () => setKos(true) },
+              ]}
+            />
           </div>
         }
       />
@@ -565,28 +649,77 @@ function DokladyPage() {
           </p>
         )}
 
-        <div className="mb-4 flex flex-wrap items-end gap-3">
-          {!bezMesiaca && (
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">{t("Mesiac")}</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="month"
-                  value={month}
-                  onChange={(e) => setMonth(e.target.value)}
-                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setMonth("")}
-                  disabled={!month}
-                  className="rounded-md border border-border bg-card px-2 py-1.5 text-xs hover:bg-secondary disabled:opacity-40"
-                >
-                  {t("Všetky")}
-                </button>
-              </div>
-            </div>
-          )}
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Dodávateľ, IČO, číslo…"
+          filters={[
+            {
+              key: "platba",
+              label: "Úhrada",
+              type: "select",
+              options: [
+                { value: "hotovost", label: "Hotovosť" },
+                { value: "karta", label: "Karta" },
+                { value: "prevod", label: "Prevod" },
+              ],
+            },
+          ]}
+          extra={
+            <>
+              {/* Mesiac načítava server (a hlási doklady mimo neho) — preto ostáva
+                  samostatný výber vedľa hľadania, nie rozsah vo Filtroch. */}
+              {!bezMesiaca && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="month"
+                    aria-label={t("Mesiac")}
+                    value={month}
+                    onChange={(e) => setMonth(e.target.value)}
+                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMonth("")}
+                    disabled={!month}
+                    className="h-9 rounded-md border border-input bg-background px-2 text-xs hover:bg-secondary disabled:opacity-40"
+                  >
+                    {t("Všetky")}
+                  </button>
+                </div>
+              )}
+              <NastaveniaZoznamu
+                nastavenia={zobrazenie}
+                stlpce={STLPCE_DOKLADOV}
+                aktualne={{ stav: zalozka, mesiac: month, hladaj, platba }}
+                pouzi={(h) => {
+                  // Jedným zápisom do adresy — viac navigate po sebe by sa prepisovalo.
+                  navigate({
+                    to: ".",
+                    replace: true,
+                    search: (prev: Record<string, unknown>) => {
+                      const n: Record<string, unknown> = { ...prev };
+                      delete n.mesiac;
+                      delete n.page;
+                      if (h.stav && ZALOZKY_DOKLADOV.some((z) => z.kluc === h.stav)) n.stav = h.stav;
+                      if (h.hladaj) n.q = h.hladaj;
+                      else delete n.q;
+                      const f: Record<string, string> = {
+                        ...((prev.f as Record<string, string>) ?? {}),
+                        mesiac: h.mesiac || "vsetky",
+                      };
+                      if (h.platba) f.platba = h.platba;
+                      else delete f.platba;
+                      n.f = f;
+                      return n;
+                    },
+                  } as any);
+                }}
+              />
+            </>
+          }
+        />
+
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           {selected.size > 0 && (zalozka === "nespracovane" || zalozka === "spracovane") && (
             <button
               onClick={() =>
@@ -631,96 +764,6 @@ function DokladyPage() {
               {selected.size})
             </button>
           )}
-          <div className="w-full sm:w-auto">
-            <label className="mb-1 block text-xs text-muted-foreground">{t("Hľadať")}</label>
-            <input
-              value={hladaj}
-              onChange={(e) => setHladaj(e.target.value)}
-              placeholder={t("Dodávateľ, IČO, číslo…")}
-              className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm sm:w-48"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">{t("Úhrada")}</label>
-            <select
-              value={platba}
-              onChange={(e) => setPlatba(e.target.value)}
-              className="h-9 rounded-md border border-border bg-background px-2 text-sm"
-            >
-              <option value="">{t("Všetky")}</option>
-              <option value="hotovost">{t("Hotovosť")}</option>
-              <option value="karta">{t("Karta")}</option>
-              <option value="prevod">{t("Prevod")}</option>
-            </select>
-          </div>
-          {/* Excel a nastavenia zoznamu idú spolu v jednom rade, nech sa nerozhádžu medzi filtre. */}
-          <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              const r = rad.zoradene as any[];
-              void stiahniExcel(`doklady-${new Date().toISOString().slice(0, 10)}.xlsx`, [
-                {
-                  nazov: t("Doklady"),
-                  data: tabulka(r, [
-                    { nazov: t("Dátum"), hodnota: (x: any) => x.issue_date },
-                    { nazov: t("Dodávateľ"), hodnota: (x: any) => x.supplier_name },
-                    { nazov: t("IČO"), hodnota: (x: any) => x.supplier_ico },
-                    { nazov: t("IČ DPH"), hodnota: (x: any) => x.supplier_ic_dph },
-                    { nazov: t("Číslo"), hodnota: (x: any) => x.document_number },
-                    { nazov: t("Kategória"), hodnota: (x: any) => x.category },
-                    { nazov: t("Základ"), hodnota: (x: any) => (x.net_amount == null ? null : Number(x.net_amount)) },
-                    { nazov: t("DPH"), hodnota: (x: any) => (x.vat_amount == null ? null : Number(x.vat_amount)) },
-                    { nazov: t("Spolu"), hodnota: (x: any) => (x.total_amount == null ? null : Number(x.total_amount)) },
-                    { nazov: t("Mena"), hodnota: (x: any) => x.currency },
-                    { nazov: t("Úhrada"), hodnota: (x: any) => x.payment_method },
-                    { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
-                    { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
-                    { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
-                    { nazov: t("Zdroj"), hodnota: (x: any) => t(ZDROJ_DOKLADU[x.source] ?? x.source) },
-                  ]),
-                },
-                {
-                  nazov: t("Položky"),
-                  data: tabulka(
-                    r.flatMap((x: any) =>
-                      (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
-                        doklad: x.document_number,
-                        dodavatel: x.supplier_name,
-                        p,
-                      })),
-                    ),
-                    [
-                      { nazov: t("Doklad"), hodnota: (x: any) => x.doklad },
-                      { nazov: t("Dodávateľ"), hodnota: (x: any) => x.dodavatel },
-                      { nazov: t("Položka"), hodnota: (x: any) => x.p?.name },
-                      { nazov: t("Množstvo"), hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
-                      { nazov: t("MJ"), hodnota: (x: any) => x.p?.unit },
-                      { nazov: t("Jedn. cena"), hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
-                      { nazov: t("Sadzba DPH"), hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
-                      { nazov: t("Spolu"), hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
-                    ],
-                  ),
-                },
-              ]);
-            }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
-          >
-            <Download className="h-4 w-4" /> Excel
-          </button>
-          <NastaveniaZoznamu
-            nastavenia={zobrazenie}
-            stlpce={STLPCE_DOKLADOV}
-            aktualne={{ stav: zalozka, mesiac: month, hladaj, platba }}
-            pouzi={(h) => {
-              if (h.stav && ZALOZKY_DOKLADOV.some((z) => z.kluc === h.stav))
-                prepniZalozku(h.stav as ZalozkaDokladov);
-              setMonth(h.mesiac ?? "");
-              setHladaj(h.hladaj ?? "");
-              setPlatba(h.platba ?? "");
-            }}
-          />
-          </div>
           {volbyExportu ? (
             <VolbyExportuOkno
               pocet={selected.size || rows.length}

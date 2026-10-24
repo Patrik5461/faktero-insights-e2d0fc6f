@@ -1,27 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { useServerFn } from "@tanstack/react-start";
 import { runRecurringNow, toggleRecurring } from "@/lib/faktero/recurring.functions";
-import { Plus, Play, Power, PowerOff, Repeat, Trash2, RotateCcw } from "lucide-react";
+import { Plus, Play, Power, PowerOff, Repeat, Trash2, RotateCcw, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { usePagedList } from "@/hooks/usePagedList";
-import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
-import {
-  Pagination,
-  PageSizeSelect,
-  ConfirmDialog,
-  BulkBar,
-  DeletedToggle,
-} from "@/components/faktero/ListControls";
+import { ListPagination, ConfirmDialog, BulkBar } from "@/components/faktero/ListControls";
+import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/opakovane/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Opakované faktúry — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: RecurringList,
 });
 
@@ -34,10 +30,33 @@ const FREQ_LABEL: Record<string, string> = {
 
 function RecurringList() {
   const { t } = useT();
+  // Hľadanie, filtre, strana a počet na stranu sú v adrese.
+  const lf = useListFilters({
+    pageSizeKey: "recurring_invoices",
+    defaultSort: { column: "created_at", ascending: false },
+  });
+  // Šablóna nemá dátum dokladu — obdobie sa vyberá podľa dátumu ďalšieho behu.
+  const { od: behOd, do: behDo } = lf.rozsah("beh");
+  const upravDotaz = useCallback(
+    (dotaz: any) => {
+      let d = dotaz;
+      if (behOd) d = d.gte("next_run", behOd);
+      if (behDo) d = d.lte("next_run", behDo);
+      return d;
+    },
+    [behOd, behDo],
+  );
   const list = usePagedList({
     resource: "recurring_invoices",
     searchColumns: ["name", "customer_name"],
+    upravDotaz,
+    riadenie: lf,
+    filterKey: `${behOd}|${behDo}`,
   });
+  // „Zobraziť vymazané“ je filter v adrese, kôš však prepína zoznam.
+  const ajVymazane = lf.zapnute("vymazane");
+  const setShowDeleted = list.setShowDeleted;
+  useEffect(() => setShowDeleted(ajVymazane), [ajVymazane, setShowDeleted]);
   const [busy, setBusy] = useState<string | null>(null);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
@@ -113,7 +132,7 @@ function RecurringList() {
         description={t("Šablóny, ktoré automaticky generujú faktúry podľa intervalu.")}
         action={
           <div className="flex flex-wrap gap-2">
-            <OdkazNaRady />
+            <HlavickaViac akcie={[{ label: "Číselné rady", icon: Hash, to: "/ciselne-rady" }]} />
             <Link
               to="/opakovane/nova"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
@@ -124,18 +143,14 @@ function RecurringList() {
         }
       />
       <PageBody>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <input
-            value={list.search}
-            onChange={(e) => list.setSearch(e.target.value)}
-            placeholder={t("Hľadať názov, odberateľa…")}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
-          />
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <DeletedToggle value={list.showDeleted} onChange={list.setShowDeleted} />
-            <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
-          </div>
-        </div>
+        <DocumentListToolbar
+          lf={lf}
+          searchPlaceholder="Hľadať názov, odberateľa…"
+          filters={[
+            { key: "beh", label: "Ďalší beh", type: "dateRange" },
+            { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
+          ]}
+        />
         <BulkBar
           onHardDelete={() => setBulkHardDelete(true)}
           count={list.selectedIds.length}
@@ -154,7 +169,7 @@ function RecurringList() {
         />
         {list.loading ? (
           <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
-        ) : list.rows.length === 0 && !list.search && !list.showDeleted ? (
+        ) : list.rows.length === 0 && !list.search && !list.showDeleted && !behOd && !behDo ? (
           <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center">
             <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary">
               <Repeat className="h-6 w-6" />
@@ -283,13 +298,16 @@ function RecurringList() {
                 ))}
               </tbody>
             </table>
-            <Pagination
-              page={list.page}
-              pageSize={list.pageSize}
-              total={list.total}
-              onPageChange={list.setPage}
-            />
           </div>
+        )}
+        {!list.loading && list.total > 0 && (
+          <ListPagination
+            page={list.page}
+            pageSize={list.pageSize}
+            total={list.total}
+            onPageChange={list.setPage}
+            onPageSizeChange={list.setPageSize}
+          />
         )}
       </PageBody>
       <ConfirmDialog

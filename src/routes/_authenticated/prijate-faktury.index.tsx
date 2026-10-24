@@ -61,11 +61,14 @@ import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
-import { PrepinacNahladu, SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
+import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
+import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté faktúry — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: PurchaseInvoicesPage,
 });
 
@@ -99,19 +102,14 @@ function fmtMoney(n: number, c = "EUR") {
   return formatovacMeny(c, "sk-SK")(n);
 }
 
-function monthOptions(t: (s: string) => string): { value: string; label: string }[] {
-  const opts: { value: string; label: string }[] = [{ value: "", label: t("Všetky mesiace") }];
-  const now = new Date();
-  for (let i = 0; i < 18; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    opts.push({
-      value: `${y}-${m}`,
-      label: `${t(["Jan", "Feb", "Mar", "Apr", "Máj", "kratko::Jún", "kratko::Júl", "Aug", "Sep", "Okt", "Nov", "Dec"][d.getMonth()])} ${y}`,
-    });
-  }
-  return opts;
+/** Prvý a posledný deň mesiaca `RRRR-MM` — uložené filtre z čias výberu mesiaca. */
+function hraniceMesiaca(mesiac: string): { od: string; do: string } | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(mesiac);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mm = Number(m[2]);
+  const posledny = new Date(y, mm, 0).getDate();
+  return { od: `${m[1]}-${m[2]}-01`, do: `${m[1]}-${m[2]}-${String(posledny).padStart(2, "0")}` };
 }
 
 /** Súčet súm s DPH po menách — meny sa nesčítavajú. */
@@ -156,13 +154,15 @@ function PurchaseInvoicesPage() {
     rows.map((r: any) => r.id),
   );
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<string>("");
-  const [month, setMonth] = useState<string>("");
-  const [supplier, setSupplier] = useState<string>("");
-  // Mesiac podľa dátumu vystavenia alebo dodania — faktúra vystavená 1. 10.
-  // s dodaním 30. 9. patrí do DPH za september.
-  const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
-  const [exportovane, setExportovane] = useState<"" | "ano" | "nie">("");
+  // Filtre sú v adrese; hľadanie toolbaru je hľadanie podľa dodávateľa.
+  const lf = useListFilters({ pageSizeKey: "prijate-faktury" });
+  const status = lf.filter("stav");
+  const supplier = lf.q;
+  // Obdobie podľa dátumu prijatia, vystavenia, dodania alebo splatnosti — faktúra
+  // vystavená 1. 10. s dodaním 30. 9. patrí do DPH za september.
+  const podla = (lf.filter("podla") || "prijatie") as DatumObdobia;
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
+  const exportovane = lf.filter("export") as "" | "ano" | "nie";
   const zobrazenie = useNastaveniaZoznamu("prijate-faktury", STLPCE_PRIJATYCH);
   const je = zobrazenie.je;
   const pocetStlpcov = zobrazenie.viditelne.length + 1;
@@ -560,12 +560,7 @@ function PurchaseInvoicesPage() {
       .order("issue_date", { ascending: false })
       .limit(500);
     if (status) q = q.eq("status", status);
-    if (month) {
-      const [y, m] = month.split("-").map(Number);
-      const from = `${y}-${String(m).padStart(2, "0")}-01`;
-      const to = `${y}-${String(m).padStart(2, "0")}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
-      q = filtrujObdobie(q, podla, from, to);
-    }
+    if (obdobieOd || obdobieDo) q = filtrujObdobie(q, podla, obdobieOd || null, obdobieDo || null);
     if (exportovane === "ano") q = q.not("exported_at", "is", null);
     if (exportovane === "nie") q = q.is("exported_at", null).neq("status", "cancelled");
     if (supplier.trim()) q = q.ilike("supplier_name", `%${supplier.trim()}%`);
@@ -589,7 +584,7 @@ function PurchaseInvoicesPage() {
   }
   useEffect(() => {
     load();
-  }, [status, month, supplier, podla, exportovane]);
+  }, [status, obdobieOd, obdobieDo, supplier, podla, exportovane]);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -662,122 +657,135 @@ function PurchaseInvoicesPage() {
           />
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-          >
-            <option value="">{t("Všetky stavy")}</option>
-            {Object.entries(STATUS_LABEL).map(([v, l]) => (
-              <option key={v} value={v}>
-                {t(l)}
-              </option>
-            ))}
-          </select>
-          <select
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-          >
-            {monthOptions(t).map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label={t("Obdobie podľa")}
-            value={podla}
-            onChange={(e) => setPodla(e.target.value as DatumObdobia)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-          >
-            <option value="vystavenie">{t("podľa dátumu vystavenia")}</option>
-            <option value="dodanie">{t("podľa dátumu dodania")}</option>
-          </select>
-          <select
-            aria-label={t("Export do účtovníctva")}
-            value={exportovane}
-            onChange={(e) => setExportovane(e.target.value as typeof exportovane)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-          >
-            <option value="">{t("Exportované aj neexportované")}</option>
-            <option value="ano">{t("Exportované")}</option>
-            <option value="nie">{t("Neexportované")}</option>
-          </select>
-          <input
-            value={supplier}
-            onChange={(e) => setSupplier(e.target.value)}
-            placeholder={t("Dodávateľ…")}
-            className="h-9 w-56 rounded-md border border-input bg-background px-3 text-sm"
+        {/* Hľadá sa len podľa mena dodávateľa (ilike v dotaze), preto taký popis. */}
+        <div className="mt-6">
+          <DocumentListToolbar
+            lf={lf}
+            searchPlaceholder="Dodávateľ…"
+            filters={[
+              {
+                key: "stav",
+                label: "Stav",
+                type: "select",
+                options: Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })),
+              },
+              {
+                key: "obdobie",
+                label: "Obdobie",
+                type: "dateRange",
+                dateFieldOptions: [
+                  { value: "prijatie", label: "dátumu prijatia" },
+                  { value: "vystavenie", label: "dátumu vystavenia" },
+                  { value: "dodanie", label: "dátumu dodania" },
+                  { value: "splatnost", label: "dátumu splatnosti" },
+                ],
+              },
+              {
+                key: "export",
+                label: "Export do účtovníctva",
+                type: "select",
+                options: [
+                  { value: "ano", label: "Exportované" },
+                  { value: "nie", label: "Neexportované" },
+                ],
+              },
+            ]}
+            previewToggle={bocny}
+            extra={
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const r = rad.zoradene as any[];
+                    void stiahniExcel(`prijate-faktury-${new Date().toISOString().slice(0, 10)}.xlsx`, [
+                      {
+                        nazov: t("Prijaté faktúry"),
+                        data: tabulka(r, [
+                          { nazov: t("Číslo"), hodnota: (x: any) => x.invoice_number },
+                          { nazov: t("Dodávateľ"), hodnota: (x: any) => x.supplier_name },
+                          { nazov: t("IČO"), hodnota: (x: any) => x.supplier_ico },
+                          { nazov: t("IČ DPH"), hodnota: (x: any) => x.supplier_ic_dph },
+                          { nazov: t("VS"), hodnota: (x: any) => x.variable_symbol },
+                          { nazov: t("Vystavená"), hodnota: (x: any) => x.issue_date },
+                          { nazov: t("DUZP"), hodnota: (x: any) => x.delivery_date },
+                          { nazov: t("Splatnosť"), hodnota: (x: any) => x.due_date },
+                          { nazov: t("Základ"), hodnota: (x: any) => Number(x.amount_without_vat ?? 0) },
+                          { nazov: t("DPH"), hodnota: (x: any) => Number(x.vat_amount ?? 0) },
+                          { nazov: t("Spolu"), hodnota: (x: any) => Number(x.amount_total ?? 0) },
+                          { nazov: t("Mena"), hodnota: (x: any) => x.currency },
+                          { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
+                          { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
+                          { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
+                          { nazov: t("Odovzdaná"), hodnota: (x: any) => (x.exported_at ? t("áno") : "") },
+                        ]),
+                      },
+                      {
+                        nazov: t("Položky"),
+                        data: tabulka(
+                          r.flatMap((x: any) =>
+                            (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
+                              doklad: x.invoice_number,
+                              dodavatel: x.supplier_name,
+                              p,
+                            })),
+                          ),
+                          [
+                          { nazov: t("Doklad"), hodnota: (x: any) => x.doklad },
+                          { nazov: t("Dodávateľ"), hodnota: (x: any) => x.dodavatel },
+                          { nazov: t("Položka"), hodnota: (x: any) => x.p?.name },
+                          { nazov: t("Množstvo"), hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
+                          { nazov: t("MJ"), hodnota: (x: any) => x.p?.unit },
+                          { nazov: t("Jedn. cena"), hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
+                          { nazov: t("Sadzba DPH"), hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
+                          { nazov: t("Spolu"), hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
+                        ],
+                        ),
+                      },
+                    ]);
+                  }}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+                >
+                  <Download className="h-4 w-4" /> Excel
+                </button>
+                <NastaveniaZoznamu
+                  nastavenia={zobrazenie}
+                  stlpce={STLPCE_PRIJATYCH}
+                  aktualne={{
+                    stav: status,
+                    dodavatel: supplier,
+                    podla: lf.filter("podla"),
+                    obdobie_od: obdobieOd,
+                    obdobie_do: obdobieDo,
+                    export: exportovane,
+                  }}
+                  pouzi={(h) => {
+                    // Staršie uložené filtre majú mesiac — vtedy sa vyberalo podľa vystavenia.
+                    const mesiac = h.mesiac ? hraniceMesiaca(h.mesiac) : null;
+                    const f: Record<string, string> = {};
+                    const nastav = (k: string, v: string | undefined) => {
+                      if (v) f[k] = v;
+                    };
+                    nastav("stav", h.stav);
+                    nastav("podla", h.podla ?? (mesiac ? "vystavenie" : undefined));
+                    nastav("obdobie_od", h.obdobie_od ?? mesiac?.od);
+                    nastav("obdobie_do", h.obdobie_do ?? mesiac?.do);
+                    nastav("export", h.export);
+                    // Hľadanie aj filtre jedným zápisom do adresy — dva za sebou by sa prepísali.
+                    void navigate({
+                      to: ".",
+                      replace: true,
+                      search: (prev: Record<string, unknown>) => ({
+                        ...prev,
+                        q: h.dodavatel || undefined,
+                        f: Object.keys(f).length ? f : undefined,
+                        page: undefined,
+                      }),
+                    } as any);
+                  }}
+                />
+              </div>
+            }
           />
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <PrepinacNahladu zapnuty={bocny.zapnuty} prepni={bocny.prepni} />
-            <button
-              type="button"
-              onClick={() => {
-                const r = rad.zoradene as any[];
-                void stiahniExcel(`prijate-faktury-${new Date().toISOString().slice(0, 10)}.xlsx`, [
-                  {
-                    nazov: t("Prijaté faktúry"),
-                    data: tabulka(r, [
-                      { nazov: t("Číslo"), hodnota: (x: any) => x.invoice_number },
-                      { nazov: t("Dodávateľ"), hodnota: (x: any) => x.supplier_name },
-                      { nazov: t("IČO"), hodnota: (x: any) => x.supplier_ico },
-                      { nazov: t("IČ DPH"), hodnota: (x: any) => x.supplier_ic_dph },
-                      { nazov: t("VS"), hodnota: (x: any) => x.variable_symbol },
-                      { nazov: t("Vystavená"), hodnota: (x: any) => x.issue_date },
-                      { nazov: t("DUZP"), hodnota: (x: any) => x.delivery_date },
-                      { nazov: t("Splatnosť"), hodnota: (x: any) => x.due_date },
-                      { nazov: t("Základ"), hodnota: (x: any) => Number(x.amount_without_vat ?? 0) },
-                      { nazov: t("DPH"), hodnota: (x: any) => Number(x.vat_amount ?? 0) },
-                      { nazov: t("Spolu"), hodnota: (x: any) => Number(x.amount_total ?? 0) },
-                      { nazov: t("Mena"), hodnota: (x: any) => x.currency },
-                      { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
-                      { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
-                      { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
-                      { nazov: t("Odovzdaná"), hodnota: (x: any) => (x.exported_at ? t("áno") : "") },
-                    ]),
-                  },
-                  {
-                    nazov: t("Položky"),
-                    data: tabulka(
-                      r.flatMap((x: any) =>
-                        (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
-                          doklad: x.invoice_number,
-                          dodavatel: x.supplier_name,
-                          p,
-                        })),
-                      ),
-                      [
-                      { nazov: t("Doklad"), hodnota: (x: any) => x.doklad },
-                      { nazov: t("Dodávateľ"), hodnota: (x: any) => x.dodavatel },
-                      { nazov: t("Položka"), hodnota: (x: any) => x.p?.name },
-                      { nazov: t("Množstvo"), hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
-                      { nazov: t("MJ"), hodnota: (x: any) => x.p?.unit },
-                      { nazov: t("Jedn. cena"), hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
-                      { nazov: t("Sadzba DPH"), hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
-                      { nazov: t("Spolu"), hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
-                    ],
-                    ),
-                  },
-                ]);
-              }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
-            >
-              <Download className="h-4 w-4" /> Excel
-            </button>
-            <NastaveniaZoznamu
-              nastavenia={zobrazenie}
-              stlpce={STLPCE_PRIJATYCH}
-              aktualne={{ stav: status, mesiac: month, dodavatel: supplier }}
-              pouzi={(h) => {
-                setStatus(h.stav ?? "");
-                setMonth(h.mesiac ?? "");
-                setSupplier(h.dodavatel ?? "");
-              }}
-            />
-          </div>
         </div>
 
         {selected.size > 0 && (
