@@ -97,7 +97,7 @@ export function PoliaZauctovania({
   const zKategorie = navrhy?.podlaKategorie?.[hodnoty.kategoria];
   if (siroke) {
     return (
-      <div className="@container space-y-3 [&_label]:min-w-0">
+      <div className="max-w-2xl space-y-3 [&_label]:min-w-0">
         <label className="block">
           <span className={popis}>
             {t("Predkontácia (Pohoda)")}
@@ -117,7 +117,7 @@ export function PoliaZauctovania({
             vyber
           />
         </label>
-        <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3">
           <label className="block">
             <span className={popis}>
               {t("Členenie DPH (plnenie)")}
@@ -160,7 +160,7 @@ export function PoliaZauctovania({
             </label>
           )}
         </div>
-        <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3">
           <label className="block">
             <span className={popis}>
               {t("Kategória nákladu")}

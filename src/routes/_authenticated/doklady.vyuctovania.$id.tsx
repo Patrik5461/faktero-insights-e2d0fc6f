@@ -494,8 +494,8 @@ function Detail() {
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("Predkontácia a členenie sa doplnia dokladom vo vyúčtovaní, ktoré ich ešte nemajú a neodišli do účtovníctva (napr. náklad voči záväzku zamestnancovi, 5xx/335).")}
               </p>
-              <div className="@container mt-3 grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
-                <label className="block text-sm @lg:col-span-2">
+              <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
+                <label className="block text-sm">
                   <span className="font-medium">{t("Predkontácia (Pohoda)")}</span>
                   <KodPohody
                     value={f.predkontacia}
@@ -526,7 +526,7 @@ function Detail() {
                     className={vstupZauctovania}
                   />
                 </label>
-                <label className="block text-sm @lg:col-span-2">
+                <label className="block text-sm">
                   <span className="font-medium">{t("Poznámka")}</span>
                   <input
                     value={f.poznamka}

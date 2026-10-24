@@ -755,7 +755,7 @@ function UpravaPravidla({
         </p>
 
         <div className="mt-5 text-sm font-medium">{t("…doplní sa")}</div>
-        <div className="mt-2 grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
+        <div className="mt-2 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
           {!banka && !vystavena && (
             <label className="block text-sm">
               <span className="font-medium">{t("Kategória")}</span>

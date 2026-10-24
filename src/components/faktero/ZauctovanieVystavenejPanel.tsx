@@ -230,8 +230,8 @@ export function ZauctovanieVystavenejPanel({
         </>
       ) : (
         <>
-          <div className="@container mt-3 grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
-            <label className="block @lg:col-span-2">
+          <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
+            <label className="block">
               <span className="text-sm font-medium text-foreground">
                 {t("Predkontácia (Pohoda)")}
               </span>
@@ -292,7 +292,7 @@ export function ZauctovanieVystavenejPanel({
             }
           />
 
-          <div className="@container mt-3 grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
+          <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
             <label className="block">
               <span className="text-sm font-medium text-foreground">{t("Stredisko")}</span>
               <KodPohody
@@ -315,7 +315,7 @@ export function ZauctovanieVystavenejPanel({
                 vyber
               />
             </label>
-            <label className="block @lg:col-span-2">
+            <label className="block">
               <span className="text-sm font-medium text-foreground">
                 {t("Interná poznámka (do Pohody)")}
               </span>

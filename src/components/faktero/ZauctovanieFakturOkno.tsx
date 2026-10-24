@@ -94,8 +94,8 @@ export function ZauctovanieFakturOkno({
           </Link>
           {t("). Kódy po položkách sa nastavujú na detaile faktúry.")}
         </p>
-        <div className="@container mt-4 grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
-          <label className="block @lg:col-span-2">
+        <div className="mt-4 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
+          <label className="block">
             <span className="text-sm font-medium text-foreground">
               {t("Predkontácia (Pohoda)")}
             </span>

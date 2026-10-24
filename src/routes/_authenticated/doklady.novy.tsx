@@ -1057,8 +1057,8 @@ function NovyDokladPage() {
                   />
                   </div>
                 ) : null}
-                <div className="@container grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
-                  <label className="block @lg:col-span-2">
+                <div className="grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
+                  <label className="block">
                     <span className="mb-1 block text-sm font-medium">{t("Predkontácia")}</span>
                     <KodPohody
                       ariaLabel={t("Predkontácia")}
@@ -1109,7 +1109,7 @@ function NovyDokladPage() {
                   </select>
                 </label>
                 </div>
-                <div className="@container mt-3 grid grid-cols-1 gap-3 @lg:grid-cols-2 [&>*]:min-w-0">
+                <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
                   <label className="block">
                     <span className="mb-1 block text-sm font-medium">{t("Stredisko")}</span>
                     <KodPohody
@@ -1165,7 +1165,7 @@ function NovyDokladPage() {
                     />
                   </label>
                 )}
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
                   <JobPicker
                     value={form.job_id}
                     onChange={(v) => updateForm("job_id", v)}
