@@ -5,6 +5,7 @@
 */
 import type { ApiCtx } from "./api-auth.server";
 import { err, ok } from "./api-auth.server";
+import { nazovBanky } from "./banka-z-iban";
 
 export type DruhApi = "prijata" | "blocek";
 
@@ -249,14 +250,62 @@ export async function zoznamNespracovanych(ctx: ApiCtx) {
   return ok({ data: (data ?? []).map((r: any) => ({ objekt: "unprocessed_document", ...r })) });
 }
 
+/** Účty firmy so zostatkom zo synchronizácie s bankou — pre `/bank-accounts` aj pohyby. */
+async function uctyFirmy(ctx: ApiCtx) {
+  const { data, error } = await (ctx.supabase as any)
+    .from("bank_accounts")
+    .select(
+      "id, account_name, iban, currency, balance, last_synced_at, unavailable_since, bank_connections(provider, status)",
+    )
+    .eq("company_id", ctx.company_id)
+    .order("created_at");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as any[]).map((u) => {
+    const banka = nazovBanky(u.iban, u.bank_connections?.provider);
+    return {
+      id: u.id as string,
+      name:
+        (u.account_name as string | null) || [banka, u.iban].filter(Boolean).join(" — ") || null,
+      iban: (u.iban as string | null) ?? null,
+      bank_name: banka,
+      currency: (u.currency as string) || "EUR",
+      // Odpojené účty sa vracajú tiež — ich `id` ostáva v starších pohyboch.
+      active: !u.unavailable_since && u.bank_connections?.status === "connected",
+      // Bez synchronizácie zostatok nepoznáme — stĺpec má predvolenú nulu, ktorá by klamala.
+      balance: u.last_synced_at ? Number(u.balance) : null,
+      balance_at: (u.last_synced_at as string | null) ?? null,
+    };
+  });
+}
+
+export async function bankoveUcty(ctx: ApiCtx) {
+  try {
+    return ok({ data: await uctyFirmy(ctx) });
+  } catch (e: any) {
+    return err("db_error", e?.message ?? "Účty sa nepodarilo načítať.", 500);
+  }
+}
+
+/**
+ * Pohyby na účtoch. Stránkovanie: `page` + `per_page` alebo starší `offset` +
+ * `limit` (najviac 500 na stranu). Odpoveď nesie `total` a `has_more`, takže
+ * sa dá dočítať aj rušný deň bez straty riadkov.
+ */
 export async function bankovePohyby(ctx: ApiCtx) {
   const p = new URL(ctx.request.url).searchParams;
-  const limit = Math.min(Math.max(parseInt(p.get("limit") ?? "100", 10) || 100, 1), 500);
-  const offset = Math.max(parseInt(p.get("offset") ?? "0", 10) || 0, 0);
+  const naStranu = Math.min(
+    Math.max(parseInt(p.get("per_page") ?? p.get("limit") ?? "100", 10) || 100, 1),
+    500,
+  );
+  const strana = Math.max(parseInt(p.get("page") ?? "", 10) || 0, 0);
+  const offset = strana
+    ? (strana - 1) * naStranu
+    : Math.max(parseInt(p.get("offset") ?? "0", 10) || 0, 0);
   let q = (ctx.supabase as any)
     .from("bank_transactions")
     .select(
       "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, description, transaction_reference, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, created_at",
+      { count: "exact" },
     )
     .eq("company_id", ctx.company_id);
   const od = datum(p.get("date_from"));
@@ -265,16 +314,28 @@ export async function bankovePohyby(ctx: ApiCtx) {
   if (doDna) q = q.lte("booking_date", doDna);
   const ucet = p.get("bank_account_id");
   if (ucet && /^[0-9a-f-]{36}$/i.test(ucet)) q = q.eq("bank_account_id", ucet);
-  const { data, error } = await q
-    .order("booking_date", { ascending: false })
-    .order("id")
-    .range(offset, offset + limit);
+  const [{ data, error, count }, ucty] = await Promise.all([
+    q
+      .order("booking_date", { ascending: false })
+      .order("id")
+      .range(offset, offset + naStranu - 1),
+    uctyFirmy(ctx).catch(() => []),
+  ]);
   if (error) return err("db_error", error.message, 500);
-  const riadky = data ?? [];
-  const dalsie = riadky.length > limit;
+  const poUcte = new Map(ucty.map((u) => [u.id, u]));
+  const riadky = ((data ?? []) as any[]).map((r) => ({
+    ...r,
+    iban: poUcte.get(r.bank_account_id)?.iban ?? null,
+    bank_name: poUcte.get(r.bank_account_id)?.bank_name ?? null,
+  }));
+  const total = count ?? null;
+  const dalsie = total != null ? offset + riadky.length < total : riadky.length === naStranu;
   return ok({
-    data: riadky.slice(0, limit),
+    data: riadky,
     has_more: dalsie,
-    next_offset: dalsie ? offset + limit : null,
+    next_offset: dalsie ? offset + naStranu : null,
+    total,
+    page: Math.floor(offset / naStranu) + 1,
+    per_page: naStranu,
   });
 }

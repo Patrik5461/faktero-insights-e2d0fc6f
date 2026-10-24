@@ -247,6 +247,8 @@ import { Route as ApiMobilOperaciaRouteImport } from './routes/api/mobil/$operac
 import { Route as ApiMobilPadRouteImport } from './routes/api/mobil/pad'
 import { Route as ApiPublicKontaktRouteImport } from './routes/api/public/kontakt'
 import { Route as ApiPublicSupportChatRouteImport } from './routes/api/public/support-chat'
+import { Route as ApiV1SplatRouteImport } from './routes/api/v1/$'
+import { Route as ApiV1BankAccountsRouteImport } from './routes/api/v1/bank-accounts'
 import { Route as ApiV1BankTransactionsRouteImport } from './routes/api/v1/bank-transactions'
 import { Route as ApiV1CustomersRouteImport } from './routes/api/v1/customers'
 import { Route as ApiV1FuelRecordsRouteImport } from './routes/api/v1/fuel-records'
@@ -1626,6 +1628,16 @@ const ApiPublicSupportChatRoute = ApiPublicSupportChatRouteImport.update({
   path: '/api/public/support-chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1SplatRoute = ApiV1SplatRouteImport.update({
+  id: '/api/v1/$',
+  path: '/api/v1/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BankAccountsRoute = ApiV1BankAccountsRouteImport.update({
+  id: '/api/v1/bank-accounts',
+  path: '/api/v1/bank-accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1BankTransactionsRoute = ApiV1BankTransactionsRouteImport.update({
   id: '/api/v1/bank-transactions',
   path: '/api/v1/bank-transactions',
@@ -2353,6 +2365,8 @@ export interface FileRoutesByFullPath {
   '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
+  '/api/v1/bank-accounts': typeof ApiV1BankAccountsRoute
   '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
@@ -2676,6 +2690,8 @@ export interface FileRoutesByTo {
   '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
+  '/api/v1/bank-accounts': typeof ApiV1BankAccountsRoute
   '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
@@ -3010,6 +3026,8 @@ export interface FileRoutesById {
   '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
+  '/api/v1/bank-accounts': typeof ApiV1BankAccountsRoute
   '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
@@ -3344,6 +3362,8 @@ export interface FileRouteTypes {
     | '/api/mobil/pad'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
+    | '/api/v1/$'
+    | '/api/v1/bank-accounts'
     | '/api/v1/bank-transactions'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
@@ -3667,6 +3687,8 @@ export interface FileRouteTypes {
     | '/api/mobil/pad'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
+    | '/api/v1/$'
+    | '/api/v1/bank-accounts'
     | '/api/v1/bank-transactions'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
@@ -4000,6 +4022,8 @@ export interface FileRouteTypes {
     | '/api/mobil/pad'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
+    | '/api/v1/$'
+    | '/api/v1/bank-accounts'
     | '/api/v1/bank-transactions'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
@@ -4206,6 +4230,8 @@ export interface RootRouteChildren {
   ApiMobilPadRoute: typeof ApiMobilPadRoute
   ApiPublicKontaktRoute: typeof ApiPublicKontaktRoute
   ApiPublicSupportChatRoute: typeof ApiPublicSupportChatRoute
+  ApiV1SplatRoute: typeof ApiV1SplatRoute
+  ApiV1BankAccountsRoute: typeof ApiV1BankAccountsRoute
   ApiV1BankTransactionsRoute: typeof ApiV1BankTransactionsRoute
   ApiV1CustomersRoute: typeof ApiV1CustomersRouteWithChildren
   ApiV1FuelRecordsRoute: typeof ApiV1FuelRecordsRoute
@@ -5933,6 +5959,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSupportChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/$': {
+      id: '/api/v1/$'
+      path: '/api/v1/$'
+      fullPath: '/api/v1/$'
+      preLoaderRoute: typeof ApiV1SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/bank-accounts': {
+      id: '/api/v1/bank-accounts'
+      path: '/api/v1/bank-accounts'
+      fullPath: '/api/v1/bank-accounts'
+      preLoaderRoute: typeof ApiV1BankAccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/bank-transactions': {
       id: '/api/v1/bank-transactions'
       path: '/api/v1/bank-transactions'
@@ -7308,6 +7348,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMobilPadRoute: ApiMobilPadRoute,
   ApiPublicKontaktRoute: ApiPublicKontaktRoute,
   ApiPublicSupportChatRoute: ApiPublicSupportChatRoute,
+  ApiV1SplatRoute: ApiV1SplatRoute,
+  ApiV1BankAccountsRoute: ApiV1BankAccountsRoute,
   ApiV1BankTransactionsRoute: ApiV1BankTransactionsRoute,
   ApiV1CustomersRoute: ApiV1CustomersRouteWithChildren,
   ApiV1FuelRecordsRoute: ApiV1FuelRecordsRoute,

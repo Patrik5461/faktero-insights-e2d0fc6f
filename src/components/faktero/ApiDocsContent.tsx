@@ -334,6 +334,11 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
             />
             <Endpoint
               method="GET"
+              path="/api/v1/bank-accounts"
+              desc="Bankové účty firmy (IBAN, banka, zostatok)"
+            />
+            <Endpoint
+              method="GET"
               path="/api/v1/bank-transactions"
               desc="Pohyby na bankových účtoch"
             />
@@ -364,9 +369,45 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
             <li>
               {t("Banka:")} <code className="font-mono">date_from</code>,{" "}
               <code className="font-mono">date_to</code>,{" "}
-              <code className="font-mono">bank_account_id</code>, {t("limit najviac 500.")}
+              <code className="font-mono">bank_account_id</code>;{" "}
+              <code className="font-mono">page</code> + <code className="font-mono">per_page</code>{" "}
+              {t("(alebo")} <code className="font-mono">offset</code> +{" "}
+              <code className="font-mono">limit</code>), {t("najviac 500 na stranu. Odpoveď má")}{" "}
+              <code className="font-mono">total</code>, <code className="font-mono">has_more</code>{" "}
+              {t("a")} <code className="font-mono">next_offset</code>{" "}
+              {t("— čítajte, kým je has_more true, inak vám riadky z rušného dňa chýbajú.")}
             </li>
           </ul>
+          <h3 className="mt-5 font-semibold">{t("Bankové účty")}</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <code className="font-mono">id</code> {t("účtu je presne to")}{" "}
+            <code className="font-mono">bank_account_id</code>
+            {t(
+              ", ktoré nesú pohyby. Vracajú sa aj odpojené účty (active: false), aby sa dalo priradiť každé id zo starších pohybov. Zostatok a jeho čas sú null, kým sa účet s bankou nesynchronizoval. Každý pohyb nesie aj iban a bank_name svojho účtu.",
+            )}
+          </p>
+          <CodeBlock
+            lang="json"
+            code={`GET /api/v1/bank-accounts
+{
+  "data": [
+    {
+      "id": "7c9a8242-5b05-4ab6-bc25-f543cf62079b",
+      "name": "Tatra banka — predaj",
+      "iban": "SK1211000000002612345678",
+      "bank_name": "Tatra banka, a.s.",
+      "currency": "EUR",
+      "active": true,
+      "balance": 1234.56,
+      "balance_at": "2026-10-24T18:00:00Z"
+    }
+  ]
+}`}
+          />
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t("Neznáma cesta pod /api/v1/ vráti 404 s telom")}{" "}
+            <code className="font-mono">{`{"error":{"code":"not_found",…}}`}</code>.
+          </p>
           <h3 className="mt-5 font-semibold">{t("Označenie odovzdaného")}</h3>
           <CodeBlock
             lang="bash"
@@ -424,6 +465,13 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
               </li>
             ))}
           </ul>
+
+          <h3 className="mt-6 font-semibold">{t("Kedy príde invoice.paid")}</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t(
+              "Len keď faktúru niekto výslovne označí ako uhradenú: volaním POST /api/v1/invoices/…/mark-paid alebo zmenou stavu na „Uhradená“ v detaile faktúry vo Fakteri. Pri spárovaní bankového pohybu s faktúrou (automaticky ani ručne), pri hromadnom označení v zozname ani pri platbe cez platobnú bránu sa invoice.paid neposiela — úhradu z banky zistíte z /api/v1/bank-transactions (matched_invoice_id).",
+            )}
+          </p>
 
           <h3 className="mt-6 font-semibold">{t("Overovanie podpisu")}</h3>
           <p className="mt-2 text-sm text-muted-foreground">

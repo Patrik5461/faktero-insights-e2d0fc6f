@@ -135,6 +135,12 @@ const sections: HelpSection[] = [
           </li>
         </ul>
         <p>
+          <code>invoice.paid</code> príde len pri výslovnom označení faktúry ako uhradenej — cez API{" "}
+          <code>mark-paid</code> alebo zmenou stavu v detaile faktúry. Spárovanie s bankovým pohybom
+          ho nespúšťa; úhradu z banky nájdete v <code>/api/v1/bank-transactions</code> (pole{" "}
+          <code>matched_invoice_id</code>).
+        </p>
+        <p>
           Každý webhook je podpísaný hlavičkou <code>X-Faktero-Signature</code> (HMAC SHA-256 z tela
           správy a tajného kľúča webhooku). Vždy podpis overte pred spracovaním.
         </p>
