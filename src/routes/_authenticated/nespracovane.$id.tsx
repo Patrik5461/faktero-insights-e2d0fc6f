@@ -665,8 +665,9 @@ function Detail() {
                 </section>
 
                 <section className="rounded-xl border border-border bg-card p-4">
-                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Zaúčtovanie")}</div>
+                  <h3 className="mb-3 text-base font-semibold">{t("Zaúčtovanie")}</h3>
                   <PoliaZauctovania
+                    siroke
                     navrhy={navrhy}
                     hodnoty={hodnotyKodov}
                     oznacenia={oznaceniaZUdajov(u)}

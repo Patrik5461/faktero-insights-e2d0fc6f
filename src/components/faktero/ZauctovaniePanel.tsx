@@ -71,6 +71,7 @@ export function PoliaZauctovania({
   hromadne,
   kvAuto,
   oznacenia,
+  siroke,
 }: {
   navrhy: Navrhy | null;
   hodnoty: Hodnoty;
@@ -80,19 +81,166 @@ export function PoliaZauctovania({
   hromadne?: boolean;
   /** Polia predvyplnené návrhom (AI alebo naučené) — ukáže sa pri nich štítok. */
   oznacenia?: OznaceniaNavrhu;
+  /**
+   * Rozloženie ako v Doklado: väčšie polia pod sebou, členenie DPH a KV DPH
+   * vedľa seba, keď je miesto (inak tiež pod sebou).
+   */
+  siroke?: boolean;
 }) {
   const { t } = useT();
   const stitok = (pole: PoleNavrhu) =>
     oznacenia?.[pole] ? <StitokNavrhu zdroj={oznacenia[pole]!} /> : null;
-  const vstup =
-    "mt-1 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm";
+  const vstup = siroke
+    ? "mt-1 h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+    : "mt-1 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm";
+  const popis = siroke ? "text-sm font-medium text-foreground" : "text-xs text-muted-foreground";
   const zKategorie = navrhy?.podlaKategorie?.[hodnoty.kategoria];
+  if (siroke) {
+    return (
+      <div className="@container space-y-3 [&_label]:min-w-0">
+        <label className="block">
+          <span className={popis}>
+            {t("Predkontácia (Pohoda)")}
+            {stitok("predkontacia")}
+          </span>
+          <KodPohody
+            odkazNaCiselnik
+            value={hodnoty.predkontacia}
+            placeholder={
+              hromadne
+                ? t("nemeniť")
+                : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? t("napr. 1Fp"))
+            }
+            onChange={(v) => setHodnoty({ ...hodnoty, predkontacia: v })}
+            moznosti={navrhy?.predkontacie ?? []}
+            className={vstup}
+            vyber
+          />
+        </label>
+        <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2">
+          <label className="block">
+            <span className={popis}>
+              {t("Členenie DPH (plnenie)")}
+              {stitok("clenenie")}
+            </span>
+            <KodPohody
+              value={hodnoty.clenenie}
+              placeholder={
+                hromadne
+                  ? t("nemeniť")
+                  : (zKategorie?.clenenie ?? navrhy?.predvoleneClenenie ?? t("napr. PD"))
+              }
+              onChange={(v) => setHodnoty({ ...hodnoty, clenenie: v })}
+              moznosti={navrhy?.clenenia ?? []}
+              vyber
+              className={vstup}
+            />
+          </label>
+          {hodnoty.kv !== undefined && (
+            <label className="block">
+              <span className={popis}>
+                {t("Členenie KV DPH")}
+                {stitok("kv")}
+              </span>
+              <select
+                value={hodnoty.kv}
+                onChange={(e) => setHodnoty({ ...hodnoty, kv: e.target.value })}
+                className={vstup}
+              >
+                <option value="">
+                  {hromadne ? t("nemeniť") : `${t("automaticky")}${kvAuto ? ` (${kvAuto})` : ""}`}
+                </option>
+                {hromadne && <option value="auto">{t("automaticky")}</option>}
+                {KV_PRIJATE.map((k) => (
+                  <option key={k.kod} value={k.kod}>
+                    {t(k.nazov)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+        <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2">
+          <label className="block">
+            <span className={popis}>
+              {t("Kategória nákladu")}
+              {stitok("kategoria")}
+            </span>
+            <select
+              value={hodnoty.kategoria}
+              onChange={(e) => setHodnoty({ ...hodnoty, kategoria: e.target.value })}
+              className={vstup}
+            >
+              <option value="">{hromadne ? t("nemeniť") : "—"}</option>
+              {KATEGORIE_VYDAVKOV.map((k) => (
+                <option key={k.kod} value={k.kod}>
+                  {t(k.nazov)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {hodnoty.stredisko !== undefined && (
+            <label className="block">
+              <span className={popis}>{t("Stredisko")}</span>
+              <KodPohody
+                value={hodnoty.stredisko}
+                onChange={(v) => setHodnoty({ ...hodnoty, stredisko: v })}
+                moznosti={navrhy?.strediska ?? []}
+                placeholder={hromadne ? t("nemeniť") : (navrhy?.predvoleneStredisko ?? "—")}
+                className={vstup}
+                vyber
+              />
+            </label>
+          )}
+          {hodnoty.cinnost !== undefined && (
+            <label className="block">
+              <span className={popis}>{t("Činnosť")}</span>
+              <KodPohody
+                value={hodnoty.cinnost}
+                onChange={(v) => setHodnoty({ ...hodnoty, cinnost: v })}
+                moznosti={navrhy?.cinnosti ?? []}
+                placeholder={hromadne ? t("nemeniť") : "—"}
+                className={vstup}
+                vyber
+              />
+            </label>
+          )}
+          {hodnoty.rad !== undefined && (
+            <label className="block">
+              <span className={popis}>{t("Číselný rad v Pohode")}</span>
+              <KodPohody
+                value={hodnoty.rad}
+                onChange={(v) => setHodnoty({ ...hodnoty, rad: v })}
+                moznosti={navrhy?.rady ?? []}
+                placeholder={
+                  hromadne ? t("nemeniť") : (navrhy?.predvolenyRad ?? t("predvolený v Pohode"))
+                }
+                className={vstup}
+                vyber
+              />
+            </label>
+          )}
+        </div>
+        {hodnoty.intPoznamka !== undefined && (
+          <label className="block sm:col-span-full">
+            <span className={popis}>{t("Interná poznámka pre účtovníka (do Pohody)")}</span>
+            <input
+              value={hodnoty.intPoznamka}
+              onChange={(e) => setHodnoty({ ...hodnoty, intPoznamka: e.target.value })}
+              maxLength={240}
+              className={vstup}
+            />
+          </label>
+        )}
+      </div>
+    );
+  }
   return (
     <div
       className={`grid grid-cols-1 gap-3 [&>*]:min-w-0 ${hodnoty.kv !== undefined ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
     >
       <label className="block">
-        <span className="text-xs text-muted-foreground">
+        <span className={popis}>
           {t("Predkontácia (Pohoda)")}
           {stitok("predkontacia")}
         </span>
@@ -111,7 +259,7 @@ export function PoliaZauctovania({
         />
       </label>
       <label className="block">
-        <span className="text-xs text-muted-foreground">
+        <span className={popis}>
           {t("Členenie DPH (plnenie)")}
           {stitok("clenenie")}
         </span>
@@ -129,7 +277,7 @@ export function PoliaZauctovania({
         />
       </label>
       <label className="block">
-        <span className="text-xs text-muted-foreground">
+        <span className={popis}>
           {t("Kategória nákladu")}
           {stitok("kategoria")}
         </span>
@@ -148,7 +296,7 @@ export function PoliaZauctovania({
       </label>
       {hodnoty.kv !== undefined && (
         <label className="block">
-          <span className="text-xs text-muted-foreground">
+          <span className={popis}>
             {t("Členenie KV DPH")}
             {stitok("kv")}
           </span>
@@ -171,7 +319,7 @@ export function PoliaZauctovania({
       )}
       {hodnoty.stredisko !== undefined && (
         <label className="block">
-          <span className="text-xs text-muted-foreground">{t("Stredisko")}</span>
+          <span className={popis}>{t("Stredisko")}</span>
           <KodPohody
             value={hodnoty.stredisko}
             onChange={(v) => setHodnoty({ ...hodnoty, stredisko: v })}
@@ -184,7 +332,7 @@ export function PoliaZauctovania({
       )}
       {hodnoty.cinnost !== undefined && (
         <label className="block">
-          <span className="text-xs text-muted-foreground">{t("Činnosť")}</span>
+          <span className={popis}>{t("Činnosť")}</span>
           <KodPohody
             value={hodnoty.cinnost}
             onChange={(v) => setHodnoty({ ...hodnoty, cinnost: v })}
@@ -197,7 +345,7 @@ export function PoliaZauctovania({
       )}
       {hodnoty.rad !== undefined && (
         <label className="block">
-          <span className="text-xs text-muted-foreground">{t("Číselný rad v Pohode")}</span>
+          <span className={popis}>{t("Číselný rad v Pohode")}</span>
           <KodPohody
             value={hodnoty.rad}
             onChange={(v) => setHodnoty({ ...hodnoty, rad: v })}
@@ -212,9 +360,7 @@ export function PoliaZauctovania({
       )}
       {hodnoty.intPoznamka !== undefined && (
         <label className="block sm:col-span-full">
-          <span className="text-xs text-muted-foreground">
-            {t("Interná poznámka pre účtovníka (do Pohody)")}
-          </span>
+          <span className={popis}>{t("Interná poznámka pre účtovníka (do Pohody)")}</span>
           <input
             value={hodnoty.intPoznamka}
             onChange={(e) => setHodnoty({ ...hodnoty, intPoznamka: e.target.value })}
