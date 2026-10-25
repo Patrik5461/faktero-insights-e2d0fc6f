@@ -617,6 +617,49 @@ export const stiahniPrijateEfakturyFn = createServerFn({ method: "POST" })
     return r;
   });
 
+/**
+ * Prijaté eFaktúry v pôvodnom UBL (Peppol BIS) ako ZIP — POHODA ich od verzie
+ * Jeseň 2026 načíta povelom „Import z BIS“, takže sa nemusia prepisovať.
+ */
+export const stiahniPrijateBisFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string; ids?: unknown };
+    if (!v?.company_id) throw new Error("Chýba company_id.");
+    const ids = Array.isArray(v.ids) ? v.ids.filter((x) => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x)) : [];
+    return { company_id: v.company_id, ids: ids.slice(0, 500) as string[] };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+    let q = supabase
+      .from("efaktura_received_documents")
+      .select("id, document_number, sender_name, xml_payload")
+      .eq("company_id", data.company_id)
+      .not("xml_payload", "is", null)
+      .order("received_at", { ascending: false })
+      .limit(500);
+    if (data.ids.length) q = q.in("id", data.ids);
+    const { data: riadky, error } = await q;
+    if (error) throw error;
+    if (!riadky?.length) throw new Error("Žiadna prijatá eFaktúra s pôvodným XML na stiahnutie.");
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+    const mena = new Set<string>();
+    for (const r of riadky) {
+      let meno = `${String(r.document_number || r.id).replace(/[^\w.-]+/g, "-")}`;
+      if (mena.has(meno)) meno = `${meno}-${String(r.id).slice(0, 8)}`;
+      mena.add(meno);
+      zip.file(`${meno}.xml`, String(r.xml_payload));
+    }
+    const content = await zip.generateAsync({ type: "base64", compression: "DEFLATE" });
+    return {
+      fileName: `prijate-efaktury-bis-${new Date().toISOString().slice(0, 10)}.zip`,
+      content,
+      pocet: riadky.length,
+    };
+  });
+
 /** Zoznam prijatých eFaktúr. */
 export const listPrijateEfakturyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

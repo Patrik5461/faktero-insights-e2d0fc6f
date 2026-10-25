@@ -6,6 +6,7 @@ export type ExportFormat =
   | "omega_txt"
   | "money_s3_xml"
   | "isdoc_zip"
+  | "bis_zip"
   | "flexi_xml"
   | "csv_univerzal";
 

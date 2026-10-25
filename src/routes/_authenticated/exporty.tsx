@@ -25,6 +25,7 @@ import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight, Mail } fro
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
+import { prveOdoslanie } from "@/lib/faktero/efaktura-odoslana";
 import { useT } from "@/lib/i18n/useT";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { KontrolaPohody } from "@/components/faktero/KontrolaPohody";
@@ -51,6 +52,11 @@ const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
     format: "pohoda_xml",
     label: "Pohoda XML",
     note: "Predkontácie a členenie DPH sa vypĺňajú v Účtovníctvo → Prepojenie s Pohodou; bez nich si ich účtovníčka doklikáva sama.",
+  },
+  {
+    format: "bis_zip",
+    label: "Peppol BIS XML (ZIP)",
+    note: "Formát eFaktúry. Pohoda od verzie Jeseň 2026 ho načíta hromadne: Súbor → Dátová komunikácia → Import z BIS. Faktúra, ktorá by neprešla ako eFaktúra, sa do súboru nedostane a povieme prečo.",
   },
   {
     format: "omega_txt",
@@ -92,6 +98,7 @@ function ExportsPage() {
   const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
   const [lenNeexportovane, setLenNeexportovane] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [efOdoslane, setEfOdoslane] = useState<Record<string, string>>({});
   const exportFn = useServerFn(exportInvoicesFn);
   const getContent = useServerFn(getExportContentFn);
   const poslatOpravu = usePoslatOpravuDoPohody();
@@ -139,6 +146,22 @@ function ExportsPage() {
     ]);
     setJobs(js ?? []);
     setInvoices(inv ?? []);
+    // Ktoré už odišli ako eFaktúra — v Pohode sa nesmú poslať cez Peppol znova.
+    const ids = (inv ?? []).map((i: any) => i.id);
+    if (ids.length) {
+      const { data: docs } = await supabase
+        .from("efaktura_documents")
+        .select("id, invoice_id")
+        .in("invoice_id", ids.slice(0, 500));
+      const docIds = (docs ?? []).map((d) => d.id);
+      const { data: dor } = docIds.length
+        ? await supabase
+            .from("efaktura_deliveries")
+            .select("document_id, status, created_at")
+            .in("document_id", docIds)
+        : { data: [] as any[] };
+      setEfOdoslane(prveOdoslanie((docs ?? []) as any, (dor ?? []) as any));
+    } else setEfOdoslane({});
   }
   useEffect(() => {
     load();
@@ -147,6 +170,7 @@ function ExportsPage() {
   const selectedIds = Object.entries(picked)
     .filter(([, v]) => v)
     .map(([k]) => k);
+  const vybraneEfaktury = selectedIds.filter((id) => efOdoslane[id]).length;
 
   async function runExport() {
     const cid = getActiveCompanyId();
@@ -285,6 +309,16 @@ function ExportsPage() {
                         </td>
                         <td className="p-3 font-medium">
                           <span className="whitespace-nowrap">{i.invoice_number}</span>
+                          {efOdoslane[i.id] ? (
+                            <span
+                              className="ml-2 rounded-full bg-sky-100 px-1.5 py-0.5 align-middle text-xs font-normal text-sky-800 dark:bg-sky-950/50 dark:text-sky-200"
+                              title={t(
+                                "Odišla ako eFaktúra — v Pohode ju cez Peppol znova neposielajte.",
+                              )}
+                            >
+                              {t("eFaktúra")}
+                            </span>
+                          ) : null}
                           {i.exported_at ? (
                             <span className="ml-2 inline-flex flex-wrap items-center gap-1 align-middle text-xs font-normal">
                               <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-emerald-800">
@@ -328,6 +362,17 @@ function ExportsPage() {
                 </table>
               </div>
 
+              {vybraneEfaktury > 0 && (format === "pohoda_xml" || format === "bis_zip") && (
+                <p
+                  role="status"
+                  className="mt-4 rounded-md border border-sky-500/30 bg-sky-500/5 px-3 py-2 text-sm text-sky-900 dark:text-sky-200"
+                >
+                  {t(
+                    "Vybrané faktúry, ktoré už odišli ako eFaktúra: {n}. V Pohode ich cez Peppol znova neposielajte — odberateľ by ich dostal dvakrát. V internej poznámke dokladu to v Pohode uvidíte.",
+                    { n: vybraneEfaktury },
+                  )}
+                </p>
+              )}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="text-sm text-muted-foreground">
                   {t("Vybraných:")}{" "}

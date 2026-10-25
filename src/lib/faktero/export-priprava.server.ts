@@ -71,9 +71,16 @@ export async function pripravFaktury(
     invs.map((i) => i.id),
   );
 
+  const { efakturaOdoslane } = await import("./efaktura-odoslana.server");
+  const odoslane = await efakturaOdoslane(
+    supabase,
+    invs.map((i) => i.id),
+  );
+
   const bundle = invs.map((invoice) => ({
     invoice: {
       ...invoice,
+      _efakturaOdoslana: odoslane[invoice.id] ?? null,
       _opravujeCislo: invoice.opravuje_fakturu_id
         ? (cislaOpravovanych[invoice.opravuje_fakturu_id] ?? null)
         : null,

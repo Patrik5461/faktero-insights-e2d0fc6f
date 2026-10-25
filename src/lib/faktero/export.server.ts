@@ -1,5 +1,16 @@
 // Server-only helpers for accounting exports.
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
+import { intNoteSEfakturou } from "./efaktura-odoslana";
+
+/**
+ * Množstvo najviac na štyri desatinné miesta. POHODA od verzie Jeseň 2026
+ * dlhšie číslo pri importe zaokrúhli a doklad prepočíta — sumy by sa potom
+ * líšili od Faktera (množstvá z AI čítania dokladov mávajú aj viac miest).
+ */
+export function mnozstvoPohody(n: number): number {
+  const r = Math.round((Number(n) || 0) * 10_000) / 10_000;
+  return Object.is(r, -0) ? 0 : r;
+}
 import {
   chybaRozuctovania,
   jeRozuctovane,
@@ -691,7 +702,7 @@ export function polozkyFaktur(opts: {
           const mnozstvo = zn * Number(it.quantity ?? 0);
           return `
         <inv:invoiceItem>${el("inv:text", skrat(it.name, 90), "          ")}
-          <inv:quantity>${mnozstvo}</inv:quantity>${el("inv:unit", skrat(it.unit ?? "ks", 10), "          ")}
+          <inv:quantity>${mnozstvoPohody(mnozstvo)}</inv:quantity>${el("inv:unit", skrat(it.unit ?? "ks", 10), "          ")}
           <inv:payVAT>false</inv:payVAT>
           <inv:rateVAT>${kod}</inv:rateVAT>${
             // Zľava riadku: jednotková cena je pred zľavou, Pohoda si cenu
@@ -848,7 +859,12 @@ export function polozkyFaktur(opts: {
         }${
           odkazIds("inv:centre", (invoice as any).stredisko || nastavenia?.stredisko, "        ") +
           odkazIds("inv:activity", (invoice as any).cinnost, "        ") +
-          el("inv:intNote", skrat((invoice as any).int_poznamka, 240), "        ")
+          // Už odoslaná eFaktúra: účtovníčka ju v Pohode nesmie poslať cez Peppol druhýkrát.
+          el(
+            "inv:intNote",
+            skrat(intNoteSEfakturou((invoice as any).int_poznamka, (invoice as any)._efakturaOdoslana), 240),
+            "        ",
+          )
         }${
           opts.zakazky?.[String(invoice.job_id ?? "")]
             ? `\n        <inv:contract><typ:ids>${esc(
@@ -1478,7 +1494,7 @@ export function polozkyDokladov(opts: {
           const pk = rozuctovanePolozky ? kodPolozky(x) : x.predkontacia;
           return `
         <${p}:${koren}Item>${el(`${p}:text`, skrat(x.nazov, 90), "          ")}
-          <${p}:quantity>${x.mnozstvo}</${p}:quantity>${el(`${p}:unit`, skrat(x.mj, 10), "          ")}
+          <${p}:quantity>${mnozstvoPohody(x.mnozstvo)}</${p}:quantity>${el(`${p}:unit`, skrat(x.mj, 10), "          ")}
           <${p}:payVAT>false</${p}:payVAT>
           <${p}:rateVAT>${kodSadzby(x.sadzba, tab)}</${p}:rateVAT>
           <${p}:${mb}>${elSuma("typ:unitPrice", x.cena, "            ")}${elSuma(
@@ -1548,7 +1564,7 @@ export function polozkyDokladov(opts: {
         .map(
           (it: any) => `
         <${p}:${koren}Item>${el(`${p}:text`, skrat(it?.name || "Položka", 90), "          ")}
-          <${p}:quantity>${Number(it?.quantity ?? 1) || 1}</${p}:quantity>
+          <${p}:quantity>${mnozstvoPohody(Number(it?.quantity ?? 1) || 1)}</${p}:quantity>
           <${p}:payVAT>true</${p}:payVAT>
           <${p}:rateVAT>${kodSadzby(Number(it?.vat_rate ?? 0), tab)}</${p}:rateVAT>
           <${p}:homeCurrency>${elSuma("typ:unitPrice", Number(it?.unit_price ?? it?.total ?? 0), "            ")}
@@ -2090,7 +2106,7 @@ export function polozkySkladovychPohybov(opts: {
           return `
         <${p}:${agenda}Item>
           <${p}:text>${esc(nazov)}</${p}:text>
-          <${p}:quantity>${Math.abs(Number(m?.quantity ?? 0))}</${p}:quantity>${el(
+          <${p}:quantity>${mnozstvoPohody(Math.abs(Number(m?.quantity ?? 0)))}</${p}:quantity>${el(
             `${p}:unit`,
             skrat(m?.unit ?? "ks", 10),
             "          ",
@@ -2236,7 +2252,13 @@ export function buildPohodaDavkaXml(opts: {
 }
 
 export type ExportFormat =
-  "pohoda_xml" | "omega_txt" | "money_s3_xml" | "isdoc_zip" | "flexi_xml" | "csv_univerzal";
+  | "pohoda_xml"
+  | "omega_txt"
+  | "money_s3_xml"
+  | "isdoc_zip"
+  | "bis_zip"
+  | "flexi_xml"
+  | "csv_univerzal";
 
 export interface ExportStrategy {
   format: ExportFormat;
@@ -2398,6 +2420,77 @@ export const ISDOC_ZIP: ExportStrategy = {
   },
 };
 
+/**
+ * Peppol BIS 3.0 (UBL) — ten istý formát ako eFaktúra. POHODA ho od verzie
+ * Jeseň 2026 (rel. 14400) načíta povelom „Import z BIS“ hromadne a výsledok
+ * zapíše do BIS logu. Štandardný formát je menej krehký než vlastné XML
+ * Pohody; jeden súbor .xml na doklad, dávka v ZIP-e.
+ */
+export const BIS_ZIP: ExportStrategy = {
+  format: "bis_zip",
+  target_system: "pohoda",
+  label: "Peppol BIS XML (ZIP)",
+  note: "Formát eFaktúry (UBL). Pohoda od verzie Jeseň 2026: Súbor → Dátová komunikácia → Import z BIS. Načíta ho aj väčšina programov s podporou eFaktúr.",
+  encoding: "base64",
+  mime: "application/zip",
+  async build({ company, invoices }) {
+    // Volá sa až po overení členstva vo firme (`exportInvoicesFn`).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { mapToEN16931 } = await import("./efaktura/en16931.server");
+    const { generatePeppolBisXml } = await import("./efaktura/xml.server");
+    const { nacitajOdpocty } = await import("./zalohy-odpocty.server");
+    const JSZip = (await import("jszip")).default;
+    const companyId = (company as any).id as string;
+    const ids = invoices.map(({ invoice }) => invoice.id as string);
+    const opravovaneIds = invoices
+      .map(({ invoice }) => (invoice as any).opravuje_fakturu_id as string | null)
+      .filter((x): x is string => !!x);
+    const [{ data: profil }, { data: povodne }, odpocty] = await Promise.all([
+      supabaseAdmin.from("efaktura_profiles").select("*").eq("company_id", companyId).maybeSingle(),
+      opravovaneIds.length
+        ? supabaseAdmin
+            .from("invoices")
+            .select("id, invoice_number, issue_date")
+            .eq("company_id", companyId)
+            .in("id", opravovaneIds)
+        : Promise.resolve({ data: [] as any[] }),
+      nacitajOdpocty(supabaseAdmin as any, companyId, ids),
+    ]);
+    const zip = new JSZip();
+    const preskocene: string[] = [];
+    for (const { invoice, items } of invoices) {
+      const p = (povodne ?? []).find((x: any) => x.id === (invoice as any).opravuje_fakturu_id);
+      try {
+        const dto = mapToEN16931({
+          company: company as any,
+          profile: profil as any,
+          invoice: invoice as any,
+          items: items as any,
+          povodnaFaktura: p ? { cislo: p.invoice_number, vystavena: p.issue_date } : null,
+          zalohy: (odpocty as any)[invoice.id as string] ?? null,
+        });
+        const r = generatePeppolBisXml(dto);
+        // Doklad, ktorý by neprešiel ani ako eFaktúra, Pohoda tiež odmietne — radšej to povedať hneď.
+        if (r.validationErrors?.length) {
+          preskocene.push(
+            `${invoice.invoice_number} — ${r.validationErrors.map((e: any) => e.message).slice(0, 2).join("; ")}`,
+          );
+          continue;
+        }
+        zip.file(`${String(invoice.invoice_number).replace(/[^\w.-]+/g, "-")}.xml`, r.xml);
+      } catch (e: any) {
+        preskocene.push(`${invoice.invoice_number} — ${e?.message ?? "nepodarilo sa vytvoriť"}`);
+      }
+    }
+    if (preskocene.length === invoices.length) {
+      throw new Error(`Do BIS XML sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
+    }
+    const content = await zip.generateAsync({ type: "base64", compression: "DEFLATE" });
+    const stamp = new Date().toISOString().slice(0, 10);
+    return { content, fileName: `bis-faktury-${stamp}.zip`, mime: "application/zip", preskocene };
+  },
+};
+
 /** ABRA Flexi (winstrom) — dávka vydaných faktúr v jednom XML. */
 export const FLEXI_XML: ExportStrategy = {
   format: "flexi_xml",
@@ -2448,6 +2541,7 @@ export const EXPORT_STRATEGIES: Record<ExportFormat, ExportStrategy> = {
   omega_txt: OMEGA_TXT,
   money_s3_xml: MONEY_S3_XML,
   isdoc_zip: ISDOC_ZIP,
+  bis_zip: BIS_ZIP,
   flexi_xml: FLEXI_XML,
   csv_univerzal: CSV_UNIVERZAL,
 };

@@ -16,9 +16,11 @@ import {
   nahladPrijatejEfakturyFn,
   prilohaPrijatejEfakturyFn,
   prilohyPrijatejEfakturyFn,
+  stiahniPrijateBisFn,
   stiahniPrijateEfakturyFn,
   zaevidujPrijatuEfakturuFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
+import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { velkost } from "@/lib/faktero/faktura-prilohy";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
@@ -189,6 +191,22 @@ function ReceivedPage() {
 
   const listFn = useServerFn(listPrijateEfakturyFn);
   const stiahni = useServerFn(stiahniPrijateEfakturyFn);
+  const bisFn = useServerFn(stiahniPrijateBisFn);
+  const [bisBusy, setBisBusy] = useState(false);
+  /** Zobrazené eFaktúry v pôvodnom XML pre „Import z BIS“ v Pohode. */
+  async function stiahniBis() {
+    if (!companyId) return;
+    setBisBusy(true);
+    try {
+      const r = await bisFn({ data: { company_id: companyId, ids: zobrazene.map((x: any) => x.id) } });
+      downloadFile(r.fileName, r.content, "application/zip", "base64");
+      toast.success(t("Stiahnuté eFaktúry: {n}. V Pohode: Súbor → Dátová komunikácia → Import z BIS.", { n: r.pocet }));
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Stiahnutie zlyhalo"));
+    } finally {
+      setBisBusy(false);
+    }
+  }
   const zaeviduj = useServerFn(zaevidujPrijatuEfakturuFn);
   const [evidujem, setEvidujem] = useState<string | null>(null);
   const nahladFn = useServerFn(nahladPrijatejEfakturyFn);
@@ -322,6 +340,17 @@ function ReceivedPage() {
         description={t("eFaktúry doručené od vašich dodávateľov cez sieť Peppol.")}
         action={
           lenOdosielanie ? undefined : (
+          <div className="flex flex-wrap items-center gap-2">
+          {riadky.length > 0 && (
+            <button
+              onClick={() => void stiahniBis()}
+              disabled={bisBusy}
+              title={t("Pôvodné XML zobrazených eFaktúr v ZIP-e — Pohoda ich načíta povelom Import z BIS.")}
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" /> {t("XML pre Pohodu (BIS)")}
+            </button>
+          )}
           <button
             onClick={stiahniNove}
             disabled={stahujem || !companyId}
@@ -330,6 +359,7 @@ function ReceivedPage() {
             <RefreshCw className={`h-4 w-4 ${stahujem ? "animate-spin" : ""}`} />{" "}
             {stahujem ? t("Sťahujem…") : t("Stiahnuť nové")}
           </button>
+          </div>
           )
         }
       />

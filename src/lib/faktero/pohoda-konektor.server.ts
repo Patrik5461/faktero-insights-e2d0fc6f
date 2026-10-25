@@ -409,6 +409,13 @@ export async function zostavDavku(
   };
 
   const odkazy = company.pohoda_odkaz_na_pdf ? await odkazyNaPdf(supabase, faktury) : {};
+  // Už odoslané eFaktúry dostanú vetu do internej poznámky — v Pohode sa nesmú poslať znova.
+  const { efakturaOdoslane } = await import("./efaktura-odoslana.server");
+  const odoslane = await efakturaOdoslane(
+    supabase,
+    faktury.map((f: Riadok) => f.id),
+  );
+  for (const f of faktury) (f as any)._efakturaOdoslana = odoslane[f.id] ?? null;
 
   const { buildPohodaDavkaXml, pohodaPrekazka } = await import("./export.server");
   const polozkyFaktury = (f: Riadok) => (polozky ?? []).filter((p: Riadok) => p.invoice_id === f.id);
