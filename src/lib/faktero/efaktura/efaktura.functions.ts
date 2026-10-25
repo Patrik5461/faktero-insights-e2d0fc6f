@@ -48,7 +48,7 @@ export const getEfakturaReadinessFn = createServerFn({ method: "POST" })
         { data: profile },
         { count: invoiceCount },
         { count: validatedCount },
-        { count: invalidCount },
+        { data: neuspesne },
       ] = await Promise.all([
         supabase.from("companies").select("*").eq("id", data.companyId).maybeSingle(),
         supabase
@@ -65,13 +65,38 @@ export const getEfakturaReadinessFn = createServerFn({ method: "POST" })
           .select("id", { count: "exact", head: true })
           .eq("company_id", data.companyId)
           .in("status", ["validated", "generated"]),
+        // Neúspešná kontrola sa ráta len pri existujúcej faktúre — zmazaná faktúra
+        // ostala v zozname navždy a upozornenie sa nedalo odstrániť.
         supabase
           .from("efaktura_documents")
-          .select("id", { count: "exact", head: true })
+          .select("invoice_id, created_at, invoices!inner(deleted_at)")
           .eq("company_id", data.companyId)
-          .eq("status", "invalid"),
+          .eq("status", "invalid")
+          .is("invoices.deleted_at", null)
+          .limit(200),
       ]);
       if (!company) throw new Error("Firma neexistuje alebo k nej nemáte prístup.");
+
+      // Faktúra opravená a znova vygenerovaná má novší úspešný dokument — stará chyba už neplatí.
+      const sChybou = (neuspesne ?? []) as { invoice_id: string | null; created_at: string }[];
+      let invalidCount = sChybou.length;
+      if (sChybou.length) {
+        const { data: neskorsie } = await supabase
+          .from("efaktura_documents")
+          .select("invoice_id, created_at")
+          .eq("company_id", data.companyId)
+          .neq("status", "invalid")
+          .in(
+            "invoice_id",
+            sChybou.map((d) => d.invoice_id).filter((x): x is string => !!x),
+          );
+        invalidCount = sChybou.filter(
+          (d) =>
+            !(neskorsie ?? []).some(
+              (n: any) => n.invoice_id === d.invoice_id && n.created_at > d.created_at,
+            ),
+        ).length;
+      }
 
       const report = computeReadiness({
         company,
