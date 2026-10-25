@@ -537,7 +537,7 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
           <h2 className="text-2xl font-semibold">{t("AI asistenti (MCP)")}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {t(
-              "Faktero má MCP server — cez Model Context Protocol sa naň napojí Claude, ChatGPT, Cursor či iný AI asistent a pracuje s údajmi vašej firmy: povie, kto vám dlhuje, nájde faktúru, vystaví novú alebo pozrie pohyby na účte. Prihlasuje sa tým istým API kľúčom ako API.",
+              "Faktero má MCP server — cez Model Context Protocol sa naň napojí Claude, ChatGPT, Cursor či iný AI asistent a pracuje s údajmi vašej firmy: povie, kto vám dlhuje, nájde faktúru, vystaví novú alebo pozrie pohyby na účte. Claude.ai a ChatGPT sa prihlásia cez Faktero, ostatní klienti API kľúčom.",
             )}
           </p>
           <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
@@ -560,6 +560,13 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
               )}
             </li>
           </ul>
+          <h3 className="mt-5 font-semibold">{t("Claude.ai a ChatGPT")}</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t(
+              "Pridajte vlastný konektor (v Claude: Nastavenia → Konektory, v ChatGPT: Nastavenia → Aplikácie a konektory) a zadajte len adresu servera. Kľúč netreba — otvorí sa Faktero, prihlásite sa, vyberiete firmu a potvrdíte prístup. Prístup sa objaví medzi API kľúčmi ako „AI asistent (MCP)“ a zrušíte ho tam jedným klikom.",
+            )}
+          </p>
+          <CodeBlock lang="text" code={`https://www.faktero.sk/api/mcp`} />
           <h3 className="mt-5 font-semibold">Claude Code</h3>
           <CodeBlock
             lang="bash"
