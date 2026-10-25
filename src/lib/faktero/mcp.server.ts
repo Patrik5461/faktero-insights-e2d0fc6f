@@ -449,7 +449,15 @@ export async function obsluzMcp(request: Request): Promise<Response> {
       JSON.stringify(
         chyba(null, -32001, "Chýba alebo je neplatný API kľúč (Authorization: Bearer fk_…)."),
       ),
-      { status: 401, headers: { ...HLAVICKY, "www-authenticate": 'Bearer realm="faktero"' } },
+      {
+        status: 401,
+        headers: {
+          ...HLAVICKY,
+          // Odkaz na metadáta — claude.ai a ChatGPT podľa neho spustia prihlásenie cez OAuth.
+          "www-authenticate": `Bearer realm="faktero", resource_metadata="${(process.env.FAKTERO_PUBLIC_URL || "https://www.faktero.sk").replace(/\/$/, "")}/.well-known/oauth-protected-resource/api/mcp"`,
+          "access-control-expose-headers": "www-authenticate",
+        },
+      },
     );
   }
   let telo: unknown;

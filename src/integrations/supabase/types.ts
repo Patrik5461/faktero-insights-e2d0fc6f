@@ -396,6 +396,7 @@ export type Database = {
           name: string
           prefix: string
           revoked_at: string | null
+          expires_at: string | null
         }
         Insert: {
           company_id: string
@@ -408,6 +409,7 @@ export type Database = {
           name: string
           prefix: string
           revoked_at?: string | null
+          expires_at?: string | null
         }
         Update: {
           company_id?: string
@@ -420,6 +422,7 @@ export type Database = {
           name?: string
           prefix?: string
           revoked_at?: string | null
+          expires_at?: string | null
         }
         Relationships: [
           {
@@ -10416,6 +10419,139 @@ export type Database = {
         ]
       }
 
+      oauth_clients: {
+        Row: {
+          client_id: string
+          client_name: string | null
+          redirect_uris: string[]
+          created_at: string
+        }
+        Insert: {
+          client_id: string
+          client_name?: string | null
+          redirect_uris: string[]
+          created_at?: string
+        }
+        Update: {
+          client_id?: string
+          client_name?: string | null
+          redirect_uris?: string[]
+          created_at?: string
+        }
+        Relationships: []
+      }
+      oauth_codes: {
+        Row: {
+          code_hash: string
+          client_id: string
+          company_id: string
+          user_id: string
+          redirect_uri: string
+          code_challenge: string
+          scope: string | null
+          expires_at: string
+          used_at: string | null
+          created_at: string
+        }
+        Insert: {
+          code_hash: string
+          client_id: string
+          company_id: string
+          user_id: string
+          redirect_uri: string
+          code_challenge: string
+          scope?: string | null
+          expires_at: string
+          used_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          code_hash?: string
+          client_id?: string
+          company_id?: string
+          user_id?: string
+          redirect_uri?: string
+          code_challenge?: string
+          scope?: string | null
+          expires_at?: string
+          used_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_codes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "oauth_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "oauth_codes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      oauth_refresh_tokens: {
+        Row: {
+          token_hash: string
+          client_id: string
+          company_id: string
+          user_id: string
+          api_key_id: string | null
+          scope: string | null
+          expires_at: string
+          revoked_at: string | null
+          created_at: string
+        }
+        Insert: {
+          token_hash: string
+          client_id: string
+          company_id: string
+          user_id: string
+          api_key_id?: string | null
+          scope?: string | null
+          expires_at: string
+          revoked_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          token_hash?: string
+          client_id?: string
+          company_id?: string
+          user_id?: string
+          api_key_id?: string | null
+          scope?: string | null
+          expires_at?: string
+          revoked_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_refresh_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "oauth_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "oauth_refresh_tokens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oauth_refresh_tokens_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       stock_items_with_availability: {

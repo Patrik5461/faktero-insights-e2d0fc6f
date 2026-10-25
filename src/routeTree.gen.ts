@@ -33,6 +33,9 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as UctovniciRouteImport } from './routes/uctovnici'
 import { Route as VyvojariRouteImport } from './routes/vyvojari'
 import { Route as ZabudnuteHesloRouteImport } from './routes/zabudnute-heslo'
+import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known.oauth-authorization-server'
+import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known.oauth-protected-resource'
+import { Route as DotwellKnownOpenidConfigurationRouteImport } from './routes/[.]well-known.openid-configuration'
 import { Route as AuthenticatedAiAsistentRouteImport } from './routes/_authenticated/ai-asistent'
 import { Route as AuthenticatedApiDokumentaciaRouteImport } from './routes/_authenticated/api-dokumentacia'
 import { Route as AuthenticatedApiKluceRouteImport } from './routes/_authenticated/api-kluce'
@@ -86,6 +89,10 @@ import { Route as EfakturaciaSlugRouteImport } from './routes/efakturacia.$slug'
 import { Route as FakturaTokenRouteImport } from './routes/faktura.$token'
 import { Route as FunkcieIndexRouteImport } from './routes/funkcie.index'
 import { Route as FunkcieSlugRouteImport } from './routes/funkcie.$slug'
+import { Route as OauthAuthorizeRouteImport } from './routes/oauth.authorize'
+import { Route as OauthRegisterRouteImport } from './routes/oauth.register'
+import { Route as OauthRevokeRouteImport } from './routes/oauth.revoke'
+import { Route as OauthTokenRouteImport } from './routes/oauth.token'
 import { Route as PayTokenRouteImport } from './routes/pay.$token'
 import { Route as PomocIndexRouteImport } from './routes/pomoc.index'
 import { Route as PomocAiAsistentRouteImport } from './routes/pomoc.ai-asistent'
@@ -139,6 +146,8 @@ import { Route as UctovniciIndexRouteImport } from './routes/uctovnici.index'
 import { Route as UctovniciSlugRouteImport } from './routes/uctovnici.$slug'
 import { Route as VyvojariIndexRouteImport } from './routes/vyvojari.index'
 import { Route as VyvojariSlugRouteImport } from './routes/vyvojari.$slug'
+import { Route as DotwellKnownOauthAuthorizationServerSplatRouteImport } from './routes/[.]well-known.oauth-authorization-server.$'
+import { Route as DotwellKnownOauthProtectedResourceSplatRouteImport } from './routes/[.]well-known.oauth-protected-resource.$'
 import { Route as AuthenticatedBankoveUctyIndexRouteImport } from './routes/_authenticated/bankove-ucty.index'
 import { Route as AuthenticatedBankoveUctyImportRouteImport } from './routes/_authenticated/bankove-ucty.import'
 import { Route as AuthenticatedBankoveUctyNotifikacieRouteImport } from './routes/_authenticated/bankove-ucty.notifikacie'
@@ -465,6 +474,24 @@ const ZabudnuteHesloRoute = ZabudnuteHesloRouteImport.update({
   path: '/zabudnute-heslo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotwellKnownOauthAuthorizationServerRoute =
+  DotwellKnownOauthAuthorizationServerRouteImport.update({
+    id: '/.well-known/oauth-authorization-server',
+    path: '/.well-known/oauth-authorization-server',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotwellKnownOauthProtectedResourceRoute =
+  DotwellKnownOauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotwellKnownOpenidConfigurationRoute =
+  DotwellKnownOpenidConfigurationRouteImport.update({
+    id: '/.well-known/openid-configuration',
+    path: '/.well-known/openid-configuration',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAiAsistentRoute = AuthenticatedAiAsistentRouteImport.update({
   id: '/ai-asistent',
   path: '/ai-asistent',
@@ -737,6 +764,26 @@ const FunkcieSlugRoute = FunkcieSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => FunkcieRoute,
 } as any)
+const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
+  id: '/oauth/authorize',
+  path: '/oauth/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthRegisterRoute = OauthRegisterRouteImport.update({
+  id: '/oauth/register',
+  path: '/oauth/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthRevokeRoute = OauthRevokeRouteImport.update({
+  id: '/oauth/revoke',
+  path: '/oauth/revoke',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthTokenRoute = OauthTokenRouteImport.update({
+  id: '/oauth/token',
+  path: '/oauth/token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PayTokenRoute = PayTokenRouteImport.update({
   id: '/pay/$token',
   path: '/pay/$token',
@@ -1004,6 +1051,18 @@ const VyvojariSlugRoute = VyvojariSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => VyvojariRoute,
 } as any)
+const DotwellKnownOauthAuthorizationServerSplatRoute =
+  DotwellKnownOauthAuthorizationServerSplatRouteImport.update({
+    id: '/$',
+    path: '/$',
+    getParentRoute: () => DotwellKnownOauthAuthorizationServerRoute,
+  } as any)
+const DotwellKnownOauthProtectedResourceSplatRoute =
+  DotwellKnownOauthProtectedResourceSplatRouteImport.update({
+    id: '/$',
+    path: '/$',
+    getParentRoute: () => DotwellKnownOauthProtectedResourceRoute,
+  } as any)
 const AuthenticatedBankoveUctyIndexRoute =
   AuthenticatedBankoveUctyIndexRouteImport.update({
     id: '/bankove-ucty/',
@@ -2196,6 +2255,9 @@ export interface FileRoutesByFullPath {
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
   '/zabudnute-heslo': typeof ZabudnuteHesloRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
+  '/.well-known/openid-configuration': typeof DotwellKnownOpenidConfigurationRoute
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
   '/api-dokumentacia': typeof AuthenticatedApiDokumentaciaRoute
   '/api-kluce': typeof AuthenticatedApiKluceRoute
@@ -2245,6 +2307,10 @@ export interface FileRoutesByFullPath {
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/faktura/$token': typeof FakturaTokenRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/register': typeof OauthRegisterRoute
+  '/oauth/revoke': typeof OauthRevokeRoute
+  '/oauth/token': typeof OauthTokenRoute
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
   '/pomoc/api': typeof PomocApiRoute
@@ -2302,6 +2368,8 @@ export interface FileRoutesByFullPath {
   '/pravne/': typeof PravneIndexRoute
   '/uctovnici/': typeof UctovniciIndexRoute
   '/vyvojari/': typeof VyvojariIndexRoute
+  '/.well-known/oauth-authorization-server/$': typeof DotwellKnownOauthAuthorizationServerSplatRoute
+  '/.well-known/oauth-protected-resource/$': typeof DotwellKnownOauthProtectedResourceSplatRoute
   '/bankove-ucty/import': typeof AuthenticatedBankoveUctyImportRoute
   '/bankove-ucty/notifikacie': typeof AuthenticatedBankoveUctyNotifikacieRoute
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
@@ -2527,6 +2595,9 @@ export interface FileRoutesByTo {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/zabudnute-heslo': typeof ZabudnuteHesloRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
+  '/.well-known/openid-configuration': typeof DotwellKnownOpenidConfigurationRoute
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
   '/api-dokumentacia': typeof AuthenticatedApiDokumentaciaRoute
   '/api-kluce': typeof AuthenticatedApiKluceRoute
@@ -2574,6 +2645,10 @@ export interface FileRoutesByTo {
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/faktura/$token': typeof FakturaTokenRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/register': typeof OauthRegisterRoute
+  '/oauth/revoke': typeof OauthRevokeRoute
+  '/oauth/token': typeof OauthTokenRoute
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
   '/pomoc/api': typeof PomocApiRoute
@@ -2631,6 +2706,8 @@ export interface FileRoutesByTo {
   '/pravne': typeof PravneIndexRoute
   '/uctovnici': typeof UctovniciIndexRoute
   '/vyvojari': typeof VyvojariIndexRoute
+  '/.well-known/oauth-authorization-server/$': typeof DotwellKnownOauthAuthorizationServerSplatRoute
+  '/.well-known/oauth-protected-resource/$': typeof DotwellKnownOauthProtectedResourceSplatRoute
   '/bankove-ucty/import': typeof AuthenticatedBankoveUctyImportRoute
   '/bankove-ucty/notifikacie': typeof AuthenticatedBankoveUctyNotifikacieRoute
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
@@ -2863,6 +2940,9 @@ export interface FileRoutesById {
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
   '/zabudnute-heslo': typeof ZabudnuteHesloRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
+  '/.well-known/openid-configuration': typeof DotwellKnownOpenidConfigurationRoute
   '/_authenticated/ai-asistent': typeof AuthenticatedAiAsistentRoute
   '/_authenticated/api-dokumentacia': typeof AuthenticatedApiDokumentaciaRoute
   '/_authenticated/api-kluce': typeof AuthenticatedApiKluceRoute
@@ -2912,6 +2992,10 @@ export interface FileRoutesById {
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/faktura/$token': typeof FakturaTokenRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/register': typeof OauthRegisterRoute
+  '/oauth/revoke': typeof OauthRevokeRoute
+  '/oauth/token': typeof OauthTokenRoute
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
   '/pomoc/api': typeof PomocApiRoute
@@ -2969,6 +3053,8 @@ export interface FileRoutesById {
   '/pravne/': typeof PravneIndexRoute
   '/uctovnici/': typeof UctovniciIndexRoute
   '/vyvojari/': typeof VyvojariIndexRoute
+  '/.well-known/oauth-authorization-server/$': typeof DotwellKnownOauthAuthorizationServerSplatRoute
+  '/.well-known/oauth-protected-resource/$': typeof DotwellKnownOauthProtectedResourceSplatRoute
   '/_authenticated/bankove-ucty/import': typeof AuthenticatedBankoveUctyImportRoute
   '/_authenticated/bankove-ucty/notifikacie': typeof AuthenticatedBankoveUctyNotifikacieRoute
   '/_authenticated/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
@@ -3202,6 +3288,9 @@ export interface FileRouteTypes {
     | '/uctovnici'
     | '/vyvojari'
     | '/zabudnute-heslo'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
+    | '/.well-known/openid-configuration'
     | '/ai-asistent'
     | '/api-dokumentacia'
     | '/api-kluce'
@@ -3251,6 +3340,10 @@ export interface FileRouteTypes {
     | '/efakturacia/$slug'
     | '/faktura/$token'
     | '/funkcie/$slug'
+    | '/oauth/authorize'
+    | '/oauth/register'
+    | '/oauth/revoke'
+    | '/oauth/token'
     | '/pay/$token'
     | '/pomoc/ai-asistent'
     | '/pomoc/api'
@@ -3308,6 +3401,8 @@ export interface FileRouteTypes {
     | '/pravne/'
     | '/uctovnici/'
     | '/vyvojari/'
+    | '/.well-known/oauth-authorization-server/$'
+    | '/.well-known/oauth-protected-resource/$'
     | '/bankove-ucty/import'
     | '/bankove-ucty/notifikacie'
     | '/bankove-ucty/pripojit'
@@ -3533,6 +3628,9 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/zabudnute-heslo'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
+    | '/.well-known/openid-configuration'
     | '/ai-asistent'
     | '/api-dokumentacia'
     | '/api-kluce'
@@ -3580,6 +3678,10 @@ export interface FileRouteTypes {
     | '/efakturacia/$slug'
     | '/faktura/$token'
     | '/funkcie/$slug'
+    | '/oauth/authorize'
+    | '/oauth/register'
+    | '/oauth/revoke'
+    | '/oauth/token'
     | '/pay/$token'
     | '/pomoc/ai-asistent'
     | '/pomoc/api'
@@ -3637,6 +3739,8 @@ export interface FileRouteTypes {
     | '/pravne'
     | '/uctovnici'
     | '/vyvojari'
+    | '/.well-known/oauth-authorization-server/$'
+    | '/.well-known/oauth-protected-resource/$'
     | '/bankove-ucty/import'
     | '/bankove-ucty/notifikacie'
     | '/bankove-ucty/pripojit'
@@ -3868,6 +3972,9 @@ export interface FileRouteTypes {
     | '/uctovnici'
     | '/vyvojari'
     | '/zabudnute-heslo'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
+    | '/.well-known/openid-configuration'
     | '/_authenticated/ai-asistent'
     | '/_authenticated/api-dokumentacia'
     | '/_authenticated/api-kluce'
@@ -3917,6 +4024,10 @@ export interface FileRouteTypes {
     | '/efakturacia/$slug'
     | '/faktura/$token'
     | '/funkcie/$slug'
+    | '/oauth/authorize'
+    | '/oauth/register'
+    | '/oauth/revoke'
+    | '/oauth/token'
     | '/pay/$token'
     | '/pomoc/ai-asistent'
     | '/pomoc/api'
@@ -3974,6 +4085,8 @@ export interface FileRouteTypes {
     | '/pravne/'
     | '/uctovnici/'
     | '/vyvojari/'
+    | '/.well-known/oauth-authorization-server/$'
+    | '/.well-known/oauth-protected-resource/$'
     | '/_authenticated/bankove-ucty/import'
     | '/_authenticated/bankove-ucty/notifikacie'
     | '/_authenticated/bankove-ucty/pripojit'
@@ -4207,6 +4320,9 @@ export interface RootRouteChildren {
   UctovniciRoute: typeof UctovniciRouteWithChildren
   VyvojariRoute: typeof VyvojariRouteWithChildren
   ZabudnuteHesloRoute: typeof ZabudnuteHesloRoute
+  DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  DotwellKnownOauthProtectedResourceRoute: typeof DotwellKnownOauthProtectedResourceRouteWithChildren
+  DotwellKnownOpenidConfigurationRoute: typeof DotwellKnownOpenidConfigurationRoute
   AktivaciaEfakturyTokenRoute: typeof AktivaciaEfakturyTokenRoute
   ApiMcpRoute: typeof ApiMcpRoute
   AuthPotvrdenieRoute: typeof AuthPotvrdenieRoute
@@ -4214,6 +4330,10 @@ export interface RootRouteChildren {
   DennySuhrnOdhlasenieRoute: typeof DennySuhrnOdhlasenieRoute
   DocsApiRoute: typeof DocsApiRoute
   FakturaTokenRoute: typeof FakturaTokenRoute
+  OauthAuthorizeRoute: typeof OauthAuthorizeRoute
+  OauthRegisterRoute: typeof OauthRegisterRoute
+  OauthRevokeRoute: typeof OauthRevokeRoute
+  OauthTokenRoute: typeof OauthTokenRoute
   PayTokenRoute: typeof PayTokenRoute
   PomocAiAsistentRoute: typeof PomocAiAsistentRoute
   PomocApiRoute: typeof PomocApiRoute
@@ -4499,6 +4619,27 @@ declare module '@tanstack/react-router' {
       path: '/zabudnute-heslo'
       fullPath: '/zabudnute-heslo'
       preLoaderRoute: typeof ZabudnuteHesloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-authorization-server': {
+      id: '/.well-known/oauth-authorization-server'
+      path: '/.well-known/oauth-authorization-server'
+      fullPath: '/.well-known/oauth-authorization-server'
+      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/openid-configuration': {
+      id: '/.well-known/openid-configuration'
+      path: '/.well-known/openid-configuration'
+      fullPath: '/.well-known/openid-configuration'
+      preLoaderRoute: typeof DotwellKnownOpenidConfigurationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/ai-asistent': {
@@ -4872,6 +5013,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FunkcieSlugRouteImport
       parentRoute: typeof FunkcieRoute
     }
+    '/oauth/authorize': {
+      id: '/oauth/authorize'
+      path: '/oauth/authorize'
+      fullPath: '/oauth/authorize'
+      preLoaderRoute: typeof OauthAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/register': {
+      id: '/oauth/register'
+      path: '/oauth/register'
+      fullPath: '/oauth/register'
+      preLoaderRoute: typeof OauthRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/revoke': {
+      id: '/oauth/revoke'
+      path: '/oauth/revoke'
+      fullPath: '/oauth/revoke'
+      preLoaderRoute: typeof OauthRevokeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/token': {
+      id: '/oauth/token'
+      path: '/oauth/token'
+      fullPath: '/oauth/token'
+      preLoaderRoute: typeof OauthTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pay/$token': {
       id: '/pay/$token'
       path: '/pay/$token'
@@ -5242,6 +5411,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/vyvojari/$slug'
       preLoaderRoute: typeof VyvojariSlugRouteImport
       parentRoute: typeof VyvojariRoute
+    }
+    '/.well-known/oauth-authorization-server/$': {
+      id: '/.well-known/oauth-authorization-server/$'
+      path: '/$'
+      fullPath: '/.well-known/oauth-authorization-server/$'
+      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerSplatRouteImport
+      parentRoute: typeof DotwellKnownOauthAuthorizationServerRoute
+    }
+    '/.well-known/oauth-protected-resource/$': {
+      id: '/.well-known/oauth-protected-resource/$'
+      path: '/$'
+      fullPath: '/.well-known/oauth-protected-resource/$'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceSplatRouteImport
+      parentRoute: typeof DotwellKnownOauthProtectedResourceRoute
     }
     '/_authenticated/bankove-ucty/': {
       id: '/_authenticated/bankove-ucty/'
@@ -7155,6 +7338,36 @@ const VyvojariRouteWithChildren = VyvojariRoute._addFileChildren(
   VyvojariRouteChildren,
 )
 
+interface DotwellKnownOauthAuthorizationServerRouteChildren {
+  DotwellKnownOauthAuthorizationServerSplatRoute: typeof DotwellKnownOauthAuthorizationServerSplatRoute
+}
+
+const DotwellKnownOauthAuthorizationServerRouteChildren: DotwellKnownOauthAuthorizationServerRouteChildren =
+  {
+    DotwellKnownOauthAuthorizationServerSplatRoute:
+      DotwellKnownOauthAuthorizationServerSplatRoute,
+  }
+
+const DotwellKnownOauthAuthorizationServerRouteWithChildren =
+  DotwellKnownOauthAuthorizationServerRoute._addFileChildren(
+    DotwellKnownOauthAuthorizationServerRouteChildren,
+  )
+
+interface DotwellKnownOauthProtectedResourceRouteChildren {
+  DotwellKnownOauthProtectedResourceSplatRoute: typeof DotwellKnownOauthProtectedResourceSplatRoute
+}
+
+const DotwellKnownOauthProtectedResourceRouteChildren: DotwellKnownOauthProtectedResourceRouteChildren =
+  {
+    DotwellKnownOauthProtectedResourceSplatRoute:
+      DotwellKnownOauthProtectedResourceSplatRoute,
+  }
+
+const DotwellKnownOauthProtectedResourceRouteWithChildren =
+  DotwellKnownOauthProtectedResourceRoute._addFileChildren(
+    DotwellKnownOauthProtectedResourceRouteChildren,
+  )
+
 interface ApiV1CustomersRouteChildren {
   ApiV1CustomersIdRoute: typeof ApiV1CustomersIdRoute
 }
@@ -7349,6 +7562,11 @@ const rootRouteChildren: RootRouteChildren = {
   UctovniciRoute: UctovniciRouteWithChildren,
   VyvojariRoute: VyvojariRouteWithChildren,
   ZabudnuteHesloRoute: ZabudnuteHesloRoute,
+  DotwellKnownOauthAuthorizationServerRoute:
+    DotwellKnownOauthAuthorizationServerRouteWithChildren,
+  DotwellKnownOauthProtectedResourceRoute:
+    DotwellKnownOauthProtectedResourceRouteWithChildren,
+  DotwellKnownOpenidConfigurationRoute: DotwellKnownOpenidConfigurationRoute,
   AktivaciaEfakturyTokenRoute: AktivaciaEfakturyTokenRoute,
   ApiMcpRoute: ApiMcpRoute,
   AuthPotvrdenieRoute: AuthPotvrdenieRoute,
@@ -7356,6 +7574,10 @@ const rootRouteChildren: RootRouteChildren = {
   DennySuhrnOdhlasenieRoute: DennySuhrnOdhlasenieRoute,
   DocsApiRoute: DocsApiRoute,
   FakturaTokenRoute: FakturaTokenRoute,
+  OauthAuthorizeRoute: OauthAuthorizeRoute,
+  OauthRegisterRoute: OauthRegisterRoute,
+  OauthRevokeRoute: OauthRevokeRoute,
+  OauthTokenRoute: OauthTokenRoute,
   PayTokenRoute: PayTokenRoute,
   PomocAiAsistentRoute: PomocAiAsistentRoute,
   PomocApiRoute: PomocApiRoute,

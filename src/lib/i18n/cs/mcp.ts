@@ -16,4 +16,20 @@ export default {
   "S API kľúčom sa na Faktero napojí aj Claude, ChatGPT či iný AI asistent cez MCP — adresa servera je":
     "S API klíčem se na Faktero napojí i Claude, ChatGPT či jiný AI asistent přes MCP — adresa serveru je",
   "Návod na napojenie": "Návod na napojení",
+  "Žiadosť sa nepodarilo overiť.": "Žádost se nepodařilo ověřit.",
+  "Prístup sa nepodarilo povoliť.": "Přístup se nepodařilo povolit.",
+  "{klient} žiada prístup k Fakteru": "{klient} žádá o přístup k Fakteru",
+  "Po povolení vás vrátime na {host}.": "Po povolení vás vrátíme na {host}.",
+  "AI asistent bude môcť": "AI asistent bude moci",
+  "čítať faktúry, odberateľov, ponuky, prijaté faktúry a bankové pohyby,":
+    "číst faktury, odběratele, nabídky, přijaté faktury a bankovní pohyby,",
+  "vystaviť faktúru, založiť odberateľa a označiť úhradu.":
+    "vystavit fakturu, založit odběratele a označit úhradu.",
+  "Nič nemaže a nič neposiela odberateľom.": "Nic nemaže a nic neposílá odběratelům.",
+  "Prístup môže povoliť len majiteľ alebo správca firmy — vo vašich firmách túto rolu nemáte.":
+    "Přístup může povolit jen vlastník nebo správce firmy — ve vašich firmách tuto roli nemáte.",
+  "Prístup uvidíte v Nastaveniach → API kľúče ako „AI asistent (MCP)“ a môžete ho kedykoľvek zrušiť.":
+    "Přístup uvidíte v Nastavení → API klíče jako „AI asistent (MCP)“ a můžete ho kdykoli zrušit.",
+  "Povoliť prístup": "Povolit přístup",
+  "Povoliť prístup — Faktero": "Povolit přístup — Faktero",
 };

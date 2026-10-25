@@ -85,11 +85,14 @@ export async function handleApi(
 
   const { data: keyRow } = await supabaseAdmin
     .from("api_keys")
-    .select("id, company_id, mode, revoked_at")
+    .select("id, company_id, mode, revoked_at, expires_at")
     .eq("key_hash", key_hash)
     .maybeSingle();
 
-  if (!keyRow || keyRow.revoked_at) {
+  // Token z OAuth (MCP) má dobu platnosti; obyčajný API kľúč ju nemá.
+  const vyprsal = (k: { expires_at?: string | null } | null) =>
+    !!k?.expires_at && Date.parse(k.expires_at) <= Date.now();
+  if (!keyRow || keyRow.revoked_at || vyprsal(keyRow as any)) {
     const r = jsonResp(401, {
       error: { code: "invalid_api_key", message: "API kľúč je neplatný alebo zneplatnený." },
     });
@@ -286,10 +289,11 @@ export async function overApiKluc(
 
   const { data } = await supabaseAdmin
     .from("api_keys")
-    .select("id, company_id, mode, revoked_at")
+    .select("id, company_id, mode, revoked_at, expires_at")
     .eq("key_hash", key_hash)
     .maybeSingle();
   if (!data || data.revoked_at) return null;
+  if ((data as any).expires_at && Date.parse((data as any).expires_at) <= Date.now()) return null;
 
   void supabaseAdmin
     .from("api_keys")

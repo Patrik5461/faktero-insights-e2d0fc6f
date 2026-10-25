@@ -16,6 +16,16 @@ import {
   type ActiveProduct,
 } from "@/lib/faktero/active-product";
 
+/**
+ * Kam po prihlásení: `?dalej=` z povolenia prístupu AI asistentovi (OAuth),
+ * inak úvodná stránka produktu. Len cesta na tomto webe — nie cudzia adresa.
+ */
+function dalejPoPrihlaseni(): string | null {
+  if (typeof window === "undefined") return null;
+  const d = new URLSearchParams(window.location.search).get("dalej");
+  return d && d.startsWith("/oauth/") && !d.startsWith("//") ? d : null;
+}
+
 export const Route = createFileRoute("/prihlasenie")({
   head: ({ match }) => ({
     meta: [
@@ -53,8 +63,11 @@ function LoginPage() {
     supabase.auth
       .getSession()
       .then(({ data }) => {
-        if (!zrusene && data.session)
+        if (!zrusene && data.session) {
+          const dalej = dalejPoPrihlaseni();
+          if (dalej) return window.location.assign(dalej);
           navigate({ to: landingPathFor(getActiveProduct() ?? "invoicing") as never });
+        }
       })
       .catch(() => {});
     return () => {
@@ -113,6 +126,8 @@ function LoginPage() {
       return toast.error(t(ch.sprava));
     }
     setNepotvrdeny(false);
+    const dalej = dalejPoPrihlaseni();
+    if (dalej) return window.location.assign(dalej);
     navigate({ to: landingPathFor(product) as any });
   }
 
