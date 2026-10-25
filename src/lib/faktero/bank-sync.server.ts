@@ -157,6 +157,12 @@ export async function stiahniTransakcieUctu(
     okno,
   );
 
+  // Pohyby prišli — prípadná stará chyba (napr. vypršaný súhlas) už neplatí.
+  await supabaseAdmin
+    .from("bank_accounts")
+    .update({ pohyby_ok_at: new Date().toISOString(), pohyby_chyba: null })
+    .eq("id", account.id);
+
   const odDna = new Date(Date.now() - okno * 86400_000).toISOString().slice(0, 10);
   const seen = await znameReferencie(supabaseAdmin, account.id, odDna);
 
@@ -346,6 +352,12 @@ export async function syncPripojenie(
           );
         } else {
           console.error(`[bank-sync] účet ${acc.iban ?? acc.id} zlyhal:`, e?.message ?? e);
+          // Dôvod k účtu — po 48 h bez úspechu ho uvidí človek pri účte aj vo zvončeku.
+          const { popisChybyPohybov } = await import("./bank-stav-pohybov");
+          await supabaseAdmin
+            .from("bank_accounts")
+            .update({ pohyby_chyba: popisChybyPohybov(String(e?.message ?? e)) })
+            .eq("id", acc.id);
         }
       }
     }

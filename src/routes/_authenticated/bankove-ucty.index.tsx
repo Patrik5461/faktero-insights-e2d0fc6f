@@ -42,6 +42,7 @@ import {
   Mail,
 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
+import { pohybyZastarane } from "@/lib/faktero/bank-stav-pohybov";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Bankové účty — Faktero") }] }),
@@ -529,6 +530,20 @@ function BankAccountsPage() {
                               title={a.unavailable_reason ?? undefined}
                             >
                               {t("Banka ho nepozná — obnovte súhlas")}
+                            </div>
+                          )}
+                          {/* Zostatok banka vydá aj bez súhlasu na pohyby — inak by účet vyzeral živý. */}
+                          {!a.unavailable_since && pohybyZastarane(a) && (
+                            <div
+                              role="status"
+                              className="mt-1 inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-2 py-0.5 text-[11px] font-medium text-rose-700 dark:text-rose-300"
+                              title={a.pohyby_chyba ?? undefined}
+                            >
+                              {a.pohyby_ok_at
+                                ? t("Pohyby sa nesťahujú od {datum} — obnovte súhlas", {
+                                    datum: new Date(a.pohyby_ok_at).toLocaleDateString(lokalJazyka(jazyk)),
+                                  })
+                                : t("Pohyby sa nesťahujú — obnovte súhlas")}
                             </div>
                           )}
                         </div>

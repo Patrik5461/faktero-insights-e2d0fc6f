@@ -376,3 +376,37 @@ describe("termíny vozového parku", () => {
     expect(n[0].to).toBe("/vozovy-park/v1");
   });
 });
+
+describe("bankový účet bez pohybov", () => {
+  it("vypršaný súhlas po dvoch dňoch vo zvončeku, krátky výpadok nie", () => {
+    const zaklad = {
+      today: "2026-10-25",
+      overdueInvoices: [],
+      overduePurchases: [],
+      unmatchedIncoming: [],
+      failedPayments: [],
+    };
+    const n = buildNotifications({
+      ...zaklad,
+      bankAccountsStale: [
+        {
+          id: "a1",
+          iban: "SK2909000000005220542779",
+          account_name: null,
+          pohyby_ok_at: "2026-10-01T09:00:00Z",
+          pohyby_chyba: "Súhlas banky na čítanie pohybov vypršal",
+        },
+        {
+          id: "a2",
+          iban: "SK77",
+          account_name: "Bežný",
+          pohyby_ok_at: "2026-10-25T05:00:00Z",
+          pohyby_chyba: "401",
+        },
+      ],
+    });
+    expect(n.map((x) => x.key)).toEqual(["bank_pohyby:a1:2026-10-01"]);
+    expect(n[0].severity).toBe("danger");
+    expect(n[0].to).toBe("/bankove-ucty");
+  });
+});

@@ -534,6 +534,8 @@ export type Database = {
           unavailable_reason: string | null
           unavailable_since: string | null
           updated_at: string
+          pohyby_ok_at: string | null
+          pohyby_chyba: string | null
         }
         Insert: {
           account_name?: string | null
@@ -550,6 +552,8 @@ export type Database = {
           unavailable_reason?: string | null
           unavailable_since?: string | null
           updated_at?: string
+          pohyby_ok_at?: string | null
+          pohyby_chyba?: string | null
         }
         Update: {
           account_name?: string | null
@@ -566,6 +570,8 @@ export type Database = {
           unavailable_reason?: string | null
           unavailable_since?: string | null
           updated_at?: string
+          pohyby_ok_at?: string | null
+          pohyby_chyba?: string | null
         }
         Relationships: [
           {
@@ -10409,6 +10415,7 @@ export type Database = {
           }
         ]
       }
+
     }
     Views: {
       stock_items_with_availability: {

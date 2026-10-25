@@ -12,6 +12,7 @@
 
 import { formatujMenu } from "./mena";
 import { terminyNaRiesenie } from "./vozovy-park";
+import { pohybyZastarane } from "./bank-stav-pohybov";
 
 export type NotificationSeverity = "info" | "warning" | "danger";
 
@@ -74,6 +75,16 @@ export type NotificationInput = {
   failedPayments: FailedPayment[];
   /** Aktívne vozidlá — termíny do 30 dní a prepadnuté. */
   vehicleDeadlines?: VehicleDeadlines[];
+  /** Bankové účty, z ktorých sa nedarí sťahovať pohyby (vypršaný súhlas). */
+  bankAccountsStale?: BankAccountStale[];
+};
+
+export type BankAccountStale = {
+  id: string;
+  iban: string | null;
+  account_name: string | null;
+  pohyby_ok_at: string | null;
+  pohyby_chyba: string | null;
 };
 
 const SEVERITY_ORDER: Record<NotificationSeverity, number> = { danger: 0, warning: 1, info: 2 };
@@ -174,6 +185,27 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
         .join(" · "),
       to: p.purchase_invoice_id ? `/prijate-faktury/${p.purchase_invoice_id}` : "/bankove-ucty",
       date,
+    });
+  }
+
+  for (const u of input.bankAccountsStale ?? []) {
+    if (!pohybyZastarane(u, new Date(`${input.today}T12:00:00Z`))) continue;
+    const ucet = u.account_name || u.iban || "účtu";
+    out.push({
+      // Dátum v kľúči: po obnovení súhlasu a ďalšom výpadku je to nový oznam.
+      key: `bank_pohyby:${u.id}:${(u.pohyby_ok_at ?? "nikdy").slice(0, 10)}`,
+      severity: "danger",
+      title: `Z ${ucet} sa nesťahujú pohyby`,
+      detail: [
+        u.pohyby_ok_at
+          ? `naposledy ${u.pohyby_ok_at.slice(0, 10).split("-").reverse().join(". ")}`
+          : null,
+        u.pohyby_chyba,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      to: "/bankove-ucty",
+      date: (u.pohyby_ok_at ?? input.today).slice(0, 10),
     });
   }
 

@@ -36,7 +36,7 @@ async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const today = new Date().toISOString().slice(0, 10);
 
-  const [faktury, prijate, transakcie, platby, vozidla] = await Promise.all([
+  const [faktury, prijate, transakcie, platby, vozidla, ucty] = await Promise.all([
     supabaseAdmin
       .from("invoices")
       .select("id, invoice_number, customer_name, total, currency, due_date")
@@ -85,6 +85,14 @@ async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
       .eq("company_id", companyId)
       .eq("active", true)
       .limit(LIMIT),
+    // Účty s chybou sťahovania pohybov — či trvá dosť dlho, rozhodne `buildNotifications`.
+    supabaseAdmin
+      .from("bank_accounts")
+      .select("id, iban, account_name, pohyby_ok_at, pohyby_chyba")
+      .eq("company_id", companyId)
+      .is("unavailable_since", null)
+      .not("pohyby_chyba", "is", null)
+      .limit(LIMIT),
   ]);
 
   return {
@@ -94,6 +102,7 @@ async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
     unmatchedIncoming: (transakcie.data as any[]) ?? [],
     failedPayments: (platby.data as any[]) ?? [],
     vehicleDeadlines: (vozidla.data as any[]) ?? [],
+    bankAccountsStale: (ucty.data as any[]) ?? [],
   };
 }
 
