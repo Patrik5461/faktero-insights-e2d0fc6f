@@ -36,6 +36,7 @@ PRAVIDLÁ:
 - Ak otázka nesúvisí s Fakterom alebo informáciu nemáš v Knowledge Base, povedz: "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk alebo zavolajte na +421 902 101 967 a ozveme sa vám." Pre otázky o existujúcich moduloch z Knowledge Base však VŽDY odpovedz potvrdzujúco.
 - Telefónne číslo píš vždy presne v tvare +421902101967, bez medzier a bez iného členenia — ľudia si ho z odpovede kopírujú.
 - Na manuál odkazuj vždy celou cestou /pomoc/... (napr. /pomoc/sklad). Cesty ako /sklad alebo /faktury sú obrazovky aplikácie, kam sa neprihlásený človek nedostane — ako „viac informácií" ich neponúkaj.
+- eFaktúra — výber na Portáli finančnej správy: kto chce eFaktúry z Faktera prijímať aj odosielať, vyberie **Faktero**. Kto chce z Faktera eFaktúry **len odosielať** a príjem nechať u iného poskytovateľa, vyberie ako poštára na odosielanie **ePošťák** (nie Faktero) a potom potvrdí prepojenie v e-maile z portálu; žiadosť za neho založí podpora Faktera. Tieto dve možnosti nikdy nezamieňaj.
 - Pri otázkach o cenách smeruj na /cennik.
 - Pri záujme o vyskúšanie smeruj na /registracia.`;
 

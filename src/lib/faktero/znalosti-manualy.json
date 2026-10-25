@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-24",
+ "vytvorene": "2026-10-25",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -329,7 +329,7 @@
     },
     {
      "nadpis": "Len odosielanie (príjem u iného poskytovateľa)",
-     "text": "<>\nAk eFaktúry prijímate u iného poskytovateľa a nechcete to meniť, môžete ich\nz Faktera len odosielať . Príjem ostáva tam, kde je — v sieti Peppol sa pre\nvašu firmu nič neprepisuje a migračný kód netreba.\n-\nNapíšte na podporu Faktera (/podpora), že chcete len odosielanie. Žiadosť\nu nášho partnera ePošták založíme za vás.\n-\nNa Portáli finančnej správy vyberte ePošťák ako poštára na\nodosielanie . Poštára na príjem nemeníte — výber slúži len na overenie, že\nfirma smie používať svoje Peppol ID.\n-\nNa kontaktný e-mail z portálu vám príde správa — v nej potvrďte prepojenie s Fakterom.\n-\nOdosielanie sa potom zapne samo a dáme vám vedieť e-mailom. Na stránke eFaktúra uvidíte\nštítok Len odosielanie .\nČo v tomto režime nejde: prijaté eFaktúry sa vo Fakteri nezobrazia a\nneuvidíte tu ani odpovede odberateľov na vaše faktúry (prijatie alebo\nzamietnutie) — obe dostávate u poskytovateľa príjmu. Stav doručenia odoslaných faktúr vo\nFakteri vidíte. Údaje o odoslaných faktúrach hlási finančnej správe náš partner, o\nprijatých váš poskytovateľ príjmu."
+     "text": "<>\nAk eFaktúry prijímate u iného poskytovateľa a nechcete to meniť, môžete ich\nz Faktera len odosielať . Príjem ostáva tam, kde je — v sieti Peppol sa pre\nvašu firmu nič neprepisuje a migračný kód netreba.\n-\nNapíšte na podporu Faktera (/podpora), že chcete len odosielanie. Žiadosť\nu nášho partnera ePošták založíme za vás.\n-\nNa Portáli finančnej správy vyberte ePošťák ako poštára na\nodosielanie — nie Faktero ; Faktero sa vyberá len vtedy,\nkeď u nás eFaktúry aj prijímate. Poštára na príjem nemeníte — výber slúži len na overenie,\nže firma smie používať svoje Peppol ID.\n-\nNa kontaktný e-mail z portálu vám príde správa — v nej potvrďte prepojenie s Fakterom.\n-\nOdosielanie sa potom zapne samo a dáme vám vedieť e-mailom. Na stránke eFaktúra uvidíte\nštítok Len odosielanie .\nČo v tomto režime nejde: prijaté eFaktúry sa vo Fakteri nezobrazia a\nneuvidíte tu ani odpovede odberateľov na vaše faktúry (prijatie alebo\nzamietnutie) — obe dostávate u poskytovateľa príjmu. Stav doručenia odoslaných faktúr vo\nFakteri vidíte. Údaje o odoslaných faktúrach hlási finančnej správe náš partner, o\nprijatých váš poskytovateľ príjmu."
     },
     {
      "nadpis": "Odoslanie eFaktúry",

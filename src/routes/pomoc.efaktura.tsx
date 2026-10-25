@@ -228,8 +228,9 @@ const sections: HelpSection[] = [
           </li>
           <li>
             Na Portáli finančnej správy vyberte <strong>ePošťák</strong> ako poštára na{" "}
-            <strong>odosielanie</strong>. Poštára na príjem nemeníte — výber slúži len na overenie, že
-            firma smie používať svoje Peppol ID.
+            <strong>odosielanie</strong> — <strong>nie Faktero</strong>; Faktero sa vyberá len vtedy,
+            keď u nás eFaktúry aj prijímate. Poštára na príjem nemeníte — výber slúži len na overenie,
+            že firma smie používať svoje Peppol ID.
           </li>
           <li>
             Na kontaktný e-mail z portálu vám príde správa — v nej potvrďte prepojenie s Fakterom.
