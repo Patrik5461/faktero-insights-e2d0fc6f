@@ -517,3 +517,28 @@ describe("SuperFaktúra xlsx — excelové dátumy a faktúra bez rozpisu DPH", 
     ).toBe(23);
   });
 });
+
+describe("SuperFaktúra xlsx — názov jedinej položky", async () => {
+  const { nazovJedinejPolozky } = await import("./import-superfaktura.server");
+  it("berie stĺpec Položky, nie titul dokladu", () => {
+    const row = {
+      "Názov / Popis": "Faktúra 2026041",
+      Položky:
+        'Apple iMac 27" A1419 2015 i5 24 GB RAM 1TB - BC , Apple Mac mini (2018) 3.0 GHz 6-Core Intel Core i5 16 GB RAM 512 GB SSD - A , ',
+    };
+    expect(nazovJedinejPolozky(row, { item_description: "Názov / Popis" })).toBe(
+      'Apple iMac 27" A1419 2015 i5 24 GB RAM 1TB - BC, Apple Mac mini (2018) 3.0 GHz 6-Core Intel Core i5 16 GB RAM 512 GB SSD - A',
+    );
+  });
+  it("bez stĺpca Položky a s titulom dokladu vráti prázdno", () => {
+    expect(
+      nazovJedinejPolozky(
+        { "Názov / Popis": "Faktúra 2026040" },
+        { item_description: "Názov / Popis" },
+      ),
+    ).toBe("");
+    expect(nazovJedinejPolozky({ Popis: "Grafické práce" }, { item_description: "Popis" })).toBe(
+      "Grafické práce",
+    );
+  });
+});

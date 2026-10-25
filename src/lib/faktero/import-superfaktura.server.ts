@@ -831,6 +831,35 @@ export function normDate(v: string): string | null {
   return null;
 }
 
+/**
+ * Názov riadku faktúry, keď súbor nemá rozpis položiek. Export SuperFaktúry
+ * má skutočný text v stĺpci „Položky“ (viac položiek oddelených „ , “),
+ * kým „Názov / Popis“ je len titul dokladu („Faktúra 2026040“) — ten sa
+ * predtým dostal na faktúru namiesto popisu plnenia.
+ */
+export function nazovJedinejPolozky(
+  row: Record<string, string>,
+  mapping: Partial<Record<FieldKey, string>>,
+): string {
+  const titulDokladu = (v: string) =>
+    /^(fakt[uú]ra|invoice|dobropis|z[aá]lohov[aá] fakt[uú]ra)\s*\S*$/i.test(v);
+  const stlpecPolozky = Object.keys(row).find((h) => normKey(h) === "polozky");
+  const kandidati = [
+    stlpecPolozky ? row[stlpecPolozky] : "",
+    pick(row, mapping, "item_name"),
+    pick(row, mapping, "item_description"),
+  ];
+  for (const k of kandidati) {
+    const text = String(k ?? "")
+      .split(/\s+,\s*/)
+      .map((x) => x.replace(/\s+/g, " ").trim().replace(/,$/, "").trim())
+      .filter(Boolean)
+      .join(", ");
+    if (text && !titulDokladu(text)) return text.slice(0, 500);
+  }
+  return "";
+}
+
 /** „Nie sme platiteľmi DPH.“ a podobné vety v poznámke faktúry. */
 export function jeNeplatitelPoznamka(poznamka: string | undefined): boolean {
   return /(nie\s+(sme|som|je)|neplatite)\w*\s*(platite\w*\s+)?dph|neplatite\w*\s+dph/i.test(
@@ -1150,7 +1179,7 @@ export async function runImport(args: {
         }
         items.push({
           // Súbor nemal rozpis položiek — faktúra príde ako jeden riadok.
-          name: pick(head, mapping, "item_description") || `Položky faktúry ${invNo}`,
+          name: nazovJedinejPolozky(head, mapping) || `Položky faktúry ${invNo}`,
           description: null,
           discount_percent: 0,
           quantity: 1,
