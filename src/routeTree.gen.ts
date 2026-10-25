@@ -74,6 +74,7 @@ import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscript
 import { Route as AdminUctyZdarmaRouteImport } from './routes/admin.ucty-zdarma'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
 import { Route as AktivaciaEfakturyTokenRouteImport } from './routes/aktivacia-efaktury.$token'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as AuthPotvrdenieRouteImport } from './routes/auth.potvrdenie'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
@@ -674,6 +675,11 @@ const AdminUsageRoute = AdminUsageRouteImport.update({
 const AktivaciaEfakturyTokenRoute = AktivaciaEfakturyTokenRouteImport.update({
   id: '/aktivacia-efaktury/$token',
   path: '/aktivacia-efaktury/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthPotvrdenieRoute = AuthPotvrdenieRouteImport.update({
@@ -2230,6 +2236,7 @@ export interface FileRoutesByFullPath {
   '/admin/ucty-zdarma': typeof AdminUctyZdarmaRoute
   '/admin/usage': typeof AdminUsageRoute
   '/aktivacia-efaktury/$token': typeof AktivaciaEfakturyTokenRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
@@ -2558,6 +2565,7 @@ export interface FileRoutesByTo {
   '/admin/ucty-zdarma': typeof AdminUctyZdarmaRoute
   '/admin/usage': typeof AdminUsageRoute
   '/aktivacia-efaktury/$token': typeof AktivaciaEfakturyTokenRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
@@ -2895,6 +2903,7 @@ export interface FileRoutesById {
   '/admin/ucty-zdarma': typeof AdminUctyZdarmaRoute
   '/admin/usage': typeof AdminUsageRoute
   '/aktivacia-efaktury/$token': typeof AktivaciaEfakturyTokenRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
@@ -3233,6 +3242,7 @@ export interface FileRouteTypes {
     | '/admin/ucty-zdarma'
     | '/admin/usage'
     | '/aktivacia-efaktury/$token'
+    | '/api/mcp'
     | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
@@ -3561,6 +3571,7 @@ export interface FileRouteTypes {
     | '/admin/ucty-zdarma'
     | '/admin/usage'
     | '/aktivacia-efaktury/$token'
+    | '/api/mcp'
     | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
@@ -3897,6 +3908,7 @@ export interface FileRouteTypes {
     | '/admin/ucty-zdarma'
     | '/admin/usage'
     | '/aktivacia-efaktury/$token'
+    | '/api/mcp'
     | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
@@ -4196,6 +4208,7 @@ export interface RootRouteChildren {
   VyvojariRoute: typeof VyvojariRouteWithChildren
   ZabudnuteHesloRoute: typeof ZabudnuteHesloRoute
   AktivaciaEfakturyTokenRoute: typeof AktivaciaEfakturyTokenRoute
+  ApiMcpRoute: typeof ApiMcpRoute
   AuthPotvrdenieRoute: typeof AuthPotvrdenieRoute
   DanovyDokladTokenRoute: typeof DanovyDokladTokenRoute
   DennySuhrnOdhlasenieRoute: typeof DennySuhrnOdhlasenieRoute
@@ -4773,6 +4786,13 @@ declare module '@tanstack/react-router' {
       path: '/aktivacia-efaktury/$token'
       fullPath: '/aktivacia-efaktury/$token'
       preLoaderRoute: typeof AktivaciaEfakturyTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/potvrdenie': {
@@ -7330,6 +7350,7 @@ const rootRouteChildren: RootRouteChildren = {
   VyvojariRoute: VyvojariRouteWithChildren,
   ZabudnuteHesloRoute: ZabudnuteHesloRoute,
   AktivaciaEfakturyTokenRoute: AktivaciaEfakturyTokenRoute,
+  ApiMcpRoute: ApiMcpRoute,
   AuthPotvrdenieRoute: AuthPotvrdenieRoute,
   DanovyDokladTokenRoute: DanovyDokladTokenRoute,
   DennySuhrnOdhlasenieRoute: DennySuhrnOdhlasenieRoute,

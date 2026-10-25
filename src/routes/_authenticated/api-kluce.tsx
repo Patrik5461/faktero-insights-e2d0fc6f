@@ -193,6 +193,18 @@ function ApiKeysPage() {
             </tbody>
           </table>
         </div>
+        <div className="mt-6 rounded-xl border border-border bg-card p-4 text-sm">
+          <div className="font-medium">{t("Napojenie AI asistenta (MCP)")}</div>
+          <p className="mt-1 text-muted-foreground">
+            {t(
+              "S API kľúčom sa na Faktero napojí aj Claude, ChatGPT či iný AI asistent cez MCP — adresa servera je",
+            )}{" "}
+            <code className="font-mono text-foreground">https://www.faktero.sk/api/mcp</code>.{" "}
+            <a href="/docs/api#mcp" className="text-primary hover:underline">
+              {t("Návod na napojenie")}
+            </a>
+          </p>
+        </div>
       </PageBody>
     </>
   );

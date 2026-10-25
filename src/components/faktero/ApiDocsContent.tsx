@@ -80,6 +80,7 @@ const SECTIONS = [
   { id: "recurring", label: "8. Opakované faktúry" },
   { id: "expenses", label: "9. Prijaté doklady a banka" },
   { id: "webhooks", label: "10. Webhooky" },
+  { id: "mcp", label: "AI asistenti (MCP)" },
   { id: "examples", label: "11. Príklady kódu" },
   { id: "status-codes", label: "12. Stavové kódy" },
   { id: "rate-limits", label: "13. Limity požiadaviek" },
@@ -530,6 +531,54 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
               "Ak váš endpoint nevráti 2xx do 10 sekúnd, Faktero pokus zopakuje s exponenciálnym odstupom (1 min, 5 min, 30 min, 2 h, 12 h) — celkovo max. 5 pokusov. Všetky pokusy a ich stavy nájdete v sekcii Webhooky → Logy.",
             )}
           </p>
+        </section>
+
+        <section id="mcp" className="scroll-mt-20">
+          <h2 className="text-2xl font-semibold">{t("AI asistenti (MCP)")}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t(
+              "Faktero má MCP server — cez Model Context Protocol sa naň napojí Claude, ChatGPT, Cursor či iný AI asistent a pracuje s údajmi vašej firmy: povie, kto vám dlhuje, nájde faktúru, vystaví novú alebo pozrie pohyby na účte. Prihlasuje sa tým istým API kľúčom ako API.",
+            )}
+          </p>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+            <li>
+              {t("Adresa:")} <code className="font-mono">https://www.faktero.sk/api/mcp</code>{" "}
+              {t("(Streamable HTTP)")}
+            </li>
+            <li>
+              {t("Hlavička:")} <code className="font-mono">Authorization: Bearer fk_live_…</code>{" "}
+              {t("— na skúšanie použite testovací kľúč.")}
+            </li>
+            <li>
+              {t(
+                "Nástroje: faktúry a ich detail, faktúry po splatnosti, vystavenie faktúry, označenie úhrady, odberatelia, cenové ponuky, prijaté faktúry, bankové účty a pohyby.",
+              )}
+            </li>
+            <li>
+              {t(
+                "Asistent nič nemaže a nič neposiela von — faktúru vystaví, ale odoslanie e-mailom či ako eFaktúru je na vás. Zapisujúce nástroje sú označené, aby si ich klient dal potvrdiť.",
+              )}
+            </li>
+          </ul>
+          <h3 className="mt-5 font-semibold">Claude Code</h3>
+          <CodeBlock
+            lang="bash"
+            code={`claude mcp add --transport http faktero https://www.faktero.sk/api/mcp \\
+  --header "Authorization: Bearer fk_live_..."`}
+          />
+          <h3 className="mt-5 font-semibold">{t("Ostatní klienti (konfigurácia JSON)")}</h3>
+          <CodeBlock
+            lang="json"
+            code={`{
+  "mcpServers": {
+    "faktero": {
+      "type": "http",
+      "url": "https://www.faktero.sk/api/mcp",
+      "headers": { "Authorization": "Bearer fk_live_..." }
+    }
+  }
+}`}
+          />
         </section>
 
         <section id="examples" className="scroll-mt-20">
