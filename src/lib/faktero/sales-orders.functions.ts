@@ -356,6 +356,7 @@ export const deleteSalesOrder = createServerFn({ method: "POST" })
     // Zrušiť sa dá aj čiastočne vyfakturovaná objednávka. Taká sa mazať nesmie —
     // faktúra sa na ňu odvoláva a po zmazaní by odkaz viedol do prázdna.
     const { count: faktury } = await context.supabase
+      // aj-zmazane: faktúra v koši sa dá obnoviť a odkazuje na objednávku
       .from("invoices")
       .select("id", { count: "exact", head: true })
       .eq("sales_order_id", data.id);

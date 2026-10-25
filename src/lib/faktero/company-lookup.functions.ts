@@ -46,6 +46,7 @@ export const findCustomerByIcoFn = createServerFn({ method: "POST" })
       .from("customers")
       .select("id, name, ico, email")
       .eq("company_id", data.companyId)
+      .is("deleted_at", null)
       .or(`ico.eq.${data.ico},ico.eq.${padded}`)
       .limit(1);
     const m = rows?.[0];

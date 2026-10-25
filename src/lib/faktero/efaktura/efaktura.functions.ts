@@ -59,7 +59,8 @@ export const getEfakturaReadinessFn = createServerFn({ method: "POST" })
         supabase
           .from("invoices")
           .select("id", { count: "exact", head: true })
-          .eq("company_id", data.companyId),
+          .eq("company_id", data.companyId)
+          .is("deleted_at", null),
         supabase
           .from("efaktura_documents")
           .select("id", { count: "exact", head: true })

@@ -139,6 +139,7 @@ export const objednavkyShoptetFn = createServerFn({ method: "POST" })
     const kody = objednavky.map((o) => `shoptet:${o.code}`);
     const { data: faktury } = kody.length
       ? await context.supabase
+          // aj-zmazane: objednávka s už vytvorenou (aj zmazanou) faktúrou sa nesmie fakturovať znova
           .from("invoices")
           .select("id, invoice_number, external_id")
           .eq("company_id", data.company_id)

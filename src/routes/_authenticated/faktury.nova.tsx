@@ -621,6 +621,7 @@ function NewInvoice() {
         "id, name, ico, dic, ic_dph, street, city, zip, country, email, invoice_language, vies_platne, vies_overene_at",
       )
       .eq("company_id", cid)
+      .is("deleted_at", null)
       .eq("odberatel", true)
       .order("name")
       .then(({ data }) => setCustomers(data ?? []));
@@ -628,6 +629,7 @@ function NewInvoice() {
       .from("products")
       .select("id, name, unit, unit_price, vat_rate, description, colny_kod, krajina_povodu, hmotnost_kg")
       .eq("company_id", cid)
+      .is("deleted_at", null)
       .eq("active", true)
       .order("name")
       .then(({ data }) => setProducts(data ?? []));
@@ -2717,6 +2719,7 @@ function InvoicePickerModal({
       .from("invoices")
       .select("id, invoice_number, variable_symbol, customer_name, total, currency, issue_date, type, status, oprava_25a")
       .eq("company_id", cid)
+      .is("deleted_at", null)
       .order("issue_date", { ascending: false })
       .limit(50);
     if (mode === "advance") query = query.eq("type", "proforma");

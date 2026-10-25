@@ -45,6 +45,7 @@ export const Route = createFileRoute("/api/v1/quotes")({
             .from("quotes")
             .select("*")
             .eq("company_id", ctx.company_id)
+            .is("deleted_at", null)
             .order("created_at", { ascending: false })
             .limit(limit);
           if (status) q = q.eq("status", status as any);
@@ -65,6 +66,7 @@ export const Route = createFileRoute("/api/v1/quotes")({
 
           if (d.external_id) {
             const { data: dupe } = await ctx.supabase
+              // aj-zmazane: idempotencia podľa external_id
               .from("quotes")
               .select("*")
               .eq("company_id", ctx.company_id)

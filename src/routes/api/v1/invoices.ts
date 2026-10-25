@@ -62,6 +62,7 @@ export const Route = createFileRoute("/api/v1/invoices")({
             .from("invoices")
             .select("*")
             .eq("company_id", ctx.company_id)
+            .is("deleted_at", null)
             .order("created_at", { ascending: false })
             .limit(limit);
           if (status) q = q.eq("status", status as any);

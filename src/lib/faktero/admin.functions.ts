@@ -95,7 +95,8 @@ export const getAdminOverview = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("invoices")
         .select("id", { count: "exact", head: true })
-        .gte("created_at", monthStart),
+        .gte("created_at", monthStart)
+        .is("deleted_at", null),
       supabaseAdmin
         .from("api_logs")
         .select("id", { count: "exact", head: true })
@@ -247,6 +248,7 @@ export const getAdminCompany = createServerFn({ method: "POST" })
         .is("deleted_at", null),
       supabaseAdmin.from("subscriptions").select("*").eq("company_id", data.id).maybeSingle(),
       supabaseAdmin
+        // aj-zmazane: posledná aktivita firmy — vznik dokladu sa počíta, aj keď ho potom zmazali
         .from("invoices")
         .select("created_at")
         .eq("company_id", data.id)

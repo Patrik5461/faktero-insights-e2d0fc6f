@@ -52,6 +52,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
           .from("purchase_invoices")
           .select("pohoda_predkontacia, pohoda_clenenie_dph")
           .eq("company_id", data.company_id)
+          .is("deleted_at", null)
           .not("pohoda_predkontacia", "is", null)
           .order("created_at", { ascending: false })
           .limit(500),

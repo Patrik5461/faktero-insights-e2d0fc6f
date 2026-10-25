@@ -42,6 +42,7 @@ export async function spustiAutoImportShoptetu(): Promise<{
       }
       if (!kody.size) continue;
       const { data: hotove } = await supabaseAdmin
+        // aj-zmazane: objednávka s už vytvorenou (aj zmazanou) faktúrou sa nesmie fakturovať znova
         .from("invoices")
         .select("external_id")
         .eq("company_id", n.company_id)

@@ -111,6 +111,7 @@ function NewOrder() {
       .from("products")
       .select("id, name, unit, unit_price, vat_rate, description")
       .eq("company_id", cid)
+      .is("deleted_at", null)
       .eq("active", true)
       .order("name")
       .then(({ data }) => setProducts(data ?? []));

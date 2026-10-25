@@ -159,6 +159,7 @@ export async function rozdielyOprotiPohode(
 
   /* ---------------------------------------------------- vydané faktúry */
   const { data: faktury } = await supabase
+    // aj-zmazane: odovzdaný a potom zmazaný doklad je rozdiel voči Pohode, ktorý treba ukázať
     .from("invoices")
     .select("*")
     .eq("company_id", companyId)
@@ -217,6 +218,7 @@ export async function rozdielyOprotiPohode(
   /* -------------------------------------- prijaté faktúry a bločky */
   const [{ data: prijate }, { data: doklady }] = await Promise.all([
     supabase
+      // aj-zmazane: odovzdaný a potom zmazaný doklad je rozdiel voči Pohode, ktorý treba ukázať
       .from("purchase_invoices")
       .select("*")
       .eq("company_id", companyId)

@@ -69,6 +69,7 @@ export async function vytvorFakturu(
   // Rovnaký externý identifikátor = tá istá objednávka; druhá faktúra nevznikne.
   if (d.external_id) {
     const { data: dupe } = await supabase
+      // aj-zmazane: idempotencia podľa external_id — opakovaná požiadavka nesmie založiť druhú faktúru
       .from("invoices")
       .select("*")
       .eq("company_id", companyId)

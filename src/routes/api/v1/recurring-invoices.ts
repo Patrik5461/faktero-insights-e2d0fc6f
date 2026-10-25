@@ -43,6 +43,7 @@ export const Route = createFileRoute("/api/v1/recurring-invoices")({
             .from("recurring_invoices")
             .select("*")
             .eq("company_id", ctx.company_id)
+            .is("deleted_at", null)
             .order("created_at", { ascending: false });
           if (error) return err("db_error", error.message, 500);
           return ok({ data });

@@ -1046,10 +1046,12 @@ export async function runImport(args: {
 
   // Pre-fetch existing customers + invoices for dup detection
   const { data: existingCustomers } = await supabaseAdmin
+    // aj-zmazane: duplicita odberateľa — zmazaný sa nezakladá druhýkrát
     .from("customers")
     .select("id, name, ico, email")
     .eq("company_id", companyId);
   const { data: existingInvoices } = await supabaseAdmin
+    // aj-zmazane: duplicita čísla — číslo zmazanej faktúry je obsadené (obnovenie by narazilo)
     .from("invoices")
     .select("id, invoice_number, original_external_id")
     .eq("company_id", companyId);

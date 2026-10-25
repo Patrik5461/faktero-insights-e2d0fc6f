@@ -390,6 +390,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
       .select("supplier_iban")
       .eq("customer_id", k.id)
       .eq("samofakturacia", true)
+      .is("deleted_at", null)
       .not("supplier_iban", "is", null)
       .order("issue_date", { ascending: false })
       .limit(1)

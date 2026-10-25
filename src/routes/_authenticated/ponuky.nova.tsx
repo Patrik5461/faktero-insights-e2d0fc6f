@@ -95,6 +95,7 @@ function NewQuote() {
       .from("customers")
       .select("id, name, ico, dic, ic_dph, street, city, zip, country, email")
       .eq("company_id", cid)
+      .is("deleted_at", null)
       .eq("odberatel", true)
       .then(({ data }) => setCustomers(data ?? []));
     supabase

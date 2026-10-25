@@ -315,6 +315,7 @@ export async function prepocitajPredbezneNaBmf(): Promise<number> {
   const skonceny = `delivery_date.lt.${zaciatokMesiaca},and(delivery_date.is.null,issue_date.lt.${zaciatokMesiaca})`;
 
   const { data: faktury } = await db
+    // aj-zmazane: doplnenie konečného kurzu — oprava údaja neškodí ani dokladu v koši
     .from("invoices")
     .select("id, currency, issue_date, delivery_date, subtotal, vat_total, total")
     .eq("exchange_rate_source", "ecb_predbezne")
@@ -341,6 +342,7 @@ export async function prepocitajPredbezneNaBmf(): Promise<number> {
   }
 
   const { data: prijate } = await db
+    // aj-zmazane: doplnenie konečného kurzu — oprava údaja neškodí ani dokladu v koši
     .from("purchase_invoices")
     .select("id, currency, issue_date, delivery_date, amount_without_vat, vat_amount")
     .eq("exchange_rate_source", "ecb_predbezne")

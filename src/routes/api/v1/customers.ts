@@ -33,6 +33,7 @@ export const Route = createFileRoute("/api/v1/customers")({
             .from("customers")
             .select("*")
             .eq("company_id", ctx.company_id)
+            .is("deleted_at", null)
             .order("created_at", { ascending: false })
             .limit(limit);
           if (error)
@@ -55,6 +56,7 @@ export const Route = createFileRoute("/api/v1/customers")({
             );
           if (parsed.data.external_id) {
             const { data: existing } = await ctx.supabase
+              // aj-zmazane: idempotencia podľa external_id
               .from("customers")
               .select("*")
               .eq("company_id", ctx.company_id)

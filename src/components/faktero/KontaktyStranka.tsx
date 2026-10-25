@@ -526,6 +526,7 @@ function CustomerDialog({
   useEffect(() => {
     if (krajinaFirmy !== "DE") return;
     (supabase as any)
+      // aj-zmazane: len skúška, či stĺpec existuje
       .from("customers")
       .select("leitweg_id")
       .limit(1)

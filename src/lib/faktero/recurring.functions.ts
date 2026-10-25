@@ -83,6 +83,7 @@ export const getRecurringWidgetStats = createServerFn({ method: "GET" })
         .select("next_run")
         .in("company_id", companyIds)
         .eq("active", true)
+        .is("deleted_at", null)
         .order("next_run", { ascending: true })
         .limit(1)
         .maybeSingle(),
@@ -96,7 +97,8 @@ export const getRecurringWidgetStats = createServerFn({ method: "GET" })
         .from("recurring_invoices")
         .select("id", { count: "exact", head: true })
         .in("company_id", companyIds)
-        .eq("active", true),
+        .eq("active", true)
+        .is("deleted_at", null),
     ]);
     return {
       last_success_at: (lastOk.data as any)?.created_at ?? null,

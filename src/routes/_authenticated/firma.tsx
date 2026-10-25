@@ -918,11 +918,13 @@ function NumberingPreview({ companyId, format }: { companyId: string; format: st
     (async () => {
       const [periodRes, allRes] = await Promise.all([
         supabase
+          // aj-zmazane: číslovanie — poradie zmazanej faktúry je obsadené
           .from("invoices")
           .select("sequence_number")
           .eq("company_id", companyId)
           .gte("issue_date", start)
           .lt("issue_date", end),
+        // aj-zmazane: číslovanie — číslo zmazanej faktúry je obsadené
         supabase.from("invoices").select("invoice_number").eq("company_id", companyId),
       ]);
       if (cancelled) return;
