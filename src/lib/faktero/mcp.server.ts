@@ -464,12 +464,19 @@ export async function obsluzMcp(request: Request): Promise<Response> {
 
   const auth = request.headers.get("authorization") ?? "";
   const volaj: Volaj = async (metoda, cesta, data) => {
-    const r = await fetch(new URL(cesta, request.url), {
+    /*
+      Priamo na tento server, nie cez verejnú adresu: za nginxom príde
+      request.url ako http://… a presmerovanie na https by hlavičku
+      Authorization zahodilo (iný pôvod).
+    */
+    const zaklad = `http://127.0.0.1:${process.env.PORT || process.env.NITRO_PORT || 3000}`;
+    const r = await fetch(new URL(cesta, zaklad), {
       method: metoda,
       headers: {
         authorization: auth,
         accept: "application/json",
         "user-agent": "Faktero-MCP/1.0",
+        "x-forwarded-for": request.headers.get("x-forwarded-for") ?? "",
         ...(data !== undefined ? { "content-type": "application/json" } : {}),
       },
       body: data !== undefined ? JSON.stringify(data) : undefined,
