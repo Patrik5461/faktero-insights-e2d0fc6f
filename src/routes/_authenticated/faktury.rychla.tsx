@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PoleDokladu, VSTUP_DOKLADU } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useEffect, useState } from "react";
@@ -131,9 +132,10 @@ function QuickInvoicePage() {
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
               <h2 className="font-medium">{t("Odberateľ")}</h2>
               <select
+                aria-label={t("Odberateľ")}
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className={VSTUP_DOKLADU}
               >
                 <option value="">{t("— vyberte —")}</option>
                 {customers.map((c) => (
@@ -155,27 +157,27 @@ function QuickInvoicePage() {
           {step === 2 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
               <h2 className="font-medium">{t("Suma a popis")}</h2>
-              <label className="block text-[13px] font-semibold text-foreground">
-                {t("Suma (s DPH)")}
+              <PoleDokladu label={t("Suma (s DPH)")} htmlFor="suma-rychla">
                 <input
+                  id="suma-rychla"
                   type="number"
                   inputMode="decimal"
                   step="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-base font-normal"
+                  className={`${VSTUP_DOKLADU} text-base`}
                   autoFocus
                 />
-              </label>
-              <label className="block text-[13px] font-semibold text-foreground">
-                {t("DPH")}
+              </PoleDokladu>
+              <PoleDokladu label={t("DPH")} htmlFor="dph-rychla">
                 <select
+                  id="dph-rychla"
                   value={vatRate}
                   onChange={(e) => {
                     setVatRate(Number(e.target.value));
                     setDphRucne(true);
                   }}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal"
+                  className={VSTUP_DOKLADU}
                 >
                   {sadzbyRezimu(rezim).map((r) => (
                     <option key={r} value={r}>
@@ -183,20 +185,25 @@ function QuickInvoicePage() {
                     </option>
                   ))}
                 </select>
-              </label>
-              <label className="block text-[13px] font-semibold text-foreground">
-                {t("Text nad položkami")} <span className="text-destructive">*</span>
+              </PoleDokladu>
+              <PoleDokladu
+                label={
+                  <>
+                    {t("Text nad položkami")} <span className="text-destructive">*</span>
+                  </>
+                }
+                htmlFor="text-rychla"
+                napoveda={t("Vytlačí sa nad tabuľkou; suma pod ním pôjde ako jeden riadok.")}
+              >
                 <input
+                  id="text-rychla"
                   required
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder={t("Napríklad: Práce podľa objednávky č. 2026/114")}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal"
+                  className={VSTUP_DOKLADU}
                 />
-                <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                  {t("Vytlačí sa nad tabuľkou; suma pod ním pôjde ako jeden riadok.")}
-                </span>
-              </label>
+              </PoleDokladu>
               <div className="flex gap-2">
                 <button
                   onClick={() => setStep(1)}

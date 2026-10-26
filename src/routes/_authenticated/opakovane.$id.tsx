@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useEffect, useMemo, useState } from "react";
@@ -201,61 +202,64 @@ function RecurringDetail() {
       />
       <PageBody>
         <div className="space-y-6">
-          <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-3">
-            <label className="block sm:col-span-3">
-              <span className="text-sm font-medium">{t("Názov")}</span>
-              <input
-                value={rec.name}
-                onChange={(e) => setRec({ ...rec, name: e.target.value })}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">{t("Frekvencia")}</span>
-              <select
-                value={rec.frequency}
-                onChange={(e) => setRec({ ...rec, frequency: e.target.value })}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="weekly">{t("Týždenne")}</option>
-                <option value="monthly">{t("Mesačne")}</option>
-                <option value="quarterly">{t("Štvrťročne")}</option>
-                <option value="yearly">{t("Ročne")}</option>
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">{t("Ďalší beh")}</span>
-              <input
-                type="date"
-                value={rec.next_run}
-                onChange={(e) => setRec({ ...rec, next_run: e.target.value })}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">{t("Splatnosť (dni)")}</span>
-              <input
-                type="number"
-                value={rec.due_days}
-                onChange={(e) => setRec({ ...rec, due_days: Number(e.target.value) })}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">{t("Mena")}</span>
-              <select
-                value={rec.currency}
-                onChange={(e) => setRec({ ...rec, currency: e.target.value })}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {MENY.map((m) => (
-                  <option key={m.code} value={m.code}>
-                    {m.code} {m.symbol} — {m.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          {/* Tie isté polia a mriežka ako na faktúre (PoleDokladu). */}
+          <section className="min-w-0 rounded-xl border border-border bg-card p-5">
+            <MriezkaDokladu>
+              <PoleDokladu label={t("Názov")} htmlFor="nazov-sablony" className={bunka.cela}>
+                <input
+                  id="nazov-sablony"
+                  value={rec.name}
+                  onChange={(e) => setRec({ ...rec, name: e.target.value })}
+                  className={VSTUP_DOKLADU}
+                />
+              </PoleDokladu>
+              <PoleDokladu label={t("Frekvencia")} htmlFor="frekvencia" className={bunka.polovica}>
+                <select
+                  id="frekvencia"
+                  value={rec.frequency}
+                  onChange={(e) => setRec({ ...rec, frequency: e.target.value })}
+                  className={VSTUP_DOKLADU}
+                >
+                  <option value="weekly">{t("Týždenne")}</option>
+                  <option value="monthly">{t("Mesačne")}</option>
+                  <option value="quarterly">{t("Štvrťročne")}</option>
+                  <option value="yearly">{t("Ročne")}</option>
+                </select>
+              </PoleDokladu>
+              <PoleDokladu label={t("Ďalší beh")} htmlFor="dalsi-beh" className={bunka.polovica}>
+                <input
+                  id="dalsi-beh"
+                  type="date"
+                  value={rec.next_run}
+                  onChange={(e) => setRec({ ...rec, next_run: e.target.value })}
+                  className={VSTUP_DOKLADU}
+                />
+              </PoleDokladu>
+              <PoleDokladu label={t("Splatnosť (dni)")} htmlFor="splatnost-dni" className={bunka.polovica}>
+                <input
+                  id="splatnost-dni"
+                  type="number"
+                  value={rec.due_days}
+                  onChange={(e) => setRec({ ...rec, due_days: Number(e.target.value) })}
+                  className={VSTUP_DOKLADU}
+                />
+              </PoleDokladu>
+              <PoleDokladu label={t("Mena")} htmlFor="mena-dokladu" className={bunka.polovica}>
+                <select
+                  id="mena-dokladu"
+                  value={rec.currency}
+                  onChange={(e) => setRec({ ...rec, currency: e.target.value })}
+                  className={VSTUP_DOKLADU}
+                >
+                  {MENY.map((m) => (
+                    <option key={m.code} value={m.code}>
+                      {m.code} {m.symbol} — {m.name}
+                    </option>
+                  ))}
+                </select>
+              </PoleDokladu>
+            </MriezkaDokladu>
+          </section>
 
           {/*
             Text nad položkami dostane každá faktúra z tejto šablóny — na

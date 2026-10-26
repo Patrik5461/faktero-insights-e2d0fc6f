@@ -1524,75 +1524,49 @@ function NewInvoice() {
           </section>
 
           {/* SECTION 1b — payment & symbols */}
-          <section className="rounded-2xl border border-border bg-card p-5">
+          <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
             <SectionHeader icon={CreditCard} title={t("Platobné údaje a symboly")} />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">
-                  {t("Variabilný symbol")}
-                </label>
+            {/* Tie isté polia a mriežka ako Základné údaje (PoleDokladu). */}
+            <MriezkaDokladu>
+              <PoleDokladu label={t("Variabilný symbol")} htmlFor="vs-dokladu" className={bunka.tretina}>
                 <input
+                  id="vs-dokladu"
                   value={form.variable_symbol}
                   onChange={(e) => setForm({ ...form, variable_symbol: e.target.value })}
                   placeholder={t("Podľa čísla faktúry")}
                   title={t("Prázdne pole = variabilný symbol sa vezme z čísla faktúry")}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={VSTUP_DOKLADU}
                 />
-              </div>
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">
-                  {t("Konštantný symbol")}
-                </label>
-                <div className="mt-1">
-                  <ConstantSymbolCombobox
-                    value={form.constant_symbol}
-                    onChange={(v) => setForm({ ...form, constant_symbol: v })}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">
-                  {t("Špecifický symbol")}
-                </label>
+              </PoleDokladu>
+              <PoleDokladu label={t("Konštantný symbol")} htmlFor="ks-dokladu" className={bunka.tretina}>
+                <ConstantSymbolCombobox
+                  id="ks-dokladu"
+                  value={form.constant_symbol}
+                  onChange={(v) => setForm({ ...form, constant_symbol: v })}
+                />
+              </PoleDokladu>
+              <PoleDokladu label={t("Špecifický symbol")} htmlFor="ss-dokladu" className={bunka.tretinaPosledna}>
                 <input
+                  id="ss-dokladu"
                   value={form.specific_symbol}
                   onChange={(e) => setForm({ ...form, specific_symbol: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={VSTUP_DOKLADU}
                 />
-              </div>
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">
-                  {t("Číslo objednávky")}
-                </label>
+              </PoleDokladu>
+              <PoleDokladu label={t("Číslo objednávky")} htmlFor="objednavka-dokladu" className={bunka.polovica}>
                 <input
+                  id="objednavka-dokladu"
                   value={form.order_number}
                   onChange={(e) => setForm({ ...form, order_number: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={VSTUP_DOKLADU}
                 />
-              </div>
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">{t("Jazyk dokladu")}</label>
+              </PoleDokladu>
+              <PoleDokladu label={t("Spôsob dodania")} htmlFor="dodanie-dokladu" className={bunka.polovica}>
                 <select
-                  value={form.language}
-                  onChange={(e) => setForm({ ...form, language: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  {JAZYKY_DOKLADU.map((j) => (
-                    <option key={j.kod} value={j.kod}>
-                      {j.nazov}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {t("Prekladajú sa popisky v PDF, nie názvy položiek a poznámky.")}
-                </p>
-              </div>
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">{t("Spôsob dodania")}</label>
-                <select
+                  id="dodanie-dokladu"
                   value={form.delivery_method}
                   onChange={(e) => setForm({ ...form, delivery_method: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={VSTUP_DOKLADU}
                 >
                   <option value="">{t("— nevyplnené —")}</option>
                   <option value="personal">{t("Osobne")}</option>
@@ -1600,22 +1574,39 @@ function NewInvoice() {
                   <option value="post">{t("Pošta")}</option>
                   <option value="electronic">{t("Elektronicky")}</option>
                 </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-[13px] font-semibold text-foreground">
-                  {t("Spôsob zaokrúhľovania")}
-                </label>
+              </PoleDokladu>
+              <PoleDokladu
+                label={t("Jazyk dokladu")}
+                htmlFor="jazyk-dokladu"
+                napoveda={t("Prekladajú sa popisky v PDF, nie názvy položiek a poznámky.")}
+                className={bunka.polovica}
+              >
                 <select
+                  id="jazyk-dokladu"
+                  value={form.language}
+                  onChange={(e) => setForm({ ...form, language: e.target.value })}
+                  className={VSTUP_DOKLADU}
+                >
+                  {JAZYKY_DOKLADU.map((j) => (
+                    <option key={j.kod} value={j.kod}>
+                      {j.nazov}
+                    </option>
+                  ))}
+                </select>
+              </PoleDokladu>
+              <PoleDokladu label={t("Spôsob zaokrúhľovania")} htmlFor="zaokruhlenie-dokladu" className={bunka.polovica}>
+                <select
+                  id="zaokruhlenie-dokladu"
                   value={form.rounding_mode}
                   onChange={(e) => setForm({ ...form, rounding_mode: e.target.value as any })}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={`${VSTUP_DOKLADU} truncate`}
                 >
                   <option value="per_item">{t("Po položkách (zaokrúhli každú položku zvlášť)")}</option>
                   <option value="per_document">{t("Za celý doklad (zaokrúhli až finálny súčet)")}</option>
                   <option value="retail">{t("Maloobchod (na 0,05 €, SK pravidlá)")}</option>
                 </select>
-              </div>
-            </div>
+              </PoleDokladu>
+            </MriezkaDokladu>
           </section>
           </div>
 

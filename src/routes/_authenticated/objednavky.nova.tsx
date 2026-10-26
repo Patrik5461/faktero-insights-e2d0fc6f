@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { CisloDokladuOdznak, MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -82,6 +83,8 @@ function NewOrder() {
   const [chyba, setChyba] = useState<string | null>(null);
   const [nacitava, setNacitava] = useState(!!id);
 
+  /** Číslo, ktoré objednávka dostane — odznak vedľa číselného radu. */
+  const [cisloNahlad, setCisloNahlad] = useState<string | null>(null);
   const [form, setForm] = useState({
     customer_id: "",
     customer_order_number: "",
@@ -287,12 +290,13 @@ function NewOrder() {
             </div>
           )}
 
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={popis}>{t("Odberateľ")}</label>
+          {/* Tie isté polia a mriežka ako na faktúre (PoleDokladu). */}
+          <section className="min-w-0 rounded-xl border border-border bg-card p-4">
+            <MriezkaDokladu>
+              <PoleDokladu label={t("Odberateľ")} htmlFor="odberatel-objednavky" className={bunka.polovica}>
                 <select
-                  className={pole}
+                  id="odberatel-objednavky"
+                  className={VSTUP_DOKLADU}
                   value={form.customer_id}
                   onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
                 >
@@ -303,50 +307,66 @@ function NewOrder() {
                     </option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className={popis}>{t("Číslo objednávky u odberateľa")}</label>
+              </PoleDokladu>
+              <PoleDokladu
+                label={t("Číslo objednávky u odberateľa")}
+                htmlFor="cislo-u-odberatela"
+                className={bunka.polovica}
+              >
                 <input
-                  className={pole}
+                  id="cislo-u-odberatela"
+                  className={VSTUP_DOKLADU}
                   value={form.customer_order_number}
                   onChange={(e) => setForm({ ...form, customer_order_number: e.target.value })}
                   placeholder={t("Napíše sa na faktúru")}
                 />
-              </div>
-              <div>
-                <label className={popis}>{t("Dátum objednávky")}</label>
+              </PoleDokladu>
+              <PoleDokladu label={t("Dátum objednávky")} htmlFor="datum-objednavky" className={bunka.polovica}>
                 <input
+                  id="datum-objednavky"
                   type="date"
                   required
-                  className={pole}
+                  className={VSTUP_DOKLADU}
                   value={form.order_date}
                   onChange={(e) => setForm({ ...form, order_date: e.target.value })}
                 />
-              </div>
-              <div>
-                <label className={popis}>{t("Požadovaný termín dodania")}</label>
+              </PoleDokladu>
+              <PoleDokladu
+                label={t("Požadovaný termín dodania")}
+                htmlFor="termin-dodania"
+                className={bunka.polovica}
+              >
                 <input
+                  id="termin-dodania"
                   type="date"
                   min={form.order_date}
-                  className={pole}
+                  className={VSTUP_DOKLADU}
                   value={form.requested_date}
                   onChange={(e) => setForm({ ...form, requested_date: e.target.value })}
                 />
-              </div>
+              </PoleDokladu>
               <VyberRadu
+                vzhlad="pole"
+                className={bunka.polovica}
                 druh="sales_order"
                 hodnota={form.number_series_id}
                 onZmena={(idRadu) => setForm({ ...form, number_series_id: idRadu })}
+                onNahlad={setCisloNahlad}
                 datum={form.order_date}
               />
+              {cisloNahlad && (
+                <div className={`${bunka.polovica} flex items-end pb-2.5`}>
+                  <CisloDokladuOdznak cislo={cisloNahlad} />
+                </div>
+              )}
               <JobPicker
-                className="sm:col-span-2"
+                className={`${bunka.cela} [&>span]:text-[13px] [&>span]:font-semibold [&>select]:h-10 [&>select]:py-0`}
                 label={t("Zákazka")}
                 value={form.job_id}
                 onChange={(v) => setForm({ ...form, job_id: v || "" })}
               />
-            </div>
-          </div>
+            </MriezkaDokladu>
+          </section>
 
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

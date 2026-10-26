@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka as bunkaDokladu } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useEffect, useMemo, useState } from "react";
@@ -176,6 +177,7 @@ function NewRecurring() {
   return (
     <>
       <PageHeader
+        sirka="formular"
         title={t("Nová opakovaná faktúra")}
         description={t("Šablóna, podľa ktorej bude Faktero pravidelne vystavovať faktúry.")}
       />
@@ -183,12 +185,14 @@ function NewRecurring() {
         <form onSubmit={submit} className="mx-auto max-w-6xl space-y-6">
           {/* Základné údaje a opakovanie vedľa seba — rovnako ako na faktúre. */}
           <div className="grid gap-6 lg:grid-cols-2">
-            <section className="rounded-2xl border border-border bg-card p-5">
+            {/* Tie isté polia a mriežka ako na faktúre (PoleDokladu). */}
+            <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
               <SectionHeader icon={FileText} title={t("Základné údaje")} />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-                  <label className="text-[13px] font-semibold text-foreground">{t("Odberateľ *")}</label>
+              <MriezkaDokladu>
+                <PoleDokladu label={t("Odberateľ *")} htmlFor="odberatel-dokladu" className={bunkaDokladu.cela}>
                   <CustomerSearch
+                    ako="pole"
+                    id="odberatel-dokladu"
                     customers={customers}
                     value={form.customer_id}
                     onChange={(id) => setForm({ ...form, customer_id: id })}
@@ -197,50 +201,37 @@ function NewRecurring() {
                       setForm((prev) => ({ ...prev, customer_id: c.id }));
                     }}
                   />
-                </div>
-                <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-                  <label className="text-[13px] font-semibold text-foreground">
-                    {t("Názov šablóny *")}
-                  </label>
+                </PoleDokladu>
+                <PoleDokladu
+                  label={t("Názov šablóny *")}
+                  htmlFor="nazov-sablony"
+                  napoveda={t("Vidíte ho len vy v zozname šablón — na faktúre nie je.")}
+                  className={bunkaDokladu.cela}
+                >
                   <input
+                    id="nazov-sablony"
                     required
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder={t("napr. Mesačný paušál ACME")}
-                    className={vstup}
+                    className={VSTUP_DOKLADU}
                   />
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {t("Vidíte ho len vy v zozname šablón — na faktúre nie je.")}
-                  </span>
-                </div>
-                <div>
-                  <label className="text-[13px] font-semibold text-foreground">{t("Mena")}</label>
-                  <select
-                    value={form.currency}
-                    onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                    className={vstup}
-                  >
-                    {MENY.map((m) => (
-                      <option key={m.code} value={m.code}>
-                        {m.code} {m.symbol} — {m.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                </PoleDokladu>
                 <VyberRadu
+                  vzhlad="pole"
                   druh="invoice"
                   hodnota={form.number_series_id}
                   onZmena={(id) => setForm({ ...form, number_series_id: id })}
                   label={t("Číselný rad faktúr")}
                   bezNahladu
-                  className="sm:col-span-2 lg:col-span-1 xl:col-span-2"
+                  className={bunkaDokladu.cela}
                 />
-                <div>
-                  <label className="text-[13px] font-semibold text-foreground">{t("Spôsob platby")}</label>
+                <PoleDokladu label={t("Spôsob platby")} htmlFor="sposob-platby" className={bunkaDokladu.polovica}>
                   <select
+                    id="sposob-platby"
                     value={form.payment_method}
                     onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
-                    className={vstup}
+                    className={VSTUP_DOKLADU}
                   >
                     {PAYMENT_METHODS.map((m) => (
                       <option key={m.value} value={m.value}>
@@ -248,54 +239,66 @@ function NewRecurring() {
                       </option>
                     ))}
                   </select>
-                </div>
-              </div>
+                </PoleDokladu>
+                <PoleDokladu label={t("Mena")} htmlFor="mena-dokladu" className={bunkaDokladu.polovica}>
+                  <select
+                    id="mena-dokladu"
+                    value={form.currency}
+                    onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                    className={VSTUP_DOKLADU}
+                  >
+                    {MENY.map((m) => (
+                      <option key={m.code} value={m.code}>
+                        {m.code} {m.symbol} — {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </PoleDokladu>
+              </MriezkaDokladu>
             </section>
 
-            <section className="rounded-2xl border border-border bg-card p-5">
+            <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
               <SectionHeader icon={Repeat} title={t("Opakovanie")} />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                <div>
-                  <label className="text-[13px] font-semibold text-foreground">{t("Ako často")}</label>
+              <MriezkaDokladu>
+                <PoleDokladu label={t("Ako často")} htmlFor="frekvencia" className={bunkaDokladu.tretina}>
                   <select
+                    id="frekvencia"
                     value={form.frequency}
                     onChange={(e) => setForm({ ...form, frequency: e.target.value as any })}
-                    className={vstup}
+                    className={VSTUP_DOKLADU}
                   >
                     <option value="weekly">{t("Týždenne")}</option>
                     <option value="monthly">{t("Mesačne")}</option>
                     <option value="quarterly">{t("Štvrťročne")}</option>
                     <option value="yearly">{t("Ročne")}</option>
                   </select>
-                </div>
-                <div>
-                  <label className="text-[13px] font-semibold text-foreground">
-                    {t("Prvé vystavenie")}
-                  </label>
+                </PoleDokladu>
+                <PoleDokladu label={t("Prvé vystavenie")} htmlFor="prve-vystavenie" className={bunkaDokladu.tretina}>
                   <input
+                    id="prve-vystavenie"
                     type="date"
                     required
                     value={form.next_run}
                     onChange={(e) => setForm({ ...form, next_run: e.target.value })}
-                    className={vstup}
+                    className={VSTUP_DOKLADU}
                   />
-                </div>
-                <div>
-                  <label className="text-[13px] font-semibold text-foreground">
-                    {t("Splatnosť (dni)")}
-                  </label>
+                </PoleDokladu>
+                <PoleDokladu
+                  label={t("Splatnosť (dni)")}
+                  htmlFor="splatnost-dni"
+                  napoveda={t("Počíta sa od dňa vystavenia každej faktúry.")}
+                  className={bunkaDokladu.tretinaPosledna}
+                >
                   <input
+                    id="splatnost-dni"
                     type="number"
                     min={1}
                     value={form.due_days}
                     onChange={(e) => setForm({ ...form, due_days: Number(e.target.value) })}
-                    className={vstup}
+                    className={VSTUP_DOKLADU}
                   />
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {t("Počíta sa od dňa vystavenia každej faktúry.")}
-                  </span>
-                </div>
-                <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+                </PoleDokladu>
+                <div className={bunkaDokladu.cela}>
                   <label className="flex items-start gap-2 rounded-xl border border-border bg-muted/20 p-3 text-sm">
                     <input
                       type="checkbox"
@@ -311,7 +314,7 @@ function NewRecurring() {
                     </span>
                   </label>
                 </div>
-              </div>
+              </MriezkaDokladu>
             </section>
           </div>
 

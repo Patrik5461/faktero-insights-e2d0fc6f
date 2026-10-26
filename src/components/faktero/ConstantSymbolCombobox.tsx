@@ -67,7 +67,10 @@ export function ConstantSymbolCombobox({ value, onChange, placeholder, id }: Pro
           onFocus={() => setOpen(true)}
           placeholder={placeholder ?? t("napr. 0098")}
           autoComplete="off"
-          className="w-full rounded-md border border-input bg-background py-2 pl-3 pr-9 text-sm"
+          // Význam kódu ide do bublinky — text pod poľom by posúval mriežku formulára.
+          title={matched ? `${matched.code} — ${t(matched.label)}` : undefined}
+          aria-describedby={matched && id ? `${id}-vyznam` : undefined}
+          className="h-10 w-full min-w-0 rounded-md border border-input bg-background pl-3 pr-9 text-sm tabular-nums"
         />
         <button
           type="button"
@@ -82,9 +85,11 @@ export function ConstantSymbolCombobox({ value, onChange, placeholder, id }: Pro
           <ChevronDown className="h-4 w-4" />
         </button>
       </div>
-      {matched && !open && (
-        <div className="mt-1 text-xs text-muted-foreground">{t(matched.label)}</div>
-      )}
+      {matched && id ? (
+        <span id={`${id}-vyznam`} className="sr-only">
+          {t(matched.label)}
+        </span>
+      ) : null}
       {open && (
         <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-border bg-popover shadow-lg">
           {filtered.length === 0 && (

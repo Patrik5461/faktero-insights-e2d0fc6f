@@ -540,8 +540,8 @@ function EditInvoice() {
               <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">
                 {t("Platobné údaje a symboly")}
               </h3>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                <PoleDokladu label={t("Spôsob platby")} htmlFor="sposob-platby">
+              <MriezkaDokladu>
+                <PoleDokladu label={t("Spôsob platby")} htmlFor="sposob-platby" className={bunka.polovica}>
                   <select
                     id="sposob-platby"
                     value={form.payment_method}
@@ -555,7 +555,7 @@ function EditInvoice() {
                     ))}
                   </select>
                 </PoleDokladu>
-                <PoleDokladu label={t("Mena")} htmlFor="mena-dokladu">
+                <PoleDokladu label={t("Mena")} htmlFor="mena-dokladu" className={bunka.polovica}>
                   <input
                     id="mena-dokladu"
                     value={form.currency}
@@ -563,7 +563,7 @@ function EditInvoice() {
                     className={VSTUP_DOKLADU}
                   />
                 </PoleDokladu>
-                <PoleDokladu label={t("Variabilný symbol")} htmlFor="vs-dokladu">
+                <PoleDokladu label={t("Variabilný symbol")} htmlFor="vs-dokladu" className={bunka.polovica}>
                   <input
                     id="vs-dokladu"
                     value={form.variable_symbol}
@@ -571,7 +571,7 @@ function EditInvoice() {
                     className={VSTUP_DOKLADU}
                   />
                 </PoleDokladu>
-              </div>
+              </MriezkaDokladu>
             </section>
           </div>
 

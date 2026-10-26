@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CisloDokladuOdznak, MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -55,6 +56,8 @@ function NewQuote() {
   /* Sadzby DPH podľa krajiny registrácie firmy. */
   const rezim = useRezimDph();
   const krajina = rezim.krajina;
+  /** Číslo, ktoré ponuka dostane — odznak vedľa číselného radu. */
+  const [cisloNahlad, setCisloNahlad] = useState<string | null>(null);
   const [customers, setCustomers] = useState<any[]>([]);
   const [form, setForm] = useState({
     customer_id: "",
@@ -302,15 +305,29 @@ function NewQuote() {
       <PageBody>
         <PoznamkaRezimuDph />
         <form onSubmit={submit} className="space-y-6">
-          <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-3 [&>*]:min-w-0">
-            <label className="block sm:col-span-3">
-              <span className="text-sm font-medium">{t("Odberateľ *")}</span>
-              <div className="mt-1 flex gap-2">
+          {/* Tie isté polia a mriežka ako na faktúre (PoleDokladu). */}
+          <section className="min-w-0 rounded-xl border border-border bg-card p-5">
+            <MriezkaDokladu>
+              <PoleDokladu
+                label={t("Odberateľ *")}
+                htmlFor="odberatel-ponuky"
+                className={bunka.cela}
+                doplnok={
+                  <button
+                    type="button"
+                    onClick={() => setNewCustOpen(true)}
+                    className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                  >
+                    <UserPlus className="h-3 w-3" /> {t("Nový")}
+                  </button>
+                }
+              >
                 <select
+                  id="odberatel-ponuky"
                   required
                   value={form.customer_id}
                   onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={VSTUP_DOKLADU}
                 >
                   <option value="">{t("Vyberte odberateľa…")}</option>
                   {customers.map((c) => (
@@ -319,55 +336,62 @@ function NewQuote() {
                     </option>
                   ))}
                 </select>
-                <button
-                  type="button"
-                  onClick={() => setNewCustOpen(true)}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+              </PoleDokladu>
+              <PoleDokladu label={t("Dátum vystavenia")} htmlFor="datum-vystavenia" className={bunka.datum}>
+                <input
+                  id="datum-vystavenia"
+                  type="date"
+                  required
+                  value={form.issue_date}
+                  onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
+                  className={VSTUP_DOKLADU}
+                />
+              </PoleDokladu>
+              <PoleDokladu label={t("Platnosť do")} htmlFor="platnost-ponuky" className={bunka.datum}>
+                <input
+                  id="platnost-ponuky"
+                  type="date"
+                  required
+                  value={form.valid_until}
+                  onChange={(e) => setForm({ ...form, valid_until: e.target.value })}
+                  className={VSTUP_DOKLADU}
+                />
+              </PoleDokladu>
+              {/*
+                Mena bola voľný text, takže sa do databázy dalo napísať čokoľvek
+                — a nezmyselný kód potom zhodil formátovanie na každej stránke,
+                kde sa taká ponuka objavila. Rovnaký výber ako na faktúre.
+              */}
+              <PoleDokladu label={t("Mena")} htmlFor="mena-dokladu" className={bunka.datumPosledny}>
+                <select
+                  id="mena-dokladu"
+                  value={form.currency}
+                  onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                  className={VSTUP_DOKLADU}
                 >
-                  <UserPlus className="h-4 w-4" /> {t("Nový")}
-                </button>
-              </div>
-            </label>
-            <In
-              label={t("Dátum vystavenia")}
-              type="date"
-              required
-              value={form.issue_date}
-              onChange={(v) => setForm({ ...form, issue_date: v })}
-            />
-            <In
-              label={t("Platnosť do")}
-              type="date"
-              required
-              value={form.valid_until}
-              onChange={(v) => setForm({ ...form, valid_until: v })}
-            />
-            {/*
-              Mena bola voľný text, takže sa do databázy dalo napísať čokoľvek
-              — a nezmyselný kód potom zhodil formátovanie na každej stránke,
-              kde sa taká ponuka objavila. Rovnaký výber ako na faktúre.
-            */}
-            <div>
-              <label className="text-[13px] font-semibold text-foreground">{t("Mena")}</label>
-              <select
-                value={form.currency}
-                onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {MENY.map((m) => (
-                  <option key={m.code} value={m.code}>
-                    {m.code} {m.symbol} — {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <VyberRadu
-              druh="quote"
-              hodnota={form.number_series_id}
-              onZmena={(id) => setForm({ ...form, number_series_id: id })}
-              datum={form.issue_date}
-            />
-          </div>
+                  {MENY.map((m) => (
+                    <option key={m.code} value={m.code}>
+                      {m.code} {m.symbol} — {m.name}
+                    </option>
+                  ))}
+                </select>
+              </PoleDokladu>
+              <VyberRadu
+                vzhlad="pole"
+                className={bunka.polovica}
+                druh="quote"
+                hodnota={form.number_series_id}
+                onZmena={(id) => setForm({ ...form, number_series_id: id })}
+                onNahlad={setCisloNahlad}
+                datum={form.issue_date}
+              />
+              {cisloNahlad && (
+                <div className={`${bunka.polovica} flex items-end pb-2.5`}>
+                  <CisloDokladuOdznak cislo={cisloNahlad} />
+                </div>
+              )}
+            </MriezkaDokladu>
+          </section>
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-semibold">{t("Položky")}</h3>

@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { Info } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
 
 /*
@@ -17,16 +18,20 @@ export function PoleDokladu({
   label,
   htmlFor,
   doplnok,
+  napoveda,
   className,
   children,
 }: {
   label: ReactNode;
   htmlFor?: string;
+  /** Vysvetlivka — ikona (i) s bublinkou pri popise; pod poľom by posunula mriežku. */
+  napoveda?: string;
   /** Vpravo v riadku popisu — tlačidlá 7d/14d/30d, odkaz na nastavenia. */
   doplnok?: ReactNode;
   className?: string;
   children: ReactNode;
 }) {
+  const idNapovedy = useId();
   return (
     <div className={`pole-dokladu min-w-0 ${className ?? ""}`}>
       <div className="pole-dokladu-hlavicka mb-1 flex h-5 items-center justify-between gap-2">
@@ -36,6 +41,25 @@ export function PoleDokladu({
         >
           {label}
         </label>
+        {napoveda ? (
+          <span className="pole-dokladu-napoveda group relative mr-auto inline-flex shrink-0">
+            <button
+              type="button"
+              aria-label={napoveda}
+              aria-describedby={idNapovedy}
+              className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:text-foreground"
+            >
+              <Info className="h-3.5 w-3.5" />
+            </button>
+            <span
+              id={idNapovedy}
+              role="tooltip"
+              className="pointer-events-none absolute left-1/2 top-full z-30 mt-1 w-56 -translate-x-1/2 rounded-md border border-border bg-popover px-2 py-1.5 text-[11px] font-normal leading-snug text-popover-foreground opacity-0 shadow-md transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+            >
+              {napoveda}
+            </span>
+          </span>
+        ) : null}
         {doplnok ? (
           <div className="pole-dokladu-doplnok flex shrink-0 items-center gap-1">{doplnok}</div>
         ) : null}
@@ -66,6 +90,9 @@ export const bunka = {
   /** Dátum: na užšej karte dva vedľa seba (tretí na celý riadok), na širšej tri. */
   datum: "md:@xs:col-span-3 md:@md:col-span-2",
   datumPosledny: "md:@xs:col-span-6 md:@md:col-span-2",
+  /** Tri polia v riadku (VS | KS | ŠS) — rovnako ako dátumy. */
+  tretina: "md:@xs:col-span-3 md:@md:col-span-2",
+  tretinaPosledna: "md:@xs:col-span-6 md:@md:col-span-2",
 } as const;
 
 /** Splatnosť s rýchlymi tlačidlami v riadku popisu (výšku riadku nemenia). */
