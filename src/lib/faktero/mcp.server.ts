@@ -440,6 +440,10 @@ const HLAVICKY = {
 export async function obsluzMcp(request: Request): Promise<Response> {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: HLAVICKY });
   if (request.method !== "POST") {
+    // Človek v prehliadači dostane návod, nie holú chybu 405.
+    if (request.method === "GET" && (request.headers.get("accept") ?? "").includes("text/html")) {
+      return new Response(null, { status: 302, headers: { location: "/docs/api#mcp" } });
+    }
     // Stream zo servera (GET/SSE) nepodporujeme — klient má posielať POST.
     return new Response(null, { status: 405, headers: { ...HLAVICKY, allow: "POST, OPTIONS" } });
   }
