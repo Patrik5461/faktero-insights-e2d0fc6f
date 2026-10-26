@@ -951,10 +951,16 @@ export function PageHeader({
   description,
   action,
   help,
+  sirka,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  /**
+   * „formular“ = šírka formulára dokladu (72rem obsahu, `max-w-6xl`) —
+   * Späť, nadpis aj popis potom začínajú na ľavej hrane karty pod nimi.
+   */
+  sirka?: "formular";
   /** Vlastný manuál, keď automatický odkaz nesedí. `false` ho skryje. */
   help?: string | false;
 }) {
@@ -971,7 +977,7 @@ export function PageHeader({
       Nadpis má minimálnu šírku 20rem – pri minmax(0,…) ho detail s veľa
       tlačidlami (cenová ponuka) zúžil až na „Ponuk…“; radšej sa zalomia tlačidlá.
     */
-    <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(20rem,1fr)_minmax(0,auto)] lg:items-end lg:gap-4 lg:px-6">
+    <div className={`mx-auto flex w-full ${sirka === "formular" ? "max-w-[calc(72rem+3rem)]" : "max-w-[1440px]"} flex-col gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(20rem,1fr)_minmax(0,auto)] lg:items-end lg:gap-4 lg:px-6`}>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {podstranka && (
@@ -980,7 +986,7 @@ export function PageHeader({
               onClick={spat}
               title={t("Späť")}
               aria-label={t("Späť")}
-              className="-ml-1 inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">{t("Späť")}</span>

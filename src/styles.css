@@ -272,6 +272,39 @@ html[data-dizajn="kompaktny"] div:has(> label:first-child + :is(input:not([type=
   margin-top: 0 !important;
 }
 
+/*
+  Pole hlavičky dokladu (PoleDokladu.tsx) — v kompaktnom rozložení popis aj
+  doplnok (7d/14d/30d, odkaz) sedia v rámčeku poľa, rovnako ako ostatné polia.
+*/
+html[data-dizajn="kompaktny"] .pole-dokladu {
+  position: relative;
+}
+html[data-dizajn="kompaktny"] .pole-dokladu-hlavicka {
+  position: absolute;
+  top: -0.6rem;
+  left: 0.65rem;
+  right: 0.65rem;
+  z-index: 1;
+  height: auto;
+  margin: 0;
+  pointer-events: none;
+}
+html[data-dizajn="kompaktny"] .pole-dokladu-popis {
+  padding: 0.05rem 0.3rem 0;
+  border-radius: 3px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+html[data-dizajn="kompaktny"] .pole-dokladu-doplnok {
+  padding: 0 0.2rem;
+  border-radius: 3px;
+  background: var(--card);
+  pointer-events: auto;
+}
+
 .dark {
   --background: oklch(0.129 0.042 264.695);
   /* V tme je to naopak: stránka je najtmavšia, karty svetlejšie. */

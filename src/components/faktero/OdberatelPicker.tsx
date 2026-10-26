@@ -17,6 +17,8 @@ export function CustomerSearch({
   onChange,
   onCreated,
   kto = "odberateľa",
+  ako,
+  id,
 }: {
   customers: any[];
   value: string;
@@ -24,6 +26,9 @@ export function CustomerSearch({
   onCreated: (c: any) => void;
   /** Koho sa hľadá (akuzatív) — samofaktúra vyberá dodávateľa, nie odberateľa. */
   kto?: string;
+  /** Tlačidlo ako jednotné pole hlavičky dokladu (bez horného odsadenia, výška h-10). */
+  ako?: "pole";
+  id?: string;
 }) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
@@ -49,14 +54,15 @@ export function CustomerSearch({
     : customers.slice(0, 8);
 
   return (
-    <div ref={ref} className="relative mt-1">
+    <div ref={ref} className={ako === "pole" ? "relative" : "relative mt-1"}>
       <button
+        id={id}
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-left text-sm hover:border-primary/50"
+        className={`flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-sm hover:border-primary/50 ${ako === "pole" ? "h-10 min-w-0" : "py-2"}`}
       >
         <User className="h-4 w-4 text-muted-foreground" />
-        <span className={selected ? "" : "text-muted-foreground"}>
+        <span className={`min-w-0 truncate ${selected ? "" : "text-muted-foreground"}`}>
           {selected ? selected.name : t("Vyhľadať {kto}…", { kto: t(kto) })}
         </span>
       </button>

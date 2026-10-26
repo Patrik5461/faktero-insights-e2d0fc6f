@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ciselneRadyFn } from "@/lib/faktero/ciselne-rady.functions";
 import { type CiselnyRad, type DruhRadu } from "@/lib/faktero/ciselne-rady";
 import { useT } from "@/lib/i18n/useT";
+import { Settings2 } from "lucide-react";
+import { PoleDokladu, VSTUP_DOKLADU } from "./PoleDokladu";
 
 /**
  * Výber číselného radu pri vystavovaní dokladu.
@@ -25,6 +27,8 @@ export function VyberRadu({
   className,
   datum,
   bezNahladu,
+  vzhlad,
+  onNahlad,
 }: {
   druh: DruhRadu;
   /** Prázdne = predvolený rad. */
@@ -36,6 +40,12 @@ export function VyberRadu({
   datum?: string;
   /** Opakovaná faktúra číslo dostane až pri vystavení — tam náhľad nedáva zmysel. */
   bezNahladu?: boolean;
+  /**
+   * „pole“ = jednotné pole hlavičky dokladu (PoleDokladu) bez textov pod
+   * výberom — číslo ukáže volajúci cez `onNahlad`, odkaz je pri popise.
+   */
+  vzhlad?: "pole";
+  onNahlad?: (cislo: string | null) => void;
 }) {
   const { t } = useT();
   const nacitaj = useServerFn(ciselneRadyFn);
@@ -102,6 +112,46 @@ export function VyberRadu({
       clearTimeout(casovac);
     };
   }, [druh, hodnota, datum, bezNahladu, rady.length]);
+
+  useEffect(() => {
+    onNahlad?.(nahlad);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nahlad]);
+
+  if (vzhlad === "pole") {
+    if (rady.length === 0) return null;
+    return (
+      <PoleDokladu
+        label={t(label)}
+        htmlFor="ciselny-rad-dokladu"
+        className={className}
+        doplnok={
+          <Link
+            to="/ciselne-rady"
+            title={t("Číselné rady")}
+            aria-label={t("Číselné rady")}
+            className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+          >
+            <Settings2 className="h-3 w-3" /> {t("Číselné rady")}
+          </Link>
+        }
+      >
+        <select
+          id="ciselny-rad-dokladu"
+          value={hodnota}
+          onChange={(e) => onZmena(e.target.value)}
+          className={`${VSTUP_DOKLADU} truncate`}
+        >
+          {rady.map((r) => (
+            <option key={r.id} value={r.is_default ? "" : r.id}>
+              {r.name}
+              {r.is_default ? ` ${t("(predvolený)")}` : ""}
+            </option>
+          ))}
+        </select>
+      </PoleDokladu>
+    );
+  }
 
   const cisloRiadok = nahlad ? (
     <span className="mt-1 block text-sm">

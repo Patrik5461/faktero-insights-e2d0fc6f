@@ -52,6 +52,14 @@ import { JobPicker } from "@/components/faktero/JobPicker";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { MENY, KROK_CENY, cenaZoSumySDph, formatujMenu } from "@/lib/faktero/mena";
 import { druhPodlaTypuFaktury } from "@/lib/faktero/ciselne-rady";
+import {
+  CisloDokladuOdznak,
+  MriezkaDokladu,
+  PoleDokladu,
+  SplatnostPole,
+  VSTUP_DOKLADU,
+  bunka,
+} from "@/components/faktero/PoleDokladu";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
 import {
   koeficientZlavy,
@@ -361,6 +369,8 @@ function NewInvoice() {
     (`riadkyNaZapis`) — kladný dobropis by eFaktúra poslala ako ťarchopis.
   */
   const [opravujeCislo, setOpravujeCislo] = useState("");
+  /** Číslo, ktoré doklad dostane — odznak v hlavičke karty Základné údaje. */
+  const [cisloNahlad, setCisloNahlad] = useState<string | null>(null);
   const [hladajOpravovanu, setHladajOpravovanu] = useState("");
   const [hladamOpravovanu, setHladamOpravovanu] = useState(false);
 
@@ -1148,6 +1158,7 @@ function NewInvoice() {
   return (
     <>
       <PageHeader
+        sirka="formular"
         title={
           form.type === "credit_note"
             ? t("Nový dobropis")
@@ -1189,12 +1200,20 @@ function NewInvoice() {
           {/* items-stretch: obe karty končia na tej istej čiare, aj keď má jedna menej polí. */}
           <div className="grid gap-6 lg:grid-cols-2">
           {/* SECTION 1 — basic info */}
-          <section className="rounded-2xl border border-border bg-card p-5">
-            <SectionHeader icon={FileText} title={t("Základné údaje")} />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">{t("Odberateľ *")}</label>
+          <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
+            <SectionHeader icon={FileText} title={t("Základné údaje")}>
+              <CisloDokladuOdznak cislo={cisloNahlad} />
+            </SectionHeader>
+            {/*
+              Jednotné polia (PoleDokladu) v mriežke s pevnými riadkami:
+              odberateľ · typ a rad · tri dátumy · platba a mena. Pomocné texty
+              a rýchle tlačidlá sú v riadku popisu, aby nerozbíjali výšku riadkov.
+            */}
+            <MriezkaDokladu>
+              <PoleDokladu label={t("Odberateľ *")} htmlFor="odberatel-dokladu" className={bunka.cela}>
                 <CustomerSearch
+                  ako="pole"
+                  id="odberatel-dokladu"
                   customers={customers}
                   value={form.customer_id}
                   onChange={(id) => setForm({ ...form, customer_id: id })}
@@ -1203,24 +1222,27 @@ function NewInvoice() {
                     setForm((f) => ({ ...f, customer_id: c.id }));
                   }}
                 />
-              </div>
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">{t("Typ dokladu")}</label>
+              </PoleDokladu>
+              <PoleDokladu label={t("Typ dokladu")} htmlFor="typ-dokladu" className={bunka.polovica}>
                 <select
+                  id="typ-dokladu"
                   value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value as any })}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={VSTUP_DOKLADU}
                 >
                   <option value="regular">{t("Faktúra")}</option>
                   <option value="proforma">{t("Zálohová faktúra")}</option>
                   <option value="credit_note">{t("Dobropis")}</option>
                   <option value="debit_note">{t("Ťarchopis (zvýšenie ceny)")}</option>
                 </select>
-              </div>
+              </PoleDokladu>
               <VyberRadu
+                vzhlad="pole"
+                className={bunka.polovica}
                 druh={druhPodlaTypuFaktury(form.type)}
                 hodnota={form.number_series_id}
                 onZmena={(id) => setForm({ ...form, number_series_id: id })}
+                onNahlad={setCisloNahlad}
                 datum={form.issue_date}
               />
               {(form.type === "credit_note" || form.type === "debit_note") && (
@@ -1309,63 +1331,34 @@ function NewInvoice() {
                   )}
                 </div>
               )}
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">
-                  {t("Dátum vystavenia")}
-                </label>
+              <PoleDokladu label={t("Dátum vystavenia")} htmlFor="datum-vystavenia" className={bunka.datum}>
                 <input
+                  id="datum-vystavenia"
                   type="date"
                   required
                   value={form.issue_date}
                   onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={VSTUP_DOKLADU}
                 />
-              </div>
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">{t("Dátum dodania")}</label>
+              </PoleDokladu>
+              <PoleDokladu label={t("Dátum dodania")} htmlFor="datum-dodania" className={bunka.datum}>
                 <input
+                  id="datum-dodania"
                   type="date"
                   value={form.delivery_date}
                   onChange={(e) => setForm({ ...form, delivery_date: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={VSTUP_DOKLADU}
                 />
-              </div>
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">{t("Splatnosť")}</label>
-                {/* V polovičnom stĺpci sa dátum a rýchle tlačidlá do jedného
-                    riadku nezmestia — nech sa radšej zalomia, než orežú. */}
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <input
-                    type="date"
-                    required
-                    value={form.due_date}
-                    onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                    className="min-w-[10rem] flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                  <div className="flex shrink-0 gap-1">
-                    {[7, 14, 30].map((d) => (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() =>
-                          setForm({
-                            ...form,
-                            due_date: new Date(Date.now() + d * 86400000)
-                              .toISOString()
-                              .slice(0, 10),
-                          })
-                        }
-                        className="rounded-md border border-border px-2 text-xs hover:bg-secondary"
-                      >
-                        {d}d
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">{t("Spôsob platby")}</label>
+              </PoleDokladu>
+              <SplatnostPole
+                required
+                className={bunka.datumPosledny}
+                value={form.due_date}
+                onChange={(v) => setForm((f) => ({ ...f, due_date: v }))}
+              />
+              <PoleDokladu label={t("Spôsob platby")} htmlFor="sposob-platby" className={bunka.polovica}>
                 <select
+                  id="sposob-platby"
                   value={form.payment_method}
                   onChange={(e) => {
                     const sposob = e.target.value;
@@ -1381,7 +1374,7 @@ function NewInvoice() {
                           : f.rounding_mode,
                     }));
                   }}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={VSTUP_DOKLADU}
                 >
                   {PAYMENT_METHODS.map((m) => (
                     <option key={m.value} value={m.value}>
@@ -1389,14 +1382,28 @@ function NewInvoice() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </PoleDokladu>
+              <PoleDokladu label={t("Mena")} htmlFor="mena-dokladu" className={bunka.polovica}>
+                <select
+                  id="mena-dokladu"
+                  value={form.currency}
+                  onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                  className={VSTUP_DOKLADU}
+                >
+                  {MENY.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} {c.symbol} — {c.name}
+                    </option>
+                  ))}
+                </select>
+              </PoleDokladu>
               {jeHotovost(form.payment_method) && (
-                <p className="text-xs text-muted-foreground sm:col-span-2">
+                <p className="col-span-full -mt-2 text-xs text-muted-foreground">
                   {t("Suma sa zaokrúhli na päť centov, ako to pri platbe v hotovosti ukladá zákon o cenách.")}
                 </p>
               )}
               {prekrocenyStrop(totals.payable, form.payment_method) && (
-                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive sm:col-span-2">
+                <p className="col-span-full rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   {prekrocenyStrop(totals.payable, form.payment_method)}
                 </p>
               )}
@@ -1405,49 +1412,42 @@ function NewInvoice() {
                   companyId={getActiveCompanyId()}
                   value={form.payment_account_id || null}
                   onChange={(id) => setForm((f) => ({ ...f, payment_account_id: id }))}
-                  className="[&>span]:text-xs [&>span]:font-medium"
+                  className={`${bunka.cela} [&>span]:mb-1 [&>span]:text-[13px] [&>span]:font-semibold [&>span]:text-foreground [&>select]:h-10 [&>select]:py-0`}
                 />
               )}
-              <div>
-                <label className="text-[13px] font-semibold text-foreground">{t("Mena")}</label>
-                <select
-                  value={form.currency}
-                  onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  {MENY.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code} {c.symbol} — {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
               <JobPicker
-                className="sm:col-span-2"
+                className={`${bunka.cela} [&>span]:text-[13px] [&>span]:font-semibold [&>select]:h-10 [&>select]:py-0`}
                 value={form.job_id}
                 onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
                 customerId={form.customer_id || null}
               />
-            </div>
+            </MriezkaDokladu>
 
-            {/* Quick action links */}
+            {/* Quick action links — pri dobropise a ťarchopise je väzba na faktúru vyššie. */}
+            {(form.type === "regular" || form.type === "proforma" || odpocty.length > 0) && (
             <div className="mt-4 flex flex-wrap gap-3 border-t border-border pt-4 text-sm">
-              <button
-                type="button"
-                onClick={() => setPickerOpen("copy")}
-                className="inline-flex items-center gap-1.5 text-primary hover:underline"
-              >
-                <FileDown className="h-4 w-4" /> {t("Načítať položky z dokladu")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPickerOpen("advance")}
-                className="inline-flex items-center gap-1.5 text-primary hover:underline"
-              >
-                <Link2 className="h-4 w-4" />{" "}
-                {odpocty.length ? t("Pridať ďalšiu zálohu") : t("Pridať zálohovú faktúru")}
-              </button>
-              {nezuctovane.filter((z) => !odpocty.some((o) => o.id === z.id)).length > 0 && (
+              {/* Dobropis a ťarchopis majú väzbu na pôvodnú faktúru vyššie (aj s načítaním položiek). */}
+              {form.type !== "credit_note" && form.type !== "debit_note" && (
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen("copy")}
+                  className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                >
+                  <FileDown className="h-4 w-4" /> {t("Načítať položky z dokladu")}
+                </button>
+              )}
+              {/* Zálohu odpočítava len bežná faktúra. */}
+              {form.type === "regular" && (
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen("advance")}
+                  className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                >
+                  <Link2 className="h-4 w-4" />{" "}
+                  {odpocty.length ? t("Pridať ďalšiu zálohu") : t("Pridať zálohovú faktúru")}
+                </button>
+              )}
+              {form.type === "regular" && nezuctovane.filter((z) => !odpocty.some((o) => o.id === z.id)).length > 0 && (
                 /*
                   Upozornenie, nie zákaz: sú prípady, keď sa záloha zámerne
                   vyúčtuje inou faktúrou. Odpočet je preto na jedno kliknutie,
@@ -1520,6 +1520,7 @@ function NewInvoice() {
                 </span>
               )}
             </div>
+            )}
           </section>
 
           {/* SECTION 1b — payment & symbols */}
@@ -2407,9 +2408,9 @@ function SectionHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4 text-primary" />
+    <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <div className="flex min-w-0 items-center gap-2">
+        <Icon className="h-4 w-4 shrink-0 text-primary" />
         <h3 className="text-sm font-semibold uppercase tracking-wide">{title}</h3>
       </div>
       {children}

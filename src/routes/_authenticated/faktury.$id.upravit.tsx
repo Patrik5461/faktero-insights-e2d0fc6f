@@ -1,4 +1,5 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
+import { MriezkaDokladu, PoleDokladu, SplatnostPole, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { ColneUdajePolozky } from "@/components/faktero/ColneUdajePolozky";
@@ -393,6 +394,7 @@ function EditInvoice() {
   return (
     <>
       <PageHeader
+        sirka="formular"
         title={t("Upraviť faktúru {cislo}", { cislo: inv.invoice_number })}
         description={t("Po uložení sa PDF pregeneruje pri ďalšom otvorení.")}
       />
@@ -460,16 +462,18 @@ function EditInvoice() {
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="rounded-2xl border border-border bg-card p-5">
               <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">{t("Základné údaje")}</h3>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-                  <Lbl label={t("Číslo faktúry")}>
+              {/* Tie isté polia a mriežka ako pri vystavení (PoleDokladu). */}
+              <MriezkaDokladu>
+                <div className={bunka.cela}>
+                  <PoleDokladu label={t("Číslo faktúry")} htmlFor="cislo-faktury">
                     <input
+                      id="cislo-faktury"
                       required
                       value={form.invoice_number}
                       onChange={(e) => setForm({ ...form, invoice_number: e.target.value })}
-                      className={inputCls}
+                      className={VSTUP_DOKLADU}
                     />
-                  </Lbl>
+                  </PoleDokladu>
                   {form.invoice_number.trim() !== (inv?.invoice_number ?? "") && (
                     <label className="mt-2 flex items-start gap-2 text-sm">
                       <input
@@ -497,40 +501,39 @@ function EditInvoice() {
                     </p>
                   )}
                 </div>
-                <Lbl label={t("Dátum vystavenia")}>
+                <PoleDokladu label={t("Dátum vystavenia")} htmlFor="datum-vystavenia" className={bunka.datum}>
                   <input
+                    id="datum-vystavenia"
                     type="date"
                     required
                     value={form.issue_date}
                     onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
-                    className={inputCls}
+                    className={VSTUP_DOKLADU}
                   />
-                </Lbl>
-                <Lbl label={t("Splatnosť")}>
+                </PoleDokladu>
+                <PoleDokladu label={t("Dátum dodania")} htmlFor="datum-dodania" className={bunka.datum}>
                   <input
-                    type="date"
-                    required
-                    value={form.due_date}
-                    onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                    className={inputCls}
-                  />
-                </Lbl>
-                <Lbl label={t("Dátum dodania")}>
-                  <input
+                    id="datum-dodania"
                     type="date"
                     value={form.delivery_date}
                     onChange={(e) => setForm({ ...form, delivery_date: e.target.value })}
-                    className={inputCls}
+                    className={VSTUP_DOKLADU}
                   />
-                </Lbl>
+                </PoleDokladu>
+                <SplatnostPole
+                  required
+                  className={bunka.datumPosledny}
+                  value={form.due_date}
+                  onChange={(v) => setForm((f) => ({ ...f, due_date: v }))}
+                />
                 <JobPicker
-                  className="sm:col-span-2"
+                  className={`${bunka.cela} [&>span]:text-[13px] [&>span]:font-semibold [&>select]:h-10 [&>select]:py-0`}
                   value={form.job_id}
                   onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
                   customerId={odberatel?.customer_id ?? inv?.customer_id ?? null}
                   companyId={inv?.company_id ?? null}
                 />
-              </div>
+              </MriezkaDokladu>
             </section>
 
             <section className="rounded-2xl border border-border bg-card p-5">
@@ -538,11 +541,12 @@ function EditInvoice() {
                 {t("Platobné údaje a symboly")}
               </h3>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                <Lbl label={t("Spôsob platby")}>
+                <PoleDokladu label={t("Spôsob platby")} htmlFor="sposob-platby">
                   <select
+                    id="sposob-platby"
                     value={form.payment_method}
                     onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
-                    className={inputCls}
+                    className={VSTUP_DOKLADU}
                   >
                     {PAYMENT_METHODS.map((m) => (
                       <option key={m.value} value={m.value}>
@@ -550,21 +554,23 @@ function EditInvoice() {
                       </option>
                     ))}
                   </select>
-                </Lbl>
-                <Lbl label={t("Mena")}>
+                </PoleDokladu>
+                <PoleDokladu label={t("Mena")} htmlFor="mena-dokladu">
                   <input
+                    id="mena-dokladu"
                     value={form.currency}
                     onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                    className={inputCls}
+                    className={VSTUP_DOKLADU}
                   />
-                </Lbl>
-                <Lbl label={t("Variabilný symbol")}>
+                </PoleDokladu>
+                <PoleDokladu label={t("Variabilný symbol")} htmlFor="vs-dokladu">
                   <input
+                    id="vs-dokladu"
                     value={form.variable_symbol}
                     onChange={(e) => setForm({ ...form, variable_symbol: e.target.value })}
-                    className={inputCls}
+                    className={VSTUP_DOKLADU}
                   />
-                </Lbl>
+                </PoleDokladu>
               </div>
             </section>
           </div>
