@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -52,6 +53,7 @@ export function ZauctovanieVystavenejPanel({
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const nacitajStav = useServerFn(stavVystavenejFn);
   const zauctuj = useServerFn(zauctujVystavenuFn);
+  const navigate = useNavigate();
   const zrus = useServerFn(zrusZauctovanieVystavenejFn);
   const vrat = useServerFn(vratVystavenuZPohodyFn);
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
@@ -120,7 +122,7 @@ export function ZauctovanieVystavenejPanel({
   async function uloz(lenUlozit: boolean) {
     setBusy(true);
     try {
-      await zauctuj({
+      const r = await zauctuj({
         data: {
           company_id: inv.company_id,
           id: inv.id,
@@ -137,6 +139,7 @@ export function ZauctovanieVystavenejPanel({
         },
       });
       toast.success(lenUlozit ? t("Uložené") : t("Zaúčtované"));
+      ponukaPravidlaToast(r.ponukaPravidla, t, navigate);
       onZmena();
       await obnov();
     } catch (e: any) {
@@ -184,6 +187,7 @@ export function ZauctovanieVystavenejPanel({
           </span>
         )}
       </div>
+      {!vPohode && <AutoZauctovanieOdznak typ="vystavena" row={inv} onZmena={onZmena} />}
 
       {vPohode ? (
         <>

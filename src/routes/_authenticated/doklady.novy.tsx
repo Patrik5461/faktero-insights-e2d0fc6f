@@ -1,4 +1,5 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { AutoZauctovanieOdznak } from "@/components/faktero/AutoZauctovanieOdznak";
 import { useT } from "@/lib/i18n/useT";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { SpracovalDokladu } from "@/components/faktero/SpracovalDokladu";
@@ -1040,6 +1041,16 @@ function NovyDokladPage() {
                     >
                       {t("Poslať opravu do Pohody")}
                     </button>
+                  </div>
+                )}
+                {ulozeny && !ulozeny.exported_at && (
+                  <div className="mb-3">
+                    <AutoZauctovanieOdznak
+                      typ="blocek"
+                      row={ulozeny}
+                      // Formulár drží kódy vo vlastnom stave — po potvrdení sa načíta celý znova.
+                      onZmena={() => window.location.reload()}
+                    />
                   </div>
                 )}
                 {cid ? (

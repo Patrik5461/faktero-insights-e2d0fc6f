@@ -52,10 +52,12 @@ export type VysledokNavrhu = {
   polia: ZlucenyNavrh;
   dovod: string | null;
   zPamate?: boolean;
+  /** Istota modelu 0–100, keď návrh pochádza od AI. */
+  istota?: number | null;
 };
 
 /** Platný návrh modelu (len kódy z povolených zoznamov). */
-export type NavrhAi = Partial<Record<PoleNavrhu, string>> & { dovod?: string };
+export type NavrhAi = Partial<Record<PoleNavrhu, string>> & { dovod?: string; istota?: number };
 
 /** Typ dokladu, ku ktorému sa návrh pamätá. */
 export type TypDokladuNavrhu = "prijata" | "doklad" | "nespracovany";
@@ -380,7 +382,7 @@ export function pokynAi(v: VstupNavrhu, povolene: PovoleneKody, polia: PoleNavrh
     "Si skúsený účtovník. Navrhni zaúčtovanie prijatého dokladu do programu POHODA.",
     `Firma: ${OSNOVA[v.krajina]}`,
     "Vyber VÝHRADNE kód zo zoznamov nižšie (presne, ako je napísaný). Ak si nie si istý alebo žiadny nesedí, daj null. Nikdy si kód nevymýšľaj.",
-    'Odpovedz len JSON: {"predkontacia": string|null, "clenenie": string|null, "kv": string|null, "kategoria": string|null, "dovod": string}. "dovod" je krátke zdôvodnenie po slovensky, najviac 80 znakov, napr. "telekomunikačné služby → 518".',
+    'Odpovedz len JSON: {"predkontacia": string|null, "clenenie": string|null, "kv": string|null, "kategoria": string|null, "dovod": string, "istota": number}. "dovod" je krátke zdôvodnenie po slovensky, najviac 80 znakov, napr. "telekomunikačné služby → 518". "istota" je celé číslo 0–100: ako veľmi si istý predkontáciou (90+ len pri jednoznačnom doklade).',
     "",
     "DOKLAD",
     `Druh: ${DRUH_TEXT[v.druh]}`,
@@ -426,8 +428,9 @@ export const SCHEMA_ODPOVEDE = {
     kv: { type: "string", nullable: true },
     kategoria: { type: "string", nullable: true },
     dovod: { type: "string" },
+    istota: { type: "integer" },
   },
-  required: ["predkontacia", "clenenie", "kv", "kategoria", "dovod"],
+  required: ["predkontacia", "clenenie", "kv", "kategoria", "dovod", "istota"],
 } as const;
 
 /** Kód z odpovede preložený na kód zo zoznamu — presne, inak bez ohľadu na veľkosť písmen. */
@@ -463,7 +466,16 @@ export function spracujOdpoved(
   if (!POLIA_NAVRHU.some((p) => out[p])) return null;
   const dovod = txt(j.dovod, 120);
   if (dovod) out.dovod = dovod;
+  const istota = istotaZ(j.istota);
+  if (istota !== null) out.istota = istota;
   return out;
+}
+
+/** Istota z odpovede: celé číslo 0–100, inak nič. */
+function istotaZ(v: unknown): number | null {
+  const n = typeof v === "number" ? v : typeof v === "string" && v.trim() ? Number(v) : NaN;
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(100, Math.round(n)));
 }
 
 /**
@@ -491,6 +503,8 @@ export function platnyZPamate(
   if (zahodene && !POLIA_NAVRHU.some((p) => out[p])) return undefined;
   if (!POLIA_NAVRHU.some((p) => out[p])) return null;
   if (typeof n.dovod === "string" && n.dovod.trim()) out.dovod = txt(n.dovod, 120);
+  const istota = istotaZ(n.istota);
+  if (istota !== null) out.istota = istota;
   return out;
 }
 

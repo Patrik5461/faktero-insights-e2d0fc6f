@@ -477,6 +477,8 @@ export default {
   Platba: "Zahlung",
   "Platba odoslaná do banky — {stav}": "Zahlung an die Bank gesendet — {stav}",
   "Platba tejto faktúry už prebieha.": "Die Zahlung dieser Rechnung läuft bereits.",
+  "Faktúra ešte nie je schválená — zaplatiť sa dá až po schválení.":
+    "Die Rechnung ist noch nicht genehmigt — bezahlen lässt sie sich erst nach der Genehmigung.",
   "Platba zamietnutá bankou": "Zahlung von der Bank abgelehnt",
   "Platba zlyhala: {chyba}": "Zahlung fehlgeschlagen: {chyba}",
   "Platbu sa nepodarilo založiť": "Die Zahlung konnte nicht angelegt werden",

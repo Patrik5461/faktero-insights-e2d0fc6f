@@ -325,6 +325,7 @@ async function navrhni(
     polia,
     dovod: maAi ? (ai?.dovod ?? null) : null,
     zPamate,
+    istota: maAi ? (ai?.istota ?? null) : null,
   };
 }
 
@@ -360,6 +361,44 @@ export async function navrhPrijatej(
     id: row.id,
     userId,
     vstup,
+    doklad: {
+      predkontacia: row.pohoda_predkontacia,
+      clenenie: row.pohoda_clenenie_dph,
+      kv: row.kv_clenenie,
+      kategoria: row.category,
+    },
+    pravidlo: zPravidla(pravidlo),
+    kontext,
+    vynutit,
+  });
+}
+
+/** Návrh pre bloček či výdavkový doklad (riadok `expense_documents`). */
+export async function navrhBlocku(
+  supabase: Klient,
+  row: Record<string, any>,
+  kontext: KontextFirmy,
+  userId: string | null,
+  vynutit = false,
+): Promise<VysledokNavrhu> {
+  const krajina = krajinaNavrhu(kontext);
+  if (!krajina) return prazdnyVysledok("nepodporovane");
+  if (row.exported_at || row.zauctovane_at) return prazdnyVysledok("netreba");
+  const pravidlo = prvePravidlo(kontext.pravidla, {
+    supplier_ico: row.supplier_ico ?? null,
+    supplier_name: row.supplier_name ?? null,
+    payment_method: row.payment_method ?? null,
+    created_by: row.created_by ?? null,
+    predmet_mailu: row.predmet_mailu ?? null,
+    druh: "blocek",
+    typ: null,
+  });
+  return navrhni(supabase, {
+    companyId: row.company_id,
+    typ: "doklad",
+    id: row.id,
+    userId,
+    vstup: vstupZBlocku(row, krajina),
     doklad: {
       predkontacia: row.pohoda_predkontacia,
       clenenie: row.pohoda_clenenie_dph,

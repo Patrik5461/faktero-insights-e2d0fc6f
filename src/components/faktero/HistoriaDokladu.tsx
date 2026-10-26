@@ -36,6 +36,8 @@ const POLIA: Record<string, string> = {
   category: "Kategória",
   note: "Poznámka",
   zauctovane_at: "Zaúčtovanie",
+  zauctovanie_zdroj: "Zdroj zaúčtovania",
+  zauctovanie_oprava: "Oprava automatického zaúčtovania",
   exported_at: "Odovzdanie do účtovníctva",
   locked_at: "Zámok",
   deleted_at: "Zmazanie",
@@ -59,6 +61,14 @@ function hodnota(pole: string, v: unknown, t: (s: string) => string, loc: string
   if (typeof v === "boolean") return v ? t("áno") : t("nie");
   if (pole.endsWith("_at")) return new Date(String(v)).toLocaleString(loc, { dateStyle: "short", timeStyle: "short" });
   if (pole === "job_id") return t("zmenená");
+  if (pole === "zauctovanie_zdroj") {
+    const z: Record<string, string> = { pravidlo: "pravidlo", zvyk: "zvyk", ai: "AI", manual: "ručne" };
+    return t(z[String(v)] ?? String(v));
+  }
+  if (pole === "zauctovanie_oprava" && typeof v === "object") {
+    const o = v as { predkontacia?: string | null; zdroj?: string | null };
+    return [o.predkontacia ?? "—", o.zdroj ? `(${t(o.zdroj === "ai" ? "AI" : o.zdroj)})` : ""].join(" ").trim();
+  }
   return String(v);
 }
 

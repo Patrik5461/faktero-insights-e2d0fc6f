@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { VyberPravidla } from "./VyberPravidla";
 import { typPrijatej } from "@/lib/faktero/pravidla-uctovania";
 import { useEffect, useState } from "react";
@@ -563,6 +564,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
         toast.success(
           lenUlozit ? t("Uložené") : t("Zaúčtované — pôjde do Pohody pri najbližšom odovzdaní."),
         );
+      ponukaPravidlaToast(r.ponukaPravidla, t, navigate);
       onZmena();
     } catch (e: any) {
       toast.error(t(e?.message ?? "Nepodarilo sa"));
@@ -607,6 +609,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
           </span>
         )}
       </div>
+      <AutoZauctovanieOdznak typ="prijata" row={row} onZmena={onZmena} />
 
       <div className="mt-3">
         {odovzdana ? (

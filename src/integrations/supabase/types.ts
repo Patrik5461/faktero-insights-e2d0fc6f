@@ -1637,6 +1637,9 @@ export type Database = {
           pohoda_predkontacia_zaokruhlenie: string | null
           qr_blocky_do_nespracovanych: boolean
           povinne_polia_dokladu: string[]
+          auto_uctovanie_rezim: string
+          auto_uctovanie_limit: number
+          auto_uctovanie_od: string
         }
         Insert: {
           kurz_de_zdroj?: string
@@ -1747,6 +1750,9 @@ export type Database = {
           pohoda_predkontacia_zaokruhlenie?: string | null
           qr_blocky_do_nespracovanych?: boolean
           povinne_polia_dokladu?: string[]
+          auto_uctovanie_rezim?: string
+          auto_uctovanie_limit?: number
+          auto_uctovanie_od?: string
         }
         Update: {
           kurz_de_zdroj?: string
@@ -1857,6 +1863,9 @@ export type Database = {
           pohoda_predkontacia_zaokruhlenie?: string | null
           qr_blocky_do_nespracovanych?: boolean
           povinne_polia_dokladu?: string[]
+          auto_uctovanie_rezim?: string
+          auto_uctovanie_limit?: number
+          auto_uctovanie_od?: string
         }
         Relationships: []
       }
@@ -3428,6 +3437,12 @@ export type Database = {
           vyuctovanie_id: string | null
           pohoda_verzia: number
           vehicle_id: string | null
+          zauctovane_at: string | null
+          zauctoval: string | null
+          zauctovanie_zdroj: string | null
+          zauctovanie_istota: number | null
+          auto_uctovanie_navrh: Json | null
+          auto_uctovanie_at: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -3484,6 +3499,12 @@ export type Database = {
           vyuctovanie_id?: string | null
           pohoda_verzia?: number
           vehicle_id?: string | null
+          zauctovane_at?: string | null
+          zauctoval?: string | null
+          zauctovanie_zdroj?: string | null
+          zauctovanie_istota?: number | null
+          auto_uctovanie_navrh?: Json | null
+          auto_uctovanie_at?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -3540,6 +3561,12 @@ export type Database = {
           vyuctovanie_id?: string | null
           pohoda_verzia?: number
           vehicle_id?: string | null
+          zauctovane_at?: string | null
+          zauctoval?: string | null
+          zauctovanie_zdroj?: string | null
+          zauctovanie_istota?: number | null
+          auto_uctovanie_navrh?: Json | null
+          auto_uctovanie_at?: string | null
         }
         Relationships: [
           {
@@ -5324,6 +5351,10 @@ export type Database = {
           zasielkovna_stav: string | null
           zasielkovna_stav_at: string | null
           pohoda_verzia: number
+          zauctovanie_zdroj: string | null
+          zauctovanie_istota: number | null
+          auto_uctovanie_navrh: Json | null
+          auto_uctovanie_at: string | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -5427,6 +5458,10 @@ export type Database = {
           zasielkovna_stav?: string | null
           zasielkovna_stav_at?: string | null
           pohoda_verzia?: number
+          zauctovanie_zdroj?: string | null
+          zauctovanie_istota?: number | null
+          auto_uctovanie_navrh?: Json | null
+          auto_uctovanie_at?: string | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -5530,6 +5565,10 @@ export type Database = {
           zasielkovna_stav?: string | null
           zasielkovna_stav_at?: string | null
           pohoda_verzia?: number
+          zauctovanie_zdroj?: string | null
+          zauctovanie_istota?: number | null
+          auto_uctovanie_navrh?: Json | null
+          auto_uctovanie_at?: string | null
         }
         Relationships: [
           {
@@ -6609,6 +6648,10 @@ export type Database = {
           vyuctovanie_id: string | null
           pohoda_verzia: number
           vehicle_id: string | null
+          zauctovanie_zdroj: string | null
+          zauctovanie_istota: number | null
+          auto_uctovanie_navrh: Json | null
+          auto_uctovanie_at: string | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -6713,6 +6756,10 @@ export type Database = {
           vyuctovanie_id?: string | null
           pohoda_verzia?: number
           vehicle_id?: string | null
+          zauctovanie_zdroj?: string | null
+          zauctovanie_istota?: number | null
+          auto_uctovanie_navrh?: Json | null
+          auto_uctovanie_at?: string | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -6817,6 +6864,10 @@ export type Database = {
           vyuctovanie_id?: string | null
           pohoda_verzia?: number
           vehicle_id?: string | null
+          zauctovanie_zdroj?: string | null
+          zauctovanie_istota?: number | null
+          auto_uctovanie_navrh?: Json | null
+          auto_uctovanie_at?: string | null
         }
         Relationships: [
           {
@@ -10552,6 +10603,7 @@ export type Database = {
           }
         ]
       }
+
     }
     Views: {
       stock_items_with_availability: {

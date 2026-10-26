@@ -81,6 +81,7 @@ const PAY_ERRORS: Record<string, string> = {
   invalid_supplier_iban: "IBAN dodávateľa nemá platný tvar.",
   invoice_already_paid: "Faktúra je už označená ako zaplatená.",
   payment_already_in_progress: "Platba tejto faktúry už prebieha.",
+  not_approved: "Faktúra ešte nie je schválená — zaplatiť sa dá až po schválení.",
   unsupported_currency: "Cez banku sa dajú platiť len faktúry v eurách.",
   not_configured: "Napojenie na banku nie je nastavené.",
   Forbidden: "Na platby potrebujete rolu vlastníka alebo správcu.",

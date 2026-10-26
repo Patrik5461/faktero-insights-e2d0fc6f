@@ -157,6 +157,47 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
  * Zaúčtuje jednu alebo viac prijatých faktúr. Vyplnené kódy prepíšu tie na
  * faktúre; prázdne nechajú, čo tam je (doplnené pravidlom alebo ručne).
  */
+/**
+ * Človek zmenil predkontáciu, ktorú navrhol alebo zaúčtoval automat —
+ * zapíše sa to do histórie a pri druhej rovnakej oprave u partnera sa
+ * vráti ponuka pravidla (`zaznamenajOpravu`).
+ */
+async function opravaAutomatu(
+  typ: "prijata" | "blocek" | "vystavena",
+  r: any,
+  po: { predkontacia: string | null | undefined; clenenie?: string | null; kv?: string | null },
+  companyId: string,
+  userId: string,
+) {
+  if (po.predkontacia === undefined) return null;
+  const auto = ["pravidlo", "zvyk", "ai"].includes(String(r.zauctovanie_zdroj ?? ""));
+  const navrh = r.auto_uctovanie_navrh as { predkontacia?: string | null; zdroj?: string | null; istota?: number } | null;
+  const pred = auto
+    ? { predkontacia: r.pohoda_predkontacia ?? null, zdroj: r.zauctovanie_zdroj, istota: r.zauctovanie_istota ?? null }
+    : navrh?.predkontacia && navrh.zdroj
+      ? { predkontacia: navrh.predkontacia, zdroj: navrh.zdroj, istota: navrh.istota ?? null }
+      : null;
+  if (!pred) return null;
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { zaznamenajOpravu } = await import("./auto-uctovanie.server");
+    const ico = typ === "vystavena" ? r.customer_ico : r.supplier_ico;
+    const nazov = typ === "vystavena" ? r.customer_name : r.supplier_name;
+    return await zaznamenajOpravu(supabaseAdmin, {
+      companyId,
+      typ,
+      dokladId: r.id,
+      userId,
+      partner: { ico: ico ?? null, nazov: nazov ?? null },
+      pred,
+      po: { predkontacia: po.predkontacia ?? null, clenenie: po.clenenie ?? null, kv: po.kv ?? null },
+    });
+  } catch (e) {
+    console.warn("[zauctovanie] oprava automatu sa nezapísala:", String((e as Error)?.message ?? e).slice(0, 160));
+    return null;
+  }
+}
+
 export const zauctujPrijateFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
@@ -183,7 +224,7 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
     const { data: riadky, error } = await supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, status, exported_at, deleted_at, samofakturacia, samofakturacia_stav, type, supplier_ico, supplier_ic_dph, supplier_name, amount_total, opravuje_cislo",
+        "id, invoice_number, status, exported_at, deleted_at, samofakturacia, samofakturacia_stav, type, supplier_ico, supplier_ic_dph, supplier_name, amount_total, opravuje_cislo, pohoda_predkontacia, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh",
       )
       .eq("company_id", data.company_id)
       .in("id", data.ids);
@@ -191,6 +232,7 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
 
     const preskocene: string[] = [];
     const ok: string[] = [];
+    let ponukaPravidla: Awaited<ReturnType<typeof opravaAutomatu>> = null;
     for (const r of riadky ?? []) {
       if (r.deleted_at) continue;
       if (r.exported_at) {
@@ -262,10 +304,17 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
             dokladId: r.id,
             userId: context.userId,
           });
+          ponukaPravidla = await opravaAutomatu(
+            "prijata",
+            r,
+            { predkontacia: data.predkontacia === undefined ? undefined : (data.predkontacia ?? null), clenenie: data.clenenie, kv: data.kv },
+            data.company_id,
+            context.userId,
+          );
         }
       }
     }
-    return { zauctovanych: data.lenUlozit ? 0 : ok.length, ulozenych: ok.length, preskocene };
+    return { zauctovanych: data.lenUlozit ? 0 : ok.length, ulozenych: ok.length, preskocene, ponukaPravidla };
   });
 
 export const zrusZauctovanieFn = createServerFn({ method: "POST" })
@@ -330,11 +379,14 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
 
     const { data: riadky, error } = await supabase
       .from("expense_documents")
-      .select("id, exported_at, supplier_ico, supplier_ic_dph, supplier_name")
+      .select(
+        "id, exported_at, supplier_ico, supplier_ic_dph, supplier_name, pohoda_predkontacia, zauctovane_at, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh",
+      )
       .eq("company_id", data.company_id)
       .in("id", data.ids);
     if (error) throw new Error(error.message);
     const ok = (riadky ?? []).filter((r: any) => !r.exported_at).map((r: any) => r.id);
+    let ponukaPravidla: Awaited<ReturnType<typeof opravaAutomatu>> = null;
     if (ok.length) {
       const { error: e2 } = await supabase
         .from("expense_documents")
@@ -342,6 +394,15 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id)
         .in("id", ok);
       if (e2) throw new Error(e2.message);
+      // Určená predkontácia = doklad je zaúčtovaný (aj pre stránku Na kontrolu).
+      if (zmena.pohoda_predkontacia) {
+        await supabase
+          .from("expense_documents")
+          .update({ zauctovane_at: new Date().toISOString(), zauctoval: context.userId })
+          .eq("company_id", data.company_id)
+          .in("id", ok)
+          .is("zauctovane_at", null);
+      }
       // Učenie z opráv — len pri jednom bločku, ako pri prijatých faktúrach.
       if (data.ids.length === 1 && ok.length === 1) {
         const r = (riadky ?? [])[0];
@@ -362,9 +423,21 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
             dokladId: r.id,
             userId: context.userId,
           });
+        if (r && zmena.pohoda_predkontacia)
+          ponukaPravidla = await opravaAutomatu(
+            "blocek",
+            r,
+            {
+              predkontacia: String(zmena.pohoda_predkontacia),
+              clenenie: (zmena.pohoda_clenenie_dph as string) ?? null,
+              kv: (zmena.kv_clenenie as string) ?? null,
+            },
+            data.company_id,
+            context.userId,
+          );
       }
     }
-    return { zmenenych: ok.length, preskocenych: (riadky ?? []).length - ok.length };
+    return { zmenenych: ok.length, preskocenych: (riadky ?? []).length - ok.length, ponukaPravidla };
   });
 
 const riadokRozuctovania = z.object({
@@ -477,7 +550,9 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
     const supabase = context.supabase as any;
     const { data: f } = await supabase
       .from("invoices")
-      .select("id, status, deleted_at")
+      .select(
+        "id, status, deleted_at, customer_ico, customer_name, pohoda_predkontacia, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh",
+      )
       .eq("company_id", data.company_id)
       .eq("id", data.id)
       .maybeSingle();
@@ -513,7 +588,14 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
         .eq("invoice_id", f.id);
       if (e2) throw new Error(e2.message);
     }
-    return { ok: true };
+    const ponukaPravidla = await opravaAutomatu(
+      "vystavena",
+      f,
+      { predkontacia: data.predkontacia?.trim() || null, clenenie: data.clenenie ?? null, kv: data.kv ?? null },
+      data.company_id,
+      context.userId,
+    );
+    return { ok: true, ponukaPravidla };
   });
 
 export const zrusZauctovanieVystavenejFn = createServerFn({ method: "POST" })

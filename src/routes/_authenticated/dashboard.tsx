@@ -18,6 +18,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { UpozornenieKleinunternehmer } from "@/components/faktero/UpozornenieKleinunternehmer";
 import { PrenosFakturyZadarmo } from "@/components/faktero/PrenosFakturyZadarmo";
 import { BankWidget } from "@/components/faktero/BankWidget";
+import { AutoUctovanieWidget } from "@/components/faktero/AutoUctovanieWidget";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
@@ -736,6 +737,7 @@ function Dashboard() {
 
         {/* ACTIVITY FEED */}
         <div className="mt-6">
+          {getActiveCompanyId() && <AutoUctovanieWidget companyId={getActiveCompanyId()!} />}
           <div className="mb-6">
             <Link
               to="/sklad/produkty"

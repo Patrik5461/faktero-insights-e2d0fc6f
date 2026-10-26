@@ -2,7 +2,8 @@ import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus, Trash2, Wand2 } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Loader2, Pencil, Plus, Trash2, Wand2 } from "lucide-react";
+import { AutopilotKarta } from "@/components/faktero/AutopilotKarta";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -224,6 +225,41 @@ function PravidlaPage() {
     void nacitaj();
   }, [nacitaj]);
 
+  /*
+    Poradie ťahaním (alebo šípkami — na dotyk a z klávesnice). Viditeľné
+    pravidlá záložky sa prečíslujú po desiatkach, uložia sa len zmenené.
+  */
+  const [tahane, setTahane] = useState<string | null>(null);
+  async function presun(id: string, ciel: string | null, smer?: -1 | 1) {
+    if (!pravidla) return;
+    const viditelne = pravidla.filter((r) => vZalozke(r, zalozka));
+    const odkial = viditelne.findIndex((r) => r.id === id);
+    if (odkial < 0) return;
+    let kam = smer ? odkial + smer : viditelne.findIndex((r) => r.id === ciel);
+    if (kam < 0 || kam >= viditelne.length || kam === odkial) return;
+    const nove = [...viditelne];
+    const [x] = nove.splice(odkial, 1);
+    nove.splice(kam, 0, x);
+    const zmenene = nove
+      .map((r, i) => ({ r, poradie: (i + 1) * 10 }))
+      .filter(({ r, poradie }) => r.poradie !== poradie);
+    if (!zmenene.length) return;
+    const mapa = new Map(zmenene.map(({ r, poradie }) => [r.id, poradie]));
+    setPravidla(
+      [...pravidla.map((r) => (mapa.has(r.id) ? { ...r, poradie: mapa.get(r.id)! } : r))].sort(
+        (a, b) => a.poradie - b.poradie,
+      ),
+    );
+    const vysledky = await Promise.all(
+      zmenene.map(({ r, poradie }) =>
+        supabase.from("pravidla_uctovania").update({ poradie }).eq("id", r.id),
+      ),
+    );
+    const chyba = vysledky.find((v) => v.error)?.error;
+    if (chyba) toast.error(chyba.message);
+    void nacitaj();
+  }
+
   async function prepni(r: Riadok) {
     const { error } = await supabase
       .from("pravidla_uctovania")
@@ -290,6 +326,11 @@ function PravidlaPage() {
         }
       />
       <PageBody>
+        {cid && (
+          <div className="mb-4">
+            <AutopilotKarta companyId={cid} />
+          </div>
+        )}
         <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
           {t(
             "Pravidlo zaberie pri každom novom doklade — naskenovanom, z e-mailu, z appky aj z importu. Dopĺňa len to, čo je prázdne; čo vyplníte sami, neprepíše. Predkontácia a členenie DPH idú do Pohody namiesto spoločných z",
@@ -359,9 +400,47 @@ function PravidlaPage() {
                       return (
                         <tr
                           key={r.id}
-                          className={`border-b border-border last:border-0 ${r.aktivne ? "" : "opacity-50"}`}
+                          draggable
+                          onDragStart={(e) => {
+                            setTahane(r.id);
+                            e.dataTransfer.effectAllowed = "move";
+                          }}
+                          onDragOver={(e) => {
+                            if (tahane) e.preventDefault();
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (tahane && tahane !== r.id) void presun(tahane, r.id);
+                            setTahane(null);
+                          }}
+                          onDragEnd={() => setTahane(null)}
+                          className={`border-b border-border last:border-0 ${r.aktivne ? "" : "opacity-50"} ${tahane === r.id ? "bg-secondary" : ""}`}
                         >
-                          <td className="p-3 tabular-nums">{r.poradie}</td>
+                          <td className="p-3 tabular-nums">
+                            <div className="flex items-center gap-1">
+                              <GripVertical
+                                className="h-4 w-4 cursor-grab text-muted-foreground"
+                                aria-hidden
+                              />
+                              <span title={t("Potiahnutím zmeníte poradie")}>{r.poradie}</span>
+                              <span className="ml-1 flex flex-col">
+                                <button
+                                  onClick={() => void presun(r.id, null, -1)}
+                                  aria-label={t("Posunúť vyššie: {nazov}", { nazov: r.nazov })}
+                                  className="rounded p-0.5 hover:bg-secondary"
+                                >
+                                  <ChevronUp className="h-3 w-3" />
+                                </button>
+                                <button
+                                  onClick={() => void presun(r.id, null, 1)}
+                                  aria-label={t("Posunúť nižšie: {nazov}", { nazov: r.nazov })}
+                                  className="rounded p-0.5 hover:bg-secondary"
+                                >
+                                  <ChevronDown className="h-3 w-3" />
+                                </button>
+                              </span>
+                            </div>
+                          </td>
                           <td className="p-3 font-medium">
                             {r.nazov}
                             {zalozka === "vsetky" && (

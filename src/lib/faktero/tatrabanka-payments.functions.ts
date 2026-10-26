@@ -53,13 +53,17 @@ export const payPurchaseInvoice = createServerFn({ method: "POST" })
     const { data: inv } = await supabaseAdmin
       .from("purchase_invoices")
       .select(
-        "id, company_id, supplier_name, supplier_iban, invoice_number, amount_total, currency, status, variable_symbol, constant_symbol, specific_symbol, deleted_at",
+        "id, company_id, supplier_name, supplier_iban, invoice_number, amount_total, currency, status, variable_symbol, constant_symbol, specific_symbol, deleted_at, created_at",
       )
       .eq("id", data.invoice_id)
       .eq("company_id", data.company_id)
       .maybeSingle();
     if (!inv || inv.deleted_at) throw new Error("invoice_not_found");
     if (inv.status === "paid") throw new Error("invoice_already_paid");
+    // Pri zapnutom schvaľovaní sa platí len schválená — rovnako ako v hromadnom príkaze.
+    const { lenSchvalene } = await import("./schvalovanie.server");
+    const { cakaju } = await lenSchvalene(supabaseAdmin, data.company_id, "prijata", [inv]);
+    if (cakaju) throw new Error("not_approved");
     if (!inv.supplier_iban) throw new Error("missing_supplier_iban");
     if (!isValidIban(inv.supplier_iban)) throw new Error("invalid_supplier_iban");
     // TB Premium API robí cez sepa-credit-transfers len eurové platby.

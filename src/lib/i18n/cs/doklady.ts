@@ -470,6 +470,8 @@ export default {
   Platba: "Platba",
   "Platba odoslaná do banky — {stav}": "Platba odeslána do banky — {stav}",
   "Platba tejto faktúry už prebieha.": "Platba této faktury už probíhá.",
+  "Faktúra ešte nie je schválená — zaplatiť sa dá až po schválení.":
+    "Faktura ještě není schválená — zaplatit ji lze až po schválení.",
   "Platba zamietnutá bankou": "Platba zamítnuta bankou",
   "Platba zlyhala: {chyba}": "Platba selhala: {chyba}",
   "Platbu sa nepodarilo založiť": "Platbu se nepodařilo založit",

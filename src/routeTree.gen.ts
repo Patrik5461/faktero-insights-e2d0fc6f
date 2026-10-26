@@ -98,6 +98,7 @@ import { Route as PomocIndexRouteImport } from './routes/pomoc.index'
 import { Route as PomocAiAsistentRouteImport } from './routes/pomoc.ai-asistent'
 import { Route as PomocApiRouteImport } from './routes/pomoc.api'
 import { Route as PomocApkaRouteImport } from './routes/pomoc.apka'
+import { Route as PomocAutomatickeZauctovanieRouteImport } from './routes/pomoc.automaticke-zauctovanie'
 import { Route as PomocBankaRouteImport } from './routes/pomoc.banka'
 import { Route as PomocCenyRouteImport } from './routes/pomoc.ceny'
 import { Route as PomocDokladyRouteImport } from './routes/pomoc.doklady'
@@ -227,6 +228,7 @@ import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_auth
 import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenticated/sklad.prijem'
 import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
 import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authenticated/uctovnictvo.dph'
+import { Route as AuthenticatedUctovnictvoNaKontroluRouteImport } from './routes/_authenticated/uctovnictvo.na-kontrolu'
 import { Route as AuthenticatedUctovnictvoOssRouteImport } from './routes/_authenticated/uctovnictvo.oss'
 import { Route as AuthenticatedUctovnictvoPohodaRouteImport } from './routes/_authenticated/uctovnictvo.pohoda'
 import { Route as AuthenticatedUctovnictvoPravidlaRouteImport } from './routes/_authenticated/uctovnictvo.pravidla'
@@ -300,6 +302,7 @@ import { Route as ApiPublicDokladTokenRouteImport } from './routes/api/public/do
 import { Route as ApiPublicEfakturaEpostakRouteImport } from './routes/api/public/efaktura/epostak'
 import { Route as ApiPublicEfakturaPdsRouteImport } from './routes/api/public/efaktura/pds'
 import { Route as ApiPublicFakturaTokenRouteImport } from './routes/api/public/faktura.$token'
+import { Route as ApiPublicHooksAutoUctovanieRouteImport } from './routes/api/public/hooks/auto-uctovanie'
 import { Route as ApiPublicHooksBankStatementsRouteImport } from './routes/api/public/hooks/bank-statements'
 import { Route as ApiPublicHooksBankStatementsRestoreRouteImport } from './routes/api/public/hooks/bank-statements-restore'
 import { Route as ApiPublicHooksBankSyncRouteImport } from './routes/api/public/hooks/bank-sync'
@@ -809,6 +812,12 @@ const PomocApkaRoute = PomocApkaRouteImport.update({
   path: '/pomoc/apka',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PomocAutomatickeZauctovanieRoute =
+  PomocAutomatickeZauctovanieRouteImport.update({
+    id: '/pomoc/automaticke-zauctovanie',
+    path: '/pomoc/automaticke-zauctovanie',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PomocBankaRoute = PomocBankaRouteImport.update({
   id: '/pomoc/banka',
   path: '/pomoc/banka',
@@ -1527,6 +1536,12 @@ const AuthenticatedUctovnictvoDphRoute =
     path: '/uctovnictvo/dph',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedUctovnictvoNaKontroluRoute =
+  AuthenticatedUctovnictvoNaKontroluRouteImport.update({
+    id: '/uctovnictvo/na-kontrolu',
+    path: '/uctovnictvo/na-kontrolu',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUctovnictvoOssRoute =
   AuthenticatedUctovnictvoOssRouteImport.update({
     id: '/uctovnictvo/oss',
@@ -1932,6 +1947,12 @@ const ApiPublicFakturaTokenRoute = ApiPublicFakturaTokenRouteImport.update({
   path: '/api/public/faktura/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksAutoUctovanieRoute =
+  ApiPublicHooksAutoUctovanieRouteImport.update({
+    id: '/api/public/hooks/auto-uctovanie',
+    path: '/api/public/hooks/auto-uctovanie',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksBankStatementsRoute =
   ApiPublicHooksBankStatementsRouteImport.update({
     id: '/api/public/hooks/bank-statements',
@@ -2315,6 +2336,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
   '/pomoc/api': typeof PomocApiRoute
   '/pomoc/apka': typeof PomocApkaRoute
+  '/pomoc/automaticke-zauctovanie': typeof PomocAutomatickeZauctovanieRoute
   '/pomoc/banka': typeof PomocBankaRoute
   '/pomoc/ceny': typeof PomocCenyRoute
   '/pomoc/doklady': typeof PomocDokladyRoute
@@ -2430,6 +2452,7 @@ export interface FileRoutesByFullPath {
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/uctovnictvo/na-kontrolu': typeof AuthenticatedUctovnictvoNaKontroluRoute
   '/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
   '/uctovnictvo/pravidla': typeof AuthenticatedUctovnictvoPravidlaRoute
@@ -2514,6 +2537,7 @@ export interface FileRoutesByFullPath {
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
+  '/api/public/hooks/auto-uctovanie': typeof ApiPublicHooksAutoUctovanieRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
@@ -2653,6 +2677,7 @@ export interface FileRoutesByTo {
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
   '/pomoc/api': typeof PomocApiRoute
   '/pomoc/apka': typeof PomocApkaRoute
+  '/pomoc/automaticke-zauctovanie': typeof PomocAutomatickeZauctovanieRoute
   '/pomoc/banka': typeof PomocBankaRoute
   '/pomoc/ceny': typeof PomocCenyRoute
   '/pomoc/doklady': typeof PomocDokladyRoute
@@ -2767,6 +2792,7 @@ export interface FileRoutesByTo {
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/uctovnictvo/na-kontrolu': typeof AuthenticatedUctovnictvoNaKontroluRoute
   '/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
   '/uctovnictvo/pravidla': typeof AuthenticatedUctovnictvoPravidlaRoute
@@ -2851,6 +2877,7 @@ export interface FileRoutesByTo {
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
+  '/api/public/hooks/auto-uctovanie': typeof ApiPublicHooksAutoUctovanieRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
@@ -3000,6 +3027,7 @@ export interface FileRoutesById {
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
   '/pomoc/api': typeof PomocApiRoute
   '/pomoc/apka': typeof PomocApkaRoute
+  '/pomoc/automaticke-zauctovanie': typeof PomocAutomatickeZauctovanieRoute
   '/pomoc/banka': typeof PomocBankaRoute
   '/pomoc/ceny': typeof PomocCenyRoute
   '/pomoc/doklady': typeof PomocDokladyRoute
@@ -3115,6 +3143,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/_authenticated/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/_authenticated/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/_authenticated/uctovnictvo/na-kontrolu': typeof AuthenticatedUctovnictvoNaKontroluRoute
   '/_authenticated/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/_authenticated/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
   '/_authenticated/uctovnictvo/pravidla': typeof AuthenticatedUctovnictvoPravidlaRoute
@@ -3199,6 +3228,7 @@ export interface FileRoutesById {
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
+  '/api/public/hooks/auto-uctovanie': typeof ApiPublicHooksAutoUctovanieRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
@@ -3348,6 +3378,7 @@ export interface FileRouteTypes {
     | '/pomoc/ai-asistent'
     | '/pomoc/api'
     | '/pomoc/apka'
+    | '/pomoc/automaticke-zauctovanie'
     | '/pomoc/banka'
     | '/pomoc/ceny'
     | '/pomoc/doklady'
@@ -3463,6 +3494,7 @@ export interface FileRouteTypes {
     | '/sklad/prijem'
     | '/sklad/vydaj'
     | '/uctovnictvo/dph'
+    | '/uctovnictvo/na-kontrolu'
     | '/uctovnictvo/oss'
     | '/uctovnictvo/pohoda'
     | '/uctovnictvo/pravidla'
@@ -3547,6 +3579,7 @@ export interface FileRouteTypes {
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
+    | '/api/public/hooks/auto-uctovanie'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
@@ -3686,6 +3719,7 @@ export interface FileRouteTypes {
     | '/pomoc/ai-asistent'
     | '/pomoc/api'
     | '/pomoc/apka'
+    | '/pomoc/automaticke-zauctovanie'
     | '/pomoc/banka'
     | '/pomoc/ceny'
     | '/pomoc/doklady'
@@ -3800,6 +3834,7 @@ export interface FileRouteTypes {
     | '/sklad/prijem'
     | '/sklad/vydaj'
     | '/uctovnictvo/dph'
+    | '/uctovnictvo/na-kontrolu'
     | '/uctovnictvo/oss'
     | '/uctovnictvo/pohoda'
     | '/uctovnictvo/pravidla'
@@ -3884,6 +3919,7 @@ export interface FileRouteTypes {
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
+    | '/api/public/hooks/auto-uctovanie'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
@@ -4032,6 +4068,7 @@ export interface FileRouteTypes {
     | '/pomoc/ai-asistent'
     | '/pomoc/api'
     | '/pomoc/apka'
+    | '/pomoc/automaticke-zauctovanie'
     | '/pomoc/banka'
     | '/pomoc/ceny'
     | '/pomoc/doklady'
@@ -4147,6 +4184,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/prijem'
     | '/_authenticated/sklad/vydaj'
     | '/_authenticated/uctovnictvo/dph'
+    | '/_authenticated/uctovnictvo/na-kontrolu'
     | '/_authenticated/uctovnictvo/oss'
     | '/_authenticated/uctovnictvo/pohoda'
     | '/_authenticated/uctovnictvo/pravidla'
@@ -4231,6 +4269,7 @@ export interface FileRouteTypes {
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
+    | '/api/public/hooks/auto-uctovanie'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
@@ -4338,6 +4377,7 @@ export interface RootRouteChildren {
   PomocAiAsistentRoute: typeof PomocAiAsistentRoute
   PomocApiRoute: typeof PomocApiRoute
   PomocApkaRoute: typeof PomocApkaRoute
+  PomocAutomatickeZauctovanieRoute: typeof PomocAutomatickeZauctovanieRoute
   PomocBankaRoute: typeof PomocBankaRoute
   PomocCenyRoute: typeof PomocCenyRoute
   PomocDokladyRoute: typeof PomocDokladyRoute
@@ -4413,6 +4453,7 @@ export interface RootRouteChildren {
   ApiPublicEfakturaEpostakRoute: typeof ApiPublicEfakturaEpostakRoute
   ApiPublicEfakturaPdsRoute: typeof ApiPublicEfakturaPdsRoute
   ApiPublicFakturaTokenRoute: typeof ApiPublicFakturaTokenRoute
+  ApiPublicHooksAutoUctovanieRoute: typeof ApiPublicHooksAutoUctovanieRoute
   ApiPublicHooksBankStatementsRoute: typeof ApiPublicHooksBankStatementsRoute
   ApiPublicHooksBankStatementsRestoreRoute: typeof ApiPublicHooksBankStatementsRestoreRoute
   ApiPublicHooksBankSyncRoute: typeof ApiPublicHooksBankSyncRoute
@@ -5074,6 +5115,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/apka'
       fullPath: '/pomoc/apka'
       preLoaderRoute: typeof PomocApkaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/automaticke-zauctovanie': {
+      id: '/pomoc/automaticke-zauctovanie'
+      path: '/pomoc/automaticke-zauctovanie'
+      fullPath: '/pomoc/automaticke-zauctovanie'
+      preLoaderRoute: typeof PomocAutomatickeZauctovanieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/banka': {
@@ -5979,6 +6027,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUctovnictvoDphRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/uctovnictvo/na-kontrolu': {
+      id: '/_authenticated/uctovnictvo/na-kontrolu'
+      path: '/uctovnictvo/na-kontrolu'
+      fullPath: '/uctovnictvo/na-kontrolu'
+      preLoaderRoute: typeof AuthenticatedUctovnictvoNaKontroluRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/uctovnictvo/oss': {
       id: '/_authenticated/uctovnictvo/oss'
       path: '/uctovnictvo/oss'
@@ -6488,6 +6543,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/faktura/$token'
       fullPath: '/api/public/faktura/$token'
       preLoaderRoute: typeof ApiPublicFakturaTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/auto-uctovanie': {
+      id: '/api/public/hooks/auto-uctovanie'
+      path: '/api/public/hooks/auto-uctovanie'
+      fullPath: '/api/public/hooks/auto-uctovanie'
+      preLoaderRoute: typeof ApiPublicHooksAutoUctovanieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/bank-statements': {
@@ -7037,6 +7099,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
   AuthenticatedPrijateFakturySamofakturaRoute: typeof AuthenticatedPrijateFakturySamofakturaRoute
   AuthenticatedUctovnictvoDphRoute: typeof AuthenticatedUctovnictvoDphRoute
+  AuthenticatedUctovnictvoNaKontroluRoute: typeof AuthenticatedUctovnictvoNaKontroluRoute
   AuthenticatedUctovnictvoOssRoute: typeof AuthenticatedUctovnictvoOssRoute
   AuthenticatedUctovnictvoPohodaRoute: typeof AuthenticatedUctovnictvoPohodaRoute
   AuthenticatedUctovnictvoPravidlaRoute: typeof AuthenticatedUctovnictvoPravidlaRoute
@@ -7160,6 +7223,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPrijateFakturySamofakturaRoute:
     AuthenticatedPrijateFakturySamofakturaRoute,
   AuthenticatedUctovnictvoDphRoute: AuthenticatedUctovnictvoDphRoute,
+  AuthenticatedUctovnictvoNaKontroluRoute:
+    AuthenticatedUctovnictvoNaKontroluRoute,
   AuthenticatedUctovnictvoOssRoute: AuthenticatedUctovnictvoOssRoute,
   AuthenticatedUctovnictvoPohodaRoute: AuthenticatedUctovnictvoPohodaRoute,
   AuthenticatedUctovnictvoPravidlaRoute: AuthenticatedUctovnictvoPravidlaRoute,
@@ -7582,6 +7647,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocAiAsistentRoute: PomocAiAsistentRoute,
   PomocApiRoute: PomocApiRoute,
   PomocApkaRoute: PomocApkaRoute,
+  PomocAutomatickeZauctovanieRoute: PomocAutomatickeZauctovanieRoute,
   PomocBankaRoute: PomocBankaRoute,
   PomocCenyRoute: PomocCenyRoute,
   PomocDokladyRoute: PomocDokladyRoute,
@@ -7657,6 +7723,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEfakturaEpostakRoute: ApiPublicEfakturaEpostakRoute,
   ApiPublicEfakturaPdsRoute: ApiPublicEfakturaPdsRoute,
   ApiPublicFakturaTokenRoute: ApiPublicFakturaTokenRoute,
+  ApiPublicHooksAutoUctovanieRoute: ApiPublicHooksAutoUctovanieRoute,
   ApiPublicHooksBankStatementsRoute: ApiPublicHooksBankStatementsRoute,
   ApiPublicHooksBankStatementsRestoreRoute:
     ApiPublicHooksBankStatementsRestoreRoute,

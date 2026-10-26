@@ -263,6 +263,14 @@ const CATS: Cat[] = [
     available: true,
     skupina: "Účtovníctvo",
   },
+  {
+    to: "/pomoc/automaticke-zauctovanie",
+    label: "Automatické zaúčtovanie",
+    desc: "Autopilot: pravidlo, zvyk partnera, AI a blokátory.",
+    icon: Sparkles,
+    available: true,
+    skupina: "Účtovníctvo",
+  },
 
   {
     to: "/pomoc/jazdy",
