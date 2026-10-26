@@ -725,7 +725,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
               >
                 {t("Uložiť bez zaúčtovania")}
               </button>
-              {zauctovana && (
+              {(zauctovana || row.status === "received" || row.status === "paid") && (
                 <button
                   onClick={() => stiahniXml(true)}
                   disabled={busy}

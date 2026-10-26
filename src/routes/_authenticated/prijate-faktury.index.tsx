@@ -192,7 +192,7 @@ function PurchaseInvoicesPage() {
   // Súčty do pätičky zoznamu — vybrané a tie, čo čakajú na odovzdanie.
   const vybrane = rad.zoradene.filter((r: any) => selected.has(r.id));
   const naExport = rad.zoradene.filter(
-    (r: any) => r.zauctovane_at && !r.exported_at && r.status !== "cancelled",
+    (r: any) => !r.exported_at && r.status !== "cancelled" && r.status !== "draft",
   );
   const [zipBusy, setZipBusy] = useState(false);
   const [hromadneBusy, setHromadneBusy] = useState(false);

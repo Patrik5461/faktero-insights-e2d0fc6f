@@ -169,8 +169,9 @@ export const presunPrijatuDoDokladovFn = createServerFn({ method: "POST" })
   });
 
 /**
- * XML pre Pohodu so zaúčtovanými prijatými faktúrami — na stiahnutie hneď
- * po zaúčtovaní, bez čakania na mesačné odovzdanie.
+ * XML pre Pohodu s prijatými faktúrami — zaúčtovanými aj nezaúčtovanými
+ * (tie idú s predvolenou predkontáciou firmy), bez čakania na mesačné
+ * odovzdanie. Koncept a stornovaná sa vynechajú.
  *
  * `oznacit` ich zapíše ako odovzdané, aby ich konektor neposlal druhýkrát.
  */
@@ -207,7 +208,9 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     const { prijataAkoDoklad } = await import("./prijate-do-pohody");
     const preskocene: string[] = [];
     const kandidati = (riadky ?? []).filter((p: any) => {
-      if (!p.zauctovane_at) return preskocene.push(`${p.invoice_number}: nie je zaúčtovaná`), false;
+      // Aj nezaúčtovaná — do Pohody ide s predvolenou predkontáciou firmy (alebo bez nej).
+      if (p.status === "draft" || p.status === "cancelled")
+        return preskocene.push(`${p.invoice_number}: ${p.status === "draft" ? "koncept" : "stornovaná"}`), false;
       if (!zapocitatelna(p)) return preskocene.push(`${p.invoice_number}: neodsúhlasená samofaktúra`), false;
       // Označiť ako odovzdanú druhýkrát nemožno — v Pohode by bola dvakrát.
       if (p.exported_at && (data.aj_odovzdane === false || data.oznacit))
