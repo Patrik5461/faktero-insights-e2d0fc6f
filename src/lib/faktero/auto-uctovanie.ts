@@ -60,7 +60,7 @@ export const TEXTY_BLOKATOROV: Record<Blokator, string> = {
   prvy: "Prvý doklad od tohto partnera",
   clenenie: "Nepodarilo sa určiť členenie DPH",
   predkontacia: "Chýba predkontácia",
-  rezim_dph: "Režim DPH treba skontrolovať (zahraničný partner mimo EÚ)",
+  rezim_dph: "Režim DPH treba skontrolovať (zahraničný partner)",
   uzamknuty: "Doklad je odovzdaný alebo uzamknutý",
 };
 
@@ -96,6 +96,7 @@ export type RezimDph =
   | "eu_tovar"
   | "eu_sluzby"
   | "tretia_krajina"
+  | "cudzia_dph"
   | "osobitna_uprava"
   | "firma_neplatitel"
   // vydané
@@ -119,6 +120,7 @@ export const NAZVY_REZIMOV: Record<RezimDph, string> = {
   eu_tovar: "Nadobudnutie tovaru z EÚ",
   eu_sluzby: "Služby z EÚ (samozdanenie)",
   tretia_krajina: "Partner mimo EÚ",
+  cudzia_dph: "Cudzia DPH z iného štátu EÚ (bez odpočtu)",
   osobitna_uprava: "Osobitná úprava",
   firma_neplatitel: "Firma nie je platiteľ DPH",
   vystup_tuzemsko: "Tuzemské plnenie",
@@ -223,6 +225,8 @@ export function rezimDph(d: VstupClenenia): RezimDph {
   }
   if (mimoEu) return "tretia_krajina";
   if (cudziEu && dph === 0) return "eu_sluzby";
+  // Hotel či palivo v Rakúsku: cudzia DPH do domáceho priznania nepatrí, odpočet nie je.
+  if (cudziEu) return "cudzia_dph";
   if (d.odpocet === false) return "tuzemsko_bez_odpoctu";
   if (dph === 0) return "bez_dph";
   return d.blocek ? "blocek" : "tuzemsko";
@@ -235,6 +239,7 @@ const ZNAME_KODY: Partial<Record<RezimDph, string>> = {
   tuzemsko_bez_odpoctu: "PN",
   bez_dph: "PN",
   osobitna_uprava: "PN",
+  cudzia_dph: "PN",
   firma_neplatitel: "PN",
   vystup_tuzemsko: "UD",
   vystup_pdp: "UDpdp",
@@ -249,6 +254,7 @@ const KLUCOVE_SLOVA: Partial<Record<RezimDph, RegExp[]>> = {
   tuzemsko_bez_odpoctu: [/tuzem.*bez nároku/i, /bez nároku/i, /nezahr/i],
   bez_dph: [/nezahr/i, /bez nároku/i],
   osobitna_uprava: [/nezahr/i, /bez nároku/i],
+  cudzia_dph: [/nezahr/i],
   firma_neplatitel: [/nezahr/i],
   pdp_tuzemsko: [/daň platí príjemca/i, /§\s*69\s*ods\.?\s*12/i, /prenes/i, /pdp/i],
   eu_tovar: [/nadobud.*tovar/i, /nadobud/i],
@@ -455,7 +461,7 @@ export function blokatory(v: VstupBlokatorov): Blokator[] {
     if (Number(v.celkom) !== 0 && rozdiel > 0.051) out.push("sucet");
   }
   if (v.rezim && REZIMY_S_VIES.includes(v.rezim) && !v.viesPlatne) out.push("vies");
-  if (v.rezim === "tretia_krajina") out.push("rezim_dph");
+  if (v.rezim === "tretia_krajina" || v.rezim === "cudzia_dph") out.push("rezim_dph");
   if (v.limit != null && v.sumaEur != null && Math.abs(Number(v.sumaEur)) > Number(v.limit))
     out.push("limit");
   if (v.prvyOdPartnera) out.push("prvy");

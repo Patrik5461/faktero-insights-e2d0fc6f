@@ -25,6 +25,9 @@ export const requestInvoiceApproval = createServerFn({ method: "POST" })
       .eq("id", data.invoiceId)
       .maybeSingle();
     if (error || !inv) throw new Error("Faktúra nenájdená.");
+    // Ďalej píše servisný kľúč — človek musí mať právo faktúry upravovať.
+    const { overPristup } = await import("./over-pristup");
+    await overPristup({ supabase, userId }, inv.company_id, { oblast: "faktury", zapis: true });
     if (inv.status !== "draft" && inv.status !== "issued") {
       throw new Error("Na schválenie možno poslať len faktúru v stave koncept alebo vystavené.");
     }

@@ -80,7 +80,23 @@ export class OAuthChyba extends Error {
 }
 
 /** Dynamická registrácia klienta (RFC 7591) — verejný klient bez tajomstva. */
+/*
+  Strop registrácií — /oauth/register je verejný (DCR). IP klienta za routerom
+  nevidíme (všetko príde z jednej adresy), preto spoločný strop za hodinu.
+*/
+const STROP_REGISTRACII = 60;
+let registracie: number[] = [];
+
 export async function zaregistrujKlienta(telo: any) {
+  const teraz = Date.now();
+  registracie = registracie.filter((t) => teraz - t < 3_600_000);
+  if (registracie.length >= STROP_REGISTRACII)
+    throw new OAuthChyba(
+      "temporarily_unavailable",
+      "Priveľa registrácií, skúste to o chvíľu.",
+      429,
+    );
+  registracie.push(teraz);
   const adresy: unknown[] = Array.isArray(telo?.redirect_uris) ? telo.redirect_uris : [];
   if (!adresy.length || adresy.length > 10 || !adresy.every(platnaNavratovaAdresa)) {
     throw new OAuthChyba(
@@ -246,6 +262,9 @@ export async function vymenToken(f: Record<string, string>) {
     const overovac = String(f.code_verifier ?? "");
     if (!kod || !overovac)
       throw new OAuthChyba("invalid_request", "Chýba code alebo code_verifier.");
+    // RFC 7636: 43–128 znakov z neobmedzenej abecedy.
+    if (!/^[A-Za-z0-9._~-]{43,128}$/.test(overovac))
+      throw new OAuthChyba("invalid_grant", "code_verifier nemá správny tvar.");
     // Kód sa zaberie naraz s overením nepoužitia — dvakrát vymeniť sa nedá ani súbežne.
     const { data: zaznam } = await supabaseAdmin
       .from("oauth_codes")
@@ -282,6 +301,27 @@ export async function vymenToken(f: Record<string, string>) {
     if (!stary || stary.client_id !== clientId || Date.parse(stary.expires_at) < Date.now()) {
       throw new OAuthChyba("invalid_grant", "Obnovovací token je neplatný alebo vypršal.");
     }
+    /*
+      Kľúč zrušený v API kľúčoch (človek) ruší aj obnovu — inak by si klient
+      zrušený prístup vrátil ďalším refreshom. Zruší sa celý rad tokenov.
+    */
+    if (stary.api_key_id) {
+      const { data: kluc } = await supabaseAdmin
+        .from("api_keys")
+        .select("revoked_at")
+        .eq("id", stary.api_key_id)
+        .maybeSingle();
+      if (!kluc || kluc.revoked_at) {
+        await supabaseAdmin
+          .from("oauth_refresh_tokens")
+          .update({ revoked_at: new Date().toISOString() })
+          .eq("client_id", stary.client_id)
+          .eq("company_id", stary.company_id)
+          .eq("user_id", stary.user_id)
+          .is("revoked_at", null);
+        throw new OAuthChyba("invalid_grant", "Prístup bol zrušený.");
+      }
+    }
     // Starý prístupový token po obnovení prestane platiť.
     if (stary.api_key_id) {
       await supabaseAdmin
@@ -289,14 +329,16 @@ export async function vymenToken(f: Record<string, string>) {
         .update({ revoked_at: new Date().toISOString() })
         .eq("id", stary.api_key_id);
     }
-    // Člen, ktorého z firmy odobrali, si prístup obnoviť nesmie.
+    // Člen, ktorého z firmy odobrali alebo mu znížili rolu, si prístup obnoviť nesmie
+    // (vydať ho smie len majiteľ alebo admin — rovnako pri obnove).
     const { data: clen } = await supabaseAdmin
       .from("company_users")
-      .select("user_id")
+      .select("role")
       .eq("company_id", stary.company_id)
       .eq("user_id", stary.user_id)
       .maybeSingle();
-    if (!clen) throw new OAuthChyba("invalid_grant", "Používateľ už k firme nemá prístup.");
+    if (!clen || !["owner", "admin"].includes(String(clen.role)))
+      throw new OAuthChyba("invalid_grant", "Používateľ už k firme nemá prístup.");
     return vydajTokeny({
       clientId,
       companyId: stary.company_id,
@@ -357,10 +399,9 @@ export function json(telo: unknown, status = 200, hlavicky: Record<string, strin
 export function chybaOdpoved(e: unknown) {
   if (e instanceof OAuthChyba)
     return json({ error: e.kod, error_description: e.message }, e.status);
-  return json(
-    { error: "server_error", error_description: String((e as Error)?.message ?? e) },
-    500,
-  );
+  // Surovú chybu databázy klientovi neukazujeme — ide len do logu.
+  console.error("[oauth]", String((e as Error)?.message ?? e).slice(0, 300));
+  return json({ error: "server_error", error_description: "Interná chyba servera." }, 500);
 }
 
 /** Telo POST požiadavky — OAuth posiela formulár, niektoré klienty JSON. */

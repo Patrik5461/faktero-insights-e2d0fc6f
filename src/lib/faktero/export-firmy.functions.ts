@@ -132,7 +132,9 @@ export const exportFirmyFn = createServerFn({ method: "POST" })
     if (data.s_pdf) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const priecinok = zip.folder("faktury-pdf");
-      const sPdf = faktury.filter((f) => f.pdf_url).slice(0, MAX_PDF);
+      // Len súbory z priečinka tejto firmy — cestu v riadku mohol niekto prepísať.
+      const vlastny = (cesta: unknown) => String(cesta ?? "").startsWith(`${data.company_id}/`);
+      const sPdf = faktury.filter((f) => vlastny(f.pdf_url)).slice(0, MAX_PDF);
       for (const f of sPdf) {
         try {
           const { data: blob } = await supabaseAdmin.storage
@@ -159,7 +161,7 @@ export const exportFirmyFn = createServerFn({ method: "POST" })
       ];
       for (const z of zdroje) {
         const priec = zip.folder(z.priecinok);
-        for (const r of z.riadky.filter((x) => x.file_path)) {
+        for (const r of z.riadky.filter((x) => String(x.file_path ?? "").startsWith(`${data.company_id}/`))) {
           if (skenov >= MAX_SKENOV) break;
           try {
             const { data: blob } = await supabaseAdmin.storage.from(z.kos).download(String(r.file_path));

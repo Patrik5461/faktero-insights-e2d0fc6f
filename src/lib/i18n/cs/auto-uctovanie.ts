@@ -76,8 +76,9 @@ export default {
   "Prvý doklad od tohto partnera": "První doklad od tohoto partnera",
   "Nepodarilo sa určiť členenie DPH": "Nepodařilo se určit členění DPH",
   "Chýba predkontácia": "Chybí předkontace",
-  "Režim DPH treba skontrolovať (zahraničný partner mimo EÚ)":
-    "Režim DPH je třeba zkontrolovat (zahraniční partner mimo EU)",
+  "Režim DPH treba skontrolovať (zahraničný partner)":
+    "Režim DPH je třeba zkontrolovat (zahraniční partner)",
+  "Cudzia DPH z iného štátu EÚ (bez odpočtu)": "Cizí DPH z jiného státu EU (bez odpočtu)",
   "Doklad je odovzdaný alebo uzamknutý": "Doklad je předaný nebo uzamčený",
   "Všetky doklady": "Všechny doklady",
   Bloček: "Účtenka",

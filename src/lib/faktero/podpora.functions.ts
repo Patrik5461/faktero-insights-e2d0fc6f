@@ -38,6 +38,11 @@ export const zalozPoziadavkuFn = createServerFn({ method: "POST" })
     const { predmetZoSpravy } = await import("./podpora");
     const { zalozPoziadavku } = await import("./podpora.server");
     const ja = await mojEmail(supabase, userId);
+    // Firma v požiadavke musí byť tá, ku ktorej má človek prístup (inak by podpora videla cudziu).
+    if (data.company_id) {
+      const { overPristup } = await import("./over-pristup");
+      await overPristup({ supabase, userId }, data.company_id);
+    }
     return zalozPoziadavku({
       userId,
       companyId: data.company_id ?? null,

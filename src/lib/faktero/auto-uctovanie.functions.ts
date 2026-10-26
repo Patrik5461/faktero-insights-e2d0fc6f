@@ -157,7 +157,7 @@ export const potvrdNavrhyFn = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id)
         .maybeSingle();
       const meno = row?.[m.cislo] ?? p.id.slice(0, 8);
-      if (!row || !(await srv.smieSaZauctovat(p.typ, row))) {
+      if (!row || !(await srv.smieSaZauctovat(p.typ, row, sb))) {
         preskocene.push(`${meno}: nedá sa zaúčtovať (stav dokladu)`);
         continue;
       }

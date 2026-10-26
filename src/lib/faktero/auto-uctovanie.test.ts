@@ -103,6 +103,16 @@ describe("odvodClenenia — prijaté doklady", () => {
   it("česká firma nemá KV", () => {
     expect(odvodClenenia(prijata({ krajinaFirmy: "CZ" })).kvClenenie).toBeNull();
   });
+  it("cudzia DPH z EÚ (rakúsky hotel) → bez odpočtu, PN, X a blokátor", async () => {
+    const c = odvodClenenia(prijata({ partnerIcDph: "ATU12345678", dph: 20 }));
+    expect(c).toEqual({ rezim: "cudzia_dph", clenenieDph: "PN", kvClenenie: "X", odpocet: false });
+    expect(rezimDph(prijata({ partnerIcDph: "ATU12345678", dph: 3, blocek: true }))).toBe(
+      "cudzia_dph",
+    );
+    expect(blokatory({ rezim: "cudzia_dph", predkontacia: "512", clenenieDph: "PN" })).toEqual([
+      "rezim_dph",
+    ]);
+  });
   it("grécke IČ DPH (EL) je EÚ", () => {
     expect(rezimDph(prijata({ partnerIcDph: "EL123456789", dph: 0 }))).toBe("eu_sluzby");
   });

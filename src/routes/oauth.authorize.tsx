@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Bot, Check, Loader2, ShieldCheck, X } from "lucide-react";
+import { AlertTriangle, Bot, Check, Loader2, ShieldCheck, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -18,6 +18,11 @@ const POLIA = [
   "scope",
   "resource",
 ] as const;
+
+/** Overení AI klienti; ostatným (aj localhost) sa zobrazí varovanie. */
+const ZNAME_DOMENY = ["claude.ai", "claude.com", "anthropic.com", "chatgpt.com", "openai.com"];
+const znamyKlient = (host: string) =>
+  ZNAME_DOMENY.some((d) => host === d || host.endsWith(`.${d}`));
 
 export const Route = createFileRoute("/oauth/authorize")({
   head: ({ match }) => ({
@@ -121,10 +126,24 @@ function Autorizacia() {
             <h1 className="text-xl font-semibold">
               {t("{klient} žiada prístup k Fakteru", { klient: stav.klient })}
             </h1>
-            {stav.host && stav.host !== stav.klient && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t("Po povolení vás vrátime na {host}.", { host: stav.host })}
+            {/* Meno si klient pri registrácii volí sám — rozhoduje adresa, kam sa vráti. */}
+            {stav.host && (
+              <p className="mt-1 text-sm">
+                {t("Po povolení vás vrátime na")} <strong className="font-mono">{stav.host}</strong>
               </p>
+            )}
+            {stav.host && !znamyKlient(stav.host) && (
+              <div
+                role="alert"
+                className="mt-3 flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+              >
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  {t(
+                    "Neoverená aplikácia. Prístup povoľte len vtedy, ak ste ju pridávali vy a adresu poznáte — inak ho zamietnite.",
+                  )}
+                </span>
+              </div>
             )}
             <div className="mt-4 rounded-lg border border-border bg-background p-3 text-sm">
               <div className="mb-2 flex items-center gap-2 font-medium">

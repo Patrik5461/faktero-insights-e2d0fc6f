@@ -326,7 +326,14 @@ export const priraditCestuFn = createServerFn({ method: "POST" })
       : { data: null };
     const { tabulkaAgendy } = await import("./schvalovanie.server");
     const { rozvinUrovne, nacitajUrovne } = await import("./schvalovanie");
-    const { data: dok } = await a.from(tabulkaAgendy(data.agenda).tabulka).select("job_id").eq("id", data.id).maybeSingle();
+    // Doklad musí patriť tej istej firme — inak by upsert prepísal schvaľovanie cudzej firmy.
+    const { data: dok } = await a
+      .from(tabulkaAgendy(data.agenda).tabulka)
+      .select("job_id")
+      .eq("id", data.id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!dok) throw new Error("Doklad sa nenašiel.");
     const { data: zak } = dok?.job_id
       ? await a.from("jobs").select("manazer_id").eq("id", dok.job_id).maybeSingle()
       : { data: null };

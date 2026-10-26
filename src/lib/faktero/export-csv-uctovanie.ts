@@ -1,3 +1,4 @@
+import { bezVzorca } from "@/lib/bezpecny-text";
 /*
   Zaúčtovaná súpiska CSV — pre programy, do ktorých nemáme priamy formát
   (MRP, Helios, Premier, Excel). Jeden riadok na riadok zaúčtovania: doklad,
@@ -18,7 +19,8 @@ const dveSk = (n: unknown): string => {
 };
 
 function pole(h: unknown): string {
-  const s = String(h ?? "")
+  // Názov dodávateľa „=HYPERLINK(…)“ by sa v Exceli spustil ako vzorec.
+  const s = bezVzorca(typeof h === "number" ? h : String(h ?? "").trim())
     .trim()
     .replace(/\r?\n/g, " ");
   return /[";]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;

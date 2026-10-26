@@ -89,10 +89,13 @@ export const getQuotePdfSignedUrl = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: quote, error } = await context.supabase
       .from("quotes")
-      .select("id, pdf_url, quote_number")
+      .select("id, pdf_url, quote_number, company_id")
       .eq("id", data.quoteId)
       .single();
     if (error || !quote?.pdf_url) throw new Error("PDF zatiaľ neexistuje");
+    // Servisný kľúč podpíše čokoľvek — súbor musí ležať v priečinku tej istej firmy.
+    if (!String(quote.pdf_url).startsWith(`${(quote as any).company_id}/`))
+      throw new Error("PDF zatiaľ neexistuje");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: signed, error: sErr } = await supabaseAdmin.storage
       .from("invoice-pdfs")

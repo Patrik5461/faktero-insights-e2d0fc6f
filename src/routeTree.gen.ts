@@ -254,7 +254,6 @@ import { Route as AdminPodporaIndexRouteImport } from './routes/admin.podpora.in
 import { Route as AdminPodporaIdRouteImport } from './routes/admin.podpora.$id'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin.users.index'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
-import { Route as ApiAdminMigrationExportRouteImport } from './routes/api/admin/migration-export'
 import { Route as ApiMobilOperaciaRouteImport } from './routes/api/mobil/$operacia'
 import { Route as ApiMobilPadRouteImport } from './routes/api/mobil/pad'
 import { Route as ApiPublicKontaktRouteImport } from './routes/api/public/kontakt'
@@ -1685,11 +1684,6 @@ const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
   path: '/users/$id',
   getParentRoute: () => AdminRoute,
 } as any)
-const ApiAdminMigrationExportRoute = ApiAdminMigrationExportRouteImport.update({
-  id: '/api/admin/migration-export',
-  path: '/api/admin/migration-export',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiMobilOperaciaRoute = ApiMobilOperaciaRouteImport.update({
   id: '/api/mobil/$operacia',
   path: '/api/mobil/$operacia',
@@ -2471,7 +2465,6 @@ export interface FileRoutesByFullPath {
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/admin/podpora/$id': typeof AdminPodporaIdRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
-  '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
   '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
@@ -2811,7 +2804,6 @@ export interface FileRoutesByTo {
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/admin/podpora/$id': typeof AdminPodporaIdRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
-  '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
   '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
@@ -3162,7 +3154,6 @@ export interface FileRoutesById {
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/admin/podpora/$id': typeof AdminPodporaIdRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
-  '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
   '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
@@ -3513,7 +3504,6 @@ export interface FileRouteTypes {
     | '/admin/companies/$id'
     | '/admin/podpora/$id'
     | '/admin/users/$id'
-    | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
     | '/api/mobil/pad'
     | '/api/public/kontakt'
@@ -3853,7 +3843,6 @@ export interface FileRouteTypes {
     | '/admin/companies/$id'
     | '/admin/podpora/$id'
     | '/admin/users/$id'
-    | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
     | '/api/mobil/pad'
     | '/api/public/kontakt'
@@ -4203,7 +4192,6 @@ export interface FileRouteTypes {
     | '/admin/companies/$id'
     | '/admin/podpora/$id'
     | '/admin/users/$id'
-    | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
     | '/api/mobil/pad'
     | '/api/public/kontakt'
@@ -4423,7 +4411,6 @@ export interface RootRouteChildren {
   SchvalitTokenRoute: typeof SchvalitTokenRoute
   PomocIndexRoute: typeof PomocIndexRoute
   PravneIndexRoute: typeof PravneIndexRoute
-  ApiAdminMigrationExportRoute: typeof ApiAdminMigrationExportRoute
   ApiMobilOperaciaRoute: typeof ApiMobilOperaciaRoute
   ApiMobilPadRoute: typeof ApiMobilPadRoute
   ApiPublicKontaktRoute: typeof ApiPublicKontaktRoute
@@ -6209,13 +6196,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersIdRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/api/admin/migration-export': {
-      id: '/api/admin/migration-export'
-      path: '/api/admin/migration-export'
-      fullPath: '/api/admin/migration-export'
-      preLoaderRoute: typeof ApiAdminMigrationExportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/mobil/$operacia': {
       id: '/api/mobil/$operacia'
       path: '/api/mobil/$operacia'
@@ -7693,7 +7673,6 @@ const rootRouteChildren: RootRouteChildren = {
   SchvalitTokenRoute: SchvalitTokenRoute,
   PomocIndexRoute: PomocIndexRoute,
   PravneIndexRoute: PravneIndexRoute,
-  ApiAdminMigrationExportRoute: ApiAdminMigrationExportRoute,
   ApiMobilOperaciaRoute: ApiMobilOperaciaRoute,
   ApiMobilPadRoute: ApiMobilPadRoute,
   ApiPublicKontaktRoute: ApiPublicKontaktRoute,

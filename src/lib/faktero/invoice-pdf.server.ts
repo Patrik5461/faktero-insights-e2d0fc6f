@@ -67,7 +67,8 @@ export async function ensureInvoicePdf(
     cachedHash === hash &&
     (await objectExists(invoice.company_id, invoice.id));
 
-  if (cacheValid) return { path: invoice.pdf_url as string, fileName, regenerated: false };
+  // Cesta sa vždy počíta — `pdf_url` z riadka mohol člen firmy prepísať na cudzí súbor.
+  if (cacheValid) return { path, fileName, regenerated: false };
 
   const [{ data: items }, { data: company }] = await Promise.all([
     supabaseAdmin.from("invoice_items").select("*").eq("invoice_id", invoice.id).order("position"),

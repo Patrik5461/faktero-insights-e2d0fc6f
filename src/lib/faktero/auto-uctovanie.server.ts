@@ -32,6 +32,7 @@ import {
   type VstupClenenia,
 } from "./auto-uctovanie";
 import { prvePravidlo, pravidloPohybu, typPrijatej, type Pravidlo } from "./pravidla-uctovania";
+import * as kurzy from "./kurzy";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Klient = any;
@@ -92,6 +93,8 @@ export type Firma = {
   rezim: RezimAutopilota;
   limit: number;
   od: string | null;
+  /** Uzamknuté obdobie — doklady s dátumom do tohto dňa sa nemenia. */
+  zamknuteDo: string | null;
   /** Firma účtovanie používa (číselník, pravidlá alebo predvolené kódy). */
   pouzivaUctovanie: boolean;
 };
@@ -108,7 +111,7 @@ export async function nacitajFirmu(sb: Klient, companyId: string): Promise<Firma
     sb
       .from("companies")
       .select(
-        `id, country, vat_payer, auto_uctovanie_rezim, auto_uctovanie_limit, auto_uctovanie_od, ${STLPCE_PREDVOLENYCH.join(", ")}`,
+        `id, country, vat_payer, locked_until, auto_uctovanie_rezim, auto_uctovanie_limit, auto_uctovanie_od, ${STLPCE_PREDVOLENYCH.join(", ")}`,
       )
       .eq("id", companyId)
       .maybeSingle(),
@@ -130,6 +133,7 @@ export async function nacitajFirmu(sb: Klient, companyId: string): Promise<Firma
     rezim: jeRezimAutopilota(c?.auto_uctovanie_rezim) ? c.auto_uctovanie_rezim : "bezpecny",
     limit: c?.auto_uctovanie_limit != null ? Number(c.auto_uctovanie_limit) : PREDVOLENY_LIMIT,
     od: c?.auto_uctovanie_od ?? null,
+    zamknuteDo: c?.locked_until ?? null,
     pouzivaUctovanie: predvolene || (kody ?? 0) > 0 || (pravidla ?? 0) > 0,
   };
 }
@@ -203,8 +207,13 @@ function sumaDoma(typ: TypDokladu, row: Riadok, krajina: string): number | null 
   if (typ === "prijata" && row.amount_without_vat_eur != null)
     return Number(row.amount_without_vat_eur) + Number(row.vat_amount_eur ?? 0);
   if (typ === "vystavena" && row.total_eur != null) return Number(row.total_eur);
-  if (row.exchange_rate) return suma * Number(row.exchange_rate);
-  return null;
+  if (row.exchange_rate) {
+    const { domacejZaJednotku } = kurzy;
+    const k = domacejZaJednotku(row.exchange_rate, krajina);
+    if (k > 0) return suma * k;
+  }
+  // Cudzia mena bez kurzu — radšej nad limitom ako potichu pod ním.
+  return Number.POSITIVE_INFINITY;
 }
 
 /** Porovnávací tvar dokladu pre pravidlá. */
@@ -387,6 +396,10 @@ export async function navrhPreRiadok(
     return prazdnyNavrh({ neprepisovat: true, blokatory: ["uzamknuty"] });
 
   const firma = volby.firma ?? (await nacitajFirmu(sb, row.company_id));
+  // Uzamknuté obdobie: kódy by zmenili vstup do už podaného DPH a KV.
+  const datumDokladu = String(row.delivery_date ?? row.issue_date ?? "");
+  if (firma.zamknuteDo && datumDokladu && datumDokladu <= String(firma.zamknuteDo))
+    return prazdnyNavrh({ neprepisovat: true, blokatory: ["uzamknuty"] });
   const { nacitajKontext } = await import("./ai-predkontacia.server");
   const kontext = volby.kontext ?? (await nacitajKontext(sb, row.company_id));
   const pravidla = (kontext.pravidla ?? []) as (Pravidlo & { id: string })[];
@@ -670,8 +683,17 @@ export async function potvrdNavrh(
 }
 
 /** Doklad, ktorý fronta (aj ručné potvrdenie) smie zaúčtovať. */
-export async function smieSaZauctovat(typ: TypDokladu, row: Riadok): Promise<boolean> {
+export async function smieSaZauctovat(typ: TypDokladu, row: Riadok, sb?: Klient): Promise<boolean> {
   if (jeUzavrety(row)) return false;
+  // Doklad, ktorý čaká na schválenie alebo bol vrátený, sa nezaúčtuje (ako export a konektor).
+  if (sb) {
+    const { schvaleneIds } = await import("./schvalovanie.server");
+    const agenda = typ === "blocek" ? "doklad" : typ;
+    const ok = await schvaleneIds(sb, row.company_id, agenda, [
+      row as { id: string; created_at?: string | null },
+    ]);
+    if (!ok.has(String(row.id))) return false;
+  }
   if (typ === "prijata") {
     if (!["received", "paid"].includes(String(row.status))) return false;
     // Zálohová nie je náklad a konektor ju neberie.
@@ -732,9 +754,12 @@ export async function spracujAutoUctovanie(
       if (typ !== "blocek") q = q.is("deleted_at", null);
       const { data, error } = await q;
       if (error) throw new Error(error.message);
-      for (const row of (data ?? []) as Riadok[])
+      for (const row of (data ?? []) as Riadok[]) {
         if (String(row.created_at) >= String(odFirmy.get(row.company_id) ?? ""))
           kandidati.push({ typ, row });
+        // Spred zapnutia autopilota firmy — označí sa, inak by zapchal frontu ostatným.
+        else await ulozNavrh(admin, typ, row.id, null).catch(() => {});
+      }
     }
     const firmyCache = new Map<string, Firma>();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -762,7 +787,7 @@ export async function spracujAutoUctovanie(
           sa ako prejdený — keď ho človek dokončí (zmena stavu), spúšťač ho
           vráti do fronty.
         */
-        if (!(await smieSaZauctovat(typ, row))) {
+        if (!(await smieSaZauctovat(typ, row, admin))) {
           await ulozNavrh(admin, typ, row.id, null);
           vysledok.preskocenych++;
           continue;

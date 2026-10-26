@@ -146,7 +146,8 @@ export async function detailDokladu(ctx: ApiCtx, druh: DruhApi, id: string) {
   if (error) return err("db_error", error.message, 500);
   if (!r) return err("not_found", "Doklad sa nenašiel.", 404);
   let subor_url: string | null = null;
-  if (r.file_path) {
+  // Súbor len z priečinka tejto firmy — cestu v riadku mohol niekto prepísať.
+  if (r.file_path && String(r.file_path).startsWith(`${ctx.company_id}/`)) {
     const { data: s } = await ctx.supabase.storage
       .from(BUCKET[druh])
       .createSignedUrl(r.file_path, 3600);

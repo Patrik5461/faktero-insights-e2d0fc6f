@@ -35,4 +35,7 @@ export default {
     "Přidejte vlastní konektor (v Claude: Nastavení → Konektory, v ChatGPT: Nastavení → Aplikace a konektory) a zadejte jen adresu serveru. Klíč není potřeba — otevře se Faktero, přihlásíte se, vyberete firmu a potvrdíte přístup. Přístup se objeví mezi API klíči jako „AI asistent (MCP)“ a zrušíte ho tam jedním kliknutím.",
   "Claude, ChatGPT či iný AI asistent sa na Faktero napojí cez MCP. Claude.ai a ChatGPT sa prihlásia cez Faktero bez kľúča, ostatní API kľúčom. Adresa servera je":
     "Claude, ChatGPT či jiný AI asistent se na Faktero napojí přes MCP. Claude.ai a ChatGPT se přihlásí přes Faktero bez klíče, ostatní API klíčem. Adresa serveru je",
+  "Po povolení vás vrátime na": "Po povolení vás vrátíme na",
+  "Neoverená aplikácia. Prístup povoľte len vtedy, ak ste ju pridávali vy a adresu poznáte — inak ho zamietnite.":
+    "Neověřená aplikace. Přístup povolte jen tehdy, pokud jste ji přidávali vy a adresu znáte — jinak jej zamítněte.",
 };

@@ -78,8 +78,10 @@ export default {
   "Prvý doklad od tohto partnera": "Erster Beleg von diesem Partner",
   "Nepodarilo sa určiť členenie DPH": "Die USt-Gliederung konnte nicht bestimmt werden",
   "Chýba predkontácia": "Vorkontierung fehlt",
-  "Režim DPH treba skontrolovať (zahraničný partner mimo EÚ)":
-    "Das USt-Regime muss geprüft werden (ausländischer Partner außerhalb der EU)",
+  "Režim DPH treba skontrolovať (zahraničný partner)":
+    "Das USt-Regime muss geprüft werden (ausländischer Partner)",
+  "Cudzia DPH z iného štátu EÚ (bez odpočtu)":
+    "Ausländische USt aus einem anderen EU-Staat (ohne Vorsteuerabzug)",
   "Doklad je odovzdaný alebo uzamknutý": "Der Beleg ist übergeben oder gesperrt",
   "Všetky doklady": "Alle Belege",
   Bloček: "Kassenbon",
