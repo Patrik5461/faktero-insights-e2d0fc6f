@@ -24,6 +24,21 @@ export type JazykDokladu = (typeof JAZYKY_DOKLADU)[number]["kod"];
 
 export const VYCHODZI_JAZYK: JazykDokladu = "sk";
 
+/** Predvyplnený text nad položkami novej faktúry — v jazyku dokladu. */
+export const UVOD_FAKTURY: Record<JazykDokladu, string> = {
+  sk: "Fakturujeme Vám",
+  cs: "Fakturujeme Vám",
+  en: "We invoice you for",
+  de: "Wir stellen Ihnen in Rechnung",
+  hu: "Számlázzuk Önnek",
+};
+
+/** Je text nad položkami ešte len predvyplnený (nikto ho nemenil)? */
+export function jeUvodFaktury(v: string | null | undefined): boolean {
+  const t = String(v ?? "").trim();
+  return !t || Object.values(UVOD_FAKTURY).includes(t);
+}
+
 export function jeJazykDokladu(v: unknown): v is JazykDokladu {
   return JAZYKY_DOKLADU.some((j) => j.kod === v);
 }

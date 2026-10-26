@@ -9,7 +9,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nezuctovaneZalohyFn, type NezuctovanaZaloha } from "@/lib/faktero/zalohy-odberatela.functions";
-import { JAZYKY_DOKLADU, jazykDokladu, predvolenyJazykFirmy } from "@/lib/faktero/faktura-jazyk";
+import {
+  JAZYKY_DOKLADU,
+  UVOD_FAKTURY,
+  jazykDokladu,
+  jeUvodFaktury,
+  predvolenyJazykFirmy,
+} from "@/lib/faktero/faktura-jazyk";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import {
   getSalesOrderForInvoice,
@@ -233,7 +239,8 @@ function NewInvoice() {
     advance_amount: 0,
     job_id: "",
     notes: "",
-    intro_note: "",
+    /* Predvyplnený úvod („Fakturujeme Vám“) — s jazykom dokladu sa vymení, kým ho nikto neprepíše. */
+    intro_note: UVOD_FAKTURY.sk,
     /* Zľava na celý doklad — percento alebo pevná suma bez DPH. */
     discount_type: "" as "" | TypZlavy,
     discount_value: 0,
@@ -382,7 +389,9 @@ function NewInvoice() {
       setOpravujeCislo(String((f as any).invoice_number ?? ""));
       // Text nad položkami je povinný — pri dobropise ho dá väzba sama.
       setForm((x) =>
-        x.intro_note.trim() ? x : { ...x, intro_note: `${nazovDokladu} k faktúre č. ${(f as any).invoice_number}` },
+        !jeUvodFaktury(x.intro_note)
+          ? x
+          : { ...x, intro_note: `${nazovDokladu} k faktúre č. ${(f as any).invoice_number}` },
       );
       if (!sPolozkami || tarchopis) {
         if (tarchopis) {
@@ -559,6 +568,14 @@ function NewInvoice() {
     predvolenyJazykRef.current = novy;
     if (novy !== stary) setForm((f) => (f.language === stary ? { ...f, language: novy } : f));
   }, [krajina]);
+
+  // Predvyplnený úvod ide s jazykom dokladu; prepísaný text sa nemení.
+  useEffect(() => {
+    const uvod = UVOD_FAKTURY[jazykDokladu(form.language)];
+    setForm((f) =>
+      jeUvodFaktury(f.intro_note) && f.intro_note.trim() && f.intro_note !== uvod ? { ...f, intro_note: uvod } : f,
+    );
+  }, [form.language]);
 
   /*
     Nezúčtované zálohy odberateľa. Bez upozornenia sa na zaplatenú zálohu ľahko
