@@ -91,11 +91,11 @@ function fmtEur(cents: number | null | undefined) {
   if (cents == null) return "—";
   return formatujMenu(cents / 100, "EUR");
 }
-function ChybaPredplatneho({ error }: { error: Error }) {
+function ChybaPredplatneho({ error }: { error: unknown }) {
   const { t } = useT();
   return (
     <div className="p-6 text-sm text-destructive">
-      {t("Chyba: {sprava}", { sprava: error.message })}
+      {t("Chyba: {sprava}", { sprava: error instanceof Error ? error.message : String(error) })}
     </div>
   );
 }
