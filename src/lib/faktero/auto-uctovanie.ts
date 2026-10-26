@@ -246,19 +246,19 @@ const ZNAME_KODY: Partial<Record<RezimDph, string>> = {
 const KLUCOVE_SLOVA: Partial<Record<RezimDph, RegExp[]>> = {
   tuzemsko: [/tuzem.*odpo/i, /s nárokom/i],
   blocek: [/tuzem.*odpo/i, /s nárokom/i],
-  tuzemsko_bez_odpoctu: [/bez nároku/i, /nezahr/i],
+  tuzemsko_bez_odpoctu: [/tuzem.*bez nároku/i, /bez nároku/i, /nezahr/i],
   bez_dph: [/nezahr/i, /bez nároku/i],
   osobitna_uprava: [/nezahr/i, /bez nároku/i],
   firma_neplatitel: [/nezahr/i],
-  pdp_tuzemsko: [/§\s*69\s*ods\.?\s*12/i, /prenes/i, /pdp/i],
-  eu_tovar: [/nadobud/i],
-  eu_sluzby: [/služ.*(eú|eu|člensk)/i, /§\s*69\s*ods\.?\s*3/i, /samozdan/i],
-  tretia_krajina: [/tret(ej|ích|ia) krajin/i, /mimo (eú|eu)/i, /zahrani/i],
+  pdp_tuzemsko: [/daň platí príjemca/i, /§\s*69\s*ods\.?\s*12/i, /prenes/i, /pdp/i],
+  eu_tovar: [/nadobud.*tovar/i, /nadobud/i],
+  eu_sluzby: [/daň platí príjemca/i, /služ.*(eú|eu|člensk)/i, /§\s*69\s*ods\.?\s*3/i, /samozdan/i],
+  tretia_krajina: [/daň platí príjemca/i, /tret(ej|ích|ia) krajin/i, /mimo (eú|eu)/i],
   vystup_tuzemsko: [/^tuzemsk[ée] plnenie$/i, /tuzemsk/i],
   vystup_oslobodene: [/oslob/i],
   vystup_pdp: [/§\s*69\s*ods\.?\s*12/i, /prenes/i],
   vystup_eu_tovar: [/dodanie tovaru.*(eú|eu|člensk)/i, /§\s*43/i],
-  vystup_eu_sluzby: [/služ.*(eú|eu|člensk)/i, /§\s*15/i],
+  vystup_eu_sluzby: [/služ.*(eú|eu|člensk)/i, /miesto plnenia v zahrani/i, /§\s*15/i],
   vystup_trojstranny: [/trojstrann/i],
   vystup_export: [/vývoz/i, /export/i, /§\s*47/i],
   vystup_oss: [/nezahr/i, /oss/i],
@@ -266,13 +266,27 @@ const KLUCOVE_SLOVA: Partial<Record<RezimDph, RegExp[]>> = {
   vystup_neplatitel: [/nezahr/i],
 };
 
-/** Smer kódu členenia: z agendy, keď ju Pohoda poslala, inak z prvého písmena (P/U). */
-function smerKodu(z: KodCiselnika): "prijate" | "vydane" | null {
-  const a = String(z.agenda ?? "").toLowerCase();
-  if (/input|vstup|prij|receiv/.test(a)) return "prijate";
-  if (/output|vystup|výstup|vyd|issued/.test(a)) return "vydane";
-  if (/^p/i.test(z.kod)) return "prijate";
-  if (/^u/i.test(z.kod)) return "vydane";
+/**
+ * Smer kódu členenia. Pohoda SK posiela v agende riadok priznania
+ * („1300 P01“, „1200 U01“, „1351 D02“): P = vstup (odpočet), U = výstup,
+ * D = daň na výstupe pri samozdanení — tú Pohoda dopĺňa sama, na doklad sa
+ * nedáva. Bez agendy rozhoduje prvé písmeno kódu.
+ */
+function smerKodu(z: KodCiselnika): "prijate" | "vydane" | "ine" | null {
+  const a = String(z.agenda ?? "");
+  const riadok =
+    a.match(/\b([PUD])\d{2}\b/i)?.[1]?.toUpperCase() ??
+    a
+      .trim()
+      .match(/^\d+\s+([PUD])$/i)?.[1]
+      ?.toUpperCase();
+  const pismeno = riadok ?? String(z.kod).charAt(0).toUpperCase();
+  const male = a.toLowerCase();
+  if (!riadok && /input|vstup|prij|receiv/.test(male)) return "prijate";
+  if (!riadok && /output|vystup|výstup|vyd|issued/.test(male)) return "vydane";
+  if (pismeno === "P") return "prijate";
+  if (pismeno === "U") return "vydane";
+  if (pismeno === "D") return "ine";
   return null;
 }
 
@@ -291,7 +305,8 @@ export function kodClenenia(
   );
   const znamy = ZNAME_KODY[rezim] ?? null;
   if (!zoznam.length) return znamy;
-  if (znamy) {
+  // Bez nároku na odpočet: firma s číselníkom má na to vlastný kód (PB), PN až potom.
+  if (znamy && rezim !== "tuzemsko_bez_odpoctu") {
     const presne = zoznam.find((z) => z.kod === znamy);
     if (presne) return presne.kod;
   }
@@ -304,7 +319,7 @@ export function kodClenenia(
         .kod;
     }
   }
-  return null;
+  return znamy && zoznam.some((z) => z.kod === znamy) ? znamy : null;
 }
 
 /** Riadok kontrolného výkazu (len SK platiteľ; prijaté B1/B2/B3/C2/X, vydané A2 alebo automaticky). */

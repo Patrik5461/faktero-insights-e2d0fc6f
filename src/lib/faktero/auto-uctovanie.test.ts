@@ -275,3 +275,55 @@ describe("polozkyNesedia", () => {
     expect(polozkyNesedia([{ name: "a", total: -120 }], -120, -147.6)).toBe(false);
   });
 });
+
+describe("kodClenenia — číselník z Pohody SK (skutočné kódy)", () => {
+  const c = (kod: string, popis: string, agenda: string, aktivne = true) => ({
+    druh: "clenenie_dph",
+    kod,
+    popis,
+    agenda,
+    aktivne,
+  });
+  const cis = [
+    c("DDnadEU", "Nadobudnutie tovaru z iného štátu EU", "1350 D01"),
+    c("DDsluz", "Tovary a služby, pri ktorých daň platí príjemca", "1351 D02"),
+    c("PB", "Tuzemské plnenia - bez nároku", "1302 P03"),
+    c("PD", "Tuzemské plnenia", "1300 P01"),
+    c("PDnadEU", "Nadobudnutie tovaru z iného štátu EU", "1303 P04"),
+    c("PBnadEU", "Nadobudnutie tovaru z iného štátu EU - bez nároku", "1305 P06", false),
+    c("PDsluz", "Poskytnutie služieb a tovarov, pri ktorých daň platí príjemca", "1306 P07"),
+    c(
+      "PKsluz",
+      "Poskytnutie služieb a tovarov, pri ktorých daň platí príjemca - krátiť nárok",
+      "1307 P08",
+      false,
+    ),
+    c("PN", "Nezahrňovať do priznania DPH", "103 P"),
+    c("UD", "Tuzemské plnenia", "1200 U01"),
+    c("UDdodEU", "Dodanie tovaru do iného štátu EU", "1203 U04"),
+    c(
+      "UDpdp",
+      "Prenesenie daňovej povinnosti §69 ods. 12 (s uvedením sadzby dane)",
+      "1235 U36",
+      false,
+    ),
+    c("UNodpBez", "Oslobodené plnenia bez možnosti odpočítania dane", "1209 U10"),
+    c("UN", "Nezahrňovať do priznania DPH", "5 U"),
+  ];
+  it("prijaté: tuzemsko PD, prenesenie PDsluz (nie DDsluz), nadobudnutie PDnadEU, bez DPH PN", () => {
+    expect(kodClenenia("tuzemsko", "prijate", cis)).toBe("PD");
+    expect(kodClenenia("pdp_tuzemsko", "prijate", cis)).toBe("PDsluz");
+    expect(kodClenenia("eu_sluzby", "prijate", cis)).toBe("PDsluz");
+    expect(kodClenenia("eu_tovar", "prijate", cis)).toBe("PDnadEU");
+    expect(kodClenenia("bez_dph", "prijate", cis)).toBe("PN");
+    expect(kodClenenia("tuzemsko_bez_odpoctu", "prijate", cis)).toBe("PB");
+    expect(kodClenenia("tuzemsko_bez_odpoctu", "prijate", [])).toBe("PN");
+  });
+  it("vydané: UD, dodanie do EÚ, oslobodené, neaktívne PDP sa neponúkne", () => {
+    expect(kodClenenia("vystup_tuzemsko", "vydane", cis)).toBe("UD");
+    expect(kodClenenia("vystup_eu_tovar", "vydane", cis)).toBe("UDdodEU");
+    expect(kodClenenia("vystup_oslobodene", "vydane", cis)).toBe("UNodpBez");
+    expect(kodClenenia("vystup_pdp", "vydane", cis)).toBeNull();
+    expect(kodClenenia("vystup_oss", "vydane", cis)).toBe("UN");
+  });
+});
