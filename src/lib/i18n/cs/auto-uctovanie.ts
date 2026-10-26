@@ -51,6 +51,7 @@ export default {
   "Vybrať {cislo}": "Vybrat {cislo}",
   "Návrh od AI čaká na potvrdenie": "Návrh od AI čeká na potvrzení",
   "Istota pod prahom autopilota": "Jistota pod prahem autopilota",
+  "Kódy sú vyplnené, čaká na potvrdenie": "Kódy jsou vyplněné, čeká na potvrzení",
   "Zatiaľ bez návrhu": "Zatím bez návrhu",
   "Zobrazuje sa najviac 500 najnovších dokladov každého druhu.":
     "Zobrazuje se nejvýše 500 nejnovějších dokladů každého druhu.",

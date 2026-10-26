@@ -52,6 +52,7 @@ export default {
   "Vybrať {cislo}": "{cislo} auswählen",
   "Návrh od AI čaká na potvrdenie": "KI-Vorschlag wartet auf Bestätigung",
   "Istota pod prahom autopilota": "Sicherheit unter der Autopilot-Schwelle",
+  "Kódy sú vyplnené, čaká na potvrdenie": "Codes sind ausgefüllt, wartet auf Bestätigung",
   "Zatiaľ bez návrhu": "Noch ohne Vorschlag",
   "Zobrazuje sa najviac 500 najnovších dokladov každého druhu.":
     "Angezeigt werden höchstens die 500 neuesten Belege jeder Art.",

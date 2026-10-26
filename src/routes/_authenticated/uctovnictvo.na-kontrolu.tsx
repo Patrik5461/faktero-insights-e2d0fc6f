@@ -374,7 +374,9 @@ function NaKontroluPage() {
                           </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">
-                            {t("Zatiaľ bez návrhu")}
+                            {r.predkontacia
+                              ? t("Kódy sú vyplnené, čaká na potvrdenie")
+                              : t("Zatiaľ bez návrhu")}
                           </span>
                         )}
                       </td>
