@@ -49,6 +49,8 @@ export const Route = createFileRoute("/api/v1/pohoda/odpoved")({
             companyId: kluc.company_id,
             xml,
           });
+          const { zapisVolanieKonektora } = await import("@/lib/faktero/api-auth.server");
+          await zapisVolanieKonektora(kluc, request, 200);
           return new Response(JSON.stringify({ ok: true, ...r }), {
             status: 200,
             headers: { "content-type": "application/json; charset=utf-8" },

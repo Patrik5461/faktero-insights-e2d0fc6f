@@ -27,14 +27,17 @@ export function mlciaceFirmy(
   firmy: Riadok[],
   dnes: Date,
   dni: number = DNI_TICHA,
+  /** Posledné úspešné volanie konektora za firmu z `api_logs` (kľúč pre viac firiem). */
+  zDennika: Map<string, string> = new Map(),
 ): { companyId: string; naposledy: string }[] {
   const hranica = new Date(dnes.getTime() - dni * 24 * 60 * 60 * 1000);
 
   // Firma môže mať kľúčov viac (každé stiahnutie balíčka vyrobí nový), takže
   // rozhoduje ten, ktorý sa ozval naposledy.
-  const posledne = new Map<string, string>();
+  const posledne = new Map<string, string>(zDennika);
   for (const k of kluce) {
-    if (k.revoked_at || !k.last_used_at) continue;
+    // Kľúč pre viac firiem sa ozýva za všetky — ktorá firma prešla, povie denník.
+    if (k.revoked_at || !k.last_used_at || k.ucet_user_id) continue;
     const doteraz = posledne.get(String(k.company_id));
     if (!doteraz || String(k.last_used_at) > doteraz) {
       posledne.set(String(k.company_id), String(k.last_used_at));
@@ -115,10 +118,42 @@ export async function runStrazcaKonektora(vstup?: {
 
   const { data: kluce } = await supabaseAdmin
     .from("api_keys")
-    .select("company_id, last_used_at, revoked_at, name")
+    .select("company_id, last_used_at, revoked_at, name, ucet_user_id, firmy")
     .like("name", "Pohoda — konektor%");
 
-  const firmyIds = [...new Set((kluce ?? []).map((k: Riadok) => String(k.company_id)))];
+  const firmyIds = [
+    ...new Set(
+      (kluce ?? []).filter((k: Riadok) => !k.ucet_user_id).map((k: Riadok) => String(k.company_id)),
+    ),
+  ];
+  // Kľúč pre viac firiem stráži všetky svoje firmy (bez zoznamu = všetky,
+  // kde je jeho majiteľ vlastník alebo admin).
+  for (const k of (kluce ?? []) as Riadok[]) {
+    if (!k.ucet_user_id || k.revoked_at) continue;
+    if (Array.isArray(k.firmy)) firmyIds.push(...k.firmy.map(String));
+    else {
+      const { data: clen } = await supabaseAdmin
+        .from("company_users")
+        .select("company_id")
+        .eq("user_id", k.ucet_user_id)
+        .in("role", ["owner", "admin"]);
+      firmyIds.push(...(clen ?? []).map((r: Riadok) => String(r.company_id)));
+    }
+  }
+  const zDennika = new Map<string, string>();
+  await Promise.all(
+    [...new Set(firmyIds)].map(async (id) => {
+      const { data } = await supabaseAdmin
+        .from("api_logs")
+        .select("created_at")
+        .eq("company_id", id)
+        .like("path", "/api/v1/pohoda/%")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.created_at) zDennika.set(id, String(data.created_at));
+    }),
+  );
   if (!firmyIds.length) {
     return { kontrolovanych: 0, mlciacich: 0, odoslanych: 0, chyb: 0, detaily: [] };
   }
@@ -126,10 +161,10 @@ export async function runStrazcaKonektora(vstup?: {
   const { data: firmy } = await supabaseAdmin
     .from("companies")
     .select("id, name, email, created_by, pohoda_konektor_upozorneny_at, suspended_at")
-    .in("id", firmyIds)
+    .in("id", [...new Set(firmyIds)])
     .is("suspended_at", null);
 
-  const mlciace = mlciaceFirmy(kluce ?? [], firmy ?? [], dnes, dni);
+  const mlciace = mlciaceFirmy(kluce ?? [], firmy ?? [], dnes, dni, zDennika);
   const podlaId = new Map((firmy ?? []).map((f: Riadok) => [String(f.id), f]));
 
   let odoslanych = 0;
@@ -176,7 +211,7 @@ export async function runStrazcaKonektora(vstup?: {
   }
 
   return {
-    kontrolovanych: firmyIds.length,
+    kontrolovanych: new Set(firmyIds).size,
     mlciacich: mlciace.length,
     odoslanych,
     chyb,

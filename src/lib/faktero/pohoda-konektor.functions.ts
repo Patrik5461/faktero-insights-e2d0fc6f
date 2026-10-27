@@ -49,7 +49,8 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
     const rok = new Date().getFullYear();
     const riadky: { kluc: string; firma: string; databaza: string }[] = [];
 
-    for (const firma of firmy) {
+    /** Nový kľúč: text do balíčka a odtlačok do databázy. */
+    async function novyKluc() {
       const bajty = new Uint8Array(24);
       crypto.getRandomValues(bajty);
       const kluc = `fk_live_${Array.from(bajty)
@@ -60,17 +61,64 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
       )
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
+      return { kluc, hash };
+    }
 
-      const { error: kErr } = await supabase.from("api_keys").insert({
-        company_id: firma.id,
+    /*
+      Viac firiem = jeden kľúč účtu a v každom riadku firmy.txt za zavináčom
+      jej IČO (`fk_live_…@12345678`). Konektor ho pošle ako `?company=` a API
+      vyberie firmu rovnako ako pri hlavičke X-Company. IČO len vtedy, keď je
+      medzi vybranými jedinečné — inak by sa dve firmy zliali do jednej.
+    */
+    let jedenKluc: { vsetky: boolean } | undefined;
+    let spolocny: string | null = null;
+    if (firmy.length > 1) {
+      const { data: vsetkyMoje } = await supabase
+        .from("company_users")
+        .select("company_id")
+        .eq("user_id", userId)
+        .in("role", ["owner", "admin"]);
+      const moje = new Set((vsetkyMoje ?? []).map((r: { company_id: string }) => r.company_id));
+      // Kto vybral všetky svoje firmy, dostane kľúč aj pre tie, čo pribudnú.
+      const vsetky = firmy.length >= moje.size && firmy.every((f) => moje.has(f.id));
+      const { kluc, hash } = await novyKluc();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: kErr } = await supabaseAdmin.from("api_keys").insert({
+        company_id: firmy[0].id,
         mode: "live",
         name: "Pohoda — konektor",
         prefix: kluc.slice(0, 14),
         key_hash: hash,
+        created_by: userId,
+        ucet_user_id: userId,
+        firmy: vsetky ? null : firmy.map((f) => f.id),
       });
       if (kErr) throw new Error(kErr.message);
+      spolocny = kluc;
+      jedenKluc = { vsetky };
+    }
+    const icoFirmy = (f: { ico: string | null }) => String(f.ico ?? "").replace(/\D/g, "");
+    const pocetIco = new Map<string, number>();
+    for (const f of firmy) pocetIco.set(icoFirmy(f), (pocetIco.get(icoFirmy(f)) ?? 0) + 1);
 
-      const ico = String(firma.ico ?? "").replace(/\D/g, "");
+    for (const firma of firmy) {
+      const ico = icoFirmy(firma);
+      let kluc: string;
+      if (spolocny) {
+        kluc = `${spolocny}@${ico && pocetIco.get(ico) === 1 ? ico : firma.id}`;
+      } else {
+        const novy = await novyKluc();
+        const { error: kErr } = await supabase.from("api_keys").insert({
+          company_id: firma.id,
+          mode: "live",
+          name: "Pohoda — konektor",
+          prefix: novy.kluc.slice(0, 14),
+          key_hash: novy.hash,
+        });
+        if (kErr) throw new Error(kErr.message);
+        kluc = novy.kluc;
+      }
+
       riadky.push({
         kluc,
         firma: String(firma.name ?? ""),
@@ -97,7 +145,10 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
     zip.file("firmy.txt", zoznamFiriem(riadky));
     zip.file("nastav-ulohu.cmd", nastavenieUlohy());
     // BOM, nech Poznámkový blok prečíta diakritiku.
-    zip.file("NAVOD.txt", "\ufeff" + navod({ firmy: riadky.map((r) => r.firma), adresa }));
+    zip.file(
+      "NAVOD.txt",
+      "\ufeff" + navod({ firmy: riadky.map((r) => r.firma), adresa, jedenKluc }),
+    );
 
     return {
       base64: await zip.generateAsync({ type: "base64" }),
@@ -121,43 +172,75 @@ export const stavKonektoraFn = createServerFn({ method: "POST" })
     */
     const idFiriem = [...new Set([data.companyId, ...(data.companyIds ?? [])])];
 
-    const [{ data: kluce }, { data: potvrdene }] = await Promise.all([
-      supabase
-        .from("api_keys")
-        .select("id, company_id, last_used_at, revoked_at")
-        .in("company_id", idFiriem)
-        .eq("name", "Pohoda — konektor")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("export_logs")
-        .select("invoice_number, pohoda_cislo, pohoda_stav, potvrdene_at, error")
-        .eq("company_id", data.companyId)
-        .not("potvrdene_at", "is", null)
-        .order("potvrdene_at", { ascending: false })
-        .limit(5),
-    ]);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: kluce }, { data: potvrdene }, { data: ucetKluce }, ...ozvania] =
+      await Promise.all([
+        supabase
+          .from("api_keys")
+          .select("id, company_id, last_used_at, revoked_at, ucet_user_id")
+          .in("company_id", idFiriem)
+          .eq("name", "Pohoda — konektor")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("export_logs")
+          .select("invoice_number, pohoda_cislo, pohoda_stav, potvrdene_at, error")
+          .eq("company_id", data.companyId)
+          .not("potvrdene_at", "is", null)
+          .order("potvrdene_at", { ascending: false })
+          .limit(5),
+        // Jeden kľúč pre viac firiem — jeho domovská firma nemusí byť medzi nimi.
+        supabaseAdmin
+          .from("api_keys")
+          .select("firmy")
+          .eq("name", "Pohoda — konektor")
+          .eq("ucet_user_id", context.userId)
+          .is("revoked_at", null),
+        // Pri spoločnom kľúči povie len denník, ktorá firma sa ozvala.
+        ...idFiriem.map((id) =>
+          supabase
+            .from("api_logs")
+            .select("created_at")
+            .eq("company_id", id)
+            .like("path", "/api/v1/pohoda/%")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ),
+      ]);
 
-    type Kluc = { company_id: string; last_used_at: string | null; revoked_at: string | null };
-    const zive = ((kluce ?? []) as Kluc[]).filter((k) => !k.revoked_at);
+    type Kluc = {
+      company_id: string;
+      last_used_at: string | null;
+      revoked_at: string | null;
+      ucet_user_id: string | null;
+    };
+    // Kľúč účtu sa počíta cez denník, nie cez svoju domovskú firmu.
+    const zive = ((kluce ?? []) as Kluc[]).filter((k) => !k.revoked_at && !k.ucet_user_id);
+    const spolocne = (ucetKluce ?? []) as { firmy: string[] | null }[];
+    const pocetKlucov = (id: string) =>
+      zive.filter((k) => k.company_id === id).length +
+      spolocne.filter((k) => !k.firmy || k.firmy.includes(id)).length;
+    const zDennika = new Map(
+      idFiriem.map((id, i) => [
+        id,
+        (ozvania[i]?.data as { created_at: string } | null)?.created_at,
+      ]),
+    );
 
     /** Kedy sa naposledy ozval ktorýkoľvek živý kľúč firmy. */
     const naposledyPre = (id: string) =>
-      (zive
-        .filter((k) => k.company_id === id)
-        .map((k) => k.last_used_at)
+      ([...zive.filter((k) => k.company_id === id).map((k) => k.last_used_at), zDennika.get(id)]
         .filter(Boolean)
         .sort()
         .pop() as string | undefined) ?? null;
 
-    const mojej = zive.filter((k) => k.company_id === data.companyId);
-
     return {
-      kluce: mojej.length,
+      kluce: pocetKlucov(data.companyId),
       naposledy: naposledyPre(data.companyId),
       potvrdene: potvrdene ?? [],
       firmy: idFiriem.map((id) => ({
         id,
-        kluce: zive.filter((k) => k.company_id === id).length,
+        kluce: pocetKlucov(id),
         naposledy: naposledyPre(id),
       })),
     };

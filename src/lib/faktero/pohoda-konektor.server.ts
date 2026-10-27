@@ -1311,6 +1311,8 @@ rem  Ktore firmy sa prenasaju, je vo firmy.txt vedla tohto suboru.
 rem  Jeden riadok na firmu:  KLUC;DATABAZA;NAZOV;DATABAZA_MINULY_ROK
 rem  Posledne pole je volitelne - na prelome rokov sa do nej prenesu
 rem  doklady minuleho roka, do DATABAZA len tohtorocne.
+rem  Jeden kluc pre viac firiem nesie za zavinacom ICO firmy:
+rem  KLUC@12345678 - kluc je vo vsetkych riadkoch ten isty.
 rem  Dalej uz netreba menit nic.
 rem ===========================================================
 
@@ -1358,6 +1360,12 @@ if "%KLUC%"=="" exit /b
 rem Poistka na poznamku, ktorej sa do zaciatku dostal BOM: Poznamkovy blok
 rem ho pri ulozeni v UTF-8 pridava sam a "eol=#" ho uz nerozpozna.
 echo %KLUC%| findstr /b /c:"fk_" >nul || exit /b
+rem Kluc pre viac firiem: firma (ICO alebo id) je za zavinacom.
+set "FIRMA="
+for /f "tokens=1,2 delims=@" %%x in ("%KLUC%") do (
+  set "KLUC=%%x"
+  set "FIRMA=%%y"
+)
 if "%DATABAZA%"=="" (
   call :log "%NAZOV%: PRESKOCENE - v firmy.txt chyba nazov databazy."
   exit /b
@@ -1391,7 +1399,17 @@ rem  Jeden prenos do jednej databazy
 rem ===========================================================
 :prenos
 set "URL=%ADRESA%/api/v1/pohoda/davka"
-if not "%CAST%"=="" set "URL=%URL%?cast=%CAST%"
+set "ODPOVED_URL=%ADRESA%/api/v1/pohoda/odpoved"
+set "SPOJ=?"
+if not "%CAST%"=="" (
+  set "URL=%URL%?cast=%CAST%"
+  set "SPOJ=&"
+)
+rem Pri kluci pre viac firiem povie, ktorej firme davka a odpoved patria.
+if not "%FIRMA%"=="" (
+  set "URL=%URL%%SPOJ%company=%FIRMA%"
+  set "ODPOVED_URL=%ODPOVED_URL%?company=%FIRMA%"
+)
 
 rem 1. Stiahnutie davky z Faktera. Von ide bezne HTTPS, nic sa neotvara.
 set "SUBOR=%VSTUP%\\davka.xml"
@@ -1429,7 +1447,7 @@ call :log "%NAZOV%: import skoncil."
 rem 4. Odpoved spat do Faktera - z nej sa dozvie cisla dokladov a chyby.
 dir /b "%ODPOVED%\\*.xml" >nul 2>&1 || call :log "%NAZOV%: Pohoda nevratila ziadnu odpoved - pozrite protokol importu v Pohode."
 for %%f in ("%ODPOVED%\\*.xml") do (
-  for /f %%k in ('curl -sS -o nul -w "%%{http_code}" -X POST -H "Authorization: Bearer %KLUC%" -H "Content-Type: text/xml" --data-binary "@%%f" "%ADRESA%/api/v1/pohoda/odpoved"') do set "KOD2=%%k"
+  for /f %%k in ('curl -sS -o nul -w "%%{http_code}" -X POST -H "Authorization: Bearer %KLUC%" -H "Content-Type: text/xml" --data-binary "@%%f" "%ODPOVED_URL%"') do set "KOD2=%%k"
   if "!KOD2!"=="200" (
     move /y "%%f" "%HOTOVO%" >nul
     call :log "%NAZOV%: odpoved odoslana ^(%%~nxf^)"
@@ -1470,7 +1488,9 @@ export function zoznamFiriem(firmy: { kluc: string; firma: string; databaza: str
 #   KLUC;DATABAZA;NAZOV
 #   KLUC;DATABAZA;NAZOV;DATABAZA_MINULY_ROK   (na prelome rokov)
 #
-#   KLUC      - z balicka, ktory vam poslal klient (zacina fk_live_)
+#   KLUC      - z balicka, ktory vam poslal klient (zacina fk_live_).
+#               Jeden kluc pre viac firiem ma za zavinacom ICO firmy:
+#               fk_live_...@12345678 - kluc je vo vsetkych riadkoch rovnaky.
 #   DATABAZA  - nazov databazy uctovnej jednotky v Pohode
 #               (Pohoda: Subor - Uctovne jednotky - stlpec Databaza)
 #   NAZOV     - lubovolne pomenovanie do protokolu (bez bodkociarky)
@@ -1513,7 +1533,26 @@ pause
 `;
 }
 
-export function navod(p: { firmy: string[]; adresa: string }): string {
+export function navod(p: {
+  firmy: string[];
+  adresa: string;
+  /** Balíček nesie jeden kľúč pre viac firiem; `vsetky` = platí aj pre budúce. */
+  jedenKluc?: { vsetky: boolean };
+}): string {
+  const dalsiKlient = p.jedenKluc?.vsetky
+    ? `Všetky firmy idú cez jeden kľúč a ten platí aj pre firmy, ktoré vo
+Fakteri spravujete neskôr. Nového klienta pridáte tak, že vo firmy.txt
+skopírujete hociktorý riadok, za zavináčom prepíšete IČO na IČO nového
+klienta a doplníte názov jeho databázy a firmy. Nový kľúč netreba.`
+    : p.jedenKluc
+      ? `Všetky firmy z tohto balíčka idú cez jeden kľúč (za zavináčom je IČO
+firmy). Platí len pre firmy, ktoré ste vybrali pri sťahovaní — pre
+ďalšieho klienta si stiahnite nový balíček a jeho riadok skopírujte sem.
+Keď pri sťahovaní vyberiete všetky svoje firmy, kľúč bude platiť aj pre
+tie, ktoré pribudnú, a nový balíček už nebude treba.`
+      : `Klient vám pošle svoj balíček. Z jeho firmy.txt skopírujte posledný
+riadok (ten s kľúčom) a vložte ho do svojho firmy.txt pod ostatné.
+Doplňte názov jeho databázy — a to je všetko.`;
   return `PRENOS DOKLADOV Z FAKTERA DO POHODY
 ${"=".repeat(45)}
 
@@ -1560,10 +1599,8 @@ Nastavenie (raz, asi päť minút)
 
 Ďalší klient (asi pol minúty)
 -----------------------------
-Klient vám pošle svoj balíček. Z jeho firmy.txt skopírujte posledný
-riadok (ten s kľúčom) a vložte ho do svojho firmy.txt pod ostatné.
-Doplňte názov jeho databázy — a to je všetko. Priečinok, dávkový súbor
-ani naplánovanú úlohu už nemeníte, o zvyšok sa postará cyklus.
+${dalsiKlient} Priečinok, dávkový súbor ani naplánovanú úlohu
+už nemeníte, o zvyšok sa postará cyklus.
 
 Firmu dočasne vypnete tým, že pred jej riadok dáte #.
 

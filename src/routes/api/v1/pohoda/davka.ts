@@ -50,6 +50,10 @@ export const Route = createFileRoute("/api/v1/pohoda/davka")({
             cast,
           });
 
+          if (!nahlad) {
+            const { zapisVolanieKonektora } = await import("@/lib/faktero/api-auth.server");
+            await zapisVolanieKonektora(kluc, request, davka.prazdna ? 204 : 200);
+          }
           if (davka.prazdna) return new Response(null, { status: 204 });
 
           return new Response(davka.xml, {

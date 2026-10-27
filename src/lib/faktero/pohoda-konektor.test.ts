@@ -704,6 +704,28 @@ describe("strážca konektora", () => {
   });
 });
 
+describe("strážca a kľúč pre viac firiem", () => {
+  const dnes = new Date("2026-08-15T06:00:00Z");
+  const firma = (id: string) => ({ id, name: id, pohoda_konektor_upozorneny_at: null });
+
+  it("spoločný kľúč nepovažuje za ozvanie všetkých firiem — rozhoduje denník", () => {
+    const kluce = [
+      {
+        company_id: "f1",
+        last_used_at: "2026-08-14T02:00:00Z",
+        revoked_at: null,
+        ucet_user_id: "u",
+      },
+    ];
+    const dennik = new Map([
+      ["f1", "2026-08-14T02:00:00Z"],
+      ["f2", "2026-08-01T02:00:00Z"],
+    ]);
+    const mlciace = mlciaceFirmy(kluce, [firma("f1"), firma("f2")], dnes, 7, dennik);
+    expect(mlciace.map((m) => m.companyId)).toEqual(["f2"]);
+  });
+});
+
 describe("balíček pre viac firiem", () => {
   const cmd = davkovySubor({ adresa: "https://www.faktero.sk" });
   const zoznam = zoznamFiriem([
@@ -751,6 +773,32 @@ describe("balíček pre viac firiem", () => {
     expect(riadky).toEqual([
       "fk_live_a;StwPh_1_2026.mdb;Prvá s.r.o.",
       "fk_live_b;StwPh_2_2026.mdb;Druhá s.r.o.",
+    ]);
+  });
+
+  /*
+    Jeden kľúč pre viac firiem: firma ide za zavináčom a konektor ju posiela
+    ako `?company=` pri stiahnutí dávky aj pri odpovedi — inak by API kľúč
+    účtu odmietlo (company_required) alebo by odpoveď pripísalo inej firme.
+  */
+  it("kľúč pre viac firiem nesie firmu za zavináčom v oboch volaniach", () => {
+    const usek = cmd.slice(cmd.indexOf("\n:firma"), cmd.indexOf("\n:koniec"));
+    expect(usek).toContain('for /f "tokens=1,2 delims=@" %%x in ("%KLUC%")');
+    expect(usek).toContain('set "URL=%URL%%SPOJ%company=%FIRMA%"');
+    expect(usek).toContain('set "ODPOVED_URL=%ODPOVED_URL%?company=%FIRMA%"');
+    expect(usek).toContain('--data-binary "@%%f" "%ODPOVED_URL%"');
+    // Firma sa vyberá pred delením na prelom rokov, nech platí pre obe časti.
+    expect(usek.indexOf('set "FIRMA=%%y"')).toBeLessThan(usek.indexOf('set "CAST=prelom"'));
+    // Bez zavináča ostáva FIRMA prázdna a URL bez parametra.
+    expect(usek).toContain('if not "%FIRMA%"=="" (');
+  });
+
+  it("riadok so spoločným kľúčom prejde zoznamom bez zmeny", () => {
+    const z = zoznamFiriem([
+      { kluc: "fk_live_x@12345678", firma: "A s.r.o.", databaza: "StwPh_12345678_2026.mdb" },
+    ]);
+    expect(z.split("\n").filter((r) => r.trim() && !r.startsWith("#"))).toEqual([
+      "fk_live_x@12345678;StwPh_12345678_2026.mdb;A s.r.o.",
     ]);
   });
 

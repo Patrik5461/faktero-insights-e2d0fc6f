@@ -255,6 +255,15 @@ const sections: HelpSection[] = [
           skopíruje posledný riadok do svojho <code>firmy.txt</code>.
         </p>
         <p>
+          <strong>Jeden kľúč pre všetky firmy.</strong> Keď v balíčku vyberiete viac firiem, dostanú
+          všetky jeden spoločný kľúč a v riadku každej je za zavináčom jej IČO:{" "}
+          <code>fk_live_…@12345678;DATABÁZA;NÁZOV</code>. Keď vyberiete všetky firmy, ktoré
+          spravujete, kľúč platí aj pre tie, ktoré pribudnú — nového klienta pridáte tak, že
+          skopírujete hociktorý riadok a prepíšete IČO, databázu a názov. Nová firma vo Fakteri sa v
+          Pohode sama nezaloží: účtovnú jednotku treba v Pohode vytvoriť a doplniť jej riadok. Pri
+          kľúči pre vybrané firmy si pre ďalšieho klienta stiahnite nový balíček.
+        </p>
+        <p>
           <strong>Prelom rokov.</strong> Na začiatku roka sa ešte účtuje aj do databázy minulého
           roka. Do riadku firmy stačí pridať štvrté pole — názov databázy minulého roka:{" "}
           <code>KĽÚČ;DATABÁZA;NÁZOV;DATABÁZA_MINULÝ_ROK</code>. Doklady s dátumom z minulého roka

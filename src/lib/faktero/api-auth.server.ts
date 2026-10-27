@@ -406,6 +406,30 @@ async function logRequest(p: {
 }
 
 /**
+ * Úspešné volanie konektora Pohody do denníka. Z neho sa berie „kedy sa firma
+ * naposledy ozvala“ — `last_used_at` kľúča nestačí, keď jeden kľúč obsluhuje
+ * viac firiem.
+ */
+export async function zapisVolanieKonektora(
+  kluc: { company_id: string; api_key_id: string },
+  request: Request,
+  status: number,
+) {
+  await logRequest({
+    company_id: kluc.company_id,
+    api_key_id: kluc.api_key_id,
+    method: request.method,
+    path: new URL(request.url).pathname,
+    status,
+    requestBody: null,
+    responseBody: null,
+    userAgent: request.headers.get("user-agent"),
+    ip: null,
+    duration: 0,
+  });
+}
+
+/**
  * Do denníka nejde obsah súborov (base64) ani obrovské telá — nahratý doklad by
  * inak v `api_logs` ležal celý a zbytočne druhýkrát.
  */

@@ -122,7 +122,7 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
             {t(
-              "Každá firma dostane vlastný kľúč a vlastný riadok vo firmy.txt. Účtovníčka tak zakladá priečinok aj naplánovanú úlohu iba raz.",
+              "Všetky vybrané firmy idú cez jeden kľúč, každá má vlastný riadok vo firmy.txt (za zavináčom IČO). Keď vyberiete všetky svoje firmy, kľúč platí aj pre tie, ktoré pribudnú. Účtovníčka zakladá priečinok aj naplánovanú úlohu iba raz.",
             )}
           </p>
         </div>
