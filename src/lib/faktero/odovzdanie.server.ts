@@ -729,6 +729,11 @@ export async function zostavBalik(
 }
 
 /** Zapíše, že doklady odišli. Bez toho by ich ďalšie odovzdanie poslalo znova. */
+/** Úprava po dávkach — tisíc id v `.in()` by prerástlo dĺžku adresy PostgREST. */
+async function poDavkach(ids: string[], krok: (kus: string[]) => PromiseLike<unknown>, davka = 200) {
+  for (let i = 0; i < ids.length; i += davka) await krok(ids.slice(i, i + davka));
+}
+
 export async function oznacOdovzdane(
   supabase: Klient,
   vstup: { companyId: string; mesiac: string; userId: string | null },
@@ -787,14 +792,13 @@ export async function oznacOdovzdane(
         od,
         do: balik.poslednyDatum,
       })) ?? job.id;
-    await supabase
-      .from("expense_documents")
-      .update({
-        status: "exported",
-        exported_at: new Date().toISOString(),
-        export_job_id: jobDokladov,
-      })
-      .in("id", balik.dokladyIds);
+    const kedy = new Date().toISOString();
+    await poDavkach(balik.dokladyIds, (kus) =>
+      supabase
+        .from("expense_documents")
+        .update({ status: "exported", exported_at: kedy, export_job_id: jobDokladov })
+        .in("id", kus),
+    );
   }
   if (job && balik.prijateIds?.length) {
     const jobPrijatych =
@@ -807,16 +811,19 @@ export async function oznacOdovzdane(
         od,
         do: balik.poslednyDatum,
       })) ?? job.id;
-    await supabase
-      .from("purchase_invoices")
-      .update({ exported_at: new Date().toISOString(), export_job_id: jobPrijatych })
-      .in("id", balik.prijateIds);
+    const kedy = new Date().toISOString();
+    await poDavkach(balik.prijateIds, (kus) =>
+      supabase
+        .from("purchase_invoices")
+        .update({ exported_at: kedy, export_job_id: jobPrijatych })
+        .in("id", kus),
+    );
   }
   if (job && balik.ostatneIds.length) {
-    await supabase
-      .from("other_documents")
-      .update({ status: "exported", exported_at: new Date().toISOString() })
-      .in("id", balik.ostatneIds);
+    const kedy = new Date().toISOString();
+    await poDavkach(balik.ostatneIds, (kus) =>
+      supabase.from("other_documents").update({ status: "exported", exported_at: kedy }).in("id", kus),
+    );
   }
   // Číselníky si pamätá tá istá tabuľka ako pri konektore, takže sa doklad
   // neodovzdá dvakrát ani vtedy, keď firma používa obidve cesty.

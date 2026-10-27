@@ -22,13 +22,18 @@ export const odovzdajUctovnikoviFn = createServerFn({ method: "POST" })
 
     let jobId: string | undefined;
     if (data.oznacit) {
-      const { data: faktury } = await supabase
-        .from("invoices")
-        .select("id, invoice_number")
-        .in(
-          "id",
-          balik.fakturyIds.length ? balik.fakturyIds : ["00000000-0000-0000-0000-000000000000"],
-        );
+      // Po dávkach — nad tisíc faktúr za mesiac by `.in()` časť nevrátil.
+      const { riadkyPreIds } = await import("./strankovanie");
+      const faktury = await riadkyPreIds<{ id: string; invoice_number: string }>(
+        balik.fakturyIds,
+        (kus, od, po) =>
+          supabase
+            .from("invoices")
+            .select("id, invoice_number")
+            .in("id", kus)
+            .order("id")
+            .range(od, po),
+      );
       jobId = await oznacOdovzdane(
         supabase,
         { companyId: data.companyId, mesiac: data.mesiac, userId },

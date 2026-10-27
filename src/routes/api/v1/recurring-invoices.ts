@@ -7,7 +7,8 @@ const Item = z.object({
   quantity: z.number().positive(),
   unit: z.string().max(20).optional().default("ks"),
   unit_price: z.number().nonnegative(),
-  vat_rate: z.number().min(0).max(100).optional().default(23),
+  // Bez sadzby: základná sadzba krajiny firmy (neplatiteľ 0 %) — doplní sa nižšie.
+  vat_rate: z.number().min(0).max(100).optional(),
 });
 const Input = z.object({
   name: z.string().min(1).max(255),
@@ -22,13 +23,14 @@ const Input = z.object({
   items: z.array(Item).min(1).max(200),
 });
 
+/** Súčty zo zaokrúhlených riadkov — rovnako ako faktúra, ktorá zo šablóny vznikne. */
 function totals(items: any[]) {
   let s = 0,
     v = 0;
   for (const it of items) {
-    const line = Number(it.quantity) * Number(it.unit_price);
+    const line = +(Number(it.quantity) * Number(it.unit_price)).toFixed(2);
     s += line;
-    v += line * (Number(it.vat_rate ?? 23) / 100);
+    v += +((line * Number(it.vat_rate ?? 0)) / 100).toFixed(2);
   }
   return { subtotal: +s.toFixed(2), vat_total: +v.toFixed(2), total: +(s + v).toFixed(2) };
 }
@@ -63,7 +65,17 @@ export const Route = createFileRoute("/api/v1/recurring-invoices")({
             .eq("company_id", ctx.company_id)
             .maybeSingle();
           if (!cust) return err("not_found", "Odberateľ nenájdený.", 404);
-          const t = totals(d.items);
+          const { data: firma } = await ctx.supabase
+            .from("companies")
+            .select("country, vat_payer")
+            .eq("id", ctx.company_id)
+            .maybeSingle();
+          const { krajinaDane, zakladnaSadzba } = await import("@/lib/faktero/vat-rates");
+          const predvolena = firma?.vat_payer
+            ? zakladnaSadzba(krajinaDane(firma?.country), d.next_run)
+            : 0;
+          const polozky = d.items.map((it) => ({ ...it, vat_rate: it.vat_rate ?? predvolena }));
+          const t = totals(polozky);
           const { data: created, error: insErr } = await ctx.supabase
             .from("recurring_invoices")
             .insert({
@@ -86,7 +98,7 @@ export const Route = createFileRoute("/api/v1/recurring-invoices")({
               payment_method: d.payment_method,
               notes: d.notes,
               active: d.active,
-              items: d.items as any,
+              items: polozky as any,
               ...t,
             })
             .select()

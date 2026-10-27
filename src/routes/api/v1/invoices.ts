@@ -57,6 +57,8 @@ export const Route = createFileRoute("/api/v1/invoices")({
         return handleApi(request, async (ctx) => {
           const url = new URL(request.url);
           const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50", 10) || 50, 200);
+          // Posun pre stránkovanie (offset); bez neho prvých `limit` najnovších, ako doteraz.
+          const offset = Math.max(parseInt(url.searchParams.get("offset") ?? "0", 10) || 0, 0);
           const status = url.searchParams.get("status");
           let q = ctx.supabase
             .from("invoices")
@@ -64,7 +66,7 @@ export const Route = createFileRoute("/api/v1/invoices")({
             .eq("company_id", ctx.company_id)
             .is("deleted_at", null)
             .order("created_at", { ascending: false })
-            .limit(limit);
+            .range(offset, offset + limit - 1);
           if (status) q = q.eq("status", status as any);
           const { data, error } = await q;
           if (error) return err("db_error", error.message, 500);

@@ -367,8 +367,9 @@ function Dashboard() {
       const today = new Date().toISOString().slice(0, 10);
       let unpaid = 0,
         overdueCount = 0;
-      (data ?? []).forEach((r: any) => {
-        if (r.status !== "paid" && r.status !== "cancelled") {
+      // V domácej mene (cudzia mena prepočítaná) a bez konceptov — koncept ešte nie je záväzok.
+      prijateNaDomacuMenu(data ?? [], menaPrehladu).forEach((r: any) => {
+        if (r.status !== "paid" && r.status !== "cancelled" && r.status !== "draft") {
           unpaid += Number(r.amount_total ?? 0);
           if (r.due_date < today) overdueCount++;
         }

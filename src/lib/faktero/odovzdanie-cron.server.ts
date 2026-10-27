@@ -67,13 +67,18 @@ export async function runMesacneOdovzdanie(opts: { mesiac?: string; teraz?: Date
         poznamka: "Tento balík poslalo Faktero automaticky.",
       });
 
-      const { data: faktury } = await supabaseAdmin
-        .from("invoices")
-        .select("id, invoice_number")
-        .in(
-          "id",
-          balik.fakturyIds.length ? balik.fakturyIds : ["00000000-0000-0000-0000-000000000000"],
-        );
+      // Po dávkach — nad tisíc faktúr za mesiac by `.in()` časť nevrátil.
+      const { riadkyPreIds } = await import("./strankovanie");
+      const faktury = await riadkyPreIds<{ id: string; invoice_number: string }>(
+        balik.fakturyIds,
+        (kus, od, po) =>
+          supabaseAdmin
+            .from("invoices")
+            .select("id, invoice_number")
+            .in("id", kus)
+            .order("id")
+            .range(od, po),
+      );
       await oznacOdovzdane(
         supabaseAdmin,
         // Cron nemá používateľa; `created_by` v histórii ostane prázdne.

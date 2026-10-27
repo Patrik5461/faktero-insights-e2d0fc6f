@@ -130,12 +130,24 @@ export const NASTROJE: Nastroj[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     async vykonaj(_a, volaj) {
       const dnes = new Date().toISOString().slice(0, 10);
-      const [vyst, odosl] = await Promise.all([
-        nutne(await volaj("GET", "/api/v1/invoices?status=issued&limit=200")),
-        nutne(await volaj("GET", "/api/v1/invoices?status=sent&limit=200")),
-      ]);
-      const po = [...(vyst.data ?? []), ...(odosl.data ?? [])]
-        .filter((f: any) => f.type !== "proforma" && f.due_date && f.due_date < dnes && !f.paid_at)
+      // Všetky stránky (po 200), nie len prvých 200 v stave.
+      const vsetky = async (stav: string) => {
+        const out: any[] = [];
+        for (let offset = 0; offset < 5000; offset += 200) {
+          const r = await nutne(
+            await volaj("GET", `/api/v1/invoices?status=${stav}&limit=200&offset=${offset}`),
+          );
+          const d = (r.data ?? []) as any[];
+          out.push(...d);
+          if (d.length < 200) break;
+        }
+        return out;
+      };
+      const [vyst, odosl] = await Promise.all([vsetky("issued"), vsetky("sent")]);
+      const { jePoSplatnosti } = await import("./faktury-sumy");
+      // Dobropis a daňový doklad k platbe nie sú dlh — rovnaké pravidlo ako prehľad.
+      const po = [...vyst, ...odosl]
+        .filter((f: any) => jePoSplatnosti(f, dnes))
         .map(fakturaStrucne)
         .sort((x: any, y: any) => String(x.splatnost).localeCompare(String(y.splatnost)));
       const spolu: Record<string, number> = {};

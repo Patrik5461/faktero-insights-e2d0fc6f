@@ -273,7 +273,37 @@ export async function vymenToken(f: Record<string, string>) {
       .is("used_at", null)
       .select("*")
       .maybeSingle();
-    if (!zaznam || zaznam.client_id !== clientId || Date.parse(zaznam.expires_at) < Date.now()) {
+    if (!zaznam) {
+      /*
+        Opakované použitie kódu (RFC 6749 § 4.1.2): kód mohol uniknúť, preto
+        sa zrušia aj tokeny, ktoré z neho po prvej výmene vznikli.
+      */
+      const { data: pouzity } = await supabaseAdmin
+        .from("oauth_codes")
+        .select("client_id, company_id, user_id, used_at")
+        .eq("code_hash", hash(kod))
+        .not("used_at", "is", null)
+        .maybeSingle();
+      if (pouzity && pouzity.client_id === clientId) {
+        const { data: tokeny } = await supabaseAdmin
+          .from("oauth_refresh_tokens")
+          .update({ revoked_at: new Date().toISOString() })
+          .eq("client_id", pouzity.client_id)
+          .eq("company_id", pouzity.company_id)
+          .eq("user_id", pouzity.user_id)
+          .gte("created_at", pouzity.used_at)
+          .is("revoked_at", null)
+          .select("api_key_id");
+        const kluce = (tokeny ?? []).map((x: any) => x.api_key_id).filter(Boolean);
+        if (kluce.length)
+          await supabaseAdmin
+            .from("api_keys")
+            .update({ revoked_at: new Date().toISOString() })
+            .in("id", kluce);
+      }
+      throw new OAuthChyba("invalid_grant", "Kód je neplatný, použitý alebo vypršal.");
+    }
+    if (zaznam.client_id !== clientId || Date.parse(zaznam.expires_at) < Date.now()) {
       throw new OAuthChyba("invalid_grant", "Kód je neplatný, použitý alebo vypršal.");
     }
     if (f.redirect_uri && f.redirect_uri !== zaznam.redirect_uri) {

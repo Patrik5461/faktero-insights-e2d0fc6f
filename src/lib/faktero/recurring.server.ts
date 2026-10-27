@@ -52,6 +52,29 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
   );
   const variable_symbol = invoice_number.replace(/\D/g, "");
 
+  /*
+    Položka bez sadzby dostane základnú sadzbu krajiny firmy (neplatiteľ 0 %),
+    nie pevných 23 % — česká firma by inak fakturovala sadzbou, ktorá v CZ
+    neexistuje. Hlavička sa sčíta zo zaokrúhlených riadkov, aby s nimi sedela.
+  */
+  const { data: firma } = await supabaseAdmin
+    .from("companies")
+    .select("country, vat_payer")
+    .eq("id", rec.company_id)
+    .maybeSingle();
+  const { krajinaDane, zakladnaSadzba } = await import("./vat-rates");
+  const predvolenaSadzba = firma?.vat_payer
+    ? zakladnaSadzba(krajinaDane(firma?.country), today)
+    : 0;
+  const riadky = items.map((it: any) => {
+    const sadzba = it.vat_rate ?? predvolenaSadzba;
+    const line = +(Number(it.quantity) * Number(it.unit_price)).toFixed(2);
+    const vat = +((line * Number(sadzba)) / 100).toFixed(2);
+    return { it, sadzba, line, vat };
+  });
+  const subtotal = +riadky.reduce((a: number, r: any) => a + r.line, 0).toFixed(2);
+  const vatTotal = +riadky.reduce((a: number, r: any) => a + r.vat, 0).toFixed(2);
+
   const { data: inv, error: insErr } = await supabaseAdmin
     .from("invoices")
     .insert({
@@ -75,9 +98,9 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
       customer_zip: rec.customer_zip,
       customer_country: rec.customer_country ?? "SK",
       customer_email: rec.customer_email,
-      subtotal: rec.subtotal,
-      vat_total: rec.vat_total,
-      total: rec.total,
+      subtotal,
+      vat_total: vatTotal,
+      total: +(subtotal + vatTotal).toFixed(2),
       notes: rec.notes ?? null,
       // Text nad položkami zo šablóny — bez neho by faktúra z paušálu
       // nepovedala, za čo je.
@@ -91,9 +114,7 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     throw new Error(insErr?.message ?? "Invoice insert failed");
   }
 
-  const rows = items.map((it: any, i: number) => {
-    const line = +(Number(it.quantity) * Number(it.unit_price)).toFixed(2);
-    const vat = +((line * Number(it.vat_rate ?? 23)) / 100).toFixed(2);
+  const rows = riadky.map(({ it, sadzba, line, vat }: any, i: number) => {
     return {
       invoice_id: inv.id,
       position: i,
@@ -102,7 +123,7 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
       quantity: it.quantity,
       unit: it.unit ?? "ks",
       unit_price: it.unit_price,
-      vat_rate: it.vat_rate ?? 23,
+      vat_rate: sadzba,
       subtotal: line,
       vat_amount: vat,
       total: +(line + vat).toFixed(2),
