@@ -94,18 +94,18 @@ Doklado nemá vlastný adresár partnerov — partner je v hlavičke každého d
 
 **Položky** (`items[]` → `invoice_items`):
 
-| Doklado `ExportItemV2`         | Faktero                                 | Poznámka                                                                                              |
-| ------------------------------ | --------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `name`                         | `name`                                  |                                                                                                       |
-| `note`                         | `description`                           |                                                                                                       |
-| `quantity`                     | `quantity`                              |                                                                                                       |
-| `unit`                         | `unit`                                  | chýba → `ks`                                                                                          |
-| `price`                        | `unit_price`                            | **bez DPH alebo s DPH sa zistí zo súčtov** — `Σ price×qty` sa porovná so základom aj s celkom dokladu |
-| `vatRate`                      | `vat_rate`                              |                                                                                                       |
-| `vatAmount`                    | `vat_amount`                            | chýba → dopočíta sa                                                                                   |
-| `discount.discountPercent`     | `discount_percent`                      |                                                                                                       |
-| `itemType = advance_payment`   | nie položka → `advance_amount` hlavičky | rovnako ako import z Pohody                                                                           |
-| `vatCategory = reverse_charge` | `prenesenie = true`, `vat_amount = 0`   | spúšťač `invoice_items_pdp_kontrola` DPH pri prenesení odmietne                                       |
+| Doklado `ExportItemV2`         | Faktero                                 | Poznámka                                                                                                                                                                                                                                       |
+| ------------------------------ | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                         | `name`                                  |                                                                                                                                                                                                                                                |
+| `note`                         | `description`                           |                                                                                                                                                                                                                                                |
+| `quantity`                     | `quantity`                              |                                                                                                                                                                                                                                                |
+| `unit`                         | `unit`                                  | chýba → `ks`                                                                                                                                                                                                                                   |
+| `price`                        | `unit_price`                            | **v praxi suma za celý riadok** (bager expres: 175 + 300 + 350 + 456 = 1 281 € pri množstvách 5/10/10/240), pri bločkoch s DPH — výklad (jednotka/riadok × bez/s DPH) sa vyberie podľa súčtov dokladu a riadok sa rozpočíta na jednotkovú cenu |
+| `vatRate`                      | `vat_rate`                              |                                                                                                                                                                                                                                                |
+| `vatAmount`                    | `vat_amount`                            | chýba → dopočíta sa                                                                                                                                                                                                                            |
+| `discount.discountPercent`     | `discount_percent`                      |                                                                                                                                                                                                                                                |
+| `itemType = advance_payment`   | nie položka → `advance_amount` hlavičky | rovnako ako import z Pohody                                                                                                                                                                                                                    |
+| `vatCategory = reverse_charge` | `prenesenie = true`, `vat_amount = 0`   | spúšťač `invoice_items_pdp_kontrola` DPH pri prenesení odmietne                                                                                                                                                                                |
 
 - Faktúra bez položiek dostane jednu položku zo `vatSummary` (po sadzbách).
 - **Dobropis sa ukladá záporne** (množstvo aj sumy), ako ho ukladá Faktero; ak Doklado pošle
@@ -200,3 +200,14 @@ rad **nastaví** (šablóna + `start_from` za najvyšším prenesenými číslom
 3. PDF vystavených faktúr ako príloha (navrhnuté), alebo ako hlavné PDF faktúry?
 4. Exportované v Doklade označiť ako odovzdané do Pohody (navrhnuté), alebo nie?
 5. `paid_at` / `payment_date`: API dátum úhrady nedáva — splatnosť (navrhnuté), alebo prázdne?
+6. Predkontácia: Doklado posiela označenie (`accountingItem.value`, napr. „Predaj služieb“) aj účty
+   (`accountingItem.code`, „311000 602000“). Navrhnuté je označenie do `pohoda_predkontacia` (tak ho
+   pozná Pohoda); vo Fakteri sa dnes vyskytujú oba tvary. Členenie KV (`classificationKVVat`, napr.
+   „KN“) sa neprenáša — Faktero si ho odvodí samo.
+
+## Overené dry-runom (2026-10-27, nič sa nezapísalo)
+
+- bager expres s. r. o. (57682798): 11 dokladov (10 vystavených, 1 prijatá), 8 volaní API;
+  rad `FA-{YYYY}{NNN}`, ďalšie `FA-2026011`.
+- MaxiTicket, s.r.o. (53251580) od 1. 10. 2026: 34 dokladov (21 prijatých vrátane 2 zálohových
+  a 1 daňového dokladu k platbe, 13 bločkov), 9 volaní API; bloček s DPH 23 % + 19 % sedí na cent.
