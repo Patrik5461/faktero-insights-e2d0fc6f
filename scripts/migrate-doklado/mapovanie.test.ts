@@ -144,6 +144,23 @@ describe("migrácia z Doklada", () => {
     expect(m.hlavicka.advance_amount).toBeGreaterThan(0);
   });
 
+  it("predkontácia bez exportu zaúčtovanie neznamená", () => {
+    const f = faktura({
+      subType: "domestic_received",
+      accountingSettings: {
+        accountingItem: { value: "Služba" },
+        classificationVat: { code: "PD" },
+      },
+    });
+    const h = prijata(f, o).hlavicka;
+    expect(h).toMatchObject({
+      status: "received",
+      pohoda_predkontacia: "Služba",
+      exported_at: null,
+    });
+    expect(h).not.toHaveProperty("zauctovane_at");
+  });
+
   it("doklad exportovaný z Doklada príde zaúčtovaný aj bez predkontácie", () => {
     const bez = faktura({ subType: "domestic_received" });
     expect(prijata(bez, o).hlavicka).toMatchObject({ status: "received", exported_at: null });

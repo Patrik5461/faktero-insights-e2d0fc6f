@@ -214,9 +214,9 @@ rad **nastaví** (šablóna + `start_from` za najvyšším prenesenými číslom
 
 ## Zaúčtované ostáva zaúčtované
 
-Doklad je vo Fakteri **zaúčtovaný** (`zauctovane_at`, prijatá faktúra `status = 'booked'`), keď
-má v Doklade predkontáciu či členenie DPH **alebo** bol v Doklade exportovaný do účtovníctva.
-Exportovaný navyše dostane `exported_at` (bloček `status = 'exported'`, vystavená faktúra aj riadok
-v `export_logs`), takže nie je medzi nezaúčtovanými ani nečaká na odovzdanie do Pohody. Dry-run
-vypíše počet zaúčtovaných a nezaúčtovaných po druhoch. Overené: bager expres 11/11, MaxiTicket
-(od 1. 10.) 34/34 — z toho 10 neexportovaných, zaúčtovaných podľa predkontácie.
+Rozhodnutie Patrika (2026-10-27): **zaúčtovaný je len doklad exportovaný z Doklada** do
+účtovníctva (`isExported`). Dostane `zauctovane_at`, `exported_at` (prijatá faktúra
+`status = 'booked'`, bloček `status = 'exported'`, vystavená faktúra aj riadok v `export_logs`).
+Ostatné prídu **nezaúčtované**; predkontácia a členenie z Doklada sa im prenesú len ako predvyplnené
+hodnoty (Doklado ich dopĺňa aj sám podľa pravidiel). Automatické zaúčtovanie ich obíde
+(`auto_uctovanie_at`), čakajú na ručné zaúčtovanie. Dry-run vypíše počty po druhoch.

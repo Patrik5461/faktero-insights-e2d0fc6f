@@ -26,6 +26,7 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { DokladoKlient, iso, type DokladAleboFaktura, type FakturaV2 } from "./doklado-klient";
 import {
+  datum as datumZTextu,
   blocek,
   druhDokladu,
   jeZauctovany,
@@ -43,6 +44,8 @@ import {
   druhPodlaTypuFaktury,
 } from "../../src/lib/faktero/ciselne-rady";
 import { rozpoznajRadyPoImporte } from "../../src/lib/faktero/ciselne-rady-import.server";
+
+const datumDokladu = (d: DokladAleboFaktura) => datumZTextu(d.issuedAt);
 
 const TU = dirname(fileURLToPath(import.meta.url));
 const LOG = join(TU, "migrate.log");
@@ -119,11 +122,44 @@ type Existujuce = {
   faktury: Map<string, { id: string; doklado_id: string | null }>;
   fakturyPodlaDoklado: Set<string>;
   prijate: Map<string, { id: string; doklado_id: string | null }>;
+  /** Tá istá faktúra bez IČO (napr. zahraničný dodávateľ z mailu): číslo + suma. */
+  prijatePodlaCislaSumy: Map<string, { id: string; doklado_id: string | null; cislo: string }>;
+  /** Iné číslo, ten istý doklad: IČO + dátum vystavenia + suma (len keď je jediný taký). */
+  prijatePodlaDna: Map<string, { id: string; doklado_id: string | null; cislo: string } | null>;
   prijatePodlaDoklado: Set<string>;
   blocky: Map<string, { id: string; doklado_id: string | null }>;
   blockyPodlaDoklado: Set<string>;
   partneri: Map<string, { id: string; odberatel: boolean; dodavatel: boolean }>;
 };
+
+const klucCislaSumy = (cislo: unknown, suma: unknown) =>
+  `${String(cislo ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")}|${Math.abs(Number(suma ?? 0)).toFixed(2)}`;
+
+const klucDna = (ico: unknown, datum: unknown, suma: unknown) =>
+  `${lenCislice(ico)}|${String(datum ?? "").slice(0, 10)}|${Math.abs(Number(suma ?? 0)).toFixed(2)}`;
+
+/**
+ * Existujúca prijatá faktúra: IČO + číslo, inak číslo + suma (dodávateľ bez
+ * IČO), inak IČO + deň + suma — ten istý doklad mohol prísť mailom s iným
+ * číslom (variabilný symbol namiesto čísla faktúry).
+ */
+function najdiPrijatu(
+  ex: Existujuce,
+  ico: unknown,
+  cislo: unknown,
+  suma: unknown,
+  datum?: unknown,
+) {
+  return (
+    ex.prijate.get(klucPrijatej(ico, cislo)) ??
+    ex.prijatePodlaCislaSumy.get(klucCislaSumy(cislo, suma)) ??
+    (lenCislice(ico) && datum
+      ? (ex.prijatePodlaDna.get(klucDna(ico, datum, suma)) ?? undefined)
+      : undefined)
+  );
+}
 
 const klucPrijatej = (ico: unknown, cislo: unknown) =>
   `${lenCislice(ico)}|${String(cislo ?? "")
@@ -149,7 +185,7 @@ async function nacitajExistujuce(db: Db, companyId: string, sId: boolean): Promi
     vsetko<any>((od, po) =>
       db
         .from("purchase_invoices")
-        .select(`id, supplier_ico, invoice_number${d}`)
+        .select(`id, supplier_ico, invoice_number, amount_total, issue_date${d}`)
         .eq("company_id", companyId)
         .is("deleted_at", null)
         .order("id")
@@ -188,6 +224,13 @@ async function nacitajExistujuce(db: Db, companyId: string, sId: boolean): Promi
       ]),
     ),
     prijatePodlaDoklado: new Set(prijate.map((f) => f.doklado_id).filter(Boolean)),
+    prijatePodlaDna: new Map(),
+    prijatePodlaCislaSumy: new Map(
+      prijate.map((f) => [
+        klucCislaSumy(f.invoice_number, f.amount_total),
+        { id: f.id, doklado_id: f.doklado_id ?? null, cislo: f.invoice_number },
+      ]),
+    ),
     blocky: new Map(
       blocky.map((b) => [
         klucBlocku(b.supplier_ico, b.document_number, b.issue_date, b.total_amount),
@@ -197,6 +240,17 @@ async function nacitajExistujuce(db: Db, companyId: string, sId: boolean): Promi
     blockyPodlaDoklado: new Set(blocky.map((b) => b.doklado_id).filter(Boolean)),
     partneri: new Map(),
   };
+  for (const f of prijate) {
+    if (!lenCislice(f.supplier_ico)) continue;
+    const k = klucDna(f.supplier_ico, f.issue_date, f.amount_total);
+    // Viac kandidátov v ten istý deň s tou istou sumou = nehádame.
+    e.prijatePodlaDna.set(
+      k,
+      e.prijatePodlaDna.has(k)
+        ? null
+        : { id: f.id, doklado_id: f.doklado_id ?? null, cislo: f.invoice_number },
+    );
+  }
   for (const p of partneri) {
     const k = klucPartnera({ ico: p.ico, name: p.name ?? "" });
     if (!e.partneri.has(k))
@@ -487,11 +541,18 @@ async function dryRunFirmy(a: {
           ex &&
           (ex.fakturyPodlaDoklado.has(id) || ex.faktury.has(String(d.invoiceNumber ?? "").trim())),
         );
+      if (dr === "vystavena" && uz) log(`  už vo Fakteri: vystavená ${d.invoiceNumber}`);
       if (dr === "prijata")
         uz = Boolean(
           ex &&
           (ex.prijatePodlaDoklado.has(id) ||
-            ex.prijate.has(klucPrijatej(d.organizationId, d.invoiceNumber))),
+            Boolean(
+              najdiPrijatu(ex, d.organizationId, d.invoiceNumber, d.totalPrice, datumDokladu(d)),
+            )),
+        );
+      if (uz)
+        log(
+          `  už vo Fakteri: prijatá ${d.invoiceNumber} (${d.organizationName}, ${d.totalPrice} €)`,
         );
       if (dr === "blocek") {
         const b = blocek(d, a);
@@ -781,7 +842,13 @@ async function zapisFirmy(a: {
       }
       const m = prijata(z as FakturaV2, { ...o, exportovany: a.exportovane.has(id) });
       const k = klucPrijatej(m.hlavicka.supplier_ico, m.hlavicka.invoice_number);
-      const uz = ex.prijate.get(k);
+      const uz = najdiPrijatu(
+        ex,
+        m.hlavicka.supplier_ico,
+        m.hlavicka.invoice_number,
+        m.hlavicka.amount_total,
+        m.hlavicka.issue_date,
+      );
       if (uz) {
         if (!uz.doklado_id)
           await db
@@ -805,6 +872,14 @@ async function zapisFirmy(a: {
       });
       if (error) throw new Error(error.message);
       ex.prijate.set(k, { id: "", doklado_id: id });
+      ex.prijatePodlaCislaSumy.set(
+        klucCislaSumy(m.hlavicka.invoice_number, m.hlavicka.amount_total),
+        {
+          id: "",
+          doklado_id: id,
+          cislo: m.hlavicka.invoice_number,
+        },
+      );
       ex.prijatePodlaDoklado.add(id);
       s.nove++;
     } catch (e) {

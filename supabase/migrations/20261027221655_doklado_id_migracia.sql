@@ -1,5 +1,5 @@
 -- Idempotencia migrácie z Doklada: id dokladu v Doklade pri každom prenesenom zázname.
--- Aplikuje sa až po schválení (cez MCP apply_migration, súbor potom do supabase/migrations/).
+-- Schválené 2026-10-27 (Patrik), aplikované cez MCP.
 alter table public.invoices add column if not exists doklado_id text;
 alter table public.purchase_invoices add column if not exists doklado_id text;
 alter table public.expense_documents add column if not exists doklado_id text;

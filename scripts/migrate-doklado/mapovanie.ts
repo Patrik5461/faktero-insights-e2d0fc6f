@@ -324,10 +324,13 @@ const zaporne = (n: number) => -Math.abs(n);
  */
 export type Volby = { teraz: string; dnes: string; exportovany?: boolean };
 
-/** Zaúčtovaný v Doklade: má predkontáciu či členenie DPH, alebo už odišiel do účtovníctva. */
-export function jeZauctovany(d: DokladAleboFaktura, exportovany = false): boolean {
-  const z = zauctovanie(d);
-  return Boolean(exportovany || z.pohoda_predkontacia || z.pohoda_clenenie_dph);
+/**
+ * Zaúčtovaný je len doklad, ktorý z Doklada odišiel do účtovníctva (exportovaný).
+ * Predkontáciu vie Doklado doplniť aj sám podľa pravidiel, ešte kým doklad niekto
+ * skontroluje — taký príde nezaúčtovaný, s predkontáciou ako predvyplnenou.
+ */
+export function jeZauctovany(_d: DokladAleboFaktura, exportovany = false): boolean {
+  return exportovany;
 }
 
 export function vystavena(d: FakturaV2, o: Volby) {

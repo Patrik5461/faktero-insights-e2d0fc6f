@@ -3452,6 +3452,7 @@ export type Database = {
           zauctovanie_istota: number | null
           auto_uctovanie_navrh: Json | null
           auto_uctovanie_at: string | null
+          doklado_id: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -3514,6 +3515,7 @@ export type Database = {
           zauctovanie_istota?: number | null
           auto_uctovanie_navrh?: Json | null
           auto_uctovanie_at?: string | null
+          doklado_id?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -3576,6 +3578,7 @@ export type Database = {
           zauctovanie_istota?: number | null
           auto_uctovanie_navrh?: Json | null
           auto_uctovanie_at?: string | null
+          doklado_id?: string | null
         }
         Relationships: [
           {
@@ -5364,6 +5367,7 @@ export type Database = {
           zauctovanie_istota: number | null
           auto_uctovanie_navrh: Json | null
           auto_uctovanie_at: string | null
+          doklado_id: string | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -5471,6 +5475,7 @@ export type Database = {
           zauctovanie_istota?: number | null
           auto_uctovanie_navrh?: Json | null
           auto_uctovanie_at?: string | null
+          doklado_id?: string | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -5578,6 +5583,7 @@ export type Database = {
           zauctovanie_istota?: number | null
           auto_uctovanie_navrh?: Json | null
           auto_uctovanie_at?: string | null
+          doklado_id?: string | null
         }
         Relationships: [
           {
@@ -6661,6 +6667,7 @@ export type Database = {
           zauctovanie_istota: number | null
           auto_uctovanie_navrh: Json | null
           auto_uctovanie_at: string | null
+          doklado_id: string | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -6769,6 +6776,7 @@ export type Database = {
           zauctovanie_istota?: number | null
           auto_uctovanie_navrh?: Json | null
           auto_uctovanie_at?: string | null
+          doklado_id?: string | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -6877,6 +6885,7 @@ export type Database = {
           zauctovanie_istota?: number | null
           auto_uctovanie_navrh?: Json | null
           auto_uctovanie_at?: string | null
+          doklado_id?: string | null
         }
         Relationships: [
           {
@@ -10612,6 +10621,7 @@ export type Database = {
           }
         ]
       }
+
 
 
 
