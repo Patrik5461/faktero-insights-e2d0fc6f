@@ -248,7 +248,11 @@ async function epostakFetch<T>(path: string, opts: FetchOpts = {}): Promise<T> {
 
   if (!res.ok) {
     const msg = chybaEPostaka(parsed, res.status);
-    console.error(`[epostak] ${opts.method ?? "GET"} ${path} → ${res.status}`, text.slice(0, 1000));
+    // Firma a druh kľúča do logu — pri opakovanom 401 inak nevedno, čí kľúč neplatí.
+    console.error(
+      `[epostak] ${opts.method ?? "GET"} ${path} → ${res.status} (firma ${opts.firmId ?? "—"}, kľúč ${kluc ? "firmy" : "hlavný"})`,
+      text.slice(0, 1000),
+    );
     const err = new Error(`ePošták ${path} zlyhal: ${msg}`) as Error & {
       status?: number;
       response?: unknown;

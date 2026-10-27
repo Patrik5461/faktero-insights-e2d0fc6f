@@ -24,6 +24,13 @@ export function popisChybyPohybov(sprava: string): string {
   return "Pohyby sa nepodarilo stiahnuť.";
 }
 
+/** Vypršaný či zrušený súhlas — bez obnovenia človekom sa neopraví. */
+export function jeChybaSuhlasu(sprava: string): boolean {
+  return /SCA_EXPIRED|SCA expired|CONSENT_(EXPIRED|INVALID|REVOKED)|consent.*(expired|invalid|revoked)/i.test(
+    String(sprava ?? ""),
+  );
+}
+
 /** Treba to človeku ukázať? Len keď zlyhanie trvá dlhšie, než je bežný výpadok banky. */
 export function pohybyZastarane(
   u: { pohyby_chyba?: string | null; pohyby_ok_at?: string | null },

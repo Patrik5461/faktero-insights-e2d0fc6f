@@ -21,3 +21,12 @@ describe("stav pohybov bankového účtu", () => {
     expect(pohybyZastarane({ pohyby_chyba: null, pohyby_ok_at: null }, teraz)).toBe(false);
   });
 });
+
+describe("jeChybaSuhlasu", () => {
+  it("SCA_EXPIRED a CONSENT_* áno, 500 nie", async () => {
+    const { jeChybaSuhlasu } = await import("./bank-stav-pohybov");
+    expect(jeChybaSuhlasu('tb_api_error: 401 {"errorCode":"SCA_EXPIRED"}')).toBe(true);
+    expect(jeChybaSuhlasu("CONSENT_INVALID")).toBe(true);
+    expect(jeChybaSuhlasu("tb_api_error: 500")).toBe(false);
+  });
+});

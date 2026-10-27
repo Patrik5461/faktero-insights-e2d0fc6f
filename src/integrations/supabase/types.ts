@@ -539,6 +539,7 @@ export type Database = {
           updated_at: string
           pohyby_ok_at: string | null
           pohyby_chyba: string | null
+          pohyby_chyba_suhlas: string | null
         }
         Insert: {
           account_name?: string | null
@@ -557,6 +558,7 @@ export type Database = {
           updated_at?: string
           pohyby_ok_at?: string | null
           pohyby_chyba?: string | null
+          pohyby_chyba_suhlas?: string | null
         }
         Update: {
           account_name?: string | null
@@ -575,6 +577,7 @@ export type Database = {
           updated_at?: string
           pohyby_ok_at?: string | null
           pohyby_chyba?: string | null
+          pohyby_chyba_suhlas?: string | null
         }
         Relationships: [
           {
@@ -10603,6 +10606,7 @@ export type Database = {
           }
         ]
       }
+
 
     }
     Views: {

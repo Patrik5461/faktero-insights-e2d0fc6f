@@ -256,6 +256,7 @@ import { Route as AdminUsersIndexRouteImport } from './routes/admin.users.index'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
 import { Route as ApiMobilOperaciaRouteImport } from './routes/api/mobil/$operacia'
 import { Route as ApiMobilPadRouteImport } from './routes/api/mobil/pad'
+import { Route as ApiPublicCspReportRouteImport } from './routes/api/public/csp-report'
 import { Route as ApiPublicKontaktRouteImport } from './routes/api/public/kontakt'
 import { Route as ApiPublicSupportChatRouteImport } from './routes/api/public/support-chat'
 import { Route as ApiPublicVerziaRouteImport } from './routes/api/public/verzia'
@@ -1694,6 +1695,11 @@ const ApiMobilPadRoute = ApiMobilPadRouteImport.update({
   path: '/api/mobil/pad',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCspReportRoute = ApiPublicCspReportRouteImport.update({
+  id: '/api/public/csp-report',
+  path: '/api/public/csp-report',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicKontaktRoute = ApiPublicKontaktRouteImport.update({
   id: '/api/public/kontakt',
   path: '/api/public/kontakt',
@@ -2467,6 +2473,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
   '/api/mobil/pad': typeof ApiMobilPadRoute
+  '/api/public/csp-report': typeof ApiPublicCspReportRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/public/verzia': typeof ApiPublicVerziaRoute
@@ -2806,6 +2813,7 @@ export interface FileRoutesByTo {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
   '/api/mobil/pad': typeof ApiMobilPadRoute
+  '/api/public/csp-report': typeof ApiPublicCspReportRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/public/verzia': typeof ApiPublicVerziaRoute
@@ -3156,6 +3164,7 @@ export interface FileRoutesById {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
   '/api/mobil/pad': typeof ApiMobilPadRoute
+  '/api/public/csp-report': typeof ApiPublicCspReportRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/public/verzia': typeof ApiPublicVerziaRoute
@@ -3506,6 +3515,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/api/mobil/$operacia'
     | '/api/mobil/pad'
+    | '/api/public/csp-report'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
     | '/api/public/verzia'
@@ -3845,6 +3855,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/api/mobil/$operacia'
     | '/api/mobil/pad'
+    | '/api/public/csp-report'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
     | '/api/public/verzia'
@@ -4194,6 +4205,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/api/mobil/$operacia'
     | '/api/mobil/pad'
+    | '/api/public/csp-report'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
     | '/api/public/verzia'
@@ -4413,6 +4425,7 @@ export interface RootRouteChildren {
   PravneIndexRoute: typeof PravneIndexRoute
   ApiMobilOperaciaRoute: typeof ApiMobilOperaciaRoute
   ApiMobilPadRoute: typeof ApiMobilPadRoute
+  ApiPublicCspReportRoute: typeof ApiPublicCspReportRoute
   ApiPublicKontaktRoute: typeof ApiPublicKontaktRoute
   ApiPublicSupportChatRoute: typeof ApiPublicSupportChatRoute
   ApiPublicVerziaRoute: typeof ApiPublicVerziaRoute
@@ -6210,6 +6223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMobilPadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/csp-report': {
+      id: '/api/public/csp-report'
+      path: '/api/public/csp-report'
+      fullPath: '/api/public/csp-report'
+      preLoaderRoute: typeof ApiPublicCspReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kontakt': {
       id: '/api/public/kontakt'
       path: '/api/public/kontakt'
@@ -7675,6 +7695,7 @@ const rootRouteChildren: RootRouteChildren = {
   PravneIndexRoute: PravneIndexRoute,
   ApiMobilOperaciaRoute: ApiMobilOperaciaRoute,
   ApiMobilPadRoute: ApiMobilPadRoute,
+  ApiPublicCspReportRoute: ApiPublicCspReportRoute,
   ApiPublicKontaktRoute: ApiPublicKontaktRoute,
   ApiPublicSupportChatRoute: ApiPublicSupportChatRoute,
   ApiPublicVerziaRoute: ApiPublicVerziaRoute,

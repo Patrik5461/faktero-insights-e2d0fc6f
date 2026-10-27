@@ -160,7 +160,11 @@ export async function stiahniTransakcieUctu(
   // Pohyby prišli — prípadná stará chyba (napr. vypršaný súhlas) už neplatí.
   await supabaseAdmin
     .from("bank_accounts")
-    .update({ pohyby_ok_at: new Date().toISOString(), pohyby_chyba: null })
+    .update({
+      pohyby_ok_at: new Date().toISOString(),
+      pohyby_chyba: null,
+      pohyby_chyba_suhlas: null,
+    })
     .eq("id", account.id);
 
   const odDna = new Date(Date.now() - okno * 86400_000).toISOString().slice(0, 10);
@@ -333,7 +337,22 @@ export async function syncPripojenie(
      */
     let inserted = 0;
     const chybneUcty: string[] = [];
+    // Účty s vypršaným súhlasom pri tom istom consent_id — banka vráti tú istú chybu.
+    const { data: stavy } = await supabaseAdmin
+      .from("bank_accounts")
+      .select("id, pohyby_chyba_suhlas")
+      .in(
+        "id",
+        accounts.map((a: any) => a.id),
+      );
+    const zlySuhlas = new Map(((stavy ?? []) as any[]).map((x) => [x.id, x.pohyby_chyba_suhlas]));
     for (const acc of accounts) {
+      if (conn.consent_id && zlySuhlas.get(acc.id) === conn.consent_id) {
+        console.log(
+          `[bank-sync] účet ${acc.iban ?? acc.id} preskočený — súhlas vypršal, čaká na obnovenie`,
+        );
+        continue;
+      }
       if (acc.unavailable_since) {
         console.log(
           `[bank-sync] účet ${acc.iban ?? acc.id} preskočený — ${acc.unavailable_reason ?? "banka ho nepozná"}`,
@@ -353,10 +372,17 @@ export async function syncPripojenie(
         } else {
           console.error(`[bank-sync] účet ${acc.iban ?? acc.id} zlyhal:`, e?.message ?? e);
           // Dôvod k účtu — po 48 h bez úspechu ho uvidí človek pri účte aj vo zvončeku.
-          const { popisChybyPohybov } = await import("./bank-stav-pohybov");
+          const { popisChybyPohybov, jeChybaSuhlasu } = await import("./bank-stav-pohybov");
+          const sprava = String(e?.message ?? e);
           await supabaseAdmin
             .from("bank_accounts")
-            .update({ pohyby_chyba: popisChybyPohybov(String(e?.message ?? e)) })
+            .update({
+              pohyby_chyba: popisChybyPohybov(sprava),
+              // Pri vypršanom súhlase sa ďalšie pokusy vynechajú, kým ho človek neobnoví.
+              ...(jeChybaSuhlasu(sprava) && conn.consent_id
+                ? { pohyby_chyba_suhlas: conn.consent_id }
+                : {}),
+            })
             .eq("id", acc.id);
         }
       }
