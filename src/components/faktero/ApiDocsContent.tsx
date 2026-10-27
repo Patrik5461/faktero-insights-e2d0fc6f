@@ -140,34 +140,50 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
   }, []);
 
   return (
-    <div className="api-dokumentacia mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 sm:py-10 lg:grid-cols-[240px_1fr] lg:gap-10 print:block print:max-w-none print:p-0">
-      {/* Mobile: collapsible section picker */}
-      <div className="lg:hidden print:hidden">
-        <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {t("Obsah dokumentácie")}
-        </label>
-        <select
-          value={active}
-          onChange={(e) => {
-            const id = e.target.value;
-            setActive(id);
-            document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }}
-          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-        >
-          {SKUPINY.map((g) => (
-            <optgroup key={g.nazov} label={t(g.nazov)}>
-              {g.polozky.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {t(s.label)}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+    <div className="api-dokumentacia mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 sm:py-10 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10 print:block print:max-w-none print:p-0">
+      {/* Mobil: výber sekcie prilepený hore (v aplikácii pod jej hlavičkou). */}
+      <div
+        className={`sticky z-30 -mx-4 bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:hidden print:hidden ${loggedIn ? "top-14" : "top-0"}`}
+      >
+        {/* Vnútorný obal: pravidlo kompaktného rozloženia dáva rodičovi popisu
+            a výberu `display: block`, čo by prebilo `lg:hidden` vyššie. */}
+        <div>
+          <label
+            htmlFor="api-docs-obsah"
+            className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          >
+            {t("Obsah dokumentácie")}
+          </label>
+          <select
+            id="api-docs-obsah"
+            value={active}
+            onChange={(e) => {
+              const id = e.target.value;
+              setActive(id);
+              document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            {SKUPINY.map((g) => (
+              <optgroup key={g.nazov} label={t(g.nazov)}>
+                {g.polozky.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {t(s.label)}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
       </div>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:sticky lg:top-6 lg:block lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto print:hidden">
+      <aside
+        className={`hidden lg:sticky lg:block lg:self-start lg:overflow-y-auto print:hidden ${
+          loggedIn
+            ? "lg:top-20 lg:max-h-[calc(100vh-6.5rem)]"
+            : "lg:top-6 lg:max-h-[calc(100vh-3rem)]"
+        }`}
+      >
         <div className="rounded-xl border border-border bg-card/40 p-3">
           <div className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t("Obsah")}
@@ -198,15 +214,15 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
       </aside>
 
       {/* Main content */}
-      <article className="min-w-0 space-y-10">
+      <article className="min-w-0 space-y-10 [&_p]:max-w-[760px]">
         {/* Hlavička: čo API je, základné údaje a stiahnutie celej dokumentácie. */}
         <header className="rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-8 print:border-0 print:bg-none print:p-0">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
+            <div className="min-w-0 basis-[28rem] grow">
               <div className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
                 REST API · v1
               </div>
-              <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+              <h1 className="mt-1 text-[clamp(2rem,4vw,3.5rem)] font-bold leading-tight tracking-tight [overflow-wrap:anywhere] [text-wrap:balance]">
                 {t("Faktero API dokumentácia")}
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
@@ -232,7 +248,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
               </button>
             </div>
           </div>
-          <dl className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_1fr]">
+          <dl className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
             {[
               { k: "Base URL", v: "https://faktero.sk/api/v1" },
               { k: "Autentifikácia", v: "Bearer fk_live_…" },
@@ -243,10 +259,12 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
                 key={x.k}
                 className="min-w-0 rounded-xl border border-border bg-background/70 px-4 py-3"
               >
-                <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <dt className="min-w-0 text-[11px] font-medium uppercase tracking-wide text-muted-foreground [overflow-wrap:anywhere]">
                   {t(x.k)}
                 </dt>
-                <dd className="mt-1 break-all font-mono text-[13px] leading-snug">{x.v}</dd>
+                <dd className="mt-1 min-w-0 font-mono text-[13px] leading-snug [overflow-wrap:anywhere]">
+                  {x.v}
+                </dd>
               </div>
             ))}
           </dl>
