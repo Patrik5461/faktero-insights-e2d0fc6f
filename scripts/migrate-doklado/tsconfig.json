@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "./*.ts",
+    "../../src/lib/faktero/ciselne-rady.ts",
+    "../../src/lib/faktero/ciselne-rady-import.server.ts"
+  ],
+  "compilerOptions": { "types": ["node"] }
+}
