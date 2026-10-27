@@ -239,6 +239,13 @@ const sections: HelpSection[] = [
           <strong>Načítať účty</strong> v <Link to="/bankove-ucty">Bankových účtoch</Link> obnoví
           zoznam účtov a zostatky, nie zoznam pohybov.
         </p>
+        <p>
+          <strong>Keď pohyby neprichádzajú:</strong> banka pri vypršanom súhlase (napríklad
+          Slovenská sporiteľňa cez Tatra banku po 90 dňoch) vydá zostatok, ale pohyby nie. Faktero
+          to po 48 hodinách ukáže pri účte aj vo zvončeku („Súhlas banky na čítanie pohybov
+          vypršal“). Kliknite pri účte na <strong>Obnoviť súhlas</strong> a potvrďte ho v banke —
+          sťahovanie sa potom rozbehne samo, aj spätne za vynechané dni.
+        </p>
       </>
     ),
   },

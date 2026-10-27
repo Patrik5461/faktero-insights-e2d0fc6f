@@ -55,11 +55,13 @@ const sections: HelpSection[] = [
           </li>
           <li>
             Dátum vystavenia a dodania sa vyplní sám. Splatnosť nastavíte jedným klikom na{" "}
-            <strong>7d</strong>, <strong>14d</strong> alebo <strong>30d</strong>.
+            <strong>7d</strong>, <strong>14d</strong> alebo <strong>30d</strong> — tlačidlá sú
+            vpravo pri popise poľa Splatnosť.
           </li>
           <li>
-            Vyplňte <strong>Text nad položkami</strong> — je povinný a hovorí, čo sa fakturuje
-            (napríklad „Nájomné za september 2026 podľa zmluvy č. 4/2021“). Vytlačí sa nad tabuľkou
+            <strong>Text nad položkami</strong> je predvyplnený („Fakturujeme Vám“, pri faktúre v
+            cudzom jazyku v jeho jazyku) — doplňte, čo sa fakturuje (napríklad „Fakturujeme Vám
+            nájomné za september 2026 podľa zmluvy č. 4/2021“). Je povinný a vytlačí sa nad tabuľkou
             položiek.
           </li>
           <li>
@@ -74,8 +76,35 @@ const sections: HelpSection[] = [
           </li>
         </ol>
         <p>
-          Číslovanie sa generuje automaticky podľa nastavenej rady vo firme. Keď máte radov viac,
-          pri výbere radu sa hneď ukáže <strong>číslo, ktoré faktúra dostane</strong>.
+          Číslovanie sa generuje automaticky podľa nastavenej rady vo firme. Číslo, ktoré faktúra
+          dostane, vidíte hore v karte <strong>Základné údaje</strong> (napríklad „FA20260004 ·
+          pridelí sa pri uložení“); rad zmeníte v poli <strong>Číselný rad</strong>, kde je aj odkaz
+          na <Link to="/ciselne-rady">Číselné rady</Link>.
+        </p>
+        <p>
+          Pod základnými údajmi sú len odkazy, ktoré pre daný druh dokladu dávajú zmysel:{" "}
+          <strong>Načítať položky z dokladu</strong> a pri bežnej faktúre{" "}
+          <strong>Pridať zálohovú faktúru</strong> (odpočet zálohy). Dobropis a ťarchopis majú
+          namiesto toho väzbu na opravovanú faktúru.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "zoznam",
+    title: "Zoznam faktúr — filtre a hromadné akcie",
+    body: (
+      <>
+        <p>
+          V <Link to="/faktury">zozname faktúr</Link> má každá faktúra dátum vystavenia, dodania aj
+          splatnosti. Vo filtroch zvolíte <strong>Obdobie</strong> podľa dátumu vystavenia, dodania
+          alebo splatnosti a <strong>Export do účtovníctva</strong> — Exportované alebo
+          Neexportované (čo ešte neodišlo do Pohody či iného programu).
+        </p>
+        <p>
+          Zaškrtnuté faktúry odošlete naraz e-mailom alebo <strong>eFaktúrou</strong>, stiahnete ako
+          ZIP či exportujete do účtovníctva. Detail faktúry ukazuje vľavo náhľad PDF, vpravo údaje a
+          akcie.
         </p>
       </>
     ),

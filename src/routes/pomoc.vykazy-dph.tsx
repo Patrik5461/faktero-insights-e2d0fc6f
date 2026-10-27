@@ -95,6 +95,13 @@ const sections: HelpSection[] = [
           stiahnuť aj tak, ale tie riadky budú neúplné — cudzia mena sa navyše do výkazov uvádza
           prepočítaná na eurá.
         </p>
+        <p>
+          <strong>Faktúra s DPH iného štátu</strong> (rakúsky hotel, nemecké palivo) do priznania
+          nepatrí — výkaz ju vynechá a upozorní na ňu. Takú daň si vraciate cez portál toho štátu.
+          Ak ide v skutočnosti o prenesenie daňovej povinnosti, nastavte ho na faktúre. Pri českej
+          firme sa faktúra od českého dodávateľa s DPH počíta ako bežný tuzemský odpočet, nie ako
+          prenesenie § 92a.
+        </p>
       </>
     ),
   },

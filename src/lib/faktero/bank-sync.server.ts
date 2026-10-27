@@ -81,7 +81,7 @@ async function syncAccounts(supabaseAdmin: any, conn: any, accessToken: string) 
 
   const { data: accounts } = await supabaseAdmin
     .from("bank_accounts")
-    .select("id, external_account_id, iban, unavailable_since, unavailable_reason")
+    .select("id, external_account_id, iban, unavailable_since, unavailable_reason, pohyby_ok_at")
     .eq("bank_connection_id", conn.id);
   return accounts ?? [];
 }
@@ -147,7 +147,15 @@ export async function stiahniTransakcieUctu(
     .from("bank_transactions")
     .select("id", { count: "exact", head: true })
     .eq("bank_account_id", account.id);
-  const okno = (count ?? 0) === 0 ? MAX_DAYS_BACK : daysBack;
+  /*
+    Po výpadku (vypršaný súhlas, chyba banky) treba dobehnúť celé obdobie od
+    posledného úspešného stiahnutia — 14-dňové okno by mesačnú dieru nezaplnilo.
+  */
+  const odPoslednych = account.pohyby_ok_at
+    ? Math.ceil((Date.now() - Date.parse(account.pohyby_ok_at)) / 86400_000) + 2
+    : 0;
+  const okno =
+    (count ?? 0) === 0 ? MAX_DAYS_BACK : Math.min(MAX_DAYS_BACK, Math.max(daysBack, odPoslednych));
 
   const { fetchTransactions } = await import("./tatrabanka.server");
   const txs = await fetchTransactions(

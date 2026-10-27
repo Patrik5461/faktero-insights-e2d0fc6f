@@ -277,6 +277,11 @@ const sections: HelpSection[] = [
           podľa nich sa v sieti hľadá.
         </p>
         <p>
+          <strong>Viac faktúr naraz:</strong> v zozname faktúr ich zaškrtnite a v lište hore zvoľte{" "}
+          <strong>Odoslať eFaktúrou</strong>. Odídu s PDF faktúry; koncepty, storná, zálohové a už
+          odoslané sa preskočia. Ďalšie prílohy pošlite jednotlivo z detailu faktúry.
+        </p>
+        <p>
           Odoslanie sa nedá vziať späť. Chybu na odoslanej faktúre opravíte dobropisom alebo
           ťarchopisom, ktoré tiež odídu ako eFaktúra.
         </p>

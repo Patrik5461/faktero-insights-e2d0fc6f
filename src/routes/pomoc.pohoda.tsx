@@ -512,8 +512,10 @@ const sections: HelpSection[] = [
             Navrhnuté polia sú označené <em>Návrh AI</em> aj so zdôvodnením (napríklad
             „telekomunikačné služby → 518“). Je to len návrh: na prijatej faktúre ho potvrdíte
             tlačidlom <em>Zaúčtovať</em>, v Nespracovaných dokladoch tlačidlom{" "}
-            <em>Potvrdiť návrh</em> — alebo kód zmeníte. Nepotvrdený návrh sa do dokladu nezapíše a
-            doklad sa podľa AI nikdy nezaúčtuje sám.
+            <em>Potvrdiť návrh</em> — alebo kód zmeníte. Nepotvrdený návrh sa do dokladu nezapíše.
+            Sám sa doklad podľa AI zaúčtuje len v plnom režime{" "}
+            <Link to="/pomoc/automaticke-zauctovanie">automatického zaúčtovania</Link> a s istotou
+            aspoň 90 %.
           </li>
           <li>
             V zozname prijatých faktúr označte faktúry a zvoľte <em>Navrhnúť AI pre vybrané</em>.

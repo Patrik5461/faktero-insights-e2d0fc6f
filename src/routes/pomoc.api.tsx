@@ -167,13 +167,55 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "ai-asistenti",
+    title: "AI asistenti — Claude, ChatGPT (MCP)",
+    body: (
+      <>
+        <p>
+          Faktero sa dá napojiť na AI asistenta cez <strong>MCP</strong> (Model Context Protocol).
+          Asistent potom odpovie, kto vám dlhuje, nájde faktúru, vystaví novú, založí odberateľa,
+          označí úhradu alebo pozrie pohyby na účte. Nič nemaže a nič neposiela odberateľom.
+        </p>
+        <ol>
+          <li>
+            V <strong>claude.ai</strong> otvorte Nastavenia → Konektory, v <strong>ChatGPT</strong>{" "}
+            Nastavenia → Aplikácie a konektory a pridajte vlastný konektor.
+          </li>
+          <li>
+            Ako adresu zadajte <code>https://www.faktero.sk/api/mcp</code>. Kľúč netreba.
+          </li>
+          <li>
+            Otvorí sa Faktero — prihláste sa, vyberte firmu (alebo{" "}
+            <strong>Všetky moje firmy</strong>) a kliknite na <strong>Povoliť prístup</strong>.
+            Povoliť ho môže majiteľ alebo admin firmy.
+          </li>
+        </ol>
+        <p>
+          Pri voľbe Všetky moje firmy sa asistent pri otázke spýta, o ktorú firmu ide. Prístup
+          uvidíte v API kľúčoch ako „AI asistent (MCP)“ a zrušíte ho tam jedným klikom. Pri neznámej
+          aplikácii Faktero pred povolením upozorní — povoľte len to, čo ste pridávali vy.
+        </p>
+        <p>
+          Claude Code, Cursor či iní klienti sa pripoja s API kľúčom v hlavičke{" "}
+          <code>Authorization: Bearer fk_live_…</code> — návod je v{" "}
+          <Link to="/docs/api" hash="mcp">
+            dokumentácii API
+          </Link>
+          .
+        </p>
+      </>
+    ),
+  },
+  {
     id: "dokumentacia",
     title: "Kompletná dokumentácia a skúšanie",
     body: (
       <>
         <p>
           Úplný zoznam endpointov, parametrov a chybových kódov nájdete v{" "}
-          <Link to="/docs/api">API dokumentácii</Link>.
+          <Link to="/docs/api">API dokumentácii</Link>. Tlačidlom <strong>Stiahnuť PDF</strong> si
+          ju stiahnete celú (v slovenčine, češtine alebo nemčine podľa jazyka webu), tlačidlom{" "}
+          <strong>Tlačiť</strong> ju vytlačíte.
         </p>
         <p>
           Volania si viete vyskúšať bez písania kódu v{" "}

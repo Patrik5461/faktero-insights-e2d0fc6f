@@ -149,6 +149,12 @@ const sections: HelpSection[] = [
             faktúrou (Faktero to samo navrhne).
           </li>
           <li>
+            <strong>XML pre Pohodu</strong> — vybrané faktúry na import do Pohody, zaúčtované aj
+            nezaúčtované (nezaúčtované dostanú predvolenú predkontáciu firmy). Koncepty a stornované
+            sa vynechajú. Pri zapnutom schvaľovaní ide do príkazu na úhradu aj na platbu cez banku
+            len schválená faktúra.
+          </li>
+          <li>
             <strong>Označiť ako prijaté</strong> — hodí sa po prezretí dávky, ktorá prišla mailom.
             Stornované a už prijaté faktúry sa preskočia.
           </li>
