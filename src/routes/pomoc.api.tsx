@@ -62,6 +62,13 @@ const sections: HelpSection[] = [
         <p>
           Kľúč posielajte v hlavičke <code>Authorization: Bearer fk_live_…</code>.
         </p>
+        <p>
+          <strong>Viac firiem jedným kľúčom:</strong> v API kľúčoch zvoľte{" "}
+          <em>Kľúč pre viac firiem</em>. Platí pre všetky firmy, kde ste vlastník alebo admin (alebo
+          len pre vybrané) — firmu potom uvádzate v každej požiadavke hlavičkou{" "}
+          <code>X-Company</code> (id alebo IČO). Zoznam firiem vráti{" "}
+          <code>GET /api/v1/companies</code>.
+        </p>
       </>
     ),
   },

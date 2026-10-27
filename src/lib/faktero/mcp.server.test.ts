@@ -104,3 +104,55 @@ describe("MCP server", () => {
     expect(r.result.content[0].text).toContain("už uhradená");
   });
 });
+
+describe("MCP s kľúčom účtu (viac firiem)", () => {
+  const kontext = {
+    ucet: true,
+    firmy: [
+      { id: "f1", name: "Prvá s.r.o.", ico: "11111111" },
+      { id: "f2", name: "Druhá s.r.o.", ico: "22222222" },
+    ],
+  };
+  it("nástroje majú povinný parameter company a je tu list_companies", async () => {
+    const l: any = await spracujSpravu(
+      { jsonrpc: "2.0", id: 1, method: "tools/list" },
+      volajZ({}),
+      kontext,
+    );
+    const nazvy = l.result.tools.map((t: any) => t.name);
+    expect(nazvy[0]).toBe("list_companies");
+    const faktury = l.result.tools.find((t: any) => t.name === "list_invoices");
+    expect(faktury.inputSchema.properties.company).toBeTruthy();
+    expect(faktury.inputSchema.required).toContain("company");
+    const i: any = await spracujSpravu(
+      { jsonrpc: "2.0", id: 2, method: "initialize", params: {} },
+      volajZ({}),
+      kontext,
+    );
+    expect(i.result.instructions).toMatch(/list_companies/);
+  });
+  it("company sa pošle ako firma volania, nie ako vstup nástroja", async () => {
+    const volaj = vi.fn(async () => ({ status: 200, json: { data: [] } }));
+    await spracujSpravu(
+      {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: { name: "list_invoices", arguments: { company: "22222222", status: "issued" } },
+      },
+      volaj as any,
+      kontext,
+    );
+    const [metoda, cesta, telo, firma] = volaj.mock.calls[0] as unknown as any[];
+    expect(metoda).toBe("GET");
+    expect(cesta).toContain("status=issued");
+    expect(cesta).not.toContain("company");
+    expect(telo).toBeUndefined();
+    expect(firma).toBe("22222222");
+  });
+  it("kľúč firmy nástroje nemení", async () => {
+    const l: any = await spracujSpravu({ jsonrpc: "2.0", id: 4, method: "tools/list" }, volajZ({}));
+    const faktury = l.result.tools.find((t: any) => t.name === "list_invoices");
+    expect(faktury.inputSchema.properties?.company).toBeUndefined();
+  });
+});

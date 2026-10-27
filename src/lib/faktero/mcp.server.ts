@@ -18,7 +18,15 @@ type Volaj = (
   metoda: "GET" | "POST",
   cesta: string,
   telo?: unknown,
+  /** Firma pri kľúči účtu (hlavička X-Company) — id alebo IČO. */
+  firma?: string,
 ) => Promise<{ status: number; json: any }>;
+
+/** Kľúč účtu: firmy, ku ktorým smie. Kľúč firmy: `ucet: false`. */
+export type KontextKluca = {
+  ucet: boolean;
+  firmy: { id: string; name: string; ico: string | null }[];
+};
 
 type Nastroj = {
   name: string;
@@ -82,6 +90,19 @@ const POLOZKA = {
     description: { type: "string" },
   },
   required: ["name", "quantity", "unit_price"],
+};
+
+/** Zoznam firiem kľúča — pri kľúči účtu prvý krok, pri kľúči firmy jedna firma. */
+const LIST_COMPANIES: Nastroj = {
+  name: "list_companies",
+  title: "Firmy",
+  description:
+    "Firmy, s ktorými môžeš pracovať (id, názov, IČO). Pri kľúči pre viac firiem pošli v ostatných nástrojoch parameter company (id alebo IČO).",
+  inputSchema: { type: "object", properties: {} },
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  async vykonaj(_a, volaj) {
+    return nutne(await volaj("GET", "/api/v1/companies"));
+  },
 };
 
 export const NASTROJE: Nastroj[] = [
@@ -388,8 +409,30 @@ const chyba = (id: Sprava["id"], code: number, message: string) => ({
   error: { code, message },
 });
 
+/** Parameter `company` pri kľúči účtu — povinný, keď má kľúč viac firiem. */
+function schemaSFirmou(schema: Record<string, any>, kontext: KontextKluca) {
+  const viac = kontext.firmy.length > 1;
+  return {
+    ...schema,
+    properties: {
+      company: {
+        type: "string",
+        description: `Firma — id alebo IČO z list_companies.${viac ? "" : " Nepovinné, kľúč má jednu firmu."}`,
+      },
+      ...(schema.properties ?? {}),
+    },
+    ...(viac
+      ? { required: [...new Set(["company", ...((schema.required as string[]) ?? [])])] }
+      : {}),
+  };
+}
+
 /** Spracuje jednu správu JSON-RPC; notifikácia (bez id) nevracia nič. */
-export async function spracujSpravu(s: Sprava, volaj: Volaj): Promise<object | null> {
+export async function spracujSpravu(
+  s: Sprava,
+  volaj: Volaj,
+  kontext: KontextKluca = { ucet: false, firmy: [] },
+): Promise<object | null> {
   const jeNotifikacia = s.id === undefined || s.id === null;
   if (s?.jsonrpc !== "2.0" || typeof s.method !== "string") {
     return jeNotifikacia ? null : chyba(s?.id, -32600, "Neplatná požiadavka JSON-RPC.");
@@ -402,27 +445,37 @@ export async function spracujSpravu(s: Sprava, volaj: Volaj): Promise<object | n
         protocolVersion: PODPOROVANE.includes(ziadana) ? ziadana : MCP_VERZIA_PROTOKOLU,
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "faktero", title: "Faktero", version: "1.0.0" },
-        instructions:
-          "Faktero je fakturačný a účtovný systém. Nástroje pracujú s údajmi jednej firmy, ku ktorej patrí API kľúč. Sumy sú v mene dokladu; faktúru vystavíš cez create_invoice, nikam sa neodošle. Odpovedaj v jazyku používateľa.",
+        instructions: kontext.ucet
+          ? "Faktero je fakturačný a účtovný systém. Kľúč platí pre viac firiem: najprv zavolaj list_companies a v každom ďalšom nástroji pošli company (id alebo IČO). Keď nie je jasné, o ktorú firmu ide, opýtaj sa. Sumy sú v mene dokladu; faktúru vystavíš cez create_invoice, nikam sa neodošle. Odpovedaj v jazyku používateľa."
+          : "Faktero je fakturačný a účtovný systém. Nástroje pracujú s údajmi jednej firmy, ku ktorej patrí API kľúč. Sumy sú v mene dokladu; faktúru vystavíš cez create_invoice, nikam sa neodošle. Odpovedaj v jazyku používateľa.",
       });
     }
     case "ping":
       return odpoved(s.id, {});
     case "tools/list":
       return odpoved(s.id, {
-        tools: NASTROJE.map(({ name, title, description, inputSchema, annotations }) => ({
-          name,
-          title,
-          description,
-          inputSchema,
-          annotations,
-        })),
+        tools: [LIST_COMPANIES, ...NASTROJE].map(
+          ({ name, title, description, inputSchema, annotations }) => ({
+            name,
+            title,
+            description,
+            inputSchema:
+              kontext.ucet && name !== "list_companies"
+                ? schemaSFirmou(inputSchema, kontext)
+                : inputSchema,
+            annotations,
+          }),
+        ),
       });
     case "tools/call": {
-      const n = NASTROJE.find((x) => x.name === s.params?.name);
+      const n = [LIST_COMPANIES, ...NASTROJE].find((x) => x.name === s.params?.name);
       if (!n) return chyba(s.id, -32602, `Neznámy nástroj: ${String(s.params?.name ?? "")}`);
       try {
-        const vysledok = await n.vykonaj(s.params?.arguments ?? {}, volaj);
+        // `company` nie je súčasť vstupu nástroja — ide do hlavičky X-Company.
+        const { company, ...argumenty } = (s.params?.arguments ?? {}) as Record<string, unknown>;
+        const firma = typeof company === "string" && company.trim() ? company.trim() : undefined;
+        const volajFirmu: Volaj = (m, c, d) => volaj(m, c, d, firma);
+        const vysledok = await n.vykonaj(argumenty, volajFirmu);
         return odpoved(s.id, {
           content: [{ type: "text", text: JSON.stringify(vysledok) }],
           structuredContent: vysledok,
@@ -459,7 +512,8 @@ export async function obsluzMcp(request: Request): Promise<Response> {
     // Stream zo servera (GET/SSE) nepodporujeme — klient má posielať POST.
     return new Response(null, { status: 405, headers: { ...HLAVICKY, allow: "POST, OPTIONS" } });
   }
-  const kluc = await overApiKluc(request);
+  // Firmu MCP nevyberá — nástroje ju posielajú pri každom volaní (kľúč účtu).
+  const kluc = await overApiKluc(request, { bezFirmy: true });
   if (!kluc) {
     return new Response(
       JSON.stringify(
@@ -487,7 +541,7 @@ export async function obsluzMcp(request: Request): Promise<Response> {
   }
 
   const auth = request.headers.get("authorization") ?? "";
-  const volaj: Volaj = async (metoda, cesta, data) => {
+  const volaj: Volaj = async (metoda, cesta, data, firma) => {
     /*
       Priamo na tento server, nie cez verejnú adresu: za nginxom príde
       request.url ako http://… a presmerovanie na https by hlavičku
@@ -501,6 +555,7 @@ export async function obsluzMcp(request: Request): Promise<Response> {
         accept: "application/json",
         "user-agent": "Faktero-MCP/1.0",
         "x-forwarded-for": request.headers.get("x-forwarded-for") ?? "",
+        ...(firma ? { "x-company": firma } : {}),
         ...(data !== undefined ? { "content-type": "application/json" } : {}),
       },
       body: data !== undefined ? JSON.stringify(data) : undefined,
@@ -510,7 +565,10 @@ export async function obsluzMcp(request: Request): Promise<Response> {
 
   const davka = Array.isArray(telo);
   const spravy = (davka ? telo : [telo]) as Sprava[];
-  const vysledky = (await Promise.all(spravy.map((s) => spracujSpravu(s, volaj)))).filter(Boolean);
+  const kontext: KontextKluca = { ucet: kluc.ucet, firmy: kluc.firmy };
+  const vysledky = (await Promise.all(spravy.map((s) => spracujSpravu(s, volaj, kontext)))).filter(
+    Boolean,
+  );
   if (!vysledky.length) return new Response(null, { status: 202, headers: HLAVICKY });
   return new Response(JSON.stringify(davka ? vysledky : vysledky[0]), {
     status: 200,

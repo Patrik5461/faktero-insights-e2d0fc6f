@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-26",
+ "vytvorene": "2026-10-27",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -33,7 +33,7 @@
     },
     {
      "nadpis": "Kde nájdem API kľúč",
-     "text": "<>\n-\nOtvorte Nastavenia (/nastavenia) → API kľúče .\n-\nKliknite na Vytvoriť nový kľúč a pomenujte ho (napr. „Eshop\nprodukcia“).\n-\nKľúč sa zobrazí iba raz — uložte ho na bezpečnom mieste.\nKľúč posielajte v hlavičke Authorization: Bearer fk_live_… ."
+     "text": "<>\n-\nOtvorte Nastavenia (/nastavenia) → API kľúče .\n-\nKliknite na Vytvoriť nový kľúč a pomenujte ho (napr. „Eshop\nprodukcia“).\n-\nKľúč sa zobrazí iba raz — uložte ho na bezpečnom mieste.\nKľúč posielajte v hlavičke Authorization: Bearer fk_live_… .\nViac firiem jedným kľúčom: v API kľúčoch zvoľte Kľúč pre viac firiem .\nPlatí pre všetky firmy, kde ste vlastník alebo admin (alebo len pre vybrané) — firmu potom\nuvádzate v každej požiadavke hlavičkou X-Company (id alebo IČO). Zoznam firiem\nvráti GET /api/v1/companies ."
     },
     {
      "nadpis": "Testovací a ostrý režim",
@@ -109,7 +109,7 @@
    "sekcie": [
     {
      "nadpis": "Ako to funguje",
-     "text": "<>\nKaždý nový doklad — prijatá faktúra, bloček aj vystavená faktúra — dostane do minúty návrh\nzaúčtovania: predkontáciu, členenie DPH, riadok kontrolného výkazu , prípadne\nstredisko a činnosť. Nezáleží na tom, či prišiel e-mailom, zo skenera, z importu alebo ste ho\nnapísali ručne.\nPredkontácia sa hľadá v tomto poradí — prvý zdroj, ktorý zaberie, vyhráva:\n-\nPravidlo účtovania (istota 100 %) — podľa partnera, textu, spôsobu úhrady,\npredmetu e-mailu či typu dokladu. Pravidlá spravujete v\nÚčtovníctvo → Pravidlá účtovania (/uctovnictvo/pravidla).\n-\nZvyk partnera — keď ste aspoň tri z posledných desiatich dokladov od toho\nistého partnera zaúčtovali väčšinou rovnako. Istota je podiel zhody (najviac 98 %).\n-\nAI (prijaté faktúry a bločky) — vyberá výhradne z vašich predkontácií a\npovie, prečo. Kód, ktorý vo vašom číselníku nie je, sa zahodí.\nČlenenie DPH a kontrolný výkaz sa AI nepýta nikdy. Odvodia sa z režimu dane na\ndoklade: tuzemsko s odpočtom (PD, B.2), bloček (B.3), bez nároku na odpočet (PN), prenesenie\ndaňovej povinnosti, nadobudnutie tovaru a služby z EÚ (B.1), opravný doklad (C.2), osobitná\núprava či firma, ktorá nie je platiteľ DPH."
+     "text": "<>\nKaždý nový doklad — prijatá faktúra, bloček aj vystavená faktúra — dostane do minúty návrh\nzaúčtovania: predkontáciu, členenie DPH, riadok kontrolného výkazu ,\nprípadne stredisko a činnosť. Nezáleží na tom, či prišiel e-mailom, zo skenera, z importu\nalebo ste ho napísali ručne.\nPredkontácia sa hľadá v tomto poradí — prvý zdroj, ktorý zaberie, vyhráva:\n-\nPravidlo účtovania (istota 100 %) — podľa partnera, textu, spôsobu\núhrady, predmetu e-mailu či typu dokladu. Pravidlá spravujete v\nÚčtovníctvo → Pravidlá účtovania (/uctovnictvo/pravidla).\n-\nZvyk partnera — keď ste aspoň tri z posledných desiatich dokladov od\ntoho istého partnera zaúčtovali väčšinou rovnako. Istota je podiel zhody (najviac 98 %).\n-\nAI (prijaté faktúry a bločky) — vyberá výhradne z vašich predkontácií a\npovie, prečo. Kód, ktorý vo vašom číselníku nie je, sa zahodí.\nČlenenie DPH a kontrolný výkaz sa AI nepýta nikdy. Odvodia sa z režimu\ndane na doklade: tuzemsko s odpočtom (PD, B.2), bloček (B.3), bez nároku na odpočet (PN),\nprenesenie daňovej povinnosti, nadobudnutie tovaru a služby z EÚ (B.1), opravný doklad\n(C.2), osobitná úprava či firma, ktorá nie je platiteľ DPH."
     },
     {
      "nadpis": "Režimy autopilota",
@@ -117,19 +117,19 @@
     },
     {
      "nadpis": "Kedy doklad čaká na vás",
-     "text": "<>\nDoklad sa nezaúčtuje sám nikdy, keď:\n- súčet položiek alebo základ s DPH nesedí so sumou dokladu,\n- ide o prenesenie či plnenie z EÚ a IČ DPH partnera nemá platné overenie vo VIES,\n- suma je nad limitom firmy (predvolene 5 000 €),\n- je to prvý doklad od tohto partnera,\n- chýba predkontácia alebo sa nedá určiť členenie DPH,\n- je odovzdaný do účtovníctva alebo zamknutý — taký sa vôbec nemení.\nRučne zaúčtovaný doklad automat nikdy neprepíše. Hodnoty, ktoré na doklade už sú, majú vždy\nprednosť pred návrhom."
+     "text": "<>\nDoklad sa nezaúčtuje sám nikdy, keď:\n- súčet položiek alebo základ s DPH nesedí so sumou dokladu,\n- ide o prenesenie či plnenie z EÚ a IČ DPH partnera nemá platné overenie vo VIES,\n- suma je nad limitom firmy (predvolene 5 000 €),\n- je to prvý doklad od tohto partnera,\n- chýba predkontácia alebo sa nedá určiť členenie DPH,\n- je odovzdaný do účtovníctva alebo zamknutý — taký sa vôbec nemení.\nRučne zaúčtovaný doklad automat nikdy neprepíše. Hodnoty, ktoré na doklade už sú, majú\nvždy prednosť pred návrhom."
     },
     {
      "nadpis": "Stránka Na kontrolu",
-     "text": "<>\nV Účtovníctvo → Zaúčtovanie na kontrolu (/uctovnictvo/na-kontrolu) sú všetky\nnezaúčtované doklady s návrhom, zdrojom a dôvodom, prečo čakajú. Filtrujete podľa druhu,\nblokátora a zdroja, vyberiete a potvrdíte návrhy naraz.\nTlačidlo Navrhnúť zaúčtovanie pre nezaúčtované pripraví návrhy aj pre doklady\nspred zapnutia — nič pritom nezaúčtuje."
+     "text": "<>\nV Účtovníctvo → Zaúčtovanie na kontrolu (/uctovnictvo/na-kontrolu) sú\nvšetky nezaúčtované doklady s návrhom, zdrojom a dôvodom, prečo čakajú. Filtrujete podľa\ndruhu, blokátora a zdroja, vyberiete a potvrdíte návrhy naraz.\nTlačidlo Navrhnúť zaúčtovanie pre nezaúčtované pripraví návrhy aj pre\ndoklady spred zapnutia — nič pritom nezaúčtuje."
     },
     {
      "nadpis": "Na detaile dokladu",
-     "text": "<>\nAutomaticky zaúčtovaný doklad má štítok Zaúčtované automaticky · pravidlo X / zvyk 98 % /\nAI 91 % so zdôvodnením. Tlačidlom Zmeniť zaúčtovanie zrušíte, kódy\nupravíte a zaúčtujete znova. Nezaúčtovaný doklad ukáže návrh s blokátormi a tlačidlo\nPotvrdiť návrh.\nKeď rovnakú opravu u toho istého partnera urobíte druhýkrát, Faktero ponúkne\nvytvoriť pravidlo s predvyplnenými podmienkami. Každá oprava sa zapíše do\nhistórie dokladu."
+     "text": "<>\nAutomaticky zaúčtovaný doklad má štítok\nZaúčtované automaticky · pravidlo X / zvyk 98 % / AI 91 % so zdôvodnením.\nTlačidlom Zmeniť zaúčtovanie zrušíte, kódy upravíte a zaúčtujete znova.\nNezaúčtovaný doklad ukáže návrh s blokátormi a tlačidlo Potvrdiť návrh.\nKeď rovnakú opravu u toho istého partnera urobíte druhýkrát, Faktero ponúkne\nvytvoriť pravidlo s predvyplnenými podmienkami. Každá oprava sa zapíše do\nhistórie dokladu."
     },
     {
      "nadpis": "Bankové pohyby",
-     "text": "<>\nPohyby sa zaúčtujú pri vývoze výpisu do Pohody: pravidlo pre banku (účet, smer, protistrana)\nmá prednosť, spárovaný pohyb dostane predvolenú predkontáciu pre banku. Pri nespárovaných\npohyboch sa AI nepýta."
+     "text": "<>\nPohyby sa zaúčtujú pri vývoze výpisu do Pohody: pravidlo pre banku (účet, smer,\nprotistrana) má prednosť, spárovaný pohyb dostane predvolenú predkontáciu pre banku. Pri\nnespárovaných pohyboch sa AI nepýta."
     }
    ]
   },

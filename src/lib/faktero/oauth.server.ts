@@ -173,10 +173,19 @@ export async function overZiadost(z: ZiadostOAuth) {
 }
 
 /** Človek povolil prístup — vydá jednorazový kód a vráti adresu, kam ho poslať. */
+/** Interná značka v rozsahu kódu a obnovy: prístup ku všetkým firmám používateľa. */
+const SCOPE_UCET = `${SCOPE} ucet`;
+const jeUcet = (scope: unknown) =>
+  String(scope ?? "")
+    .split(/\s+/)
+    .includes("ucet");
+
 export async function vydajKod(
   z: ZiadostOAuth,
   companyId: string,
   userId: string,
+  /** Všetky firmy používateľa (kľúč účtu); `companyId` je potom len domovská firma. */
+  ucet = false,
 ): Promise<string> {
   await overZiadost(z);
   const kod = nahodny(32);
@@ -187,7 +196,7 @@ export async function vydajKod(
     user_id: userId,
     redirect_uri: z.redirect_uri,
     code_challenge: z.code_challenge,
-    scope: SCOPE,
+    scope: ucet ? SCOPE_UCET : SCOPE,
     expires_at: new Date(Date.now() + PLATNOST_KODU_S * 1000).toISOString(),
   });
   if (error) throw new OAuthChyba("server_error", error.message, 500);
@@ -210,6 +219,7 @@ async function vydajTokeny(o: {
   companyId: string;
   userId: string;
   nazovKlienta: string | null;
+  ucet?: boolean;
 }) {
   const pristup = `fk_mcp_${nahodny(32)}`;
   const { data: kluc, error } = await supabaseAdmin
@@ -222,6 +232,8 @@ async function vydajTokeny(o: {
       key_hash: hash(pristup),
       created_by: o.userId,
       expires_at: new Date(Date.now() + PLATNOST_TOKENU_S * 1000).toISOString(),
+      // Kľúč účtu — asistent vyberá firmu pri každom nástroji (list_companies).
+      ...(o.ucet ? { ucet_user_id: o.userId, firmy: null } : {}),
     } as any)
     .select("id")
     .single();
@@ -234,7 +246,7 @@ async function vydajTokeny(o: {
     company_id: o.companyId,
     user_id: o.userId,
     api_key_id: kluc.id,
-    scope: SCOPE,
+    scope: o.ucet ? SCOPE_UCET : SCOPE,
     expires_at: new Date(Date.now() + PLATNOST_REFRESH_S * 1000).toISOString(),
   });
   if (e2) throw new OAuthChyba("server_error", e2.message, 500);
@@ -317,6 +329,7 @@ export async function vymenToken(f: Record<string, string>) {
       companyId: zaznam.company_id,
       userId: zaznam.user_id,
       nazovKlienta: klient.client_name,
+      ucet: jeUcet(zaznam.scope),
     });
   }
 
@@ -361,19 +374,22 @@ export async function vymenToken(f: Record<string, string>) {
     }
     // Člen, ktorého z firmy odobrali alebo mu znížili rolu, si prístup obnoviť nesmie
     // (vydať ho smie len majiteľ alebo admin — rovnako pri obnove).
-    const { data: clen } = await supabaseAdmin
+    const ucet = jeUcet(stary.scope);
+    // Kľúč účtu: stačí, že je ešte niekde vlastník alebo admin (ktoré firmy, rieši každá požiadavka).
+    let q = supabaseAdmin
       .from("company_users")
-      .select("role")
-      .eq("company_id", stary.company_id)
+      .select("role, company_id")
       .eq("user_id", stary.user_id)
-      .maybeSingle();
-    if (!clen || !["owner", "admin"].includes(String(clen.role)))
-      throw new OAuthChyba("invalid_grant", "Používateľ už k firme nemá prístup.");
+      .in("role", ["owner", "admin"]);
+    if (!ucet) q = q.eq("company_id", stary.company_id);
+    const { data: clen } = await q.limit(1);
+    if (!clen?.length) throw new OAuthChyba("invalid_grant", "Používateľ už k firme nemá prístup.");
     return vydajTokeny({
       clientId,
-      companyId: stary.company_id,
+      companyId: ucet ? String(clen[0].company_id) : stary.company_id,
       userId: stary.user_id,
       nazovKlienta: klient.client_name,
+      ucet,
     });
   }
 

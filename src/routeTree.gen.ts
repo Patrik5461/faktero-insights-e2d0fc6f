@@ -263,6 +263,7 @@ import { Route as ApiPublicVerziaRouteImport } from './routes/api/public/verzia'
 import { Route as ApiV1SplatRouteImport } from './routes/api/v1/$'
 import { Route as ApiV1BankAccountsRouteImport } from './routes/api/v1/bank-accounts'
 import { Route as ApiV1BankTransactionsRouteImport } from './routes/api/v1/bank-transactions'
+import { Route as ApiV1CompaniesRouteImport } from './routes/api/v1/companies'
 import { Route as ApiV1CustomersRouteImport } from './routes/api/v1/customers'
 import { Route as ApiV1FuelRecordsRouteImport } from './routes/api/v1/fuel-records'
 import { Route as ApiV1InvoicesRouteImport } from './routes/api/v1/invoices'
@@ -1730,6 +1731,11 @@ const ApiV1BankTransactionsRoute = ApiV1BankTransactionsRouteImport.update({
   path: '/api/v1/bank-transactions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1CompaniesRoute = ApiV1CompaniesRouteImport.update({
+  id: '/api/v1/companies',
+  path: '/api/v1/companies',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1CustomersRoute = ApiV1CustomersRouteImport.update({
   id: '/api/v1/customers',
   path: '/api/v1/customers',
@@ -2480,6 +2486,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/v1/bank-accounts': typeof ApiV1BankAccountsRoute
   '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
+  '/api/v1/companies': typeof ApiV1CompaniesRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
   '/api/v1/invoices': typeof ApiV1InvoicesRouteWithChildren
@@ -2820,6 +2827,7 @@ export interface FileRoutesByTo {
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/v1/bank-accounts': typeof ApiV1BankAccountsRoute
   '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
+  '/api/v1/companies': typeof ApiV1CompaniesRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
   '/api/v1/invoices': typeof ApiV1InvoicesRouteWithChildren
@@ -3171,6 +3179,7 @@ export interface FileRoutesById {
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/v1/bank-accounts': typeof ApiV1BankAccountsRoute
   '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
+  '/api/v1/companies': typeof ApiV1CompaniesRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
   '/api/v1/invoices': typeof ApiV1InvoicesRouteWithChildren
@@ -3522,6 +3531,7 @@ export interface FileRouteTypes {
     | '/api/v1/$'
     | '/api/v1/bank-accounts'
     | '/api/v1/bank-transactions'
+    | '/api/v1/companies'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
     | '/api/v1/invoices'
@@ -3862,6 +3872,7 @@ export interface FileRouteTypes {
     | '/api/v1/$'
     | '/api/v1/bank-accounts'
     | '/api/v1/bank-transactions'
+    | '/api/v1/companies'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
     | '/api/v1/invoices'
@@ -4212,6 +4223,7 @@ export interface FileRouteTypes {
     | '/api/v1/$'
     | '/api/v1/bank-accounts'
     | '/api/v1/bank-transactions'
+    | '/api/v1/companies'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
     | '/api/v1/invoices'
@@ -4432,6 +4444,7 @@ export interface RootRouteChildren {
   ApiV1SplatRoute: typeof ApiV1SplatRoute
   ApiV1BankAccountsRoute: typeof ApiV1BankAccountsRoute
   ApiV1BankTransactionsRoute: typeof ApiV1BankTransactionsRoute
+  ApiV1CompaniesRoute: typeof ApiV1CompaniesRoute
   ApiV1CustomersRoute: typeof ApiV1CustomersRouteWithChildren
   ApiV1FuelRecordsRoute: typeof ApiV1FuelRecordsRoute
   ApiV1InvoicesRoute: typeof ApiV1InvoicesRouteWithChildren
@@ -6272,6 +6285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1BankTransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/companies': {
+      id: '/api/v1/companies'
+      path: '/api/v1/companies'
+      fullPath: '/api/v1/companies'
+      preLoaderRoute: typeof ApiV1CompaniesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/customers': {
       id: '/api/v1/customers'
       path: '/api/v1/customers'
@@ -7702,6 +7722,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1SplatRoute: ApiV1SplatRoute,
   ApiV1BankAccountsRoute: ApiV1BankAccountsRoute,
   ApiV1BankTransactionsRoute: ApiV1BankTransactionsRoute,
+  ApiV1CompaniesRoute: ApiV1CompaniesRoute,
   ApiV1CustomersRoute: ApiV1CustomersRouteWithChildren,
   ApiV1FuelRecordsRoute: ApiV1FuelRecordsRoute,
   ApiV1InvoicesRoute: ApiV1InvoicesRouteWithChildren,

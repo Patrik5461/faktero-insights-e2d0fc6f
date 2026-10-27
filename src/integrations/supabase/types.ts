@@ -397,6 +397,8 @@ export type Database = {
           prefix: string
           revoked_at: string | null
           expires_at: string | null
+          ucet_user_id: string | null
+          firmy: string[] | null
         }
         Insert: {
           company_id: string
@@ -410,6 +412,8 @@ export type Database = {
           prefix: string
           revoked_at?: string | null
           expires_at?: string | null
+          ucet_user_id?: string | null
+          firmy?: string[] | null
         }
         Update: {
           company_id?: string
@@ -423,6 +427,8 @@ export type Database = {
           prefix?: string
           revoked_at?: string | null
           expires_at?: string | null
+          ucet_user_id?: string | null
+          firmy?: string[] | null
         }
         Relationships: [
           {
@@ -10606,6 +10612,7 @@ export type Database = {
           }
         ]
       }
+
 
 
     }

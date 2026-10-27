@@ -55,13 +55,22 @@ export const oauthNahladFn = createServerFn({ method: "POST" })
 
 export const oauthSchvalFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: unknown) => z.object({ ziadost: Ziadost, company_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) =>
+    // „*“ = všetky firmy, kde je človek vlastník alebo správca (kľúč účtu).
+    z
+      .object({ ziadost: Ziadost, company_id: z.union([z.string().uuid(), z.literal("*")]) })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const firmy = await spravovaneFirmy((context as any).supabase, (context as any).userId);
+    const { vydajKod } = await import("./oauth.server");
+    if (data.company_id === "*") {
+      if (!firmy.length) throw new Error("Nespravujete žiadnu firmu.");
+      return { url: await vydajKod(data.ziadost, firmy[0].id, (context as any).userId, true) };
+    }
     if (!firmy.some((f) => f.id === data.company_id)) {
       throw new Error("Prístup k firme môže povoliť len jej majiteľ alebo správca.");
     }
-    const { vydajKod } = await import("./oauth.server");
     return { url: await vydajKod(data.ziadost, data.company_id, (context as any).userId) };
   });
 

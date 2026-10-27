@@ -177,7 +177,20 @@ function Autorizacia() {
                       {f.nazov}
                     </option>
                   ))}
+                  {/* Kľúč účtu — asistent si firmu vyberie pri každej otázke. */}
+                  {stav.firmy.length > 1 && (
+                    <option value="*">
+                      {t("Všetky moje firmy ({n})", { n: stav.firmy.length })}
+                    </option>
+                  )}
                 </select>
+                {firma === "*" && (
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {t(
+                      "Asistent uvidí všetky firmy, kde ste vlastník alebo správca, aj tie, ktoré pribudnú. Pri otázke sa spýta, o ktorú firmu ide.",
+                    )}
+                  </span>
+                )}
               </label>
             ) : (
               <p className="mt-4 rounded-md bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">

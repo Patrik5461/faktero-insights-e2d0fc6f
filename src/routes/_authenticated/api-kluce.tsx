@@ -5,7 +5,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { Building2, Copy, Plus, Trash2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { firmyPreKlucUctuFn, vytvorKlucUctuFn } from "@/lib/faktero/api-kluce.functions";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 
@@ -34,6 +37,7 @@ function ApiKeysPage() {
   const { t } = useT();
   const [keys, setKeys] = useState<any[]>([]);
   const [revealed, setRevealed] = useState<{ id: string; plaintext: string } | null>(null);
+  const [kluceUctu, setKluceUctu] = useState(false);
 
   async function reload() {
     const cid = getActiveCompanyId();
@@ -91,7 +95,13 @@ function ApiKeysPage() {
         title={t("API kľúče")}
         description={t("Použite Bearer kľúč v hlavičke Authorization.")}
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setKluceUctu(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
+            >
+              <Building2 className="h-4 w-4" /> {t("Kľúč pre viac firiem")}
+            </button>
             <button
               onClick={() => create("test")}
               className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
@@ -160,6 +170,14 @@ function ApiKeysPage() {
                     className={`p-3 font-medium ${k.revoked_at ? "text-muted-foreground line-through" : ""}`}
                   >
                     {k.name}
+                    {k.ucet_user_id && (
+                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-normal text-muted-foreground">
+                        <Building2 className="h-3 w-3" />
+                        {Array.isArray(k.firmy) && k.firmy.length
+                          ? t("{n} firiem", { n: k.firmy.length })
+                          : t("všetky firmy")}
+                      </span>
+                    )}
                   </td>
                   <td className="p-3">
                     <span
@@ -194,6 +212,17 @@ function ApiKeysPage() {
           </table>
         </div>
         <div className="mt-6 rounded-xl border border-border bg-card p-4 text-sm">
+          <div className="font-medium">{t("Kľúč pre viac firiem")}</div>
+          <p className="mt-1 text-muted-foreground">
+            {t(
+              "Jeden kľúč pre všetky firmy, ktoré spravujete (ste vlastník alebo admin) — napríklad pre účtovnú kanceláriu. Firmu vyberiete v každej požiadavke hlavičkou",
+            )}{" "}
+            <code className="font-mono text-foreground">X-Company</code>{" "}
+            {t("(id alebo IČO); zoznam firiem vráti")}{" "}
+            <code className="font-mono text-foreground">GET /api/v1/companies</code>.
+          </p>
+        </div>
+        <div className="mt-4 rounded-xl border border-border bg-card p-4 text-sm">
           <div className="font-medium">{t("Napojenie AI asistenta (MCP)")}</div>
           <p className="mt-1 text-muted-foreground">
             {t(
@@ -206,6 +235,143 @@ function ApiKeysPage() {
           </p>
         </div>
       </PageBody>
+      {kluceUctu && (
+        <KlucUctuOkno
+          onClose={() => setKluceUctu(false)}
+          onHotovo={(r) => {
+            setKluceUctu(false);
+            setRevealed(r);
+            reload();
+          }}
+        />
+      )}
     </>
+  );
+}
+
+/** Okno: kľúč pre všetky moje firmy alebo len pre vybrané. */
+function KlucUctuOkno({
+  onClose,
+  onHotovo,
+}: {
+  onClose: () => void;
+  onHotovo: (r: { id: string; plaintext: string }) => void;
+}) {
+  const { t } = useT();
+  useZatvorNaEscape(onClose);
+  const nacitaj = useServerFn(firmyPreKlucUctuFn);
+  const vytvor = useServerFn(vytvorKlucUctuFn);
+  const [firmy, setFirmy] = useState<{ id: string; name: string; ico: string | null }[] | null>(null);
+  const [vsetky, setVsetky] = useState(true);
+  const [vybrane, setVybrane] = useState<Set<string>>(new Set());
+  const [mode, setMode] = useState<"live" | "test">("live");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    nacitaj()
+      .then((r) => setFirmy(r.firmy))
+      .catch(() => setFirmy([]));
+  }, [nacitaj]);
+
+  async function vytvorit() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    if (!vsetky && !vybrane.size) return toast.error(t("Vyberte aspoň jednu firmu."));
+    setBusy(true);
+    try {
+      const r = await vytvor({
+        data: { company_id: cid, mode, firmy: vsetky ? null : [...vybrane] },
+      });
+      onHotovo(r);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="kluc-uctu-nadpis"
+        className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="kluc-uctu-nadpis" className="text-lg font-semibold">
+          {t("Kľúč pre viac firiem")}
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t("Kľúč platí pre firmy, kde ste vlastník alebo admin. Firmu vyberiete v každej požiadavke hlavičkou X-Company.")}
+        </p>
+        <fieldset className="mt-4 space-y-2 text-sm">
+          <legend className="sr-only">{t("Pre ktoré firmy")}</legend>
+          <label className="flex items-start gap-2">
+            <input type="radio" checked={vsetky} onChange={() => setVsetky(true)} className="mt-1" />
+            <span>
+              <strong>{t("Všetky moje firmy")}</strong>
+              <span className="block text-xs text-muted-foreground">
+                {t("Aj tie, ktoré pribudnú neskôr.")}
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-2">
+            <input type="radio" checked={!vsetky} onChange={() => setVsetky(false)} className="mt-1" />
+            <span>
+              <strong>{t("Len vybrané firmy")}</strong>
+            </span>
+          </label>
+        </fieldset>
+        {!vsetky && (
+          <div className="mt-2 max-h-56 overflow-y-auto rounded-md border border-border p-2 text-sm">
+            {firmy === null ? (
+              <div className="p-2 text-muted-foreground">{t("Načítavam…")}</div>
+            ) : firmy.length === 0 ? (
+              <div className="p-2 text-muted-foreground">{t("Nespravujete žiadnu firmu.")}</div>
+            ) : (
+              firmy.map((f) => (
+                <label key={f.id} className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-secondary">
+                  <input
+                    type="checkbox"
+                    checked={vybrane.has(f.id)}
+                    onChange={() => {
+                      const n = new Set(vybrane);
+                      if (n.has(f.id)) n.delete(f.id);
+                      else n.add(f.id);
+                      setVybrane(n);
+                    }}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                  {f.ico && <span className="font-mono text-xs text-muted-foreground">{f.ico}</span>}
+                </label>
+              ))
+            )}
+          </div>
+        )}
+        <label className="mt-4 block text-sm">
+          <span className="text-xs text-muted-foreground">{t("Režim")}</span>
+          <select
+            value={mode}
+            onChange={(e) => setMode(e.target.value as "live" | "test")}
+            className="mt-1 block h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+          >
+            <option value="live">{t("Live — ostré doklady")}</option>
+            <option value="test">{t("Test — len čítanie")}</option>
+          </select>
+        </label>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
+            {t("Zrušiť")}
+          </button>
+          <button
+            onClick={() => void vytvorit()}
+            disabled={busy}
+            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {t("Vytvoriť kľúč")}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

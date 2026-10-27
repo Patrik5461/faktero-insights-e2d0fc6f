@@ -3,6 +3,8 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 export type ApiCtx = {
   supabase: typeof supabaseAdmin;
   company_id: string;
+  /** Kľúč účtu (viac firiem) — firma prišla z hlavičky X-Company alebo ?company=. */
+  ucet: boolean;
   api_key_id: string;
   mode: "test" | "live";
   request: Request;
@@ -24,10 +26,118 @@ function jsonResp(status: number, body: any) {
     headers: {
       "content-type": "application/json; charset=utf-8",
       "access-control-allow-origin": "*",
-      "access-control-allow-headers": "authorization, content-type",
+      "access-control-allow-headers": "authorization, content-type, x-company",
       "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
     },
   });
+}
+
+type RiadokKluca = {
+  id: string;
+  company_id: string;
+  ucet_user_id?: string | null;
+  firmy?: string[] | null;
+};
+
+export type FirmaKluca = {
+  id: string;
+  name: string;
+  ico: string | null;
+  ic_dph: string | null;
+  country: string | null;
+};
+
+/**
+ * Firmy, ku ktorým kľúč smie. Kľúč firmy = jedna firma. Kľúč účtu = firmy,
+ * kde je jeho majiteľ vlastník alebo admin (správa API je len pre nich),
+ * prípadne zúžené zoznamom `firmy`.
+ */
+export async function firmyKluca(k: RiadokKluca): Promise<FirmaKluca[]> {
+  if (!k.ucet_user_id) {
+    const { data } = await supabaseAdmin
+      .from("companies")
+      .select("id, name, ico, ic_dph, country")
+      .eq("id", k.company_id)
+      .maybeSingle();
+    return data ? [data as FirmaKluca] : [];
+  }
+  const { data: clen } = await supabaseAdmin
+    .from("company_users")
+    .select("company_id")
+    .eq("user_id", k.ucet_user_id)
+    .in("role", ["owner", "admin"]);
+  let ids = ((clen ?? []) as any[]).map((r) => String(r.company_id));
+  if (Array.isArray(k.firmy) && k.firmy.length) ids = ids.filter((id) => k.firmy!.includes(id));
+  if (!ids.length) return [];
+  const { data } = await supabaseAdmin
+    .from("companies")
+    .select("id, name, ico, ic_dph, country")
+    .in("id", ids)
+    .order("name");
+  return (data ?? []) as FirmaKluca[];
+}
+
+/** Firma z požiadavky: hlavička X-Company alebo ?company= (UUID alebo IČO). */
+export function firmaZPoziadavky(request: Request): string | null {
+  const h = request.headers.get("x-company")?.trim();
+  if (h) return h;
+  const q = new URL(request.url).searchParams.get("company")?.trim();
+  return q || null;
+}
+
+export type VyberFirmy =
+  | { ok: true; company_id: string; ucet: boolean }
+  | { ok: false; status: number; code: string; message: string; firmy?: FirmaKluca[] };
+
+/**
+ * Vyberie firmu požiadavky. Kľúč firmy ide vždy na svoju firmu (iná v
+ * hlavičke je chyba). Kľúč účtu potrebuje firmu z požiadavky — okrem
+ * prípadu, keď smie len k jednej.
+ */
+export async function vyberFirmu(k: RiadokKluca, request: Request): Promise<VyberFirmy> {
+  const ziadana = firmaZPoziadavky(request);
+  const ico = (v: string) => v.replace(/\s/g, "");
+  if (!k.ucet_user_id) {
+    if (ziadana && ziadana !== k.company_id) {
+      const firmy = await firmyKluca(k);
+      if (!firmy.some((f) => f.id === ziadana || (f.ico && ico(f.ico) === ico(ziadana))))
+        return {
+          ok: false,
+          status: 403,
+          code: "company_forbidden",
+          message: "Tento kľúč patrí inej firme.",
+        };
+    }
+    return { ok: true, company_id: k.company_id, ucet: false };
+  }
+  const firmy = await firmyKluca(k);
+  if (!firmy.length)
+    return {
+      ok: false,
+      status: 403,
+      code: "no_companies",
+      message: "Kľúč účtu už nemá prístup k žiadnej firme.",
+    };
+  if (!ziadana) {
+    if (firmy.length === 1) return { ok: true, company_id: firmy[0].id, ucet: true };
+    return {
+      ok: false,
+      status: 400,
+      code: "company_required",
+      message:
+        "Kľúč účtu platí pre viac firiem — uveďte firmu v hlavičke X-Company (id alebo IČO). Zoznam: GET /api/v1/companies.",
+      firmy,
+    };
+  }
+  const f = firmy.find((x) => x.id === ziadana || (x.ico && ico(x.ico) === ico(ziadana)));
+  if (!f)
+    return {
+      ok: false,
+      status: 403,
+      code: "company_forbidden",
+      message: "K tejto firme kľúč nemá prístup (musíte byť jej vlastník alebo admin).",
+    };
+  return { ok: true, company_id: f.id, ucet: true };
 }
 
 export async function handleApi(
@@ -85,7 +195,7 @@ export async function handleApi(
 
   const { data: keyRow } = await supabaseAdmin
     .from("api_keys")
-    .select("id, company_id, mode, revoked_at, expires_at")
+    .select("id, company_id, mode, revoked_at, expires_at, ucet_user_id, firmy")
     .eq("key_hash", key_hash)
     .maybeSingle();
 
@@ -139,6 +249,48 @@ export async function handleApi(
     return jsonResp(403, body);
   }
 
+  /*
+    Firma požiadavky. Zoznam firiem kľúča (/api/v1/companies) ju nepotrebuje;
+    ostatné endpointy dostanú v ctx.company_id tú vybranú.
+  */
+  let firmaPoziadavky = keyRow.company_id;
+  let jeUcet = false;
+  if (path.replace(/\/+$/, "") !== "/api/v1/companies") {
+    const v = await vyberFirmu(keyRow as RiadokKluca, request);
+    if (!v.ok) {
+      const body = {
+        error: {
+          code: v.code,
+          message: v.message,
+          ...(v.firmy
+            ? {
+                details: {
+                  companies: v.firmy.map((f) => ({ id: f.id, name: f.name, ico: f.ico })),
+                },
+              }
+            : {}),
+        },
+      };
+      await logRequest({
+        company_id: keyRow.company_id,
+        api_key_id: keyRow.id,
+        method,
+        path,
+        status: v.status,
+        requestBody,
+        responseBody: body,
+        userAgent,
+        ip,
+        duration: Date.now() - started,
+      });
+      return jsonResp(v.status, body);
+    }
+    firmaPoziadavky = v.company_id;
+    jeUcet = v.ucet;
+  } else {
+    jeUcet = Boolean((keyRow as any).ucet_user_id);
+  }
+
   // Rate limit: 300 requests / 5 min per API key (uses api_logs as the counter store)
   const windowStart = new Date(Date.now() - 5 * 60_000).toISOString();
   const { count: recentCount } = await supabaseAdmin
@@ -159,7 +311,7 @@ export async function handleApi(
       headers: {
         "content-type": "application/json; charset=utf-8",
         "access-control-allow-origin": "*",
-        "access-control-allow-headers": "authorization, content-type",
+        "access-control-allow-headers": "authorization, content-type, x-company",
         "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
         "retry-after": String(retryAfterSec),
         "x-ratelimit-limit": "300",
@@ -185,7 +337,8 @@ export async function handleApi(
   try {
     result = await fn({
       supabase: supabaseAdmin,
-      company_id: keyRow.company_id,
+      company_id: firmaPoziadavky,
+      ucet: jeUcet,
       api_key_id: keyRow.id,
       mode: keyRow.mode as "test" | "live",
       request,
@@ -207,7 +360,7 @@ export async function handleApi(
     .update({ last_used_at: new Date().toISOString() })
     .eq("id", keyRow.id);
   await logRequest({
-    company_id: keyRow.company_id,
+    company_id: firmaPoziadavky,
     api_key_id: keyRow.id,
     method,
     path,
@@ -282,18 +435,33 @@ export function skratDoDennika(telo: any): any {
  */
 export async function overApiKluc(
   request: Request,
-): Promise<{ company_id: string; api_key_id: string; mode: "test" | "live" } | null> {
+  volby: { bezFirmy?: boolean } = {},
+): Promise<{
+  company_id: string;
+  api_key_id: string;
+  mode: "test" | "live";
+  /** Kľúč účtu — firmy, ku ktorým smie (pri `bezFirmy` sa firma nevyberá). */
+  ucet: boolean;
+  firmy: FirmaKluca[];
+} | null> {
   const auth = request.headers.get("authorization") ?? "";
   if (!auth.startsWith("Bearer ")) return null;
   const key_hash = await sha256Hex(auth.slice(7).trim());
 
   const { data } = await supabaseAdmin
     .from("api_keys")
-    .select("id, company_id, mode, revoked_at, expires_at")
+    .select("id, company_id, mode, revoked_at, expires_at, ucet_user_id, firmy")
     .eq("key_hash", key_hash)
     .maybeSingle();
   if (!data || data.revoked_at) return null;
   if ((data as any).expires_at && Date.parse((data as any).expires_at) <= Date.now()) return null;
+  const ucet = Boolean((data as any).ucet_user_id);
+  let companyId = data.company_id;
+  if (!volby.bezFirmy) {
+    const v = await vyberFirmu(data as RiadokKluca, request);
+    if (!v.ok) return null;
+    companyId = v.company_id;
+  }
 
   void supabaseAdmin
     .from("api_keys")
@@ -301,9 +469,11 @@ export async function overApiKluc(
     .eq("id", data.id);
 
   return {
-    company_id: data.company_id,
+    company_id: companyId,
     api_key_id: data.id,
     mode: data.mode as "test" | "live",
+    ucet,
+    firmy: ucet ? await firmyKluca(data as RiadokKluca) : [],
   };
 }
 

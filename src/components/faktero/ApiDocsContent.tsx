@@ -293,6 +293,38 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
                 "Kľúč nikdy nezdieľajte ani neukladajte do verejných repozitárov. Stratený kľúč okamžite revokujte v sekcii API kľúče.",
               )}
             </p>
+            <h3 className="mt-6 font-semibold">{t("Kľúč pre viac firiem")}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t(
+                "Účtovná kancelária či integrátor nepotrebuje kľúč za každú firmu. Kľúč pre viac firiem (API kľúče → Kľúč pre viac firiem) platí pre všetky firmy, kde ste vlastník alebo admin, alebo len pre vybrané. Firmu vyberiete v každej požiadavke hlavičkou",
+              )}{" "}
+              <code className="font-mono">X-Company</code>{" "}
+              {t("(id firmy alebo IČO) alebo parametrom")}{" "}
+              <code className="font-mono">?company=</code>.{" "}
+              {t(
+                "Bez nej vráti API chybu company_required so zoznamom firiem — okrem kľúča, ktorý smie len k jednej firme.",
+              )}
+            </p>
+            <div className="mt-3">
+              <CodeBlock
+                lang="cURL"
+                code={`# Firmy, ku ktorým kľúč smie
+curl https://faktero.sk/api/v1/companies \\
+  -H "Authorization: Bearer fk_live_..."
+
+# Faktúry konkrétnej firmy (podľa IČO)
+curl https://faktero.sk/api/v1/invoices \\
+  -H "Authorization: Bearer fk_live_..." \\
+  -H "X-Company: 12345678"`}
+              />
+            </div>
+            <ul className="mt-3 space-y-1 text-sm">
+              <Endpoint
+                method="GET"
+                path="/api/v1/companies"
+                desc="Firmy, ku ktorým kľúč smie (id, názov, IČO)"
+              />
+            </ul>
           </section>
           <section
             id="test-live"
@@ -756,7 +788,7 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
             <h3 className="mt-5 font-semibold">{t("Claude.ai a ChatGPT")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t(
-                "Pridajte vlastný konektor (v Claude: Nastavenia → Konektory, v ChatGPT: Nastavenia → Aplikácie a konektory) a zadajte len adresu servera. Kľúč netreba — otvorí sa Faktero, prihlásite sa, vyberiete firmu a potvrdíte prístup. Prístup sa objaví medzi API kľúčmi ako „AI asistent (MCP)“ a zrušíte ho tam jedným klikom.",
+                "Pridajte vlastný konektor (v Claude: Nastavenia → Konektory, v ChatGPT: Nastavenia → Aplikácie a konektory) a zadajte len adresu servera. Kľúč netreba — otvorí sa Faktero, prihlásite sa, vyberiete firmu a potvrdíte prístup. Prístup sa objaví medzi API kľúčmi ako „AI asistent (MCP)“ a zrušíte ho tam jedným klikom. Pri povolení môžete vybrať aj „Všetky moje firmy“ — asistent sa potom pri otázke spýta, o ktorú firmu ide.",
               )}
             </p>
             <CodeBlock lang="text" code={`https://www.faktero.sk/api/mcp`} />
