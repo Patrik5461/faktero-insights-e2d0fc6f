@@ -14,6 +14,7 @@ import { rozpisPrijatej } from "./prijate-do-pohody";
 import {
   hraniceObdobia,
   odvodRezimPrijatej,
+  jeCudziaDph,
   riadokZoSum,
   type Obdobie,
   type PrijataFaktura,
@@ -444,13 +445,15 @@ export async function nacitajVstup(
       });
     }
     const tuzemske = prenesene.length ? rozpisP.filter((x) => !x.pdp) : null;
+    const domaciKod = String(krajinaDane((firmaKody as any)?.country));
     const rezimP =
-      (p.dph_rezim as PrijataFaktura["rezim"]) ??
-      odvodRezimPrijatej(
-        p.supplier_ic_dph,
-        dan,
-        String(krajinaDane((firmaKody as any)?.country)) === "DE" ? "DE" : "SK",
-      );
+      (p.dph_rezim as PrijataFaktura["rezim"]) ?? odvodRezimPrijatej(p.supplier_ic_dph, dan, domaciKod);
+    if (!p.dph_rezim && jeCudziaDph(p.supplier_ic_dph, dan, domaciKod)) {
+      vytky.push({
+        doklad: p.invoice_number ?? p.supplier_name ?? "prijatá faktúra",
+        text: `Faktúra od ${p.supplier_ic_dph} je s DPH iného štátu — do priznania nepatrí (vracia sa cez portál toho štátu). Ak ide o prenesenie, nastavte to na faktúre.`,
+      });
+    }
     // Celá prenesená faktúra už ide vyššie; druhý, prázdny záznam by KV zdvojil.
     if (tuzemske && !tuzemske.length) continue;
     prijate.push({
@@ -571,7 +574,8 @@ export async function nacitajVstup(
       return {
         cislo: String(p.invoice_number ?? ""),
         dodavatelIcDph: p.supplier_ic_dph,
-        rezim: ((p.dph_rezim as PrijataFaktura["rezim"]) ?? odvodRezimPrijatej(p.supplier_ic_dph, dan)) as PrijataFaktura["rezim"],
+        rezim: ((p.dph_rezim as PrijataFaktura["rezim"]) ??
+          odvodRezimPrijatej(p.supplier_ic_dph, dan, String(krajinaDane((firmaKody as any)?.country)))) as PrijataFaktura["rezim"],
         odpocet: p.odpocet !== false,
         dobropis: Boolean(p.opravuje_cislo) || zaklad < 0,
         splatnost: String(p.povodna_splatnost || p.due_date),

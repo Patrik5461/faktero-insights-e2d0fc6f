@@ -165,3 +165,59 @@ describe("opravné doklady a obdobie", () => {
     expect(sep.vstup.prijate).toHaveLength(0);
   });
 });
+
+describe("odvodRezimPrijatej podľa krajiny firmy", () => {
+  it("česká firma: český dodávateľ s DPH je tuzemský odpočet, nie prenesenie § 92a", () => {
+    expect(odvodRezimPrijatej("CZ25097563", 210, "CZ")).toBe("tuzemsko");
+    expect(odvodRezimPrijatej("CZ25097563", 0, "CZ")).toBe("bez_dane");
+  });
+  it("slovenská firma: domáci dodávateľ s DPH tuzemsko, bez dane mimo výkazu", () => {
+    expect(odvodRezimPrijatej("SK2021987654", 23)).toBe("tuzemsko");
+    expect(odvodRezimPrijatej("SK2021987654", 0)).toBe("bez_dane");
+  });
+  it("cudzia DPH z EÚ (rakúsky hotel) do priznania nepatrí", async () => {
+    const { jeCudziaDph } = await import("./dph-vykazy");
+    expect(odvodRezimPrijatej("ATU12345678", 20, "SK")).toBe("bez_dane");
+    expect(odvodRezimPrijatej("SK2021987654", 23, "CZ")).toBe("bez_dane");
+    expect(jeCudziaDph("ATU12345678", 20, "SK")).toBe(true);
+    expect(jeCudziaDph("SK2021987654", 23, "SK")).toBe(false);
+    expect(jeCudziaDph("IE6388047V", 0, "SK")).toBe(false);
+  });
+  it("služba z EÚ bez dane sa samozdaní", () => {
+    expect(odvodRezimPrijatej("IE6388047V", 0, "SK")).toBe("samozdanenie");
+    expect(odvodRezimPrijatej("DE123456789", 0, "CZ")).toBe("samozdanenie");
+  });
+  it("nemecká firma: nemecký dodávateľ s daňou je tuzemsko", () => {
+    expect(odvodRezimPrijatej("DE123456789", 19, "DE")).toBe("tuzemsko");
+  });
+});
+
+describe("česká firma — prijatá faktúra od českého dodávateľa", () => {
+  it("ide do KH ako B.2 (tuzemský odpočet), nie ako B.1 prenesenie § 92a", async () => {
+    const { kontrolniHlaseni } = await import("./cz-dph");
+    const { vstup } = await nacitajVstup(
+      klient({
+        companies: [{ country: "CZ" }],
+        purchase_invoices: [
+          {
+            id: "pcz",
+            invoice_number: "FV-2026-114",
+            supplier_ic_dph: "CZ25097563",
+            delivery_date: "2026-09-11",
+            currency: "CZK",
+            amount_without_vat: 20000,
+            vat_amount: 4200,
+            amount_total: 24200,
+            type: "regular",
+          },
+        ],
+      }) as any,
+      "f-cz",
+      obdobie,
+    );
+    expect(vstup.prijate.map((p) => p.rezim)).toEqual(["tuzemsko"]);
+    const kh = kontrolniHlaseni(vstup, { vlastneDic: "CZ12345678" });
+    expect(kh.b1).toHaveLength(0);
+    expect(kh.b2).toHaveLength(1);
+  });
+});

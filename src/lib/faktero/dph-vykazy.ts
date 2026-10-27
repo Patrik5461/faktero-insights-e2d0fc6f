@@ -791,10 +791,10 @@ export function odvodRezimPrijatej(
   dodavatelIcDph: string | null | undefined,
   danSpolu: number,
   /**
-   * Predpona tuzemského IČ DPH. Nemecká firma ju má „DE“ — inak by sa
-   * faktúra od nemeckého dodávateľa s daňou tvárila ako samozdanenie.
-   * Česká firma ostáva pri „SK“ zámerne: jej výkazy rátajú s tým, že český
-   * dodávateľ bez dane je prenesenie § 92a.
+   * Predpona tuzemského IČ DPH podľa krajiny firmy (SK, CZ, DE). Česká firma
+   * dostávala „SK“, takže český dodávateľ s daňou vyzeral ako zahraničný a
+   * faktúra skončila ako prenesenie § 92a. Prenesenie sa pozná z príznaku na
+   * faktúre a položkách (`rozpisPrijatej` → pdp), nie z odhadu tu.
    */
   domaci: string = "SK",
 ): PrijataFaktura["rezim"] {
@@ -803,9 +803,33 @@ export function odvodRezimPrijatej(
     .toUpperCase();
   // Dobropis nesie zápornú daň — aj ten je tuzemská faktúra (oprava odpočtu, C.2).
   const sDanou = Math.abs(Number(danSpolu) || 0) > 0;
-  if (ic.startsWith(domaci)) return sDanou ? "tuzemsko" : "bez_dane";
-  if (/^[A-Z]{2}/.test(ic)) return "samozdanenie";
+  const dom = String(domaci || "SK").toUpperCase();
+  if (ic.startsWith(dom)) return sDanou ? "tuzemsko" : "bez_dane";
+  if (/^[A-Z]{2}/.test(ic)) {
+    /*
+      Cudzia DPH (rakúsky hotel, nemecké palivo) do domáceho priznania
+      nepatrí — vracia sa cez portál toho štátu. Bez dane je to služba
+      z EÚ, ktorú odberateľ samozdaní.
+    */
+    return sDanou ? "bez_dane" : "samozdanenie";
+  }
   return sDanou ? "tuzemsko" : "bez_dane";
+}
+
+/** Faktúra s DPH iného štátu — do priznania nepatrí, výkaz na ňu upozorní. */
+export function jeCudziaDph(
+  dodavatelIcDph: string | null | undefined,
+  danSpolu: number,
+  domaci: string = "SK",
+): boolean {
+  const ic = String(dodavatelIcDph ?? "")
+    .replace(/\s/g, "")
+    .toUpperCase();
+  return (
+    /^[A-Z]{2}/.test(ic) &&
+    !ic.startsWith(String(domaci || "SK").toUpperCase()) &&
+    Math.abs(Number(danSpolu) || 0) > 0
+  );
 }
 
 /**
