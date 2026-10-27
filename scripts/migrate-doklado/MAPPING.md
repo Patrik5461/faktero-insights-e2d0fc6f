@@ -211,3 +211,12 @@ rad **nastaví** (šablóna + `start_from` za najvyšším prenesenými číslom
   rad `FA-{YYYY}{NNN}`, ďalšie `FA-2026011`.
 - MaxiTicket, s.r.o. (53251580) od 1. 10. 2026: 34 dokladov (21 prijatých vrátane 2 zálohových
   a 1 daňového dokladu k platbe, 13 bločkov), 9 volaní API; bloček s DPH 23 % + 19 % sedí na cent.
+
+## Zaúčtované ostáva zaúčtované
+
+Doklad je vo Fakteri **zaúčtovaný** (`zauctovane_at`, prijatá faktúra `status = 'booked'`), keď
+má v Doklade predkontáciu či členenie DPH **alebo** bol v Doklade exportovaný do účtovníctva.
+Exportovaný navyše dostane `exported_at` (bloček `status = 'exported'`, vystavená faktúra aj riadok
+v `export_logs`), takže nie je medzi nezaúčtovanými ani nečaká na odovzdanie do Pohody. Dry-run
+vypíše počet zaúčtovaných a nezaúčtovaných po druhoch. Overené: bager expres 11/11, MaxiTicket
+(od 1. 10.) 34/34 — z toho 10 neexportovaných, zaúčtovaných podľa predkontácie.

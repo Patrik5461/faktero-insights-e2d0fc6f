@@ -28,6 +28,7 @@ import { DokladoKlient, iso, type DokladAleboFaktura, type FakturaV2 } from "./d
 import {
   blocek,
   druhDokladu,
+  jeZauctovany,
   klucPartnera,
   lenCislice,
   menoSuboru,
@@ -421,7 +422,7 @@ async function main() {
     const ex = firma ? await nacitajExistujuce(db, firma.id, sId) : null;
 
     if (o.dryRun) {
-      await dryRunFirmy({ doklado, ico, podlaDruhu, ex, s, teraz, dnes });
+      await dryRunFirmy({ doklado, ico, podlaDruhu, exportovane, ex, s, teraz, dnes });
       continue;
     }
     if (!firma || !ex) continue;
@@ -451,12 +452,30 @@ async function dryRunFirmy(a: {
   doklado: DokladoKlient;
   ico: string;
   podlaDruhu: Map<Druh, DokladAleboFaktura[]>;
+  exportovane: Set<string>;
   ex: Existujuce | null;
   s: Suhrn;
   teraz: string;
   dnes: string;
 }) {
   const { podlaDruhu, ex, s } = a;
+  // Zaúčtované v Doklade musí prísť zaúčtované — tu je to vidieť po druhoch.
+  for (const dr of ["vystavena", "prijata", "blocek"] as const) {
+    const zoz = podlaDruhu.get(dr) ?? [];
+    if (!zoz.length) continue;
+    let zauct = 0;
+    let lenExportom = 0;
+    for (const d of zoz) {
+      const exp = a.exportovane.has(String(d.documentId));
+      if (jeZauctovany(d, exp)) zauct++;
+      if (exp && !jeZauctovany(d, false)) lenExportom++;
+    }
+    log(
+      `  ${dr}: zaúčtovaných ${zauct}/${zoz.length}` +
+        (lenExportom ? ` (z toho ${lenExportom} bez predkontácie, zaúčtované podľa exportu)` : "") +
+        (zoz.length - zauct ? `, nezaúčtovaných ${zoz.length - zauct}` : ""),
+    );
+  }
   const partneri = new Set<string>();
   const noviPartneri = new Set<string>();
   for (const dr of ["vystavena", "prijata", "blocek"] as const) {
@@ -529,12 +548,13 @@ async function dryRunFirmy(a: {
     } catch (e) {
       log(`  detail ${d0.documentId}: ${(e as Error).message}`);
     }
+    const ov = { ...a, exportovany: a.exportovane.has(String(d0.documentId)) };
     const mapa =
       dr === "vystavena"
-        ? vystavena(d as FakturaV2, a)
+        ? vystavena(d as FakturaV2, ov)
         : dr === "prijata"
-          ? prijata(d as FakturaV2, a)
-          : blocek(d, a);
+          ? prijata(d as FakturaV2, ov)
+          : blocek(d, ov);
     let subory = "";
     try {
       if (dr === "vystavena") {
@@ -680,7 +700,7 @@ async function zapisFirmy(a: {
         s.preskocene++;
         continue;
       }
-      const m = vystavena(z as FakturaV2, o);
+      const m = vystavena(z as FakturaV2, { ...o, exportovany: a.exportovane.has(id) });
       const cislo = m.hlavicka.invoice_number;
       const uz = ex.faktury.get(cislo);
       if (uz) {
@@ -759,7 +779,7 @@ async function zapisFirmy(a: {
         s.preskocene++;
         continue;
       }
-      const m = prijata(z as FakturaV2, o);
+      const m = prijata(z as FakturaV2, { ...o, exportovany: a.exportovane.has(id) });
       const k = klucPrijatej(m.hlavicka.supplier_ico, m.hlavicka.invoice_number);
       const uz = ex.prijate.get(k);
       if (uz) {
@@ -801,7 +821,7 @@ async function zapisFirmy(a: {
         s.preskocene++;
         continue;
       }
-      const m = blocek(z, o);
+      const m = blocek(z, { ...o, exportovany: a.exportovane.has(id) });
       const k = klucBlocku(m.supplier_ico, m.document_number, m.issue_date, m.total_amount);
       const uz = ex.blocky.get(k);
       if (uz) {

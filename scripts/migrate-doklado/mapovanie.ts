@@ -317,7 +317,20 @@ function zauctovanie(d: DokladAleboFaktura) {
 /** Kladný doklad sa pri dobropise otočí; záporný ostane, ako ho Doklado poslal. */
 const zaporne = (n: number) => -Math.abs(n);
 
-export function vystavena(d: FakturaV2, o: { teraz: string; dnes: string }) {
+/**
+ * `exportovany` = doklad bol v Doklade odovzdaný do účtovníctva. Taký je
+ * zaúčtovaný vždy — aj keď v Doklade nemá vyplnenú predkontáciu — a vo
+ * Fakteri nesmie skončiť medzi nezaúčtovanými ani ísť do Pohody druhýkrát.
+ */
+export type Volby = { teraz: string; dnes: string; exportovany?: boolean };
+
+/** Zaúčtovaný v Doklade: má predkontáciu či členenie DPH, alebo už odišiel do účtovníctva. */
+export function jeZauctovany(d: DokladAleboFaktura, exportovany = false): boolean {
+  const z = zauctovanie(d);
+  return Boolean(exportovany || z.pohoda_predkontacia || z.pohoda_clenenie_dph);
+}
+
+export function vystavena(d: FakturaV2, o: Volby) {
   const pod = String(d.subType ?? "");
   const typ = typVystavenej(pod);
   const s = sumy(d);
@@ -380,9 +393,11 @@ export function vystavena(d: FakturaV2, o: { teraz: string; dnes: string }) {
           .filter(Boolean)
           .join("\n") || null,
       int_poznamka: text(d.internalNote),
-      ...(z.pohoda_predkontacia || z.pohoda_clenenie_dph
-        ? { ...z, zauctovane_at: o.teraz, zauctovanie_zdroj: "manual" }
-        : { stredisko: z.stredisko, cinnost: z.cinnost }),
+      ...z,
+      ...(jeZauctovany(d, o.exportovany)
+        ? { zauctovane_at: o.teraz, zauctovanie_zdroj: "manual" }
+        : {}),
+      exported_at: o.exportovany ? o.teraz : null,
       import_source: "doklado",
       imported_at: o.teraz,
       original_external_id: d.documentId,
@@ -406,7 +421,7 @@ export function vystavena(d: FakturaV2, o: { teraz: string; dnes: string }) {
   };
 }
 
-export function prijata(d: FakturaV2, o: { teraz: string; dnes: string }) {
+export function prijata(d: FakturaV2, o: Volby) {
   const pod = String(d.subType ?? "");
   const s = sumy(d);
   const { polozky: pol } = polozky(d, s);
@@ -418,7 +433,7 @@ export function prijata(d: FakturaV2, o: { teraz: string; dnes: string }) {
   const prenesenie = d.vatCategory === "reverse_charge";
   const zahranicna = pod.startsWith("foreign");
   const z = zauctovanie(d);
-  const zauctovana = Boolean(z.pohoda_predkontacia || z.pohoda_clenenie_dph);
+  const zauctovana = jeZauctovany(d, o.exportovany);
   const zaplatena = d.paymentStatus === "paid";
   const pay = (d as any).paymentInfo ?? {};
   return {
@@ -476,6 +491,7 @@ export function prijata(d: FakturaV2, o: { teraz: string; dnes: string }) {
         : null,
       ...z,
       ...(zauctovana ? { zauctovane_at: o.teraz, zauctovanie_zdroj: "manual" } : {}),
+      exported_at: o.exportovany ? o.teraz : null,
       source: "import",
       auto_uctovanie_at: o.teraz,
     },
@@ -483,16 +499,17 @@ export function prijata(d: FakturaV2, o: { teraz: string; dnes: string }) {
   };
 }
 
-export function blocek(d: DokladAleboFaktura, o: { teraz: string; dnes: string }) {
+export function blocek(d: DokladAleboFaktura, o: Volby) {
   const x = d as any;
   const s = sumy(d);
   const { polozky: pol } = polozky(d, s);
   const uhrada = uhradaPrijatej(x.paymentType) ?? "karta";
   const z = zauctovanie(d);
-  const zauctovany = Boolean(z.pohoda_predkontacia || z.pohoda_clenenie_dph);
+  const zauctovany = jeZauctovany(d, o.exportovany);
   return {
     doklado_id: x.documentId,
-    status: "processed",
+    // Odovzdaný bloček má vo Fakteri vlastný stav „exported“.
+    status: o.exportovany ? "exported" : "processed",
     source: "import",
     supplier_name: text(x.organizationName),
     supplier_ico: lenCislice(x.organizationId) || null,
@@ -525,6 +542,7 @@ export function blocek(d: DokladAleboFaktura, o: { teraz: string; dnes: string }
     int_poznamka: text(x.internalNote),
     ...z,
     ...(zauctovany ? { zauctovane_at: o.teraz, zauctovanie_zdroj: "manual" } : {}),
+    exported_at: o.exportovany ? o.teraz : null,
     processed_at: o.teraz,
     auto_uctovanie_at: o.teraz,
   };

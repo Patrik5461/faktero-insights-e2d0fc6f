@@ -144,6 +144,23 @@ describe("migrácia z Doklada", () => {
     expect(m.hlavicka.advance_amount).toBeGreaterThan(0);
   });
 
+  it("doklad exportovaný z Doklada príde zaúčtovaný aj bez predkontácie", () => {
+    const bez = faktura({ subType: "domestic_received" });
+    expect(prijata(bez, o).hlavicka).toMatchObject({ status: "received", exported_at: null });
+    expect(prijata(bez, o).hlavicka).not.toHaveProperty("zauctovane_at");
+    const exp = prijata(bez, { ...o, exportovany: true }).hlavicka;
+    expect(exp).toMatchObject({ status: "booked", zauctovane_at: o.teraz, exported_at: o.teraz });
+    expect(vystavena(faktura(), { ...o, exportovany: true }).hlavicka).toMatchObject({
+      zauctovane_at: o.teraz,
+      exported_at: o.teraz,
+    });
+    const b = blocek({ type: "receipt", documentId: "b2", totalPrice: 5 } as any, {
+      ...o,
+      exportovany: true,
+    });
+    expect(b).toMatchObject({ status: "exported", zauctovane_at: o.teraz, exported_at: o.teraz });
+  });
+
   it("hotovostný bloček nepohne pokladňou", () => {
     const b = blocek(
       {
