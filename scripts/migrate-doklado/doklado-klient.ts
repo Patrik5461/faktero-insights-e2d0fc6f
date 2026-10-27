@@ -11,6 +11,12 @@ export type DokladV2 = components["schemas"]["DocumentV2"];
 export type FakturaV2 = components["schemas"]["InvoiceV2"];
 export type DokladAleboFaktura = DokladV2 | FakturaV2;
 export type Organizacia = components["schemas"]["PublicOrganization"];
+export type Nespracovany = components["schemas"]["UnprocessedDocumentPublicApi"];
+export type Zmena = {
+  createdAt?: string;
+  createdBy?: { email?: string | null } | null;
+  changedFields?: { field?: string; before?: string; after?: string }[];
+};
 export type Priloha = {
   documentId?: string;
   downloadUrl?: string;
@@ -27,6 +33,8 @@ export const POVOLENE_CESTY = [
   "/v2/documents/get",
   "/v2/documents/attachments/get",
   "/v1/documents/get-invoice-pdf",
+  "/v1/unprocessed-documents",
+  "/v2/documents/changes",
 ] as const;
 export type Cesta = (typeof POVOLENE_CESTY)[number];
 
@@ -207,6 +215,62 @@ export class DokladoKlient {
       dalej = r.searchAfter;
     }
     return vsetky;
+  }
+
+  /** Nespracované doklady (ešte nevyťažené v Doklade), stránkované cez searchAfter. */
+  async nespracovane(o: { ico: string; od: Date; do: Date }): Promise<Nespracovany[]> {
+    const vsetky: Nespracovany[] = [];
+    let dalej: unknown[] | undefined;
+    let predosle = "";
+    for (let strana = 0; strana < 10_000; strana++) {
+      let r: Odpoved & { searchAfter?: unknown[] };
+      try {
+        r = await this.post("/v1/unprocessed-documents", {
+          organizationId: o.ico,
+          dateType: "create",
+          orderBy: "creation_date",
+          dateFrom: o.od.toISOString(),
+          dateTo: o.do.toISOString(),
+          ...(dalej ? { searchAfter: dalej } : {}),
+        });
+      } catch (e) {
+        if (e instanceof ChybaDoklada && e.kod === "APP_NO_MORE_DATA") break;
+        throw e;
+      }
+      const d = r.data ?? {};
+      const data = (Array.isArray(d) ? d : (d.documents ?? [])) as Nespracovany[];
+      vsetky.push(...data);
+      const sa = (r.searchAfter ?? d.searchAfter) as unknown[] | undefined;
+      const token = JSON.stringify(sa ?? null);
+      if (r.code === "APP_NO_MORE_DATA" || !data.length || !sa?.length || token === predosle) break;
+      predosle = token;
+      dalej = sa;
+    }
+    return vsetky;
+  }
+
+  /** História zmien — najviac 10 dokladov na volanie (1 jednotka za doklad). */
+  async zmeny(documentIds: string[]): Promise<Map<string, Zmena[]>> {
+    const von = new Map<string, Zmena[]>();
+    for (let i = 0; i < documentIds.length; i += 10) {
+      const r = await this.post("/v2/documents/changes", {
+        documents: documentIds.slice(i, i + 10).map((documentId) => ({ documentId })),
+      });
+      const d = r.data;
+      const zoznam = (Array.isArray(d) ? d : (d?.documents ?? d?.history ?? [])) as {
+        documentId?: string;
+        changes?: Zmena[];
+      }[];
+      for (const h of zoznam) if (h.documentId) von.set(h.documentId, h.changes ?? []);
+    }
+    return von;
+  }
+
+  async prilohyNespracovaneho(documentId: string): Promise<Priloha[]> {
+    const r = await this.post("/v2/documents/attachments/get", {
+      requestDocumentsAttachments: [{ documentType: "unprocessed_document", documentId }],
+    });
+    return (Array.isArray(r.data) ? r.data : []) as Priloha[];
   }
 
   async detail(documentId: string): Promise<DokladAleboFaktura | null> {

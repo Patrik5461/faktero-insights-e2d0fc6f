@@ -11,6 +11,8 @@
     --vlastnik <e-mail>     chýbajúcu firmu založí s týmto vlastníkom (inak ju len vypíše)
     --pripojit-k <id>       firmu Tobify/PALIERA pripojí k tejto firme vo Fakteri (len s --company)
     --za-sekundu <n>        strop požiadaviek na Doklado (predvolene 4)
+    --vsetko                navyše nespracované doklady (so súbormi) a história zmien dokladov
+    --nespracovane / --historia   len jedno z toho
 
   Doklado účtuje spotrebu (1 € / 1 000 jednotiek): zoznam = 1 jednotka za doklad,
   prílohy 1 za doklad s prílohami, PDF faktúry 1. Detail sa nevolá — zoznam nesie
@@ -71,6 +73,8 @@ function volby(argv: string[]) {
     vlastnik: typeof o.vlastnik === "string" ? o.vlastnik : null,
     pripojitK: typeof o["pripojit-k"] === "string" ? o["pripojit-k"] : null,
     zaSekundu: Number(o["za-sekundu"]) || 4,
+    nespracovane: Boolean(o.vsetko || o.nespracovane),
+    historia: Boolean(o.vsetko || o.historia),
   };
 }
 
@@ -486,10 +490,18 @@ async function main() {
 
     if (o.dryRun) {
       await dryRunFirmy({ doklado, ico, podlaDruhu, exportovane, ex, s, teraz, dnes });
+      if (o.nespracovane) {
+        const n = await doklado.nespracovane({ ico, od, do: doDna });
+        log(`  nespracované v Doklade: ${n.length}`);
+      }
+      if (o.historia)
+        log(`  história zmien: ${doklady.length} dokladov ≈ ${doklady.length} jednotiek API`);
       continue;
     }
     if (!firma || !ex) continue;
     await zapisFirmy({ db, doklado, ico, firma, podlaDruhu, exportovane, ex, s, teraz, dnes });
+    if (o.nespracovane) await zapisNespracovane({ db, doklado, ico, cid: firma.id, od, doDna, s });
+    if (o.historia) await zapisHistoriu({ db, doklado, cid: firma.id, doklady, s });
     try {
       const rady = await rozpoznajRadyPoImporte(db, firma.id);
       for (const r of rady)
@@ -559,7 +571,8 @@ async function dryRunFirmy(a: {
               najdiPrijatu(ex, d.organizationId, d.invoiceNumber, d.totalPrice, datumDokladu(d)),
             )),
         );
-      if (uz)
+      // Pri veľkom prenose by výpis zaplavil protokol — len do 30 riadkov.
+      if (dr === "prijata" && uz && s.sparovane < 30)
         log(
           `  už vo Fakteri: prijatá ${d.invoiceNumber} (${d.organizationName}, ${d.totalPrice} €)`,
         );
@@ -1087,6 +1100,184 @@ async function zapisFirmy(a: {
     log(`  dozaúčtované (exportované v Doklade, vo Fakteri boli nezaúčtované): ${dozauctovane}`);
 }
 
+/* ---------------- nespracované doklady a história ---------------- */
+
+/**
+ * Nespracované doklady z Doklada → Nespracované doklady vo Fakteri. Doklado
+ * k nim dáva len dodávateľa, sumu a dátum; zvyšok doplní človek (alebo AI
+ * tlačidlom vo Fakteri). Súbor ide do koša `nespracovane`.
+ */
+async function zapisNespracovane(a: {
+  db: Db;
+  doklado: DokladoKlient;
+  ico: string;
+  cid: string;
+  od: Date;
+  doDna: Date;
+  s: Suhrn;
+}) {
+  const { db, doklado, cid, s } = a;
+  const zoznam = await doklado.nespracovane({ ico: a.ico, od: a.od, do: a.doDna });
+  const { data: uz } = await db
+    .from("nespracovane_doklady")
+    .select("doklado_id")
+    .eq("company_id", cid)
+    .not("doklado_id", "is", null);
+  const existuju = new Set((uz ?? []).map((r: any) => r.doklado_id));
+  let nove = 0;
+  for (const n of zoznam) {
+    const id = String(n.documentId);
+    if (existuju.has(id)) continue;
+    try {
+      let prilohy: Awaited<ReturnType<DokladoKlient["prilohyNespracovaneho"]>> = [];
+      try {
+        prilohy = await doklado.prilohyNespracovaneho(id);
+      } catch (e) {
+        s.chyby++;
+        log(`  prílohy nespracovaného ${id}: ${(e as Error).message}`);
+      }
+      const subory: { cesta: string; meno: string; mime: string; velkost: number }[] = [];
+      for (const [i, p] of prilohy.entries()) {
+        if (!p.downloadUrl) continue;
+        const sub = await stiahni(p.downloadUrl);
+        const meno = p.fileName || `doklad-${i}`;
+        const cesta = `${cid}/doklado/${id}/${i}-${menoSuboru(meno, `subor-${i}`)}`;
+        await nahraj(db, "nespracovane", cesta, sub.bajty, sub.mime);
+        subory.push({ cesta, meno, mime: sub.mime, velkost: sub.bajty.length });
+        s.prilohy++;
+      }
+      const hlavny = subory[0];
+      const poznamka = [
+        "Prenesené z Doklada (sekcia Nespracované).",
+        n.note ? `Poznámka: ${n.note}` : null,
+        n.comment ? `Komentár: ${n.comment}` : null,
+        n.createdBy ? `Nahral: ${n.createdBy}` : null,
+        subory.length > 1
+          ? `Ďalšie súbory: ${subory
+              .slice(1)
+              .map((x) => x.cesta)
+              .join(", ")}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n");
+      const { error } = await db.from("nespracovane_doklady").insert({
+        company_id: cid,
+        doklado_id: id,
+        zdroj: "import",
+        stav: "vytazene",
+        druh: null,
+        file_path: hlavny?.cesta ?? null,
+        file_name: hlavny?.meno ?? null,
+        file_mime: hlavny?.mime ?? null,
+        file_size: hlavny?.velkost ?? null,
+        udaje: {
+          dodavatel: { nazov: n.organizationName ?? "" },
+          celkom: n.totalPrice ?? null,
+          mena: n.currency || "EUR",
+          datumDodania: datumZTextu(n.deliveryDate) ?? "",
+          poznamka,
+        },
+        created_at: n.createdAt ?? undefined,
+      });
+      if (error) throw new Error(error.message);
+      nove++;
+    } catch (e) {
+      s.chyby++;
+      log(`  CHYBA nespracovaný ${id}: ${(e as Error).message}`);
+    }
+  }
+  log(`  nespracované doklady: ${zoznam.length} v Doklade, nových vo Fakteri ${nove}`);
+}
+
+/**
+ * História zmien z Doklada → karta História pri doklade. Autor z Doklada
+ * vo Fakteri používateľom byť nemusí, preto je jeho e-mail v názve poľa a
+ * `kto` ostáva prázdny. Doklad, ktorý už históriu z Doklada má, sa preskočí.
+ */
+async function zapisHistoriu(a: {
+  db: Db;
+  doklado: DokladoKlient;
+  cid: string;
+  doklady: DokladAleboFaktura[];
+  s: Suhrn;
+}) {
+  const { db, doklado, cid, s } = a;
+  const mapa = new Map<string, { agenda: string; id: string }>();
+  for (const [tabulka, agenda] of [
+    ["invoices", "faktura"],
+    ["purchase_invoices", "prijata"],
+    ["expense_documents", "doklad"],
+  ] as const) {
+    const riadky = await vsetko<any>((od, po) =>
+      db
+        .from(tabulka)
+        .select("id, doklado_id")
+        .eq("company_id", cid)
+        .not("doklado_id", "is", null)
+        .order("id")
+        .range(od, po),
+    );
+    for (const r of riadky) mapa.set(r.doklado_id, { agenda, id: r.id });
+  }
+  const uzMaju = new Set(
+    (
+      await vsetko<any>((od, po) =>
+        db
+          .from("historia_dokladov")
+          .select("doklad_id")
+          .eq("company_id", cid)
+          .like("pole", "Doklado%")
+          .order("id")
+          .range(od, po),
+      )
+    ).map((r) => r.doklad_id),
+  );
+  const naCitanie = a.doklady
+    .map((d) => String(d.documentId))
+    .filter((id) => mapa.has(id) && !uzMaju.has(mapa.get(id)!.id));
+  let zaznamov = 0;
+  for (let i = 0; i < naCitanie.length; i += 10) {
+    const davka = naCitanie.slice(i, i + 10);
+    let zmeny: Map<string, any[]>;
+    try {
+      zmeny = await doklado.zmeny(davka);
+    } catch (e) {
+      s.chyby++;
+      log(`  história ${davka[0]}…: ${(e as Error).message}`);
+      continue;
+    }
+    const riadky: Record<string, unknown>[] = [];
+    for (const [docId, zoznam] of zmeny) {
+      const ciel = mapa.get(docId);
+      if (!ciel) continue;
+      for (const z of zoznam) {
+        const kto = z.createdBy?.email ? ` (${z.createdBy.email})` : "";
+        for (const f of z.changedFields ?? []) {
+          riadky.push({
+            company_id: cid,
+            agenda: ciel.agenda,
+            doklad_id: ciel.id,
+            pole: `Doklado${kto} · ${f.field ?? "?"}`,
+            pred: f.before ?? null,
+            po: f.after ?? null,
+            kto: null,
+            kedy: z.createdAt ?? new Date().toISOString(),
+          });
+        }
+      }
+    }
+    if (riadky.length) {
+      const { error } = await db.from("historia_dokladov").insert(riadky);
+      if (error) {
+        s.chyby++;
+        log(`  história zápis: ${error.message}`);
+      } else zaznamov += riadky.length;
+    }
+  }
+  log(`  história zmien: ${naCitanie.length} dokladov prečítaných, ${zaznamov} záznamov`);
+}
+
 /** Súbory prijatého dokladu: hlavný do `file_path`, ďalšie vedľa a ich zoznam do poznámky. */
 async function suboryDokladu(
   db: Db,
@@ -1097,7 +1288,7 @@ async function suboryDokladu(
   s: Suhrn,
 ) {
   const hlavny: Record<string, unknown> = {};
-  const dalsie: string[] = [];
+  const dalsie: { file_path: string; file_mime: string; file_size: number }[] = [];
   let prilohy: Awaited<ReturnType<DokladoKlient["prilohy"]>> = [];
   try {
     prilohy = await doklado.prilohy(id);
@@ -1118,15 +1309,19 @@ async function suboryDokladu(
           file_mime: sub.mime,
           file_size: sub.bajty.length,
         });
-      } else dalsie.push(cesta);
+      } else dalsie.push({ file_path: cesta, file_mime: sub.mime, file_size: sub.bajty.length });
     } catch (e) {
       s.chyby++;
       log(`  súbor ${p.fileName} (${id}): ${(e as Error).message}`);
     }
   }
+  // Staré bločky majú v Doklade fotku len ako „secondary“ — bez hlavnej je ona súborom dokladu.
+  if (!hlavny.file_path && dalsie.length) Object.assign(hlavny, dalsie.shift());
   return {
     hlavny,
-    dalsie: dalsie.length ? `Ďalšie súbory z Doklada (${kos}): ${dalsie.join(", ")}` : null,
+    dalsie: dalsie.length
+      ? `Ďalšie súbory z Doklada (${kos}): ${dalsie.map((d) => d.file_path).join(", ")}`
+      : null,
   };
 }
 

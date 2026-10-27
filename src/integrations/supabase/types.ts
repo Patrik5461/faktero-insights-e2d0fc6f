@@ -4524,6 +4524,7 @@ export type Database = {
           udaje: Json
           updated_at: string
           zdroj: string
+          doklado_id: string | null
         }
         Insert: {
           ai?: Json | null
@@ -4542,6 +4543,7 @@ export type Database = {
           udaje?: Json
           updated_at?: string
           zdroj?: string
+          doklado_id?: string | null
         }
         Update: {
           ai?: Json | null
@@ -4560,6 +4562,7 @@ export type Database = {
           udaje?: Json
           updated_at?: string
           zdroj?: string
+          doklado_id?: string | null
         }
         Relationships: []
       }
@@ -10621,6 +10624,7 @@ export type Database = {
           }
         ]
       }
+
 
 
 
