@@ -544,3 +544,34 @@ select.input {
     animation: none;
   }
 }
+
+/*
+  Tlač a PDF API dokumentácie (`.api-dokumentacia`) — bez hlavičky webu,
+  pätičky a plávajúcich tlačidiel; kód sa zalamuje a nedelí cez stranu.
+*/
+@media print {
+  body:has(.api-dokumentacia) :is(header, footer, nav, .fixed):not(.api-dokumentacia *) {
+    display: none !important;
+  }
+  body:has(.api-dokumentacia) {
+    background: #fff !important;
+  }
+  /* Biely papier — béžová stránka a karty by robili pruhy. */
+  body:has(.api-dokumentacia) :is(div, main, section, article, header, aside) {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  /* Kód svetlý (šetrí toner), s rámikom. */
+  .api-dokumentacia pre {
+    white-space: pre-wrap !important;
+    word-break: break-word;
+    break-inside: avoid;
+    background: #f6f7f8 !important;
+    color: #111827 !important;
+    border: 1px solid #d1d5db !important;
+  }
+  .api-dokumentacia h2,
+  .api-dokumentacia h3 {
+    break-after: avoid;
+  }
+}

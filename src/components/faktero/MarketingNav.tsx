@@ -66,7 +66,7 @@ export function MarketingNav() {
       {/* Announcement bar */}
       <Link
         to="/efaktura"
-        className="block w-full bg-primary/10 text-center text-sm text-foreground hover:bg-primary/15 transition-colors"
+        className="block w-full bg-primary/10 text-center text-sm text-foreground hover:bg-primary/15 transition-colors print:hidden"
       >
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-6 py-2">
           <Rocket className="h-3.5 w-3.5 text-primary" />
