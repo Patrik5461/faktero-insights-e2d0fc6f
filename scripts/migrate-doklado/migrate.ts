@@ -153,7 +153,7 @@ function najdiPrijatu(
   datum?: unknown,
 ) {
   return (
-    ex.prijate.get(klucPrijatej(ico, cislo)) ??
+    (klucPrijatej(ico, cislo, suma) ? ex.prijate.get(klucPrijatej(ico, cislo, suma)) : undefined) ??
     ex.prijatePodlaCislaSumy.get(klucCislaSumy(cislo, suma)) ??
     (lenCislice(ico) && datum
       ? (ex.prijatePodlaDna.get(klucDna(ico, datum, suma)) ?? undefined)
@@ -161,10 +161,17 @@ function najdiPrijatu(
   );
 }
 
-const klucPrijatej = (ico: unknown, cislo: unknown) =>
-  `${lenCislice(ico)}|${String(cislo ?? "")
-    .trim()
-    .toLowerCase()}`;
+/**
+ * IČO + číslo + suma. Bez IČO kľúč nie je (""): zahraniční dodávatelia bez
+ * IČO s rovnakým číslom (RNS26012268 od dvoch firiem) by sa inak zliali.
+ * Suma je v kľúči, lebo rovnaké číslo s inou sumou je iný doklad.
+ */
+const klucPrijatej = (ico: unknown, cislo: unknown, suma: unknown) =>
+  lenCislice(ico)
+    ? `${lenCislice(ico)}|${String(cislo ?? "")
+        .trim()
+        .toLowerCase()}|${Math.abs(Number(suma ?? 0)).toFixed(2)}`
+    : "";
 const klucBlocku = (ico: unknown, cislo: unknown, datum: unknown, suma: unknown) =>
   `${lenCislice(ico)}|${String(cislo ?? "")
     .trim()
@@ -218,10 +225,12 @@ async function nacitajExistujuce(db: Db, companyId: string, sId: boolean): Promi
     ),
     fakturyPodlaDoklado: new Set(faktury.map((f) => f.doklado_id).filter(Boolean)),
     prijate: new Map(
-      prijate.map((f) => [
-        klucPrijatej(f.supplier_ico, f.invoice_number),
-        { id: f.id, doklado_id: f.doklado_id ?? null },
-      ]),
+      prijate
+        .filter((f) => klucPrijatej(f.supplier_ico, f.invoice_number, f.amount_total))
+        .map((f) => [
+          klucPrijatej(f.supplier_ico, f.invoice_number, f.amount_total),
+          { id: f.id, doklado_id: f.doklado_id ?? null },
+        ]),
     ),
     prijatePodlaDoklado: new Set(prijate.map((f) => f.doklado_id).filter(Boolean)),
     prijatePodlaDna: new Map(),
@@ -737,6 +746,76 @@ async function stiahni(url: string) {
   };
 }
 
+/**
+ * Doklad exportovaný z Doklada je zaúčtovaný — aj ten, čo vo Fakteri už bol
+ * (z mailu, z predošlého importu) a teraz sa len spároval. Mení sa len to, čo
+ * ešte nastavené nie je; vlastné zaúčtovanie vo Fakteri sa neprepíše.
+ */
+async function dozauctuj(
+  db: Db,
+  tabulka: "invoices" | "purchase_invoices" | "expense_documents",
+  cid: string,
+  kde: { id: string } | { doklado_id: string },
+  teraz: string,
+) {
+  const [stlpec, hodnota] = "id" in kde ? ["id", kde.id] : ["doklado_id", kde.doklado_id];
+  const r1 = await db
+    .from(tabulka)
+    .update({ zauctovane_at: teraz, zauctovanie_zdroj: "manual" })
+    .eq("company_id", cid)
+    .eq(stlpec, hodnota)
+    .is("zauctovane_at", null)
+    .select("id");
+  if (r1.error) throw new Error(`dozaúčtovanie: ${r1.error.message}`);
+  const r2 = await db
+    .from(tabulka)
+    .update(
+      tabulka === "expense_documents"
+        ? { exported_at: teraz, status: "exported" }
+        : { exported_at: teraz },
+    )
+    .eq("company_id", cid)
+    .eq(stlpec, hodnota)
+    .is("exported_at", null)
+    .select("id");
+  if (r2.error) throw new Error(`označenie exportu: ${r2.error.message}`);
+  if (tabulka === "purchase_invoices") {
+    const r3 = await db
+      .from(tabulka)
+      .update({ status: "booked" })
+      .eq("company_id", cid)
+      .eq(stlpec, hodnota)
+      .in("status", ["draft", "received"]);
+    if (r3.error) throw new Error(`stav: ${r3.error.message}`);
+  }
+  return (r1.data?.length ?? 0) + (r2.data?.length ?? 0) > 0;
+}
+
+/** Vystavená faktúra je pre konektor Pohody odovzdaná, keď má riadok v export_logs. */
+async function zapisOdovzdanie(
+  db: Db,
+  cid: string,
+  jobId: () => Promise<string>,
+  faktura: { id: string; cislo: string },
+) {
+  const { data: uz } = await db
+    .from("export_logs")
+    .select("id")
+    .eq("invoice_id", faktura.id)
+    .eq("status", "ok")
+    .limit(1);
+  if (uz?.length) return false;
+  const { error } = await db.from("export_logs").insert({
+    company_id: cid,
+    export_job_id: await jobId(),
+    invoice_id: faktura.id,
+    invoice_number: faktura.cislo,
+    status: "ok",
+  });
+  if (error) throw new Error(`export_logs: ${error.message}`);
+  return true;
+}
+
 async function zapisFirmy(a: {
   db: Db;
   doklado: DokladoKlient;
@@ -752,6 +831,26 @@ async function zapisFirmy(a: {
   const { db, doklado, firma, ex, s } = a;
   const cid = firma.id as string;
   const o = { teraz: a.teraz, dnes: a.dnes };
+  let dozauctovane = 0;
+  // Jeden záznam „Prenos z Doklada“ v histórii exportov — export_logs ho vyžaduje.
+  let job: string | null = null;
+  const jobId = async () => {
+    if (job) return job;
+    const { data, error } = await db
+      .from("export_jobs")
+      .insert({
+        company_id: cid,
+        format: "doklado-prenos",
+        target_system: "pohoda",
+        status: "completed",
+        file_name: "Prenos z Doklada",
+      })
+      .select("id")
+      .single();
+    if (error || !data) throw new Error(`export_jobs: ${error?.message}`);
+    job = data.id as string;
+    return job;
+  };
 
   // Vystavené faktúry.
   for (const z of a.podlaDruhu.get("vystavena") ?? []) {
@@ -759,6 +858,22 @@ async function zapisFirmy(a: {
     try {
       if (ex.fakturyPodlaDoklado.has(id)) {
         s.preskocene++;
+        if (a.exportovane.has(id)) {
+          const { data: f } = await db
+            .from("invoices")
+            .select("id, invoice_number")
+            .eq("company_id", cid)
+            .eq("doklado_id", id)
+            .maybeSingle();
+          if (f) {
+            const zmena = await dozauctuj(db, "invoices", cid, { id: f.id }, a.teraz);
+            const odovzd = await zapisOdovzdanie(db, cid, jobId, {
+              id: f.id,
+              cislo: f.invoice_number,
+            });
+            if (zmena || odovzd) dozauctovane++;
+          }
+        }
         continue;
       }
       const m = vystavena(z as FakturaV2, { ...o, exportovany: a.exportovane.has(id) });
@@ -772,6 +887,11 @@ async function zapisFirmy(a: {
             .update({ doklado_id: id })
             .eq("id", uz.id)
             .eq("company_id", cid);
+        if (a.exportovane.has(id)) {
+          const zmena = await dozauctuj(db, "invoices", cid, { id: uz.id }, a.teraz);
+          const odovzd = await zapisOdovzdanie(db, cid, jobId, { id: uz.id, cislo });
+          if (zmena || odovzd) dozauctovane++;
+        }
         ex.fakturyPodlaDoklado.add(id);
         s.sparovane++;
         continue;
@@ -798,11 +918,7 @@ async function zapisFirmy(a: {
           throw new Error(`položky: ${e2.message}`);
         }
       }
-      if (exportovana) {
-        await db
-          .from("export_logs")
-          .insert({ company_id: cid, invoice_id: f.id, invoice_number: cislo, status: "ok" });
-      }
+      if (exportovana) await zapisOdovzdanie(db, cid, jobId, { id: f.id, cislo });
       ex.faktury.set(cislo, { id: f.id, doklado_id: id });
       ex.fakturyPodlaDoklado.add(id);
       s.nove++;
@@ -838,10 +954,19 @@ async function zapisFirmy(a: {
     try {
       if (ex.prijatePodlaDoklado.has(id)) {
         s.preskocene++;
+        if (
+          a.exportovane.has(id) &&
+          (await dozauctuj(db, "purchase_invoices", cid, { doklado_id: id }, a.teraz))
+        )
+          dozauctovane++;
         continue;
       }
       const m = prijata(z as FakturaV2, { ...o, exportovany: a.exportovane.has(id) });
-      const k = klucPrijatej(m.hlavicka.supplier_ico, m.hlavicka.invoice_number);
+      const k = klucPrijatej(
+        m.hlavicka.supplier_ico,
+        m.hlavicka.invoice_number,
+        m.hlavicka.amount_total,
+      );
       const uz = najdiPrijatu(
         ex,
         m.hlavicka.supplier_ico,
@@ -856,26 +981,40 @@ async function zapisFirmy(a: {
             .update({ doklado_id: id })
             .eq("id", uz.id)
             .eq("company_id", cid);
+        else if (uz.doklado_id !== id)
+          log(
+            `  duplicita v Doklade: prijatá ${z.invoiceNumber} (${z.organizationName}, ${z.totalPrice} €) — ${id} = ${uz.doklado_id}, prenesená raz`,
+          );
+        if (
+          uz.id &&
+          a.exportovane.has(id) &&
+          (await dozauctuj(db, "purchase_invoices", cid, { id: uz.id }, a.teraz))
+        )
+          dozauctovane++;
         ex.prijatePodlaDoklado.add(id);
         s.sparovane++;
         continue;
       }
       const customer_id = await partnerId(db, cid, ex, m.partner, "dodavatel", s);
       const subory = await suboryDokladu(db, doklado, cid, id, "purchase-invoices", s);
-      const { error } = await db.from("purchase_invoices").insert({
-        ...m.hlavicka,
-        company_id: cid,
-        customer_id,
-        ...subory.hlavny,
-        int_poznamka: [m.hlavicka.int_poznamka, subory.dalsie].filter(Boolean).join("\n") || null,
-        ...(a.exportovane.has(id) ? { exported_at: a.teraz } : {}),
-      });
-      if (error) throw new Error(error.message);
-      ex.prijate.set(k, { id: "", doklado_id: id });
+      const { data: nova, error } = await db
+        .from("purchase_invoices")
+        .insert({
+          ...m.hlavicka,
+          company_id: cid,
+          customer_id,
+          ...subory.hlavny,
+          int_poznamka: [m.hlavicka.int_poznamka, subory.dalsie].filter(Boolean).join("\n") || null,
+          ...(a.exportovane.has(id) ? { exported_at: a.teraz } : {}),
+        })
+        .select("id")
+        .single();
+      if (error || !nova) throw new Error(error?.message ?? "prijatá faktúra sa nezapísala");
+      if (k) ex.prijate.set(k, { id: nova.id, doklado_id: id });
       ex.prijatePodlaCislaSumy.set(
         klucCislaSumy(m.hlavicka.invoice_number, m.hlavicka.amount_total),
         {
-          id: "",
+          id: nova.id,
           doklado_id: id,
           cislo: m.hlavicka.invoice_number,
         },
@@ -894,6 +1033,11 @@ async function zapisFirmy(a: {
     try {
       if (ex.blockyPodlaDoklado.has(id)) {
         s.preskocene++;
+        if (
+          a.exportovane.has(id) &&
+          (await dozauctuj(db, "expense_documents", cid, { doklado_id: id }, a.teraz))
+        )
+          dozauctovane++;
         continue;
       }
       const m = blocek(z, { ...o, exportovany: a.exportovane.has(id) });
@@ -906,20 +1050,32 @@ async function zapisFirmy(a: {
             .update({ doklado_id: id })
             .eq("id", uz.id)
             .eq("company_id", cid);
+        else if (uz.doklado_id !== id)
+          log(`  duplicita v Doklade: bloček ${id} = ${uz.doklado_id}, prenesený raz`);
+        if (
+          uz.id &&
+          a.exportovane.has(id) &&
+          (await dozauctuj(db, "expense_documents", cid, { id: uz.id }, a.teraz))
+        )
+          dozauctovane++;
         ex.blockyPodlaDoklado.add(id);
         s.sparovane++;
         continue;
       }
       const subory = await suboryDokladu(db, doklado, cid, id, "expense-receipts", s);
-      const { error } = await db.from("expense_documents").insert({
-        ...m,
-        company_id: cid,
-        ...subory.hlavny,
-        int_poznamka: [m.int_poznamka, subory.dalsie].filter(Boolean).join("\n") || null,
-        ...(a.exportovane.has(id) ? { exported_at: a.teraz } : {}),
-      });
-      if (error) throw new Error(error.message);
-      ex.blocky.set(k, { id: "", doklado_id: id });
+      const { data: novy, error } = await db
+        .from("expense_documents")
+        .insert({
+          ...m,
+          company_id: cid,
+          ...subory.hlavny,
+          int_poznamka: [m.int_poznamka, subory.dalsie].filter(Boolean).join("\n") || null,
+          ...(a.exportovane.has(id) ? { exported_at: a.teraz } : {}),
+        })
+        .select("id")
+        .single();
+      if (error || !novy) throw new Error(error?.message ?? "bloček sa nezapísal");
+      ex.blocky.set(k, { id: novy.id, doklado_id: id });
       ex.blockyPodlaDoklado.add(id);
       s.nove++;
     } catch (e) {
@@ -927,6 +1083,8 @@ async function zapisFirmy(a: {
       log(`  CHYBA bloček ${id}: ${(e as Error).message}`);
     }
   }
+  if (dozauctovane)
+    log(`  dozaúčtované (exportované v Doklade, vo Fakteri boli nezaúčtované): ${dozauctovane}`);
 }
 
 /** Súbory prijatého dokladu: hlavný do `file_path`, ďalšie vedľa a ich zoznam do poznámky. */

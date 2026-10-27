@@ -224,8 +224,21 @@ export function sablonaZCisla(
   */
   if (/\d/.test(vzor)) return null;
 
-  const format = `${vzor}{${"N".repeat(Math.min(posledna[0].length, 6))}}`;
-  return chybaSablony(format) ? null : { format, poradie };
+  /*
+    Poradie má v šablóne najviac šesť miest. Dlhší blok (Doklado/Pohoda
+    „260800001" = 26 · 0800001) nechá úvodné číslice ako pevnú časť — inak by
+    sa vodiaca nula stratila a ďalšie číslo by vyšlo „26800002".
+  */
+  const cislice = posledna[0];
+  // Len vodiace nuly — iné číslice navyše môžu byť cudzí rok (pozri vyššie).
+  const navyse =
+    cislice.length > 6 && /^0+$/.test(cislice.slice(0, cislice.length - 6))
+      ? cislice.slice(0, cislice.length - 6)
+      : "";
+  const format = `${vzor}${navyse}{${"N".repeat(Math.min(cislice.length, 6))}}`;
+  const poradieRadu = navyse ? Number(cislice.slice(navyse.length)) : poradie;
+  if (navyse && poradieRadu < 1) return null;
+  return chybaSablony(format) ? null : { format, poradie: poradieRadu };
 }
 
 /**

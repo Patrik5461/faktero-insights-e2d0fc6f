@@ -85,6 +85,11 @@ describe("šablóna odvodená z ručne napísaného čísla", () => {
       poradie: 100,
     });
     expect(sablonaZCisla("20260007", den)).toEqual({ format: "{YYYY}{NNNN}", poradie: 7 });
+    // Doklado/Pohoda „260800001": vodiaca nula poradia nesmie zmiznúť (ďalšie 260800002).
+    expect(sablonaZCisla("260800001", "2026-04-01")).toEqual({
+      format: "{YY}0{NNNNNN}",
+      poradie: 800001,
+    });
     expect(sablonaZCisla("2026/114", den)).toEqual({ format: "{YYYY}/{NNN}", poradie: 114 });
     expect(sablonaZCisla("ZF20260001", den)).toEqual({ format: "ZF{YYYY}{NNNN}", poradie: 1 });
   });
