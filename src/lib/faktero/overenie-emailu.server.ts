@@ -64,7 +64,8 @@ export async function maMx(domena: string, casMs = 3000): Promise<boolean | null
 /** Je doména (alebo nadradená) v zozname `blokovane_domeny`? `null` = nevieme. */
 async function jeJednorazova(email: string): Promise<boolean | null> {
   const url = process.env.SUPABASE_URL;
-  const kluc = process.env.SUPABASE_PUBLISHABLE_KEY;
+  // Servisný kľúč — funkcia už nie je verejná (anon by z nej vyčítal zoznam domén).
+  const kluc = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !kluc) return null;
   try {
     const r = await fetch(`${url}/rest/v1/rpc/je_blokovana_domena`, {
