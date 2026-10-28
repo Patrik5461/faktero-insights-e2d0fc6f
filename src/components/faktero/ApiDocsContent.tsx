@@ -248,6 +248,13 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
               >
                 <Printer className="h-4 w-4" /> {t("Tlačiť")}
               </button>
+              <a
+                href={`/docs/faktero-prepojenia-${jazykPdf}.pdf`}
+                download
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-secondary"
+              >
+                <Download className="h-4 w-4" /> {t("API a prepojenia (PDF)")}
+              </a>
             </div>
           </div>
           <dl className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">

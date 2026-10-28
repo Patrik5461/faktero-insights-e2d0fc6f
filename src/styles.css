@@ -546,6 +546,29 @@ select.input {
 }
 
 /*
+  Tlač a PDF manuálov v Pomoci (`.pomoc-manual`) — bez hlavičky a pätičky
+  webu; sekcia sa nedelí uprostred nadpisu.
+*/
+@media print {
+  body:has(.pomoc-manual) :is(header, footer, .fixed):not(.pomoc-manual *) {
+    display: none !important;
+  }
+  body:has(.pomoc-manual) {
+    background: #fff !important;
+  }
+  /* Biely papier — béžová stránka by v PDF presvitala. */
+  body:has(.pomoc-manual) :is(div, main, section, article) {
+    background: transparent !important;
+  }
+  .pomoc-manual h2 {
+    break-after: avoid;
+  }
+  .pomoc-manual a {
+    color: inherit !important;
+  }
+}
+
+/*
   Tlač a PDF API dokumentácie (`.api-dokumentacia`) — bez hlavičky webu,
   pätičky a plávajúcich tlačidiel; kód sa zalamuje a nedelí cez stranu.
 */

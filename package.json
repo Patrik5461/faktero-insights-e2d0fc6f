@@ -20,6 +20,7 @@
     "ktora-apka": "node scripts/ktora-apka.mjs",
     "znalosti": "node scripts/znalosti-manualy.mjs",
     "docs:pdf": "node scripts/docs-pdf.mjs",
+    "docs:manualy": "node scripts/manualy-pdf.mjs",
     "doplnok:woo": "node scripts/zbal-woocommerce.mjs",
     "test:db": "node scripts/test-db.mjs"
   },

@@ -1082,6 +1082,60 @@
    ]
   },
   {
+   "cesta": "/pomoc/prepojenia",
+   "titulok": "API a prepojenia",
+   "sekcie": [
+    {
+     "nadpis": "Prehľad",
+     "text": "<>\nFaktero nie je ostrov. Doklady si berie z banky, z e-mailu, zo skenera aj z e-shopu,\nposiela ich do účtovného programu a cez eFaktúru odberateľom a vlastný systém či AI\nasistent sa naň napojí cez API. Táto stránka zhŕňa všetky prepojenia na jednom mieste —\npodrobnosti ku každému sú v samostatných manuáloch.\nCelý prehľad si stiahnete ako PDF tlačidlom hore alebo zo sekcie\nNa stiahnutie (#na-stiahnutie)."
+    },
+    {
+     "nadpis": "Faktero API — čo vie čítať a zapisovať",
+     "text": "<>\nREST API na adrese https://faktero.sk/api/v1 , odpovede v JSON. Prihlasuje sa\nAPI kľúčom v hlavičke Authorization: Bearer fk_live_… . Testovací kľúč (\nfk_test_… ) smie len čítať.\n-\nFakturácia — faktúry (vystavenie, úprava, PDF, odoslanie e-mailom,\núhrada, storno), cenové ponuky a ich prevod na faktúru, opakované faktúry, odberatelia a\ndodávatelia vrátane hromadného prenosu adresára (do 1000 naraz).\n-\nDoklady — prijaté faktúry a bločky (čítanie, zápis aj so súborom,\núhrada, zaúčtovanie, označenie odovzdaných), nahratie dokladu na prečítanie cez AI.\n-\nBanka — bankové účty a pohyby; účet banky bez napojenia založíte cez\nAPI a pohyby naň posielate dávkami.\n-\nCenník a sklad — produkty a služby, sklady, skladové karty, stavy,\npohyby, ocenenie skladu a prečítanie dodacieho listu.\n-\nKniha jázd — vozidlá, jazdy a tankovania.\n-\nFirmy a používatelia — kľúčom pre viac firiem založíte firmu klienta,\nupravíte jej údaje a pozvete do nej účtovníka či kolegu.\n-\nPohoda — dávka dokladov pre konektor a príjem odpovede z Pohody.\nKľúč firmy alebo kľúč pre viac firiem. Účtovná kancelária má jeden kľúč\nna všetkých klientov a firmu vyberie hlavičkou X-Company (IČO alebo id).\nZakladať firmy a pozývať používateľov smie len kľúč pre viac firiem.\nBezpečné opakovanie. Pri zápise pošlite vlastné external_id\n— to isté volanie druhýkrát nič nezdvojí. Cez API sa nič nemaže, faktúra sa dá len\nstornovať. Limit je 300 požiadaviek za 5 minút na kľúč.\nÚplný zoznam endpointov s príkladmi je v API dokumentácii (/docs/api),\nnávod na kľúče v manuáli API a webhooky (/pomoc/api)."
+    },
+    {
+     "nadpis": "Webhooky — Faktero sa ozve samo",
+     "text": "<>\nNa vašu adresu pošle Faktero správu, keď sa niečo stane — nemusíte sa každú chvíľu pýtať:\n-\ninvoice.created , invoice.sent , invoice.paid ,\ninvoice.cancelled — faktúra vznikla, odišla, je uhradená, je stornovaná,\n-\ncustomer.created — nový odberateľ,\n-\nbank_transaction.created — nový pohyb na účte.\nKaždá správa je podpísaná, neúspešné doručenie sa opakuje a v\ndenníku webhookov (/webhooky-logy) vidíte, čo odišlo."
+    },
+    {
+     "nadpis": "AI asistenti — Claude, ChatGPT a Faktero AI",
+     "text": "<>\nFaktero AI je asistent priamo vo Fakteri — pozná vaše doklady aj tieto\nmanuály. Navyše sa na Faktero napojí Claude, ChatGPT , Claude Code či\nCursor cez MCP na adrese https://www.faktero.sk/api/mcp .\nAsistent cez MCP vie vypísať firmy, faktúry, faktúry po splatnosti, ponuky, cenník,\nprijaté faktúry, odberateľov, bankové účty a pohyby; vystaviť faktúru, zapísať prijatú\nfaktúru či bloček, založiť odberateľa, produkt alebo firmu, preniesť kontakty a bankové\npohyby, označiť úhradu a pozvať používateľa. Nič nemaže a nič neposiela odberateľom.\nPostup pridania je v manuáli API a webhooky (/pomoc/api)."
+    },
+    {
+     "nadpis": "Banky a platby",
+     "text": "<>\n-\nTatra banka — priame napojenie: zostatky, pohyby, výpisy a platby z\nFaktera; cez Tatra banku aj účty v iných slovenských bankách.\n-\nFio banka, Wise, Revolut Business, Wallester — pohyby a zostatky cez\nich API (token alebo prepojenie).\n-\nE-mailové notifikácie banky — pri banke bez napojenia stačí preposielať\navíza o platbách na adresu, ktorú vám Faktero pridelí.\n-\nNahratie výpisu (camt.053, CSV z platobných brán) a\núčet cez API — pre ostatné banky a pri prechode z iného programu.\n-\nPlatby sa párujú s faktúrami samé (podľa VS, sumy a protistrany),\nvystavené faktúry sa označia ako uhradené.\n-\nHromadný príkaz na úhradu (SEPA XML) z prijatých faktúr a\nplatobný QR kód na faktúre (PAY by square, v Česku QR platba).\n-\nVlastné výpisy v PDF a camt.053 aj pre banky, ktoré ich samé nedajú.\nPodrobne v manuáloch Bankové účty (/pomoc/banka) a\nLeasingy a úvery (/pomoc/financovanie)."
+    },
+    {
+     "nadpis": "Účtovné programy",
+     "text": "<>\n-\nPOHODA — konektor si doklady berie sám každú noc (aj pre viac firiem\njedným kľúčom) a vráti čísla, ktoré im Pohoda pridelila; alebo XML na ručný import.\nFaktúry, prijaté doklady, pokladňa, adresár, sklad a zákazky, s predkontáciou a členením\nDPH.\n-\nOmega a ALFA plus, Money S3, ABRA Flexi, DATEV — exporty v ich\nformátoch, vrátane zaúčtovania.\n-\nCSV a ISDOC — pre ostatné programy a e-faktúry v českom štandarde.\n-\nMesačné odovzdanie účtovníkovi — jeden balík (XML, súpisky, PDF a\nskeny) automaticky e-mailom 5. v mesiaci.\n-\nPrístup pre účtovníka — pozvete ho do firmy s rolou účtovník; doklady\nvedie a zaúčtuje priamo vo Fakteri.\nPodrobne v manuáloch Prepojenie s Pohodou (/pomoc/pohoda),\nExporty a importy (/pomoc/exporty) a\nAutomatické zaúčtovanie (/pomoc/automaticke-zauctovanie)."
+    },
+    {
+     "nadpis": "eFaktúra, štát a registre",
+     "text": "<>\n-\neFaktúra — posielanie a prijímanie elektronických faktúr cez sieť\nPeppol (od roku 2027 povinné), s doručenkami a prijatými eFaktúrami priamo vo Fakteri.\n-\nFinančná správa — bloček z eKasy načítaný z QR kódu (aj s položkami),\nvýkazy DPH v XML na podanie (priznanie, kontrolný a súhrnný výkaz; v Česku DPHDP3, KH1 a\nSHV).\n-\nRegistre — údaje firmy podľa IČO (slovenské a české registre), overenie\nIČ DPH vo VIES s dôkazom pre daňovú kontrolu.\n-\nKurzy — ECB, ČNB a nemecké BMF pre faktúry v cudzej mene.\nPodrobne v manuáloch eFaktúra (/pomoc/efaktura),\nVýkazy k DPH (/pomoc/vykazy-dph) a\nOSS — predaj do EÚ (/pomoc/oss)."
+    },
+    {
+     "nadpis": "E-shopy a doprava",
+     "text": "<>\n-\nWooCommerce — doplnok pre WordPress vystaví faktúru k objednávke a\npošle ju zákazníkovi.\n-\nShoptet — objednávky sa prenesú do Faktera a vyfakturujú.\n-\nZásielkovňa — zásielka k faktúre jedným klikom, sledovanie stavu.\n-\nOstatné e-shopy a pokladne sa napoja cez API (/docs/api).\nPodrobne v manuáli E-shop na WooCommerce (/pomoc/woocommerce)."
+    },
+    {
+     "nadpis": "Kniha jázd a vozidlá",
+     "text": "<>\n-\nCommander — jazdy z GPS jednotiek vozidiel.\n-\nTesla — jazdy priamo z auta.\n-\nAplikácia Kniha jázd — jazdu rozpozná telefón sám, adresy a vodiča\ndoplní Faktero.\nPodrobne v manuáloch Kniha jázd (/pomoc/jazdy) a\nVozový park (/pomoc/vozovy-park)."
+    },
+    {
+     "nadpis": "E-mail, skenovanie a doklady",
+     "text": "<>\n-\nPríjem dokladov e-mailom — firma má vlastnú adresu; faktúry a bločky,\nktoré na ňu pošlete či preposielate, Faktero prečíta a zaradí.\n-\nSkener v aplikácii — odfotený doklad prečíta AI; ISDOC a ZUGFeRD v PDF\nsa načítajú presne.\n-\nOdosielanie faktúr — e-mailom z Faktera alebo z vlastnej poštovej\nschránky (SMTP), s verejným odkazom na faktúru.\nPodrobne v manuáloch Doklady a skenovanie (/pomoc/doklady) a\nPrijaté faktúry (/pomoc/prijate-faktury)."
+    },
+    {
+     "nadpis": "Prechod z iných programov",
+     "text": "<>\nFaktúry, kontakty a doklady prenesiete z programov POHODA a mPOHODA ,\nSuperFaktúra , iDoklad , KROS (Omega) a\nMoney S3 ; prijaté doklady z exportu pre Pohodu, z tabuľky a zo ZIP so\nskenmi. Číslovanie faktúr potom pokračuje tam, kde ste skončili.\nVäčší prenos (celú históriu dokladov aj so súbormi, adresár, cenník, bankové účty) zvládne\naj API (/docs/api). Ak potrebujete pomôcť s prechodom, napíšte nám."
+    },
+    {
+     "nadpis": "Aplikácie a ostatné",
+     "text": "<>\n-\nMobilná aplikácia pre iPhone a Android — faktúry, doklady, skener,\nbanka; funguje aj bez signálu.\n-\nPredplatné Faktera sa platí kartou cez GoPay."
+    }
+   ]
+  },
+  {
    "cesta": "/pomoc/prijate-faktury",
    "titulok": "Prijaté faktúry",
    "sekcie": [

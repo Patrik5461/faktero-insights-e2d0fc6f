@@ -346,6 +346,14 @@ const CATS: Cat[] = [
     skupina: "Účet a vývoj",
   },
   {
+    to: "/pomoc/prepojenia",
+    label: "API a prepojenia",
+    desc: "Všetko, s čím sa Faktero prepojí — aj ako PDF na stiahnutie.",
+    icon: Code2,
+    available: true,
+    skupina: "Účet a vývoj",
+  },
+  {
     to: "/pomoc/nastavenia",
     label: "Nastavenia firmy",
     desc: "Údaje firmy, číslovanie dokladov, logo a farba na faktúre, e-mailové šablóny.",
@@ -378,7 +386,8 @@ function pocetVidei(n: number) {
 }
 
 function Page() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
+  const jazykPdf = jazyk === "cs" || jazyk === "de" ? jazyk : "sk";
   return (
     <MarketingShell>
       <div className="mx-auto max-w-5xl px-4 py-16">
@@ -399,6 +408,22 @@ function Page() {
           </a>
           .
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <a
+            href={`/docs/faktero-manualy-${jazykPdf}.pdf`}
+            download
+            className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+          >
+            {t("Všetky manuály (PDF)")}
+          </a>
+          <a
+            href={`/docs/faktero-prepojenia-${jazykPdf}.pdf`}
+            download
+            className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+          >
+            {t("API a prepojenia (PDF)")}
+          </a>
+        </div>
         {VIDEO_NAVODY.length > 0 && (
           <Link
             to="/pomoc/videa"

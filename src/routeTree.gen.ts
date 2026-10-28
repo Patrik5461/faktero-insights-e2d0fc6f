@@ -120,6 +120,7 @@ import { Route as PomocPohodaRouteImport } from './routes/pomoc.pohoda'
 import { Route as PomocPokladnaRouteImport } from './routes/pomoc.pokladna'
 import { Route as PomocPonukyRouteImport } from './routes/pomoc.ponuky'
 import { Route as PomocPredplatneRouteImport } from './routes/pomoc.predplatne'
+import { Route as PomocPrepojeniaRouteImport } from './routes/pomoc.prepojenia'
 import { Route as PomocPrijateFakturyRouteImport } from './routes/pomoc.prijate-faktury'
 import { Route as PomocRoleRouteImport } from './routes/pomoc.role'
 import { Route as PomocSkladRouteImport } from './routes/pomoc.sklad'
@@ -930,6 +931,11 @@ const PomocPonukyRoute = PomocPonukyRouteImport.update({
 const PomocPredplatneRoute = PomocPredplatneRouteImport.update({
   id: '/pomoc/predplatne',
   path: '/pomoc/predplatne',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocPrepojeniaRoute = PomocPrepojeniaRouteImport.update({
+  id: '/pomoc/prepojenia',
+  path: '/pomoc/prepojenia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocPrijateFakturyRoute = PomocPrijateFakturyRouteImport.update({
@@ -2408,6 +2414,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
+  '/pomoc/prepojenia': typeof PomocPrepojeniaRoute
   '/pomoc/prijate-faktury': typeof PomocPrijateFakturyRoute
   '/pomoc/role': typeof PomocRoleRoute
   '/pomoc/sklad': typeof PomocSkladRoute
@@ -2757,6 +2764,7 @@ export interface FileRoutesByTo {
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
+  '/pomoc/prepojenia': typeof PomocPrepojeniaRoute
   '/pomoc/prijate-faktury': typeof PomocPrijateFakturyRoute
   '/pomoc/role': typeof PomocRoleRoute
   '/pomoc/sklad': typeof PomocSkladRoute
@@ -3115,6 +3123,7 @@ export interface FileRoutesById {
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
+  '/pomoc/prepojenia': typeof PomocPrepojeniaRoute
   '/pomoc/prijate-faktury': typeof PomocPrijateFakturyRoute
   '/pomoc/role': typeof PomocRoleRoute
   '/pomoc/sklad': typeof PomocSkladRoute
@@ -3474,6 +3483,7 @@ export interface FileRouteTypes {
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
     | '/pomoc/predplatne'
+    | '/pomoc/prepojenia'
     | '/pomoc/prijate-faktury'
     | '/pomoc/role'
     | '/pomoc/sklad'
@@ -3823,6 +3833,7 @@ export interface FileRouteTypes {
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
     | '/pomoc/predplatne'
+    | '/pomoc/prepojenia'
     | '/pomoc/prijate-faktury'
     | '/pomoc/role'
     | '/pomoc/sklad'
@@ -4180,6 +4191,7 @@ export interface FileRouteTypes {
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
     | '/pomoc/predplatne'
+    | '/pomoc/prepojenia'
     | '/pomoc/prijate-faktury'
     | '/pomoc/role'
     | '/pomoc/sklad'
@@ -4497,6 +4509,7 @@ export interface RootRouteChildren {
   PomocPokladnaRoute: typeof PomocPokladnaRoute
   PomocPonukyRoute: typeof PomocPonukyRoute
   PomocPredplatneRoute: typeof PomocPredplatneRoute
+  PomocPrepojeniaRoute: typeof PomocPrepojeniaRoute
   PomocPrijateFakturyRoute: typeof PomocPrijateFakturyRoute
   PomocRoleRoute: typeof PomocRoleRoute
   PomocSkladRoute: typeof PomocSkladRoute
@@ -5369,6 +5382,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/predplatne'
       fullPath: '/pomoc/predplatne'
       preLoaderRoute: typeof PomocPredplatneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/prepojenia': {
+      id: '/pomoc/prepojenia'
+      path: '/pomoc/prepojenia'
+      fullPath: '/pomoc/prepojenia'
+      preLoaderRoute: typeof PomocPrepojeniaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/prijate-faktury': {
@@ -7875,6 +7895,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocPokladnaRoute: PomocPokladnaRoute,
   PomocPonukyRoute: PomocPonukyRoute,
   PomocPredplatneRoute: PomocPredplatneRoute,
+  PomocPrepojeniaRoute: PomocPrepojeniaRoute,
   PomocPrijateFakturyRoute: PomocPrijateFakturyRoute,
   PomocRoleRoute: PomocRoleRoute,
   PomocSkladRoute: PomocSkladRoute,

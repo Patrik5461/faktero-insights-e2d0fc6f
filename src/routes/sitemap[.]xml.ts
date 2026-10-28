@@ -101,6 +101,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/pomoc/jazdy", priority: 0.6 },
           { path: "/pomoc/role", priority: 0.6 },
           { path: "/pomoc/api", priority: 0.6 },
+          { path: "/pomoc/prepojenia", priority: 0.6 },
           { path: "/pomoc/woocommerce", priority: 0.6 },
           { path: "/pomoc/podpora", priority: 0.6 },
           { path: "/pomoc/predplatne", priority: 0.6 },

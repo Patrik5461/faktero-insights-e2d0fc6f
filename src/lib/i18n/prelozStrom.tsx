@@ -182,19 +182,27 @@ export function kluceStromu(uzol: ReactNode): string[] {
   return kluce;
 }
 
-type ManualProps = { category: string; title: string; intro?: ReactNode; sections: HelpSection[] };
+type ManualProps = {
+  category: string;
+  title: string;
+  intro?: ReactNode;
+  sections: HelpSection[];
+  /** Manuál má vlastné hotové PDF: /docs/faktero-<pdf>-<jazyk>.pdf. */
+  pdf?: string;
+};
 
 /** `HelpArticle` s preloženým obsahom — v slovenčine ho len odovzdá ďalej. */
-export function PrelozenyManual({ category, title, intro, sections }: ManualProps) {
+export function PrelozenyManual({ category, title, intro, sections, pdf }: ManualProps) {
   const { t, jazyk } = useT();
   const props = useMemo<ManualProps>(() => {
-    if (jazyk === "sk") return { category, title, intro, sections };
+    if (jazyk === "sk") return { category, title, intro, sections, pdf };
     return {
+      pdf,
       category: t(category),
       title: t(title),
       intro: intro === undefined ? undefined : prelozStrom(intro, t),
       sections: sections.map((s) => ({ ...s, title: t(s.title), body: prelozStrom(s.body, t) })),
     };
-  }, [jazyk, t, category, title, intro, sections]);
+  }, [jazyk, t, category, title, intro, sections, pdf]);
   return <HelpArticle {...props} />;
 }
