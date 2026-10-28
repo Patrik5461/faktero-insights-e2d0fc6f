@@ -207,3 +207,89 @@ export const adminPocetNovychFn = createServerFn({ method: "GET" })
     ).length;
     return { n };
   });
+
+/*
+  Automatická oprava (scripts/auto-oprava/oprava.mjs). Návrh robí spúšťač na
+  serveri; tu podpora len vidí výsledok a rozhodne — nasadí sa až po schválení.
+*/
+const STAVY_AKTIVNEJ_OPRAVY = ["caka", "bezi", "navrh", "schvalena", "zlucuje", "zlucena"];
+
+export const adminAutoOpravyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ poziadavka_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const db = await admin((context as { userId: string }).userId);
+    const { data: rows, error } = await db
+      .from("podpora_auto_opravy")
+      .select("*")
+      .eq("poziadavka_id", data.poziadavka_id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+export const adminAutoOpravaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        poziadavka_id: z.string().uuid(),
+        id: z.string().uuid().optional(),
+        akcia: z.enum(["spustit", "schvalit", "zamietnut", "znova"]),
+        pokyn: z.string().trim().max(4000).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const userId = (context as { userId: string }).userId;
+    const db = await admin(userId);
+    const teraz = new Date().toISOString();
+    const { data: posledne } = await db
+      .from("podpora_auto_opravy")
+      .select("id, stav, pokus, commit_sha")
+      .eq("poziadavka_id", data.poziadavka_id)
+      .order("created_at", { ascending: false });
+    const riadky = (posledne ?? []) as { id: string; stav: string; pokus: number; commit_sha: string | null }[];
+    const ciel = data.id ? riadky.find((r) => r.id === data.id) : undefined;
+    if (data.id && !ciel) throw new Error("Návrh opravy sa nenašiel.");
+
+    if (data.akcia === "schvalit") {
+      if (ciel?.stav !== "navrh" || !ciel.commit_sha)
+        throw new Error("Schváliť sa dá len hotový návrh opravy.");
+      const { error } = await db
+        .from("podpora_auto_opravy")
+        .update({ stav: "schvalena", schvalil: userId, schvalene_at: teraz, updated_at: teraz })
+        .eq("id", ciel.id)
+        .eq("stav", "navrh");
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
+    if (data.akcia === "zamietnut") {
+      if (!ciel || !["navrh", "bez_opravy", "zlyhala", "caka"].includes(ciel.stav))
+        throw new Error("Tento návrh sa už nedá zamietnuť.");
+      const { error } = await db
+        .from("podpora_auto_opravy")
+        .update({ stav: "zamietnuta", updated_at: teraz })
+        .eq("id", ciel.id);
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
+    // spustit / znova — nový pokus; rozbehnutý alebo schválený beh sa nezdvojí.
+    if (riadky.some((r) => ["caka", "bezi", "schvalena", "zlucuje", "zlucena"].includes(r.stav)))
+      throw new Error("Oprava pre túto požiadavku už beží alebo sa nasadzuje.");
+    if (data.akcia === "spustit" && riadky.some((r) => STAVY_AKTIVNEJ_OPRAVY.includes(r.stav)))
+      throw new Error("Návrh už existuje — použite „Skúsiť znova“.");
+    for (const r of riadky.filter((x) => x.stav === "navrh"))
+      await db
+        .from("podpora_auto_opravy")
+        .update({ stav: "zamietnuta", updated_at: teraz })
+        .eq("id", r.id);
+    const { error } = await db.from("podpora_auto_opravy").insert({
+      poziadavka_id: data.poziadavka_id,
+      pokyn: data.pokyn || null,
+      pokus: Math.max(0, ...riadky.map((r) => r.pokus)) + 1,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

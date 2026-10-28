@@ -10700,6 +10700,86 @@ export type Database = {
           }
         ]
       }
+      podpora_auto_opravy: {
+        Row: {
+          id: string
+          poziadavka_id: string
+          stav: string
+          vetva: string | null
+          commit_sha: string | null
+          zlucene_sha: string | null
+          pricina: string | null
+          zmena: string | null
+          istota: string | null
+          subory: string[]
+          diff: string | null
+          kontrola: string | null
+          chyba: string | null
+          pokyn: string | null
+          pokus: number
+          schvalil: string | null
+          schvalene_at: string | null
+          zaciatok_at: string | null
+          koniec_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          poziadavka_id: string
+          stav?: string
+          vetva?: string | null
+          commit_sha?: string | null
+          zlucene_sha?: string | null
+          pricina?: string | null
+          zmena?: string | null
+          istota?: string | null
+          subory?: string[]
+          diff?: string | null
+          kontrola?: string | null
+          chyba?: string | null
+          pokyn?: string | null
+          pokus?: number
+          schvalil?: string | null
+          schvalene_at?: string | null
+          zaciatok_at?: string | null
+          koniec_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          poziadavka_id?: string
+          stav?: string
+          vetva?: string | null
+          commit_sha?: string | null
+          zlucene_sha?: string | null
+          pricina?: string | null
+          zmena?: string | null
+          istota?: string | null
+          subory?: string[]
+          diff?: string | null
+          kontrola?: string | null
+          chyba?: string | null
+          pokyn?: string | null
+          pokus?: number
+          schvalil?: string | null
+          schvalene_at?: string | null
+          zaciatok_at?: string | null
+          koniec_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podpora_auto_opravy_poziadavka_id_fkey"
+            columns: ["poziadavka_id"]
+            isOneToOne: false
+            referencedRelation: "podpora_poziadavky"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       stock_items_with_availability: {

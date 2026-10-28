@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, Lock, Send } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
 import { PrilohyPoziadavky } from "@/components/faktero/PrilohyPoziadavky";
+import { AutoOpravaKarta } from "@/components/faktero/AutoOpravaKarta";
 import {
   adminOdpovedzFn,
   adminPoziadavkaFn,
@@ -116,6 +117,7 @@ function AdminPoziadavka() {
       <AdminPageBody>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <div className="min-w-0 space-y-3">
+            {p.kategoria === "chyba" ? <AutoOpravaKarta poziadavkaId={p.id} /> : null}
             {d.spravy.map((s: any) => (
               <div
                 key={s.id}
