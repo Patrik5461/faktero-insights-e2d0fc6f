@@ -92,7 +92,7 @@ export async function prehladEfakturyPdf(
   const pocty = new Map<RozsahEfaktury, number>();
   for (const r of riadky) pocty.set(r.rozsah, (pocty.get(r.rozsah) ?? 0) + 1);
   let x = OKRAJ;
-  for (const k of PORADIE_ROZSAHU) {
+  for (const k of PORADIE_ROZSAHU.filter((r) => r !== "bez_portalu")) {
     const t = `${NAZOV_ROZSAHU[k]}: ${pocty.get(k) ?? 0}`;
     text(t, x, y, { f: k === "odosielanie_prijimanie" || k === "len_odosielanie" ? bold : font });
     x += font.widthOfTextAtSize(t, 9) + 18;

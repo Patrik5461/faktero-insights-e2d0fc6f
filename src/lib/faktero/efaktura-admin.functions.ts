@@ -534,7 +534,8 @@ export const adminEfakturaPrehladPdfFn = createServerFn({ method: "POST" })
       }),
     );
     const { prehladEfakturyPdf } = await import("./efaktura-prehlad-pdf.server");
-    const pdf = await prehladEfakturyPdf(riadky);
+    // Testovacie napojenia (bez výberu na portáli FS) do prehľadu nepatria.
+    const pdf = await prehladEfakturyPdf(riadky.filter((r) => r.rozsah !== "bez_portalu"));
     return {
       base64: Buffer.from(pdf).toString("base64"),
       nazov: `firmy-efaktura-${new Date().toISOString().slice(0, 10)}.pdf`,
