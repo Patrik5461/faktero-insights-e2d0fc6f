@@ -353,7 +353,7 @@ export function AppShell({
           Farba je na vnútornom riadku, nie na hlavičke — tá si pri rolovaní
           mení pozadie a zelená by sa s ňou prala.
         */}
-          <div className="flex h-14 items-center gap-2.5 px-4 max-md:bg-primary max-md:text-primary-foreground lg:px-6">
+          <div className="flex h-14 items-center gap-2.5 px-4 max-md:gap-2 max-md:bg-primary max-md:px-3 max-md:text-primary-foreground lg:px-6">
             {/* Mobile menu trigger */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
@@ -403,8 +403,12 @@ export function AppShell({
             >
               <Logo variant="icon" className="h-7 w-7 shrink-0 md:hidden" />
               <Logo className="hidden h-7 shrink-0 md:block" />
+              {/* Na telefóne je vedľa veľa tlačidiel — meno sa radšej zalomí do
+                  dvoch riadkov, než aby z neho ostalo „QA Č…". */}
               {active && (
-                <span className="truncate text-[13px] font-semibold md:hidden">{active.name}</span>
+                <span className="line-clamp-2 break-words text-[12px] font-semibold leading-tight md:hidden">
+                  {active.name}
+                </span>
               )}
             </Link>
 
@@ -485,7 +489,7 @@ export function AppShell({
             )}
 
             {/* Right cluster */}
-            <div className="ml-auto flex items-center gap-1.5">
+            <div className="ml-auto flex shrink-0 items-center gap-1.5 max-md:gap-1">
               <PrepinacJazyka
                 className="max-md:border-white/30 max-md:[&_button[aria-pressed=false]]:text-primary-foreground/80"
                 kompaktnyClassName="max-md:border-white/30 max-md:text-primary-foreground"
