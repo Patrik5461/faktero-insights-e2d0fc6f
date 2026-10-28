@@ -1028,6 +1028,7 @@ describe("stratégie", () => {
       "flexi_xml",
       "isdoc_zip",
       "money_s3_xml",
+      "mrp_xml",
       "omega_txt",
       "pohoda_xml",
     ]);
@@ -1037,6 +1038,7 @@ describe("stratégie", () => {
     expect(EXPORT_STRATEGIES.pohoda_xml.encoding).toBe("utf-8");
     expect(EXPORT_STRATEGIES.money_s3_xml.encoding).toBe("utf-8");
     expect(EXPORT_STRATEGIES.flexi_xml.encoding).toBe("utf-8");
+    expect(EXPORT_STRATEGIES.mrp_xml.encoding).toBe("utf-8");
     // BIS je ZIP súborov — v histórii exportov sa nesie v base64 ako ISDOC.
     expect(EXPORT_STRATEGIES.bis_zip.encoding).toBe("base64");
     // ISDOC je ZIP — história exportov drží text, tak ide v base64.

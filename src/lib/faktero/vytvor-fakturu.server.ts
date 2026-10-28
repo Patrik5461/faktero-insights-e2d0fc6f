@@ -42,6 +42,11 @@ export type VstupFaktury = {
   notes?: string | null;
   job_id?: string | null;
   items: PolozkaFaktury[];
+  /**
+   * Ďalšie stĺpce faktúry z verejného API (dodaci_list, zobrazit_peciatku,
+   * účtovné kódy, stav, štítky, komentár, int_poznamka) — overené volajúcim.
+   */
+  doplnky?: Record<string, unknown>;
 };
 
 export type VysledokFaktury =
@@ -162,6 +167,7 @@ export async function vytvorFakturu(
       order_number: d.order_number ?? null,
       external_id: d.external_id ?? null,
       job_id: d.job_id ?? null,
+      ...(d.doplnky ?? {}),
       status: "issued",
     })
     .select()

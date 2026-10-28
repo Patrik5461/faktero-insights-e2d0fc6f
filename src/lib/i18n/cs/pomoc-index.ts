@@ -25,8 +25,8 @@ export default {
   "Čo dlžíte, splatnosť a DPH na vstupe.": "Co dlužíte, splatnost a DPH na vstupu.",
   "Karta odberateľa, jeho ceny, zľava a predvolená zákazka.":
     "Karta odběratele, jeho ceny, sleva a výchozí zakázka.",
-  "Zapnutie cez Portál FS, odoslanie a príjem eFaktúr.":
-    "Zapnutí přes Portál FS SR, odeslání a příjem eFaktur.",
+  "Zapnutie cez Portál FS, odoslanie, príjem a kontrola XML eFaktúr.":
+    "Zapnutí přes Portál FS SR, odeslání, příjem a kontrola XML eFaktur.",
   "Aplikácia v telefóne": "Aplikace v telefonu",
   "Fakturovanie a skenovanie v teréne, práca bez signálu a samostatná Kniha jázd.":
     "Fakturace a skenování v terénu, práce bez signálu a samostatná Kniha jízd.",

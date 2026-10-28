@@ -69,8 +69,8 @@ export default {
     "Víceúrovňové schvalování dokladů — do Pohody a k úhradě jde jen schválené",
   "Funguje so všetkými radami Pohody": "Funguje se všemi řadami Pohody",
   "Neúčtujete v Pohode?": "Neúčtujete v Pohodě?",
-  "Zaúčtované vystavené faktúry, prijaté faktúry aj bločky pošle Faktero aj do KROS Omegy (rovno účtovné zápisy), Money S3 a ABRA Flexi — s predkontáciou, členením DPH, strediskom a zákazkou. Pre MRP, Helios či Premier pripraví zaúčtovanú súpisku CSV.":
-    "Zaúčtované vystavené faktury, přijaté faktury i účtenky pošle Faktero také do KROS Omegy (rovnou účetní zápisy), Money S3 a ABRA Flexi — s předkontací, členěním DPH, střediskem a zakázkou. Pro MRP, Helios či Premier připraví zaúčtovanou soupisku CSV.",
+  "Zaúčtované vystavené faktúry, prijaté faktúry aj bločky pošle Faktero aj do KROS Omegy (rovno účtovné zápisy), Money S3, ABRA Flexi a MRP-K/S — s predkontáciou, členením DPH, strediskom a zákazkou. Pre Helios či Premier pripraví zaúčtovanú súpisku CSV.":
+    "Zaúčtované vystavené faktury, přijaté faktury i účtenky pošle Faktero také do KROS Omegy (rovnou účetní zápisy), Money S3, ABRA Flexi a MRP-K/S — s předkontací, členěním DPH, střediskem a zakázkou. Pro Helios či Premier připraví zaúčtovanou soupisku CSV.",
   "Import zo SuperFaktúry": "Import ze SuperFaktúry",
   "Prejdite na Faktero bez straty histórie a číselných radov.":
     "Přejděte na Faktero bez ztráty historie a číselných řad.",
@@ -580,9 +580,10 @@ export default {
     "Pohoda XML a přímé propojení, které si doklady bere samo",
   "KROS Omega (TXT) a Money S3 (XML) vrátane faktúr v cudzej mene":
     "KROS Omega (TXT) a Money S3 (XML) včetně faktur v cizí měně",
-  "ISDOC pre české programy a ABRA Flexi XML": "ISDOC pro české programy a ABRA Flexi XML",
-  "CSV súpiska pre MRP, Helios, Premier alebo Excel":
-    "Soupiska CSV pro MRP, Helios, Premier nebo Excel",
+  "ISDOC pre české programy, ABRA Flexi XML a MRP-K/S XML":
+    "ISDOC pro české programy, ABRA Flexi XML a MRP-K/S XML",
+  "CSV súpiska pre Helios, Premier alebo Excel":
+    "Soupiska CSV pro Helios, Premier nebo Excel",
   "Zálohové faktúry, dobropisy a zľavy rozpočítané správne v každom formáte":
     "Zálohové faktury, dobropisy a slevy rozpočítané správně v každém formátu",
   "Automatické účtovanie": "Automatické účtování",

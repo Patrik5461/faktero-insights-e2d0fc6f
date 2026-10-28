@@ -28,8 +28,6 @@ export default {
   "100 % — len na podnikanie": "100 % — jen k podnikání",
   "50 % — zmiešané použitie": "50 % — smíšené použití",
   "Bez odpočtu": "Bez odpočtu",
-  "Pri zmiešanom použití osobného auta sa na Slovensku od roku 2025 odpočítava DPH paušálne 50 % (§ 49 ods. 7 zákona o DPH), ak nevediete knihu jázd preukazujúcu len podnikanie.":
-    "Při smíšeném použití osobního auta se na Slovensku od roku 2025 odpočítává DPH paušálně 50 % (§ 49 odst. 7 slovenského zákona o DPH), pokud nevedete knihu jízd prokazující jen podnikání.",
   "Platí sa daň z motorových vozidiel": "Platí se silniční daň",
   "Kategória {k} dani podlieha (nákladné a autobusy nad 3,5 t, ťažké prívesy).":
     "Kategorie {k} dani podléhá (nákladní a autobusy nad 3,5 t, těžké přívěsy).",

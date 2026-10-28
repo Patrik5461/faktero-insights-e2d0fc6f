@@ -6,8 +6,6 @@ export default {
     "Každý nový doklad — přijatá faktura, účtenka i vystavená faktura — dostane do minuty návrh zaúčtování: <0>předkontaci, členění DPH, řádek kontrolního výkazu</0>, případně středisko a činnost. Nezáleží na tom, zda přišel e-mailem, ze skeneru, z importu, nebo jste ho napsali ručně.",
   "Predkontácia sa hľadá v tomto poradí — prvý zdroj, ktorý zaberie, vyhráva:":
     "Předkontace se hledá v tomto pořadí — první zdroj, který zabere, vyhrává:",
-  "<0>Pravidlo účtovania</0> (istota 100 %) — podľa partnera, textu, spôsobu úhrady, predmetu e-mailu či typu dokladu. Pravidlá spravujete v <1>Účtovníctvo → Pravidlá účtovania</1>.":
-    "<0>Pravidlo účtování</0> (jistota 100 %) — podle partnera, textu, způsobu úhrady, předmětu e-mailu či typu dokladu. Pravidla spravujete v <1>Účetnictví → Pravidla účtování</1>.",
   "<0>Zvyk partnera</0> — keď ste aspoň tri z posledných desiatich dokladov od toho istého partnera zaúčtovali väčšinou rovnako. Istota je podiel zhody (najviac 98 %).":
     "<0>Zvyk partnera</0> — když jste alespoň tři z posledních deseti dokladů od stejného partnera zaúčtovali většinou stejně. Jistota je podíl shody (nejvýše 98 %).",
   "<0>AI</0> (prijaté faktúry a bločky) — vyberá výhradne z vašich predkontácií a povie, prečo. Kód, ktorý vo vašom číselníku nie je, sa zahodí.":
@@ -49,6 +47,8 @@ export default {
   "Keď rovnakú opravu u toho istého partnera urobíte druhýkrát, Faktero ponúkne <0>vytvoriť pravidlo</0> s predvyplnenými podmienkami. Každá oprava sa zapíše do histórie dokladu.":
     "Když stejnou opravu u stejného partnera uděláte podruhé, Faktero nabídne <0>vytvořit pravidlo</0> s předvyplněnými podmínkami. Každá oprava se zapíše do historie dokladu.",
   "Bankové pohyby": "Bankovní pohyby",
-  "Pohyby sa zaúčtujú pri vývoze výpisu do Pohody: pravidlo pre banku (účet, smer, protistrana) má prednosť, spárovaný pohyb dostane predvolenú predkontáciu pre banku. Pri nespárovaných pohyboch sa AI nepýta.":
-    "Pohyby se zaúčtují při exportu výpisu do Pohody: pravidlo pro banku (účet, směr, protistrana) má přednost, spárovaný pohyb dostane výchozí předkontaci pro banku. U nespárovaných pohybů se AI neptá.",
+  "<0>Pravidlo účtovania</0> (istota 100 %) — podľa partnera, textu, spôsobu úhrady, predmetu či odosielateľa e-mailu, krajiny, variabilného symbolu alebo typu dokladu. Pravidlá spravujete v <1>Účtovníctvo → Pravidlá účtovania</1>.":
+    "<0>Pravidlo účtování</0> (jistota 100 %) — podle partnera, textu, způsobu úhrady, předmětu či odesílatele e-mailu, země, variabilního symbolu nebo typu dokladu. Pravidla spravujete v <1>Účetnictví → Pravidla účtování</1>.",
+  "Pohyby sa zaúčtujú pri vývoze výpisu do Pohody: pravidlo pre banku (účet, smer, protistrana) má prednosť, spárovaný pohyb dostane predvolenú predkontáciu pre banku. Pri nespárovaných pohyboch sa AI nepýta. Pravidlo pre banku s výsledkom <0>Spárované bez dokladu</0> (poplatky, mzdy, odvody) vybaví pohyb hneď, ako príde z banky alebo z nahratého výpisu — pozri <1>Banka</1>.":
+    "Pohyby se zaúčtují při exportu výpisu do Pohody: pravidlo pro banku (účet, směr, protistrana) má přednost, spárovaný pohyb dostane výchozí předkontaci pro banku. U nespárovaných pohybů se AI neptá. Pravidlo pro banku s výsledkem <0>Spárováno bez dokladu</0> (poplatky, mzdy, odvody) vyřídí pohyb hned, jak přijde z banky nebo z nahraného výpisu — viz <1>Banka</1>.",
 };

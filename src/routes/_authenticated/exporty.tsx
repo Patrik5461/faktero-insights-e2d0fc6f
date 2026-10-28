@@ -79,8 +79,13 @@ const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
     note: "Import v ABRA Flexi: Nástroje → Import → XML. Zálohové faktúry a doklady v cudzej mene vynechá.",
   },
   {
+    format: "mrp_xml",
+    label: "MRP-K/S XML",
+    note: "XML MRP-K/S 2.0 pre slovenskú aj českú verziu: Faktury vydané → Funkce → Import ze souboru XML. Typy DPH a verziu programu nastavíte v Zaúčtovaných dokladoch pri programe MRP-K/S.",
+  },
+  {
     format: "csv_univerzal",
-    label: "Súpiska CSV (Excel, MRP, Premier…)",
+    label: "Súpiska CSV (Excel, Premier, Helios…)",
     note: "Jeden riadok na doklad s rozpisom po sadzbách DPH, oddeľovač bodkočiarka, kódovanie Windows-1250. Dobropis je záporný, aby sa dal rovno sčítať.",
   },
 ];
@@ -208,7 +213,7 @@ function ExportsPage() {
       <PageHeader
         title={t("Účtovné exporty")}
         description={t(
-          "Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, DATEV, do ISDOC-u alebo ako súpisku pre Excel.",
+          "Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, MRP, DATEV, do ISDOC-u alebo ako súpisku pre Excel.",
         )}
       />
       <PageBody>

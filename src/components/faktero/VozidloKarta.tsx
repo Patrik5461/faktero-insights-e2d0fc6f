@@ -546,7 +546,14 @@ export function VozidloKarta({ id }: { id: string | null }) {
           {zmiesane && txt("odpocet_dph") === "100" && (
             <p className="text-xs text-amber-700 sm:col-span-2 dark:text-amber-300">
               {t(
-                "Pri zmiešanom použití osobného auta sa na Slovensku od roku 2025 odpočítava DPH paušálne 50 % (§ 49 ods. 7 zákona o DPH), ak nevediete knihu jázd preukazujúcu len podnikanie.",
+                "Pri zmiešanom použití osobného auta sa na Slovensku od 1. 1. 2026 do 30. 6. 2028 odpočítava DPH paušálne 50 % (§ 85n zákona o DPH). 100 % len pri aute výlučne na podnikanie s podrobnou elektronickou evidenciou jázd a oznámením daňovému úradu.",
+              )}
+            </p>
+          )}
+          {(txt("odpocet_dph") === "50" || txt("odpocet_dph") === "0") && (
+            <p className="text-xs text-muted-foreground sm:col-span-2">
+              {t(
+                "Bločky a prijaté faktúry s týmto vozidlom sa pri zaúčtovaní aj vo výkazoch DPH rozdelia samy — odpočíta sa len povolená časť DPH, zvyšok ide do nákladu (v dani z príjmov je to nedaňový výdavok).",
               )}
             </p>
           )}

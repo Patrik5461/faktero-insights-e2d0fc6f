@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
-import { Landmark, RefreshCw } from "lucide-react";
+import { Landmark, RefreshCw, X } from "lucide-react";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { akciePohybu, stitokPohybu } from "@/lib/mobile/doklad-oznacenie";
+import type { StavPohybu, Vybavenie } from "@/lib/faktero/pohyb-vybavenie";
 import { zostatkyPodlaMien } from "@/lib/faktero/zostatky";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
 import { formatovacMeny } from "@/lib/faktero/mena";
@@ -48,7 +51,15 @@ type Pohyb = {
   protistrana: string | null;
   popis: string | null;
   faktura: string | null;
+  /** Staršia verzia servera ho neposiela — vtedy sa berie z `faktura`. */
+  stav?: StavPohybu;
+  vybavenie_poznamka?: string | null;
 };
+
+/** Stav pohybu aj zo staršej odpovede servera, ktorá pozná len faktúru. */
+function stavRiadku(p: Pohyb): StavPohybu {
+  return p.stav ?? (p.faktura ? "sparovany" : "nesparovany");
+}
 
 function suma(v: number, mena: string | null | undefined, loc: string): string {
   return formatovacMeny(mena ?? "EUR", loc)(v);
@@ -150,6 +161,29 @@ export function Banka({
   const { t, locale } = usePreklad();
   const nacitaj = useOperacia("banka-prehlad");
   const stiahni = useOperacia("banka-stiahni");
+  const oznac = useOperacia("pohyb-oznac");
+  /** Pohyb otvorený v spodnom okne (stav a označenie bez dokladu). */
+  const [otvoreny, setOtvoreny] = useState<Pohyb | null>(null);
+  const [oznacujem, setOznacujem] = useState(false);
+
+  /*
+    „Pohyb nemá doklad“ / „Transakčná daň“ — tá istá serverová funkcia ako
+    detail pohybu na webe; server odmietne pohyb spárovaný s dokladom.
+  */
+  async function oznacPohyb(p: Pohyb, vybavenie: Vybavenie | null) {
+    setOznacujem(true);
+    try {
+      await oznac({ data: { company_id: firma.id, id: p.id, vybavenie } });
+      const stav: StavPohybu = vybavenie ?? "nesparovany";
+      setPohyby((z) => z.map((x) => (x.id === p.id ? { ...x, stav } : x)));
+      setOtvoreny(null);
+      toast.success(vybavenie ? t("banka.oznacene") : t("banka.oznacenieZrusene"));
+    } catch (e: any) {
+      toast.error(e?.message ?? t("banka.chybaOznacenia"));
+    } finally {
+      setOznacujem(false);
+    }
+  }
   const [ucty, setUcty] = useState<Ucet[] | null>(null);
   const [pohyby, setPohyby] = useState<Pohyb[]>([]);
   const [vybrany, setVybrany] = useState<string | null>(null);
@@ -320,9 +354,12 @@ export function Banka({
             <div key={den}>
               <SectionHeader title={denNazov(den, t, locale)} />
               <ListCard>
-                {riadky.map((p) => (
+                {riadky.map((p) => {
+                  const stitok = stitokPohybu(stavRiadku(p));
+                  return (
                   <ListRow
                     key={p.id}
+                    onClick={() => setOtvoreny(p)}
                     title={nadpisPohybu(p, firma.name, t)}
                     subtitle={podnadpisPohybu(p, firma.name, t) ?? undefined}
                     right={`${p.suma > 0 ? "+" : ""}${suma(p.suma, p.mena, locale)}`}
@@ -330,16 +367,127 @@ export function Banka({
                     /* Stav párovania patrí pod sumu — je to vlastnosť platby,
                        nie samostatný riadok. */
                     rightSub={
-                      p.faktura ? <StatusBadge text={t("banka.sparovane")} ton="zelena" /> : undefined
+                      stitok ? <StatusBadge text={t(stitok.kluc)} ton={stitok.ton} /> : undefined
                     }
                   />
-                ))}
+                  );
+                })}
               </ListCard>
             </div>
           ))}
         </div>
       )}
+      {otvoreny && (
+        <DetailPohybu
+          pohyb={otvoreny}
+          firma={firma.name}
+          pracujem={oznacujem}
+          onOznac={(v) => void oznacPohyb(otvoreny, v)}
+          onZavriet={() => setOtvoreny(null)}
+        />
+      )}
     </MobilObrazovka>
+  );
+}
+
+const NAZOV_AKCIE: Record<Vybavenie | "zrusit", Kluc> = {
+  bez_dokladu: "banka.oznacitBezDokladu",
+  transakcna_dan: "banka.oznacitTransakcnaDan",
+  zrusit: "banka.zrusitOznacenie",
+};
+
+/**
+ * Spodné okno s pohybom: stav (spárovaný, bez dokladu, transakčná daň,
+ * nespárovaný) a označenie. Párovanie s dokladom sa tu nerieši — na to sú
+ * návrhy v Dokladoch a detail pohybu na webe.
+ */
+export function DetailPohybu({
+  pohyb: p,
+  firma,
+  pracujem,
+  onOznac,
+  onZavriet,
+}: {
+  pohyb: Pohyb;
+  firma: string;
+  pracujem: boolean;
+  onOznac: (v: Vybavenie | null) => void;
+  onZavriet: () => void;
+}) {
+  const { t, locale } = usePreklad();
+  useZatvorNaEscape(pracujem ? null : onZavriet);
+  const stav = stavRiadku(p);
+  const stitok = stitokPohybu(stav);
+  const akcie = akciePohybu(stav);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={onZavriet}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("banka.detailPohybu")}
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[85dvh] w-full overflow-y-auto rounded-t-[20px] bg-app-karta p-4"
+        style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="truncate text-[17px] font-bold text-app-text">
+              {nadpisPohybu(p, firma, t)}
+            </div>
+            <div className="mt-0.5 text-[13px] text-app-text-2">{denNazov(p.datum, t, locale)}</div>
+          </div>
+          <button
+            onClick={onZavriet}
+            aria-label={t("spolocne.spat")}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-app-text-2 active:bg-app-ramik"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div
+          className={`mt-3 text-[28px] font-bold tabular-nums ${p.suma > 0 ? "text-app-zelena" : "text-app-text"}`}
+        >
+          {`${p.suma > 0 ? "+" : ""}${suma(p.suma, p.mena, locale)}`}
+        </div>
+        {podnadpisPohybu(p, firma, t) && (
+          <p className="mt-1 break-words text-[13px] text-app-text-2">
+            {podnadpisPohybu(p, firma, t)}
+          </p>
+        )}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <StatusBadge
+            text={stitok ? t(stitok.kluc) : t("banka.nesparovane")}
+            ton={stitok?.ton ?? "neutral"}
+          />
+          {p.vybavenie_poznamka && (
+            <span className="min-w-0 break-words text-[13px] text-app-text-2">
+              {p.vybavenie_poznamka}
+            </span>
+          )}
+        </div>
+        {akcie.length === 0 ? (
+          <p className="mt-4 text-[13px] text-app-text-2">{t("banka.sparovanyPopis")}</p>
+        ) : (
+          <>
+            <p className="mt-4 text-[13px] text-app-text-2">{t("banka.oznacenieNapoveda")}</p>
+            <div className="mt-3 space-y-2">
+              {akcie.map((a) => (
+                <button
+                  key={a ?? "zrusit"}
+                  disabled={pracujem}
+                  onClick={() => onOznac(a)}
+                  className={`min-h-[48px] w-full rounded-app-sm px-4 text-[15px] font-medium disabled:opacity-50 ${
+                    a ? "bg-app-zelena-plocha text-white" : "border border-app-ramik text-app-text"
+                  }`}
+                >
+                  {t(NAZOV_AKCIE[a ?? "zrusit"])}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 

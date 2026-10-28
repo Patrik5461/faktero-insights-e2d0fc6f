@@ -25,10 +25,10 @@ export default {
     "<0>Übersicht</0> — Umsatz von heute und gestern, wer noch nicht bezahlt hat, und Schnellschaltflächen für eine neue Rechnung und einen neuen Beleg.",
   "<0>Faktúry</0> — vystavenie aj oprava už vystavenej faktúry, cenové ponuky, PDF a odoslanie e-mailom. Opravuje sa na tej istej obrazovke, na ktorej sa vystavuje.":
     "<0>Rechnungen</0> — Ausstellen und Korrigieren bereits ausgestellter Rechnungen, Angebote, PDF und Versand per E-Mail. Korrigiert wird auf demselben Bildschirm, auf dem auch ausgestellt wird.",
-  "<0>Doklady</0> — nahraté a rozpoznané výdavkové doklady.":
-    "<0>Belege</0> — hochgeladene und erkannte Ausgabenbelege.",
-  "<0>Banka</0> — zostatky a posledné pohyby z pripojených účtov.":
-    "<0>Bank</0> — Kontostände und die letzten Umsätze der verbundenen Konten.",
+  "<0>Doklady</0> — nahraté a rozpoznané výdavkové doklady a prijaté faktúry. Pri prijatej faktúre vidíte, koľko zostáva uhradiť a koľko dní je po splatnosti, a pridáte úhradu, aj čiastočnú. Pri doklade je komentár (do účtovníctva sa neprenáša), stav, štítky a poznámka s preddefinovanými textami firmy.":
+    "<0>Belege</0> — hochgeladene und erkannte Ausgabenbelege sowie Eingangsrechnungen. Bei einer Eingangsrechnung sehen Sie, wie viel noch offen ist und wie viele Tage sie überfällig ist, und erfassen eine Zahlung, auch eine Teilzahlung. Jeder Beleg hat einen Kommentar (wird nicht in die Buchhaltung übertragen), einen Status, Etiketten und eine Notiz mit vordefinierten Texten der Firma.",
+  "<0>Banka</0> — zostatky a posledné pohyby z pripojených účtov. Pohyb bez dokladu (poplatok banky, mzda, odvody) po ťuknutí označíte ako „Pohyb nemá doklad“ alebo „Transakčná daň“.":
+    "<0>Bank</0> — Kontostände und die letzten Umsätze der verbundenen Konten. Eine Bewegung ohne Beleg (Bankgebühr, Lohn, Abgaben) markieren Sie per Tippen als „Ohne Beleg“ oder „Transaktionssteuer“.",
   "<0>Jazdy</0> — kniha jázd, vrátane tých, ktoré si telefón všimol sám.":
     "<0>Fahrten</0> — das Fahrtenbuch, einschließlich der Fahrten, die das Smartphone selbst erkannt hat.",
   "Účet aj firmu si v appke založíte sami — na web kvôli tomu chodiť netreba.":

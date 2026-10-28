@@ -25,8 +25,8 @@ export default {
   "Čo dlžíte, splatnosť a DPH na vstupe.": "Was Sie schulden, Fälligkeit und Vorsteuer.",
   "Karta odberateľa, jeho ceny, zľava a predvolená zákazka.":
     "Kundenkarte, Kundenpreise, Rabatt und Standardprojekt.",
-  "Zapnutie cez Portál FS, odoslanie a príjem eFaktúr.":
-    "Aktivierung über das Portal der Finanzverwaltung (FS), Versand und Empfang von E-Rechnungen.",
+  "Zapnutie cez Portál FS, odoslanie, príjem a kontrola XML eFaktúr.":
+    "Aktivierung über das Portal der Finanzverwaltung (FS), Versand, Empfang und XML-Prüfung von E-Rechnungen.",
   "Aplikácia v telefóne": "App auf dem Smartphone",
   "Fakturovanie a skenovanie v teréne, práca bez signálu a samostatná Kniha jázd.":
     "Rechnungsstellung und Scannen unterwegs, Arbeiten ohne Empfang und die eigenständige Fahrtenbuch-App.",

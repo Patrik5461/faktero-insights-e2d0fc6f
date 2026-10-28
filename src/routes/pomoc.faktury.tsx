@@ -91,11 +91,12 @@ const sections: HelpSection[] = [
           namiesto toho väzbu na opravovanú faktúru.
         </p>
         <p>
-          Pod položkami je <strong>Pridať uhradenú zálohu</strong> (ponúknu sa zálohové faktúry
-          vybraného odberateľa) a voľba <strong>Táto faktúra slúži zároveň ako dodací list</strong>{" "}
-          — PDF potom nesie nadpis „Faktúra – dodací list“ a dole podpisy Odovzdal a Prevzal.
-          Pečiatku a podpis zapnete či vypnete pre jednu faktúru v Platobných údajoch, predvolený
-          text nad položkami nastavíte vo Vzhľade faktúry.
+          Ten istý odpočet zálohy pridáte aj priamo pod položkami cez{" "}
+          <strong>Pridať uhradenú zálohu</strong> (ponúknu sa zálohové faktúry vybraného
+          odberateľa). Tam je aj voľba <strong>Táto faktúra slúži zároveň ako dodací list</strong> —
+          PDF potom nesie nadpis „Faktúra – dodací list“ a dole podpisy Odovzdal a Prevzal. Pečiatku
+          a podpis zapnete či vypnete pre jednu faktúru v Platobných údajoch, predvolený text nad
+          položkami nastavíte vo Vzhľade faktúry.
         </p>
         <p>
           Zbalená časť <strong>Účtovné nastavenia</strong> na konci formulára má dátum daňovej
@@ -119,8 +120,12 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Zaškrtnuté faktúry odošlete naraz e-mailom alebo <strong>eFaktúrou</strong>, stiahnete ako
-          ZIP či exportujete do účtovníctva. Detail faktúry ukazuje vľavo náhľad PDF, vpravo údaje a
-          akcie.
+          ZIP či exportujete do účtovníctva. <strong>Hromadná akcia</strong> im naraz nastaví
+          účtovnú položku, typ platby, členenie DPH a KV, poznámku, vlastný stav, štítky alebo
+          úhradu (viac v <Link to="/pomoc/doklady">manuáli k dokladom</Link>) a súčtová lišta pod
+          zoznamom ukáže, koľko označené faktúry stoja s DPH aj bez DPH. Detail faktúry ukazuje
+          vľavo náhľad PDF, vpravo údaje a akcie; šípkami <strong>Predošlý doklad</strong> a{" "}
+          <strong>Ďalší doklad</strong> prejdete na susednú faktúru.
         </p>
       </>
     ),
@@ -367,7 +372,9 @@ const sections: HelpSection[] = [
           Do Pohody ide aj text nad položkami faktúry a popis položiek, zľavy, spôsob úhrady a
           bankový účet — ten ako skratka účtu v Pohode, ktorú zadáte v{" "}
           <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> (pole{" "}
-          <em>Bankový účet v Pohode</em>, napr. <code>TB</code>).
+          <em>Bankový účet v Pohode</em>, napr. <code>TB</code>). Pri viacerých účtoch zadáte
+          skratku pri každom účte vo <Link to="/firma">Firma → Bankové účty</Link> a faktúra pôjde
+          so skratkou účtu, na ktorý sa má platiť.
         </p>
       </>
     ),
@@ -701,6 +708,26 @@ const sections: HelpSection[] = [
           Nad <strong>5 000 €</strong> sa objaví upozornenie: taká platba v hotovosti je medzi
           podnikateľmi zakázaná (zákon č. 394/2012 Z. z.). Medzi fyzickými osobami mimo podnikania
           je strop 15 000 €.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "vynosy-naklady",
+    title: "Výnosy a náklady na prehľade",
+    body: (
+      <>
+        <p>
+          Na stránke <Link to="/dashboard">Prehľad</Link> je graf <strong>Výnosy a náklady</strong>{" "}
+          po mesiacoch: výnosy z vystavených faktúr, náklady z prijatých faktúr a bločkov a ich{" "}
+          <strong>bilancia</strong>. Obdobie zvolíte — tento rok, minulý rok, posledných 12 mesiacov
+          alebo vlastné od–do — a sumy prepnete medzi s DPH a bez DPH. Neuhradené faktúry sú v
+          stĺpci svetlejšie ako očakávané výnosy a náklady; pod grafom je súhrn po mesiacoch.
+        </p>
+        <p>
+          Koncept, stornovaná a zálohová faktúra ani daňový doklad k platbe sa do výnosov
+          nepočítajú, dobropis ich znižuje. Vystavená faktúra patrí do mesiaca vystavenia, prijatá
+          do mesiaca dodania. Doklady v cudzej mene sú prepočítané kurzom uloženým na doklade.
         </p>
       </>
     ),

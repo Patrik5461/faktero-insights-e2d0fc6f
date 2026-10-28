@@ -15,8 +15,17 @@ export function csvHodnota(v: unknown): string {
   return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/**
+ * Stĺpce, ktoré do exportu ani zálohy nepatria: prístupové tokeny verejných
+ * odkazov (faktúra, schválenie, ponuka), šifrované a tajné hodnoty. Kto má
+ * balík, nesmie sa nimi dostať k dokladom mimo aplikácie.
+ */
+const TAJNE_STLPCE = /(token|sifrovan|secret|tajomstv|heslo|password|api_key|_hash$)/i;
+
 export function naCsv(riadky: Record<string, unknown>[], stlpce?: string[]): string {
-  const hlavicka = stlpce ?? [...new Set(riadky.flatMap((r) => Object.keys(r)))];
+  const hlavicka = (stlpce ?? [...new Set(riadky.flatMap((r) => Object.keys(r)))]).filter(
+    (k) => !TAJNE_STLPCE.test(k),
+  );
   const telo = riadky.map((r) => hlavicka.map((k) => csvHodnota(r[k])).join(";"));
   // BOM, inak Excel zje diakritiku.
   return "﻿" + [hlavicka.join(";"), ...telo].join("\r\n") + "\r\n";

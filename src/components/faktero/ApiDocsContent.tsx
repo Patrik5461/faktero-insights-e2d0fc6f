@@ -502,7 +502,11 @@ curl https://faktero.sk/api/v1/invoices \\
               <Endpoint method="POST" path="/api/v1/invoices" desc="Vystavenie faktúry" />
               <Endpoint method="GET" path="/api/v1/invoices" desc="Zoznam faktúr" />
               <Endpoint method="GET" path="/api/v1/invoices/{id}" desc="Detail faktúry" />
-              <Endpoint method="PUT" path="/api/v1/invoices/{id}" desc="Úprava (len koncepty)" />
+              <Endpoint
+                method="PUT"
+                path="/api/v1/invoices/{id}"
+                desc="Úprava: poznámka, splatnosť, VS, úhrada, dodací list, pečiatka, zaúčtovanie, stav a štítky"
+              />
               <Endpoint
                 method="GET"
                 path="/api/v1/invoices/{id}/pdf"
@@ -516,6 +520,26 @@ curl https://faktero.sk/api/v1/invoices \\
               />
               <Endpoint method="POST" path="/api/v1/invoices/{id}/cancel" desc="Storno faktúry" />
             </ul>
+            <h3 className="mt-5 font-semibold">{t("Dodací list, pečiatka a zaúčtovanie")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "Pri vystavení (POST) aj úprave (PUT) môžete poslať dodaci_list: true (faktúra slúži zároveň ako dodací list — iný nadpis a podpisy odovzdania a prevzatia v PDF), zobrazit_peciatku (true alebo false; bez neho podľa nastavenia firmy) a accounting { predkontacia, clenenie_dph, kv_clenenie, stredisko, cinnost, booked }. V odpovedi sú ako pohoda_predkontacia, pohoda_clenenie_dph a kv_clenenie. Faktúra prijíma aj stav, štítky, komentár a účtovnú poznámku (pozri Prijaté doklady a banka). Na faktúre odovzdanej do účtovníctva sa účtovné údaje, sumy ani dátumy nezmenia — API vráti 409 s kódom locked a v details sú dotknuté polia.",
+              )}
+            </p>
+            <div className="mt-3">
+              <CodeBlock
+                lang="json"
+                code={`PUT /api/v1/invoices/{id}
+{
+  "dodaci_list": true,
+  "zobrazit_peciatku": false,
+  "accounting": { "predkontacia": "1Fv", "clenenie_dph": "UD", "kv_clenenie": "A1" },
+  "stav": "Skontrolovať",
+  "stitky_pridat": "Zákazka Novák",
+  "komentar": "Overiť dodanie s Petrom"
+}`}
+              />
+            </div>
           </section>
           <section
             id="quotes"
@@ -584,6 +608,21 @@ curl https://faktero.sk/api/v1/invoices \\
                 path="/api/v1/purchase-invoices/{id}/exported"
                 desc="Označiť ako odovzdanú"
               />
+              <Endpoint
+                method="GET"
+                path="/api/v1/purchase-invoices/{id}/payments"
+                desc="Úhrady prijatej faktúry a koľko zostáva uhradiť"
+              />
+              <Endpoint
+                method="POST"
+                path="/api/v1/purchase-invoices/{id}/payments"
+                desc="Pridať úhradu (aj čiastočnú)"
+              />
+              <Endpoint
+                method="DELETE"
+                path="/api/v1/purchase-invoices/{id}/payments/{paymentId}"
+                desc="Zmazať ručne pridanú úhradu"
+              />
               <Endpoint method="GET" path="/api/v1/receipts" desc="Bločky" />
               <Endpoint method="POST" path="/api/v1/receipts" desc="Zapísať bloček" />
               <Endpoint method="PUT" path="/api/v1/receipts/{id}" desc="Úprava bločku" />
@@ -616,6 +655,23 @@ curl https://faktero.sk/api/v1/invoices \\
                 method="GET"
                 path="/api/v1/bank-transactions"
                 desc="Pohyby na bankových účtoch"
+              />
+              <Endpoint
+                method="POST"
+                path="/api/v1/bank-transactions/{id}/resolution"
+                desc="Vybaviť pohyb bez dokladu (aj transakčná daň)"
+              />
+              <Endpoint method="GET" path="/api/v1/document-states" desc="Vlastné stavy dokladov" />
+              <Endpoint method="GET" path="/api/v1/tags" desc="Číselník štítkov" />
+              <Endpoint
+                method="GET"
+                path="/api/v1/accounting-codes"
+                desc="Predkontácie, členenia DPH, strediská, činnosti a číselné rady"
+              />
+              <Endpoint
+                method="GET"
+                path="/api/v1/accounting-templates"
+                desc="Predlohy zaúčtovania"
               />
               <Endpoint
                 method="POST"
@@ -660,6 +716,66 @@ curl https://faktero.sk/api/v1/invoices \\
                 "Úhradu zapíšete cez PUT s payment_date. Bloček: issue_date, total_amount (s DPH), vat_breakdown [{ rate, base, vat }] a payment_method (hotovost, karta, prevod) — hotovosť sa započíta do pokladne, ak nepošlete cash_register: false.",
               )}
             </p>
+            <h3 className="mt-5 font-semibold">{t("Úhrady prijatých faktúr")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "Prijatá faktúra môže mať viac úhrad, aj čiastočných. POST …/payments prijme amount (v mene faktúry), paid_at (RRRR-MM-DD, predvolene dnes), method (prevod, hotovost, karta) a note; s external_id je opakovanie bezpečné. Keď súčet úhrad dosiahne sumu na úhradu (celková suma mínus zaplatená zálohová faktúra), faktúra je uhradená — stav a payment_date prepočíta Faktero samo. GET vráti úhrady a súhrn amount_due, amount_paid, amount_remaining a payment_status (paid, partially_paid, unpaid). Úhradu zo spárovaného bankového pohybu (source: bank) cez API zmazať nejde (409 bank_payment). Úhrady nezamyká odovzdanie do účtovníctva ani uzávierka.",
+              )}
+            </p>
+            <div className="mt-3">
+              <CodeBlock
+                lang="json"
+                code={`POST /api/v1/purchase-invoices/{id}/payments
+{ "amount": 50.00, "paid_at": "2026-10-28", "method": "prevod",
+  "external_id": "erp-uhrada-881" }
+
+201 Created
+{
+  "objekt": "purchase_invoice_payment",
+  "id": "2f0c…", "amount": 50, "currency": "EUR", "paid_at": "2026-10-28",
+  "source": "manual", "deletable": true,
+  "invoice": { "amount_due": 123, "amount_paid": 50, "amount_remaining": 73,
+               "payment_status": "partially_paid" }
+}`}
+              />
+            </div>
+            <h3 className="mt-5 font-semibold">{t("Stav, štítky, komentár a účtovná poznámka")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "Prijaté faktúry, bločky aj vystavené faktúry prijímajú pri zápise (POST) aj úprave (PUT): stav_id alebo stav (názov z GET /document-states; null stav zruší), stitky (nahradia celý zoznam, najviac 5) alebo stitky_pridat a stitky_odobrat (jeden štítok), komentar (pre ľudí vo firme, do účtovníctva nejde nikdy) a int_poznamka (účtovná poznámka, ide s dokladom do účtovníctva). Nový štítok sa zapíše aj do číselníka firmy (GET /tags). Stav, štítky a komentár sa menia aj na doklade odovzdanom do účtovníctva; účtovné údaje vrátane účtovnej poznámky nie — API vráti 409 locked, kým doklad nevrátite (exported: false).",
+              )}
+            </p>
+            <div className="mt-3">
+              <CodeBlock
+                lang="json"
+                code={`PUT /api/v1/receipts/{id}
+{ "stav": "Čaká na doklad od klienta", "stitky": ["Auto", "Služobná cesta"],
+  "komentar": "Chýba druhá strana bločku" }
+
+409 Conflict
+{ "error": { "code": "locked", "message": "Doklad je odovzdaný do účtovníctva — …",
+             "details": { "reason": "odovzdany", "fields": ["pohoda_predkontacia"] } } }`}
+              />
+            </div>
+            <h3 className="mt-5 font-semibold">{t("Číselníky zaúčtovania")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "GET /accounting-codes vráti číselník firmy (napr. prenesený z Pohody): druh, kod, popis, ucet_md, ucet_d, typ_dokladu a typ_platby. Filter kind (predkontacia, clenenie_dph, stredisko, cinnost, ciselny_rad); document_type (faktura, blocek) a payment_type (hotovost, karta, prevod) vrátia kódy pre daný typ aj tie, ktoré typ neurčujú; active=all vráti aj vypnuté. GET /accounting-templates vráti predlohy zaúčtovania (document_kind: blocek, prijata, vystavena). Kód z číselníka pošlite v accounting.predkontacia.",
+              )}
+            </p>
+            <h3 className="mt-5 font-semibold">{t("Pohyby bez dokladu")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "Nie každý pohyb má doklad — poplatok banky, mzda, odvod či transakčná daň. Každý pohyb nesie stav (sparovany, bez_dokladu, transakcna_dan, nesparovany) a vybavenie, vybavenie_poznamka a vybavene_at; filter state=nesparovany vráti len to, čo treba ešte vyriešiť. POST /bank-transactions/{id}/resolution s resolution bez_dokladu alebo transakcna_dan (a note do 200 znakov) pohyb vybaví, resolution: null označenie zruší. Spárovaný pohyb sa označiť nedá (409 already_matched). Transakčnú daň Faktero väčšinou spozná samo podľa popisu banky.",
+              )}
+            </p>
+            <div className="mt-3">
+              <CodeBlock
+                lang="json"
+                code={`POST /api/v1/bank-transactions/{id}/resolution
+{ "resolution": "bez_dokladu", "note": "Poplatok za vedenie účtu" }`}
+              />
+            </div>
             <h3 className="mt-5 font-semibold">{t("Prenos bankového účtu")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t(
@@ -699,6 +815,11 @@ curl https://faktero.sk/api/v1/invoices \\
                 {t("len zaúčtované (prijaté faktúry).")}
               </li>
               <li>
+                <code className="font-mono">stav_id</code> {t("(id stavu alebo none) a")}{" "}
+                <code className="font-mono">tag</code> —{" "}
+                {t("len doklady s daným stavom alebo štítkom.")}
+              </li>
+              <li>
                 <code className="font-mono">limit</code> {t("(najviac 200) a")}{" "}
                 <code className="font-mono">offset</code>; {t("odpoveď má")}{" "}
                 <code className="font-mono">has_more</code> {t("a")}{" "}
@@ -707,8 +828,8 @@ curl https://faktero.sk/api/v1/invoices \\
               <li>
                 {t("Banka:")} <code className="font-mono">date_from</code>,{" "}
                 <code className="font-mono">date_to</code>,{" "}
-                <code className="font-mono">bank_account_id</code>;{" "}
-                <code className="font-mono">page</code> +{" "}
+                <code className="font-mono">bank_account_id</code>,{" "}
+                <code className="font-mono">state</code>; <code className="font-mono">page</code> +{" "}
                 <code className="font-mono">per_page</code> {t("(alebo")}{" "}
                 <code className="font-mono">offset</code> + <code className="font-mono">limit</code>
                 ), {t("najviac 500 na stranu. Odpoveď má")} <code className="font-mono">total</code>
@@ -967,12 +1088,12 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
               </li>
               <li>
                 {t(
-                  "Nástroje: faktúry a ich detail, faktúry po splatnosti, vystavenie faktúry, označenie úhrady, odberatelia aj ich hromadný prenos, cenové ponuky, cenník, prijaté faktúry a bločky (aj ich zápis a úhrada), bankové účty a pohyby (aj prenos na účet bez napojenia), založenie firmy, používatelia a pozvánky.",
+                  "Nástroje: faktúry a ich detail, faktúry po splatnosti, vystavenie faktúry, označenie úhrady, odberatelia aj ich hromadný prenos, cenové ponuky, cenník, prijaté faktúry a bločky (aj ich zápis, úhrady po častiach, stav, štítky a zaúčtovanie), predkontácie a predlohy zaúčtovania, bankové účty a pohyby (aj prenos na účet bez napojenia a vybavenie pohybu bez dokladu), založenie firmy, používatelia a pozvánky.",
                 )}
               </li>
               <li>
                 {t(
-                  "Asistent nič nemaže a nič neposiela odberateľom — faktúru vystaví, ale odoslanie e-mailom či ako eFaktúru je na vás. Jediný e-mail, ktorý odíde, je pozvánka používateľa, keď o ňu výslovne požiadate. Zapisujúce nástroje sú označené, aby si ich klient dal potvrdiť.",
+                  "Asistent zmaže nanajvýš ručne pridanú úhradu prijatej faktúry (nástroj je označený ako deštruktívny) a nič neposiela odberateľom — faktúru vystaví, ale odoslanie e-mailom či ako eFaktúru je na vás. Jediný e-mail, ktorý odíde, je pozvánka používateľa, keď o ňu výslovne požiadate. Zapisujúce nástroje sú označené, aby si ich klient dal potvrdiť.",
                 )}
               </li>
             </ul>

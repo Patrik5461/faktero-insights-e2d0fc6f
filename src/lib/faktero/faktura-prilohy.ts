@@ -120,3 +120,31 @@ export function cestaPrilohy(companyId: string, dokladId: string, mime: string):
   const pripona = POVOLENE_TYPY[mime] ?? "bin";
   return `${companyId}/${dokladId}/${crypto.randomUUID()}.${pripona}`;
 }
+
+/** Najviac toľko bajtov spolu ide do jedného ZIP-u „Stiahnuť všetky prílohy“. */
+export const MAX_ZIP_PRILOH = 60 * 1024 * 1024;
+
+/**
+ * Názvy súborov do ZIP-u: bez lomiek a riadiacich znakov (súbor by sa
+ * rozbalil mimo priečinka) a bez dvojíc — dva „sken.pdf“ by sa v archíve
+ * prepísali, druhý dostane „sken (2).pdf“.
+ */
+export function nazvyDoZipu(nazvy: string[]): string[] {
+  const pouzite = new Set<string>();
+  return nazvy.map((povodny) => {
+    const cisty =
+      String(povodny ?? "")
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\u0000-\u001f\\/:*?"<>|]+/g, "_")
+        .replace(/^\.+/, "")
+        .trim()
+        .slice(0, 150) || "priloha";
+    const bodka = cisty.lastIndexOf(".");
+    const meno = bodka > 0 ? cisty.slice(0, bodka) : cisty;
+    const pripona = bodka > 0 ? cisty.slice(bodka) : "";
+    let kandidat = cisty;
+    for (let i = 2; pouzite.has(kandidat.toLowerCase()); i++) kandidat = `${meno} (${i})${pripona}`;
+    pouzite.add(kandidat.toLowerCase());
+    return kandidat;
+  });
+}

@@ -1,7 +1,7 @@
 // Standardkontierung beim Buchen (NastavitPredvolene.tsx) und KV-Gliederung in den Vorkontierungen.
 export default {
-  "Nastaviť {kody} ako predvolené pre {doklad}? Použije sa pri každom ďalšom doklade tohto druhu bez vlastného zaúčtovania.":
-    "{kody} als Standard für {doklad} festlegen? Er gilt für jeden weiteren Beleg dieser Art ohne eigene Kontierung.",
+  "Nastaviť {kody} ako predvolené pre druh dokladu „{doklad}“? Použije sa pri každom ďalšom doklade tohto druhu bez vlastného zaúčtovania.":
+    "{kody} als Standard für die Belegart „{doklad}“ festlegen? Er gilt für jeden weiteren Beleg dieser Art ohne eigene Kontierung.",
   "Nastavené ako predvolené": "Als Standard festgelegt",
   "Vyplnené kódy sú už predvolené (alebo nie je čo nastaviť).":
     "Die ausgefüllten Codes sind bereits Standard (oder es gibt nichts festzulegen).",

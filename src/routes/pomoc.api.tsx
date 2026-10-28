@@ -178,7 +178,8 @@ const sections: HelpSection[] = [
         <ul>
           <li>
             <strong>Prijaté faktúry a bločky</strong> — zapíšete ich aj so súborom (PDF, fotka),
-            dodávateľ sa sám založí v adresári. Úhradu a zaúčtovanie doplníte úpravou.
+            dodávateľ sa sám založí v adresári. Úhrady (aj po častiach), zaúčtovanie, stav, štítky a
+            komentár doplníte neskôr.
           </li>
           <li>
             <strong>Adresár</strong> — naraz prenesiete až 1000 odberateľov a dodávateľov.
@@ -190,7 +191,8 @@ const sections: HelpSection[] = [
           </li>
           <li>
             <strong>Bankové účty</strong> — účet banky, ku ktorej sa Faktero nepripojí, založíte cez
-            API a pohyby naň posielate dávkami. Duplicity sa preskočia.
+            API a pohyby naň posielate dávkami. Duplicity sa preskočia. Poplatok, mzdu či transakčnú
+            daň označíte ako vybavené bez dokladu.
           </li>
           <li>
             <strong>Firmy a používatelia</strong> — kľúčom pre viac firiem založíte firmu nového
@@ -199,8 +201,8 @@ const sections: HelpSection[] = [
         </ul>
         <p>
           Pri každom zápise môžete poslať vlastné <code>external_id</code> — opakované odoslanie
-          potom nič nezdvojí. Nič sa cez API nemaže; faktúra sa dá len stornovať. Presný tvar údajov
-          je v <Link to="/docs/api">API dokumentácii</Link>.
+          potom nič nezdvojí. Cez API sa maže len ručne pridaná úhrada prijatej faktúry; faktúra sa
+          dá len stornovať. Presný tvar údajov je v <Link to="/docs/api">API dokumentácii</Link>.
         </p>
       </>
     ),
@@ -214,8 +216,9 @@ const sections: HelpSection[] = [
           Faktero sa dá napojiť na AI asistenta cez <strong>MCP</strong> (Model Context Protocol).
           Asistent potom odpovie, kto vám dlhuje, nájde faktúru, vystaví novú, zapíše prijatú
           faktúru či bloček, založí odberateľa, produkt alebo firmu, prenesie kontakty a bankové
-          pohyby, označí úhradu, pozve kolegu alebo pozrie pohyby na účte. Nič nemaže a nič
-          neposiela odberateľom.
+          pohyby, označí úhradu (aj čiastočnú), nastaví stav, štítky či zaúčtovanie dokladu, vybaví
+          bankový pohyb bez dokladu, pozve kolegu alebo pozrie pohyby na účte. Zmaže nanajvýš ručne
+          pridanú úhradu prijatej faktúry a nič neposiela odberateľom.
         </p>
         <ol>
           <li>

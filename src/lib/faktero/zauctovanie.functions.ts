@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { MoznostKodu } from "./predkontacie";
+import { POLIA_ZAUCTOVANIA_DOKLADU, zmenaZauctovaniaDokladu } from "./zauctovanie-dokladu";
 
 /*
   Zaúčtovanie prijatých faktúr — predkontácia, členenie DPH, kategória a
@@ -352,6 +353,7 @@ export const zrusZauctovanieFn = createServerFn({ method: "POST" })
  *
  * Doklad nemá samostatný krok „zaúčtovať" — do Pohody ide, keď je spracovaný.
  * Tu sa mu len určí, ako sa zaúčtuje; prázdne pole nechá, čo na ňom je.
+ * Vyprázdniť kód sa dá len výslovne cez `vymazat` (detail bločku).
  * Odovzdaný doklad sa nemení, v Pohode by sa rozišiel.
  */
 export const zauctujDokladyFn = createServerFn({ method: "POST" })
@@ -369,20 +371,17 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
         cinnost: kod,
         rad: kod,
         pokladna: kod,
+        /** Polia, ktoré sa majú vyprázdniť (prázdna hodnota sama nič nemení). */
+        vymazat: z
+          .array(z.enum(POLIA_ZAUCTOVANIA_DOKLADU as [string, ...string[]]))
+          .max(10)
+          .optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const zmena: Record<string, unknown> = {};
-    if (data.pokladna?.trim()) zmena.pohoda_pokladna = data.pokladna.trim();
-    if (data.kv?.trim()) zmena.kv_clenenie = data.kv.trim() === "auto" ? null : data.kv.trim();
-    if (data.stredisko?.trim()) zmena.stredisko = data.stredisko.trim();
-    if (data.cinnost?.trim()) zmena.cinnost = data.cinnost.trim();
-    if (data.rad?.trim()) zmena.pohoda_rad = data.rad.trim();
-    if (data.predkontacia?.trim()) zmena.pohoda_predkontacia = data.predkontacia.trim();
-    if (data.clenenie?.trim()) zmena.pohoda_clenenie_dph = data.clenenie.trim();
-    if (data.kategoria?.trim()) zmena.category = data.kategoria.trim();
+    const zmena = zmenaZauctovaniaDokladu(data as Parameters<typeof zmenaZauctovaniaDokladu>[0]);
     if (!Object.keys(zmena).length) return { zmenenych: 0, preskocenych: 0 };
 
     const { data: riadky, error } = await supabase

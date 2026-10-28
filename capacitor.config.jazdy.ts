@@ -23,10 +23,11 @@ const config: CapacitorConfig = {
   */
   backgroundColor: "#f5f6f5",
   /*
-    Kniha jázd nefotí doklady ani nečíta QR kódy, takže si skener a fotoaparát
-    ani nepribalí. Bez tohto zoznamu si Capacitor vezme všetky pluginy z
-    package.json — appka by narástla o ML Kit a pýtala by si prístup k
-    fotoaparátu, ktorý nikdy nepoužije.
+    Kniha jázd nefotí doklady, takže si skener dokladov (ML Kit) ani
+    nepribalí. Bez tohto zoznamu si Capacitor vezme všetky pluginy z
+    package.json — appka by narástla o ML Kit. Fotoaparát používa len
+    prihlásenie QR kódom z webu, a to cez `getUserMedia` v stránke bez pluginu;
+    povolenie preň je v Info.plist (`NSCameraUsageDescription`) a v manifeste.
   */
   includePlugins: [
     "@aparajita/capacitor-biometric-auth",

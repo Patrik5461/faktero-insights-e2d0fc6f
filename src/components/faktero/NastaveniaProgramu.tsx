@@ -141,6 +141,48 @@ const POLIA: Record<ProgramUctovania, Skupina[]> = {
       ],
     },
   ],
+  mrp: [
+    {
+      nazov: "Verzia a pokladňa v MRP",
+      polia: [
+        {
+          kluc: "verzia",
+          nazov: "Verzia MRP-K/S",
+          moznosti: [
+            ["", "Podľa krajiny firmy"],
+            ["SK", "Slovenská"],
+            ["CZ", "Česká"],
+          ],
+        },
+        {
+          kluc: "radPrijate",
+          nazov: "Prefix radu prijatých faktúr",
+          placeholder: "napr. FP",
+          napoveda: "Rad musí v MRP existovať; prázdne = rad z profilu importu.",
+        },
+        {
+          kluc: "pokladna",
+          nazov: "Identifikátor pokladne",
+          placeholder: "prázdne = bločky ako prijaté faktúry",
+        },
+      ],
+    },
+    {
+      nazov: "Typy DPH z číselníka MRP (prázdne = predvolené)",
+      polia: [
+        { kluc: "typDphVydane", nazov: "Vystavená faktúra", placeholder: "SK 10 · CZ 41" },
+        { kluc: "typDphVydanePdp", nazov: "Vystavená v prenesení daňovej povinnosti" },
+        { kluc: "typDphVydaneEu", nazov: "Dodanie do EÚ" },
+        { kluc: "typDphVydaneVyvoz", nazov: "Vývoz" },
+        { kluc: "typDphVydaneNedanove", nazov: "Zálohová faktúra (nedaňová)", placeholder: "19" },
+        { kluc: "typDphPrijate", nazov: "Prijatá faktúra", placeholder: "SK 40 · CZ 71" },
+        { kluc: "typDphPrijatePdp", nazov: "Prijatá v prenesení daňovej povinnosti" },
+        { kluc: "typDphPrijateEu", nazov: "Nadobudnutie tovaru z EÚ" },
+        { kluc: "typDphPrijateDovoz", nazov: "Dovoz" },
+        { kluc: "typDphPrijateNedanove", nazov: "Prijatá zálohová (nedaňová)", placeholder: "39" },
+      ],
+    },
+  ],
   datev: [
     {
       nazov: "Mandant v DATEV",
@@ -217,6 +259,7 @@ const NAPOVEDA: Record<ProgramUctovania, string> = {
     "Predkontácie a členenia DPH zadajte v Účtovníctvo → Predkontácie s rovnakými skratkami, aké máte v Money S3.",
   flexi:
     "Predkontácie (predpisy zaúčtovania) a členenia DPH zadajte v Účtovníctvo → Predkontácie s kódmi z ABRA Flexi — napr. členenie „40-41“, nie pohodové PD.",
+  mrp: "Predkontácie zadajte v Účtovníctvo → Predkontácie číslom predkontácie z MRP (napr. 311) — na doklad ide len jedna. Typy DPH sú čísla z číselníka Typy DPH vo vašom MRP; číselné členenie DPH na doklade má prednosť.",
   datev:
     "Beraternummer a Mandantennummer vám dá daňový poradca. Daň si DATEV rozpočíta sám: výnosy a nákupy v prenesení idú na automatické účty, bežné náklady s BU-Schlüssel. Účet z predkontácie (Účtovníctvo → Predkontácie, MD pri nákupe, Dal pri predaji) má prednosť pred predvoleným.",
   csv: "Súpiska nemá čo nastavovať — obsahuje kódy aj účty z Účtovníctvo → Predkontácie.",

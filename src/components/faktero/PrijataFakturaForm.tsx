@@ -556,11 +556,12 @@ export function PrijataFakturaForm({
         />
       </Field>
       <Field label="IČO">
-        <div className="flex -space-x-px items-start">
+        {/* Úzky stĺpec (Kompaktné rozloženie): tlačidlo radšej pod pole, než aby sa IČO orezalo. */}
+        <div className="flex flex-wrap -space-x-px items-start">
           <input
             value={form.supplier_ico}
             onChange={(e) => set("supplier_ico", e.target.value)}
-            className="input flex-1 rounded-l-md focus:z-10"
+            className="input min-w-[7.5rem] flex-1 rounded-l-md focus:z-10"
           />
           <IcoLookupButton
             ico={form.supplier_ico}

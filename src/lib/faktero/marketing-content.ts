@@ -31,6 +31,9 @@ import {
   ListChecks,
   Send,
   Flag,
+  FileCheck2,
+  BarChart3,
+  CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -171,7 +174,7 @@ export const funkcie: HubContent = {
         {
           type: "callout",
           title: "Neúčtujete v Pohode?",
-          body: "Zaúčtované vystavené faktúry, prijaté faktúry aj bločky pošle Faktero aj do KROS Omegy (rovno účtovné zápisy), Money S3 a ABRA Flexi — s predkontáciou, členením DPH, strediskom a zákazkou. Pre MRP, Helios či Premier pripraví zaúčtovanú súpisku CSV.",
+          body: "Zaúčtované vystavené faktúry, prijaté faktúry aj bločky pošle Faktero aj do KROS Omegy (rovno účtovné zápisy), Money S3, ABRA Flexi a MRP-K/S — s predkontáciou, členením DPH, strediskom a zákazkou. Pre Helios či Premier pripraví zaúčtovanú súpisku CSV.",
         },
       ],
     },
@@ -250,7 +253,7 @@ export const funkcie: HubContent = {
       blocks: [
         {
           type: "lead",
-          text: "Každá firma dostane vlastnú adresu. Čo na ňu prepošlete, to sa prečíta a založí medzi prijaté faktúry — bez sťahovania, bez prihlasovania.",
+          text: "Každá firma dostane vlastnú adresu. Čo na ňu prepošlete, to sa prečíta a pripraví v Nespracovaných dokladoch — bez sťahovania, bez prihlasovania.",
         },
         {
           type: "bullets",
@@ -266,17 +269,17 @@ export const funkcie: HubContent = {
         {
           type: "callout",
           title: "Viac firiem, jedna adresa",
-          body: "Rozdeľovač pošle každý doklad tej z vašich firiem, na ktorej IČO alebo IČ DPH je vystavený. Doklad pre neznámeho odberateľa sa nezaloží naslepo — počká na ručné priradenie.",
+          body: "Rozdeľovač pošle každý doklad tej z vašich firiem, na ktorú je vystavený — podľa IČO, IČ DPH či DIČ odberateľa, keď chýbajú, podľa IBAN-u alebo názvu. Rovnako to funguje pri nahratí PDF do ktorejkoľvek firmy. Doklad, ktorý nesedí práve na jednu firmu, sa nezaradí naslepo — počká na ručné priradenie.",
         },
         {
           type: "callout",
           title: "Nič sa neschváli samo",
-          body: "Doklad čaká medzi prijatými faktúrami ako rozpracovaný, kým si ho neprezriete. Stroj pripraví podklad, rozhodnutie ostáva na človeku — a pri každom maile je v denníku vidieť, ako dopadol.",
+          body: "Doklad čaká v Nespracovaných dokladoch, kým si ho neprezriete — miesta, odkiaľ sa údaje vzali, sú v náhľade PDF vyznačené. Stroj pripraví podklad, rozhodnutie ostáva na človeku — a pri každom maile je v denníku vidieť, ako dopadol.",
         },
         {
           type: "section",
           title: "Keď adresa unikne",
-          body: "Adresa sa dá kedykoľvek vypnúť alebo vymeniť za novú; stará vtedy prestane prijímať. Berú sa len PDF a fotky, takže mail bez prílohy nič nezaloží.",
+          body: "Adresa sa dá kedykoľvek vypnúť alebo vymeniť za novú; stará vtedy prestane prijímať. Prijímanie sa dá obmedziť na povolených odosielateľov a mail bez prílohy nič nezaloží — ak nezapnete, aby sa uložil ako PDF s textom mailu.",
         },
       ],
     },
@@ -812,6 +815,79 @@ export const funkcie: HubContent = {
         },
       ],
     },
+    {
+      slug: "schvalovanie-dokladov",
+      label: "Schvaľovanie dokladov",
+      summary: "Kto čo schvaľuje, určíte vy — do účtovníctva a na úhradu ide len schválené.",
+      icon: CheckCircle2,
+      manual: "/pomoc/doklady",
+      blocks: [
+        {
+          type: "lead",
+          text: "Bločky, prijaté a vystavené faktúry, nespracované doklady aj vyúčtovania výdavkov môžu pred účtovníctvom prejsť schválením — jedným človekom alebo viacerými úrovňami.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Schvaľovacie cesty podľa dodávateľa, sumy, predkontácie či druhu dokladu",
+            "Schvaľovateľom môže byť aj manažér zákazky, na ktorej doklad je",
+            "Povolenia pre každého zvlášť: schváliť, zrušiť schválenie, vrátiť na opravu, zamietnuť",
+            "Suma, pod ktorou sa doklad schváli sám",
+            "Vystavená faktúra môže odísť až po schválení — z webu, z appky aj cez API",
+            "Do Pohody, do mesačného balíka a do príkazu na úhradu idú len schválené doklady",
+            "Moje úlohy: na jednom mieste všetko, čo čaká práve na vás",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "hromadne-akcie",
+      label: "Hromadné akcie, stavy a štítky",
+      summary: "Desiatky dokladov zaúčtujete, označíte a roztriedite naraz.",
+      icon: ListChecks,
+      manual: "/pomoc/doklady",
+      blocks: [
+        {
+          type: "lead",
+          text: "Označte doklady v zozname a Hromadná akcia im naraz nastaví, čo treba. Pod zoznamom pritom vidíte, koľko označené doklady stoja a čo z nich ešte čaká.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Účtovná položka, typ platby, členenie DPH a KV, účtovná poznámka aj úhrada pre všetky označené",
+            "Účtovná položka priamo v riadku zoznamu, s hľadaním",
+            "Vlastné stavy dokladov („Čaká na doklad od klienta“) a štítky na triedenie",
+            "Komentár pre kolegov, ktorý do účtovníctva nikdy neodíde",
+            "Súčtová lišta: počet, suma s DPH aj bez, čo čaká na export a na úhradu",
+            "Odovzdané a zamknuté doklady sa pri účtovných zmenách samy preskočia",
+            "Preddefinované poznámky a e-mailové šablóny podľa typu dokladu a jazyka",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "vynosy-a-naklady",
+      label: "Výnosy a náklady",
+      summary: "Koľko firma zarobila a minula, po mesiacoch a s bilanciou.",
+      icon: BarChart3,
+      manual: "/pomoc/faktury",
+      blocks: [
+        {
+          type: "lead",
+          text: "Na prehľade firmy je graf výnosov z vystavených faktúr a nákladov z prijatých faktúr a bločkov — aj s bilanciou za každý mesiac.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Tento rok, minulý rok, posledných 12 mesiacov alebo vlastné obdobie",
+            "Sumy s DPH aj bez DPH",
+            "Uhradené zvlášť od očakávaného — neuhradené faktúry sú v stĺpci svetlejšie",
+            "Zálohové faktúry sa nepočítajú, dobropisy odpočítavajú",
+            "Doklady v cudzej mene prepočítané kurzom z dokladu",
+          ],
+        },
+      ],
+    },
   ],
 };
 
@@ -1079,6 +1155,29 @@ export const efakturacia: HubContent = {
       ],
     },
     {
+      slug: "kontrola-efaktury",
+      label: "Kontrola e-faktúry",
+      summary:
+        "Skontrolujte XML e-faktúry podľa EN 16931 a Peppol BIS 3.0 — zadarmo, aj bez registrácie.",
+      icon: FileCheck2,
+      manual: "/pomoc/efaktura",
+      blocks: [
+        {
+          type: "lead",
+          text: "Máte XML e-faktúry od dodávateľa alebo z iného programu a neviete, či prejde? Nahrajte ho na stránke faktero.sk/nastroje/kontrola-efaktury a hneď uvidíte, čo je v ňom zle.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Chyby a varovania podľa EN 16931, Peppol BIS 3.0 a slovenských pravidiel",
+            "Pri každej chybe kód pravidla (napríklad BR-CO-15) a miesto v súbore",
+            "Súbor sa kontroluje len vo vašom prehliadači, nikam sa neposiela",
+            "Bez prihlásenia na verejnej stránke, vo Fakteri v eFaktúra → Kontrola XML",
+          ],
+        },
+      ],
+    },
+    {
       slug: "nemecko-xrechnung-zugferd",
       label: "Nemecko: XRechnung a ZUGFeRD",
       summary: "E-faktúra pre firmy so sídlom v Nemecku — PDF s vloženým XML aj čisté XRechnung.",
@@ -1119,7 +1218,7 @@ export const uctovnici: HubContent = {
   hubTitle: "Pre účtovníkov",
   hubHeadline: "Účtovné podklady jedným klikom",
   hubDescription:
-    "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.",
+    "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, pravidlá účtovania, konvertor z Excelu, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.",
   hubLead:
     "Spolupracujte so svojimi klientmi efektívnejšie. Faktero generuje účtovné podklady jedným klikom.",
   items: [
@@ -1140,6 +1239,9 @@ export const uctovnici: HubContent = {
             "Sadzba DPH podľa dňa plnenia, nie podľa dneška",
             "Predkontácie a členenia DPH z vašej Pohody",
             "Prijaté doklady s rozpisom DPH po sadzbách a pokladňa",
+            "Nastavenia exportu pre firmu: dátum zápisu a odpočtu DPH, text dokladu, interná poznámka, partner do adresára",
+            "Zaokrúhlenie zvlášť kladné a záporné, s vlastnou predkontáciou a členením",
+            "Partner bez IČO dostane stály náhradný identifikátor, takže sa v adresári Pohody nezdvojí",
           ],
         },
       ],
@@ -1170,9 +1272,9 @@ export const uctovnici: HubContent = {
     },
     {
       slug: "uctovne-exporty",
-      label: "Sedem účtovných exportov",
+      label: "Osem účtovných exportov",
       summary:
-        "Pohoda, Omega, Money S3, ABRA Flexi, DATEV, ISDOC a CSV — vyberiete program a stiahnete.",
+        "Pohoda, Omega, Money S3, ABRA Flexi, MRP, DATEV, ISDOC a CSV — vyberiete program a stiahnete.",
       icon: Upload,
       blocks: [
         {
@@ -1184,9 +1286,9 @@ export const uctovnici: HubContent = {
           items: [
             "Pohoda XML a priame prepojenie, ktoré si doklady berie samo",
             "KROS Omega (TXT) a Money S3 (XML) vrátane faktúr v cudzej mene",
-            "ISDOC pre české programy a ABRA Flexi XML",
+            "ISDOC pre české programy, ABRA Flexi XML a MRP-K/S XML",
             "DATEV Buchungsstapel pre klientov so sídlom v Nemecku — SKR03 alebo SKR04, menej bežné účty treba overiť s daňovým poradcom",
-            "CSV súpiska pre MRP, Helios, Premier alebo Excel",
+            "CSV súpiska pre Helios, Premier alebo Excel",
             "Zálohové faktúry, dobropisy a zľavy rozpočítané správne v každom formáte",
           ],
         },
@@ -1207,12 +1309,80 @@ export const uctovnici: HubContent = {
           type: "bullets",
           items: [
             "Pre bločky, prijaté aj vystavené faktúry a bankové pohyby",
-            "Podmienky: partner, IČO, typ faktúry, spôsob úhrady, kto doklad nahral, predmet mailu; pri banke účet, smer a typ pohybu",
-            "Doplní predkontáciu a členenie DPH pre Pohodu, členenie KV, kategóriu, odpočet DPH a poznámku",
-            "Pravidlo vytvoríte jedným klikom priamo z dokladu",
+            "Podmienky: partner, IČO, typ faktúry, spôsob úhrady, kto doklad nahral, predmet aj odosielateľ mailu, krajina dodávateľa a stály variabilný symbol; pri banke účet, smer, typ pohybu a VS",
+            "Doplní predkontáciu a členenie DPH pre Pohodu, členenie KV, kategóriu, odpočet DPH a poznámku, pri bločku aj pokladňu a rozúčtovanie pomerom",
+            "Pravidlo vytvoríte jedným klikom priamo z dokladu alebo z bankového pohybu",
+            "Predlohy: pomenované zaúčtovanie (napr. „Nákup PHM – platba kartou“), ktoré pri doklade vyberiete jedným klikom",
+            "Bankový pohyb bez dokladu (poplatok, mzda, odvod) pravidlo vybaví hneď, ako príde z banky",
             "Zaberie pri skene na webe aj v appke, pri doklade z e-mailu aj z importu",
             "Dopĺňa len prázdne políčka — čo vyplní človek, neprepíše",
             "Jedným klikom ho uplatníte aj na doklady, ktoré už vo Fakteri sú",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "konvertor-excel-pohoda",
+      label: "Konvertor z Excelu do Pohody",
+      summary: "Doklady vyplnené v Exceli stiahnete ako dávku XML pre Pohodu.",
+      icon: FileSpreadsheet,
+      manual: "/pomoc/pohoda",
+      blocks: [
+        {
+          type: "lead",
+          text: "Klient vedie faktúry či bločky v tabuľke? Stiahnite šablónu, vyplňte ju v Exceli a nahrajte späť — Faktero z nej poskladá XML pre Pohodu s predkontáciami a nastaveniami firmy.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Šablóny pre vydané faktúry, prijaté faktúry a bločky",
+            "Riadky s rovnakým číslom dokladu sa spoja do jedného dokladu",
+            "Do Faktera sa nič neukladá — XML sa len stiahne a naimportujete ho v Pohode",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "rozdelovac-dokladov",
+      label: "Jedna adresa pre všetkých klientov",
+      summary: "Doklady z jedného mailu či nahratia sa samy rozdelia medzi firmy.",
+      icon: Building2,
+      manual: "/pomoc/doklady",
+      blocks: [
+        {
+          type: "lead",
+          text: "Účtovníčka s desiatkami klientov si nemusí pamätať adresu každej firmy. Doklady pošle na jednu osobnú adresu alebo ich nahrá v Správe firiem — a každý skončí v Nespracovaných tej firmy, na ktorú je vystavený.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Firma podľa IČO, IČ DPH či DIČ odberateľa, až potom podľa IBAN-u alebo názvu",
+            "Jeden mail môže rozdeliť faktúry aj medzi viac firiem",
+            "Vyberá sa len z firiem, v ktorých smiete upravovať doklady",
+            "Čo nesedí práve na jednu firmu, počká v Nepriradených dokladoch — nič sa nezaradí naslepo",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "banka-bez-dokladu",
+      label: "Banka bez zbytočného párovania",
+      summary: "Poplatky, mzdy, odvody a transakčná daň vybavené raz a navždy.",
+      icon: Landmark,
+      manual: "/pomoc/banka",
+      blocks: [
+        {
+          type: "lead",
+          text: "Nie každý pohyb na účte má doklad. Faktero ich od nespárovaných oddelí, aby ste v zozname videli len to, čo naozaj treba doriešiť.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Pohyb nemá doklad — poplatok, mzda či odvod aj s poznámkou",
+            "Transakčnú daň Faktero spozná samo a vo výpise do Pohody dostane vlastnú predkontáciu",
+            "Pravidlo z pohybu (IBAN, smer, VS) vybaví každý ďalší taký pohyb hneď po príchode",
+            "Detail pohybu so všetkými spárovanými dokladmi a súčtom",
+            "Odkedy sa pohyby sťahujú a párujú automaticky, nastavíte sami",
           ],
         },
       ],
@@ -1279,7 +1449,7 @@ export const uctovnici: HubContent = {
             "SuperFaktúra — ZIP s ISDOC dokladmi",
             "Pohoda — export XML aj konektor a bankový výpis",
             "Doklado — prijaté doklady zo XML, CSV aj ZIP so skenmi",
-            "Export do Pohody, Omegy, Money S3, ABRA Flexi, DATEV, ISDOC a CSV",
+            "Export do Pohody, Omegy, Money S3, ABRA Flexi, MRP, DATEV, ISDOC a CSV",
             "WooCommerce — doplnok, ktorý vystaví faktúru z každej objednávky",
             "Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta — výpisy z platobných brán",
             "Vlastné integrácie cez REST API",

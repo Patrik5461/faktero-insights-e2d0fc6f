@@ -82,9 +82,16 @@ export const Route = createFileRoute("/api/v1/invoices")({
           if (!parsed.success)
             return err("validation_error", "Neplatné dáta faktúry.", 400, parsed.error.flatten());
           const d = parsed.data;
+          // Dodací list, pečiatka, účtovné kódy, stav, štítky, komentár, účtovná poznámka.
+          const { doplnkyNovejFaktury } = await import("@/lib/faktero/api-evidencia.server");
+          const doplnky = await doplnkyNovejFaktury(ctx, ctx.requestBody);
+          if (!doplnky.ok) return doplnky.odpoved;
 
           const { vytvorFakturu } = await import("@/lib/faktero/vytvor-fakturu.server");
-          const v = await vytvorFakturu(ctx.supabase, ctx.company_id, d);
+          const v = await vytvorFakturu(ctx.supabase, ctx.company_id, {
+            ...d,
+            doplnky: doplnky.riadok,
+          });
           if (!v.ok) return err(v.kod, v.sprava, v.status);
           if (!v.nova) return ok(v.faktura, 200);
           const created = v.faktura;

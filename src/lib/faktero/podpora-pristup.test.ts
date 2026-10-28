@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { opravneniaPodpory, platnostDo, stavPristupu } from "./podpora-pristup";
+import {
+  oznamUdeleniaPodpore,
+  opravneniaPodpory,
+  platnostDo,
+  stavPristupu,
+} from "./podpora-pristup";
 import { OBLASTI } from "./opravnenia";
 
 describe("prístup technickej podpory", () => {
@@ -31,5 +36,30 @@ describe("prístup technickej podpory", () => {
     expect(stavPristupu({ stav: "odobraty", platne_do: "2026-10-29T00:00:00Z" }, teraz)).toBe(
       "odobraty",
     );
+  });
+});
+
+describe("oznam podpore o udelení prístupu", () => {
+  it("názov firmy, rozsah a platnosť v čase Bratislavy, bez dôvodu", () => {
+    const o = oznamUdeleniaPodpore({
+      firma: "  Tobify\n s.r.o. ",
+      rozsah: "citanie",
+      dni: 3,
+      platneDo: "2026-10-31T13:05:00Z",
+    });
+    expect(o.predmet).toBe(
+      "Tobify s.r.o. udelila prístup technickej podpore do 31. 10. 2026 14:05",
+    );
+    expect(o.text).toContain("(3 dni), rozsah: len čítanie.");
+  });
+  it("jeden deň a plný prístup", () => {
+    const o = oznamUdeleniaPodpore({
+      firma: "",
+      rozsah: "plny",
+      dni: 1,
+      platneDo: new Date("2026-07-01T10:00:00Z"),
+    });
+    expect(o.predmet).toMatch(/^Firma udelila prístup technickej podpore do 1\. 7\. 2026 12:00$/);
+    expect(o.text).toContain("(1 deň), rozsah: plný prístup k dokladom.");
   });
 });

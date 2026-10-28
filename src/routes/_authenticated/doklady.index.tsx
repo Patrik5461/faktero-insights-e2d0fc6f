@@ -350,7 +350,11 @@ function DokladyPage() {
     }
   }
 
-  async function refresh() {
+  /**
+   * `ponechatVyber` — po hromadnej akcii ostane výber (ako v Prijatých faktúrach),
+   * aby sa na tie isté doklady dala hneď pustiť ďalšia akcia.
+   */
+  async function refresh(ponechatVyber = false) {
     if (!cid) return;
     setLoading(true);
     try {
@@ -358,7 +362,10 @@ function DokladyPage() {
         data: { company_id: cid, status, month: bezMesiaca ? null : month || null },
       });
       setRows(data ?? []);
-      setSelected(new Set());
+      if (ponechatVyber) {
+        const v = new Set((data ?? []).map((r: any) => r.id as string));
+        setSelected((s) => new Set([...s].filter((id) => v.has(id))));
+      } else setSelected(new Set());
       void pocetFn({ data: { company_id: cid } })
         .then((v) => setNespracovanych(v.pocet))
         .catch(() => {
@@ -824,7 +831,7 @@ function DokladyPage() {
               companyId={cid}
               agenda="doklad"
               ids={Array.from(selected)}
-              onHotovo={refresh}
+              onHotovo={() => void refresh(true)}
               pdfZip={() => void handleExport(false)}
               pdfZipNazov={t("Stiahnuť ZIP (skeny + XML)")}
               zmazat={() => void zmazVybrane()}

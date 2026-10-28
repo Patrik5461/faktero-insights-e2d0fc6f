@@ -18,12 +18,13 @@ describe("MCP server", () => {
     expect(r.result.capabilities.tools).toBeTruthy();
     const l: any = await spracujSpravu({ jsonrpc: "2.0", id: 2, method: "tools/list" }, volajZ({}));
     expect(l.result.tools.map((t: any) => t.name)).toContain("list_overdue_invoices");
-    // Zapisujúce nástroje nie sú označené ako len na čítanie, žiadny nič nemaže.
+    // Zapisujúce nástroje nie sú označené ako len na čítanie; maže len ručná úhrada.
     expect(
       NASTROJE.filter((t) => !t.annotations.readOnlyHint)
         .map((t) => t.name)
         .sort(),
     ).toEqual([
+      "add_purchase_invoice_payment",
       "create_bank_account",
       "create_company",
       "create_customer",
@@ -31,13 +32,19 @@ describe("MCP server", () => {
       "create_product",
       "create_purchase_invoice",
       "create_receipt",
+      "delete_purchase_invoice_payment",
       "import_bank_transactions",
       "import_contacts",
       "invite_user",
       "mark_invoice_paid",
       "mark_purchase_invoice_paid",
+      "resolve_bank_transaction",
+      "set_document_accounting",
+      "update_document_labels",
     ]);
-    expect(NASTROJE.some((t) => t.annotations.destructiveHint)).toBe(false);
+    expect(NASTROJE.filter((t) => t.annotations.destructiveHint).map((t) => t.name)).toEqual([
+      "delete_purchase_invoice_payment",
+    ]);
   });
   it("notifikácia nemá odpoveď, neznáma metóda je chyba", async () => {
     expect(
@@ -115,6 +122,90 @@ describe("MCP server", () => {
     );
     expect(r.result.isError).toBe(true);
     expect(r.result.content[0].text).toContain("už uhradená");
+  });
+});
+
+describe("MCP — úhrady, značky a pohyby", () => {
+  const zavolaj = (name: string, args: any, volaj: any) =>
+    spracujSpravu(
+      { jsonrpc: "2.0", id: 9, method: "tools/call", params: { name, arguments: args } },
+      volaj,
+    ) as Promise<any>;
+
+  it("úhrada sa pošle na /payments bez id v tele, mazanie cez DELETE", async () => {
+    const volaj = vi.fn(async () => ({ status: 201, json: { id: "u1" } }));
+    await zavolaj(
+      "add_purchase_invoice_payment",
+      { id: "f1", amount: 50, paid_at: "2026-10-28" },
+      volaj,
+    );
+    expect((volaj.mock.calls[0] as any[]).slice(0, 3)).toEqual([
+      "POST",
+      "/api/v1/purchase-invoices/f1/payments",
+      { amount: 50, paid_at: "2026-10-28" },
+    ]);
+    await zavolaj("delete_purchase_invoice_payment", { id: "f1", payment_id: "u1" }, volaj);
+    expect((volaj.mock.calls[1] as any[]).slice(0, 2)).toEqual([
+      "DELETE",
+      "/api/v1/purchase-invoices/f1/payments/u1",
+    ]);
+  });
+
+  it("značky idú cez PUT na správny druh dokladu, neznámy druh je chyba", async () => {
+    const volaj = vi.fn(async () => ({
+      status: 200,
+      json: { id: "r1", stav_id: "s1", stitky: ["a"], komentar: "k" },
+    }));
+    const r = await zavolaj(
+      "update_document_labels",
+      { document_type: "receipt", id: "r1", stav: "Skontrolovať", stitky_pridat: "a" },
+      volaj,
+    );
+    expect((volaj.mock.calls[0] as any[]).slice(0, 3)).toEqual([
+      "PUT",
+      "/api/v1/receipts/r1",
+      { stav: "Skontrolovať", stitky_pridat: "a" },
+    ]);
+    expect(r.result.structuredContent.stitky).toEqual(["a"]);
+    const zle = await zavolaj("update_document_labels", { document_type: "x", id: "1" }, volaj);
+    expect(zle.result.isError).toBe(true);
+  });
+
+  it("zaúčtovanie posiela len accounting a účtovnú poznámku", async () => {
+    const volaj = vi.fn(async () => ({ status: 200, json: { id: "i1" } }));
+    await zavolaj(
+      "set_document_accounting",
+      { document_type: "invoice", id: "i1", accounting: { predkontacia: "1Fv" }, stitky: ["x"] },
+      volaj,
+    );
+    expect((volaj.mock.calls[0] as any[]).slice(0, 3)).toEqual([
+      "PUT",
+      "/api/v1/invoices/i1",
+      { accounting: { predkontacia: "1Fv" } },
+    ]);
+  });
+
+  it("vybavenie pohybu: null označenie zruší", async () => {
+    const volaj = vi.fn(async () => ({ status: 200, json: { id: "p1", vybavenie: null } }));
+    await zavolaj("resolve_bank_transaction", { id: "p1", resolution: null }, volaj);
+    expect((volaj.mock.calls[0] as any[]).slice(0, 3)).toEqual([
+      "POST",
+      "/api/v1/bank-transactions/p1/resolution",
+      { resolution: null },
+    ]);
+  });
+
+  it("stavy a štítky v jednom nástroji", async () => {
+    const r = await zavolaj(
+      "list_document_labels",
+      {},
+      volajZ({
+        "/api/v1/document-states": { data: [{ id: "s1", nazov: "Skontrolovať" }] },
+        "/api/v1/tags": { data: [{ id: "t1", nazov: "Auto" }] },
+      }),
+    );
+    expect(r.result.structuredContent.stavy[0].nazov).toBe("Skontrolovať");
+    expect(r.result.structuredContent.stitky[0].nazov).toBe("Auto");
   });
 });
 

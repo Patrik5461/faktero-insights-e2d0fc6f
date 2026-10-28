@@ -86,7 +86,10 @@ const sections: HelpSection[] = [
             PDF a odoslanie e-mailom. Opravuje sa na tej istej obrazovke, na ktorej sa vystavuje.
           </li>
           <li>
-            <strong>Doklady</strong> — nahraté a rozpoznané výdavkové doklady.
+            <strong>Doklady</strong> — nahraté a rozpoznané výdavkové doklady a prijaté faktúry. Pri
+            prijatej faktúre vidíte, koľko zostáva uhradiť a koľko dní je po splatnosti, a pridáte
+            úhradu, aj čiastočnú. Pri doklade je komentár (do účtovníctva sa neprenáša), stav,
+            štítky a poznámka s preddefinovanými textami firmy.
           </li>
           <li>
             <strong>Skener</strong> — odfotíte bloček alebo faktúru a text z nej prečíta server. Pri
@@ -98,7 +101,9 @@ const sections: HelpSection[] = [
             webe.
           </li>
           <li>
-            <strong>Banka</strong> — zostatky a posledné pohyby z pripojených účtov.
+            <strong>Banka</strong> — zostatky a posledné pohyby z pripojených účtov. Pohyb bez
+            dokladu (poplatok banky, mzda, odvody) po ťuknutí označíte ako „Pohyb nemá doklad“ alebo
+            „Transakčná daň“.
           </li>
           <li>
             <strong>Jazdy</strong> — kniha jázd, vrátane tých, ktoré si telefón všimol sám.

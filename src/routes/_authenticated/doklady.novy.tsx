@@ -732,6 +732,30 @@ function NovyDokladPage() {
               <ZdrojovyMailTlacidlo druh="doklad" id={ulozeny.id} inboxMessageId={ulozeny.inbox_message_id} />
             </div>
           ) : null}
+          {/* Štítky a stav dokladu ako v detaile prijatej faktúry — inak by sa v Kompaktnom rozložení nedali nastaviť. */}
+          {cid ? (
+            <div className="mx-auto mb-4 flex max-w-6xl flex-wrap items-start gap-3 [&>*]:min-w-0">
+              <StitkyDokladu
+                tabulka="expense_documents"
+                id={ulozeny.id}
+                stitky={ulozeny.stitky ?? []}
+                zamknute={Boolean(ulozeny.exported_at || ulozeny.locked_at)}
+                companyId={cid}
+              />
+              {ciselnikyFirmy.stavy.length ? (
+                <label className="block w-full sm:w-64">
+                  <span className="mb-1 block text-xs text-muted-foreground">{t("Stav dokladu")}</span>
+                  <VyberStavuDokladu
+                    key={ulozeny.id}
+                    tabulka="expense_documents"
+                    id={ulozeny.id}
+                    stavId={ulozeny.stav_id}
+                    stavy={ciselnikyFirmy.stavy}
+                  />
+                </label>
+              ) : null}
+            </div>
+          ) : null}
           <BlocekDetailKompaktny
             row={ulozeny}
             nahladUrl={preview}

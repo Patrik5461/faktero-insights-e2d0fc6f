@@ -40,6 +40,13 @@ type Predvolba = "rok" | "minuly_rok" | "12_mesiacov" | "vlastne";
 const FARBA_VYNOS = "var(--chart-2)";
 const FARBA_NAKLAD = "var(--destructive)";
 const FARBA_BILANCIA = "var(--foreground)";
+/*
+  Očakávané sumy svetlejšou farbou priamo vo `fill`, nie cez `fillOpacity` —
+  legenda grafu priehľadnosť ignoruje a „Očakávané“ v nej vyzerali rovnako
+  ako uhradené.
+*/
+const FARBA_VYNOS_SVETLA = "color-mix(in oklch, var(--chart-2) 40%, transparent)";
+const FARBA_NAKLAD_SVETLA = "color-mix(in oklch, var(--destructive) 40%, transparent)";
 
 const MESIACE = [
   "Jan",
@@ -334,8 +341,7 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                       dataKey="ocakavaneVynosy"
                       name={t("Očakávané výnosy")}
                       stackId="v"
-                      fill={FARBA_VYNOS}
-                      fillOpacity={0.4}
+                      fill={FARBA_VYNOS_SVETLA}
                       radius={[4, 4, 0, 0]}
                       maxBarSize={28}
                     />
@@ -350,8 +356,7 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                       dataKey="ocakavaneNaklady"
                       name={t("Očakávané náklady")}
                       stackId="n"
-                      fill={FARBA_NAKLAD}
-                      fillOpacity={0.4}
+                      fill={FARBA_NAKLAD_SVETLA}
                       radius={[4, 4, 0, 0]}
                       maxBarSize={28}
                     />

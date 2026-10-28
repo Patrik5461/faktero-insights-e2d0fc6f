@@ -177,7 +177,8 @@ const SEKCIE: HelpSection[] = [
           <code>[VS]</code>, <code>[ODBERATEL]</code>, <code>[FIRMA]</code>, <code>[IBAN]</code>,{" "}
           <code>[CISLO_OBJEDNAVKY]</code>. Pri odoslaní sa vyberie šablóna, ktorá na doklad sedí
           najlepšie (presný typ má prednosť pred „všetkými faktúrami“, presný jazyk pred „všetkými
-          jazykmi“); v okne odoslania ju môžete zmeniť.
+          jazykmi“); v okne odoslania ju môžete zmeniť. Keď žiadna nesedí, použije sa základný text
+          vyššie.
         </p>
         <p className="mt-3">
           <strong>Meno odosielateľa</strong> a <strong>Odpovedať na (Reply-To)</strong> sa nastavujú

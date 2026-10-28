@@ -85,7 +85,10 @@ const sections: HelpSection[] = [
           Pri každom kóde v číselníku sa dá zaškrtnúť,{" "}
           <strong>pri ktorých dokladoch sa ponúka</strong> (napr. len bločky), a{" "}
           <strong>kategória nákladu</strong>, pre ktorú sa použije sám — bloček s kategóriou Palivo
-          tak dostane PHM bez klikania. Poradie: kód na doklade, pravidlo účtovania, kategória,
+          tak dostane PHM bez klikania. Kód (v zoznamoch sa volá aj <strong>účtovná položka</strong>
+          ) môže mať <strong>typ dokladu</strong> (faktúra, bloček) a <strong>typ platby</strong>{" "}
+          (hotovosť, karta, prevod) — doklad, ktorý na ne sedí, ho má v ponuke navrchu. V ponuke je
+          najprv názov, potom kód a účty. Poradie: kód na doklade, pravidlo účtovania, kategória,
           predvolený kód druhu dokladu. Doklad sa dá aj{" "}
           <strong>rozúčtovať na viac predkontácií a členení</strong>; v Pohode má potom hlavičku
           „Rozúčtovať“ a kódy nesú položky.
@@ -454,9 +457,11 @@ const sections: HelpSection[] = [
         </p>
         <ul>
           <li>
-            Podmienky: časť názvu dodávateľa, IČO, spôsob úhrady, <strong>kto doklad nahral</strong>{" "}
-            a <strong>predmet mailu</strong>, s ktorým doklad prišiel. Vyplnené musia platiť naraz;
-            pravidlo podľa dodávateľa má prednosť pred pravidlom podľa používateľa či predmetu.
+            Podmienky: časť názvu dodávateľa, IČO, spôsob úhrady, <strong>kto doklad nahral</strong>
+            , <strong>predmet a odosielateľ mailu</strong>, s ktorým doklad prišiel, krajina
+            dodávateľa a stály variabilný symbol. Vyplnené musia platiť naraz; pravidlo podľa
+            partnera alebo VS má prednosť pred ostatnými. Podrobne v manuáli{" "}
+            <Link to="/pomoc/automaticke-zauctovanie">Automatické zaúčtovanie</Link>.
           </li>
           <li>
             Poznámka môže obsahovať premenné podľa dátumu dokladu: <code>#MM#</code>,{" "}
@@ -471,8 +476,10 @@ const sections: HelpSection[] = [
           </li>
           <li>
             Doplní: kategóriu, predkontáciu a členenie DPH pre Pohodu,{" "}
-            <strong>členenie kontrolného výkazu</strong>, odpočet DPH a poznámku. Vystavenej faktúre
-            podľa odberateľa predkontáciu, členenie DPH a KV.
+            <strong>členenie kontrolného výkazu</strong>, odpočet DPH a poznámku; bločku aj pokladňu
+            a rozúčtovanie pomerom. Vystavenej faktúre podľa odberateľa predkontáciu, členenie DPH a
+            KV. Zaúčtovanie bez podmienky si uložíte ako <strong>predlohu</strong> a pri doklade ju
+            vyberiete cez <em>Použiť predlohu…</em>.
           </li>
           <li>
             <strong>Banka:</strong> podľa účtu (IBAN), smeru (príjem/výdaj), typu pohybu (poplatok,
@@ -480,10 +487,10 @@ const sections: HelpSection[] = [
             Má prednosť pred predkontáciami podľa označenia platby.
           </li>
           <li>
-            Na detaile dokladu, ktorý ešte žiadne pravidlo nemá, je odkaz{" "}
-            <em>Vytvoriť pravidlo pre …</em> — otvorí nové pravidlo predvyplnené partnerom a kódmi z
-            dokladu. Keď na doklad sedí viac pravidiel, vyberiete iné v ponuke pri doklade; použité
-            pravidlo označuje hviezdička.
+            Pri zaúčtovaní dokladu je <em>Vytvoriť pravidlo z tohto dokladu</em> — otvorí nové
+            pravidlo predvyplnené partnerom a kódmi z dokladu; keď pre dodávateľa pravidlo už je,
+            ponúkne <em>Upraviť pravidlo</em>. Keď na doklad sedí viac pravidiel, vyberiete iné v
+            ponuke pri doklade; použité pravidlo označuje hviezdička.
           </li>
           <li>
             Zaberie pri každom novom doklade — zo skenu na webe aj v appke, z e-mailu, z importu —
@@ -588,7 +595,8 @@ const sections: HelpSection[] = [
           </li>
           <li>
             <strong>predkontáciu pre zaokrúhlenie</strong> — rozdiel medzi položkami a sumou pôjde
-            ako samostatná položka s touto predkontáciou,
+            ako samostatná položka s touto predkontáciou; zvlášť sa dá nastaviť kladné a záporné
+            zaokrúhlenie (napr. 548100 a 648100) aj s členením DPH a KV,
           </li>
           <li>či bločky s QR kódom idú najprv do Nespracovaných dokladov,</li>
           <li>povinnú zákazku, stredisko alebo činnosť pri spracovaní dokladu.</li>
@@ -596,9 +604,10 @@ const sections: HelpSection[] = [
         <p>
           Prijatá faktúra nesie do Pohody aj konštantný a špecifický symbol a číslo objednávky.
           Prenesenie daňovej povinnosti na položkách ide s členením „Prijatá faktúra — prenesenie
-          daňovej povinnosti“ a kontrolným výkazom B.1. Daňový doklad k prijatej platbe ide medzi
-          interné doklady. Z Pohody sa okrem predkontácií načítajú aj <strong>zákazky</strong>{" "}
-          (založia sa aj vo Fakteri s rovnakým číslom) a <strong>bankové účty</strong>.
+          daňovej povinnosti“ a kontrolným výkazom B.1. Daňový doklad k prijatej platbe ide
+          predvolene medzi interné doklady (inak pozri nastavenia exportu nižšie). Z Pohody sa okrem
+          predkontácií načítajú aj <strong>zákazky</strong> (založia sa aj vo Fakteri s rovnakým
+          číslom) a <strong>bankové účty</strong>.
         </p>
       </>
     ),

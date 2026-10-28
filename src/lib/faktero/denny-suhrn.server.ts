@@ -165,7 +165,7 @@ export async function poctyPreClovekaAFirmu(
   const [{ data: clen }, { data: firma }] = await Promise.all([
     db
       .from("company_users")
-      .select("user_id, role, permissions")
+      .select("user_id, role, permissions, schvalovanie_prava")
       .eq("company_id", companyId)
       .eq("user_id", userId)
       .maybeSingle(),
@@ -232,7 +232,7 @@ export async function spustiDennySuhrn(
   const clenstva = await selectAll<Clen & { company_id: string }>((from, to) =>
     db
       .from("company_users")
-      .select("id, company_id, user_id, role, permissions")
+      .select("id, company_id, user_id, role, permissions, schvalovanie_prava")
       .order("id")
       .range(from, to),
   );

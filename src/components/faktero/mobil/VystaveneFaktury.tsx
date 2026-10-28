@@ -16,6 +16,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import { PrilohyAppka } from "./PrilohyAppka";
+import { SablonaMailu, type VybranaSablona } from "./SablonaMailu";
+import { OznacenieDokladu, type OznacenieDokladu as Oznacenie } from "./DokladOznacenie";
 import { useDatumPredOdoslanim } from "./datum-pred-odoslanim";
 import { datum } from "./PrijateDoklady";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
@@ -400,6 +402,10 @@ function DetailFaktury({
   const upomienkaFn = useOperacia("faktura-upomienka");
   /* Koľká upomienka je na rade — text sa s každou ďalšou pritvrdzuje. */
   const [poslanych, setPoslanych] = useState(0);
+  /** Iná e-mailová šablóna než tá, ktorú by server vybral sám. */
+  const [sablona, setSablona] = useState<VybranaSablona>(null);
+  /** Komentár, stav a štítky — zoznam ich nenesie, dočítajú sa pri otvorení. */
+  const [oznacenie, setOznacenie] = useState<(Oznacenie & { company_id: string }) | null>(null);
 
   /** Má faktúra položky viazané na sklad? Vtedy sa opravuje na počítači. */
   const [skladove, setSkladove] = useState<boolean | null>(null);
@@ -412,6 +418,15 @@ function DetailFaktury({
       .eq("invoice_id", faktura.id)
       .eq("status", "sent")
       .then(({ data }) => setPoslanych(Math.max(0, ...(data ?? []).map((r) => r.reminder_number))));
+    supabase
+      .from("invoices")
+      .select("id, company_id, komentar, stav_id, stitky")
+      .eq("id", faktura.id)
+      .maybeSingle()
+      .then(
+        ({ data }) => setOznacenie((data as any) ?? null),
+        () => setOznacenie(null),
+      );
     supabase
       .from("invoice_items")
       .select("stock_item_id")
@@ -491,6 +506,7 @@ function DetailFaktury({
           recipient_email: faktura.customer_email,
           s_prilohami: true,
           potvrdeny_stary_datum: datumOk.potvrdenyStaryDatum || undefined,
+          ...(sablona ?? {}),
         },
       });
       toast.success(t("nf.odoslaneNa", { email: faktura.customer_email ?? "" }));
@@ -584,12 +600,15 @@ function DetailFaktury({
             onClick={otvorPdf}
           />
           {faktura.customer_email && (
-            <VelkeTlacidlo
-              icon={Mail}
-              label={t("faktury.poslatEmailom")}
-              hint={faktura.customer_email}
-              onClick={posli}
-            />
+            <>
+              <VelkeTlacidlo
+                icon={Mail}
+                label={t("faktury.poslatEmailom")}
+                hint={faktura.customer_email}
+                onClick={posli}
+              />
+              <SablonaMailu fakturaId={faktura.id} onZmena={setSablona} />
+            </>
           )}
           {/*
             Upomienka má zmysel len po splatnosti a len keď je kam písať —
@@ -645,6 +664,15 @@ function DetailFaktury({
         </div>
 
         <PrilohyAppka invoiceId={faktura.id} mozeMenit={faktura.status !== "cancelled"} />
+
+        {oznacenie && (
+          <OznacenieDokladu
+            tabulka="invoices"
+            firmaId={oznacenie.company_id}
+            doklad={oznacenie}
+            onZmena={(z) => setOznacenie((o) => (o ? { ...o, ...z } : o))}
+          />
+        )}
 
         {mazem ? (
           <div className="rounded-app border border-destructive/40 bg-destructive/5 p-4">

@@ -9,6 +9,8 @@
 import { z } from "zod";
 import type { ApiCtx } from "./api-auth.server";
 import { err, ok } from "./api-auth.server";
+import { ZnackyVstup, maZnacky } from "./api-evidencia";
+import { chybaDb, riadokZnaciek, strazZamku } from "./api-evidencia.server";
 
 type Odpoved = { status: number; body: any };
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -16,15 +18,6 @@ const lenCislice = (v: unknown) => String(v ?? "").replace(/\D/g, "");
 const jeUuid = (v: string) => /^[0-9a-f-]{36}$/i.test(v);
 const DATUM = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Dátum v tvare RRRR-MM-DD");
 
-/** Chyba z databázy do zrozumiteľnej odpovede (zámok obdobia, odovzdaný doklad…). */
-function chybaDb(e: { message?: string; code?: string } | null, sprava = "Zápis sa nepodaril.") {
-  const m = e?.message ?? sprava;
-  if (e?.code === "23505") return err("conflict", `Záznam už existuje: ${m}`, 409);
-  if (/zamknut|locked|odovzdan|uzamk/i.test(m)) return err("locked", m, 409);
-  if (/FAKTERO_PLAN_BLOCK/.test(m))
-    return err("plan_limit", "Predplatné firmy zápis nedovoľuje.", 402);
-  return err("db_error", m, 500);
-}
 
 /* ---------------- spoločné časti ---------------- */
 
@@ -200,7 +193,7 @@ const PrijataVstup = z.object({
   payment_date: DATUM.nullish(),
   accounting: Zauctovanie.optional(),
   file: Subor.optional(),
-});
+}).merge(ZnackyVstup);
 
 function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string) {
   const s = sucty(d.items, {
@@ -279,7 +272,7 @@ function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string)
 }
 
 const STL_PRIJATEJ =
-  "id, external_id, invoice_number, type, status, supplier_name, supplier_ico, issue_date, due_date, payment_date, currency, amount_without_vat, vat_amount, amount_total, zauctovane_at, exported_at, source, created_at, updated_at";
+  "id, external_id, invoice_number, type, status, supplier_name, supplier_ico, issue_date, due_date, payment_date, currency, amount_without_vat, vat_amount, amount_total, stav_id, stitky, komentar, int_poznamka, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie, zauctovane_at, exported_at, source, created_at, updated_at";
 
 export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
   const v = PrijataVstup.safeParse(ctx.requestBody);
@@ -324,11 +317,14 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
       return err("validation_error", e.message);
     }
   }
+  const zn = await riadokZnaciek(ctx, d, []);
+  if (!zn.ok) return zn.odpoved;
   const customer_id = await partnerId(ctx, d.supplier, "dodavatel");
   const { data, error } = await db
     .from("purchase_invoices")
     .insert({
       ...riadok,
+      ...zn.riadok,
       status: riadok.status ?? "received",
       company_id: ctx.company_id,
       customer_id,
@@ -347,6 +343,22 @@ export async function upravPrijatu(ctx: ApiCtx, id: string): Promise<Odpoved> {
   const v = PrijataVstup.omit({ external_id: true }).partial().safeParse(ctx.requestBody);
   if (!v.success) return err("validation_error", "Neplatné údaje.", 400, v.error.flatten());
   const { riadok } = riadokPrijatej(v.data, new Date().toISOString());
+  const { data: stary } = await (ctx.supabase as any)
+    .from("purchase_invoices")
+    .select("*")
+    .eq("company_id", ctx.company_id)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!stary) return err("not_found", "Prijatá faktúra sa nenašla.", 404);
+  if (maZnacky(v.data)) {
+    const zn = await riadokZnaciek(ctx, v.data, stary.stitky ?? []);
+    if (!zn.ok) return zn.odpoved;
+    Object.assign(riadok, zn.riadok);
+  }
+  // Zámok odovzdaného dokladu: servisný kľúč spúšťač púšťa, stráži ho API.
+  const zamok = strazZamku("purchase_invoices", stary, riadok);
+  if (zamok) return zamok;
   if (v.data.file) {
     try {
       Object.assign(riadok, await ulozSubor(ctx, "purchase-invoices", v.data.file));
@@ -389,7 +401,7 @@ const BlocekVstup = z.object({
   note: z.string().max(4000).nullish(),
   accounting: Zauctovanie.optional(),
   file: Subor.optional(),
-});
+}).merge(ZnackyVstup);
 
 function riadokBlocku(d: Partial<z.infer<typeof BlocekVstup>>, teraz: string) {
   const r: Record<string, unknown> = {};
@@ -449,7 +461,7 @@ function riadokBlocku(d: Partial<z.infer<typeof BlocekVstup>>, teraz: string) {
 }
 
 const STL_BLOCKU =
-  "id, external_id, document_number, status, supplier_name, supplier_ico, issue_date, currency, total_amount, vat_amount, net_amount, vat_breakdown, payment_method, mimo_pokladne, zauctovane_at, exported_at, source, created_at, updated_at";
+  "id, external_id, document_number, status, supplier_name, supplier_ico, issue_date, currency, total_amount, vat_amount, net_amount, vat_breakdown, payment_method, mimo_pokladne, stav_id, stitky, komentar, int_poznamka, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie, zauctovane_at, exported_at, source, created_at, updated_at";
 
 export async function zalozBlocek(ctx: ApiCtx): Promise<Odpoved> {
   const v = BlocekVstup.safeParse(ctx.requestBody);
@@ -473,11 +485,14 @@ export async function zalozBlocek(ctx: ApiCtx): Promise<Odpoved> {
       return err("validation_error", e.message);
     }
   }
+  const zn = await riadokZnaciek(ctx, d, []);
+  if (!zn.ok) return zn.odpoved;
   const teraz = new Date().toISOString();
   const { data, error } = await db
     .from("expense_documents")
     .insert({
       ...riadokBlocku(d, teraz),
+      ...zn.riadok,
       company_id: ctx.company_id,
       external_id: d.external_id ?? null,
       source: "api",
@@ -496,6 +511,20 @@ export async function upravBlocek(ctx: ApiCtx, id: string): Promise<Odpoved> {
   const v = BlocekVstup.omit({ external_id: true }).partial().safeParse(ctx.requestBody);
   if (!v.success) return err("validation_error", "Neplatné údaje.", 400, v.error.flatten());
   const riadok = riadokBlocku(v.data, new Date().toISOString());
+  const { data: stary } = await (ctx.supabase as any)
+    .from("expense_documents")
+    .select("*")
+    .eq("company_id", ctx.company_id)
+    .eq("id", id)
+    .maybeSingle();
+  if (!stary) return err("not_found", "Bloček sa nenašiel.", 404);
+  if (maZnacky(v.data)) {
+    const zn = await riadokZnaciek(ctx, v.data, stary.stitky ?? []);
+    if (!zn.ok) return zn.odpoved;
+    Object.assign(riadok, zn.riadok);
+  }
+  const zamok = strazZamku("expense_documents", stary, riadok);
+  if (zamok) return zamok;
   if (v.data.file) {
     try {
       Object.assign(riadok, await ulozSubor(ctx, "expense-receipts", v.data.file));

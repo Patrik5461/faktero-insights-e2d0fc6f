@@ -246,6 +246,15 @@ const sections: HelpSection[] = [
           vypršal“). Kliknite pri účte na <strong>Obnoviť súhlas</strong> a potvrďte ho v banke —
           sťahovanie sa potom rozbehne samo, aj spätne za vynechané dni.
         </p>
+        <p>
+          <strong>Nastavenia banky</strong> v <Link to="/bankove-ucty">Bankových účtoch</Link>:{" "}
+          <em>Synchronizovať banku od</em> — staršie pohyby sa pri sťahovaní neuložia;{" "}
+          <em>Najskorší dátum automatického párovania</em> — staršie pohyby sa s faktúrami samy
+          nespárujú a ostanú na ručné potvrdenie; <em>Ignorovať typ platby</em> pri párovaní pohybov
+          s bločkami (vypnuté = bloček platený kartou sa páruje len s platbou kartou) a predvolený{" "}
+          <em>text pre príjemcu</em> v hromadnom príkaze na úhradu — číslo faktúry, VS alebo účtovná
+          poznámka. Prázdne voľby fungujú ako doteraz.
+        </p>
       </>
     ),
   },

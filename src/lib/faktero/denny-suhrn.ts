@@ -54,7 +54,13 @@ const OBLAST_AGENDY: Record<string, Oblast> = {
 
 const ROLY_POHLADAVOK = ["owner", "admin", "accountant"];
 
-export type Clen = { user_id: string; role: string; permissions: unknown };
+export type Clen = {
+  user_id: string;
+  role: string;
+  permissions: unknown;
+  /** Povolenia schvaľovania po používateľoch (`company_users.schvalovanie_prava`) — ako zvonček. */
+  schvalovanie_prava?: unknown;
+};
 
 export type ZaznamSchvalovania = {
   agenda: string;
@@ -90,7 +96,12 @@ export function poctyClena(
   const schvalenie = d.schvalovanie.filter(
     (r) =>
       vidi(r.agenda) &&
-      mozeSchvalit({ ...r, urovne: nacitajUrovne(r.urovne) }, clen.user_id, clen.role),
+      mozeSchvalit(
+        { ...r, urovne: nacitajUrovne(r.urovne) },
+        clen.user_id,
+        clen.role,
+        clen.schvalovanie_prava,
+      ),
   ).length;
   const komentare = d.komentare.filter((k) => vidi(k.agenda) && cakaNaMna(k, clen.user_id)).length;
   const nespracovane = vidiOblast(clen.role, clen.permissions, "doklady") ? d.nespracovane : 0;

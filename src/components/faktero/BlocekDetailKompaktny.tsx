@@ -46,6 +46,8 @@ import { PrilohyFaktury } from "./PrilohyFaktury";
 import { HistoriaDokladu } from "./HistoriaDokladu";
 import { KomentarePanel } from "./KomentarePanel";
 import { PravidloZDokladu } from "./PravidloZDokladu";
+import { PouzitPredlohu } from "./PouzitPredlohu";
+import { NastavitPredvolene } from "./NastavitPredvolene";
 
 const PLATBY: Record<string, string> = {
   hotovost: "Hotovosťou",
@@ -114,13 +116,25 @@ export function BlocekDetailKompaktny({
     onZmena();
   }
 
-  /** Kód zaúčtovania — tá istá serverová funkcia ako hromadné zaúčtovanie bločkov. */
+  /**
+   * Kód zaúčtovania — tá istá serverová funkcia ako hromadné zaúčtovanie bločkov.
+   * Tam prázdne pole nič nemení, preto vymazanie ide výslovne cez `vymazat`.
+   */
   async function ulozKod(pole: "predkontacia" | "clenenie" | "kv" | "pokladna", v: string) {
-    if (!v.trim()) return;
+    const prazdne = !v.trim();
+    const stlpec = {
+      predkontacia: "pohoda_predkontacia",
+      clenenie: "pohoda_clenenie_dph",
+      kv: "kv_clenenie",
+      pokladna: "pohoda_pokladna",
+    }[pole];
+    if (prazdne && !row[stlpec]) return;
     setUkladam(true);
     try {
       const r = await zauctuj({
-        data: { company_id: row.company_id, ids: [row.id], [pole]: v } as any,
+        data: (prazdne
+          ? { company_id: row.company_id, ids: [row.id], vymazat: [pole] }
+          : { company_id: row.company_id, ids: [row.id], [pole]: v }) as any,
       });
       if (r.preskocenych) toast.error(t("Doklad je odovzdaný do Pohody — zmena sa neuložila."));
       else {
@@ -366,7 +380,49 @@ export function BlocekDetailKompaktny({
           </label>
         </fieldset>
         {!zamknute ? (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <PouzitPredlohu
+              companyId={row.company_id}
+              druh="blocek"
+              onPouzi={async (p) => {
+                // Kódy cez zaúčtovanie (história, pravidlá), rad a poznámka priamo.
+                const kody = Object.fromEntries(
+                  (
+                    [
+                      ["predkontacia", p.predkontacia],
+                      ["clenenie", p.clenenie_dph],
+                      ["kv", p.kv_clenenie],
+                      ["pokladna", p.pokladna],
+                    ] as const
+                  ).filter(([, v]) => v),
+                );
+                setUkladam(true);
+                try {
+                  if (Object.keys(kody).length)
+                    await zauctuj({
+                      data: { company_id: row.company_id, ids: [row.id], ...kody } as any,
+                    });
+                  const ine: Record<string, string> = {};
+                  if (p.rad) ine.pohoda_rad = p.rad;
+                  if (p.poznamka) ine.int_poznamka = p.poznamka;
+                  if (Object.keys(ine).length) await ulozStlpec(ine);
+                  else hotovo();
+                } catch (e: any) {
+                  toast.error(t(e?.message ?? "Nepodarilo sa"));
+                } finally {
+                  setUkladam(false);
+                }
+              }}
+            />
+            <NastavitPredvolene
+              companyId={row.company_id}
+              kluc="doklady"
+              hodnoty={{
+                predkontacia: row.pohoda_predkontacia ?? "",
+                clenenie: row.pohoda_clenenie_dph ?? "",
+                kv: row.kv_clenenie ?? "",
+              }}
+            />
             <PravidloZDokladu
               companyId={row.company_id}
               zaklad={{

@@ -7,7 +7,9 @@ import {
   DRUHY_S_PRILOHAMI,
   MAX_PRILOHA,
   MAX_PRILOH,
+  MAX_ZIP_PRILOH,
   cestaPrilohy,
+  nazvyDoZipu,
   typSuboru,
   type DruhSPrilohou,
 } from "./faktura-prilohy";
@@ -155,4 +157,75 @@ export const zmazPrilohuFn = createServerFn({ method: "POST" })
        v zozname bez obsahu. */
     await context.supabase.storage.from(KOS).remove([riadok.path]);
     return { ok: true as const };
+  });
+
+/** Súbor samotného dokladu (sken prijatej faktúry, fotka bločku) — iný kôš. */
+const HLAVNY_SUBOR: Partial<Record<DruhSPrilohou, string>> = {
+  purchase_invoice: "purchase-invoices",
+  expense: "expense-receipts",
+};
+
+/**
+ * „Stiahnuť všetky prílohy“ ako jeden ZIP — doklad, prílohy aj súbor dokladu.
+ *
+ * Všetko ide klientom prihláseného človeka: doklad aj prílohy cudzej firmy
+ * odfiltruje RLS, súbory v úložisku jeho pravidlá. Vracia base64 (ako iné
+ * ZIP exporty), preto strop na celkovú veľkosť.
+ */
+export const zipPrilohFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    Doklad.extend({ nazovDokladu: z.string().trim().max(150).optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { tabulka, stlpec, prilohy, nazov } = DRUHY_S_PRILOHAMI[data.druh];
+    const kos = HLAVNY_SUBOR[data.druh];
+    const { data: doklad } = await (context.supabase as any)
+      .from(tabulka)
+      .select(kos ? "id, company_id, file_path" : "id, company_id")
+      .eq("id", data.dokladId)
+      .maybeSingle();
+    if (!doklad) throw new Error(`${nazov} sa nenašla.`);
+
+    const { data: riadky, error } = await (context.supabase as any)
+      .from(prilohy)
+      .select("path, name, size")
+      .eq(stlpec, doklad.id)
+      .order("created_at");
+    if (error) throw new Error(error.message);
+
+    const subory: { kos: string; path: string; name: string; size: number }[] = [];
+    if (kos && doklad.file_path) {
+      const pripona = String(doklad.file_path).split(".").pop() ?? "pdf";
+      subory.push({
+        kos,
+        path: doklad.file_path,
+        name: `${data.nazovDokladu || "doklad"}.${pripona}`,
+        size: 0,
+      });
+    }
+    for (const r of (riadky ?? []) as any[])
+      subory.push({ kos: KOS, path: r.path, name: r.name, size: Number(r.size) || 0 });
+    if (!subory.length) throw new Error("Doklad nemá žiadne prílohy.");
+    if (subory.reduce((s, f) => s + f.size, 0) > MAX_ZIP_PRILOH)
+      throw new Error("Prílohy sú spolu väčšie než 60 MB — stiahnite ich po jednom.");
+
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+    const nazvy = nazvyDoZipu(subory.map((f) => f.name));
+    let spolu = 0;
+    for (const [i, f] of subory.entries()) {
+      const { data: blob, error: chyba } = await context.supabase.storage
+        .from(f.kos)
+        .download(f.path);
+      if (chyba || !blob) throw new Error(`${f.name}: súbor sa nepodarilo načítať.`);
+      const bajty = new Uint8Array(await blob.arrayBuffer());
+      spolu += bajty.length;
+      if (spolu > MAX_ZIP_PRILOH)
+        throw new Error("Prílohy sú spolu väčšie než 60 MB — stiahnite ich po jednom.");
+      zip.file(nazvy[i], bajty);
+    }
+    const base64 = await zip.generateAsync({ type: "base64" });
+    const meno = nazvyDoZipu([`${data.nazovDokladu || "doklad"}-prilohy.zip`])[0];
+    return { base64, filename: meno, pocet: subory.length };
   });

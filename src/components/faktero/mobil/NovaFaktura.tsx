@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { VyberPoznamky } from "./DokladOznacenie";
+import { SablonaMailu, type VybranaSablona } from "./SablonaMailu";
+import { vlozDoPoznamky } from "@/lib/faktero/preddefinovane-poznamky";
 import { useDatumPredOdoslanim } from "./datum-pred-odoslanim";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useOperacia } from "@/lib/mobile/server-most";
@@ -1598,6 +1601,12 @@ function KrokSuhrn({
             className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
           />
         </label>
+        {/* Preddefinované poznámky firmy (Nastavenia na webe) — vložia sa na nový riadok. */}
+        <VyberPoznamky
+          firmaId={firmaId}
+          agenda="faktura"
+          onVyber={(text) => setPoznamka(vlozDoPoznamky(poznamka, text))}
+        />
       </div>
     </MobilObrazovka>
   );
@@ -1840,6 +1849,8 @@ function Vystavena({
   const overDatum = useDatumPredOdoslanim();
   const [busy, setBusy] = useState<"pdf" | "mail" | "zdielam" | null>(null);
   const [odoslane, setOdoslane] = useState(false);
+  /** Iná e-mailová šablóna než tá, ktorú by server vybral sám. */
+  const [sablona, setSablona] = useState<VybranaSablona>(null);
 
   async function otvorPdf() {
     setBusy("pdf");
@@ -1879,6 +1890,7 @@ function Vystavena({
           invoiceId: faktura.id,
           recipient_email: faktura.customer_email,
           potvrdeny_stary_datum: datumOk.potvrdenyStaryDatum || undefined,
+          ...(sablona ?? {}),
         },
       });
       setOdoslane(true);
@@ -1917,6 +1929,9 @@ function Vystavena({
               disabled={odoslane}
               onClick={posli}
             />
+          )}
+          {faktura.customer_email && !odoslane && (
+            <SablonaMailu fakturaId={faktura.id} onZmena={setSablona} />
           )}
           <VelkeTlacidlo
             icon={Share2}

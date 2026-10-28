@@ -52,28 +52,17 @@ export const getSupabaseUsage = createServerFn({ method: "GET" })
     let storageTotalBytes = 0;
     const buckets: Array<{ name: string; files: number; size_bytes: number }> = [];
     try {
-      const { data: bucketList } = await supabaseAdmin.storage.listBuckets();
-      for (const b of bucketList ?? []) {
-        let files = 0;
-        let size = 0;
-        // Recursively list objects (top-level + first level of folders).
-        const stack: string[] = [""];
-        while (stack.length) {
-          const prefix = stack.pop()!;
-          const { data: objs } = await supabaseAdmin.storage
-            .from(b.name)
-            .list(prefix, { limit: 1000, sortBy: { column: "name", order: "asc" } });
-          for (const o of objs ?? []) {
-            if ((o as any).id === null || (o as any).metadata == null) {
-              // folder
-              stack.push(prefix ? `${prefix}/${o.name}` : o.name);
-            } else {
-              files += 1;
-              size += Number((o as any).metadata?.size ?? 0);
-            }
-          }
-        }
-        buckets.push({ name: b.name, files, size_bytes: size });
+      // Jeden dotaz do storage.objects — prechádzanie priečinkov cez Storage API
+      // pri tisícoch súborov trvalo dlhšie ako 30 s a nginx stránku zrušil.
+      const { data, error } = await supabaseAdmin.rpc("admin_storage_stats" as any);
+      if (error) throw error;
+      for (const b of ((data as any[]) ?? []) as {
+        name: string;
+        files: number;
+        size_bytes: number;
+      }[]) {
+        const size = Number(b.size_bytes ?? 0);
+        buckets.push({ name: b.name, files: Number(b.files ?? 0), size_bytes: size });
         storageTotalBytes += size;
       }
     } catch (e: any) {

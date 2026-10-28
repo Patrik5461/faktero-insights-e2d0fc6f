@@ -200,6 +200,8 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     pohoda_clenenie_dph: p.pohoda_clenenie_dph,
     rozuctovanie: p.rozuctovanie,
     job_id: p.job_id,
+    // Vozidlo s odpočtom 50 % rozúčtuje faktúru na časť s odpočtom a bez neho.
+    vehicle_id: p.vehicle_id ?? null,
     stredisko: p.stredisko,
     cinnost: p.cinnost,
     pohoda_rad: p.pohoda_rad,

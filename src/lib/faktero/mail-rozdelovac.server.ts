@@ -126,7 +126,8 @@ function opisPrilohy(
     dodavatel: (ai?.supplier_name as string) ?? null,
     suma: (ai?.amount_total as number) ?? null,
     mena: (ai?.currency as string) ?? null,
-    dovod: dovodNepriradenia(v),
+    // Pri zhode dôvod nepatrí — inak by sa k zaradenému dokladu uložilo „chýbajú údaje odberateľa“.
+    dovod: v.vysledok === "zhoda" ? null : dovodNepriradenia(v),
     kandidati: v.kandidati,
   };
 }

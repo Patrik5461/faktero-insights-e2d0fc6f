@@ -100,7 +100,7 @@ function KonvertorPage() {
       a.remove();
       URL.revokeObjectURL(url);
       setVysledok({ pocet: r.pocet, preskocene: r.preskocene, subor: r.fileName });
-      toast.success(t("Prevedené: {n} dokladov. Súbor sa stiahol.", { n: r.pocet }));
+      toast.success(t("Prevedené doklady: {n}. Súbor sa stiahol.", { n: r.pocet }));
     } catch (e: any) {
       toast.error(e?.message ?? t("Prevod sa nepodaril"));
     } finally {
@@ -197,7 +197,7 @@ function KonvertorPage() {
             {vysledok && (
               <div className="mt-4 rounded-md border border-border p-3 text-sm">
                 <p>
-                  {t("Do súboru {subor} išlo {n} dokladov.", {
+                  {t("Počet dokladov v súbore {subor}: {n}.", {
                     subor: vysledok.subor,
                     n: vysledok.pocet,
                   })}

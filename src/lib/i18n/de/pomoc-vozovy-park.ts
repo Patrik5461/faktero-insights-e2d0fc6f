@@ -29,8 +29,6 @@ export default {
     "<0>Privatfahrzeug</0> — Auto eines Mitarbeiters oder Geschäftsführers, das auch für Dienstreisen genutzt wird.",
   "Pri leasingu a úvere sa dá vozidlo prepojiť so zmluvou v <0>Banka → Leasingy a úvery</0>; zo zmluvy sa potom jedným klikom dostanete na splátkový kalendár.":
     "Bei Leasing und Kredit lässt sich das Fahrzeug mit dem Vertrag unter <0>Bank → Leasing und Kredite</0> verknüpfen; vom Vertrag gelangen Sie dann mit einem Klick zum Tilgungsplan.",
-  "Použitie a odpočet DPH: pri osobnom aute používanom aj súkromne sa na Slovensku od roku 2025 odpočítava DPH paušálne 50 %. Daň z motorových vozidiel od roku 2023 platia len nákladné vozidlá a autobusy nad 3,5 t a ťažké prívesy — Faktero to pri kategórii vozidla pripomenie.":
-    "Nutzung und Vorsteuerabzug: Bei einem auch privat genutzten Pkw wird in der Slowakei seit 2025 pauschal 50 % der Vorsteuer abgezogen. Kraftfahrzeugsteuer zahlen seit 2023 nur Lkw und Busse über 3,5 t sowie schwere Anhänger — Faktero weist bei der Fahrzeugklasse darauf hin.",
   "Termíny a upozornenia": "Termine und Erinnerungen",
   "Pri vozidle zapíšte platnosť STK, emisnej kontroly, PZP, havarijného poistenia, diaľničnej známky a dátum najbližšieho servisu. Termín, ktorý končí do 30 dní, sa ukáže <0>v zvončeku</0> aj v zozname vozidiel; prepadnutý je červený.":
     "Tragen Sie beim Fahrzeug die Gültigkeit von HU, Abgasuntersuchung, Kfz-Haftpflicht, Kasko, Vignette und das Datum des nächsten Service ein. Ein Termin, der innerhalb von 30 Tagen endet, erscheint <0>in der Glocke</0> und in der Fahrzeugliste; ein abgelaufener ist rot.",

@@ -500,9 +500,18 @@ function PurchaseInvoiceDetail() {
         : "Prijatá faktúra",
   );
   const stavOdznak = (
-    <StavOdznak className={STATUS_CLASS[row.status] ?? undefined}>
-      {t(STATUS_LABEL[row.status] ?? row.status)}
-    </StavOdznak>
+    <>
+      <StavOdznak className={STATUS_CLASS[row.status] ?? undefined}>
+        {t(STATUS_LABEL[row.status] ?? row.status)}
+      </StavOdznak>
+      {/* Čiastočná úhrada nie je hodnota `status` — počíta sa z úhrad faktúry. */}
+      {uhradyFaktury.stav.stav === "ciastocne" &&
+      row.status !== "paid" &&
+      row.status !== "cancelled" &&
+      row.status !== "draft" ? (
+        <StavOdznak className="bg-amber-50 text-amber-800">{t("Čiastočne uhradená")}</StavOdznak>
+      ) : null}
+    </>
   );
   const prepniPolozky = async (vypnut: boolean) => {
     // Položky sa presunú bokom (a späť) — všetko, čo z nich počíta, ich prestane vidieť.

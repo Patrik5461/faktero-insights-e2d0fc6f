@@ -99,7 +99,7 @@ export async function nacitajVstup(
       supabase
         .from("purchase_invoices")
         .select(
-          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, rozuctovanie, amount_total",
+          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, rozuctovanie, amount_total, vehicle_id",
         )
         .eq("company_id", companyId)
         /*
@@ -115,7 +115,7 @@ export async function nacitajVstup(
       supabase
         .from("expense_documents")
         .select(
-          "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, status, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie, pohoda_predkontacia, category, items, rozuctovanie, total_amount",
+          "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, status, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie, pohoda_predkontacia, category, items, rozuctovanie, total_amount, vehicle_id",
         )
         .eq("company_id", companyId)
         .order("id")
@@ -140,6 +140,13 @@ export async function nacitajVstup(
       .eq("id", companyId)
       .maybeSingle(),
   ]);
+  /*
+    Vozidlo s odpočtom DPH 50 % (osobné auto aj na súkromné účely, § 85n
+    zákona o DPH): bez výslovného rozúčtovania sa odpočíta len polovica.
+  */
+  const { odpocetVozidielFirmy } = await import("./vozidlo-odpocet.server");
+  const { odpocetDokladu } = await import("./vozidlo-odpocet");
+  const vozidla = await odpocetVozidielFirmy(supabase, companyId, pomery);
   // Do výkazu ide domáca mena firmy (SK eurá, CZ koruny); cudzia je všetko ostatné.
   const domaca = domacaMena((firmaKody as any)?.country);
   /*
@@ -149,7 +156,7 @@ export async function nacitajVstup(
   */
   const podiel = (doklad: any, rozpis: { sadzba: number; zaklad: number; dph: number }[], kod: unknown): number | undefined => {
     const k = String(kod ?? "").trim() || null;
-    const r = riadkyDokladu(doklad, rozpis, k, null, pomery);
+    const r = riadkyDokladu(doklad, rozpis, k, null, pomery, odpocetDokladu(doklad, vozidla));
     const v = podielOdpoctuRiadkov(r);
     return v === 1 ? undefined : v;
   };

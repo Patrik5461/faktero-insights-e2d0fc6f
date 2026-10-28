@@ -250,7 +250,7 @@ export function UctovneNastaveniaFaktury({
           </MriezkaDokladu>
           <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             {pravidlo ? (
-              <span className="inline-flex items-center gap-1 text-amber-700">
+              <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
                 <Star className="h-3.5 w-3.5 fill-current" />
                 {t("Kódy doplní pravidlo „{nazov}“.", { nazov: pravidlo.nazov })}
               </span>

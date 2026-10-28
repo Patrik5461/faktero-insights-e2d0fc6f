@@ -30,6 +30,8 @@ export const OPERACIE = [
   "sken-vytvor",
   "banka-prehlad",
   "banka-stiahni",
+  // „Pohyb nemá doklad“ / „Transakčná daň“ — tá istá funkcia ako detail pohybu na webe.
+  "pohyb-oznac",
   "faktury-zoznam",
   "faktura-pdf",
   "faktura-email",

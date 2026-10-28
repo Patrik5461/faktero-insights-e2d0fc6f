@@ -38,6 +38,7 @@ const menus: Menu[] = [
       { label: "Prehľad", href: "/efakturacia/prehlad" },
       { label: "Peppol", href: "/efakturacia/peppol" },
       { label: "Digitálny poštár", href: "/efakturacia/digitalny-postar" },
+      { label: "Kontrola e-faktúry", href: "/nastroje/kontrola-efaktury" },
     ],
   },
   {
@@ -46,6 +47,7 @@ const menus: Menu[] = [
     items: [
       { label: "Pohoda export", href: "/uctovnici/pohoda-export" },
       { label: "Mesačné podklady", href: "/uctovnici/mesacne-podklady" },
+      { label: "Automatické účtovanie", href: "/uctovnici/pravidla-uctovania" },
       { label: "Integrácie", href: "/uctovnici/integracie" },
     ],
   },

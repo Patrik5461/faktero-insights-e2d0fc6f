@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { stavPohybu } from "./pohyb-vybavenie";
 
 /**
  * Bankové pohyby pre mobilnú aplikáciu.
@@ -30,7 +31,7 @@ export const bankaPrehladFn = createServerFn({ method: "POST" })
     let dotazPohyby = supabase
       .from("bank_transactions")
       .select(
-        "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, description, matched_invoice_id, invoices:matched_invoice_id (invoice_number)",
+        "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, description, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, matched_installment_id, vybavenie, vybavenie_poznamka, invoices:matched_invoice_id (invoice_number)",
       )
       .eq("company_id", data.company_id)
       // Dva stĺpce: v jeden deň chodí pohybov viac a samotný dátum ich nezoradí.
@@ -67,6 +68,12 @@ export const bankaPrehladFn = createServerFn({ method: "POST" })
         protistrana: (p.counterparty as string | null) ?? null,
         popis: (p.description as string | null) ?? null,
         faktura: (p.invoices?.invoice_number as string | null) ?? null,
+        /*
+          Spárovaný s dokladom, označený bez dokladu („Pohyb nemá doklad“,
+          „Transakčná daň“) alebo nespárovaný — to isté rozhodnutie ako web.
+        */
+        stav: stavPohybu(p),
+        vybavenie_poznamka: (p.vybavenie_poznamka as string | null) ?? null,
       })),
     };
   });

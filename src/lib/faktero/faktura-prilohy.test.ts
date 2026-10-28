@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import {
   DRUHY_S_PRILOHAMI,
   MAX_PRILOH,
+  nazvyDoZipu,
   POVOLENE_TYPY,
   PRIPONY_PRE_VYBER,
   cestaPrilohy,
@@ -139,5 +140,24 @@ describe("druhy dokladov s prílohami", () => {
   it("názvy druhov sa neopakujú", () => {
     const nazvy = Object.values(DRUHY_S_PRILOHAMI).map((d) => d.nazov);
     expect(new Set(nazvy).size).toBe(nazvy.length);
+  });
+});
+
+describe("nazvyDoZipu", () => {
+  it("dvojice dostanú poradové číslo, bez ohľadu na veľkosť písmen", () => {
+    expect(nazvyDoZipu(["sken.pdf", "Sken.pdf", "sken.pdf", "vykaz.xlsx"])).toEqual([
+      "sken.pdf",
+      "Sken (2).pdf",
+      "sken (3).pdf",
+      "vykaz.xlsx",
+    ]);
+  });
+  it("lomky a cesty sa z názvu odstránia", () => {
+    expect(nazvyDoZipu(["../../etc/passwd", "a/b\\c.pdf", "", ".skryty"])).toEqual([
+      "_.._etc_passwd",
+      "a_b_c.pdf",
+      "priloha",
+      "skryty",
+    ]);
   });
 });

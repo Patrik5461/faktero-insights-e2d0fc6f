@@ -1153,7 +1153,7 @@ function UpravaPravidla({
             </div>
           )}
           {!banka && !vystavena && (
-            <label className="block text-sm sm:col-span-2">
+            <label className="block text-sm">
               <span className="font-medium">{t("Poznámka")}</span>
               <input
                 value={p.poznamka ?? ""}

@@ -54,6 +54,8 @@ import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
 import { polozkaPrijatej } from "@/lib/faktero/suhrn-vyberu";
 import { ZAPLATENE_NA_MIESTE } from "@/lib/faktero/hromadny-prikaz";
 import { NavrhyAiOkno } from "@/components/faktero/NavrhyAiOkno";
+import { jeCiastocneUhradena, sumyUhradPodlaFaktury } from "@/lib/faktero/uhrady-prijatej";
+import { riadkyPreIds } from "@/lib/faktero/strankovanie";
 import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
@@ -88,6 +90,8 @@ const STATUS_LABEL: Record<string, string> = {
   paid: "Zaplatené",
   cancelled: "Stornované",
 };
+/** Filter navyše — nie je to hodnota `status`, počíta sa z `purchase_invoice_payments`. */
+const CIASTOCNE = "ciastocne";
 
 function StatusBadge({ status }: { status: string }) {
   const { t } = useT();
@@ -156,6 +160,8 @@ function PurchaseInvoicesPage() {
   // Naposledy otvorená faktúra — zvýraznený riadok po návrate z detailu.
   const posledny = usePoslednyOtvoreny("prijate-faktury");
   const [rows, setRows] = useState<any[]>([]);
+  // Súčet úhrad (aj čiastočných) po faktúrach — pre stav „Čiastočne uhradená“.
+  const [uhradene, setUhradene] = useState<Record<string, number>>({});
   // Tá istá faktúra v zozname dvakrát (prišla mailom znova) — označí sa pri čísle.
   const duplicity = useMemo(() => duplicityVZozname(rows), [rows]);
   const sch = useStavSchvalovania(
@@ -576,7 +582,8 @@ function PurchaseInvoicesPage() {
       .is("deleted_at", null)
       .order("issue_date", { ascending: false })
       .limit(500);
-    if (status) q = q.eq("status", status);
+    if (status === CIASTOCNE) q = q.not("status", "in", "(paid,cancelled,draft)");
+    else if (status) q = q.eq("status", status);
     if (obdobieOd || obdobieDo) q = filtrujObdobie(q, podla, obdobieOd || null, obdobieDo || null);
     if (exportovane === "ano") q = q.not("exported_at", "is", null);
     if (exportovane === "nie") q = q.is("exported_at", null).neq("status", "cancelled");
@@ -584,9 +591,36 @@ function PurchaseInvoicesPage() {
     if (stavFiltra === "_bez") q = q.is("stav_id", null);
     else if (stavFiltra) q = q.eq("stav_id", stavFiltra);
     if (stitokFiltra) q = q.contains("stitky", [stitokFiltra]);
-    const { data, error } = await q;
+    const { data: nacitane, error } = await q;
     if (cislo !== poslednyDotaz.current) return;
     if (error) toast.error(error.message);
+    // Úhrady len pre neuhradené faktúry — zaplatené ani storno čiastočné byť nemôžu.
+    const naUhrady = (nacitane ?? [])
+      .filter((r: any) => !["paid", "cancelled", "draft"].includes(r.status))
+      .map((r: any) => r.id);
+    let sumy: Record<string, number> = {};
+    try {
+      if (naUhrady.length)
+        sumy = sumyUhradPodlaFaktury(
+          await riadkyPreIds<any>(naUhrady, (kus, od, po) =>
+            supabase
+              .from("purchase_invoice_payments")
+              .select("id, purchase_invoice_id, amount")
+              .eq("company_id", cid)
+              .in("purchase_invoice_id", kus)
+              .order("id")
+              .range(od, po),
+          ),
+        );
+    } catch {
+      sumy = {};
+    }
+    if (cislo !== poslednyDotaz.current) return;
+    const data =
+      status === CIASTOCNE
+        ? (nacitane ?? []).filter((r: any) => jeCiastocneUhradena(r, sumy[r.id]))
+        : nacitane;
+    setUhradene(sumy);
     setRows(data ?? []);
     setLoading(false);
 
@@ -738,7 +772,10 @@ function PurchaseInvoicesPage() {
                 key: "stav",
                 label: "Stav",
                 type: "select",
-                options: Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })),
+                options: [
+                  ...Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })),
+                  { value: CIASTOCNE, label: "Čiastočne uhradená" },
+                ],
               },
               {
                 key: "obdobie",
@@ -1182,6 +1219,14 @@ function PurchaseInvoicesPage() {
                   {je("stav") && (
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <StatusBadge status={r.status} />
+                      {jeCiastocneUhradena(r, uhradene[r.id]) && (
+                        <span
+                          className="mt-1 block w-fit rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800"
+                          title={formatujMenu(uhradene[r.id], r.currency ?? "EUR")}
+                        >
+                          {t("Čiastočne uhradená")}
+                        </span>
+                      )}
                       {r.locked_at ? (
                         <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground" title={t("Zamknutý doklad")}>
                           <Lock className="h-3 w-3" /> {t("Zamknutá")}

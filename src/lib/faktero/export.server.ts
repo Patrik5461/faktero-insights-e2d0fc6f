@@ -20,7 +20,9 @@ import {
   riadkyDokladu,
   rozpisBlocku,
   rozuctovaniePodlaPomeru,
+  type OdpocetVozidla,
 } from "./rozuctovanie";
+import { odpocetDokladu } from "./vozidlo-odpocet";
 import { kodyZaokruhlenia } from "./predkontacie";
 import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
 import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
@@ -279,6 +281,8 @@ export type PohodaNastavenia = {
   polozkyBlockov?: boolean;
   /** Účtovanie pomerom podľa kódu predkontácie (napr. auto 50/50). */
   pomeryPredkontacii?: Record<string, unknown>;
+  /** Vozidlo → krátený odpočet DPH (zmiešané použitie 50 %), pre doklady s `vehicle_id`. */
+  odpocetVozidiel?: Record<string, OdpocetVozidla>;
   /** Skratka pokladne v Pohode — do ktorej pokladne pohyby patria. */
   pokladna?: string | null;
   /** Predkontácia pre pokladničný doklad. */
@@ -1545,6 +1549,7 @@ export function polozkyDokladov(opts: {
         predkontaciaJedna ?? null,
         clenenieJedno ?? null,
         nastavenia?.pomeryPredkontacii,
+        odpocetDokladu(d, nastavenia?.odpocetVozidiel),
       );
       const rozuctovany = jeRozuctovane(rozuct);
       /*
@@ -2469,6 +2474,7 @@ export type ExportFormat =
   | "isdoc_zip"
   | "bis_zip"
   | "flexi_xml"
+  | "mrp_xml"
   | "csv_univerzal";
 
 export interface ExportStrategy {
@@ -2729,11 +2735,48 @@ export const FLEXI_XML: ExportStrategy = {
   },
 };
 
-/** Súpiska pre všetko ostatné — MRP, Premier, Helios aj obyčajný Excel. */
+/**
+ * MRP-K/S (aj MRP Autonómny podnik) — vystavené faktúry v XML MRP-K/S 2.0.
+ * Ten istý zápis ako zaúčtované doklady (`export-mrp-uctovanie.ts`): typy DPH
+ * a verzia programu z nastavení exportu do MRP, predkontácie z firmy.
+ */
+export const MRP_XML: ExportStrategy = {
+  format: "mrp_xml",
+  target_system: "other",
+  label: "MRP-K/S XML",
+  note: "Import v MRP-K/S: Faktury vydané → Funkce → Import ze souboru XML MRP-K/S 2.0.",
+  encoding: "utf-8",
+  mime: "application/xml",
+  async build({ invoices, company, nastavenia }) {
+    const { vystavenaNaUctovanie } = await import("./zauctovanie-export");
+    const { buildMrpUctovanie } = await import("./export-mrp-uctovanie");
+    const doklady = invoices.map(({ invoice, items }) =>
+      vystavenaNaUctovanie(invoice, items, (nastavenia ?? {}) as never),
+    );
+    // Upozornenia (nečíselná predkontácia) tu nehlásime — doklad v súbore je a vynechaný by sa rátal ako neodovzdaný.
+    const { xml, preskocene } = buildMrpUctovanie({
+      firma: company as Record<string, any>,
+      doklady,
+      nastavenia: ((company as any)?.uctovanie_nastavenia ?? {})?.mrp ?? {},
+    });
+    if (preskocene.length === invoices.length) {
+      throw new Error(`Do MRP sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
+    }
+    const stamp = new Date().toISOString().slice(0, 10);
+    return {
+      content: xml,
+      fileName: `mrp-faktury-${stamp}.xml`,
+      mime: "application/xml",
+      preskocene,
+    };
+  },
+};
+
+/** Súpiska pre všetko ostatné — Premier, Helios aj obyčajný Excel. */
 export const CSV_UNIVERZAL: ExportStrategy = {
   format: "csv_univerzal",
   target_system: "other",
-  label: "Súpiska CSV (Excel, MRP, Premier…)",
+  label: "Súpiska CSV (Excel, Premier, Helios…)",
   note: "Jeden riadok na doklad s rozpisom po sadzbách DPH. Oddeľovač je bodkočiarka a kódovanie Windows-1250, aby sa v Exceli otvorila správne.",
   encoding: "windows-1250",
   mime: "text/csv",
@@ -2754,6 +2797,7 @@ export const EXPORT_STRATEGIES: Record<ExportFormat, ExportStrategy> = {
   isdoc_zip: ISDOC_ZIP,
   bis_zip: BIS_ZIP,
   flexi_xml: FLEXI_XML,
+  mrp_xml: MRP_XML,
   csv_univerzal: CSV_UNIVERZAL,
 };
 

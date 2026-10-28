@@ -55,6 +55,8 @@
       </array>
     </dict>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Fotoaparát potrebujeme len na nasnímanie QR kódu, ktorým sa prihlásite z webu.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Face ID použijeme na rýchle odomknutie aplikácie bez zadávania hesla.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

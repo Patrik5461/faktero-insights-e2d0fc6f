@@ -11,7 +11,7 @@ export const Route = createFileRoute("/pomoc/exporty")({
         name: "description",
         content: preloz(
           match.context.jazyk,
-          "Účtovné exporty pre účtovníčku — Pohoda, KROS Omega, Money S3, ISDOC, ABRA Flexi aj súpiska CSV — a prenos dát zo SuperFaktúry, iDokladu a KROSu do Faktera.",
+          "Účtovné exporty pre účtovníčku — Pohoda, KROS Omega, Money S3, MRP-K/S, ISDOC, ABRA Flexi aj súpiska CSV — a prenos dát zo SuperFaktúry, iDokladu a KROSu do Faktera.",
         ),
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/exporty" },
@@ -58,8 +58,8 @@ const sections: HelpSection[] = [
         <p>
           Kto neúčtuje v Pohode, nájde v <Link to="/exporty">Účtovné exporty</Link> časť{" "}
           <strong>Zaúčtované doklady do vášho programu</strong>. Raz vyberiete{" "}
-          <strong>účtovný program</strong> (KROS Omega, Money S3, ABRA Flexi alebo „iný program“ so
-          súpiskou CSV) a Faktero si ho zapamätá. Potom zvolíte, čo posielate —{" "}
+          <strong>účtovný program</strong> (KROS Omega, Money S3, ABRA Flexi, MRP-K/S alebo „iný
+          program“ so súpiskou CSV) a Faktero si ho zapamätá. Potom zvolíte, čo posielate —{" "}
           <strong>vystavené faktúry, prijaté faktúry alebo bločky</strong> — obdobie a doklady.
           Súbor obsahuje zaúčtovanie tak, ako ste ho urobili vo Fakteri: predkontáciu, členenie DPH
           a kontrolného výkazu, stredisko, zákazku a činnosť, rozúčtovanie aj účtovanie pomerom.
@@ -90,7 +90,19 @@ const sections: HelpSection[] = [
             členenie „40-41“), nie pohodové PD. Import: Nástroje → Import → XML.
           </li>
           <li>
-            <strong>Iný program</strong> (MRP, Helios, Premier, Excel) dostane{" "}
+            <strong>MRP-K/S</strong> (slovenská aj česká verzia, aj MRP Autonómny podnik) dostane
+            vystavené a prijaté faktúry a bločky vo formáte <strong>XML MRP-K/S 2.0</strong> s
+            predkontáciou, typom DPH, strediskom a zákazkou. Predkontácia je v MRP číslo (napr. 311)
+            a na doklad ide len jedna — doklad rozúčtovaný na viac predkontácií sa vynechá. Typ DPH
+            je číslo z číselníka Typy DPH v MRP: tuzemské (SK 10 a 40, CZ 41 a 71) a nedaňové (19 a
+            39) sú predvolené, pre prenesenie daňovej povinnosti, EÚ, vývoz a dovoz ich doplňte v
+            nastaveniach. Bločky v hotovosti idú do pokladne, keď vyplníte jej identifikátor, inak
+            ako faktúry prijaté. Dobropis ide so zápornými sumami, doklad v cudzej mene s kurzom.
+            Import: v module Faktury vydané, Faktury přijaté alebo Pokladna import zo súboru XML
+            MRP-K/S 2.0.
+          </li>
+          <li>
+            <strong>Iný program</strong> (Helios, Premier, Excel) dostane{" "}
             <strong>zaúčtovanú súpisku CSV</strong>: riadok na každý riadok zaúčtovania s dokladom,
             partnerom, sadzbou, základom, DPH, predkontáciou s účtami MD/Dal, členením, strediskom,
             zákazkou a činnosťou.
@@ -274,6 +286,13 @@ const sections: HelpSection[] = [
             sumy v eurách aj v pôvodnej mene (<code>…Men</code>) s kurzom; odpočet zálohy ide ako
             záporná položka. <strong>Zálohové faktúry sa vynechajú</strong> — Flexi pre ne chce
             vlastný typ dokladu.
+          </li>
+          <li>
+            <strong>MRP-K/S XML</strong> — vystavené faktúry vo formáte XML MRP-K/S 2.0 pre
+            slovenskú aj českú verziu (import v module Faktury vydané). Verziu programu a typy DPH
+            berie z nastavení pre MRP-K/S v časti Zaúčtované doklady do vášho programu. Dobropis ide
+            so zápornými sumami, faktúra v cudzej mene so súčtami v oboch menách a kurzom, odpočet
+            zálohy ako riadok odpočtu zálohy.
           </li>
           <li>
             <strong>Súpiska CSV</strong> — jeden riadok na doklad s rozpisom po sadzbách DPH,

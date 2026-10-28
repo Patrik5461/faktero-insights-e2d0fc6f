@@ -184,16 +184,14 @@ export const hromadneDokladyFn = createServerFn({ method: "POST" })
         for (const g of skupiny.values()) await uprav(g.ids, { stitky: g.stitky });
         // Nový štítok sa zapíše aj do číselníka firmy, nech sa ponúka nabudúce.
         if (a.pridat?.trim())
-          await supabase
-            .from("stitky_firmy")
-            .upsert(
-              {
-                company_id: data.company_id,
-                nazov: a.pridat.trim().slice(0, 40),
-                created_by: context.userId,
-              },
-              { onConflict: "company_id,nazov", ignoreDuplicates: true },
-            );
+          await supabase.from("stitky_firmy").upsert(
+            {
+              company_id: data.company_id,
+              nazov: a.pridat.trim().slice(0, 40),
+              created_by: context.userId,
+            },
+            { onConflict: "company_id,nazov", ignoreDuplicates: true },
+          );
         break;
       }
       case "uhrada": {

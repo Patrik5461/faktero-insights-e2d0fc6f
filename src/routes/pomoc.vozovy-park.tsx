@@ -89,10 +89,12 @@ const sections: HelpSection[] = [
           dostanete na splátkový kalendár.
         </p>
         <p>
-          Použitie a odpočet DPH: pri osobnom aute používanom aj súkromne sa na Slovensku od roku
-          2025 odpočítava DPH paušálne 50 %. Daň z motorových vozidiel od roku 2023 platia len
-          nákladné vozidlá a autobusy nad 3,5 t a ťažké prívesy — Faktero to pri kategórii vozidla
-          pripomenie.
+          Použitie a odpočet DPH: pri osobnom aute a motocykli používanom aj súkromne sa na
+          Slovensku od 1. 1. 2026 do 30. 6. 2028 odpočítava DPH paušálne 50 % — z kúpy, nájmu aj
+          prevádzky (§ 85n zákona o DPH). Celých 100 % len pri aute výlučne na podnikanie s
+          podrobnou elektronickou evidenciou jázd a oznámením daňovému úradu. Daň z motorových
+          vozidiel od roku 2023 platia len nákladné vozidlá a autobusy nad 3,5 t a ťažké prívesy —
+          Faktero to pri kategórii vozidla pripomenie.
         </p>
       </>
     ),
@@ -129,6 +131,20 @@ const sections: HelpSection[] = [
         <p>
           Na karte vozidla potom vidíte <strong>náklady za tento rok aj spolu</strong> bez DPH a
           posledné doklady s odkazom na ne.
+        </p>
+        <p>
+          Keď má vozidlo <strong>odpočet DPH 50 %</strong>, doklad s ním sa rozúčtuje sám: polovica
+          DPH sa odpočíta, druhá ide so základom do nákladu (v dani z príjmov je to nedaňový
+          výdavok). Takto ide do priznania DPH, kontrolného výkazu aj do exportu do Pohody, Omegy,
+          Money a ABRA Flexi. Vlastné rozúčtovanie dokladu, pravidlo účtovania alebo predkontácia s
+          pomerom majú prednosť. Kódy pre neodpočítateľnú časť sa berú z predkontácie s pomerom „DPH
+          50/50“ v <Link to="/uctovnictvo/predkontacie">Predkontáciách</Link>; bez nej ostane
+          predkontácia dokladu s členením bez nároku na odpočet.
+        </p>
+        <p>
+          Daň z príjmov je samostatná vec: kto nevedie knihu jázd, uplatní si PHM do výdavkov len
+          paušálne 80 % — na to je predkontácia s pomerom „DPH 50/50 a vlastný podiel nákladu“ s
+          podielom 80 %.
         </p>
       </>
     ),

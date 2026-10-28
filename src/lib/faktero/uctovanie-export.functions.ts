@@ -4,7 +4,7 @@ import { z } from "zod";
 
 /*
   Export zaúčtovaných dokladov do iných programov než Pohoda: KROS Omega
-  (účtovné doklady EUD), Money S3, ABRA Flexi, DATEV (Buchungsstapel pre
+  (účtovné doklady EUD), Money S3, ABRA Flexi, MRP-K/S, DATEV (Buchungsstapel pre
   nemeckých poradcov) a zaúčtovaná súpiska CSV.
   Vystavené faktúry, prijaté faktúry aj bločky — s predkontáciou,
   členením, strediskom, zákazkou a činnosťou, ako ich nastavila firma.
@@ -18,7 +18,7 @@ import {
 
 const Vstup = z.object({
   company_id: z.string().uuid(),
-  program: z.enum(["omega", "money_s3", "flexi", "csv", "datev"]),
+  program: z.enum(["omega", "money_s3", "flexi", "mrp", "csv", "datev"]),
   agenda: z.enum(["vystavena", "prijata", "doklad"]),
   ids: z.array(z.string().uuid()).min(1).max(1000),
   /** Zapísať doklady ako odovzdané (zamknú sa, konektor ich už nepošle). */
@@ -108,6 +108,12 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
       const r = buildFlexiUctovanie({ firma, doklady: ok, kody, nastavenia });
       obsah = r.xml;
       vynechane = r.preskocene;
+    } else if (data.program === "mrp") {
+      const { buildMrpUctovanie } = await import("./export-mrp-uctovanie");
+      const r = buildMrpUctovanie({ firma, doklady: ok, nastavenia });
+      obsah = r.xml;
+      vynechane = r.preskocene;
+      upozornenia = r.upozornenia;
     } else if (data.program === "datev") {
       const { buildDatevBuchungsstapel } = await import("./export-datev");
       const r = buildDatevBuchungsstapel({ firma, doklady: ok, kody, nastavenia });
@@ -194,7 +200,7 @@ export const programUctovaniaFn = createServerFn({ method: "POST" })
     z
       .object({
         company_id: z.string().uuid(),
-        program: z.enum(["pohoda", "omega", "money_s3", "flexi", "csv", "datev"]).optional(),
+        program: z.enum(["pohoda", "omega", "money_s3", "flexi", "mrp", "csv", "datev"]).optional(),
         nastavenia: z.record(z.string(), z.unknown()).optional(),
       })
       .parse(d),

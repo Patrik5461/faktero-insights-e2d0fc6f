@@ -29,8 +29,6 @@ export default {
     "<0>soukromé vozidlo</0> — auto zaměstnance nebo jednatele používané i na služební cesty.",
   "Pri leasingu a úvere sa dá vozidlo prepojiť so zmluvou v <0>Banka → Leasingy a úvery</0>; zo zmluvy sa potom jedným klikom dostanete na splátkový kalendár.":
     "U leasingu a úvěru lze vozidlo propojit se smlouvou v <0>Banka → Leasingy a úvěry</0>; ze smlouvy se pak jedním kliknutím dostanete na splátkový kalendář.",
-  "Použitie a odpočet DPH: pri osobnom aute používanom aj súkromne sa na Slovensku od roku 2025 odpočítava DPH paušálne 50 %. Daň z motorových vozidiel od roku 2023 platia len nákladné vozidlá a autobusy nad 3,5 t a ťažké prívesy — Faktero to pri kategórii vozidla pripomenie.":
-    "Použití a odpočet DPH: u osobního auta používaného i soukromě se na Slovensku od roku 2025 odpočítává DPH paušálně 50 %. Silniční daň od roku 2023 platí jen nákladní vozidla a autobusy nad 3,5 t a těžké přívěsy — Faktero to u kategorie vozidla připomene.",
   "Termíny a upozornenia": "Termíny a upozornění",
   "Pri vozidle zapíšte platnosť STK, emisnej kontroly, PZP, havarijného poistenia, diaľničnej známky a dátum najbližšieho servisu. Termín, ktorý končí do 30 dní, sa ukáže <0>v zvončeku</0> aj v zozname vozidiel; prepadnutý je červený.":
     "U vozidla zapište platnost STK, emisní kontroly, povinného ručení, havarijního pojištění, dálniční známky a datum nejbližšího servisu. Termín, který končí do 30 dní, se zobrazí <0>ve zvonečku</0> i v seznamu vozidel; propadlý je červený.",

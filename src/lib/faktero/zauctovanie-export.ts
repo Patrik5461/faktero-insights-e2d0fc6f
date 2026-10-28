@@ -13,7 +13,8 @@
   kód druhu dokladu. Čisté funkcie bez databázy.
 */
 
-import { riadkyDokladu, rozpisBlocku, type RozpisSadzby } from "./rozuctovanie";
+import { riadkyDokladu, rozpisBlocku, type OdpocetVozidla, type RozpisSadzby } from "./rozuctovanie";
+import { odpocetDokladu } from "./vozidlo-odpocet";
 import { rozpisPrijatej } from "./prijate-do-pohody";
 import {
   odpoctyZapisatelne,
@@ -157,6 +158,8 @@ export type NastaveniaUctovania = {
   predkontaciaPokladna?: string | null;
   podlaKategorie?: Record<string, { predkontacia?: string | null; clenenie?: string | null }>;
   pomeryPredkontacii?: Record<string, unknown>;
+  /** Vozidlo → krátený odpočet DPH (zmiešané použitie 50 %), pre doklady s `vehicle_id`. */
+  odpocetVozidiel?: Record<string, OdpocetVozidla>;
   blockyPodlaPlatby?: boolean;
   stredisko?: string | null;
   radPrijate?: string | null;
@@ -215,14 +218,21 @@ function rozdielneKody(riadky: RiadokUctovania[]): boolean {
  */
 function riadkyPrijatehoDokladu(
   rozpis: RozpisSadzby[],
-  doklad: { rozuctovanie?: unknown; items?: unknown },
+  doklad: { rozuctovanie?: unknown; items?: unknown; vehicle_id?: unknown },
   predkontacia: string | null,
   clenenie: string | null,
   kv: string | null,
   odpocet: boolean,
   nast: NastaveniaUctovania,
 ): RiadokUctovania[] {
-  return riadkyDokladu(doklad, rozpis, predkontacia, clenenie, nast.pomeryPredkontacii).map((r) => ({
+  return riadkyDokladu(
+    { ...doklad, odpocet },
+    rozpis,
+    predkontacia,
+    clenenie,
+    nast.pomeryPredkontacii,
+    odpocetDokladu(doklad, nast.odpocetVozidiel),
+  ).map((r) => ({
     sadzba: Number(r.sadzba) || 0,
     zaklad: r2(r.zaklad),
     dph: r2(r.dph),

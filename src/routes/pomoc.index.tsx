@@ -120,7 +120,7 @@ const CATS: Cat[] = [
   {
     to: "/pomoc/efaktura",
     label: "eFaktúra",
-    desc: "Zapnutie cez Portál FS, odoslanie a príjem eFaktúr.",
+    desc: "Zapnutie cez Portál FS, odoslanie, príjem a kontrola XML eFaktúr.",
     icon: FileCheck2,
     available: true,
     skupina: "Fakturácia",

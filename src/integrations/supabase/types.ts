@@ -11294,6 +11294,7 @@ export type Database = {
           note: string | null
           created_by: string | null
           created_at: string
+          external_id: string | null
         }
         Insert: {
           id?: string
@@ -11308,6 +11309,7 @@ export type Database = {
           note?: string | null
           created_by?: string | null
           created_at?: string
+          external_id?: string | null
         }
         Update: {
           id?: string
@@ -11322,6 +11324,7 @@ export type Database = {
           note?: string | null
           created_by?: string | null
           created_at?: string
+          external_id?: string | null
         }
         Relationships: [
           {

@@ -304,7 +304,7 @@ export function TechnickaPodpora({
             type="button"
             onClick={() => odober(aktivny.id)}
             disabled={busy}
-            className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-50"
+            className="text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline disabled:opacity-50"
           >
             {t("Odobrať prístup")}
           </button>

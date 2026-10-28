@@ -1,7 +1,7 @@
 // Výchozí zaúčtování při účtování (NastavitPredvolene.tsx) a členění KV v předkontacích.
 export default {
-  "Nastaviť {kody} ako predvolené pre {doklad}? Použije sa pri každom ďalšom doklade tohto druhu bez vlastného zaúčtovania.":
-    "Nastavit {kody} jako výchozí pro {doklad}? Použije se u každého dalšího dokladu tohoto druhu bez vlastního zaúčtování.",
+  "Nastaviť {kody} ako predvolené pre druh dokladu „{doklad}“? Použije sa pri každom ďalšom doklade tohto druhu bez vlastného zaúčtovania.":
+    "Nastavit {kody} jako výchozí pro druh dokladu „{doklad}“? Použije se u každého dalšího dokladu tohoto druhu bez vlastního zaúčtování.",
   "Nastavené ako predvolené": "Nastaveno jako výchozí",
   "Vyplnené kódy sú už predvolené (alebo nie je čo nastaviť).":
     "Vyplněné kódy už jsou výchozí (nebo není co nastavit).",

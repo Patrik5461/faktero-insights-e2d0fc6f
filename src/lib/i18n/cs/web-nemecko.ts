@@ -51,13 +51,13 @@ export default {
     "Faktero německé e-faktury neodesílá přes Peppol ani na portály úřadů. PDF se ZUGFeRD pošlete e-mailem jako dosud, XRechnung odešlete nebo nahrajete sami.",
   "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
     "Export i konektor pro Pohodu, sedm formátů exportu včetně DATEV, pravidla účtování, výpisy z platebních bran a měsíční podklady — Faktero připraví vše, co potřebujete.",
-  "Sedem účtovných exportov": "Sedm účetních exportů",
-  "Pohoda, Omega, Money S3, ABRA Flexi, DATEV, ISDOC a CSV — vyberiete program a stiahnete.":
-    "Pohoda, Omega, Money S3, ABRA Flexi, DATEV, ISDOC a CSV — zvolíte program a stáhnete.",
+  "Osem účtovných exportov": "Osm účetních exportů",
+  "Pohoda, Omega, Money S3, ABRA Flexi, MRP, DATEV, ISDOC a CSV — vyberiete program a stiahnete.":
+    "Pohoda, Omega, Money S3, ABRA Flexi, MRP, DATEV, ISDOC a CSV — zvolíte program a stáhnete.",
   "DATEV Buchungsstapel pre klientov so sídlom v Nemecku — SKR03 alebo SKR04, menej bežné účty treba overiť s daňovým poradcom":
     "DATEV Buchungsstapel pro klienty se sídlem v Německu — SKR03 nebo SKR04, méně běžné účty je třeba ověřit s daňovým poradcem",
-  "Export do Pohody, Omegy, Money S3, ABRA Flexi, DATEV, ISDOC a CSV":
-    "Export do Pohody, Omegy, Money S3, ABRA Flexi, DATEV, ISDOC a CSV",
+  "Export do Pohody, Omegy, Money S3, ABRA Flexi, MRP, DATEV, ISDOC a CSV":
+    "Export do Pohody, Omegy, Money S3, ABRA Flexi, MRP, DATEV, ISDOC a CSV",
   "Prehľad UStVA za mesiac alebo štvrťrok v CSV a PDF, so Soll- aj Ist-Versteuerung a termínom podania":
     "Přehled UStVA za měsíc nebo čtvrtletí v CSV a PDF, se Soll- i Ist-Versteuerung a termínem podání",
   "Zusammenfassende Meldung ako CSV pre BZStOnline-Portal":

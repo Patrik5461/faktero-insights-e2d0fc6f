@@ -12,6 +12,7 @@ import { createExpenseFn, findExpenseDuplicateFn, predvolbySkenuFn } from "@/lib
 import { nahrajPrijatuFakturuFn } from "@/lib/faktero/prijata-nahratie.functions";
 import { bankaPrehladFn } from "@/lib/faktero/mobil-banka.functions";
 import { syncBankTransactions } from "@/lib/faktero/tatrabanka.functions";
+import { oznacPohybFn } from "@/lib/faktero/pohyb-vybavenie.functions";
 import { vystaveneFakturyFn } from "@/lib/faktero/mobil-faktura.functions";
 import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
@@ -85,6 +86,7 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "sken-vytvor": vytvorZNespracovanehoFn,
   "banka-prehlad": bankaPrehladFn,
   "banka-stiahni": syncBankTransactions,
+  "pohyb-oznac": oznacPohybFn,
   "faktury-zoznam": vystaveneFakturyFn,
   "faktura-pdf": generateInvoicePdf,
   "faktura-email": sendInvoiceEmailFn,

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import type { HelpSection } from "@/components/faktero/HelpArticle";
 import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
@@ -67,6 +67,11 @@ const sections: HelpSection[] = [
           prehliadač pripojíme sami.
         </p>
         <p>Hneď príde potvrdenie e-mailom. Odpovedáme v pracovné dni, spravidla do 24 hodín.</p>
+        <p>
+          Keď sa potrebujeme pozrieť priamo do vašej firmy, majiteľ nám môže dať dočasný prístup —
+          pozri <Link to="/pomoc/role">Prístup technickej podpory</Link>. Bez neho do firmy
+          nevidíme.
+        </p>
       </>
     ),
   },

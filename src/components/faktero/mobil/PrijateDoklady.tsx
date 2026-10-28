@@ -34,6 +34,9 @@ import {
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
+import { OznacenieDokladu, PoznamkaDokladu } from "./DokladOznacenie";
+import { FilterChips } from "./ui";
+import { PrijateFaktury } from "./PrijateFaktury";
 /**
  * Prijaté doklady v mobilnej aplikácii.
  *
@@ -67,7 +70,36 @@ type Doklad = {
   category?: string | null;
   exported_at?: string | null;
   locked_at?: string | null;
+  komentar?: string | null;
+  stav_id?: string | null;
+  stitky?: string[] | null;
 };
+
+/** Bločky a prijaté faktúry sú v Dokladoch vedľa seba — prepína ich lišta hore. */
+export type AgendaDokladov = "blocky" | "faktury";
+
+export function PrepinacDokladov({
+  aktivna,
+  onZmen,
+}: {
+  aktivna: AgendaDokladov;
+  onZmen: (a: AgendaDokladov) => void;
+}) {
+  const { t } = usePreklad();
+  return (
+    <div className="mb-4">
+      <FilterChips
+        ariaLabel={t("pf.agenda")}
+        aktivna={aktivna}
+        onZmen={onZmen}
+        moznosti={[
+          { kod: "blocky", popis: t("pf.blocky") },
+          { kod: "faktury", popis: t("pf.nazov") },
+        ]}
+      />
+    </div>
+  );
+}
 
 type Uhrada = "hotovost" | "karta" | "prevod";
 
@@ -132,6 +164,7 @@ export function PrijateDoklady({
   const [odosielam, setOdosielam] = useState(false);
   const [hladanie, setHladanie] = useState("");
   const [otvoreny, setOtvoreny] = useState<Doklad | null>(null);
+  const [agenda, setAgenda] = useState<AgendaDokladov>("blocky");
   /** Zoznam sa nepodarilo načítať, lebo nie je signál. */
   const [nedostupne, setNedostupne] = useState(false);
   /*
@@ -349,6 +382,16 @@ export function PrijateDoklady({
     if (ok === ids.length) koniecVyberu();
   }
 
+  if (agenda === "faktury") {
+    return (
+      <PrijateFaktury
+        firma={firma}
+        onSpat={onSpat}
+        prepinac={<PrepinacDokladov aktivna="faktury" onZmen={setAgenda} />}
+      />
+    );
+  }
+
   if (otvoreny) {
     return (
       <DetailDokladu
@@ -367,6 +410,11 @@ export function PrijateDoklady({
           setOtvoreny(null);
           setDoklady(null);
           await obnov();
+        }}
+        onOznacenie={(zmena) => {
+          // Komentár, stav a štítky sa menia bez zatvorenia detailu.
+          setOtvoreny((o) => (o ? { ...o, ...zmena } : o));
+          setDoklady((z) => z?.map((d) => (d.id === otvoreny.id ? { ...d, ...zmena } : d)) ?? z);
         }}
       />
     );
@@ -401,6 +449,7 @@ export function PrijateDoklady({
         ) : undefined
       }
     >
+      {!vyberam && <PrepinacDokladov aktivna="blocky" onZmen={setAgenda} />}
       <div className="relative mb-4">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-2" />
         <input
@@ -752,11 +801,14 @@ function DetailDokladu({
   onZmena,
   uhrada: uhradaZUctu,
   onRozparovane,
+  onOznacenie,
 }: {
   doklad: Doklad;
   firmaId: string;
   onSpat: () => void;
   onZmena: () => void;
+  /** Zmena komentára, stavu, štítkov alebo poznámky — detail ostáva otvorený. */
+  onOznacenie: (zmena: Partial<Doklad>) => void;
   /** Pohyb, ktorým je doklad uhradený. `null`, keď spárovaný nie je. */
   uhrada: { datum: string; transactionId: string } | null;
   onRozparovane: () => void;
@@ -890,8 +942,23 @@ function DetailDokladu({
           <Riadok label={t("pd.ico")} value={doklad.supplier_ico ?? "—"} />
           <Riadok label={t("pd.icDph")} value={doklad.supplier_ic_dph ?? "—"} />
           <Riadok label={t("pd.cisloDokladu")} value={doklad.document_number ?? "—"} />
-          {doklad.note && <Riadok label={t("pd.poznamka")} value={doklad.note} />}
         </div>
+
+        <PoznamkaDokladu
+          tabulka="expense_documents"
+          id={doklad.id}
+          firmaId={firmaId}
+          agenda="blocek"
+          poznamka={doklad.note}
+          zamknute={!!(doklad.exported_at || doklad.locked_at)}
+          onZmena={(note) => onOznacenie({ note })}
+        />
+        <OznacenieDokladu
+          tabulka="expense_documents"
+          firmaId={firmaId}
+          doklad={doklad}
+          onZmena={onOznacenie}
+        />
 
         <div>
           <div className="mb-2 text-sm font-medium">{t("pd.sposobUhrady")}</div>

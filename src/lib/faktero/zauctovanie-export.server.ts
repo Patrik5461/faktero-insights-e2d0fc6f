@@ -50,6 +50,10 @@ export async function nastaveniaUctovania(
       company.id,
     )) as NastaveniaUctovania["podlaKategorie"],
     pomeryPredkontacii: await pomeryPredkontacii(supabase, company.id),
+    // Vozidlo s odpočtom DPH 50 % (zmiešané použitie) rozúčtuje doklad samo.
+    odpocetVozidiel: await (
+      await import("./vozidlo-odpocet.server")
+    ).odpocetVozidielFirmy(supabase, company.id),
     blockyPodlaPlatby: company.pohoda_blocky_agenda === "podla_platby",
     stredisko: company.pohoda_stredisko,
     radPrijate: company.pohoda_rad_prijate,

@@ -1,6 +1,6 @@
 /** Účtovné programy, do ktorých Faktero vie poslať zaúčtované doklady. */
 
-export type ProgramUctovania = "omega" | "money_s3" | "flexi" | "csv" | "datev";
+export type ProgramUctovania = "omega" | "money_s3" | "flexi" | "mrp" | "csv" | "datev";
 export type AgendaExportu = "vystavena" | "prijata" | "doklad";
 
 export const PROGRAMY_UCTOVANIA: {
@@ -44,6 +44,15 @@ export const PROGRAMY_UCTOVANIA: {
     encoding: "utf-8",
   },
   {
+    // MRP-K/S a MRP Autonómny podnik — XML MRP-K/S verzie 2.0 (UTF-8, znaky z Windows-1250).
+    program: "mrp",
+    nazov: "MRP-K/S",
+    format: "mrp_uct",
+    pripona: "xml",
+    mime: "application/xml",
+    encoding: "utf-8",
+  },
+  {
     // DATEV-Format „Buchungsstapel“ (EXTF 700) — ANSI, teda Windows-1252.
     program: "datev",
     nazov: "DATEV (Buchungsstapel)",
@@ -54,7 +63,7 @@ export const PROGRAMY_UCTOVANIA: {
   },
   {
     program: "csv",
-    nazov: "Iný program (MRP, Helios, Premier…) — súpiska CSV",
+    nazov: "Iný program (Helios, Premier…) — súpiska CSV",
     format: "csv_uct",
     pripona: "csv",
     mime: "text/csv",

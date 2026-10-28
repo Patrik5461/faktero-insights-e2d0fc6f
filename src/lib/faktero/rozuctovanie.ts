@@ -371,17 +371,85 @@ export function rozvinPomery(
   return out;
 }
 
+/* ------------------------------------------ odpočet DPH podľa vozidla */
+
+/**
+ * Odpočet DPH podľa vozidla na doklade (karta vozidla vo Vozovom parku).
+ * Osobné auto používané aj súkromne: od 1. 1. 2026 do 30. 6. 2028 sa DPH
+ * z jeho obstarania aj prevádzky (PHM, servis, diely…) odpočíta paušálne
+ * 50 % (§ 85n zákona č. 222/2004 Z. z.). Neodpočítaná polovica ide do
+ * nákladu, v dani z príjmov je to nedaňový výdavok.
+ */
+export type OdpocetVozidla = {
+  /** Odpočítateľný podiel DPH v % — 50 (zmiešané použitie) alebo 0 (bez odpočtu). */
+  podiel: number;
+  /** Názov vozidla s EČV do textu riadku. */
+  nazov?: string | null;
+  /** Predkontácia neodpočítateľnej časti; prázdne = kód riadku. */
+  predkontaciaBezOdpoctu?: string | null;
+  /** Členenie DPH neodpočítateľnej časti; prázdne = členenie riadku. */
+  clenenieBezOdpoctu?: string | null;
+};
+
+/** Podiel odpočtu z karty vozidla, alebo `null`, keď vozidlo odpočet nekráti (100 % či nevyplnené). */
+export function podielOdpoctuVozidla(odpocetDph: unknown): number | null {
+  const s = String(odpocetDph ?? "").trim();
+  if (s === "50") return 50;
+  if (s === "0") return 0;
+  return null;
+}
+
+/**
+ * Riadky zaúčtovania rozdelené podľa odpočtu vozidla — každý riadok na časť
+ * s odpočtom a časť bez neho (základ aj DPH v rovnakom pomere, takže celý
+ * základ ostáva v nákladoch a neodpočítaná DPH ide do nákladu tiež). Časť bez
+ * odpočtu dorovná centy, aby súčty sedeli s dokladom.
+ */
+export function rozdelPodlaVozidla(
+  riadky: RiadokRozuctovania[],
+  v: OdpocetVozidla,
+): RiadokRozuctovania[] {
+  const podiel = Math.min(100, Math.max(0, Number(v.podiel) || 0));
+  if (podiel >= 100) return riadky;
+  const out: RiadokRozuctovania[] = [];
+  const pk = (x: string | null) => String(v.predkontaciaBezOdpoctu ?? "").trim() || x;
+  const cl = (x: string | null) => String(v.clenenieBezOdpoctu ?? "").trim() || x;
+  const text = (r: RiadokRozuctovania, t: string) => [r.text, t].filter(Boolean).join(" · ").slice(0, 90) || null;
+  for (const r of riadky) {
+    const z = r2((r.zaklad * podiel) / 100);
+    const d = r2((r.dph * podiel) / 100);
+    if (podiel > 0) {
+      out.push({ ...r, zaklad: z, dph: d, odpocet: true, text: text(r, `${podiel} % s odpočtom DPH`) });
+    }
+    out.push({
+      ...r,
+      predkontacia: pk(r.predkontacia),
+      clenenie: cl(r.clenenie),
+      zaklad: r2(r.zaklad - z),
+      dph: r2(r.dph - d),
+      odpocet: false,
+      text: text(r, `${100 - podiel} % bez odpočtu DPH`),
+    });
+  }
+  return out;
+}
+
 /**
  * Riadky zaúčtovania dokladu (Doklado: „účtovanie pomerom na celý doklad"
  * aj „na položku"): ručné rozúčtovanie, inak predkontácie pri položkách,
  * inak kód hlavičky po sadzbách — a predkontácie s pomerom sa rozvinú.
+ *
+ * Vozidlo s kráteným odpočtom (50 %) rozdelí doklad samo, ale len keď nič
+ * výslovnejšie nerozhodlo: ručné rozúčtovanie, pomer z pravidla, predkontácia
+ * s pomerom či doklad bez nároku na odpočet majú prednosť.
  */
 export function riadkyDokladu(
-  d: { rozuctovanie?: unknown; items?: unknown },
+  d: { rozuctovanie?: unknown; items?: unknown; odpocet?: unknown },
   rozpis: RozpisSadzby[],
   predkontacia: string | null,
   clenenie: string | null,
   pomery: Record<string, unknown> | null | undefined,
+  vozidlo?: OdpocetVozidla | null,
 ): RiadokRozuctovania[] {
   const rucne = nacitajRozuctovanie(d?.rozuctovanie);
   /*
@@ -390,7 +458,8 @@ export function riadkyDokladu(
   */
   const pomerDokladu = Array.isArray(d?.rozuctovanie) ? null : nacitajPomer(d?.rozuctovanie);
   let zaklad: RiadokRozuctovania[];
-  if (rucne.length && !chybaRozuctovania(rucne, rozpis)) zaklad = rucne;
+  const rucnePlati = rucne.length > 0 && !chybaRozuctovania(rucne, rozpis);
+  if (rucnePlati) zaklad = rucne;
   else {
     const zPoloziek = rozuctovaniePolozkami(d?.items as PolozkaSKodom[], rozpis, predkontacia, clenenie);
     zaklad = zPoloziek.length
@@ -404,7 +473,17 @@ export function riadkyDokladu(
         out.push({ ...c, kv: r.kv, text: [r.text, c.text].filter(Boolean).join(" · ") || null });
     return out;
   }
-  return rozvinPomery(zaklad, pomery);
+  const out = rozvinPomery(zaklad, pomery);
+  if (
+    vozidlo &&
+    !rucnePlati &&
+    d?.odpocet !== false &&
+    // Predkontácia s pomerom už odpočet krátila — vozidlo by ho skrátilo druhýkrát.
+    !out.some((r) => r.odpocet === false)
+  ) {
+    return rozdelPodlaVozidla(out, vozidlo);
+  }
+  return out;
 }
 
 /** Rozúčtovanie dokladu je pomer z pravidla (nie ručne zadané sumy)? */

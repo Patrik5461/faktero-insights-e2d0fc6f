@@ -68,11 +68,12 @@ const sections: HelpSection[] = [
         <p>Ručný zápis je len jedna z nich a väčšinou tá najpomalšia.</p>
         <ol>
           <li>
-            <strong>E-mailom</strong> — faktúru od dodávateľa prepošlete na svoju adresu a zaeviduje
-            sa sama. Najrýchlejšia cesta, popísaná v{" "}
+            <strong>E-mailom</strong> — faktúru od dodávateľa prepošlete na svoju adresu a pripraví
+            sa sama v Nespracovaných dokladoch. Najrýchlejšia cesta, popísaná v{" "}
             <Link to="/pomoc/doklady">manuáli k dokladom</Link>. Kto vedie viac firiem, môže použiť{" "}
-            <strong>rozdeľovač</strong> — jednu adresu pre všetky firmy; doklad pôjde tej, na ktorej
-            IČO alebo IČ DPH je vystavený, a čo nesedí na žiadnu, počká na ručné priradenie.
+            <strong>rozdeľovač</strong> — jednu adresu pre všetky firmy; doklad pôjde do
+            Nespracovaných tej, na ktorú je vystavený (podľa IČO, IČ DPH či DIČ odberateľa), a čo
+            nesedí práve na jednu, počká na ručné priradenie.
           </li>
           <li>
             <strong>Zo Skenera</strong> — PDF alebo fotku nahráte v{" "}
@@ -119,6 +120,14 @@ const sections: HelpSection[] = [
             otvorenie.
           </li>
         </ul>
+        <p>
+          V <strong>kompaktnom rozložení</strong> je detail prijatej faktúry jeden stĺpec kariet:
+          hlavička s kartou úhrady, účtovanie priamo na stránke (účtovná poznámka, komentár, dátum
+          daňovej povinnosti, typ platby, predkontácia, členenie DPH a KV — každá zmena sa hneď
+          uloží), prílohy, dodávateľ a odberateľ, položky, platobné údaje s kopírovaním a sumár po
+          sadzbách DPH. Ceruzka otvorí úpravu s náhľadom dokladu vedľa polí, rovnako ako v
+          Nespracovaných dokladoch. Odovzdaná alebo zamknutá faktúra sa dá len prezerať.
+        </p>
       </>
     ),
   },
@@ -155,6 +164,11 @@ const sections: HelpSection[] = [
             len schválená faktúra.
           </li>
           <li>
+            <strong>Hromadná akcia</strong> — účtovná položka, typ platby, členenie DPH a KV,
+            poznámka, komentár, vlastný stav, štítky či úhrada pre všetky označené naraz; pozri{" "}
+            <Link to="/pomoc/doklady">manuál k dokladom</Link>.
+          </li>
+          <li>
             <strong>Označiť ako prijaté</strong> — hodí sa po prezretí dávky, ktorá prišla mailom.
             Stornované a už prijaté faktúry sa preskočia.
           </li>
@@ -169,7 +183,7 @@ const sections: HelpSection[] = [
           Zálohová faktúra sa do súčtu nepočíta, dobropis ho znižuje a rôzne meny sa sčítavajú
           zvlášť. Tlačidlo Uhradiť v tej istej lište pripraví hromadný príkaz na úhradu z označených
           faktúr; rovnako to funguje aj v Nespracovaných dokladoch, kde sa IBAN, symbol a suma berú
-          z vyčítaných údajov.
+          z vyčítaných údajov. Tá istá lišta je aj pri bločkoch a vystavených faktúrach.
         </p>
         <p>
           Zoznam sa dá filtrovať podľa stavu, mesiaca a dodávateľa, a hľadať sa dá aj podľa{" "}
@@ -204,14 +218,6 @@ const sections: HelpSection[] = [
           uhradená faktúra ostáva otvorená, kým súčet úhrad nedosiahne jej sumu — potom sa sama
           označí ako uhradená. Spárovaný pohyb z banky sa do úhrad započíta sám a zmizne, keď
           spárovanie zrušíte.
-        </p>
-        <p>
-          V <strong>kompaktnom rozložení</strong> je detail prijatej faktúry jeden stĺpec kariet:
-          hlavička s kartou úhrady, účtovanie priamo na stránke (účtovná poznámka, komentár, dátum
-          daňovej povinnosti, typ platby, predkontácia, členenie DPH a KV — každá zmena sa hneď
-          uloží), prílohy, dodávateľ a odberateľ, položky, platobné údaje s kopírovaním a sumár po
-          sadzbách DPH. Ceruzka otvorí úpravu s náhľadom dokladu vedľa polí, rovnako ako v
-          Nespracovaných dokladoch. Odovzdaná alebo zamknutá faktúra sa dá len prezerať.
         </p>
       </>
     ),

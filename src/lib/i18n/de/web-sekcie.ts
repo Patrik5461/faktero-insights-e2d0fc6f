@@ -70,8 +70,8 @@ export default {
     "Mehrstufige Freigabe von Belegen — nach Pohoda und zur Zahlung geht nur Freigegebenes",
   "Funguje so všetkými radami Pohody": "Funktioniert mit allen Pohoda-Editionen",
   "Neúčtujete v Pohode?": "Sie buchen nicht in Pohoda?",
-  "Zaúčtované vystavené faktúry, prijaté faktúry aj bločky pošle Faktero aj do KROS Omegy (rovno účtovné zápisy), Money S3 a ABRA Flexi — s predkontáciou, členením DPH, strediskom a zákazkou. Pre MRP, Helios či Premier pripraví zaúčtovanú súpisku CSV.":
-    "Verbuchte Ausgangsrechnungen, Eingangsrechnungen und Kassenbons sendet Faktero auch an KROS Omega (direkt als Buchungssätze), Money S3 und ABRA Flexi — mit Vorkontierung, MwSt.-Kennzeichen, Kostenstelle und Projekt. Für MRP, Helios oder Premier erstellt es eine verbuchte CSV-Liste.",
+  "Zaúčtované vystavené faktúry, prijaté faktúry aj bločky pošle Faktero aj do KROS Omegy (rovno účtovné zápisy), Money S3, ABRA Flexi a MRP-K/S — s predkontáciou, členením DPH, strediskom a zákazkou. Pre Helios či Premier pripraví zaúčtovanú súpisku CSV.":
+    "Verbuchte Ausgangsrechnungen, Eingangsrechnungen und Kassenbons sendet Faktero auch an KROS Omega (direkt als Buchungssätze), Money S3, ABRA Flexi und MRP-K/S — mit Vorkontierung, MwSt.-Kennzeichen, Kostenstelle und Projekt. Für Helios oder Premier erstellt es eine verbuchte CSV-Liste.",
   "Import zo SuperFaktúry": "Import aus SuperFaktúra",
   "Prejdite na Faktero bez straty histórie a číselných radov.":
     "Wechseln Sie zu Faktero ohne Verlust von Verlauf und Nummernkreisen.",
@@ -591,10 +591,10 @@ export default {
     "Pohoda-XML und eine direkte Anbindung, die sich die Belege selbst holt",
   "KROS Omega (TXT) a Money S3 (XML) vrátane faktúr v cudzej mene":
     "KROS Omega (TXT) und Money S3 (XML) inklusive Rechnungen in Fremdwährung",
-  "ISDOC pre české programy a ABRA Flexi XML":
-    "ISDOC für tschechische Programme und ABRA Flexi XML",
-  "CSV súpiska pre MRP, Helios, Premier alebo Excel":
-    "CSV-Liste für MRP, Helios, Premier oder Excel",
+  "ISDOC pre české programy, ABRA Flexi XML a MRP-K/S XML":
+    "ISDOC für tschechische Programme, ABRA Flexi XML und MRP-K/S XML",
+  "CSV súpiska pre Helios, Premier alebo Excel":
+    "CSV-Liste für Helios, Premier oder Excel",
   "Zálohové faktúry, dobropisy a zľavy rozpočítané správne v každom formáte":
     "Anzahlungsrechnungen, Rechnungskorrekturen und Rabatte in jedem Format richtig aufgeteilt",
   "Automatické účtovanie": "Automatische Buchung",

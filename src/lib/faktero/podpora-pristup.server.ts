@@ -1,4 +1,9 @@
-import { opravneniaPodpory, platnostDo, type RozsahPodpory } from "./podpora-pristup";
+import {
+  oznamUdeleniaPodpore,
+  opravneniaPodpory,
+  platnostDo,
+  type RozsahPodpory,
+} from "./podpora-pristup";
 
 /*
   Zápis prístupu technickej podpory. Všetko ide servisným klientom — tabuľku
@@ -86,7 +91,30 @@ export async function udelPristup(
       throw new Error(e2.message);
     }
   }
+  await oznamUdelenie(admin, v, platneDo);
   return { id: pristup.id as string, platneDo, pridanych: nove.length };
+}
+
+/** E-mail platform adminom — prístup je udelený aj vtedy, keď mail neodíde. */
+async function oznamUdelenie(
+  admin: Klient,
+  v: { companyId: string; rozsah: RozsahPodpory; dni: number },
+  platneDo: string,
+): Promise<void> {
+  try {
+    const { data: firma } = await admin
+      .from("companies")
+      .select("name")
+      .eq("id", v.companyId)
+      .maybeSingle();
+    const { oznamPodpore } = await import("./podpora.server");
+    await oznamPodpore({
+      ...oznamUdeleniaPodpore({ firma: firma?.name ?? "", rozsah: v.rozsah, dni: v.dni, platneDo }),
+      odkaz: { cesta: `/admin/companies/${v.companyId}`, popis: "Firma v administrácii" },
+    });
+  } catch (e: any) {
+    console.error("[podpora-pristup] oznam podpore zlyhal:", e?.message ?? e);
+  }
 }
 
 /** Odobratie — okamžite zmizne členstvo podpory vo firme. */

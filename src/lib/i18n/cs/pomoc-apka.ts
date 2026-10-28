@@ -25,10 +25,10 @@ export default {
     "<0>Přehled</0> — tržba za dnešek a včerejšek, kdo ještě nezaplatil a rychlá tlačítka pro novou fakturu a nový doklad.",
   "<0>Faktúry</0> — vystavenie aj oprava už vystavenej faktúry, cenové ponuky, PDF a odoslanie e-mailom. Opravuje sa na tej istej obrazovke, na ktorej sa vystavuje.":
     "<0>Faktury</0> — vystavení i oprava již vystavené faktury, cenové nabídky, PDF a odeslání e-mailem. Opravuje se na téže obrazovce, na které se vystavuje.",
-  "<0>Doklady</0> — nahraté a rozpoznané výdavkové doklady.":
-    "<0>Doklady</0> — nahrané a rozpoznané výdajové doklady.",
-  "<0>Banka</0> — zostatky a posledné pohyby z pripojených účtov.":
-    "<0>Banka</0> — zůstatky a poslední pohyby z připojených účtů.",
+  "<0>Doklady</0> — nahraté a rozpoznané výdavkové doklady a prijaté faktúry. Pri prijatej faktúre vidíte, koľko zostáva uhradiť a koľko dní je po splatnosti, a pridáte úhradu, aj čiastočnú. Pri doklade je komentár (do účtovníctva sa neprenáša), stav, štítky a poznámka s preddefinovanými textami firmy.":
+    "<0>Doklady</0> — nahrané a rozpoznané výdajové doklady a přijaté faktury. U přijaté faktury vidíte, kolik zbývá uhradit a kolik dní je po splatnosti, a přidáte úhradu, i částečnou. U dokladu je komentář (do účetnictví se nepřenáší), stav, štítky a poznámka s předdefinovanými texty firmy.",
+  "<0>Banka</0> — zostatky a posledné pohyby z pripojených účtov. Pohyb bez dokladu (poplatok banky, mzda, odvody) po ťuknutí označíte ako „Pohyb nemá doklad“ alebo „Transakčná daň“.":
+    "<0>Banka</0> — zůstatky a poslední pohyby z připojených účtů. Pohyb bez dokladu (poplatek banky, mzda, odvody) po klepnutí označíte jako „Pohyb nemá doklad“ nebo „Transakční daň“.",
   "<0>Jazdy</0> — kniha jázd, vrátane tých, ktoré si telefón všimol sám.":
     "<0>Jízdy</0> — kniha jízd, včetně těch, kterých si telefon všiml sám.",
   "Účet aj firmu si v appke založíte sami — na web kvôli tomu chodiť netreba.":

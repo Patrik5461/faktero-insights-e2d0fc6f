@@ -32,6 +32,10 @@ export default {
     "Účet lze zrušit z nastavení; pro potvrzení je třeba zadat heslo, aby to nemohl udělat nikdo, kdo se dostane k odemčenému telefonu. Mazání má <0>14denní odklad</0> — do té doby se lze vrátit zpět přihlášením.",
   "Pred zrušením si stiahnite doklady. Povinnosť uchovávať účtovné doklady <0>desať rokov</0> platí ďalej a zrušením účtu nezaniká.":
     "Před zrušením si stáhněte doklady. Povinnost uchovávat účetní doklady <0>deset let</0> platí dál a zrušením účtu nezaniká.",
-  "Súbory otvorí Excel bez nastavovania. Odkaz na stiahnutie platí sedem dní; balík sa dá pripraviť kedykoľvek znova. Pravidelný archív so všetkými PDF a skenmi dokladov si majiteľ alebo admin vytvorí v <0>Nastavenia → Zálohy dokladov</0> — beží na pozadí, ponecháva sa posledných päť záloh.":
-    "Soubory otevře Excel bez nastavování. Odkaz ke stažení platí sedm dní; balík lze kdykoli připravit znovu. Pravidelný archiv se všemi PDF a skeny dokladů si vlastník nebo admin vytvoří v <0>Nastavení → Zálohy dokladů</0> — běží na pozadí, ponechává se posledních pět záloh.",
+  "Do appky v telefóne sa prihlásite aj bez hesla — QR kódom z <0>Prihlásiť appku v telefóne</0>. Kód platí dve minúty a dá sa použiť len raz.":
+    "Do aplikace v telefonu se přihlásíte i bez hesla — QR kódem z <0>Přihlásit aplikaci v telefonu</0>. Kód platí dvě minuty a lze ho použít jen jednou.",
+  "Technická podpora Faktera do vašej firmy nevidí, kým jej majiteľ nedá dočasný prístup — pozri <0>Prístup technickej podpory</0>.":
+    "Technická podpora Faktera do vaší firmy nevidí, dokud jí majitel nedá dočasný přístup — viz <0>Přístup technické podpory</0>.",
+  "Súbory otvorí Excel bez nastavovania. Odkaz na stiahnutie platí sedem dní; balík sa dá pripraviť kedykoľvek znova. Celý archív aj s PDF faktúr a skenmi dokladov si majiteľ alebo admin vytvorí v <0>Nastavenia → Zálohy dokladov</0> tlačidlom <1>Vytvoriť zálohu</1> — beží na pozadí (pri väčšej firme aj niekoľko minút), dobehne aj bez vás a ponecháva sa posledných päť záloh.":
+    "Soubory otevře Excel bez nastavování. Odkaz ke stažení platí sedm dní; balík lze připravit kdykoli znovu. Celý archiv i s PDF faktur a skeny dokladů si majitel nebo admin vytvoří v <0>Nastavení → Zálohy dokladů</0> tlačítkem <1>Vytvořit zálohu</1> — běží na pozadí (u větší firmy i několik minut), doběhne i bez vás a ponechává se posledních pět záloh.",
 } satisfies Record<string, string>;

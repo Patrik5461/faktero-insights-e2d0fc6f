@@ -46,8 +46,12 @@
       pridajú samy z pluginu `@faktero/drive-detector` — sú v jeho manifeste,
       lebo bez nich by plugin nefungoval v žiadnej appke.
 
-      Fotoaparát tu zámerne nie je: Kniha jázd doklady nefotí ani neskenuje
-      QR kódy. Zoznam pluginov v `capacitor.config.jazdy.ts` sa drží toho
-      istého — čo appka nepoužíva, to si ani nepribalí.
+      Fotoaparát je tu len kvôli prihláseniu QR kódom z webu („Prihlásiť
+      appku v telefóne“) — doklady Kniha jázd nefotí. Kamera beží v stránke
+      (getUserMedia), takže netreba žiadny plugin; bez tohto povolenia ju ale
+      WebView nedostane a skener skončí chybou. Fotoaparát nie je podmienkou
+      inštalácie (`required="false"`).
     -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

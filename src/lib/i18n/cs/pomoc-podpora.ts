@@ -31,4 +31,6 @@ export default {
   "Z mobilnej aplikácie": "Z mobilní aplikace",
   "Nahlásenie chyby a odoslanie diagnostiky z appky založí požiadavku rovnako. V appke dostanete jej číslo, odpoveď príde e-mailom a celé vlákno uvidíte vo Fakteri na webe.":
     "Nahlášení chyby a odeslání diagnostiky z aplikace založí požadavek stejně. V aplikaci dostanete jeho číslo, odpověď přijde e-mailem a celé vlákno uvidíte ve Fakteru na webu.",
+  "Keď sa potrebujeme pozrieť priamo do vašej firmy, majiteľ nám môže dať dočasný prístup — pozri <0>Prístup technickej podpory</0>. Bez neho do firmy nevidíme.":
+    "Když se potřebujeme podívat přímo do vaší firmy, majitel nám může dát dočasný přístup — viz <0>Přístup technické podpory</0>. Bez něj do firmy nevidíme.",
 } satisfies Record<string, string>;

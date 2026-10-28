@@ -57,10 +57,10 @@ export function NastavitPredvolene({
     if (
       !(await potvrd(
         t(
-          "Nastaviť {kody} ako predvolené pre {doklad}? Použije sa pri každom ďalšom doklade tohto druhu bez vlastného zaúčtovania.",
+          "Nastaviť {kody} ako predvolené pre druh dokladu „{doklad}“? Použije sa pri každom ďalšom doklade tohto druhu bez vlastného zaúčtovania.",
           {
             kody: popis,
-            doklad: t(p!.nazov).toLowerCase(),
+            doklad: t(p!.nazov),
           },
         ),
       ))

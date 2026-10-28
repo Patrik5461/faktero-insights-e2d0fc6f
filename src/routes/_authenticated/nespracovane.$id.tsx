@@ -792,6 +792,14 @@ function Detail() {
                   <textarea rows={2} value={u.poznamka} onChange={(e) => set({ poznamka: e.target.value })} className={`${vstup} border-input`} />
                   <PreddefinovanaPoznamka companyId={d.companyId} agenda="nespracovane" onVyber={(text) => set({ poznamka: u.poznamka ? `${u.poznamka}\n${text}` : text })} />
                 </label>
+                {/* Komentár pre ľudí vo firme — ako v kompaktnom rozložení; ide do `komentar` dokladu, do účtovníctva nie. */}
+                {druh !== "ostatny" ? (
+                  <label className="mt-3 block text-sm">
+                    <span className="text-xs text-muted-foreground">{t("Komentár (do účtovníctva sa neprenáša)")}</span>
+                    <textarea rows={2} maxLength={1000} value={u.komentar ?? ""} onChange={(e) => set({ komentar: e.target.value })} className={`${vstup} border-input`} />
+                    <span className="block text-right text-[11px] text-muted-foreground">{(u.komentar ?? "").length}/1000</span>
+                  </label>
+                ) : null}
               </section>
             ) : null}
 

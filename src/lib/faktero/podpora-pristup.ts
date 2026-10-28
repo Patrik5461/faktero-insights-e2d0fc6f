@@ -52,3 +52,37 @@ export function stavPristupu(
   if (r.stav === "vyprsal" || new Date(r.platne_do).getTime() <= teraz) return "vyprsal";
   return "aktivny";
 }
+
+/**
+ * E-mail platform adminom (schránka podpory), že firma udelila prístup.
+ * Len názov firmy, rozsah a platnosť — dôvod ani nič z dokladov nie, mail
+ * ide mimo aplikácie a dôvod môže obsahovať čokoľvek.
+ */
+export function oznamUdeleniaPodpore(v: {
+  firma: string;
+  rozsah: RozsahPodpory;
+  dni: number;
+  platneDo: string | Date;
+}): { predmet: string; text: string } {
+  const firma =
+    String(v.firma ?? "")
+      .replace(/\s+/g, " ")
+      .trim() || "Firma";
+  const kedy = new Intl.DateTimeFormat("sk-SK", {
+    timeZone: "Europe/Bratislava",
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(v.platneDo));
+  const dni = Math.round(v.dni);
+  const slovo = dni === 1 ? "deň" : dni >= 2 && dni <= 4 ? "dni" : "dní";
+  return {
+    predmet: `${firma} udelila prístup technickej podpore do ${kedy}`,
+    text:
+      `Firma ${firma} udelila technickej podpore Faktero dočasný prístup do ${kedy} ` +
+      `(${dni} ${slovo}), rozsah: ${NAZVY_ROZSAHU[v.rozsah].toLowerCase()}.\n` +
+      `Firma sa zobrazí v prepínači firiem; prístup sa po uplynutí zruší sám.`,
+  };
+}

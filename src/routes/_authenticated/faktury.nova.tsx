@@ -3002,9 +3002,9 @@ function InvoicePickerModal({
                     {/* Odpočítava sa uhradená záloha — neuhradenú je vidieť hneď. */}
                     {mode === "advance" &&
                       (inv.status === "paid" ? (
-                        <span className="ml-1 text-emerald-700">· {t("uhradená")}</span>
+                        <span className="ml-1 text-emerald-700 dark:text-emerald-400">· {t("uhradená")}</span>
                       ) : (
-                        <span className="ml-1 text-amber-700">· {t("neuhradená")}</span>
+                        <span className="ml-1 text-amber-700 dark:text-amber-400">· {t("neuhradená")}</span>
                       ))}
                   </div>
                 </div>

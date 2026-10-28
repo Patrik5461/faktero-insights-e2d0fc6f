@@ -255,6 +255,14 @@ export const adminAutoOpravaFn = createServerFn({ method: "POST" })
     if (data.id && !ciel) throw new Error("Návrh opravy sa nenašiel.");
 
     if (data.akcia === "schvalit") {
+      // Schválenie pošle kód do main a ten sa sám nasadí — smie len superadmin.
+      const { data: rola } = await db
+        .from("platform_admins")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if ((rola as { role?: string } | null)?.role !== "superadmin")
+        throw new Error("Opravu na nasadenie smie schváliť len superadmin.");
       if (ciel?.stav !== "navrh" || !ciel.commit_sha)
         throw new Error("Schváliť sa dá len hotový návrh opravy.");
       const { error } = await db

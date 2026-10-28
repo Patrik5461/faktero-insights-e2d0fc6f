@@ -29,8 +29,6 @@ export default {
   "100 % — len na podnikanie": "100 % — nur betrieblich",
   "50 % — zmiešané použitie": "50 % — gemischte Nutzung",
   "Bez odpočtu": "Ohne Vorsteuerabzug",
-  "Pri zmiešanom použití osobného auta sa na Slovensku od roku 2025 odpočítava DPH paušálne 50 % (§ 49 ods. 7 zákona o DPH), ak nevediete knihu jázd preukazujúcu len podnikanie.":
-    "Bei gemischter Nutzung eines Pkw wird in der Slowakei seit 2025 pauschal 50 % der Vorsteuer abgezogen (§ 49 Abs. 7 slowakisches MwSt-Gesetz), sofern kein Fahrtenbuch die ausschließlich betriebliche Nutzung belegt.",
   "Platí sa daň z motorových vozidiel": "Kraftfahrzeugsteuer wird gezahlt",
   "Kategória {k} dani podlieha (nákladné a autobusy nad 3,5 t, ťažké prívesy).":
     "Die Kategorie {k} ist steuerpflichtig (Lkw und Busse über 3,5 t, schwere Anhänger).",

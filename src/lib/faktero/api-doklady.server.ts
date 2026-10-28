@@ -6,6 +6,7 @@
 import type { ApiCtx } from "./api-auth.server";
 import { err, ok } from "./api-auth.server";
 import { nazovBanky } from "./banka-z-iban";
+import { stavPohybu } from "./pohyb-vybavenie";
 
 export type DruhApi = "prijata" | "blocek";
 
@@ -49,6 +50,10 @@ const STL_PRIJATEJ = [
   "opravuje_cislo",
   "order_number",
   "delivery_note_number",
+  "stav_id",
+  "stitky",
+  "komentar",
+  "int_poznamka",
   "zauctovane_at",
   "exported_at",
   "pohoda_cislo",
@@ -76,6 +81,10 @@ const STL_BLOCKU = [
   "odpocet",
   "rozuctovanie",
   "note",
+  "stav_id",
+  "stitky",
+  "komentar",
+  "int_poznamka",
   "exported_at",
   "pohoda_cislo",
   "file_path",
@@ -119,6 +128,15 @@ export async function zoznamDokladov(ctx: ApiCtx, druh: DruhApi) {
   if (exportovane === "true") q = q.not("exported_at", "is", null);
   if (exportovane === "false") q = q.is("exported_at", null);
   if (druh === "prijata" && p.get("booked") === "true") q = q.not("zauctovane_at", "is", null);
+  // Pracovné značky: vlastný stav (id z /document-states) a štítok.
+  const stav = p.get("stav_id");
+  if (stav) {
+    if (stav === "none") q = q.is("stav_id", null);
+    else if (/^[0-9a-f-]{36}$/i.test(stav)) q = q.eq("stav_id", stav);
+    else return err("validation_error", "stav_id musí byť id stavu alebo none.");
+  }
+  const stitok = p.get("tag");
+  if (stitok) q = q.contains("stitky", [stitok.trim().slice(0, 40)]);
   // Stabilné poradie — pri stránkovaní sa nič nevynechá ani nezopakuje.
   const { data, error } = await q
     .order("updated_at", { ascending: true })
@@ -305,7 +323,7 @@ export async function bankovePohyby(ctx: ApiCtx) {
   let q = (ctx.supabase as any)
     .from("bank_transactions")
     .select(
-      "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, description, transaction_reference, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, created_at",
+      "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, counterparty_iban, description, transaction_reference, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, matched_installment_id, vybavenie, vybavenie_poznamka, vybavene_at, created_at",
       { count: "exact" },
     )
     .eq("company_id", ctx.company_id);
@@ -315,6 +333,25 @@ export async function bankovePohyby(ctx: ApiCtx) {
   if (doDna) q = q.lte("booking_date", doDna);
   const ucet = p.get("bank_account_id");
   if (ucet && /^[0-9a-f-]{36}$/i.test(ucet)) q = q.eq("bank_account_id", ucet);
+  // Stav pohybu: spárovaný, vybavený bez dokladu / transakčná daň, nespárovaný.
+  const stav = p.get("state");
+  if (stav) {
+    const SPAROVANE = [
+      "matched_invoice_id",
+      "matched_purchase_invoice_id",
+      "matched_expense_id",
+      "matched_installment_id",
+    ];
+    if (stav === "sparovany") q = q.or(SPAROVANE.map((s) => `${s}.not.is.null`).join(","));
+    else if (["bez_dokladu", "transakcna_dan", "nesparovany"].includes(stav)) {
+      for (const s of SPAROVANE) q = q.is(s, null);
+      q = stav === "nesparovany" ? q.is("vybavenie", null) : q.eq("vybavenie", stav);
+    } else
+      return err(
+        "validation_error",
+        "state musí byť sparovany, bez_dokladu, transakcna_dan alebo nesparovany.",
+      );
+  }
   const [{ data, error, count }, ucty] = await Promise.all([
     q
       .order("booking_date", { ascending: false })
@@ -326,6 +363,7 @@ export async function bankovePohyby(ctx: ApiCtx) {
   const poUcte = new Map(ucty.map((u) => [u.id, u]));
   const riadky = ((data ?? []) as any[]).map((r) => ({
     ...r,
+    stav: stavPohybu(r),
     iban: poUcte.get(r.bank_account_id)?.iban ?? null,
     bank_name: poUcte.get(r.bank_account_id)?.bank_name ?? null,
   }));

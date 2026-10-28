@@ -44,3 +44,11 @@ describe("sprievodný text", () => {
     expect(t).toContain("desať rokov");
   });
 });
+
+describe("export firmy bez tajných stĺpcov", () => {
+  it("vynechá tokeny a šifrované hodnoty", () => {
+    const csv = naCsv([{ cislo: "1", public_token: "x", pdf_token: "y", approval_token: "z", smtp_heslo_sifrovane: "q" }]);
+    const hlavicka = csv.replace("﻿", "").split("\r\n")[0];
+    expect(hlavicka).toBe("cislo");
+  });
+});

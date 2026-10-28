@@ -45,18 +45,18 @@ export default {
   "Prenos dát a zápis dokladov cez API": "Přenos dat a zápis dokladů přes API",
   "API nielen číta, ale aj zapisuje — hodí sa pri prechode z iného programu aj pri trvalom napojení e-shopu, skladu či účtovnej kancelárie:":
     "API nejen čte, ale i zapisuje — hodí se při přechodu z jiného programu i při trvalém napojení e-shopu, skladu či účetní kanceláře:",
-  "<0>Prijaté faktúry a bločky</0> — zapíšete ich aj so súborom (PDF, fotka), dodávateľ sa sám založí v adresári. Úhradu a zaúčtovanie doplníte úpravou.":
-    "<0>Přijaté faktury a účtenky</0> — zapíšete je i se souborem (PDF, fotka), dodavatel se sám založí v adresáři. Úhradu a zaúčtování doplníte úpravou.",
+  "<0>Prijaté faktúry a bločky</0> — zapíšete ich aj so súborom (PDF, fotka), dodávateľ sa sám založí v adresári. Úhrady (aj po častiach), zaúčtovanie, stav, štítky a komentár doplníte neskôr.":
+    "<0>Přijaté faktury a účtenky</0> — zapíšete je i se souborem (PDF, fotka), dodavatel se sám založí v adresáři. Úhrady (i po částech), zaúčtování, stav, štítky a komentář doplníte později.",
   "<0>Adresár</0> — naraz prenesiete až 1000 odberateľov a dodávateľov. Existujúci kontakt sa nezdvojí, len sa doplní.":
     "<0>Adresář</0> — najednou přenesete až 1000 odběratelů a dodavatelů. Existující kontakt se nezdvojí, jen se doplní.",
   "<0>Cenník</0> — produkty a služby, ktoré sa dajú synchronizovať napríklad z e-shopu.":
     "<0>Ceník</0> — produkty a služby, které lze synchronizovat například z e-shopu.",
-  "<0>Bankové účty</0> — účet banky, ku ktorej sa Faktero nepripojí, založíte cez API a pohyby naň posielate dávkami. Duplicity sa preskočia.":
-    "<0>Bankovní účty</0> — účet banky, ke které se Faktero nepřipojí, založíte přes API a pohyby na něj posíláte dávkami. Duplicity se přeskočí.",
+  "<0>Bankové účty</0> — účet banky, ku ktorej sa Faktero nepripojí, založíte cez API a pohyby naň posielate dávkami. Duplicity sa preskočia. Poplatok, mzdu či transakčnú daň označíte ako vybavené bez dokladu.":
+    "<0>Bankovní účty</0> — účet banky, ke které se Faktero nepřipojí, založíte přes API a pohyby na něj posíláte dávkami. Duplicity se přeskočí. Poplatek, mzdu či transakční daň označíte jako vyřízené bez dokladu.",
   "<0>Firmy a používatelia</0> — kľúčom pre viac firiem založíte firmu nového klienta a pozvete do nej účtovníka či kolegu (pozvánka príde e-mailom).":
     "<0>Firmy a uživatelé</0> — klíčem pro více firem založíte firmu nového klienta a pozvete do ní účetního či kolegu (pozvánka přijde e-mailem).",
-  "Pri každom zápise môžete poslať vlastné <0>external_id</0> — opakované odoslanie potom nič nezdvojí. Nič sa cez API nemaže; faktúra sa dá len stornovať. Presný tvar údajov je v <1>API dokumentácii</1>.":
-    "Při každém zápisu můžete poslat vlastní <0>external_id</0> — opakované odeslání pak nic nezdvojí. Přes API se nic nemaže; fakturu lze jen stornovat. Přesný tvar údajů je v <1>API dokumentaci</1>.",
-  "Faktero sa dá napojiť na AI asistenta cez <0>MCP</0> (Model Context Protocol). Asistent potom odpovie, kto vám dlhuje, nájde faktúru, vystaví novú, zapíše prijatú faktúru či bloček, založí odberateľa, produkt alebo firmu, prenesie kontakty a bankové pohyby, označí úhradu, pozve kolegu alebo pozrie pohyby na účte. Nič nemaže a nič neposiela odberateľom.":
-    "Faktero lze napojit na AI asistenta přes <0>MCP</0> (Model Context Protocol). Asistent pak odpoví, kdo vám dluží, najde fakturu, vystaví novou, zapíše přijatou fakturu či účtenku, založí odběratele, produkt nebo firmu, přenese kontakty a bankovní pohyby, označí úhradu, pozve kolegu nebo se podívá na pohyby na účtu. Nic nemaže a nic neposílá odběratelům.",
+  "Pri každom zápise môžete poslať vlastné <0>external_id</0> — opakované odoslanie potom nič nezdvojí. Cez API sa maže len ručne pridaná úhrada prijatej faktúry; faktúra sa dá len stornovať. Presný tvar údajov je v <1>API dokumentácii</1>.":
+    "Při každém zápisu můžete poslat vlastní <0>external_id</0> — opakované odeslání pak nic nezdvojí. Přes API se maže jen ručně přidaná úhrada přijaté faktury; fakturu lze jen stornovat. Přesný tvar údajů je v <1>API dokumentaci</1>.",
+  "Faktero sa dá napojiť na AI asistenta cez <0>MCP</0> (Model Context Protocol). Asistent potom odpovie, kto vám dlhuje, nájde faktúru, vystaví novú, zapíše prijatú faktúru či bloček, založí odberateľa, produkt alebo firmu, prenesie kontakty a bankové pohyby, označí úhradu (aj čiastočnú), nastaví stav, štítky či zaúčtovanie dokladu, vybaví bankový pohyb bez dokladu, pozve kolegu alebo pozrie pohyby na účte. Zmaže nanajvýš ručne pridanú úhradu prijatej faktúry a nič neposiela odberateľom.":
+    "Faktero lze napojit na AI asistenta přes <0>MCP</0> (Model Context Protocol). Asistent pak odpoví, kdo vám dluží, najde fakturu, vystaví novou, zapíše přijatou fakturu či účtenku, založí odběratele, produkt nebo firmu, přenese kontakty a bankovní pohyby, označí úhradu (i částečnou), nastaví stav, štítky či zaúčtování dokladu, vyřídí bankovní pohyb bez dokladu, pozve kolegu nebo se podívá na pohyby na účtu. Smaže nanejvýš ručně přidanou úhradu přijaté faktury a nic neposílá odběratelům.",
 };

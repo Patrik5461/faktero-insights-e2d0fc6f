@@ -8,6 +8,7 @@ export type ExportFormat =
   | "isdoc_zip"
   | "bis_zip"
   | "flexi_xml"
+  | "mrp_xml"
   | "csv_univerzal";
 
 export const exportInvoicesFn = createServerFn({ method: "POST" })

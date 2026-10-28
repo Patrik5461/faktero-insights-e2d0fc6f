@@ -14,6 +14,7 @@ import {
   nahrajPrilohuFn,
   odkazNaPrilohuFn,
   zmazPrilohuFn,
+  zipPrilohFn,
 } from "@/lib/faktero/faktura-prilohy.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
@@ -74,6 +75,7 @@ export function PrilohyFaktury({
   const nahraj = useServerFn(nahrajPrilohuFn);
   const odkaz = useServerFn(odkazNaPrilohuFn);
   const zmaz = useServerFn(zmazPrilohuFn);
+  const zip = useServerFn(zipPrilohFn);
 
   const [prilohy, setPrilohy] = useState<Priloha[]>([]);
   const [pracujem, setPracujem] = useState(false);
@@ -145,9 +147,30 @@ export function PrilohyFaktury({
     }
   }
 
+  /** Jeden ZIP so súborom dokladu aj prílohami — nie kopa nových kariet. */
   async function stiahniVsetky() {
-    hlavny?.stiahni();
-    for (const p of prilohy) await stiahni(p);
+    setPracujem(true);
+    try {
+      const bez = (n: string) => n.replace(/\.[^.]+$/, "");
+      const r = await zip({
+        data: { druh, dokladId, nazovDokladu: hlavny?.nazov ? bez(hlavny.nazov) : undefined },
+      });
+      const bin = atob(r.base64);
+      const bajty = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bajty[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([bajty], { type: "application/zip" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = r.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (e) {
+      toast.error(t(hlaska(e, "Prílohy sa nepodarilo stiahnuť.")));
+    } finally {
+      setPracujem(false);
+    }
   }
 
   if (kompaktne) {
@@ -171,9 +194,15 @@ export function PrilohyFaktury({
             <button
               type="button"
               onClick={() => void stiahniVsetky()}
+              disabled={pracujem}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs hover:bg-secondary"
             >
-              <Download className="h-3.5 w-3.5" /> {t("Stiahnuť všetky prílohy")}
+              {pracujem ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}{" "}
+              {t("Stiahnuť všetky prílohy")}
             </button>
           ) : null}
         </div>

@@ -53,6 +53,34 @@ export function stavUhradyPrijatej(vstup: {
   return { celkom, zaloha, naUhradu, uhradene, zostava, preplatene, stav };
 }
 
+/** Súčet úhrad po faktúrach z riadkov `purchase_invoice_payments` (zoznam faktúr). */
+export function sumyUhradPodlaFaktury(
+  riadky: { purchase_invoice_id: string; amount: number | string | null }[],
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of riadky) {
+    const a = Number(r.amount) || 0;
+    if (a <= 0) continue;
+    out[r.purchase_invoice_id] = r2((out[r.purchase_invoice_id] ?? 0) + a);
+  }
+  return out;
+}
+
+/**
+ * Čiastočne uhradená faktúra v zozname: niečo je uhradené, ale spúšťač ju
+ * ešte neprepol na `paid`. Koncept a storno sa nepočítajú — tie sa neplatia.
+ * (Zaplatenú zálohu tu netreba: keď s ňou úhrady pokryjú celú sumu, faktúra
+ * už je `paid`.)
+ */
+export function jeCiastocneUhradena(
+  row: { status?: string | null; amount_total?: number | string | null },
+  uhradene: number | null | undefined,
+): boolean {
+  if (row.status === "paid" || row.status === "cancelled" || row.status === "draft") return false;
+  const u = Number(uhradene) || 0;
+  return u > 0.004 && u < Math.abs(Number(row.amount_total ?? 0)) - 0.004;
+}
+
 /** Dni po splatnosti (kladné), 0 v deň splatnosti, záporné = koľko dní ešte zostáva. */
 export function dniPoSplatnosti(
   splatnost: string | null | undefined,

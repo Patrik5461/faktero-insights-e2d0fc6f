@@ -77,6 +77,24 @@ async function posliMail(args: {
   }
 }
 
+/**
+ * Upozornenie do schránky podpory (platform admini) — napr. že firma udelila
+ * dočasný prístup. Bez vlákna help desku; zlyhanie mailu nič nezhodí.
+ */
+export async function oznamPodpore(args: {
+  predmet: string;
+  text: string;
+  odkaz?: { cesta: string; popis: string };
+}): Promise<void> {
+  await posliMail({
+    komu: schrankaPodpory(),
+    predmet: args.predmet,
+    riadky: [],
+    text: args.text,
+    odkaz: args.odkaz ? { url: `${web()}${args.odkaz.cesta}`, popis: args.odkaz.popis } : undefined,
+  });
+}
+
 export type NovaPoziadavka = {
   userId: string | null;
   companyId?: string | null;

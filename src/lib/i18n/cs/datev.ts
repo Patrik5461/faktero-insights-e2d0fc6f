@@ -1,7 +1,7 @@
 // Český preklad. Preklady: export DATEV (Buchungsstapel) a prehľad UStVA pre nemecké firmy.
 export default {
-  "Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, DATEV, do ISDOC-u alebo ako súpisku pre Excel.":
-    "Exportujte faktury do Pohody, Omegy, Money S3, ABRA Flexi, DATEV, do ISDOC nebo jako soupis pro Excel.",
+  "Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, MRP, DATEV, do ISDOC-u alebo ako súpisku pre Excel.":
+    "Exportujte faktury do Pohody, Omegy, Money S3, ABRA Flexi, MRP, DATEV, do ISDOC nebo jako soupis pro Excel.",
   "Súbor EXTF_Buchungsstapel… (Windows-1252) načíta DATEV Rechnungswesen cez Bestand → Importieren → ASCII-Daten / DATEV-Format, prípadne ho pošlite poradcovi do DATEV Unternehmen online. Jeden súbor smie obsahovať len doklady z jedného hospodárskeho roka. Pred prvým exportom vyplňte v nastaveniach Beraternummer a Mandantennummer.":
     "Soubor EXTF_Buchungsstapel… (Windows-1252) načte DATEV Rechnungswesen přes Bestand → Importieren → ASCII-Daten / DATEV-Format, případně ho pošlete poradci do DATEV Unternehmen online. Jeden soubor smí obsahovat jen doklady z jednoho hospodářského roku. Před prvním exportem vyplňte v nastavení Beraternummer a Mandantennummer.",
   "Beraternummer a Mandantennummer vám dá daňový poradca. Daň si DATEV rozpočíta sám: výnosy a nákupy v prenesení idú na automatické účty, bežné náklady s BU-Schlüssel. Účet z predkontácie (Účtovníctvo → Predkontácie, MD pri nákupe, Dal pri predaji) má prednosť pred predvoleným.":

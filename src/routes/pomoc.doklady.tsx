@@ -170,16 +170,6 @@ const sections: HelpSection[] = [
           kolegu napísaním <strong>@meno</strong>; dostane upozornenie do zvončeka. Iné doklady sa
           dajú triediť do <strong>priečinkov</strong>.
         </p>
-        <p>
-          V zoznamoch bločkov, prijatých a vystavených faktúr vyberiete{" "}
-          <strong>účtovnú položku</strong> priamo v riadku (s hľadaním) a po označení viacerých
-          dokladov ponúkne <strong>Hromadná akcia</strong> účtovnú položku, typ platby, členenie DPH
-          a KV, účtovnú poznámku, komentár, vlastný stav, štítky aj označenie úhrady. Odovzdané,
-          zamknuté doklady a doklady v uzavretom období sa pri účtovných zmenách preskočia. Vlastné{" "}
-          <strong>stavy dokladov</strong> (napr. „Čaká na doklad od klienta“) a štítky si nastavíte
-          v Účtovníctvo → Predkontácie; <strong>komentár</strong> sa na rozdiel od účtovnej poznámky
-          do účtovníctva nikdy neprenáša.
-        </p>
       </>
     ),
   },
@@ -381,6 +371,24 @@ const sections: HelpSection[] = [
           <em>Pre všetky moje firmy</em> pre všetky naraz.
         </p>
         <p>
+          V zoznamoch bločkov, prijatých a vystavených faktúr vyberiete{" "}
+          <strong>účtovnú položku</strong> (predkontáciu) priamo v riadku, s hľadaním. Po označení
+          viacerých dokladov — aj v Iných dokladoch — ponúkne <strong>Hromadná akcia</strong>{" "}
+          účtovnú položku, typ platby, členenie DPH a KV, účtovnú poznámku, komentár, vlastný stav,
+          štítky aj označenie úhrady. Odovzdané, zamknuté doklady a doklady v uzavretom období sa
+          pri účtovných zmenách preskočia. Vlastné <strong>stavy dokladov</strong> (napr. „Čaká na
+          doklad od klienta“) a štítky si nastavíte v Účtovníctvo → Predkontácie;{" "}
+          <strong>komentár</strong> sa na rozdiel od účtovnej poznámky do účtovníctva nikdy
+          neprenáša.
+        </p>
+        <p>
+          Pri výbere sa pod zoznamom ukáže <strong>súčtová lišta</strong> — počet dokladov, suma s
+          DPH aj bez DPH a koľko z toho čaká na export a na úhradu (podrobnejšie v manuáli{" "}
+          <Link to="/pomoc/prijate-faktury">Prijaté faktúry</Link>). Na detaile bločku, prijatej aj
+          vystavenej faktúry sa šípkami <strong>Predošlý doklad</strong> a{" "}
+          <strong>Ďalší doklad</strong> posuniete na susedný doklad bez návratu do zoznamu.
+        </p>
+        <p>
           Do balíka pre účtovníčku idú doklady spolu s faktúrami cez{" "}
           <Link to="/exporty">Účtovné exporty</Link>; ak účtujete v Pohode, prenesú sa aj tam —
           pozri <Link to="/pomoc/pohoda">Prepojenie s Pohodou</Link>.
@@ -428,7 +436,8 @@ const sections: HelpSection[] = [
           </li>
           <li>
             Berie sa <strong>PDF alebo fotka</strong> v prílohe. Mail bez prílohy sa v denníku
-            označí ako „bez prílohy“ a nič sa nezaloží.
+            označí ako „bez prílohy“ a nič sa nezaloží — ak nemáte zapnuté{" "}
+            <em>Ukladať aj e-maily bez dokladu</em> (nižšie).
           </li>
           <li>
             Viac príloh v jednom maile znamená <strong>viac dokladov</strong> — každá sa spracuje
@@ -475,26 +484,23 @@ const sections: HelpSection[] = [
           <strong>Rozdeľovač — jedna adresa pre všetky firmy.</strong> Kto vedie viac firiem (alebo
           účtovníčka s klientmi), nemusí si pamätať adresu každej. V karte <em>Rozdeľovač</em> na
           tej istej stránke je vaša osobná adresa v tvare{" "}
-          <code>rozdelovac-…@doklady.faktero.sk</code>. Faktero z každej prílohy prečíta IČO alebo
-          IČ DPH odberateľa a doklad založí v tej z vašich firiem, na ktorú je vystavený — jeden
-          mail tak môže rozdeliť faktúry aj medzi viac firiem. Doklad, ktorý nesedí na žiadnu vašu
-          firmu (alebo sedí na dve s rovnakým IČO), sa naslepo nezaloží: počká v zozname{" "}
-          <em>Nepriradené doklady</em>, kde vyberiete firmu a kliknete na <strong>Priradiť</strong>,
-          prípadne <strong>Zahodiť</strong>. Rozdeľovač sa dá vypnúť a adresa vymeniť za novú.
-          Potvrdenie preposielania z Gmailu treba nastaviť na adresu konkrétnej firmy, nie na
-          rozdeľovač.
+          <code>rozdelovac-…@doklady.faktero.sk</code>. Faktero z každej prílohy prečíta odberateľa
+          — IČO, IČ DPH a DIČ; až keď na doklade nie sú, IBAN platiteľa alebo názov — a doklad
+          pošle do <em>Nespracovaných</em> tej z vašich firiem, na ktorú je vystavený, s poznámkou,
+          podľa čoho ho zaradil. Jeden mail tak môže rozdeliť faktúry aj medzi viac firiem. Vyberá
+          sa len z firiem, v ktorých smiete upravovať doklady, a firma, ktorá doklad sama vystavila,
+          sa za odberateľa nepovažuje. Doklad, ktorý nesedí na žiadnu vašu firmu, sedí na viac firiem
+          alebo si jeho údaje odporujú, sa naslepo nezaradí: počká v zozname{" "}
+          <em>Nepriradené doklady</em> (firmy, na ktoré sedí, sú vo výbere označené hviezdičkou),
+          kde vyberiete firmu a kliknete na <strong>Priradiť</strong>, prípadne{" "}
+          <strong>Zahodiť</strong>. Rozdeľovač sa dá vypnúť a adresa vymeniť za novú. Potvrdenie
+          preposielania z Gmailu treba nastaviť na adresu konkrétnej firmy, nie na rozdeľovač.
         </p>
         <p>
           <strong>Nahrať do ktorejkoľvek firmy.</strong> Rozdeľovač je aj v{" "}
           <Link to="/firmy">Správe firiem</Link> a ukáže sa každému, kto má prístup aspoň k dvom
           firmám. Tlačidlom <strong>Nahrať do ktorejkoľvek firmy</strong> vyberiete PDF alebo fotky
-          dokladov (do 15 MB) bez prepínania firiem. Firmu Faktero určí podľa odberateľa na doklade
-          — IČO, IČ DPH a DIČ; až keď na doklade nie sú, podľa IBAN platiteľa alebo názvu. Doklad
-          pôjde do <em>Nespracovaných</em> tej firmy s poznámkou, podľa čoho ho rozdeľovač zaradil.
-          Vyberá sa len z firiem, v ktorých smiete upravovať doklady, a firma, ktorá doklad sama
-          vystavila, sa za odberateľa nepovažuje. Keď sedí viac firiem alebo si údaje odporujú,
-          doklad počká v zozname <em>Nepriradené doklady</em> a firmy, na ktoré sedí, sú vo výbere
-          označené hviezdičkou.
+          dokladov (do 15 MB) bez prepínania firiem; firmu Faktero určí rovnako ako pri maile.
         </p>
       </>
     ),
@@ -626,7 +632,8 @@ const sections: HelpSection[] = [
           vznikne až po schválení) a <strong>vyúčtovanie výdavkov</strong> (schvaľuje sa po
           uzavretí). V tabuľke <strong>Povolenia používateľov</strong> nastavíte každému zvlášť
           Schvaľovanie, Zrušenie schválenia, Vrátenie a Zamietnutie; majiteľ má vždy všetko.
-          Neschválenú vystavenú faktúru server neodošle ani z appky, ani cez API.
+          Keď je zapnuté odoslanie až po schválení, neschválenú vystavenú faktúru server neodošle
+          ani z appky, ani cez API.
         </p>
         <p>
           <strong>Moje úlohy</strong> (v menu hneď pod Prehľadom, s počtom) zhrnú na jednej stránke

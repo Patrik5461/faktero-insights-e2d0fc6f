@@ -2,10 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Activity,
+  Archive,
   ArrowRight,
   ArrowUpRight,
   BadgeCheck,
   Banknote,
+  BarChart3,
   BellRing,
   Blocks,
   Boxes,
@@ -17,14 +19,17 @@ import {
   CreditCard,
   ClipboardList,
   Database,
+  FileCheck2,
   FileSpreadsheet,
   FileText,
   Flag,
   HardHat,
+  KeyRound,
   Landmark,
   Mail,
   MapPin,
   Minus,
+  PackageCheck,
   Plug,
   QrCode,
   Quote,
@@ -35,6 +40,7 @@ import {
   Send,
   ShieldCheck,
   ShoppingCart,
+  Tag,
   ListChecks,
   Download,
   ArrowLeftRight,
@@ -178,12 +184,12 @@ const features = [
     title: "E-mailové šablóny",
     /* Spojené s kartou „Z vašej e-mailovej adresy“ — uvoľnilo miesto pre
        Firmy v Nemecku a mriežka ostala po 4. */
-    text: "Vlastné texty e-mailov pre faktúry, upomienky aj schvaľovanie. Ak chcete, chodia odberateľom z faktury@vasafirma.sk cez váš poštový server.",
+    text: "Vlastné texty e-mailov podľa typu dokladu a jazyka — šablóna sa vyberie sama. Ak chcete, chodia odberateľom z faktury@vasafirma.sk cez váš poštový server.",
   },
   {
     icon: Blocks,
     title: "Hromadné akcie",
-    text: "Označte, odošlite alebo exportujte desiatky faktúr naraz. Ušetrite hodiny manuálnej práce.",
+    text: "Označte desiatky dokladov a naraz ich odošlite, exportujte či zaúčtujte — účtovná položka, stav, štítky aj úhrada jedným klikom.",
   },
   {
     icon: ShoppingCart,
@@ -290,6 +296,47 @@ const features = [
     title: "Stráž duplicít",
     text: "Tá istá faktúra od dodávateľa druhýkrát — mailom, nahratá či cez eFaktúru — sa nezaeviduje bez otázky a nezaplatí dvakrát.",
   },
+  /* Novinky z 28. 10. 2026 — osem kariet, aby mriežka ostala po 4. */
+  {
+    icon: FileCheck2,
+    title: "Kontrola e-faktúry",
+    text: "Nahrajte XML e-faktúry a hneď uvidíte chyby podľa EN 16931 a Peppol BIS 3.0 — s kódom pravidla a miestom v súbore. Zadarmo aj bez registrácie.",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Schvaľovanie dokladov",
+    text: "Schvaľovacie cesty podľa dodávateľa a sumy, povolenia pre každého používateľa zvlášť. Do účtovníctva a na úhradu ide len schválené.",
+  },
+  {
+    icon: BarChart3,
+    title: "Výnosy a náklady",
+    text: "Graf po mesiacoch s bilanciou — uhradené aj očakávané, s DPH aj bez, za obdobie, ktoré si zvolíte.",
+  },
+  {
+    icon: CreditCard,
+    title: "Úhrady po častiach",
+    text: "Prijatú faktúru zaplatíte aj na splátky. Zvyšok je stále vidieť a spárovaná platba z banky sa započíta sama.",
+  },
+  {
+    icon: Tag,
+    title: "Stavy, štítky a komentáre",
+    text: "Vlastné stavy ako „Čaká na doklad od klienta“, štítky na triedenie a interné komentáre, ktoré do účtovníctva nikdy neodídu.",
+  },
+  {
+    icon: PackageCheck,
+    title: "Faktúra aj dodací list",
+    text: "Jedna faktúra môže byť zároveň dodacím listom — s nadpisom „Faktúra – dodací list“ a podpismi Odovzdal a Prevzal.",
+  },
+  {
+    icon: KeyRound,
+    title: "Prihlásenie appky QR kódom",
+    text: "Telefón prihlásite naskenovaním kódu z webu, bez písania hesla. Kód platí dve minúty a dá sa použiť len raz.",
+  },
+  {
+    icon: Archive,
+    title: "Zálohy dokladov",
+    text: "Celý archív firmy v jednom ZIP — tabuľky v CSV, PDF faktúr aj skeny dokladov. Pripraví sa na pozadí, posledných päť záloh ostáva.",
+  },
 ] as const;
 
 const accounting = [
@@ -352,6 +399,26 @@ const accounting = [
     icon: Calculator,
     title: "UStVA pre nemecké firmy",
     text: "Kennzahlen za mesiac či štvrťrok zostavené z dokladov — v CSV a PDF na prepis do ELSTER.",
+  },
+  {
+    icon: FileSpreadsheet,
+    title: "Konvertor z Excelu do Pohody",
+    text: "Vydané a prijaté faktúry či bločky vyplníte v šablóne v Exceli a stiahnete dávku XML pre Pohodu aj s predkontáciami.",
+  },
+  {
+    icon: Building,
+    title: "Jedna adresa pre všetkých klientov",
+    text: "Doklady z jedného mailu či nahratia sa rozdelia medzi firmy podľa odberateľa. Čo nesedí jednoznačne, počká na vás.",
+  },
+  {
+    icon: Landmark,
+    title: "Banka bez zbytočného párovania",
+    text: "Poplatky, mzdy či odvody označíte ako pohyb bez dokladu — raz, alebo pravidlom navždy. Transakčnú daň Faktero spozná samo.",
+  },
+  {
+    icon: Plug,
+    title: "Export podľa vašej Pohody",
+    text: "Dátum zápisu a odpočtu DPH, text dokladu, partner do adresára či zaokrúhlenie zvlášť kladné a záporné — nastavíte raz pre firmu.",
   },
 ] as const;
 
@@ -1103,6 +1170,12 @@ function EFakturaSection() {
               >
                 {t("Zistiť viac")}
               </a>
+              <Link
+                to="/nastroje/kontrola-efaktury"
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold hover:bg-secondary"
+              >
+                <FileCheck2 className="h-4 w-4" /> {t("Skontrolovať XML zadarmo")}
+              </Link>
             </div>
           </div>
 
@@ -1648,6 +1721,7 @@ function SiteFooter() {
               ["Funkcie", "/funkcie"],
               ["Cenník", "/cennik"],
               ["eFaktúra 2027", "/efakturacia"],
+              ["Kontrola e-faktúry", "/nastroje/kontrola-efaktury"],
               ["Blog", "/blog"],
             ],
           },

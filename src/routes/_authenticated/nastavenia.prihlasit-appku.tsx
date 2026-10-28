@@ -95,7 +95,7 @@ function Stranka() {
             <div className="flex flex-wrap items-start gap-6">
               <div className="grid h-[280px] w-[280px] max-w-full shrink-0 place-items-center rounded-lg border border-border bg-white">
                 {hotovo ? (
-                  <div className="flex flex-col items-center gap-2 p-4 text-center text-emerald-700">
+                  <div className="flex flex-col items-center gap-2 p-4 text-center text-emerald-700 dark:text-emerald-400">
                     <CheckCircle2 className="h-12 w-12" />
                     <span className="text-sm font-medium">{t("Appka je prihlásená.")}</span>
                   </div>

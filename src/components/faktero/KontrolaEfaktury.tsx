@@ -192,7 +192,7 @@ export function KontrolaEfaktury({ maxVelkost }: { maxVelkost: number }) {
             }`}
           >
             {vysledok.platny ? (
-              <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-600" />
+              <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-600 dark:text-emerald-400" />
             ) : (
               <XCircle className="h-6 w-6 shrink-0 text-destructive" />
             )}

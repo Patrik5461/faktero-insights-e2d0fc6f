@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   dniPoSplatnosti,
+  jeCiastocneUhradena,
+  sumyUhradPodlaFaktury,
   stavUhradyPrijatej,
   sumarPoSadzbach,
   typPrijatejFaktury,
@@ -127,5 +129,29 @@ describe("typPrijatejFaktury", () => {
     expect(typPrijatejFaktury({ type: "regular", dph_rezim: "nadobudnutie" })).toBe(
       "Prijatá faktúra – zahraničná",
     );
+  });
+});
+
+describe("čiastočne uhradená v zozname", () => {
+  it("sčíta úhrady po faktúrach a vynechá nekladné", () => {
+    expect(
+      sumyUhradPodlaFaktury([
+        { purchase_invoice_id: "a", amount: "10.10" },
+        { purchase_invoice_id: "a", amount: 20.2 },
+        { purchase_invoice_id: "b", amount: 0 },
+      ]),
+    ).toEqual({ a: 30.3 });
+  });
+  it("niečo uhradené, nie všetko", () => {
+    expect(jeCiastocneUhradena({ status: "booked", amount_total: 100 }, 30)).toBe(true);
+    expect(jeCiastocneUhradena({ status: "received", amount_total: "-100" }, 30)).toBe(true);
+  });
+  it("bez úhrad, celé, zaplatená, koncept ani storno nie sú čiastočné", () => {
+    expect(jeCiastocneUhradena({ status: "booked", amount_total: 100 }, 0)).toBe(false);
+    expect(jeCiastocneUhradena({ status: "booked", amount_total: 100 }, undefined)).toBe(false);
+    expect(jeCiastocneUhradena({ status: "booked", amount_total: 100 }, 100)).toBe(false);
+    expect(jeCiastocneUhradena({ status: "paid", amount_total: 100 }, 30)).toBe(false);
+    expect(jeCiastocneUhradena({ status: "draft", amount_total: 100 }, 30)).toBe(false);
+    expect(jeCiastocneUhradena({ status: "cancelled", amount_total: 100 }, 30)).toBe(false);
   });
 });

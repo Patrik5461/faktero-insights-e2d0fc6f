@@ -37,7 +37,8 @@ const sections: HelpSection[] = [
         <ol>
           <li>
             <strong>Pravidlo účtovania</strong> (istota 100 %) — podľa partnera, textu, spôsobu
-            úhrady, predmetu e-mailu či typu dokladu. Pravidlá spravujete v{" "}
+            úhrady, predmetu či odosielateľa e-mailu, krajiny, variabilného symbolu alebo typu
+            dokladu. Pravidlá spravujete v{" "}
             <Link to="/uctovnictvo/pravidla">Účtovníctvo → Pravidlá účtovania</Link>.
           </li>
           <li>
@@ -73,8 +74,8 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Okrem predkontácie, členenia DPH a KV vie pravidlo bločku nastaviť{" "}
-          <strong>pokladňu</strong> a doklad <strong>rozúčtovať pomerom</strong> (napr. 80 % náklad
-          s odpočtom, 20 % bez odpočtu) — sumy sa dopočítajú pri odovzdaní z rozpisu DPH.
+          <strong>pokladňu</strong> a doklad <strong>rozúčtovať pomerom</strong> (napr. telefón 70 %
+          s odpočtom, 30 % bez odpočtu) — sumy sa dopočítajú pri odovzdaní z rozpisu DPH.
         </p>
         <p>
           <strong>Predloha</strong> (záložka Predlohy v Pravidlách účtovania) je pomenované
@@ -181,7 +182,9 @@ const sections: HelpSection[] = [
         <p>
           Pohyby sa zaúčtujú pri vývoze výpisu do Pohody: pravidlo pre banku (účet, smer,
           protistrana) má prednosť, spárovaný pohyb dostane predvolenú predkontáciu pre banku. Pri
-          nespárovaných pohyboch sa AI nepýta.
+          nespárovaných pohyboch sa AI nepýta. Pravidlo pre banku s výsledkom{" "}
+          <strong>Spárované bez dokladu</strong> (poplatky, mzdy, odvody) vybaví pohyb hneď, ako
+          príde z banky alebo z nahratého výpisu — pozri <Link to="/pomoc/banka">Banka</Link>.
         </p>
       </>
     ),

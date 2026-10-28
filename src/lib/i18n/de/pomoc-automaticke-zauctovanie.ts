@@ -6,8 +6,6 @@ export default {
     "Jeder neue Beleg — Eingangsrechnung, Kassenbon und Ausgangsrechnung — erhält innerhalb einer Minute einen Kontierungsvorschlag: <0>Vorkontierung, USt-Gliederung, Zeile des Kontrollberichts</0>, gegebenenfalls Kostenstelle und Tätigkeit. Es spielt keine Rolle, ob er per E-Mail, vom Scanner, aus einem Import kam oder von Ihnen von Hand erfasst wurde.",
   "Predkontácia sa hľadá v tomto poradí — prvý zdroj, ktorý zaberie, vyhráva:":
     "Die Vorkontierung wird in dieser Reihenfolge gesucht — die erste Quelle, die greift, gewinnt:",
-  "<0>Pravidlo účtovania</0> (istota 100 %) — podľa partnera, textu, spôsobu úhrady, predmetu e-mailu či typu dokladu. Pravidlá spravujete v <1>Účtovníctvo → Pravidlá účtovania</1>.":
-    "<0>Kontierungsregel</0> (Sicherheit 100 %) — nach Partner, Text, Zahlungsart, E-Mail-Betreff oder Belegtyp. Regeln verwalten Sie unter <1>Buchhaltung → Kontierungsregeln</1>.",
   "<0>Zvyk partnera</0> — keď ste aspoň tri z posledných desiatich dokladov od toho istého partnera zaúčtovali väčšinou rovnako. Istota je podiel zhody (najviac 98 %).":
     "<0>Gewohnheit beim Partner</0> — wenn Sie mindestens drei der letzten zehn Belege desselben Partners überwiegend gleich kontiert haben. Die Sicherheit ist der Anteil der Übereinstimmung (höchstens 98 %).",
   "<0>AI</0> (prijaté faktúry a bločky) — vyberá výhradne z vašich predkontácií a povie, prečo. Kód, ktorý vo vašom číselníku nie je, sa zahodí.":
@@ -49,6 +47,8 @@ export default {
   "Keď rovnakú opravu u toho istého partnera urobíte druhýkrát, Faktero ponúkne <0>vytvoriť pravidlo</0> s predvyplnenými podmienkami. Každá oprava sa zapíše do histórie dokladu.":
     "Wenn Sie dieselbe Korrektur beim selben Partner zum zweiten Mal vornehmen, bietet Faktero an, <0>eine Regel anzulegen</0> — mit vorausgefüllten Bedingungen. Jede Korrektur wird in der Belegchronik festgehalten.",
   "Bankové pohyby": "Bankbewegungen",
-  "Pohyby sa zaúčtujú pri vývoze výpisu do Pohody: pravidlo pre banku (účet, smer, protistrana) má prednosť, spárovaný pohyb dostane predvolenú predkontáciu pre banku. Pri nespárovaných pohyboch sa AI nepýta.":
-    "Bewegungen werden beim Export des Kontoauszugs nach Pohoda kontiert: Die Bankregel (Konto, Richtung, Gegenpartei) hat Vorrang, eine zugeordnete Bewegung erhält die Standard-Vorkontierung für die Bank. Bei nicht zugeordneten Bewegungen wird die KI nicht gefragt.",
+  "<0>Pravidlo účtovania</0> (istota 100 %) — podľa partnera, textu, spôsobu úhrady, predmetu či odosielateľa e-mailu, krajiny, variabilného symbolu alebo typu dokladu. Pravidlá spravujete v <1>Účtovníctvo → Pravidlá účtovania</1>.":
+    "<0>Buchungsregel</0> (Sicherheit 100 %) — nach Partner, Text, Zahlungsart, Betreff oder Absender der E-Mail, Land, variablem Symbol oder Belegtyp. Regeln verwalten Sie unter <1>Buchhaltung → Buchungsregeln</1>.",
+  "Pohyby sa zaúčtujú pri vývoze výpisu do Pohody: pravidlo pre banku (účet, smer, protistrana) má prednosť, spárovaný pohyb dostane predvolenú predkontáciu pre banku. Pri nespárovaných pohyboch sa AI nepýta. Pravidlo pre banku s výsledkom <0>Spárované bez dokladu</0> (poplatky, mzdy, odvody) vybaví pohyb hneď, ako príde z banky alebo z nahratého výpisu — pozri <1>Banka</1>.":
+    "Bankbewegungen werden beim Export des Kontoauszugs nach Pohoda gebucht: Die Bankregel (Konto, Richtung, Gegenpartei) hat Vorrang, eine zugeordnete Bewegung erhält die Standard-Vorkontierung für die Bank. Bei nicht zugeordneten Bewegungen wird die KI nicht gefragt. Eine Bankregel mit dem Ergebnis <0>Ohne Beleg zugeordnet</0> (Gebühren, Löhne, Abgaben) erledigt die Bewegung sofort, wenn sie von der Bank oder aus einem hochgeladenen Kontoauszug kommt — siehe <1>Bank</1>.",
 };

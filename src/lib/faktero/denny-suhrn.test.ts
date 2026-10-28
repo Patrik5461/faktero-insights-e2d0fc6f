@@ -191,6 +191,34 @@ describe("počty pre člena firmy", () => {
     );
     expect(p).toMatchObject({ schvalenie: 0, komentare: 1, nespracovane: 5, poSplatnosti: 0 });
   });
+
+  it("povolenia po používateľoch: admin bez schvaľovania nemá nič na schválenie", () => {
+    const p = poctyClena(
+      {
+        user_id: JA,
+        role: "admin",
+        permissions: {},
+        schvalovanie_prava: { schvalit: false, zrusit: true },
+      },
+      f,
+      data,
+    );
+    expect(p.schvalenie).toBe(0);
+  });
+
+  it("povolenia po používateľoch: zamestnanec so schvaľovaním dostane aj jednoduché schvaľovanie", () => {
+    const p = poctyClena(
+      {
+        user_id: KOLEGA,
+        role: "employee",
+        permissions: {},
+        schvalovanie_prava: { schvalit: true },
+      },
+      f,
+      data,
+    );
+    expect(p.schvalenie).toBe(3);
+  });
 });
 
 describe("čas v Bratislave", () => {

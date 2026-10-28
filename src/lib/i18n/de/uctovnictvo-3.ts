@@ -262,7 +262,7 @@ export default {
   "ABRA Flexi XML": "ABRA Flexi XML",
   "Import v ABRA Flexi: Nástroje → Import → XML. Zálohové faktúry a doklady v cudzej mene vynechá.":
     "Import in ABRA Flexi: Nástroje → Import → XML. Anzahlungsrechnungen und Belege in Fremdwährung werden ausgelassen.",
-  "Súpiska CSV (Excel, MRP, Premier…)": "CSV-Liste (Excel, MRP, Premier…)",
+  "Súpiska CSV (Excel, Premier, Helios…)": "CSV-Liste (Excel, Premier, Helios…)",
   "Jeden riadok na doklad s rozpisom po sadzbách DPH, oddeľovač bodkočiarka, kódovanie Windows-1250. Dobropis je záporný, aby sa dal rovno sčítať.":
     "Eine Zeile pro Beleg mit Aufschlüsselung nach MwSt.-Sätzen, Trennzeichen Semikolon, Kodierung Windows-1250. Rechnungskorrekturen sind negativ, damit sie sich direkt summieren lassen.",
 
@@ -314,8 +314,7 @@ export default {
   "Vystavené faktúry, prijaté faktúry aj bločky s predkontáciou, členením DPH, strediskom a zákazkou — tak, ako ste ich zaúčtovali vo Fakteri.":
     "Ausgangsrechnungen, Eingangsrechnungen und Kassenbons mit Vorkontierung, MwSt.-Kennzeichen, Kostenstelle und Projekt — so, wie Sie sie in Faktero verbucht haben.",
   "Účtovný program": "Buchhaltungsprogramm",
-  "Iný program (MRP, Helios, Premier…) — súpiska CSV":
-    "Anderes Programm (MRP, Helios, Premier…) — CSV-Liste",
+  "Iný program (Helios, Premier…) — súpiska CSV": "Anderes Programm (Helios, Premier…) — CSV-Liste",
   "Do Pohody idú zaúčtované doklady konektorom alebo mesačným balíkom nižšie; jednotlivo tlačidlom":
     "Verbuchte Belege gelangen per Konnektor oder über das Monatspaket unten nach Pohoda; einzeln über die Schaltfläche",
   "Stiahnuť XML pre Pohodu": "XML für Pohoda herunterladen",

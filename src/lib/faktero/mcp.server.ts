@@ -6,8 +6,9 @@
  * Prihlásenie je ten istý API kľúč ako pri /api/v1 (`Authorization: Bearer`).
  * Každý nástroj volá existujúce REST API s tým istým kľúčom — overenie dát,
  * predplatné, záznam v API logu aj práva firmy ostávajú jedny. Nástroje nič
- * nemažú a nič neposielajú von (e-mail, eFaktúra); zapisujúce sú označené,
- * aby si ich klient dal potvrdiť.
+ * neposielajú von (e-mail, eFaktúra) a mažú len ručne pridanú úhradu prijatej
+ * faktúry (`delete_purchase_invoice_payment`, označený ako deštruktívny);
+ * zapisujúce sú označené, aby si ich klient dal potvrdiť.
  */
 import { overApiKluc } from "./api-auth.server";
 
@@ -15,7 +16,7 @@ export const MCP_VERZIA_PROTOKOLU = "2025-06-18";
 const PODPOROVANE = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
 type Volaj = (
-  metoda: "GET" | "POST" | "PUT",
+  metoda: "GET" | "POST" | "PUT" | "DELETE",
   cesta: string,
   telo?: unknown,
   /** Firma pri kľúči účtu (hlavička X-Company) — id alebo IČO. */
@@ -91,6 +92,57 @@ const POLOZKA = {
   },
   required: ["name", "quantity", "unit_price"],
 };
+
+/** Pracovné značky dokladu — stav, štítky, komentár (do účtovníctva nejdú). */
+const ZNACKY = {
+  stav: {
+    type: "string",
+    description: "Vlastný stav dokladu podľa názvu (z list_document_labels); prázdny text ho zruší",
+  },
+  stitky: {
+    type: "array",
+    items: { type: "string" },
+    maxItems: 5,
+    description: "Štítky — nahradia celý zoznam (najviac 5)",
+  },
+  komentar: { type: "string", description: "Komentár pre ľudí vo firme, do účtovníctva nejde" },
+};
+
+const ZAUCTOVANIE = {
+  type: "object",
+  description: "Účtovné kódy (z list_accounting_codes)",
+  properties: {
+    predkontacia: { type: "string" },
+    clenenie_dph: { type: "string" },
+    kv_clenenie: { type: "string" },
+    stredisko: { type: "string" },
+    cinnost: { type: "string" },
+  },
+};
+
+const CESTA_DOKLADU: Record<string, string> = {
+  invoice: "/api/v1/invoices",
+  purchase_invoice: "/api/v1/purchase-invoices",
+  receipt: "/api/v1/receipts",
+};
+
+const cestaDokladu = (typ: unknown, id: unknown) => {
+  const zaklad = CESTA_DOKLADU[String(typ)];
+  if (!zaklad) throw new Error("document_type musí byť invoice, purchase_invoice alebo receipt.");
+  return `${zaklad}/${encodeURIComponent(String(id ?? ""))}`;
+};
+
+/** Z odpovede len to, čo sa značkami a zaúčtovaním zmenilo. */
+const znackyStrucne = (r: any) => ({
+  id: r.id,
+  stav_id: r.stav_id ?? null,
+  stitky: r.stitky ?? [],
+  komentar: r.komentar ?? null,
+  int_poznamka: r.int_poznamka ?? null,
+  predkontacia: r.pohoda_predkontacia ?? undefined,
+  clenenie_dph: r.pohoda_clenenie_dph ?? undefined,
+  kv_clenenie: r.kv_clenenie ?? undefined,
+});
 
 /** Zoznam firiem kľúča — pri kľúči účtu prvý krok, pri kľúči firmy jedna firma. */
 const LIST_COMPANIES: Nastroj = {
@@ -206,6 +258,17 @@ export const NASTROJE: Nastroj[] = [
         currency: { type: "string", default: "EUR" },
         notes: { type: "string" },
         items: { type: "array", minItems: 1, items: POLOZKA },
+        dodaci_list: {
+          type: "boolean",
+          description: "Faktúra slúži zároveň ako dodací list (podpisy odovzdania a prevzatia)",
+        },
+        zobrazit_peciatku: {
+          type: "boolean",
+          description: "Pečiatka a podpis v PDF; bez parametra podľa nastavenia firmy",
+        },
+        accounting: ZAUCTOVANIE,
+        int_poznamka: { type: "string", description: "Účtovná poznámka" },
+        ...ZNACKY,
       },
       required: ["items"],
     },
@@ -371,13 +434,18 @@ export const NASTROJE: Nastroj[] = [
     name: "list_bank_transactions",
     title: "Pohyby na účtoch",
     description:
-      "Pohyby na bankových účtoch (príchodzie kladné, odchodzie záporné), so spárovanou faktúrou. Dátumy RRRR-MM-DD.",
+      "Pohyby na bankových účtoch (príchodzie kladné, odchodzie záporné), so spárovanou faktúrou a stavom (stav: sparovany, bez_dokladu, transakcna_dan, nesparovany). Dátumy RRRR-MM-DD.",
     inputSchema: {
       type: "object",
       properties: {
         date_from: { type: "string" },
         date_to: { type: "string" },
         bank_account_id: { type: "string", format: "uuid" },
+        state: {
+          type: "string",
+          enum: ["sparovany", "bez_dokladu", "transakcna_dan", "nesparovany"],
+          description: "Len pohyby v tomto stave",
+        },
         page: { type: "integer", minimum: 1, default: 1 },
         per_page: { type: "integer", minimum: 1, maximum: 200, default: 100 },
       },
@@ -391,6 +459,7 @@ export const NASTROJE: Nastroj[] = [
             date_from: a?.date_from,
             date_to: a?.date_to,
             bank_account_id: a?.bank_account_id,
+            state: a?.state,
             page: a?.page,
             per_page: Math.min(Number(a?.per_page ?? 100) || 100, 200),
           })}`,
@@ -435,6 +504,9 @@ export const NASTROJE: Nastroj[] = [
         payment_date: { type: "string", description: "Dátum úhrady, ak je už zaplatená" },
         note: { type: "string" },
         external_id: { type: "string", description: "Vlastné id — opakované volanie nič nezdvojí" },
+        accounting: ZAUCTOVANIE,
+        int_poznamka: { type: "string", description: "Účtovná poznámka" },
+        ...ZNACKY,
       },
       required: ["invoice_number", "supplier", "issue_date"],
     },
@@ -504,6 +576,9 @@ export const NASTROJE: Nastroj[] = [
         payment_method: { type: "string", enum: ["hotovost", "karta", "prevod"] },
         note: { type: "string" },
         external_id: { type: "string" },
+        accounting: ZAUCTOVANIE,
+        int_poznamka: { type: "string", description: "Účtovná poznámka" },
+        ...ZNACKY,
       },
       required: ["issue_date", "total_amount"],
     },
@@ -729,6 +804,241 @@ export const NASTROJE: Nastroj[] = [
           `/api/v1/companies/${encodeURIComponent(company_id)}/invitations`,
           telo,
         ),
+      );
+    },
+  },
+  {
+    name: "list_purchase_invoice_payments",
+    title: "Úhrady prijatej faktúry",
+    description:
+      "Úhrady prijatej faktúry (aj čiastočné) so súhrnom: koľko treba uhradiť, koľko je uhradené, koľko zostáva a stav (paid, partially_paid, unpaid).",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string", description: "id prijatej faktúry" } },
+      required: ["id"],
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      return nutne(
+        await volaj("GET", `/api/v1/purchase-invoices/${encodeURIComponent(a.id)}/payments`),
+      );
+    },
+  },
+  {
+    name: "add_purchase_invoice_payment",
+    title: "Pridať úhradu prijatej faktúry",
+    description:
+      "Zapíše úhradu prijatej faktúry — aj čiastočnú. Keď súčet úhrad dosiahne sumu faktúry, faktúra je uhradená.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "id prijatej faktúry" },
+        amount: { type: "number", description: "Uhradená suma (kladná, v mene faktúry)" },
+        paid_at: { type: "string", description: "Dátum úhrady RRRR-MM-DD, predvolene dnes" },
+        method: { type: "string", enum: ["prevod", "hotovost", "karta"] },
+        note: { type: "string" },
+        external_id: { type: "string", description: "Vlastné id — opakované volanie nič nezdvojí" },
+      },
+      required: ["id", "amount"],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      const { id, ...telo } = a;
+      return nutne(
+        await volaj("POST", `/api/v1/purchase-invoices/${encodeURIComponent(id)}/payments`, telo),
+      );
+    },
+  },
+  {
+    name: "delete_purchase_invoice_payment",
+    title: "Zmazať úhradu prijatej faktúry",
+    description:
+      "Zmaže ručne pridanú úhradu prijatej faktúry (id úhrady z list_purchase_invoice_payments). Úhradu zo spárovaného bankového pohybu zmazať nejde.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "id prijatej faktúry" },
+        payment_id: { type: "string", description: "id úhrady" },
+      },
+      required: ["id", "payment_id"],
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    async vykonaj(a, volaj) {
+      return nutne(
+        await volaj(
+          "DELETE",
+          `/api/v1/purchase-invoices/${encodeURIComponent(a.id)}/payments/${encodeURIComponent(a.payment_id)}`,
+        ),
+      );
+    },
+  },
+  {
+    name: "list_document_labels",
+    title: "Stavy dokladov a štítky",
+    description:
+      "Vlastné stavy dokladov firmy (napr. „Skontrolovať“) a číselník štítkov — na výber v update_document_labels.",
+    inputSchema: { type: "object", properties: {} },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async vykonaj(_a, volaj) {
+      const [stavy, stitky] = await Promise.all([
+        volaj("GET", "/api/v1/document-states").then(nutne),
+        volaj("GET", "/api/v1/tags").then(nutne),
+      ]);
+      return { stavy: stavy.data ?? [], stitky: stitky.data ?? [] };
+    },
+  },
+  {
+    name: "update_document_labels",
+    title: "Stav, štítky a komentár dokladu",
+    description:
+      "Nastaví vlastný stav, štítky alebo komentár vystavenej faktúry, prijatej faktúry či bločku. Mení sa aj na doklade odovzdanom do účtovníctva — do účtovníctva nejdú.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        document_type: { type: "string", enum: ["invoice", "purchase_invoice", "receipt"] },
+        id: { type: "string" },
+        ...ZNACKY,
+        stitky_pridat: { type: "string", description: "Pridá jeden štítok" },
+        stitky_odobrat: { type: "string", description: "Odoberie jeden štítok" },
+      },
+      required: ["document_type", "id"],
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    async vykonaj(a, volaj) {
+      const { document_type, id, ...telo } = a;
+      return znackyStrucne(await nutne(await volaj("PUT", cestaDokladu(document_type, id), telo)));
+    },
+  },
+  {
+    name: "set_document_accounting",
+    title: "Zaúčtovať doklad",
+    description:
+      "Nastaví účtovné kódy (predkontácia, členenie DPH, KV, stredisko, činnosť) a účtovnú poznámku na vystavenej faktúre, prijatej faktúre alebo bločku. Odovzdaný doklad treba najprv vrátiť z účtovníctva.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        document_type: { type: "string", enum: ["invoice", "purchase_invoice", "receipt"] },
+        id: { type: "string" },
+        accounting: {
+          ...ZAUCTOVANIE,
+          properties: {
+            ...ZAUCTOVANIE.properties,
+            booked: { type: "boolean", description: "true = doklad je zaúčtovaný" },
+          },
+        },
+        int_poznamka: { type: "string", description: "Účtovná poznámka" },
+      },
+      required: ["document_type", "id"],
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    async vykonaj(a, volaj) {
+      const { document_type, id, accounting, int_poznamka } = a;
+      return znackyStrucne(
+        await nutne(
+          await volaj("PUT", cestaDokladu(document_type, id), {
+            ...(accounting ? { accounting } : {}),
+            ...(int_poznamka !== undefined ? { int_poznamka } : {}),
+          }),
+        ),
+      );
+    },
+  },
+  {
+    name: "list_accounting_codes",
+    title: "Predkontácie a členenia",
+    description:
+      "Číselník firmy: predkontácie, členenia DPH, strediská, činnosti a číselné rady (kind). document_type (faktura/blocek) a payment_type (hotovost/karta/prevod) vrátia kódy pre ten typ a tie, ktoré typ neurčujú.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        kind: {
+          type: "string",
+          enum: ["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad"],
+        },
+        document_type: { type: "string", enum: ["faktura", "blocek"] },
+        payment_type: { type: "string", enum: ["hotovost", "karta", "prevod"] },
+        limit: { type: "integer", minimum: 1, maximum: 1000, default: 500 },
+        offset: { type: "integer", minimum: 0 },
+      },
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      return nutne(
+        await volaj(
+          "GET",
+          `/api/v1/accounting-codes${qs({
+            kind: a?.kind,
+            document_type: a?.document_type,
+            payment_type: a?.payment_type,
+            limit: a?.limit,
+            offset: a?.offset,
+          })}`,
+        ),
+      );
+    },
+  },
+  {
+    name: "list_accounting_templates",
+    title: "Predlohy zaúčtovania",
+    description:
+      "Pomenované predlohy zaúčtovania firmy (predkontácia, členenie DPH, KV, pokladňa, rad, poznámka). document_kind: blocek, prijata, vystavena.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        document_kind: { type: "string", enum: ["blocek", "prijata", "vystavena"] },
+      },
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      return nutne(
+        await volaj(
+          "GET",
+          `/api/v1/accounting-templates${qs({ document_kind: a?.document_kind })}`,
+        ),
+      );
+    },
+  },
+  {
+    name: "resolve_bank_transaction",
+    title: "Vybaviť pohyb bez dokladu",
+    description:
+      "Označí nespárovaný bankový pohyb ako vybavený bez dokladu: bez_dokladu (poplatok, mzda, odvod…) alebo transakcna_dan. resolution null označenie zruší. Spárovaný pohyb sa označiť nedá.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "id pohybu z list_bank_transactions" },
+        resolution: { type: ["string", "null"], enum: ["bez_dokladu", "transakcna_dan", null] },
+        note: { type: "string", description: "Poznámka (do 200 znakov)" },
+      },
+      required: ["id", "resolution"],
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    async vykonaj(a, volaj) {
+      return nutne(
+        await volaj("POST", `/api/v1/bank-transactions/${encodeURIComponent(a.id)}/resolution`, {
+          resolution: a.resolution ?? null,
+          ...(a.note ? { note: a.note } : {}),
+        }),
       );
     },
   },

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PoleDokladu, VSTUP_DOKLADU } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -30,6 +30,8 @@ function QuickInvoicePage() {
   const krajina = rezim.krajina;
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [customers, setCustomers] = useState<any[]>([]);
+  /* Prázdny výber bez slova nehovoril, prečo sa nedá pokračovať — firma bez odberateľov. */
+  const [odberateliaNacitani, setOdberateliaNacitani] = useState(false);
   const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
   /* Text nad položkami je povinný; suma ide ako jediný riadok dokladu. */
@@ -60,6 +62,7 @@ function QuickInvoicePage() {
       .limit(100)
       .then(({ data }) => {
         setCustomers(data ?? []);
+        setOdberateliaNacitani(true);
       });
   }, []);
 
@@ -144,6 +147,14 @@ function QuickInvoicePage() {
                   </option>
                 ))}
               </select>
+              {odberateliaNacitani && customers.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {t("Zatiaľ nemáte žiadneho odberateľa.")}{" "}
+                  <Link to="/odberatelia" search={{ new: "1" }} className="text-primary underline">
+                    {t("Pridať odberateľa")}
+                  </Link>
+                </p>
+              )}
               <button
                 disabled={!customerId}
                 onClick={() => setStep(2)}
