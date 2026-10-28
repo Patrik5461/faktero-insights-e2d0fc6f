@@ -180,21 +180,24 @@ export const potvrdParovaniePrijatej = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!zmenene?.length) throw new Error("Tento pohyb je už spárovaný s inou faktúrou.");
 
-    const { error: chybaFaktury } = await supabase
+    /*
+      Úhradu z pohybu zapíše spúšťač do `purchase_invoice_payments` a stav
+      faktúry prepočíta sám — pohyb na časť sumy faktúru nechá čiastočne
+      uhradenú (predtým ju označil celú). Tu sa len overí, že faktúra je
+      dostupná; inak sa väzba vráti.
+    */
+    const { data: faktura, error: chybaFaktury } = await supabase
       .from("purchase_invoices")
-      .update({
-        status: "paid",
-        payment_date: pohyb.booking_date,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", data.purchase_invoice_id);
-    if (chybaFaktury) {
+      .select("id")
+      .eq("id", data.purchase_invoice_id)
+      .maybeSingle();
+    if (chybaFaktury || !faktura) {
       // Väzbu nenechávame visieť na faktúre, ktorá o nej nevie.
       await supabase
         .from("bank_transactions")
         .update({ matched_purchase_invoice_id: null })
         .eq("id", data.transaction_id);
-      throw new Error(chybaFaktury.message);
+      throw new Error(chybaFaktury?.message ?? "Faktúra sa nenašla.");
     }
 
     return { ok: true, payment_date: pohyb.booking_date };

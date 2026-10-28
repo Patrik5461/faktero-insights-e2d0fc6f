@@ -84,9 +84,9 @@ export function HromadnyPrikaz({
   }, [companyId]);
 
   /*
-    Čo je z faktúr už zaplatené: odchádzajúce platby spárované z banky
-    (čiastočná úhrada) a zaplatená prijatá zálohová faktúra, ktorú faktúra
-    vyúčtováva. Kým sa to nenačíta, príkaz sa nedá stiahnuť.
+    Čo je z faktúr už zaplatené: úhrady faktúry (purchase_invoice_payments —
+    spárované pohyby z banky aj ručne zapísané čiastočné úhrady) a zaplatená
+    prijatá zálohová faktúra, ktorú faktúra vyúčtováva. Kým sa to nenačíta, príkaz sa nedá stiahnuť.
   */
   const [uhrady, setUhrady] = useState<Record<string, { uhradene: number; zaloha: number }> | null>(
     null,
@@ -98,12 +98,13 @@ export function HromadnyPrikaz({
         ...new Set(faktury.map((f: any) => f.advance_invoice_id).filter(Boolean) as string[]),
       ];
       const [{ data: pohyby }, { data: zalohove }] = await Promise.all([
+        // Úhrady faktúry — spárované pohyby z banky aj ručne zapísané čiastočné úhrady.
         ids.length
           ? supabase
-              .from("bank_transactions")
-              .select("matched_purchase_invoice_id, amount")
+              .from("purchase_invoice_payments")
+              .select("purchase_invoice_id, amount")
               .eq("company_id", companyId)
-              .in("matched_purchase_invoice_id", ids)
+              .in("purchase_invoice_id", ids)
           : Promise.resolve({ data: [] as any[] }),
         zalohoveIds.length
           ? supabase
@@ -115,9 +116,8 @@ export function HromadnyPrikaz({
       ]);
       const out: Record<string, { uhradene: number; zaloha: number }> = {};
       for (const p of (pohyby ?? []) as any[]) {
-        // Úhrada dodávateľovi je odchádzajúca platba (záporná suma).
-        if (!(Number(p.amount) < 0)) continue;
-        const k = String(p.matched_purchase_invoice_id);
+        if (!(Number(p.amount) > 0)) continue;
+        const k = String(p.purchase_invoice_id);
         out[k] = out[k] ?? { uhradene: 0, zaloha: 0 };
         out[k].uhradene += Math.abs(Number(p.amount));
       }

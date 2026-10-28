@@ -54,6 +54,9 @@ import {
   Mail,
   Paperclip,
   SendHorizontal,
+  MessageSquare,
+  ExternalLink,
+  Printer,
 } from "lucide-react";
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
 import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions";
@@ -67,6 +70,9 @@ import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DetailSNahladom, useNahladVDetaile } from "@/components/faktero/BocnyNahlad";
+import { useDizajn } from "@/hooks/useDizajn";
+import { PrijataDetailKompaktna } from "@/components/faktero/PrijataDetailKompaktna";
+import { KartaUhrady, UhradyOkno, useUhradyPrijatej } from "@/components/faktero/UhradyPrijatej";
 
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
   ACTC: "Pripravená na podpis",
@@ -127,6 +133,9 @@ function PurchaseInvoiceDetail() {
   const [nahlad, setNahlad] = useState<string | null>(null);
   // Doklad stále vľavo vedľa údajov — pri účtovaní ho netreba hľadať pod formulárom.
   const nahladDetail = useNahladVDetaile();
+  // Kompaktné rozloženie má vlastné usporiadanie detailu (jeden stĺpec kariet).
+  const kompaktne = useDizajn() === "kompaktny";
+  const [oknoUhrad, setOknoUhrad] = useState(false);
   // Bez tohto ostal na neexistujúcom doklade navždy nápis „Načítavam…".
   const [nenajdene, setNenajdene] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -138,6 +147,7 @@ function PurchaseInvoiceDetail() {
   const loadPayments = useServerFn(listPayments);
   const poslatOpravu = usePoslatOpravuDoPohody();
   const refreshPayment = useServerFn(refreshPaymentStatus);
+  const uhradyFaktury = useUhradyPrijatej(row);
 
   async function load() {
     const { data } = await supabase
@@ -291,6 +301,7 @@ function PurchaseInvoiceDetail() {
     );
     if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
     await setStatus("paid", { payment_date: d });
+    void uhradyFaktury.nacitaj();
   }
 
   const doNespracovanych = useServerFn(prijataDoNespracovanychFn);
@@ -393,19 +404,287 @@ function PurchaseInvoiceDetail() {
     !!row.due_date &&
     new Date(row.due_date) < new Date(new Date().toDateString());
 
+  const menu = (
+    <>
+      <MenuSkupina label={t("Úpravy a zaúčtovanie")}>
+        {row.status !== "cancelled" && !samo && (
+          <MenuAkcia asChild>
+            <Link to="/prijate-faktury/$id/upravit" params={{ id }}>
+              <Pencil className="h-4 w-4" /> {t("Upraviť")}
+            </Link>
+          </MenuAkcia>
+        )}
+        {(row as any).type === "regular" && !navrh && (
+          <MenuAkcia ikona={BookCheck} onClick={skocNaZauctovanie}>
+            {row.zauctovane_at ? t("Zaúčtovanie") : t("Zaúčtovať")}
+          </MenuAkcia>
+        )}
+        {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
+          <MenuAkcia ikona={CheckCircle2} onClick={() => setStatus("received")}>
+            {t("Označiť ako prijaté")}
+          </MenuAkcia>
+        )}
+        {row.exported_at && (
+          <MenuAkcia
+            ikona={SendHorizontal}
+            onClick={async () => {
+              if (await poslatOpravu("prijata", row.company_id, row.id)) void load();
+            }}
+            title={t("Faktúra sa vráti z Pohody, aby sa dala opraviť a odovzdať znova")}
+          >
+            {t("Poslať opravu do Pohody")}
+          </MenuAkcia>
+        )}
+        {!row.exported_at && !samo && (
+          <MenuAkcia ikona={(row as any).locked_at ? LockOpen : Lock} onClick={prepniZamok}>
+            {(row as any).locked_at ? t("Odomknúť úpravy") : t("Zamknúť proti úpravám")}
+          </MenuAkcia>
+        )}
+      </MenuSkupina>
+      <MenuSkupina label={t("Ostatné")}>
+      <MenuAkcia
+        ikona={ExternalLink}
+        onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
+      >
+        {t("Otvoriť v novej karte")}
+      </MenuAkcia>
+      {row.file_path ? (
+        <MenuAkcia ikona={Printer} onClick={downloadPdf}>
+          {t("Vytlačiť / stiahnuť PDF")}
+        </MenuAkcia>
+      ) : null}
+        {(row as any).inbox_message_id && (
+          <MenuAkcia ikona={Mail} onClick={() => setZdrojovyMail(true)}>
+            {t("Zdrojový e-mail")}
+          </MenuAkcia>
+        )}
+        {row.file_path && !row.exported_at && !samo && (
+          <MenuAkcia
+            ikona={Paperclip}
+            onClick={() => setPresunPrilohy(true)}
+            title={t("Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha")}
+          >
+            {t("Presunúť ako prílohu")}
+          </MenuAkcia>
+        )}
+        {!row.exported_at && !(row as any).locked_at && !samo && (
+          <MenuAkcia
+            ikona={Undo2}
+            onClick={vratitDoNespracovanych}
+            title={t("Zle zaradená faktúra — spracuje sa znova v Nespracovaných dokladoch")}
+          >
+            {t("Vrátiť do Nespracovaných")}
+          </MenuAkcia>
+        )}
+      </MenuSkupina>
+      <MenuSkupina>
+        {row.status !== "cancelled" && (
+          <MenuAkcia ikona={Ban} onClick={() => setStatus("cancelled")} nebezpecna>
+            {t("Storno")}
+          </MenuAkcia>
+        )}
+        <MenuAkcia ikona={Trash2} onClick={del} nebezpecna>
+          {t("Vymazať")}
+        </MenuAkcia>
+      </MenuSkupina>
+    </>
+  );
+
+  const titulok = t(
+    samo
+      ? row.opravuje_cislo
+        ? "Dobropis (samofaktúra)"
+        : "Samofaktúra"
+      : (row as any).type === "proforma"
+        ? "Prijatá zálohová faktúra"
+        : "Prijatá faktúra",
+  );
+  const stavOdznak = (
+    <StavOdznak className={STATUS_CLASS[row.status] ?? undefined}>
+      {t(STATUS_LABEL[row.status] ?? row.status)}
+    </StavOdznak>
+  );
+  const prepniPolozky = async (vypnut: boolean) => {
+    // Položky sa presunú bokom (a späť) — všetko, čo z nich počíta, ich prestane vidieť.
+    const zmena = vypnut
+      ? { items: [], polozky_vypnute: row.items }
+      : { items: row.polozky_vypnute ?? [], polozky_vypnute: null };
+    const { error } = await supabase.from("purchase_invoices").update(zmena as any).eq("id", row.id);
+    if (error) return toast.error(error.message);
+    toast.success(
+      vypnut
+        ? t("Položky sú vypnuté — faktúra sa zaúčtuje podľa súčtov dokladu.")
+        : t("Položky sú znova zapnuté."),
+    );
+    load();
+  };
+
+  /* Kompaktné rozloženie: lišta ikon hore a jeden stĺpec kariet. */
+  if (kompaktne)
+    return (
+      <>
+        {zdrojovyMail && (
+          <OknoZdrojovehoMailu druh="prijata" id={row.id} onClose={() => setZdrojovyMail(false)} />
+        )}
+        {presunPrilohy && (
+          <PresunAkoPrilohuOkno
+            companyId={row.company_id}
+            zdroj={{ agenda: "prijata", id: row.id }}
+            onClose={() => setPresunPrilohy(false)}
+          />
+        )}
+        <DocumentDetailHeader
+          title={titulok}
+          number={row.invoice_number}
+          status={stavOdznak}
+          meta={<MetaRiadok polozky={[row.supplier_name]} />}
+          secondaryActions={
+            <>
+              {row.status !== "cancelled" && !samo ? (
+                <SekundarnaAkcia
+                  ikona={Pencil}
+                  label={t("Upraviť")}
+                  onClick={() => navigate({ to: "/prijate-faktury/$id/upravit", params: { id } })}
+                />
+              ) : null}
+              {!navrh ? (
+                <SekundarnaAkcia
+                  ikona={MessageSquare}
+                  label={t("Komentáre")}
+                  onClick={() =>
+                    document.getElementById("komentare")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
+                />
+              ) : null}
+              <SekundarnaAkcia ikona={Trash2} label={t("Vymazať")} onClick={del} />
+              {!navrh ? (
+                <DokladPoradie
+                  tabulka="purchase_invoices"
+                  companyId={row.company_id}
+                  id={row.id}
+                  createdAt={row.created_at}
+                  onOtvor={(dalsi) => navigate({ to: "/prijate-faktury/$id", params: { id: dalsi } })}
+                />
+              ) : null}
+            </>
+          }
+          menuActions={menu}
+        />
+        <PageBody>
+          <PrijataDetailKompaktna
+            row={row}
+            nahladUrl={nahlad}
+            navrh={navrh}
+            onZmena={load}
+            onStiahni={downloadPdf}
+            onPrepniPolozky={prepniPolozky}
+            hore={
+              <>
+                {!navrh ? (
+                  <div className="flex flex-wrap items-start gap-3 [&>*]:min-w-0">
+                    <StitkyDokladu
+                      tabulka="purchase_invoices"
+                      id={row.id}
+                      stitky={(row as any).stitky ?? []}
+                      zamknute={Boolean(row.exported_at || (row as any).locked_at)}
+                      companyId={row.company_id}
+                    />
+                    {ciselnikyFirmy.stavy.length ? (
+                      <label className="block w-full sm:w-64">
+                        <span className="mb-1 block text-xs text-muted-foreground">{t("Stav dokladu")}</span>
+                        <VyberStavuDokladu
+                          key={row.id}
+                          tabulka="purchase_invoices"
+                          id={row.id}
+                          stavId={(row as any).stav_id}
+                          stavy={ciselnikyFirmy.stavy}
+                        />
+                      </label>
+                    ) : null}
+                  </div>
+                ) : null}
+                {samo && <SamofakturaPanel row={row} onZmena={load} />}
+                <RegistrPlatcuDph
+                  companyId={row.company_id}
+                  dic={row.supplier_dic}
+                  icDph={row.supplier_ic_dph}
+                  iban={row.supplier_iban}
+                />
+                {!navrh && (
+                  <SchvalovaniePanel companyId={row.company_id} agenda="prijata" id={row.id} onZmena={load} />
+                )}
+              </>
+            }
+            bokom={
+              <div className="space-y-3 text-sm">
+                <div>
+                  {t("Splatnosť:")} {popisSplatnosti(row)}
+                </div>
+                <PredlzitSplatnost druh="prijata" faktura={row} onZmena={load} />
+                {uhrada && (
+                  <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs">
+                    <span className="min-w-0">
+                      <span className="block font-medium">{t("Zaplatené z účtu")}</span>
+                      <span className="block truncate text-muted-foreground">
+                        {datumNaDoklade(uhrada.datum)}
+                        {uhrada.protistrana ? ` · ${uhrada.protistrana}` : ""}
+                      </span>
+                    </span>
+                    <button
+                      onClick={zrusVazbu}
+                      className="shrink-0 rounded border border-border px-2 py-1 text-muted-foreground hover:bg-background"
+                    >
+                      {t("Zrušiť väzbu")}
+                    </button>
+                  </div>
+                )}
+                <div className="empty:hidden">
+                  <JobPicker value={row.job_id ?? ""} onChange={(v) => nastavZakazku(v)} label={t("Zákazka")} />
+                </div>
+                {accounts.length > 0 && row.status !== "cancelled" && row.status !== "paid" && !navrh && row.supplier_iban ? (
+                  <div className="space-y-2 rounded-lg border border-border p-3">
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                      <Landmark className="h-3.5 w-3.5" /> {t("Zaplatiť cez banku")}
+                    </div>
+                    <select
+                      aria-label={t("Z účtu")}
+                      value={debtorAccountId}
+                      onChange={(e) => setDebtorAccountId(e.target.value)}
+                      className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+                    >
+                      <option value="">{t("Vyberiem v banke")}</option>
+                      {accounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.account_name ?? a.iban}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={payViaBank}
+                      disabled={paying}
+                      className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                    >
+                      <Landmark className="h-4 w-4" />
+                      {paying ? t("Pripravujem…") : t("Zaplatiť cez banku")}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            }
+          />
+        </PageBody>
+      </>
+    );
+
   return (
     <>
       {zdrojovyMail && (
         <OknoZdrojovehoMailu druh="prijata" id={row.id} onClose={() => setZdrojovyMail(false)} />
       )}
       <DocumentDetailHeader
-        title={t(samo ? (row.opravuje_cislo ? "Dobropis (samofaktúra)" : "Samofaktúra") : (row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra")}
+        title={titulok}
         number={row.invoice_number}
-        status={
-          <StavOdznak className={STATUS_CLASS[row.status] ?? undefined}>
-            {t(STATUS_LABEL[row.status] ?? row.status)}
-          </StavOdznak>
-        }
+        status={stavOdznak}
         meta={
           <MetaRiadok
             polozky={[
@@ -445,80 +724,7 @@ function PurchaseInvoiceDetail() {
             ) : null}
           </>
         }
-        menuActions={
-          <>
-            <MenuSkupina label={t("Úpravy a zaúčtovanie")}>
-              {row.status !== "cancelled" && !samo && (
-                <MenuAkcia asChild>
-                  <Link to="/prijate-faktury/$id/upravit" params={{ id }}>
-                    <Pencil className="h-4 w-4" /> {t("Upraviť")}
-                  </Link>
-                </MenuAkcia>
-              )}
-              {(row as any).type === "regular" && !navrh && (
-                <MenuAkcia ikona={BookCheck} onClick={skocNaZauctovanie}>
-                  {row.zauctovane_at ? t("Zaúčtovanie") : t("Zaúčtovať")}
-                </MenuAkcia>
-              )}
-              {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
-                <MenuAkcia ikona={CheckCircle2} onClick={() => setStatus("received")}>
-                  {t("Označiť ako prijaté")}
-                </MenuAkcia>
-              )}
-              {row.exported_at && (
-                <MenuAkcia
-                  ikona={SendHorizontal}
-                  onClick={async () => {
-                    if (await poslatOpravu("prijata", row.company_id, row.id)) void load();
-                  }}
-                  title={t("Faktúra sa vráti z Pohody, aby sa dala opraviť a odovzdať znova")}
-                >
-                  {t("Poslať opravu do Pohody")}
-                </MenuAkcia>
-              )}
-              {!row.exported_at && !samo && (
-                <MenuAkcia ikona={(row as any).locked_at ? LockOpen : Lock} onClick={prepniZamok}>
-                  {(row as any).locked_at ? t("Odomknúť úpravy") : t("Zamknúť proti úpravám")}
-                </MenuAkcia>
-              )}
-            </MenuSkupina>
-            <MenuSkupina label={t("Ostatné")}>
-              {(row as any).inbox_message_id && (
-                <MenuAkcia ikona={Mail} onClick={() => setZdrojovyMail(true)}>
-                  {t("Zdrojový e-mail")}
-                </MenuAkcia>
-              )}
-              {row.file_path && !row.exported_at && !samo && (
-                <MenuAkcia
-                  ikona={Paperclip}
-                  onClick={() => setPresunPrilohy(true)}
-                  title={t("Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha")}
-                >
-                  {t("Presunúť ako prílohu")}
-                </MenuAkcia>
-              )}
-              {!row.exported_at && !(row as any).locked_at && !samo && (
-                <MenuAkcia
-                  ikona={Undo2}
-                  onClick={vratitDoNespracovanych}
-                  title={t("Zle zaradená faktúra — spracuje sa znova v Nespracovaných dokladoch")}
-                >
-                  {t("Vrátiť do Nespracovaných")}
-                </MenuAkcia>
-              )}
-            </MenuSkupina>
-            <MenuSkupina>
-              {row.status !== "cancelled" && (
-                <MenuAkcia ikona={Ban} onClick={() => setStatus("cancelled")} nebezpecna>
-                  {t("Storno")}
-                </MenuAkcia>
-              )}
-              <MenuAkcia ikona={Trash2} onClick={del} nebezpecna>
-                {t("Vymazať")}
-              </MenuAkcia>
-            </MenuSkupina>
-          </>
-        }
+        menuActions={menu}
       />
       <PageBody>
         {!navrh && (
@@ -666,20 +872,7 @@ function PurchaseInvoiceDetail() {
               mena={row.currency}
               samo={samo}
               mozeMenit={!row.exported_at}
-              onPrepni={async (vypnut) => {
-                // Položky sa presunú bokom (a späť) — všetko, čo z nich počíta, ich prestane vidieť.
-                const zmena = vypnut
-                  ? { items: [], polozky_vypnute: row.items }
-                  : { items: row.polozky_vypnute ?? [], polozky_vypnute: null };
-                const { error } = await supabase.from("purchase_invoices").update(zmena as any).eq("id", row.id);
-                if (error) return toast.error(error.message);
-                toast.success(
-                  vypnut
-                    ? t("Položky sú vypnuté — faktúra sa zaúčtuje podľa súčtov dokladu.")
-                    : t("Položky sú znova zapnuté."),
-                );
-                load();
-              }}
+              onPrepni={prepniPolozky}
             />
 
             {/* Na širokej obrazovke je doklad vľavo; tu ostáva pre mobil a pre toho, kto ho skryl. */}
@@ -701,6 +894,26 @@ function PurchaseInvoiceDetail() {
           </div>
 
           <aside className="min-w-0 space-y-4">
+            {!navrh && row.status !== "cancelled" && row.status !== "draft" ? (
+              <KartaUhrady
+                row={row}
+                stav={uhradyFaktury.stav}
+                onOznacit={markPaid}
+                onPridat={() => setOknoUhrad(true)}
+              />
+            ) : null}
+            {oknoUhrad ? (
+              <UhradyOkno
+                row={row}
+                uhrady={uhradyFaktury.uhrady}
+                stav={uhradyFaktury.stav}
+                onClose={() => setOknoUhrad(false)}
+                onZmena={() => {
+                  void uhradyFaktury.nacitaj();
+                  void load();
+                }}
+              />
+            ) : null}
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
               <div className="mt-3 space-y-1 text-sm">

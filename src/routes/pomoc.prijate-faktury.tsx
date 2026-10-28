@@ -197,6 +197,22 @@ const sections: HelpSection[] = [
           <strong>Z účtu sa nič nestrhne, kým platbu nepodpíšete.</strong> Potrebná je k tomu
           faktúra s IBAN dodávateľa a samostatný súhlas na platby — súhlas na čítanie účtu nestačí.
         </p>
+        <p>
+          Úhrady sa dajú zapisovať aj <strong>po častiach</strong>. Na detaile faktúry je karta
+          úhrady so splatnosťou a sumou, ktorá ešte zostáva. Tlačidlo <strong>Pridať úhradu</strong>{" "}
+          otvorí okno Úhrady: celková suma, už uhradené, aktuálna úhrada a koľko zostane. Čiastočne
+          uhradená faktúra ostáva otvorená, kým súčet úhrad nedosiahne jej sumu — potom sa sama
+          označí ako uhradená. Spárovaný pohyb z banky sa do úhrad započíta sám a zmizne, keď
+          spárovanie zrušíte.
+        </p>
+        <p>
+          V <strong>kompaktnom rozložení</strong> je detail prijatej faktúry jeden stĺpec kariet:
+          hlavička s kartou úhrady, účtovanie priamo na stránke (účtovná poznámka, komentár, dátum
+          daňovej povinnosti, typ platby, predkontácia, členenie DPH a KV — každá zmena sa hneď
+          uloží), prílohy, dodávateľ a odberateľ, položky, platobné údaje s kopírovaním a sumár po
+          sadzbách DPH. Ceruzka otvorí úpravu s náhľadom dokladu vedľa polí, rovnako ako v
+          Nespracovaných dokladoch. Odovzdaná alebo zamknutá faktúra sa dá len prezerať.
+        </p>
       </>
     ),
   },

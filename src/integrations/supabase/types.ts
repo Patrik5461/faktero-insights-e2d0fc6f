@@ -11280,6 +11280,73 @@ export type Database = {
           }
         ]
       }
+      purchase_invoice_payments: {
+        Row: {
+          id: string
+          company_id: string
+          purchase_invoice_id: string
+          amount: number
+          currency: string
+          paid_at: string
+          method: string | null
+          zdroj: string
+          bank_transaction_id: string | null
+          note: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          purchase_invoice_id: string
+          amount: number
+          currency?: string
+          paid_at?: string
+          method?: string | null
+          zdroj?: string
+          bank_transaction_id?: string | null
+          note?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          purchase_invoice_id?: string
+          amount?: number
+          currency?: string
+          paid_at?: string
+          method?: string | null
+          zdroj?: string
+          bank_transaction_id?: string | null
+          note?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_invoice_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_invoice_payments_purchase_invoice_id_fkey"
+            columns: ["purchase_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_invoice_payments_bank_transaction_id_fkey"
+            columns: ["bank_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "bank_transactions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       stock_items_with_availability: {

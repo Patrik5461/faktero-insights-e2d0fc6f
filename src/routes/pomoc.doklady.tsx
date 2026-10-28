@@ -228,6 +228,13 @@ const sections: HelpSection[] = [
           Doplňte kategóriu (napríklad „pohonné hmoty“), spôsob platby — hotovosťou, kartou alebo
           prevodom — a prípadne poznámku.
         </p>
+        <p>
+          Uložený doklad sa otvorí s <strong>náhľadom bločku</strong> vedľa formulára a so sumárom
+          po sadzbách DPH. V <strong>kompaktnom rozložení</strong> sa otvorí ako detail: hlavička s
+          obchodníkom a sumou, účtovanie priamo na stránke (každá zmena sa hneď uloží), prílohy,
+          položky, ostatné údaje k bločku vrátane ID bločku z eKasy, sumár a história. Všetky
+          údaje sa dajú zmeniť po kliknutí na ceruzku.
+        </p>
       </>
     ),
   },

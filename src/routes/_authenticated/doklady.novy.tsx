@@ -43,6 +43,7 @@ import {
   nastavStavDokladovFn,
   getExpenseFileUrlFn,
   findExpenseDuplicateFn,
+  deleteExpenseFn,
 } from "@/lib/faktero/expenses.functions";
 import { Camera, CheckCircle2, Loader2, Lock, LockOpen, QrCode, Save, Upload as UploadIcon } from "lucide-react";
 import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
@@ -51,6 +52,20 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { MENY, formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { useDizajn } from "@/hooks/useDizajn";
+import { BlocekDetailKompaktny } from "@/components/faktero/BlocekDetailKompaktny";
+import { NahladDokladuNastroje } from "@/components/faktero/PrijataUpravaKompaktna";
+import { SumarK } from "@/components/faktero/DetailDokladuKompaktny";
+import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
+import {
+  DocumentDetailHeader,
+  MenuAkcia,
+  MenuSkupina,
+  MetaRiadok,
+  PrimarnaAkcia,
+  SekundarnaAkcia,
+} from "@/components/faktero/DocumentDetailHeader";
+import { ExternalLink, MessageSquare, Pencil, Printer, SendHorizontal, Trash2, Paperclip } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nový doklad — Faktero") }] }),
@@ -168,6 +183,13 @@ function NovyDokladPage() {
   // Vlastné stavy dokladov firmy (Účtovníctvo → Predkontácie) — kódy tu netreba.
   const ciselnikyFirmy = useCiselnikyDokladov(cid, null, false);
   const [ulozeny, setUlozeny] = useState<any>(null);
+  /*
+    Kompaktné rozloženie: uložený doklad sa otvorí ako detail s účtovaním
+    priamo na stránke; ceruzka prepne na tento formulár.
+  */
+  const kompaktne = useDizajn() === "kompaktny";
+  const [uprava, setUprava] = useState(false);
+  const zmazFn = useServerFn(deleteExpenseFn);
   const [presunPrilohy, setPresunPrilohy] = useState(false);
   const sablonyFn = useServerFn(poznamkySablonyFn);
   const [sablony, setSablony] = useState<string[]>([]);
@@ -609,6 +631,136 @@ function NovyDokladPage() {
     }
   }
 
+  async function zmazDoklad() {
+    if (!search.id || !(await potvrd(t("Presunúť doklad do koša? Do 90 dní sa dá obnoviť.")))) return;
+    try {
+      await zmazFn({ data: { id: search.id } });
+      toast.success(t("Doklad je v koši"));
+      navigate({ to: "/doklady" });
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    }
+  }
+  async function spracuj() {
+    if (!cid || !search.id) return;
+    const v = await stavFn({ data: { company_id: cid, ids: [search.id], stav: "processed" } });
+    if (v.zmenene) {
+      setStavDokladu("processed");
+      toast.success(t("Doklad je spracovaný"));
+      await obnovUlozeny();
+    } else toast.warning(t("Bez sumy, dátumu a spôsobu úhrady sa doklad nedá označiť ako spracovaný."));
+  }
+  function stiahniSubor() {
+    if (preview) window.open(preview, "_blank", "noopener,noreferrer");
+  }
+
+  if (kompaktne && search.id && ulozeny && !uprava)
+    return (
+      <>
+        <DocumentDetailHeader
+          title={t("Bloček")}
+          number={ulozeny.document_number}
+          meta={<MetaRiadok polozky={[ulozeny.supplier_name, datumNaDoklade(ulozeny.issue_date)]} />}
+          primaryAction={
+            stavDokladu === "new" ? (
+              <PrimarnaAkcia onClick={() => void spracuj()}>
+                <CheckCircle2 /> {t("Spracovať")}
+              </PrimarnaAkcia>
+            ) : null
+          }
+          secondaryActions={
+            <>
+              <SekundarnaAkcia ikona={Pencil} label={t("Upraviť")} onClick={() => setUprava(true)} />
+              <SekundarnaAkcia
+                ikona={MessageSquare}
+                label={t("Komentáre")}
+                onClick={() =>
+                  document.getElementById("komentare")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                }
+              />
+              {!ulozeny.exported_at ? (
+                <SekundarnaAkcia ikona={Trash2} label={t("Vymazať")} onClick={() => void zmazDoklad()} />
+              ) : null}
+              {cid ? (
+                <DokladPoradie
+                  tabulka="expense_documents"
+                  companyId={cid}
+                  id={ulozeny.id}
+                  createdAt={ulozeny.created_at}
+                  onOtvor={(id) => navigate({ to: "/doklady/novy", search: { id } as any })}
+                />
+              ) : null}
+            </>
+          }
+          menuActions={
+            <>
+              <MenuSkupina label={t("Úpravy a zaúčtovanie")}>
+                {ulozeny.exported_at ? (
+                  <MenuAkcia ikona={SendHorizontal} onClick={() => void vratZPohody()}>
+                    {t("Poslať opravu do Pohody")}
+                  </MenuAkcia>
+                ) : (
+                  <MenuAkcia ikona={ulozeny.locked_at ? LockOpen : Lock} onClick={() => void prepniZamok()}>
+                    {ulozeny.locked_at ? t("Odomknúť úpravy") : t("Zamknúť proti úpravám")}
+                  </MenuAkcia>
+                )}
+              </MenuSkupina>
+              <MenuSkupina label={t("Ostatné")}>
+                <MenuAkcia
+                  ikona={ExternalLink}
+                  onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
+                >
+                  {t("Otvoriť v novej karte")}
+                </MenuAkcia>
+                {preview ? (
+                  <MenuAkcia ikona={Printer} onClick={stiahniSubor}>
+                    {t("Vytlačiť / stiahnuť doklad")}
+                  </MenuAkcia>
+                ) : null}
+                {ulozeny.file_path && !ulozeny.exported_at ? (
+                  <MenuAkcia ikona={Paperclip} onClick={() => setPresunPrilohy(true)}>
+                    {t("Presunúť ako prílohu")}
+                  </MenuAkcia>
+                ) : null}
+              </MenuSkupina>
+            </>
+          }
+        />
+        <PageBody>
+          {ulozeny.inbox_message_id ? (
+            <div className="mx-auto mb-3 flex max-w-6xl justify-end">
+              <ZdrojovyMailTlacidlo druh="doklad" id={ulozeny.id} inboxMessageId={ulozeny.inbox_message_id} />
+            </div>
+          ) : null}
+          <BlocekDetailKompaktny
+            row={ulozeny}
+            nahladUrl={preview}
+            kody={kody}
+            onZmena={() => void obnovUlozeny()}
+            onStiahni={stiahniSubor}
+          />
+          {cid ? (
+            <div className="mx-auto mt-4 max-w-6xl">
+              <SchvalovaniePanel companyId={cid} agenda="doklad" id={ulozeny.id} />
+            </div>
+          ) : null}
+          {presunPrilohy && cid ? (
+            <PresunAkoPrilohuOkno
+              companyId={cid}
+              zdroj={{ agenda: "doklad", id: ulozeny.id }}
+              onClose={() => setPresunPrilohy(false)}
+            />
+          ) : null}
+        </PageBody>
+      </>
+    );
+
+  /*
+    Uložený doklad so súborom: náhľad dokladu vľavo vedľa formulára (na
+    širokej obrazovke), aby sa údaje dali kontrolovať bez otvárania súboru.
+  */
+  const nahladVedla = Boolean(search.id && preview);
+
   return (
     <>
       <PageHeader
@@ -656,7 +808,39 @@ function NovyDokladPage() {
         }
       />
       <PageBody>
-        <div className="mx-auto max-w-3xl space-y-5">
+        <div
+          className={
+            nahladVedla
+              ? "grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,48rem)]"
+              : "mx-auto max-w-3xl"
+          }
+        >
+          {nahladVedla ? (
+            <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
+              <NahladDokladuNastroje
+                url={preview}
+                mime={nahladJePdf ? "application/pdf" : uploadedFile?.mime ?? "image/jpeg"}
+              />
+            </div>
+          ) : null}
+        <div className="min-w-0 space-y-5">
+          {kompaktne && search.id && ulozeny ? (
+            <button
+              type="button"
+              onClick={() => setUprava(false)}
+              className="text-sm text-primary hover:underline"
+            >
+              {t("← Späť na detail dokladu")}
+            </button>
+          ) : null}
+          {search.id && ulozeny ? (
+            <SumarK
+              rozpis={rozpisBlocku(ulozeny)}
+              sadzby={sadzbyKrajiny(krajina, ulozeny.issue_date)}
+              mena={ulozeny.currency ?? "EUR"}
+              celkom={Number(ulozeny.total_amount ?? 0)}
+            />
+          ) : null}
           {duplikat && (
             <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <div className="font-semibold">{t("Tento bloček už vo firme máte")}</div>
@@ -751,7 +935,7 @@ function NovyDokladPage() {
             </div>
           )}
 
-          {preview && (
+          {preview && !nahladVedla && (
             <div className="overflow-hidden rounded-xl border border-border bg-card">
               {nahladJePdf ? (
                 <NahladPdf url={preview} />
@@ -1362,6 +1546,7 @@ function NovyDokladPage() {
               </button>
             </div>
           </div>
+        </div>
         </div>
       </PageBody>
     </>

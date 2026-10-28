@@ -19,6 +19,10 @@ import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
 import { dicPreRegister, ucetNaIban } from "@/lib/faktero/cz-registr-dph";
 import { useT } from "@/lib/i18n/useT";
+import { upravIban } from "@/lib/faktero/platobny-ucet";
+import { PravidloZDokladu } from "@/components/faktero/PravidloZDokladu";
+import { PrijataUpravaKompaktna } from "@/components/faktero/PrijataUpravaKompaktna";
+import type { PolozkaK } from "@/components/faktero/DetailDokladuKompaktny";
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -38,10 +42,13 @@ function addDays(iso: string, d: number) {
 export function PrijataFakturaForm({
   id,
   druh = "regular",
+  kompaktne,
 }: {
   id?: string;
   /** Predvolený druh dokladu pri zakladaní — zo zoznamu prijatých záloh. */
   druh?: "regular" | "proforma";
+  /** Kompaktné rozloženie úpravy: vľavo náhľad dokladu, vpravo panel s poliami. */
+  kompaktne?: boolean;
 }) {
   const { t } = useT();
   const upravujeme = Boolean(id);
@@ -184,6 +191,10 @@ export function PrijataFakturaForm({
   const [nenajdene, setNenajdene] = useState(false);
   /** Príloha, ktorá je na faktúre už uložená — nová ju nahradí. */
   const [prilohaCesta, setPrilohaCesta] = useState<string | null>(null);
+  const [prilohaMime, setPrilohaMime] = useState<string | null>(null);
+  /** Kódy zaúčtovania a položky — len na čítanie (pravidlo z dokladu, kompaktná úprava). */
+  const [kody, setKody] = useState({ predkontacia: "", clenenie: "", kv: "", kategoria: "" });
+  const [polozkyDokladu, setPolozkyDokladu] = useState<PolozkaK[]>([]);
 
   /*
     Faktúra v cudzej mene sa do priznania k DPH uvádza v domácej mene firmy
@@ -259,6 +270,14 @@ export function PrijataFakturaForm({
         advance_invoice_id: (data as any).advance_invoice_id ?? "",
       });
       setPrilohaCesta(data.file_path ?? null);
+      setPrilohaMime(data.file_mime ?? null);
+      setKody({
+        predkontacia: (data as any).pohoda_predkontacia ?? "",
+        clenenie: (data as any).pohoda_clenenie_dph ?? "",
+        kv: (data as any).kv_clenenie ?? "",
+        kategoria: (data as any).category ?? "",
+      });
+      setPolozkyDokladu(Array.isArray(data.items) ? (data.items as PolozkaK[]) : []);
       setNacitavam(false);
     })();
     return () => {
@@ -496,6 +515,431 @@ export function PrijataFakturaForm({
     );
   }
 
+  // Zelená fajka pri sumách a IBAN-e v kompaktnom rozložení.
+  const sumaSedi = (() => {
+    const z = sumaZPola(form.amount_without_vat || "0");
+    const d = sumaZPola(form.vat_amount || "0");
+    const c = sumaZPola(form.amount_total || "0");
+    return Number.isFinite(c) && c !== 0 && Math.abs((z || 0) + (d || 0) - c) < 0.015;
+  })();
+  const ibanOk = Boolean(form.supplier_iban.trim() && upravIban(form.supplier_iban));
+
+  /*
+    Polia formulára sú raz — klasické rozloženie ich skladá do štyroch kariet,
+    kompaktné do úzkeho panelu vedľa náhľadu dokladu (ako Nespracované).
+  */
+  const poliaDodavatela = (
+    <>
+      {dodavatelia.length > 0 && (
+        <Field label="Z adresára dodávateľov">
+          <select
+            value={znamyDodavatel?.id ?? ""}
+            onChange={(e) => vyberDodavatela(e.target.value)}
+            className="input"
+          >
+            <option value="">{t("— vybrať dodávateľa —")}</option>
+            {dodavatelia.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+                {d.ico ? ` · ${t("IČO {ico}", { ico: d.ico })}` : ""}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
+      <Field label="Názov *">
+        <input
+          required
+          value={form.supplier_name}
+          onChange={(e) => set("supplier_name", e.target.value)}
+          className="input"
+        />
+      </Field>
+      <Field label="IČO">
+        <div className="flex -space-x-px items-start">
+          <input
+            value={form.supplier_ico}
+            onChange={(e) => set("supplier_ico", e.target.value)}
+            className="input flex-1 rounded-l-md focus:z-10"
+          />
+          <IcoLookupButton
+            ico={form.supplier_ico}
+            onResult={(r) => {
+              if (r.name) set("supplier_name", r.name);
+              if (r.dic) set("supplier_dic", r.dic);
+              if (r.ic_dph) set("supplier_ic_dph", r.ic_dph);
+            }}
+          />
+        </div>
+      </Field>
+      <Field label="DIČ">
+        <input
+          value={form.supplier_dic}
+          onChange={(e) => set("supplier_dic", e.target.value)}
+          className="input"
+        />
+      </Field>
+      <Field label="IČ DPH">
+        <input
+          value={form.supplier_ic_dph}
+          onChange={(e) => set("supplier_ic_dph", e.target.value)}
+          className="input"
+        />
+      </Field>
+      <Field label="IBAN dodávateľa">
+        <input
+          value={form.supplier_iban}
+          onChange={(e) => set("supplier_iban", e.target.value)}
+          placeholder="SK00 0000 0000 0000 0000 0000"
+          className="input font-mono"
+        />
+      </Field>
+      <OverenieRegistraCz
+        dic={form.supplier_dic}
+        icDph={form.supplier_ic_dph}
+        iban={form.supplier_iban}
+      />
+      {!upravujeme && !znamyDodavatel && form.supplier_name.trim() && (
+        <label className="flex items-start gap-2 text-sm sm:col-span-2">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={pridatDoAdresara}
+            onChange={(e) => setPridatDoAdresara(e.target.checked)}
+          />
+          <span>
+            {t("Uložiť dodávateľa do adresára")}
+            <span className="block text-xs text-muted-foreground">
+              {t("Nabudúce ho vyberiete zo zoznamu a údaje sa doplnia samy.")}
+            </span>
+          </span>
+        </label>
+      )}
+    </>
+  );
+  const poliaPlatby = (
+    <>
+      <Field label="Variabilný symbol">
+        <input
+          value={form.variable_symbol}
+          onChange={(e) => set("variable_symbol", e.target.value)}
+          placeholder={form.invoice_number || t("napr. 20260112")}
+          className="input"
+        />
+      </Field>
+      <Field label="Konštantný symbol">
+        <input
+          value={form.constant_symbol}
+          onChange={(e) => set("constant_symbol", e.target.value)}
+          inputMode="numeric"
+          maxLength={4}
+          className="input"
+        />
+      </Field>
+      <Field label="Špecifický symbol">
+        <input
+          value={form.specific_symbol}
+          onChange={(e) => set("specific_symbol", e.target.value)}
+          inputMode="numeric"
+          maxLength={10}
+          className="input"
+        />
+      </Field>
+      <Field label="Číslo objednávky">
+        <input
+          value={form.order_number}
+          onChange={(e) => set("order_number", e.target.value)}
+          className="input"
+        />
+      </Field>
+      <Field label="Číslo dodacieho listu">
+        <input
+          value={form.delivery_note_number}
+          onChange={(e) => set("delivery_note_number", e.target.value)}
+          className="input"
+        />
+      </Field>
+    </>
+  );
+  const poliaFaktury = (
+    <>
+      <Field label="Druh dokladu">
+        <select
+          value={form.type}
+          onChange={(e) => set("type", e.target.value as "regular" | "proforma")}
+          className="input"
+        >
+          <option value="regular">{t("Prijatá faktúra (daňový doklad)")}</option>
+          <option value="proforma">{t("Prijatá zálohová faktúra")}</option>
+        </select>
+        {form.type === "proforma" && (
+          <span className="mt-1 block text-xs text-muted-foreground">
+            {t("Do výkazov k DPH nevstupuje. Daň si odpočítate až z ostrej faktúry.")}
+          </span>
+        )}
+      </Field>
+      {form.type === "regular" && zalohy.length > 0 && (
+        <Field label="Zúčtováva prijatú zálohu">
+          <select
+            value={form.advance_invoice_id}
+            onChange={(e) => set("advance_invoice_id", e.target.value)}
+            className="input"
+          >
+            <option value="">{t("— žiadnu —")}</option>
+            {zalohy.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.invoice_number} · {formatujMenu(z.amount_total, z.currency)}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
+      <Field label="Číslo faktúry dodávateľa *">
+        <input
+          required
+          value={form.invoice_number}
+          onChange={(e) => set("invoice_number", e.target.value)}
+          className="input"
+        />
+      </Field>
+      <Field label="Dátum vystavenia">
+        <input
+          type="date"
+          required
+          value={form.issue_date}
+          onChange={(e) => set("issue_date", e.target.value)}
+          className="input"
+        />
+      </Field>
+      {/* Dátum dodania = deň daňového plnenia: rozhoduje o období DPH
+        a ide do kontrolného výkazu aj do Pohody (dateTax). */}
+      <Field label="Dátum dodania (daňového plnenia)">
+        <input
+          type="date"
+          value={form.delivery_date}
+          onChange={(e) => set("delivery_date", e.target.value)}
+          className="input"
+        />
+        <span className="mt-1 block text-xs text-muted-foreground">
+          {t("Rozhoduje o období DPH. Prázdne = dátum vystavenia.")}
+        </span>
+      </Field>
+      <Field label="Dátum prijatia">
+        <input
+          type="date"
+          required
+          value={form.received_date}
+          onChange={(e) => set("received_date", e.target.value)}
+          className="input"
+        />
+      </Field>
+      <Field label="Dátum splatnosti">
+        <input
+          type="date"
+          required
+          value={form.due_date}
+          onChange={(e) => set("due_date", e.target.value)}
+          className="input"
+        />
+      </Field>
+      <Field label="Spôsob platby">
+        <select
+          value={form.payment_method}
+          onChange={(e) => set("payment_method", e.target.value)}
+          className="input"
+        >
+          <option value="prevod">{t("Prevod")}</option>
+          <option value="hotovost">{t("Hotovosť")}</option>
+          <option value="karta">{t("Karta")}</option>
+          <option value="dobierka">{t("Dobierka")}</option>
+          <option value="inkaso">{t("Inkaso")}</option>
+          <option value="zaloha">{t("Úhrada zálohou")}</option>
+          <option value="zapocet">{t("Zápočet")}</option>
+        </select>
+      </Field>
+      <Field label="Stav">
+        <select
+          value={form.status}
+          onChange={(e) => set("status", e.target.value as any)}
+          className="input"
+        >
+          <option value="draft">{t("Koncept")}</option>
+          <option value="received">{t("Prijaté")}</option>
+          <option value="booked">{t("Zaúčtované")}</option>
+          <option value="paid">{t("Zaplatené")}</option>
+        </select>
+      </Field>
+    </>
+  );
+  const poliaSum = (
+    <>
+      <Field label="Bez DPH">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={form.amount_without_vat}
+          onChange={(e) => set("amount_without_vat", e.target.value)}
+          className="input"
+        />
+      </Field>
+      <Field label="DPH">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={form.vat_amount}
+          onChange={(e) => set("vat_amount", e.target.value)}
+          className="input"
+        />
+      </Field>
+      <Field label="Celkom">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={form.amount_total}
+          onChange={(e) => set("amount_total", e.target.value)}
+          className="input font-semibold"
+        />
+      </Field>
+      <Field label="Mena">
+        <select
+          value={form.currency}
+          onChange={(e) => set("currency", e.target.value)}
+          className="input"
+        >
+          <option value="EUR">EUR</option>
+          <option value="CZK">CZK</option>
+          <option value="USD">USD</option>
+        </select>
+      </Field>
+    </>
+  );
+  const poliaPrilohy = (
+    <>
+      <Field label="PDF príloha">
+        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border bg-background px-4 py-6 text-sm text-muted-foreground hover:bg-muted/30">
+          <Upload className="h-4 w-4" />
+          {file
+            ? file.name
+            : prilohaCesta
+              ? t("Priložený súbor ostáva — kliknutím ho nahradíte")
+              : t("Kliknite pre výber PDF/obrázka")}
+          <input
+            type="file"
+            className="hidden"
+            accept="application/pdf,image/*"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
+        </label>
+      </Field>
+    </>
+  );
+  const poliaOstatne = (
+    <>
+      <JobPicker
+        value={form.job_id}
+        onChange={(v) => set("job_id", v)}
+        label={t("Zákazka (náklad sa započíta do jej vyhodnotenia)")}
+      />
+      <VozidloPicker value={form.vehicle_id} onChange={(v) => set("vehicle_id", v)} />
+      <Field label="Režim DPH">
+        <select
+          value={form.dph_rezim}
+          onChange={(e) => set("dph_rezim", e.target.value as typeof form.dph_rezim)}
+          className="input"
+        >
+          <option value="">{t("Určiť podľa dodávateľa")}</option>
+          <option value="tuzemsko">{t("Tuzemská faktúra od platiteľa (B.2)")}</option>
+          <option value="samozdanenie">{t("Daň platím ja — § 69 (B.1)")}</option>
+          <option value="nadobudnutie">{t("Nadobudnutie tovaru z EÚ")}</option>
+          <option value="dovoz">{t("Dovoz — daň zaplatená colnému úradu")}</option>
+          <option value="bez_dane">{t("Bez dane / od neplatiteľa")}</option>
+        </select>
+        <span className="mt-1 block text-xs text-muted-foreground">
+          {t(
+            "Rozhoduje, do ktorej časti kontrolného výkazu a do ktorého riadku priznania faktúra vstúpi.",
+          )}
+        </span>
+      </Field>
+      <Field label="Odpočítanie dane">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.odpocet}
+            onChange={(e) => set("odpocet", e.target.checked)}
+            className="h-4 w-4 rounded border-input"
+          />
+          {t("Daň si z tejto faktúry odpočítavam")}
+        </label>
+      </Field>
+      <Field label="Opravuje faktúru číslo">
+        <input
+          value={form.opravuje_cislo}
+          onChange={(e) => set("opravuje_cislo", e.target.value)}
+          placeholder={t("pri dobropise číslo pôvodnej faktúry")}
+          className="input"
+        />
+      </Field>
+      <Field label="Poznámka">
+        <textarea
+          rows={3}
+          value={form.note}
+          onChange={(e) => set("note", e.target.value)}
+          className="input"
+        />
+        <PreddefinovanaPoznamka
+          companyId={getActiveCompanyId()}
+          agenda="prijata_faktura"
+          onVyber={(text) => set("note", form.note ? `${form.note}\n${text}` : text)}
+        />
+      </Field>
+    </>
+  );
+
+  if (kompaktne && upravujeme)
+    return (
+      <PrijataUpravaKompaktna
+        titulok={t(
+          form.type === "proforma"
+            ? "Úprava prijatej zálohovej faktúry"
+            : "Úprava prijatej faktúry",
+        )}
+        priloha={prilohaCesta ? { cesta: prilohaCesta, mime: prilohaMime } : null}
+        onSubmit={submit}
+        busy={busy}
+        sumaSedi={sumaSedi}
+        ibanOk={ibanOk}
+        pravidlo={
+          <PravidloZDokladu
+            companyId={getActiveCompanyId() ?? ""}
+            tlacidlo
+            zaklad={{
+              druh: "prijata",
+              nazov: form.supplier_name,
+              ico: form.supplier_ico,
+              vs: form.variable_symbol,
+              platba: form.payment_method,
+              predkontacia: kody.predkontacia,
+              clenenie: kody.clenenie,
+              kv: kody.kv,
+              kategoria: kody.kategoria,
+            }}
+          />
+        }
+        zakladne={poliaFaktury}
+        sumy={poliaSum}
+        dodavatel={poliaDodavatela}
+        platba={poliaPlatby}
+        poznamka={
+          <>
+            {poliaOstatne}
+            {poliaPrilohy}
+          </>
+        }
+        polozky={polozkyDokladu}
+        mena={form.currency}
+      />
+    );
+
   return (
     <>
       <PageHeader
@@ -523,131 +967,8 @@ export function PrijataFakturaForm({
               {t("Dodávateľ")}
             </h3>
             <div className="grid gap-3 sm:grid-cols-2">
-              {dodavatelia.length > 0 && (
-                <Field label="Z adresára dodávateľov">
-                  <select
-                    value={znamyDodavatel?.id ?? ""}
-                    onChange={(e) => vyberDodavatela(e.target.value)}
-                    className="input"
-                  >
-                    <option value="">{t("— vybrať dodávateľa —")}</option>
-                    {dodavatelia.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                        {d.ico ? ` · ${t("IČO {ico}", { ico: d.ico })}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              )}
-              <Field label="Názov *">
-                <input
-                  required
-                  value={form.supplier_name}
-                  onChange={(e) => set("supplier_name", e.target.value)}
-                  className="input"
-                />
-              </Field>
-              <Field label="IČO">
-                <div className="flex -space-x-px items-start">
-                  <input
-                    value={form.supplier_ico}
-                    onChange={(e) => set("supplier_ico", e.target.value)}
-                    className="input flex-1 rounded-l-md focus:z-10"
-                  />
-                  <IcoLookupButton
-                    ico={form.supplier_ico}
-                    onResult={(r) => {
-                      if (r.name) set("supplier_name", r.name);
-                      if (r.dic) set("supplier_dic", r.dic);
-                      if (r.ic_dph) set("supplier_ic_dph", r.ic_dph);
-                    }}
-                  />
-                </div>
-              </Field>
-              <Field label="DIČ">
-                <input
-                  value={form.supplier_dic}
-                  onChange={(e) => set("supplier_dic", e.target.value)}
-                  className="input"
-                />
-              </Field>
-              <Field label="IČ DPH">
-                <input
-                  value={form.supplier_ic_dph}
-                  onChange={(e) => set("supplier_ic_dph", e.target.value)}
-                  className="input"
-                />
-              </Field>
-              <Field label="IBAN dodávateľa">
-                <input
-                  value={form.supplier_iban}
-                  onChange={(e) => set("supplier_iban", e.target.value)}
-                  placeholder="SK00 0000 0000 0000 0000 0000"
-                  className="input font-mono"
-                />
-              </Field>
-              <OverenieRegistraCz
-                dic={form.supplier_dic}
-                icDph={form.supplier_ic_dph}
-                iban={form.supplier_iban}
-              />
-              {!upravujeme && !znamyDodavatel && form.supplier_name.trim() && (
-                <label className="flex items-start gap-2 text-sm sm:col-span-2">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={pridatDoAdresara}
-                    onChange={(e) => setPridatDoAdresara(e.target.checked)}
-                  />
-                  <span>
-                    {t("Uložiť dodávateľa do adresára")}
-                    <span className="block text-xs text-muted-foreground">
-                      {t("Nabudúce ho vyberiete zo zoznamu a údaje sa doplnia samy.")}
-                    </span>
-                  </span>
-                </label>
-              )}
-              <Field label="Variabilný symbol">
-                <input
-                  value={form.variable_symbol}
-                  onChange={(e) => set("variable_symbol", e.target.value)}
-                  placeholder={form.invoice_number || t("napr. 20260112")}
-                  className="input"
-                />
-              </Field>
-              <Field label="Konštantný symbol">
-                <input
-                  value={form.constant_symbol}
-                  onChange={(e) => set("constant_symbol", e.target.value)}
-                  inputMode="numeric"
-                  maxLength={4}
-                  className="input"
-                />
-              </Field>
-              <Field label="Špecifický symbol">
-                <input
-                  value={form.specific_symbol}
-                  onChange={(e) => set("specific_symbol", e.target.value)}
-                  inputMode="numeric"
-                  maxLength={10}
-                  className="input"
-                />
-              </Field>
-              <Field label="Číslo objednávky">
-                <input
-                  value={form.order_number}
-                  onChange={(e) => set("order_number", e.target.value)}
-                  className="input"
-                />
-              </Field>
-              <Field label="Číslo dodacieho listu">
-                <input
-                  value={form.delivery_note_number}
-                  onChange={(e) => set("delivery_note_number", e.target.value)}
-                  className="input"
-                />
-              </Field>
+              {poliaDodavatela}
+              {poliaPlatby}
             </div>
           </section>
 
@@ -655,239 +976,22 @@ export function PrijataFakturaForm({
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Faktúra")}
             </h3>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="Druh dokladu">
-                <select
-                  value={form.type}
-                  onChange={(e) => set("type", e.target.value as "regular" | "proforma")}
-                  className="input"
-                >
-                  <option value="regular">{t("Prijatá faktúra (daňový doklad)")}</option>
-                  <option value="proforma">{t("Prijatá zálohová faktúra")}</option>
-                </select>
-                {form.type === "proforma" && (
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {t("Do výkazov k DPH nevstupuje. Daň si odpočítate až z ostrej faktúry.")}
-                  </span>
-                )}
-              </Field>
-              {form.type === "regular" && zalohy.length > 0 && (
-                <Field label="Zúčtováva prijatú zálohu">
-                  <select
-                    value={form.advance_invoice_id}
-                    onChange={(e) => set("advance_invoice_id", e.target.value)}
-                    className="input"
-                  >
-                    <option value="">{t("— žiadnu —")}</option>
-                    {zalohy.map((z) => (
-                      <option key={z.id} value={z.id}>
-                        {z.invoice_number} · {formatujMenu(z.amount_total, z.currency)}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              )}
-              <Field label="Číslo faktúry dodávateľa *">
-                <input
-                  required
-                  value={form.invoice_number}
-                  onChange={(e) => set("invoice_number", e.target.value)}
-                  className="input"
-                />
-              </Field>
-              <Field label="Dátum vystavenia">
-                <input
-                  type="date"
-                  required
-                  value={form.issue_date}
-                  onChange={(e) => set("issue_date", e.target.value)}
-                  className="input"
-                />
-              </Field>
-              {/* Dátum dodania = deň daňového plnenia: rozhoduje o období DPH
-                  a ide do kontrolného výkazu aj do Pohody (dateTax). */}
-              <Field label="Dátum dodania (daňového plnenia)">
-                <input
-                  type="date"
-                  value={form.delivery_date}
-                  onChange={(e) => set("delivery_date", e.target.value)}
-                  className="input"
-                />
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  {t("Rozhoduje o období DPH. Prázdne = dátum vystavenia.")}
-                </span>
-              </Field>
-              <Field label="Dátum prijatia">
-                <input
-                  type="date"
-                  required
-                  value={form.received_date}
-                  onChange={(e) => set("received_date", e.target.value)}
-                  className="input"
-                />
-              </Field>
-              <Field label="Dátum splatnosti">
-                <input
-                  type="date"
-                  required
-                  value={form.due_date}
-                  onChange={(e) => set("due_date", e.target.value)}
-                  className="input"
-                />
-              </Field>
-              <Field label="Spôsob platby">
-                <select
-                  value={form.payment_method}
-                  onChange={(e) => set("payment_method", e.target.value)}
-                  className="input"
-                >
-                  <option value="prevod">{t("Prevod")}</option>
-                  <option value="hotovost">{t("Hotovosť")}</option>
-                  <option value="karta">{t("Karta")}</option>
-                  <option value="dobierka">{t("Dobierka")}</option>
-                  <option value="inkaso">{t("Inkaso")}</option>
-                  <option value="zaloha">{t("Úhrada zálohou")}</option>
-                  <option value="zapocet">{t("Zápočet")}</option>
-                </select>
-              </Field>
-              <Field label="Stav">
-                <select
-                  value={form.status}
-                  onChange={(e) => set("status", e.target.value as any)}
-                  className="input"
-                >
-                  <option value="draft">{t("Koncept")}</option>
-                  <option value="received">{t("Prijaté")}</option>
-                  <option value="booked">{t("Zaúčtované")}</option>
-                  <option value="paid">{t("Zaplatené")}</option>
-                </select>
-              </Field>
-            </div>
+            <div className="grid gap-3 sm:grid-cols-3">{poliaFaktury}</div>
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Sumy")}
             </h3>
-            <div className="grid gap-3 sm:grid-cols-4">
-              <Field label="Bez DPH">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={form.amount_without_vat}
-                  onChange={(e) => set("amount_without_vat", e.target.value)}
-                  className="input"
-                />
-              </Field>
-              <Field label="DPH">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={form.vat_amount}
-                  onChange={(e) => set("vat_amount", e.target.value)}
-                  className="input"
-                />
-              </Field>
-              <Field label="Celkom">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={form.amount_total}
-                  onChange={(e) => set("amount_total", e.target.value)}
-                  className="input font-semibold"
-                />
-              </Field>
-              <Field label="Mena">
-                <select
-                  value={form.currency}
-                  onChange={(e) => set("currency", e.target.value)}
-                  className="input"
-                >
-                  <option value="EUR">EUR</option>
-                  <option value="CZK">CZK</option>
-                  <option value="USD">USD</option>
-                </select>
-              </Field>
-            </div>
+            <div className="grid gap-3 sm:grid-cols-4">{poliaSum}</div>
           </section>
 
           <section className="space-y-4 rounded-xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Príloha & poznámka")}
             </h3>
-            <Field label="PDF príloha">
-              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border bg-background px-4 py-6 text-sm text-muted-foreground hover:bg-muted/30">
-                <Upload className="h-4 w-4" />
-                {file
-                  ? file.name
-                  : prilohaCesta
-                    ? t("Priložený súbor ostáva — kliknutím ho nahradíte")
-                    : t("Kliknite pre výber PDF/obrázka")}
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="application/pdf,image/*"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                />
-              </label>
-            </Field>
-            <JobPicker
-              value={form.job_id}
-              onChange={(v) => set("job_id", v)}
-              label={t("Zákazka (náklad sa započíta do jej vyhodnotenia)")}
-            />
-            <VozidloPicker value={form.vehicle_id} onChange={(v) => set("vehicle_id", v)} />
-            <Field label="Režim DPH">
-              <select
-                value={form.dph_rezim}
-                onChange={(e) => set("dph_rezim", e.target.value as typeof form.dph_rezim)}
-                className="input"
-              >
-                <option value="">{t("Určiť podľa dodávateľa")}</option>
-                <option value="tuzemsko">{t("Tuzemská faktúra od platiteľa (B.2)")}</option>
-                <option value="samozdanenie">{t("Daň platím ja — § 69 (B.1)")}</option>
-                <option value="nadobudnutie">{t("Nadobudnutie tovaru z EÚ")}</option>
-                <option value="dovoz">{t("Dovoz — daň zaplatená colnému úradu")}</option>
-                <option value="bez_dane">{t("Bez dane / od neplatiteľa")}</option>
-              </select>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                {t(
-                  "Rozhoduje, do ktorej časti kontrolného výkazu a do ktorého riadku priznania faktúra vstúpi.",
-                )}
-              </span>
-            </Field>
-            <Field label="Odpočítanie dane">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.odpocet}
-                  onChange={(e) => set("odpocet", e.target.checked)}
-                  className="h-4 w-4 rounded border-input"
-                />
-                {t("Daň si z tejto faktúry odpočítavam")}
-              </label>
-            </Field>
-            <Field label="Opravuje faktúru číslo">
-              <input
-                value={form.opravuje_cislo}
-                onChange={(e) => set("opravuje_cislo", e.target.value)}
-                placeholder={t("pri dobropise číslo pôvodnej faktúry")}
-                className="input"
-              />
-            </Field>
-            <Field label="Poznámka">
-              <textarea
-                rows={3}
-                value={form.note}
-                onChange={(e) => set("note", e.target.value)}
-                className="input"
-              />
-              <PreddefinovanaPoznamka
-                companyId={getActiveCompanyId()}
-                agenda="prijata_faktura"
-                onVyber={(text) => set("note", form.note ? `${form.note}\n${text}` : text)}
-              />
-            </Field>
+            {poliaPrilohy}
+            {poliaOstatne}
           </section>
 
           <div className="flex justify-end gap-2">

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Paperclip, Download, Trash2, Upload, Loader2 } from "lucide-react";
+import { Paperclip, Download, Trash2, Upload, Loader2, FileText } from "lucide-react";
 import {
   MAX_PRILOH,
   PRIPONY_PRE_VYBER,
@@ -52,6 +52,8 @@ export function PrilohyFaktury({
   dokladId,
   mozeMenit,
   onZmena,
+  kompaktne,
+  hlavny,
 }: {
   /** Faktúra, cenová ponuka alebo prijatá objednávka. */
   druh?: DruhSPrilohou;
@@ -59,6 +61,13 @@ export function PrilohyFaktury({
   /** Stornovaný alebo odovzdaný doklad sa už needituje. */
   mozeMenit: boolean;
   onZmena?: (pocet: number) => void;
+  /**
+   * Kompaktné rozloženie detailu: pole na pretiahnutie súborov ostáva vždy,
+   * súbory ako dlaždice s náhľadom a tlačidlo Stiahnuť všetky.
+   */
+  kompaktne?: boolean;
+  /** Súbor samotného dokladu — v kompaktnom rozložení prvá dlaždica. */
+  hlavny?: { nazov: string; url: string | null; mime: string | null; stiahni: () => void } | null;
 }) {
   const { t } = useT();
   const nacitaj = useServerFn(prilohyFakturyFn);
@@ -134,6 +143,138 @@ export function PrilohyFaktury({
     } catch (e) {
       toast.error(t(hlaska(e, "Prílohu sa nepodarilo zmazať.")));
     }
+  }
+
+  async function stiahniVsetky() {
+    hlavny?.stiahni();
+    for (const p of prilohy) await stiahni(p);
+  }
+
+  if (kompaktne) {
+    const dlazdica =
+      "group relative flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-background";
+    return (
+      <section
+        aria-label={t("Prílohy")}
+        className="rounded-xl border border-border bg-card p-4 sm:p-5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-base font-semibold">
+            {t("Prílohy")}
+            {prilohy.length + (hlavny ? 1 : 0) > 0 ? (
+              <span className="text-sm font-normal text-muted-foreground">
+                ({prilohy.length + (hlavny ? 1 : 0)})
+              </span>
+            ) : null}
+          </h2>
+          {prilohy.length + (hlavny ? 1 : 0) > 1 ? (
+            <button
+              type="button"
+              onClick={() => void stiahniVsetky()}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs hover:bg-secondary"
+            >
+              <Download className="h-3.5 w-3.5" /> {t("Stiahnuť všetky prílohy")}
+            </button>
+          ) : null}
+        </div>
+        <input
+          ref={vstup}
+          type="file"
+          multiple
+          accept={PRIPONY_PRE_VYBER}
+          className="hidden"
+          onChange={(e) => {
+            void pridaj(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        {mozeMenit ? (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => vstup.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") vstup.current?.click();
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setNadSchrankou(true);
+            }}
+            onDragLeave={() => setNadSchrankou(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setNadSchrankou(false);
+              void pridaj(e.dataTransfer.files);
+            }}
+            className={`mt-3 flex cursor-pointer flex-wrap items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4 text-center text-sm text-muted-foreground ${
+              nadSchrankou ? "border-primary bg-primary/5" : "border-border hover:bg-secondary/40"
+            }`}
+          >
+            {pracujem ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            {t("Pretiahnite sem súbor alebo ho vyberte (najviac {n} príloh)", { n: MAX_PRILOH })}
+          </div>
+        ) : null}
+        {hlavny || prilohy.length ? (
+          <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {hlavny ? (
+              <li className={dlazdica}>
+                <button
+                  type="button"
+                  onClick={hlavny.stiahni}
+                  className="block h-28 w-full bg-muted/30"
+                  title={hlavny.nazov}
+                >
+                  {hlavny.url && (hlavny.mime ?? "").startsWith("image/") ? (
+                    <img src={hlavny.url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
+                  )}
+                </button>
+                <span className="truncate px-2 py-1.5 text-xs font-medium" title={hlavny.nazov}>
+                  {hlavny.nazov}
+                </span>
+              </li>
+            ) : null}
+            {prilohy.map((p) => (
+              <li key={p.id} className={dlazdica}>
+                <button
+                  type="button"
+                  onClick={() => void stiahni(p)}
+                  className="grid h-28 w-full place-items-center bg-muted/30"
+                  title={p.name}
+                >
+                  <FileText className="h-10 w-10 text-muted-foreground" />
+                </button>
+                <span className="flex min-w-0 items-center gap-1 px-2 py-1.5 text-xs">
+                  <span className="min-w-0 flex-1 truncate font-medium" title={p.name}>
+                    {p.name}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-muted-foreground">
+                    {velkost(p.size)}
+                  </span>
+                </span>
+                {mozeMenit ? (
+                  <button
+                    type="button"
+                    onClick={() => void odstran(p)}
+                    aria-label={t("Zmazať {nazov}", { nazov: p.name })}
+                    className="absolute right-1 top-1 rounded-md bg-card/90 p-1 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : !mozeMenit ? (
+          <p className="mt-3 text-sm text-muted-foreground">{t("Doklad nemá prílohy.")}</p>
+        ) : null}
+      </section>
+    );
   }
 
   return (
