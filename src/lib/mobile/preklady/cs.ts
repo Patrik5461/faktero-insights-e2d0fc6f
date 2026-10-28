@@ -593,6 +593,11 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.zaregistrujteSa": "Zaregistrujte se",
   "app.zabudnuteHeslo": "Zapomenuté heslo si obnovíte na faktero.sk.",
   "app.zabudliHeslo": "Zapomněli jste heslo?",
+  "app.qrPrihlasenie": "Přihlásit se QR kódem z webu",
+  "app.qrPrihlasenieNapoveda": "Na webu Faktero otevřete Přihlásit aplikaci v telefonu a naskenujte zobrazený kód.",
+  "app.qrNieJeKod": "Toto není kód pro přihlášení z webu Faktero.",
+  "app.qrPrihlasenieNapovedaJazdy": "Na webu otevřete Přihlásit aplikaci v telefonu a naskenujte zobrazený kód.",
+  "app.qrNieJeKodJazdy": "Toto není kód pro přihlášení z webu.",
   "app.zadajteEmailPreHeslo": "Nejprve zadejte e-mail, na který pošleme odkaz na nové heslo.",
   "app.odkazNaHesloOdoslany":
     "Pokud k adrese {email} existuje účet, poslali jsme na ni odkaz na nové heslo.",

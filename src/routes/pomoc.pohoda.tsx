@@ -312,6 +312,11 @@ const sections: HelpSection[] = [
             nefakturujete. Zmenený kontakt sa prepíše, nezaloží sa druhý.
           </li>
           <li>
+            <strong>IČO z mena</strong> — partner bez IČO (zahraničná firma, fyzická osoba) dostane
+            stabilný náhradný identifikátor odvodený z mena a krajiny (napr. FK3A9F12C0), takže ho
+            Pohoda v adresári spáruje vždy s tou istou kartou.
+          </li>
+          <li>
             <strong>skladové karty</strong> — číselník zásob. Potrebuje vyplnené členenie skladu.
           </li>
           <li>
@@ -594,6 +599,69 @@ const sections: HelpSection[] = [
           daňovej povinnosti“ a kontrolným výkazom B.1. Daňový doklad k prijatej platbe ide medzi
           interné doklady. Z Pohody sa okrem predkontácií načítajú aj <strong>zákazky</strong>{" "}
           (založia sa aj vo Fakteri s rovnakým číslom) a <strong>bankové účty</strong>.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "nastavenia-exportu",
+    title: "Nastavenia exportu do účtovného programu",
+    body: (
+      <>
+        <p>
+          Na stránke <Link to="/uctovnictvo/predkontacie">Predkontácie</Link> v časti{" "}
+          <em>Export do účtovného programu</em> nastavíte, ako doklady prídu do Pohody. Predvolené
+          voľby posielajú doklady tak ako doteraz.
+        </p>
+        <ul>
+          <li>
+            <strong>Dátum zápisu</strong> prijatých dokladov — dátum vyhotovenia, dodania alebo
+            doručenia (pri bločku dátum uloženia).
+          </li>
+          <li>
+            <strong>Dátum odpočtu DPH</strong> — dátum dodania, zaúčtovania, doručenia alebo
+            neskorší z dodania a doručenia. DPH sa podľa zákona odpočíta najskôr v období, keď
+            faktúru máte; keď faktúra príde až v ďalšom mesiaci, zvoľte doručenie alebo neskorší
+            dátum.
+          </li>
+          <li>
+            <strong>Text dokladu</strong> a <strong>internú poznámku</strong> — popis plnenia, názov
+            predkontácie, poznámku alebo dodávateľa s číslom dokladu.
+          </li>
+          <li>
+            <strong>Export partnera do adresára</strong> — pri párovaní ide karta partnera do
+            adresára Pohody pred dokladom a doklad sa na ňu odvolá.
+          </li>
+          <li>
+            <strong>Daňové doklady k prijatej platbe</strong> ako interné doklady alebo ako vydané
+            faktúry (s predkontáciou zálohovej faktúry).
+          </li>
+          <li>
+            <strong>Položky z rozpisu DPH</strong> pre doklad bez položiek a{" "}
+            <strong>názov položiek odpočtu zálohy</strong> (číslo dokladu alebo sadzba DPH).
+          </li>
+        </ul>
+        <p>
+          Pri viacerých bankových účtoch zadajte pri každom účte vo{" "}
+          <Link to="/firma">Firma → Bankové účty</Link> jeho skratku v Pohode — faktúra pôjde so
+          skratkou účtu, na ktorý sa má platiť.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "konvertor",
+    title: "Konvertor z Excelu do Pohody",
+    body: (
+      <>
+        <p>
+          V <Link to="/uctovnictvo/konvertor">Účtovníctvo → Konvertor Excel → Pohoda</Link> si
+          stiahnete šablónu pre vydané faktúry, prijaté faktúry alebo bločky, vyplníte ju v Exceli a
+          nahráte späť. Faktero z nej poskladá dávku XML s predkontáciami a nastaveniami firmy.
+        </p>
+        <p>
+          Riadky s rovnakým číslom dokladu sa spoja do jedného dokladu. Do Faktera sa nič neukladá —
+          XML sa len stiahne a naimportujete ho v Pohode.
         </p>
       </>
     ),

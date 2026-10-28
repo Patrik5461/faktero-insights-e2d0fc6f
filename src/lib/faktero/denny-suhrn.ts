@@ -48,6 +48,8 @@ const OBLAST_AGENDY: Record<string, Oblast> = {
   doklad: "doklady",
   prijata: "doklady",
   vystavena: "faktury",
+  nespracovany: "doklady",
+  vyuctovanie: "doklady",
 };
 
 const ROLY_POHLADAVOK = ["owner", "admin", "accountant"];

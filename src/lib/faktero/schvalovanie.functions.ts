@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { AgendaSchvalovania } from "./schvalovanie";
 
 /*
   Schvaľovanie dokladov. Čítanie ide cez prihláseného (RLS); zápis cez
@@ -8,16 +9,25 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
   urobiť — inak by si zamestnanec mohol doklad schváliť sám cez API.
 */
 
-const Agenda = z.enum(["doklad", "prijata", "vystavena"]);
+const Agenda = z.enum(["doklad", "prijata", "vystavena", "nespracovany", "vyuctovanie"]);
 
-async function rolaVoFirme(supabase: any, companyId: string, userId: string): Promise<string | null> {
+/** Rola a uložené povolenia na schvaľovanie (filtrované na seba). */
+async function clenVoFirme(
+  supabase: any,
+  companyId: string,
+  userId: string,
+): Promise<{ rola: string | null; prava: unknown }> {
   const { data } = await supabase
     .from("company_users")
-    .select("role")
+    .select("role, schvalovanie_prava")
     .eq("company_id", companyId)
     .eq("user_id", userId)
     .maybeSingle();
-  return (data?.role ?? null) as string | null;
+  return { rola: (data?.role ?? null) as string | null, prava: data?.schvalovanie_prava ?? null };
+}
+
+async function rolaVoFirme(supabase: any, companyId: string, userId: string): Promise<string | null> {
+  return (await clenVoFirme(supabase, companyId, userId)).rola;
 }
 
 async function admin() {
@@ -40,8 +50,10 @@ export const nastavenieSchvalovaniaFn = createServerFn({ method: "POST" })
         const a = await admin();
         const { data: cu } = await a
           .from("company_users")
-          .select("user_id, role")
-          .eq("company_id", data.company_id);
+          .select("user_id, role, schvalovanie_prava, podpora_pristup_id")
+          .eq("company_id", data.company_id)
+          // Technická podpora má prístup len dočasne — schvaľovateľom nie je.
+          .is("podpora_pristup_id", null);
         const ids = (cu ?? []).map((r: any) => r.user_id);
         const { data: prof } = ids.length
           ? await a.from("profiles").select("id, email, full_name").in("id", ids)
@@ -50,6 +62,7 @@ export const nastavenieSchvalovaniaFn = createServerFn({ method: "POST" })
         return (cu ?? []).map((r: any) => ({
           id: r.user_id as string,
           rola: r.role as string,
+          prava: (r.schvalovanie_prava ?? null) as Record<string, boolean> | null,
           meno: ((p.get(r.user_id) as any)?.full_name || (p.get(r.user_id) as any)?.email || "používateľ") as string,
         }));
       })(),
@@ -64,7 +77,7 @@ export const ulozNastavenieSchvalovaniaFn = createServerFn({ method: "POST" })
       .object({
         company_id: z.string().uuid(),
         zapnute: z.boolean(),
-        agendy: z.array(Agenda).max(3),
+        agendy: z.array(Agenda).max(5),
         autoPod: z.number().min(0).nullable().optional(),
         odoslanie: z.boolean(),
       })
@@ -88,6 +101,61 @@ export const ulozNastavenieSchvalovaniaFn = createServerFn({ method: "POST" })
       .eq("id", data.company_id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/**
+ * Povolenia po používateľoch (Schvaľovanie, Zrušenie schválenia, Vrátenie,
+ * Zamietnutie). `null` vráti človeka na správanie podľa roly. Majiteľovi sa
+ * nič neukladá — má vždy všetko.
+ */
+export const ulozPravaSchvalovaniaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        prava: z
+          .array(
+            z.object({
+              user_id: z.string().uuid(),
+              prava: z
+                .object({
+                  schvalit: z.boolean(),
+                  zrusit: z.boolean(),
+                  vratit: z.boolean(),
+                  zamietnut: z.boolean(),
+                })
+                .nullable(),
+            }),
+          )
+          .max(500),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const rola = await rolaVoFirme(context.supabase, data.company_id, context.userId);
+    if (!["owner", "admin"].includes(String(rola)))
+      throw new Error("Povolenia nastavuje majiteľ alebo správca firmy.");
+    const a = await admin();
+    const { data: clenovia } = await a
+      .from("company_users")
+      .select("user_id, role, podpora_pristup_id")
+      .eq("company_id", data.company_id);
+    const podlaId = new Map((clenovia ?? []).map((c: any) => [c.user_id as string, c]));
+    let ulozene = 0;
+    for (const r of data.prava) {
+      const c: any = podlaId.get(r.user_id);
+      // Len členovia tejto firmy; majiteľ a dočasná podpora sa nemenia.
+      if (!c || c.role === "owner" || c.podpora_pristup_id) continue;
+      const { error } = await a
+        .from("company_users")
+        .update({ schvalovanie_prava: r.prava })
+        .eq("company_id", data.company_id)
+        .eq("user_id", r.user_id);
+      if (error) throw new Error(error.message);
+      ulozene++;
+    }
+    return { ulozene };
   });
 
 export const ulozCestuFn = createServerFn({ method: "POST" })
@@ -162,7 +230,7 @@ export const stavSchvalovaniaFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const rola = await rolaVoFirme(supabase, data.company_id, context.userId);
+    const { rola, prava } = await clenVoFirme(supabase, data.company_id, context.userId);
     if (!rola) throw new Error("Do firmy nemáte prístup.");
     const { nastavenieFirmy, zabezpecSchvalovanie } = await import("./schvalovanie.server");
     const n = await nastavenieFirmy(supabase, data.company_id);
@@ -177,7 +245,7 @@ export const stavSchvalovaniaFn = createServerFn({ method: "POST" })
     const stavy: Record<string, { stav: string; odznak: string; mozem: boolean }> = {};
     for (const r of riadky ?? []) {
       const s = { ...r, urovne: nacitajUrovne(r.urovne) };
-      stavy[r.doklad_id] = { stav: r.stav, odznak: odznak(s), mozem: mozeSchvalit(s, context.userId, rola) };
+      stavy[r.doklad_id] = { stav: r.stav, odznak: odznak(s), mozem: mozeSchvalit(s, context.userId, rola, prava) };
     }
     return { zapnute: true, stavy };
   });
@@ -190,7 +258,7 @@ export const detailSchvalovaniaFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const rola = await rolaVoFirme(supabase, data.company_id, context.userId);
+    const { rola, prava } = await clenVoFirme(supabase, data.company_id, context.userId);
     if (!rola) throw new Error("Do firmy nemáte prístup.");
     const { nastavenieFirmy, zabezpecSchvalovanie } = await import("./schvalovanie.server");
     const n = await nastavenieFirmy(supabase, data.company_id);
@@ -214,7 +282,7 @@ export const detailSchvalovaniaFn = createServerFn({ method: "POST" })
     const mena: Record<string, string> = Object.fromEntries(
       (prof ?? []).map((p: any) => [p.id, p.full_name || p.email || "používateľ"]),
     );
-    const { mozeSchvalit, mozeZrusit, nacitajUrovne, odznak } = await import("./schvalovanie");
+    const { mozeRozhodnut, mozeZrusit, nacitajUrovne, odznak } = await import("./schvalovanie");
     const z0 = { ...s, urovne: nacitajUrovne(s.urovne) };
     const { data: cesty } = await supabase
       .from("schvalovacie_cesty")
@@ -231,8 +299,10 @@ export const detailSchvalovaniaFn = createServerFn({ method: "POST" })
         cestaId: s.cesta_id as string | null,
       },
       historia: (hist ?? []).map((h: any) => ({ ...h, meno: h.user_id ? mena[h.user_id] ?? "používateľ" : "Faktero" })),
-      mozem: mozeSchvalit(z0, context.userId, rola),
-      mozemZrusit: mozeZrusit(z0, context.userId, rola),
+      mozem: mozeRozhodnut(z0, context.userId, rola, "schvalit", prava),
+      mozemVratit: mozeRozhodnut(z0, context.userId, rola, "vratit", prava),
+      mozemZamietnut: mozeRozhodnut(z0, context.userId, rola, "zamietnut", prava),
+      mozemZrusit: mozeZrusit(z0, context.userId, rola, prava),
       mozemPriradit: ["owner", "admin", "accountant"].includes(rola),
       cesty: (cesty ?? []) as { id: string; nazov: string }[],
     } as const;
@@ -254,7 +324,7 @@ export const rozhodnutieFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const rola = await rolaVoFirme(supabase, data.company_id, context.userId);
+    const { rola, prava } = await clenVoFirme(supabase, data.company_id, context.userId);
     if (!rola) throw new Error("Do firmy nemáte prístup.");
     const a = await admin();
     const { zabezpecSchvalovanie } = await import("./schvalovanie.server");
@@ -265,7 +335,7 @@ export const rozhodnutieFn = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id)
       .eq("agenda", data.agenda)
       .in("doklad_id", data.ids);
-    const { mozeSchvalit, mozeZrusit, nacitajUrovne, poSchvaleni, urovenPouzivatela } = await import("./schvalovanie");
+    const { mozeRozhodnut, mozeZrusit, nacitajUrovne, poSchvaleni, urovenPouzivatela } = await import("./schvalovanie");
     let hotovo = 0;
     const preskocene: string[] = [];
     for (const r of riadky ?? []) {
@@ -273,22 +343,22 @@ export const rozhodnutieFn = createServerFn({ method: "POST" })
       let zmena: Record<string, unknown> | null = null;
       let akcia = "";
       if (data.akcia === "schvalit") {
-        if (!mozeSchvalit(s, context.userId, rola)) {
+        if (!mozeRozhodnut(s, context.userId, rola, "schvalit", prava)) {
           preskocene.push(r.doklad_id);
           continue;
         }
         zmena = poSchvaleni(s, context.userId);
         akcia = "schvalil";
       } else if (data.akcia === "zrusit") {
-        if (!mozeZrusit(s, context.userId, rola)) {
+        if (!mozeZrusit(s, context.userId, rola, prava)) {
           preskocene.push(r.doklad_id);
           continue;
         }
         zmena = { stav: "caka", schvalena_uroven: 0 };
         akcia = "zrusil";
       } else {
-        // Zamietnuť či vrátiť smie ten, kto by smel schváliť.
-        if (!mozeSchvalit(s, context.userId, rola)) {
+        // Zamietnuť či vrátiť smie ten, kto je na rade a má na to povolenie.
+        if (!mozeRozhodnut(s, context.userId, rola, data.akcia, prava)) {
           preskocene.push(r.doklad_id);
           continue;
         }
@@ -327,9 +397,10 @@ export const priraditCestuFn = createServerFn({ method: "POST" })
     const { tabulkaAgendy } = await import("./schvalovanie.server");
     const { rozvinUrovne, nacitajUrovne } = await import("./schvalovanie");
     // Doklad musí patriť tej istej firme — inak by upsert prepísal schvaľovanie cudzej firmy.
+    const zdroj = tabulkaAgendy(data.agenda);
     const { data: dok } = await a
-      .from(tabulkaAgendy(data.agenda).tabulka)
-      .select("job_id")
+      .from(zdroj.tabulka)
+      .select(zdroj.zakazka ? "id, job_id" : "id")
       .eq("id", data.id)
       .eq("company_id", data.company_id)
       .maybeSingle();
@@ -371,14 +442,14 @@ export const cakajuNaMnaFn = createServerFn({ method: "POST" })
   .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const rola = await rolaVoFirme(supabase, data.company_id, context.userId);
+    const { rola, prava } = await clenVoFirme(supabase, data.company_id, context.userId);
     if (!rola) throw new Error("Do firmy nemáte prístup.");
     const { nastavenieFirmy, zabezpecSchvalovanie, tabulkaAgendy } = await import("./schvalovanie.server");
     const n = await nastavenieFirmy(supabase, data.company_id);
     if (!n.zapnute) return { zapnute: false, polozky: [] };
     const a = await admin();
     // Doklady od zapnutia, ktoré ešte nemajú záznam, sa doplnia.
-    for (const agenda of n.agendy as ("doklad" | "prijata" | "vystavena")[]) {
+    for (const agenda of n.agendy as AgendaSchvalovania[]) {
       const t = tabulkaAgendy(agenda);
       let q = a.from(t.tabulka).select("id").eq("company_id", data.company_id).order("created_at", { ascending: false }).limit(300);
       if (n.od) q = q.gte("created_at", n.od);
@@ -392,27 +463,27 @@ export const cakajuNaMnaFn = createServerFn({ method: "POST" })
       .in("stav", ["caka", "vrateny"])
       .order("created_at", { ascending: false })
       .limit(500);
-    const { mozeSchvalit, nacitajUrovne, odznak } = await import("./schvalovanie");
-    const moje = (caka ?? []).filter((r: any) => mozeSchvalit({ ...r, urovne: nacitajUrovne(r.urovne) }, context.userId, rola));
+    const { mozeSchvalit, nacitajUrovne, odznak, AGENDY_SCHVALOVANIA } = await import("./schvalovanie");
+    const moje = (caka ?? []).filter((r: any) =>
+      mozeSchvalit({ ...r, urovne: nacitajUrovne(r.urovne) }, context.userId, rola, prava),
+    );
     const polozky: any[] = [];
-    for (const agenda of ["doklad", "prijata", "vystavena"] as const) {
+    for (const agenda of AGENDY_SCHVALOVANIA) {
       const ids = moje.filter((r: any) => r.agenda === agenda).map((r: any) => r.doklad_id);
       if (!ids.length) continue;
       const t = tabulkaAgendy(agenda);
-      const { data: d } = await supabase
-        .from(t.tabulka)
-        .select(`id, issue_date, currency, ${t.cislo}, ${t.partner}, ${t.suma}`)
-        .in("id", ids);
-      for (const x of d ?? []) {
+      const { data: d } = await supabase.from(t.tabulka).select(t.zoznam).in("id", ids);
+      for (const x of (d ?? []) as any[]) {
         const r = moje.find((m: any) => m.doklad_id === x.id && m.agenda === agenda);
+        const suma = x.suma != null && x.suma !== "" ? Number(x.suma) : null;
         polozky.push({
           agenda,
           id: x.id,
-          cislo: x[t.cislo],
-          partner: x[t.partner],
-          suma: Number(x[t.suma] ?? 0),
-          mena: x.currency ?? "EUR",
-          datum: x.issue_date,
+          cislo: x.cislo ?? x.subor ?? null,
+          partner: x.partner ?? null,
+          suma: suma != null && Number.isFinite(suma) ? suma : null,
+          mena: x.mena || "EUR",
+          datum: x.datum ?? null,
           stav: r.stav,
           odznak: odznak({ ...r, urovne: nacitajUrovne(r.urovne) }),
         });

@@ -62,11 +62,16 @@ export const previewReminderFn = createServerFn({ method: "POST" })
         .maybeSingle();
       recipient = c?.email ?? "";
     }
-    const { buildReminderContent, prvaOdoslanaUpomienka } = await import("./reminders.server");
+    const { buildReminderContent, prvaOdoslanaUpomienka, sablonaUpomienky } =
+      await import("./reminders.server");
+    // Faktúru prečítal prihlásený cez RLS — šablóny jej firmy smie vidieť tiež.
+    const sablona = await sablonaUpomienky(inv.company_id, inv, company, data.reminderNumber);
     const built = buildReminderContent({
       invoice: inv,
       company,
       reminderNumber: data.reminderNumber as 1 | 2 | 3,
+      overrideSubject: sablona.subject,
+      overrideMessage: sablona.body,
       prvaUpomienka: await prvaOdoslanaUpomienka(context.supabase, inv.id),
     });
     return {

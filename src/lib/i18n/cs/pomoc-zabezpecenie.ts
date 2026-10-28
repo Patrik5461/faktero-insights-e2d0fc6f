@@ -32,4 +32,6 @@ export default {
     "Účet lze zrušit z nastavení; pro potvrzení je třeba zadat heslo, aby to nemohl udělat nikdo, kdo se dostane k odemčenému telefonu. Mazání má <0>14denní odklad</0> — do té doby se lze vrátit zpět přihlášením.",
   "Pred zrušením si stiahnite doklady. Povinnosť uchovávať účtovné doklady <0>desať rokov</0> platí ďalej a zrušením účtu nezaniká.":
     "Před zrušením si stáhněte doklady. Povinnost uchovávat účetní doklady <0>deset let</0> platí dál a zrušením účtu nezaniká.",
+  "Súbory otvorí Excel bez nastavovania. Odkaz na stiahnutie platí sedem dní; balík sa dá pripraviť kedykoľvek znova. Pravidelný archív so všetkými PDF a skenmi dokladov si majiteľ alebo admin vytvorí v <0>Nastavenia → Zálohy dokladov</0> — beží na pozadí, ponecháva sa posledných päť záloh.":
+    "Soubory otevře Excel bez nastavování. Odkaz ke stažení platí sedm dní; balík lze kdykoli připravit znovu. Pravidelný archiv se všemi PDF a skeny dokladů si vlastník nebo admin vytvoří v <0>Nastavení → Zálohy dokladů</0> — běží na pozadí, ponechává se posledních pět záloh.",
 } satisfies Record<string, string>;

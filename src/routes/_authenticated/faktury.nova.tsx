@@ -1,4 +1,6 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
+import { UctovneNastaveniaFaktury } from "@/components/faktero/UctovneNastaveniaFaktury";
+import { datumPoDnoch, dniMedzi } from "@/lib/faktero/splatnost-dni";
 import { RozpisDph } from "@/components/faktero/RozpisDph";
 import { rozpisPodlaSadzieb } from "@/lib/faktero/rozpis-dph";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -41,6 +43,8 @@ import {
   Link2,
   FileDown,
   Percent,
+  Mail,
+  Truck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
@@ -80,6 +84,9 @@ import { SADZBY_EU, sadzbyStatu, zakladnaSadzbaStatu } from "@/lib/faktero/sadzb
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { historickeSadzby } from "@/lib/faktero/vat-rates";
 import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
+import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
+import { UpozornenieObjednavky } from "@/components/faktero/PovinnaObjednavka";
+import { vlozDoPoznamky } from "@/lib/faktero/preddefinovane-poznamky";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { ColneUdajePolozky } from "@/components/faktero/ColneUdajePolozky";
 import { colneUdajeNaZapis } from "@/lib/faktero/colny-kod";
@@ -254,7 +261,19 @@ function NewInvoice() {
     discount_value: 0,
     /* Číselný rad, z ktorého sa vezme číslo. Prázdny = predvolený pre druh. */
     number_series_id: "",
+    /* Faktúra slúži zároveň ako dodací list — iný nadpis v PDF a podpisy prevzatia. */
+    dodaci_list: false,
+    /* Pečiatka a podpis v PDF; null = podľa nastavenia firmy. */
+    zobrazit_peciatku: null as boolean | null,
+    /* Účtovné nastavenia — prázdne = predvolené (pravidlo účtovania, inak kód firmy). */
+    predkontacia: "",
+    clenenie: "",
+    kv: "",
   });
+  /* Čo sa má stať po vystavení — „Vystaviť a stiahnuť PDF“ / „… a odoslať e-mailom“. */
+  const poVystaveniRef = useRef<"" | "pdf" | "email">("");
+  /* Predvolený text nad položkami z nastavení firmy (napr. „Fakturujeme vám:“). */
+  const uvodFirmyRef = useRef<string>("");
   /*
     Krajina firmy dobehne až po načítaní. Prvé vykreslenie preto nesie
     slovenskú predvolenú sadzbu a českej firme by v položke ostalo 23 % —
@@ -579,6 +598,20 @@ function NewInvoice() {
     if (novy !== stary) setForm((f) => (f.language === stary ? { ...f, language: novy } : f));
   }, [krajina]);
 
+  /*
+    Dobropis a ťarchopis majú vlastný úvod („Dobropis k faktúre č. …“), ktorý
+    sa doplní len na nedotknutý text — predvolený úvod firmy sa preto vráti
+    na predvyplnený, aby ho väzba na faktúru vedela prepísať.
+  */
+  useEffect(() => {
+    if (form.type !== "credit_note" && form.type !== "debit_note") return;
+    setForm((f) =>
+      uvodFirmyRef.current && f.intro_note === uvodFirmyRef.current
+        ? { ...f, intro_note: UVOD_FAKTURY[jazykDokladu(f.language)] }
+        : f,
+    );
+  }, [form.type]);
+
   // Predvyplnený úvod ide s jazykom dokladu; prepísaný text sa nemení.
   useEffect(() => {
     const uvod = UVOD_FAKTURY[jazykDokladu(form.language)];
@@ -668,7 +701,19 @@ function NewInvoice() {
       .then(({ data }) => {
         if (data) {
           setCompany(data);
-          setForm((f) => ({ ...f, currency: data.default_currency || "EUR" }));
+          const uvodFirmy = String((data as any).invoice_intro_default ?? "").trim();
+          uvodFirmyRef.current = uvodFirmy;
+          setForm((f) => ({
+            ...f,
+            currency: data.default_currency || "EUR",
+            /* Vlastný úvod firmy len na nedotknutý text faktúry — dobropis má vlastný. */
+            ...(uvodFirmy &&
+            !search.opravuje &&
+            (f.type === "regular" || f.type === "proforma") &&
+            jeUvodFaktury(f.intro_note)
+              ? { intro_note: uvodFirmy }
+              : {}),
+          }));
         }
       });
     // Build product_id → stock metadata map
@@ -995,6 +1040,13 @@ function NewInvoice() {
           // zapisuje nižšie do `invoice_advances`.
           advance_invoice_id: odpocty[0]?.id ?? null,
           payment_account_id: form.payment_account_id || null,
+          // Dodacím listom môže byť len bežná faktúra.
+          dodaci_list: form.type === "regular" && form.dodaci_list,
+          zobrazit_peciatku: form.zobrazit_peciatku,
+          // Prázdne kódy doplní pravidlo účtovania (spúšťač), inak predvolené firmy pri exporte.
+          pohoda_predkontacia: form.predkontacia.trim() || null,
+          pohoda_clenenie_dph: form.clenenie.trim() || null,
+          kv_clenenie: form.kv || null,
           opravuje_fakturu_id: form.opravuje_fakturu_id || null,
           advance_amount: odpocty.length ? totals.advance : null,
           job_id: form.job_id || null,
@@ -1149,7 +1201,9 @@ function NewInvoice() {
               ? t("Zálohová faktúra vytvorená")
               : t("Faktúra vytvorená"),
       );
-      navigate({ to: "/faktury/$id", params: { id: inv.id } });
+      // „Vystaviť a stiahnuť PDF / odoslať e-mailom“ — detail to po načítaní spraví sám.
+      const po = poVystaveniRef.current;
+      navigate({ to: "/faktury/$id", params: { id: inv.id }, search: po ? { po } : {} });
     } finally {
       setSubmitting(false);
     }
@@ -1176,6 +1230,24 @@ function NewInvoice() {
               : t("Vytvorte faktúru za menej než 30 sekúnd.")
         }
         action={
+          <div className="flex flex-wrap items-center gap-2">
+          {/* Jazyk faktúry hore — odberateľovi v zahraničí sa nesmie zabudnúť prepnúť. */}
+          <label className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1 text-sm">
+            <span className="text-[13px] font-semibold text-foreground">{t("Jazyk faktúry")}</span>
+            <select
+              id="jazyk-dokladu"
+              value={form.language}
+              onChange={(e) => setForm({ ...form, language: e.target.value })}
+              title={t("Prekladajú sa popisky v PDF, nie názvy položiek a poznámky.")}
+              className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+            >
+              {JAZYKY_DOKLADU.map((j) => (
+                <option key={j.kod} value={j.kod}>
+                  {j.nazov}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             onClick={() => setAiOpen(true)}
@@ -1186,6 +1258,7 @@ function NewInvoice() {
               {mod}K
             </kbd>
           </button>
+          </div>
         }
       />
       <PageBody>
@@ -1331,17 +1404,28 @@ function NewInvoice() {
                   )}
                 </div>
               )}
-              <PoleDokladu label={t("Dátum vystavenia")} htmlFor="datum-vystavenia" className={bunka.datum}>
+              <PoleDokladu label={t("Dátum vystavenia")} htmlFor="datum-vystavenia" className={bunka.datumDvojica}>
                 <input
                   id="datum-vystavenia"
                   type="date"
                   required
                   value={form.issue_date}
-                  onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
+                  onChange={(e) => {
+                    const novy = e.target.value;
+                    // Splatnosť „o 14 dní“ ostáva o 14 dní aj od nového dátumu vystavenia.
+                    setForm((f) => {
+                      const dni = dniMedzi(f.issue_date, f.due_date);
+                      return {
+                        ...f,
+                        issue_date: novy,
+                        due_date: novy && dni != null && dni >= 0 ? datumPoDnoch(novy, dni) : f.due_date,
+                      };
+                    });
+                  }}
                   className={VSTUP_DOKLADU}
                 />
               </PoleDokladu>
-              <PoleDokladu label={t("Dátum dodania")} htmlFor="datum-dodania" className={bunka.datum}>
+              <PoleDokladu label={t("Dátum dodania")} htmlFor="datum-dodania" className={bunka.datumDvojica}>
                 <input
                   id="datum-dodania"
                   type="date"
@@ -1352,7 +1436,8 @@ function NewInvoice() {
               </PoleDokladu>
               <SplatnostPole
                 required
-                className={bunka.datumPosledny}
+                className={bunka.splatnostRiadok}
+                odDatumu={form.issue_date}
                 value={form.due_date}
                 onChange={(v) => setForm((f) => ({ ...f, due_date: v }))}
               />
@@ -1560,6 +1645,11 @@ function NewInvoice() {
                   onChange={(e) => setForm({ ...form, order_number: e.target.value })}
                   className={VSTUP_DOKLADU}
                 />
+                <UpozornenieObjednavky
+                  companyId={getActiveCompanyId()}
+                  customerId={form.customer_id || null}
+                  cisloObjednavky={form.order_number}
+                />
               </PoleDokladu>
               <PoleDokladu label={t("Spôsob dodania")} htmlFor="dodanie-dokladu" className={bunka.polovica}>
                 <select
@@ -1575,26 +1665,7 @@ function NewInvoice() {
                   <option value="electronic">{t("Elektronicky")}</option>
                 </select>
               </PoleDokladu>
-              <PoleDokladu
-                label={t("Jazyk dokladu")}
-                htmlFor="jazyk-dokladu"
-                napoveda={t("Prekladajú sa popisky v PDF, nie názvy položiek a poznámky.")}
-                className={bunka.polovica}
-              >
-                <select
-                  id="jazyk-dokladu"
-                  value={form.language}
-                  onChange={(e) => setForm({ ...form, language: e.target.value })}
-                  className={VSTUP_DOKLADU}
-                >
-                  {JAZYKY_DOKLADU.map((j) => (
-                    <option key={j.kod} value={j.kod}>
-                      {j.nazov}
-                    </option>
-                  ))}
-                </select>
-              </PoleDokladu>
-              <PoleDokladu label={t("Spôsob zaokrúhľovania")} htmlFor="zaokruhlenie-dokladu" className={bunka.polovica}>
+              <PoleDokladu label={t("Spôsob zaokrúhľovania")} htmlFor="zaokruhlenie-dokladu" className={bunka.cela}>
                 <select
                   id="zaokruhlenie-dokladu"
                   value={form.rounding_mode}
@@ -1607,6 +1678,30 @@ function NewInvoice() {
                 </select>
               </PoleDokladu>
             </MriezkaDokladu>
+            {/* Pečiatka a podpis — len keď ich firma nahrala vo Vzhľade faktúry. */}
+            {company?.stamp_url && (
+              <label className="mt-4 flex items-start gap-2 border-t border-border pt-4 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.zobrazit_peciatku ?? company.invoice_show_stamp !== false}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      // Rovnaké ako nastavenie firmy = bez vlastnej voľby (null).
+                      zobrazit_peciatku:
+                        e.target.checked === (company.invoice_show_stamp !== false) ? null : e.target.checked,
+                    }))
+                  }
+                  className="mt-0.5 h-4 w-4 rounded border-input"
+                />
+                <span>
+                  {t("Zobraziť pečiatku a podpis")}
+                  <span className="block text-xs text-muted-foreground">
+                    {t("Nahratá pečiatka sa vytlačí vedľa súčtov. Predvolené sa nastavuje vo Vzhľade faktúry.")}
+                  </span>
+                </span>
+              </label>
+            )}
           </section>
           </div>
 
@@ -2167,6 +2262,35 @@ function NewInvoice() {
                 {mod}I
               </kbd>
             </button>
+            {/*
+              Odpočet zálohy a dodací list priamo pri položkách — tam ich človek
+              hľadá. Záloha sa odpočíta v súčtoch (Odpočet zálohy) ako doteraz.
+            */}
+            {form.type === "regular" && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!form.customer_id) return toast.error(t("Najprv vyberte odberateľa — ponúknu sa jeho zálohové faktúry."));
+                    setPickerOpen("advance");
+                  }}
+                  className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                >
+                  <Link2 className="h-4 w-4" />
+                  {odpocty.length ? t("Pridať ďalšiu uhradenú zálohu") : t("Pridať uhradenú zálohu")}
+                </button>
+                <label className="inline-flex min-w-0 items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.dodaci_list}
+                    onChange={(e) => setForm((f) => ({ ...f, dodaci_list: e.target.checked }))}
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  <Truck className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span>{t("Táto faktúra slúži zároveň ako dodací list")}</span>
+                </label>
+              </div>
+            )}
           </section>
 
           {/* SECTION 3 — totals */}
@@ -2302,9 +2426,41 @@ function NewInvoice() {
                     className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                 </label>
+                <PreddefinovanaPoznamka
+                  companyId={getActiveCompanyId()}
+                  agenda="faktura"
+                  onVyber={(text) => setForm((f) => ({ ...f, notes: vlozDoPoznamky(f.notes, text) }))}
+                />
               </div>
             )}
           </section>
+
+          {/* Účtovné nastavenia — zaúčtovanie hneď pri vystavení, nie až v detaile. */}
+          <UctovneNastaveniaFaktury
+            companyId={getActiveCompanyId()}
+            typ={form.type}
+            odberatel={(() => {
+              const c = customers.find((x) => x.id === form.customer_id);
+              return c ? { ico: c.ico, name: c.name } : null;
+            })()}
+            reverseCharge={form.reverse_charge}
+            kody={{ predkontacia: form.predkontacia, clenenie: form.clenenie, kv: form.kv }}
+            onKody={(k) => setForm((f) => ({ ...f, ...k }))}
+            datumDane={form.delivery_date}
+            onDatumDane={(v) => setForm((f) => ({ ...f, delivery_date: v }))}
+            sposobPlatby={form.payment_method}
+            onSposobPlatby={(sposob) =>
+              setForm((f) => ({
+                ...f,
+                payment_method: sposob,
+                rounding_mode: jeHotovost(sposob)
+                  ? "retail"
+                  : f.rounding_mode === "retail"
+                    ? "per_document"
+                    : f.rounding_mode,
+              }))
+            }
+          />
 
           {/* SECTION 5 — actions */}
           <div /*
@@ -2318,7 +2474,7 @@ function NewInvoice() {
               <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">{mod}↵</kbd> {t("uložiť")} ·
               <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono">{mod}K</kbd> AI
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => navigate({ to: "/faktury" })}
@@ -2327,9 +2483,26 @@ function NewInvoice() {
                 {t("Zrušiť")}
               </button>
               <button
+                type="submit"
+                disabled={submitting}
+                onClick={() => (poVystaveniRef.current = "pdf")}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-60"
+              >
+                <FileDown className="h-4 w-4" /> {t("Vystaviť a stiahnuť PDF")}
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                onClick={() => (poVystaveniRef.current = "email")}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-60"
+              >
+                <Mail className="h-4 w-4" /> {t("Vystaviť a odoslať e-mailom")}
+              </button>
+              <button
                 id="invoice-submit"
                 type="submit"
                 disabled={submitting}
+                onClick={() => (poVystaveniRef.current = "")}
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -2358,6 +2531,7 @@ function NewInvoice() {
         {pickerOpen && (
           <InvoicePickerModal
             mode={pickerOpen}
+            customerId={form.customer_id || null}
             onClose={() => setPickerOpen(null)}
             onPickCopy={(loaded) => {
               setItems(loaded.map((it) => ({ ...EMPTY_ITEM, ...it })));
@@ -2706,11 +2880,14 @@ function AiModal({
 
 function InvoicePickerModal({
   mode,
+  customerId,
   onClose,
   onPickCopy,
   onPickAdvance,
 }: {
   mode: "copy" | "advance" | "opravuje";
+  /** Zálohy sa ponúkajú len vybraného odberateľa. */
+  customerId?: string | null;
   onClose: () => void;
   onPickCopy: (items: Partial<Item>[]) => void;
   onPickAdvance: (inv: { id: string; invoice_number: string; total: number }) => void;
@@ -2731,14 +2908,17 @@ function InvoicePickerModal({
       .is("deleted_at", null)
       .order("issue_date", { ascending: false })
       .limit(50);
-    if (mode === "advance") query = query.eq("type", "proforma");
+    if (mode === "advance") {
+      query = query.eq("type", "proforma");
+      if (customerId) query = query.eq("customer_id", customerId);
+    }
     // Dobropis opravuje bežnú faktúru, nie zálohovú ani iný dobropis.
     if (mode === "opravuje") query = query.eq("type", "regular");
     query.then(({ data }) => {
       setList(data ?? []);
       setLoading(false);
     });
-  }, [mode]);
+  }, [mode, customerId]);
 
   const filtered = q
     ? list.filter((i) =>
@@ -2819,6 +2999,13 @@ function InvoicePickerModal({
                   <div className="font-medium">{inv.invoice_number}</div>
                   <div className="text-xs text-muted-foreground">
                     {inv.customer_name} · {datumNaDoklade(inv.issue_date)}
+                    {/* Odpočítava sa uhradená záloha — neuhradenú je vidieť hneď. */}
+                    {mode === "advance" &&
+                      (inv.status === "paid" ? (
+                        <span className="ml-1 text-emerald-700">· {t("uhradená")}</span>
+                      ) : (
+                        <span className="ml-1 text-amber-700">· {t("neuhradená")}</span>
+                      ))}
                   </div>
                 </div>
                 <div className="tabular-nums font-medium">

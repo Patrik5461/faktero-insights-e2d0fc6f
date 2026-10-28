@@ -1,4 +1,5 @@
 import { normMeno, normVs } from "./parovanie";
+import { platbaSedi } from "./export-nastavenia";
 
 /**
  * Párovanie naskenovaných dokladov s pohybmi na účte.
@@ -85,10 +86,13 @@ export function dodavatelSedi(p: Pohyb, v: Vydavok): boolean {
 export function ohodnotDoklad(
   p: Pohyb,
   v: Vydavok,
+  /** Nastavenie firmy: `false` = karta len s platbou kartou, prevod len s iným pohybom. */
+  ignorovatTypPlatby = true,
 ): Omit<ZhodaDokladu, "transactionId" | "expenseId"> | null {
   // Doklad je náklad, teda odchádzajúca platba. Prichádzajúca k nemu nepatrí.
   if (p.amount >= 0) return null;
   if (v.payment_method === "hotovost") return null;
+  if (!platbaSedi(v.payment_method, p, ignorovatTypPlatby)) return null;
   if (v.total_amount == null || v.total_amount <= 0) return null;
   if ((p.currency || "EUR") !== (v.currency || "EUR")) return null;
   if (!v.issue_date) return null;
@@ -140,11 +144,15 @@ export function ohodnotDoklad(
  * raz. Keď na doklad sedia dva rovnako dobré pohyby, ani jeden sa neoznačí za
  * istý — obidva idú do návrhov a rozhodne človek.
  */
-export function sparujDoklady(pohyby: Pohyb[], vydavky: Vydavok[]): ZhodaDokladu[] {
+export function sparujDoklady(
+  pohyby: Pohyb[],
+  vydavky: Vydavok[],
+  ignorovatTypPlatby = true,
+): ZhodaDokladu[] {
   const vsetky: ZhodaDokladu[] = [];
   for (const p of pohyby) {
     for (const v of vydavky) {
-      const o = ohodnotDoklad(p, v);
+      const o = ohodnotDoklad(p, v, ignorovatTypPlatby);
       if (o) vsetky.push({ transactionId: p.id, expenseId: v.id, ...o });
     }
   }

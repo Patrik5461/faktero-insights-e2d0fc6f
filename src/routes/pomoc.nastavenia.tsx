@@ -169,6 +169,17 @@ const SEKCIE: HelpSection[] = [
           dokladu, suma, splatnosť), takže sa nič neprepisuje ručne.
         </p>
         <p className="mt-3">
+          V časti <strong>Šablóny pre odosielanie dokladov</strong> si založíte ľubovoľný počet
+          šablón — každá pre typ dokladu (všetky faktúry, faktúra, zálohová, daňový doklad k platbe,
+          dobropis, ťarchopis, upomienka, cenová ponuka) a jazyk (SK, CZ, DE, EN, HU). Premenné sa
+          píšu v hranatých zátvorkách: <code>[TYP_FAKTURY]</code>, <code>[CISLO_FAKTURY]</code>,{" "}
+          <code>[SUMA]</code>, <code>[SPLATNOST]</code>, <code>[DATUM_VYSTAVENIA]</code>,{" "}
+          <code>[VS]</code>, <code>[ODBERATEL]</code>, <code>[FIRMA]</code>, <code>[IBAN]</code>,{" "}
+          <code>[CISLO_OBJEDNAVKY]</code>. Pri odoslaní sa vyberie šablóna, ktorá na doklad sedí
+          najlepšie (presný typ má prednosť pred „všetkými faktúrami“, presný jazyk pred „všetkými
+          jazykmi“); v okne odoslania ju môžete zmeniť.
+        </p>
+        <p className="mt-3">
           <strong>Meno odosielateľa</strong> a <strong>Odpovedať na (Reply-To)</strong> sa nastavujú
           pri údajoch firmy. Odosiela sa z adresy Faktera, ale odpoveď príde vám — to je dôvod,
           prečo Reply-To netreba nechať prázdne.

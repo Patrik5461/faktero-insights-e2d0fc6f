@@ -80,7 +80,11 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       company,
       invoices: bundle,
       zalohy,
-      nastavenia: nastaveniaFaktur(company),
+      nastavenia: {
+        ...nastaveniaFaktur(company),
+        // Nastavenia exportu, skratky bankových účtov a partneri v adresári Pohody.
+        ...(await (await import("./export-nastavenia.server")).doplnkyExportu(supabase, company)),
+      },
     });
 
     // Doklad, ktorý do súboru neprešiel, sa nesmie tváriť ako odovzdaný —

@@ -606,6 +606,11 @@ export const sk = {
   "app.zaregistrujteSa": "Zaregistrujte sa",
   "app.zabudnuteHeslo": "Zabudnuté heslo si obnovíte na faktero.sk.",
   "app.zabudliHeslo": "Zabudli ste heslo?",
+  "app.qrPrihlasenie": "Prihlásiť sa QR kódom z webu",
+  "app.qrPrihlasenieNapoveda": "Na webe Faktero otvorte Prihlásiť appku v telefóne a naskenujte zobrazený kód.",
+  "app.qrNieJeKod": "Toto nie je kód na prihlásenie z webu Faktero.",
+  "app.qrPrihlasenieNapovedaJazdy": "Na webe otvorte Prihlásiť appku v telefóne a naskenujte zobrazený kód.",
+  "app.qrNieJeKodJazdy": "Toto nie je kód na prihlásenie z webu.",
   "app.zadajteEmailPreHeslo": "Najprv zadajte e-mail, na ktorý pošleme odkaz na nové heslo.",
   "app.odkazNaHesloOdoslany":
     "Ak k adrese {email} existuje účet, poslali sme na ňu odkaz na nové heslo.",

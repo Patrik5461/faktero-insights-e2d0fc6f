@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { KopirovatNastaveniaOkno } from "@/components/faktero/KopirovatNastaveniaOkno";
 import { PredponyObjednavky } from "@/components/faktero/PredponyObjednavky";
+import { NastaveniaExportu } from "@/components/faktero/NastaveniaExportu";
+import { StavyAStitkyNastavenia } from "@/components/faktero/StavyAStitkyNastavenia";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -159,8 +161,10 @@ function Stranka() {
             onUlozene={obnov}
             onPridat={() => setPridat((n) => n + 1)}
           />
+          <NastaveniaExportu companyId={companyId} firma={firma} onUlozene={obnov} />
           <Ciselnik companyId={companyId} zaznamy={zaznamy} onZmena={obnov} pridat={pridat} />
           <Import companyId={companyId} firma={firma} onZmena={obnov} />
+          <StavyAStitkyNastavenia companyId={companyId} />
         </div>
       </PageBody>
     </>

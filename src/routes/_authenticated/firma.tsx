@@ -19,6 +19,7 @@ import { chybyIdentifikatorovDe, popiskyIdentifikatorov } from "@/lib/faktero/fi
 import { zabudniKrajinuDane, zabudniRezimDph } from "@/lib/faktero/krajina-firmy";
 import { BankoveUctyFirmy } from "@/components/faktero/banka/BankoveUctyFirmy";
 import { EditorOpravneni, VysvetlenieRoli } from "@/components/faktero/pristupy/Opravnenia";
+import { TechnickaPodpora, UdajeClena } from "@/components/faktero/pristupy/ClenFirmy";
 import { suhrnOpravneni, type Opravnenia } from "@/lib/faktero/opravnenia";
 import { potvrd } from "@/lib/potvrdenie";
 import { domacaMena } from "@/lib/faktero/kurzy";
@@ -656,6 +657,7 @@ function TeamSection({ companyId }: { companyId: string }) {
               <tr>
                 <th className="p-3">{t("Kto má prístup")}</th>
                 <th className="p-3">{t("Rola")}</th>
+                <th className="p-3">{t("Telefón, číslo zamestnanca, projekt")}</th>
                 <th className="p-3">{t("Od")}</th>
                 <th className="p-3"></th>
               </tr>
@@ -671,71 +673,87 @@ function TeamSection({ companyId }: { companyId: string }) {
                     )}
                   </td>
                   <td className="p-3">
-                    <select
-                      value={upravuje?.userId === m.user_id ? "custom" : m.role}
-                      onChange={(e) =>
-                        // Vlastný prístup potrebuje oblasti — najprv sa vyklikajú, uloží sa potom.
-                        e.target.value === "custom"
-                          ? setUpravuje({
-                              userId: m.user_id,
-                              opr: (m.permissions ?? {}) as Opravnenia,
-                            })
-                          : zmenRolu(m.user_id, e.target.value)
-                      }
-                      className="rounded-md border border-input bg-background px-2 py-1 text-sm"
-                    >
-                      <option value="owner">{t("Majiteľ")}</option>
-                      <option value="admin">{t("Administrátor")}</option>
-                      <option value="accountant">{t("Účtovník")}</option>
-                      <option value="employee">{t("Používateľ")}</option>
-                      <option value="custom">{t("Vlastný prístup")}</option>
-                    </select>
-                    {m.role === "custom" && upravuje?.userId !== m.user_id && (
-                      <div className="mt-1 max-w-xs text-xs text-muted-foreground">
-                        {suhrnOpravneni(m.permissions)}{" "}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setUpravuje({
-                              userId: m.user_id,
-                              opr: (m.permissions ?? {}) as Opravnenia,
-                            })
-                          }
-                          className="font-medium text-primary hover:underline"
-                        >
-                          {t("Upraviť")}
-                        </button>
-                      </div>
-                    )}
-                    {upravuje?.userId === m.user_id && (
-                      <div className="mt-2 min-w-[20rem]">
-                        <EditorOpravneni
-                          hodnota={upravuje?.opr ?? {}}
-                          onZmena={(opr) => setUpravuje({ userId: m.user_id, opr })}
-                        />
-                        <div className="mt-2 flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const opr = upravuje?.opr ?? {};
-                              if (!Object.keys(opr).length)
-                                return toast.error(t("Vyberte aspoň jednu oblasť."));
-                              zmenRolu(m.user_id, "custom", opr);
-                            }}
-                            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
-                          >
-                            {t("Uložiť prístup")}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setUpravuje(null)}
-                            className="rounded-md border border-border px-3 py-1.5 text-xs"
-                          >
-                            {t("Zrušiť")}
-                          </button>
+                    {m.podpora_do ? (
+                      <div className="max-w-xs text-xs">
+                        <div className="font-medium text-foreground">
+                          {t("Technická podpora Faktero")}
+                        </div>
+                        <div className="text-muted-foreground">
+                          {t("dočasný prístup do {datum}", { datum: datum(m.podpora_do) })}
                         </div>
                       </div>
+                    ) : (
+                      <>
+                        <select
+                          value={upravuje?.userId === m.user_id ? "custom" : m.role}
+                          onChange={(e) =>
+                            // Vlastný prístup potrebuje oblasti — najprv sa vyklikajú, uloží sa potom.
+                            e.target.value === "custom"
+                              ? setUpravuje({
+                                  userId: m.user_id,
+                                  opr: (m.permissions ?? {}) as Opravnenia,
+                                })
+                              : zmenRolu(m.user_id, e.target.value)
+                          }
+                          className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+                        >
+                          <option value="owner">{t("Majiteľ")}</option>
+                          <option value="admin">{t("Administrátor")}</option>
+                          <option value="accountant">{t("Účtovník")}</option>
+                          <option value="employee">{t("Používateľ")}</option>
+                          <option value="custom">{t("Vlastný prístup")}</option>
+                        </select>
+                        {m.role === "custom" && upravuje?.userId !== m.user_id && (
+                          <div className="mt-1 max-w-xs text-xs text-muted-foreground">
+                            {suhrnOpravneni(m.permissions)}{" "}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setUpravuje({
+                                  userId: m.user_id,
+                                  opr: (m.permissions ?? {}) as Opravnenia,
+                                })
+                              }
+                              className="font-medium text-primary hover:underline"
+                            >
+                              {t("Upraviť")}
+                            </button>
+                          </div>
+                        )}
+                        {upravuje?.userId === m.user_id && (
+                          <div className="mt-2 min-w-[20rem]">
+                            <EditorOpravneni
+                              hodnota={upravuje?.opr ?? {}}
+                              onZmena={(opr) => setUpravuje({ userId: m.user_id, opr })}
+                            />
+                            <div className="mt-2 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const opr = upravuje?.opr ?? {};
+                                  if (!Object.keys(opr).length)
+                                    return toast.error(t("Vyberte aspoň jednu oblasť."));
+                                  zmenRolu(m.user_id, "custom", opr);
+                                }}
+                                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                              >
+                                {t("Uložiť prístup")}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setUpravuje(null)}
+                                className="rounded-md border border-border px-3 py-1.5 text-xs"
+                              >
+                                {t("Zrušiť")}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
+                  </td>
+                  <td className="p-3 align-top">
+                    <UdajeClena companyId={companyId} clen={m} onUlozene={load} />
                   </td>
                   <td className="p-3 text-muted-foreground">{datum(m.created_at)}</td>
                   <td className="p-3 text-right">
@@ -753,6 +771,8 @@ function TeamSection({ companyId }: { companyId: string }) {
           </table>
         </div>
       )}
+
+      {clenovia && clenovia.length > 0 && <TechnickaPodpora companyId={companyId} onZmena={load} />}
 
       <form onSubmit={invite} className="mt-4 flex flex-wrap items-end gap-3">
         <label className="block">

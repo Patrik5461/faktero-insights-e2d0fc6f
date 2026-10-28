@@ -244,6 +244,7 @@ export const NAV: NavGroup[] = [
         search: { zdroj: "brana" },
         label: "Výpis z platobnej brány",
       },
+      { to: "/uctovnictvo/konvertor", label: "Konvertor Excel → Pohoda" },
       { to: "/uctovnictvo/predkontacie", label: "Predkontácie a členenie DPH" },
       { to: "/uctovnictvo/na-kontrolu", label: "Zaúčtovanie na kontrolu" },
       { to: "/uctovnictvo/pravidla", label: "Pravidlá účtovania" },
@@ -319,8 +320,11 @@ export const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
   { to: "/nastavenia/schvalovanie", label: "Schvaľovanie dokladov" },
   { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
   { to: "/nastavenia/email-sablony", label: "E-mailové šablóny" },
+  { to: "/nastavenia/poznamky", label: "Preddefinované poznámky" },
+  { to: "/nastavenia/zalohy", label: "Zálohy dokladov" },
   { to: "/nastavenia/eshop", label: "E-shop a doprava" },
   { to: "/nastavenia/zabezpecenie", label: "Zabezpečenie účtu" },
+  { to: "/nastavenia/prihlasit-appku", label: "Prihlásiť appku v telefóne" },
   { to: "/nastavenia", label: "Nastavenia systému" },
 ];
 
@@ -484,6 +488,7 @@ export const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/uctovnictvo/uzavierka", to: "/pomoc/uzavierka" },
   { prefix: "/uctovnictvo/pohoda", to: "/pomoc/pohoda" },
   { prefix: "/uctovnictvo/vypis-do-pohody", to: "/pomoc/pohoda" },
+  { prefix: "/uctovnictvo/konvertor", to: "/pomoc/pohoda" },
   { prefix: "/uctovnictvo/pravidla", to: "/pomoc/automaticke-zauctovanie" },
   { prefix: "/uctovnictvo/na-kontrolu", to: "/pomoc/automaticke-zauctovanie" },
   { prefix: "/uctovnictvo/predkontacie", to: "/pomoc/pohoda" },

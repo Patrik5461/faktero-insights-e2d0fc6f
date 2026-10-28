@@ -6,7 +6,7 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { DetailSNahladom, useNahladVDetaile, type SuborNahladu } from "@/components/faktero/BocnyNahlad";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageBody } from "@/components/faktero/AppShell";
 import {
@@ -27,7 +27,12 @@ import { ZauctovanieVystavenejPanel } from "@/components/faktero/ZauctovanieVyst
 import { ZasielkovnaFaktury } from "@/components/faktero/ZasielkovnaFaktury";
 import { skocNaZauctovanie } from "@/components/faktero/TlacidloZauctovat";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
+import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { KomentarePanel } from "@/components/faktero/KomentarePanel";
+import { KomentarDokladu, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
+import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
+import { DokladPoradie } from "@/components/faktero/DokladPoradie";
+import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
 import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
@@ -91,6 +96,8 @@ import { isdocFakturyFn } from "@/lib/faktero/isdoc.functions";
 import { xrechnungFakturyFn } from "@/lib/faktero/xrechnung.functions";
 import { hodnotyMailu, jazykFaktury, predvolenyMailFaktury } from "@/lib/faktero/email-jazyk";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
+import { hodnotyPremennych } from "@/lib/faktero/email-sablony";
+import { VyberEmailSablony } from "@/components/faktero/VyberEmailSablony";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
@@ -108,6 +115,10 @@ const NAZOV_TYPU: Record<string, string> = {
 
 export const Route = createFileRoute("/_authenticated/faktury/$id/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Detail faktúry — Faktero") }] }),
+  /* `po` posiela formulár faktúry: „Vystaviť a stiahnuť PDF“ / „… a odoslať e-mailom“. */
+  validateSearch: (s: Record<string, unknown>): { po?: "pdf" | "email" } => ({
+    po: s.po === "pdf" || s.po === "email" ? s.po : undefined,
+  }),
   component: InvoiceDetail,
 });
 
@@ -115,6 +126,8 @@ function InvoiceDetail() {
   const { t } = useT();
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  // Vlastné stavy dokladov firmy (číselník v Účtovníctvo → Predkontácie).
+  const ciselnikyFirmy = useCiselnikyDokladov(getActiveCompanyId(), null, false);
   const [inv, setInv] = useState<any>(null);
   // Bez tohto ostal na neexistujúcej faktúre navždy nápis „Načítavam…".
   const [nenajdene, setNenajdene] = useState(false);
@@ -151,6 +164,11 @@ function InvoiceDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [emailForm, setEmailForm] = useState({ recipient_email: "", subject: "", message: "" });
+  const [emailSablona, setEmailSablona] = useState<{
+    jazyk: string;
+    predvolene: { predmet: string; text: string };
+    hodnoty: Record<string, string>;
+  } | null>(null);
   const genPdf = useServerFn(generateInvoicePdf);
   const getPdf = useServerFn(getInvoicePdfSignedUrl);
   const sendEmail = useServerFn(sendInvoiceEmailFn);
@@ -806,6 +824,23 @@ function InvoiceDetail() {
     }
   }
 
+  /*
+    Po „Vystaviť a stiahnuť PDF / odoslať e-mailom“ vo formulári sa akcia
+    spustí raz, keď je faktúra načítaná; parameter sa z adresy hneď zmaže,
+    aby sa pri obnovení stránky nespustila znova.
+  */
+  const { po } = Route.useSearch();
+  const poHotovoRef = useRef(false);
+  const openEmailRef = useRef<null | (() => Promise<void>)>(null);
+  useEffect(() => {
+    if (!po || !inv || poHotovoRef.current) return;
+    poHotovoRef.current = true;
+    navigate({ to: "/faktury/$id", params: { id }, search: {}, replace: true });
+    if (po === "pdf") void handleDownload();
+    else void openEmailRef.current?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [po, inv]);
+
   if (nenajdene)
     return (
       <PageBody>
@@ -871,20 +906,37 @@ function InvoiceDetail() {
       krajinaDane((company as any)?.country),
     );
     const hodnoty = hodnotyMailu(fa, jazykMailu);
-    setEmailForm({
-      recipient_email: adresa ?? "",
-      subject: (company?.email_default_subject ?? predvoleny.predmet).replaceAll(
+    const predvolenyMail = {
+      predmet: (company?.email_default_subject ?? predvoleny.predmet).replaceAll(
         "{invoice_number}",
         fa.invoice_number,
       ),
-      message: (company?.email_default_message ?? predvoleny.text)
+      text: (company?.email_default_message ?? predvoleny.text)
         .replaceAll("{invoice_number}", fa.invoice_number)
         .replaceAll("{due_date}", hodnoty.due_date)
         .replaceAll("{total}", hodnoty.total)
         .replaceAll("{company_name}", company?.name ?? ""),
+    };
+    // Šablóna podľa typu a jazyka dokladu (VyberEmailSablony) ho po načítaní nahradí.
+    setEmailSablona({
+      jazyk: jazykMailu,
+      predvolene: predvolenyMail,
+      hodnoty: hodnotyPremennych({
+        doklad: fa as any,
+        jazyk: jazykMailu,
+        firma: company?.name ?? "",
+        iban: company ? (sUctomFaktury(company, fa).iban ?? "") : "",
+        krajina: krajinaDane((company as any)?.country),
+      }),
+    });
+    setEmailForm({
+      recipient_email: adresa ?? "",
+      subject: predvolenyMail.predmet,
+      message: predvolenyMail.text,
     });
     setEmailOpen(true);
   }
+  openEmailRef.current = openEmail;
   async function submitEmail() {
     if (!emailForm.recipient_email.trim()) {
       toast.error(t("Zadajte adresu príjemcu."));
@@ -1021,6 +1073,13 @@ function InvoiceDetail() {
               label={pdfBusy ? "…" : inv.pdf_url ? t("Stiahnuť PDF") : t("Vygenerovať PDF")}
               onClick={inv.pdf_url ? handleDownload : handleGenerate}
               disabled={pdfBusy}
+            />
+            <DokladPoradie
+              tabulka="invoices"
+              companyId={inv.company_id}
+              id={inv.id}
+              createdAt={inv.created_at}
+              onOtvor={(dalsi) => navigate({ to: "/faktury/$id", params: { id: dalsi } })}
             />
           </>
         }
@@ -1476,6 +1535,28 @@ function InvoiceDetail() {
             {inv.status !== "draft" && (
               <SchvalovaniePanel companyId={inv.company_id} agenda="vystavena" id={inv.id} onZmena={() => void load()} />
             )}
+            <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+              <StitkyDokladu
+                key={inv.id}
+                tabulka="invoices"
+                id={inv.id}
+                stitky={(inv as any).stitky ?? []}
+                companyId={inv.company_id}
+              />
+              {ciselnikyFirmy.stavy.length ? (
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium">{t("Stav dokladu")}</span>
+                  <VyberStavuDokladu
+                    key={inv.id}
+                    tabulka="invoices"
+                    id={inv.id}
+                    stavId={(inv as any).stav_id}
+                    stavy={ciselnikyFirmy.stavy}
+                  />
+                </label>
+              ) : null}
+              <KomentarDokladu tabulka="invoices" id={inv.id} komentar={(inv as any).komentar} />
+            </div>
             <KomentarePanel companyId={inv.company_id} agenda="vystavena" id={inv.id} />
             {inv.status === "paid" ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100 dark:border-emerald-900/40">
@@ -1773,6 +1854,16 @@ function InvoiceDetail() {
                 </span>
               )}
             </label>
+            {emailSablona && (
+              <VyberEmailSablony
+                companyId={inv?.company_id}
+                typ={(inv as any)?.type}
+                jazyk={emailSablona.jazyk}
+                hodnoty={emailSablona.hodnoty}
+                predvolene={emailSablona.predvolene}
+                onPouzi={(m) => setEmailForm((f) => ({ ...f, subject: m.predmet, message: m.text }))}
+              />
+            )}
             <label className="block text-sm">
               <span className="font-medium">{t("Predmet")}</span>
               <input

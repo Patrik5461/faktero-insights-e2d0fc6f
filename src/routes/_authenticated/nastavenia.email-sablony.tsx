@@ -12,6 +12,7 @@ import {
 } from "@/lib/faktero/email-templates.functions";
 import { RotateCcw, Save, Send, Loader2 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
+import { EmailSablonyDokladov } from "@/components/faktero/EmailSablonyDokladov";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -145,6 +146,10 @@ function EmailTemplatesPage() {
         }
       />
       <PageBody>
+        <div className="mb-4">
+          <EmailSablonyDokladov />
+        </div>
+        <h2 className="mb-2 text-base font-semibold">{t("Predvolené texty")}</h2>
         <div className="mb-4 rounded-xl border border-border bg-card p-4">
           <div className="flex flex-wrap items-center gap-3">
             <label className="min-w-0 flex-1 basis-60">

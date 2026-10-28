@@ -218,29 +218,39 @@ export const zdrojovyMailFn = createServerFn({ method: "POST" })
     return { text: text.slice(0, 20000) || "(prázdny mail)" };
   });
 
-/** Povolení odosielatelia — prázdne = ktokoľvek s adresou. */
+/**
+ * Nastavenia brány — povolení odosielatelia (prázdne = ktokoľvek s adresou)
+ * a či sa ukladá aj mail bez dokladu (do Nespracovaných ako PDF s textom).
+ */
 export const povoleniOdosielateliaFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
-    CompanyInput.extend({ zoznam: z.array(z.string().trim().max(120)).max(100).optional() }).parse(input),
+    CompanyInput.extend({
+      zoznam: z.array(z.string().trim().max(120)).max(100).optional(),
+      ukladat_bez_dokladu: z.boolean().optional(),
+    }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    await assertMember(supabase, userId, data.company_id, true);
-    if (data.zoznam) {
-      const zoznam = [...new Set(data.zoznam.map((x) => x.toLowerCase()).filter(Boolean))];
-      const { error } = await supabase
-        .from("companies")
-        .update({ mail_povoleni_odosielatelia: zoznam })
-        .eq("id", data.company_id);
+    const zapis = data.zoznam !== undefined || data.ukladat_bez_dokladu !== undefined;
+    await assertMember(supabase, userId, data.company_id, zapis);
+    const zmena: Record<string, unknown> = {};
+    if (data.zoznam)
+      zmena.mail_povoleni_odosielatelia = [...new Set(data.zoznam.map((x) => x.toLowerCase()).filter(Boolean))];
+    if (data.ukladat_bez_dokladu !== undefined) zmena.mail_ukladat_bez_dokladu = data.ukladat_bez_dokladu;
+    if (Object.keys(zmena).length) {
+      const { error } = await supabase.from("companies").update(zmena).eq("id", data.company_id);
       if (error) throw new Error(error.message);
     }
     const { data: f } = await supabase
       .from("companies")
-      .select("mail_povoleni_odosielatelia")
+      .select("mail_povoleni_odosielatelia, mail_ukladat_bez_dokladu")
       .eq("id", data.company_id)
       .maybeSingle();
-    return { zoznam: ((f as any)?.mail_povoleni_odosielatelia ?? []) as string[] };
+    return {
+      zoznam: ((f as any)?.mail_povoleni_odosielatelia ?? []) as string[],
+      ukladatBezDokladu: !!(f as any)?.mail_ukladat_bez_dokladu,
+    };
   });
 
 export type StavRozdelovaca = {

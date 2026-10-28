@@ -73,6 +73,22 @@ export function BankoveUctyFirmy({ companyId }: { companyId: string }) {
     obnov();
   }
 
+  /*
+    Skratka účtu v Pohode — faktúra s týmto účtom ide do Pohody s ňou (inak so
+    spoločnou skratkou z Prepojenia s Pohodou). Ukladá sa pri opustení poľa.
+  */
+  async function ulozSkratku(id: string, povodna: string | null | undefined, nova: string) {
+    const v = nova.trim().slice(0, 19) || null;
+    if ((povodna ?? null) === v) return;
+    const { error } = await supabase
+      .from("company_bank_accounts")
+      .update({ pohoda_skratka: v })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(t("Skratka účtu uložená."));
+    obnov();
+  }
+
   async function zmaz(id: string, predvoleny: boolean) {
     if (predvoleny && (ucty?.length ?? 0) > 1) {
       return toast.error(t("Najprv nastavte ako predvolený iný účet."));
@@ -121,6 +137,18 @@ export function BankoveUctyFirmy({ companyId }: { companyId: string }) {
                   {u.swift ? ` · ${u.swift}` : ""}
                 </div>
               </div>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                {t("Skratka pre účtovníctvo")}
+                <input
+                  key={`${u.id}-${u.pohoda_skratka ?? ""}`}
+                  defaultValue={u.pohoda_skratka ?? ""}
+                  maxLength={19}
+                  placeholder={t("napr. {x}", { x: "TB" })}
+                  aria-label={t("Skratka účtu {iban} v Pohode", { iban: u.iban })}
+                  onBlur={(e) => ulozSkratku(u.id, u.pohoda_skratka, e.target.value)}
+                  className="w-20 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
+                />
+              </label>
               {!u.is_default && (
                 <button
                   onClick={() => nastavPredvoleny(u.id)}

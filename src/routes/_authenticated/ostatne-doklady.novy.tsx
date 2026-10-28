@@ -33,6 +33,7 @@ import { MENY } from "@/lib/faktero/mena";
 import { CheckCircle2, Loader2, Paperclip, Save, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
+import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/novy")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Iný doklad — Faktero") }] }),
@@ -150,6 +151,7 @@ function OstatnyDokladPage() {
   const [ulozene, setUlozene] = useState<any[]>([]);
   const [nove, setNove] = useState<File[]>([]);
   const [nacitavam, setNacitavam] = useState(!novy);
+  const [stitky, setStitky] = useState<string[]>([]);
   const [ukladam, setUkladam] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -172,6 +174,7 @@ function OstatnyDokladPage() {
           financing_contract_id: d.financing_contract_id ?? "",
         });
         setStav(d.status);
+        setStitky(d.stitky ?? []);
         setUlozene(
           [...(d.other_document_files ?? [])].sort((a: any, b: any) => a.position - b.position),
         );
@@ -409,6 +412,17 @@ function OstatnyDokladPage() {
                   <strong>{t(STAV_DOKLADU_NAZOV[stav as keyof typeof STAV_DOKLADU_NAZOV] ?? stav)}</strong>
                 </div>
               )}
+              {!novy ? (
+                <div className="mb-4">
+                  <StitkyDokladu
+                    tabulka="other_documents"
+                    id={id}
+                    stitky={stitky}
+                    companyId={cid}
+                    onZmena={setStitky}
+                  />
+                </div>
+              ) : null}
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm">
                   <span className="mb-1 block text-xs text-muted-foreground">{t("Druh dokladu")}</span>

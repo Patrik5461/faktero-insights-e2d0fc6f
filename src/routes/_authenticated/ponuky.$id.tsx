@@ -35,7 +35,9 @@ import {
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { potvrd } from "@/lib/potvrdenie";
-import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { datumNaDoklade, predvolenyJazykFirmy } from "@/lib/faktero/faktura-jazyk";
+import { hodnotyPremennych } from "@/lib/faktero/email-sablony";
+import { VyberEmailSablony } from "@/components/faktero/VyberEmailSablony";
 import { formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ponuky/$id")({
@@ -75,6 +77,7 @@ function QuoteDetail() {
   const [posielatPrilohy, setPosielatPrilohy] = useState(true);
   useZatvorNaEscape(emailOpen ? () => setEmailOpen(false) : null);
   const [emailForm, setEmailForm] = useState({ recipient_email: "", subject: "", message: "" });
+  const [emailPredvolene, setEmailPredvolene] = useState<{ predmet: string; text: string } | null>(null);
 
   const genPdf = useServerFn(generateQuotePdf);
   const getPdf = useServerFn(getQuotePdfSignedUrl);
@@ -174,10 +177,15 @@ function QuoteDetail() {
   function openEmail() {
     if (!q.customer_email)
       return toast.error(t("Odberateľ nemá e-mail. Doplňte ho v karte odberateľa."));
+    const predvolene = {
+      predmet: t("Cenová ponuka {cislo}", { cislo: q.quote_number }),
+      text: t("Dobrý deň,\n\nv prílohe Vám posielame cenovú ponuku {cislo} platnú do {datum}.\n\nS pozdravom,\n{firma}", { cislo: q.quote_number, datum: datumNaDoklade(q.valid_until), firma: company?.name ?? "" }),
+    };
+    setEmailPredvolene(predvolene);
     setEmailForm({
       recipient_email: q.customer_email,
-      subject: t("Cenová ponuka {cislo}", { cislo: q.quote_number }),
-      message: t("Dobrý deň,\n\nv prílohe Vám posielame cenovú ponuku {cislo} platnú do {datum}.\n\nS pozdravom,\n{firma}", { cislo: q.quote_number, datum: datumNaDoklade(q.valid_until), firma: company?.name ?? "" }),
+      subject: predvolene.predmet,
+      message: predvolene.text,
     });
     setEmailOpen(true);
   }
@@ -514,6 +522,29 @@ function QuoteDetail() {
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </label>
+            {emailPredvolene && (
+              <VyberEmailSablony
+                companyId={q.company_id}
+                typ="ponuka"
+                jazyk={predvolenyJazykFirmy((company as any)?.country)}
+                hodnoty={hodnotyPremennych({
+                  doklad: {
+                    invoice_number: q.quote_number,
+                    total: q.total,
+                    currency: q.currency,
+                    due_date: q.valid_until,
+                    issue_date: q.issue_date,
+                    customer_name: q.customer_name,
+                  },
+                  typ: "ponuka",
+                  jazyk: predvolenyJazykFirmy((company as any)?.country),
+                  firma: company?.name ?? "",
+                  iban: (company as any)?.iban ?? "",
+                })}
+                predvolene={emailPredvolene}
+                onPouzi={(m) => setEmailForm((f) => ({ ...f, subject: m.predmet, message: m.text }))}
+              />
+            )}
             <label className="block text-sm">
               <span className="font-medium">{t("Predmet")}</span>
               <input

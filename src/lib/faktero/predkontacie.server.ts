@@ -206,6 +206,8 @@ export async function nastaveniaDokladov(
     .eq("aktivne", true);
   out.zavazkovePredkontacie = (zavazky ?? []).map((r: any) => String(r.kod));
   out.pomeryPredkontacii = await pomeryPredkontacii(supabase, company.id);
+  // Nastavenia exportu (dátumy, texty, partneri, skratky účtov) — Predkontácie → Export.
+  Object.assign(out, await (await import("./export-nastavenia.server")).doplnkyExportu(supabase, company));
 
   // Zákazka ide len vtedy, keď ich firma do Pohody posiela — inak by doklad
   // ukázal na zákazku, ktorú Pohoda nepozná, a import by ho odmietol.

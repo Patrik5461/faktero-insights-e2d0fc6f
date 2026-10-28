@@ -60,6 +60,9 @@ import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions"
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { SpracovalDokladu } from "@/components/faktero/SpracovalDokladu";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
+import { KomentarDokladu, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
+import { DokladPoradie } from "@/components/faktero/DokladPoradie";
+import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -115,6 +118,8 @@ function PurchaseInvoiceDetail() {
   const { t } = useT();
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  // Vlastné stavy dokladov firmy — kódy predkontácií si načíta panel zaúčtovania sám.
+  const ciselnikyFirmy = useCiselnikyDokladov(getActiveCompanyId(), null, false);
   const [presunPrilohy, setPresunPrilohy] = useState(false);
   const [zdrojovyMail, setZdrojovyMail] = useState(false);
   const [row, setRow] = useState<any | null>(null);
@@ -425,9 +430,20 @@ function PurchaseInvoiceDetail() {
           ) : null
         }
         secondaryActions={
-          row.file_path ? (
-            <SekundarnaAkcia ikona={Download} label={t("Stiahnuť PDF")} onClick={downloadPdf} />
-          ) : null
+          <>
+            {row.file_path ? (
+              <SekundarnaAkcia ikona={Download} label={t("Stiahnuť PDF")} onClick={downloadPdf} />
+            ) : null}
+            {!navrh ? (
+              <DokladPoradie
+                tabulka="purchase_invoices"
+                companyId={row.company_id}
+                id={row.id}
+                createdAt={row.created_at}
+                onOtvor={(dalsi) => navigate({ to: "/prijate-faktury/$id", params: { id: dalsi } })}
+              />
+            ) : null}
+          </>
         }
         menuActions={
           <>
@@ -512,7 +528,25 @@ function PurchaseInvoiceDetail() {
               id={row.id}
               stitky={(row as any).stitky ?? []}
               zamknute={Boolean(row.exported_at || (row as any).locked_at)}
+              companyId={row.company_id}
             />
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] [&>*]:min-w-0">
+              {ciselnikyFirmy.stavy.length ? (
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium">{t("Stav dokladu")}</span>
+                  <VyberStavuDokladu
+                    key={row.id}
+                    tabulka="purchase_invoices"
+                    id={row.id}
+                    stavId={(row as any).stav_id}
+                    stavy={ciselnikyFirmy.stavy}
+                  />
+                </label>
+              ) : null}
+              <div className={ciselnikyFirmy.stavy.length ? "" : "sm:col-span-2"}>
+                <KomentarDokladu tabulka="purchase_invoices" id={row.id} komentar={(row as any).komentar} />
+              </div>
+            </div>
           </div>
         )}
         <DetailSNahladom

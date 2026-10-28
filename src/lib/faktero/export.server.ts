@@ -1,6 +1,7 @@
 // Server-only helpers for accounting exports.
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
 import { intNoteSEfakturou } from "./efaktura-odoslana";
+import { icoPrePohodu } from "./ico-z-mena";
 
 /**
  * Množstvo najviac na štyri desatinné miesta. POHODA od verzie Jeseň 2026
@@ -38,6 +39,14 @@ import {
   prekazkaVydanej,
 } from "./pohoda-kontrola";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
+import {
+  datumyPrijateho,
+  internaPoznamka,
+  nastaveniaExportu,
+  nazovPolozkyOdpoctu,
+  partnerACislo,
+  type NastaveniaExportu,
+} from "./export-nastavenia";
 type InvoiceRow = any;
 type ItemRow = any;
 type CompanyRow = any;
@@ -288,7 +297,46 @@ export type PohodaNastavenia = {
    * účtujú každé inam. Čo tu nie je, dostane `predkontaciaBanka`.
    */
   predkontacieOznaceni?: Partial<Record<KodOznacenia, string | null>> | null;
+  /**
+   * Nastavenia exportu firmy (`uctovanie_nastavenia.export`) — dátumy, texty,
+   * partneri, daňový doklad k platbe. Bez nich sa čítajú z `company`; obe
+   * chýbajú = správanie ako doteraz.
+   */
+  export?: Partial<NastaveniaExportu> | Record<string, unknown> | null;
+  /** Popis predkontácie podľa kódu (číselník) — pre text „účtovná položka". */
+  popisyPredkontacii?: Record<string, string>;
+  /**
+   * Partneri (`customers.id`), ktorých karta už je v adresári Pohody alebo ide
+   * v tej istej dávke — doklad sa s nimi spáruje cez `extId`.
+   */
+  partneriVPohode?: string[];
+  /** Skratka bankového účtu v Pohode podľa id účtu firmy alebo IBAN-u (bez medzier). */
+  bankaPodlaUctu?: Record<string, string>;
 };
+
+/** Nastavenia exportu pre builder — z `nastavenia.export`, inak z firmy. */
+function exportFirmy(company: CompanyRow, nastavenia?: PohodaNastavenia): NastaveniaExportu {
+  return nastaveniaExportu(nastavenia?.export ?? (company as any)?.uctovanie_nastavenia);
+}
+
+/** Skratka účtu v Pohode pre faktúru — účet faktúry, inak spoločná skratka firmy. */
+export function bankaFaktury(invoice: InvoiceRow, nastavenia?: PohodaNastavenia): string | null {
+  const m = nastavenia?.bankaPodlaUctu ?? {};
+  const iban = String((invoice as any)?.payment_iban ?? "").replace(/\s/g, "").toUpperCase();
+  return (
+    m[String((invoice as any)?.payment_account_id ?? "")] ||
+    (iban ? m[iban] : "") ||
+    String(nastavenia?.banka ?? "").trim() ||
+    null
+  );
+}
+
+/** Partner dokladu spárovaný s kartou adresára Pohody (`extId`), keď to firma chce. */
+function extIdPartnera(ex: NastaveniaExportu, nastavenia: PohodaNastavenia | undefined, customerId: unknown): string {
+  const id = String(customerId ?? "");
+  if (ex.partneri !== "parovat" || !id || !nastavenia?.partneriVPohode?.includes(id)) return "";
+  return extId("typ", id, "          ");
+}
 
 /** Domáca mena podľa krajiny firmy (SK → EUR, CZ → CZK), nie podľa predvolenej meny faktúr. */
 function domacaMenaFirmy(company: CompanyRow): string {
@@ -489,6 +537,24 @@ export function buildPohodaInvoiceXml(opts: {
 }
 
 /** Položky `dataPackItem` s faktúrami — bez obálky, aby sa dali zliať do dávky. */
+/**
+ * Text vystavenej faktúry v Pohode podľa nastavenia firmy. Predvolene „text
+ * nad položkami" (to, čo sa fakturuje), inak poznámka, inak „Faktúra …".
+ */
+function textVystavenej(invoice: InvoiceRow, ex: NastaveniaExportu): string {
+  const inv = invoice as any;
+  const cislo =
+    inv.type === "advance_payment"
+      ? `Daňový doklad k prijatej platbe ${inv.invoice_number ?? ""}`.trim()
+      : `Faktúra ${inv.invoice_number}`;
+  const auto = String(inv.intro_note ?? "").trim() || String(inv.notes ?? "").trim() || cislo;
+  if (ex.textVystavene === "poznamka") return String(inv.notes ?? "").trim() || auto;
+  if (ex.textVystavene === "odberatel_cislo")
+    return partnerACislo(inv.customer_name, inv.invoice_number) || auto;
+  if (ex.textVystavene === "cislo") return cislo;
+  return auto;
+}
+
 export function polozkyFaktur(opts: {
   company: CompanyRow;
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
@@ -515,8 +581,18 @@ export function polozkyFaktur(opts: {
     Daňový doklad k prijatej platbe Pohoda SK vedie medzi internými dokladmi
     (typ faktúry preň schéma nemá) — ide preto cez agendu Interné doklady.
   */
-  const kPlatbe = vsetky.filter(({ invoice }) => String(invoice.type) === "advance_payment");
-  const invoices = vsetky.filter(({ invoice }) => String(invoice.type) !== "advance_payment");
+  /*
+    Firma si môže zvoliť evidenciu medzi vydanými faktúrami (Predkontácie →
+    Export) — vtedy ide ako bežná vydaná faktúra s predkontáciou zálohy.
+  */
+  const ex = exportFirmy(company, nastavenia);
+  const kPlatbeInterne = ex.dokladKPlatbe === "interne";
+  const kPlatbe = vsetky.filter(
+    ({ invoice }) => kPlatbeInterne && String(invoice.type) === "advance_payment",
+  );
+  const invoices = vsetky.filter(
+    ({ invoice }) => !kPlatbeInterne || String(invoice.type) !== "advance_payment",
+  );
   const interne = kPlatbe.length
     ? polozkyDokladov({
         company,
@@ -616,7 +692,7 @@ export function polozkyFaktur(opts: {
       */
       const predkontaciaJedna =
         String((invoice as any).pohoda_predkontacia ?? "").trim() ||
-        (typ === "proforma"
+        (typ === "proforma" || typ === "advance_payment"
           ? nastavenia?.predkontaciaZaloha
           : typ === "credit_note"
             ? nastavenia?.predkontaciaDobropis
@@ -765,7 +841,23 @@ export function polozkyFaktur(opts: {
             -zaloha.zaklad,
             "            ",
           )}${elSuma("typ:priceVAT", -zaloha.dph, "            ")}
-          </inv:${menaBlok}>
+          </inv:${menaBlok}>${
+            // Názov položky odpočtu podľa nastavenia firmy; predvolene bez poznámky.
+            ex.nazovOdpoctu !== "doklad"
+              ? el(
+                  "inv:note",
+                  skrat(
+                    nazovPolozkyOdpoctu(
+                      zaloha.cislo ? `Odpočet zálohy ${zaloha.cislo}` : "Odpočet zálohy",
+                      zaloha.sadzba,
+                      ex.nazovOdpoctu,
+                    ),
+                    90,
+                  ),
+                  "          ",
+                )
+              : ""
+          }
         </inv:invoiceAdvancePaymentItem>`
         : "";
 
@@ -777,7 +869,7 @@ export function polozkyFaktur(opts: {
         invoice.customer_country
           ? `\n            <typ:country><typ:ids>${esc(invoice.customer_country)}</typ:ids></typ:country>`
           : "",
-        el("typ:ico", skrat(invoice.customer_ico, 15), "            "),
+        el("typ:ico", skrat(icoPrePohodu(invoice.customer_ico, invoice.customer_name, invoice.customer_country, (company as any)?.pohoda_ico_z_mena), 15), "            "),
         el("typ:dic", skrat(invoice.customer_dic, 18), "            "),
         el("typ:icDph", skrat(invoice.customer_ic_dph, 18), "            "),
         el("typ:email", skrat(invoice.customer_email, 98), "            "),
@@ -856,12 +948,7 @@ export function polozkyFaktur(opts: {
           "inv:text",
           // „Text nad položkami" je to, čo sa fakturuje — patrí do textu
           // dokladu v Pohode. Poznámka ide do poznámky.
-          skrat(
-            String((invoice as any).intro_note ?? "").trim() ||
-              String(invoice.notes ?? "").trim() ||
-              `Faktúra ${invoice.invoice_number}`,
-            240,
-          ),
+          skrat(textVystavenej(invoice, ex), 240),
           "        ",
         )}${el("inv:note", poznamky, "        ")}${
           predkontacia
@@ -895,7 +982,7 @@ export function polozkyFaktur(opts: {
             ? `\n        <inv:numberOrder>${esc(skrat(invoice.order_number, 32))}</inv:numberOrder>`
             : ""
         }${statOss ? `\n        <inv:MOSS><typ:ids>${esc(statOss.kod)}</typ:ids></inv:MOSS>` : ""}
-        <inv:partnerIdentity>
+        <inv:partnerIdentity>${extIdPartnera(ex, nastavenia, (invoice as any).customer_id)}
           <typ:address>${adresa}
           </typ:address>
         </inv:partnerIdentity>
@@ -905,8 +992,8 @@ export function polozkyFaktur(opts: {
             Stormware: <typ:ids>KB</typ:ids>). IBAN bez kódu banky Pohoda
             nenájde a doklad odmietne; bez skratky použije účet z nastavenia.
           */
-          nastavenia?.banka
-            ? `\n        <inv:account><typ:ids>${esc(nastavenia.banka)}</typ:ids></inv:account>`
+          bankaFaktury(invoice, nastavenia)
+            ? `\n        <inv:account><typ:ids>${esc(bankaFaktury(invoice, nastavenia))}</typ:ids></inv:account>`
             : ""
         }
       </inv:invoiceHeader>
@@ -1318,6 +1405,7 @@ export function polozkyDokladov(opts: {
   const { company, nastavenia } = opts;
   const domaca = domacaMenaFirmy(company);
   const cz = krajinaDane(company?.country) === "CZ";
+  const ex = exportFirmy(company, nastavenia);
   /*
     Cudzia mena ide len pri prijatej faktúre s kurzom — sumy v mene, kurz
     v súhrne, domáce sumy si Pohoda prepočíta. Bloček kurz nemá, ten ostáva
@@ -1376,6 +1464,37 @@ export function polozkyDokladov(opts: {
       // Prijatý doklad (nie daňový doklad k platbe, ktorý je náš vystavený).
       const prijatyDoklad = d?._typPohody !== "danovyDokladKPlatbe";
       const datumDph = String(d?._datumDph || d?.issue_date || "");
+      /*
+        Dátum zápisu a odpočtu podľa nastavenia firmy (Predkontácie → Export).
+        Predvolené je to, čo išlo vždy: zápis = dátum vystavenia, odpočet =
+        dátum dodania (bez neho vystavenia). Daňového dokladu k platbe (náš
+        vystavený) sa voľba netýka.
+      */
+      const zamknutieZ = (den: unknown) =>
+        nastavenia?.datumZauctovaniaPevny || datumZauctovania(den, nastavenia?.zamknuteDo);
+      const datumZapisu =
+        prijatyDoklad && ex.datumZapisu !== "vyhotovenie"
+          ? datumyPrijateho(
+              {
+                vystavenie: d?.issue_date,
+                dodanie: d?._datumDph,
+                dorucenie: d?._datumDorucenia || d?.received_date || String(d?.created_at ?? "").slice(0, 10),
+              },
+              ex,
+            ).zapis || String(d?.issue_date ?? "")
+          : String(d?.issue_date ?? "");
+      const datumOdpoctu =
+        prijatyDoklad && ex.datumOdpoctu !== "dodanie"
+          ? datumyPrijateho(
+              {
+                vystavenie: d?.issue_date,
+                dodanie: d?._datumDph,
+                dorucenie: d?._datumDorucenia || d?.received_date || String(d?.created_at ?? "").slice(0, 10),
+                zauctovanie: zamknutieZ(datumZapisu),
+              },
+              ex,
+            ).odpocet || datumDph
+          : datumDph;
       const popis = skrat(
         [
           d?.supplier_name,
@@ -1482,6 +1601,23 @@ export function polozkyDokladov(opts: {
               : "inv"
           : "inv";
       const koren = p === "inv" ? "invoice" : p === "vch" ? "voucher" : "intDoc";
+      /*
+        Text dokladu v Pohode. Predvolene ako vždy (popis plnenia, inak
+        dodávateľ s číslom a kategóriou); firma si môže zvoliť názov účtovnej
+        položky (predkontácie), poznámku alebo dodávateľa s číslom dokladu.
+      */
+      const textAuto = skrat(d?._text, 240) || popis || "Prijatý doklad";
+      const textDokladu =
+        (prijatyDoklad && ex.textPrijate !== "auto"
+          ? skrat(
+              ex.textPrijate === "polozka"
+                ? nastavenia?.popisyPredkontacii?.[String(predkontaciaJedna ?? "")]
+                : ex.textPrijate === "poznamka"
+                  ? d?.note
+                  : partnerACislo(d?.supplier_name, d?.document_number),
+              240,
+            )
+          : "") || textAuto;
       const menaDokladu = String(d?.currency ?? domaca).toUpperCase() || domaca;
       const cudziaD = menaDokladu !== domaca;
       const mb = cudziaD ? "foreignCurrency" : "homeCurrency";
@@ -1602,6 +1738,59 @@ export function polozkyDokladov(opts: {
           : "";
 
       /*
+        Faktúra v cudzej mene bez položiek: súhrn v cudzej mene nesie len
+        celkovú sumu, sadzby by Pohoda nepoznala — položky sa vyrobia
+        z rozpisu DPH, po jednej na sadzbu.
+      */
+      const polozkyZRozpisu = (mena: "foreignCurrency" | "homeCurrency") =>
+        `
+      <${p}:${koren}Detail>${rozpis
+        .map((r: RozpisDph & { pdp?: boolean }) => {
+          /*
+            Domáca mena (voľba „položky z rozpisu DPH"): prenesená sadzba nesie
+            členenie pre prenesenie a KV B.1 ako položka prijatej faktúry.
+            Cudzia mena ostáva tak, ako bola.
+          */
+          const domace = mena === "homeCurrency";
+          const cl = domace
+            ? r.pdp
+              ? nastavenia?.clenenieDphPdpPrijata || clenenie
+              : clenenie
+            : clenenieJedno;
+          const kvr = domace && r.pdp && !cz ? "B1" : "";
+          return `
+        <${p}:${koren}Item>${el(`${p}:text`, skrat(popis || "Prijatý doklad", 90), "          ")}
+          <${p}:quantity>1</${p}:quantity>
+          <${p}:payVAT>false</${p}:payVAT>
+          <${p}:rateVAT>${kodSadzby(r.sadzba, tab)}</${p}:rateVAT>
+          <${p}:${mena}>${elSuma("typ:unitPrice", r.zaklad, "            ")}${elSuma(
+            "typ:price",
+            r.zaklad,
+            "            ",
+          )}${elSuma("typ:priceVAT", r.dph, "            ")}${elSuma("typ:priceSum", r.zaklad + r.dph, "            ")}
+          </${p}:${mena}>${
+            predkontaciaJedna ? `\n          <${p}:accounting><typ:ids>${esc(predkontaciaJedna)}</typ:ids></${p}:accounting>` : ""
+          }${cl ? `\n          <${p}:classificationVAT><typ:ids>${esc(cl)}</typ:ids></${p}:classificationVAT>` : ""}${
+            kvr ? `\n          <${p}:classificationKVDPH><typ:ids>${esc(kvr)}</typ:ids></${p}:classificationKVDPH>` : ""
+          }
+        </${p}:${koren}Item>`;
+        })
+        .join("")}
+      </${p}:${koren}Detail>`;
+      /*
+        Položky z rozpisu DPH: v cudzej mene vždy (súhrn sadzby nenesie), inak
+        len keď si to firma zapla a doklad iné položky nemá.
+      */
+      const xmlZRozpisu =
+        xmlPolozkyFaktury || polozkyRozuct
+          ? ""
+          : cudziaD
+            ? polozkyZRozpisu("foreignCurrency")
+            : ex.polozkyZRozpisu && prijatyDoklad && rozpis.length
+              ? polozkyZRozpisu("homeCurrency")
+              : "";
+
+      /*
         Zaokrúhlenie ako položka s vlastnou predkontáciou (nastavenie firmy) —
         len keď doklad ide s položkami; súhrn potom zaokrúhlenie nenesie.
       */
@@ -1616,7 +1805,9 @@ export function polozkyDokladov(opts: {
       const clZaokr = kodyZaokr.clenenie;
       // KV len v slovenskej Pohode a „X“ (nezahŕňať) sa neposiela.
       const kvZaokr = !cz && kodyZaokr.kv && kodyZaokr.kv !== "X" ? kodyZaokr.kv : null;
-      const zaokrPolozkou = Boolean(pkZaokr && zaokruhlenie && !cudziaD && (xmlPolozkyFaktury || polozkyRozuct));
+      const zaokrPolozkou = Boolean(
+        pkZaokr && zaokruhlenie && !cudziaD && (xmlPolozkyFaktury || polozkyRozuct || xmlZRozpisu),
+      );
       const vlozZaokruhlenie = (detail: string) =>
         zaokrPolozkou
           ? detail.replace(
@@ -1639,32 +1830,7 @@ export function polozkyDokladov(opts: {
             )
           : detail;
 
-      /*
-        Faktúra v cudzej mene bez položiek: súhrn v cudzej mene nesie len
-        celkovú sumu, sadzby by Pohoda nepoznala — položky sa vyrobia
-        z rozpisu DPH, po jednej na sadzbu.
-      */
-      const polozkyZRozpisu = () =>
-        `
-      <${p}:${koren}Detail>${rozpis
-        .map(
-          (r) => `
-        <${p}:${koren}Item>${el(`${p}:text`, skrat(popis || "Prijatý doklad", 90), "          ")}
-          <${p}:quantity>1</${p}:quantity>
-          <${p}:payVAT>false</${p}:payVAT>
-          <${p}:rateVAT>${kodSadzby(r.sadzba, tab)}</${p}:rateVAT>
-          <${p}:foreignCurrency>${elSuma("typ:unitPrice", r.zaklad, "            ")}${elSuma(
-            "typ:price",
-            r.zaklad,
-            "            ",
-          )}${elSuma("typ:priceVAT", r.dph, "            ")}${elSuma("typ:priceSum", r.zaklad + r.dph, "            ")}
-          </${p}:foreignCurrency>${
-            predkontaciaJedna ? `\n          <${p}:accounting><typ:ids>${esc(predkontaciaJedna)}</typ:ids></${p}:accounting>` : ""
-          }${clenenieJedno ? `\n          <${p}:classificationVAT><typ:ids>${esc(clenenieJedno)}</typ:ids></${p}:classificationVAT>` : ""}
-        </${p}:${koren}Item>`,
-        )
-        .join("")}
-      </${p}:${koren}Detail>`;
+
 
       // Poradie prvkov podľa typ:addressType: firma, mesto, ulica, PSČ, IČO, DIČ, IČ DPH.
       const adresa = [
@@ -1676,7 +1842,7 @@ export function polozkyDokladov(opts: {
         /^[A-Z]{2}$/.test(String(d?.supplier_country ?? "").trim().toUpperCase())
           ? `\n            <typ:country><typ:ids>${String(d.supplier_country).trim().toUpperCase()}</typ:ids></typ:country>`
           : "",
-        el("typ:ico", skrat(d?.supplier_ico, 15), "            "),
+        el("typ:ico", skrat(icoPrePohodu(d?.supplier_ico, d?.supplier_name, d?.supplier_country, (company as any)?.pohoda_ico_z_mena), 15), "            "),
         el("typ:dic", skrat(d?.supplier_dic, 18), "            "),
         el("typ:icDph", skrat(d?.supplier_ic_dph, 18), "            "),
       ].join("");
@@ -1750,7 +1916,16 @@ export function polozkyDokladov(opts: {
         `${p}:activity`,
         d?.cinnost,
         "        ",
-      )}${odkazIds(`${p}:contract`, zakazka, "        ")}${el(`${p}:intNote`, skrat(d?.int_poznamka, 240), "        ")}${
+      )}${odkazIds(`${p}:contract`, zakazka, "        ")}${el(
+        `${p}:intNote`,
+        skrat(
+          prijatyDoklad
+            ? internaPoznamka(d ?? {}, blocek ? ex.intPoznamkaBlocky : ex.intPoznamkaPrijate)
+            : d?.int_poznamka,
+          240,
+        ),
+        "        ",
+      )}${
         // Párovací symbol: Pohoda podľa neho páruje úhradu z banky.
         symPar ? el(`${p}:symPar`, symPar, "        ") : ""
       }${
@@ -1771,18 +1946,14 @@ export function polozkyDokladov(opts: {
           povodne,
           "        ",
         )}${el(`${p}:originalDocumentNumber`, opravujeCislo, "        ")}
-        <${p}:date>${esc(d?.issue_date ?? "")}</${p}:date>
-        <${p}:dateTax>${esc(datumDph)}</${p}:dateTax>${datumyVerzie}${
+        <${p}:date>${esc(datumZapisu)}</${p}:date>
+        <${p}:dateTax>${esc(datumOdpoctu)}</${p}:dateTax>${datumyVerzie}${
           p === "inv" ? el("inv:dateDue", d?._splatnost, "        ") : ""
         }${
           p !== "vch"
-            ? el(
-                `${p}:dateAccounting`,
-                nastavenia?.datumZauctovaniaPevny || datumZauctovania(d?.issue_date, nastavenia?.zamknuteDo),
-                "        ",
-              )
+            ? el(`${p}:dateAccounting`, zamknutieZ(datumZapisu), "        ")
             : ""
-        }${el(`${p}:text`, skrat(d?._text, 240) || popis || "Prijatý doklad", "        ")}${el(
+        }${el(`${p}:text`, textDokladu, "        ")}${el(
           `${p}:note`,
           poznamkaDokladu,
           "        ",
@@ -1801,7 +1972,7 @@ export function polozkyDokladov(opts: {
         }${
           adresa
             ? `
-        <${p}:partnerIdentity>
+        <${p}:partnerIdentity>${extIdPartnera(ex, nastavenia, d?.customer_id)}
           <typ:address>${adresa}
           </typ:address>
         </${p}:partnerIdentity>`
@@ -1817,7 +1988,7 @@ export function polozkyDokladov(opts: {
             ? `\n        <inv:paymentAccount><typ:accountNo>${esc(ucetDodavatela.cislo)}</typ:accountNo><typ:bankCode>${esc(ucetDodavatela.kodBanky)}</typ:bankCode></inv:paymentAccount>`
             : ""
         }
-      </${p}:${koren}Header>${vlozZaokruhlenie(xmlPolozkyFaktury || polozkyRozuct || (cudziaD ? polozkyZRozpisu() : ""))}
+      </${p}:${koren}Header>${vlozZaokruhlenie(xmlPolozkyFaktury || polozkyRozuct || xmlZRozpisu)}
       <${p}:${koren}Summary>${
         zaokruhlenie && !zaokrPolozkou ? "" : `\n        <${p}:roundingDocument>none</${p}:roundingDocument>`
       }
@@ -1911,7 +2082,7 @@ function idSVerziou(id: unknown, verzia: unknown): string {
  * Tu ide celá karta vrátane kontaktu, telefónu a e-mailu, takže účtovníčka má
  * odberateľa aj vtedy, keď mu tento mesiac nič nefakturujeme.
  */
-export function polozkyAdresara(opts: { zakaznici: DokladRow[] }): string {
+export function polozkyAdresara(opts: { zakaznici: DokladRow[]; company?: CompanyRow }): string {
   return opts.zakaznici
     .map((z) => {
       const adresa = [
@@ -1923,7 +2094,7 @@ export function polozkyAdresara(opts: { zakaznici: DokladRow[] }): string {
         z?.country
           ? `\n              <typ:country><typ:ids>${esc(z.country)}</typ:ids></typ:country>`
           : "",
-        el("typ:ico", skrat(z?.ico, 15), "              "),
+        el("typ:ico", skrat(icoPrePohodu(z?.ico, z?.name, z?.country, (opts.company as any)?.pohoda_ico_z_mena), 15), "              "),
         el("typ:dic", skrat(z?.dic, 18), "              "),
         el("typ:icDph", skrat(z?.ic_dph, 18), "              "),
       ].join("");
@@ -2260,7 +2431,7 @@ export function buildPohodaDavkaXml(opts: {
   // Číselníky idú prvé, nech je odberateľ v adresári a zákazka v zozname skôr,
   // než sa na ne odvolá faktúra.
   const entries = [
-    opts.zakaznici?.length ? polozkyAdresara({ zakaznici: opts.zakaznici }) : "",
+    opts.zakaznici?.length ? polozkyAdresara({ zakaznici: opts.zakaznici, company: opts.company }) : "",
     opts.zasoby?.length
       ? polozkySkladu({
           zasoby: opts.zasoby,
@@ -2661,11 +2832,16 @@ function prekazkaBezZaloh(invoice: InvoiceRow, program: string): string | null {
 }
 
 /** Položky faktúry so zľavou na doklad rozpočítanou a s odpočtom zálohy na konci. */
-function polozkySOdpoctom(invoice: InvoiceRow, items: ItemRow[]): ItemRow[] {
+function polozkySOdpoctom(invoice: InvoiceRow, items: ItemRow[], company?: CompanyRow): ItemRow[] {
   const inv = invoice as any;
+  // Názov položky odpočtu podľa nastavenia firmy (predvolene číslo dokladu).
+  const format = nastaveniaExportu((company as any)?.uctovanie_nastavenia).nazovOdpoctu;
   return [
     ...riadkySoZlavou(items, inv.discount_total),
-    ...(polozkyOdpoctu(inv._odpocty) as unknown as ItemRow[]),
+    ...(polozkyOdpoctu(
+      inv._odpocty,
+      format === "doklad" ? undefined : (text, sadzba) => nazovPolozkyOdpoctu(text, sadzba, format),
+    ) as unknown as ItemRow[]),
   ];
 }
 
@@ -2721,7 +2897,7 @@ export function buildOmegaTxt(opts: {
       continue;
     }
     // Zľava na doklad je len v hlavičke a odpočet zálohy ide ako záporné položky.
-    const items = polozkySOdpoctom(invoice, povodne);
+    const items = polozkySOdpoctom(invoice, povodne, opts.company);
     const sadzby = sadzbyDokladu(items);
     const vyssia = sadzby[0];
     const nizsia = sadzby[1];
@@ -2918,7 +3094,7 @@ export function buildMoneyS3Xml(opts: {
     }
     // Zľava na doklad je len v hlavičke; Money ju chce mať v cenách položiek.
     // Odpočet zálohy ide ako záporné položky s príznakom zdanenej zálohy.
-    const items = polozkySOdpoctom(invoice, povodne);
+    const items = polozkySOdpoctom(invoice, povodne, opts.company);
     const mena = String(invoice.currency ?? domaca).toUpperCase() || domaca;
     const cudzia = mena !== domaca;
     /*

@@ -172,6 +172,7 @@ function InvoiceAppearancePage() {
         invoice_show_logo: c.invoice_show_logo ?? true,
         invoice_show_stamp: c.invoice_show_stamp ?? true,
         invoice_footer: c.invoice_footer ?? null,
+        invoice_intro_default: String(c.invoice_intro_default ?? "").trim() || null,
       } as any)
       .eq("id", companyId!);
     setSaving(false);
@@ -352,6 +353,22 @@ function InvoiceAppearancePage() {
                   </button>
                 ))}
               </div>
+            </section>
+
+            {/* Predvolený text nad položkami novej faktúry */}
+            <section className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-sm font-semibold">{t("Text nad položkami")}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("Predvyplní sa do každej novej faktúry, napr. „Fakturujeme vám:“. Prázdne = „Fakturujeme Vám“ v jazyku faktúry.")}
+              </p>
+              <input
+                value={c.invoice_intro_default ?? ""}
+                onChange={(e) => setC({ ...c, invoice_intro_default: e.target.value })}
+                maxLength={500}
+                placeholder={t("Fakturujeme Vám")}
+                aria-label={t("Predvolený text nad položkami")}
+                className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
             </section>
 
             {/* Pätička */}

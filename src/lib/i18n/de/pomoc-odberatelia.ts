@@ -59,4 +59,6 @@ export default {
     "Das ist keine Formalität: Bei Warenlieferungen in die EU ist eine gültige USt-IdNr. des Kunden <0>Voraussetzung für die Steuerbefreiung</0>. Jede Prüfung wird mit Datum gespeichert, sodass sie sich bei einer Prüfung nachweisen lässt; nach dreißig Tagen wird sie als älter markiert, und vor der nächsten Lieferung lohnt es sich, erneut zu prüfen.",
   "Keď je register nedostupný, Faktero to povie ako výpadok — nie ako neplatné IČ DPH. To sú dve rôzne veci a rozhodujú o tom, či faktúra smie ísť bez dane.":
     "Ist das Register nicht erreichbar, meldet Faktero das als Ausfall — nicht als ungültige USt-IdNr. Das sind zwei verschiedene Dinge, und sie entscheiden darüber, ob die Rechnung ohne Steuer hinausgehen darf.",
+  "<0>Povinné číslo objednávky.</0> Keď partner chce na každom doklade číslo svojej objednávky, zaškrtnite to na jeho karte. Faktúra pre neho a doklad od neho v Nespracovaných potom bez čísla objednávky ukážu upozornenie — uložiť sa dajú aj tak.":
+    "<0>Pflicht-Bestellnummer.</0> Wenn ein Partner auf jedem Beleg die Nummer seiner Bestellung haben möchte, haken Sie das auf seiner Karte an. Eine Rechnung für ihn und ein Beleg von ihm in Unverarbeitete zeigen dann ohne Bestellnummer einen Hinweis — speichern lassen sie sich trotzdem.",
 } satisfies Record<string, string>;

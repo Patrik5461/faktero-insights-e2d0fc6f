@@ -32,4 +32,6 @@ export default {
     "Das Konto lässt sich in den Einstellungen löschen; zur Bestätigung ist das Passwort einzugeben, damit das niemand tun kann, der an ein entsperrtes Handy gelangt. Die Löschung erfolgt mit <0>14 Tagen Aufschub</0> — bis dahin lässt sie sich durch Anmelden rückgängig machen.",
   "Pred zrušením si stiahnite doklady. Povinnosť uchovávať účtovné doklady <0>desať rokov</0> platí ďalej a zrušením účtu nezaniká.":
     "Laden Sie vor der Löschung Ihre Belege herunter. Die Pflicht, Buchungsbelege <0>zehn Jahre</0> aufzubewahren, gilt weiter und erlischt nicht mit der Löschung des Kontos.",
+  "Súbory otvorí Excel bez nastavovania. Odkaz na stiahnutie platí sedem dní; balík sa dá pripraviť kedykoľvek znova. Pravidelný archív so všetkými PDF a skenmi dokladov si majiteľ alebo admin vytvorí v <0>Nastavenia → Zálohy dokladov</0> — beží na pozadí, ponecháva sa posledných päť záloh.":
+    "Die Dateien öffnet Excel ohne Einstellungen. Der Download-Link gilt sieben Tage; das Paket lässt sich jederzeit neu erstellen. Ein regelmäßiges Archiv mit allen PDFs und Scans der Belege erstellt der Eigentümer oder Admin unter <0>Einstellungen → Belegsicherungen</0> — es läuft im Hintergrund, die letzten fünf Sicherungen bleiben erhalten.",
 } satisfies Record<string, string>;

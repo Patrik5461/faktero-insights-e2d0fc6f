@@ -59,6 +59,8 @@ export type UdajeNespracovaneho = {
   /** Vozidlo z vozového parku — náklad na auto (PHM, servis, poistka). */
   vehicleId?: string;
   poznamka: string;
+  /** Komentár pre ľudí vo firme — ide do `komentar`, do účtovníctva nikdy. */
+  komentar?: string;
   /** Iný doklad. */
   ostatny: { druh: string; predmet: string; lehota: string };
   /** Zaúčtovanie — rovnaké kódy ako pri prijatej faktúre. */
@@ -157,6 +159,7 @@ export function prazdneUdaje(): UdajeNespracovaneho {
     jobId: "",
     vehicleId: "",
     poznamka: "",
+    komentar: "",
     ostatny: { druh: "ine", predmet: "", lehota: "" },
     kody: { predkontacia: "", clenenie: "", kv: "", stredisko: "", cinnost: "", rad: "", intPoznamka: "" },
     polozky: [],
@@ -509,6 +512,7 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
   u.platba = s(p.payment_method);
   u.kategoria = s(p.category);
   u.poznamka = s(p.note);
+  u.komentar = s(p.komentar);
   u.polozky = Array.isArray(p.items) && p.items.length ? p.items : Array.isArray(p.polozky_vypnute) ? p.polozky_vypnute : [];
   u.polozkyVypnute = !(Array.isArray(p.items) && p.items.length) && Array.isArray(p.polozky_vypnute) && p.polozky_vypnute.length > 0;
   u.opravuje = s(p.opravuje_cislo);
@@ -582,6 +586,7 @@ export function prijataZUdajov(
     cinnost: prazdne(u.kody.cinnost),
     pohoda_rad: prazdne(u.kody.rad),
     int_poznamka: prazdne(u.kody.intPoznamka),
+    komentar: prazdne(u.komentar ?? ""),
   };
 }
 
@@ -614,6 +619,7 @@ export function blocekZUdajov(u: UdajeNespracovaneho) {
     cinnost: prazdne(u.kody.cinnost),
     pohoda_rad: prazdne(u.kody.rad),
     int_poznamka: prazdne(u.kody.intPoznamka),
+    komentar: prazdne(u.komentar ?? ""),
   };
 }
 

@@ -6,6 +6,9 @@ import { SpracovalDokladu } from "@/components/faktero/SpracovalDokladu";
 import { jePalivo } from "@/lib/faktero/palivo";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
+import { KomentarDokladu, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
+import { DokladPoradie } from "@/components/faktero/DokladPoradie";
+import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno";
@@ -162,13 +165,15 @@ function NovyDokladPage() {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const cid = getActiveCompanyId();
+  // Vlastné stavy dokladov firmy (Účtovníctvo → Predkontácie) — kódy tu netreba.
+  const ciselnikyFirmy = useCiselnikyDokladov(cid, null, false);
   const [ulozeny, setUlozeny] = useState<any>(null);
   const [presunPrilohy, setPresunPrilohy] = useState(false);
   const sablonyFn = useServerFn(poznamkySablonyFn);
   const [sablony, setSablony] = useState<string[]>([]);
   useEffect(() => {
     if (!cid) return;
-    sablonyFn({ data: { company_id: cid } })
+    sablonyFn({ data: { company_id: cid, agenda: "blocek" } })
       .then((r) => setSablony(r.zoznam))
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -612,6 +617,15 @@ function NovyDokladPage() {
         action={
           search.id ? (
             <div className="flex flex-wrap gap-2">
+              {ulozeny && cid ? (
+                <DokladPoradie
+                  tabulka="expense_documents"
+                  companyId={cid}
+                  id={ulozeny.id}
+                  createdAt={ulozeny.created_at}
+                  onOtvor={(id) => navigate({ to: "/doklady/novy", search: { id } as any })}
+                />
+              ) : null}
               {ulozeny ? (
                 <ZdrojovyMailTlacidlo druh="doklad" id={ulozeny.id} inboxMessageId={ulozeny.inbox_message_id} />
               ) : null}
@@ -996,7 +1010,27 @@ function NovyDokladPage() {
                         id={search.id}
                         stitky={ulozeny.stitky ?? []}
                         zamknute={Boolean(ulozeny.exported_at || ulozeny.locked_at)}
+                        companyId={cid}
                       />
+                    </div>
+                  ) : null}
+                  {ulozeny ? (
+                    <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
+                      {ciselnikyFirmy.stavy.length ? (
+                        <label className="block">
+                          <span className="mb-1 block text-sm font-medium">{t("Stav dokladu")}</span>
+                          <VyberStavuDokladu
+                            key={ulozeny.id}
+                            tabulka="expense_documents"
+                            id={ulozeny.id}
+                            stavId={ulozeny.stav_id}
+                            stavy={ciselnikyFirmy.stavy}
+                          />
+                        </label>
+                      ) : null}
+                      <div className="sm:col-span-2">
+                        <KomentarDokladu tabulka="expense_documents" id={ulozeny.id} komentar={ulozeny.komentar} />
+                      </div>
                     </div>
                   ) : null}
                   <SchvalovaniePanel companyId={cid} agenda="doklad" id={search.id} />
@@ -1283,7 +1317,7 @@ function NovyDokladPage() {
                       onClick={async () => {
                         if (!cid) return;
                         const r = await sablonyFn({
-                          data: { company_id: cid, pridat: form.note.trim() },
+                          data: { company_id: cid, agenda: "blocek", pridat: form.note.trim() },
                         });
                         setSablony(r.zoznam);
                         toast.success(t("Poznámka uložená medzi preddefinované"));

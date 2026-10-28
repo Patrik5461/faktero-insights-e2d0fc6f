@@ -292,9 +292,25 @@ export async function zostavDavku(
 
   // Číselníky — len keď si ich firma zapla. Sklad navyše potrebuje členenie,
   // bez neho Pohoda kartu nezaloží, tak sa ani neposiela.
-  const zakaznici = lenBezny && company.pohoda_posielat_adresar
-    ? await nacitajZakaznikov(supabase, vstup.companyId)
-    : [];
+  /*
+    Partneri dokladov „pridať alebo aktualizovať a párovať" (Predkontácie →
+    Export): aj bez posielania celého adresára idú karty partnerov, na ktorých
+    sa doklady v dávke odvolávajú — doklad sa s kartou spáruje cez `extId`.
+  */
+  const { nastaveniaExportu } = await import("./export-nastavenia");
+  const parovatPartnerov = nastaveniaExportu(company.uctovanie_nastavenia).partneri === "parovat";
+  const partneriDokladov = new Set(
+    [...faktury, ...prijate].map((d: Riadok) => String(d.customer_id ?? "")).filter(Boolean),
+  );
+  const zakaznici = !lenBezny
+    ? []
+    : company.pohoda_posielat_adresar
+      ? await nacitajZakaznikov(supabase, vstup.companyId)
+      : parovatPartnerov && partneriDokladov.size
+        ? (await nacitajZakaznikov(supabase, vstup.companyId)).filter((z: Riadok) =>
+            partneriDokladov.has(String(z.id)),
+          )
+        : [];
   const zasoby =
     lenBezny && company.pohoda_posielat_sklad && company.pohoda_sklad
       ? await nacitajZasoby(supabase, vstup.companyId)
@@ -410,6 +426,11 @@ export async function zostavDavku(
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
     sklad: company.pohoda_sklad,
   };
+  // Karty, ktoré idú v tejto dávke, sú v Pohode skôr než doklady (adresár ide prvý).
+  if (parovatPartnerov)
+    nastavenia.partneriVPohode = [
+      ...new Set([...(nastavenia.partneriVPohode ?? []), ...zakaznici.map((z: Riadok) => String(z.id))]),
+    ];
 
   const odkazy = company.pohoda_odkaz_na_pdf ? await odkazyNaPdf(supabase, faktury) : {};
   // Už odoslané eFaktúry dostanú vetu do internej poznámky — v Pohode sa nesmú poslať znova.

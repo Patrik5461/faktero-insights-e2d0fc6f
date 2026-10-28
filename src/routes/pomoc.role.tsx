@@ -276,6 +276,30 @@ const sections: HelpSection[] = [
           Koľko ľudí môžete pozvať, závisí od plánu — pozri{" "}
           <Link to="/pomoc/predplatne">Predplatné</Link>.
         </p>
+        <p>
+          Pri každom členovi môžete vyplniť <strong>telefón</strong>,{" "}
+          <strong>číslo zamestnanca</strong> a <strong>projekt</strong> — predvolenú zákazku, na
+          ktorú sa zaradí každý jeho nový bloček a prijatá faktúra (na doklade sa dá zmeniť).
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "podpora",
+    title: "Prístup technickej podpory",
+    body: (
+      <>
+        <p>
+          Keď potrebujete, aby sa technická podpora Faktero pozrela priamo do vašej firmy, majiteľ
+          jej v sekcii <em>Používatelia a pozvánky</em> cez{" "}
+          <strong>Pridať technickú podporu</strong> udelí dočasný prístup — len na čítanie alebo
+          plný k dokladom, na 1 až 30 dní. Bez toho podpora do firmy nevidí. K zamestnancom, banke,
+          API ani používateľom sa nedostane nikdy.
+        </p>
+        <p>
+          Prístup vidíte v zozname používateľov a odobrať ho viete kedykoľvek; po uplynutí sa zruší
+          sám. Kto ho udelil, odobral a dokedy platil, ostáva v histórii prístupov podpory.
+        </p>
       </>
     ),
   },

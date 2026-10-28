@@ -11,6 +11,8 @@ export type UcetFirmy = {
   bank_name: string | null;
   currency: string;
   is_default: boolean;
+  /** Skratka účtu v Pohode (pre účtovníctvo). */
+  pohoda_skratka?: string | null;
 };
 
 /** Bankové účty firmy — predvolený prvý. */
@@ -22,7 +24,7 @@ export function useUctyFirmy(companyId: string | null | undefined) {
     let zive = true;
     supabase
       .from("company_bank_accounts")
-      .select("id, name, iban, swift, bank_name, currency, is_default")
+      .select("id, name, iban, swift, bank_name, currency, is_default, pohoda_skratka")
       .eq("company_id", companyId)
       .order("is_default", { ascending: false })
       .order("position")

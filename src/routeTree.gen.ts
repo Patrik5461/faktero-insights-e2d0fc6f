@@ -197,9 +197,12 @@ import { Route as AuthenticatedNastaveniaIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedNastaveniaEmailSablonyRouteImport } from './routes/_authenticated/nastavenia.email-sablony'
 import { Route as AuthenticatedNastaveniaEshopRouteImport } from './routes/_authenticated/nastavenia.eshop'
 import { Route as AuthenticatedNastaveniaOnlinePlatbyRouteImport } from './routes/_authenticated/nastavenia.online-platby'
+import { Route as AuthenticatedNastaveniaPoznamkyRouteImport } from './routes/_authenticated/nastavenia.poznamky'
+import { Route as AuthenticatedNastaveniaPrihlasitAppkuRouteImport } from './routes/_authenticated/nastavenia.prihlasit-appku'
 import { Route as AuthenticatedNastaveniaSchvalovanieRouteImport } from './routes/_authenticated/nastavenia.schvalovanie'
 import { Route as AuthenticatedNastaveniaVzhladFakturyRouteImport } from './routes/_authenticated/nastavenia.vzhlad-faktury'
 import { Route as AuthenticatedNastaveniaZabezpecenieRouteImport } from './routes/_authenticated/nastavenia.zabezpecenie'
+import { Route as AuthenticatedNastaveniaZalohyRouteImport } from './routes/_authenticated/nastavenia.zalohy'
 import { Route as AuthenticatedNespracovaneIndexRouteImport } from './routes/_authenticated/nespracovane.index'
 import { Route as AuthenticatedNespracovaneIdRouteImport } from './routes/_authenticated/nespracovane.$id'
 import { Route as AuthenticatedObjednavkyIndexRouteImport } from './routes/_authenticated/objednavky.index'
@@ -231,6 +234,7 @@ import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_auth
 import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenticated/sklad.prijem'
 import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
 import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authenticated/uctovnictvo.dph'
+import { Route as AuthenticatedUctovnictvoKonvertorRouteImport } from './routes/_authenticated/uctovnictvo.konvertor'
 import { Route as AuthenticatedUctovnictvoNaKontroluRouteImport } from './routes/_authenticated/uctovnictvo.na-kontrolu'
 import { Route as AuthenticatedUctovnictvoOssRouteImport } from './routes/_authenticated/uctovnictvo.oss'
 import { Route as AuthenticatedUctovnictvoPohodaRouteImport } from './routes/_authenticated/uctovnictvo.pohoda'
@@ -318,6 +322,7 @@ import { Route as ApiPublicHooksEfakturaSyncRouteImport } from './routes/api/pub
 import { Route as ApiPublicHooksJazdyDoplnenieRouteImport } from './routes/api/public/hooks/jazdy-doplnenie'
 import { Route as ApiPublicHooksKurzyEcbRouteImport } from './routes/api/public/hooks/kurzy-ecb'
 import { Route as ApiPublicHooksOdovzdanieMesacneRouteImport } from './routes/api/public/hooks/odovzdanie-mesacne'
+import { Route as ApiPublicHooksPodporaPristupyRouteImport } from './routes/api/public/hooks/podpora-pristupy'
 import { Route as ApiPublicHooksPohodaStrazcaRouteImport } from './routes/api/public/hooks/pohoda-strazca'
 import { Route as ApiPublicHooksPredplatneObnovaRouteImport } from './routes/api/public/hooks/predplatne-obnova'
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
@@ -1365,6 +1370,18 @@ const AuthenticatedNastaveniaOnlinePlatbyRoute =
     path: '/nastavenia/online-platby',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNastaveniaPoznamkyRoute =
+  AuthenticatedNastaveniaPoznamkyRouteImport.update({
+    id: '/nastavenia/poznamky',
+    path: '/nastavenia/poznamky',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNastaveniaPrihlasitAppkuRoute =
+  AuthenticatedNastaveniaPrihlasitAppkuRouteImport.update({
+    id: '/nastavenia/prihlasit-appku',
+    path: '/nastavenia/prihlasit-appku',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedNastaveniaSchvalovanieRoute =
   AuthenticatedNastaveniaSchvalovanieRouteImport.update({
     id: '/nastavenia/schvalovanie',
@@ -1381,6 +1398,12 @@ const AuthenticatedNastaveniaZabezpecenieRoute =
   AuthenticatedNastaveniaZabezpecenieRouteImport.update({
     id: '/nastavenia/zabezpecenie',
     path: '/nastavenia/zabezpecenie',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNastaveniaZalohyRoute =
+  AuthenticatedNastaveniaZalohyRouteImport.update({
+    id: '/nastavenia/zalohy',
+    path: '/nastavenia/zalohy',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedNespracovaneIndexRoute =
@@ -1562,6 +1585,12 @@ const AuthenticatedUctovnictvoDphRoute =
   AuthenticatedUctovnictvoDphRouteImport.update({
     id: '/uctovnictvo/dph',
     path: '/uctovnictvo/dph',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedUctovnictvoKonvertorRoute =
+  AuthenticatedUctovnictvoKonvertorRouteImport.update({
+    id: '/uctovnictvo/konvertor',
+    path: '/uctovnictvo/konvertor',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedUctovnictvoNaKontroluRoute =
@@ -2049,6 +2078,12 @@ const ApiPublicHooksOdovzdanieMesacneRoute =
     path: '/api/public/hooks/odovzdanie-mesacne',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksPodporaPristupyRoute =
+  ApiPublicHooksPodporaPristupyRouteImport.update({
+    id: '/api/public/hooks/podpora-pristupy',
+    path: '/api/public/hooks/podpora-pristupy',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksPohodaStrazcaRoute =
   ApiPublicHooksPohodaStrazcaRouteImport.update({
     id: '/api/public/hooks/pohoda-strazca',
@@ -2500,9 +2535,12 @@ export interface FileRoutesByFullPath {
   '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/eshop': typeof AuthenticatedNastaveniaEshopRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  '/nastavenia/poznamky': typeof AuthenticatedNastaveniaPoznamkyRoute
+  '/nastavenia/prihlasit-appku': typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
   '/nastavenia/schvalovanie': typeof AuthenticatedNastaveniaSchvalovanieRoute
   '/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
+  '/nastavenia/zalohy': typeof AuthenticatedNastaveniaZalohyRoute
   '/nespracovane/$id': typeof AuthenticatedNespracovaneIdRoute
   '/objednavky/$id': typeof AuthenticatedObjednavkyIdRoute
   '/objednavky/nova': typeof AuthenticatedObjednavkyNovaRoute
@@ -2525,6 +2563,7 @@ export interface FileRoutesByFullPath {
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/uctovnictvo/konvertor': typeof AuthenticatedUctovnictvoKonvertorRoute
   '/uctovnictvo/na-kontrolu': typeof AuthenticatedUctovnictvoNaKontroluRoute
   '/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
@@ -2623,6 +2662,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -2851,9 +2891,12 @@ export interface FileRoutesByTo {
   '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/eshop': typeof AuthenticatedNastaveniaEshopRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  '/nastavenia/poznamky': typeof AuthenticatedNastaveniaPoznamkyRoute
+  '/nastavenia/prihlasit-appku': typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
   '/nastavenia/schvalovanie': typeof AuthenticatedNastaveniaSchvalovanieRoute
   '/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
+  '/nastavenia/zalohy': typeof AuthenticatedNastaveniaZalohyRoute
   '/nespracovane/$id': typeof AuthenticatedNespracovaneIdRoute
   '/objednavky/$id': typeof AuthenticatedObjednavkyIdRoute
   '/objednavky/nova': typeof AuthenticatedObjednavkyNovaRoute
@@ -2876,6 +2919,7 @@ export interface FileRoutesByTo {
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/uctovnictvo/konvertor': typeof AuthenticatedUctovnictvoKonvertorRoute
   '/uctovnictvo/na-kontrolu': typeof AuthenticatedUctovnictvoNaKontroluRoute
   '/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
@@ -2974,6 +3018,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -3213,9 +3258,12 @@ export interface FileRoutesById {
   '/_authenticated/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/_authenticated/nastavenia/eshop': typeof AuthenticatedNastaveniaEshopRoute
   '/_authenticated/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  '/_authenticated/nastavenia/poznamky': typeof AuthenticatedNastaveniaPoznamkyRoute
+  '/_authenticated/nastavenia/prihlasit-appku': typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
   '/_authenticated/nastavenia/schvalovanie': typeof AuthenticatedNastaveniaSchvalovanieRoute
   '/_authenticated/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/_authenticated/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
+  '/_authenticated/nastavenia/zalohy': typeof AuthenticatedNastaveniaZalohyRoute
   '/_authenticated/nespracovane/$id': typeof AuthenticatedNespracovaneIdRoute
   '/_authenticated/objednavky/$id': typeof AuthenticatedObjednavkyIdRoute
   '/_authenticated/objednavky/nova': typeof AuthenticatedObjednavkyNovaRoute
@@ -3238,6 +3286,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/_authenticated/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/_authenticated/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/_authenticated/uctovnictvo/konvertor': typeof AuthenticatedUctovnictvoKonvertorRoute
   '/_authenticated/uctovnictvo/na-kontrolu': typeof AuthenticatedUctovnictvoNaKontroluRoute
   '/_authenticated/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/_authenticated/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
@@ -3336,6 +3385,7 @@ export interface FileRoutesById {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -3575,9 +3625,12 @@ export interface FileRouteTypes {
     | '/nastavenia/email-sablony'
     | '/nastavenia/eshop'
     | '/nastavenia/online-platby'
+    | '/nastavenia/poznamky'
+    | '/nastavenia/prihlasit-appku'
     | '/nastavenia/schvalovanie'
     | '/nastavenia/vzhlad-faktury'
     | '/nastavenia/zabezpecenie'
+    | '/nastavenia/zalohy'
     | '/nespracovane/$id'
     | '/objednavky/$id'
     | '/objednavky/nova'
@@ -3600,6 +3653,7 @@ export interface FileRouteTypes {
     | '/sklad/prijem'
     | '/sklad/vydaj'
     | '/uctovnictvo/dph'
+    | '/uctovnictvo/konvertor'
     | '/uctovnictvo/na-kontrolu'
     | '/uctovnictvo/oss'
     | '/uctovnictvo/pohoda'
@@ -3698,6 +3752,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/podpora-pristupy'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/predplatne-obnova'
     | '/api/public/hooks/push-overdue'
@@ -3926,9 +3981,12 @@ export interface FileRouteTypes {
     | '/nastavenia/email-sablony'
     | '/nastavenia/eshop'
     | '/nastavenia/online-platby'
+    | '/nastavenia/poznamky'
+    | '/nastavenia/prihlasit-appku'
     | '/nastavenia/schvalovanie'
     | '/nastavenia/vzhlad-faktury'
     | '/nastavenia/zabezpecenie'
+    | '/nastavenia/zalohy'
     | '/nespracovane/$id'
     | '/objednavky/$id'
     | '/objednavky/nova'
@@ -3951,6 +4009,7 @@ export interface FileRouteTypes {
     | '/sklad/prijem'
     | '/sklad/vydaj'
     | '/uctovnictvo/dph'
+    | '/uctovnictvo/konvertor'
     | '/uctovnictvo/na-kontrolu'
     | '/uctovnictvo/oss'
     | '/uctovnictvo/pohoda'
@@ -4049,6 +4108,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/podpora-pristupy'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/predplatne-obnova'
     | '/api/public/hooks/push-overdue'
@@ -4287,9 +4347,12 @@ export interface FileRouteTypes {
     | '/_authenticated/nastavenia/email-sablony'
     | '/_authenticated/nastavenia/eshop'
     | '/_authenticated/nastavenia/online-platby'
+    | '/_authenticated/nastavenia/poznamky'
+    | '/_authenticated/nastavenia/prihlasit-appku'
     | '/_authenticated/nastavenia/schvalovanie'
     | '/_authenticated/nastavenia/vzhlad-faktury'
     | '/_authenticated/nastavenia/zabezpecenie'
+    | '/_authenticated/nastavenia/zalohy'
     | '/_authenticated/nespracovane/$id'
     | '/_authenticated/objednavky/$id'
     | '/_authenticated/objednavky/nova'
@@ -4312,6 +4375,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/prijem'
     | '/_authenticated/sklad/vydaj'
     | '/_authenticated/uctovnictvo/dph'
+    | '/_authenticated/uctovnictvo/konvertor'
     | '/_authenticated/uctovnictvo/na-kontrolu'
     | '/_authenticated/uctovnictvo/oss'
     | '/_authenticated/uctovnictvo/pohoda'
@@ -4410,6 +4474,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/podpora-pristupy'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/predplatne-obnova'
     | '/api/public/hooks/push-overdue'
@@ -4604,6 +4669,7 @@ export interface RootRouteChildren {
   ApiPublicHooksJazdyDoplnenieRoute: typeof ApiPublicHooksJazdyDoplnenieRoute
   ApiPublicHooksKurzyEcbRoute: typeof ApiPublicHooksKurzyEcbRoute
   ApiPublicHooksOdovzdanieMesacneRoute: typeof ApiPublicHooksOdovzdanieMesacneRoute
+  ApiPublicHooksPodporaPristupyRoute: typeof ApiPublicHooksPodporaPristupyRoute
   ApiPublicHooksPohodaStrazcaRoute: typeof ApiPublicHooksPohodaStrazcaRoute
   ApiPublicHooksPredplatneObnovaRoute: typeof ApiPublicHooksPredplatneObnovaRoute
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
@@ -5950,6 +6016,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/nastavenia/poznamky': {
+      id: '/_authenticated/nastavenia/poznamky'
+      path: '/nastavenia/poznamky'
+      fullPath: '/nastavenia/poznamky'
+      preLoaderRoute: typeof AuthenticatedNastaveniaPoznamkyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nastavenia/prihlasit-appku': {
+      id: '/_authenticated/nastavenia/prihlasit-appku'
+      path: '/nastavenia/prihlasit-appku'
+      fullPath: '/nastavenia/prihlasit-appku'
+      preLoaderRoute: typeof AuthenticatedNastaveniaPrihlasitAppkuRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/nastavenia/schvalovanie': {
       id: '/_authenticated/nastavenia/schvalovanie'
       path: '/nastavenia/schvalovanie'
@@ -5969,6 +6049,13 @@ declare module '@tanstack/react-router' {
       path: '/nastavenia/zabezpecenie'
       fullPath: '/nastavenia/zabezpecenie'
       preLoaderRoute: typeof AuthenticatedNastaveniaZabezpecenieRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nastavenia/zalohy': {
+      id: '/_authenticated/nastavenia/zalohy'
+      path: '/nastavenia/zalohy'
+      fullPath: '/nastavenia/zalohy'
+      preLoaderRoute: typeof AuthenticatedNastaveniaZalohyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/nespracovane/': {
@@ -6186,6 +6273,13 @@ declare module '@tanstack/react-router' {
       path: '/uctovnictvo/dph'
       fullPath: '/uctovnictvo/dph'
       preLoaderRoute: typeof AuthenticatedUctovnictvoDphRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/uctovnictvo/konvertor': {
+      id: '/_authenticated/uctovnictvo/konvertor'
+      path: '/uctovnictvo/konvertor'
+      fullPath: '/uctovnictvo/konvertor'
+      preLoaderRoute: typeof AuthenticatedUctovnictvoKonvertorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/uctovnictvo/na-kontrolu': {
@@ -6797,6 +6891,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksOdovzdanieMesacneRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/podpora-pristupy': {
+      id: '/api/public/hooks/podpora-pristupy'
+      path: '/api/public/hooks/podpora-pristupy'
+      fullPath: '/api/public/hooks/podpora-pristupy'
+      preLoaderRoute: typeof ApiPublicHooksPodporaPristupyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/pohoda-strazca': {
       id: '/api/public/hooks/pohoda-strazca'
       path: '/api/public/hooks/pohoda-strazca'
@@ -7303,9 +7404,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNastaveniaEmailSablonyRoute: typeof AuthenticatedNastaveniaEmailSablonyRoute
   AuthenticatedNastaveniaEshopRoute: typeof AuthenticatedNastaveniaEshopRoute
   AuthenticatedNastaveniaOnlinePlatbyRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  AuthenticatedNastaveniaPoznamkyRoute: typeof AuthenticatedNastaveniaPoznamkyRoute
+  AuthenticatedNastaveniaPrihlasitAppkuRoute: typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
   AuthenticatedNastaveniaSchvalovanieRoute: typeof AuthenticatedNastaveniaSchvalovanieRoute
   AuthenticatedNastaveniaVzhladFakturyRoute: typeof AuthenticatedNastaveniaVzhladFakturyRoute
   AuthenticatedNastaveniaZabezpecenieRoute: typeof AuthenticatedNastaveniaZabezpecenieRoute
+  AuthenticatedNastaveniaZalohyRoute: typeof AuthenticatedNastaveniaZalohyRoute
   AuthenticatedNespracovaneIdRoute: typeof AuthenticatedNespracovaneIdRoute
   AuthenticatedObjednavkyIdRoute: typeof AuthenticatedObjednavkyIdRoute
   AuthenticatedObjednavkyNovaRoute: typeof AuthenticatedObjednavkyNovaRoute
@@ -7318,6 +7422,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
   AuthenticatedPrijateFakturySamofakturaRoute: typeof AuthenticatedPrijateFakturySamofakturaRoute
   AuthenticatedUctovnictvoDphRoute: typeof AuthenticatedUctovnictvoDphRoute
+  AuthenticatedUctovnictvoKonvertorRoute: typeof AuthenticatedUctovnictvoKonvertorRoute
   AuthenticatedUctovnictvoNaKontroluRoute: typeof AuthenticatedUctovnictvoNaKontroluRoute
   AuthenticatedUctovnictvoOssRoute: typeof AuthenticatedUctovnictvoOssRoute
   AuthenticatedUctovnictvoPohodaRoute: typeof AuthenticatedUctovnictvoPohodaRoute
@@ -7423,12 +7528,16 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNastaveniaEshopRoute: AuthenticatedNastaveniaEshopRoute,
   AuthenticatedNastaveniaOnlinePlatbyRoute:
     AuthenticatedNastaveniaOnlinePlatbyRoute,
+  AuthenticatedNastaveniaPoznamkyRoute: AuthenticatedNastaveniaPoznamkyRoute,
+  AuthenticatedNastaveniaPrihlasitAppkuRoute:
+    AuthenticatedNastaveniaPrihlasitAppkuRoute,
   AuthenticatedNastaveniaSchvalovanieRoute:
     AuthenticatedNastaveniaSchvalovanieRoute,
   AuthenticatedNastaveniaVzhladFakturyRoute:
     AuthenticatedNastaveniaVzhladFakturyRoute,
   AuthenticatedNastaveniaZabezpecenieRoute:
     AuthenticatedNastaveniaZabezpecenieRoute,
+  AuthenticatedNastaveniaZalohyRoute: AuthenticatedNastaveniaZalohyRoute,
   AuthenticatedNespracovaneIdRoute: AuthenticatedNespracovaneIdRoute,
   AuthenticatedObjednavkyIdRoute: AuthenticatedObjednavkyIdRoute,
   AuthenticatedObjednavkyNovaRoute: AuthenticatedObjednavkyNovaRoute,
@@ -7442,6 +7551,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPrijateFakturySamofakturaRoute:
     AuthenticatedPrijateFakturySamofakturaRoute,
   AuthenticatedUctovnictvoDphRoute: AuthenticatedUctovnictvoDphRoute,
+  AuthenticatedUctovnictvoKonvertorRoute:
+    AuthenticatedUctovnictvoKonvertorRoute,
   AuthenticatedUctovnictvoNaKontroluRoute:
     AuthenticatedUctovnictvoNaKontroluRoute,
   AuthenticatedUctovnictvoOssRoute: AuthenticatedUctovnictvoOssRoute,
@@ -8009,6 +8120,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksJazdyDoplnenieRoute: ApiPublicHooksJazdyDoplnenieRoute,
   ApiPublicHooksKurzyEcbRoute: ApiPublicHooksKurzyEcbRoute,
   ApiPublicHooksOdovzdanieMesacneRoute: ApiPublicHooksOdovzdanieMesacneRoute,
+  ApiPublicHooksPodporaPristupyRoute: ApiPublicHooksPodporaPristupyRoute,
   ApiPublicHooksPohodaStrazcaRoute: ApiPublicHooksPohodaStrazcaRoute,
   ApiPublicHooksPredplatneObnovaRoute: ApiPublicHooksPredplatneObnovaRoute,
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,

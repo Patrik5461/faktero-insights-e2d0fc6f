@@ -273,6 +273,15 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
     if (chyba.length) throw new Error(`Doplňte: ${chyba.map((k) => NAZVY_POLI[k] ?? k).join(", ")}.`);
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(r.company_id);
+    // Firma schvaľuje nespracované doklady — doklad z neho vznikne až po schválení.
+    await (
+      await import("./schvalovanie.server")
+    ).overSchvalenie(
+      r.company_id,
+      "nespracovany",
+      r.id,
+      "Doklad čaká na schválenie — vytvoriť ho možno až po schválení.",
+    );
     /*
       Tá istá prijatá faktúra už v evidencii je (prišla mailom znova, zadal ju
       niekto ručne) — druhýkrát by bola náklad aj odpočet DPH a príkaz na

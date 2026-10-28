@@ -14,6 +14,7 @@ import {
   StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { supabase } from "@/integrations/supabase/client";
 import { KodPohody } from "@/components/faktero/KodPohody";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
@@ -606,6 +607,12 @@ function Detail() {
           >
             {t("Otvoriť na úpravu")}
           </button>
+        ) : null}
+        {/* Mimo fieldsetu — uzavreté vyúčtovanie sa schvaľuje, hoci sa už neupravuje. */}
+        {f.id && cid ? (
+          <div className="mt-6 max-w-xl">
+            <SchvalovaniePanel companyId={cid} agenda="vyuctovanie" id={f.id} />
+          </div>
         ) : null}
       </PageBody>
       {vyber && cid && (

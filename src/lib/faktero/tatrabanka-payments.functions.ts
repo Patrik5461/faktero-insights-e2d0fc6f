@@ -53,7 +53,7 @@ export const payPurchaseInvoice = createServerFn({ method: "POST" })
     const { data: inv } = await supabaseAdmin
       .from("purchase_invoices")
       .select(
-        "id, company_id, supplier_name, supplier_iban, invoice_number, amount_total, currency, status, variable_symbol, constant_symbol, specific_symbol, deleted_at, created_at",
+        "id, company_id, supplier_name, supplier_iban, invoice_number, amount_total, currency, status, variable_symbol, constant_symbol, specific_symbol, deleted_at, created_at, note",
       )
       .eq("id", data.invoice_id)
       .eq("company_id", data.company_id)
@@ -100,7 +100,24 @@ export const payPurchaseInvoice = createServerFn({ method: "POST" })
       inv.specific_symbol,
       inv.constant_symbol,
     );
-    const remittance = `Faktura ${inv.invoice_number}`;
+    // Správa pre príjemcu podľa Bankové účty → Nastavenia banky (predvolene „Faktura <číslo>").
+    const { data: firmaNast } = await supabaseAdmin
+      .from("companies")
+      .select("uctovanie_nastavenia")
+      .eq("id", data.company_id)
+      .maybeSingle();
+    const { nastaveniaBanky } = await import("./export-nastavenia");
+    const { textPrijemcu } = await import("./hromadny-prikaz");
+    const remittance = textPrijemcu(
+      {
+        cisloFaktury: String(inv.invoice_number ?? ""),
+        vs: String(inv.variable_symbol ?? "")
+          .replace(/\D/g, "")
+          .slice(0, 10),
+        poznamka: inv.note ?? undefined,
+      },
+      nastaveniaBanky(firmaNast?.uctovanie_nastavenia).textPrijemcu,
+    );
 
     const init = await initiatePayment({
       creditorIban: inv.supplier_iban,

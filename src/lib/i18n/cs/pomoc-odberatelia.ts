@@ -59,4 +59,6 @@ export default {
     "Není to formalita: při dodání zboží do EU je platné IČ DPH odběratele <0>podmínkou osvobození od daně</0>. Každé ověření se zapíše i s datem, takže ho lze při kontrole prokázat; po třiceti dnech se označí jako starší a před dalším dodáním se vyplatí ověřit znovu.",
   "Keď je register nedostupný, Faktero to povie ako výpadok — nie ako neplatné IČ DPH. To sú dve rôzne veci a rozhodujú o tom, či faktúra smie ísť bez dane.":
     "Když je registr nedostupný, Faktero to oznámí jako výpadek — ne jako neplatné IČ DPH. To jsou dvě různé věci a rozhodují o tom, zda faktura smí jít bez daně.",
+  "<0>Povinné číslo objednávky.</0> Keď partner chce na každom doklade číslo svojej objednávky, zaškrtnite to na jeho karte. Faktúra pre neho a doklad od neho v Nespracovaných potom bez čísla objednávky ukážu upozornenie — uložiť sa dajú aj tak.":
+    "<0>Povinné číslo objednávky.</0> Když partner chce na každém dokladu číslo své objednávky, zaškrtněte to na jeho kartě. Faktura pro něj a doklad od něj v Nezpracovaných pak bez čísla objednávky ukážou upozornění — uložit se dají i tak.",
 } satisfies Record<string, string>;

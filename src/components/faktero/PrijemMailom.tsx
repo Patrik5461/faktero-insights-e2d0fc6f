@@ -43,13 +43,17 @@ export function PrijemMailom({
   const [pracuje, setPracuje] = useState(false);
   const [zdroj, setZdroj] = useState<Record<string, string>>({});
   const [povoleni, setPovoleni] = useState("");
+  const [bezDokladu, setBezDokladu] = useState(false);
   const nacitajZdroj = useServerFn(zdrojovyMailFn);
   const ulozPovolenych = useServerFn(povoleniOdosielateliaFn);
   useEffect(() => {
     const cid = getActiveCompanyId();
     if (!cid) return;
     ulozPovolenych({ data: { company_id: cid } })
-      .then((r) => setPovoleni(r.zoznam.join("\n")))
+      .then((r) => {
+        setPovoleni(r.zoznam.join("\n"));
+        setBezDokladu(r.ukladatBezDokladu);
+      })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -311,6 +315,35 @@ export function PrijemMailom({
                     {t("Uložiť odosielateľov")}
                   </button>
                 </div>
+
+                <label className="mt-3 flex items-start gap-2 rounded-md border border-border p-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={bezDokladu}
+                    onChange={async (e) => {
+                      const v = e.target.checked;
+                      setBezDokladu(v);
+                      try {
+                        await ulozPovolenych({
+                          data: { company_id: getActiveCompanyId()!, ukladat_bez_dokladu: v },
+                        });
+                        toast.success(t("Uložené"));
+                      } catch (err: any) {
+                        setBezDokladu(!v);
+                        toast.error(t(err?.message ?? "Nepodarilo sa"));
+                      }
+                    }}
+                    className="mt-0.5 h-4 w-4 rounded border-input"
+                  />
+                  <span>
+                    <span className="font-medium">{t("Ukladať aj e-maily bez dokladu")}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {t(
+                        "Mail bez PDF či fotky dokladu (napr. faktúra priamo v texte alebo len odkaz na stiahnutie) sa uloží do Nespracovaných ako PDF s textom mailu. Inak ostane len v zozname posledných mailov.",
+                      )}
+                    </span>
+                  </span>
+                </label>
 
                 <div className="mt-4">
                   <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">

@@ -21,11 +21,16 @@ import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Trash2, Plus, Loader2, Save, Send } from "lucide-react";
+import { Trash2, Plus, Loader2, Save, Send, FileDown, Mail, Truck } from "lucide-react";
+import { UctovneNastaveniaFaktury } from "@/components/faktero/UctovneNastaveniaFaktury";
+import { JAZYKY_DOKLADU, jazykDokladu, predvolenyJazykFirmy } from "@/lib/faktero/faktura-jazyk";
+import { datumPoDnoch, dniMedzi } from "@/lib/faktero/splatnost-dni";
 import { toast } from "sonner";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
+import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
+import { vlozDoPoznamky } from "@/lib/faktero/preddefinovane-poznamky";
 import {
   odberatelNaZapis,
   odberatelZAdresara,
@@ -95,6 +100,10 @@ function EditInvoice() {
     vystaviť sa nedal nikde, a tak ľudia kópie mazali a písali faktúru nanovo.
   */
   const vystavitRef = useRef(false);
+  /* Po uložení stiahnuť PDF alebo otvoriť odoslanie e-mailom (v detaile faktúry). */
+  const poUlozeniRef = useRef<"" | "pdf" | "email">("");
+  /* Pečiatka firmy — prepínač na faktúre má zmysel len keď je nahratá. */
+  const [firma, setFirma] = useState<{ stamp_url: string | null; invoice_show_stamp: boolean | null; country: string | null } | null>(null);
   /* Odberateľ: kópia na faktúre, pôvodná na porovnanie a adresár na výber iného. */
   const [odberatel, setOdberatel] = useState<OdberatelFaktury | null>(null);
   const [povodnyOdberatel, setPovodnyOdberatel] = useState<OdberatelFaktury | null>(null);
@@ -115,6 +124,15 @@ function EditInvoice() {
     /* Zľava na celý doklad — percento alebo pevná suma bez DPH. */
     discount_type: "" as "" | TypZlavy,
     discount_value: 0,
+    /* Jazyk PDF dokladu. */
+    language: "sk",
+    dodaci_list: false,
+    /* null = pečiatka podľa nastavenia firmy. */
+    zobrazit_peciatku: null as boolean | null,
+    /* Účtovné nastavenia — prázdne = predvolené. */
+    predkontacia: "",
+    clenenie: "",
+    kv: "",
   });
 
   useEffect(() => {
@@ -139,7 +157,7 @@ function EditInvoice() {
       const o = odberatelZFaktury(i);
       setOdberatel(o);
       setPovodnyOdberatel(o);
-      const [{ data: odb }, { data: ef }] = await Promise.all([
+      const [{ data: odb }, { data: ef }, { data: fi }] = await Promise.all([
         supabase
           .from("customers")
           .select("*")
@@ -148,7 +166,13 @@ function EditInvoice() {
           .is("deleted_at", null)
           .order("name"),
         supabase.from("efaktura_documents").select("id").eq("invoice_id", id).limit(1),
+        supabase
+          .from("companies")
+          .select("stamp_url, invoice_show_stamp, country")
+          .eq("id", i.company_id)
+          .maybeSingle(),
       ]);
+      setFirma((fi as any) ?? null);
       setCustomers(odb ?? []);
       setEfakturaOdoslana((ef ?? []).length > 0);
       setForm({
@@ -164,6 +188,12 @@ function EditInvoice() {
         intro_note: i.intro_note ?? "",
         discount_type: (i.discount_type as TypZlavy | null) ?? "",
         discount_value: Number(i.discount_value ?? 0),
+        language: jazykDokladu(i.language || predvolenyJazykFirmy((fi as any)?.country)),
+        dodaci_list: Boolean((i as any).dodaci_list),
+        zobrazit_peciatku: typeof (i as any).zobrazit_peciatku === "boolean" ? (i as any).zobrazit_peciatku : null,
+        predkontacia: i.pohoda_predkontacia ?? "",
+        clenenie: i.pohoda_clenenie_dph ?? "",
+        kv: i.kv_clenenie ?? "",
       });
       // Dobropis sa vo formulári ukazuje kladne, pri uložení sa otočí späť.
       const znNacitania = znamienkoFormulara(i.type, i);
@@ -312,6 +342,17 @@ function EditInvoice() {
           discount_type: totals.zlava > 0 ? form.discount_type || "percent" : null,
           discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
           discount_total: totals.zlava,
+          language: form.language || null,
+          dodaci_list: inv?.type === "regular" && form.dodaci_list,
+          zobrazit_peciatku: form.zobrazit_peciatku,
+          // Účtovné kódy len keď sa zmenili — odovzdanú faktúru inak nič nepreúčtuje.
+          ...(form.predkontacia.trim() !== (inv?.pohoda_predkontacia ?? "")
+            ? { pohoda_predkontacia: form.predkontacia.trim() || null }
+            : {}),
+          ...(form.clenenie.trim() !== (inv?.pohoda_clenenie_dph ?? "")
+            ? { pohoda_clenenie_dph: form.clenenie.trim() || null }
+            : {}),
+          ...(form.kv !== (inv?.kv_clenenie ?? "") ? { kv_clenenie: form.kv || null } : {}),
           ...(odberatel ? odberatelNaZapis(odberatel) : {}),
           ...(inv?.status === "draft" && vystavitRef.current ? { status: "issued" } : {}),
           subtotal: Number(totals.subtotal.toFixed(2)),
@@ -381,7 +422,8 @@ function EditInvoice() {
           ? t("Faktúra {cislo} je vystavená.", { cislo: form.invoice_number.trim() })
           : t("Faktúra upravená. PDF treba pregenerovať."),
       );
-      navigate({ to: "/faktury/$id", params: { id } });
+      const po = poUlozeniRef.current;
+      navigate({ to: "/faktury/$id", params: { id }, search: po ? { po } : {} });
     } catch (err: any) {
       toast.error(t(zrozumitelnaChyba(err?.message)));
     } finally {
@@ -397,6 +439,24 @@ function EditInvoice() {
         sirka="formular"
         title={t("Upraviť faktúru {cislo}", { cislo: inv.invoice_number })}
         description={t("Po uložení sa PDF pregeneruje pri ďalšom otvorení.")}
+        action={
+          <label className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1 text-sm">
+            <span className="text-[13px] font-semibold text-foreground">{t("Jazyk faktúry")}</span>
+            <select
+              id="jazyk-dokladu"
+              value={form.language}
+              onChange={(e) => setForm({ ...form, language: e.target.value })}
+              title={t("Prekladajú sa popisky v PDF, nie názvy položiek a poznámky.")}
+              className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+            >
+              {JAZYKY_DOKLADU.map((j) => (
+                <option key={j.kod} value={j.kod}>
+                  {j.nazov}
+                </option>
+              ))}
+            </select>
+          </label>
+        }
       />
       <PageBody>
         <form onSubmit={submit} className="mx-auto max-w-6xl space-y-6">
@@ -501,17 +561,28 @@ function EditInvoice() {
                     </p>
                   )}
                 </div>
-                <PoleDokladu label={t("Dátum vystavenia")} htmlFor="datum-vystavenia" className={bunka.datum}>
+                <PoleDokladu label={t("Dátum vystavenia")} htmlFor="datum-vystavenia" className={bunka.datumDvojica}>
                   <input
                     id="datum-vystavenia"
                     type="date"
                     required
                     value={form.issue_date}
-                    onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
+                    onChange={(e) => {
+                      const novy = e.target.value;
+                      // Splatnosť „o 14 dní“ ostáva o 14 dní aj od nového dátumu vystavenia.
+                      setForm((f) => {
+                        const dni = dniMedzi(f.issue_date, f.due_date);
+                        return {
+                          ...f,
+                          issue_date: novy,
+                          due_date: novy && dni != null && dni >= 0 ? datumPoDnoch(novy, dni) : f.due_date,
+                        };
+                      });
+                    }}
                     className={VSTUP_DOKLADU}
                   />
                 </PoleDokladu>
-                <PoleDokladu label={t("Dátum dodania")} htmlFor="datum-dodania" className={bunka.datum}>
+                <PoleDokladu label={t("Dátum dodania")} htmlFor="datum-dodania" className={bunka.datumDvojica}>
                   <input
                     id="datum-dodania"
                     type="date"
@@ -522,7 +593,8 @@ function EditInvoice() {
                 </PoleDokladu>
                 <SplatnostPole
                   required
-                  className={bunka.datumPosledny}
+                  className={bunka.splatnostRiadok}
+                  odDatumu={form.issue_date}
                   value={form.due_date}
                   onChange={(v) => setForm((f) => ({ ...f, due_date: v }))}
                 />
@@ -572,6 +644,28 @@ function EditInvoice() {
                   />
                 </PoleDokladu>
               </MriezkaDokladu>
+              {firma?.stamp_url && (
+                <label className="mt-4 flex items-start gap-2 border-t border-border pt-4 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.zobrazit_peciatku ?? firma.invoice_show_stamp !== false}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        zobrazit_peciatku:
+                          e.target.checked === (firma.invoice_show_stamp !== false) ? null : e.target.checked,
+                      }))
+                    }
+                    className="mt-0.5 h-4 w-4 rounded border-input"
+                  />
+                  <span>
+                    {t("Zobraziť pečiatku a podpis")}
+                    <span className="block text-xs text-muted-foreground">
+                      {t("Nahratá pečiatka sa vytlačí vedľa súčtov. Predvolené sa nastavuje vo Vzhľade faktúry.")}
+                    </span>
+                  </span>
+                </label>
+              )}
             </section>
           </div>
 
@@ -886,6 +980,18 @@ function EditInvoice() {
             >
               <Plus className="h-3.5 w-3.5" /> {t("Pridať položku")}
             </button>
+            {inv.type === "regular" && (
+              <label className="mt-3 inline-flex min-w-0 items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.dodaci_list}
+                  onChange={(e) => setForm((f) => ({ ...f, dodaci_list: e.target.checked }))}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Truck className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span>{t("Táto faktúra slúži zároveň ako dodací list")}</span>
+              </label>
+            )}
           </section>
 
           <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-primary/[0.03] p-5">
@@ -968,10 +1074,28 @@ function EditInvoice() {
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               className={inputCls}
             />
+            <PreddefinovanaPoznamka
+              companyId={inv?.company_id ?? null}
+              agenda="faktura"
+              onVyber={(text) => setForm((f) => ({ ...f, notes: vlozDoPoznamky(f.notes, text) }))}
+            />
           </section>
 
+          <UctovneNastaveniaFaktury
+            companyId={inv.company_id}
+            typ={inv.type}
+            odberatel={odberatel ? { ico: odberatel.customer_ico, name: odberatel.customer_name } : null}
+            reverseCharge={Boolean(inv.reverse_charge)}
+            kody={{ predkontacia: form.predkontacia, clenenie: form.clenenie, kv: form.kv }}
+            onKody={(k) => setForm((f) => ({ ...f, ...k }))}
+            datumDane={form.delivery_date}
+            onDatumDane={(v) => setForm((f) => ({ ...f, delivery_date: v }))}
+            sposobPlatby={form.payment_method}
+            onSposobPlatby={(v) => setForm((f) => ({ ...f, payment_method: v }))}
+          />
+
           <div /* Vpravo dole sedí plávajúce tlačidlo pomoci — nech neprekryje „Uložiť". */
-            className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-2xl border border-border bg-card/95 p-4 pr-20 backdrop-blur sm:flex-row sm:items-center sm:justify-end"
+            className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-2xl border border-border bg-card/95 p-4 pr-20 backdrop-blur sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
           >
             <Link
               to="/faktury/$id"
@@ -980,12 +1104,40 @@ function EditInvoice() {
             >
               {t("Zrušiť")}
             </Link>
+            {/* Uložiť (pri koncepte vystaviť) a hneď stiahnuť PDF či odoslať e-mailom. */}
+            <button
+              type="submit"
+              disabled={saving}
+              onClick={() => {
+                vystavitRef.current = inv.status === "draft";
+                poUlozeniRef.current = "pdf";
+              }}
+              className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-60"
+            >
+              <FileDown className="h-4 w-4" />
+              {inv.status === "draft" ? t("Vystaviť a stiahnuť PDF") : t("Uložiť a stiahnuť PDF")}
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              onClick={() => {
+                vystavitRef.current = inv.status === "draft";
+                poUlozeniRef.current = "email";
+              }}
+              className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-60"
+            >
+              <Mail className="h-4 w-4" />
+              {inv.status === "draft" ? t("Vystaviť a odoslať e-mailom") : t("Uložiť a odoslať e-mailom")}
+            </button>
             {inv.status === "draft" ? (
               <>
                 <button
                   type="submit"
                   disabled={saving}
-                  onClick={() => (vystavitRef.current = false)}
+                  onClick={() => {
+                    vystavitRef.current = false;
+                    poUlozeniRef.current = "";
+                  }}
                   className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-60"
                 >
                   <Save className="h-4 w-4" />
@@ -994,7 +1146,10 @@ function EditInvoice() {
                 <button
                   type="submit"
                   disabled={saving}
-                  onClick={() => (vystavitRef.current = true)}
+                  onClick={() => {
+                    vystavitRef.current = true;
+                    poUlozeniRef.current = "";
+                  }}
                   className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
                 >
                   {saving ? (
@@ -1009,6 +1164,7 @@ function EditInvoice() {
               <button
                 type="submit"
                 disabled={saving}
+                onClick={() => (poUlozeniRef.current = "")}
                 className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
                 {saving ? (

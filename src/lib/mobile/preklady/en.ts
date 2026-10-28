@@ -599,6 +599,11 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.zaregistrujteSa": "Sign up",
   "app.zabudnuteHeslo": "Reset a forgotten password at faktero.sk.",
   "app.zabudliHeslo": "Forgot your password?",
+  "app.qrPrihlasenie": "Sign in with a QR code from the web",
+  "app.qrPrihlasenieNapoveda": "On the Faktero website, open “Sign in the phone app” and scan the code shown.",
+  "app.qrNieJeKod": "This is not a sign-in code from the Faktero website.",
+  "app.qrPrihlasenieNapovedaJazdy": "On the website, open “Sign in the phone app” and scan the code shown.",
+  "app.qrNieJeKodJazdy": "This is not a sign-in code from the website.",
   "app.zadajteEmailPreHeslo": "First enter the email we should send the reset link to.",
   "app.odkazNaHesloOdoslany":
     "If an account exists for {email}, we have sent it a link to set a new password.",

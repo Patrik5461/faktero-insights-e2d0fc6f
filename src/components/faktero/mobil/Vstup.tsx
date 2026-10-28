@@ -8,7 +8,7 @@
  */
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Building2, Fingerprint, Lock, LogOut, Plus } from "lucide-react";
+import { Building2, Fingerprint, Lock, LogOut, Plus, QrCode } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { isBiometricAvailable, loginWithBiometric, overBiometriu } from "@/lib/mobile/biometric";
@@ -18,6 +18,9 @@ import { JE_KNIHA_JAZD } from "@/lib/mobile/apka";
 import { ZnackaJazd } from "./jazdy/ZnackaJazd";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
+import { useOperacia } from "@/lib/mobile/server-most";
+import { jeKodParovania } from "@/lib/faktero/parovanie-zariadenia";
+import { QrSkener } from "./QrSkener";
 
 type Firma = { id: string; name: string };
 
@@ -35,10 +38,33 @@ export function Prihlasenie({
   const [heslo, setHeslo] = useState("");
   const [busy, setBusy] = useState(false);
   const [biometria, setBiometria] = useState(false);
+  const [skenuje, setSkenuje] = useState(false);
+  const vymenKod = useOperacia<{ tokenHash: string; email: string }>("parovanie-vymen");
 
   useEffect(() => {
     isBiometricAvailable().then(setBiometria);
   }, []);
+
+  /*
+    Prihlásenie QR kódom z webu: server overí jednorazový kód a vráti
+    overovací token toho istého účtu, z ktorého si appka urobí vlastnú
+    reláciu. Do firmy tým nikto nepribudne.
+  */
+  async function prihlasKodom(raw: string) {
+    setSkenuje(false);
+    if (!jeKodParovania(raw)) return toast.error(t("app.qrNieJeKod"));
+    setBusy(true);
+    try {
+      const r = await vymenKod({ data: { kod: raw } });
+      const { error } = await supabase.auth.verifyOtp({ token_hash: r.tokenHash, type: "email" });
+      if (error) throw new Error(prelozAuthChybu(error.message).sprava);
+      onHotovo();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("app.prihlasenieZlyhalo"));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function prihlas() {
     if (!email.trim() || !heslo) return toast.error(t("app.vyplnteEmailHeslo"));
@@ -132,6 +158,15 @@ export function Prihlasenie({
             {busy ? t("app.prihlasujem") : t("app.prihlasitSa")}
           </button>
 
+          <button
+            onClick={() => setSkenuje(true)}
+            disabled={busy}
+            className="flex w-full items-center justify-center gap-2 rounded-app-sm border border-app-ramik px-4 py-3 text-base disabled:opacity-50"
+          >
+            <QrCode className="h-5 w-5" /> {t("app.qrPrihlasenie")}
+          </button>
+          <p className="text-center text-xs text-app-text-2">{t("app.qrPrihlasenieNapoveda")}</p>
+
           {biometria && (
             <button
               onClick={odomkni}
@@ -157,6 +192,7 @@ export function Prihlasenie({
           {t("app.zabudliHeslo")}
         </button>
       </div>
+      {skenuje && <QrSkener onNajdene={prihlasKodom} onZrusit={() => setSkenuje(false)} />}
     </div>
   );
 }

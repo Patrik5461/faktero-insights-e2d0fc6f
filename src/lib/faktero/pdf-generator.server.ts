@@ -214,8 +214,15 @@ async function vykresliFakturu(
     debit_note: t.tarchopis,
   };
   // Doklad podľa § 25a nie je opravná faktúra (§ 71 ods. 2) — vlastný nadpis.
+  /*
+    Faktúra, ktorá slúži zároveň ako dodací list (len bežná faktúra) — nadpis
+    to povie hneď a dole pribudnú podpisy odovzdania a prevzatia.
+  */
+  const dodaciList =
+    !input.documentLabel && Boolean((invoice as any).dodaci_list) && String((invoice as any).type ?? "regular") === "regular";
   const docLabel =
     input.documentLabel ??
+    (dodaciList ? t.fakturaDodaciList : undefined) ??
     ((invoice as any).oprava_25a ? t.opravnyDoklad : undefined) ??
     podlaTypu[String((invoice as any).type ?? "")] ??
     t.faktura;
@@ -269,7 +276,8 @@ async function vykresliFakturu(
   }
 
   // Title block, right aligned
-  const titleSize = 26;
+  // Dlhý nadpis („RECHNUNG – LIEFERSCHEIN“) sa zmenší, nech nevojde do loga.
+  const titleSize = Math.min(26, (innerW - 130) / Math.max(1, bold.widthOfTextAtSize(san(docLabel), 1)));
   const titleW = bold.widthOfTextAtSize(san(docLabel), titleSize);
   page.drawText(san(docLabel), {
     x: width - margin - titleW,
@@ -888,10 +896,13 @@ async function vykresliFakturu(
     Zmestí sa do výšky bloku súčtov a najviac 150 bodov šírky, pomer strán
     obrázka ostane zachovaný.
   */
-  const kresliPeciatku = Boolean(
-    input.stampBytes && input.stampMime && (company as any).invoice_show_stamp !== false,
-  );
-  if (input.stampBytes && input.stampMime && (company as any).invoice_show_stamp !== false) {
+  /* Faktúra si môže pečiatku zapnúť či vypnúť sama; bez voľby rozhoduje nastavenie firmy. */
+  const peciatkaZapnuta =
+    typeof (invoice as any).zobrazit_peciatku === "boolean"
+      ? (invoice as any).zobrazit_peciatku
+      : (company as any).invoice_show_stamp !== false;
+  const kresliPeciatku = Boolean(input.stampBytes && input.stampMime && peciatkaZapnuta);
+  if (kresliPeciatku && input.stampBytes && input.stampMime) {
     try {
       const img = input.stampMime.includes("png")
         ? await doc.embedPng(input.stampBytes)
@@ -1340,6 +1351,27 @@ async function vykresliFakturu(
       y -= 12;
     });
     y -= 12;
+  }
+
+  /*
+    Dodací list: podpisy toho, kto tovar odovzdal, a toho, kto ho prevzal.
+    Dve čiary vedľa seba na konci dokladu, pod všetkými údajmi.
+  */
+  if (dodaciList) {
+    ensureSpace(58);
+    y -= 30;
+    const sirkaPola = (innerW - 40) / 2;
+    [t.odovzdal, t.prevzal].forEach((popis, i) => {
+      const x = margin + i * (sirkaPola + 40);
+      cur.drawLine({
+        start: { x, y },
+        end: { x: x + sirkaPola, y },
+        color: muted,
+        thickness: 0.6,
+      });
+      cur.drawText(san(popis), { x, y: y - 12, size: 8.5, font, color: muted });
+    });
+    y -= 24;
   }
 
   // ── Footer on every page ──

@@ -247,4 +247,6 @@ export default {
     "Návrh se počítá jednou a pamatuje se u dokladu; znovu se zeptá, jen když se změní dodavatel, částky nebo položky. Co potvrdíte nebo změníte, si Faktero zapamatuje u dodavatele — u dalšího dokladu už AI není potřeba.",
   "Robí sa pre slovenské a české firmy; keď AI práve neodpovedá, návrh sa jednoducho neukáže.":
     "Dělá se pro slovenské a české firmy; když AI zrovna neodpovídá, návrh se prostě neukáže.",
+  "<0>IČO z mena</0> — partner bez IČO (zahraničná firma, fyzická osoba) dostane stabilný náhradný identifikátor odvodený z mena a krajiny (napr. FK3A9F12C0), takže ho Pohoda v adresári spáruje vždy s tou istou kartou.":
+    "<0>IČO z názvu</0> — partner bez IČO (zahraniční firma, fyzická osoba) dostane stabilní náhradní identifikátor odvozený z názvu a země (např. FK3A9F12C0), takže ho Pohoda v adresáři spáruje vždy se stejnou kartou.",
 } satisfies Record<string, string>;

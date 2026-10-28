@@ -106,12 +106,41 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
     if (dlErr || !blob) throw new Error(dlErr?.message ?? "PDF sa nepodarilo načítať.");
     const pdfB64 = b64(await blob.arrayBuffer());
 
-    const subject = (data.subject ?? `Cenová ponuka ${q.quote_number}`).replaceAll(
-      "{quote_number}",
-      q.quote_number,
-    );
+    // Bez textu z okna (API, hromadné odoslanie) platí šablóna „Cenová ponuka“ firmy.
+    let sablona: { predmet: string; text: string } | null = null;
+    if (data.subject === undefined && data.message === undefined) {
+      const { sablonaPreDoklad } = await import("./email-sablony.server");
+      const { predvolenyJazykFirmy } = await import("./faktura-jazyk");
+      const { doplnPremenne, hodnotyPremennych } = await import("./email-sablony");
+      const jazyk = predvolenyJazykFirmy((company as any)?.country);
+      const s = await sablonaPreDoklad(q.company_id, "ponuka", jazyk);
+      if (s) {
+        const h = hodnotyPremennych({
+          doklad: {
+            invoice_number: q.quote_number,
+            total: q.total,
+            currency: q.currency,
+            due_date: q.valid_until,
+            issue_date: q.issue_date,
+            customer_name: q.customer_name,
+          },
+          typ: "ponuka",
+          jazyk,
+          firma: (company as any)?.name ?? "",
+          iban: (company as any)?.iban ?? "",
+        });
+        sablona = { predmet: doplnPremenne(s.predmet, h), text: doplnPremenne(s.text, h) };
+      }
+    }
+    const subject = (
+      data.subject ??
+      sablona?.predmet ??
+      `Cenová ponuka ${q.quote_number}`
+    ).replaceAll("{quote_number}", q.quote_number);
     const message = (
-      data.message ?? `V prílohe Vám posielame cenovú ponuku ${q.quote_number}.`
+      data.message ??
+      sablona?.text ??
+      `V prílohe Vám posielame cenovú ponuku ${q.quote_number}.`
     ).replaceAll("{quote_number}", q.quote_number);
     const senderName = menoOdosielatela(company?.email_sender_name || company?.name);
 

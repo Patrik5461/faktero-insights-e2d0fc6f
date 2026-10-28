@@ -79,6 +79,11 @@ export const OPERACIE = [
   */
   "registracia",
   "registracia-nastavenie",
+  /*
+    Prihlásenie QR kódom z webu („Prihlásiť appku v telefóne"). Bez
+    prihlásenia — preukazom je jednorazový kód, ktorý server vymení za reláciu.
+  */
+  "parovanie-vymen",
   // Oznam o e-fakturácii 2027 na Prehľade — tie isté funkcie ako okno na webe.
   "efaktura-oznam-stav",
   "efaktura-oznam-akcia",
@@ -91,6 +96,7 @@ export type Operacia = (typeof OPERACIE)[number];
 export const OPERACIE_BEZ_PRIHLASENIA: readonly Operacia[] = [
   "registracia",
   "registracia-nastavenie",
+  "parovanie-vymen",
 ];
 
 export function jeOperacia(hodnota: string): hodnota is Operacia {

@@ -247,4 +247,6 @@ export default {
     "Der Vorschlag wird einmal berechnet und beim Beleg gespeichert; neu gefragt wird nur, wenn sich Lieferant, Beträge oder Positionen ändern. Was Sie bestätigen oder ändern, merkt sich Faktero beim Lieferanten — beim nächsten Beleg ist die KI nicht mehr nötig.",
   "Robí sa pre slovenské a české firmy; keď AI práve neodpovedá, návrh sa jednoducho neukáže.":
     "Das gibt es für slowakische und tschechische Unternehmen; antwortet die KI gerade nicht, erscheint einfach kein Vorschlag.",
+  "<0>IČO z mena</0> — partner bez IČO (zahraničná firma, fyzická osoba) dostane stabilný náhradný identifikátor odvodený z mena a krajiny (napr. FK3A9F12C0), takže ho Pohoda v adresári spáruje vždy s tou istou kartou.":
+    "<0>IČO aus dem Namen</0> — ein Partner ohne IČO (ausländische Firma, Privatperson) bekommt eine stabile Ersatzkennung, abgeleitet aus Name und Land (z. B. FK3A9F12C0), sodass Pohoda ihn im Adressbuch immer derselben Karte zuordnet.",
 } satisfies Record<string, string>;

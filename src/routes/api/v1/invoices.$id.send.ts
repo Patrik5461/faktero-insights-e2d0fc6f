@@ -92,6 +92,7 @@ export const Route = createFileRoute("/api/v1/invoices/$id/send")({
           } catch (e: any) {
             // Strážca odosielania (strop adresátov, podozrivý obsah, pozastavenie).
             if (e?.code === "issue_date_in_past") return err("issue_date_in_past", e.message, 409);
+            if (e?.code === "approval_pending") return err("approval_pending", e.message, 409);
             if (e?.name === "OdosielanieZastavene")
               return err("sending_blocked", e.message, 429, { reason: e.dovod ?? null });
             return err("send_failed", e?.message ?? "Odoslanie zlyhalo.", 502);

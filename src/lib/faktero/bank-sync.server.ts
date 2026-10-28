@@ -5,6 +5,7 @@
  * Robí to isté, čo tlačidlo "Synchronizovať" v apke, ale pre všetky pripojenia
  * naraz a bez prihláseného používateľa — preto ide cez supabaseAdmin.
  */
+import { lenOdDatumu, nastaveniaBanky } from "./export-nastavenia";
 
 type SyncResult = {
   connection_id: string;
@@ -202,7 +203,33 @@ export async function stiahniTransakcieUctu(
     description: t.description,
     transaction_reference: t.transaction_reference,
   }));
-  return { inserted: await vlozPohyby(supabaseAdmin, riadky), total: txs.length };
+  const odFirmy = await synchronizovatOd(supabaseAdmin, conn.company_id);
+  return {
+    inserted: await vlozPohyby(supabaseAdmin, lenOdDatumu(riadky, odFirmy)),
+    total: txs.length,
+  };
+}
+
+/**
+ * Od ktorého dňa sa pohyby ukladajú (Bankové účty → Nastavenia banky →
+ * „Synchronizovať banku od"). Bez nastavenia `null` = všetko, ako doteraz.
+ */
+async function synchronizovatOd(
+  supabaseAdmin: any,
+  companyId: string | null | undefined,
+): Promise<string | null> {
+  if (!companyId) return null;
+  // Nastavenie, ktoré sa nedá prečítať, sťahovanie nezastaví — uloží sa všetko.
+  try {
+    const { data } = await supabaseAdmin
+      .from("companies")
+      .select("uctovanie_nastavenia")
+      .eq("id", companyId)
+      .maybeSingle();
+    return nastaveniaBanky(data?.uctovanie_nastavenia).synchronizovatOd;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -267,6 +294,7 @@ export async function stiahniPohybyPripojenia(
     .eq("bank_connection_id", connectionId);
 
   const odDna = new Date(Date.now() - 366 * 86400_000).toISOString().slice(0, 10);
+  const odFirmy = await synchronizovatOd(supabaseAdmin, companyId);
   let vlozenych = 0;
   const problemy: string[] = [];
 
@@ -279,18 +307,21 @@ export async function stiahniPohybyPripojenia(
       if (!nove.length) continue;
       vlozenych += await vlozPohyby(
         supabaseAdmin,
-        nove.map((p) => ({
-          company_id: companyId,
-          bank_account_id: u.id,
-          booking_date: p.booking_date,
-          amount: p.amount,
-          currency: p.currency,
-          variable_symbol: p.variable_symbol,
-          counterparty: p.counterparty,
-          counterparty_iban: p.counterparty_iban ?? null,
-          description: p.description,
-          transaction_reference: p.external_id,
-        })),
+        lenOdDatumu(
+          nove.map((p) => ({
+            company_id: companyId,
+            bank_account_id: u.id,
+            booking_date: p.booking_date,
+            amount: p.amount,
+            currency: p.currency,
+            variable_symbol: p.variable_symbol,
+            counterparty: p.counterparty,
+            counterparty_iban: p.counterparty_iban ?? null,
+            description: p.description,
+            transaction_reference: p.external_id,
+          })),
+          odFirmy,
+        ),
       );
     } catch (e: any) {
       problemy.push(`${u.currency}: ${e?.message ?? "nepodarilo sa"}`);

@@ -178,7 +178,11 @@ export async function rozdielyOprotiPohode(
     for (const l of logy ?? []) if (!posledny.has(l.invoice_id)) posledny.set(l.invoice_id, l);
     await suborJobu([...posledny.values()].map((l) => l.export_job_id));
     const { bundle, zalohy } = await pripravFaktury(supabase, companyId, faktury);
-    const nast = nastaveniaFaktur(company);
+    const nast = {
+      ...nastaveniaFaktur(company),
+      // Skratky účtov a partneri — inak by sa XML líšilo od odoslaného len preto.
+      ...(await (await import("./export-nastavenia.server")).doplnkyExportu(supabase, company)),
+    };
     for (const { invoice, items } of bundle) {
       const log = posledny.get(invoice.id);
       const odoslane = log ? subory.get(log.export_job_id)?.[invoice.id] : undefined;

@@ -11,6 +11,7 @@
   (aj to vo Fakteri) podľa nich spozná, čo bolo zaplatené.
 */
 import { upravIban } from "./platobny-ucet";
+import type { TextPrijemcu } from "./export-nastavenia";
 
 export type FakturaNaUhradu = {
   id: string;
@@ -31,6 +32,8 @@ export type FakturaNaUhradu = {
   zaloha?: number | null;
   /** Faktúra vo vyúčtovaní výdavkov — zaplatil ju zamestnanec. */
   vyuctovanie_id?: string | null;
+  /** Účtovná poznámka faktúry — do správy pre príjemcu, keď si to firma zvolí. */
+  note?: string | null;
 };
 
 export type Platba = {
@@ -51,6 +54,8 @@ export type Platba = {
   referencia: string;
   /** Koľko sa z faktúry odpočítalo (čiastočná úhrada a záloha); 0 = platí sa celá. */
   odpocitane: number;
+  /** Účtovná poznámka faktúry (pre správu pre príjemcu). */
+  poznamka?: string;
 };
 
 export type Preskocena = { id: string; cisloFaktury: string; dovod: string };
@@ -192,6 +197,7 @@ export function pripravPlatby(faktury: FakturaNaUhradu[]): {
       ks: iba(f.constant_symbol, 4),
       referencia: referenciaPlatitela(f),
       odpocitane,
+      ...(String(f.note ?? "").trim() ? { poznamka: String(f.note).trim() } : {}),
     });
   }
   return { platby, preskocene };
@@ -216,12 +222,31 @@ export function sepaText(v: string, max: number): string {
  * Správa pre príjemcu: referencia `RF…` štruktúrovane (banka ju odovzdá
  * dodávateľovi na spárovanie), iná referencia platiteľa na začiatok textu.
  */
-function spravaPrijemcovi(p: Pick<Platba, "cisloFaktury" | "referencia">): string {
+function spravaPrijemcovi(
+  p: Pick<Platba, "cisloFaktury" | "referencia" | "vs" | "poznamka">,
+  format: TextPrijemcu = "cislo",
+): string {
   const ref = String(p.referencia ?? "");
   if (ref && jeRfReferencia(ref))
     return `<Strd><CdtrRefInf><Tp><CdOrPrtry><Cd>SCOR</Cd></CdOrPrtry></Tp><Ref>${xml(ref.toUpperCase())}</Ref></CdtrRefInf></Strd>`;
-  const text = ref ? `${ref} Faktura ${p.cisloFaktury}` : `Faktura ${p.cisloFaktury}`;
-  return `<Ustrd>${xml(sepaText(text, 140))}</Ustrd>`;
+  const text = textPrijemcu(p, format);
+  return `<Ustrd>${xml(sepaText(ref ? `${ref} ${text}` : text, 140))}</Ustrd>`;
+}
+
+/**
+ * Text pre príjemcu podľa nastavenia firmy (Bankové účty → Nastavenia banky):
+ * „Faktura 123" (predvolené), len číslo faktúry, variabilný symbol alebo
+ * účtovná poznámka. Bez poznámky či symbolu ide predvolený text.
+ */
+export function textPrijemcu(
+  p: Pick<Platba, "cisloFaktury" | "vs" | "poznamka">,
+  format: TextPrijemcu = "cislo",
+): string {
+  const predvoleny = `Faktura ${p.cisloFaktury}`;
+  if (format === "len_cislo") return p.cisloFaktury || predvoleny;
+  if (format === "vs") return p.vs ? `VS ${p.vs}` : predvoleny;
+  if (format === "poznamka") return String(p.poznamka ?? "").trim() || predvoleny;
+  return predvoleny;
 }
 
 const xml = (v: string) =>
@@ -241,6 +266,8 @@ export type NastaveniePrikazu = {
   datum: string;
   /** `true` = každá faktúra až v deň splatnosti (nie skôr než `datum`). */
   podlaSplatnosti: boolean;
+  /** Správa pre príjemcu (nastavenie firmy); predvolene „Faktura <číslo>". */
+  textPrijemcu?: TextPrijemcu;
   /** Na skúšky; inak teraz. */
   vytvorene?: Date;
 };
@@ -284,7 +311,7 @@ export function zostavPain001(platby: Platba[], n: NastaveniePrikazu): string {
         <Amt><InstdAmt Ccy="EUR">${suma2(p.suma)}</InstdAmt></Amt>
         <Cdtr><Nm>${xml(sepaText(p.prijemca, 70) || "Prijemca")}</Nm></Cdtr>
         <CdtrAcct><Id><IBAN>${p.iban}</IBAN></Id></CdtrAcct>
-        <RmtInf>${spravaPrijemcovi(p)}</RmtInf>
+        <RmtInf>${spravaPrijemcovi(p, n.textPrijemcu)}</RmtInf>
       </CdtTrfTxInf>`,
         )
         .join("\n");

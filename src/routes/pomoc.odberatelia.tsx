@@ -105,6 +105,11 @@ const sections: HelpSection[] = [
           doplnia sa im len prázdne údaje (napríklad e-mail alebo IČ DPH). Ten istý odberateľ v
           súbore viackrát sa založí raz.
         </p>
+        <p>
+          <strong>Povinné číslo objednávky.</strong> Keď partner chce na každom doklade číslo svojej
+          objednávky, zaškrtnite to na jeho karte. Faktúra pre neho a doklad od neho v
+          Nespracovaných potom bez čísla objednávky ukážu upozornenie — uložiť sa dajú aj tak.
+        </p>
       </>
     ),
   },

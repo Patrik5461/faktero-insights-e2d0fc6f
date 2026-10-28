@@ -96,6 +96,11 @@ type Popisky = {
   uhradene: string;
   spoluKUhrade: string;
   peciatkaPodpis: string;
+  /** Nadpis faktúry, ktorá slúži zároveň ako dodací list. */
+  fakturaDodaciList: string;
+  /** Podpisové polia dodacieho listu — kto tovar odovzdal a kto ho prevzal. */
+  odovzdal: string;
+  prevzal: string;
   platobneUdaje: string;
   iban: string;
   swift: string;
@@ -173,6 +178,9 @@ const SK: Popisky = {
   uhradene: "UHRADENÉ",
   spoluKUhrade: "SPOLU K ÚHRADE",
   peciatkaPodpis: "Pečiatka a podpis",
+  fakturaDodaciList: "FAKTÚRA – DODACÍ LIST",
+  odovzdal: "Odovzdal",
+  prevzal: "Prevzal",
   platobneUdaje: "PLATOBNÉ ÚDAJE",
   iban: "IBAN",
   swift: "SWIFT/BIC",
@@ -230,6 +238,9 @@ const CS: Popisky = {
   uhradene: "UHRAZENO",
   spoluKUhrade: "CELKEM K ÚHRADĚ",
   peciatkaPodpis: "Razítko a podpis",
+  fakturaDodaciList: "FAKTURA – DODACÍ LIST",
+  odovzdal: "Předal",
+  prevzal: "Převzal",
   platobneUdaje: "PLATEBNÍ ÚDAJE",
   qrPlatba: "QR PLATBA PŘEVODEM",
   poznamky: "POZNÁMKY",
@@ -290,6 +301,9 @@ const EN: Popisky = {
   uhradene: "PAID",
   spoluKUhrade: "TOTAL DUE",
   peciatkaPodpis: "Stamp and signature",
+  fakturaDodaciList: "INVOICE – DELIVERY NOTE",
+  odovzdal: "Delivered by",
+  prevzal: "Received by",
   platobneUdaje: "PAYMENT DETAILS",
   iban: "IBAN",
   swift: "SWIFT/BIC",
@@ -354,6 +368,9 @@ const DE: Popisky = {
   uhradene: "BEZAHLT",
   spoluKUhrade: "ZAHLBETRAG",
   peciatkaPodpis: "Stempel und Unterschrift",
+  fakturaDodaciList: "RECHNUNG – LIEFERSCHEIN",
+  odovzdal: "Übergeben",
+  prevzal: "Empfangen",
   platobneUdaje: "ZAHLUNGSDATEN",
   iban: "IBAN",
   swift: "SWIFT/BIC",
@@ -419,6 +436,9 @@ const HU: Popisky = {
   uhradene: "KIFIZETVE",
   spoluKUhrade: "FIZETENDŐ",
   peciatkaPodpis: "Bélyegző és aláírás",
+  fakturaDodaciList: "SZÁMLA – SZÁLLÍTÓLEVÉL",
+  odovzdal: "Átadta",
+  prevzal: "Átvette",
   platobneUdaje: "FIZETÉSI ADATOK",
   qrPlatba: "QR ÁTUTALÁS",
   poznamky: "MEGJEGYZÉSEK",

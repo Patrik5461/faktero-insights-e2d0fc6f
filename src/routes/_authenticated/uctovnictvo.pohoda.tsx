@@ -35,6 +35,7 @@ const POLIA = [
   "pohoda_posielat_pohyby",
   "pohoda_posielat_zakazky",
   "pohoda_odkaz_na_pdf",
+  "pohoda_ico_z_mena",
 ] as const;
 
 function Stranka() {
@@ -160,12 +161,21 @@ function Stranka() {
             onChange={f("pohoda_pokladna")}
             placeholder={t("napr. {x}", { x: "HOT" })}
           />
-          <In
-            label={t("Bankový účet v Pohode")}
-            value={c.pohoda_banka ?? ""}
-            onChange={f("pohoda_banka")}
-            placeholder={t("napr. {x}", { x: "TB" })}
-          />
+          <div>
+            <In
+              label={t("Bankový účet v Pohode")}
+              value={c.pohoda_banka ?? ""}
+              onChange={f("pohoda_banka")}
+              placeholder={t("napr. {x}", { x: "TB" })}
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {t("Pri viacerých účtoch zadajte skratku pri každom účte vo")}{" "}
+              <Link to="/firma" className="text-primary underline">
+                {t("Firma → Bankové účty")}
+              </Link>
+              {t(" — faktúra pôjde so skratkou svojho účtu.")}
+            </span>
+          </div>
           <In
             label={t("Členenie skladu v Pohode")}
             value={c.pohoda_sklad ?? ""}
@@ -196,7 +206,12 @@ function Stranka() {
               <span className="mt-0.5 block text-xs text-muted-foreground">
                 {t(
                   "Odberatelia idú do Pohody aj vtedy, keď im tento mesiac nič nefakturujeme. Zmenený kontakt sa prepíše, nezaloží sa druhý.",
-                )}
+                )}{" "}
+                {t("Len partnerov z dokladov a ich párovanie s dokladom nastavíte v")}{" "}
+                <Link to="/uctovnictvo/predkontacie" className="text-primary underline">
+                  {t("Predkontáciách")}
+                </Link>
+                .
               </span>
             </span>
           </label>
@@ -266,6 +281,23 @@ function Stranka() {
               <span className="mt-0.5 block text-xs text-muted-foreground">
                 {t(
                   "Doklad má v Pohode v záložke Dokumenty odkaz, ktorým sa otvorí PDF. Odkaz je dlhý náhodný reťazec a otvorí ho každý, kto ho má — rovnako ako faktúra poslaná mailom.",
+                )}
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={!!c.pohoda_ico_z_mena}
+              onChange={(e) => setC({ ...c, pohoda_ico_z_mena: e.target.checked })}
+              className="mt-0.5 h-4 w-4"
+            />
+            <span className="text-sm">
+              {t("Generovať IČO z mena pre partnerov bez IČO")}
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {t(
+                  "Zahraničná firma alebo fyzická osoba dostane v Pohode stabilný náhradný identifikátor (napr. FK3A9F12C0) odvodený z mena a krajiny, takže sa v adresári vždy spáruje s tou istou kartou a nezakladá nové. Partnera so skutočným IČO sa to netýka.",
                 )}
               </span>
             </span>

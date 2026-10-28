@@ -170,6 +170,16 @@ const sections: HelpSection[] = [
           kolegu napísaním <strong>@meno</strong>; dostane upozornenie do zvončeka. Iné doklady sa
           dajú triediť do <strong>priečinkov</strong>.
         </p>
+        <p>
+          V zoznamoch bločkov, prijatých a vystavených faktúr vyberiete{" "}
+          <strong>účtovnú položku</strong> priamo v riadku (s hľadaním) a po označení viacerých
+          dokladov ponúkne <strong>Hromadná akcia</strong> účtovnú položku, typ platby, členenie DPH
+          a KV, účtovnú poznámku, komentár, vlastný stav, štítky aj označenie úhrady. Odovzdané,
+          zamknuté doklady a doklady v uzavretom období sa pri účtovných zmenách preskočia. Vlastné{" "}
+          <strong>stavy dokladov</strong> (napr. „Čaká na doklad od klienta“) a štítky si nastavíte
+          v Účtovníctvo → Predkontácie; <strong>komentár</strong> sa na rozdiel od účtovnej poznámky
+          do účtovníctva nikdy neprenáša.
+        </p>
       </>
     ),
   },
@@ -444,6 +454,12 @@ const sections: HelpSection[] = [
           odosielateľ“. Prázdny zoznam znamená, že doklad prijme od kohokoľvek, kto adresu pozná.
         </p>
         <p>
+          <strong>Ukladať aj e-maily bez dokladu.</strong> Keď mail nemá PDF ani fotku dokladu
+          (faktúra je priamo v texte alebo len odkaz na stiahnutie), predvolene ostane len v zozname
+          posledných mailov. Po zaškrtnutí tejto voľby sa uloží do Nespracovaných ako PDF s textom
+          mailu a spracujete ho ako každý iný doklad.
+        </p>
+        <p>
           <strong>Kontrola odberateľa.</strong> Keď je na doklade iný odberateľ (iné IČO alebo IČ
           DPH) než vaša firma, doklad sa založí, ale s upozornením v poznámke aj v denníku mailov —
           aby sa vám medzi náklady nedostala cudzia faktúra.
@@ -599,6 +615,13 @@ const sections: HelpSection[] = [
           doklad sa po oprave vráti na schválenie odznova.
         </p>
         <p>
+          Schvaľovať sa dajú aj <strong>nespracované doklady</strong> (bloček či faktúra z nich
+          vznikne až po schválení) a <strong>vyúčtovanie výdavkov</strong> (schvaľuje sa po
+          uzavretí). V tabuľke <strong>Povolenia používateľov</strong> nastavíte každému zvlášť
+          Schvaľovanie, Zrušenie schválenia, Vrátenie a Zamietnutie; majiteľ má vždy všetko.
+          Neschválenú vystavenú faktúru server neodošle ani z appky, ani cez API.
+        </p>
+        <p>
           <strong>Moje úlohy</strong> (v menu hneď pod Prehľadom, s počtom) zhrnú na jednej stránke
           všetko, čo čaká práve na vás: doklady na vaše schválenie, komentáre, v ktorých vás kolega
           označil, a nespracované doklady na kontrolu. Komentár po vybavení označte tlačidlom{" "}
@@ -662,7 +685,9 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Pri poznámke si viete opakované texty uložiť ako <strong>preddefinované</strong> a potom
-          ich len vyberať.
+          ich len vyberať. Číselník je v <strong>Nastavenia → Preddefinované poznámky</strong>{" "}
+          (alebo cez „Spravovať poznámky…“ priamo pri poli): každá poznámka má názov, text a agendy,
+          kde sa ponúka — vystavené a prijaté faktúry, bločky, Nespracované.
         </p>
         <p>
           <strong>Prílohy a presun.</strong> K dokladu sa dá priložiť ďalší súbor (dodací list,

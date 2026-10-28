@@ -85,6 +85,10 @@ export function SchvalovaniePanel({
   }
 
   const z = d.zaznam;
+  // Staršia odpoveď servera nemala povolenia zvlášť — vtedy platí „kto schvaľuje, aj vráti".
+  const mozemVratit: boolean = d.mozemVratit ?? d.mozem;
+  const mozemZamietnut: boolean = d.mozemZamietnut ?? d.mozem;
+  const nieco = d.mozem || mozemVratit || mozemZamietnut;
   return (
     <div className="rounded-xl border border-border bg-card p-5 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -127,9 +131,9 @@ export function SchvalovaniePanel({
             </p>
           )}
 
-          {(d.mozem || d.mozemZrusit) && (
+          {(nieco || d.mozemZrusit) && (
             <div className="mt-3 space-y-2">
-              {d.mozem && (
+              {nieco && (
                 <input
                   value={poznamka}
                   onChange={(e) => setPoznamka(e.target.value)}
@@ -138,34 +142,40 @@ export function SchvalovaniePanel({
                 />
               )}
               <div className="flex flex-wrap gap-2">
-                {d.mozem && (
+                {nieco && (
                   <>
-                    <button
-                      onClick={() => akcia("schvalit")}
-                      disabled={busy}
-                      className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-                    >
-                      {busy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="h-4 w-4" />
-                      )}
-                      {t("Schváliť")}
-                    </button>
-                    <button
-                      onClick={() => akcia("vratit")}
-                      disabled={busy}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-                    >
-                      <Undo2 className="h-4 w-4" /> {t("Vrátiť na opravu")}
-                    </button>
-                    <button
-                      onClick={() => akcia("zamietnut")}
-                      disabled={busy}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
-                    >
-                      <XCircle className="h-4 w-4" /> {t("Zamietnuť")}
-                    </button>
+                    {d.mozem && (
+                      <button
+                        onClick={() => akcia("schvalit")}
+                        disabled={busy}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                      >
+                        {busy ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4" />
+                        )}
+                        {t("Schváliť")}
+                      </button>
+                    )}
+                    {mozemVratit && (
+                      <button
+                        onClick={() => akcia("vratit")}
+                        disabled={busy}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+                      >
+                        <Undo2 className="h-4 w-4" /> {t("Vrátiť na opravu")}
+                      </button>
+                    )}
+                    {mozemZamietnut && (
+                      <button
+                        onClick={() => akcia("zamietnut")}
+                        disabled={busy}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                      >
+                        <XCircle className="h-4 w-4" /> {t("Zamietnuť")}
+                      </button>
+                    )}
                   </>
                 )}
                 {d.mozemZrusit && z.stav !== "caka" && (

@@ -11,7 +11,12 @@ import {
   ulozNastavenieSchvalovaniaFn,
   zmazCestuFn,
 } from "@/lib/faktero/schvalovanie.functions";
-import { NAZVY_AGEND, type AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
+import {
+  AGENDY_SCHVALOVANIA,
+  NAZVY_AGEND,
+  type AgendaSchvalovania,
+} from "@/lib/faktero/schvalovanie";
+import { PravaSchvalovaniaTabulka } from "@/components/faktero/PravaSchvalovaniaTabulka";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
@@ -29,7 +34,7 @@ export const Route = createFileRoute("/_authenticated/nastavenia/schvalovanie")(
   component: Stranka,
 });
 
-type Clovek = { id: string; rola: string; meno: string };
+type Clovek = { id: string; rola: string; meno: string; prava: Record<string, boolean> | null };
 type CestaForm = {
   id?: string;
   nazov: string;
@@ -39,7 +44,7 @@ type CestaForm = {
   poradie: number;
 };
 
-const AGENDY: AgendaSchvalovania[] = ["doklad", "prijata", "vystavena"];
+const AGENDY: AgendaSchvalovania[] = AGENDY_SCHVALOVANIA;
 const vstup = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 
 function Stranka() {
@@ -198,6 +203,11 @@ function Stranka() {
                   </label>
                 ))}
               </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t(
+                  "Nespracovaný doklad sa zmení na bloček či faktúru až po schválení. Vyúčtovanie výdavkov sa schvaľuje po uzavretí.",
+                )}
+              </p>
             </div>
             <label className="block">
               <span className="text-xs text-muted-foreground">{t("Automaticky schváliť doklad so sumou pod ({mena})", { mena: mena.symbol })}</span>
@@ -220,6 +230,11 @@ function Stranka() {
             />
             {t("Vystavenú faktúru odoslať (mailom, eFaktúrou) až po schválení")}
           </label>
+          <p className="ml-6 text-xs text-muted-foreground">
+            {t(
+              "Platí, keď sa schvaľujú vystavené faktúry. Server neodošle neschválenú faktúru ani z appky, ani cez API.",
+            )}
+          </p>
           {spravca ? (
             <div className="mt-4 flex justify-end">
               <button
@@ -234,6 +249,14 @@ function Stranka() {
             <p className="mt-3 text-xs text-muted-foreground">{t("Nastavenie mení majiteľ alebo správca firmy.")}</p>
           )}
         </section>
+
+        <PravaSchvalovaniaTabulka
+          companyId={companyId}
+          ludia={ludia}
+          vCeste={new Set((d.cesty ?? []).flatMap((c: any) => (c.urovne ?? []).flat() as string[]))}
+          spravca={spravca}
+          onUlozene={obnov}
+        />
 
         <section className="rounded-xl border border-border bg-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">

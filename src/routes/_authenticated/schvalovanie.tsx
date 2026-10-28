@@ -22,6 +22,8 @@ const ODKAZ: Record<AgendaSchvalovania, (id: string) => { to: string; params?: a
   doklad: (id) => ({ to: "/doklady/novy", search: { id } }),
   prijata: (id) => ({ to: "/prijate-faktury/$id", params: { id } }),
   vystavena: (id) => ({ to: "/faktury/$id", params: { id } }),
+  nespracovany: (id) => ({ to: "/nespracovane/$id", params: { id } }),
+  vyuctovanie: (id) => ({ to: "/doklady/vyuctovania/$id", params: { id } }),
 };
 
 function Stranka() {
@@ -165,7 +167,7 @@ function Stranka() {
                         <td className="py-1.5 pr-3">{p.partner ?? "—"}</td>
                         <td className="py-1.5 pr-3">{datumNaDoklade(p.datum)}</td>
                         <td className="py-1.5 pr-3 text-right tabular-nums">
-                          {formatujMenu(p.suma, p.mena)}
+                          {p.suma == null ? "—" : formatujMenu(p.suma, p.mena)}
                         </td>
                         <td className="py-1.5 text-xs">
                           {t(NAZVY_STAVOV[p.stav as keyof typeof NAZVY_STAVOV] ?? "")} · {p.odznak}

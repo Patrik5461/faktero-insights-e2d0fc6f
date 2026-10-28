@@ -42,6 +42,7 @@ import {
   Mail,
 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
+import { NastaveniaBanky } from "@/components/faktero/banka/NastaveniaBanky";
 import { pohybyZastarane } from "@/lib/faktero/bank-stav-pohybov";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/")({
@@ -582,6 +583,7 @@ function BankAccountsPage() {
             </div>
           ))}
         </div>
+        {getActiveCompanyId() ? <NastaveniaBanky companyId={getActiveCompanyId()!} /> : null}
       </PageBody>
     </>
   );

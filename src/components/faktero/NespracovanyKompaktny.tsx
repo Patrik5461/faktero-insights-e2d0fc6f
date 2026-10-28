@@ -1,4 +1,5 @@
 import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
+import { UpozornenieObjednavky } from "./PovinnaObjednavka";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PolozkyNespracovaneho } from "./PolozkyNespracovaneho";
 import { JobPicker } from "./JobPicker";
@@ -611,6 +612,11 @@ export function NespracovanyKompaktny({
                   onChange={(e) => set({ objednavka: e.target.value })}
                   className={ram("")}
                 />
+                <UpozornenieObjednavky
+                  companyId={companyId ?? getActiveCompanyId()}
+                  ico={u.dodavatel.ico}
+                  cisloObjednavky={u.objednavka}
+                />
               </Pole>
               <Pole popis="Číslo dodacieho listu">
                 <input
@@ -732,22 +738,38 @@ export function NespracovanyKompaktny({
                   <div className="text-right text-[11px] text-muted-foreground">
                     {u.kody.intPoznamka.length}/200
                   </div>
+                  {/* Poznámka dokladu (aj zhrnutie od AI) ide do účtovníctva — musí byť vidieť. */}
+                  <textarea
+                    rows={2}
+                    maxLength={1000}
+                    placeholder={t("Poznámka k dokladu (ide do účtovníctva)")}
+                    value={u.poznamka}
+                    onChange={(e) => set({ poznamka: e.target.value })}
+                    className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  />
                 </div>
               ) : null}
               <div>
                 <textarea
                   rows={2}
                   maxLength={1000}
-                  placeholder={t("Komentár (do účtovníctva sa neprenáša)")}
-                  value={u.poznamka}
-                  onChange={(e) => set({ poznamka: e.target.value })}
+                  placeholder={
+                    druh === "ostatny"
+                      ? t("Poznámka")
+                      : t("Komentár (do účtovníctva sa neprenáša)")
+                  }
+                  value={druh === "ostatny" ? u.poznamka : (u.komentar ?? "")}
+                  onChange={(e) =>
+                    set(druh === "ostatny" ? { poznamka: e.target.value } : { komentar: e.target.value })
+                  }
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 />
                 <div className="text-right text-[11px] text-muted-foreground">
-                  {u.poznamka.length}/1000
+                  {(druh === "ostatny" ? u.poznamka : (u.komentar ?? "")).length}/1000
                 </div>
                 <PreddefinovanaPoznamka
                   companyId={getActiveCompanyId()}
+                  agenda="nespracovane"
                   onVyber={(text) =>
                     set({ poznamka: u.poznamka ? `${u.poznamka}\n${text}` : text })
                   }

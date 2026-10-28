@@ -291,6 +291,8 @@ export async function zostavBalik(
     pokladna: company.pohoda_pokladna,
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
     sklad: company.pohoda_sklad,
+    // Nastavenia exportu, skratky bankových účtov a partneri v adresári Pohody.
+    ...(await (await import("./export-nastavenia.server")).doplnkyExportu(supabase, company)),
   };
 
   const {
@@ -321,9 +323,27 @@ export async function zostavBalik(
   const { zalohy, opravovane, povodneCisla } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
   const storna = await nacitajStorna(supabase, vstup.companyId, cisla);
 
+  /*
+    Partneri „pridať alebo aktualizovať a párovať" (Predkontácie → Export):
+    aj bez celého adresára idú karty partnerov dokladov z balíka.
+  */
+  const { nastaveniaExportu } = await import("./export-nastavenia");
+  const parovatPartnerov = nastaveniaExportu(company.uctovanie_nastavenia).partneri === "parovat";
+  const partneriDokladov = new Set(
+    [...faktury, ...prijate].map((d: Riadok) => String(d.customer_id ?? "")).filter(Boolean),
+  );
   const zakaznici = company.pohoda_posielat_adresar
     ? await nacitajZakaznikov(supabase, vstup.companyId)
-    : [];
+    : parovatPartnerov && partneriDokladov.size
+      ? (await nacitajZakaznikov(supabase, vstup.companyId)).filter((z: Riadok) =>
+          partneriDokladov.has(String(z.id)),
+        )
+      : [];
+  // Karty z balíka (pohoda-adresar.xml) — doklady sa na ne odvolajú cez extId.
+  if (parovatPartnerov)
+    nastavenia.partneriVPohode = [
+      ...new Set([...(nastavenia.partneriVPohode ?? []), ...zakaznici.map((z: Riadok) => String(z.id))]),
+    ];
   const zasoby =
     company.pohoda_posielat_sklad && company.pohoda_sklad
       ? await nacitajZasoby(supabase, vstup.companyId)
@@ -413,6 +433,7 @@ export async function zostavBalik(
     const nastDokladov = {
       ...nastavenia,
       ...(await (await import("./predkontacie.server")).nastaveniaDokladov(supabase, company, doklady)),
+      partneriVPohode: nastavenia.partneriVPohode,
     };
     for (const d of doklady) {
       const dovod = prekazkaDokladu(d, company, nastDokladov);
@@ -465,6 +486,7 @@ export async function zostavBalik(
         company,
         prijate.map(prijataAkoDoklad),
       )),
+      partneriVPohode: nastavenia.partneriVPohode,
     };
     for (const p of prijate) {
       const dovod = prekazkaDokladu(prijataAkoDoklad(p), company, nastPrijatych);

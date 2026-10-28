@@ -105,7 +105,11 @@ export function prekazkaOdpoctu(
  * Odpočet ako záporné položky faktúry (tvar `invoice_items`) — pre formáty,
  * ktoré skladajú súčty po sadzbách z položiek (Omega, Money S3, Flexi).
  */
-export function polozkyOdpoctu(odpocty: OdpocetZalohy[] | null | undefined): {
+export function polozkyOdpoctu(
+  odpocty: OdpocetZalohy[] | null | undefined,
+  /** Názov položky (nastavenie firmy) — bez neho „Odpočet zálohy <doklad>". */
+  nazov?: (text: string, sadzba: number) => string,
+): {
   name: string;
   description: null;
   quantity: number;
@@ -119,7 +123,7 @@ export function polozkyOdpoctu(odpocty: OdpocetZalohy[] | null | undefined): {
 }[] {
   return (odpocty ?? []).flatMap((o) =>
     o.riadky.map((r) => ({
-      name: textOdpoctu(o),
+      name: nazov ? nazov(textOdpoctu(o), r.sadzba) : textOdpoctu(o),
       description: null,
       quantity: 1,
       unit: "ks",

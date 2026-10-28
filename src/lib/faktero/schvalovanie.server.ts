@@ -9,10 +9,72 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Klient = any;
 
-const TABULKY: Record<AgendaSchvalovania, { tabulka: string; ico: string; suma: string; cislo: string; partner: string }> = {
-  doklad: { tabulka: "expense_documents", ico: "supplier_ico", suma: "total_amount", cislo: "document_number", partner: "supplier_name" },
-  prijata: { tabulka: "purchase_invoices", ico: "supplier_ico", suma: "amount_total", cislo: "invoice_number", partner: "supplier_name" },
-  vystavena: { tabulka: "invoices", ico: "customer_ico", suma: "total", cislo: "invoice_number", partner: "customer_name" },
+/*
+  Odkiaľ sa berie doklad každej agendy. `vyber` dáva stĺpcom jednotné mená
+  (PostgREST aliasy), aby zvyšok kódu nemusel vedieť, že nespracovaný doklad
+  má dodávateľa v JSON-e a vyúčtovanie nemá sumu vôbec. `cislo`/`partner`
+  ostávajú pre staršie miesta, ktoré si stĺpce skladajú samy.
+*/
+type ZdrojAgendy = {
+  tabulka: string;
+  /** Má doklad zákazku (pre „manažéra zákazky" v ceste)? */
+  zakazka: boolean;
+  cislo: string;
+  partner: string;
+  /** Údaje pre výber cesty: id, created_at, job_id, ico, suma, predkontacia, stav. */
+  podmienky: string;
+  /** Údaje pre zoznam „Na schválenie": id, cislo, partner, suma, mena, datum. */
+  zoznam: string;
+  /** Rozpracovaný doklad sa ešte neschvaľuje (koncept faktúry, otvorené vyúčtovanie). */
+  rozpracovany?: (stav: unknown) => boolean;
+};
+
+const TABULKY: Record<AgendaSchvalovania, ZdrojAgendy> = {
+  doklad: {
+    zakazka: true,
+    tabulka: "expense_documents",
+    cislo: "document_number",
+    partner: "supplier_name",
+    podmienky: "id, created_at, job_id, ico:supplier_ico, suma:total_amount, predkontacia:pohoda_predkontacia",
+    zoznam: "id, cislo:document_number, partner:supplier_name, suma:total_amount, mena:currency, datum:issue_date",
+  },
+  prijata: {
+    zakazka: true,
+    tabulka: "purchase_invoices",
+    cislo: "invoice_number",
+    partner: "supplier_name",
+    podmienky: "id, created_at, job_id, ico:supplier_ico, suma:amount_total, predkontacia:pohoda_predkontacia",
+    zoznam: "id, cislo:invoice_number, partner:supplier_name, suma:amount_total, mena:currency, datum:issue_date",
+  },
+  vystavena: {
+    zakazka: true,
+    tabulka: "invoices",
+    cislo: "invoice_number",
+    partner: "customer_name",
+    podmienky:
+      "id, created_at, job_id, ico:customer_ico, suma:total, predkontacia:pohoda_predkontacia, stav:status",
+    zoznam: "id, cislo:invoice_number, partner:customer_name, suma:total, mena:currency, datum:issue_date",
+    rozpracovany: (stav) => stav === "draft",
+  },
+  nespracovany: {
+    zakazka: false,
+    tabulka: "nespracovane_doklady",
+    cislo: "file_name",
+    partner: "file_name",
+    podmienky: "id, created_at, ico:udaje->dodavatel->>ico, suma:udaje->>celkom",
+    zoznam:
+      "id, subor:file_name, cislo:udaje->>cislo, partner:udaje->dodavatel->>nazov, suma:udaje->>celkom, mena:udaje->>mena, datum:udaje->>datumVystavenia",
+  },
+  vyuctovanie: {
+    zakazka: false,
+    tabulka: "vyuctovania_vydavkov",
+    cislo: "nazov",
+    partner: "zamestnanec_meno",
+    podmienky: "id, created_at, predkontacia, stav",
+    zoznam: "id, cislo:nazov, partner:zamestnanec_meno, mena, datum:obdobie_do",
+    // Schvaľuje sa odovzdané (uzavreté) vyúčtovanie — otvorené sa ešte dopĺňa.
+    rozpracovany: (stav) => stav === "otvorene",
+  },
 };
 
 export function tabulkaAgendy(a: AgendaSchvalovania) {
@@ -55,7 +117,7 @@ export async function zabezpecSchvalovanie(
   const [{ data: doklady }, { data: existujuce }, { data: cesty }] = await Promise.all([
     admin
       .from(t.tabulka)
-      .select(`id, created_at, job_id, ${t.ico}, ${t.suma}, pohoda_predkontacia${agenda === "vystavena" ? ", status" : ""}`)
+      .select(t.podmienky)
       .eq("company_id", companyId)
       .in("id", ids),
     admin.from("schvalovanie").select("doklad_id").eq("agenda", agenda).in("doklad_id", ids),
@@ -73,17 +135,19 @@ export async function zabezpecSchvalovanie(
     (d: any) =>
       !uz.has(d.id) &&
       (!n.od || String(d.created_at) >= n.od) &&
-      !(agenda === "vystavena" && d.status === "draft"),
+      !t.rozpracovany?.(d.stav),
   );
   for (const d of nove) {
-    const suma = Number(d[t.suma] ?? 0);
+    // Bez sumy (vyúčtovanie, nevyťažený doklad) sa pod hranicou nič samo neschváli.
+    const znamaSuma = d.suma != null && d.suma !== "" && Number.isFinite(Number(d.suma));
+    const suma = znamaSuma ? Number(d.suma) : null;
     const cesta = vyberCestu(vsetkyCesty, {
       agenda,
-      ico: d[t.ico],
+      ico: d.ico,
       suma,
-      predkontacia: d.pohoda_predkontacia,
+      predkontacia: d.predkontacia,
     });
-    const auto = n.autoPod != null && Math.abs(suma) < n.autoPod;
+    const auto = n.autoPod != null && suma != null && Math.abs(suma) < n.autoPod;
     const { data: zaznam } = await admin
       .from("schvalovanie")
       .insert({
@@ -179,5 +243,36 @@ export async function overOdoslanie(companyId: string, invoiceId: string): Promi
   if (!f) return;
   await zabezpecSchvalovanie(supabaseAdmin, companyId, "vystavena", [invoiceId]);
   const ok = await schvaleneIds(supabaseAdmin, companyId, "vystavena", [f as any]);
-  if (!ok.has(invoiceId)) throw new Error("Faktúra čaká na schválenie — odoslať ju možno až po schválení.");
+  if (!ok.has(invoiceId)) {
+    const e = new Error("Faktúra čaká na schválenie — odoslať ju možno až po schválení.") as Error & {
+      code?: string;
+    };
+    e.code = "approval_pending";
+    throw e;
+  }
+}
+
+/**
+ * Doklad z agendy smie ísť ďalej až po schválení (napr. Nespracovaný doklad
+ * sa zmení na bloček či faktúru). Keď agenda schvaľovanie nemá, nič.
+ */
+export async function overSchvalenie(
+  companyId: string,
+  agenda: AgendaSchvalovania,
+  id: string,
+  sprava: string,
+): Promise<void> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const n = await nastavenieFirmy(supabaseAdmin, companyId);
+  if (!n.zapnute || !n.agendy.includes(agenda)) return;
+  const { data: d } = await (supabaseAdmin as Klient)
+    .from(TABULKY[agenda].tabulka)
+    .select("id, created_at")
+    .eq("id", id)
+    .eq("company_id", companyId)
+    .maybeSingle();
+  if (!d) return;
+  await zabezpecSchvalovanie(supabaseAdmin, companyId, agenda, [id]);
+  const ok = await schvaleneIds(supabaseAdmin, companyId, agenda, [d]);
+  if (!ok.has(id)) throw new Error(sprava);
 }

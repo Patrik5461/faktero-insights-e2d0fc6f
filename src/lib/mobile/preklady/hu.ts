@@ -596,6 +596,11 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.zaregistrujteSa": "Regisztráljon",
   "app.zabudnuteHeslo": "Elfelejtett jelszavát a faktero.sk oldalon állíthatja vissza.",
   "app.zabudliHeslo": "Elfelejtette a jelszavát?",
+  "app.qrPrihlasenie": "Bejelentkezés QR-kóddal a webről",
+  "app.qrPrihlasenieNapoveda": "A Faktero weboldalán nyissa meg az „Alkalmazás bejelentkeztetése a telefonon” menüt, és olvassa be a megjelenő kódot.",
+  "app.qrNieJeKod": "Ez nem a Faktero weboldal bejelentkezési kódja.",
+  "app.qrPrihlasenieNapovedaJazdy": "A weboldalon nyissa meg az „Alkalmazás bejelentkeztetése a telefonon” menüt, és olvassa be a megjelenő kódot.",
+  "app.qrNieJeKodJazdy": "Ez nem a weboldal bejelentkezési kódja.",
   "app.zadajteEmailPreHeslo": "Először adja meg az e-mailt, amelyre a linket küldjük.",
   "app.odkazNaHesloOdoslany":
     "Ha a(z) {email} címhez tartozik fiók, elküldtük rá az új jelszó beállításához szükséges linket.",

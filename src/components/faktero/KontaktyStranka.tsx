@@ -71,6 +71,8 @@ type Customer = {
   /** Leitweg-ID nemeckého úradu — ide do XRechnung ako Buyer reference (BT-10). */
   leitweg_id?: string | null;
   swift?: string | null;
+  /** Partner chce na dokladoch číslo objednávky — bez neho Faktero upozorní. */
+  povinne_cislo_objednavky?: boolean;
 };
 
 export type Rola = "odberatel" | "dodavatel";
@@ -833,6 +835,20 @@ function CustomerDialog({
               </label>
             </>
           )}
+          <label className="sm:col-span-2 flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={!!c.povinne_cislo_objednavky}
+              onChange={(e) => f("povinne_cislo_objednavky", e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-input"
+            />
+            <span>
+              <span className="font-medium">{tr("Povinné číslo objednávky")}</span>
+              <span className="block text-xs text-muted-foreground">
+                {tr("Keď doklad od tohto partnera alebo preňho nemá číslo objednávky, Faktero upozorní pri vystavení faktúry aj v Nespracovaných.")}
+              </span>
+            </span>
+          </label>
           {/* Samofakturácia je dohoda s dodávateľom; staršie dohody ostávajú viditeľné. */}
           {(c.dodavatel || c.samofakturacia_od) && <SamofakturaciaDohoda c={c} f={f} />}
           <label className="sm:col-span-2 block">

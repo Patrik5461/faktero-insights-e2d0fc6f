@@ -65,3 +65,54 @@ describe("manažér zákazky v ceste", () => {
     expect(rozvinUrovne([["manazer", "u1"]], "u1")).toEqual([["u1"]]);
   });
 });
+
+describe("povolenia po používateľoch", () => {
+  const cesta = { urovne: [["u1"], ["u2"]], schvalena_uroven: 0, stav: "caka" as const };
+  const jednoduche = { urovne: [], schvalena_uroven: 0, stav: "caka" as const };
+
+  it("bez uložených povolení sa správa podľa roly ako doteraz", async () => {
+    const { mozeRozhodnut, pravaClena } = await import("./schvalovanie");
+    expect(pravaClena("employee", null)).toEqual({
+      prava: { schvalit: true, zrusit: true, vratit: true, zamietnut: true },
+      vyslovne: false,
+    });
+    expect(mozeRozhodnut(cesta, "u1", "employee", "zamietnut")).toBe(true);
+    expect(mozeRozhodnut(jednoduche, "x", "employee", "schvalit")).toBe(false);
+  });
+
+  it("odobraté povolenie platí aj pre toho, kto je v ceste", async () => {
+    const { mozeRozhodnut } = await import("./schvalovanie");
+    const prava = { schvalit: true, zrusit: false, vratit: true, zamietnut: false };
+    expect(mozeRozhodnut(cesta, "u1", "employee", "schvalit", prava)).toBe(true);
+    expect(mozeRozhodnut(cesta, "u1", "employee", "zamietnut", prava)).toBe(false);
+    expect(mozeZrusit(cesta, "x", "admin", prava)).toBe(false);
+  });
+
+  it("bez cesty urobí výslovné povolenie schvaľovateľa aj z bežného používateľa", async () => {
+    const { mozeRozhodnut } = await import("./schvalovanie");
+    const prava = { schvalit: true, zrusit: false, vratit: false, zamietnut: false };
+    expect(mozeRozhodnut(jednoduche, "x", "employee", "schvalit", prava)).toBe(true);
+    expect(mozeRozhodnut(jednoduche, "x", "employee", "vratit", prava)).toBe(false);
+    // Účtovník s odobratým schvaľovaním neschváli, hoci rola by ho pustila.
+    expect(mozeSchvalit(jednoduche, "x", "accountant", { ...prava, schvalit: false })).toBe(false);
+  });
+
+  it("majiteľ má vždy všetko, nech je uložené čokoľvek", async () => {
+    const { mozeRozhodnut } = await import("./schvalovanie");
+    const nic = { schvalit: false, zrusit: false, vratit: false, zamietnut: false };
+    expect(mozeRozhodnut(jednoduche, "x", "owner", "zamietnut", nic)).toBe(true);
+    expect(mozeZrusit(jednoduche, "x", "owner", nic)).toBe(true);
+  });
+
+  it("nezmysel v databáze znamená nič uložené", async () => {
+    const { nacitajPrava } = await import("./schvalovanie");
+    expect(nacitajPrava(null)).toBeNull();
+    expect(nacitajPrava([1])).toBeNull();
+    expect(nacitajPrava({ schvalit: "ano" })).toEqual({
+      schvalit: false,
+      zrusit: false,
+      vratit: false,
+      zamietnut: false,
+    });
+  });
+});

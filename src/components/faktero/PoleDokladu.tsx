@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from "react";
 import { Info } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
+import { datumPoDnoch, dniMedzi } from "@/lib/faktero/splatnost-dni";
 
 /*
   Spoločné pole hlavičky dokladu (faktúra, zálohová, dobropis, ťarchopis —
@@ -93,24 +94,37 @@ export const bunka = {
   /** Tri polia v riadku (VS | KS | ŠS) — rovnako ako dátumy. */
   tretina: "md:@xs:col-span-3 md:@md:col-span-2",
   tretinaPosledna: "md:@xs:col-span-6 md:@md:col-span-2",
+  /**
+   * Dva dátumy vedľa seba a splatnosť s počtom dní na celom riadku — dátum
+   * aj „14 dní“ sa do tretiny polovičnej karty nezmestia.
+   */
+  datumDvojica: "md:@xs:col-span-3",
+  splatnostRiadok: "md:@xs:col-span-6",
 } as const;
 
-/** Splatnosť s rýchlymi tlačidlami v riadku popisu (výšku riadku nemenia). */
+/**
+ * Splatnosť s rýchlymi tlačidlami v riadku popisu (výšku riadku nemenia).
+ * S `odDatumu` (dátum vystavenia) sa dá zadať aj počtom dní — „14 dní“ — a
+ * tlačidlá rátajú od neho, nie od dneška.
+ */
 export function SplatnostPole({
   value,
   onChange,
   required,
   className,
   id = "splatnost-dokladu",
+  odDatumu,
 }: {
   value: string;
   onChange: (v: string) => void;
   required?: boolean;
   className?: string;
   id?: string;
+  odDatumu?: string;
 }) {
   const { t } = useT();
-  const za = (dni: number) => new Date(Date.now() + dni * 86400000).toISOString().slice(0, 10);
+  const za = (dni: number) => datumPoDnoch(odDatumu, dni);
+  const dni = odDatumu !== undefined ? dniMedzi(odDatumu, value) : null;
   return (
     <PoleDokladu
       label={t("Splatnosť")}
@@ -141,14 +155,44 @@ export function SplatnostPole({
         </div>
       }
     >
-      <input
-        id={id}
-        type="date"
-        required={required}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={VSTUP_DOKLADU}
-      />
+      {odDatumu !== undefined ? (
+        <div className="flex min-w-0 gap-2">
+          <input
+            id={id}
+            type="date"
+            required={required}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className={`${VSTUP_DOKLADU} flex-1`}
+          />
+          <label className="flex h-10 shrink-0 items-center gap-1 rounded-md border border-input bg-background pr-2 text-sm text-muted-foreground">
+            <input
+              type="number"
+              min={0}
+              max={3650}
+              inputMode="numeric"
+              aria-label={t("Splatnosť v dňoch")}
+              value={dni ?? ""}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (e.target.value !== "" && Number.isFinite(n) && n >= 0 && n <= 3650)
+                  onChange(datumPoDnoch(odDatumu, Math.round(n)));
+              }}
+              className="h-full w-12 min-w-0 rounded-md bg-transparent pl-2 text-right tabular-nums text-foreground outline-none"
+            />
+            {t("dní")}
+          </label>
+        </div>
+      ) : (
+        <input
+          id={id}
+          type="date"
+          required={required}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={VSTUP_DOKLADU}
+        />
+      )}
     </PoleDokladu>
   );
 }

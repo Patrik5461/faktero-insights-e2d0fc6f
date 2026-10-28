@@ -229,6 +229,10 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     // Kurz ECB (jednotky meny za 1 €) — bez neho sa faktúra v cudzej mene do Pohody nevyvezie.
     _kurz: p.exchange_rate,
     _datumDph: p.delivery_date || p.issue_date,
+    // Kedy faktúra do firmy prišla — pre voľbu dátumu zápisu a odpočtu.
+    _datumDorucenia: p.received_date || String(p.created_at ?? "").slice(0, 10) || null,
+    // Partner v adresári — pre párovanie s kartou v Pohode (voľba firmy).
+    customer_id: p.customer_id ?? null,
     _splatnost: p.due_date,
     _typPohody: spolu < 0 || p.opravuje_cislo ? "receivedCreditNotice" : "receivedInvoice",
     // Číslo faktúry, ktorú dobropis opravuje — SK Pohoda ho chce v „Pôvodné číslo dokladu".

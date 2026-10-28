@@ -66,6 +66,13 @@ import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/Document
 import { useListFilters, zoznamSearch, type ListSearch } from "@/hooks/useListFilters";
 import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
 import { polozkaBlocku } from "@/lib/faktero/suhrn-vyberu";
+import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
+import { StavDokladuOdznak, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
+import { useCiselnikyDokladov, filtreStavuAStitkov, splnaStavAStitok } from "@/hooks/useCiselnikyDokladov";
+import { dovodZamku, NAZOV_ZAMKU } from "@/lib/faktero/doklady-hromadne";
+import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
+import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doklady — Faktero") }] }),
@@ -109,6 +116,8 @@ const STLPCE_DOKLADOV: StlpecZoznamu[] = [
   { kluc: "datum", nazov: "Dátum" },
   { kluc: "dodavatel", nazov: "Dodávateľ", povinny: true },
   { kluc: "cislo", nazov: "Číslo a predkontácia" },
+  { kluc: "predkontacia", nazov: "Účtovná položka" },
+  { kluc: "stavDokladu", nazov: "Stav dokladu" },
   { kluc: "kategoria", nazov: "Kategória", predvoleny: false },
   { kluc: "zaklad", nazov: "Základ", predvoleny: false },
   { kluc: "dph", nazov: "DPH", predvoleny: false },
@@ -186,19 +195,25 @@ function DokladyPage() {
   /** Dohľadanie a spôsob úhrady sa filtrujú v prehliadači nad načítaným výberom. */
   const hladaj = lf.q;
   const platba = lf.filter("platba");
+  const stavFiltra = lf.filter("stavDokladu");
+  const stitokFiltra = lf.filter("stitok");
   const rows = useMemo(() => {
     const h = hladaj.trim().toLowerCase();
     return vsetkyRiadky.filter(
       (r) =>
         (!platba || r.payment_method === platba) &&
+        splnaStavAStitok(r, stavFiltra, stitokFiltra) &&
         (!h ||
-          [r.supplier_name, r.supplier_ico, r.document_number, r.note, ...(r.stitky ?? [])]
+          [r.supplier_name, r.supplier_ico, r.document_number, r.note, r.komentar, r.int_poznamka, ...(r.stitky ?? [])]
             .filter(Boolean)
             .some((x) => String(x).toLowerCase().includes(h))),
     );
-  }, [vsetkyRiadky, hladaj, platba]);
+  }, [vsetkyRiadky, hladaj, platba, stavFiltra, stitokFiltra]);
   const zobrazenie = useNastaveniaZoznamu("doklady", STLPCE_DOKLADOV);
   const je = zobrazenie.je;
+  // Číselník predkontácií sa načíta raz (len keď je stĺpec zapnutý), stavy a uzávierka vždy.
+  const cis = useCiselnikyDokladov(getActiveCompanyId(), "doklad", je("predkontacia"));
+  const stavPodlaId = useMemo(() => new Map(cis.stavy.map((s) => [s.id, s])), [cis.stavy]);
   const program = useExportDoProgramu();
   const rad = useRadenie(rows, {
     datum: (r: any) => r.issue_date,
@@ -264,6 +279,40 @@ function DokladyPage() {
       .eq("id", id);
     if (error) return toast.error(error.message);
     setRows((rs: any[]) => rs.map((x) => (x.id === id ? { ...x, payment_method: platbaRiadku || null } : x)));
+  }
+  /** Predkontácia v riadku — tá istá serverová funkcia ako v úprave dokladu. */
+  async function zmenPredkontaciuRiadku(id: string, kodPk: string) {
+    const c = getActiveCompanyId();
+    if (!c || !kodPk) return;
+    try {
+      const v = await zauctujDokladyFn({ data: { company_id: c, ids: [id], predkontacia: kodPk } });
+      if (v.preskocenych) {
+        toast.warning(t("Doklad je už odovzdaný — predkontácia sa nezmenila."));
+        return;
+      }
+      setRows((rs: any[]) => rs.map((x) => (x.id === id ? { ...x, pohoda_predkontacia: kodPk } : x)));
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Predkontáciu sa nepodarilo uložiť"));
+    }
+  }
+  /** Hromadné mazanie — každý doklad ide do koša rovnako ako jednotlivo. */
+  async function zmazVybrane() {
+    const ids = Array.from(selected);
+    if (!ids.length) return;
+    if (!(await potvrd(t("Presunúť {n} dokladov do koša? Do 90 dní sa dajú obnoviť.", { n: ids.length })))) return;
+    let ok = 0;
+    const chyby: string[] = [];
+    for (const id of ids) {
+      try {
+        await deleteFn({ data: { id } });
+        ok++;
+      } catch (e: any) {
+        chyby.push(String(e?.message ?? e));
+      }
+    }
+    if (ok) toast.success(t("Do koša presunuté: {n}", { n: ok }));
+    if (chyby.length) toast.warning(t("Nezmazané: {n}", { n: chyby.length }), { description: chyby[0] });
+    refresh();
   }
   const [predkontaciaOkno, setPredkontaciaOkno] = useState(false);
   const [kos, setKos] = useState(false);
@@ -684,6 +733,7 @@ function DokladyPage() {
                 { value: "prevod", label: "Prevod" },
               ],
             },
+            ...filtreStavuAStitkov(cis.stavy, cis.stitky),
           ]}
           extra={
             <>
@@ -768,6 +818,17 @@ function DokladyPage() {
             >
               {t("Predkontácia")} ({selected.size})
             </button>
+          )}
+          {selected.size > 0 && cid && (
+            <HromadnaAkciaDokladov
+              companyId={cid}
+              agenda="doklad"
+              ids={Array.from(selected)}
+              onHotovo={refresh}
+              pdfZip={() => void handleExport(false)}
+              pdfZipNazov={t("Stiahnuť ZIP (skeny + XML)")}
+              zmazat={() => void zmazVybrane()}
+            />
           )}
           {selected.size > 0 && cid && (
             <VyuctovanieZVyberu companyId={cid} druh="blocek" ids={Array.from(selected)} onHotovo={refresh} />
@@ -945,6 +1006,8 @@ function DokladyPage() {
                   {je("datum") && <th className="px-3 py-2 text-left">{rad.hlavicka("datum", t("Dátum"))}</th>}
                   <th className="px-3 py-2 text-left">{rad.hlavicka("dodavatel", t("Dodávateľ"))}</th>
                   {je("cislo") && <th className="px-3 py-2 text-left">{rad.hlavicka("cislo", t("Číslo"))}</th>}
+                  {je("predkontacia") && <th className="px-3 py-2 text-left">{t("Účtovná položka")}</th>}
+                  {je("stavDokladu") && <th className="px-3 py-2 text-left">{t("Stav dokladu")}</th>}
                   {je("kategoria") && <th className="px-3 py-2 text-left">{rad.hlavicka("kategoria", t("Kategória"))}</th>}
                   {je("zaklad") && <th className="px-3 py-2 text-right">{rad.hlavicka("zaklad", t("Základ"))}</th>}
                   {je("dph") && <th className="px-3 py-2 text-right">{rad.hlavicka("dph", t("DPH"))}</th>}
@@ -1026,6 +1089,45 @@ function DokladyPage() {
                         ) : null}
                       </td>
                     )}
+                    {je("predkontacia") && (
+                      <td className="px-3 py-2">
+                        {(() => {
+                          const z = dovodZamku(r, cis.zamknuteDo);
+                          return (
+                            <VyberVRiadku
+                              ariaLabel={t("Účtovná položka dokladu {cislo}", { cislo: r.document_number ?? "" })}
+                              hodnota={r.pohoda_predkontacia}
+                              moznosti={moznostiKodov(
+                                zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], {
+                                  typ: "blocek",
+                                  platba: r.payment_method,
+                                }),
+                              )}
+                              zamok={z ? t(NAZOV_ZAMKU[z]) : null}
+                              onVyber={(v) => zmenPredkontaciuRiadku(r.id, v)}
+                            />
+                          );
+                        })()}
+                      </td>
+                    )}
+                    {je("stavDokladu") && (
+                      <td className="px-3 py-2">
+                        {cis.stavy.length ? (
+                          <VyberStavuDokladu
+                            kompaktny
+                            tabulka="expense_documents"
+                            id={r.id}
+                            stavId={r.stav_id}
+                            stavy={cis.stavy}
+                            onZmena={(v) =>
+                              setRows((rs: any[]) => rs.map((x) => (x.id === r.id ? { ...x, stav_id: v } : x)))
+                            }
+                          />
+                        ) : (
+                          <StavDokladuOdznak stav={stavPodlaId.get(r.stav_id)} />
+                        )}
+                      </td>
+                    )}
                     {je("kategoria") && (
                       <td className="px-3 py-2 text-xs text-muted-foreground">
                         {r.category ?? "—"}
@@ -1049,7 +1151,7 @@ function DokladyPage() {
                     {je("platba") && (
                       <td className="px-3 py-2 text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>
                         {/* Spôsob úhrady priamo v riadku — odovzdaný ani zamknutý doklad meniť nejde. */}
-                        {!r.exported_at && !r.locked_at ? (
+                        {!dovodZamku(r, cis.zamknuteDo) ? (
                           <select
                             aria-label={t("Spôsob úhrady dokladu {cislo}", { cislo: r.document_number ?? "" })}
                             value={r.payment_method ?? ""}

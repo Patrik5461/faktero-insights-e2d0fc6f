@@ -30,6 +30,31 @@ function cislo(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Automatické párovanie len od dátumu, ktorý si firma nastavila (Bankové
+ * účty → Nastavenia banky). Staršie pohyby ostávajú na ručné potvrdenie —
+ * napr. po pripojení banky s ročnou históriou, kde sú faktúry už dávno
+ * uhradené v starom programe.
+ */
+async function lenOdAutoParovania<T extends { transactionId: string }>(
+  supabase: any,
+  companyId: string,
+  auto: T[],
+  pohyby: { id: string; booking_date: string }[],
+): Promise<T[]> {
+  if (!auto.length) return auto;
+  const { data } = await supabase
+    .from("companies")
+    .select("uctovanie_nastavenia")
+    .eq("id", companyId)
+    .maybeSingle();
+  const { nastaveniaBanky } = await import("./export-nastavenia");
+  const od = nastaveniaBanky(data?.uctovanie_nastavenia).autoParovanieOd;
+  if (!od) return auto;
+  const datum = new Map(pohyby.map((p) => [p.id, String(p.booking_date ?? "").slice(0, 10)]));
+  return auto.filter((z) => (datum.get(z.transactionId) ?? "") >= od);
+}
+
 /** Podklady na párovanie: nespárované príchodzie platby a otvorené faktúry. */
 async function podklady(supabase: any, companyId: string) {
   const od = new Date(Date.now() - DNI_PAROVANIA * 86400000).toISOString().slice(0, 10);
@@ -273,7 +298,9 @@ export const sparujAutomaticky = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await overClena(context, data.companyId, true);
     const { pohyby, doklady } = await podklady(context.supabase, data.companyId);
-    const { auto, navrhy } = sparuj(pohyby, doklady);
+    const vysledok = sparuj(pohyby, doklady);
+    const { navrhy } = vysledok;
+    const auto = await lenOdAutoParovania(context.supabase, data.companyId, vysledok.auto, pohyby);
     if (auto.length === 0) return { zapisanych: 0, uhradenych: 0, navrhov: navrhy.length };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -392,7 +419,12 @@ export async function sparujFirmuAutomaticky(companyId: string): Promise<{
 }> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { pohyby, doklady } = await podklady(supabaseAdmin, companyId);
-  const { auto } = sparuj(pohyby, doklady);
+  const auto = await lenOdAutoParovania(
+    supabaseAdmin,
+    companyId,
+    sparuj(pohyby, doklady).auto,
+    pohyby,
+  );
   const uhradene: {
     id: string;
     invoice_number: string;

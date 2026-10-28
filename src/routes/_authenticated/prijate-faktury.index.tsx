@@ -68,6 +68,12 @@ import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
+import { StavDokladuOdznak, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
+import { useCiselnikyDokladov, filtreStavuAStitkov } from "@/hooks/useCiselnikyDokladov";
+import { dovodZamku, NAZOV_ZAMKU, platbaPreZoradenie } from "@/lib/faktero/doklady-hromadne";
+import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté faktúry — Faktero") }] }),
@@ -137,7 +143,8 @@ const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
   { kluc: "zaklad", nazov: "Základ", predvoleny: false },
   { kluc: "dph", nazov: "DPH", predvoleny: false },
   { kluc: "suma", nazov: "Suma" },
-  { kluc: "predkontacia", nazov: "Predkontácia / členenie", predvoleny: false },
+  { kluc: "predkontacia", nazov: "Účtovná položka" },
+  { kluc: "stavDokladu", nazov: "Stav dokladu" },
   { kluc: "zapisal", nazov: "Zapísal" },
   { kluc: "spracoval", nazov: "Spracoval" },
   { kluc: "stav", nazov: "Stav" },
@@ -166,8 +173,13 @@ function PurchaseInvoicesPage() {
   const podla = (lf.filter("podla") || "prijatie") as DatumObdobia;
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
   const exportovane = lf.filter("export") as "" | "ano" | "nie";
+  const stavFiltra = lf.filter("stavDokladu");
+  const stitokFiltra = lf.filter("stitok");
   const zobrazenie = useNastaveniaZoznamu("prijate-faktury", STLPCE_PRIJATYCH);
   const je = zobrazenie.je;
+  // Číselník predkontácií raz (keď je stĺpec zapnutý), stavy, štítky a uzávierka vždy.
+  const cis = useCiselnikyDokladov(getActiveCompanyId(), "prijata", je("predkontacia"));
+  const stavPodlaId = useMemo(() => new Map(cis.stavy.map((s) => [s.id, s])), [cis.stavy]);
   const pocetStlpcov = zobrazenie.viditelne.length + 1;
   const rad = useRadenie(rows, {
     cislo: (r: any) => r.invoice_number,
@@ -371,13 +383,10 @@ function PurchaseInvoicesPage() {
   // Predkontácie do stĺpca v riadku sa načítajú, keď je stĺpec zapnutý.
   const stlpecPredkontacie = zobrazenie.viditelne.includes("predkontacia");
   useEffect(() => {
-    const cid = getActiveCompanyId();
-    if (!stlpecPredkontacie || kodyNavrhy || !cid) return;
-    nacitajKody({ data: { company_id: cid } })
-      .then(setKodyNavrhy)
-      .catch(() => {});
+    // Načíta ich useCiselnikyDokladov (raz za firmu) — okno Zaúčtovať ich použije tiež.
+    if (stlpecPredkontacie && cis.navrhy && !kodyNavrhy) setKodyNavrhy(cis.navrhy as Navrhy);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stlpecPredkontacie]);
+  }, [stlpecPredkontacie, cis.navrhy]);
   async function zmenPredkontaciuRiadku(id: string, kodPk: string) {
     const cid = getActiveCompanyId();
     if (!cid) return;
@@ -572,6 +581,9 @@ function PurchaseInvoicesPage() {
     if (exportovane === "ano") q = q.not("exported_at", "is", null);
     if (exportovane === "nie") q = q.is("exported_at", null).neq("status", "cancelled");
     if (supplier.trim()) q = q.ilike("supplier_name", `%${supplier.trim()}%`);
+    if (stavFiltra === "_bez") q = q.is("stav_id", null);
+    else if (stavFiltra) q = q.eq("stav_id", stavFiltra);
+    if (stitokFiltra) q = q.contains("stitky", [stitokFiltra]);
     const { data, error } = await q;
     if (cislo !== poslednyDotaz.current) return;
     if (error) toast.error(error.message);
@@ -592,7 +604,7 @@ function PurchaseInvoicesPage() {
   }
   useEffect(() => {
     load();
-  }, [status, obdobieOd, obdobieDo, supplier, podla, exportovane]);
+  }, [status, obdobieOd, obdobieDo, supplier, podla, exportovane, stavFiltra, stitokFiltra]);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -748,6 +760,7 @@ function PurchaseInvoicesPage() {
                   { value: "nie", label: "Neexportované" },
                 ],
               },
+              ...filtreStavuAStitkov(cis.stavy, cis.stitky),
             ]}
             previewToggle={bocny}
             extra={
@@ -808,6 +821,16 @@ function PurchaseInvoicesPage() {
               )}
               {t("Stiahnuť ZIP (PDF + CSV)")}
             </button>
+            {getActiveCompanyId() ? (
+              <HromadnaAkciaDokladov
+                companyId={getActiveCompanyId()!}
+                agenda="prijata"
+                ids={Array.from(selected)}
+                onHotovo={() => void load()}
+                pdfZip={() => void runBulkZip()}
+                zmazat={() => setMazanie(true)}
+              />
+            ) : null}
             {getActiveCompanyId() ? (
               <VyuctovanieZVyberu
                 companyId={getActiveCompanyId()!}
@@ -968,7 +991,8 @@ function PurchaseInvoicesPage() {
                 {je("zaklad") && <th className="p-3 text-right">{rad.hlavicka("zaklad", t("Základ"))}</th>}
                 {je("dph") && <th className="p-3 text-right">{rad.hlavicka("dph", t("DPH"))}</th>}
                 {je("suma") && <th className="p-3 text-right">{rad.hlavicka("suma", t("Suma"))}</th>}
-                {je("predkontacia") && <th className="p-3">{rad.hlavicka("predkontacia", t("Predkontácia"))}</th>}
+                {je("predkontacia") && <th className="p-3">{rad.hlavicka("predkontacia", t("Účtovná položka"))}</th>}
+                {je("stavDokladu") && <th className="p-3">{t("Stav dokladu")}</th>}
                 {je("zapisal") && <th className="p-3">{t("Zapísal")}</th>}
                 {je("spracoval") && <th className="hidden p-3 md:table-cell">{t("Spracoval")}</th>}
                 {je("stav") && <th className="p-3">{rad.hlavicka("stav", t("Stav"))}</th>}
@@ -1107,30 +1131,41 @@ function PurchaseInvoicesPage() {
                   )}
                   {je("predkontacia") && (
                     <td className="p-3 text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>
-                      {/* Predkontácia priamo v riadku — odovzdanú ani zamknutú meniť nejde. */}
-                      {kodyNavrhy?.predkontacie.length && !r.exported_at && !r.locked_at ? (
-                        <select
-                          aria-label={t("Predkontácia faktúry {cislo}", { cislo: r.invoice_number })}
-                          value={r.pohoda_predkontacia ?? ""}
-                          onChange={(e) => void zmenPredkontaciuRiadku(r.id, e.target.value)}
-                          className="w-full max-w-[12rem] rounded-md border border-input bg-background px-1.5 py-1 text-xs text-foreground"
-                        >
-                          <option value="">—</option>
-                          {[
-                            ...kodyNavrhy.predkontacie,
-                            ...(r.pohoda_predkontacia &&
-                            !kodyNavrhy.predkontacie.some((k) => k.kod === r.pohoda_predkontacia)
-                              ? [{ kod: r.pohoda_predkontacia, popis: "" }]
-                              : []),
-                          ].map((k) => (
-                            <option key={k.kod} value={k.kod}>
-                              {k.kod}
-                              {k.popis ? ` — ${k.popis}` : ""}
-                            </option>
-                          ))}
-                        </select>
+                      {/* Účtovná položka priamo v riadku — odovzdanú, zamknutú ani v uzavretom období meniť nejde. */}
+                      {(() => {
+                        const z = dovodZamku(r, cis.zamknuteDo);
+                        return (
+                          <VyberVRiadku
+                            ariaLabel={t("Predkontácia faktúry {cislo}", { cislo: r.invoice_number })}
+                            hodnota={r.pohoda_predkontacia}
+                            moznosti={moznostiKodov(
+                              zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], {
+                                typ: "faktura",
+                                platba: platbaPreZoradenie(r.payment_method),
+                              }),
+                            )}
+                            zamok={z ? t(NAZOV_ZAMKU[z]) : null}
+                            prazdne={t("Nedefinované")}
+                            onVyber={(v) => zmenPredkontaciuRiadku(r.id, v)}
+                          />
+                        );
+                      })()}
+                      {r.pohoda_clenenie_dph ? <div className="mt-0.5">{r.pohoda_clenenie_dph}</div> : null}
+                    </td>
+                  )}
+                  {je("stavDokladu") && (
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      {cis.stavy.length ? (
+                        <VyberStavuDokladu
+                          kompaktny
+                          tabulka="purchase_invoices"
+                          id={r.id}
+                          stavId={r.stav_id}
+                          stavy={cis.stavy}
+                          onZmena={(v) => setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, stav_id: v } : x)))}
+                        />
                       ) : (
-                        [r.pohoda_predkontacia, r.pohoda_clenenie_dph].filter(Boolean).join(" · ") || "—"
+                        <StavDokladuOdznak stav={stavPodlaId.get(r.stav_id)} />
                       )}
                     </td>
                   )}

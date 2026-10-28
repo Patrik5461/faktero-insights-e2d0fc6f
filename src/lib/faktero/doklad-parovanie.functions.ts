@@ -68,12 +68,21 @@ export const navrhniParovanieDokladov = createServerFn({ method: "POST" })
     );
 
     const vydavky = ((doklady as Vydavok[]) ?? []).filter((v) => !obsadene.has(v.id));
+    // Bankové účty → Nastavenia banky: párovať podľa typu platby, alebo ho ignorovať (predvolené).
+    const { data: firma } = await supabase
+      .from("companies")
+      .select("uctovanie_nastavenia")
+      .eq("id", data.company_id)
+      .maybeSingle();
+    const { nastaveniaBanky } = await import("./export-nastavenia");
+    const { ignorovatTypPlatby } = nastaveniaBanky(firma?.uctovanie_nastavenia);
     const zhody = sparujDoklady(
       ((pohyby as unknown as Pohyb[]) ?? []).map((p) => ({ ...p, amount: Number(p.amount) })),
       vydavky.map((v) => ({
         ...v,
         total_amount: v.total_amount == null ? null : Number(v.total_amount),
       })),
+      ignorovatTypPlatby,
     );
 
     // Do odpovede patrí aj to, čo je v dvojici — inak by zoznam ukazoval

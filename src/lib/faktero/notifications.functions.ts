@@ -342,7 +342,7 @@ async function notifikaciaSchvalovania(companyId: string, userId: string): Promi
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [{ data: firma }, { data: clen }] = await Promise.all([
     supabaseAdmin.from("companies").select("schvalovanie_zapnute").eq("id", companyId).maybeSingle(),
-    supabaseAdmin.from("company_users").select("role").eq("company_id", companyId).eq("user_id", userId).maybeSingle(),
+    supabaseAdmin.from("company_users").select("role, schvalovanie_prava").eq("company_id", companyId).eq("user_id", userId).maybeSingle(),
   ]);
   if (!(firma as any)?.schvalovanie_zapnute) return [];
   const { data } = await supabaseAdmin
@@ -353,7 +353,12 @@ async function notifikaciaSchvalovania(companyId: string, userId: string): Promi
     .limit(500);
   const { mozeSchvalit, nacitajUrovne } = await import("./schvalovanie");
   const pocet = ((data ?? []) as any[]).filter((r) =>
-    mozeSchvalit({ ...r, urovne: nacitajUrovne(r.urovne) }, userId, (clen as any)?.role),
+    mozeSchvalit(
+      { ...r, urovne: nacitajUrovne(r.urovne) },
+      userId,
+      (clen as any)?.role,
+      (clen as any)?.schvalovanie_prava,
+    ),
   ).length;
   if (!pocet) return [];
   const dnes = new Date().toISOString().slice(0, 10);

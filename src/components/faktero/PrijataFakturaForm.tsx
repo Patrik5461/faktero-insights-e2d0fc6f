@@ -884,6 +884,7 @@ export function PrijataFakturaForm({
               />
               <PreddefinovanaPoznamka
                 companyId={getActiveCompanyId()}
+                agenda="prijata_faktura"
                 onVyber={(text) => set("note", form.note ? `${form.note}\n${text}` : text)}
               />
             </Field>

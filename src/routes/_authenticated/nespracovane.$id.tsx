@@ -8,6 +8,7 @@ import { NauceneZDodavatela } from "@/components/faktero/NauceneZDodavatela";
 import { NavrhAiNespracovaneho, useNavrhZauctovania } from "@/components/faktero/NavrhAi";
 import { doplnNavrhDoUdajov, oznaceniaZUdajov } from "@/lib/faktero/ai-predkontacia";
 import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
+import { UpozornenieObjednavky } from "@/components/faktero/PovinnaObjednavka";
 import { PravidloNespracovaneho } from "@/components/faktero/PravidloNespracovaneho";
 import { PravidloZDokladu } from "@/components/faktero/PravidloZDokladu";
 import type { ZakladPravidlaZDokladu } from "@/lib/faktero/pravidla-uctovania";
@@ -19,6 +20,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, ExternalLink, RefreshCw } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
+import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { NahladSVyberom, poleZPrvku, zablikajPole } from "@/components/faktero/NahladSVyberom";
 import { poliaPreDruh, zapisDoUdajov, type KlucPola } from "@/lib/faktero/vyber-z-dokladu";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
@@ -605,6 +607,7 @@ function Detail() {
                       <label className="block text-sm">
                         <span className="text-xs text-muted-foreground">{t("Číslo objednávky")}</span>
                         <input value={u.objednavka ?? ""} onChange={(e) => set({ objednavka: e.target.value })} className={`${vstup} border-input`} />
+                        <UpozornenieObjednavky companyId={d.companyId} ico={u.dodavatel.ico} cisloObjednavky={u.objednavka} />
                       </label>
                     )}
                     {faktura && (
@@ -787,7 +790,7 @@ function Detail() {
                 <label className="block text-sm">
                   <span className="text-xs text-muted-foreground">{t("Poznámka")}</span>
                   <textarea rows={2} value={u.poznamka} onChange={(e) => set({ poznamka: e.target.value })} className={`${vstup} border-input`} />
-                  <PreddefinovanaPoznamka companyId={d.companyId} onVyber={(text) => set({ poznamka: u.poznamka ? `${u.poznamka}\n${text}` : text })} />
+                  <PreddefinovanaPoznamka companyId={d.companyId} agenda="nespracovane" onVyber={(text) => set({ poznamka: u.poznamka ? `${u.poznamka}\n${text}` : text })} />
                 </label>
               </section>
             ) : null}
@@ -827,6 +830,9 @@ function Detail() {
               </button>
             </div>
           </div>
+        </div>
+        <div className="mt-6 max-w-xl">
+          <SchvalovaniePanel companyId={d.companyId} agenda="nespracovany" id={d.id} />
         </div>
       </PageBody>
     </>

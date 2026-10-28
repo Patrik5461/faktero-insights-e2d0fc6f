@@ -1,0 +1,81 @@
+// Předdefinované poznámky, e-mailové šablony, partneři, e-mailová brána a zálohy dokladů.
+export default {
+  "Preddefinované poznámky…": "Předdefinované poznámky…",
+  "Spravovať poznámky…": "Spravovat poznámky…",
+  "Text poznámky je povinný.": "Text poznámky je povinný.",
+  "Poznámka uložená": "Poznámka uložena",
+  "Zmazať poznámku „{nazov}“?": "Smazat poznámku „{nazov}“?",
+  "Zatiaľ žiadne poznámky. Pridajte texty, ktoré píšete na doklady stále dookola.":
+    "Zatím žádné poznámky. Přidejte texty, které na doklady píšete stále dokola.",
+  "Názov (napr. Záruka 24 mesiacov)": "Název (např. Záruka 24 měsíců)",
+  "Názov poznámky": "Název poznámky",
+  "Text poznámky": "Text poznámky",
+  "Kde sa ponúka (nič nezaškrtnuté = všade)": "Kde se nabízí (nic nezaškrtnuto = všude)",
+  "Pridať poznámku": "Přidat poznámku",
+  "Preddefinované poznámky": "Předdefinované poznámky",
+  "Preddefinované poznámky — Faktero": "Předdefinované poznámky — Faktero",
+  "Texty, ktoré sa dajú jedným klikom vložiť do poznámky faktúry, prijatej faktúry, bločku alebo nespracovaného dokladu.":
+    "Texty, které lze jedním kliknutím vložit do poznámky faktury, přijaté faktury, účtenky nebo nezpracovaného dokladu.",
+  "Poznámky sa nepodarilo načítať.": "Poznámky se nepodařilo načíst.",
+  "Predvolený text (bez šablóny)": "Výchozí text (bez šablony)",
+  "Vyplňte názov, predmet aj text šablóny.": "Vyplňte název, předmět i text šablony.",
+  "Zmazať šablónu „{nazov}“?": "Smazat šablonu „{nazov}“?",
+  "Šablóny pre odosielanie dokladov": "Šablony pro odesílání dokladů",
+  "Vlastný predmet a text podľa typu dokladu a jazyka. Pri odoslaní sa vyberie šablóna, ktorá na doklad sedí najlepšie — v okne odoslania ju môžete zmeniť. Bez vhodnej šablóny platí text nižšie.":
+    "Vlastní předmět a text podle typu dokladu a jazyka. Při odeslání se vybere šablona, která na doklad nejlépe sedí — v okně odeslání ji můžete změnit. Bez vhodné šablony platí text níže.",
+  "napr. Faktúra po nemecky": "např. Faktura německy",
+  "Pridať šablónu": "Přidat šablonu",
+  "Predvolené texty": "Výchozí texty",
+  "Všetky faktúry": "Všechny faktury",
+  Upomienka: "Upomínka",
+  "Všetky jazyky": "Všechny jazyky",
+  Nemčina: "Němčina",
+  Angličtina: "Angličtina",
+  Maďarčina: "Maďarština",
+  "Druh dokladu v jazyku dokladu (Faktúra, Dobropis…)":
+    "Druh dokladu v jazyce dokladu (Faktura, Dobropis…)",
+  "Suma na úhradu s menou": "Částka k úhradě s měnou",
+  "Dátum splatnosti (pri ponuke platnosť)": "Datum splatnosti (u nabídky platnost)",
+  "Názov odberateľa": "Název odběratele",
+  "Názov vašej firmy": "Název vaší firmy",
+  "IBAN na úhradu": "IBAN pro úhradu",
+  "Číslo objednávky odberateľa": "Číslo objednávky odběratele",
+  "Tento partner vyžaduje na doklade číslo objednávky.":
+    "Tento partner vyžaduje na dokladu číslo objednávky.",
+  "Povinné číslo objednávky": "Povinné číslo objednávky",
+  "Keď doklad od tohto partnera alebo preňho nemá číslo objednávky, Faktero upozorní pri vystavení faktúry aj v Nespracovaných.":
+    "Když doklad od tohoto partnera nebo pro něj nemá číslo objednávky, Faktero upozorní při vystavení faktury i v Nezpracovaných.",
+  "Generovať IČO z mena pre partnerov bez IČO": "Generovat IČO ze jména pro partnery bez IČO",
+  "Zahraničná firma alebo fyzická osoba dostane v Pohode stabilný náhradný identifikátor (napr. FK3A9F12C0) odvodený z mena a krajiny, takže sa v adresári vždy spáruje s tou istou kartou a nezakladá nové. Partnera so skutočným IČO sa to netýka.":
+    "Zahraniční firma nebo fyzická osoba dostane v Pohodě stabilní náhradní identifikátor (např. FK3A9F12C0) odvozený ze jména a země, takže se v adresáři vždy spáruje se stejnou kartou a nezakládá nové. Partnera se skutečným IČO se to netýká.",
+  "Ukladať aj e-maily bez dokladu": "Ukládat i e-maily bez dokladu",
+  "Mail bez PDF či fotky dokladu (napr. faktúra priamo v texte alebo len odkaz na stiahnutie) sa uloží do Nespracovaných ako PDF s textom mailu. Inak ostane len v zozname posledných mailov.":
+    "E-mail bez PDF či fotky dokladu (např. faktura přímo v textu nebo jen odkaz ke stažení) se uloží do Nezpracovaných jako PDF s textem e-mailu. Jinak zůstane jen v seznamu posledních e-mailů.",
+  "Záloha sa vytvára. Môžete odísť — dobehne aj bez vás.":
+    "Záloha se vytváří. Můžete odejít — doběhne i bez vás.",
+  "Zmazať zálohu? Súbor sa nedá obnoviť.": "Smazat zálohu? Soubor nelze obnovit.",
+  "Zálohy dokladov": "Zálohy dokladů",
+  "Zálohy dokladov — Faktero": "Zálohy dokladů — Faktero",
+  "Celý archív firmy v jednom ZIP súbore — faktúry, prijaté faktúry, bločky, banka, pokladňa a adresár v CSV, k tomu PDF faktúr a skeny dokladov.":
+    "Celý archiv firmy v jednom ZIP souboru — faktury, přijaté faktury, účtenky, banka, pokladna a adresář v CSV, k tomu PDF faktur a skeny dokladů.",
+  "Vytvoriť zálohu": "Vytvořit zálohu",
+  "Záloha sa vytvára na pozadí a pri väčšej firme môže trvať niekoľko minút. Ponecháva sa posledných {n} záloh, staršie sa zmažú samy. Vytvoriť, stiahnuť a zmazať zálohu môže majiteľ alebo admin firmy.":
+    "Záloha se vytváří na pozadí a u větší firmy může trvat několik minut. Ponechává se posledních {n} záloh, starší se smažou samy. Vytvořit, stáhnout a smazat zálohu může vlastník nebo admin firmy.",
+  "Zatiaľ žiadna záloha.": "Zatím žádná záloha.",
+  "faktúr: {n}": "faktur: {n}",
+  "Zmazať zálohu": "Smazat zálohu",
+  "Vytvára sa…": "Vytváří se…",
+  Hotová: "Hotová",
+  "Záloha sa už vytvára — počkajte, kým dobehne.": "Záloha se už vytváří — počkejte, až doběhne.",
+  "Zálohu sa nepodarilo založiť.": "Zálohu se nepodařilo založit.",
+  "Záloha nie je pripravená.": "Záloha není připravena.",
+  "Záloha nepatrí tejto firme.": "Záloha nepatří této firmě.",
+  "Záloha sa nenašla.": "Záloha nebyla nalezena.",
+  "Zálohu, ktorá sa ešte vytvára, nemožno zmazať.": "Zálohu, která se ještě vytváří, nelze smazat.",
+  "Záloha sa nedokončila, skúste ju vytvoriť znova.":
+    "Záloha se nedokončila, zkuste ji vytvořit znovu.",
+  "Zálohy sa nepodarilo načítať.": "Zálohy se nepodařilo načíst.",
+  "Zálohu sa nepodarilo spustiť.": "Zálohu se nepodařilo spustit.",
+  "Zálohu sa nepodarilo stiahnuť.": "Zálohu se nepodařilo stáhnout.",
+  "Zálohu sa nepodarilo zmazať.": "Zálohu se nepodařilo smazat.",
+};

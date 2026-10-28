@@ -92,7 +92,9 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Súbory otvorí Excel bez nastavovania. Odkaz na stiahnutie platí sedem dní; balík sa dá
-          pripraviť kedykoľvek znova.
+          pripraviť kedykoľvek znova. Pravidelný archív so všetkými PDF a skenmi dokladov si majiteľ
+          alebo admin vytvorí v <strong>Nastavenia → Zálohy dokladov</strong> — beží na pozadí,
+          ponecháva sa posledných päť záloh.
         </p>
       </>
     ),

@@ -21,14 +21,6 @@ const Vstup = z.object({
   podla: z.enum(["vystavenia", "dodania", "vytvorenia"]).default("vystavenia"),
 });
 
-/** Stĺpec dátumu podľa voľby — pre každú tabuľku dokladov. */
-const DATUMY: Record<string, Record<"vystavenia" | "dodania" | "vytvorenia", string>> = {
-  invoices: { vystavenia: "issue_date", dodania: "delivery_date", vytvorenia: "created_at" },
-  purchase_invoices: { vystavenia: "issue_date", dodania: "delivery_date", vytvorenia: "created_at" },
-  expense_documents: { vystavenia: "issue_date", dodania: "issue_date", vytvorenia: "created_at" },
-  other_documents: { vystavenia: "received_date", dodania: "received_date", vytvorenia: "created_at" },
-};
-
 /** Strop pre skeny — sťahovanie po jednom je pomalé. */
 const MAX_SKENOV = 200;
 
@@ -39,150 +31,12 @@ export const exportFirmyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Vstup.parse(input))
   .handler(async ({ data, context }) => {
-    const supabase = context.supabase;
-    const { naCsv, nazovSuboru, sprievodnyText } = await import("./export-firmy");
-    const JSZip = (await import("jszip")).default;
-
-    const { data: firma } = await supabase
-      .from("companies")
-      .select("*")
-      .eq("id", data.company_id)
-      .maybeSingle();
-    if (!firma) throw new Error("Firma sa nenašla.");
-
-    const zip = new JSZip();
-    const pridaj = (nazov: string, riadky: unknown[]) => {
-      const zoznam = (riadky ?? []) as Record<string, unknown>[];
-      if (!zoznam.length) return 0;
-      zip.file(nazov, naCsv(zoznam));
-      return zoznam.length;
-    };
-
-    const zTabulky = async (tabulka: string, stlpce = "*") => {
-      // Obdobie platí len pre doklady; adresár, produkty a ostatné idú celé.
-      const stlpecDatumu = DATUMY[tabulka]?.[data.podla];
-      const dotaz = () => {
-        let q = (supabase as any).from(tabulka).select(stlpce).eq("company_id", data.company_id);
-        if (stlpecDatumu && data.od) q = q.gte(stlpecDatumu, data.od);
-        if (stlpecDatumu && data.do)
-          q = stlpecDatumu === "created_at" ? q.lt(stlpecDatumu, `${data.do}T23:59:59.999Z`) : q.lte(stlpecDatumu, data.do);
-        return q;
-      };
-      // Po stránkach — Supabase vráti najviac 1 000 riadkov, `.limit` to neobíde.
-      const { vsetkyRiadky } = await import("./strankovanie");
-      return (await vsetkyRiadky<Record<string, unknown>>((zac, kon) =>
-        dotaz().order("id").range(zac, kon),
-      )) as Record<string, unknown>[];
-    };
-
-    const [
-      faktury,
-      prijate,
-      doklady,
-      ostatne,
-      odberatelia,
-      produkty,
-      pokladna,
-      banka,
-      jazdy,
-      zakazky,
-    ] = await Promise.all([
-      zTabulky("invoices"),
-      zTabulky("purchase_invoices"),
-      zTabulky("expense_documents"),
-      zTabulky("other_documents"),
-      zTabulky("customers"),
-      zTabulky("products"),
-      zTabulky("cash_entries"),
-      zTabulky("bank_transactions"),
-      zTabulky("trips"),
-      zTabulky("jobs"),
-    ]);
-
-    // Položky faktúr sa viažu na faktúru, nie na firmu — berú sa po dávkach.
-    const { riadkyPreIds } = await import("./strankovanie");
-    const polozky = await riadkyPreIds<Record<string, unknown>>(
-      faktury.map((f) => String(f.id)),
-      (kus, zac, kon) =>
-        supabase
-          .from("invoice_items")
-          .select("*")
-          .in("invoice_id", kus)
-          .order("invoice_id")
-          .order("position")
-          .order("id")
-          .range(zac, kon),
+    const { zostavBalikFirmy } = await import("./export-firmy.server");
+    const { obsah, pocty, pdfka, skenov, orezaneSkeny, orezanePdf } = await zostavBalikFirmy(
+      context.supabase,
+      data,
+      { maxPdf: MAX_PDF, maxSkenov: MAX_SKENOV },
     );
-
-    const pocty: Record<string, number> = {};
-    pocty["firma"] = pridaj("firma.csv", [firma as Record<string, unknown>]);
-    pocty["faktúry"] = pridaj("faktury.csv", faktury);
-    pocty["položky faktúr"] = pridaj("faktury-polozky.csv", polozky);
-    pocty["prijaté faktúry"] = pridaj("prijate-faktury.csv", prijate);
-    pocty["doklady"] = pridaj("doklady.csv", doklady);
-    pocty["iné doklady"] = pridaj("ostatne-doklady.csv", ostatne);
-    pocty["odberatelia"] = pridaj("odberatelia.csv", odberatelia);
-    pocty["produkty"] = pridaj("produkty.csv", produkty);
-    pocty["pokladňa"] = pridaj("pokladna.csv", pokladna);
-    pocty["banka"] = pridaj("banka.csv", banka);
-    pocty["jazdy"] = pridaj("jazdy.csv", jazdy);
-    pocty["zákazky"] = pridaj("zakazky.csv", zakazky);
-
-    let pdfka = 0;
-    if (data.s_pdf) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const priecinok = zip.folder("faktury-pdf");
-      // Len súbory z priečinka tejto firmy — cestu v riadku mohol niekto prepísať.
-      const vlastny = (cesta: unknown) => String(cesta ?? "").startsWith(`${data.company_id}/`);
-      const sPdf = faktury.filter((f) => vlastny(f.pdf_url)).slice(0, MAX_PDF);
-      for (const f of sPdf) {
-        try {
-          const { data: blob } = await supabaseAdmin.storage
-            .from("invoice-pdfs")
-            .download(String(f.pdf_url));
-          if (!blob) continue;
-          priecinok?.file(
-            nazovSuboru(String(f.invoice_number ?? f.id), "pdf"),
-            new Uint8Array(await blob.arrayBuffer()),
-          );
-          pdfka++;
-        } catch {
-          /* jedno chýbajúce PDF nesmie zhodiť celý balík */
-        }
-      }
-    }
-
-    let skenov = 0;
-    if (data.s_skenmi) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const zdroje: { kos: string; priecinok: string; riadky: Record<string, unknown>[]; cislo: string }[] = [
-        { kos: "purchase-invoices", priecinok: "skeny/prijate-faktury", riadky: prijate, cislo: "invoice_number" },
-        { kos: "expense-receipts", priecinok: "skeny/blocky", riadky: doklady, cislo: "document_number" },
-      ];
-      for (const z of zdroje) {
-        const priec = zip.folder(z.priecinok);
-        for (const r of z.riadky.filter((x) => String(x.file_path ?? "").startsWith(`${data.company_id}/`))) {
-          if (skenov >= MAX_SKENOV) break;
-          try {
-            const { data: blob } = await supabaseAdmin.storage.from(z.kos).download(String(r.file_path));
-            if (!blob) continue;
-            const pripona = String(r.file_path).split(".").pop()?.slice(0, 5) || "pdf";
-            const meno = [r.issue_date, r.supplier_name, r[z.cislo]].filter(Boolean).join("_") || String(r.id);
-            priec?.file(nazovSuboru(meno, pripona), new Uint8Array(await blob.arrayBuffer()));
-            skenov++;
-          } catch {
-            /* chýbajúci sken nezhodí balík */
-          }
-        }
-      }
-    }
-
-    zip.file(
-      "OBSAH.txt",
-      sprievodnyText(String(firma.name ?? ""), new Date().toLocaleString("sk-SK")),
-    );
-
-    const obsah = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
     const cesta = `${data.company_id}/export-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.zip`;
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -202,7 +56,7 @@ export const exportFirmyFn = createServerFn({ method: "POST" })
       pocty,
       pdfka,
       skenov,
-      orezaneSkeny: skenov >= MAX_SKENOV,
-      orezanePdf: data.s_pdf && faktury.filter((f) => f.pdf_url).length > MAX_PDF,
+      orezaneSkeny,
+      orezanePdf,
     };
   });

@@ -182,6 +182,59 @@ export type SendReminderInput = {
   userId?: string | null;
 };
 
+/**
+ * Text upomienky zo šablón firmy: najprv šablóna typu „Upomienka“ v jazyku
+ * faktúry (premenné už doplnené), potom stará šablóna pre stupeň upomienky.
+ * Nič = predvolený text z `buildReminderContent`.
+ */
+export async function sablonaUpomienky(
+  companyId: string,
+  invoice: any,
+  company: any,
+  reminderNumber: number,
+): Promise<{ subject?: string; body?: string }> {
+  let dbSubject: string | undefined;
+  let dbBody: string | undefined;
+  /*
+    Šablóna typu „Upomienka“ v jazyku faktúry (Nastavenia → E-mailové
+    šablóny) má prednosť pred jednou šablónou pre každý stupeň upomienky.
+  */
+  try {
+    const { sablonaPreDoklad } = await import("./email-sablony.server");
+    const { jazykFaktury } = await import("./email-jazyk");
+    const { doplnPremenne, hodnotyPremennych } = await import("./email-sablony");
+    const jazyk = jazykFaktury(invoice as any, company as any);
+    const s = await sablonaPreDoklad(companyId, "upomienka", jazyk);
+    if (s) {
+      const h = hodnotyPremennych({
+        doklad: invoice as any,
+        jazyk,
+        firma: (company as any)?.name ?? "",
+        iban: sUctomFaktury((company as any) ?? {}, invoice as any).iban ?? "",
+        krajina: krajinaDane((company as any)?.country),
+      });
+      dbSubject = doplnPremenne(s.predmet, h);
+      dbBody = doplnPremenne(s.text, h);
+    }
+  } catch {
+    /* ignore */
+  }
+  if (dbSubject === undefined) {
+    try {
+      const { getEmailTemplate } = await import("./email-templates.server");
+      const tpl = await getEmailTemplate(companyId, `reminder_${reminderNumber}` as any);
+      if (tpl.fromDb) {
+        dbSubject = tpl.subject;
+        dbBody = tpl.body;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return { subject: dbSubject, body: dbBody };
+}
+
 export async function sendReminder(input: SendReminderInput) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY nie je nakonfigurovaný.");
@@ -212,18 +265,13 @@ export async function sendReminder(input: SendReminderInput) {
   if (!recipient) throw new Error("Chýba e-mail príjemcu.");
 
   // Load editable DB template (falls back to hardcoded defaults + legacy company columns)
-  let dbSubject: string | undefined;
-  let dbBody: string | undefined;
-  try {
-    const { getEmailTemplate } = await import("./email-templates.server");
-    const tpl = await getEmailTemplate(input.company_id, `reminder_${input.reminderNumber}` as any);
-    if (tpl.fromDb) {
-      dbSubject = tpl.subject;
-      dbBody = tpl.body;
-    }
-  } catch {
-    /* ignore */
-  }
+  // Upravená šablóna firmy (Nastavenia → E-mailové šablóny), inak predvolený text.
+  const { subject: dbSubject, body: dbBody } = await sablonaUpomienky(
+    input.company_id,
+    invoice,
+    company,
+    input.reminderNumber,
+  );
 
   const built = buildReminderContent({
     invoice,

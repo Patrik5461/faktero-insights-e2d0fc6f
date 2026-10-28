@@ -13,6 +13,7 @@ import {
   type Preskocena,
 } from "@/lib/faktero/hromadny-prikaz";
 import { useT } from "@/lib/i18n/useT";
+import { nastaveniaBanky, type TextPrijemcu } from "@/lib/faktero/export-nastavenia";
 
 type Ucet = {
   id: string;
@@ -57,6 +58,8 @@ export function HromadnyPrikaz({
   const [datum, setDatum] = useState(dnes());
   const [podlaSplatnosti, setPodlaSplatnosti] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Správa pre príjemcu podľa Bankové účty → Nastavenia banky.
+  const [textPrijemcu, setTextPrijemcu] = useState<TextPrijemcu>("cislo");
 
   useEffect(() => {
     void (async () => {
@@ -66,12 +69,17 @@ export function HromadnyPrikaz({
           .select("id, name, iban, swift, is_default")
           .eq("company_id", companyId)
           .order("position", { ascending: true }),
-        supabase.from("companies").select("name").eq("id", companyId).maybeSingle(),
+        supabase
+          .from("companies")
+          .select("name, uctovanie_nastavenia")
+          .eq("id", companyId)
+          .maybeSingle(),
       ]);
       const zoznam = ((u ?? []) as Ucet[]).filter((x) => x.iban);
       setUcty(zoznam);
       setUcetId((zoznam.find((x) => x.is_default) ?? zoznam[0])?.id ?? "");
       setMeno((firma as any)?.name ?? "");
+      setTextPrijemcu(nastaveniaBanky((firma as any)?.uctovanie_nastavenia).textPrijemcu);
     })();
   }, [companyId]);
 
@@ -152,6 +160,7 @@ export function HromadnyPrikaz({
         platitel: { meno, iban: ucet.iban, bic: ucet.swift },
         datum,
         podlaSplatnosti,
+        textPrijemcu,
       });
       const url = URL.createObjectURL(new Blob([xml], { type: "application/xml" }));
       const a = document.createElement("a");

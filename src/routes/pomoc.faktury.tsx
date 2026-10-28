@@ -56,7 +56,8 @@ const sections: HelpSection[] = [
           <li>
             Dátum vystavenia a dodania sa vyplní sám. Splatnosť nastavíte jedným klikom na{" "}
             <strong>7d</strong>, <strong>14d</strong> alebo <strong>30d</strong> — tlačidlá sú
-            vpravo pri popise poľa Splatnosť.
+            vpravo pri popise poľa Splatnosť — alebo počtom dní v políčku vedľa dátumu. Jazyk
+            faktúry prepnete hore vedľa nadpisu.
           </li>
           <li>
             <strong>Text nad položkami</strong> je predvyplnený („Fakturujeme Vám“, pri faktúre v
@@ -72,7 +73,9 @@ const sections: HelpSection[] = [
           </li>
           <li>
             Kliknite na <strong>Vystaviť faktúru</strong>. Otvorí sa detail faktúry, odkiaľ ju
-            odošlete e-mailom alebo vygenerujete PDF.
+            odošlete e-mailom alebo vygenerujete PDF. Tlačidlá{" "}
+            <strong>Vystaviť a stiahnuť PDF</strong> a <strong>Vystaviť a odoslať e-mailom</strong>{" "}
+            to urobia hneď po vystavení.
           </li>
         </ol>
         <p>
@@ -86,6 +89,19 @@ const sections: HelpSection[] = [
           <strong>Načítať položky z dokladu</strong> a pri bežnej faktúre{" "}
           <strong>Pridať zálohovú faktúru</strong> (odpočet zálohy). Dobropis a ťarchopis majú
           namiesto toho väzbu na opravovanú faktúru.
+        </p>
+        <p>
+          Pod položkami je <strong>Pridať uhradenú zálohu</strong> (ponúknu sa zálohové faktúry
+          vybraného odberateľa) a voľba <strong>Táto faktúra slúži zároveň ako dodací list</strong>{" "}
+          — PDF potom nesie nadpis „Faktúra – dodací list“ a dole podpisy Odovzdal a Prevzal.
+          Pečiatku a podpis zapnete či vypnete pre jednu faktúru v Platobných údajoch, predvolený
+          text nad položkami nastavíte vo Vzhľade faktúry.
+        </p>
+        <p>
+          Zbalená časť <strong>Účtovné nastavenia</strong> na konci formulára má dátum daňovej
+          povinnosti, typ platby, účtovnú položku (predkontáciu), členenie DPH a KV DPH. Prázdne
+          pole znamená predvolené — kód z pravidla účtovania, inak z nastavení firmy — takže
+          účtovník faktúru po vystavení nemusí otvárať zvlášť.
         </p>
       </>
     ),

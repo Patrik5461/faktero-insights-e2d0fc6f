@@ -191,10 +191,38 @@ export const listMembersFn = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: clenovia, error } = await supabaseAdmin
       .from("company_users")
-      .select("user_id, role, permissions, created_at")
+      .select(
+        "user_id, role, permissions, created_at, cislo_zamestnanca, telefon, predvolena_zakazka_id, podpora_pristup_id",
+      )
       .eq("company_id", data.company_id)
       .order("created_at");
     if (error) throw error;
+
+    // Názvy predvolených zákaziek a do kedy má prístup technická podpora.
+    const jobIds = [
+      ...new Set((clenovia ?? []).map((c: any) => c.predvolena_zakazka_id).filter(Boolean)),
+    ] as string[];
+    const podporaIds = [
+      ...new Set((clenovia ?? []).map((c: any) => c.podpora_pristup_id).filter(Boolean)),
+    ] as string[];
+    const [{ data: zakazky }, { data: podpora }] = await Promise.all([
+      jobIds.length
+        ? supabaseAdmin
+            .from("jobs")
+            .select("id, job_number, name")
+            .eq("company_id", data.company_id)
+            .in("id", jobIds)
+        : Promise.resolve({ data: [] as any[] }),
+      podporaIds.length
+        ? supabaseAdmin
+            .from("podpora_pristupy")
+            .select("id, platne_do, rozsah")
+            .eq("company_id", data.company_id)
+            .in("id", podporaIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const zakazka = new Map((zakazky ?? []).map((j: any) => [j.id, j]));
+    const pristup = new Map((podpora ?? []).map((p: any) => [p.id, p]));
 
     const ids = (clenovia ?? []).map((c) => c.user_id as string);
     const { data: profily } = ids.length
@@ -210,7 +238,79 @@ export const listMembersFn = createServerFn({ method: "POST" })
       email: podlaId.get(c.user_id)?.email ?? null,
       full_name: podlaId.get(c.user_id)?.full_name ?? null,
       je_to_ja: c.user_id === context.userId,
+      cislo_zamestnanca: (c.cislo_zamestnanca ?? null) as string | null,
+      telefon: (c.telefon ?? null) as string | null,
+      predvolena_zakazka_id: (c.predvolena_zakazka_id ?? null) as string | null,
+      zakazka_nazov: c.predvolena_zakazka_id
+        ? ([zakazka.get(c.predvolena_zakazka_id)?.job_number, zakazka.get(c.predvolena_zakazka_id)?.name]
+            .filter(Boolean)
+            .join(" · ") || null)
+        : null,
+      /** Technická podpora Faktero s dočasným prístupom — do kedy. */
+      podpora_do: c.podpora_pristup_id
+        ? ((pristup.get(c.podpora_pristup_id)?.platne_do ?? null) as string | null)
+        : null,
+      podpora_pristup_id: (c.podpora_pristup_id ?? null) as string | null,
     }));
+  });
+
+/** Id prístupu, ak je člen technická podpora s dočasným prístupom. */
+async function jePodpora(admin: any, companyId: string, userId: string): Promise<string | null> {
+  const { data } = await admin
+    .from("company_users")
+    .select("podpora_pristup_id")
+    .eq("company_id", companyId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return (data?.podpora_pristup_id as string | null) ?? null;
+}
+
+/**
+ * Číslo zamestnanca, telefón a predvolená zákazka člena. Predvolenú zákazku
+ * dostane každý jeho nový bloček a prijatá faktúra, kým ju na doklade
+ * nezmení (dopĺňa ju spúšťač v databáze).
+ */
+export const upravUdajeClenaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        user_id: z.string().uuid(),
+        cislo_zamestnanca: z.string().trim().max(40).nullable(),
+        telefon: z.string().trim().max(40).nullable(),
+        predvolena_zakazka_id: z.string().uuid().nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await overAdmina(context, data.company_id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (await jePodpora(supabaseAdmin, data.company_id, data.user_id))
+      throw new Error("Technickej podpore sa údaje nevypĺňajú.");
+    if (data.predvolena_zakazka_id) {
+      // Zákazka musí byť z tej istej firmy — inak by sa doklady pripájali k cudzej.
+      const { data: z0 } = await supabaseAdmin
+        .from("jobs")
+        .select("id")
+        .eq("id", data.predvolena_zakazka_id)
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      if (!z0) throw new Error("Zákazka sa nenašla.");
+    }
+    const { data: r, error } = await supabaseAdmin
+      .from("company_users")
+      .update({
+        cislo_zamestnanca: data.cislo_zamestnanca || null,
+        telefon: data.telefon || null,
+        predvolena_zakazka_id: data.predvolena_zakazka_id,
+      })
+      .eq("company_id", data.company_id)
+      .eq("user_id", data.user_id)
+      .select("user_id");
+    if (error) throw error;
+    if (!r?.length) throw new Error("Používateľ sa nenašiel.");
+    return { ok: true };
   });
 
 /** Koľko majiteľov firme ostane, keď tomuto členovi rolu vezmeme. */
@@ -233,6 +333,8 @@ export const changeMemberRoleFn = createServerFn({ method: "POST" })
     await overAdmina(context, data.company_id);
     if (!ROLY_CLENA.includes(data.role)) throw new Error("Neplatná rola.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (await jePodpora(supabaseAdmin, data.company_id, data.user_id))
+      throw new Error("Rozsah technickej podpory sa nemení — odoberte jej prístup a udeľte nový.");
     /*
       Majiteľa smie meniť a rolu majiteľa udeliť len majiteľ. Admin by si inak
       vedel sám pridať rolu majiteľa alebo zosadiť skutočného majiteľa (prevzatie firmy).
@@ -273,6 +375,17 @@ export const removeMemberFn = createServerFn({ method: "POST" })
       throw new Error("Majiteľa môže z firmy odobrať len majiteľ.");
     if (await poslednyMajitel(supabaseAdmin, data.company_id, data.user_id))
       throw new Error("Posledného majiteľa firmy odobrať nemožno.");
+    // Technická podpora: odobratie sa zapíše aj do histórie jej prístupov.
+    const podpora = await jePodpora(supabaseAdmin, data.company_id, data.user_id);
+    if (podpora) {
+      const { odoberPristup } = await import("./podpora-pristup.server");
+      await odoberPristup(supabaseAdmin, {
+        companyId: data.company_id,
+        id: podpora,
+        userId: context.userId,
+      });
+      return { ok: true };
+    }
     const { error } = await supabaseAdmin
       .from("company_users")
       .delete()

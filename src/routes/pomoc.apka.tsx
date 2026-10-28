@@ -185,6 +185,12 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
+          Heslo v telefóne písať netreba: na webe otvorte{" "}
+          <Link to="/nastavenia/prihlasit-appku">Prihlásiť appku v telefóne</Link> a v appke ťuknite
+          na <strong>Prihlásiť sa QR kódom z webu</strong>. Kód platí dve minúty, dá sa použiť len
+          raz a prihlási telefón do vášho vlastného účtu — nikoho nepridáva do firmy.
+        </p>
+        <p>
           Po prvom prihlásení sa dá zapnúť <strong>Face ID / Touch ID</strong> (na Androide
           odtlačok) a ďalej sa už heslo nepíše.
         </p>

@@ -3,6 +3,7 @@ import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { hodnotyMailu, jazykFaktury, predvolenyMailFaktury } from "./email-jazyk";
 import { krajinaDane } from "./vat-rates";
+import { doplnPremenne, hodnotyPremennych } from "./email-sablony";
 
 export type SendInvoiceEmailInput = {
   company_id: string;
@@ -22,8 +23,20 @@ export type SendInvoiceEmailInput = {
 };
 
 function applyVars(s: string, inv: any, company: any) {
+  const jazyk = jazykFaktury(inv, company);
+  // [PREMENNE] zo šablón podľa typu a jazyka dokladu.
+  s = doplnPremenne(
+    s,
+    hodnotyPremennych({
+      doklad: inv,
+      jazyk,
+      firma: company?.name ?? "",
+      iban: sUctomFaktury(company ?? {}, inv).iban ?? "",
+      krajina: krajinaDane(company?.country),
+    }),
+  );
   // Suma a dátum v zvyklostiach jazyka dokladu (nemecky „1.297,00 €“, „29.10.2026“).
-  const { total, due_date } = hodnotyMailu(inv, jazykFaktury(inv, company));
+  const { total, due_date } = hodnotyMailu(inv, jazyk);
   const pairs: Array<[string, string]> = [
     ["invoice_number", inv.invoice_number ?? ""],
     ["due_date", due_date],
@@ -63,6 +76,9 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
     .maybeSingle();
   if (error || !invoice) throw new Error("Faktúra nenájdená");
   if (invoice.status === "cancelled") throw new Error("Stornovanú faktúru nemožno odoslať.");
+  // Schvaľovanie: odoslať až po schválení, ak si to firma zapla. Tu, nie vo
+  // volajúcom — tou istou cestou idú web, appka aj verejné API.
+  await (await import("./schvalovanie.server")).overOdoslanie(input.company_id, invoice.id);
   // Prvé odoslanie len s dnešným dátumom vystavenia — pred záznamom o pokuse,
   // odmietnutie nie je zlyhané odoslanie.
   await (
@@ -135,15 +151,35 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
 
     let tplSubject: string | undefined;
     let tplBody: string | undefined;
+    /*
+      Šablóna podľa typu a jazyka dokladu (Nastavenia → E-mailové šablóny).
+      Keď žiadna nesedí, platí stará jedna šablóna „Odoslanie faktúry“.
+    */
     try {
-      const { getEmailTemplate } = await import("./email-templates.server");
-      const tpl = await getEmailTemplate(input.company_id, "invoice_send");
-      if (tpl.fromDb) {
-        tplSubject = tpl.subject;
-        tplBody = tpl.body;
+      const { sablonaPreDoklad } = await import("./email-sablony.server");
+      const s = await sablonaPreDoklad(
+        input.company_id,
+        (invoice as any).type,
+        jazykFaktury(invoice, company),
+      );
+      if (s) {
+        tplSubject = s.predmet;
+        tplBody = s.text;
       }
     } catch {
       /* ignore */
+    }
+    if (tplSubject === undefined) {
+      try {
+        const { getEmailTemplate } = await import("./email-templates.server");
+        const tpl = await getEmailTemplate(input.company_id, "invoice_send");
+        if (tpl.fromDb) {
+          tplSubject = tpl.subject;
+          tplBody = tpl.body;
+        }
+      } catch {
+        /* ignore */
+      }
     }
 
     /*

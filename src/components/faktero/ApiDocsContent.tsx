@@ -1116,6 +1116,11 @@ const { signed_url } = await res.json();
                 'Pri prvom odoslaní musí byť dátum vystavenia dnešný. Faktúru so starším dátumom API odmietne odpoveďou 409 s kódom issue_date_in_past (v details je issue_date, today, new_due_date a can_update). Pošlite požiadavku znova s "update_issue_date": true — dátum vystavenia sa zmení na dnes, splatnosť sa posunie o rovnaký počet dní a dátum dodania ostáva. Keď sa dátum zmeniť nedá (can_update: false — uzamknuté obdobie alebo export do účtovníctva), faktúru odošle s pôvodným dátumom až "keep_issue_date": true. Upomienky a opätovné odoslanie sa nekontrolujú.',
               )}
             </p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                "Keď má firma zapnuté schvaľovanie a voľbu odoslať faktúru až po schválení, neschválenú faktúru API neodošle — vráti 409 s kódom approval_pending. Odošlite ju znova po schválení.",
+              )}
+            </p>
             <CodeBlock
               lang="JSON"
               code={`HTTP/1.1 409 Conflict

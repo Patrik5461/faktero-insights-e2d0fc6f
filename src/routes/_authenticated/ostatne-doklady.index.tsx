@@ -34,6 +34,8 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { DocumentListToolbar, PRVOK } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Iné doklady — Faktero") }] }),
@@ -77,6 +79,10 @@ function OstatneDokladyPage() {
   const [rows, setRows] = useState<any[]>([]);
   // Priečinky (zmluvy, objednávky…) — filtrujú sa na obrazovke z načítaných dokladov.
   const priecinok = lf.filter("priecinok");
+  const stitokFiltra = lf.filter("stitok");
+  const cis = useCiselnikyDokladov(cid, null, false);
+  // Štítky na výber: číselník firmy a tie, čo sú na načítaných dokladoch.
+  const stitkyNaVyber = [...new Set([...cis.stitky, ...rows.flatMap((r) => (r.stitky ?? []) as string[])])].sort();
   const priecinky = [...new Set(rows.map((r) => String(r.priecinok ?? "").trim()).filter(Boolean))].sort();
   // Hľadanie len prechádza načítané doklady.
   const hladane = lf.q.trim().toLowerCase();
@@ -84,8 +90,9 @@ function OstatneDokladyPage() {
     (r) =>
       (!priecinok ||
         String(r.priecinok ?? "").trim() === (priecinok === "__bez" ? "" : priecinok)) &&
+      (!stitokFiltra || (r.stitky ?? []).includes(stitokFiltra)) &&
       (!hladane ||
-        [r.sender, r.subject, r.priecinok]
+        [r.sender, r.subject, r.priecinok, ...(r.stitky ?? [])]
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(hladane))),
   );
@@ -332,6 +339,16 @@ function OstatneDokladyPage() {
                 { value: "__bez", label: "Bez priečinka" },
               ],
             },
+            ...(stitkyNaVyber.length
+              ? [
+                  {
+                    key: "stitok",
+                    label: "Štítok",
+                    type: "select" as const,
+                    options: stitkyNaVyber.map((x) => ({ value: x, label: x })),
+                  },
+                ]
+              : []),
           ]}
           extra={
             !bezMesiaca && (
@@ -365,6 +382,14 @@ function OstatneDokladyPage() {
             >
               <FolderOpen className="h-4 w-4" /> {t("Do priečinka")} ({selected.size})
             </button>
+            {cid ? (
+              <HromadnaAkciaDokladov
+                companyId={cid}
+                agenda="ostatny"
+                ids={Array.from(selected)}
+                onHotovo={() => void refresh()}
+              />
+            ) : null}
             {(zalozka === "nespracovane" || zalozka === "spracovane") && (
               <button
                 onClick={() =>
@@ -475,6 +500,15 @@ function OstatneDokladyPage() {
                           {r.subject && (
                             <div className="text-xs text-muted-foreground">{r.subject}</div>
                           )}
+                          {r.stitky?.length ? (
+                            <div className="mt-0.5 flex flex-wrap gap-1">
+                              {r.stitky.map((stitok: string) => (
+                                <span key={stitok} className="rounded-full bg-secondary px-1.5 text-[11px] text-muted-foreground">
+                                  {stitok}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                           <ZdrojovyMailTlacidlo druh="ostatny" id={r.id} inboxMessageId={r.inbox_message_id} ikona />
                           {(r.zamestnanec || r.zmluva) && (
                             <div className="text-xs text-primary">

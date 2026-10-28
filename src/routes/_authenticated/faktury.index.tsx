@@ -68,6 +68,13 @@ import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { posliEfakturuFn } from "@/lib/faktero/efaktura/efaktura.functions";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
+import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
+import { VyberStavuDokladu, StavDokladuOdznak } from "@/components/faktero/StavDokladu";
+import { useCiselnikyDokladov, filtreStavuAStitkov } from "@/hooks/useCiselnikyDokladov";
+import { dovodZamku, NAZOV_ZAMKU, platbaPreZoradenie } from "@/lib/faktero/doklady-hromadne";
+import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
+import { zauctujVystavenuFn } from "@/lib/faktero/zauctovanie.functions";
 
 type BulkAction = null | "paid" | "email" | "efaktura" | "clone" | "reminder" | "zip";
 
@@ -169,15 +176,20 @@ function InvoicesPage() {
   );
   // Obdobie a „len neexportované“ filtruje databáza, nie načítaná stránka —
   // inak by na druhej strane chýbali faktúry, ktoré na prvú nevošli.
+  const stavFiltra = lf.filter("stavDokladu");
+  const stitokFiltra = lf.filter("stitok");
   const upravDotaz = useCallback(
     (dotaz: any) => {
       let d = filtrujObdobie(dotaz, podla, obdobieOd || null, obdobieDo || null);
+      if (stavFiltra === "_bez") d = d.is("stav_id", null);
+      else if (stavFiltra) d = d.eq("stav_id", stavFiltra);
+      if (stitokFiltra) d = d.contains("stitky", [stitokFiltra]);
       // Koncept ani stornovaná sa do účtovníctva neexportujú, tak tu nepatria.
       if (exportovane === "ano") d = d.not("exported_at", "is", null);
       if (exportovane === "nie") d = d.is("exported_at", null).not("status", "in", "(draft,cancelled)");
       return d;
     },
-    [podla, obdobieOd, obdobieDo, exportovane],
+    [podla, obdobieOd, obdobieDo, exportovane, stavFiltra, stitokFiltra],
   );
   const list = usePagedList({
     resource: "invoices",
@@ -189,8 +201,34 @@ function InvoicesPage() {
     orderBy: { column: "issue_date", ascending: false },
     upravDotaz,
     riadenie: lf,
-    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${exportovane}`,
+    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${exportovane}|${stavFiltra}|${stitokFiltra}`,
   });
+  // Predkontácie, vlastné stavy, štítky a uzávierka — raz za firmu, nie za riadok.
+  const cis = useCiselnikyDokladov(getActiveCompanyId(), "vystavena");
+  const stavPodlaId = useMemo(() => new Map(cis.stavy.map((s) => [s.id, s])), [cis.stavy]);
+  /** Predkontácia v riadku — tá istá funkcia ako panel zaúčtovania v detaile (len uloží, nezaúčtuje). */
+  async function zmenPredkontaciuRiadku(i: any, kodPk: string) {
+    const c = getActiveCompanyId();
+    if (!c) return;
+    try {
+      await zauctujVystavenuFn({
+        data: {
+          company_id: c,
+          id: i.id,
+          predkontacia: kodPk || null,
+          clenenie: i.pohoda_clenenie_dph ?? null,
+          kv: i.kv_clenenie ?? null,
+          stredisko: i.stredisko ?? null,
+          cinnost: i.cinnost ?? null,
+          intPoznamka: i.int_poznamka ?? null,
+          lenUlozit: true,
+        },
+      });
+      list.reload();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Predkontáciu sa nepodarilo uložiť"));
+    }
+  }
   // „Zobraziť vymazané“ je filter v adrese, kôš však prepína zoznam.
   const ajVymazane = lf.zapnute("vymazane");
   const setShowDeleted = list.setShowDeleted;
@@ -958,6 +996,7 @@ function InvoicesPage() {
             },
             { key: "bezUpomienky", label: "Po splatnosti bez upomienky", type: "checkbox" },
             { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
+            ...filtreStavuAStitkov(cis.stavy, cis.stitky),
           ]}
           previewToggle={bocny}
         />
@@ -1031,6 +1070,16 @@ function InvoicesPage() {
               >
                 <Archive className="h-3.5 w-3.5" /> {t("Exportovať PDF (ZIP)")}
               </button>
+              {getActiveCompanyId() ? (
+                <HromadnaAkciaDokladov
+                  companyId={getActiveCompanyId()!}
+                  agenda="vystavena"
+                  ids={list.selectedIds}
+                  onHotovo={() => list.reload()}
+                  pdfZip={() => setBulkAction("zip")}
+                  zmazat={() => setBulkDelete(true)}
+                />
+              ) : null}
               {progress && (
                 <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("Spracováva sa {a}/{b}…", { a: progress.current, b: progress.total })}
@@ -1133,6 +1182,7 @@ function InvoicesPage() {
                     <th className="p-3">{t("Dodaná")}</th>
                     <th className="p-3">{t("Splatnosť")}</th>
                     <th className="p-3 text-right">{t("Suma")}</th>
+                    <th className="p-3">{t("Účtovná položka")}</th>
                     <th className="p-3">{t("Stav")}</th>
                     <th className="p-3"></th>
                   </tr>
@@ -1140,14 +1190,14 @@ function InvoicesPage() {
                 <tbody className="divide-y divide-border">
                   {list.loading && (
                     <tr>
-                      <td colSpan={9} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={10} className="p-8 text-center text-muted-foreground">
                         {t("Načítavam…")}
                       </td>
                     </tr>
                   )}
                   {!list.loading && visibleRows.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={10} className="p-8 text-center text-muted-foreground">
                         {list.showDeleted ? t("Žiadne vymazané faktúry.") : t("Žiadne faktúry.")}
                       </td>
                     </tr>
@@ -1216,8 +1266,56 @@ function InvoicesPage() {
                         {/* Dobropis bez mínusu — že znižuje, hovorí štítok Dobropis. */}
                         {formatujMenu(sumaNaZobrazenie(i, i.total), i.currency)}
                       </td>
+                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                        {(() => {
+                          // Koncept sa účtuje až po vystavení; odovzdanú najprv treba vrátiť z Pohody.
+                          const z = dovodZamku(i, cis.zamknuteDo);
+                          return (
+                            <VyberVRiadku
+                              ariaLabel={t("Účtovná položka faktúry {cislo}", { cislo: i.invoice_number ?? "" })}
+                              hodnota={i.pohoda_predkontacia}
+                              moznosti={moznostiKodov(
+                                zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], {
+                                  typ: "faktura",
+                                  platba: platbaPreZoradenie(i.payment_method),
+                                }),
+                              )}
+                              zamok={
+                                list.showDeleted ? t("Vymazaná faktúra") : z ? t(NAZOV_ZAMKU[z]) : null
+                              }
+                              prazdne={t("Nedefinované")}
+                              nazovPrazdnej={t("predvolená")}
+                              onVyber={(v) => zmenPredkontaciuRiadku(i, v)}
+                            />
+                          );
+                        })()}
+                      </td>
                       <td className="p-3">
                         <StatusBadge status={i.status} />
+                        {cis.stavy.length && !list.showDeleted ? (
+                          <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+                            <VyberStavuDokladu
+                              kompaktny
+                              tabulka="invoices"
+                              id={i.id}
+                              stavId={i.stav_id}
+                              stavy={cis.stavy}
+                            />
+                          </div>
+                        ) : i.stav_id ? (
+                          <div className="mt-1">
+                            <StavDokladuOdznak stav={stavPodlaId.get(i.stav_id)} />
+                          </div>
+                        ) : null}
+                        {i.stitky?.length ? (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {i.stitky.map((stitok: string) => (
+                              <span key={stitok} className="rounded-full bg-secondary px-1.5 text-[11px] text-muted-foreground">
+                                {stitok}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                         {sch.stavy[i.id] ? (
                           <div className={`mt-1 text-xs ${farbaOdznaku(sch.stavy[i.id].stav)}`} title={t("Schvaľovanie")}>
                             {t(sch.stavy[i.id].odznak)}

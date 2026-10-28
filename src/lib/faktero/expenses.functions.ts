@@ -751,39 +751,59 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     };
   });
 
-/** Preddefinované poznámky firmy (ako v Doklado) — načítať, pridať, odobrať. */
+/**
+ * Preddefinované poznámky firmy — načítať (pre agendu), pridať, odobrať.
+ * Číselník je v `preddefinovane_poznamky` a číta sa cez RLS prihláseného;
+ * `zoznam` (holé texty) ostáva kvôli starším volajúcim.
+ */
 export const poznamkySablonyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
     z
       .object({
         company_id: z.string().uuid(),
-        pridat: z.string().trim().min(1).max(300).optional(),
-        odobrat: z.string().max(300).optional(),
+        agenda: z.enum(["faktura", "prijata_faktura", "blocek", "nespracovane"]).optional(),
+        pridat: z.string().trim().min(1).max(2000).optional(),
+        odobrat: z.string().max(2000).optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const { data: clen } = await supabase
-      .from("company_users")
-      .select("user_id")
-      .eq("company_id", data.company_id)
-      .eq("user_id", context.userId)
-      .maybeSingle();
-    if (!clen) throw new Error("Do firmy nemáte prístup.");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: f } = await supabaseAdmin
-      .from("companies")
-      .select("poznamky_sablony")
-      .eq("id", data.company_id)
-      .single();
-    let zoznam: string[] = ((f as any)?.poznamky_sablony ?? []) as string[];
-    if (data.pridat && !zoznam.includes(data.pridat)) zoznam = [...zoznam, data.pridat].slice(-50);
-    if (data.odobrat) zoznam = zoznam.filter((x) => x !== data.odobrat);
-    if (data.pridat || data.odobrat)
-      await supabaseAdmin.from("companies").update({ poznamky_sablony: zoznam }).eq("id", data.company_id);
-    return { zoznam };
+    const { poznamkyPreAgendu } = await import("./preddefinovane-poznamky");
+    const nacitaj = async () => {
+      const { data: riadky, error } = await supabase
+        .from("preddefinovane_poznamky")
+        .select("id, nazov, text, agendy, poradie")
+        .eq("company_id", data.company_id)
+        .order("poradie")
+        .limit(500);
+      if (error) throw new Error(error.message);
+      return (riadky ?? []) as Array<{ id: string; nazov: string; text: string; agendy: string[]; poradie: number }>;
+    };
+    let vsetky = await nacitaj();
+    if (data.pridat && !vsetky.some((p) => p.text === data.pridat)) {
+      const { error } = await supabase.from("preddefinovane_poznamky").insert({
+        company_id: data.company_id,
+        nazov: data.pridat.replace(/\s+/g, " ").slice(0, 60),
+        text: data.pridat,
+        // Uložená z dokladu platí najprv tam, kde vznikla.
+        agendy: data.agenda ? [data.agenda] : [],
+        poradie: vsetky.length + 1,
+      });
+      if (error) throw new Error(error.message);
+    }
+    if (data.odobrat) {
+      const { error } = await supabase
+        .from("preddefinovane_poznamky")
+        .delete()
+        .eq("company_id", data.company_id)
+        .eq("text", data.odobrat);
+      if (error) throw new Error(error.message);
+    }
+    if (data.pridat || data.odobrat) vsetky = await nacitaj();
+    const polozky = poznamkyPreAgendu(vsetky, data.agenda ?? null);
+    return { zoznam: polozky.map((p) => p.text), polozky };
   });
 
 /**

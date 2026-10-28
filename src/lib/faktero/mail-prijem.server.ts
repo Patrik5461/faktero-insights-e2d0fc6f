@@ -440,7 +440,7 @@ export async function spracujPrijatyMail(
   */
   const { data: firma } = await supabaseAdmin
     .from("companies")
-    .select("mail_povoleni_odosielatelia, ico, ic_dph, name, country, uctovanie_nastavenia")
+    .select("mail_povoleni_odosielatelia, mail_ukladat_bez_dokladu, ico, ic_dph, name, country, uctovanie_nastavenia")
     .eq("id", adresa.company_id)
     .maybeSingle();
   // Uprednostnená domáca mena pri vyťažení (nastavenie Nespracovaných dokladov).
@@ -558,15 +558,19 @@ export async function spracujPrijatyMail(
       Potvrdenie preposielania sem nedôjde — jeho telo sa zámerne neukladá.
       Bez textu sa doklad spracuje aj tak.
     */
+    let textPreUlozenie: string | null = null;
+    let komuPreUlozenie: string | null = null;
     if (zaznam?.id) {
       try {
         const obsah = await obsahMailu(mail.email_id, apiKey);
         const { textMailu } = await import("./zdrojovy-mail");
+        textPreUlozenie = textMailu(rozbalTelo(obsah.text), rozbalTelo(obsah.html));
+        komuPreUlozenie = (Array.isArray(obsah.to) ? obsah.to.join(", ") : obsah.to ?? null) || null;
         await supabaseAdmin
           .from("inbox_messages")
           .update({
-            text_mailu: textMailu(rozbalTelo(obsah.text), rozbalTelo(obsah.html)),
-            to_email: (Array.isArray(obsah.to) ? obsah.to.join(", ") : obsah.to ?? null) || null,
+            text_mailu: textPreUlozenie,
+            to_email: komuPreUlozenie,
           })
           .eq("id", zaznam.id);
       } catch (e: any) {
@@ -591,6 +595,44 @@ export async function spracujPrijatyMail(
       : vsetkyDoklady;
 
     if (!doklady.length) {
+      /*
+        „Ukladať aj e-maily bez dokladu“: mail sa uloží do Nespracovaných ako
+        PDF s textom (faktúra v tele mailu, odkaz na stiahnutie). Pri
+        rozdeľovači nie — ten mail rozdeľuje podľa príloh, bez nich nevie,
+        do ktorej firmy patrí.
+      */
+      if ((firma as any)?.mail_ukladat_bez_dokladu && !smer?.rozdelovac && !smer?.lenPrilohy) {
+        try {
+          const { pdfZMailu } = await import("./mail-na-pdf.server");
+          const pdf = await pdfZMailu({
+            od: odosielatel,
+            komu: komuPreUlozenie,
+            predmet,
+            prijate: new Date().toLocaleString("sk-SK", { timeZone: "Europe/Bratislava" }),
+            text: textPreUlozenie,
+          });
+          const { zalozNespracovany } = await import("./nespracovane.server");
+          const n = await zalozNespracovany(supabaseAdmin, {
+            companyId: adresaFirmy.company_id,
+            userId: adresaFirmy.user_id,
+            zdroj: "mail",
+            bajty: Buffer.from(pdf),
+            nazov: `${(predmet ?? "e-mail").replace(/[\\/:*?"<>|]+/g, " ").slice(0, 80).trim() || "e-mail"}.pdf`,
+            mime: "application/pdf",
+            poznamka: [
+              odosielatel ? `E-mail bez prílohy od ${odosielatel}` : "E-mail bez prílohy",
+              predmet ? `predmet „${predmet.slice(0, 120)}“` : null,
+            ]
+              .filter(Boolean)
+              .join(", ") + ".",
+            inboxMessageId: zaznam?.id ?? null,
+          });
+          await doprav("hotovo", "Mail bez dokladu uložený do Nespracovaných ako PDF s textom.", vsetky.length, [], [], [n.id]);
+          return { stav: "hotovo", vytvorenych: 1 };
+        } catch (e: any) {
+          console.warn("[mail-prijem] mail bez dokladu sa neuložil:", String(e?.message ?? e).slice(0, 200));
+        }
+      }
       await doprav("bez_prilohy", "Mail neobsahoval PDF ani fotku dokladu.", vsetky.length, []);
       return { stav: "bez_prilohy", vytvorenych: 0 };
     }

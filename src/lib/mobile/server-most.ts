@@ -64,6 +64,7 @@ import {
   zmazPrilohuFn,
 } from "@/lib/faktero/faktura-prilohy.functions";
 import { nastavenieRegistracieFn, registrujUcetFn } from "@/lib/faktero/registracia.functions";
+import { vymenParovanieFn } from "@/lib/faktero/parovanie-zariadenia.functions";
 import {
   pozviUctovnikaEfakturyFn,
   stavOznamuEfakturyFn,
@@ -124,6 +125,7 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "priloha-zmaz": zmazPrilohuFn,
   registracia: registrujUcetFn,
   "registracia-nastavenie": nastavenieRegistracieFn,
+  "parovanie-vymen": vymenParovanieFn,
   "efaktura-oznam-stav": stavOznamuEfakturyFn,
   "efaktura-oznam-akcia": zaznamenajOznamEfakturyFn,
   "efaktura-pozvi-uctovnika": pozviUctovnikaEfakturyFn,
