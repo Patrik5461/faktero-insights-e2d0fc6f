@@ -144,6 +144,14 @@ describe("migrácia z Doklada", () => {
     expect(m.hlavicka.advance_amount).toBeGreaterThan(0);
   });
 
+  it("predkontácia je skratka z Doklada, nie názov účtovnej položky", () => {
+    const f = faktura({
+      subType: "domestic_received",
+      accountingSettings: { accountingItem: { value: "Nákup PHM - platba kartou", code: "501200 325100" } },
+    });
+    expect(prijata(f, o).hlavicka.pohoda_predkontacia).toBe("501200 325100");
+  });
+
   it("predkontácia bez exportu zaúčtovanie neznamená", () => {
     const f = faktura({
       subType: "domestic_received",
@@ -155,6 +163,7 @@ describe("migrácia z Doklada", () => {
     const h = prijata(f, o).hlavicka;
     expect(h).toMatchObject({
       status: "received",
+      // Bez skratky ostane aspoň názov.
       pohoda_predkontacia: "Služba",
       exported_at: null,
     });

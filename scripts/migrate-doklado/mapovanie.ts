@@ -307,7 +307,13 @@ const uhradaPrijatej = (t: unknown) =>
 function zauctovanie(d: DokladAleboFaktura) {
   const a = (d as any).accountingSettings ?? {};
   return {
-    pohoda_predkontacia: text(a.accountingItem?.value) ?? text(a.accountingItem?.code),
+    /*
+      Do Pohody ide skratka predkontácie (`code`, napr. „501200 325100“), nie
+      názov účtovnej položky (`value`, „Nákup PHM – platba kartou“). Predtým
+      sa bral názov — Pohoda ho nepozná a dlhší ako 19 znakov neprejde ani
+      schémou (typ:ids). Názov ide len keď skratka chýba.
+    */
+    pohoda_predkontacia: text(a.accountingItem?.code) ?? text(a.accountingItem?.value),
     pohoda_clenenie_dph: text(a.classificationVat?.code),
     stredisko: text(a.expenditureCenter?.code) ?? text(a.expenditureCenter?.value),
     cinnost: text(a.activity?.code) ?? text(a.activity?.value),
