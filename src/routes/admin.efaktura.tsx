@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import {
   ArrowRightLeft,
   CheckCircle2,
+  FileDown,
   Loader2,
   RefreshCw,
   Send,
@@ -22,6 +23,7 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 import {
   adminEfakturaPrehladFn,
+  adminEfakturaPrehladPdfFn,
   adminLenOdosielanieFn,
   adminMigrujZiadostFn,
   adminNastavOnboardingWebhookFn,
@@ -74,6 +76,39 @@ const STAVY_PRE_MIGRACIU = new Set(["cudzi_poskytovatel", "chyba", "zamietnuta"]
 const kedy = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("sk-SK", { dateStyle: "short", timeStyle: "short" }) : "—";
 
+/** PDF so zoznamom firiem na eFaktúre a rozsahom služby (odosielanie / príjem). */
+function PrehladPdf() {
+  const stiahni = useServerFn(adminEfakturaPrehladPdfFn);
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          const { base64, nazov } = await stiahni({});
+          const bajty = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+          const url = URL.createObjectURL(new Blob([bajty], { type: "application/pdf" }));
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = nazov;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        } catch (e: any) {
+          toast.error(e?.message ?? "PDF sa nepodarilo vytvoriť");
+        } finally {
+          setBusy(false);
+        }
+      }}
+      className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+    >
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+      Stiahnuť PDF — firmy na eFaktúre
+    </button>
+  );
+}
+
 function Page() {
   const qc = useQueryClient();
   const nacitaj = useServerFn(adminEfakturaPrehladFn);
@@ -102,12 +137,15 @@ function Page() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">eFaktúra</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Firmy, ktoré si na Portáli finančnej správy vybrali Faktero, a odbery udalostí od
-          ePoštáka.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold">eFaktúra</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Firmy, ktoré si na Portáli finančnej správy vybrali Faktero, a odbery udalostí od
+            ePoštáka.
+          </p>
+        </div>
+        <PrehladPdf />
       </div>
 
       {data && (

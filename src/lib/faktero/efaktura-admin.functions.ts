@@ -453,3 +453,90 @@ export const adminNastavOnboardingWebhookFn = createServerFn({ method: "POST" })
     });
     return r;
   });
+
+/**
+ * PDF „Firmy na eFaktúre“: ktoré firmy sú u nás cez eFaktúru a čo presne
+ * majú — odosielanie aj prijímanie, len odosielanie, alebo či sú v procese.
+ */
+export const adminEfakturaPrehladPdfFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ base64: string; nazov: string }> => {
+    const db = await admin((context as { userId: string }).userId);
+    const [{ data: profily }, { data: pds }, { data: sendOnly }] = await Promise.all([
+      db
+        .from("efaktura_profiles")
+        .select("company_id, peppol_participant_id, activated_at, created_at")
+        .limit(5000),
+      db
+        .from("efaktura_pds_ziadosti")
+        .select("company_id, dic, nazov, stav, peppol_id, cudzi_poskytovatel, prijate_at")
+        .order("prijate_at", { ascending: false })
+        .limit(5000),
+      db
+        .from("efaktura_odosielanie_ziadosti")
+        .select("company_id, dic, stav, prijem_poskytovatel, vytvorene_at, aktivovane_at")
+        .order("vytvorene_at", { ascending: false })
+        .limit(5000),
+    ]);
+    // Posledná žiadosť každej firmy (zoznamy sú zoradené od najnovšej).
+    const prva = <T extends { company_id: string | null }>(rows: T[] | null) => {
+      const m = new Map<string, T>();
+      for (const r of rows ?? []) if (r.company_id && !m.has(r.company_id)) m.set(r.company_id, r);
+      return m;
+    };
+    const pdsFirmy = prva(pds as any[]);
+    const sendFirmy = prva(sendOnly as any[]);
+    const profilFirmy = new Map(((profily ?? []) as any[]).map((p) => [p.company_id as string, p]));
+    const ids = [...new Set([...profilFirmy.keys(), ...pdsFirmy.keys(), ...sendFirmy.keys()])];
+
+    const { data: firmy } = ids.length
+      ? await db.from("companies").select("id, name, ico, dic").in("id", ids)
+      : { data: [] as any[] };
+    const pocet = async (tabulka: string, id: string) => {
+      const { count } = await db
+        .from(tabulka)
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", id);
+      return count ?? 0;
+    };
+    const { rozsahFirmy } = await import("./efaktura-rozsah-firiem");
+    const riadky = await Promise.all(
+      ((firmy ?? []) as any[]).map(async (f) => {
+        const p = pdsFirmy.get(f.id) as any;
+        const s = sendFirmy.get(f.id) as any;
+        const prof = profilFirmy.get(f.id) as any;
+        const { rozsah, poznamka } = rozsahFirmy({
+          pdsStav: p?.stav ?? null,
+          cudziPoskytovatel: p?.cudzi_poskytovatel ?? null,
+          sendOnlyStav: s?.stav ?? null,
+          prijemPoskytovatel: s?.prijem_poskytovatel ?? null,
+          maProfil: Boolean(prof),
+        });
+        const od =
+          rozsah === "len_odosielanie"
+            ? (s?.aktivovane_at ?? s?.vytvorene_at ?? null)
+            : (prof?.activated_at ?? p?.prijate_at ?? prof?.created_at ?? null);
+        const [odoslanych, prijatych] = await Promise.all([
+          pocet("efaktura_deliveries", f.id),
+          pocet("efaktura_received_documents", f.id),
+        ]);
+        return {
+          firma: f.name as string,
+          ico: f.ico ?? null,
+          dic: f.dic ?? p?.dic ?? s?.dic ?? null,
+          peppolId: prof?.peppol_participant_id ?? p?.peppol_id ?? null,
+          rozsah,
+          poznamka,
+          od,
+          odoslanych,
+          prijatych,
+        };
+      }),
+    );
+    const { prehladEfakturyPdf } = await import("./efaktura-prehlad-pdf.server");
+    const pdf = await prehladEfakturyPdf(riadky);
+    return {
+      base64: Buffer.from(pdf).toString("base64"),
+      nazov: `firmy-efaktura-${new Date().toISOString().slice(0, 10)}.pdf`,
+    };
+  });
