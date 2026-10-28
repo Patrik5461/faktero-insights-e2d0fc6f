@@ -145,16 +145,15 @@ function reverseChargeReason(invoice: Pick<InvoiceRow, "reverse_charge_type">): 
   return "Reverse charge — domestic supply (§69 ods. 12 zákona o DPH)";
 }
 
-/** Peppol id `schéma:hodnota` rozdelené pre EndpointID; bez neho e-mail (EM). */
-function endpoint(
-  id: string | null,
-  email?: string | null,
-): Pick<EN16931Party, "endpointId" | "endpointScheme"> {
-  if (id) {
-    const i = id.indexOf(":");
-    return { endpointScheme: id.slice(0, i), endpointId: id.slice(i + 1) };
-  }
-  return email ? { endpointScheme: "EM", endpointId: email } : {};
+/**
+ * Peppol id `schéma:hodnota` rozdelené pre EndpointID. Bez id sa adresa
+ * nevymýšľa: e-mail (`EM`) predtým prešiel do XML, ale číselník EAS siete
+ * Peppol ho nepozná (PEPPOL-EN16931-CL008) a takú e-faktúru by sieť odmietla.
+ */
+function endpoint(id: string | null): Pick<EN16931Party, "endpointId" | "endpointScheme"> {
+  if (!id) return {};
+  const i = id.indexOf(":");
+  return { endpointScheme: id.slice(0, i), endpointId: id.slice(i + 1) };
 }
 
 function buildSellerParty(company: CompanyRow, profile?: ProfileRow | null): EN16931Party {
@@ -193,7 +192,6 @@ function buildBuyerParty(inv: InvoiceRow): EN16931Party {
     */
     ...endpoint(
       peppolId({ zadane: inv.customer_peppol_id, dic: inv.customer_dic, icDph: inv.customer_ic_dph }),
-      inv.customer_email,
     ),
     address: {
       street: inv.customer_street || undefined,

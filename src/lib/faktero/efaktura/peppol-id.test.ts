@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dicZUdajov, peppolId, schemaZId, SCHEMA_SK } from "./peppol-id";
+import { dicZUdajov, peppolId, peppolIdZDph, schemaZId, SCHEMA_SK } from "./peppol-id";
 
 describe("Peppol id slovenskej firmy", () => {
   it("schéma je 0245, nie 9944", () => {
@@ -39,6 +39,27 @@ describe("Peppol id slovenskej firmy", () => {
   it("schéma sa dá prečítať späť", () => {
     expect(schemaZId("0245:5843291067")).toBe("0245");
     expect(schemaZId(null)).toBeNull();
+  });
+});
+
+describe("Peppol id zahraničného odberateľa", () => {
+  it("schéma podľa krajiny IČ DPH, hodnota s predponou", () => {
+    expect(peppolId({ icDph: "DE123456789" })).toBe("9930:DE123456789");
+    expect(peppolId({ icDph: "cz 12345678" })).toBe("9929:CZ12345678");
+    expect(peppolId({ icDph: "ATU12345678" })).toBe("9914:ATU12345678");
+    expect(peppolId({ icDph: "IT01234567890" })).toBe("0211:IT01234567890");
+  });
+
+  it("zahraničné IČ DPH nikdy nejde do slovenskej schémy 0245", () => {
+    expect(dicZUdajov(null, "DE123456789")).toBeNull();
+    expect(dicZUdajov("CZ12345678", null)).toBeNull();
+    expect(peppolId({ dic: "CZ12345678" })).toBe("9929:CZ12345678");
+  });
+
+  it("neznáma krajina alebo nezmysel → žiadne id (nie e-mail)", () => {
+    expect(peppolId({ icDph: "XX123" })).toBeNull();
+    expect(peppolId({ dic: "abc" })).toBeNull();
+    expect(peppolIdZDph("SK2021234567")).toBeNull();
   });
 });
 

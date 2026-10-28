@@ -265,11 +265,28 @@ describe("pokazené varianty chybu nájdu", () => {
       .replace('schemeID="0245">4286179504', 'schemeID="0245">SK4286179504');
     const k = kody(zle);
     expect(k).toEqual(expect.arrayContaining(["FAKTERO-SK-02", "FAKTERO-SK-03"]));
-    // Bez Peppol id generátor dáva odberateľovi e-mail (EM) — ten Peppol nepozná.
-    const em = xmlZ({
+    // E-mail (EM) Peppol nepozná — kontrola ho nájde, keď ho niekto podstrčí.
+    expect(chyby(dobre.replace('schemeID="0245">4286179504', 'schemeID="EM">a@b.sk'))).toContain(
+      "PEPPOL-EN16931-CL008",
+    );
+    // Generátor ho už nedáva: bez DIČ a IČ DPH adresa chýba a hlási sa R010.
+    const bezId = xmlZ({
       invoice: faktura({ customer_dic: null, customer_ic_dph: null, customer_email: "a@b.sk" }),
     });
-    expect(chyby(em)).toContain("PEPPOL-EN16931-CL008");
+    expect(bezId).not.toContain('schemeID="EM"');
+    expect(chyby(bezId)).toContain("PEPPOL-EN16931-R010");
+    // Zahraničný odberateľ dostane schému podľa krajiny IČ DPH a prejde.
+    const de = xmlZ({
+      invoice: faktura({
+        customer_dic: null,
+        customer_ic_dph: "DE123456789",
+        customer_country: "DE",
+      }),
+    });
+    expect(de).toContain('schemeID="9930">DE123456789');
+    expect(
+      chyby(de).filter((c) => c.startsWith("PEPPOL-EN16931-CL") || c === "PEPPOL-EN16931-R010"),
+    ).toEqual([]);
   });
 
   it("dobropis bez pôvodnej faktúry → FAKTERO-SK-07", () => {
