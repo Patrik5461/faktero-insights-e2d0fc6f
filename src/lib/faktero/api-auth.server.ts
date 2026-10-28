@@ -502,6 +502,29 @@ export async function overApiKluc(
   };
 }
 
+/**
+ * GET na endpoint, ktorý ho nemá. Bez neho TanStack vrátil HTML stránku so
+ * stavom 200 — integrátor s nesprávnou metódou si myslel, že všetko prešlo.
+ */
+export function metodaNepovolena(povolene: string) {
+  return new Response(
+    JSON.stringify({
+      error: {
+        code: "method_not_allowed",
+        message: `Tento koncový bod prijíma len ${povolene}.`,
+      },
+    }),
+    {
+      status: 405,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*",
+        allow: `${povolene}, OPTIONS`,
+      },
+    },
+  );
+}
+
 export function ok(body: any, status = 200) {
   return { status, body };
 }

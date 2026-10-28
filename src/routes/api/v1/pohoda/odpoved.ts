@@ -13,6 +13,7 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/v1/pohoda/odpoved")({
   server: {
     handlers: {
+      GET: async () => (await import("@/lib/faktero/api-auth.server")).metodaNepovolena("POST"),
       POST: async ({ request }) => {
         const { overApiKluc } = await import("@/lib/faktero/api-auth.server");
         const kluc = await overApiKluc(request);

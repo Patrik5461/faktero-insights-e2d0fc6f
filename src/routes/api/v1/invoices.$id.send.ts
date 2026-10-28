@@ -18,6 +18,7 @@ const Body = z.object({
 export const Route = createFileRoute("/api/v1/invoices/$id/send")({
   server: {
     handlers: {
+      GET: async () => (await import("@/lib/faktero/api-auth.server")).metodaNepovolena("POST"),
       POST: async ({ request, params }) => {
         const { handleApi, ok, err } = await import("@/lib/faktero/api-auth.server");
         return handleApi(request, async (ctx) => {

@@ -147,6 +147,7 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON objekt, žiadny iný text:
 export const Route = createFileRoute("/api/v1/sklad/parse-delivery-note")({
   server: {
     handlers: {
+      GET: async () => (await import("@/lib/faktero/api-auth.server")).metodaNepovolena("POST"),
       OPTIONS: async () => new Response(null, { status: 204, headers: corsHeaders }),
       POST: async ({ request }) => {
         try {

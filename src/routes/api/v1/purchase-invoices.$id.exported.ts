@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/v1/purchase-invoices/$id/exported")({
   server: {
     handlers: {
+      GET: async () => (await import("@/lib/faktero/api-auth.server")).metodaNepovolena("POST"),
       OPTIONS: async ({ request }) =>
         (await import("@/lib/faktero/api-auth.server")).handleApi(request, async () => ({
           status: 204,
