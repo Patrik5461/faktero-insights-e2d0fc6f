@@ -10,6 +10,7 @@ import {
   pripravPlatby,
   zostavPain001,
   type FakturaNaUhradu,
+  type Preskocena,
 } from "@/lib/faktero/hromadny-prikaz";
 import { useT } from "@/lib/i18n/useT";
 
@@ -39,10 +40,13 @@ function prelozDovod(dovod: string, t: (s: string, p?: Record<string, string | n
 export function HromadnyPrikaz({
   companyId,
   faktury,
+  vynechane,
   onClose,
 }: {
   companyId: string;
   faktury: FakturaNaUhradu[];
+  /** Doklady, ktoré do príkazu nepatria už z povahy (napr. dobropis v Nespracovaných), s dôvodom. */
+  vynechane?: Preskocena[];
   onClose: () => void;
 }) {
   const { t } = useT();
@@ -126,17 +130,16 @@ export function HromadnyPrikaz({
     })();
   }, [faktury, companyId]);
 
-  const { platby, preskocene } = useMemo(
-    () =>
-      pripravPlatby(
-        faktury.map((f) => ({
-          ...f,
-          uhradene: uhrady?.[f.id]?.uhradene ?? 0,
-          zaloha: uhrady?.[f.id]?.zaloha ?? 0,
-        })),
-      ),
-    [faktury, uhrady],
-  );
+  const { platby, preskocene } = useMemo(() => {
+    const p = pripravPlatby(
+      faktury.map((f) => ({
+        ...f,
+        uhradene: uhrady?.[f.id]?.uhradene ?? 0,
+        zaloha: uhrady?.[f.id]?.zaloha ?? 0,
+      })),
+    );
+    return { platby: p.platby, preskocene: [...(vynechane ?? []), ...p.preskocene] };
+  }, [faktury, uhrady, vynechane]);
   const spolu = platby.reduce((s, p) => s + Math.round(p.suma * 100), 0) / 100;
   const dni = new Set(platby.map((p) => datumUhrady(p, { datum, podlaSplatnosti }))).size;
 

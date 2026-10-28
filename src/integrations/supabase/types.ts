@@ -839,6 +839,12 @@ export type Database = {
           transaction_reference: string | null
           variable_symbol: string | null
           zdroj: string | null
+          counterparty_iban: string | null
+          vybavenie: string | null
+          vybavenie_poznamka: string | null
+          vybavenie_pravidlo_id: string | null
+          vybavene_at: string | null
+          vybavil: string | null
         }
         Insert: {
           amount: number
@@ -857,6 +863,12 @@ export type Database = {
           transaction_reference?: string | null
           variable_symbol?: string | null
           zdroj?: string | null
+          counterparty_iban?: string | null
+          vybavenie?: string | null
+          vybavenie_poznamka?: string | null
+          vybavenie_pravidlo_id?: string | null
+          vybavene_at?: string | null
+          vybavil?: string | null
         }
         Update: {
           amount?: number
@@ -875,6 +887,12 @@ export type Database = {
           transaction_reference?: string | null
           variable_symbol?: string | null
           zdroj?: string | null
+          counterparty_iban?: string | null
+          vybavenie?: string | null
+          vybavenie_poznamka?: string | null
+          vybavenie_pravidlo_id?: string | null
+          vybavene_at?: string | null
+          vybavil?: string | null
         }
         Relationships: [
           {
@@ -1652,6 +1670,12 @@ export type Database = {
           kv_clenenie_faktura: string | null
           kv_clenenie_prijata: string | null
           kv_clenenie_doklady: string | null
+          pohoda_predkontacia_zaokruhlenie_plus: string | null
+          pohoda_predkontacia_zaokruhlenie_minus: string | null
+          pohoda_clenenie_dph_zaokruhlenie_plus: string | null
+          pohoda_clenenie_dph_zaokruhlenie_minus: string | null
+          kv_clenenie_zaokruhlenie_plus: string | null
+          kv_clenenie_zaokruhlenie_minus: string | null
         }
         Insert: {
           kurz_de_zdroj?: string
@@ -1768,6 +1792,12 @@ export type Database = {
           kv_clenenie_faktura?: string | null
           kv_clenenie_prijata?: string | null
           kv_clenenie_doklady?: string | null
+          pohoda_predkontacia_zaokruhlenie_plus?: string | null
+          pohoda_predkontacia_zaokruhlenie_minus?: string | null
+          pohoda_clenenie_dph_zaokruhlenie_plus?: string | null
+          pohoda_clenenie_dph_zaokruhlenie_minus?: string | null
+          kv_clenenie_zaokruhlenie_plus?: string | null
+          kv_clenenie_zaokruhlenie_minus?: string | null
         }
         Update: {
           kurz_de_zdroj?: string
@@ -1884,6 +1914,12 @@ export type Database = {
           kv_clenenie_faktura?: string | null
           kv_clenenie_prijata?: string | null
           kv_clenenie_doklady?: string | null
+          pohoda_predkontacia_zaokruhlenie_plus?: string | null
+          pohoda_predkontacia_zaokruhlenie_minus?: string | null
+          pohoda_clenenie_dph_zaokruhlenie_plus?: string | null
+          pohoda_clenenie_dph_zaokruhlenie_minus?: string | null
+          kv_clenenie_zaokruhlenie_plus?: string | null
+          kv_clenenie_zaokruhlenie_minus?: string | null
         }
         Relationships: []
       }
@@ -3463,6 +3499,7 @@ export type Database = {
           auto_uctovanie_at: string | null
           doklado_id: string | null
           external_id: string | null
+          odosielatel_mailu: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -3527,6 +3564,7 @@ export type Database = {
           auto_uctovanie_at?: string | null
           doklado_id?: string | null
           external_id?: string | null
+          odosielatel_mailu?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -3591,6 +3629,7 @@ export type Database = {
           auto_uctovanie_at?: string | null
           doklado_id?: string | null
           external_id?: string | null
+          odosielatel_mailu?: string | null
         }
         Relationships: [
           {
@@ -4393,11 +4432,17 @@ export type Database = {
           from_email: string | null
           id: string
           prilohy: Json
-          provider_email_id: string
+          provider_email_id: string | null
           received_at: string
           status: string
           subject: string | null
           user_id: string
+          zdroj: string
+          file_path: string | null
+          file_name: string | null
+          file_mime: string | null
+          file_size: number | null
+          ai: Json | null
         }
         Insert: {
           company_id?: string | null
@@ -4405,11 +4450,17 @@ export type Database = {
           from_email?: string | null
           id?: string
           prilohy?: Json
-          provider_email_id: string
+          provider_email_id?: string | null
           received_at?: string
           status?: string
           subject?: string | null
           user_id: string
+          zdroj?: string
+          file_path?: string | null
+          file_name?: string | null
+          file_mime?: string | null
+          file_size?: number | null
+          ai?: Json | null
         }
         Update: {
           company_id?: string | null
@@ -4417,11 +4468,17 @@ export type Database = {
           from_email?: string | null
           id?: string
           prilohy?: Json
-          provider_email_id?: string
+          provider_email_id?: string | null
           received_at?: string
           status?: string
           subject?: string | null
           user_id?: string
+          zdroj?: string
+          file_path?: string | null
+          file_name?: string | null
+          file_mime?: string | null
+          file_size?: number | null
+          ai?: Json | null
         }
         Relationships: []
       }
@@ -4537,6 +4594,7 @@ export type Database = {
           updated_at: string
           zdroj: string
           doklado_id: string | null
+          cez_rozdelovac: boolean
         }
         Insert: {
           ai?: Json | null
@@ -4556,6 +4614,7 @@ export type Database = {
           updated_at?: string
           zdroj?: string
           doklado_id?: string | null
+          cez_rozdelovac?: boolean
         }
         Update: {
           ai?: Json | null
@@ -4575,6 +4634,7 @@ export type Database = {
           updated_at?: string
           zdroj?: string
           doklado_id?: string | null
+          cez_rozdelovac?: boolean
         }
         Relationships: []
       }
@@ -6175,6 +6235,8 @@ export type Database = {
           druhy_dokladov: string[]
           kategoria: string | null
           pomer: Json | null
+          typ_dokladu: string | null
+          typ_platby: string | null
         }
         Insert: {
           agenda?: string
@@ -6193,6 +6255,8 @@ export type Database = {
           druhy_dokladov?: string[]
           kategoria?: string | null
           pomer?: Json | null
+          typ_dokladu?: string | null
+          typ_platby?: string | null
         }
         Update: {
           agenda?: string
@@ -6211,6 +6275,8 @@ export type Database = {
           druhy_dokladov?: string[]
           kategoria?: string | null
           pomer?: Json | null
+          typ_dokladu?: string | null
+          typ_platby?: string | null
         }
         Relationships: []
       }
@@ -6687,6 +6753,7 @@ export type Database = {
           auto_uctovanie_at: string | null
           doklado_id: string | null
           external_id: string | null
+          odosielatel_mailu: string | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -6797,6 +6864,7 @@ export type Database = {
           auto_uctovanie_at?: string | null
           doklado_id?: string | null
           external_id?: string | null
+          odosielatel_mailu?: string | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -6907,6 +6975,7 @@ export type Database = {
           auto_uctovanie_at?: string | null
           doklado_id?: string | null
           external_id?: string | null
+          odosielatel_mailu?: string | null
         }
         Relationships: [
           {
@@ -9942,6 +10011,13 @@ export type Database = {
           bankovy_ucet: string | null
           smer: string | null
           oznacenie: string | null
+          odosielatel_text: string | null
+          krajina: string | null
+          variabilny_symbol: string | null
+          pokladna: string | null
+          rozuctovanie: Json | null
+          iban_protistrany: string | null
+          bez_dokladu: boolean
         }
         Insert: {
           id?: string
@@ -9968,6 +10044,13 @@ export type Database = {
           bankovy_ucet?: string | null
           smer?: string | null
           oznacenie?: string | null
+          odosielatel_text?: string | null
+          krajina?: string | null
+          variabilny_symbol?: string | null
+          pokladna?: string | null
+          rozuctovanie?: Json | null
+          iban_protistrany?: string | null
+          bez_dokladu?: boolean
         }
         Update: {
           id?: string
@@ -9994,6 +10077,13 @@ export type Database = {
           bankovy_ucet?: string | null
           smer?: string | null
           oznacenie?: string | null
+          odosielatel_text?: string | null
+          krajina?: string | null
+          variabilny_symbol?: string | null
+          pokladna?: string | null
+          rozuctovanie?: Json | null
+          iban_protistrany?: string | null
+          bez_dokladu?: boolean
         }
         Relationships: [
           {
@@ -10780,6 +10870,67 @@ export type Database = {
           }
         ]
       }
+
+      predlohy_uctovania: {
+        Row: {
+          id: string
+          company_id: string
+          nazov: string
+          druh: string | null
+          predkontacia: string | null
+          clenenie_dph: string | null
+          kv_clenenie: string | null
+          pokladna: string | null
+          rad: string | null
+          poznamka: string | null
+          poradie: number
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          nazov: string
+          druh?: string | null
+          predkontacia?: string | null
+          clenenie_dph?: string | null
+          kv_clenenie?: string | null
+          pokladna?: string | null
+          rad?: string | null
+          poznamka?: string | null
+          poradie?: number
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          nazov?: string
+          druh?: string | null
+          predkontacia?: string | null
+          clenenie_dph?: string | null
+          kv_clenenie?: string | null
+          pokladna?: string | null
+          rad?: string | null
+          poznamka?: string | null
+          poradie?: number
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predlohy_uctovania_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+
     }
     Views: {
       stock_items_with_availability: {

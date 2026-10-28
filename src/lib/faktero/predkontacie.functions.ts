@@ -35,7 +35,9 @@ export const predkontacieFn = createServerFn({ method: "POST" })
     const [{ data: zaznamy, error }, { data: firma }] = await Promise.all([
       supabase
         .from("predkontacie")
-        .select("id, druh, kod, popis, agenda, ucet_md, ucet_d, zdroj, aktivne, druhy_dokladov, kategoria, pomer, updated_at")
+        .select(
+          "id, druh, kod, popis, agenda, ucet_md, ucet_d, zdroj, aktivne, druhy_dokladov, kategoria, pomer, typ_dokladu, typ_platby, updated_at",
+        )
         .eq("company_id", data.company_id)
         .order("kod"),
       supabase.from("companies").select(STLPCE_FIRMY).eq("id", data.company_id).maybeSingle(),
@@ -71,6 +73,9 @@ export const ulozPredkontaciuFn = createServerFn({ method: "POST" })
         druhy_dokladov: z.array(z.string().max(20)).max(20).optional(),
         kategoria: kratke(40),
         pomer: z.any().optional().nullable(),
+        /** Účtovná položka len pre faktúru či bloček a typ platby (prázdne = všetky). */
+        typ_dokladu: z.enum(["faktura", "blocek"]).optional().nullable(),
+        typ_platby: z.enum(["hotovost", "karta", "prevod"]).optional().nullable(),
       })
       .parse(d),
   )
@@ -84,6 +89,9 @@ export const ulozPredkontaciuFn = createServerFn({ method: "POST" })
       pomer,
       druhy_dokladov: data.druhy_dokladov ?? [],
       kategoria: data.kategoria,
+      // Typ dokladu a platby dáva zmysel len pri predkontácii.
+      typ_dokladu: data.druh === "predkontacia" ? (data.typ_dokladu ?? null) : null,
+      typ_platby: data.druh === "predkontacia" ? (data.typ_platby ?? null) : null,
       company_id: data.company_id,
       druh: data.druh,
       kod: data.kod,
@@ -151,6 +159,8 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
             dodaciList: z.boolean(),
             // Bez neho zod pole zahodil a vypnutie sa nikdy neuložilo.
             domacaMena: z.boolean().optional(),
+            typPodlaIban: z.boolean().optional(),
+            predponyObjednavky: z.array(z.string().max(20)).max(10).optional(),
           })
           .optional(),
       })
@@ -311,7 +321,9 @@ export const kopirujNastaveniaFn = createServerFn({ method: "POST" })
     const { data: zaznamy } = data.ciselnik
       ? await supabase
           .from("predkontacie")
-          .select("druh, kod, popis, agenda, ucet_md, ucet_d, zdroj, aktivne, druhy_dokladov, kategoria, pomer")
+          .select(
+            "druh, kod, popis, agenda, ucet_md, ucet_d, zdroj, aktivne, druhy_dokladov, kategoria, pomer, typ_dokladu, typ_platby",
+          )
           .eq("company_id", data.company_id)
       : { data: [] };
     const STLPCE = [

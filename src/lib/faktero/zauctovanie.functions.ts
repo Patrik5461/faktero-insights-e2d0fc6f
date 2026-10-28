@@ -45,7 +45,9 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
           .maybeSingle(),
         supabase
           .from("predkontacie")
-          .select("druh, kod, popis, agenda, ucet_md, ucet_d, aktivne, druhy_dokladov, kategoria, pomer")
+          .select(
+            "druh, kod, popis, agenda, ucet_md, ucet_d, aktivne, druhy_dokladov, kategoria, pomer, typ_dokladu, typ_platby",
+          )
           .eq("company_id", data.company_id),
         supabase.from("pravidla_uctovania").select("predkontacia, clenenie_dph").eq("company_id", data.company_id),
         supabase

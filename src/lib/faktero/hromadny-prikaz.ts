@@ -94,7 +94,7 @@ export function jeRfReferencia(v: string): boolean {
 }
 
 /** Spôsoby úhrady, pri ktorých sa už nič neposiela — zaplatené na mieste. */
-const ZAPLATENE_NA_MIESTE = new Set(["hotovost", "karta", "dobierka", "zapocet"]);
+export const ZAPLATENE_NA_MIESTE = new Set(["hotovost", "karta", "dobierka", "zapocet"]);
 
 const iba = (v: string | null | undefined, n: number) =>
   String(v ?? "")

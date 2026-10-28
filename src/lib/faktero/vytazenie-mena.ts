@@ -15,6 +15,8 @@ import { domacaMena } from "./kurzy";
 export type VolbyCitania = {
   /** Domáca mena firmy, ktorú má AI uprednostniť (null = neuprednostňovať). */
   domacaMena?: string | null;
+  /** Predpony čísla objednávky firmy (nastavenie Nespracovaných), napr. „OBJ-", „PO". */
+  predponyObjednavky?: string[] | null;
 };
 
 /** Mena, ktorú má vyťaženie uprednostniť — podľa nastavenia a krajiny firmy. */
@@ -42,9 +44,28 @@ Keď je doklad len v jednej mene, sumy ani menu nemeň, nič neprepočítavaj s�
 "items_currency", "original_currency" aj "original_amount_total" nechaj null.`;
 }
 
-/** Celý pokyn pre AI — základný pokyn a prípadný doplnok o domácej mene. */
+/** Doplnok pokynu o predponách čísla objednávky (prázdny bez predpôn). */
+export function pokynPredponObjednavky(predpony: string[] | null | undefined): string {
+  const p = (predpony ?? [])
+    .map((x) =>
+      String(x ?? "")
+        .trim()
+        .replace(/["\\\n\r]/g, "")
+        .slice(0, 20),
+    )
+    .filter(Boolean)
+    .slice(0, 10);
+  if (!p.length) return "";
+  return `
+Číslo objednávky: firma čísluje svoje objednávky s predponou ${p.map((x) => `„${x}"`).join(", ")}.
+Keď je na doklade číslo začínajúce niektorou z nich (napr. v texte, poznámke či položke),
+daj ho do "order_number" celé aj s predponou.`;
+}
+
+/** Celý pokyn pre AI — základný pokyn a prípadné doplnky (domáca mena, predpony objednávky). */
 export function pokynCitania(zaklad: string, volby?: VolbyCitania | null): string {
-  const doplnok = pokynDomacejMeny(volby?.domacaMena);
+  const doplnok =
+    pokynDomacejMeny(volby?.domacaMena) + pokynPredponObjednavky(volby?.predponyObjednavky);
   if (!doplnok) return zaklad;
   // Záverečná veta „nič si nevymýšľaj“ má ostať posledná.
   const zaver = "Čo na doklade nie je, nechaj null — nič si nevymýšľaj.";

@@ -16,6 +16,7 @@ export type KodOznacenia =
   | "poplatok"
   | "urok"
   | "dan"
+  | "transakcna_dan"
   | "mzda"
   | "splatka"
   | "najom"
@@ -29,6 +30,8 @@ export const OZNACENIA: { kod: KodOznacenia; nazov: string }[] = [
   { kod: "poplatok", nazov: "Bankový poplatok" },
   { kod: "urok", nazov: "Úrok" },
   { kod: "dan", nazov: "Daň a odvody" },
+  // Zákon 235/2024 Z. z. — banka ju strháva sama, doklad k nej nie je.
+  { kod: "transakcna_dan", nazov: "Transakčná daň" },
   { kod: "mzda", nazov: "Mzda" },
   { kod: "splatka", nazov: "Splátka úveru alebo leasingu" },
   { kod: "najom", nazov: "Nájom" },
@@ -67,6 +70,8 @@ function holy(v: unknown): string {
   je nájom. Čo je vpredu, vyhráva.
 */
 const PODLA_TEXTU: [KodOznacenia, RegExp][] = [
+  // Pred „daňou“ — transakčná daň sa účtuje inak než daň z príjmu či DPH.
+  ["transakcna_dan", /transakcn[a-z]*\s+dan|transaction\s+tax/],
   [
     "dan",
     /\bdan\b|\bdane\b|\bdph\b|financna sprava|danovy urad|socialna poistovna|zdravotna poistovna|\bodvod/,
@@ -148,6 +153,7 @@ export function ucelCamt(
     case "faktura":
       return { cd: smer === "vydaj" ? "SUPP" : "TRAD" };
     case "dan":
+    case "transakcna_dan":
       return { cd: "TAXS" };
     case "mzda":
       return { cd: "SALA" };

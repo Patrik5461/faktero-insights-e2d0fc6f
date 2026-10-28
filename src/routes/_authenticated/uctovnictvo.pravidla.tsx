@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, GripVertical, Loader2, Pencil, Plus, Trash2, Wand2 } from "lucide-react";
 import { AutopilotKarta } from "@/components/faktero/AutopilotKarta";
+import { PredlohyUctovania } from "@/components/faktero/PredlohyUctovania";
+import { PomerEditor, type PomerHodnota } from "@/components/faktero/PomerEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -16,6 +18,7 @@ import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import { KV_CLENENIA, KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { OZNACENIA } from "@/lib/faktero/vypis-oznacenie";
+import { uplatniPravidlaBankyFn } from "@/lib/faktero/pohyb-vybavenie.functions";
 import {
   DRUHY_PRAVIDIEL,
   SMERY_POHYBU,
@@ -30,6 +33,7 @@ import {
   PREMENNE_POZNAMKY,
   premennePoznamky,
   pravidloSedi,
+  krajinaDokladu,
   type DokladNaPorovnanie,
   type Pravidlo,
 } from "@/lib/faktero/pravidla-uctovania";
@@ -47,6 +51,17 @@ type Hladanie = {
   clenenie?: string;
   kv?: string;
   kategoria?: string;
+  /** Odosielateľ mailu a VS dokladu — podmienka, alebo ponuka na pridanie. */
+  email?: string;
+  vs?: string;
+  pokladna?: string;
+  /** Otvoriť existujúce pravidlo na úpravu (podobné už je). */
+  upravit?: string;
+  /** Banka — „Vytvoriť pravidlo z tohto pohybu“: IBAN a VS protistrany, smer, protistrana. */
+  iban?: string;
+  smer?: string;
+  bvs?: string;
+  protistrana?: string;
 };
 const text = (v: unknown) =>
   typeof v === "string" && v.trim() ? v.trim().slice(0, 200) : undefined;
@@ -63,17 +78,26 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/pravidla")({
     clenenie: text(s.clenenie),
     kv: text(s.kv),
     kategoria: text(s.kategoria),
+    email: text(s.email),
+    vs: text(s.vs),
+    pokladna: text(s.pokladna),
+    upravit: text(s.upravit),
+    iban: text(s.iban),
+    smer: s.smer === "prijem" || s.smer === "vydaj" ? s.smer : undefined,
+    bvs: text(s.bvs),
+    protistrana: text(s.protistrana),
   }),
   component: PravidlaPage,
 });
 
-type Zalozka = "vsetky" | DruhPravidla;
+type Zalozka = "vsetky" | DruhPravidla | "predlohy";
 const ZALOZKY: { kod: Zalozka; nazov: string }[] = [
   { kod: "vsetky", nazov: "Všetky" },
   { kod: "blocek", nazov: "Bločky" },
   { kod: "prijata", nazov: "Prijaté faktúry" },
   { kod: "vystavena", nazov: "Vystavené faktúry" },
   { kod: "banka", nazov: "Banka" },
+  { kod: "predlohy", nazov: "Predlohy" },
 ];
 /** Patrí pravidlo do záložky? Pôvodné pravidlá (bez druhu) sú v bločkoch aj prijatých. */
 const vZalozke = (r: Pravidlo, z: Zalozka) =>
@@ -127,22 +151,47 @@ function PravidlaPage() {
   const [ucty, setUcty] = useState<string[]>([]);
   const hladanie = Route.useSearch();
   const navigate = Route.useNavigate();
+  /* Návrhy podmienok z dokladu (e-mail, VS), keď pravidlo už má partnera. */
+  const [navrhPodmienok, setNavrhPodmienok] = useState<{ email?: string; vs?: string }>({});
   /* Prišiel z dokladu cez „Vytvoriť pravidlo" — formulár sa otvorí predvyplnený. */
   useEffect(() => {
     if (!hladanie.novy) return;
+    /* Z detailu bankového pohybu — pravidlo „Spárované bez dokladu“. */
+    if (hladanie.novy === "banka") {
+      setUprava({
+        ...NOVE,
+        druh: "banka",
+        nazov: hladanie.nazov ?? (hladanie.bvs ? `VS ${hladanie.bvs}` : (hladanie.iban ?? "")),
+        smer: (hladanie.smer as Pravidlo["smer"]) ?? null,
+        iban_protistrany: hladanie.iban ?? null,
+        variabilny_symbol: hladanie.bvs ?? null,
+        dodavatel_text: hladanie.protistrana ?? null,
+        bez_dokladu: true,
+      });
+      setZalozka("banka");
+      void navigate({ search: {}, replace: true });
+      return;
+    }
     const druh =
       (["blocek", "prijata", "vystavena"] as const).find((d) => d === hladanie.novy) ?? null;
+    // Bez partnera sa podmienkou stane e-mail alebo stály VS; s partnerom sa len ponúknu.
+    const partner = Boolean(hladanie.ico || hladanie.nazov);
+    const vs = druh === "prijata" ? hladanie.vs : undefined;
     setUprava({
       ...NOVE,
       druh,
-      nazov: hladanie.nazov ?? "",
+      nazov: hladanie.nazov ?? hladanie.email ?? (vs ? `VS ${vs}` : ""),
       dodavatel_text: hladanie.ico ? null : (hladanie.nazov ?? null),
       dodavatel_ico: hladanie.ico ?? null,
+      odosielatel_text: partner ? null : (hladanie.email ?? null),
+      variabilny_symbol: partner || hladanie.email ? null : (vs ?? null),
       predkontacia: hladanie.predkontacia ?? null,
       clenenie_dph: hladanie.clenenie ?? null,
       kv_clenenie: hladanie.kv ?? null,
       kategoria: druh === "vystavena" ? null : (hladanie.kategoria ?? null),
+      pokladna: druh === "blocek" ? (hladanie.pokladna ?? null) : null,
     });
+    setNavrhPodmienok(partner ? { email: hladanie.email, vs } : hladanie.email ? { vs } : {});
     if (druh) setZalozka(druh);
     void navigate({ search: {}, replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -157,6 +206,7 @@ function PravidlaPage() {
       { data: vf },
       { data: u1 },
       { data: u2 },
+      { data: firma },
     ] = await Promise.all([
       supabase
         .from("pravidla_uctovania")
@@ -167,14 +217,16 @@ function PravidlaPage() {
       // Na náhľad, koľkých dokladov by sa pravidlo týkalo.
       supabase
         .from("expense_documents")
-        .select("supplier_ico, supplier_name, payment_method, created_by, predmet_mailu")
+        .select(
+          "supplier_ico, supplier_name, supplier_ic_dph, payment_method, created_by, predmet_mailu, odosielatel_mailu",
+        )
         .eq("company_id", cid)
         .order("created_at", { ascending: false })
         .limit(1000),
       supabase
         .from("purchase_invoices")
         .select(
-          "supplier_ico, supplier_name, payment_method, created_by, predmet_mailu, type, amount_total, opravuje_cislo",
+          "supplier_ico, supplier_name, supplier_ic_dph, supplier_country, payment_method, created_by, predmet_mailu, odosielatel_mailu, variable_symbol, type, amount_total, opravuje_cislo",
         )
         .eq("company_id", cid)
         .is("deleted_at", null)
@@ -189,15 +241,25 @@ function PravidlaPage() {
         .limit(1000),
       supabase.from("company_bank_accounts").select("iban").eq("company_id", cid),
       supabase.from("bank_accounts").select("iban").eq("company_id", cid),
+      supabase.from("companies").select("country").eq("id", cid).maybeSingle(),
     ]);
+    const krajinaFirmy = (firma?.country as string | null) ?? null;
     if (error) toast.error(error.message);
     setPravidla((p ?? []) as unknown as Riadok[]);
     setDoklady([
-      ...((d ?? []) as DokladNaPorovnanie[]).map((x) => ({ ...x, druh: "blocek" as const })),
+      ...((d ?? []) as any[]).map((x) => ({
+        ...x,
+        druh: "blocek" as const,
+        krajina: krajinaDokladu(null, x.supplier_ic_dph),
+        krajina_firmy: krajinaFirmy,
+      })),
       ...((pf ?? []) as any[]).map((x) => ({
         ...x,
         druh: "prijata" as const,
         typ: typPrijatej(x.type, x.amount_total, x.opravuje_cislo),
+        krajina: krajinaDokladu(x.supplier_country, x.supplier_ic_dph),
+        krajina_firmy: krajinaFirmy,
+        variabilny_symbol: x.variable_symbol,
       })),
       ...((vf ?? []) as any[]).map((x) => ({
         supplier_ico: x.customer_ico,
@@ -224,6 +286,18 @@ function PravidlaPage() {
   useEffect(() => {
     void nacitaj();
   }, [nacitaj]);
+
+  /* Odkaz „Upraviť pravidlo" z dokladu — podobné pravidlo už je, otvorí sa ono. */
+  useEffect(() => {
+    if (!hladanie.upravit || !pravidla) return;
+    const r = pravidla.find((x) => x.id === hladanie.upravit);
+    if (r) {
+      setUprava({ ...r });
+      setZalozka(r.druh ?? "vsetky");
+    }
+    void navigate({ search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hladanie.upravit, pravidla]);
 
   /*
     Poradie ťahaním (alebo šípkami — na dotyk a z klávesnice). Viditeľné
@@ -317,12 +391,16 @@ function PravidlaPage() {
           "Automatické účtovanie: bloček, prijatá aj vystavená faktúra či pohyb v banke dostane predkontáciu, členenie DPH a KV sám — hneď, ako vznikne.",
         )}
         action={
+          zalozka === "predlohy" ? undefined : (
           <button
-            onClick={() => setUprava({ ...NOVE, druh: zalozka === "vsetky" ? null : zalozka })}
+            onClick={() =>
+              setUprava({ ...NOVE, druh: zalozka === "vsetky" ? null : zalozka })
+            }
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             <Plus className="h-4 w-4" /> {t("Nové pravidlo")}
           </button>
+          )
         }
       />
       <PageBody>
@@ -359,13 +437,19 @@ function PravidlaPage() {
                 }`}
               >
                 {t(z.nazov)}
-                {pravidla ? <span className="ml-1 opacity-70">{pocet}</span> : null}
+                {pravidla && z.kod !== "predlohy" ? (
+                  <span className="ml-1 opacity-70">{pocet}</span>
+                ) : null}
               </button>
             );
           })}
         </div>
 
-        {pravidla === null ? (
+        {zalozka === "predlohy" ? (
+          cid ? (
+            <PredlohyUctovania companyId={cid} />
+          ) : null
+        ) : pravidla === null ? (
           <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
           </div>
@@ -533,7 +617,11 @@ function PravidlaPage() {
           pravidlo={uprava}
           doklady={doklady}
           ucty={ucty}
-          onClose={() => setUprava(null)}
+          navrhPodmienok={navrhPodmienok}
+          onClose={() => {
+            setUprava(null);
+            setNavrhPodmienok({});
+          }}
           onUlozene={() => {
             setUprava(null);
             void nacitaj();
@@ -560,6 +648,7 @@ function UpravaPravidla({
   pravidlo,
   doklady,
   ucty,
+  navrhPodmienok = {},
   onClose,
   onUlozene,
 }: {
@@ -567,6 +656,8 @@ function UpravaPravidla({
   pravidlo: Pravidlo;
   doklady: DokladNaPorovnanie[];
   ucty: string[];
+  /** E-mail a VS z dokladu, ktoré sa dajú pridať jedným klikom. */
+  navrhPodmienok?: { email?: string; vs?: string };
   onClose: () => void;
   onUlozene: () => void;
 }) {
@@ -589,6 +680,7 @@ function UpravaPravidla({
   const partner = vystavena ? t("Odberateľ") : t("Dodávateľ");
   const chyba = chybaPravidla(p);
   const nacitajMenaClenov = useServerFn(menaClenovFirmy);
+  const uplatniBanku = useServerFn(uplatniPravidlaBankyFn);
   const [clenovia, setClenovia] = useState<Record<string, string>>({});
   useEffect(() => {
     nacitajMenaClenov({ data: { company_id: companyId } })
@@ -605,7 +697,8 @@ function UpravaPravidla({
     if (chyba) return toast.error(t(chyba));
     setBusy(true);
     try {
-      const riadok = { ...naUlozenie(ocistiPodlaDruhu(p)), updated_at: new Date().toISOString() };
+      // `rozuctovanie` je jsonb — v typoch tabuľky Json, v pravidle neznámy tvar pomeru.
+      const riadok = { ...naUlozenie(ocistiPodlaDruhu(p)), updated_at: new Date().toISOString() } as any;
       const { error } = p.id
         ? await supabase
             .from("pravidla_uctovania")
@@ -618,6 +711,16 @@ function UpravaPravidla({
       toast.success(
         p.id ? t("Pravidlo uložené.") : t("Pravidlo pridané — zaberie pri ďalšom doklade."),
       );
+      /* Pravidlo „Spárované bez dokladu“ vybaví aj staršie nespárované pohyby, nielen nové. */
+      if (riadok.druh === "banka" && riadok.bez_dokladu && riadok.aktivne) {
+        try {
+          const { vybavenych } = await uplatniBanku({ data: { company_id: companyId } });
+          if (vybavenych > 0)
+            toast.success(t("Za vybavené bez dokladu sa označilo {n} starších pohybov.", { n: vybavenych }));
+        } catch {
+          /* nové pohyby pravidlo aj tak vybaví pri príchode */
+        }
+      }
       onUlozene();
     } catch (e) {
       toast.error((e as Error).message);
@@ -724,6 +827,25 @@ function UpravaPravidla({
               />
             </label>
             <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">{t("IBAN protistrany")}</span>
+              <input
+                value={p.iban_protistrany ?? ""}
+                onChange={(e) => zmen({ iban_protistrany: e.target.value })}
+                placeholder={t("Ktorýkoľvek")}
+                className={vstup}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">{t("Variabilný symbol")}</span>
+              <input
+                value={p.variabilny_symbol ?? ""}
+                onChange={(e) => zmen({ variabilny_symbol: e.target.value })}
+                inputMode="numeric"
+                placeholder={t("Akýkoľvek")}
+                className={vstup}
+              />
+            </label>
+            <label className="block text-sm">
               <span className="text-xs text-muted-foreground">{t("Poradie (menšie vyhráva)")}</span>
               <input
                 type="number"
@@ -816,6 +938,43 @@ function UpravaPravidla({
                 />
               </label>
             )}
+            {!vystavena && (
+              <label className="block text-sm">
+                <span className="text-xs text-muted-foreground">{t("E-mail odosielateľa obsahuje")}</span>
+                <input
+                  value={p.odosielatel_text ?? ""}
+                  onChange={(e) => zmen({ odosielatel_text: e.target.value })}
+                  placeholder={t("napr. {x}", { x: "@telekom.sk" })}
+                  className={vstup}
+                />
+              </label>
+            )}
+            {!vystavena && (
+              <label className="block text-sm">
+                <span className="text-xs text-muted-foreground">{t("Krajina dodávateľa")}</span>
+                <input
+                  value={p.krajina ?? ""}
+                  onChange={(e) => zmen({ krajina: e.target.value.toUpperCase().slice(0, 2) })}
+                  placeholder={t("napr. {x}", { x: "CZ" })}
+                  maxLength={2}
+                  className={vstup}
+                />
+              </label>
+            )}
+            {p.druh !== "blocek" && !vystavena && (
+              <label className="block text-sm">
+                <span className="text-xs text-muted-foreground">
+                  {t("Variabilný symbol (stály, napr. zmluva)")}
+                </span>
+                <input
+                  value={p.variabilny_symbol ?? ""}
+                  onChange={(e) => zmen({ variabilny_symbol: e.target.value })}
+                  inputMode="numeric"
+                  placeholder="1234567890"
+                  className={vstup}
+                />
+              </label>
+            )}
             <label className="block text-sm">
               <span className="text-xs text-muted-foreground">{t("Poradie (menšie vyhráva)")}</span>
               <input
@@ -831,10 +990,66 @@ function UpravaPravidla({
           {t(
             "Vyplnené podmienky musia platiť naraz. IČO aj názov sa dajú kombinovať.",
           )}
+          {!banka && !vystavena
+            ? ` ${t("Bez krajiny na doklade platí krajina vašej firmy; VS sa porovnáva len podľa číslic.")}`
+            : ""}
         </p>
+        {!banka && !vystavena && (navrhPodmienok.email || navrhPodmienok.vs) ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted-foreground">{t("Z dokladu:")}</span>
+            {navrhPodmienok.email && !p.odosielatel_text ? (
+              <button
+                type="button"
+                onClick={() => zmen({ odosielatel_text: navrhPodmienok.email ?? null })}
+                className="rounded-md border border-border px-2 py-1 hover:bg-secondary"
+              >
+                + {t("e-mail {x}", { x: navrhPodmienok.email })}
+              </button>
+            ) : null}
+            {navrhPodmienok.vs && p.druh !== "blocek" && !p.variabilny_symbol ? (
+              <button
+                type="button"
+                onClick={() => zmen({ variabilny_symbol: navrhPodmienok.vs ?? null })}
+                className="rounded-md border border-border px-2 py-1 hover:bg-secondary"
+              >
+                + {t("VS {x}", { x: navrhPodmienok.vs })}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="mt-5 text-sm font-medium">{t("…doplní sa")}</div>
         <div className="mt-2 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
+          {banka && (
+            <label className="block text-sm">
+              <span className="font-medium">{t("Párovanie")}</span>
+              <select
+                value={p.bez_dokladu ? "bez_dokladu" : ""}
+                onChange={(e) => zmen({ bez_dokladu: e.target.value === "bez_dokladu" })}
+                className={vstupZauctovania}
+              >
+                <option value="">{t("Nedefinované")}</option>
+                <option value="bez_dokladu">{t("Spárované bez dokladu")}</option>
+              </select>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                {t(
+                  "Pohyb sa pri príchode z banky označí za vybavený a nebude čakať na doklad — poplatky banky, mzdy, odvody poisťovniam. Predkontácia je potom nepovinná a použije sa vo výpise do Pohody.",
+                )}
+              </span>
+            </label>
+          )}
+          {banka && p.bez_dokladu && (
+            <label className="block text-sm">
+              <span className="font-medium">{t("Poznámka k pohybu")}</span>
+              <input
+                value={p.poznamka ?? ""}
+                maxLength={100}
+                onChange={(e) => zmen({ poznamka: e.target.value })}
+                placeholder={t("napr. Odvody #MM-1/YYYY#")}
+                className={vstupZauctovania}
+              />
+            </label>
+          )}
           {!banka && !vystavena && (
             <label className="block text-sm">
               <span className="font-medium">{t("Kategória")}</span>
@@ -908,6 +1123,34 @@ function UpravaPravidla({
                 <option value="nie">{t("Bez odpočtu (napr. reprezentácia)")}</option>
               </select>
             </label>
+          )}
+          {p.druh === "blocek" || p.druh === null ? (
+            <label className="block text-sm">
+              <span className="font-medium">{t("Pokladňa (hotovostný bloček)")}</span>
+              <KodPohody
+                value={p.pokladna ?? ""}
+                onChange={(v) => zmen({ pokladna: v })}
+                moznosti={kody?.pokladne ?? []}
+                placeholder={t("napr. {x}", { x: "HP" })}
+                className={vstupZauctovania}
+                vyber
+              />
+            </label>
+          ) : null}
+          {!banka && !vystavena && (
+            <div className="text-sm">
+              <PomerEditor
+                value={(p.rozuctovanie ?? null) as PomerHodnota}
+                onChange={(v) => zmen({ rozuctovanie: v })}
+                predkontacie={kody?.predkontacie ?? []}
+                clenenia={kody?.clenenia ?? []}
+              />
+              <span className="mt-1 block text-xs text-muted-foreground">
+                {t(
+                  "Rozúčtovanie na položky: doklad sa pri odovzdaní rozdelí na časti s vlastnou predkontáciou v tomto pomere — sumy sa dopočítajú z rozpisu DPH dokladu.",
+                )}
+              </span>
+            </div>
           )}
           {!banka && !vystavena && (
             <label className="block text-sm sm:col-span-2">

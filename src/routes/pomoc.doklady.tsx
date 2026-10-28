@@ -139,6 +139,20 @@ const sections: HelpSection[] = [
           len v cudzej mene, položky čakajú vypnuté a doklad ide podľa súčtov.
         </p>
         <p>
+          Voľba <strong>Automaticky určiť typ faktúry podľa firemných IBAN-ov</strong>: keď je na
+          faktúre ako príjemca platby IBAN niektorého vášho bankového účtu, je to vaša vystavená
+          faktúra. Faktero ju výrazne označí, ponúkne uložiť ju ako iný doklad alebo zmazať a medzi
+          prijaté ju založí len po potvrdení. V <strong>Predponách čísla objednávky</strong> zadáte,
+          ako začínajú čísla vašich objednávok (napr. OBJ-, PO) — také číslo sa pri vyťažení zapíše
+          do poľa Číslo objednávky.
+        </p>
+        <p>
+          V náhľade PDF sú <strong>modrým rámčekom</strong> vyznačené miesta, odkiaľ sa vzali číslo
+          faktúry, VS, IBAN, IČO, DIČ, IČ DPH, dátumy a suma. Keď kliknete do poľa, jeho miesto sa
+          zvýrazní silnejšie a náhľad sa naň posunie. Zvýraznenie vypnete ikonou zvýrazňovača nad
+          náhľadom. Pri fotkách a skenoch bez textu sa nič nevyznačí.
+        </p>
+        <p>
           Keď sú položky vyčítané úplne zle, stlačte <strong>Vypnúť položky</strong>. Doklad sa
           potom vytvorí a zaúčtuje len podľa súčtov a rozpisu DPH — rozúčtovanie, export do Pohody
           aj výkazy k DPH položky nepoužijú. To isté tlačidlo je aj v detaile prijatej faktúry a
@@ -446,6 +460,18 @@ const sections: HelpSection[] = [
           prípadne <strong>Zahodiť</strong>. Rozdeľovač sa dá vypnúť a adresa vymeniť za novú.
           Potvrdenie preposielania z Gmailu treba nastaviť na adresu konkrétnej firmy, nie na
           rozdeľovač.
+        </p>
+        <p>
+          <strong>Nahrať do ktorejkoľvek firmy.</strong> Rozdeľovač je aj v{" "}
+          <Link to="/firmy">Správe firiem</Link> a ukáže sa každému, kto má prístup aspoň k dvom
+          firmám. Tlačidlom <strong>Nahrať do ktorejkoľvek firmy</strong> vyberiete PDF alebo fotky
+          dokladov (do 15 MB) bez prepínania firiem. Firmu Faktero určí podľa odberateľa na doklade
+          — IČO, IČ DPH a DIČ; až keď na doklade nie sú, podľa IBAN platiteľa alebo názvu. Doklad
+          pôjde do <em>Nespracovaných</em> tej firmy s poznámkou, podľa čoho ho rozdeľovač zaradil.
+          Vyberá sa len z firiem, v ktorých smiete upravovať doklady, a firma, ktorá doklad sama
+          vystavila, sa za odberateľa nepovažuje. Keď sedí viac firiem alebo si údaje odporujú,
+          doklad počká v zozname <em>Nepriradené doklady</em> a firmy, na ktoré sedí, sú vo výbere
+          označené hviezdičkou.
         </p>
       </>
     ),

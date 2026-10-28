@@ -5,7 +5,7 @@ import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Upload, AlertTriangle, FileText } from "lucide-react";
+import { Loader2, Upload, AlertTriangle, FileText, Landmark } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
@@ -13,8 +13,13 @@ import {
   hromadneNespracovaneFn,
   nahrajNespracovaneFn,
   nespracovaneFn,
+  nespracovaneNaUhraduFn,
   zmazNespracovaneFn,
 } from "@/lib/faktero/nespracovane.functions";
+import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
+import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
+import { polozkaNespracovaneho } from "@/lib/faktero/suhrn-vyberu";
+import type { FakturaNaUhradu, Preskocena } from "@/lib/faktero/hromadny-prikaz";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { potvrd } from "@/lib/potvrdenie";
 import { DRUHY_NESPRACOVANYCH } from "@/lib/faktero/nespracovane";
@@ -74,6 +79,10 @@ function Stranka() {
   const [vybrane, setVybrane] = useState<Set<string>>(new Set());
   const [zmena, setZmena] = useState({ druh: "", jobId: "", stredisko: "", cinnost: "", predkontacia: "", clenenie: "" });
   const [hromadneBusy, setHromadneBusy] = useState(false);
+  // Hromadný príkaz na úhradu z označených — IBAN, symboly a suma z vyčítaných údajov.
+  const naUhraduFn = useServerFn(nespracovaneNaUhraduFn);
+  const [prikaz, setPrikaz] = useState<{ faktury: FakturaNaUhradu[]; vynechane: Preskocena[] } | null>(null);
+  const [prikazBusy, setPrikazBusy] = useState(false);
   // Naposledy otvorený doklad — zvýraznený riadok po návrate z detailu.
   const posledny = usePoslednyOtvoreny("nespracovane");
   // Mená kolegov pre stĺpec „Nahral“ (profily číta server po overení členstva).
@@ -156,6 +165,9 @@ function Stranka() {
 
   // „Vybrať všetky“ berie len zobrazené — skrytý doklad sa nesmie hromadne zmeniť ani zmazať.
   const vyberatelne = zobrazene.filter((r) => r.typ === "nespracovany" && r.stav !== "cita");
+  // Lišta výberu — len zobrazené a vybrané nespracované doklady.
+  const vybraneSuhrn = vyberatelne.filter((r) => vybrane.has(r.id)).map((r: any) => polozkaNespracovaneho(r));
+  const naUhraduPocet = vybraneSuhrn.filter((p) => p.naUhradu).length;
   const prepniVyber = (id: string) =>
     setVybrane((p) => {
       const n = new Set(p);
@@ -180,6 +192,27 @@ function Stranka() {
       toast.error(e?.message ?? t("Nepodarilo sa"));
     } finally {
       setHromadneBusy(false);
+    }
+  }
+
+  async function uhradVybrane() {
+    const cid = getActiveCompanyId();
+    if (!cid || !vybrane.size) return;
+    setPrikazBusy(true);
+    try {
+      const doklady = await naUhraduFn({ data: { company_id: cid, ids: [...vybrane] } });
+      const vynechane: Preskocena[] = [];
+      const faktury: FakturaNaUhradu[] = [];
+      for (const d of doklady) {
+        const { dovod, ...f } = d;
+        if (dovod) vynechane.push({ id: f.id, cisloFaktury: f.invoice_number || t("bez čísla"), dovod });
+        else faktury.push(f);
+      }
+      setPrikaz({ faktury, vynechane });
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa načítať"));
+    } finally {
+      setPrikazBusy(false);
     }
   }
 
@@ -472,7 +505,17 @@ function Stranka() {
               className={`block cursor-pointer rounded-xl border border-border p-3 hover:bg-muted/30 ${posledny.karta(r.id).className || "bg-card"}`}
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
+                {r.typ === "nespracovany" && r.stav !== "cita" ? (
+                  <input
+                    type="checkbox"
+                    aria-label={t("Vybrať doklad")}
+                    checked={vybrane.has(r.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={() => prepniVyber(r.id)}
+                    className="mt-1 h-4 w-4 shrink-0"
+                  />
+                ) : null}
+                <div className="min-w-0 flex-1">
                   <div className="font-medium">{druhText(r)}</div>
                   {r.subor ? <div className="truncate text-xs text-muted-foreground">{r.subor}</div> : null}
                 </div>
@@ -492,6 +535,33 @@ function Stranka() {
             </div>
           ))}
         </div>
+
+        {/* Súčet označených + úhrada z výberu (lišta drží spodok obrazovky). */}
+        <SuctovaListaVyberu
+          polozky={vybraneSuhrn}
+          exportNazov={t("Nezaúčtované:")}
+          onZrusit={() => setVybrane(new Set())}
+          akcie={
+            <button
+              type="button"
+              onClick={() => void uhradVybrane()}
+              disabled={prikazBusy || !naUhraduPocet}
+              title={t("Pripraví hromadný príkaz na úhradu (SEPA XML) z označených dokladov. Doklad bez IBAN-u sa vynechá.")}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {prikazBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Landmark className="h-3.5 w-3.5" />}{" "}
+              {t("Uhradiť ({n})", { n: naUhraduPocet })}
+            </button>
+          }
+        />
+        {prikaz && getActiveCompanyId() ? (
+          <HromadnyPrikaz
+            companyId={getActiveCompanyId()!}
+            faktury={prikaz.faktury}
+            vynechane={prikaz.vynechane}
+            onClose={() => setPrikaz(null)}
+          />
+        ) : null}
       </PageBody>
     </>
   );

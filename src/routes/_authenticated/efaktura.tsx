@@ -11,6 +11,7 @@ const TABS = [
   { to: "/efaktura/odoslane", label: "smer::Odoslané" },
   { to: "/efaktura/prijate", label: "smer::Prijaté" },
   { to: "/efaktura/dorucenia", label: "Doručenia" },
+  { to: "/efaktura/kontrola", label: "Kontrola XML" },
 ] as const;
 
 function EfakturaLayout() {

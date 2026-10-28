@@ -64,6 +64,8 @@ import { spracovanieDokladu, menoSpracovatela } from "@/lib/faktero/spracoval";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch, type ListSearch } from "@/hooks/useListFilters";
+import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
+import { polozkaBlocku } from "@/lib/faktero/suhrn-vyberu";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doklady — Faktero") }] }),
@@ -1212,10 +1214,7 @@ function DokladyPage() {
           )}
           {rows.length > 0 ? (
             <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              <span>
-                {t("Vybrané:")} <strong className="text-foreground">{vybrane.length}</strong>
-                {vybrane.length ? ` · ${sumyDokladov(vybrane)}` : ""}
-              </span>
+              {/* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu). */}
               <span title={t("Spracované a ešte neodovzdané do účtovníctva")}>
                 {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
                 {naExport.length ? ` · ${sumyDokladov(naExport)}` : ""}
@@ -1241,6 +1240,11 @@ function DokladyPage() {
             onHotovo={refresh}
           />
         )}
+        {/* Súčet označených bločkov (lišta drží spodok obrazovky). */}
+        <SuctovaListaVyberu
+          polozky={vybrane.map((r: any) => polozkaBlocku(r, !!uhrady[r.id]))}
+          onZrusit={() => setSelected(new Set())}
+        />
       </PageBody>
     </>
   );

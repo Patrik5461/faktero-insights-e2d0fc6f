@@ -92,6 +92,7 @@ export const navrhniParovaniePrijatych = createServerFn({ method: "POST" })
           .is("matched_expense_id", null)
           .is("matched_invoice_id", null)
           .is("matched_installment_id", null)
+          .is("vybavenie", null)
           .order("booking_date", { ascending: false })
           .limit(1000)
       : { data: [] as any[] };

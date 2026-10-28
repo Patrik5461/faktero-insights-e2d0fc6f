@@ -59,6 +59,39 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "pravidla-a-predlohy",
+    title: "Pravidlá, predlohy a pravidlo z dokladu",
+    body: (
+      <>
+        <p>
+          Pravidlo platí, keď na doklad sedia všetky vyplnené podmienky: dodávateľ (IČO alebo časť
+          názvu), typ faktúry, spôsob úhrady, kto doklad nahral, predmet e-mailu,{" "}
+          <strong>e-mail odosielateľa</strong> (napr. <code>@telekom.sk</code>),{" "}
+          <strong>krajina dodávateľa</strong> (bez nej na doklade platí krajina vašej firmy) a pri
+          prijatej faktúre <strong>stály variabilný symbol</strong> — zmluva s operátorom či
+          energiami. Pravidlo podľa partnera alebo VS má prednosť pred ostatnými.
+        </p>
+        <p>
+          Okrem predkontácie, členenia DPH a KV vie pravidlo bločku nastaviť{" "}
+          <strong>pokladňu</strong> a doklad <strong>rozúčtovať pomerom</strong> (napr. 80 % náklad
+          s odpočtom, 20 % bez odpočtu) — sumy sa dopočítajú pri odovzdaní z rozpisu DPH.
+        </p>
+        <p>
+          <strong>Predloha</strong> (záložka Predlohy v Pravidlách účtovania) je pomenované
+          zaúčtovanie bez podmienky, napríklad „Nákup PHM – platba kartou“. Sama sa nepoužije — pri
+          doklade ju vyberiete cez „Použiť predlohu…“ a doplní kódy, pokladňu, rad aj poznámku
+          naraz.
+        </p>
+        <p>
+          V Nespracovaných dokladoch (vedľa tlačidla Vytvoriť) a pri zaúčtovaní prijatej faktúry či
+          bločku je <strong>Vytvoriť pravidlo z tohto dokladu</strong>: predvyplní dodávateľa, kódy
+          a ponúkne e-mail a VS z dokladu. Keď podobné pravidlo už máte, otvorí sa to — nevznikne
+          druhé.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "autopilot",
     title: "Režimy autopilota",
     body: (

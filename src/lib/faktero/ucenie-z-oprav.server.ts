@@ -11,6 +11,7 @@
 
 import type { UdajeNespracovaneho } from "./nespracovane";
 import {
+  krajinaDokladu,
   prvePravidlo,
   typPrijatej,
   type DokladNaPorovnanie,
@@ -53,9 +54,13 @@ function naPorovnanie(
   druh: DruhUcenia,
   createdBy: string | null,
   predmetMailu: string | null,
+  krajinaFirmy: string | null = null,
 ): DokladNaPorovnanie {
   const blocek = druh === "blocek";
   return {
+    krajina: krajinaDokladu(null, u.dodavatel.icDph),
+    krajina_firmy: krajinaFirmy,
+    variabilny_symbol: blocek ? null : u.vs || null,
     supplier_ico: u.dodavatel.ico || null,
     supplier_name: u.dodavatel.nazov || (blocek ? null : "Neurčený dodávateľ"),
     // Rovnaké predvolené hodnoty ako `prijataZUdajov` / `blocekZUdajov`.
@@ -82,14 +87,13 @@ export async function poliaRucnehoPravidla(
   createdBy: string | null,
   predmetMailu: string | null,
 ): Promise<PoleUcenia[]> {
-  const { data } = await supabase
-    .from("pravidla_uctovania")
-    .select("*")
-    .eq("company_id", companyId)
-    .eq("aktivne", true);
+  const [{ data }, { data: firma }] = await Promise.all([
+    supabase.from("pravidla_uctovania").select("*").eq("company_id", companyId).eq("aktivne", true),
+    supabase.from("companies").select("country").eq("id", companyId).maybeSingle(),
+  ]);
   const p = prvePravidlo(
     (data ?? []) as Pravidlo[],
-    naPorovnanie(u, druh, createdBy, predmetMailu),
+    naPorovnanie(u, druh, createdBy, predmetMailu, firma?.country ?? null),
   );
   return poliaPravidla(p);
 }

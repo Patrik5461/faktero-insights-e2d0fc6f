@@ -198,6 +198,7 @@ export async function stiahniTransakcieUctu(
     currency: t.currency,
     variable_symbol: t.variable_symbol,
     counterparty: t.counterparty,
+    counterparty_iban: t.counterparty_iban ?? null,
     description: t.description,
     transaction_reference: t.transaction_reference,
   }));
@@ -286,6 +287,7 @@ export async function stiahniPohybyPripojenia(
           currency: p.currency,
           variable_symbol: p.variable_symbol,
           counterparty: p.counterparty,
+          counterparty_iban: p.counterparty_iban ?? null,
           description: p.description,
           transaction_reference: p.external_id,
         })),

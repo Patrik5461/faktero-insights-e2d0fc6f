@@ -20,6 +20,7 @@ import {
   rozpisBlocku,
   rozuctovaniePodlaPomeru,
 } from "./rozuctovanie";
+import { kodyZaokruhlenia } from "./predkontacie";
 import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
 import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
 import { statEu } from "./sadzby-eu";
@@ -257,6 +258,12 @@ export type PohodaNastavenia = {
   parovaciSymbol?: "vs" | "dodaci_list" | "cislo" | null;
   /** Predkontácia pre zaokrúhlenie — rozdiel ide ako položka namiesto zaokrúhlenia dokladu. */
   predkontaciaZaokruhlenie?: string | null;
+  /**
+   * Stĺpce firmy so zaokrúhlením zvlášť pre kladné a záporné (predkontácia,
+   * členenie DPH, KV) — vyberie sa podľa znamienka rozdielu; bez nich platí
+   * `predkontaciaZaokruhlenie`.
+   */
+  zaokruhlenieFirmy?: Record<string, unknown> | null;
   /** Predkontácie s agendou „Ostatné záväzky" — faktúra s nimi ide ako záväzok. */
   zavazkovePredkontacie?: string[];
   /** Bločky aj s položkami (inak len súhrn po sadzbách). */
@@ -1598,7 +1605,17 @@ export function polozkyDokladov(opts: {
         Zaokrúhlenie ako položka s vlastnou predkontáciou (nastavenie firmy) —
         len keď doklad ide s položkami; súhrn potom zaokrúhlenie nenesie.
       */
-      const pkZaokr = String(nastavenia?.predkontaciaZaokruhlenie ?? "").trim();
+      const kodyZaokr = kodyZaokruhlenia(
+        {
+          pohoda_predkontacia_zaokruhlenie: nastavenia?.predkontaciaZaokruhlenie,
+          ...(nastavenia?.zaokruhlenieFirmy ?? {}),
+        },
+        zaokruhlenie,
+      );
+      const pkZaokr = kodyZaokr.predkontacia ?? "";
+      const clZaokr = kodyZaokr.clenenie;
+      // KV len v slovenskej Pohode a „X“ (nezahŕňať) sa neposiela.
+      const kvZaokr = !cz && kodyZaokr.kv && kodyZaokr.kv !== "X" ? kodyZaokr.kv : null;
       const zaokrPolozkou = Boolean(pkZaokr && zaokruhlenie && !cudziaD && (xmlPolozkyFaktury || polozkyRozuct));
       const vlozZaokruhlenie = (detail: string) =>
         zaokrPolozkou
@@ -1612,7 +1629,11 @@ export function polozkyDokladov(opts: {
           <${p}:rateVAT>none</${p}:rateVAT>
           <${p}:homeCurrency>${elSuma("typ:unitPrice", zaokruhlenie, "            ")}${elSuma("typ:price", zaokruhlenie, "            ")}
           </${p}:homeCurrency>
-          <${p}:accounting><typ:ids>${esc(pkZaokr)}</typ:ids></${p}:accounting>
+          <${p}:accounting><typ:ids>${esc(pkZaokr)}</typ:ids></${p}:accounting>${
+            clZaokr ? `\n          <${p}:classificationVAT><typ:ids>${esc(clZaokr)}</typ:ids></${p}:classificationVAT>` : ""
+          }${
+            kvZaokr ? `\n          <${p}:classificationKVDPH><typ:ids>${esc(kvZaokr)}</typ:ids></${p}:classificationKVDPH>` : ""
+          }
         </${p}:${koren}Item>
       </${p}:${koren}Detail>`,
             )

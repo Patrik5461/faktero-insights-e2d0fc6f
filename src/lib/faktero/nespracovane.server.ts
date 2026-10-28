@@ -42,8 +42,10 @@ export async function volbyCitaniaFirmy(supabase: Klient, companyId: string) {
     .select("country, uctovanie_nastavenia")
     .eq("id", companyId)
     .maybeSingle();
+  const n = nastaveniaNespracovanych(data?.uctovanie_nastavenia);
   return {
-    domacaMena: menaPreVytazenie(nastaveniaNespracovanych(data?.uctovanie_nastavenia).domacaMena, data?.country),
+    domacaMena: menaPreVytazenie(n.domacaMena, data?.country),
+    predponyObjednavky: n.predponyObjednavky,
   };
 }
 
@@ -57,9 +59,16 @@ async function poNastaveniach(
   druh: DruhNespracovaneho | null,
   udaje: UdajeNespracovaneho,
   predvolby?: PredvolbySkenu | null,
+  /** Odpoveď AI — hľadá sa v nej číslo objednávky podľa predpôn firmy. */
+  ai?: Record<string, unknown> | null,
 ): Promise<UdajeNespracovaneho> {
-  const { upravVytazeneUdaje } = await import("./nespracovane-nastavenia");
-  let u = upravVytazeneUdaje(udaje, druh, await nastaveniaNespracovanychFirmy(supabase, companyId));
+  const { upravVytazeneUdaje, textyPreObjednavku } = await import("./nespracovane-nastavenia");
+  let u = upravVytazeneUdaje(
+    udaje,
+    druh,
+    await nastaveniaNespracovanychFirmy(supabase, companyId),
+    textyPreObjednavku(ai),
+  );
   const p = predvolby ?? u.predvolby;
   if (p && Object.values(p).some(Boolean)) {
     // Uplatní sa raz — „Dočítať z dokladu" neskôr neprepíše, čo človek medzitým zmenil.
@@ -96,6 +105,8 @@ export async function zalozNespracovany(
     inboxMessageId?: string | null;
     /** Nastavenie zo skenera v appke — platí aj pre doklad dokončený na webe. */
     predvolby?: PredvolbySkenu | null;
+    /** Do firmy ho zaradil rozdeľovač (osobná adresa alebo nahratie bez výberu firmy). */
+    cezRozdelovac?: boolean;
   },
 ): Promise<{ id: string; udaje: UdajeNespracovaneho | null }> {
   const id = crypto.randomUUID();
@@ -120,7 +131,7 @@ export async function zalozNespracovany(
       inboxMessageId: args.inboxMessageId,
     });
   }
-  if (udaje) udaje = await poNastaveniach(supabase, args.companyId, druh, udaje, args.predvolby);
+  if (udaje) udaje = await poNastaveniach(supabase, args.companyId, druh, udaje, args.predvolby, args.ai);
   // Ešte nevyťažený doklad: nastavenie zo skenera počká v údajoch na vyťaženie.
   const predvolby = args.predvolby && Object.values(args.predvolby).some(Boolean) ? args.predvolby : null;
   const { error } = await supabase.from("nespracovane_doklady").insert({
@@ -138,6 +149,7 @@ export async function zalozNespracovany(
     ai: args.ai ?? null,
     udaje: udaje ?? (predvolby ? { predvolby } : {}),
     inbox_message_id: args.inboxMessageId ?? null,
+    cez_rozdelovac: !!args.cezRozdelovac,
   });
   if (error) {
     await supabase.storage.from(KOS_NESPRACOVANYCH).remove([cesta]);
@@ -184,7 +196,7 @@ export async function vytazNespracovany(id: string): Promise<void> {
         inboxMessageId: r.inbox_message_id ?? null,
       });
       // Nastavenia firmy a nastavenie zo skenera (uložené pri nahratí).
-      udaje = await poNastaveniach(supabaseAdmin, r.company_id, druh as DruhNespracovaneho | null, udaje, povodne.predvolby);
+      udaje = await poNastaveniach(supabaseAdmin, r.company_id, druh as DruhNespracovaneho | null, udaje, povodne.predvolby, ai);
     }
     await supabaseAdmin
       .from("nespracovane_doklady")
@@ -289,13 +301,16 @@ export async function vytvorDoklad(
   if (u.pravidloId && /^[0-9a-f-]{36}$/i.test(u.pravidloId) && druh !== "ostatny") {
     const { data: p } = await supabase
       .from("pravidla_uctovania")
-      .select("id, odpocet, poznamka, aktivne")
+      .select("id, odpocet, poznamka, aktivne, pokladna, rozuctovanie")
       .eq("id", u.pravidloId)
       .eq("company_id", r.company_id)
       .maybeSingle();
     pravidlo = p?.aktivne ? p : null;
   }
-  const zPravidla = async (riadok: { note?: string | null; issue_date?: string | null; odpocet?: boolean }) => {
+  const zPravidla = async (
+    riadok: { note?: string | null; issue_date?: string | null; odpocet?: boolean },
+    blocek = false,
+  ) => {
     if (!pravidlo) return {};
     const { premennePoznamky } = await import("./pravidla-uctovania");
     const pozn = premennePoznamky(String(pravidlo.poznamka ?? ""), riadok.issue_date ?? null).trim();
@@ -304,6 +319,9 @@ export async function vytvorDoklad(
       pravidlo_id: pravidlo.id as string,
       ...(typeof pravidlo.odpocet === "boolean" ? { odpocet: pravidlo.odpocet } : {}),
       ...(pozn && !note.includes(pozn) ? { note: [note.trim(), pozn].filter(Boolean).join(" ") } : {}),
+      // Rozúčtovanie pomerom a pokladňa bločku — spúšťač ich pri zvolenom pravidle nedoplní.
+      ...(pravidlo.rozuctovanie ? { rozuctovanie: pravidlo.rozuctovanie } : {}),
+      ...(blocek && String(pravidlo.pokladna ?? "").trim() ? { pohoda_pokladna: String(pravidlo.pokladna).trim() } : {}),
     };
   };
 
@@ -416,7 +434,7 @@ export async function vytvorDoklad(
       .from("expense_documents")
       .insert({
         ...blocekZUdajov(u),
-        ...(await zPravidla(blocekZUdajov(u))),
+        ...(await zPravidla(blocekZUdajov(u), true)),
         predmet_mailu: predmetMailu,
         inbox_message_id: r.inbox_message_id ?? null,
         company_id: r.company_id,

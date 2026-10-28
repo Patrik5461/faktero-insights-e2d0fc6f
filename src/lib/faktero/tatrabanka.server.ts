@@ -389,6 +389,8 @@ export type TbTransaction = {
   currency: string;
   variable_symbol: string | null;
   counterparty: string | null;
+  /** IBAN protistrany — pri výdaji príjemca, pri príjme platiteľ. */
+  counterparty_iban: string | null;
   description: string | null;
 };
 
@@ -456,6 +458,10 @@ export async function fetchTransactions(
       t.variableSymbol ??
       extractVS(t.remittanceInformationUnstructured ?? "");
     const counter = t.creditorName ?? t.debtorName ?? t.counterPartyName ?? null;
+    const protiucet =
+      (amt < 0
+        ? (t.creditorAccount?.iban ?? t.debtorAccount?.iban)
+        : (t.debtorAccount?.iban ?? t.creditorAccount?.iban)) ?? null;
     return {
       transaction_reference: t.transactionId ?? t.entryReference ?? null,
       booking_date: (t.bookingDate ?? t.valueDate ?? new Date().toISOString()).slice(0, 10),
@@ -463,6 +469,7 @@ export async function fetchTransactions(
       currency: cur,
       variable_symbol: vs ? String(vs) : null,
       counterparty: counter,
+      counterparty_iban: protiucet ? String(protiucet).replace(/\s+/g, "").toUpperCase() : null,
       description: t.remittanceInformationUnstructured ?? t.additionalInformation ?? null,
     };
   });

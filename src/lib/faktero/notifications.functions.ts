@@ -64,6 +64,7 @@ async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
       .select("id, booking_date, amount, currency, counterparty, variable_symbol")
       .eq("company_id", companyId)
       .is("matched_invoice_id", null)
+      .is("vybavenie", null)
       .gt("amount", 0)
       .order("booking_date", { ascending: false })
       .limit(LIMIT),

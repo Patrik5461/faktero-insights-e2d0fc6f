@@ -368,6 +368,14 @@ const sections: HelpSection[] = [
             vloženým vo vnútri.
           </li>
         </ul>
+        <p>
+          Akékoľvek XML e-faktúry — vlastné, od dodávateľa alebo z iného programu — skontrolujete v{" "}
+          <Link to="/efaktura/kontrola">eFaktúra → Kontrola XML</Link>. Uvidíte chyby a varovania
+          podľa EN 16931, Peppol BIS 3.0 a slovenských pravidiel, každú s kódom pravidla (napríklad
+          BR-CO-15) a miestom v súbore. Súbor sa kontroluje len vo vašom prehliadači. Bez
+          prihlásenia je kontrola aj na stránke{" "}
+          <Link to="/nastroje/kontrola-efaktury">Kontrola e-faktúry</Link>.
+        </p>
       </>
     ),
   },

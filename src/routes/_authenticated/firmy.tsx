@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { CreateCompanyDialog } from "@/components/faktero/CreateCompanyDialog";
 import { getActiveCompanyId, setActiveCompanyId } from "@/lib/faktero/active-company";
-import { Plus, Check, Trash2, Search, Inbox } from "lucide-react";
+import { Plus, Check, Trash2, Search, Inbox, Landmark, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { zmazFirmuFn } from "@/lib/faktero/firma-zmazanie.functions";
@@ -16,6 +16,7 @@ import { HLADANIE_OD } from "@/lib/faktero/hladanie-firiem";
 import { citajPosledneFirmy, zoradFirmy } from "@/lib/faktero/poradie-firiem";
 import { riadkyPreIds } from "@/lib/faktero/strankovanie";
 import { AvatarFirmy } from "@/components/faktero/PrepinacFiriem";
+import { RozdelovacMailov } from "@/components/faktero/RozdelovacMailov";
 
 export const Route = createFileRoute("/_authenticated/firmy")({
   head: ({ match }) => ({
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/firmy")({
 });
 
 type Row = { id: string; name: string; ico: string | null; role: string; created_at: string };
+type PrehladFirmy = { blocky: number; uctySpolu: number; uctyNapojene: number };
 
 function CompanyManagementPage() {
   const { t, jazyk } = useT();
@@ -39,6 +41,8 @@ function CompanyManagementPage() {
   const [posledne] = useState(citajPosledneFirmy);
   /** Nespracované doklady a neskontrolované bločky po firmách; `null` = ešte sa načítava alebo sa nedalo. */
   const [nespracovane, setNespracovane] = useState<Map<string, number> | null>(null);
+  /** Neexportované bločky a bankové účty po firmách; `null` = ešte sa načítava alebo sa nedalo. */
+  const [prehlad, setPrehlad] = useState<Map<string, PrehladFirmy> | null>(null);
 
   async function load() {
     // Bez filtra na seba vráti RLS aj členstvá kolegov a firma sa v zozname
@@ -114,6 +118,38 @@ function CompanyManagementPage() {
     };
   }, [rows]);
 
+  /*
+    Neexportované bločky a bankové účty (napojené / všetky) — jedna funkcia
+    v databáze spočíta všetky firmy naraz (`prehlad_firiem`, cez RLS). Po
+    500 firmách na volanie, aby výsledok nenarazil na strop 1 000 riadkov.
+  */
+  useEffect(() => {
+    if (!rows?.length) return;
+    let zrusene = false;
+    const ids = rows.map((r) => r.id);
+    (async () => {
+      const out = new Map<string, PrehladFirmy>();
+      for (let i = 0; i < ids.length; i += 500) {
+        const { data, error } = await (supabase.rpc as any)("prehlad_firiem", {
+          p_company_ids: ids.slice(i, i + 500),
+        });
+        if (error) throw error;
+        for (const x of (data ?? []) as any[])
+          out.set(x.company_id, {
+            blocky: Number(x.neexportovane_blocky) || 0,
+            uctySpolu: Number(x.ucty_spolu) || 0,
+            uctyNapojene: Number(x.ucty_napojene) || 0,
+          });
+      }
+      if (!zrusene) setPrehlad(out);
+    })().catch(() => {
+      // Počty sú len pomôcka — bez nich ostanú stĺpce prázdne.
+    });
+    return () => {
+      zrusene = true;
+    };
+  }, [rows]);
+
   const roly = useMemo(() => [...new Set((rows ?? []).map((r) => r.role))], [rows]);
   const zobrazene = useMemo(() => {
     const podlaRoly = (rows ?? []).filter((r) => !rola || r.role === rola);
@@ -160,6 +196,57 @@ function CompanyManagementPage() {
       >
         <Inbox className="h-3 w-3" /> {n}
       </button>
+    );
+  };
+
+  /** Bločky spracované, ale ešte neodovzdané do účtovníctva — odkaz do Dokladov firmy. */
+  const neexportovaneBlocky = (r: Row) => {
+    if (!prehlad) return <span className="text-muted-foreground">…</span>;
+    const n = prehlad.get(r.id)?.blocky ?? 0;
+    if (!n) return <span className="text-muted-foreground">0</span>;
+    return (
+      <button
+        type="button"
+        onClick={() => switchTo(r.id, "/doklady")}
+        title={t("Bločky spracované, ale ešte neodovzdané do účtovníctva")}
+        className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium hover:bg-secondary/70"
+      >
+        <Receipt className="h-3 w-3" /> {n}
+      </button>
+    );
+  };
+
+  /** Napojené / všetky bankové účty; oranžovo s „Napojiť“, keď niektorý napojený nie je. */
+  const banka = (r: Row) => {
+    if (!prehlad) return <span className="text-muted-foreground">…</span>;
+    const b = prehlad.get(r.id);
+    const spolu = b?.uctySpolu ?? 0;
+    const napojene = b?.uctyNapojene ?? 0;
+    const chyba = spolu === 0 || napojene < spolu;
+    return (
+      <span className="inline-flex flex-wrap items-center gap-2">
+        <span
+          title={t("Napojené na banku / všetky bankové účty firmy")}
+          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${
+            chyba
+              ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+              : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+          }`}
+        >
+          <Landmark className="h-3 w-3" /> {napojene}/{spolu}
+        </span>
+        {/* Napojiť banku smie len správa firmy — účtovník k banke prístup nemá. */}
+        {chyba && (r.role === "owner" || r.role === "admin") ? (
+          <button
+            type="button"
+            onClick={() => switchTo(r.id, "/bankove-ucty/pripojit")}
+            title={t("Napojiť bankový účet tejto firmy")}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            {t("Napojiť")}
+          </button>
+        ) : null}
+      </span>
     );
   };
 
@@ -229,6 +316,8 @@ function CompanyManagementPage() {
         }
       />
       <PageBody>
+        {/* Jedna adresa a nahratie pre všetky firmy — doklad sa zaradí sám podľa odberateľa. */}
+        {rows && rows.length > 1 && <RozdelovacMailov />}
         {/* Pri desiatkach firiem (účtovná kancelária) hľadanie a filter podľa roly. */}
         {sNastrojmi && (
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -306,6 +395,16 @@ function CompanyManagementPage() {
                   <span className="ml-1">{pocetNespracovanych(r)}</span>
                 )}
               </div>
+              {prehlad ? (
+                <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    {t("Neexportované bločky")}: {neexportovaneBlocky(r)}
+                  </span>
+                  <span className="inline-flex flex-wrap items-center gap-1">
+                    {t("Banka")}: {banka(r)}
+                  </span>
+                </div>
+              ) : null}
               <div className="mt-3 flex justify-start [&>div]:justify-start">{akcie(r)}</div>
             </div>
           ))}
@@ -318,6 +417,8 @@ function CompanyManagementPage() {
                 <th className="px-4 py-3">{t("IČO")}</th>
                 <th className="px-4 py-3">{t("Rola")}</th>
                 <th className="px-4 py-3">{t("Nespracované")}</th>
+                <th className="px-4 py-3">{t("Neexportované bločky")}</th>
+                <th className="px-4 py-3">{t("Banka")}</th>
                 <th className="px-4 py-3">{t("Vytvorené")}</th>
                 <th className="px-4 py-3 text-right">{t("Akcie")}</th>
               </tr>
@@ -325,21 +426,21 @@ function CompanyManagementPage() {
             <tbody>
               {rows === null && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">
                     {t("Načítavam…")}
                   </td>
                 </tr>
               )}
               {rows?.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">
                     {t("Žiadne firmy.")}
                   </td>
                 </tr>
               )}
               {rows && rows.length > 0 && zobrazene.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">
                     {t("Nič sa nenašlo.")}
                   </td>
                 </tr>
@@ -360,6 +461,8 @@ function CompanyManagementPage() {
                   <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.ico ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{t(popisRoly(r.role))}</td>
                   <td className="px-4 py-3">{pocetNespracovanych(r)}</td>
+                  <td className="px-4 py-3">{neexportovaneBlocky(r)}</td>
+                  <td className="px-4 py-3">{banka(r)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{datum(r.created_at)}</td>
                   <td className="px-4 py-3 text-right">{akcie(r)}</td>
                 </tr>

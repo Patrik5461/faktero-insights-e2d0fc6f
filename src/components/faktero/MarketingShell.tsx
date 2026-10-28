@@ -92,6 +92,9 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
               <Link to="/efakturacia" className="hover:text-foreground">
                 {t("eFaktúra")}
               </Link>
+              <Link to="/nastroje/kontrola-efaktury" className="hover:text-foreground">
+                {t("Kontrola e-faktúry")}
+              </Link>
               <Link to="/uctovnici" className="hover:text-foreground">
                 {t("Účtovníci")}
               </Link>

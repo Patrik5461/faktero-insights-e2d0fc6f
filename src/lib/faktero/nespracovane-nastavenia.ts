@@ -33,6 +33,16 @@ export type NastaveniaNespracovanych = {
    * s prepočtom na CZK) sa vyťaží v domácej mene firmy (SK EUR, CZ CZK).
    */
   domacaMena: boolean;
+  /**
+   * Faktúra, na ktorej je ako príjemca platby IBAN niektorého účtu firmy, je
+   * vystavená faktúra firmy — upozorní sa a medzi prijaté ide len po potvrdení.
+   */
+  typPodlaIban: boolean;
+  /**
+   * Predpony čísla objednávky (napr. „OBJ-", „PO") — podľa nich sa na doklade
+   * spozná číslo objednávky firmy (AI ich dostane v pokyne, výsledok sa overí).
+   */
+  predponyObjednavky: string[];
 };
 
 export const PREDVOLENE_NESPRACOVANE: NastaveniaNespracovanych = {
@@ -44,7 +54,27 @@ export const PREDVOLENE_NESPRACOVANE: NastaveniaNespracovanych = {
   polozkyBlockov: true,
   dodaciList: true,
   domacaMena: true,
+  typPodlaIban: false,
+  predponyObjednavky: [],
 };
+
+/** Najviac toľko predpôn a takú dĺžku jednej — viac je už preklep, nie predpona. */
+export const MAX_PREDPON = 10;
+export const MAX_DLZKA_PREDPONY = 20;
+
+/** Predpony z nastavení — orezané, bez prázdnych a duplicít (bez ohľadu na veľkosť písmen). */
+export function upravPredpony(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  const out: string[] = [];
+  for (const x of v) {
+    const p = String(x ?? "")
+      .trim()
+      .slice(0, MAX_DLZKA_PREDPONY);
+    if (p && !out.some((o) => o.toLowerCase() === p.toLowerCase())) out.push(p);
+    if (out.length >= MAX_PREDPON) break;
+  }
+  return out;
+}
 
 /** Najväčšia povolená tolerancia — viac by už nebolo zaokrúhlenie, ale chyba v sumách. */
 export const MAX_TOLERANCIA_CENTOV = 100;
@@ -72,6 +102,8 @@ export function nastaveniaNespracovanych(uctovanieNastavenia: unknown): Nastaven
     polozkyBlockov: ano(n.polozkyBlockov, p.polozkyBlockov),
     dodaciList: ano(n.dodaciList, p.dodaciList),
     domacaMena: ano(n.domacaMena, p.domacaMena),
+    typPodlaIban: ano(n.typPodlaIban, p.typPodlaIban),
+    predponyObjednavky: upravPredpony(n.predponyObjednavky),
   };
 }
 
@@ -81,9 +113,25 @@ export function nastaveniaNespracovanych(uctovanieNastavenia: unknown): Nastaven
  * Čo už človek rozhodol (`polozkyVypnute` je vyplnené), sa nemení.
  */
 export function upravVytazeneUdaje<
-  U extends { polozky: unknown[]; polozkyVypnute?: boolean; dodaciList?: string },
->(u: U, druh: string | null | undefined, n: NastaveniaNespracovanych): U {
+  U extends {
+    polozky: unknown[];
+    polozkyVypnute?: boolean;
+    dodaciList?: string;
+    objednavka?: string;
+  },
+>(
+  u: U,
+  druh: string | null | undefined,
+  n: NastaveniaNespracovanych,
+  /** Texty z vyťaženia (odpoveď AI), v ktorých sa hľadá číslo objednávky podľa predpôn. */
+  texty: string[] = [],
+): U {
   let out = u;
+  const predpony = n.predponyObjednavky ?? [];
+  if (predpony.length && !maPredponu(out.objednavka, predpony)) {
+    const cislo = cisloObjednavkyPodlaPredpon([out.objednavka ?? "", ...texty], predpony);
+    if (cislo) out = { ...out, objednavka: cislo };
+  }
   const blocek = druh === "blocek";
   const vytazovat = blocek ? n.polozkyBlockov : n.polozkyFaktur;
   if (!vytazovat && out.polozky.length && out.polozkyVypnute === undefined)
@@ -117,4 +165,79 @@ export function kodyPrijatejUrcene(
     (p.reverse_charge ? k(firma?.pohoda_clenenie_dph_prijata_pdp) : "") ||
     k(firma?.pohoda_clenenie_dph_prijata);
   return Boolean(pk && cl);
+}
+
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** Dátum „12.10.2026" za predponou nie je číslo objednávky („Po 12.10.2026" = pondelok). */
+const JE_DATUM = /^\d{1,2}[./]\d{1,2}[./]\d{2,4}$/;
+
+/** Začína hodnota niektorou predponou (bez ohľadu na veľkosť písmen)? */
+export function maPredponu(hodnota: string | null | undefined, predpony: string[]): boolean {
+  const h = String(hodnota ?? "")
+    .trim()
+    .toLowerCase();
+  return Boolean(h) && predpony.some((p) => p && h.startsWith(p.toLowerCase()));
+}
+
+/**
+ * Číslo objednávky podľa predpôn firmy — prvý výskyt v textoch (v poradí, ako
+ * prišli). Za predponou môže byť oddeľovač („PO: 4500123", „OBJ- 15") a číslo
+ * musí obsahovať aspoň jednu číslicu. Vráti sa predpona, ako je vytlačená,
+ * a hneď za ňou číslo („OBJ-2026-015", „PO4500123").
+ */
+export function cisloObjednavkyPodlaPredpon(
+  texty: (string | null | undefined)[],
+  predpony: string[],
+): string | null {
+  const zoznam = upravPredpony(predpony).sort((a, b) => b.length - a.length);
+  if (!zoznam.length) return null;
+  for (const text of texty) {
+    const t = String(text ?? "");
+    if (!t.trim()) continue;
+    let najskor: { poz: number; cislo: string } | null = null;
+    for (const p of zoznam) {
+      // Pred predponou nesmie byť písmeno ani číslica — „SPO123" nie je „PO123".
+      const vzor = new RegExp(
+        `(?<![\\p{L}\\d])${escapeRegex(p)}[\\s:#.\\-/]{0,3}([\\p{L}\\d][\\p{L}\\d\\-/._]*)`,
+        "giu",
+      );
+      for (const m of t.matchAll(vzor)) {
+        const zvysok = m[1].replace(/[._\-/]+$/, "");
+        if (!/\d/.test(zvysok) || JE_DATUM.test(zvysok)) continue;
+        const poz = m.index ?? 0;
+        if (!najskor || poz < najskor.poz) {
+          // Predpona tak, ako je vytlačená; z oddeľovača ostane len pomlčka,
+          // lomka či bodka („PO: 4500123" → „PO4500123", „OBJ-15" ostane).
+          const vytlacena = m[0].slice(0, p.length);
+          const oddelovac = m[0].slice(p.length, m[0].length - m[1].length).replace(/[\s:#]/g, "");
+          najskor = { poz, cislo: `${vytlacena}${oddelovac}${zvysok}` };
+        }
+        break;
+      }
+    }
+    if (najskor) return najskor.cislo;
+  }
+  return null;
+}
+
+/**
+ * Texty z odpovede AI, v ktorých sa hľadá číslo objednávky podľa predpôn:
+ * najprv samotné `order_number`, potom popis, nadpis, zhrnutie a položky.
+ * Číslo faktúry, VS ani dodací list sa neberú — tie objednávkou nie sú.
+ */
+export function textyPreObjednavku(ai: Record<string, unknown> | null | undefined): string[] {
+  if (!ai || typeof ai !== "object") return [];
+  const s = (v: unknown) => (typeof v === "string" ? v : "");
+  const polozky = Array.isArray(ai.items)
+    ? (ai.items as unknown[]).map((p) => s((p as Record<string, unknown> | null)?.name))
+    : [];
+  return [
+    s(ai.order_number),
+    s(ai.description),
+    s(ai.document_title),
+    s(ai.summary),
+    s(ai.other_subject),
+    s(ai.note),
+    ...polozky,
+  ].filter(Boolean);
 }

@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Plus, Star } from "lucide-react";
+import { Pencil, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { pravidloSedi, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
+import { krajinaDokladu, pravidloSedi, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
+import type { Predloha } from "@/lib/faktero/predlohy-uctovania";
 import { useT } from "@/lib/i18n/useT";
+import { PouzitPredlohu } from "./PouzitPredlohu";
+import { PravidloZDokladu } from "./PravidloZDokladu";
 
 /** Hodnoty, z ktorých sa dá založiť nové pravidlo („Vytvoriť automatické účtovanie"). */
 export type ZakladPravidla = {
@@ -11,6 +14,7 @@ export type ZakladPravidla = {
   clenenie?: string | null;
   kv?: string | null;
   kategoria?: string | null;
+  pokladna?: string | null;
 };
 
 /**
@@ -26,6 +30,7 @@ export function VyberPravidla({
   typ,
   zaklad,
   onPouzi,
+  onPredloha,
 }: {
   companyId: string;
   doklad: {
@@ -33,16 +38,25 @@ export function VyberPravidla({
     supplier_name?: string | null;
     payment_method?: string | null;
     pravidlo_id?: string | null;
+    created_by?: string | null;
+    predmet_mailu?: string | null;
+    odosielatel_mailu?: string | null;
+    supplier_country?: string | null;
+    supplier_ic_dph?: string | null;
+    variable_symbol?: string | null;
   };
   druh?: "blocek" | "prijata" | "vystavena";
   typ?: string | null;
   /** Súčasné kódy dokladu — predvyplnia nové pravidlo. */
   zaklad?: ZakladPravidla;
   onPouzi: (p: Pravidlo) => void;
+  /** „Použiť predlohu" — pomenovaná šablóna kódov bez podmienky. */
+  onPredloha?: (p: Predloha) => void;
 }) {
   const { t } = useT();
   const [pravidla, setPravidla] = useState<(Pravidlo & { id: string })[]>([]);
   const [vybrane, setVybrane] = useState("");
+  const [krajinaFirmy, setKrajinaFirmy] = useState<string | null>(null);
 
   useEffect(() => {
     // Tabuľka nie je v generovaných typoch — pravidlá číta aj stránka pravidiel takto.
@@ -53,6 +67,12 @@ export function VyberPravidla({
       .eq("aktivne", true)
       .order("poradie")
       .then(({ data }: { data: unknown[] | null }) => setPravidla((data ?? []) as any));
+    supabase
+      .from("companies")
+      .select("country")
+      .eq("id", companyId)
+      .maybeSingle()
+      .then(({ data }) => setKrajinaFirmy((data?.country as string | null) ?? null));
   }, [companyId]);
 
   const zhodne = pravidla.filter((p) =>
@@ -60,17 +80,26 @@ export function VyberPravidla({
       supplier_ico: doklad.supplier_ico ?? null,
       supplier_name: doklad.supplier_name ?? null,
       payment_method: doklad.payment_method ?? null,
+      created_by: doklad.created_by ?? null,
+      predmet_mailu: doklad.predmet_mailu ?? null,
+      odosielatel_mailu: doklad.odosielatel_mailu ?? null,
+      krajina:
+        druh === "vystavena"
+          ? null
+          : krajinaDokladu(doklad.supplier_country, doklad.supplier_ic_dph),
+      krajina_firmy: krajinaFirmy,
+      variabilny_symbol: druh === "prijata" ? (doklad.variable_symbol ?? null) : null,
       druh,
       typ: typ ?? null,
     }),
   );
   const pouzite = pravidla.find((p) => p.id === doklad.pravidlo_id);
 
-  const partner = String(doklad.supplier_name ?? "").trim();
-  const ico = String(doklad.supplier_ico ?? "").replace(/\D/g, "");
-  const novePravidlo = (partner || ico) && !pouzite && !zhodne.length;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+      {onPredloha ? (
+        <PouzitPredlohu companyId={companyId} druh={druh} onPouzi={onPredloha} />
+      ) : null}
       {pouzite ? (
         <span
           className="inline-flex items-center gap-1 text-amber-700"
@@ -113,31 +142,38 @@ export function VyberPravidla({
           </button>
         </>
       ) : null}
-      {novePravidlo ? (
-        /* Ako „Vytvoriť automatické účtovanie" v Doklado — ďalší doklad od
-           tohto partnera dostane tie isté kódy sám. */
+      {pouzite ? (
         <Link
           to="/uctovnictvo/pravidla"
-          search={{
-            novy: druh,
-            nazov: partner || undefined,
-            ico: ico.length >= 6 ? ico : undefined,
-            predkontacia: zaklad?.predkontacia || undefined,
-            clenenie: zaklad?.clenenie || undefined,
-            kv: zaklad?.kv || undefined,
-            kategoria: zaklad?.kategoria || undefined,
-          }}
+          search={{ upravit: pouzite.id } as any}
           className="inline-flex items-center gap-1 text-primary hover:underline"
         >
-          <Plus className="h-3.5 w-3.5" />{" "}
-          {t("Vytvoriť pravidlo pre {partner}", { partner: partner || t("IČO {ico}", { ico }) })}
+          <Pencil className="h-3.5 w-3.5" /> {t("Upraviť pravidlo")}
         </Link>
-      ) : (
-        /* Samotné „pravidlá“ viselo osamote bez súvislosti — povedz, kam odkaz vedie. */
-        <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
-          {t("Pravidlá účtovania →")}
-        </Link>
-      )}
+      ) : !zhodne.length ? (
+        /* Ako „Vytvoriť automatické účtovanie" v Doklado — ďalší doklad od
+           tohto partnera dostane tie isté kódy sám; podobné pravidlo sa nezdvojí. */
+        <PravidloZDokladu
+          companyId={companyId}
+          zaklad={{
+            druh,
+            nazov: doklad.supplier_name,
+            ico: doklad.supplier_ico,
+            odosielatel: doklad.odosielatel_mailu,
+            vs: doklad.variable_symbol,
+            platba: doklad.payment_method,
+            predkontacia: zaklad?.predkontacia,
+            clenenie: zaklad?.clenenie,
+            kv: zaklad?.kv,
+            kategoria: zaklad?.kategoria,
+            pokladna: zaklad?.pokladna,
+          }}
+        />
+      ) : null}
+      {/* Samotné „pravidlá“ viselo osamote bez súvislosti — povedz, kam odkaz vedie. */}
+      <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
+        {t("Pravidlá účtovania →")}
+      </Link>
     </div>
   );
 }

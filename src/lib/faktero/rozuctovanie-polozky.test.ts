@@ -44,3 +44,32 @@ describe("predkontácia na položku a účtovanie pomerom", () => {
     expect(rozuctovaniePolozkami([{ vat_rate: 5, total: 10, predkontacia: "X" }], rozpis, "1Pv", null)).toEqual([]);
   });
 });
+
+describe("rozúčtovanie pomerom z pravidla", () => {
+  it("pomer v doklade rozdelí každú sadzbu a sedí na cent", async () => {
+    const { riadkyDokladu, jePomerDokladu } = await import("./rozuctovanie");
+    const pomer = {
+      typ: "pomer",
+      casti: [
+        { podiel: 80, predkontacia: "501", odpocet: true },
+        { podiel: 20, predkontacia: "513", odpocet: false },
+      ],
+    };
+    expect(jePomerDokladu(pomer)).toBe(true);
+    expect(jePomerDokladu([])).toBe(false);
+    const r = riadkyDokladu(
+      { rozuctovanie: pomer },
+      [
+        { sadzba: 23, zaklad: 10.01, dph: 2.3 },
+        { sadzba: 5, zaklad: 3, dph: 0.15 },
+      ],
+      "1Fp",
+      "PD",
+      {},
+    );
+    expect(r.map((x) => x.predkontacia)).toEqual(["501", "513", "501", "513"]);
+    const z23 = r.filter((x) => x.sadzba === 23).reduce((a, x) => a + x.zaklad, 0);
+    expect(Math.round(z23 * 100) / 100).toBe(10.01);
+    expect(r[1].odpocet).toBe(false);
+  });
+});

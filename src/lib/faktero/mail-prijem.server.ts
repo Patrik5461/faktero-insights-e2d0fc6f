@@ -101,7 +101,8 @@ Dátum dodania ("delivery_date") hľadaj pod „Dátum dodania", „Dátum dodan
 „Dátum vzniku daňovej povinnosti", „Dátum uskutočnenia zdaniteľného plnenia", „DUZP",
 „Datum zdanitelného plnění" — keď na doklade nie je, null (nie dátum vystavenia).
 Dodávateľ je ten, KTO doklad vystavil, nie odberateľ. Sumy uveď ako čísla s bodkou.
-Pridaj aj údaje ODBERATEĽA, ak sú na doklade: "buyer_name", "buyer_ico", "buyer_ic_dph" (inak null).
+Pridaj aj údaje ODBERATEĽA, ak sú na doklade: "buyer_name", "buyer_ico", "buyer_ic_dph", "buyer_dic"
+a "buyer_iban" (len účet odberateľa/platiteľa, nikdy účet dodávateľa na úhradu) — inak null.
 Pridaj ADRESU DODÁVATEĽA: "supplier_street" (ulica a číslo), "supplier_city", "supplier_zip",
 "supplier_country" (kód štátu, napr. SK) a "description" — jednou vetou, čo sa fakturuje
 (napr. „Stavebné práce za október"), bez názvu dodávateľa.
@@ -335,6 +336,8 @@ export type SmerovanieMailu = {
   adresa: { id: string; company_id: string; user_id: string; active: boolean };
   lenPrilohy?: string[];
   predcitane?: Map<string, PredcitanaPriloha>;
+  /** Mail prišiel na rozdeľovač; veta do poznámky, prečo doklad skončil v tejto firme. */
+  rozdelovac?: { poznamka: string };
 };
 
 export async function spracujPrijatyMail(
@@ -444,8 +447,11 @@ export async function spracujPrijatyMail(
   const volbyCitania = await (async () => {
     const { nastaveniaNespracovanych } = await import("./nespracovane-nastavenia");
     const { menaPreVytazenie } = await import("./vytazenie-mena");
-    const zapnute = nastaveniaNespracovanych((firma as any)?.uctovanie_nastavenia).domacaMena;
-    return { domacaMena: menaPreVytazenie(zapnute, (firma as any)?.country) };
+    const n = nastaveniaNespracovanych((firma as any)?.uctovanie_nastavenia);
+    return {
+      domacaMena: menaPreVytazenie(n.domacaMena, (firma as any)?.country),
+      predponyObjednavky: n.predponyObjednavky,
+    };
   })();
   const firmaUdaje = {
     ico: String((firma as any)?.ico ?? "").replace(/\s/g, ""),
@@ -676,8 +682,9 @@ export async function spracujPrijatyMail(
           nazov: meno,
           mime,
           ai,
-          poznamka: [odkial + ".", cudzi].filter(Boolean).join(" "),
+          poznamka: [odkial + ".", smer?.rozdelovac?.poznamka, cudzi].filter(Boolean).join(" "),
           inboxMessageId: zaznam?.id ?? null,
+          cezRozdelovac: !!smer?.rozdelovac,
         });
         vytvorene.push(n.id);
       } catch (e: any) {

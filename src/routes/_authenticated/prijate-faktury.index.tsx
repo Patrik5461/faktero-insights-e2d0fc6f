@@ -50,6 +50,9 @@ import { toast } from "sonner";
 import { formatovacMeny, formatujMenu } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
+import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
+import { polozkaPrijatej } from "@/lib/faktero/suhrn-vyberu";
+import { ZAPLATENE_NA_MIESTE } from "@/lib/faktero/hromadny-prikaz";
 import { NavrhyAiOkno } from "@/components/faktero/NavrhyAiOkno";
 import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
@@ -194,6 +197,11 @@ function PurchaseInvoicesPage() {
   const naExport = rad.zoradene.filter(
     (r: any) => !r.exported_at && r.status !== "cancelled" && r.status !== "draft",
   );
+  // Lišta výberu: súčty po menách, zálohová mimo súčtu, dobropis záporne.
+  const vybraneSuhrn = vybrane.map((r: any) =>
+    polozkaPrijatej(r, { zapocitatelna: zapocitatelna(r), zaplateneNaMieste: ZAPLATENE_NA_MIESTE }),
+  );
+  const naUhraduPocet = vybraneSuhrn.filter((p) => p.naUhradu).length;
   const [zipBusy, setZipBusy] = useState(false);
   const [hromadneBusy, setHromadneBusy] = useState(false);
   const [mazanie, setMazanie] = useState(false);
@@ -1208,10 +1216,7 @@ function PurchaseInvoicesPage() {
           </table>
           {rows.length > 0 ? (
             <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              <span>
-                {t("Vybrané:")} <strong className="text-foreground">{vybrane.length}</strong>
-                {vybrane.length ? ` · ${sumyPodlaMeny(vybrane)}` : ""}
-              </span>
+              {/* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu). */}
               <span title={t("Zaúčtované a ešte neodovzdané do účtovníctva")}>
                 {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
                 {naExport.length ? ` · ${sumyPodlaMeny(naExport)}` : ""}
@@ -1224,6 +1229,22 @@ function PurchaseInvoicesPage() {
         </div>
         </SNahladom>
         </div>
+        {/* Súčet označených + úhrada z výberu (lišta drží spodok obrazovky). */}
+        <SuctovaListaVyberu
+          polozky={vybraneSuhrn}
+          onZrusit={() => setSelected(new Set())}
+          akcie={
+            <button
+              type="button"
+              onClick={() => setPrikaz(true)}
+              disabled={!naUhraduPocet}
+              title={t("Pripraví hromadný príkaz na úhradu (SEPA XML) z označených faktúr.")}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              <Landmark className="h-3.5 w-3.5" /> {t("Uhradiť ({n})", { n: naUhraduPocet })}
+            </button>
+          }
+        />
       </PageBody>
 
       <ConfirmDialog

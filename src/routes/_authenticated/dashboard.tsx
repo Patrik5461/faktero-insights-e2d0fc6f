@@ -5,9 +5,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   jeOtvorena,
   jePoSplatnosti,
-  jeZapocitatelny,
   sucetDokladov,
-  znamienkoDokladu,
 } from "@/lib/faktero/faktury-sumy";
 import { mnozne } from "@/lib/faktero/mnozne";
 import { useT } from "@/lib/i18n/useT";
@@ -19,6 +17,7 @@ import { UpozornenieKleinunternehmer } from "@/components/faktero/UpozornenieKle
 import { PrenosFakturyZadarmo } from "@/components/faktero/PrenosFakturyZadarmo";
 import { BankWidget } from "@/components/faktero/BankWidget";
 import { AutoUctovanieWidget } from "@/components/faktero/AutoUctovanieWidget";
+import { VynosyNakladyPanel } from "@/components/faktero/VynosyNakladyPanel";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
@@ -50,13 +49,10 @@ import {
 } from "lucide-react";
 import {
   ResponsiveContainer,
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
-  Legend,
   PieChart,
   Pie,
   Cell,
@@ -127,16 +123,6 @@ const STATUS_COLOR: Record<string, string> = {
   overdue: "var(--destructive)",
   cancelled: "oklch(0.60 0.02 250)",
 };
-
-function monthKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-function monthLabel(key: string) {
-  const [, m] = key.split("-");
-  return ["Jan", "Feb", "Mar", "Apr", "Máj", "kratko::Jún", "kratko::Júl", "Aug", "Sep", "Okt", "Nov", "Dec"][
-    Number(m) - 1
-  ];
-}
 
 function useCountdown(target: Date) {
   const [now, setNow] = useState(() => new Date());
@@ -392,10 +378,6 @@ function Dashboard() {
     () => computeMetrics(invDomace, payments, customers, purchaseInvoices),
     [invDomace, payments, customers, purchaseInvoices],
   );
-  const chartData = useMemo(
-    () => buildRevenueChart(invDomace).map((b) => ({ ...b, month: t(b.month) })),
-    [invDomace, t],
-  );
   const statusData = useMemo(
     () => buildStatusDistribution(invDomace).map((d) => ({ ...d, name: t(d.name) })),
     [invDomace, t],
@@ -469,126 +451,15 @@ function Dashboard() {
           <BankWidget />
         </div>
 
-        {/* MAIN CHARTS */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Panel className="lg:col-span-2" title="Obrat (posledných 12 mesiacov)" icon={TrendingUp}>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="gIssued" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gPaid" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(160 70% 45%)" stopOpacity={0.5} />
-                      <stop offset="100%" stopColor="hsl(160 70% 45%)" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gOverdue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="var(--border)"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="month"
-                    stroke="var(--muted-foreground)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="var(--muted-foreground)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={fmtCompact}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                    formatter={(v: any) => fmt(Number(v))}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Area
-                    type="monotone"
-                    dataKey="issued"
-                    name={t("Vystavené")}
-                    stroke="var(--primary)"
-                    fill="url(#gIssued)"
-                    strokeWidth={2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="paid"
-                    name={t("Zaplatené")}
-                    stroke="hsl(160 70% 45%)"
-                    fill="url(#gPaid)"
-                    strokeWidth={2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="overdue"
-                    name={t("Po splatnosti")}
-                    stroke="var(--destructive)"
-                    fill="url(#gOverdue)"
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </Panel>
-
-          <Panel title="Rozdelenie faktúr" icon={Activity}>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={2}
-                  >
-                    {statusData.map((d, i) => (
-                      <Cell key={i} fill={d.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <ul className="mt-2 space-y-1 text-xs">
-              {statusData.map((s) => (
-                <li key={s.name} className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
-                    {s.name}
-                  </span>
-                  <span className="font-medium tabular-nums">{s.value}</span>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        </div>
+        {/*
+          Výnosy a náklady po mesiacoch — nahradili graf „Obrat (12 mesiacov)",
+          ktorý ukazoval len vystavené faktúry. Načítava si vlastné obdobie.
+        */}
+        {getActiveCompanyId() && (
+          <div className="mt-6">
+            <VynosyNakladyPanel companyId={getActiveCompanyId()!} />
+          </div>
+        )}
 
         {/* SECOND ROW */}
         <div className="grid gap-6 lg:grid-cols-4">
@@ -667,7 +538,7 @@ function Dashboard() {
         </div>
 
         {/* THIRD ROW */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-3">
           {/*
             Odpočet do 1. 1. 2027 je slovenská povinnosť a odkaz vedie na
             eFaktúru cez slovenskú schému Peppol. Českej firme by sľuboval
@@ -714,6 +585,48 @@ function Dashboard() {
               </div>
             </div>
           )}
+
+          <Panel title="Rozdelenie faktúr" icon={Activity}>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={2}
+                  >
+                    {statusData.map((d, i) => (
+                      <Cell key={i} fill={d.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <ul className="mt-2 space-y-1 text-xs">
+              {statusData.map((s) => (
+                <li key={s.name} className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+                    {s.name}
+                  </span>
+                  <span className="font-medium tabular-nums">{s.value}</span>
+                </li>
+              ))}
+            </ul>
+          </Panel>
 
           <Panel title="API a integrácie" icon={KeyRound}>
             <div className="grid grid-cols-2 gap-3">
@@ -1345,35 +1258,6 @@ function computeMetrics(invoices: any[], payments: any[], customers: any[], prij
     yearIncome,
     yearExpenses,
   };
-}
-
-/*
-  Graf počítal po svojom a v troch veciach inak než dlaždice nad ním:
-  zálohovú faktúru pripočítal k výnosom (to isté plnenie druhýkrát), dobropis
-  tiež pripočítal namiesto odpočtu, a červená čiara „Po splatnosti" vychádzala
-  zo stavu `overdue`, ktorý do databázy nikto nezapisuje — bola teda vždy na
-  nule aj pri kope nezaplatených faktúr. Pravidlá sú v `faktury-sumy`.
-*/
-function buildRevenueChart(invoices: any[]) {
-  const buckets: Record<string, { month: string; issued: number; paid: number; overdue: number }> =
-    {};
-  const now = new Date();
-  const dnesISO = now.toISOString().slice(0, 10);
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const k = monthKey(d);
-    buckets[k] = { month: monthLabel(k), issued: 0, paid: 0, overdue: 0 };
-  }
-  invoices.forEach((inv) => {
-    if (!jeZapocitatelny(inv)) return;
-    const k = monthKey(new Date(inv.issue_date));
-    if (!buckets[k]) return;
-    const total = znamienkoDokladu(inv.type, inv.total) * Number(inv.total ?? 0);
-    buckets[k].issued += total;
-    if (inv.status === "paid" || inv.paid_at) buckets[k].paid += total;
-    if (jePoSplatnosti(inv, dnesISO)) buckets[k].overdue += Number(inv.total ?? 0);
-  });
-  return Object.values(buckets);
 }
 
 function buildStatusDistribution(invoices: any[]) {

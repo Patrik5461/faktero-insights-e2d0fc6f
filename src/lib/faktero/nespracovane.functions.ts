@@ -37,6 +37,29 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Podklady pre hromadný príkaz na úhradu z označených nespracovaných dokladov
+ * (IBAN, symboly, suma, splatnosť). Číta sa cez RLS prihláseného — cudzí
+ * doklad sa nevráti.
+ */
+export const nespracovaneNaUhraduFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z.object({ company_id: z.string().uuid(), ids: z.array(z.string().uuid()).min(1).max(500) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: rows, error } = await supabase
+      .from("nespracovane_doklady")
+      .select("id, druh, udaje, ai")
+      .eq("company_id", data.company_id)
+      .in("id", data.ids);
+    if (error) throw new Error(error.message);
+    const { naUhraduZNespracovaneho } = await import("./nespracovane");
+    const dnes = new Date().toISOString().slice(0, 10);
+    return ((rows ?? []) as any[]).map((r) => naUhraduZNespracovaneho(r, dnes));
+  });
+
 export const nahrajNespracovaneFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
@@ -103,9 +126,15 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
     const { nastaveniaNespracovanychFirmy } = await import("./nespracovane.server");
     const nastavenia = await nastaveniaNespracovanychFirmy(supabase, r.company_id);
     let predmetMailu: string | null = null;
+    let odosielatelMailu: string | null = null;
     if (r.inbox_message_id) {
-      const { data: m } = await supabase.from("inbox_messages").select("subject").eq("id", r.inbox_message_id).maybeSingle();
+      const { data: m } = await supabase
+        .from("inbox_messages")
+        .select("subject, from_email")
+        .eq("id", r.inbox_message_id)
+        .maybeSingle();
       predmetMailu = m?.subject ?? null;
+      odosielatelMailu = m?.from_email ? String(m.from_email).trim().toLowerCase() : null;
     }
     // Ďalší v poradí — po vytvorení sa dá rovno pokračovať (ak to firma nevypla).
     const { data: dalsi } = await supabase
@@ -119,10 +148,26 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
     const { varovaniaNespracovaneho } = await import("./nespracovane.server");
     const { data: firma } = await supabase
       .from("companies")
-      .select("ico, ic_dph, dic, povinne_polia_dokladu")
+      .select("ico, ic_dph, dic, iban, povinne_polia_dokladu, country")
       .eq("id", r.company_id)
       .maybeSingle();
+    /*
+      Firemné účty — podľa nich sa spozná vlastná vystavená faktúra (nastavenie
+      „Automaticky určiť typ faktúry podľa firemných IBAN-ov"). Číta sa cez RLS.
+    */
+    let vlastneUcty: { iban: string; nazov: string | null }[] = [];
+    if (nastavenia.typPodlaIban) {
+      const { data: ucty } = await supabase
+        .from("company_bank_accounts")
+        .select("iban, name")
+        .eq("company_id", r.company_id);
+      vlastneUcty = ((ucty ?? []) as { iban: string; name: string | null }[])
+        .filter((x) => x.iban)
+        .map((x) => ({ iban: x.iban, nazov: x.name }));
+      if (firma?.iban && !vlastneUcty.length) vlastneUcty = [{ iban: firma.iban, nazov: null }];
+    }
     return {
+      vlastneUcty,
       povinne: (firma?.povinne_polia_dokladu ?? []) as string[],
       varovania: await varovaniaNespracovaneho(supabase, r, udaje, firma),
       id: r.id as string,
@@ -140,10 +185,14 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       /** Kto doklad nahral a predmet mailu — podľa nich vyberajú pravidlá účtovania. */
       createdBy: (r.created_by ?? null) as string | null,
       predmetMailu,
+      /** Odosielateľ mailu a krajina firmy — tiež podmienky pravidiel. */
+      odosielatelMailu,
+      krajinaFirmy: ((firma as any)?.country ?? null) as string | null,
       nastavenia: {
         toleranciaCenty: nastavenia.toleranciaCenty,
         kontrolaSplatnosti: nastavenia.kontrolaSplatnosti,
         zauctovat: nastavenia.zauctovat,
+        typPodlaIban: nastavenia.typPodlaIban,
       },
     };
   });

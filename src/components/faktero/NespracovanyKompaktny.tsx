@@ -20,6 +20,9 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { NahladPdf } from "./NahladPdf";
+import { PrepinacZvyraznenia, type ZvyraznenieNahladu } from "./ZvyraznenieVytazenych";
+import { poleZPrvku } from "./NahladSVyberom";
+import type { KlucPola } from "@/lib/faktero/vyber-z-dokladu";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
 import { NauceneZDodavatela } from "./NauceneZDodavatela";
 import { NavrhAiNespracovaneho } from "./NavrhAi";
@@ -124,7 +127,11 @@ export function NespracovanyKompaktny({
   onZmaz,
   companyId,
   pravidlo,
+  pravidloZDokladu,
   rozdielVyrovna = null,
+  upozornenie,
+  zvyraznenie,
+  onPrepniZvyraznenie,
 }: {
   subor: { url: string | null; nazov: string | null; mime: string | null };
   stav: string;
@@ -147,12 +154,21 @@ export function NespracovanyKompaktny({
   companyId?: string;
   /** Pravidlo účtovania (výber a hviezdička) — v sekcii Zaúčtovanie. */
   pravidlo?: ReactNode;
+  /** „Vytvoriť pravidlo z tohto dokladu" — pod tlačidlom Vytvoriť. */
+  pravidloZDokladu?: ReactNode;
   /** Rozdiel položiek v tolerancii, ktorý doplní vyrovnávacia položka. */
   rozdielVyrovna?: number | null;
+  /** Výrazné upozornenie nad údajmi (napr. vlastná vystavená faktúra podľa IBAN-u). */
+  upozornenie?: ReactNode;
+  /** Zvýraznenie vyťažených údajov v náhľade PDF; aktívne pole určí kurzor v paneli. */
+  zvyraznenie?: Omit<ZvyraznenieNahladu, "aktivne">;
+  onPrepniZvyraznenie?: () => void;
 }) {
   const { t } = useT();
   const [otocenie, setOtocenie] = useState(0);
   const [zvacsenie, setZvacsenie] = useState(1);
+  // Pole s kurzorom — jeho miesto sa v náhľade zvýrazní a náhľad sa naň posunie.
+  const [aktivnePole, setAktivnePole] = useState<KlucPola | null>(null);
   const blocek = druh === "blocek";
   const faktura = druh === "faktura" || druh === "zalohova" || druh === "dobropis";
   const zle = (k: string) => chyby.includes(k);
@@ -200,6 +216,9 @@ export function NespracovanyKompaktny({
                 <I className="h-4 w-4" />
               </button>
             ))}
+            {pdf && zvyraznenie && onPrepniZvyraznenie ? (
+              <PrepinacZvyraznenia zap={zvyraznenie.zobrazit} onPrepni={onPrepniZvyraznenie} />
+            ) : null}
             {subor.url ? (
               <a
                 href={subor.url}
@@ -234,7 +253,10 @@ export function NespracovanyKompaktny({
               className="transition-transform"
             >
               {pdf ? (
-                <NahladPdf url={subor.url} />
+                <NahladPdf
+                  url={subor.url}
+                  zvyraznenie={zvyraznenie ? { ...zvyraznenie, aktivne: aktivnePole } : undefined}
+                />
               ) : (
                 <img
                   src={subor.url}
@@ -250,8 +272,12 @@ export function NespracovanyKompaktny({
       </div>
 
       {/* Panel s údajmi */}
-      <div className="flex min-w-0 flex-col rounded-2xl border border-border bg-card lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)]">
+      <div
+        onFocusCapture={(e) => setAktivnePole(poleZPrvku(e.target))}
+        className="flex min-w-0 flex-col rounded-2xl border border-border bg-card lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)]"
+      >
         <div className="min-h-0 flex-1 overflow-auto">
+          {upozornenie ? <div className="m-4">{upozornenie}</div> : null}
           {stav === "cita" && (
             <div className="m-4 flex items-center gap-2 rounded-lg bg-muted/50 p-3 text-sm">
               <Loader2 className="h-4 w-4 animate-spin" /> {t("Čítam doklad…")}
@@ -629,6 +655,7 @@ export function NespracovanyKompaktny({
               <PoliaZauctovania
                 navrhy={navrhy}
                 oznacenia={oznaceniaZUdajov(u)}
+                doklad={{ typ: druh === "blocek" ? "blocek" : "faktura", platba: u.platba }}
                 hodnoty={{
                   predkontacia: u.kody.predkontacia,
                   clenenie: u.kody.clenenie,
@@ -764,6 +791,7 @@ export function NespracovanyKompaktny({
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("Vytvoriť")}
           </button>
+          {pravidloZDokladu ? <div className="flex justify-center">{pravidloZDokladu}</div> : null}
         </div>
       </div>
     </div>

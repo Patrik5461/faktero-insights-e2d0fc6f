@@ -20,6 +20,8 @@ import { EmptyState, ListFooter, LogsToolbar } from "@/components/faktero/ListCo
 import { Landmark } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { DetailPohybu } from "@/components/faktero/DetailPohybu";
+import { nazovVybavenia, stavPohybu } from "@/lib/faktero/pohyb-vybavenie";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/transakcie")({
   head: ({ match }) => ({
@@ -83,6 +85,10 @@ function TxPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [smer, setSmer] = useState<"" | "prijate" | "odoslane">("");
+  /** Filter na pohyby vybavené bez dokladu (transakčná daň, „Pohyb nemá doklad“). */
+  const [vybavenie, setVybavenie] = useState<"" | "bez_dokladu" | "transakcna_dan">("");
+  /** Otvorený detail pohybu. */
+  const [detail, setDetail] = useState<string | null>(null);
 
   /*
    * Smer platby sa nedá vybrať rovnosťou — banka ho ukladá znamienkom sumy.
@@ -115,7 +121,7 @@ function TxPage() {
     // `iban` tu nikdy nebol — hľadanie kvôli nemu končilo chybou 400 a
     // nenašlo nič. Referencia pohybu je to, čo sa naozaj dá hľadať.
     searchColumns: ["counterparty", "variable_symbol", "description", "transaction_reference"],
-    filters: { bank_account_id: selected ?? null },
+    filters: { bank_account_id: selected ?? null, vybavenie: vybavenie || null },
     compare: compare as any,
     dateColumn: "booking_date",
     dateFrom: dateFrom || null,
@@ -250,6 +256,16 @@ function TxPage() {
                 { value: "odoslane", label: t("Iba odoslané") },
               ],
             },
+            {
+              label: t("Bez dokladu"),
+              value: vybavenie,
+              onChange: (v) => setVybavenie(v as "" | "bez_dokladu" | "transakcna_dan"),
+              options: [
+                { value: "", label: t("Všetky pohyby") },
+                { value: "bez_dokladu", label: t("Spárované bez dokladu") },
+                { value: "transakcna_dan", label: t("Transakčná daň") },
+              ],
+            },
           ]}
           dateFrom={dateFrom}
           dateTo={dateTo}
@@ -260,6 +276,7 @@ function TxPage() {
             setDateFrom("");
             setDateTo("");
             setSmer("");
+            setVybavenie("");
           }}
           right={
             <div className="flex flex-wrap gap-2">
@@ -330,7 +347,7 @@ function TxPage() {
                 <th className="px-3 py-2">{t("Protistrana")}</th>
                 <th className="px-3 py-2">{t("VS")}</th>
                 <th className="px-3 py-2">{t("Popis")}</th>
-                <th className="px-3 py-2">{t("Faktúra")}</th>
+                <th className="px-3 py-2">{t("Párovanie")}</th>
                 <th className="px-3 py-2 text-right">{t("Suma")}</th>
               </tr>
             </thead>
@@ -379,10 +396,39 @@ function TxPage() {
                           <Unlink className="h-3.5 w-3.5" />
                         </button>
                       </span>
-                    ) : Number(tx.amount) > 0 ? (
-                      <span className="text-xs text-muted-foreground">{t("nespárované")}</span>
                     ) : (
-                      "—"
+                      (() => {
+                        const stav = stavPohybu(tx);
+                        const popis =
+                          stav === "sparovany"
+                            ? t("spárované")
+                            : stav === "nesparovany"
+                              ? t("nespárované")
+                              : t(nazovVybavenia(stav) ?? "");
+                        const farba =
+                          stav === "nesparovany"
+                            ? "text-muted-foreground"
+                            : stav === "sparovany"
+                              ? "text-emerald-700 dark:text-emerald-300"
+                              : "rounded-full bg-sky-100 px-1.5 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300";
+                        return (
+                          <button
+                            onClick={() => setDetail(tx.id)}
+                            title={tx.vybavenie_poznamka ?? t("Detail pohybu")}
+                            className={`text-xs hover:underline ${farba}`}
+                          >
+                            {popis}
+                          </button>
+                        );
+                      })()
+                    )}
+                    {tx.matched_invoice_id && (
+                      <button
+                        onClick={() => setDetail(tx.id)}
+                        className="ml-2 text-xs text-muted-foreground hover:underline"
+                      >
+                        {t("detail")}
+                      </button>
                     )}
                   </td>
                   <td
@@ -409,6 +455,14 @@ function TxPage() {
             onPageSizeChange={setPageSize}
           />
         </div>
+        {detail && getActiveCompanyId() && (
+          <DetailPohybu
+            companyId={getActiveCompanyId()!}
+            pohybId={detail}
+            onClose={() => setDetail(null)}
+            onZmena={reload}
+          />
+        )}
       </PageBody>
     </>
   );

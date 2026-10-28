@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  cisloObjednavkyPodlaPredpon,
   kodyPrijatejUrcene,
+  maPredponu,
+  textyPreObjednavku,
   nastaveniaNespracovanych,
   PREDVOLENE_NESPRACOVANE,
   upravVytazeneUdaje,
@@ -90,5 +93,56 @@ describe("kodyPrijatejUrcene", () => {
     const firma = { pohoda_predkontacia_prijata: "1Fp", pohoda_clenenie_dph_prijata_pdp: "PDpdp" };
     expect(kodyPrijatejUrcene({ reverse_charge: true }, firma)).toBe(true);
     expect(kodyPrijatejUrcene({ reverse_charge: false }, firma)).toBe(false);
+  });
+});
+
+describe("predpony čísla objednávky", () => {
+  it("nastavenie predpôn orezané, bez duplicít", () => {
+    const n = nastaveniaNespracovanych({
+      nespracovane: { predponyObjednavky: [" OBJ- ", "obj-", "", "PO", 5] },
+    });
+    expect(n.predponyObjednavky).toEqual(["OBJ-", "PO", "5"]);
+    expect(PREDVOLENE_NESPRACOVANE.predponyObjednavky).toEqual([]);
+    expect(PREDVOLENE_NESPRACOVANE.typPodlaIban).toBe(false);
+    expect(nastaveniaNespracovanych({ nespracovane: { typPodlaIban: true } }).typPodlaIban).toBe(
+      true,
+    );
+  });
+
+  it("nájde číslo objednávky podľa predpony", () => {
+    const p = ["OBJ-", "PO"];
+    expect(cisloObjednavkyPodlaPredpon(["Fakturujeme podľa OBJ-2026-015."], p)).toBe(
+      "OBJ-2026-015",
+    );
+    expect(cisloObjednavkyPodlaPredpon(["Vaša objednávka PO: 4500123"], p)).toBe("PO4500123");
+    expect(cisloObjednavkyPodlaPredpon(["obj-77 a PO 1"], p)).toBe("obj-77");
+    // bez číslice, vnútri slova, dátum za „Po" — nie
+    expect(cisloObjednavkyPodlaPredpon(["PO BOX", "SPO123", "Po 12.10.2026"], p)).toBeNull();
+    expect(cisloObjednavkyPodlaPredpon(["OBJ-15"], [])).toBeNull();
+    // prvý text má prednosť
+    expect(cisloObjednavkyPodlaPredpon(["PO 9", "OBJ-1"], p)).toBe("PO9");
+  });
+
+  it("upravVytazeneUdaje doplní objednávku z textov AI, s predponou ju nemení", () => {
+    const n = { ...PREDVOLENE_NESPRACOVANE, predponyObjednavky: ["OBJ-"] };
+    const ai = { order_number: null, description: "Tovar podľa OBJ-42", items: [{ name: "x" }] };
+    const zaklad: { polozky: unknown[]; objednavka?: string } = { polozky: [] };
+    expect(upravVytazeneUdaje(zaklad, "faktura", n, textyPreObjednavku(ai)).objednavka).toBe(
+      "OBJ-42",
+    );
+    // AI vrátilo číslo bez predpony, predpona je inde v texte → vezme sa číslo s predponou
+    expect(
+      upravVytazeneUdaje({ ...zaklad, objednavka: "12345" }, "faktura", n, ["OBJ-7"]).objednavka,
+    ).toBe("OBJ-7");
+    expect(
+      upravVytazeneUdaje({ ...zaklad, objednavka: "OBJ-1" }, "faktura", n, ["OBJ-7"]).objednavka,
+    ).toBe("OBJ-1");
+    // bez predpôn sa nemení nič
+    expect(
+      upravVytazeneUdaje({ ...zaklad, objednavka: "12345" }, "faktura", PREDVOLENE_NESPRACOVANE, [
+        "OBJ-7",
+      ]).objednavka,
+    ).toBe("12345");
+    expect(maPredponu("obj-1", ["OBJ-"])).toBe(true);
   });
 });

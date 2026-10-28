@@ -50,6 +50,8 @@ export const navrhniParovanieDokladov = createServerFn({ method: "POST" })
         // Pohyb, ktorý už niečo uhrádza, nemá čo uhrádzať druhýkrát.
         .is("matched_expense_id", null)
         .is("matched_invoice_id", null)
+        // Transakčná daň či pohyb označený „bez dokladu“ doklad nehľadá.
+        .is("vybavenie", null)
         .lt("amount", 0)
         .order("booking_date", { ascending: false })
         .limit(500),

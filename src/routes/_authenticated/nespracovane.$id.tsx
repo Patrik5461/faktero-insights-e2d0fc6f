@@ -9,6 +9,8 @@ import { NavrhAiNespracovaneho, useNavrhZauctovania } from "@/components/faktero
 import { doplnNavrhDoUdajov, oznaceniaZUdajov } from "@/lib/faktero/ai-predkontacia";
 import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
 import { PravidloNespracovaneho } from "@/components/faktero/PravidloNespracovaneho";
+import { PravidloZDokladu } from "@/components/faktero/PravidloZDokladu";
+import type { ZakladPravidlaZDokladu } from "@/lib/faktero/pravidla-uctovania";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
@@ -43,6 +45,10 @@ import { potvrd } from "@/lib/potvrdenie";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
 import { zapamatajOtvoreny } from "@/lib/faktero/posledny-otvoreny";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { vystavenaPodlaIban } from "@/lib/faktero/nespracovane-iban";
+import { VlastnaFakturaUpozornenie } from "@/components/faktero/VlastnaFakturaUpozornenie";
+import { useZobrazitZvyraznenie } from "@/components/faktero/ZvyraznenieVytazenych";
+import { POLIA_ZVYRAZNENIA } from "@/lib/faktero/zvyraznenie-vytazenych";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nespracovaný doklad — Faktero") }] }),
@@ -77,6 +83,8 @@ function Detail() {
   const [vyberPole, setVyberPole] = useState<KlucPola | null>(null);
   const udajeRef = useRef<HTMLDivElement>(null);
   const { vzhlad, zmen: zmenVzhlad } = useVzhladNespracovanych();
+  // Zvýraznenie vyťažených údajov v náhľade (prepínač si pamätá prehliadač).
+  const [zobrazitZvyraznenie, prepniZvyraznenie] = useZobrazitZvyraznenie();
 
   async function obnov() {
     try {
@@ -169,6 +177,31 @@ function Detail() {
   const setRozpis = (i: number, z: Partial<UdajeNespracovaneho["rozpis"][number]>) =>
     set({ rozpis: u.rozpis.map((r, j) => (j === i ? { ...r, ...z } : r)), celkom: null });
 
+  /*
+    Vlastná vystavená faktúra (IBAN príjemcu platby je firemný) — nastavenie
+    „Automaticky určiť typ faktúry podľa firemných IBAN-ov". Nespracované
+    vystavené faktúry nezakladajú, takže upozornia a medzi prijaté ju pustia
+    len po potvrdení.
+  */
+  const vlastnyUcet = vystavenaPodlaIban({
+    zapnute: Boolean(d.nastavenia.typPodlaIban),
+    druh,
+    ibanDokladu: u.dodavatel.iban,
+    ucty: d.vlastneUcty ?? [],
+  });
+  const upozornenieVlastnej = vlastnyUcet ? (
+    <VlastnaFakturaUpozornenie
+      ucet={vlastnyUcet}
+      onInyDoklad={() => setDruh("ostatny")}
+      onZmaz={() => void zmazDoklad()}
+    />
+  ) : null;
+  const zvyraznenie = {
+    udaje: u,
+    polia: druh ? poliaPreDruh(druh) : POLIA_ZVYRAZNENIA,
+    zobrazit: zobrazitZvyraznenie,
+  };
+
   async function ulozZmeny() {
     setBusy(true);
     try {
@@ -187,6 +220,17 @@ function Detail() {
         t("Doplňte: {polia}", { polia: chyby.map((k) => t(NAZVY_POLI[k] ?? k)).join(", ") }),
       );
       return;
+    }
+    // Pri opakovaní kvôli duplicite už človek vlastnú faktúru potvrdil.
+    if (vlastnyUcet && !ajDuplicitu) {
+      const ano = await potvrd(
+        t(
+          "IBAN {iban} na doklade je váš — je to vaša vystavená faktúra, nie prijatá. Naozaj ju založiť medzi prijaté faktúry?",
+          { iban: vlastnyUcet.iban },
+        ),
+        { potvrdit: t("Založiť ako prijatú"), zrusit: t("Nezaložiť"), nebezpecne: true },
+      );
+      if (!ano) return;
     }
     setBusy(true);
     try {
@@ -331,6 +375,14 @@ function Detail() {
             onZmaz={() => void zmazDoklad()}
             companyId={d.companyId}
             rozdielVyrovna={rozdielVyrovna?.rozdiel ?? null}
+            upozornenie={upozornenieVlastnej}
+            zvyraznenie={zvyraznenie}
+            onPrepniZvyraznenie={prepniZvyraznenie}
+            pravidloZDokladu={
+              druh && druh !== "ostatny" ? (
+                <PravidloZDokladu companyId={d.companyId} zaklad={zakladPravidla(druh, u, d.odosielatelMailu)} />
+              ) : null
+            }
             pravidlo={
               <PravidloNespracovaneho
                 companyId={d.companyId}
@@ -339,6 +391,8 @@ function Detail() {
                 setU={setU}
                 createdBy={d.createdBy}
                 predmetMailu={d.predmetMailu}
+                odosielatelMailu={d.odosielatelMailu}
+                krajinaFirmy={d.krajinaFirmy}
                 aktivne={d.stav !== "cita"}
               />
             }
@@ -387,6 +441,8 @@ function Detail() {
                     setVyberPole(null);
                     zablikajPole(udajeRef.current, kluc);
                   }}
+                  zvyraznenie={{ ...zvyraznenie, aktivne: vyberPole }}
+                  onPrepniZvyraznenie={prepniZvyraznenie}
                 />
                 <a
                   href={d.subor.url}
@@ -411,6 +467,7 @@ function Detail() {
               </div>
             )}
             {d.chyba && <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{d.chyba}</div>}
+            {upozornenieVlastnej}
             {d.zdrojUdajov && (
               <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
                 {t("Údaje sú zo strojového záznamu faktúry")} (
@@ -670,6 +727,7 @@ function Detail() {
                   <PoliaZauctovania
                     siroke
                     navrhy={navrhy}
+                    doklad={{ typ: druh === "blocek" ? "blocek" : "faktura", platba: u.platba }}
                     hodnoty={hodnotyKodov}
                     oznacenia={oznaceniaZUdajov(u)}
                     setHodnoty={(h: any) =>
@@ -707,6 +765,8 @@ function Detail() {
                     setU={setU}
                     createdBy={d.createdBy}
                     predmetMailu={d.predmetMailu}
+                    odosielatelMailu={d.odosielatelMailu}
+                    krajinaFirmy={d.krajinaFirmy}
                     aktivne={d.stav !== "cita"}
                   />
                   <NauceneZDodavatela u={u} />
@@ -736,6 +796,13 @@ function Detail() {
               <button type="button" disabled={busy || d.stav === "cita"} onClick={() => void vytvorDoklad()} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("Vytvoriť")}
               </button>
+              {druh && druh !== "ostatny" ? (
+                <PravidloZDokladu
+                  companyId={d.companyId}
+                  zaklad={zakladPravidla(druh, u, d.odosielatelMailu)}
+                  tlacidlo
+                />
+              ) : null}
               <button type="button" disabled={busy} onClick={ulozZmeny} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-60">
                 {t("Uložiť zmeny")}
               </button>
@@ -764,4 +831,24 @@ function Detail() {
       </PageBody>
     </>
   );
+}
+
+/** Čo z nespracovaného dokladu predvyplní nové pravidlo účtovania. */
+function zakladPravidla(
+  druh: DruhNespracovaneho,
+  u: UdajeNespracovaneho,
+  odosielatel: string | null | undefined,
+): ZakladPravidlaZDokladu {
+  return {
+    druh: druh === "blocek" ? "blocek" : "prijata",
+    nazov: u.dodavatel.nazov,
+    ico: u.dodavatel.ico,
+    odosielatel: odosielatel ?? null,
+    vs: druh === "blocek" ? null : u.vs,
+    platba: u.platba,
+    predkontacia: u.kody.predkontacia,
+    clenenie: u.kody.clenenie,
+    kv: u.kody.kv,
+    kategoria: u.kategoria,
+  };
 }

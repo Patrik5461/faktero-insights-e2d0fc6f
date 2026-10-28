@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { KopirovatNastaveniaOkno } from "@/components/faktero/KopirovatNastaveniaOkno";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PredponyObjednavky } from "@/components/faktero/PredponyObjednavky";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Download, Loader2, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
@@ -26,7 +27,11 @@ import {
   ziadostCiselnikov,
   DRUHY_CISELNIKA,
   RADY_POHODY,
+  TYPY_DOKLADU_POLOZKY,
+  TYPY_PLATBY_POLOZKY,
   type DruhCiselnika,
+  type TypDokladuPolozky,
+  type TypPlatbyPolozky,
 } from "@/lib/faktero/predkontacie";
 import {
   importCiselnikaFn,
@@ -37,7 +42,7 @@ import {
   zmazPredkontaciuFn,
 } from "@/lib/faktero/predkontacie.functions";
 import { potvrd } from "@/lib/potvrdenie";
-import { KV_PREDVOLENE, nazovKv, type DruhKvPredvoleneho } from "@/lib/faktero/kv-clenenie";
+import { KV_CLENENIA, KV_PREDVOLENE, nazovKv, type DruhKvPredvoleneho } from "@/lib/faktero/kv-clenenie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -71,6 +76,8 @@ type Zaznam = {
   druhy_dokladov: string[];
   kategoria: string | null;
   pomer: PomerHodnota;
+  typ_dokladu: TypDokladuPolozky | null;
+  typ_platby: TypPlatbyPolozky | null;
 };
 
 const ZDROJ: Record<string, string> = { pohoda: "Pohoda", subor: "súbor", rucne: "ručne" };
@@ -479,6 +486,60 @@ function Predvolene({
             )}
           </span>
         </label>
+        <div>
+          <span className="text-xs text-muted-foreground">
+            {t("Zaokrúhlenie zvlášť pre kladné a záporné (prázdne = spoločná predkontácia vyššie)")}
+          </span>
+          <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-[auto_1fr_1fr_1fr] sm:items-center [&>*]:min-w-0">
+            {(["plus", "minus"] as const).map((z) => (
+              <Fragment key={z}>
+                <span className="text-xs font-medium">
+                  {z === "plus" ? t("Kladné (napr. 548100)") : t("Záporné (napr. 648100)")}
+                </span>
+                <KodPohody
+                  ariaLabel={z === "plus" ? t("Predkontácia kladného zaokrúhlenia") : t("Predkontácia záporného zaokrúhlenia")}
+                  value={h[`pohoda_predkontacia_zaokruhlenie_${z}`] ?? ""}
+                  onChange={(v) => setH({ ...h, [`pohoda_predkontacia_zaokruhlenie_${z}`]: v })}
+                  moznosti={ponuka(zaznamy, "predkontacia")}
+                  placeholder={ine.predkontaciaZaokruhlenie || t("predkontácia")}
+                  bezPopisu
+                  vyber
+                />
+                <KodPohody
+                  ariaLabel={z === "plus" ? t("Členenie DPH kladného zaokrúhlenia") : t("Členenie DPH záporného zaokrúhlenia")}
+                  value={h[`pohoda_clenenie_dph_zaokruhlenie_${z}`] ?? ""}
+                  onChange={(v) => setH({ ...h, [`pohoda_clenenie_dph_zaokruhlenie_${z}`]: v })}
+                  moznosti={ponukaClenenia(ponuka(zaznamy, "clenenie_dph"), "prijata")}
+                  placeholder={t("členenie DPH")}
+                  bezPopisu
+                  vyber
+                />
+                {kvStlpec ? (
+                  <select
+                    aria-label={z === "plus" ? t("Členenie KV kladného zaokrúhlenia") : t("Členenie KV záporného zaokrúhlenia")}
+                    value={h[`kv_clenenie_zaokruhlenie_${z}`] ?? ""}
+                    onChange={(e) => setH({ ...h, [`kv_clenenie_zaokruhlenie_${z}`]: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">{t("KV: nezadané")}</option>
+                    {KV_CLENENIA.map((k) => (
+                      <option key={k.kod} value={k.kod}>
+                        {t(k.nazov)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span />
+                )}
+              </Fragment>
+            ))}
+          </div>
+          <span className="mt-1 block text-xs text-muted-foreground">
+            {t(
+              "Kladné je, keď je suma dokladu vyššia než súčet položiek, záporné naopak. Pri exporte do Pohody sa vyberie podľa znamienka rozdielu.",
+            )}
+          </span>
+        </div>
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
@@ -558,6 +619,11 @@ function Predvolene({
               "Uprednostniť domácu menu pri vyťažovaní",
               "Keď sú na doklade sumy vo viacerých menách (napr. v cudzej mene aj s prepočtom), vyťažia sa sumy v domácej mene firmy. Doklady len v jednej mene sa nemenia.",
             ],
+            [
+              "typPodlaIban",
+              "Automaticky určiť typ faktúry podľa firemných IBAN-ov",
+              "Keď je na faktúre ako príjemca platby IBAN niektorého vášho bankového účtu, ide o vašu vystavenú faktúru — Faktero na to upozorní a medzi prijaté ju založí len po potvrdení.",
+            ],
           ] as const
         ).map(([k, n, popis]) => (
           <label key={k} className="flex items-start gap-2">
@@ -595,6 +661,10 @@ function Predvolene({
             )}
           </span>
         </label>
+        <PredponyObjednavky
+          hodnota={nesp.predponyObjednavky}
+          onZmena={(predponyObjednavky) => setNesp({ ...nesp, predponyObjednavky })}
+        />
       </fieldset>
 
       <fieldset className="mt-4 rounded-md border border-border p-3">
@@ -697,6 +767,13 @@ function Predvolene({
                 placeholder={h.pohoda_predkontacia_banka || t("napr. {kod}", { kod: "3Bv" })}
                 vyber
               />
+              {o.kod === "transakcna_dan" && (
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {t(
+                    "Transakčná daň (zákon 235/2024 Z. z.) nemá doklad. Založte si v Pohode predkontáciu s účtami podľa vašej osnovy (nákladový účet dane a bankový účet) a napíšte sem jej skratku.",
+                  )}
+                </span>
+              )}
             </label>
           ))}
         </div>
@@ -901,6 +978,8 @@ const PRAZDNY = {
   druhy_dokladov: [] as string[],
   kategoria: "",
   pomer: null as PomerHodnota,
+  typ_dokladu: null as TypDokladuPolozky | null,
+  typ_platby: null as TypPlatbyPolozky | null,
 };
 
 function Ciselnik({
@@ -1126,6 +1205,49 @@ function Ciselnik({
               ))}
             </div>
           </div>
+          {druh === "predkontacia" && (
+            <>
+              <label className="block">
+                <span className="text-xs text-muted-foreground">{t("Typ dokladu")}</span>
+                <select
+                  value={form.typ_dokladu ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, typ_dokladu: (e.target.value || null) as TypDokladuPolozky | null })
+                  }
+                  className={vstup}
+                >
+                  <option value="">{t("Všetky doklady")}</option>
+                  {TYPY_DOKLADU_POLOZKY.map((x) => (
+                    <option key={x.kod} value={x.kod}>
+                      {t(x.nazov)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs text-muted-foreground">{t("Typ platby")}</span>
+                <select
+                  value={form.typ_platby ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, typ_platby: (e.target.value || null) as TypPlatbyPolozky | null })
+                  }
+                  className={vstup}
+                >
+                  <option value="">{t("Všetky platby")}</option>
+                  {TYPY_PLATBY_POLOZKY.map((x) => (
+                    <option key={x.kod} value={x.kod}>
+                      {t(x.nazov)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="text-xs text-muted-foreground sm:col-span-4 sm:self-end">
+                {t(
+                  "Pri doklade s rovnakým typom a platbou sa táto položka ponúkne medzi prvými — napr. „Nákup PHM – platba kartou“ len pri bločku platenom kartou.",
+                )}
+              </p>
+            </>
+          )}
           <label className="block sm:col-span-2">
             <span className="text-xs text-muted-foreground">{t("Použiť sám pre kategóriu nákladu")}</span>
             <select
@@ -1255,6 +1377,18 @@ function Ciselnik({
                           .map((k) => t(PREDVOLENE.find((p) => p.kluc === k)?.nazov ?? k))
                           .join(", ")
                       : t("všade")}
+                    {z.typ_dokladu || z.typ_platby ? (
+                      <span className="block">
+                        {[
+                          z.typ_dokladu &&
+                            t(TYPY_DOKLADU_POLOZKY.find((x) => x.kod === z.typ_dokladu)?.nazov ?? z.typ_dokladu),
+                          z.typ_platby &&
+                            t(TYPY_PLATBY_POLOZKY.find((x) => x.kod === z.typ_platby)?.nazov ?? z.typ_platby),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    ) : null}
                     {z.kategoria ? (
                       <span className="block text-foreground">
                         {t("kategória:")}{" "}
@@ -1290,6 +1424,8 @@ function Ciselnik({
                           druhy_dokladov: z.druhy_dokladov ?? [],
                           kategoria: z.kategoria ?? "",
                           pomer: z.pomer ?? null,
+                          typ_dokladu: z.typ_dokladu ?? null,
+                          typ_platby: z.typ_platby ?? null,
                         })
                       }
                       className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"

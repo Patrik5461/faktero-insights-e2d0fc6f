@@ -36,6 +36,7 @@ import {
 export type { VysledokNavrhu, StavNavrhu };
 import { klucDodavatela, navrhPola, type DruhUcenia, type PoliaNavyku } from "./ucenie-z-oprav";
 import {
+  krajinaDokladu,
   prvePravidlo,
   typPrijatej,
   type DokladNaPorovnanie,
@@ -352,6 +353,10 @@ export async function navrhPrijatej(
     payment_method: row.payment_method ?? null,
     created_by: row.created_by ?? null,
     predmet_mailu: row.predmet_mailu ?? null,
+    odosielatel_mailu: row.odosielatel_mailu ?? null,
+    krajina: krajinaDokladu(row.supplier_country, row.supplier_ic_dph),
+    krajina_firmy: kontext.krajina,
+    variabilny_symbol: row.variable_symbol ?? null,
     druh: "prijata",
     typ: typPrijatej(row.type, row.amount_total, row.opravuje_cislo),
   });
@@ -390,6 +395,9 @@ export async function navrhBlocku(
     payment_method: row.payment_method ?? null,
     created_by: row.created_by ?? null,
     predmet_mailu: row.predmet_mailu ?? null,
+    odosielatel_mailu: row.odosielatel_mailu ?? null,
+    krajina: krajinaDokladu(null, row.supplier_ic_dph),
+    krajina_firmy: kontext.krajina,
     druh: "blocek",
     typ: null,
   });
@@ -435,13 +443,15 @@ export async function navrhNespracovaneho(
     vstup = vstupZPrijatej(riadok, krajina, rozpisPrijatej(riadok));
   }
   let predmetMailu: string | null = null;
+  let odosielatelMailu: string | null = null;
   if (r.inbox_message_id) {
     const { data: m } = await supabase
       .from("inbox_messages")
-      .select("subject")
+      .select("subject, from_email")
       .eq("id", r.inbox_message_id)
       .maybeSingle();
     predmetMailu = m?.subject ?? null;
+    odosielatelMailu = m?.from_email ? String(m.from_email).trim().toLowerCase() : null;
   }
   const blocek = druh === "blocek";
   const porovnanie: DokladNaPorovnanie = {
@@ -450,6 +460,10 @@ export async function navrhNespracovaneho(
     payment_method: u.platba || (blocek ? "karta" : "prevod"),
     created_by: r.created_by ?? null,
     predmet_mailu: predmetMailu,
+    odosielatel_mailu: odosielatelMailu,
+    krajina: krajinaDokladu(null, u.dodavatel.icDph),
+    krajina_firmy: kontext.krajina,
+    variabilny_symbol: blocek ? null : u.vs || null,
     druh: blocek ? "blocek" : "prijata",
     typ: blocek
       ? null

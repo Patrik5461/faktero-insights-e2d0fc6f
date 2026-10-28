@@ -933,6 +933,10 @@ export async function prenesPohyby(ctx: ApiCtx, ucetId: string): Promise<Odpoved
       variable_symbol: p.variable_symbol ?? null,
       counterparty:
         [p.counterparty, p.counterparty_iban].filter(Boolean).join(" · ").slice(0, 255) || null,
+      // Vlastný stĺpec kvôli pravidlám „Spárované bez dokladu“ podľa IBAN-u protistrany.
+      counterparty_iban: p.counterparty_iban
+        ? p.counterparty_iban.replace(/\s+/g, "").toUpperCase()
+        : null,
       description: p.description ?? null,
       transaction_reference: p.reference ?? (await odvodReferenciu(p, n)),
     });

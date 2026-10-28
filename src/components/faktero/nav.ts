@@ -109,6 +109,7 @@ export const NAV: NavGroup[] = [
       { to: "/efaktura/odoslane", label: "Odoslané eFaktúry" },
       { to: "/efaktura/prijate", label: "Prijaté eFaktúry" },
       { to: "/efaktura/dorucenia", label: "Doručenia eFaktúr" },
+      { to: "/efaktura/kontrola", label: "Kontrola e-faktúry" },
     ],
   },
   {

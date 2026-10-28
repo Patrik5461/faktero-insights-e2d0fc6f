@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import type { MoznostKodu } from "@/lib/faktero/predkontacie";
+import { textMoznosti, type MoznostKodu } from "@/lib/faktero/predkontacie";
 import { useT } from "@/lib/i18n/useT";
 
 /**
@@ -75,9 +75,8 @@ export function KodPohody({
           ) : null}
           {moznosti.map((m) => (
             <option key={m.kod} value={m.kod}>
-              {m.kod}
-              {m.popis ? ` — ${m.popis}` : ""}
-              {m.ucty ? ` (${m.ucty})` : ""}
+              {/* Názov ako hlavný text (ako účtovné položky): „Nákup PHM – karta · 1Fk · 501/325". */}
+              {textMoznosti(m)}
             </option>
           ))}
           <option value="__iny__">{t("Iný kód…")}</option>

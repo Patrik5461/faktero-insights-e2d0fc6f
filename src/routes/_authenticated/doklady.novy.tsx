@@ -10,6 +10,7 @@ import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-r
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno";
 import { VyberPravidla } from "@/components/faktero/VyberPravidla";
+import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { KodPohody } from "@/components/faktero/KodPohody";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { VozidloPicker } from "@/components/faktero/VozidloPicker";
@@ -1057,18 +1058,35 @@ function NovyDokladPage() {
                   <div className="mb-3">
                   <VyberPravidla
                     companyId={cid}
-                    doklad={{ ...form, pravidlo_id: ulozeny?.pravidlo_id ?? null }}
+                    doklad={{
+                      ...form,
+                      pravidlo_id: ulozeny?.pravidlo_id ?? null,
+                      created_by: ulozeny?.created_by ?? null,
+                      predmet_mailu: ulozeny?.predmet_mailu ?? null,
+                      odosielatel_mailu: ulozeny?.odosielatel_mailu ?? null,
+                    }}
                     zaklad={{
                       predkontacia: form.pohoda_predkontacia,
                       clenenie: form.pohoda_clenenie_dph,
                       kategoria: form.category,
                       kv: form.kv_clenenie,
+                      pokladna: form.pohoda_pokladna,
                     }}
                     onPouzi={(p) => {
                       if (p.predkontacia) updateForm("pohoda_predkontacia", p.predkontacia);
                       if (p.clenenie_dph) updateForm("pohoda_clenenie_dph", p.clenenie_dph);
                       if (p.kategoria) updateForm("category", p.kategoria as any);
                       if (p.kv_clenenie) updateForm("kv_clenenie", p.kv_clenenie);
+                      if (p.pokladna) updateForm("pohoda_pokladna", p.pokladna);
+                    }}
+                    onPredloha={(p) => {
+                      // Predloha prepíše len to, čo má vyplnené.
+                      if (p.predkontacia) updateForm("pohoda_predkontacia", p.predkontacia);
+                      if (p.clenenie_dph) updateForm("pohoda_clenenie_dph", p.clenenie_dph);
+                      if (p.kv_clenenie) updateForm("kv_clenenie", p.kv_clenenie);
+                      if (p.pokladna) updateForm("pohoda_pokladna", p.pokladna);
+                      if (p.rad) updateForm("pohoda_rad", p.rad);
+                      if (p.poznamka) updateForm("int_poznamka", p.poznamka);
                     }}
                   />
                   </div>
@@ -1081,7 +1099,10 @@ function NovyDokladPage() {
                       odkazNaCiselnik
                       value={form.pohoda_predkontacia}
                       onChange={(v) => updateForm("pohoda_predkontacia", v)}
-                      moznosti={kody?.predkontacie ?? []}
+                      moznosti={zoradPodlaDokladu(kody?.predkontacie ?? [], {
+                        typ: "blocek",
+                        platba: form.payment_method,
+                      })}
                       placeholder={
                         kody?.podlaKategorie?.[form.category]?.predkontacia ??
                         kody?.predvolenaPredkontacia ??

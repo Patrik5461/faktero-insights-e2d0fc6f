@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { VyberPravidla } from "./VyberPravidla";
+import { uplatniPredlohu } from "@/lib/faktero/predlohy-uctovania";
 import { typPrijatej } from "@/lib/faktero/pravidla-uctovania";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -18,7 +19,11 @@ import {
   zrusZauctovanieFn,
 } from "@/lib/faktero/zauctovanie.functions";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
-import type { MoznostKodu } from "@/lib/faktero/predkontacie";
+import {
+  zoradPodlaDokladu,
+  type MoznostKodu,
+  type TypDokladuPolozky,
+} from "@/lib/faktero/predkontacie";
 import { KV_PRIJATE, kvAutomaticky, kvSPredvolenym } from "@/lib/faktero/kv-clenenie";
 import { KodPohody } from "./KodPohody";
 import { RozuctovaniePanel } from "./RozuctovaniePanel";
@@ -76,6 +81,7 @@ export function PoliaZauctovania({
   kvAuto,
   oznacenia,
   siroke = true,
+  doklad,
 }: {
   navrhy: Navrhy | null;
   hodnoty: Hodnoty;
@@ -90,8 +96,13 @@ export function PoliaZauctovania({
    * vedľa seba, keď je miesto (inak tiež pod sebou).
    */
   siroke?: boolean;
+  /** Typ dokladu a platby — účtovné položky pre ne sa ponúknu prvé. */
+  doklad?: { typ?: TypDokladuPolozky | null; platba?: string | null };
 }) {
   const { t } = useT();
+  const predkontacie = doklad
+    ? zoradPodlaDokladu(navrhy?.predkontacie ?? [], doklad)
+    : (navrhy?.predkontacie ?? []);
   const stitok = (pole: PoleNavrhu) =>
     oznacenia?.[pole] ? <StitokNavrhu zdroj={oznacenia[pole]!} /> : null;
   const vstup = siroke
@@ -116,7 +127,7 @@ export function PoliaZauctovania({
                 : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? t("napr. 1Fp"))
             }
             onChange={(v) => setHodnoty({ ...hodnoty, predkontacia: v })}
-            moznosti={navrhy?.predkontacie ?? []}
+            moznosti={predkontacie}
             className={vstup}
             vyber
           />
@@ -257,7 +268,7 @@ export function PoliaZauctovania({
               : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? t("napr. 1Fp"))
           }
           onChange={(v) => setHodnoty({ ...hodnoty, predkontacia: v })}
-          moznosti={navrhy?.predkontacie ?? []}
+          moznosti={predkontacie}
           className={vstup}
           vyber
         />
@@ -651,6 +662,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
               hodnoty={h}
               setHodnoty={setH}
               oznacenia={oznacenia}
+              doklad={{ typ: "faktura", platba: row.payment_method }}
               kvAuto={
                 kvSPredvolenym(
                   kvAutomaticky({
@@ -685,6 +697,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
                   kv: p.kv_clenenie ?? h.kv,
                 })
               }
+              onPredloha={(p) => setH(uplatniPredlohu(h, p))}
             />
             <p className="mt-2 text-xs text-muted-foreground">
               {t("Prázdne pole = predvolené z")}{" "}

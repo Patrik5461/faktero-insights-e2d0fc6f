@@ -13,6 +13,7 @@
 
 import type { DruhNespracovaneho, UdajeNespracovaneho } from "./nespracovane";
 import {
+  krajinaDokladu,
   prvePravidlo,
   pravidloSedi,
   typPrijatej,
@@ -47,7 +48,12 @@ function zPravidla(p: Pravidlo, pole: PolePravidla): string {
 export function porovnanieNespracovaneho(
   u: UdajeNespracovaneho,
   druh: DruhNespracovaneho | "" | null,
-  kontext: { createdBy?: string | null; predmetMailu?: string | null } = {},
+  kontext: {
+    createdBy?: string | null;
+    predmetMailu?: string | null;
+    odosielatelMailu?: string | null;
+    krajinaFirmy?: string | null;
+  } = {},
 ): DokladNaPorovnanie | null {
   if (!druh || druh === "ostatny") return null;
   const blocek = druh === "blocek";
@@ -57,6 +63,10 @@ export function porovnanieNespracovaneho(
     payment_method: u.platba || (blocek ? "karta" : "prevod"),
     created_by: kontext.createdBy ?? null,
     predmet_mailu: kontext.predmetMailu ?? null,
+    odosielatel_mailu: kontext.odosielatelMailu ?? null,
+    krajina: krajinaDokladu(null, u.dodavatel.icDph),
+    krajina_firmy: kontext.krajinaFirmy ?? null,
+    variabilny_symbol: blocek ? null : u.vs || null,
     druh: blocek ? "blocek" : "prijata",
     typ: blocek
       ? null

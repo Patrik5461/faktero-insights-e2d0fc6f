@@ -42,6 +42,8 @@ async function podklady(supabase: any, companyId: string) {
       )
       .eq("company_id", companyId)
       .is("matched_invoice_id", null)
+      // Vybavené bez dokladu (pravidlo, ručne) sa už nepárujú.
+      .is("vybavenie", null)
       .gt("amount", 0)
       .gte("booking_date", od)
       .order("booking_date", { ascending: false })

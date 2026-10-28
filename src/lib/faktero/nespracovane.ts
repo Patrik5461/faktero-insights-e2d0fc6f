@@ -655,12 +655,57 @@ export function zhrnutieNespracovaneho(r: Record<string, any>) {
           ? u.rozpis.reduce((a: number, x: any) => a + Number(x.zaklad || 0) + Number(x.dph || 0), 0)
           : null,
     mena: (u.mena as string) || "EUR",
+    /** Základ dane — pre súčet „bez DPH“ v lište výberu; bez rozpisu nie je známy. */
+    zaklad:
+      Array.isArray(u.rozpis) && u.rozpis.length
+        ? u.rozpis.reduce((a: number, x: any) => a + Number(x.zaklad || 0), 0)
+        : null,
+    platba: (u.platba as string) || null,
+    predkontacia: (u.kody?.predkontacia as string) || null,
     subor: (r.file_name ?? null) as string | null,
     chyba: (r.chyba ?? null) as string | null,
     inboxMessageId: (r.inbox_message_id ?? null) as string | null,
     /** Kto doklad nahral (pri maile majiteľ adresy — meno sa preto pri maile neukazuje). */
     nahral: (r.created_by ?? null) as string | null,
     vytvorene: r.created_at as string,
+  };
+}
+
+/**
+ * Nespracovaný doklad v tvare pre hromadný príkaz na úhradu (`pripravPlatby`).
+ * Údaje sú tie isté, aké ukáže detail: uložené, a kým ich nikto neotvoril,
+ * vyťažené z AI. Dobropis, bloček a iný doklad sa neplatia — vrátia dôvod,
+ * ktorý okno príkazu ukáže; nič sa nevynechá potichu.
+ */
+export function naUhraduZNespracovaneho(
+  r: { id: string; druh?: string | null; udaje?: unknown; ai?: Record<string, unknown> | null },
+  dnes: string,
+) {
+  const ulozene = nacitajUdaje(r.udaje);
+  const u = ulozene.dodavatel.nazov || ulozene.cislo || !r.ai ? ulozene : udajeZAi(r.ai, dnes);
+  const druh = r.druh ?? "";
+  const dovod =
+    druh === "dobropis"
+      ? "je dobropis — peniaze vracia dodávateľ"
+      : druh === "blocek"
+        ? "je bloček — zaplatený na mieste"
+        : druh === "ostatny"
+          ? "nie je faktúra (iný doklad)"
+          : null;
+  return {
+    id: r.id,
+    invoice_number: u.cislo || null,
+    supplier_name: u.dodavatel.nazov || null,
+    supplier_iban: u.dodavatel.iban || null,
+    amount_total: sucty(u).celkom,
+    currency: u.mena || "EUR",
+    due_date: u.splatnost || null,
+    status: "received",
+    payment_method: u.platba || null,
+    variable_symbol: u.vs || null,
+    specific_symbol: u.ss || null,
+    constant_symbol: u.ks || null,
+    dovod,
   };
 }
 

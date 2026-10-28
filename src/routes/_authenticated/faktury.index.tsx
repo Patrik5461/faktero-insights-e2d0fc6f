@@ -9,6 +9,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeZapnute } from "@/lib/faktero/search-parametre";
 import { jeOtvorena } from "@/lib/faktero/faktury-sumy";
 import { sumaNaZobrazenie } from "@/lib/faktero/dobropis-zobrazenie";
+import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
+import { polozkaVystavenej } from "@/lib/faktero/suhrn-vyberu";
 import { DNI_PAROVANIA, MAX_PAROVANIA } from "@/lib/faktero/parovanie-limity";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
@@ -257,6 +259,7 @@ function InvoicesPage() {
       .select("id", { count: "exact", head: true })
       .eq("company_id", cid)
       .is("matched_invoice_id", null)
+      .is("vybavenie", null)
       .gt("amount", 0)
       .gte("booking_date", od)
       .then(({ count }) => setCakaNaParovanie(Math.min(count ?? 0, MAX_PAROVANIA)));
@@ -1299,6 +1302,14 @@ function InvoicesPage() {
             }}
           />
         )}
+        {/* Súčet označených faktúr — zálohová mimo súčtu, dobropis odpočítava, meny zvlášť. */}
+        {!list.showDeleted ? (
+          <SuctovaListaVyberu
+            polozky={selectedRows.map((r: any) => polozkaVystavenej(r))}
+            pocet={list.selectedIds.length}
+            onZrusit={list.clearSelection}
+          />
+        ) : null}
       </PageBody>
 
       <ConfirmDialog

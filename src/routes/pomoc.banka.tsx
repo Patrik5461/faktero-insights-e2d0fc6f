@@ -281,6 +281,26 @@ const sections: HelpSection[] = [
           zmaže a faktúru vráti medzi otvorené.
         </p>
         <p>
+          <strong>Pohyb bez dokladu.</strong> Kliknutím na stav v stĺpci Párovanie sa otvorí detail
+          pohybu. Poplatok banky, mzdu či odvod poisťovni označíte tlačidlom{" "}
+          <strong>Pohyb nemá doklad</strong> (aj s poznámkou) — medzi nespárovanými sa potom
+          neukazuje. Pri spárovanom pohybe detail ukáže všetky doklady so súčtom „Spolu X z Y“ a
+          dajú sa odpárovať aj naraz.
+        </p>
+        <p>
+          <strong>Transakčná daň.</strong> Pohyby, ktoré banka sama nazve transakčnou daňou (zákon
+          235/2024 Z. z.), Faktero označí samo, ostatné tlačidlom{" "}
+          <strong>Označiť ako transakčná daň</strong>. Vo výpise do Pohody dostanú predkontáciu,
+          ktorú nastavíte v <Link to="/uctovnictvo/predkontacie">predkontáciách</Link> pri označení
+          „Transakčná daň“.
+        </p>
+        <p>
+          <strong>Pravidlá pre opakované pohyby.</strong> V detaile pohybu kliknite na{" "}
+          <strong>Vytvoriť pravidlo z tohto pohybu</strong> — predvyplní IBAN protistrany, smer a
+          variabilný symbol s výsledkom „Spárované bez dokladu“. Pravidlo zaberie pri každom novom
+          pohybe z banky aj z nahratého výpisu a po uložení vybaví aj staršie nespárované pohyby.
+        </p>
+        <p>
           Odchádzajúce platby sa nepárujú — tie patria k prijatým faktúram, nie k vystaveným.
           Párovanie podľa variabilného symbolu funguje spoľahlivo len vtedy, keď ho odberateľ
           uvedie; preto Faktero predvypĺňa variabilný symbol z čísla faktúry.

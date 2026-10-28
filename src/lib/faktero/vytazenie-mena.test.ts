@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { menaPreVytazenie, pokynCitania, pokynDomacejMeny } from "./vytazenie-mena";
+import {
+  pokynPredponObjednavky,
+  menaPreVytazenie,
+  pokynCitania,
+  pokynDomacejMeny,
+} from "./vytazenie-mena";
 import { nastaveniaNespracovanych } from "./nespracovane-nastavenia";
 import { udajeZAi } from "./nespracovane";
 
@@ -75,5 +80,17 @@ describe("udajeZAi — položky v inej mene ako sumy", () => {
     expect(udajeZAi(ai, "2026-10-22").polozkyVypnute).toBeUndefined();
     expect(udajeZAi({ ...ai, items_currency: "EUR" }, "2026-10-22").polozkyVypnute).toBeUndefined();
     expect(udajeZAi({ ...ai, items_currency: null }, "2026-10-22").polozkyVypnute).toBeUndefined();
+  });
+});
+
+describe("pokyn s predponami čísla objednávky", () => {
+  it("bez predpôn sa pokyn nemení, s nimi ich AI dostane a záver ostane posledný", () => {
+    const zaklad = "Pokyn.\nČo na doklade nie je, nechaj null — nič si nevymýšľaj.";
+    expect(pokynPredponObjednavky([])).toBe("");
+    expect(pokynCitania(zaklad, { predponyObjednavky: [] })).toBe(zaklad);
+    const s = pokynCitania(zaklad, { predponyObjednavky: ["OBJ-", 'P"O'] });
+    expect(s).toContain('„OBJ-"');
+    expect(s).toContain('„PO"');
+    expect(s.trimEnd().endsWith("nič si nevymýšľaj.")).toBe(true);
   });
 });

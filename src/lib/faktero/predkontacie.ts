@@ -154,6 +154,36 @@ export const PREDVOLENE: {
   },
 ];
 
+/**
+ * Zaokrúhlenie zvlášť pre kladný a záporný rozdiel (napr. 548100 / 648100)
+ * s členením DPH a KV. Spoločné `pohoda_predkontacia_zaokruhlenie` ostáva
+ * predvolené, keď konkrétne nie je vyplnené.
+ */
+export const STLPCE_ZAOKRUHLENIA = [
+  "pohoda_predkontacia_zaokruhlenie_plus",
+  "pohoda_predkontacia_zaokruhlenie_minus",
+  "pohoda_clenenie_dph_zaokruhlenie_plus",
+  "pohoda_clenenie_dph_zaokruhlenie_minus",
+  "kv_clenenie_zaokruhlenie_plus",
+  "kv_clenenie_zaokruhlenie_minus",
+] as const;
+
+export type KodyZaokruhlenia = { predkontacia: string | null; clenenie: string | null; kv: string | null };
+
+/** Kódy pre položku zaokrúhlenia podľa znamienka rozdielu (kladný = doklad je vyšší než položky). */
+export function kodyZaokruhlenia(
+  firma: Record<string, unknown> | null | undefined,
+  rozdiel: number,
+): KodyZaokruhlenia {
+  const t = (v: unknown) => String(v ?? "").trim() || null;
+  const z = rozdiel < 0 ? "minus" : "plus";
+  return {
+    predkontacia: t(firma?.[`pohoda_predkontacia_zaokruhlenie_${z}`]) ?? t(firma?.pohoda_predkontacia_zaokruhlenie),
+    clenenie: t(firma?.[`pohoda_clenenie_dph_zaokruhlenie_${z}`]),
+    kv: t(firma?.[`kv_clenenie_zaokruhlenie_${z}`]),
+  };
+}
+
 /** Stĺpce na `companies`, ktoré stránka predkontácií ukladá. */
 export const STLPCE_PREDVOLENYCH = [
   ...PREDVOLENE.flatMap((p) =>
@@ -167,6 +197,7 @@ export const STLPCE_PREDVOLENYCH = [
   "pohoda_rad_pokladna",
   "pohoda_rad_interne",
   "pohoda_stredisko",
+  ...STLPCE_ZAOKRUHLENIA,
 ];
 
 /** Predvolené číselné rady Pohody — stĺpec na firme a pre ktorú agendu. */
@@ -583,7 +614,54 @@ export type MoznostKodu = {
   popis: string | null;
   agenda: string;
   ucty: string | null;
+  /** Účtovná položka len pre faktúru či bloček (prázdne = všetky). */
+  typDokladu?: TypDokladuPolozky | null;
+  /** Účtovná položka len pre tento typ platby (prázdne = všetky). */
+  typPlatby?: TypPlatbyPolozky | null;
 };
+
+export type TypDokladuPolozky = "faktura" | "blocek";
+export type TypPlatbyPolozky = "hotovost" | "karta" | "prevod";
+
+export const TYPY_DOKLADU_POLOZKY: { kod: TypDokladuPolozky; nazov: string }[] = [
+  { kod: "faktura", nazov: "Faktúra" },
+  { kod: "blocek", nazov: "Bloček" },
+];
+export const TYPY_PLATBY_POLOZKY: { kod: TypPlatbyPolozky; nazov: string }[] = [
+  { kod: "hotovost", nazov: "Hotovosť" },
+  { kod: "karta", nazov: "Karta" },
+  { kod: "prevod", nazov: "Prevod" },
+];
+
+/**
+ * Ponuka zoradená pre konkrétny doklad (ako účtovné položky v Doklado):
+ * najprv položky presne pre tento typ dokladu a platby, potom všeobecné,
+ * nakoniec tie pre iný doklad či platbu. Inak poradie ostáva.
+ */
+export function zoradPodlaDokladu(
+  moznosti: MoznostKodu[],
+  doklad: { typ?: TypDokladuPolozky | null; platba?: string | null },
+): MoznostKodu[] {
+  const skore = (m: MoznostKodu) => {
+    const ineTyp = Boolean(m.typDokladu && doklad.typ && m.typDokladu !== doklad.typ);
+    const inaPlatba = Boolean(m.typPlatby && doklad.platba && m.typPlatby !== doklad.platba);
+    if (ineTyp || inaPlatba) return 3;
+    const zhody = Number(Boolean(m.typDokladu && m.typDokladu === doklad.typ)) +
+      Number(Boolean(m.typPlatby && m.typPlatby === doklad.platba));
+    return 2 - zhody;
+  };
+  return moznosti
+    .map((m, i) => ({ m, i, s: skore(m) }))
+    .sort((a, b) => a.s - b.s || a.i - b.i)
+    .map((x) => x.m);
+}
+
+/** Text voľby: názov (popis) ako hlavný, potom kód a účty — „Nákup PHM – karta · 1Fk · 501200/325100". */
+export function textMoznosti(m: Pick<MoznostKodu, "kod" | "popis" | "ucty">): string {
+  const popis = String(m.popis ?? "").trim();
+  if (!popis) return m.ucty ? `${m.kod} (${m.ucty})` : m.kod;
+  return [popis, m.kod, m.ucty].filter(Boolean).join(" · ");
+}
 
 /**
  * Základné členenia DPH slovenskej Pohody — ponúkajú sa, kým si firma
@@ -633,6 +711,8 @@ export function ponuka(
     druh: string;
     aktivne?: boolean;
     druhy_dokladov?: string[] | null;
+    typ_dokladu?: string | null;
+    typ_platby?: string | null;
   })[],
   druh: DruhCiselnika,
   agendy: string[] = [],
@@ -655,5 +735,7 @@ export function ponuka(
       popis: z.popis,
       agenda: z.agenda,
       ucty: z.ucet_md || z.ucet_d ? `${z.ucet_md ?? "—"}/${z.ucet_d ?? "—"}` : null,
+      ...(z.typ_dokladu ? { typDokladu: z.typ_dokladu as TypDokladuPolozky } : {}),
+      ...(z.typ_platby ? { typPlatby: z.typ_platby as TypPlatbyPolozky } : {}),
     }));
 }

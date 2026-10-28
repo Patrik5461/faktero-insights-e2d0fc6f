@@ -15,6 +15,7 @@ import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
 import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KodPohody } from "./KodPohody";
 import { VyberPravidla } from "./VyberPravidla";
+import { uplatniPredlohu } from "@/lib/faktero/predlohy-uctovania";
 import type { Navrhy } from "./ZauctovaniePanel";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
@@ -295,6 +296,7 @@ export function ZauctovanieVystavenejPanel({
                 kv: p.kv_clenenie ?? h.kv,
               })
             }
+            onPredloha={(p) => setH(uplatniPredlohu(h, p))}
           />
 
           <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">

@@ -10,6 +10,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Crosshair, Loader2, X } from "lucide-react";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
+import {
+  PrepinacZvyraznenia,
+  usePosunNaAktivne,
+  useZvyraznenia,
+  ZvyrazneniaStrany,
+  type ZvyraznenieNahladu,
+} from "@/components/faktero/ZvyraznenieVytazenych";
+import { slovaStranyPdf } from "@/lib/faktero/pdf-slova";
 import { precitajVyrezFn } from "@/lib/faktero/vyber-z-dokladu.functions";
 import {
   NAZOV_TYPU,
@@ -20,7 +28,6 @@ import {
   polePodlaPopisu,
   poleVyberu,
   slovaVObdlzniku,
-  slovaZUseku,
   slovoNaBode,
   textZoSlov,
   type Hodnota,
@@ -74,6 +81,9 @@ type Props = {
   onVyberPola: (kluc: KlucPola) => void;
   onZrus: () => void;
   onHodnota: (kluc: KlucPola, hodnota: Hodnota) => void;
+  /** Zvýraznenie vyťažených údajov (aktívne pole = to, pre ktoré sa vyberá). */
+  zvyraznenie?: ZvyraznenieNahladu;
+  onPrepniZvyraznenie?: () => void;
 };
 
 function useJeDesktop(): boolean {
@@ -198,7 +208,7 @@ export function NahladSVyberom(props: Props) {
     return <p className="p-6 text-sm text-muted-foreground">{t("Doklad nemá súbor.")}</p>;
   if (!desktop)
     return jePdf ? (
-      <NahladPdf url={subor.url} />
+      <NahladPdf url={subor.url} zvyraznenie={props.zvyraznenie} />
     ) : (
       <img src={subor.url} alt={subor.nazov ?? t("Doklad")} className="w-full rounded-md" />
     );
@@ -228,6 +238,8 @@ function Vyber({
   onVyberPola,
   onZrus,
   onHodnota,
+  zvyraznenie,
+  onPrepniZvyraznenie,
 }: Props & { url: string; jePdf: boolean }) {
   const { t } = useT();
   const precitajVyrez = useServerFn(precitajVyrezFn);
@@ -243,8 +255,15 @@ function Vyber({
   const [volbaPola, setVolbaPola] = useState<KlucPola | "">("");
   const pdfStrany = useRef<any[]>([]);
   const bitmapa = useRef<Promise<ImageBitmap> | null>(null);
+  const obal = useRef<HTMLDivElement>(null);
 
   const maText = strany.some((s) => s.slova.length > 0);
+  // Zvýraznenie vyťažených údajov — z tých istých slov, ktoré slúžia na výber.
+  const slovaStran = useMemo(() => strany.map((s) => s.slova), [strany]);
+  const zvyraznenia = useZvyraznenia(slovaStran, zvyraznenie);
+  const zobrazitZvyraznenie = Boolean(zvyraznenie?.zobrazit);
+  const aktivne = zvyraznenie?.aktivne ?? pole;
+  usePosunNaAktivne(obal, aktivne, zvyraznenia, zobrazitZvyraznenie);
 
   // Vykreslenie PDF aj s textovou vrstvou.
   useEffect(() => {
@@ -278,38 +297,8 @@ function Vyber({
           await strana.render({ canvas: platno, canvasContext: kontext, viewport }).promise;
           if (zrusene) return;
 
-          const slova: SlovoNahladu[] = [];
-          try {
-            const obsah = await strana.getTextContent();
-            for (const p of obsah.items as any[]) {
-              if (!p?.str?.trim()) continue;
-              const styl = (obsah.styles as any)?.[p.fontName] ?? {};
-              if (styl.vertical) continue;
-              const tx = pdfjs.Util.transform(viewport.transform, p.transform);
-              // Otočený text sa do rámčekov nedá vložiť rozumne — vynechá sa.
-              if (Math.abs(tx[1]) > 0.01 * Math.abs(tx[0])) continue;
-              const vyska = Math.hypot(tx[2], tx[3]);
-              const sirka = p.width * viewport.scale;
-              if (!(vyska > 0 && sirka > 0)) continue;
-              const vystup = typeof styl.ascent === "number" && styl.ascent > 0 ? styl.ascent : 0.8;
-              const hore = tx[5] - vyska * vystup;
-              if (meradlo) meradlo.font = `${vyska}px ${styl.fontFamily ?? "sans-serif"}`;
-              slova.push(
-                ...slovaZUseku(
-                  {
-                    str: p.str,
-                    x: tx[4] / viewport.width,
-                    y: hore / viewport.height,
-                    w: sirka / viewport.width,
-                    h: (vyska * 1.15) / viewport.height,
-                  },
-                  (s) => (meradlo ? meradlo.measureText(s).width : s.length),
-                ),
-              );
-            }
-          } catch (e) {
-            console.warn("[vyber] text strany sa nepodarilo prečítať:", e);
-          }
+          const slova = await slovaStranyPdf(pdfjs, strana, viewport, meradlo);
+          if (zrusene) return;
           pdfStrany.current[i - 1] = strana;
           setStrany((pred) => [
             ...pred,
@@ -535,6 +524,13 @@ function Vyber({
           {citamVyrez && (
             <Loader2 className="h-4 w-4 animate-spin" aria-label={t("Čítam označenú oblasť")} />
           )}
+          {onPrepniZvyraznenie && maText ? (
+            <PrepinacZvyraznenia
+              zap={zobrazitZvyraznenie}
+              onPrepni={onPrepniZvyraznenie}
+              className="rounded-md border border-border bg-background p-1 hover:bg-secondary"
+            />
+          ) : null}
           <button
             type="button"
             onClick={onZrus}
@@ -569,6 +565,13 @@ function Vyber({
           >
             <Crosshair className="h-3.5 w-3.5" /> {t("Vybrať z dokladu")}
           </button>
+          {onPrepniZvyraznenie && maText ? (
+            <PrepinacZvyraznenia
+              zap={zobrazitZvyraznenie}
+              onPrepni={onPrepniZvyraznenie}
+              className="ml-auto rounded-md border border-border p-1 hover:bg-secondary"
+            />
+          ) : null}
           <span className="basis-full">
             {t("alebo kliknite do poľa vo formulári a potom na text v doklade.")}
           </span>
@@ -594,7 +597,7 @@ function Vyber({
         </div>
       )}
 
-      <div className="bg-muted/20">
+      <div ref={obal} className="bg-muted/20">
         {jePdf ? (
           strany.map((s, i) => (
             <StranaNahladu
@@ -610,6 +613,11 @@ function Vyber({
               }
               oznacene={oznacene?.strana === i ? oznacene.r : null}
               hotovo={poslednyVyber?.strana === i ? poslednyVyber.r : null}
+              zvyraznenia={
+                zobrazitZvyraznenie ? (
+                  <ZvyrazneniaStrany zvyraznenia={zvyraznenia} strana={i} aktivne={aktivne} />
+                ) : null
+              }
               obdlznik={obdlznik}
               onDole={dole}
               onPohyb={pohyb}
@@ -732,6 +740,7 @@ function StranaNahladu({
   onHore,
   onOdid,
   onZrusTah,
+  zvyraznenia,
   children,
 }: {
   strana: Strana;
@@ -747,6 +756,8 @@ function StranaNahladu({
   onHore: (e: ReactPointerEvent<HTMLDivElement>, strana: number) => void;
   onOdid: () => void;
   onZrusTah: () => void;
+  /** Rámčeky vyťažených údajov (pod vrstvou výberu). */
+  zvyraznenia?: ReactNode;
   children?: ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
@@ -764,6 +775,7 @@ function StranaNahladu({
       aria-label={`Strana ${index + 1} dokladu`}
     >
       {strana.platno ? <div ref={box} className="absolute inset-0" /> : children}
+      {zvyraznenia}
       <div
         className={`absolute inset-0 touch-none select-none ${aktivna ? "cursor-crosshair" : "cursor-cell"}`}
         onPointerDown={(e) => onDole(e, index)}

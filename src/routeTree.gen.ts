@@ -89,6 +89,7 @@ import { Route as EfakturaciaSlugRouteImport } from './routes/efakturacia.$slug'
 import { Route as FakturaTokenRouteImport } from './routes/faktura.$token'
 import { Route as FunkcieIndexRouteImport } from './routes/funkcie.index'
 import { Route as FunkcieSlugRouteImport } from './routes/funkcie.$slug'
+import { Route as NastrojeKontrolaEfakturyRouteImport } from './routes/nastroje.kontrola-efaktury'
 import { Route as OauthAuthorizeRouteImport } from './routes/oauth.authorize'
 import { Route as OauthRegisterRouteImport } from './routes/oauth.register'
 import { Route as OauthRevokeRouteImport } from './routes/oauth.revoke'
@@ -165,6 +166,7 @@ import { Route as AuthenticatedDokladyMailomRouteImport } from './routes/_authen
 import { Route as AuthenticatedDokladyNovyRouteImport } from './routes/_authenticated/doklady.novy'
 import { Route as AuthenticatedEfakturaIndexRouteImport } from './routes/_authenticated/efaktura.index'
 import { Route as AuthenticatedEfakturaDoruceniaRouteImport } from './routes/_authenticated/efaktura.dorucenia'
+import { Route as AuthenticatedEfakturaKontrolaRouteImport } from './routes/_authenticated/efaktura.kontrola'
 import { Route as AuthenticatedEfakturaOdoslaneRouteImport } from './routes/_authenticated/efaktura.odoslane'
 import { Route as AuthenticatedEfakturaPrijateRouteImport } from './routes/_authenticated/efaktura.prijate'
 import { Route as AuthenticatedFakturyIndexRouteImport } from './routes/_authenticated/faktury.index'
@@ -776,6 +778,12 @@ const FunkcieSlugRoute = FunkcieSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => FunkcieRoute,
 } as any)
+const NastrojeKontrolaEfakturyRoute =
+  NastrojeKontrolaEfakturyRouteImport.update({
+    id: '/nastroje/kontrola-efaktury',
+    path: '/nastroje/kontrola-efaktury',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
   id: '/oauth/authorize',
   path: '/oauth/authorize',
@@ -1172,6 +1180,12 @@ const AuthenticatedEfakturaDoruceniaRoute =
   AuthenticatedEfakturaDoruceniaRouteImport.update({
     id: '/dorucenia',
     path: '/dorucenia',
+    getParentRoute: () => AuthenticatedEfakturaRoute,
+  } as any)
+const AuthenticatedEfakturaKontrolaRoute =
+  AuthenticatedEfakturaKontrolaRouteImport.update({
+    id: '/kontrola',
+    path: '/kontrola',
     getParentRoute: () => AuthenticatedEfakturaRoute,
   } as any)
 const AuthenticatedEfakturaOdoslaneRoute =
@@ -2384,6 +2398,7 @@ export interface FileRoutesByFullPath {
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/faktura/$token': typeof FakturaTokenRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
+  '/nastroje/kontrola-efaktury': typeof NastrojeKontrolaEfakturyRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/revoke': typeof OauthRevokeRoute
@@ -2459,6 +2474,7 @@ export interface FileRoutesByFullPath {
   '/doklady/mailom': typeof AuthenticatedDokladyMailomRoute
   '/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
+  '/efaktura/kontrola': typeof AuthenticatedEfakturaKontrolaRoute
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
   '/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
   '/faktury/nova': typeof AuthenticatedFakturyNovaRoute
@@ -2734,6 +2750,7 @@ export interface FileRoutesByTo {
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/faktura/$token': typeof FakturaTokenRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
+  '/nastroje/kontrola-efaktury': typeof NastrojeKontrolaEfakturyRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/revoke': typeof OauthRevokeRoute
@@ -2809,6 +2826,7 @@ export interface FileRoutesByTo {
   '/doklady/mailom': typeof AuthenticatedDokladyMailomRoute
   '/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
+  '/efaktura/kontrola': typeof AuthenticatedEfakturaKontrolaRoute
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
   '/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
   '/faktury/nova': typeof AuthenticatedFakturyNovaRoute
@@ -3093,6 +3111,7 @@ export interface FileRoutesById {
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/faktura/$token': typeof FakturaTokenRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
+  '/nastroje/kontrola-efaktury': typeof NastrojeKontrolaEfakturyRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/revoke': typeof OauthRevokeRoute
@@ -3168,6 +3187,7 @@ export interface FileRoutesById {
   '/_authenticated/doklady/mailom': typeof AuthenticatedDokladyMailomRoute
   '/_authenticated/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/_authenticated/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
+  '/_authenticated/efaktura/kontrola': typeof AuthenticatedEfakturaKontrolaRoute
   '/_authenticated/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
   '/_authenticated/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
   '/_authenticated/faktury/nova': typeof AuthenticatedFakturyNovaRoute
@@ -3453,6 +3473,7 @@ export interface FileRouteTypes {
     | '/efakturacia/$slug'
     | '/faktura/$token'
     | '/funkcie/$slug'
+    | '/nastroje/kontrola-efaktury'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/revoke'
@@ -3528,6 +3549,7 @@ export interface FileRouteTypes {
     | '/doklady/mailom'
     | '/doklady/novy'
     | '/efaktura/dorucenia'
+    | '/efaktura/kontrola'
     | '/efaktura/odoslane'
     | '/efaktura/prijate'
     | '/faktury/nova'
@@ -3803,6 +3825,7 @@ export interface FileRouteTypes {
     | '/efakturacia/$slug'
     | '/faktura/$token'
     | '/funkcie/$slug'
+    | '/nastroje/kontrola-efaktury'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/revoke'
@@ -3878,6 +3901,7 @@ export interface FileRouteTypes {
     | '/doklady/mailom'
     | '/doklady/novy'
     | '/efaktura/dorucenia'
+    | '/efaktura/kontrola'
     | '/efaktura/odoslane'
     | '/efaktura/prijate'
     | '/faktury/nova'
@@ -4161,6 +4185,7 @@ export interface FileRouteTypes {
     | '/efakturacia/$slug'
     | '/faktura/$token'
     | '/funkcie/$slug'
+    | '/nastroje/kontrola-efaktury'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/revoke'
@@ -4236,6 +4261,7 @@ export interface FileRouteTypes {
     | '/_authenticated/doklady/mailom'
     | '/_authenticated/doklady/novy'
     | '/_authenticated/efaktura/dorucenia'
+    | '/_authenticated/efaktura/kontrola'
     | '/_authenticated/efaktura/odoslane'
     | '/_authenticated/efaktura/prijate'
     | '/_authenticated/faktury/nova'
@@ -4479,6 +4505,7 @@ export interface RootRouteChildren {
   DennySuhrnOdhlasenieRoute: typeof DennySuhrnOdhlasenieRoute
   DocsApiRoute: typeof DocsApiRoute
   FakturaTokenRoute: typeof FakturaTokenRoute
+  NastrojeKontrolaEfakturyRoute: typeof NastrojeKontrolaEfakturyRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
   OauthRegisterRoute: typeof OauthRegisterRoute
   OauthRevokeRoute: typeof OauthRevokeRoute
@@ -5167,6 +5194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FunkcieSlugRouteImport
       parentRoute: typeof FunkcieRoute
     }
+    '/nastroje/kontrola-efaktury': {
+      id: '/nastroje/kontrola-efaktury'
+      path: '/nastroje/kontrola-efaktury'
+      fullPath: '/nastroje/kontrola-efaktury'
+      preLoaderRoute: typeof NastrojeKontrolaEfakturyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/oauth/authorize': {
       id: '/oauth/authorize'
       path: '/oauth/authorize'
@@ -5697,6 +5731,13 @@ declare module '@tanstack/react-router' {
       path: '/dorucenia'
       fullPath: '/efaktura/dorucenia'
       preLoaderRoute: typeof AuthenticatedEfakturaDoruceniaRouteImport
+      parentRoute: typeof AuthenticatedEfakturaRoute
+    }
+    '/_authenticated/efaktura/kontrola': {
+      id: '/_authenticated/efaktura/kontrola'
+      path: '/kontrola'
+      fullPath: '/efaktura/kontrola'
+      preLoaderRoute: typeof AuthenticatedEfakturaKontrolaRouteImport
       parentRoute: typeof AuthenticatedEfakturaRoute
     }
     '/_authenticated/efaktura/odoslane': {
@@ -7111,6 +7152,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedEfakturaRouteChildren {
   AuthenticatedEfakturaDoruceniaRoute: typeof AuthenticatedEfakturaDoruceniaRoute
+  AuthenticatedEfakturaKontrolaRoute: typeof AuthenticatedEfakturaKontrolaRoute
   AuthenticatedEfakturaOdoslaneRoute: typeof AuthenticatedEfakturaOdoslaneRoute
   AuthenticatedEfakturaPrijateRoute: typeof AuthenticatedEfakturaPrijateRoute
   AuthenticatedEfakturaIndexRoute: typeof AuthenticatedEfakturaIndexRoute
@@ -7118,6 +7160,7 @@ interface AuthenticatedEfakturaRouteChildren {
 
 const AuthenticatedEfakturaRouteChildren: AuthenticatedEfakturaRouteChildren = {
   AuthenticatedEfakturaDoruceniaRoute: AuthenticatedEfakturaDoruceniaRoute,
+  AuthenticatedEfakturaKontrolaRoute: AuthenticatedEfakturaKontrolaRoute,
   AuthenticatedEfakturaOdoslaneRoute: AuthenticatedEfakturaOdoslaneRoute,
   AuthenticatedEfakturaPrijateRoute: AuthenticatedEfakturaPrijateRoute,
   AuthenticatedEfakturaIndexRoute: AuthenticatedEfakturaIndexRoute,
@@ -7865,6 +7908,7 @@ const rootRouteChildren: RootRouteChildren = {
   DennySuhrnOdhlasenieRoute: DennySuhrnOdhlasenieRoute,
   DocsApiRoute: DocsApiRoute,
   FakturaTokenRoute: FakturaTokenRoute,
+  NastrojeKontrolaEfakturyRoute: NastrojeKontrolaEfakturyRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
   OauthRegisterRoute: OauthRegisterRoute,
   OauthRevokeRoute: OauthRevokeRoute,

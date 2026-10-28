@@ -175,6 +175,27 @@ export async function nastaveniaDokladov(
     parovaciSymbol: company.pohoda_parovaci_symbol ?? "vs",
     predkontaciaZaokruhlenie: company.pohoda_predkontacia_zaokruhlenie ?? null,
   };
+  /*
+    Zaokrúhlenie zvlášť pre kladné a záporné — firma prichádza z rôznych
+    miest s rôznym výberom stĺpcov, preto sa kódy načítajú tu.
+  */
+  {
+    const { STLPCE_ZAOKRUHLENIA } = await import("./predkontacie");
+    const chyba = STLPCE_ZAOKRUHLENIA.some((k) => !(k in company));
+    const { data: z } = chyba
+      ? await supabase
+          .from("companies")
+          .select(["pohoda_predkontacia_zaokruhlenie", ...STLPCE_ZAOKRUHLENIA].join(", "))
+          .eq("id", company.id)
+          .maybeSingle()
+      : { data: company };
+    out.zaokruhlenieFirmy = Object.fromEntries(
+      ["pohoda_predkontacia_zaokruhlenie", ...STLPCE_ZAOKRUHLENIA].map((k) => [
+        k,
+        (z as Record<string, unknown> | null)?.[k] ?? company[k] ?? null,
+      ]),
+    );
+  }
   // Predkontácie s agendou Ostatné záväzky — faktúra s nimi ide ako záväzok.
   const { data: zavazky } = await supabase
     .from("predkontacie")

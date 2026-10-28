@@ -31,7 +31,13 @@ import {
   type RezimAutopilota,
   type VstupClenenia,
 } from "./auto-uctovanie";
-import { prvePravidlo, pravidloPohybu, typPrijatej, type Pravidlo } from "./pravidla-uctovania";
+import {
+  krajinaDokladu,
+  prvePravidlo,
+  pravidloPohybu,
+  typPrijatej,
+  type Pravidlo,
+} from "./pravidla-uctovania";
 import * as kurzy from "./kurzy";
 import { kvSPredvolenym } from "./kv-clenenie";
 
@@ -225,7 +231,7 @@ function sumaDoma(typ: TypDokladu, row: Riadok, krajina: string): number | null 
 }
 
 /** Porovnávací tvar dokladu pre pravidlá. */
-function porovnanie(typ: TypDokladu, row: Riadok) {
+function porovnanie(typ: TypDokladu, row: Riadok, krajinaFirmy: string | null) {
   const m = TABULKY[typ];
   return {
     supplier_ico: row[m.ico] ?? null,
@@ -233,6 +239,10 @@ function porovnanie(typ: TypDokladu, row: Riadok) {
     payment_method: row.payment_method ?? null,
     created_by: row.created_by ?? null,
     predmet_mailu: row.predmet_mailu ?? null,
+    odosielatel_mailu: row.odosielatel_mailu ?? null,
+    krajina: typ === "vystavena" ? null : krajinaDokladu(row.supplier_country, row.supplier_ic_dph),
+    krajina_firmy: krajinaFirmy,
+    variabilny_symbol: typ === "prijata" ? (row.variable_symbol ?? null) : null,
     druh: typ,
     typ:
       typ === "prijata"
@@ -418,7 +428,7 @@ export async function navrhPreRiadok(
   // a) pravidlo — to, ktoré uplatnil spúšťač, alebo prvé zhodné.
   const pravidlo =
     (row.pravidlo_id ? pravidla.find((p) => p.id === row.pravidlo_id) : null) ??
-    prvePravidlo(pravidla, porovnanie(typ, row));
+    prvePravidlo(pravidla, porovnanie(typ, row, firma.krajina));
 
   let predkontacia = t(row.pohoda_predkontacia);
   let zdroj: NavrhZauctovania["zdroj"] = null;
@@ -570,12 +580,24 @@ export async function navrhPohybu(sb: Klient, id: string): Promise<NavrhZauctova
       .eq("company_id", p.company_id)
       .eq("druh", "banka")
       .eq("aktivne", true),
-    sb.from("companies").select("pohoda_predkontacia_banka").eq("id", p.company_id).maybeSingle(),
+    sb
+      .from("companies")
+      .select("pohoda_predkontacia_banka, pohoda_predkontacie_oznaceni")
+      .eq("id", p.company_id)
+      .maybeSingle(),
   ]);
   const smer = Number(p.amount) < 0 ? "vydaj" : "prijem";
   const r = pravidloPohybu(
     (pravidla ?? []) as Pravidlo[],
-    { smer, protistrana: p.counterparty, popis: p.description },
+    {
+      smer,
+      protistrana: p.counterparty,
+      popis: p.description,
+      protiucet: p.counterparty_iban,
+      vs: p.variable_symbol,
+      // Transakčná daň je označenie pohybu — pravidlo na tento typ pohybu ju chytí.
+      oznacenie: p.vybavenie === "transakcna_dan" ? "transakcna_dan" : null,
+    },
     ucet?.iban,
   );
   const sparovany = Boolean(
@@ -605,6 +627,16 @@ export async function navrhPohybu(sb: Klient, id: string): Promise<NavrhZauctova
       pravidloId: (r as Pravidlo).id ?? null,
       pravidloNazov: r.nazov,
       zdovodnenie: `Pravidlo „${r.nazov}“`,
+    };
+  /* Transakčná daň má vlastnú predkontáciu v nastaveniach banky (podľa označenia platby). */
+  const predkontaciaDane = String(
+    (firma?.pohoda_predkontacie_oznaceni as Record<string, string> | null)?.transakcna_dan ?? "",
+  ).trim();
+  if (p.vybavenie === "transakcna_dan" && predkontaciaDane)
+    return {
+      ...zaklad,
+      predkontacia: predkontaciaDane,
+      zdovodnenie: "Transakčná daň — predkontácia z nastavení banky",
     };
   if (sparovany && !prazdne(firma?.pohoda_predkontacia_banka)) {
     const druh = p.matched_invoice_id

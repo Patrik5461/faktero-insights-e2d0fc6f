@@ -18,6 +18,8 @@ export type PohybNaImport = {
   currency: string;
   variable_symbol: string | null;
   counterparty: string | null;
+  /** IBAN protistrany — na pravidlá „Spárované bez dokladu“. */
+  counterparty_iban?: string | null;
   description: string | null;
   transaction_reference: string;
 };
@@ -58,6 +60,14 @@ export function odtlacok(p: VypisPohyb, poradie: number): string {
   const s = casti.join("|");
   for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
   return `import:${p.datum}:${(h >>> 0).toString(36)}`;
+}
+
+/** Protiúčet z výpisu, len keď je to naozaj IBAN (domáci tvar „číslo/kód banky“ nie). */
+export function ibanProtiuctu(v: string | null | undefined): string | null {
+  const s = String(v ?? "")
+    .replace(/\s+/g, "")
+    .toUpperCase();
+  return /^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(s) ? s : null;
 }
 
 /** Prevedie prečítaný výpis na riadky, ktoré sa dajú zapísať. */
@@ -111,6 +121,7 @@ export function rozberVypis(obsah: string, menaUctu?: string | null): RozborVypi
       currency: (vypis.mena ?? menaUctu ?? "EUR").toUpperCase(),
       variable_symbol: p.vs ?? null,
       counterparty: p.protistrana ?? p.protiucet ?? null,
+      counterparty_iban: ibanProtiuctu(p.protiucet),
       description: p.popis ?? null,
       transaction_reference: odtlacok(p, n),
     };

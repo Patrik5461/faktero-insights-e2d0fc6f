@@ -164,6 +164,14 @@ const sections: HelpSection[] = [
           </li>
         </ul>
         <p>
+          Dole pod zoznamom sa pri výbere ukáže súčet: koľko dokladov je označených, koľko stoja s
+          DPH aj bez DPH, koľko z nich ešte čaká na export do účtovníctva a koľko na úhradu.
+          Zálohová faktúra sa do súčtu nepočíta, dobropis ho znižuje a rôzne meny sa sčítavajú
+          zvlášť. Tlačidlo Uhradiť v tej istej lište pripraví hromadný príkaz na úhradu z označených
+          faktúr; rovnako to funguje aj v Nespracovaných dokladoch, kde sa IBAN, symbol a suma berú
+          z vyčítaných údajov.
+        </p>
+        <p>
           Zoznam sa dá filtrovať podľa stavu, mesiaca a dodávateľa, a hľadať sa dá aj podľa{" "}
           <strong>variabilného symbolu</strong>, ktorý je vo vlastnom stĺpci.
         </p>

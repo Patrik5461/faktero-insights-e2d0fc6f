@@ -384,6 +384,11 @@ export function riadkyDokladu(
   pomery: Record<string, unknown> | null | undefined,
 ): RiadokRozuctovania[] {
   const rucne = nacitajRozuctovanie(d?.rozuctovanie);
+  /*
+    Pravidlo účtovania ukladá rozúčtovanie ako pomer (nie sumy) — rozdelí sa
+    každý riadok dokladu, sumy idú z rozpisu, aby sedeli na cent.
+  */
+  const pomerDokladu = Array.isArray(d?.rozuctovanie) ? null : nacitajPomer(d?.rozuctovanie);
   let zaklad: RiadokRozuctovania[];
   if (rucne.length && !chybaRozuctovania(rucne, rozpis)) zaklad = rucne;
   else {
@@ -392,7 +397,19 @@ export function riadkyDokladu(
       ? zPoloziek
       : rozpis.map((s) => ({ predkontacia, clenenie, sadzba: s.sadzba, zaklad: r2(s.zaklad), dph: r2(s.dph) }));
   }
+  if (pomerDokladu) {
+    const out: RiadokRozuctovania[] = [];
+    for (const r of zaklad)
+      for (const c of rozuctovaniePodlaPomeru(pomerDokladu, [{ sadzba: r.sadzba, zaklad: r.zaklad, dph: r.dph }], r.clenenie))
+        out.push({ ...c, kv: r.kv, text: [r.text, c.text].filter(Boolean).join(" · ") || null });
+    return out;
+  }
   return rozvinPomery(zaklad, pomery);
+}
+
+/** Rozúčtovanie dokladu je pomer z pravidla (nie ručne zadané sumy)? */
+export function jePomerDokladu(v: unknown): boolean {
+  return !Array.isArray(v) && nacitajPomer(v) !== null;
 }
 
 /** Sú riadky naozaj rozúčtované — rôzne kódy alebo časť bez odpočtu? */

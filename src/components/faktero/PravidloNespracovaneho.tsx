@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Plus, Star } from "lucide-react";
+import { Pencil, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Pravidlo } from "@/lib/faktero/pravidla-uctovania";
 import type { DruhNespracovaneho, UdajeNespracovaneho } from "@/lib/faktero/nespracovane";
@@ -10,6 +10,8 @@ import {
   zhodnePravidla,
 } from "@/lib/faktero/nespracovane-pravidlo";
 import { useT } from "@/lib/i18n/useT";
+import type { Predloha } from "@/lib/faktero/predlohy-uctovania";
+import { PouzitPredlohu } from "./PouzitPredlohu";
 
 type PravidloSId = Pravidlo & { id: string };
 
@@ -26,6 +28,8 @@ export function PravidloNespracovaneho({
   setU,
   createdBy,
   predmetMailu,
+  odosielatelMailu,
+  krajinaFirmy,
   aktivne = true,
 }: {
   companyId: string;
@@ -34,6 +38,8 @@ export function PravidloNespracovaneho({
   setU: (f: (p: UdajeNespracovaneho | null) => UdajeNespracovaneho | null) => void;
   createdBy?: string | null;
   predmetMailu?: string | null;
+  odosielatelMailu?: string | null;
+  krajinaFirmy?: string | null;
   /** Kým AI doklad číta, pravidlo sa neuplatňuje (dodávateľ ešte nie je známy). */
   aktivne?: boolean;
 }) {
@@ -59,10 +65,28 @@ export function PravidloNespracovaneho({
   }, [companyId]);
 
   const porovnanie = useMemo(
-    () => porovnanieNespracovaneho(u, druh, { createdBy, predmetMailu }),
+    () =>
+      porovnanieNespracovaneho(u, druh, {
+        createdBy,
+        predmetMailu,
+        odosielatelMailu,
+        krajinaFirmy,
+      }),
     // Pravidlo závisí len od týchto polí — nie od každého písmena v poznámke.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [u.dodavatel.ico, u.dodavatel.nazov, u.platba, u.opravuje, druh, createdBy, predmetMailu],
+    [
+      u.dodavatel.ico,
+      u.dodavatel.nazov,
+      u.dodavatel.icDph,
+      u.vs,
+      u.platba,
+      u.opravuje,
+      druh,
+      createdBy,
+      predmetMailu,
+      odosielatelMailu,
+      krajinaFirmy,
+    ],
   );
   const zhodne = useMemo(() => zhodnePravidla(pravidla ?? [], porovnanie), [pravidla, porovnanie]);
 
@@ -83,12 +107,28 @@ export function PravidloNespracovaneho({
   if (!porovnanie) return null;
   const pouzite = zhodne.find((p) => p.id === u.pravidloId) ?? null;
   const ine = zhodne.filter((p) => p.id !== pouzite?.id);
-  const partner = u.dodavatel.nazov.trim();
-  const ico = u.dodavatel.ico.replace(/\D/g, "");
   const druhPravidla = druh === "blocek" ? "blocek" : "prijata";
+  // Predloha vyplní kódy a ruší hviezdičku pravidla len pri poliach, ktoré zmenila.
+  const pouziPredlohu = (p: Predloha) =>
+    setU((x) => {
+      if (!x) return x;
+      const v = (h: string | null) => String(h ?? "").trim();
+      return {
+        ...x,
+        kody: {
+          ...x.kody,
+          predkontacia: v(p.predkontacia) || x.kody.predkontacia,
+          clenenie: v(p.clenenie_dph) || x.kody.clenenie,
+          kv: v(p.kv_clenenie) || x.kody.kv,
+          rad: v(p.rad) || x.kody.rad,
+          intPoznamka: v(p.poznamka) || x.kody.intPoznamka,
+        },
+      };
+    });
 
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+      <PouzitPredlohu companyId={companyId} druh={druhPravidla} onPouzi={pouziPredlohu} />
       {pouzite ? (
         <span
           className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"
@@ -129,24 +169,13 @@ export function PravidloNespracovaneho({
           </button>
         </>
       ) : null}
-      {!pouzite && !ine.length && (partner || ico) ? (
+      {pouzite ? (
         <Link
           to="/uctovnictvo/pravidla"
-          search={
-            {
-              novy: druhPravidla,
-              nazov: partner || undefined,
-              ico: ico.length >= 6 ? ico : undefined,
-              predkontacia: u.kody.predkontacia || undefined,
-              clenenie: u.kody.clenenie || undefined,
-              kv: u.kody.kv || undefined,
-              kategoria: u.kategoria || undefined,
-            } as any
-          }
+          search={{ upravit: pouzite.id } as any}
           className="inline-flex items-center gap-1 text-primary hover:underline"
         >
-          <Plus className="h-3.5 w-3.5" />{" "}
-          {t("Vytvoriť pravidlo pre {partner}", { partner: partner || t("IČO {ico}", { ico }) })}
+          <Pencil className="h-3.5 w-3.5" /> {t("Upraviť pravidlo")}
         </Link>
       ) : null}
     </div>
