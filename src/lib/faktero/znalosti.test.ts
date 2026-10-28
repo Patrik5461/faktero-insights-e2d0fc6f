@@ -65,7 +65,8 @@ describe("text do promptu", () => {
   it("obsah sám o sebe je krátky, celá báza sa neposiela", () => {
     // 35 manuálov (od 2026-10-17 aj Firmy v Nemecku) majú obsah ~8 200 znakov.
     // 2026-10-24 pribudol Vozový park (36 manuálov, ~9 060 znakov).
-    expect(obsahManualov().length).toBeLessThan(9500);
+    // 2026-10-28 pribudli API a prepojenia (38 manuálov, ~9 730 znakov).
+    expect(obsahManualov().length).toBeLessThan(10500);
     expect(znalostiKOtazke("faktúra").length).toBeLessThan(24000);
   });
 });
