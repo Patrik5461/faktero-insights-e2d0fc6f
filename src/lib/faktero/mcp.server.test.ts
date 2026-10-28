@@ -23,7 +23,20 @@ describe("MCP server", () => {
       NASTROJE.filter((t) => !t.annotations.readOnlyHint)
         .map((t) => t.name)
         .sort(),
-    ).toEqual(["create_customer", "create_invoice", "mark_invoice_paid"]);
+    ).toEqual([
+      "create_bank_account",
+      "create_company",
+      "create_customer",
+      "create_invoice",
+      "create_product",
+      "create_purchase_invoice",
+      "create_receipt",
+      "import_bank_transactions",
+      "import_contacts",
+      "invite_user",
+      "mark_invoice_paid",
+      "mark_purchase_invoice_paid",
+    ]);
     expect(NASTROJE.some((t) => t.annotations.destructiveHint)).toBe(false);
   });
   it("notifikácia nemá odpoveď, neznáma metóda je chyba", async () => {

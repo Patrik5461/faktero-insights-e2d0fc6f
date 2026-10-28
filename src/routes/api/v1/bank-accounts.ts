@@ -14,6 +14,11 @@ export const Route = createFileRoute("/api/v1/bank-accounts")({
         const { bankoveUcty } = await import("@/lib/faktero/api-doklady.server");
         return handleApi(request, (ctx) => bankoveUcty(ctx));
       },
+      POST: async ({ request }) => {
+        const { handleApi } = await import("@/lib/faktero/api-auth.server");
+        const { zalozBankovyUcet } = await import("@/lib/faktero/api-zapis.server");
+        return handleApi(request, (ctx) => zalozBankovyUcet(ctx));
+      },
     },
   },
 });

@@ -15,6 +15,13 @@ const Patch = z
     phone: z.string().max(40).nullable().optional(),
     contact_person: z.string().max(120).nullable().optional(),
     external_id: z.string().max(120).nullable().optional(),
+    iban: z.string().max(42).nullable().optional(),
+    swift: z.string().max(11).nullable().optional(),
+    notes: z.string().max(4000).nullable().optional(),
+    typ: z.enum(["firma", "fyzicka"]).optional(),
+    /** Rola v adresári: odberateľ (predvolene) a/alebo dodávateľ. */
+    odberatel: z.boolean().optional(),
+    dodavatel: z.boolean().optional(),
   })
   .strict();
 

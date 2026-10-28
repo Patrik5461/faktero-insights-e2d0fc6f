@@ -267,6 +267,7 @@ import { Route as ApiV1CompaniesRouteImport } from './routes/api/v1/companies'
 import { Route as ApiV1CustomersRouteImport } from './routes/api/v1/customers'
 import { Route as ApiV1FuelRecordsRouteImport } from './routes/api/v1/fuel-records'
 import { Route as ApiV1InvoicesRouteImport } from './routes/api/v1/invoices'
+import { Route as ApiV1ProductsRouteImport } from './routes/api/v1/products'
 import { Route as ApiV1PurchaseInvoicesRouteImport } from './routes/api/v1/purchase-invoices'
 import { Route as ApiV1QuotesRouteImport } from './routes/api/v1/quotes'
 import { Route as ApiV1ReceiptsRouteImport } from './routes/api/v1/receipts'
@@ -332,10 +333,13 @@ import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/pu
 import { Route as ApiPublicTatrabankaWebhookRouteImport } from './routes/api/public/tatrabanka/webhook'
 import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
 import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api/public/webhooks/gopay-merchant'
+import { Route as ApiV1CompaniesIdRouteImport } from './routes/api/v1/companies.$id'
 import { Route as ApiV1CustomersIdRouteImport } from './routes/api/v1/customers.$id'
+import { Route as ApiV1CustomersImportRouteImport } from './routes/api/v1/customers.import'
 import { Route as ApiV1InvoicesIdRouteImport } from './routes/api/v1/invoices.$id'
 import { Route as ApiV1PohodaDavkaRouteImport } from './routes/api/v1/pohoda/davka'
 import { Route as ApiV1PohodaOdpovedRouteImport } from './routes/api/v1/pohoda/odpoved'
+import { Route as ApiV1ProductsIdRouteImport } from './routes/api/v1/products.$id'
 import { Route as ApiV1PurchaseInvoicesIdRouteImport } from './routes/api/v1/purchase-invoices.$id'
 import { Route as ApiV1QuotesIdRouteImport } from './routes/api/v1/quotes.$id'
 import { Route as ApiV1ReceiptsIdRouteImport } from './routes/api/v1/receipts.$id'
@@ -348,6 +352,9 @@ import { Route as ApiV1StockMovementsRouteImport } from './routes/api/v1/stock.m
 import { Route as ApiV1StockValuationRouteImport } from './routes/api/v1/stock.valuation'
 import { Route as AuthenticatedSkladProduktyIdIndexRouteImport } from './routes/_authenticated/sklad.produkty.$id.index'
 import { Route as AuthenticatedSkladProduktyIdUpravitRouteImport } from './routes/_authenticated/sklad.produkty.$id.upravit'
+import { Route as ApiV1BankAccountsIdTransactionsRouteImport } from './routes/api/v1/bank-accounts.$id.transactions'
+import { Route as ApiV1CompaniesIdInvitationsRouteImport } from './routes/api/v1/companies.$id.invitations'
+import { Route as ApiV1CompaniesIdMembersRouteImport } from './routes/api/v1/companies.$id.members'
 import { Route as ApiV1InvoicesIdCancelRouteImport } from './routes/api/v1/invoices.$id.cancel'
 import { Route as ApiV1InvoicesIdMarkPaidRouteImport } from './routes/api/v1/invoices.$id.mark-paid'
 import { Route as ApiV1InvoicesIdPdfRouteImport } from './routes/api/v1/invoices.$id.pdf'
@@ -1751,6 +1758,11 @@ const ApiV1InvoicesRoute = ApiV1InvoicesRouteImport.update({
   path: '/api/v1/invoices',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1ProductsRoute = ApiV1ProductsRouteImport.update({
+  id: '/api/v1/products',
+  path: '/api/v1/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1PurchaseInvoicesRoute = ApiV1PurchaseInvoicesRouteImport.update({
   id: '/api/v1/purchase-invoices',
   path: '/api/v1/purchase-invoices',
@@ -2121,9 +2133,19 @@ const ApiPublicWebhooksGopayMerchantRoute =
     path: '/api/public/webhooks/gopay-merchant',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiV1CompaniesIdRoute = ApiV1CompaniesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiV1CompaniesRoute,
+} as any)
 const ApiV1CustomersIdRoute = ApiV1CustomersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
+  getParentRoute: () => ApiV1CustomersRoute,
+} as any)
+const ApiV1CustomersImportRoute = ApiV1CustomersImportRouteImport.update({
+  id: '/import',
+  path: '/import',
   getParentRoute: () => ApiV1CustomersRoute,
 } as any)
 const ApiV1InvoicesIdRoute = ApiV1InvoicesIdRouteImport.update({
@@ -2140,6 +2162,11 @@ const ApiV1PohodaOdpovedRoute = ApiV1PohodaOdpovedRouteImport.update({
   id: '/api/v1/pohoda/odpoved',
   path: '/api/v1/pohoda/odpoved',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ProductsIdRoute = ApiV1ProductsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiV1ProductsRoute,
 } as any)
 const ApiV1PurchaseInvoicesIdRoute = ApiV1PurchaseInvoicesIdRouteImport.update({
   id: '/$id',
@@ -2205,6 +2232,23 @@ const AuthenticatedSkladProduktyIdUpravitRoute =
     path: '/produkty/$id/upravit',
     getParentRoute: () => AuthenticatedSkladRoute,
   } as any)
+const ApiV1BankAccountsIdTransactionsRoute =
+  ApiV1BankAccountsIdTransactionsRouteImport.update({
+    id: '/$id/transactions',
+    path: '/$id/transactions',
+    getParentRoute: () => ApiV1BankAccountsRoute,
+  } as any)
+const ApiV1CompaniesIdInvitationsRoute =
+  ApiV1CompaniesIdInvitationsRouteImport.update({
+    id: '/invitations',
+    path: '/invitations',
+    getParentRoute: () => ApiV1CompaniesIdRoute,
+  } as any)
+const ApiV1CompaniesIdMembersRoute = ApiV1CompaniesIdMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => ApiV1CompaniesIdRoute,
+} as any)
 const ApiV1InvoicesIdCancelRoute = ApiV1InvoicesIdCancelRouteImport.update({
   id: '/cancel',
   path: '/cancel',
@@ -2484,12 +2528,13 @@ export interface FileRoutesByFullPath {
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/public/verzia': typeof ApiPublicVerziaRoute
   '/api/v1/$': typeof ApiV1SplatRoute
-  '/api/v1/bank-accounts': typeof ApiV1BankAccountsRoute
+  '/api/v1/bank-accounts': typeof ApiV1BankAccountsRouteWithChildren
   '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
-  '/api/v1/companies': typeof ApiV1CompaniesRoute
+  '/api/v1/companies': typeof ApiV1CompaniesRouteWithChildren
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
   '/api/v1/invoices': typeof ApiV1InvoicesRouteWithChildren
+  '/api/v1/products': typeof ApiV1ProductsRouteWithChildren
   '/api/v1/purchase-invoices': typeof ApiV1PurchaseInvoicesRouteWithChildren
   '/api/v1/quotes': typeof ApiV1QuotesRouteWithChildren
   '/api/v1/receipts': typeof ApiV1ReceiptsRouteWithChildren
@@ -2573,10 +2618,13 @@ export interface FileRoutesByFullPath {
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
+  '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
+  '/api/v1/customers/import': typeof ApiV1CustomersImportRoute
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/pohoda/davka': typeof ApiV1PohodaDavkaRoute
   '/api/v1/pohoda/odpoved': typeof ApiV1PohodaOdpovedRoute
+  '/api/v1/products/$id': typeof ApiV1ProductsIdRoute
   '/api/v1/purchase-invoices/$id': typeof ApiV1PurchaseInvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/receipts/$id': typeof ApiV1ReceiptsIdRouteWithChildren
@@ -2596,6 +2644,9 @@ export interface FileRoutesByFullPath {
   '/sklad/presuny/': typeof AuthenticatedSkladPresunyIndexRoute
   '/sklad/produkty/': typeof AuthenticatedSkladProduktyIndexRoute
   '/sklad/produkty/$id/upravit': typeof AuthenticatedSkladProduktyIdUpravitRoute
+  '/api/v1/bank-accounts/$id/transactions': typeof ApiV1BankAccountsIdTransactionsRoute
+  '/api/v1/companies/$id/invitations': typeof ApiV1CompaniesIdInvitationsRoute
+  '/api/v1/companies/$id/members': typeof ApiV1CompaniesIdMembersRoute
   '/api/v1/invoices/$id/cancel': typeof ApiV1InvoicesIdCancelRoute
   '/api/v1/invoices/$id/mark-paid': typeof ApiV1InvoicesIdMarkPaidRoute
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
@@ -2825,12 +2876,13 @@ export interface FileRoutesByTo {
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/public/verzia': typeof ApiPublicVerziaRoute
   '/api/v1/$': typeof ApiV1SplatRoute
-  '/api/v1/bank-accounts': typeof ApiV1BankAccountsRoute
+  '/api/v1/bank-accounts': typeof ApiV1BankAccountsRouteWithChildren
   '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
-  '/api/v1/companies': typeof ApiV1CompaniesRoute
+  '/api/v1/companies': typeof ApiV1CompaniesRouteWithChildren
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
   '/api/v1/invoices': typeof ApiV1InvoicesRouteWithChildren
+  '/api/v1/products': typeof ApiV1ProductsRouteWithChildren
   '/api/v1/purchase-invoices': typeof ApiV1PurchaseInvoicesRouteWithChildren
   '/api/v1/quotes': typeof ApiV1QuotesRouteWithChildren
   '/api/v1/receipts': typeof ApiV1ReceiptsRouteWithChildren
@@ -2914,10 +2966,13 @@ export interface FileRoutesByTo {
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
+  '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
+  '/api/v1/customers/import': typeof ApiV1CustomersImportRoute
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/pohoda/davka': typeof ApiV1PohodaDavkaRoute
   '/api/v1/pohoda/odpoved': typeof ApiV1PohodaOdpovedRoute
+  '/api/v1/products/$id': typeof ApiV1ProductsIdRoute
   '/api/v1/purchase-invoices/$id': typeof ApiV1PurchaseInvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/receipts/$id': typeof ApiV1ReceiptsIdRouteWithChildren
@@ -2937,6 +2992,9 @@ export interface FileRoutesByTo {
   '/sklad/presuny': typeof AuthenticatedSkladPresunyIndexRoute
   '/sklad/produkty': typeof AuthenticatedSkladProduktyIndexRoute
   '/sklad/produkty/$id/upravit': typeof AuthenticatedSkladProduktyIdUpravitRoute
+  '/api/v1/bank-accounts/$id/transactions': typeof ApiV1BankAccountsIdTransactionsRoute
+  '/api/v1/companies/$id/invitations': typeof ApiV1CompaniesIdInvitationsRoute
+  '/api/v1/companies/$id/members': typeof ApiV1CompaniesIdMembersRoute
   '/api/v1/invoices/$id/cancel': typeof ApiV1InvoicesIdCancelRoute
   '/api/v1/invoices/$id/mark-paid': typeof ApiV1InvoicesIdMarkPaidRoute
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
@@ -3177,12 +3235,13 @@ export interface FileRoutesById {
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/public/verzia': typeof ApiPublicVerziaRoute
   '/api/v1/$': typeof ApiV1SplatRoute
-  '/api/v1/bank-accounts': typeof ApiV1BankAccountsRoute
+  '/api/v1/bank-accounts': typeof ApiV1BankAccountsRouteWithChildren
   '/api/v1/bank-transactions': typeof ApiV1BankTransactionsRoute
-  '/api/v1/companies': typeof ApiV1CompaniesRoute
+  '/api/v1/companies': typeof ApiV1CompaniesRouteWithChildren
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
   '/api/v1/invoices': typeof ApiV1InvoicesRouteWithChildren
+  '/api/v1/products': typeof ApiV1ProductsRouteWithChildren
   '/api/v1/purchase-invoices': typeof ApiV1PurchaseInvoicesRouteWithChildren
   '/api/v1/quotes': typeof ApiV1QuotesRouteWithChildren
   '/api/v1/receipts': typeof ApiV1ReceiptsRouteWithChildren
@@ -3266,10 +3325,13 @@ export interface FileRoutesById {
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
+  '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
+  '/api/v1/customers/import': typeof ApiV1CustomersImportRoute
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/pohoda/davka': typeof ApiV1PohodaDavkaRoute
   '/api/v1/pohoda/odpoved': typeof ApiV1PohodaOdpovedRoute
+  '/api/v1/products/$id': typeof ApiV1ProductsIdRoute
   '/api/v1/purchase-invoices/$id': typeof ApiV1PurchaseInvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/receipts/$id': typeof ApiV1ReceiptsIdRouteWithChildren
@@ -3289,6 +3351,9 @@ export interface FileRoutesById {
   '/_authenticated/sklad/presuny/': typeof AuthenticatedSkladPresunyIndexRoute
   '/_authenticated/sklad/produkty/': typeof AuthenticatedSkladProduktyIndexRoute
   '/_authenticated/sklad/produkty/$id/upravit': typeof AuthenticatedSkladProduktyIdUpravitRoute
+  '/api/v1/bank-accounts/$id/transactions': typeof ApiV1BankAccountsIdTransactionsRoute
+  '/api/v1/companies/$id/invitations': typeof ApiV1CompaniesIdInvitationsRoute
+  '/api/v1/companies/$id/members': typeof ApiV1CompaniesIdMembersRoute
   '/api/v1/invoices/$id/cancel': typeof ApiV1InvoicesIdCancelRoute
   '/api/v1/invoices/$id/mark-paid': typeof ApiV1InvoicesIdMarkPaidRoute
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
@@ -3535,6 +3600,7 @@ export interface FileRouteTypes {
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
     | '/api/v1/invoices'
+    | '/api/v1/products'
     | '/api/v1/purchase-invoices'
     | '/api/v1/quotes'
     | '/api/v1/receipts'
@@ -3618,10 +3684,13 @@ export interface FileRouteTypes {
     | '/api/public/tatrabanka/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
+    | '/api/v1/companies/$id'
     | '/api/v1/customers/$id'
+    | '/api/v1/customers/import'
     | '/api/v1/invoices/$id'
     | '/api/v1/pohoda/davka'
     | '/api/v1/pohoda/odpoved'
+    | '/api/v1/products/$id'
     | '/api/v1/purchase-invoices/$id'
     | '/api/v1/quotes/$id'
     | '/api/v1/receipts/$id'
@@ -3641,6 +3710,9 @@ export interface FileRouteTypes {
     | '/sklad/presuny/'
     | '/sklad/produkty/'
     | '/sklad/produkty/$id/upravit'
+    | '/api/v1/bank-accounts/$id/transactions'
+    | '/api/v1/companies/$id/invitations'
+    | '/api/v1/companies/$id/members'
     | '/api/v1/invoices/$id/cancel'
     | '/api/v1/invoices/$id/mark-paid'
     | '/api/v1/invoices/$id/pdf'
@@ -3876,6 +3948,7 @@ export interface FileRouteTypes {
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
     | '/api/v1/invoices'
+    | '/api/v1/products'
     | '/api/v1/purchase-invoices'
     | '/api/v1/quotes'
     | '/api/v1/receipts'
@@ -3959,10 +4032,13 @@ export interface FileRouteTypes {
     | '/api/public/tatrabanka/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
+    | '/api/v1/companies/$id'
     | '/api/v1/customers/$id'
+    | '/api/v1/customers/import'
     | '/api/v1/invoices/$id'
     | '/api/v1/pohoda/davka'
     | '/api/v1/pohoda/odpoved'
+    | '/api/v1/products/$id'
     | '/api/v1/purchase-invoices/$id'
     | '/api/v1/quotes/$id'
     | '/api/v1/receipts/$id'
@@ -3982,6 +4058,9 @@ export interface FileRouteTypes {
     | '/sklad/presuny'
     | '/sklad/produkty'
     | '/sklad/produkty/$id/upravit'
+    | '/api/v1/bank-accounts/$id/transactions'
+    | '/api/v1/companies/$id/invitations'
+    | '/api/v1/companies/$id/members'
     | '/api/v1/invoices/$id/cancel'
     | '/api/v1/invoices/$id/mark-paid'
     | '/api/v1/invoices/$id/pdf'
@@ -4227,6 +4306,7 @@ export interface FileRouteTypes {
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
     | '/api/v1/invoices'
+    | '/api/v1/products'
     | '/api/v1/purchase-invoices'
     | '/api/v1/quotes'
     | '/api/v1/receipts'
@@ -4310,10 +4390,13 @@ export interface FileRouteTypes {
     | '/api/public/tatrabanka/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
+    | '/api/v1/companies/$id'
     | '/api/v1/customers/$id'
+    | '/api/v1/customers/import'
     | '/api/v1/invoices/$id'
     | '/api/v1/pohoda/davka'
     | '/api/v1/pohoda/odpoved'
+    | '/api/v1/products/$id'
     | '/api/v1/purchase-invoices/$id'
     | '/api/v1/quotes/$id'
     | '/api/v1/receipts/$id'
@@ -4333,6 +4416,9 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/presuny/'
     | '/_authenticated/sklad/produkty/'
     | '/_authenticated/sklad/produkty/$id/upravit'
+    | '/api/v1/bank-accounts/$id/transactions'
+    | '/api/v1/companies/$id/invitations'
+    | '/api/v1/companies/$id/members'
     | '/api/v1/invoices/$id/cancel'
     | '/api/v1/invoices/$id/mark-paid'
     | '/api/v1/invoices/$id/pdf'
@@ -4442,12 +4528,13 @@ export interface RootRouteChildren {
   ApiPublicSupportChatRoute: typeof ApiPublicSupportChatRoute
   ApiPublicVerziaRoute: typeof ApiPublicVerziaRoute
   ApiV1SplatRoute: typeof ApiV1SplatRoute
-  ApiV1BankAccountsRoute: typeof ApiV1BankAccountsRoute
+  ApiV1BankAccountsRoute: typeof ApiV1BankAccountsRouteWithChildren
   ApiV1BankTransactionsRoute: typeof ApiV1BankTransactionsRoute
-  ApiV1CompaniesRoute: typeof ApiV1CompaniesRoute
+  ApiV1CompaniesRoute: typeof ApiV1CompaniesRouteWithChildren
   ApiV1CustomersRoute: typeof ApiV1CustomersRouteWithChildren
   ApiV1FuelRecordsRoute: typeof ApiV1FuelRecordsRoute
   ApiV1InvoicesRoute: typeof ApiV1InvoicesRouteWithChildren
+  ApiV1ProductsRoute: typeof ApiV1ProductsRouteWithChildren
   ApiV1PurchaseInvoicesRoute: typeof ApiV1PurchaseInvoicesRouteWithChildren
   ApiV1QuotesRoute: typeof ApiV1QuotesRouteWithChildren
   ApiV1ReceiptsRoute: typeof ApiV1ReceiptsRouteWithChildren
@@ -6313,6 +6400,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1InvoicesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/products': {
+      id: '/api/v1/products'
+      path: '/api/v1/products'
+      fullPath: '/api/v1/products'
+      preLoaderRoute: typeof ApiV1ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/purchase-invoices': {
       id: '/api/v1/purchase-invoices'
       path: '/api/v1/purchase-invoices'
@@ -6768,11 +6862,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksGopayMerchantRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/companies/$id': {
+      id: '/api/v1/companies/$id'
+      path: '/$id'
+      fullPath: '/api/v1/companies/$id'
+      preLoaderRoute: typeof ApiV1CompaniesIdRouteImport
+      parentRoute: typeof ApiV1CompaniesRoute
+    }
     '/api/v1/customers/$id': {
       id: '/api/v1/customers/$id'
       path: '/$id'
       fullPath: '/api/v1/customers/$id'
       preLoaderRoute: typeof ApiV1CustomersIdRouteImport
+      parentRoute: typeof ApiV1CustomersRoute
+    }
+    '/api/v1/customers/import': {
+      id: '/api/v1/customers/import'
+      path: '/import'
+      fullPath: '/api/v1/customers/import'
+      preLoaderRoute: typeof ApiV1CustomersImportRouteImport
       parentRoute: typeof ApiV1CustomersRoute
     }
     '/api/v1/invoices/$id': {
@@ -6795,6 +6903,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/v1/pohoda/odpoved'
       preLoaderRoute: typeof ApiV1PohodaOdpovedRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/products/$id': {
+      id: '/api/v1/products/$id'
+      path: '/$id'
+      fullPath: '/api/v1/products/$id'
+      preLoaderRoute: typeof ApiV1ProductsIdRouteImport
+      parentRoute: typeof ApiV1ProductsRoute
     }
     '/api/v1/purchase-invoices/$id': {
       id: '/api/v1/purchase-invoices/$id'
@@ -6879,6 +6994,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/sklad/produkty/$id/upravit'
       preLoaderRoute: typeof AuthenticatedSkladProduktyIdUpravitRouteImport
       parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/api/v1/bank-accounts/$id/transactions': {
+      id: '/api/v1/bank-accounts/$id/transactions'
+      path: '/$id/transactions'
+      fullPath: '/api/v1/bank-accounts/$id/transactions'
+      preLoaderRoute: typeof ApiV1BankAccountsIdTransactionsRouteImport
+      parentRoute: typeof ApiV1BankAccountsRoute
+    }
+    '/api/v1/companies/$id/invitations': {
+      id: '/api/v1/companies/$id/invitations'
+      path: '/invitations'
+      fullPath: '/api/v1/companies/$id/invitations'
+      preLoaderRoute: typeof ApiV1CompaniesIdInvitationsRouteImport
+      parentRoute: typeof ApiV1CompaniesIdRoute
+    }
+    '/api/v1/companies/$id/members': {
+      id: '/api/v1/companies/$id/members'
+      path: '/members'
+      fullPath: '/api/v1/companies/$id/members'
+      preLoaderRoute: typeof ApiV1CompaniesIdMembersRouteImport
+      parentRoute: typeof ApiV1CompaniesIdRoute
     }
     '/api/v1/invoices/$id/cancel': {
       id: '/api/v1/invoices/$id/cancel'
@@ -7453,12 +7589,50 @@ const DotwellKnownOauthProtectedResourceRouteWithChildren =
     DotwellKnownOauthProtectedResourceRouteChildren,
   )
 
+interface ApiV1BankAccountsRouteChildren {
+  ApiV1BankAccountsIdTransactionsRoute: typeof ApiV1BankAccountsIdTransactionsRoute
+}
+
+const ApiV1BankAccountsRouteChildren: ApiV1BankAccountsRouteChildren = {
+  ApiV1BankAccountsIdTransactionsRoute: ApiV1BankAccountsIdTransactionsRoute,
+}
+
+const ApiV1BankAccountsRouteWithChildren =
+  ApiV1BankAccountsRoute._addFileChildren(ApiV1BankAccountsRouteChildren)
+
+interface ApiV1CompaniesIdRouteChildren {
+  ApiV1CompaniesIdInvitationsRoute: typeof ApiV1CompaniesIdInvitationsRoute
+  ApiV1CompaniesIdMembersRoute: typeof ApiV1CompaniesIdMembersRoute
+}
+
+const ApiV1CompaniesIdRouteChildren: ApiV1CompaniesIdRouteChildren = {
+  ApiV1CompaniesIdInvitationsRoute: ApiV1CompaniesIdInvitationsRoute,
+  ApiV1CompaniesIdMembersRoute: ApiV1CompaniesIdMembersRoute,
+}
+
+const ApiV1CompaniesIdRouteWithChildren =
+  ApiV1CompaniesIdRoute._addFileChildren(ApiV1CompaniesIdRouteChildren)
+
+interface ApiV1CompaniesRouteChildren {
+  ApiV1CompaniesIdRoute: typeof ApiV1CompaniesIdRouteWithChildren
+}
+
+const ApiV1CompaniesRouteChildren: ApiV1CompaniesRouteChildren = {
+  ApiV1CompaniesIdRoute: ApiV1CompaniesIdRouteWithChildren,
+}
+
+const ApiV1CompaniesRouteWithChildren = ApiV1CompaniesRoute._addFileChildren(
+  ApiV1CompaniesRouteChildren,
+)
+
 interface ApiV1CustomersRouteChildren {
   ApiV1CustomersIdRoute: typeof ApiV1CustomersIdRoute
+  ApiV1CustomersImportRoute: typeof ApiV1CustomersImportRoute
 }
 
 const ApiV1CustomersRouteChildren: ApiV1CustomersRouteChildren = {
   ApiV1CustomersIdRoute: ApiV1CustomersIdRoute,
+  ApiV1CustomersImportRoute: ApiV1CustomersImportRoute,
 }
 
 const ApiV1CustomersRouteWithChildren = ApiV1CustomersRoute._addFileChildren(
@@ -7493,6 +7667,18 @@ const ApiV1InvoicesRouteChildren: ApiV1InvoicesRouteChildren = {
 
 const ApiV1InvoicesRouteWithChildren = ApiV1InvoicesRoute._addFileChildren(
   ApiV1InvoicesRouteChildren,
+)
+
+interface ApiV1ProductsRouteChildren {
+  ApiV1ProductsIdRoute: typeof ApiV1ProductsIdRoute
+}
+
+const ApiV1ProductsRouteChildren: ApiV1ProductsRouteChildren = {
+  ApiV1ProductsIdRoute: ApiV1ProductsIdRoute,
+}
+
+const ApiV1ProductsRouteWithChildren = ApiV1ProductsRoute._addFileChildren(
+  ApiV1ProductsRouteChildren,
 )
 
 interface ApiV1PurchaseInvoicesIdRouteChildren {
@@ -7720,12 +7906,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSupportChatRoute: ApiPublicSupportChatRoute,
   ApiPublicVerziaRoute: ApiPublicVerziaRoute,
   ApiV1SplatRoute: ApiV1SplatRoute,
-  ApiV1BankAccountsRoute: ApiV1BankAccountsRoute,
+  ApiV1BankAccountsRoute: ApiV1BankAccountsRouteWithChildren,
   ApiV1BankTransactionsRoute: ApiV1BankTransactionsRoute,
-  ApiV1CompaniesRoute: ApiV1CompaniesRoute,
+  ApiV1CompaniesRoute: ApiV1CompaniesRouteWithChildren,
   ApiV1CustomersRoute: ApiV1CustomersRouteWithChildren,
   ApiV1FuelRecordsRoute: ApiV1FuelRecordsRoute,
   ApiV1InvoicesRoute: ApiV1InvoicesRouteWithChildren,
+  ApiV1ProductsRoute: ApiV1ProductsRouteWithChildren,
   ApiV1PurchaseInvoicesRoute: ApiV1PurchaseInvoicesRouteWithChildren,
   ApiV1QuotesRoute: ApiV1QuotesRouteWithChildren,
   ApiV1ReceiptsRoute: ApiV1ReceiptsRouteWithChildren,

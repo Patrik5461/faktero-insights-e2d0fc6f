@@ -3453,6 +3453,7 @@ export type Database = {
           auto_uctovanie_navrh: Json | null
           auto_uctovanie_at: string | null
           doklado_id: string | null
+          external_id: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -3516,6 +3517,7 @@ export type Database = {
           auto_uctovanie_navrh?: Json | null
           auto_uctovanie_at?: string | null
           doklado_id?: string | null
+          external_id?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -3579,6 +3581,7 @@ export type Database = {
           auto_uctovanie_navrh?: Json | null
           auto_uctovanie_at?: string | null
           doklado_id?: string | null
+          external_id?: string | null
         }
         Relationships: [
           {
@@ -6430,6 +6433,7 @@ export type Database = {
           unit_price: number
           updated_at: string
           vat_rate: number
+          external_id: string | null
         }
         Insert: {
           colny_kod?: string | null
@@ -6447,6 +6451,7 @@ export type Database = {
           unit_price?: number
           updated_at?: string
           vat_rate?: number
+          external_id?: string | null
         }
         Update: {
           colny_kod?: string | null
@@ -6464,6 +6469,7 @@ export type Database = {
           unit_price?: number
           updated_at?: string
           vat_rate?: number
+          external_id?: string | null
         }
         Relationships: [
           {
@@ -6671,6 +6677,7 @@ export type Database = {
           auto_uctovanie_navrh: Json | null
           auto_uctovanie_at: string | null
           doklado_id: string | null
+          external_id: string | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -6780,6 +6787,7 @@ export type Database = {
           auto_uctovanie_navrh?: Json | null
           auto_uctovanie_at?: string | null
           doklado_id?: string | null
+          external_id?: string | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -6889,6 +6897,7 @@ export type Database = {
           auto_uctovanie_navrh?: Json | null
           auto_uctovanie_at?: string | null
           doklado_id?: string | null
+          external_id?: string | null
         }
         Relationships: [
           {
@@ -10624,6 +10633,7 @@ export type Database = {
           }
         ]
       }
+
 
 
 

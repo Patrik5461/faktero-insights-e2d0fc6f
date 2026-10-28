@@ -167,14 +167,55 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "prenos-dat",
+    title: "Prenos dát a zápis dokladov cez API",
+    body: (
+      <>
+        <p>
+          API nielen číta, ale aj zapisuje — hodí sa pri prechode z iného programu aj pri trvalom
+          napojení e-shopu, skladu či účtovnej kancelárie:
+        </p>
+        <ul>
+          <li>
+            <strong>Prijaté faktúry a bločky</strong> — zapíšete ich aj so súborom (PDF, fotka),
+            dodávateľ sa sám založí v adresári. Úhradu a zaúčtovanie doplníte úpravou.
+          </li>
+          <li>
+            <strong>Adresár</strong> — naraz prenesiete až 1000 odberateľov a dodávateľov.
+            Existujúci kontakt sa nezdvojí, len sa doplní.
+          </li>
+          <li>
+            <strong>Cenník</strong> — produkty a služby, ktoré sa dajú synchronizovať napríklad z
+            e-shopu.
+          </li>
+          <li>
+            <strong>Bankové účty</strong> — účet banky, ku ktorej sa Faktero nepripojí, založíte cez
+            API a pohyby naň posielate dávkami. Duplicity sa preskočia.
+          </li>
+          <li>
+            <strong>Firmy a používatelia</strong> — kľúčom pre viac firiem založíte firmu nového
+            klienta a pozvete do nej účtovníka či kolegu (pozvánka príde e-mailom).
+          </li>
+        </ul>
+        <p>
+          Pri každom zápise môžete poslať vlastné <code>external_id</code> — opakované odoslanie
+          potom nič nezdvojí. Nič sa cez API nemaže; faktúra sa dá len stornovať. Presný tvar údajov
+          je v <Link to="/docs/api">API dokumentácii</Link>.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "ai-asistenti",
     title: "AI asistenti — Claude, ChatGPT (MCP)",
     body: (
       <>
         <p>
           Faktero sa dá napojiť na AI asistenta cez <strong>MCP</strong> (Model Context Protocol).
-          Asistent potom odpovie, kto vám dlhuje, nájde faktúru, vystaví novú, založí odberateľa,
-          označí úhradu alebo pozrie pohyby na účte. Nič nemaže a nič neposiela odberateľom.
+          Asistent potom odpovie, kto vám dlhuje, nájde faktúru, vystaví novú, zapíše prijatú
+          faktúru či bloček, založí odberateľa, produkt alebo firmu, prenesie kontakty a bankové
+          pohyby, označí úhradu, pozve kolegu alebo pozrie pohyby na účte. Nič nemaže a nič
+          neposiela odberateľom.
         </p>
         <ol>
           <li>

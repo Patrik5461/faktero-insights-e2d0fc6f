@@ -34,6 +34,11 @@ export const Route = createFileRoute("/api/v1/companies")({
           });
         });
       },
+      POST: async ({ request }) => {
+        const { handleApi } = await import("@/lib/faktero/api-auth.server");
+        const { zalozFirmu } = await import("@/lib/faktero/api-zapis.server");
+        return handleApi(request, (ctx) => zalozFirmu(ctx));
+      },
     },
   },
 });

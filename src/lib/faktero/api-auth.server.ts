@@ -255,7 +255,8 @@ export async function handleApi(
   */
   let firmaPoziadavky = keyRow.company_id;
   let jeUcet = false;
-  if (path.replace(/\/+$/, "") !== "/api/v1/companies") {
+  // Pod /api/v1/companies je firma v adrese (alebo žiadna) — z hlavičky sa nevyberá.
+  if (!/^\/api\/v1\/companies(\/|$)/.test(path)) {
     const v = await vyberFirmu(keyRow as RiadokKluca, request);
     if (!v.ok) {
       const body = {

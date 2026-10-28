@@ -152,11 +152,15 @@ function Autorizacia() {
               <ul className="space-y-1 text-muted-foreground">
                 <li className="flex gap-2">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  {t("čítať faktúry, odberateľov, ponuky, prijaté faktúry a bankové pohyby,")}
+                  {t(
+                    "čítať faktúry, odberateľov, ponuky, cenník, prijaté faktúry, bločky a bankové pohyby,",
+                  )}
                 </li>
                 <li className="flex gap-2">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  {t("vystaviť faktúru, založiť odberateľa a označiť úhradu.")}
+                  {t(
+                    "vystaviť faktúru, zapísať prijatú faktúru či bloček, založiť odberateľa, produkt alebo firmu, preniesť kontakty a bankové pohyby, označiť úhradu a pozvať používateľa.",
+                  )}
                 </li>
                 <li className="flex gap-2">
                   <X className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />

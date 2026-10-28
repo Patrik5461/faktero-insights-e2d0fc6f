@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-27",
+ "vytvorene": "2026-10-28",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -52,8 +52,12 @@
      "text": "Na WooCommerce netreba nič programovať — hotový doplnok vystavuje faktúry z objednávok sám.\nNávod a stiahnutie: Faktúry z e-shopu na WooCommerce (/pomoc/woocommerce)."
     },
     {
+     "nadpis": "Prenos dát a zápis dokladov cez API",
+     "text": "<>\nAPI nielen číta, ale aj zapisuje — hodí sa pri prechode z iného programu aj pri trvalom\nnapojení e-shopu, skladu či účtovnej kancelárie:\n-\nPrijaté faktúry a bločky — zapíšete ich aj so súborom (PDF, fotka),\ndodávateľ sa sám založí v adresári. Úhradu a zaúčtovanie doplníte úpravou.\n-\nAdresár — naraz prenesiete až 1000 odberateľov a dodávateľov.\nExistujúci kontakt sa nezdvojí, len sa doplní.\n-\nCenník — produkty a služby, ktoré sa dajú synchronizovať napríklad z\ne-shopu.\n-\nBankové účty — účet banky, ku ktorej sa Faktero nepripojí, založíte cez\nAPI a pohyby naň posielate dávkami. Duplicity sa preskočia.\n-\nFirmy a používatelia — kľúčom pre viac firiem založíte firmu nového\nklienta a pozvete do nej účtovníka či kolegu (pozvánka príde e-mailom).\nPri každom zápise môžete poslať vlastné external_id — opakované odoslanie\npotom nič nezdvojí. Nič sa cez API nemaže; faktúra sa dá len stornovať. Presný tvar údajov\nje v API dokumentácii (/docs/api)."
+    },
+    {
      "nadpis": "AI asistenti — Claude, ChatGPT (MCP)",
-     "text": "<>\nFaktero sa dá napojiť na AI asistenta cez MCP (Model Context Protocol).\nAsistent potom odpovie, kto vám dlhuje, nájde faktúru, vystaví novú, založí odberateľa,\noznačí úhradu alebo pozrie pohyby na účte. Nič nemaže a nič neposiela odberateľom.\n-\nV claude.ai otvorte Nastavenia → Konektory, v ChatGPT\nNastavenia → Aplikácie a konektory a pridajte vlastný konektor.\n-\nAko adresu zadajte https://www.faktero.sk/api/mcp . Kľúč netreba.\n-\nOtvorí sa Faktero — prihláste sa, vyberte firmu (alebo\nVšetky moje firmy ) a kliknite na Povoliť prístup .\nPovoliť ho môže majiteľ alebo admin firmy.\nPri voľbe Všetky moje firmy sa asistent pri otázke spýta, o ktorú firmu ide. Prístup\nuvidíte v API kľúčoch ako „AI asistent (MCP)“ a zrušíte ho tam jedným klikom. Pri neznámej\naplikácii Faktero pred povolením upozorní — povoľte len to, čo ste pridávali vy.\nClaude Code, Cursor či iní klienti sa pripoja s API kľúčom v hlavičke\nAuthorization: Bearer fk_live_… — návod je v\ndokumentácii API\n(/docs/api)\n."
+     "text": "<>\nFaktero sa dá napojiť na AI asistenta cez MCP (Model Context Protocol).\nAsistent potom odpovie, kto vám dlhuje, nájde faktúru, vystaví novú, zapíše prijatú\nfaktúru či bloček, založí odberateľa, produkt alebo firmu, prenesie kontakty a bankové\npohyby, označí úhradu, pozve kolegu alebo pozrie pohyby na účte. Nič nemaže a nič\nneposiela odberateľom.\n-\nV claude.ai otvorte Nastavenia → Konektory, v ChatGPT\nNastavenia → Aplikácie a konektory a pridajte vlastný konektor.\n-\nAko adresu zadajte https://www.faktero.sk/api/mcp . Kľúč netreba.\n-\nOtvorí sa Faktero — prihláste sa, vyberte firmu (alebo\nVšetky moje firmy ) a kliknite na Povoliť prístup .\nPovoliť ho môže majiteľ alebo admin firmy.\nPri voľbe Všetky moje firmy sa asistent pri otázke spýta, o ktorú firmu ide. Prístup\nuvidíte v API kľúčoch ako „AI asistent (MCP)“ a zrušíte ho tam jedným klikom. Pri neznámej\naplikácii Faktero pred povolením upozorní — povoľte len to, čo ste pridávali vy.\nClaude Code, Cursor či iní klienti sa pripoja s API kľúčom v hlavičke\nAuthorization: Bearer fk_live_… — návod je v\ndokumentácii API\n(/docs/api)\n."
     },
     {
      "nadpis": "Kompletná dokumentácia a skúšanie",

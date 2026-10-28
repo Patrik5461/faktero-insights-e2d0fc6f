@@ -14,6 +14,13 @@ const CustomerInput = z.object({
   phone: z.string().max(40).optional().nullable(),
   contact_person: z.string().max(120).optional().nullable(),
   external_id: z.string().max(120).optional().nullable(),
+  iban: z.string().max(42).optional().nullable(),
+  swift: z.string().max(11).optional().nullable(),
+  notes: z.string().max(4000).optional().nullable(),
+  typ: z.enum(["firma", "fyzicka"]).optional(),
+  /** Rola v adresári: odberateľ (predvolene) a/alebo dodávateľ. */
+  odberatel: z.boolean().optional(),
+  dodavatel: z.boolean().optional(),
 });
 
 export const Route = createFileRoute("/api/v1/customers")({

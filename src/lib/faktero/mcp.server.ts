@@ -15,7 +15,7 @@ export const MCP_VERZIA_PROTOKOLU = "2025-06-18";
 const PODPOROVANE = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
 type Volaj = (
-  metoda: "GET" | "POST",
+  metoda: "GET" | "POST" | "PUT",
   cesta: string,
   telo?: unknown,
   /** Firma pri kľúči účtu (hlavička X-Company) — id alebo IČO. */
@@ -398,7 +398,349 @@ export const NASTROJE: Nastroj[] = [
       );
     },
   },
+  {
+    name: "create_purchase_invoice",
+    title: "Založiť prijatú faktúru",
+    description:
+      "Zapíše prijatú (dodávateľskú) faktúru. Sumy buď z položiek (items, ceny bez DPH), alebo amount_total (+ amount_without_vat, vat_amount). Dodávateľ sa založí v adresári, ak tam nie je. Tá istá faktúra (IČO + číslo + suma) sa druhýkrát nezaloží.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        invoice_number: { type: "string", description: "Číslo faktúry dodávateľa" },
+        supplier: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            ico: { type: "string" },
+            dic: { type: "string" },
+            ic_dph: { type: "string" },
+            iban: { type: "string" },
+            street: { type: "string" },
+            city: { type: "string" },
+            zip: { type: "string" },
+            country: { type: "string", description: "Kód krajiny, napr. SK" },
+          },
+          required: ["name"],
+        },
+        issue_date: { type: "string", description: "RRRR-MM-DD" },
+        delivery_date: { type: "string" },
+        due_date: { type: "string" },
+        currency: { type: "string" },
+        variable_symbol: { type: "string" },
+        payment_method: { type: "string", enum: ["prevod", "hotovost", "karta"] },
+        items: { type: "array", items: POLOZKA },
+        amount_without_vat: { type: "number" },
+        vat_amount: { type: "number" },
+        amount_total: { type: "number" },
+        payment_date: { type: "string", description: "Dátum úhrady, ak je už zaplatená" },
+        note: { type: "string" },
+        external_id: { type: "string", description: "Vlastné id — opakované volanie nič nezdvojí" },
+      },
+      required: ["invoice_number", "supplier", "issue_date"],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      return nutne(await volaj("POST", "/api/v1/purchase-invoices", a));
+    },
+  },
+  {
+    name: "mark_purchase_invoice_paid",
+    title: "Uhradiť prijatú faktúru",
+    description: "Označí prijatú faktúru ako zaplatenú k dátumu (predvolene dnes).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "id prijatej faktúry" },
+        payment_date: { type: "string", description: "RRRR-MM-DD" },
+      },
+      required: ["id"],
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    async vykonaj(a, volaj) {
+      const datum = a.payment_date || new Date().toISOString().slice(0, 10);
+      return nutne(
+        await volaj("PUT", `/api/v1/purchase-invoices/${encodeURIComponent(a.id)}`, {
+          payment_date: datum,
+        }),
+      );
+    },
+  },
+  {
+    name: "create_receipt",
+    title: "Zapísať bloček",
+    description:
+      "Zapíše bloček (výdavkový doklad): dodávateľ, dátum, suma s DPH, prípadne rozpis DPH po sadzbách a spôsob úhrady.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        supplier: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            ico: { type: "string" },
+            ic_dph: { type: "string" },
+          },
+        },
+        document_number: { type: "string" },
+        issue_date: { type: "string", description: "RRRR-MM-DD" },
+        total_amount: { type: "number", description: "Suma s DPH" },
+        vat_breakdown: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              rate: { type: "number" },
+              base: { type: "number" },
+              vat: { type: "number" },
+            },
+            required: ["rate", "base", "vat"],
+          },
+        },
+        payment_method: { type: "string", enum: ["hotovost", "karta", "prevod"] },
+        note: { type: "string" },
+        external_id: { type: "string" },
+      },
+      required: ["issue_date", "total_amount"],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      return nutne(await volaj("POST", "/api/v1/receipts", { supplier: {}, ...a }));
+    },
+  },
+  {
+    name: "import_contacts",
+    title: "Preniesť kontakty",
+    description:
+      "Hromadne prenesie odberateľov/dodávateľov (do 1000). Páruje podľa external_id, IČO, bez IČO podľa mena; existujúce len doplní (update_existing: true ich prepíše).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        contacts: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              ico: { type: "string" },
+              dic: { type: "string" },
+              ic_dph: { type: "string" },
+              email: { type: "string" },
+              phone: { type: "string" },
+              street: { type: "string" },
+              city: { type: "string" },
+              zip: { type: "string" },
+              country: { type: "string" },
+              iban: { type: "string" },
+              customer: { type: "boolean", description: "Odberateľ (predvolene áno)" },
+              supplier: { type: "boolean", description: "Dodávateľ" },
+              external_id: { type: "string" },
+            },
+            required: ["name"],
+          },
+        },
+        update_existing: { type: "boolean" },
+      },
+      required: ["contacts"],
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    async vykonaj(a, volaj) {
+      return nutne(await volaj("POST", "/api/v1/customers/import", a));
+    },
+  },
+  {
+    name: "list_products",
+    title: "Cenník",
+    description: "Produkty a služby z cenníka firmy (q = hľadanie v názve a kóde).",
+    inputSchema: {
+      type: "object",
+      properties: { q: { type: "string" }, limit: { type: "number" } },
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      return nutne(
+        await volaj(
+          "GET",
+          `/api/v1/products${qs({ q: a.q, limit: a.limit ?? 50, active: "true" })}`,
+        ),
+      );
+    },
+  },
+  {
+    name: "create_product",
+    title: "Pridať do cenníka",
+    description: "Pridá produkt alebo službu do cenníka (cena bez DPH).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        code: { type: "string" },
+        unit: { type: "string" },
+        unit_price: { type: "number", description: "Cena bez DPH" },
+        vat_rate: { type: "number" },
+        description: { type: "string" },
+        external_id: { type: "string" },
+      },
+      required: ["name"],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      return nutne(await volaj("POST", "/api/v1/products", a));
+    },
+  },
+  {
+    name: "create_bank_account",
+    title: "Pridať bankový účet",
+    description:
+      "Pridá bankový účet bez napojenia na banku (prenos z iného programu). Pohyby naň posiela import_bank_transactions.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        iban: { type: "string" },
+        name: { type: "string" },
+        currency: { type: "string" },
+        balance: { type: "number", description: "Aktuálny zostatok" },
+      },
+      required: ["iban"],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      return nutne(await volaj("POST", "/api/v1/bank-accounts", a));
+    },
+  },
+  {
+    name: "import_bank_transactions",
+    title: "Preniesť bankové pohyby",
+    description:
+      "Zapíše pohyby na účet založený cez create_bank_account (nie na účet napojený na banku). Duplicity sa preskočia.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        bank_account_id: { type: "string" },
+        transactions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              booking_date: { type: "string", description: "RRRR-MM-DD" },
+              amount: { type: "number", description: "Kladná príjem, záporná výdaj" },
+              variable_symbol: { type: "string" },
+              counterparty: { type: "string" },
+              counterparty_iban: { type: "string" },
+              description: { type: "string" },
+              reference: { type: "string", description: "Jedinečné id pohybu" },
+            },
+            required: ["booking_date", "amount"],
+          },
+        },
+        balance: { type: "number" },
+      },
+      required: ["bank_account_id", "transactions"],
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    async vykonaj(a, volaj) {
+      const { bank_account_id, ...telo } = a;
+      return nutne(
+        await volaj(
+          "POST",
+          `/api/v1/bank-accounts/${encodeURIComponent(bank_account_id)}/transactions`,
+          telo,
+        ),
+      );
+    },
+  },
+  {
+    name: "create_company",
+    title: "Založiť firmu",
+    description:
+      "Založí novú firmu pod tvojím účtom (len s kľúčom pre viac firiem). Budeš jej vlastník.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        ico: { type: "string" },
+        dic: { type: "string" },
+        ic_dph: { type: "string" },
+        street: { type: "string" },
+        city: { type: "string" },
+        zip: { type: "string" },
+        country: { type: "string", enum: ["SK", "CZ", "DE"] },
+        email: { type: "string" },
+        iban: { type: "string" },
+        vat_payer: { type: "boolean" },
+      },
+      required: ["name"],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      return nutne(await volaj("POST", "/api/v1/companies", a));
+    },
+  },
+  {
+    name: "list_company_members",
+    title: "Používatelia firmy",
+    description: "Používatelia firmy (e-mail, rola) a čakajúce pozvánky.",
+    inputSchema: {
+      type: "object",
+      properties: { company_id: { type: "string", description: "id firmy z list_companies" } },
+      required: ["company_id"],
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async vykonaj(a, volaj) {
+      return nutne(
+        await volaj("GET", `/api/v1/companies/${encodeURIComponent(a.company_id)}/members`),
+      );
+    },
+  },
+  {
+    name: "invite_user",
+    title: "Pozvať používateľa",
+    description:
+      "Pošle pozvánku do firmy e-mailom (rola admin, accountant = účtovník, employee). Len s kľúčom pre viac firiem a ak si vo firme vlastník alebo admin.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        company_id: { type: "string", description: "id firmy z list_companies" },
+        email: { type: "string" },
+        role: { type: "string", enum: ["admin", "accountant", "employee"] },
+      },
+      required: ["company_id", "email", "role"],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    async vykonaj(a, volaj) {
+      const { company_id, ...telo } = a;
+      return nutne(
+        await volaj(
+          "POST",
+          `/api/v1/companies/${encodeURIComponent(company_id)}/invitations`,
+          telo,
+        ),
+      );
+    },
+  },
 ];
+
+/** Nástroje, kde firma ide v adrese (company_id), nie v hlavičke X-Company. */
+const BEZ_FIRMY = new Set([
+  "list_companies",
+  "create_company",
+  "list_company_members",
+  "invite_user",
+]);
 
 type Sprava = { jsonrpc?: string; id?: string | number | null; method?: string; params?: any };
 
@@ -460,7 +802,7 @@ export async function spracujSpravu(
             title,
             description,
             inputSchema:
-              kontext.ucet && name !== "list_companies"
+              kontext.ucet && !BEZ_FIRMY.has(name)
                 ? schemaSFirmou(inputSchema, kontext)
                 : inputSchema,
             annotations,

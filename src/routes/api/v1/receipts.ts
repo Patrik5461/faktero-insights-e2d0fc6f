@@ -13,6 +13,11 @@ export const Route = createFileRoute("/api/v1/receipts")({
         const { zoznamDokladov } = await import("@/lib/faktero/api-doklady.server");
         return handleApi(request, (ctx) => zoznamDokladov(ctx, "blocek"));
       },
+      POST: async ({ request }) => {
+        const { handleApi } = await import("@/lib/faktero/api-auth.server");
+        const { zalozBlocek } = await import("@/lib/faktero/api-zapis.server");
+        return handleApi(request, (ctx) => zalozBlocek(ctx));
+      },
     },
   },
 });

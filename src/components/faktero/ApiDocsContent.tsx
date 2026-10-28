@@ -98,6 +98,8 @@ const SKUPINY: { nazov: string; polozky: { id: string; label: string }[] }[] = [
       { id: "quotes", label: "Cenové ponuky" },
       { id: "recurring", label: "Opakované faktúry" },
       { id: "expenses", label: "Prijaté doklady a banka" },
+      { id: "products", label: "Cenník" },
+      { id: "companies-api", label: "Firmy a používatelia" },
     ],
   },
   {
@@ -457,7 +459,32 @@ curl https://faktero.sk/api/v1/invoices \\
               <Endpoint method="GET" path="/api/v1/customers" desc="Zoznam odberateľov" />
               <Endpoint method="GET" path="/api/v1/customers/{id}" desc="Detail odberateľa" />
               <Endpoint method="PUT" path="/api/v1/customers/{id}" desc="Úprava odberateľa" />
+              <Endpoint
+                method="POST"
+                path="/api/v1/customers/import"
+                desc="Hromadný prenos adresára (do 1000)"
+              />
             </ul>
+            <h3 className="mt-5 font-semibold">{t("Hromadný prenos adresára")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "Prenesie odberateľov aj dodávateľov z iného programu naraz. Páruje podľa external_id, potom IČO, bez IČO podľa mena. Existujúci kontakt sa len doplní o prázdne polia; s update_existing: true sa prepíše. Odpoveď povie, čo sa založilo, doplnilo alebo ostalo bez zmeny, a chyby po riadkoch.",
+              )}
+            </p>
+            <div className="mt-3">
+              <CodeBlock
+                lang="json"
+                code={`POST /api/v1/customers/import
+{
+  "update_existing": false,
+  "contacts": [
+    { "name": "Odberateľ s.r.o.", "ico": "12345678", "email": "fakturacia@odberatel.sk" },
+    { "name": "Dodávateľ a.s.", "ico": "87654321", "supplier": true, "customer": false,
+      "iban": "SK31 1200 0000 1987 4263 7541" }
+  ]
+}`}
+              />
+            </div>
           </section>
           <section
             id="invoices"
@@ -531,6 +558,16 @@ curl https://faktero.sk/api/v1/invoices \\
             <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card px-4">
               <Endpoint method="GET" path="/api/v1/purchase-invoices" desc="Prijaté faktúry" />
               <Endpoint
+                method="POST"
+                path="/api/v1/purchase-invoices"
+                desc="Zapísať prijatú faktúru (aj so súborom)"
+              />
+              <Endpoint
+                method="PUT"
+                path="/api/v1/purchase-invoices/{id}"
+                desc="Úprava, úhrada (payment_date), zaúčtovanie"
+              />
+              <Endpoint
                 method="GET"
                 path="/api/v1/purchase-invoices/{id}"
                 desc="Detail s položkami a odkazom na súbor (1 h)"
@@ -541,6 +578,8 @@ curl https://faktero.sk/api/v1/invoices \\
                 desc="Označiť ako odovzdanú"
               />
               <Endpoint method="GET" path="/api/v1/receipts" desc="Bločky" />
+              <Endpoint method="POST" path="/api/v1/receipts" desc="Zapísať bloček" />
+              <Endpoint method="PUT" path="/api/v1/receipts/{id}" desc="Úprava bločku" />
               <Endpoint
                 method="GET"
                 path="/api/v1/receipts/{id}"
@@ -571,7 +610,70 @@ curl https://faktero.sk/api/v1/invoices \\
                 path="/api/v1/bank-transactions"
                 desc="Pohyby na bankových účtoch"
               />
+              <Endpoint
+                method="POST"
+                path="/api/v1/bank-accounts"
+                desc="Pridať účet bez napojenia na banku"
+              />
+              <Endpoint
+                method="POST"
+                path="/api/v1/bank-accounts/{id}/transactions"
+                desc="Preniesť pohyby na taký účet (do 2000)"
+              />
             </ul>
+            <h3 className="mt-5 font-semibold">{t("Zápis prijatej faktúry")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "Sumy pošlite buď ako položky (ceny bez DPH, sadzba v %), alebo ako amount_total (+ amount_without_vat a vat_amount). Dodávateľ sa založí v adresári, ak tam nie je. S external_id je opakované volanie bezpečné; bez neho sa tá istá faktúra (IČO + číslo + suma) druhýkrát nezaloží (409). Súbor (PDF, JPG, PNG) ide ako base64 do 14 MB. Bez accounting.booked príde faktúra nezaúčtovaná.",
+              )}
+            </p>
+            <div className="mt-3">
+              <CodeBlock
+                lang="json"
+                code={`POST /api/v1/purchase-invoices
+{
+  "external_id": "erp-2026-0042",
+  "invoice_number": "FV2026118",
+  "supplier": { "name": "Dodávateľ s.r.o.", "ico": "12345678",
+                "ic_dph": "SK2020123456", "iban": "SK3112000000198742637541" },
+  "issue_date": "2026-10-20",
+  "delivery_date": "2026-10-20",
+  "due_date": "2026-11-03",
+  "variable_symbol": "2026118",
+  "payment_method": "prevod",
+  "items": [{ "name": "Servis", "quantity": 2, "unit_price": 50, "vat_rate": 23 }],
+  "accounting": { "predkontacia": "1Fp", "clenenie_dph": "PD", "booked": false },
+  "file": { "file_name": "FV2026118.pdf", "content_type": "application/pdf",
+            "content_base64": "JVBERi0xLjQK..." }
+}`}
+              />
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                "Úhradu zapíšete cez PUT s payment_date. Bloček: issue_date, total_amount (s DPH), vat_breakdown [{ rate, base, vat }] a payment_method (hotovost, karta, prevod) — hotovosť sa započíta do pokladne, ak nepošlete cash_register: false.",
+              )}
+            </p>
+            <h3 className="mt-5 font-semibold">{t("Prenos bankového účtu")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "Pre banku, ku ktorej sa Faktero nepripojí, alebo pri prechode z iného programu: POST /bank-accounts založí účet (IBAN, mena, zostatok) a pohyby naň pošlete dávkou. Každý pohyb má mať reference (jedinečné id z banky); bez neho ho Faktero odvodí z dátumu, sumy a symbolov, takže opakované odoslanie nič nezdvojí. Na účet napojený priamo na banku pohyby cez API poslať nejde — vedie ich banka.",
+              )}
+            </p>
+            <div className="mt-3">
+              <CodeBlock
+                lang="json"
+                code={`POST /api/v1/bank-accounts/{id}/transactions
+{
+  "transactions": [
+    { "booking_date": "2026-10-22", "amount": 123.00, "variable_symbol": "2026001",
+      "counterparty": "Odberateľ s.r.o.", "reference": "TX-88123" },
+    { "booking_date": "2026-10-22", "amount": -12.30, "description": "Kancelárske potreby",
+      "reference": "TX-88124" }
+  ],
+  "balance": 1098.40
+}`}
+              />
+            </div>
             <h3 className="mt-5 font-semibold">{t("Filtre zoznamu")}</h3>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
               <li>
@@ -666,6 +768,70 @@ curl https://faktero.sk/api/v1/invoices \\
               <code className="font-mono">cita</code>, <code className="font-mono">vytazene</code>,{" "}
               <code className="font-mono">chyba</code>) {t("vráti GET.")}
             </p>
+          </section>
+          <section
+            id="products"
+            className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-7 print:break-inside-auto print:rounded-none print:border-0 print:p-0"
+          >
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("Cenník")}</h2>
+            <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card px-4">
+              <Endpoint
+                method="GET"
+                path="/api/v1/products"
+                desc="Produkty a služby (q = hľadanie)"
+              />
+              <Endpoint method="POST" path="/api/v1/products" desc="Pridať do cenníka" />
+              <Endpoint method="GET" path="/api/v1/products/{id}" desc="Detail produktu" />
+              <Endpoint method="PUT" path="/api/v1/products/{id}" desc="Úprava produktu" />
+            </ul>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                "Cena je bez DPH. S external_id sa ten istý produkt druhýkrát nezaloží — vhodné na synchronizáciu z e-shopu či skladového programu.",
+              )}
+            </p>
+          </section>
+          <section
+            id="companies-api"
+            className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-7 print:break-inside-auto print:rounded-none print:border-0 print:p-0"
+          >
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              {t("Firmy a používatelia")}
+            </h2>
+            <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card px-4">
+              <Endpoint method="GET" path="/api/v1/companies" desc="Firmy, ku ktorým kľúč smie" />
+              <Endpoint method="POST" path="/api/v1/companies" desc="Založiť firmu (kľúč účtu)" />
+              <Endpoint method="GET" path="/api/v1/companies/{id}" desc="Detail firmy" />
+              <Endpoint method="PUT" path="/api/v1/companies/{id}" desc="Úprava údajov firmy" />
+              <Endpoint
+                method="GET"
+                path="/api/v1/companies/{id}/members"
+                desc="Používatelia a čakajúce pozvánky"
+              />
+              <Endpoint
+                method="POST"
+                path="/api/v1/companies/{id}/invitations"
+                desc="Pozvať používateľa (kľúč účtu)"
+              />
+            </ul>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                "Pre účtovné kancelárie a integrátorov: kľúčom pre viac firiem založíte firmu nového klienta (stanete sa jej vlastníkom a kľúč k nej hneď smie) a pozvete do nej používateľov — účtovníka (accountant), admina alebo zamestnanca. Pozvánka príde e-mailom a platí 14 dní; v odpovedi je aj odkaz na prijatie. Firmu zakladať a pozývať smie len kľúč pre viac firiem, ktorého majiteľ je vo firme vlastník alebo admin — obyčajný firemný kľúč nie.",
+              )}
+            </p>
+            <div className="mt-3">
+              <CodeBlock
+                lang="bash"
+                code={`# Nová firma klienta
+curl -X POST https://faktero.sk/api/v1/companies \\
+  -H "Authorization: Bearer fk_live_..." -H "Content-Type: application/json" \\
+  -d '{"name":"Klient s.r.o.","ico":"12345678","country":"SK","vat_payer":true}'
+
+# Pozvánka pre účtovníčku
+curl -X POST https://faktero.sk/api/v1/companies/{id}/invitations \\
+  -H "Authorization: Bearer fk_live_..." -H "Content-Type: application/json" \\
+  -d '{"email":"uctovnicka@kancelaria.sk","role":"accountant"}'`}
+              />
+            </div>
           </section>
         </div>
         <div className="space-y-5">
@@ -794,12 +960,12 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
               </li>
               <li>
                 {t(
-                  "Nástroje: faktúry a ich detail, faktúry po splatnosti, vystavenie faktúry, označenie úhrady, odberatelia, cenové ponuky, prijaté faktúry, bankové účty a pohyby.",
+                  "Nástroje: faktúry a ich detail, faktúry po splatnosti, vystavenie faktúry, označenie úhrady, odberatelia aj ich hromadný prenos, cenové ponuky, cenník, prijaté faktúry a bločky (aj ich zápis a úhrada), bankové účty a pohyby (aj prenos na účet bez napojenia), založenie firmy, používatelia a pozvánky.",
                 )}
               </li>
               <li>
                 {t(
-                  "Asistent nič nemaže a nič neposiela von — faktúru vystaví, ale odoslanie e-mailom či ako eFaktúru je na vás. Zapisujúce nástroje sú označené, aby si ich klient dal potvrdiť.",
+                  "Asistent nič nemaže a nič neposiela odberateľom — faktúru vystaví, ale odoslanie e-mailom či ako eFaktúru je na vás. Jediný e-mail, ktorý odíde, je pozvánka používateľa, keď o ňu výslovne požiadate. Zapisujúce nástroje sú označené, aby si ich klient dal potvrdiť.",
                 )}
               </li>
             </ul>

@@ -13,6 +13,11 @@ export const Route = createFileRoute("/api/v1/purchase-invoices")({
         const { zoznamDokladov } = await import("@/lib/faktero/api-doklady.server");
         return handleApi(request, (ctx) => zoznamDokladov(ctx, "prijata"));
       },
+      POST: async ({ request }) => {
+        const { handleApi } = await import("@/lib/faktero/api-auth.server");
+        const { zalozPrijatu } = await import("@/lib/faktero/api-zapis.server");
+        return handleApi(request, (ctx) => zalozPrijatu(ctx));
+      },
     },
   },
 });
