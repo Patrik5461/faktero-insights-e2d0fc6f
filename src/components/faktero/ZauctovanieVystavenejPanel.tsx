@@ -12,6 +12,7 @@ import {
   zrusZauctovanieVystavenejFn,
 } from "@/lib/faktero/zauctovanie.functions";
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
+import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KodPohody } from "./KodPohody";
 import { VyberPravidla } from "./VyberPravidla";
 import type { Navrhy } from "./ZauctovaniePanel";
@@ -427,6 +428,29 @@ export function ZauctovanieVystavenejPanel({
               ". Do Pohody ide faktúra konektorom alebo mesačným balíkom; hneď ju stiahnete tlačidlom.",
             )}
           </p>
+          <NastavitPredvolene
+            companyId={inv.company_id}
+            kluc={
+              inv.type === "proforma"
+                ? "zaloha"
+                : inv.type === "credit_note"
+                  ? "dobropis"
+                  : "faktura"
+            }
+            hodnoty={h}
+            predvolene={{
+              predkontacia: navrhy?.predvolenaPredkontacia,
+              clenenie: navrhy?.predvoleneClenenie,
+              kv: navrhy?.predvoleneKv,
+            }}
+            onUlozene={() =>
+              nacitajNavrhy({
+                data: { company_id: inv.company_id, pre: "vystavena", typ: inv.type },
+              })
+                .then(setNavrhy)
+                .catch(() => {})
+            }
+          />
           <div className="mt-3 flex flex-wrap gap-2">
             {!zauctovana && (
               <button

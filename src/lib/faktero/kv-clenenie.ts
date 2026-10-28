@@ -39,3 +39,32 @@ export function kvAutomaticky(d: {
   if (d.prenesenie) return "B1";
   return "B2";
 }
+
+/** Druh dokladu, pre ktorý má firma predvolené členenie KV (Predkontácie → Predvolené). */
+export type DruhKvPredvoleneho = "faktura" | "prijata" | "doklady";
+
+/**
+ * Predvolené členenie KV firmy. `standard` je to, čo dostane bežný doklad
+ * automaticky — predvolené ho nahradí; iný výsledok (prenesenie B.1, opravný
+ * C.2, vydané s prenesením A.2) ostáva, lebo ten určuje zákon, nie zvyk firmy.
+ */
+export const KV_PREDVOLENE: Record<
+  DruhKvPredvoleneho,
+  { stlpec: string; standard: string | null; kody: string[] }
+> = {
+  faktura: { stlpec: "kv_clenenie_faktura", standard: null, kody: ["A1", "D2", "X"] },
+  prijata: { stlpec: "kv_clenenie_prijata", standard: "B2", kody: ["B2", "B3", "X"] },
+  doklady: { stlpec: "kv_clenenie_doklady", standard: "B3", kody: ["B3", "B2", "X"] },
+};
+
+/** Odvodené členenie KV s predvoleným firmy (len slovenská firma, len bežný doklad). */
+export function kvSPredvolenym(
+  odvodene: string | null,
+  druh: DruhKvPredvoleneho,
+  predvolene: string | null | undefined,
+  slovenskaFirma = true,
+): string | null {
+  const p = String(predvolene ?? "").trim();
+  if (!p || !slovenskaFirma || !KV_PREDVOLENE[druh].kody.includes(p)) return odvodene;
+  return odvodene === KV_PREDVOLENE[druh].standard ? p : odvodene;
+}

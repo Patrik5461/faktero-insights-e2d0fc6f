@@ -75,6 +75,8 @@ export const PREDVOLENE: {
   nazov: string;
   predkontacia: string;
   clenenie?: string;
+  /** Stĺpec predvoleného členenia KV DPH (kv-clenenie.ts → KV_PREDVOLENE). */
+  kv?: string;
   agendy: string[];
   /** Členenie DPH sa ponúkne pre prijaté či vydané plnenia. */
   smer: "vstup" | "vystup";
@@ -84,6 +86,7 @@ export const PREDVOLENE: {
     nazov: "Vydaná faktúra",
     predkontacia: "pohoda_predkontacia",
     clenenie: "pohoda_clenenie_dph",
+    kv: "kv_clenenie_faktura",
     agendy: ["issuedInvoice"],
     smer: "vystup",
   },
@@ -114,6 +117,7 @@ export const PREDVOLENE: {
     nazov: "Prijatá faktúra",
     predkontacia: "pohoda_predkontacia_prijata",
     clenenie: "pohoda_clenenie_dph_prijata",
+    kv: "kv_clenenie_prijata",
     agendy: ["receivedInvoice"],
     smer: "vstup",
   },
@@ -130,6 +134,7 @@ export const PREDVOLENE: {
     nazov: "Bloček a výdavkový doklad",
     predkontacia: "pohoda_predkontacia_doklady",
     clenenie: "pohoda_clenenie_dph_doklady",
+    kv: "kv_clenenie_doklady",
     agendy: ["receivedInvoice", "cashPaid", "internalDocument"],
     smer: "vstup",
   },
@@ -151,7 +156,9 @@ export const PREDVOLENE: {
 
 /** Stĺpce na `companies`, ktoré stránka predkontácií ukladá. */
 export const STLPCE_PREDVOLENYCH = [
-  ...PREDVOLENE.flatMap((p) => [p.predkontacia, p.clenenie].filter((x): x is string => !!x)),
+  ...PREDVOLENE.flatMap((p) =>
+    [p.predkontacia, p.clenenie, p.kv].filter((x): x is string => !!x),
+  ),
   // Hlavička rozúčtovaného dokladu („Rozúčtovať" v Pohode).
   "pohoda_predkontacia_rozuctovat",
   // Číselné rady Pohody (predpony) a predvolené stredisko.

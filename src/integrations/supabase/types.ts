@@ -1649,6 +1649,9 @@ export type Database = {
           auto_uctovanie_rezim: string
           auto_uctovanie_limit: number
           auto_uctovanie_od: string
+          kv_clenenie_faktura: string | null
+          kv_clenenie_prijata: string | null
+          kv_clenenie_doklady: string | null
         }
         Insert: {
           kurz_de_zdroj?: string
@@ -1762,6 +1765,9 @@ export type Database = {
           auto_uctovanie_rezim?: string
           auto_uctovanie_limit?: number
           auto_uctovanie_od?: string
+          kv_clenenie_faktura?: string | null
+          kv_clenenie_prijata?: string | null
+          kv_clenenie_doklady?: string | null
         }
         Update: {
           kurz_de_zdroj?: string
@@ -1875,6 +1881,9 @@ export type Database = {
           auto_uctovanie_rezim?: string
           auto_uctovanie_limit?: number
           auto_uctovanie_od?: string
+          kv_clenenie_faktura?: string | null
+          kv_clenenie_prijata?: string | null
+          kv_clenenie_doklady?: string | null
         }
         Relationships: []
       }
@@ -10639,6 +10648,58 @@ export type Database = {
 
 
 
+
+      podpora_prilohy: {
+        Row: {
+          id: string
+          poziadavka_id: string
+          sprava_id: string | null
+          path: string
+          name: string
+          mime: string
+          size: number
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          poziadavka_id: string
+          sprava_id?: string | null
+          path: string
+          name: string
+          mime: string
+          size: number
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          poziadavka_id?: string
+          sprava_id?: string | null
+          path?: string
+          name?: string
+          mime?: string
+          size?: number
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podpora_prilohy_poziadavka_id_fkey"
+            columns: ["poziadavka_id"]
+            isOneToOne: false
+            referencedRelation: "podpora_poziadavky"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "podpora_prilohy_sprava_id_fkey"
+            columns: ["sprava_id"]
+            isOneToOne: false
+            referencedRelation: "podpora_spravy"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       stock_items_with_availability: {

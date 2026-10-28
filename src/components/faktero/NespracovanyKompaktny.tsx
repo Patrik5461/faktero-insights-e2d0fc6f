@@ -33,6 +33,7 @@ import {
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { useT } from "@/lib/i18n/useT";
+import { NastavitPredvolene } from "./NastavitPredvolene";
 
 /*
   Rozloženie nespracovaného dokladu kompaktné: veľký náhľad s
@@ -674,6 +675,18 @@ export function NespracovanyKompaktny({
                 </Link>
                 .
               </p>
+              {companyId && (druh === "blocek" || druh === "faktura") ? (
+                <NastavitPredvolene
+                  companyId={companyId}
+                  kluc={druh === "blocek" ? "doklady" : "prijata"}
+                  hodnoty={u.kody}
+                  predvolene={{
+                    predkontacia: navrhy?.predvolenaPredkontacia,
+                    clenenie: navrhy?.predvoleneClenenie,
+                    kv: navrhy?.predvoleneKv,
+                  }}
+                />
+              ) : null}
             </Sekcia>
           ) : null}
 

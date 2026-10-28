@@ -102,6 +102,36 @@ export const adminPoziadavkaFn = createServerFn({ method: "POST" })
     const { data: firma } = poz.company_id
       ? await db.from("companies").select("id, name, ico").eq("id", poz.company_id).maybeSingle()
       : { data: null };
+    /*
+      Prílohy (snímky obrazovky, fotky, PDF) aj s podpísaným odkazom na hodinu —
+      kôš je súkromný a obrázok sa má ukázať rovno vo vlákne.
+    */
+    const { KOS_PODPORY } = await import("./podpora-prilohy");
+    const { data: riadkyPriloh } = await db
+      .from("podpora_prilohy")
+      .select("id, sprava_id, path, name, mime, size, created_at")
+      .eq("poziadavka_id", data.id)
+      .order("created_at");
+    const zoznamPriloh = (riadkyPriloh ?? []) as {
+      id: string;
+      sprava_id: string | null;
+      path: string;
+      name: string;
+      mime: string;
+      size: number;
+      created_at: string;
+    }[];
+    const { data: odkazy } = zoznamPriloh.length
+      ? await db.storage.from(KOS_PODPORY).createSignedUrls(
+          zoznamPriloh.map((r) => r.path),
+          3600,
+        )
+      : { data: [] as { path: string | null; signedUrl: string }[] };
+    const odkazPodlaCesty = new Map((odkazy ?? []).map((o) => [o.path, o.signedUrl]));
+    const prilohy = zoznamPriloh.map(({ path, ...r }) => ({
+      ...r,
+      url: odkazPodlaCesty.get(path) ?? null,
+    }));
 
     // Otvorením podpora požiadavku videla.
     await db
@@ -116,6 +146,7 @@ export const adminPoziadavkaFn = createServerFn({ method: "POST" })
         ...s,
         autor: s.autor_id ? (meno.get(s.autor_id) ?? null) : null,
       })),
+      prilohy,
     };
   });
 

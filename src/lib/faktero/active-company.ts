@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { citaj, zapis, zmaz } from "@/lib/mobile/trvale-ulozisko";
+import { zapamatajPouzituFirmu } from "@/lib/faktero/poradie-firiem";
 
 const KEY = "faktero.active_company";
 
@@ -17,8 +18,11 @@ export function getActiveCompanyId(): string | null {
 
 export function setActiveCompanyId(id: string | null) {
   if (typeof window === "undefined") return;
-  if (id) zapis(KEY, id);
-  else zmaz(KEY);
+  if (id) {
+    zapis(KEY, id);
+    // Prepínač firiem ukazuje naposledy použité hore.
+    zapamatajPouzituFirmu(id);
+  } else zmaz(KEY);
 }
 
 /**

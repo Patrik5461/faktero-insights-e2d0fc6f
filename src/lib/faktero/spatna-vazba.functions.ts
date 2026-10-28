@@ -22,6 +22,8 @@ const Vstup = z.object({
   url: z.string().trim().max(300).optional(),
   user_agent: z.string().trim().max(400).optional(),
   company_id: z.string().uuid().optional(),
+  /** Koľko príloh okno ešte nahrá — aby e-mail podpore vedel, že ich má hľadať v administrácii. */
+  pocet_priloh: z.number().int().min(0).max(20).optional(),
 });
 
 function bezpecne(v: string): string {
@@ -128,6 +130,7 @@ export const posliSpatnuVazbu = createServerFn({ method: "POST" })
         text: data.message,
         url: data.url ?? null,
         userAgent: data.user_agent ?? null,
+        pocetPriloh: data.pocet_priloh ?? 0,
       });
       return { ok: true, poziadavkaId: p.id, cislo: p.cislo };
     } catch (e: any) {

@@ -43,6 +43,7 @@ import {
   odvolajZrusenieUctuFn,
 } from "@/lib/faktero/ucet-zrusenie.functions";
 import { posliSpatnuVazbu } from "@/lib/faktero/spatna-vazba.functions";
+import { nahrajPrilohuPodporyFn } from "@/lib/faktero/podpora-prilohy.functions";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
 import {
   navrhniParovanieDokladov,
@@ -111,6 +112,7 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "ucet-poziadaj-o-zrusenie": poziadajOZrusenieUctuFn,
   "ucet-odvolaj-zrusenie": odvolajZrusenieUctuFn,
   "spatna-vazba": posliSpatnuVazbu,
+  "podpora-priloha-nahraj": nahrajPrilohuPodporyFn,
   "pravne-suhlasy": recordLegalAcceptance,
   "doklady-navrhy-parovania": navrhniParovanieDokladov,
   "doklad-sparuj": potvrdParovanieDokladu,

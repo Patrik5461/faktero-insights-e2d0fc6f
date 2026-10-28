@@ -1,17 +1,21 @@
 import { popisRoly } from "@/lib/faktero/rola-popis";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { CreateCompanyDialog } from "@/components/faktero/CreateCompanyDialog";
 import { getActiveCompanyId, setActiveCompanyId } from "@/lib/faktero/active-company";
-import { Plus, Check, Building2, Trash2 } from "lucide-react";
+import { Plus, Check, Trash2, Search, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { zmazFirmuFn } from "@/lib/faktero/firma-zmazanie.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { HLADANIE_OD } from "@/lib/faktero/hladanie-firiem";
+import { citajPosledneFirmy, zoradFirmy } from "@/lib/faktero/poradie-firiem";
+import { riadkyPreIds } from "@/lib/faktero/strankovanie";
+import { AvatarFirmy } from "@/components/faktero/PrepinacFiriem";
 
 export const Route = createFileRoute("/_authenticated/firmy")({
   head: ({ match }) => ({
@@ -20,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/firmy")({
   component: CompanyManagementPage,
 });
 
-type Row = { id: string; name: string; role: string; created_at: string };
+type Row = { id: string; name: string; ico: string | null; role: string; created_at: string };
 
 function CompanyManagementPage() {
   const { t, jazyk } = useT();
@@ -30,6 +34,11 @@ function CompanyManagementPage() {
   const [open, setOpen] = useState(false);
   const [mazem, setMazem] = useState<Row | null>(null);
   const zmazFirmu = useServerFn(zmazFirmuFn);
+  const [hladanie, setHladanie] = useState("");
+  const [rola, setRola] = useState("");
+  const [posledne] = useState(citajPosledneFirmy);
+  /** Nespracované doklady a neskontrolované bločky po firmách; `null` = ešte sa načítava alebo sa nedalo. */
+  const [nespracovane, setNespracovane] = useState<Map<string, number> | null>(null);
 
   async function load() {
     // Bez filtra na seba vráti RLS aj členstvá kolegov a firma sa v zozname
@@ -38,7 +47,7 @@ function CompanyManagementPage() {
     if (!auth.user) return;
     const { data, error } = await supabase
       .from("company_users")
-      .select("role, company:companies(id, name, created_at)")
+      .select("role, company:companies(id, name, ico, created_at)")
       .eq("user_id", auth.user.id)
       .order("created_at", { ascending: true });
     if (error) {
@@ -50,6 +59,7 @@ function CompanyManagementPage() {
         role: r.role,
         id: r.company.id,
         name: r.company.name,
+        ico: r.company.ico ?? null,
         created_at: r.company.created_at,
       })),
     );
@@ -58,6 +68,58 @@ function CompanyManagementPage() {
   useEffect(() => {
     load();
   }, []);
+
+  /*
+    Počet nespracovaných pri každej firme — to isté číslo, aké ukazuje menu
+    pri Nespracovaných (doklady v Nespracovaných + nové bločky). Takých riadkov
+    je málo, tak sa načítajú len stĺpce `company_id` pre všetky firmy naraz
+    namiesto dvoch dotazov na každú firmu.
+  */
+  useEffect(() => {
+    if (!rows?.length) return;
+    let zrusene = false;
+    const ids = rows.map((r) => r.id);
+    (async () => {
+      const [a, b] = await Promise.all([
+        riadkyPreIds<{ company_id: string }>(
+          ids,
+          (kus, od, po) =>
+            supabase
+              .from("nespracovane_doklady" as any)
+              .select("id, company_id")
+              .in("company_id", kus)
+              .order("id")
+              .range(od, po) as any,
+        ),
+        riadkyPreIds<{ company_id: string }>(
+          ids,
+          (kus, od, po) =>
+            supabase
+              .from("expense_documents")
+              .select("id, company_id")
+              .in("company_id", kus)
+              .eq("status", "new")
+              .order("id")
+              .range(od, po) as any,
+        ),
+      ]);
+      const pocty = new Map<string, number>();
+      for (const r of [...a, ...b]) pocty.set(r.company_id, (pocty.get(r.company_id) ?? 0) + 1);
+      if (!zrusene) setNespracovane(pocty);
+    })().catch(() => {
+      // Počty sú len pomôcka — bez nich sa stĺpec nezobrazí.
+    });
+    return () => {
+      zrusene = true;
+    };
+  }, [rows]);
+
+  const roly = useMemo(() => [...new Set((rows ?? []).map((r) => r.role))], [rows]);
+  const zobrazene = useMemo(() => {
+    const podlaRoly = (rows ?? []).filter((r) => !rola || r.role === rola);
+    return zoradFirmy(podlaRoly, hladanie, activeId, posledne).vsetky;
+  }, [rows, rola, hladanie, activeId, posledne]);
+  const sNastrojmi = (rows?.length ?? 0) >= HLADANIE_OD;
 
   /**
    * Po zmazaní firmy sa treba prepnúť inam — inak by celá aplikácia ukazovala
@@ -77,12 +139,42 @@ function CompanyManagementPage() {
     await load();
   }
 
-  function switchTo(id: string) {
+  function switchTo(id: string, kam = "/dashboard") {
     setActiveCompanyId(id);
     setAid(id);
     toast.success(t("Firma prepnutá"));
-    window.location.assign("/dashboard");
+    window.location.assign(kam);
   }
+
+  /** Počet nespracovaných ako odkaz — prepne do firmy rovno na Nespracované. */
+  const pocetNespracovanych = (r: Row) => {
+    if (!nespracovane) return <span className="text-muted-foreground">…</span>;
+    const n = nespracovane.get(r.id) ?? 0;
+    if (!n) return <span className="text-muted-foreground">0</span>;
+    return (
+      <button
+        type="button"
+        onClick={() => switchTo(r.id, "/nespracovane")}
+        title={t("Otvoriť Nespracované v tejto firme")}
+        className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-500/25 dark:text-amber-300"
+      >
+        <Inbox className="h-3 w-3" /> {n}
+      </button>
+    );
+  };
+
+  const nazovFirmy = (r: Row) =>
+    r.id === activeId ? (
+      <span className="min-w-0 break-words font-medium">{r.name}</span>
+    ) : (
+      <button
+        type="button"
+        onClick={() => switchTo(r.id)}
+        className="min-w-0 break-words text-left font-medium hover:text-primary hover:underline"
+      >
+        {r.name}
+      </button>
+    );
 
   const akcie = (r: Row) => (
     <div className="inline-flex flex-wrap justify-end gap-2">
@@ -137,6 +229,46 @@ function CompanyManagementPage() {
         }
       />
       <PageBody>
+        {/* Pri desiatkach firiem (účtovná kancelária) hľadanie a filter podľa roly. */}
+        {sNastrojmi && (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <div className="relative min-w-0 flex-1 basis-56">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                autoFocus
+                value={hladanie}
+                onChange={(e) => setHladanie(e.target.value)}
+                onKeyDown={(e) => {
+                  // Jediná nájdená firma — Enter do nej prepne.
+                  if (e.key === "Enter" && zobrazene.length === 1 && zobrazene[0].id !== activeId)
+                    switchTo(zobrazene[0].id);
+                  if (e.key === "Escape") setHladanie("");
+                }}
+                placeholder={t("Hľadať firmu alebo IČO…")}
+                aria-label={t("Hľadať firmu")}
+                className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm"
+              />
+            </div>
+            {roly.length > 1 && (
+              <select
+                value={rola}
+                onChange={(e) => setRola(e.target.value)}
+                aria-label={t("Rola")}
+                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+              >
+                <option value="">{t("Všetky roly")}</option>
+                {roly.map((r) => (
+                  <option key={r} value={r}>
+                    {t(popisRoly(r))}
+                  </option>
+                ))}
+              </select>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {t("Zobrazené {n} z {spolu}", { n: zobrazene.length, spolu: rows?.length ?? 0 })}
+            </span>
+          </div>
+        )}
         {/* Mobil: karty — stĺpec Akcie bol mimo obrazovky. */}
         <div className="space-y-2 md:hidden">
           {rows === null && (
@@ -149,19 +281,30 @@ function CompanyManagementPage() {
               {t("Žiadne firmy.")}
             </div>
           )}
-          {rows?.map((r) => (
+          {rows && rows.length > 0 && zobrazene.length === 0 && (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+              {t("Nič sa nenašlo.")}
+            </div>
+          )}
+          {zobrazene.map((r) => (
             <div key={r.id} className="rounded-xl border border-border bg-card p-4 text-sm">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 break-words font-medium">{r.name}</span>
+                <AvatarFirmy nazov={r.name} />
+                {nazovFirmy(r)}
                 {r.id === activeId && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
                     <Check className="h-3 w-3" /> {t("Aktívna")}
                   </span>
                 )}
               </div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                {t(popisRoly(r.role))} · {t("vytvorené")} {datum(r.created_at)}
+              <div className="mt-1 flex flex-wrap items-center gap-x-1 gap-y-1 text-xs text-muted-foreground">
+                {r.ico && <span>{t("IČO {ico}", { ico: r.ico })} ·</span>}
+                <span>
+                  {t(popisRoly(r.role))} · {t("vytvorené")} {datum(r.created_at)}
+                </span>
+                {nespracovane && (nespracovane.get(r.id) ?? 0) > 0 && (
+                  <span className="ml-1">{pocetNespracovanych(r)}</span>
+                )}
               </div>
               <div className="mt-3 flex justify-start [&>div]:justify-start">{akcie(r)}</div>
             </div>
@@ -172,7 +315,9 @@ function CompanyManagementPage() {
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">{t("Firma")}</th>
+                <th className="px-4 py-3">{t("IČO")}</th>
                 <th className="px-4 py-3">{t("Rola")}</th>
+                <th className="px-4 py-3">{t("Nespracované")}</th>
                 <th className="px-4 py-3">{t("Vytvorené")}</th>
                 <th className="px-4 py-3 text-right">{t("Akcie")}</th>
               </tr>
@@ -180,24 +325,31 @@ function CompanyManagementPage() {
             <tbody>
               {rows === null && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
                     {t("Načítavam…")}
                   </td>
                 </tr>
               )}
               {rows?.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
                     {t("Žiadne firmy.")}
                   </td>
                 </tr>
               )}
-              {rows?.map((r) => (
+              {rows && rows.length > 0 && zobrazene.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                    {t("Nič sa nenašlo.")}
+                  </td>
+                </tr>
+              )}
+              {zobrazene.map((r) => (
                 <tr key={r.id} className="border-t border-border">
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{r.name}</span>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <AvatarFirmy nazov={r.name} />
+                      {nazovFirmy(r)}
                       {r.id === activeId && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
                           <Check className="h-3 w-3" /> {t("Aktívna")}
@@ -205,7 +357,9 @@ function CompanyManagementPage() {
                       )}
                     </div>
                   </td>
+                  <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.ico ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{t(popisRoly(r.role))}</td>
+                  <td className="px-4 py-3">{pocetNespracovanych(r)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{datum(r.created_at)}</td>
                   <td className="px-4 py-3 text-right">{akcie(r)}</td>
                 </tr>

@@ -26,6 +26,7 @@ import {
   odpocitajZdanenuZalohu,
 } from "./dph-vykazy";
 import { domacaMena, domacejZaJednotku } from "./kurzy";
+import { kvSPredvolenym } from "./kv-clenenie";
 import { krajinaDane } from "./vat-rates";
 
 type Klient = {
@@ -133,7 +134,9 @@ export async function nacitajVstup(
     kodyPodlaKategorie(supabase, companyId),
     supabase
       .from("companies")
-      .select("pohoda_predkontacia_prijata, pohoda_predkontacia_doklady, country")
+      .select(
+        "pohoda_predkontacia_prijata, pohoda_predkontacia_doklady, country, kv_clenenie_prijata, kv_clenenie_doklady",
+      )
       .eq("id", companyId)
       .maybeSingle(),
   ]);
@@ -474,7 +477,14 @@ export async function nacitajVstup(
               return [{ sadzba: sz, zaklad, dan: Math.round(zaklad * sz) / 100 }];
             })()
           : riadkyPrijatej(p, zaklad, dan, den, cudziaP),
-      kv: p.kv_clenenie,
+      // Predvolené KV firmy len pre bežnú tuzemskú faktúru (nie prenesenie ani opravnú).
+      kv:
+        p.kv_clenenie ||
+        kvSPredvolenym(
+          rezimP === "samozdanenie" || rezimP === "nadobudnutie" || p.opravuje_cislo ? null : "B2",
+          "prijata",
+          (firmaKody as any)?.kv_clenenie_prijata,
+        ),
       podielOdpoctu: podiel(
         p,
         rozpisPrijatej(p).map((x) => ({ sadzba: x.sadzba, zaklad: Math.abs(x.zaklad), dph: Math.abs(x.dph) })),
@@ -528,7 +538,7 @@ export async function nacitajVstup(
       dodavatelIcDph: d.supplier_ic_dph,
       odpocet: d.odpocet !== false,
       riadky,
-      kv: d.kv_clenenie,
+      kv: d.kv_clenenie || kvSPredvolenym("B3", "doklady", (firmaKody as any)?.kv_clenenie_doklady),
       cislo: d.document_number,
       datum: d.issue_date,
       podielOdpoctu: podiel(

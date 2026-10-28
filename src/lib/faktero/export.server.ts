@@ -194,6 +194,12 @@ function skrat(v: unknown, max: number): string {
     .slice(0, max);
 }
 
+/** Predvolené KV firmy do Pohody — „X" (nezahŕňať) nemá v Pohode skratku. */
+function kvZPredvoleneho(kod: string | null | undefined): string {
+  const k = String(kod ?? "").trim();
+  return k && k !== "X" ? k : "";
+}
+
 /** Predkontácia a členenie DPH — kódy z Pohody účtovníka, ak si ich vyplnil. */
 export type PohodaNastavenia = {
   /** Predkontácia pre bežnú faktúru, napr. `3Fv`. */
@@ -216,6 +222,10 @@ export type PohodaNastavenia = {
   predkontaciaDoklady?: string | null;
   /** Členenie DPH pre bloček a výdavkový doklad; prázdne = ako prijatá faktúra. */
   clenenieDphDoklady?: string | null;
+  /** Predvolené členenie KV DPH bežného dokladu (len SK; prenesenie a opravný doklad nie). */
+  kvFaktura?: string | null;
+  kvPrijata?: string | null;
+  kvDoklady?: string | null;
   /**
    * Predkontácia hlavičky rozúčtovaného dokladu — v Pohode „Rozúčtovať";
    * kódy potom nesú položky. Prázdne = podľa krajiny firmy.
@@ -640,7 +650,9 @@ export function polozkyFaktur(opts: {
               : ""
             : tuzemskePdp
               ? KV_PDP_VYDANE
-              : "";
+              : invoice.type === "regular" && !invoice.reverse_charge
+                ? kvZPredvoleneho(nastavenia?.kvFaktura)
+                : "";
       /*
         Colné údaje položky do Pohody: blok `intrastatItem` (kód tovaru KN,
         krajina pôvodu, krajina určenia, vlastná hmotnosť riadku). Hmotnosť
@@ -1477,7 +1489,14 @@ export function polozkyDokladov(opts: {
       // Účet dodávateľa na príkaz na úhradu; bez kódu banky sa nezapíše vôbec.
       const ucetDodavatela = d?._ucetDodavatela ? rozdelUcet(d._ucetDodavatela) : null;
       const kvHlavicka =
-        rozuctovany || cz ? "" : kv() || (d?._pdp && !String(d?.kv_clenenie ?? "").trim() ? "B1" : "");
+        rozuctovany || cz
+          ? ""
+          : kv() ||
+            (d?._pdp && !String(d?.kv_clenenie ?? "").trim() ? "B1" : "") ||
+            // Bežný doklad bez vlastného KV dostane predvolené firmy.
+            (!d?._pdp && (blocek || typPohody === "receivedInvoice")
+              ? kvZPredvoleneho(blocek ? nastavenia?.kvDoklady : nastavenia?.kvPrijata)
+              : "");
 
       /*
         Položky bločku (voľba firmy): v cenách s DPH, ako sú na bločku. Pri

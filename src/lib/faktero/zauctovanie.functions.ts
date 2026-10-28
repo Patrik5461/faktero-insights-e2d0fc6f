@@ -39,7 +39,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         supabase
           .from("companies")
           .select(
-            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady",
+            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady",
           )
           .eq("id", data.company_id)
           .maybeSingle(),
@@ -123,6 +123,12 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
       ),
       predvolenaPredkontacia,
       predvoleneClenenie,
+      /** Predvolené členenie KV DPH bežného dokladu tohto druhu (prázdne = automaticky). */
+      predvoleneKv: ((vystavena
+        ? firma?.kv_clenenie_faktura
+        : doklad
+          ? firma?.kv_clenenie_doklady
+          : firma?.kv_clenenie_prijata) ?? null) as string | null,
       maCiselnik: (ciselnik ?? []).length > 0,
       strediska: ponuka(ciselnik ?? [], "stredisko"),
       cinnosti: ponuka(ciselnik ?? [], "cinnost"),

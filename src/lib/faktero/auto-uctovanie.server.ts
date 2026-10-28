@@ -33,6 +33,7 @@ import {
 } from "./auto-uctovanie";
 import { prvePravidlo, pravidloPohybu, typPrijatej, type Pravidlo } from "./pravidla-uctovania";
 import * as kurzy from "./kurzy";
+import { kvSPredvolenym } from "./kv-clenenie";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Klient = any;
@@ -97,6 +98,8 @@ export type Firma = {
   zamknuteDo: string | null;
   /** Firma účtovanie používa (číselník, pravidlá alebo predvolené kódy). */
   pouzivaUctovanie: boolean;
+  /** Predvolené členenie KV DPH bežného dokladu (Predkontácie → Predvolené). */
+  kvPredvolene?: Partial<Record<TypDokladu, string | null>>;
 };
 
 const STLPCE_PREDVOLENYCH = [
@@ -111,7 +114,7 @@ export async function nacitajFirmu(sb: Klient, companyId: string): Promise<Firma
     sb
       .from("companies")
       .select(
-        `id, country, vat_payer, locked_until, auto_uctovanie_rezim, auto_uctovanie_limit, auto_uctovanie_od, ${STLPCE_PREDVOLENYCH.join(", ")}`,
+        `id, country, vat_payer, locked_until, auto_uctovanie_rezim, auto_uctovanie_limit, auto_uctovanie_od, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, ${STLPCE_PREDVOLENYCH.join(", ")}`,
       )
       .eq("id", companyId)
       .maybeSingle(),
@@ -135,6 +138,11 @@ export async function nacitajFirmu(sb: Klient, companyId: string): Promise<Firma
     od: c?.auto_uctovanie_od ?? null,
     zamknuteDo: c?.locked_until ?? null,
     pouzivaUctovanie: predvolene || (kody ?? 0) > 0 || (pravidla ?? 0) > 0,
+    kvPredvolene: {
+      vystavena: c?.kv_clenenie_faktura ?? null,
+      prijata: c?.kv_clenenie_prijata ?? null,
+      blocek: c?.kv_clenenie_doklady ?? null,
+    },
   };
 }
 
@@ -486,7 +494,16 @@ export async function navrhPreRiadok(
 
   // Hodnoty na doklade a v pravidle prebíjajú odvodené členenie.
   const clenenieDph = t(row.pohoda_clenenie_dph) ?? t(pravidlo?.clenenie_dph) ?? clen.clenenieDph;
-  const kvClenenie = t(row.kv_clenenie) ?? t(pravidlo?.kv_clenenie) ?? clen.kvClenenie;
+  // Predvolené firmy nahradí len odvodenie bežného dokladu (nie B.1, C.2, A.2).
+  const kvClenenie =
+    t(row.kv_clenenie) ??
+    t(pravidlo?.kv_clenenie) ??
+    kvSPredvolenym(
+      clen.kvClenenie,
+      typ === "vystavena" ? "faktura" : typ === "blocek" ? "doklady" : "prijata",
+      firma.kvPredvolene?.[typ],
+      firma.krajina === "SK",
+    );
   const rezimText = `${NAZVY_REZIMOV[clen.rezim]}${clenenieDph ? ` → ${clenenieDph}` : ""}${kvClenenie ? ` / KV ${kvClenenie}` : ""}`;
 
   const m = TABULKY[typ];

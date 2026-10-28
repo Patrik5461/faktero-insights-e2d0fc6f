@@ -236,6 +236,7 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     const nastavenia = {
       predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
       clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
+      kvPrijata: firma?.kv_clenenie_prijata,
       predkontaciaRozuctovat: firma?.pohoda_predkontacia_rozuctovat,
       ...(await nastaveniaDokladov(supabase, firma, schvalene.map(prijataAkoDoklad))),
       datumZauctovaniaPevny: data.datum_zauctovania ?? null,

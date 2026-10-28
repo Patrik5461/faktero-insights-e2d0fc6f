@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Loader2, Lock, Send } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
+import { PrilohyPoziadavky } from "@/components/faktero/PrilohyPoziadavky";
 import {
   adminOdpovedzFn,
   adminPoziadavkaFn,
@@ -94,6 +95,9 @@ function AdminPoziadavka() {
     );
   }
   const p = d.poziadavka;
+  const idSprav = new Set(d.spravy.map((s: any) => s.id));
+  // Príloha bez správy (správa zmazaná) sa nesmie stratiť — ide do bočného stĺpca.
+  const prilohyBezSpravy = d.prilohy.filter((x) => !x.sprava_id || !idSprav.has(x.sprava_id));
 
   return (
     <>
@@ -135,6 +139,7 @@ function AdminPoziadavka() {
                   <span>{new Date(s.created_at).toLocaleString("sk-SK")}</span>
                 </div>
                 <div className="whitespace-pre-wrap text-sm">{s.text}</div>
+                <PrilohyPoziadavky prilohy={d.prilohy.filter((x) => x.sprava_id === s.id)} />
               </div>
             ))}
 
@@ -226,6 +231,12 @@ function AdminPoziadavka() {
                 </Link>
               )}
             </div>
+            {prilohyBezSpravy.length > 0 && (
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="text-xs text-muted-foreground">Prílohy</div>
+                <PrilohyPoziadavky prilohy={prilohyBezSpravy} />
+              </div>
+            )}
             {(p.url || p.user_agent) && (
               <div className="space-y-1 break-all rounded-xl border border-border bg-card p-4 text-xs text-muted-foreground">
                 {p.url && <div>Stránka: {p.url}</div>}

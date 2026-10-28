@@ -1,4 +1,3 @@
-import { popisRoly } from "@/lib/faktero/rola-popis";
 import { Link, useRouter, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useDizajn } from "@/hooks/useDizajn";
 import { PrepinacDizajnu } from "./PrepinacDizajnu";
@@ -12,7 +11,6 @@ import {
   KeyRound,
   Settings,
   ChevronDown,
-  ChevronsUpDown,
   Plus,
   Search,
   HelpCircle,
@@ -53,7 +51,7 @@ import {
 } from "@/components/faktero/nav";
 export type { ProductMode };
 export { manualPre };
-import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
+import { PrepinacFiriem, ZoznamFiriem } from "@/components/faktero/PrepinacFiriem";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -138,7 +136,6 @@ export function AppShell({
   const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const navigate = useNavigate();
   const active = companies.find((c) => c.id === activeId) ?? companies[0];
-  const [hladanieFiriem, setHladanieFiriem] = useState("");
   const [search, setSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   /* Zbalenie panela si pamätá prehliadač. Čítanie je v efekte, nie v
@@ -325,22 +322,6 @@ export function AppShell({
     navigate({ to: "/faktury", search: { q } as any });
   }
 
-  // Deterministic accent color for the company avatar initial.
-  const AVATAR_COLORS = [
-    "from-emerald-500 to-teal-600",
-    "from-emerald-600 to-green-700",
-    "from-teal-500 to-emerald-700",
-    "from-amber-500 to-orange-600",
-    "from-lime-500 to-emerald-600",
-    "from-emerald-400 to-cyan-600",
-  ];
-  function avatarGradient(name?: string) {
-    const s = name ?? "";
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-    return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
-  }
-
   return (
     /*
       Rám aplikácie je vodorovný: panel vľavo, obsah vpravo. Predtým boli nad
@@ -471,75 +452,15 @@ export function AppShell({
               </div>
             )}
 
-            {/* Company switcher — pill */}
+            {/* Prepínač firiem — hľadanie, šípky, naposledy použité hore (PrepinacFiriem.tsx). */}
             {active && (
-              <DropdownMenu onOpenChange={(o) => !o && setHladanieFiriem("")}>
-                <DropdownMenuTrigger className="hidden min-w-0 items-center gap-1.5 rounded-full border-[0.5px] border-border bg-background py-1 pl-1 pr-2 text-[12px] text-foreground hover:bg-secondary/60 md:inline-flex">
-                  <span
-                    className={`grid h-[17px] w-[17px] shrink-0 place-items-center rounded-full bg-gradient-to-br ${avatarGradient(active.name)} text-[9px] font-semibold text-white`}
-                  >
-                    {(active.name?.[0] ?? "F").toUpperCase()}
-                  </span>
-                  <span className="max-w-[160px] truncate font-medium">{active.name}</span>
-                  <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64">
-                  <DropdownMenuLabel>{t("Firmy")}</DropdownMenuLabel>
-                  {/* Účtovník môže mať stovky firiem — od šiestich sa dá hľadať. */}
-                  {companies.length >= HLADANIE_OD && (
-                    <div className="px-2 pb-1.5">
-                      <input
-                        autoFocus
-                        value={hladanieFiriem}
-                        onChange={(e) => setHladanieFiriem(e.target.value)}
-                        // Menu inak písmená berie ako skok na položku a pole by nepísalo.
-                        onKeyDown={(e) => e.key !== "Escape" && e.stopPropagation()}
-                        placeholder={t("Hľadať firmu alebo IČO…")}
-                        aria-label={t("Hľadať firmu")}
-                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                  )}
-                  <div className="max-h-80 overflow-y-auto">
-                    {filtrujFirmy(companies, hladanieFiriem, activeId).length === 0 && (
-                      <p className="px-2 py-3 text-center text-sm text-muted-foreground">
-                        {t("Nič sa nenašlo.")}
-                      </p>
-                    )}
-                    {filtrujFirmy(companies, hladanieFiriem, activeId).map((c) => (
-                      <DropdownMenuItem
-                        key={c.id}
-                        onClick={() => onChangeCompany(c.id)}
-                        className={c.id === activeId ? "font-semibold" : ""}
-                      >
-                        <span
-                          className={`mr-2 grid h-5 w-5 shrink-0 place-items-center rounded bg-gradient-to-br ${avatarGradient(c.name)} text-[10px] font-semibold text-white`}
-                        >
-                          {(c.name?.[0] ?? "F").toUpperCase()}
-                        </span>
-                        <span className="min-w-0 truncate">
-                          {c.name}
-                          {c.ico && (
-                            <span className="block text-[11px] font-normal text-muted-foreground">
-                              {t("IČO {ico}", { ico: c.ico })}
-                            </span>
-                          )}
-                        </span>
-                        <span className="ml-auto pl-2 text-xs text-muted-foreground">{t(popisRoly(c.role))}</span>
-                      </DropdownMenuItem>
-                    ))}
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      setCreateOpen(true);
-                    }}
-                  >
-                    <Plus className="mr-2 h-3.5 w-3.5" /> {t("Pridať firmu")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <PrepinacFiriem
+                active={active}
+                companies={companies}
+                activeId={active.id}
+                onChangeCompany={onChangeCompany}
+                onAddCompany={() => setCreateOpen(true)}
+              />
             )}
 
             {/* Search — pill, max 400px */}
@@ -569,6 +490,17 @@ export function AppShell({
                 className="max-md:border-white/30 max-md:[&_button[aria-pressed=false]]:text-primary-foreground/80"
                 kompaktnyClassName="max-md:border-white/30 max-md:text-primary-foreground"
               />
+              {/* Nahlásenie chyby priamo v hlavičke — v ponuke pod avatarom ho nikto nenašiel. */}
+              <button
+                type="button"
+                onClick={() => setNahlasenieOtvorene(true)}
+                title={t("Nahlásiť chybu alebo návrh")}
+                aria-label={t("Nahlásiť chybu")}
+                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border px-2.5 text-[12px] font-medium text-muted-foreground hover:border-primary/40 hover:text-foreground max-md:border-white/30 max-md:text-primary-foreground max-md:hover:bg-white/15"
+              >
+                <Bug className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">{t("Nahlásiť chybu")}</span>
+              </button>
               <NotificationBell className="max-md:text-primary-foreground max-md:hover:bg-white/15" />
 
               {/* Quick create — the only filled element */}
@@ -792,7 +724,6 @@ function MobileNav({
   pocetUloh?: number;
 }) {
   const { t } = useT();
-  const [hladanie, setHladanie] = useState("");
   const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const sekcie: SekciaPanela[] = nav.map((g) => ({
     key: g.key,
@@ -847,28 +778,28 @@ function MobileNav({
       {active && (
         <div className="border-b border-border px-4 py-3">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Firma")}</div>
-          {companies.length >= HLADANIE_OD && (
-            <input
-              value={hladanie}
-              onChange={(e) => setHladanie(e.target.value)}
-              placeholder={t("Hľadať firmu alebo IČO…")}
-              aria-label={t("Hľadať firmu")}
-              className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+          {/* Rovnaký zoznam ako v hlavičke na počítači — výber cez <select> sa pri
+              desiatkach firiem nedal prehľadať. */}
+          <div className="-mx-2 mt-1">
+            <ZoznamFiriem
+              companies={companies}
+              activeId={active.id}
+              vyskaZoznamu="max-h-64"
+              onVyber={(id) => {
+                if (id === active.id) onClose();
+                else onChangeCompany(id);
+              }}
             />
+          </div>
+          {companies.length > 1 && (
+            <Link
+              to="/firmy"
+              onClick={onClose}
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1.5 text-sm hover:bg-secondary"
+            >
+              {t("Všetky firmy ({pocet})", { pocet: companies.length })}
+            </Link>
           )}
-          <select
-            value={active.id}
-            onChange={(e) => onChangeCompany(e.target.value)}
-            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-          >
-            {[active, ...filtrujFirmy(companies, hladanie).filter((c) => c.id !== active.id)].map(
-              (c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ),
-            )}
-          </select>
           <button
             type="button"
             onClick={(e) => {

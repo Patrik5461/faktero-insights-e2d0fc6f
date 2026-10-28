@@ -10,6 +10,7 @@ import { STLPCE_PREDVOLENYCH } from "./predkontacie";
 
 const STLPCE_FIRMY = [
   "ico",
+  "country",
   ...STLPCE_PREDVOLENYCH,
   "pohoda_predkontacie_oznaceni",
   "pohoda_nacitat_ciselniky",
@@ -148,6 +149,8 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
             polozkyFaktur: z.boolean(),
             polozkyBlockov: z.boolean(),
             dodaciList: z.boolean(),
+            // Bez neho zod pole zahodil a vypnutie sa nikdy neuložilo.
+            domacaMena: z.boolean().optional(),
           })
           .optional(),
       })
@@ -169,6 +172,13 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
     // vyplnená skratka a Pohoda by dostala prázdny element.
     for (const s of STLPCE_PREDVOLENYCH) {
       if (s in data.hodnoty) zmena[s] = data.hodnoty[s]?.trim() || null;
+    }
+    // Členenie KV len z povolených kódov pre daný druh dokladu.
+    const { KV_PREDVOLENE } = await import("./kv-clenenie");
+    for (const { stlpec, kody } of Object.values(KV_PREDVOLENE)) {
+      const v = zmena[stlpec];
+      if (typeof v === "string" && !kody.includes(v))
+        throw new Error(`Členenie KV ${v} sa pre tento druh dokladu nedá nastaviť.`);
     }
     if (data.oznaceni !== undefined) {
       const m = Object.entries(data.oznaceni ?? {})

@@ -61,6 +61,8 @@ export const OPERACIE = [
   "ucet-poziadaj-o-zrusenie",
   "ucet-odvolaj-zrusenie",
   "spatna-vazba",
+  // Snímka obrazovky alebo fotka k nahlásenej chybe — príloha požiadavky v help desku.
+  "podpora-priloha-nahraj",
   "pravne-suhlasy",
   "doklady-navrhy-parovania",
   "doklad-sparuj",

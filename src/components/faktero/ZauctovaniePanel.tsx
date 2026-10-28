@@ -19,12 +19,13 @@ import {
 } from "@/lib/faktero/zauctovanie.functions";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import type { MoznostKodu } from "@/lib/faktero/predkontacie";
-import { KV_PRIJATE, kvAutomaticky } from "@/lib/faktero/kv-clenenie";
+import { KV_PRIJATE, kvAutomaticky, kvSPredvolenym } from "@/lib/faktero/kv-clenenie";
 import { KodPohody } from "./KodPohody";
 import { RozuctovaniePanel } from "./RozuctovaniePanel";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { NastavitPredvolene } from "./NastavitPredvolene";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import {
   NavrhAiInfo,
@@ -40,6 +41,8 @@ export type Navrhy = {
   clenenia: MoznostKodu[];
   predvolenaPredkontacia: string | null;
   predvoleneClenenie: string | null;
+  /** Predvolené členenie KV DPH firmy pre bežný doklad. */
+  predvoleneKv?: string | null;
   maCiselnik?: boolean;
   podlaKategorie?: Record<string, { predkontacia?: string; clenenie?: string }>;
   strediska?: MoznostKodu[];
@@ -648,10 +651,17 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
               hodnoty={h}
               setHodnoty={setH}
               oznacenia={oznacenia}
-              kvAuto={kvAutomaticky({
-                opravny: Number(row.amount_total ?? 0) < 0 || !!row.opravuje_cislo,
-                prenesenie: row.dph_rezim === "samozdanenie" || row.dph_rezim === "nadobudnutie",
-              })}
+              kvAuto={
+                kvSPredvolenym(
+                  kvAutomaticky({
+                    opravny: Number(row.amount_total ?? 0) < 0 || !!row.opravuje_cislo,
+                    prenesenie:
+                      row.dph_rezim === "samozdanenie" || row.dph_rezim === "nadobudnutie",
+                  }),
+                  "prijata",
+                  navrhy?.predvoleneKv,
+                ) ?? undefined
+              }
             />
             {aktivneAi && <NavrhAiInfo dovod={navrh?.dovod ?? null} onZahod={zahodNavrh} />}
             {navrh?.stav === "bez_ciselnika" && <NavrhBezCiselnika />}
@@ -694,6 +704,21 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
                 t("Kódy musia existovať v Pohode.")
               )}
             </p>
+            <NastavitPredvolene
+              companyId={row.company_id}
+              kluc="prijata"
+              hodnoty={h}
+              predvolene={{
+                predkontacia: navrhy?.predvolenaPredkontacia,
+                clenenie: navrhy?.predvoleneClenenie,
+                kv: navrhy?.predvoleneKv,
+              }}
+              onUlozene={() =>
+                nacitajNavrhy({ data: { company_id: row.company_id } })
+                  .then(setNavrhy)
+                  .catch(() => {})
+              }
+            />
             <RozuctovaniePanel
               companyId={row.company_id}
               druh="prijata"

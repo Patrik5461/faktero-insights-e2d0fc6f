@@ -14,6 +14,8 @@ import {
 } from "@/lib/faktero/podpora.functions";
 import { cisloPoziadavky, nazovKategorie } from "@/lib/faktero/podpora";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
+import { PrilohyPoziadavky, type PrilohaPoziadavky } from "@/components/faktero/PrilohyPoziadavky";
+import { odkazNaPrilohuPodporyFn } from "@/lib/faktero/podpora-prilohy.functions";
 
 export const Route = createFileRoute("/_authenticated/podpora/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Požiadavka — Faktero") }] }),
@@ -36,11 +38,13 @@ function DetailPoziadavky() {
   const precitane = useServerFn(oznacPrecitaneFn);
   const [p, setP] = useState<any | null | undefined>(undefined);
   const [spravy, setSpravy] = useState<Sprava[]>([]);
+  const [prilohy, setPrilohy] = useState<(PrilohaPoziadavky & { sprava_id: string | null })[]>([]);
+  const odkazNaPrilohu = useServerFn(odkazNaPrilohuPodporyFn);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
 
   const nacitaj = useCallback(async () => {
-    const [{ data: poz }, { data: sp }] = await Promise.all([
+    const [{ data: poz }, { data: sp }, { data: pr }] = await Promise.all([
       supabase
         .from("podpora_poziadavky")
         .select("id, cislo, predmet, stav, kategoria, created_at") // token adresy klient čítať nesmie
@@ -51,9 +55,15 @@ function DetailPoziadavky() {
         .select("id, od_podpory, text, created_at, cez_email")
         .eq("poziadavka_id", id)
         .order("created_at"),
+      supabase
+        .from("podpora_prilohy")
+        .select("id, sprava_id, name, mime, size")
+        .eq("poziadavka_id", id)
+        .order("created_at"),
     ]);
     setP(poz ?? null);
     setSpravy((sp ?? []) as unknown as Sprava[]);
+    setPrilohy((pr ?? []) as any);
   }, [id]);
 
   useEffect(() => {
@@ -137,6 +147,10 @@ function DetailPoziadavky() {
                     <span>{new Date(s.created_at).toLocaleString("sk-SK")}</span>
                   </div>
                   <div className="whitespace-pre-wrap text-sm">{s.text}</div>
+                  <PrilohyPoziadavky
+                    prilohy={prilohy.filter((x) => x.sprava_id === s.id)}
+                    odkaz={async (pid) => (await odkazNaPrilohu({ data: { id: pid } })).url}
+                  />
                 </li>
               ))}
             </ol>

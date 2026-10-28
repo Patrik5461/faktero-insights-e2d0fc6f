@@ -37,6 +37,7 @@ import {
   zmazPredkontaciuFn,
 } from "@/lib/faktero/predkontacie.functions";
 import { potvrd } from "@/lib/potvrdenie";
+import { KV_PREDVOLENE, nazovKv, type DruhKvPredvoleneho } from "@/lib/faktero/kv-clenenie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -51,6 +52,9 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/predkontacie")
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Predkontácie — Faktero") }],
   }),
+  // ?pridat=1 otvorí rovno formulár novej predkontácie (odkaz zo zaúčtovania).
+  validateSearch: (s: Record<string, unknown>): { pridat?: string } =>
+    s.pridat ? { pridat: String(s.pridat) } : {},
   component: Stranka,
 });
 
@@ -81,6 +85,9 @@ function Stranka() {
   const [zaznamy, setZaznamy] = useState<Zaznam[] | null>(null);
   const [firma, setFirma] = useState<Record<string, any>>({});
   const [kopirovat, setKopirovat] = useState(false);
+  const { pridat: pridatZOdkazu } = Route.useSearch();
+  // Každé stlačenie „Pridať predkontáciu“ zvýši číslo — číselník otvorí formulár.
+  const [pridat, setPridat] = useState(pridatZOdkazu ? 1 : 0);
   const cid = companyId;
 
   const obnov = useCallback(async () => {
@@ -117,21 +124,36 @@ function Stranka() {
           "Číselník predkontácií a členení DPH z Pohody a čo sa predvolene použije pri faktúrach, prijatých faktúrach, bločkoch, pokladni a banke.",
         )}
         action={
-          <button
-            type="button"
-            onClick={() => setKopirovat(true)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
-          >
-            {t("Kopírovať do iných firiem")}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setPridat((n) => n + 1)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> {t("Pridať predkontáciu")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setKopirovat(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            >
+              {t("Kopírovať do iných firiem")}
+            </button>
+          </div>
         }
       />
       {kopirovat && cid ? <KopirovatNastaveniaOkno companyId={cid} onClose={() => setKopirovat(false)} /> : null}
       <PageBody>
         <div className="space-y-4">
-          <Predvolene companyId={companyId} firma={firma} zaznamy={zaznamy} onUlozene={obnov} />
+          <Predvolene
+            companyId={companyId}
+            firma={firma}
+            zaznamy={zaznamy}
+            onUlozene={obnov}
+            onPridat={() => setPridat((n) => n + 1)}
+          />
+          <Ciselnik companyId={companyId} zaznamy={zaznamy} onZmena={obnov} pridat={pridat} />
           <Import companyId={companyId} firma={firma} onZmena={obnov} />
-          <Ciselnik companyId={companyId} zaznamy={zaznamy} onZmena={obnov} />
         </div>
       </PageBody>
     </>
@@ -145,13 +167,18 @@ function Predvolene({
   firma,
   zaznamy,
   onUlozene,
+  onPridat,
 }: {
   companyId: string;
   firma: Record<string, any>;
   zaznamy: Zaznam[];
   onUlozene: () => void;
+  /** Otvorí formulár novej predkontácie v číselníku nižšie. */
+  onPridat: () => void;
 }) {
   const { t } = useT();
+  // Kontrolný výkaz DPH je len slovenský — inde sa členenie KV nepoužije.
+  const kvStlpec = String(firma.country ?? "SK").toUpperCase() === "SK";
   const uloz = useServerFn(ulozPredvoleneFn);
   const [h, setH] = useState<Record<string, string>>({});
   const [oznaceni, setOznaceni] = useState<Record<string, string>>({});
@@ -216,9 +243,18 @@ function Predvolene({
 
   return (
     <section className="rounded-xl border border-border bg-card p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        {t("Predvolené podľa druhu dokladu")}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {t("Predvolené podľa druhu dokladu")}
+        </h2>
+        <button
+          type="button"
+          onClick={onPridat}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs hover:bg-secondary"
+        >
+          <Plus className="h-3.5 w-3.5" /> {t("Pridať predkontáciu")}
+        </button>
+      </div>
       <p className="mt-1 text-xs text-muted-foreground">
         {t("Použije sa, keď doklad nemá vlastnú predkontáciu — tú mu dá")}{" "}
         <Link to="/uctovnictvo/pravidla" className="underline">
@@ -226,14 +262,24 @@ function Predvolene({
         </Link>{" "}
         {t("alebo človek pri zaúčtovaní. Prázdne pole = Pohoda doklad nechá nezaúčtovaný.")}
       </p>
+      {kvStlpec ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+        {t(
+          "Členenie KV DPH sa použije len pri bežnom doklade — prenesenie daňovej povinnosti (B.1) a opravný doklad (C.2) sa určia vždy podľa zákona.",
+        )}
+      </p>
+      ) : null}
 
       <div className="mt-4 md:overflow-x-auto">
-        <table className="block w-full text-sm md:table md:min-w-[560px]">
+        <table
+          className={`block w-full text-sm md:table ${kvStlpec ? "md:min-w-[760px]" : ""}`}
+        >
           <thead className="hidden md:table-header-group">
             <tr className="text-left text-xs text-muted-foreground">
               <th className="py-1 pr-3 font-medium">{t("Doklad")}</th>
               <th className="py-1 pr-3 font-medium">{t("Predkontácia")}</th>
-              <th className="py-1 font-medium">{t("Členenie DPH")}</th>
+              <th className="py-1 pr-3 font-medium">{t("Členenie DPH")}</th>
+              {kvStlpec ? <th className="py-1 font-medium">{t("Členenie KV DPH")}</th> : null}
             </tr>
           </thead>
           <tbody className="block md:table-row-group">
@@ -293,6 +339,36 @@ function Predvolene({
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </td>
+                {kvStlpec ? (
+                <td className="block py-1 md:table-cell md:py-2">
+                  <span className="block text-xs text-muted-foreground md:hidden">
+                    {t("Členenie KV DPH")}
+                  </span>
+                  {p.kv ? (
+                    <select
+                      aria-label={t("Členenie KV DPH — {nazov}", { nazov: t(p.nazov) })}
+                      value={h[p.kv] ?? ""}
+                      onChange={(e) => setH({ ...h, [p.kv!]: e.target.value })}
+                      className={vstup}
+                    >
+                      <option value="">
+                        {KV_PREDVOLENE[p.kluc as DruhKvPredvoleneho].standard
+                          ? t("automaticky ({kod})", {
+                              kod: KV_PREDVOLENE[p.kluc as DruhKvPredvoleneho].standard!,
+                            })
+                          : t("automaticky")}
+                      </option>
+                      {KV_PREDVOLENE[p.kluc as DruhKvPredvoleneho].kody.map((k) => (
+                        <option key={k} value={k}>
+                          {t(nazovKv(k) ?? k)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </td>
+                ) : null}
               </tr>
             ))}
           </tbody>
@@ -831,13 +907,17 @@ function Ciselnik({
   companyId,
   zaznamy,
   onZmena,
+  pridat = 0,
 }: {
   companyId: string;
   zaznamy: Zaznam[];
   onZmena: () => void;
+  /** Zvýšené číslo = otvoriť formulár novej predkontácie a posunúť sa k nemu. */
+  pridat?: number;
 }) {
   const { t } = useT();
   const uloz = useServerFn(ulozPredkontaciuFn);
+  const sekcia = useRef<HTMLElement>(null);
   const zmaz = useServerFn(zmazPredkontaciuFn);
   const [druh, setDruh] = useState<DruhCiselnika>("predkontacia");
   const [hladaj, setHladaj] = useState("");
@@ -845,6 +925,14 @@ function Ciselnik({
   const [vsetky, setVsetky] = useState(false);
   const [form, setForm] = useState<typeof PRAZDNY | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!pridat) return;
+    setDruh("predkontacia");
+    setAgenda("");
+    setForm({ ...PRAZDNY });
+    sekcia.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [pridat]);
 
   const pocty = Object.fromEntries(
     DRUHY_CISELNIKA.map((d) => [d.kod, zaznamy.filter((z) => z.druh === d.kod).length]),
@@ -901,7 +989,7 @@ function Ciselnik({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
+    <section ref={sekcia} className="scroll-mt-24 rounded-xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div
           className="flex max-w-full gap-1 overflow-x-auto rounded-md bg-muted p-1 text-sm"

@@ -88,6 +88,8 @@ export type NovaPoziadavka = {
   text: string;
   url?: string | null;
   userAgent?: string | null;
+  /** Prílohy sa nahrávajú až po založení — e-mail podpore len povie, koľko ich príde. */
+  pocetPriloh?: number;
   /** Kontaktný formulár si posiela vlastný e-mail — dvakrát netreba. */
   bezUpozornenia?: boolean;
 };
@@ -140,6 +142,7 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
         firma ? `Firma: ${firma}` : "",
         n.url ? `Stránka: ${n.url}` : "",
         n.userAgent ? `Prehliadač: ${n.userAgent}` : "",
+        n.pocetPriloh ? `Prílohy: ${n.pocetPriloh} (v administrácii)` : "",
       ].filter(Boolean),
       text: n.text,
       odkaz: { url: `${web()}/admin/podpora/${poz.id}`, popis: `Otvoriť ${c} v administrácii` },
