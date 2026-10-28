@@ -249,8 +249,8 @@ export default {
   "Unprocessable Entity — validačná chyba": "Unprocessable Entity — validační chyba",
   "Internal Server Error — chyba na strane Faktero":
     "Internal Server Error — chyba na straně Faktero",
-  "Limity počtu požiadaviek doplníme pred verejným spustením API. Pre spoľahlivé použitie v produkcii odporúčame pri odpovedi 429 opakovať požiadavku s postupne predlžovaným odstupom (exponenciálny backoff).":
-    "Limity počtu požadavků doplníme před veřejným spuštěním API. Pro spolehlivé použití v produkci doporučujeme při odpovědi 429 opakovat požadavek s postupně prodlužovaným odstupem (exponenciální backoff).",
+  "Počet požiadaviek nie je obmedzený — aj veľký prenos (tisíce dokladov) môžete poslať naraz. Posielajte ich však za sebou, nie stovky súbežne, a pri dočasnej chybe servera (5xx) požiadavku zopakujte s postupne predlžovaným odstupom. S external_id je opakovanie bezpečné.":
+    "Počet požadavků není omezený — i velký přenos (tisíce dokladů) můžete poslat najednou. Posílejte je však za sebou, ne stovky souběžně, a při dočasné chybě serveru (5xx) požadavek zopakujte s postupně prodlužovaným odstupem. S external_id je opakování bezpečné.",
   "Vytvoriť API kľúč": "Vytvořit API klíč",
   "Otvoriť skúšobné prostredie API": "Otevřít zkušební prostředí API",
   "Vytvoriť účet zdarma": "Vytvořit účet zdarma",

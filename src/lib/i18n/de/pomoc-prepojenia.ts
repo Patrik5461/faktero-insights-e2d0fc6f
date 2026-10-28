@@ -30,8 +30,8 @@ export default {
     "<0>Pohoda</0> — Belegstapel für den Konnektor und Empfang der Antwort von Pohoda.",
   "<0>Kľúč firmy alebo kľúč pre viac firiem.</0> Účtovná kancelária má jeden kľúč na všetkých klientov a firmu vyberie hlavičkou <1>X-Company</1> (IČO alebo id). Zakladať firmy a pozývať používateľov smie len kľúč pre viac firiem.":
     "<0>Unternehmensschlüssel oder Schlüssel für mehrere Unternehmen.</0> Ein Steuerbüro hat einen Schlüssel für alle Mandanten und wählt das Unternehmen mit dem Header <1>X-Company</1> (Firmen-ID oder ID). Unternehmen anlegen und Benutzer einladen darf nur der Schlüssel für mehrere Unternehmen.",
-  "<0>Bezpečné opakovanie.</0> Pri zápise pošlite vlastné <1>external_id</1> — to isté volanie druhýkrát nič nezdvojí. Cez API sa nič nemaže, faktúra sa dá len stornovať. Limit je 300 požiadaviek za 5 minút na kľúč.":
-    "<0>Sicheres Wiederholen.</0> Senden Sie beim Schreiben eine eigene <1>external_id</1> — derselbe Aufruf verdoppelt beim zweiten Mal nichts. Per API wird nichts gelöscht, eine Rechnung lässt sich nur stornieren. Das Limit beträgt 300 Anfragen in 5 Minuten pro Schlüssel.",
+  "<0>Bezpečné opakovanie.</0> Pri zápise pošlite vlastné <1>external_id</1> — to isté volanie druhýkrát nič nezdvojí. Cez API sa nič nemaže, faktúra sa dá len stornovať. Počet požiadaviek nie je obmedzený.":
+    "<0>Sicheres Wiederholen.</0> Senden Sie beim Schreiben eine eigene <1>external_id</1> — derselbe Aufruf verdoppelt beim zweiten Mal nichts. Per API wird nichts gelöscht, eine Rechnung lässt sich nur stornieren. Die Zahl der Anfragen ist nicht begrenzt.",
   "Úplný zoznam endpointov s príkladmi je v <0>API dokumentácii</0>, návod na kľúče v manuáli <1>API a webhooky</1>.":
     "Die vollständige Liste der Endpunkte mit Beispielen steht in der <0>API-Dokumentation</0>, die Anleitung zu Schlüsseln im Handbuch <1>API und Webhooks</1>.",
   "Webhooky — Faktero sa ozve samo": "Webhooks — Faktero meldet sich selbst",

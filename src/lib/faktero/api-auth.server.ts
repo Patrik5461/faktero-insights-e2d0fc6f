@@ -292,48 +292,11 @@ export async function handleApi(
     jeUcet = Boolean((keyRow as any).ucet_user_id);
   }
 
-  // Rate limit: 300 requests / 5 min per API key (uses api_logs as the counter store)
-  const windowStart = new Date(Date.now() - 5 * 60_000).toISOString();
-  const { count: recentCount } = await supabaseAdmin
-    .from("api_logs")
-    .select("id", { count: "exact", head: true })
-    .eq("api_key_id", keyRow.id)
-    .gte("created_at", windowStart);
-  if ((recentCount ?? 0) >= 300) {
-    const retryAfterSec = 300; // 5-minute window
-    const body = {
-      error: {
-        code: "rate_limit_exceeded",
-        message: "Prekročili ste limit API požiadaviek (300 / 5 minút). Skúste to neskôr.",
-      },
-    };
-    const r = new Response(JSON.stringify(body), {
-      status: 429,
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "access-control-allow-origin": "*",
-        "access-control-allow-headers": "authorization, content-type, x-company",
-        "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
-        "retry-after": String(retryAfterSec),
-        "x-ratelimit-limit": "300",
-        "x-ratelimit-window": "300",
-      },
-    });
-    await logRequest({
-      company_id: keyRow.company_id,
-      api_key_id: keyRow.id,
-      method,
-      path,
-      status: 429,
-      requestBody,
-      responseBody: body,
-      userAgent,
-      ip,
-      duration: Date.now() - started,
-    });
-    return r;
-  }
-
+  /*
+    Počet požiadaviek sa zámerne neobmedzuje (rozhodnutie 2026-10-28): prenos
+    tisícok dokladov narážal na limit 300 / 5 min a skript časť nepreniesol.
+    Ochranu pred zahltením necháva na serveri (nginx), nie na kľúči.
+  */
   let result: { status: number; body: any };
   try {
     result = await fn({

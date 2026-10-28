@@ -92,7 +92,7 @@ const sections: HelpSection[] = [
         <p>
           <strong>Bezpečné opakovanie.</strong> Pri zápise pošlite vlastné <code>external_id</code>{" "}
           — to isté volanie druhýkrát nič nezdvojí. Cez API sa nič nemaže, faktúra sa dá len
-          stornovať. Limit je 300 požiadaviek za 5 minút na kľúč.
+          stornovať. Počet požiadaviek nie je obmedzený.
         </p>
         <p>
           Úplný zoznam endpointov s príkladmi je v <Link to="/docs/api">API dokumentácii</Link>,

@@ -444,7 +444,7 @@ curl https://faktero.sk/api/v1/invoices \\
             </h2>
             <div className="mt-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-sm text-muted-foreground">
               {t(
-                "Limity počtu požiadaviek doplníme pred verejným spustením API. Pre spoľahlivé použitie v produkcii odporúčame pri odpovedi 429 opakovať požiadavku s postupne predlžovaným odstupom (exponenciálny backoff).",
+                "Počet požiadaviek nie je obmedzený — aj veľký prenos (tisíce dokladov) môžete poslať naraz. Posielajte ich však za sebou, nie stovky súbežne, a pri dočasnej chybe servera (5xx) požiadavku zopakujte s postupne predlžovaným odstupom. S external_id je opakovanie bezpečné.",
               )}
             </div>
           </section>
