@@ -6,6 +6,10 @@
     node scripts/jira.mjs komentar FAK-12 "Text"
     node scripts/jira.mjs stav FAK-12 "Hotovo"         # prechod podľa názvu stavu
     node scripts/jira.mjs hladaj "text"
+    node scripts/jira.mjs davka subor.json             # epiky s úlohami naraz
+
+  Dávka: [{ "epik": "Názov", "popis": "…", "ulohy": [{ "nazov", "popis", "typ"?, "stav"? }] }].
+  Epik aj úloha s rovnakým názvom sa druhýkrát nezaloží (dávka sa dá pustiť znova).
 
   Prihlásenie: JIRA_EMAIL a JIRA_API_TOKEN v ecosystem.config.cjs
   (~/vloz-tajomstvo.sh JIRA_EMAIL, ~/vloz-tajomstvo.sh JIRA_API_TOKEN).
@@ -71,7 +75,7 @@ if (prikaz === "over") {
   console.log(`Prihlásený: ${ja.displayName}; projekt ${p.key} – ${p.name}`);
   console.log("Typy úloh:", (p.issueTypes ?? []).map((t) => t.name).join(", "));
 } else if (prikaz === "zaloz") {
-  const [nazov, popis, typ = "Task"] = a;
+  const [nazov, popis, typ = "Úloha"] = a;
   const r = await api("POST", "/issue", {
     fields: {
       project: { key: PROJEKT },
@@ -108,6 +112,53 @@ if (prikaz === "over") {
   });
   for (const i of r.issues ?? [])
     console.log(i.key, `[${i.fields.status?.name}]`, i.fields.summary);
+} else if (prikaz === "davka") {
+  const { readFileSync } = await import("node:fs");
+  const davka = JSON.parse(readFileSync(a[0], "utf8"));
+  const existujuce = new Map();
+  for (let start = null; ;) {
+    const r = await api("POST", "/search/jql", {
+      jql: `project = ${PROJEKT}`,
+      maxResults: 100,
+      fields: ["summary"],
+      ...(start ? { nextPageToken: start } : {}),
+    });
+    for (const i of r.issues ?? []) existujuce.set(i.fields.summary, i.key);
+    if (!r.nextPageToken) break;
+    start = r.nextPageToken;
+  }
+  const zaloz = async (fields) => {
+    if (existujuce.has(fields.summary)) return existujuce.get(fields.summary);
+    const r = await api("POST", "/issue", { fields: { project: { key: PROJEKT }, ...fields } });
+    existujuce.set(fields.summary, r.key);
+    return r.key;
+  };
+  const prejdi = async (kluc, nazov) => {
+    if (!nazov) return;
+    const { transitions } = await api("GET", `/issue/${kluc}/transitions`);
+    const t = transitions.find((x) => (x.to?.name ?? x.name).toLowerCase() === nazov.toLowerCase());
+    if (t) await api("POST", `/issue/${kluc}/transitions`, { transition: { id: t.id } });
+  };
+  for (const e of davka) {
+    const epik = await zaloz({
+      summary: e.epik,
+      description: adf(e.popis),
+      issuetype: { name: "Epik" },
+    });
+    let hotove = 0;
+    for (const u of e.ulohy ?? []) {
+      const k = await zaloz({
+        summary: u.nazov,
+        description: adf(u.popis),
+        issuetype: { name: u.typ ?? "Úloha" },
+        parent: { key: epik },
+      });
+      await prejdi(k, u.stav ?? "Hotovo");
+      if ((u.stav ?? "Hotovo") === "Hotovo") hotove++;
+    }
+    if (e.ulohy?.length && hotove === e.ulohy.length) await prejdi(epik, "Hotovo");
+    console.log(epik, e.epik, `(${e.ulohy?.length ?? 0} úloh)`);
+  }
 } else {
-  console.log("Použitie: over | zaloz | komentar | stav | hladaj");
+  console.log("Použitie: over | zaloz | komentar | stav | hladaj | davka");
 }
