@@ -1365,7 +1365,13 @@ function DokladyPage() {
                     <td className="px-3 py-2 text-right">
                       {r.file_path && (
                         <button
-                          onClick={() => openFile(r.file_path)}
+                          onClick={() => {
+                            // Na širokej obrazovke ukáže súbor v náhľade vedľa zoznamu, nie na novej karte.
+                            if (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches) {
+                              if (!bocny.zapnuty) bocny.prepni(true);
+                              bocny.setVybrany(r.id);
+                            } else openFile(r.file_path);
+                          }}
                           title={t("Otvoriť súbor")}
                           className="rounded-md p-1.5 hover:bg-secondary"
                         >
