@@ -30,6 +30,7 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
+import { DetailSNahladom, useNahladVDetaile } from "@/components/faktero/BocnyNahlad";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
@@ -65,7 +66,7 @@ import {
   PrimarnaAkcia,
   SekundarnaAkcia,
 } from "@/components/faktero/DocumentDetailHeader";
-import { ExternalLink, MessageSquare, Pencil, Printer, SendHorizontal, Trash2, Paperclip } from "lucide-react";
+import { ExternalLink, Eye, MessageSquare, Pencil, Printer, SendHorizontal, Trash2, Paperclip } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nový doklad — Faktero") }] }),
@@ -188,6 +189,8 @@ function NovyDokladPage() {
     priamo na stránke; ceruzka prepne na tento formulár.
   */
   const kompaktne = useDizajn() === "kompaktny";
+  // Sken bločku vľavo vedľa kariet — v kompaktnom detaile bola len malá dlaždica v prílohách.
+  const nahladDetail = useNahladVDetaile();
   const [uprava, setUprava] = useState(false);
   const zmazFn = useServerFn(deleteExpenseFn);
   const [presunPrilohy, setPresunPrilohy] = useState(false);
@@ -717,6 +720,11 @@ function NovyDokladPage() {
                     {t("Vytlačiť / stiahnuť doklad")}
                   </MenuAkcia>
                 ) : null}
+                {preview && !nahladDetail.zapnuty ? (
+                  <MenuAkcia ikona={Eye} onClick={() => nahladDetail.prepni(true)}>
+                    {t("Zobraziť vedľa údajov")}
+                  </MenuAkcia>
+                ) : null}
                 {ulozeny.file_path && !ulozeny.exported_at ? (
                   <MenuAkcia ikona={Paperclip} onClick={() => setPresunPrilohy(true)}>
                     {t("Presunúť ako prílohu")}
@@ -756,13 +764,31 @@ function NovyDokladPage() {
               ) : null}
             </div>
           ) : null}
-          <BlocekDetailKompaktny
-            row={ulozeny}
-            nahladUrl={preview}
-            kody={kody}
-            onZmena={() => void obnovUlozeny()}
-            onStiahni={stiahniSubor}
-          />
+          <DetailSNahladom
+            zobrazit={nahladDetail.zapnuty && !!ulozeny.file_path}
+            subor={preview ? { url: preview, obrazok: !nahladJePdf } : undefined}
+            nazov={[ulozeny.supplier_name, ulozeny.document_number].filter(Boolean).join(" · ") || t("Bloček")}
+            onSkryt={() => nahladDetail.prepni(false)}
+            akcie={
+              preview ? (
+                <button
+                  type="button"
+                  onClick={stiahniSubor}
+                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť súbor")}
+                </button>
+              ) : null
+            }
+          >
+            <BlocekDetailKompaktny
+              row={ulozeny}
+              nahladUrl={preview}
+              kody={kody}
+              onZmena={() => void obnovUlozeny()}
+              onStiahni={stiahniSubor}
+            />
+          </DetailSNahladom>
           {cid ? (
             <div className="mx-auto mt-4 max-w-6xl">
               <SchvalovaniePanel companyId={cid} agenda="doklad" id={ulozeny.id} />

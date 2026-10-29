@@ -15,6 +15,8 @@ export type VolbyExportu = {
   radenie: RadenieExportu;
   /** Bločky: preniesť aj vyťažené položky (`null` = podľa nastavenia firmy). */
   polozky: boolean | null;
+  /** Bločky: samotné XML pre Pohodu alebo ZIP so skenmi (len pri `ponukaFormat`). */
+  format: "xml" | "zip";
 };
 
 /**
@@ -26,6 +28,7 @@ export function VolbyExportuOkno({
   nazov,
   ponukaOznacit = true,
   ponukaPolozky,
+  ponukaFormat = false,
   onClose,
   onExport,
 }: {
@@ -34,6 +37,8 @@ export function VolbyExportuOkno({
   ponukaOznacit?: boolean;
   /** Bločky: ponúknuť „Exportovať položky dokladu" (hodnota = nastavenie firmy). */
   ponukaPolozky?: { predvolene: boolean };
+  /** Bločky: ponúknuť výber „XML pre Pohodu“ / „ZIP (XML + skeny)“. */
+  ponukaFormat?: boolean;
   onClose: () => void;
   onExport: (v: VolbyExportu) => Promise<void>;
 }) {
@@ -45,6 +50,7 @@ export function VolbyExportuOkno({
     oznacit: true,
     radenie: "datum",
     polozky: null,
+    format: "xml",
   });
   const [busy, setBusy] = useState(false);
 
@@ -74,6 +80,38 @@ export function VolbyExportuOkno({
         <p className="mt-1 text-sm text-muted-foreground">{nazov}</p>
 
         <div className="mt-4 space-y-4 text-sm">
+          {ponukaFormat ? (
+            <fieldset>
+              <legend className="text-xs font-medium text-muted-foreground">{t("Súbor")}</legend>
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ["xml", t("XML pre Pohodu"), t("Len pohoda.xml na import, bez skenov.")],
+                    ["zip", t("ZIP (XML + skeny)"), t("pohoda.xml, súpiska CSV a skeny dokladov.")],
+                  ] as const
+                ).map(([k, nazov, popis]) => (
+                  <label
+                    key={k}
+                    className={`flex min-w-0 cursor-pointer flex-col rounded-md border px-3 py-2 ${
+                      v.format === k ? "border-primary bg-primary/5" : "border-border"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 font-medium">
+                      <input
+                        type="radio"
+                        name="format-exportu"
+                        checked={v.format === k}
+                        onChange={() => setV({ ...v, format: k })}
+                      />
+                      {nazov}
+                    </span>
+                    <span className="mt-0.5 text-xs text-muted-foreground">{popis}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
+
           <label className="block">
             <span className="text-xs font-medium text-muted-foreground">
               {t("Dátum zaúčtovania")}

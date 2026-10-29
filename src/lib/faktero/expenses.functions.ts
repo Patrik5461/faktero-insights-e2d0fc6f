@@ -468,6 +468,9 @@ export const zmazZKosaFn = createServerFn({ method: "POST" })
  * `issue_date ?? created_at`.
  */
 function vMesiaci<Q extends { or: (filter: string) => Q }>(q: Q, month: string): Q {
+  // Iná hodnota než RRRR-MM (napr. „vsetky“ z odkazu) nie je mesiac — bez nej
+  // padal dotaz na „NaN-undefined-01“ a zoznam ostal prázdny s chybou.
+  if (!/^\d{4}-\d{2}$/.test(month)) return q;
   const [y, m] = month.split("-").map(Number);
   const od = `${y}-${String(m).padStart(2, "0")}-01`;
   const dalsiMesiac = m === 12 ? 1 : m + 1;
@@ -554,7 +557,8 @@ export const getExpenseFileUrlFn = createServerFn({ method: "POST" })
     return { url: signed.signedUrl };
   });
 
-// Export vybraných dokladov ako ZIP (CSV súhrn + priložené súbory)
+// Export vybraných dokladov ako ZIP (CSV súhrn + pohoda.xml + priložené súbory)
+// alebo len pohoda.xml (`format: "xml"`)
 export const exportExpensesZipFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
@@ -571,6 +575,8 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       radenie?: "datum" | "cislo" | "nahratie" | null;
       /** Preniesť položky bločkov — prebije nastavenie firmy pre tento export. */
       polozky?: boolean | null;
+      /** `xml` = len pohoda.xml bez CSV a skenov; predvolene ZIP. */
+      format?: "zip" | "xml";
     }) => data,
   )
   .handler(async ({ data, context }) => {
@@ -656,9 +662,7 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       )
       .eq("id", data.company_id)
       .single();
-    const { buildPohodaExpensesXml, podlaRoka } = await import("./export.server");
     const datumZ = /^\d{4}-\d{2}-\d{2}$/.test(String(data.datum_zauctovania ?? "")) ? String(data.datum_zauctovania) : null;
-    // Prelom rokov: každý rok do vlastného súboru (Pohoda importuje do jedného roka).
     const nastavenia = {
       datumZauctovaniaPevny: datumZ,
       predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
@@ -678,37 +682,39 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       )),
       ...(typeof data.polozky === "boolean" ? { polozkyBlockov: data.polozky } : {}),
     };
-    /*
-      Kontrola pred odovzdaním: doklad, ktorý by Pohoda zaúčtovala zle, do XML
-      nejde a neoznačí sa. Odovzdaný doklad sa druhýkrát neoznačí — v Pohode
-      by bol dvakrát; v ZIP-e (CSV, skeny) ostáva.
-    */
-    const { prekazkaDokladu } = await import("./pohoda-kontrola");
-    const preskocene: string[] = [];
-    const doXml = rows.filter((r: any) => {
-      if (data.mark_exported && r.exported_at) {
-        preskocene.push(
-          `${r.document_number || "bloček"} — už je odovzdaný do Pohody — znova ho pošlete až po vrátení (Vrátiť z Pohody)`,
-        );
-        return false;
-      }
-      const dovod = prekazkaDokladu(r, firma ?? {}, nastavenia);
-      if (dovod) preskocene.push(dovod);
-      return !dovod;
+    // Kontrola pred odovzdaním a XML podľa rokov — rovnaké pre ZIP aj samotné XML.
+    const obdobie = data.month ?? new Date().toISOString().slice(0, 7);
+    const { pohodaXmlBlockov } = await import("./blocky-pohoda-xml.server");
+    const { subory: xmlPodlaRoka, preskocene } = pohodaXmlBlockov({
+      firma,
+      rows,
+      nastavenia,
+      oznacit: Boolean(data.mark_exported),
+      datumZauctovania: datumZ,
+      obdobie,
     });
-    const roky = datumZ ? [{ rok: "", doklady: doXml }] : podlaRoka(doXml, (r: any) => r.issue_date);
-    const xmlPodlaRoka: { xml: string; doklady: any[]; nazov: string }[] = [];
-    for (const r of roky) {
-      if (!r.doklady.length) continue;
-      const nazov = roky.length > 1 ? `pohoda-${r.rok}.xml` : "pohoda.xml";
-      const xml = buildPohodaExpensesXml({ company: firma ?? {}, doklady: r.doklady, nastavenia });
-      zip.file(nazov, xml);
-      xmlPodlaRoka.push({ xml, doklady: r.doklady, nazov });
-    }
+    for (const x of xmlPodlaRoka) zip.file(x.nazov, x.xml);
+    /*
+      Čo do XML nešlo, musí byť vidieť aj v samotnom ZIP-e — inak to vyzerá,
+      že XML „chýba“ (hotovostný bloček bez pokladne, zlá DPH…).
+    */
+    if (preskocene.length)
+      zip.file(
+        "pohoda-nevyvezene.txt",
+        "\uFEFF" +
+          (xmlPodlaRoka.length
+            ? "Tieto doklady nie sú v pohoda.xml:\n"
+            : "Žiadny doklad neprešiel kontrolou pred Pohodou, preto v ZIP-e nie je pohoda.xml:\n") +
+          preskocene.map((d) => `- ${d}`).join("\n") +
+          "\n",
+      );
+    // Samotné XML bez skenov — keď sa nedá nič vyviezť, povie prečo.
+    if (data.format === "xml" && !xmlPodlaRoka.length)
+      throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
 
-    // Priložené súbory
+    // Priložené súbory (len do ZIP-u)
     const files = zip.folder("subory")!;
-    for (const r of rows) {
+    for (const r of data.format === "xml" ? [] : rows) {
       if (!r.file_path) continue;
       const { data: file } = await supabase.storage.from("expense-receipts").download(r.file_path);
       if (!file) continue;
@@ -719,12 +725,12 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       files.file(`${namePart}.${ext}`, await file.arrayBuffer());
     }
 
-    const blob = await zip.generateAsync({ type: "base64" });
+    const blob = data.format === "xml" ? "" : await zip.generateAsync({ type: "base64" });
 
     if (data.mark_exported) {
       // Čo Pohoda dostala, sa uloží do histórie exportov (porovnanie neskôr).
       const { ulozOdoslaneXml } = await import("./pohoda-odoslane-xml.server");
-      const mesiac = data.month ?? new Date().toISOString().slice(0, 7);
+      const mesiac = obdobie;
       for (const x of xmlPodlaRoka) {
         const jobId = await ulozOdoslaneXml(supabase as any, {
           companyId: data.company_id,
@@ -743,10 +749,15 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       }
     }
 
+    const vXml = xmlPodlaRoka.reduce((s, x) => s + x.doklady.length, 0);
     return {
       base64: blob,
-      filename: `doklady-${data.month ?? new Date().toISOString().slice(0, 7)}.zip`,
-      count: rows.length,
+      filename: `doklady-${obdobie}.zip`,
+      // Samotné XML pre Pohodu (pri prelome rokov viac súborov).
+      subory: data.format === "xml" ? xmlPodlaRoka.map((x) => ({ fileName: x.fileName, xml: x.xml })) : [],
+      count: data.format === "xml" ? vXml : rows.length,
+      /** Koľko dokladov je v XML pre Pohodu (zvyšok je v `preskocene`). */
+      v_xml: vXml,
       preskocene,
     };
   });

@@ -106,6 +106,15 @@ describe("účtovanie pomerom", () => {
     expect(podielOdpoctu(p)).toBe(0.5);
   });
 
+  it("bez vlastného kódu bez odpočtu dostanú časti bez nároku PN, nie členenie dokladu", async () => {
+    // PALIERA: PHM 50/50 bez vyplneného „členenia bez odpočtu“ išlo celé ako PD.
+    const { nacitajPomer, rozuctovaniePodlaPomeru } = await import("./rozuctovanie");
+    const p = nacitajPomer({ typ: "dph5050", zaklad: 80, zdanitelna: "PHM", lenZaklad: "PHMZ", nezdanitelna: "SUK" })!;
+    expect(rozuctovaniePodlaPomeru(p, rozpisAuto, "PD").map((x) => x.clenenie)).toEqual(["PD", "PN", "PN"]);
+    // Doklad bez členenia ostane bez neho.
+    expect(rozuctovaniePodlaPomeru(p, rozpisAuto, null).map((x) => x.clenenie)).toEqual([null, null, null]);
+  });
+
   it("pomer 80/20 s odpočtom len z prvej časti; nesúci pomer sa odmietne", async () => {
     const { nacitajPomer, rozuctovaniePodlaPomeru, podielOdpoctu } = await import("./rozuctovanie");
     const p = nacitajPomer({ typ: "pomer", casti: [{ podiel: 80, predkontacia: "1Fp" }, { podiel: 20, predkontacia: "5Fp", odpocet: false }] })!;

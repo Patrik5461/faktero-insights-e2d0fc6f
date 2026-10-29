@@ -6,6 +6,9 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { DetailSNahladom, useNahladVDetaile, type SuborNahladu } from "@/components/faktero/BocnyNahlad";
+import { UdajePreUctovnika, useSirokaPreNahlad, type UdajeUctovnika } from "@/components/faktero/UdajePreUctovnika";
+import { ZbaleneK } from "@/components/faktero/DetailDokladuKompaktny";
+import { rezimDphVystavenej, stavZauctovania } from "@/lib/faktero/udaje-pre-uctovnika";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageBody } from "@/components/faktero/AppShell";
@@ -141,6 +144,7 @@ function InvoiceDetail() {
   const [nahladUrl, setNahladUrl] = useState<string | null>(null);
   // PDF stále vľavo vedľa údajov — pri účtovaní ho netreba otvárať zvlášť.
   const nahladDetail = useNahladVDetaile();
+  const sirokaPreNahlad = useSirokaPreNahlad();
   const [pdfVedla, setPdfVedla] = useState<SuborNahladu | undefined>(undefined);
   const [emailOpen, setEmailOpen] = useState(false);
   /* Koľko príloh doklad má — podľa toho sa v maile ponúkne, či ich priložiť. */
@@ -970,6 +974,588 @@ function InvoiceDetail() {
     }
   }
 
+
+  /* PDF vľavo a vpravo jeden stĺpec — len keď je náhľad zapnutý a obrazovka široká. */
+  const pdfRozlozenie = nahladDetail.zapnuty && sirokaPreNahlad;
+  const jeZaloha = maZuctovanuZalohu(inv.advance_amount);
+  const udajeUctovnika: UdajeUctovnika = {
+    cislo: inv.invoice_number,
+    druh: inv.oprava_25a ? t("Opravný doklad (§ 25a)") : t(NAZOV_TYPU[inv.type as string] ?? "Faktúra"),
+    stranaNadpis: "Odberateľ",
+    strana: {
+      nazov: inv.customer_name,
+      ico: inv.customer_ico,
+      dic: inv.customer_dic,
+      icDph: inv.customer_ic_dph,
+    },
+    stranaDoplnok:
+      inv.status !== "cancelled" ? (
+        <Link
+          to="/faktury/$id/upravit"
+          params={{ id }}
+          className="normal-case tracking-normal text-primary hover:underline print:hidden"
+        >
+          {t("Zmeniť")}
+        </Link>
+      ) : null,
+    vystavenie: inv.issue_date,
+    dodanie: inv.delivery_date,
+    splatnost: popisSplatnosti(inv),
+    vs: inv.variable_symbol,
+    formaUhrady: t(paymentMethodLabel(inv.payment_method)),
+    mena: inv.currency,
+    kurz: inv.exchange_rate,
+    kurzDatum: inv.exchange_rate_date,
+    rozpis: rozpisPodlaSadzieb(
+      riadkySoZlavou(items, inv.discount_total).map((it: any) => ({
+        vat_rate: it.vat_rate,
+        subtotal: it.subtotal,
+        vat_amount: it.vat_amount,
+        prenesenie: Boolean(inv.reverse_charge || it.prenesenie),
+      })),
+      { subtotal: inv.subtotal, vat_total: inv.vat_total },
+    ),
+    naZobrazenie: (n) => sumaNaZobrazenie(inv, n),
+    zaklad: Number(inv.subtotal),
+    dph: Number(inv.vat_total),
+    zlava: Number(inv.discount_total ?? 0),
+    zaloha: jeZaloha ? Number(inv.advance_amount) : null,
+    kUhrade: jeZaloha ? zostavaUhradit(inv.total, inv.advance_amount) : null,
+    spolu: Number(inv.total),
+    rezimy: rezimDphVystavenej(
+      inv,
+      items.some((it: any) => it.prenesenie),
+    ),
+    uhrada: {
+      uhradena: inv.status === "paid",
+      datum: inv.paid_at ? String(inv.paid_at).slice(0, 10) : null,
+      zostava: sumaNaZobrazenie(inv, zostavaUhradit(inv.total, inv.advance_amount)),
+      bezUhrady: inv.status === "cancelled" || inv.status === "draft" || jeDobropisNaZobrazenie(inv),
+    },
+    zauctovanie: {
+      ...stavZauctovania(inv),
+      predkontacia: inv.pohoda_predkontacia,
+      clenenie: inv.pohoda_clenenie_dph,
+      kv: inv.kv_clenenie,
+    },
+  };
+
+  /*
+    Kúsky detailu. Skladajú sa v dvoch rozloženiach: bez náhľadu PDF
+    (hlavný stĺpec + bočný 320 px) a s náhľadom PDF vľavo — vtedy je vpravo
+    jeden stĺpec, navrchu údaje pre účtovníka a platba, a to, čo len
+    opakuje PDF (strany, položky, poznámky), je zbalené v „Údajoch faktúry“.
+  */
+  const kartaStrany = (
+    <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
+      <div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          {t("Dodávateľ")}
+        </div>
+        <div className="mt-1 font-medium">{company?.name}</div>
+        <div className="text-sm text-muted-foreground">
+          {company?.street}
+          <br />
+          {company?.zip} {company?.city}, {company?.country}
+        </div>
+        <div className="mt-2 text-sm">
+          {t("IČO")}: {company?.ico ?? "—"} · {t("DIČ")}: {company?.dic ?? "—"}
+        </div>
+        {company?.ic_dph && <div className="text-sm">{t("IČ DPH")}: {company.ic_dph}</div>}
+      </div>
+      <div>
+        <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+          {t("Odberateľ")}
+          {inv.status !== "cancelled" && (
+            <Link
+              to="/faktury/$id/upravit"
+              params={{ id }}
+              className="normal-case tracking-normal text-primary hover:underline print:hidden"
+            >
+              {t("Zmeniť")}
+            </Link>
+          )}
+        </div>
+        <div className="mt-1 font-medium">{inv.customer_name}</div>
+        {/* Prázdne časti adresy sa vynechajú — inak tam ostane holá čiarka. */}
+        <div className="text-sm text-muted-foreground">
+          {adresaRiadky(
+            inv.customer_street,
+            inv.customer_zip,
+            inv.customer_city,
+            inv.customer_country,
+          ).map((r) => (
+            <div key={r}>{r}</div>
+          ))}
+        </div>
+        <div className="mt-2 text-sm">
+          {t("IČO")}: {inv.customer_ico ?? "—"} · {t("DIČ")}: {inv.customer_dic ?? "—"}
+        </div>
+      </div>
+    </div>
+  );
+  const kartaUvod = inv.intro_note ? (
+    <div className="whitespace-pre-wrap rounded-xl border border-border bg-card p-5 text-sm">
+      {inv.intro_note}
+    </div>
+
+  ) : null;
+  const kartaPolozky = (
+    <div className="overflow-x-auto rounded-xl border border-border bg-card">
+      <table className="w-full text-sm">
+        <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <tr>
+            <th className="p-3">{t("Položka")}</th>
+            <th className="p-3 text-right">{t("Mn.")}</th>
+            <th className="p-3">{t("MJ")}</th>
+            <th className="p-3 text-right">{t("Cena")}</th>
+            <th className="p-3 text-right">{t("DPH")}</th>
+            <th className="p-3 text-right">{t("Spolu")}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {/* Dobropis je v databáze záporný, na detaile sa ukazuje kladne. */}
+          {items.map((it0) => polozkaNaZobrazenie(inv, it0)).map((it) => (
+            <tr key={it.id}>
+              <td className="p-3">
+                <div className="font-medium">{it.name}</div>
+                {it.description && (
+                  <div className="whitespace-pre-line text-xs text-muted-foreground">{it.description}</div>
+                )}
+                {Number((it as any).discount_percent ?? 0) > 0 && (
+                  <div className="text-xs text-emerald-600">
+                    {t("Zľava {n} %", { n: Number((it as any).discount_percent) })}
+                  </div>
+                )}
+              </td>
+              <td className="p-3 text-right">{Number(it.quantity)}</td>
+              <td className="p-3">{it.unit}</td>
+              <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
+              <td className="p-3 text-right">
+                {inv.reverse_charge || (it as any).prenesenie ? (
+                  <span title={t("Prenesenie daňovej povinnosti — daň priznáva odberateľ")}>{t("PDP")}</span>
+                ) : (
+                  `${it.vat_rate}%`
+                )}
+              </td>
+              <td className="p-3 text-right font-medium">{formatujCislo(it.total, 2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+  const kartaPoznamka = inv.notes ? (
+    <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">
+      {inv.notes}
+    </div>
+
+  ) : null;
+  const kartaPrilohy = (
+    <PrilohyFaktury
+      dokladId={inv.id}
+      mozeMenit={inv.status !== "cancelled"}
+      onZmena={setPocetPriloh}
+    />
+  );
+  const kartaZauctovanie = (
+    <ZauctovanieVystavenejPanel
+      inv={inv}
+      onZmena={() => void load()}
+      onStiahnut={handlePohodaExport}
+    />
+  );
+  const kartaHistoria = (
+    <>
+      <HistoriaDokladu companyId={inv.company_id} agenda="faktura" id={inv.id} />
+    </>
+  );
+  const kartaZasielkovna = (
+    <>
+      <ZasielkovnaFaktury inv={inv} onZmena={() => void load()} />
+      {zakazka && (
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Zákazka")}</div>
+          <Link
+            to="/zakazky/$id"
+            params={{ id: zakazka.id }}
+            className="mt-1 block text-sm text-primary hover:underline"
+          >
+            {zakazka.job_number} — {zakazka.name}
+          </Link>
+        </div>
+      )}
+    </>
+  );
+  const kartaSumar = (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
+      <div className="mt-3 space-y-1 text-sm">
+        {Number(inv.discount_total ?? 0) > 0 && (
+          <>
+            <Row
+              label={t("Medzisúčet")}
+              value={formatujMenu((Number(inv.subtotal) + Number(inv.discount_total)), inv.currency)}
+            />
+            <Row
+              label={t("Zľava")}
+              value={`−${formatujMenu(inv.discount_total, inv.currency)}`}
+            />
+          </>
+        )}
+        <Row label={t("Bez DPH")} value={formatujMenu(sumaNaZobrazenie(inv, inv.subtotal), inv.currency)} />
+        <Row label={t("DPH")} value={formatujMenu(sumaNaZobrazenie(inv, inv.vat_total), inv.currency)} />
+        <RozpisDph
+          skupiny={rozpisPodlaSadzieb(
+            riadkySoZlavou(items, inv.discount_total).map((it: any) => ({
+              vat_rate: it.vat_rate,
+              subtotal: it.subtotal,
+              vat_amount: it.vat_amount,
+              prenesenie: Boolean(inv.reverse_charge || it.prenesenie),
+            })),
+            { subtotal: inv.subtotal, vat_total: inv.vat_total },
+          )}
+          mena={inv.currency}
+          naZobrazenie={(n) => sumaNaZobrazenie(inv, n)}
+        />
+        {maZuctovanuZalohu(inv.advance_amount) && (
+          <>
+            <Row label={t("Spolu")} value={formatujMenu(inv.total, inv.currency)} />
+            <Row
+              label={t("Zúčtovaná záloha")}
+              value={`−${formatujMenu(inv.advance_amount, inv.currency)}`}
+            />
+          </>
+        )}
+      </div>
+      <div className="mt-3 border-t border-border pt-3">
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          {inv.status === "paid"
+            ? t("Uhradené")
+            : jeDobropisNaZobrazenie(inv)
+              ? t("Spolu")
+              : t("Spolu k úhrade")}
+        </div>
+        <div className="text-lg font-semibold tabular-nums">
+          {formatujMenu(
+            sumaNaZobrazenie(inv, zostavaUhradit(inv.total, inv.advance_amount)),
+            inv.currency,
+          )}
+        </div>
+      </div>
+    </div>
+  );
+  const kartyOpravaSchvalovanie = (
+    <>
+      <Oprava25aPanel invoice={inv} />
+      {inv.status !== "draft" && (
+        <SchvalovaniePanel companyId={inv.company_id} agenda="vystavena" id={inv.id} onZmena={() => void load()} />
+      )}
+    </>
+  );
+  const kartaStitky = (
+    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+      <StitkyDokladu
+        key={inv.id}
+        tabulka="invoices"
+        id={inv.id}
+        stitky={(inv as any).stitky ?? []}
+        companyId={inv.company_id}
+      />
+      {ciselnikyFirmy.stavy.length ? (
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium">{t("Stav dokladu")}</span>
+          <VyberStavuDokladu
+            key={inv.id}
+            tabulka="invoices"
+            id={inv.id}
+            stavId={(inv as any).stav_id}
+            stavy={ciselnikyFirmy.stavy}
+          />
+        </label>
+      ) : null}
+    </div>
+  );
+  /* Interná poznámka je v tej istej karte ako komentáre — dva skoro rovnaké názvy mätli. */
+  const kartaKomentare = (
+    <KomentarePanel companyId={inv.company_id} agenda="vystavena" id={inv.id}>
+      <KomentarDokladu tabulka="invoices" id={inv.id} komentar={(inv as any).komentar} />
+    </KomentarePanel>
+  );
+  const kartaPlatba = (sumaHore: boolean) =>
+    inv.status === "paid" ? (
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100 dark:border-emerald-900/40">
+        <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          {t("Uhradené")}
+        </div>
+        {sumaHore && (
+          <div className="text-lg font-semibold tabular-nums">
+            {formatujMenu(sumaNaZobrazenie(inv, zostavaUhradit(inv.total, inv.advance_amount)), inv.currency)}
+          </div>
+        )}
+        <div className="mt-2">
+          {t("Dátum úhrady:")} {inv.paid_at ? String(inv.paid_at).slice(0, 10) : "—"}
+        </div>
+        <div>{t("Forma úhrady:")} {t(paymentMethodLabel(inv.payment_method))}</div>
+        <div className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">
+          {t("Platobné údaje sa nezobrazujú — faktúra je zaplatená.")}
+        </div>
+      </div>
+    ) : (
+      <div className="rounded-xl border border-border bg-card p-5 text-sm">
+        {sumaHore ? (
+          /* Pri náhľade PDF je suma na úhradu hneď nad platobnými údajmi. */
+          <div className="mb-3 border-b border-border pb-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              {jeDobropisNaZobrazenie(inv) ? t("Spolu") : t("Spolu k úhrade")}
+            </div>
+            <div className="text-2xl font-semibold tabular-nums">
+              {formatujMenu(sumaNaZobrazenie(inv, zostavaUhradit(inv.total, inv.advance_amount)), inv.currency)}
+            </div>
+          </div>
+        ) : null}
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Platba")}</div>
+        <div className="mt-2">
+          {t("IBAN:")}{" "}
+          <span className="font-mono">
+            {sUctomFaktury(company ?? {}, inv).iban
+              ? formatujIban(sUctomFaktury(company ?? {}, inv).iban)
+              : "—"}
+          </span>
+        </div>
+        {/* Iný účet aj na vystavenej faktúre — PDF a QR sa pregenerujú samé. */}
+        {inv.status !== "cancelled" && (
+          <VyberUctu
+            className="mt-2"
+            predvyplnit={false}
+            companyId={inv.company_id}
+            value={inv.payment_account_id ?? null}
+            onChange={async (id) => {
+              if (id === inv.payment_account_id) return;
+              const { error } = await supabase
+                .from("invoices")
+                .update({ payment_account_id: id })
+                .eq("id", inv.id);
+              if (error) return toast.error(error.message);
+              toast.success(t("Účet na úhradu zmenený."));
+              void load();
+            }}
+          />
+        )}
+        <div>
+          {t("Variabilný symbol:")} <span className="font-mono">{inv.variable_symbol}</span>
+        </div>
+        <div>{t("Splatnosť:")} {popisSplatnosti(inv)}</div>
+        {predlzena(inv) && (
+          <div className="text-xs text-muted-foreground">
+            {t("Lehoty DPH (§ 25a) sa počítajú od pôvodnej splatnosti.")}
+            {inv.predlzenie_poznamka ? ` ${t("Dohoda:")} ${inv.predlzenie_poznamka}` : ""}
+          </div>
+        )}
+        <div className="my-2">
+          <PredlzitSplatnost druh="vydana" faktura={inv} onZmena={() => void load()} />
+        </div>
+        <div>{t("Forma úhrady:")} {t(paymentMethodLabel(inv.payment_method))}</div>
+        {/*
+          Bez IBAN-u nemá odberateľ kam zaplatiť a na doklade nie je ani
+          QR kód. Pri novej firme sa toto pole preskočí ľahko — register
+          ho nedopĺňa — a chyba sa ukáže až vtedy, keď peniaze neprídu.
+        */}
+        {!sUctomFaktury(company ?? {}, inv).iban && (
+          <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
+            <div className="font-medium text-foreground">{t("Chýba IBAN")}</div>
+            <p className="mt-0.5 text-muted-foreground">
+              {t("Odberateľ nemá kam zaplatiť a na doklade nebude QR kód.")}
+            </p>
+            <Link
+              to="/firma"
+              className="mt-1 inline-block font-medium text-primary hover:underline"
+            >
+              {t("Doplniť v údajoch firmy")}
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  const kartyZalohySklad = (
+    <>
+      {inv.type === "proforma" && (
+        <div className="rounded-xl border border-border bg-card p-5 text-sm">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("Zálohová faktúra")}
+          </div>
+          {settledIn ? (
+            <div className="mt-2 space-y-1">
+              <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
+                {t("Zúčtovaná")}
+              </div>
+              <div>
+                {t("Zúčtovaná vo faktúre:")}{" "}
+                <Link
+                  to="/faktury/$id"
+                  params={{ id: settledIn.id }}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {settledIn.invoice_number}
+                </Link>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {datumNaDoklade(settledIn.issue_date)} · {formatujMenu(settledIn.total, settledIn.currency)}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-2 text-muted-foreground">
+              {t("Zatiaľ nezúčtovaná. Zálohu môžete použiť pri vytváraní novej faktúry cez „Pridať zálohovú faktúru\".")}
+            </div>
+          )}
+
+          {/*
+            Daňová povinnosť vzniká prijatím platby, nie dodaním — platiteľ
+            DPH musí do 15 dní vystaviť doklad k tejto platbe. Preto je
+            ponuka priamo pri zálohovej faktúre, hneď ako je uhradená.
+          */}
+          <div className="mt-4 border-t border-border pt-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              {t("Daňový doklad k prijatej platbe")}
+            </div>
+            {dokladKPlatbe ? (
+              <div className="mt-2 space-y-1">
+                <Link
+                  to="/faktury/$id"
+                  params={{ id: dokladKPlatbe.id }}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {dokladKPlatbe.invoice_number}
+                </Link>
+                <div className="text-xs text-muted-foreground">
+                  {datumNaDoklade(dokladKPlatbe.issue_date)} · {formatujMenu(dokladKPlatbe.total, dokladKPlatbe.currency)} · {t("daň sa priznáva v tomto období")}
+                </div>
+              </div>
+            ) : inv.status === "paid" ? (
+              <div className="mt-2 space-y-2">
+                <p className="text-muted-foreground">
+                  {t("Záloha je uhradená — ako platiteľ DPH musíte do 15 dní od prijatia platby vystaviť daňový doklad. Daň sa prizná v období platby a na vyúčtovacej faktúre sa už znovu nepočíta.")}
+                </p>
+                <button
+                  type="button"
+                  disabled={vystavujemDoklad}
+                  onClick={vystavDoklad}
+                  className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                >
+                  {vystavujemDoklad ? t("Vystavujem…") : t("Vystaviť daňový doklad")}
+                </button>
+              </div>
+            ) : (
+              <p className="mt-2 text-muted-foreground">
+                {t("Vystaví sa až po úhrade zálohy — daňová povinnosť vzniká prijatím platby.")}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      {odpocitaneZalohy.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-5 text-sm">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            {odpocitaneZalohy.length === 1 ? t("Zúčtovaná záloha") : t("Zúčtované zálohy")}
+          </div>
+          <ul className="mt-2 space-y-1">
+            {odpocitaneZalohy.map((o) => (
+              <li key={o.advance_invoice_id} className="flex flex-wrap items-baseline gap-2">
+                <Link
+                  to="/faktury/$id"
+                  params={{ id: o.advance_invoice_id }}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {o.zaloha?.invoice_number ?? t("zálohová faktúra")}
+                </Link>
+                <span className="text-xs text-muted-foreground">
+                  {o.zaloha?.issue_date ? datumNaDoklade(o.zaloha.issue_date) : ""} · {t("odpočítané")}{" "}
+                  {formatujMenu(o.amount, o.zaloha?.currency ?? inv.currency)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {odpocitaneZalohy.length > 1 && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              {t("Spolu odpočítané")}{" "}
+              <strong>
+                {formatujMenu(
+                  odpocitaneZalohy.reduce((a: number, o: any) => a + Number(o.amount), 0),
+                  inv.currency,
+                )}
+              </strong>
+            </div>
+          )}
+        </div>
+      )}
+      {advanceProforma && (
+        <div className="rounded-xl border border-border bg-card p-5 text-sm">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("Zúčtovaná záloha")}
+          </div>
+          <div className="mt-2 space-y-1">
+            <div>
+              {t("Zálohová faktúra:")}{" "}
+              <Link
+                to="/faktury/$id"
+                params={{ id: advanceProforma.id }}
+                className="font-medium text-primary hover:underline"
+              >
+                {advanceProforma.invoice_number}
+              </Link>
+            </div>
+            {inv.advance_amount != null && (
+              <div className="text-xs text-muted-foreground">
+                {t("Odpočítaná suma:")} {formatujMenu(inv.advance_amount, inv.currency)}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {stockMoves.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-5 text-sm">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sklad")}</div>
+          <div className="mt-2 space-y-2">
+            {stockMoves.map((m) => {
+              const reversed = m.type === "dobropis";
+              return (
+                <div
+                  key={m.id}
+                  className="flex items-start justify-between gap-2 border-b border-border/40 pb-2 last:border-0 last:pb-0"
+                >
+                  <div>
+                    <div className="font-medium">
+                      {reversed ? t("Sklad vrátený") : t("Sklad odpočítaný")}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {stockSkus[m.stock_item_id] ?? "—"} ·{" "}
+                      {warehouseNames[m.warehouse_id] ?? "—"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(m.created_at).toLocaleString("sk-SK")}
+                    </div>
+                  </div>
+                  <div
+                    className={`tabular-nums text-right font-semibold ${reversed ? "text-emerald-600" : "text-destructive"}`}
+                  >
+                    {reversed ? "+" : "−"}
+                    {Math.abs(Number(m.quantity))}
+                  </div>
+                </div>
+              );
+            })}
+            <Link
+              to="/sklad/pohyby"
+              className="block pt-1 text-xs text-primary hover:underline"
+            >
+              {t("Pozrieť všetky pohyby →")}
+            </Link>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <>
       {nahladUrl && (
@@ -1335,483 +1921,50 @@ function InvoiceDetail() {
           nazov={inv.invoice_number}
           onSkryt={() => nahladDetail.prepni(false)}
         >
-        <div
-          className={
-            nahladDetail.zapnuty
-              ? "grid gap-6 min-[1800px]:grid-cols-[minmax(0,1fr)_300px]"
-              : "grid gap-6 lg:grid-cols-[1fr_320px]"
-          }
-        >
+        {pdfRozlozenie ? (
+          <div className="min-w-0 space-y-4">
+            <UdajePreUctovnika u={udajeUctovnika} />
+            {kartaPlatba(true)}
+            {kartaZasielkovna}
+            {kartyOpravaSchvalovanie}
+            {kartaStitky}
+            {kartaPrilohy}
+            {kartaKomentare}
+            {kartyZalohySklad}
+            {kartaZauctovanie}
+            <ZbaleneK nadpis="Údaje faktúry">
+              <div className="space-y-4">
+                {kartaUvod}
+                {kartaPolozky}
+                {kartaPoznamka}
+              </div>
+            </ZbaleneK>
+            {kartaHistoria}
+          </div>
+        ) : (
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="min-w-0 space-y-6">
-            <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
-              <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {t("Dodávateľ")}
-                </div>
-                <div className="mt-1 font-medium">{company?.name}</div>
-                <div className="text-sm text-muted-foreground">
-                  {company?.street}
-                  <br />
-                  {company?.zip} {company?.city}, {company?.country}
-                </div>
-                <div className="mt-2 text-sm">
-                  {t("IČO")}: {company?.ico ?? "—"} · {t("DIČ")}: {company?.dic ?? "—"}
-                </div>
-                {company?.ic_dph && <div className="text-sm">{t("IČ DPH")}: {company.ic_dph}</div>}
-              </div>
-              <div>
-                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                  {t("Odberateľ")}
-                  {inv.status !== "cancelled" && (
-                    <Link
-                      to="/faktury/$id/upravit"
-                      params={{ id }}
-                      className="normal-case tracking-normal text-primary hover:underline print:hidden"
-                    >
-                      {t("Zmeniť")}
-                    </Link>
-                  )}
-                </div>
-                <div className="mt-1 font-medium">{inv.customer_name}</div>
-                {/* Prázdne časti adresy sa vynechajú — inak tam ostane holá čiarka. */}
-                <div className="text-sm text-muted-foreground">
-                  {adresaRiadky(
-                    inv.customer_street,
-                    inv.customer_zip,
-                    inv.customer_city,
-                    inv.customer_country,
-                  ).map((r) => (
-                    <div key={r}>{r}</div>
-                  ))}
-                </div>
-                <div className="mt-2 text-sm">
-                  {t("IČO")}: {inv.customer_ico ?? "—"} · {t("DIČ")}: {inv.customer_dic ?? "—"}
-                </div>
-              </div>
-            </div>
-
-            {inv.intro_note && (
-              <div className="whitespace-pre-wrap rounded-xl border border-border bg-card p-5 text-sm">
-                {inv.intro_note}
-              </div>
-            )}
-
-            <div className="overflow-x-auto rounded-xl border border-border bg-card">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="p-3">{t("Položka")}</th>
-                    <th className="p-3 text-right">{t("Mn.")}</th>
-                    <th className="p-3">{t("MJ")}</th>
-                    <th className="p-3 text-right">{t("Cena")}</th>
-                    <th className="p-3 text-right">{t("DPH")}</th>
-                    <th className="p-3 text-right">{t("Spolu")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {/* Dobropis je v databáze záporný, na detaile sa ukazuje kladne. */}
-                  {items.map((it0) => polozkaNaZobrazenie(inv, it0)).map((it) => (
-                    <tr key={it.id}>
-                      <td className="p-3">
-                        <div className="font-medium">{it.name}</div>
-                        {it.description && (
-                          <div className="whitespace-pre-line text-xs text-muted-foreground">{it.description}</div>
-                        )}
-                        {Number((it as any).discount_percent ?? 0) > 0 && (
-                          <div className="text-xs text-emerald-600">
-                            {t("Zľava {n} %", { n: Number((it as any).discount_percent) })}
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-3 text-right">{Number(it.quantity)}</td>
-                      <td className="p-3">{it.unit}</td>
-                      <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
-                      <td className="p-3 text-right">
-                        {inv.reverse_charge || (it as any).prenesenie ? (
-                          <span title={t("Prenesenie daňovej povinnosti — daň priznáva odberateľ")}>{t("PDP")}</span>
-                        ) : (
-                          `${it.vat_rate}%`
-                        )}
-                      </td>
-                      <td className="p-3 text-right font-medium">{formatujCislo(it.total, 2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {inv.notes && (
-              <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">
-                {inv.notes}
-              </div>
-            )}
-
-            <PrilohyFaktury
-              dokladId={inv.id}
-              mozeMenit={inv.status !== "cancelled"}
-              onZmena={setPocetPriloh}
-            />
-
-            {/* Zaúčtovanie patrí do širokého stĺpca — v bočnom (320 px) sa polia nezmestili. */}
-            <ZauctovanieVystavenejPanel
-              inv={inv}
-              onZmena={() => void load()}
-              onStiahnut={handlePohodaExport}
-            />
-            <HistoriaDokladu companyId={inv.company_id} agenda="faktura" id={inv.id} />
+            {kartaStrany}
+            {kartaUvod}
+            {kartaPolozky}
+            {kartaPoznamka}
+            {kartaPrilohy}
+            {kartaZauctovanie}
+            {kartaHistoria}
           </div>
 
           <aside className="space-y-4">
-            <ZasielkovnaFaktury inv={inv} onZmena={() => void load()} />
-            {zakazka && (
-              <div className="rounded-xl border border-border bg-card p-5">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Zákazka")}</div>
-                <Link
-                  to="/zakazky/$id"
-                  params={{ id: zakazka.id }}
-                  className="mt-1 block text-sm text-primary hover:underline"
-                >
-                  {zakazka.job_number} — {zakazka.name}
-                </Link>
-              </div>
-            )}
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
-              <div className="mt-3 space-y-1 text-sm">
-                {Number(inv.discount_total ?? 0) > 0 && (
-                  <>
-                    <Row
-                      label={t("Medzisúčet")}
-                      value={formatujMenu((Number(inv.subtotal) + Number(inv.discount_total)), inv.currency)}
-                    />
-                    <Row
-                      label={t("Zľava")}
-                      value={`−${formatujMenu(inv.discount_total, inv.currency)}`}
-                    />
-                  </>
-                )}
-                <Row label={t("Bez DPH")} value={formatujMenu(sumaNaZobrazenie(inv, inv.subtotal), inv.currency)} />
-                <Row label={t("DPH")} value={formatujMenu(sumaNaZobrazenie(inv, inv.vat_total), inv.currency)} />
-                <RozpisDph
-                  skupiny={rozpisPodlaSadzieb(
-                    riadkySoZlavou(items, inv.discount_total).map((it: any) => ({
-                      vat_rate: it.vat_rate,
-                      subtotal: it.subtotal,
-                      vat_amount: it.vat_amount,
-                      prenesenie: Boolean(inv.reverse_charge || it.prenesenie),
-                    })),
-                    { subtotal: inv.subtotal, vat_total: inv.vat_total },
-                  )}
-                  mena={inv.currency}
-                  naZobrazenie={(n) => sumaNaZobrazenie(inv, n)}
-                />
-                {maZuctovanuZalohu(inv.advance_amount) && (
-                  <>
-                    <Row label={t("Spolu")} value={formatujMenu(inv.total, inv.currency)} />
-                    <Row
-                      label={t("Zúčtovaná záloha")}
-                      value={`−${formatujMenu(inv.advance_amount, inv.currency)}`}
-                    />
-                  </>
-                )}
-              </div>
-              <div className="mt-3 border-t border-border pt-3">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {inv.status === "paid"
-                    ? t("Uhradené")
-                    : jeDobropisNaZobrazenie(inv)
-                      ? t("Spolu")
-                      : t("Spolu k úhrade")}
-                </div>
-                <div className="text-lg font-semibold tabular-nums">
-                  {formatujMenu(
-                    sumaNaZobrazenie(inv, zostavaUhradit(inv.total, inv.advance_amount)),
-                    inv.currency,
-                  )}
-                </div>
-              </div>
-            </div>
-            <Oprava25aPanel invoice={inv} />
-            {inv.status !== "draft" && (
-              <SchvalovaniePanel companyId={inv.company_id} agenda="vystavena" id={inv.id} onZmena={() => void load()} />
-            )}
-            <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-              <StitkyDokladu
-                key={inv.id}
-                tabulka="invoices"
-                id={inv.id}
-                stitky={(inv as any).stitky ?? []}
-                companyId={inv.company_id}
-              />
-              {ciselnikyFirmy.stavy.length ? (
-                <label className="block">
-                  <span className="mb-1 block text-sm font-medium">{t("Stav dokladu")}</span>
-                  <VyberStavuDokladu
-                    key={inv.id}
-                    tabulka="invoices"
-                    id={inv.id}
-                    stavId={(inv as any).stav_id}
-                    stavy={ciselnikyFirmy.stavy}
-                  />
-                </label>
-              ) : null}
-              <KomentarDokladu tabulka="invoices" id={inv.id} komentar={(inv as any).komentar} />
-            </div>
-            <KomentarePanel companyId={inv.company_id} agenda="vystavena" id={inv.id} />
-            {inv.status === "paid" ? (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100 dark:border-emerald-900/40">
-                <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                  {t("Uhradené")}
-                </div>
-                <div className="mt-2">
-                  {t("Dátum úhrady:")} {inv.paid_at ? String(inv.paid_at).slice(0, 10) : "—"}
-                </div>
-                <div>{t("Forma úhrady:")} {t(paymentMethodLabel(inv.payment_method))}</div>
-                <div className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">
-                  {t("Platobné údaje sa nezobrazujú — faktúra je zaplatená.")}
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-border bg-card p-5 text-sm">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Platba")}</div>
-                <div className="mt-2">
-                  {t("IBAN:")}{" "}
-                  <span className="font-mono">
-                    {sUctomFaktury(company ?? {}, inv).iban
-                      ? formatujIban(sUctomFaktury(company ?? {}, inv).iban)
-                      : "—"}
-                  </span>
-                </div>
-                {/* Iný účet aj na vystavenej faktúre — PDF a QR sa pregenerujú samé. */}
-                {inv.status !== "cancelled" && (
-                  <VyberUctu
-                    className="mt-2"
-                    predvyplnit={false}
-                    companyId={inv.company_id}
-                    value={inv.payment_account_id ?? null}
-                    onChange={async (id) => {
-                      if (id === inv.payment_account_id) return;
-                      const { error } = await supabase
-                        .from("invoices")
-                        .update({ payment_account_id: id })
-                        .eq("id", inv.id);
-                      if (error) return toast.error(error.message);
-                      toast.success(t("Účet na úhradu zmenený."));
-                      void load();
-                    }}
-                  />
-                )}
-                <div>
-                  {t("Variabilný symbol:")} <span className="font-mono">{inv.variable_symbol}</span>
-                </div>
-                <div>{t("Splatnosť:")} {popisSplatnosti(inv)}</div>
-                {predlzena(inv) && (
-                  <div className="text-xs text-muted-foreground">
-                    {t("Lehoty DPH (§ 25a) sa počítajú od pôvodnej splatnosti.")}
-                    {inv.predlzenie_poznamka ? ` ${t("Dohoda:")} ${inv.predlzenie_poznamka}` : ""}
-                  </div>
-                )}
-                <div className="my-2">
-                  <PredlzitSplatnost druh="vydana" faktura={inv} onZmena={() => void load()} />
-                </div>
-                <div>{t("Forma úhrady:")} {t(paymentMethodLabel(inv.payment_method))}</div>
-                {/*
-                  Bez IBAN-u nemá odberateľ kam zaplatiť a na doklade nie je ani
-                  QR kód. Pri novej firme sa toto pole preskočí ľahko — register
-                  ho nedopĺňa — a chyba sa ukáže až vtedy, keď peniaze neprídu.
-                */}
-                {!sUctomFaktury(company ?? {}, inv).iban && (
-                  <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
-                    <div className="font-medium text-foreground">{t("Chýba IBAN")}</div>
-                    <p className="mt-0.5 text-muted-foreground">
-                      {t("Odberateľ nemá kam zaplatiť a na doklade nebude QR kód.")}
-                    </p>
-                    <Link
-                      to="/firma"
-                      className="mt-1 inline-block font-medium text-primary hover:underline"
-                    >
-                      {t("Doplniť v údajoch firmy")}
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
-            {inv.type === "proforma" && (
-              <div className="rounded-xl border border-border bg-card p-5 text-sm">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {t("Zálohová faktúra")}
-                </div>
-                {settledIn ? (
-                  <div className="mt-2 space-y-1">
-                    <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
-                      {t("Zúčtovaná")}
-                    </div>
-                    <div>
-                      {t("Zúčtovaná vo faktúre:")}{" "}
-                      <Link
-                        to="/faktury/$id"
-                        params={{ id: settledIn.id }}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {settledIn.invoice_number}
-                      </Link>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {datumNaDoklade(settledIn.issue_date)} · {formatujMenu(settledIn.total, settledIn.currency)}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-2 text-muted-foreground">
-                    {t("Zatiaľ nezúčtovaná. Zálohu môžete použiť pri vytváraní novej faktúry cez „Pridať zálohovú faktúru\".")}
-                  </div>
-                )}
-
-                {/*
-                  Daňová povinnosť vzniká prijatím platby, nie dodaním — platiteľ
-                  DPH musí do 15 dní vystaviť doklad k tejto platbe. Preto je
-                  ponuka priamo pri zálohovej faktúre, hneď ako je uhradená.
-                */}
-                <div className="mt-4 border-t border-border pt-3">
-                  <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                    {t("Daňový doklad k prijatej platbe")}
-                  </div>
-                  {dokladKPlatbe ? (
-                    <div className="mt-2 space-y-1">
-                      <Link
-                        to="/faktury/$id"
-                        params={{ id: dokladKPlatbe.id }}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {dokladKPlatbe.invoice_number}
-                      </Link>
-                      <div className="text-xs text-muted-foreground">
-                        {datumNaDoklade(dokladKPlatbe.issue_date)} · {formatujMenu(dokladKPlatbe.total, dokladKPlatbe.currency)} · {t("daň sa priznáva v tomto období")}
-                      </div>
-                    </div>
-                  ) : inv.status === "paid" ? (
-                    <div className="mt-2 space-y-2">
-                      <p className="text-muted-foreground">
-                        {t("Záloha je uhradená — ako platiteľ DPH musíte do 15 dní od prijatia platby vystaviť daňový doklad. Daň sa prizná v období platby a na vyúčtovacej faktúre sa už znovu nepočíta.")}
-                      </p>
-                      <button
-                        type="button"
-                        disabled={vystavujemDoklad}
-                        onClick={vystavDoklad}
-                        className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-                      >
-                        {vystavujemDoklad ? t("Vystavujem…") : t("Vystaviť daňový doklad")}
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-muted-foreground">
-                      {t("Vystaví sa až po úhrade zálohy — daňová povinnosť vzniká prijatím platby.")}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-            {odpocitaneZalohy.length > 0 && (
-              <div className="rounded-xl border border-border bg-card p-5 text-sm">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {odpocitaneZalohy.length === 1 ? t("Zúčtovaná záloha") : t("Zúčtované zálohy")}
-                </div>
-                <ul className="mt-2 space-y-1">
-                  {odpocitaneZalohy.map((o) => (
-                    <li key={o.advance_invoice_id} className="flex flex-wrap items-baseline gap-2">
-                      <Link
-                        to="/faktury/$id"
-                        params={{ id: o.advance_invoice_id }}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {o.zaloha?.invoice_number ?? t("zálohová faktúra")}
-                      </Link>
-                      <span className="text-xs text-muted-foreground">
-                        {o.zaloha?.issue_date ? datumNaDoklade(o.zaloha.issue_date) : ""} · {t("odpočítané")}{" "}
-                        {formatujMenu(o.amount, o.zaloha?.currency ?? inv.currency)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                {odpocitaneZalohy.length > 1 && (
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {t("Spolu odpočítané")}{" "}
-                    <strong>
-                      {formatujMenu(
-                        odpocitaneZalohy.reduce((a: number, o: any) => a + Number(o.amount), 0),
-                        inv.currency,
-                      )}
-                    </strong>
-                  </div>
-                )}
-              </div>
-            )}
-            {advanceProforma && (
-              <div className="rounded-xl border border-border bg-card p-5 text-sm">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {t("Zúčtovaná záloha")}
-                </div>
-                <div className="mt-2 space-y-1">
-                  <div>
-                    {t("Zálohová faktúra:")}{" "}
-                    <Link
-                      to="/faktury/$id"
-                      params={{ id: advanceProforma.id }}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {advanceProforma.invoice_number}
-                    </Link>
-                  </div>
-                  {inv.advance_amount != null && (
-                    <div className="text-xs text-muted-foreground">
-                      {t("Odpočítaná suma:")} {formatujMenu(inv.advance_amount, inv.currency)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            {stockMoves.length > 0 && (
-              <div className="rounded-xl border border-border bg-card p-5 text-sm">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sklad")}</div>
-                <div className="mt-2 space-y-2">
-                  {stockMoves.map((m) => {
-                    const reversed = m.type === "dobropis";
-                    return (
-                      <div
-                        key={m.id}
-                        className="flex items-start justify-between gap-2 border-b border-border/40 pb-2 last:border-0 last:pb-0"
-                      >
-                        <div>
-                          <div className="font-medium">
-                            {reversed ? t("Sklad vrátený") : t("Sklad odpočítaný")}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {stockSkus[m.stock_item_id] ?? "—"} ·{" "}
-                            {warehouseNames[m.warehouse_id] ?? "—"}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(m.created_at).toLocaleString("sk-SK")}
-                          </div>
-                        </div>
-                        <div
-                          className={`tabular-nums text-right font-semibold ${reversed ? "text-emerald-600" : "text-destructive"}`}
-                        >
-                          {reversed ? "+" : "−"}
-                          {Math.abs(Number(m.quantity))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <Link
-                    to="/sklad/pohyby"
-                    className="block pt-1 text-xs text-primary hover:underline"
-                  >
-                    {t("Pozrieť všetky pohyby →")}
-                  </Link>
-                </div>
-              </div>
-            )}
+            {kartaZasielkovna}
+            {kartaSumar}
+            {/* Platba hneď pod sumárom — doteraz bola až pod komentármi. */}
+            {kartaPlatba(false)}
+            {kartyOpravaSchvalovanie}
+            {kartaStitky}
+            {kartaKomentare}
+            {kartyZalohySklad}
           </aside>
         </div>
+        )}
         </DetailSNahladom>
       </PageBody>
       {efakturaOkno && inv?.company_id && (

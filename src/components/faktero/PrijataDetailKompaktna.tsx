@@ -38,13 +38,15 @@ import { ZauctovaniePanel } from "./ZauctovaniePanel";
 import { PrilohyFaktury } from "./PrilohyFaktury";
 import { HistoriaDokladu } from "./HistoriaDokladu";
 import { KomentarePanel } from "./KomentarePanel";
+import { KomentarDokladu } from "./StavDokladu";
 import { HromadnyPrikaz } from "./HromadnyPrikaz";
 import { PravidloZDokladu } from "./PravidloZDokladu";
 
 /**
- * Detail prijatej faktúry v kompaktnom rozložení — jeden stĺpec kariet:
- * hlavička s kartou úhrady, účtovanie priamo v detaile, prílohy, dodávateľ |
- * odberateľ, položky, platba | sumár, história a komentáre. Údaje aj akcie
+ * Detail prijatej faktúry v kompaktnom rozložení — jeden stĺpec kariet,
+ * najdôležitejšie pre účtovníka navrchu: hlavička s kartou úhrady, platba |
+ * sumár, účtovanie priamo v detaile, prílohy, komentáre s internou poznámkou,
+ * dodávateľ | odberateľ, položky a história. Údaje aj akcie
  * sú tie isté ako v klasickom rozložení; mení sa len usporiadanie.
  */
 export function PrijataDetailKompaktna({
@@ -236,7 +238,24 @@ export function PrijataDetailKompaktna({
         ) : null}
       </div>
 
-      {/* 2. Účtovanie priamo v detaile */}
+      {/* 2. Platba | Sumár — hneď pod úhradou */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 [&>*]:min-w-0">
+        <PlatbaK
+          iban={row.supplier_iban}
+          vs={row.variable_symbol}
+          ks={row.constant_symbol}
+          ss={row.specific_symbol}
+          doplnok={bokom}
+        />
+        <SumarK
+          rozpis={rozpisPrijatej(row)}
+          sadzby={sadzbyKrajiny(krajina, row.delivery_date ?? row.issue_date)}
+          mena={menaDokladu}
+          celkom={Number(row.amount_total ?? 0)}
+        />
+      </div>
+
+      {/* 3. Účtovanie priamo v detaile */}
       {row.type === "regular" && !navrh ? (
         <ZauctovaniePanel
           row={row}
@@ -264,7 +283,7 @@ export function PrijataDetailKompaktna({
         />
       ) : null}
 
-      {/* 3. Prílohy */}
+      {/* 4. Prílohy */}
       <PrilohyFaktury
         druh="purchase_invoice"
         dokladId={row.id}
@@ -282,7 +301,17 @@ export function PrijataDetailKompaktna({
         }
       />
 
-      {/* 4. Dodávateľ | Odberateľ */}
+      {/* 5. Komentáre a interná poznámka */}
+      {!navrh ? (
+        <div id="komentare" className="scroll-mt-24">
+          {/* Interná poznámka v tej istej karte ako komentáre. */}
+          <KomentarePanel companyId={row.company_id} agenda="prijata" id={row.id}>
+            <KomentarDokladu tabulka="purchase_invoices" id={row.id} komentar={row.komentar} />
+          </KomentarePanel>
+        </div>
+      ) : null}
+
+      {/* 6. Dodávateľ | Odberateľ */}
       <StranyDokladuK
         companyId={row.company_id}
         dodavatel={{
@@ -297,7 +326,7 @@ export function PrijataDetailKompaktna({
         }}
       />
 
-      {/* 5. Položky */}
+      {/* 7. Položky */}
       <PolozkyK
         polozky={polozky}
         mena={menaDokladu}
@@ -320,39 +349,17 @@ export function PrijataDetailKompaktna({
         }
       />
 
-      {/* 6. Platba | Sumár */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 [&>*]:min-w-0">
-        <PlatbaK
-          iban={row.supplier_iban}
-          vs={row.variable_symbol}
-          ks={row.constant_symbol}
-          ss={row.specific_symbol}
-          doplnok={bokom}
-        />
-        <SumarK
-          rozpis={rozpisPrijatej(row)}
-          sadzby={sadzbyKrajiny(krajina, row.delivery_date ?? row.issue_date)}
-          mena={menaDokladu}
-          celkom={Number(row.amount_total ?? 0)}
-        />
-      </div>
-
       {row.note ? (
         <KartaK nadpis="Poznámka">
           <p className="whitespace-pre-wrap text-sm">{row.note}</p>
         </KartaK>
       ) : null}
 
-      {/* 7. História (zbalená) a komentáre */}
+      {/* 8. História (zbalená) */}
       {!navrh ? (
         <ZbaleneK nadpis="História dokladu">
           <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} />
         </ZbaleneK>
-      ) : null}
-      {!navrh ? (
-        <div id="komentare" className="scroll-mt-24">
-          <KomentarePanel companyId={row.company_id} agenda="prijata" id={row.id} />
-        </div>
       ) : null}
 
       {okno ? (

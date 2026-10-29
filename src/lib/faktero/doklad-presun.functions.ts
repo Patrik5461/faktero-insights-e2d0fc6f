@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
+import { CHYBA_PRESUNU_BLOCKU, jeSkutocnyBlocek } from "./doklad-je-blocek";
 
 /**
  * Presun dokladu medzi prijaté faktúry.
@@ -41,6 +42,9 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
       .maybeSingle();
     if (chybaCitania) throw new Error(chybaCitania.message);
     if (!doklad) throw new Error("Doklad sa nenašiel.");
+    // Bloček z pokladnice faktúrou nie je — ponuka sa pri ňom neukazuje a
+    // server to stráži aj pre staršie appky či priame volanie.
+    if (jeSkutocnyBlocek(doklad)) throw new Error(CHYBA_PRESUNU_BLOCKU);
 
     /* --- príloha --- */
     let file_path: string | null = null;

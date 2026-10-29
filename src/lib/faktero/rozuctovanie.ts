@@ -6,6 +6,7 @@
   Súčty po sadzbách musia sedieť s rozpisom DPH dokladu na cent — inak by
   Pohoda zaúčtovala inú daň, než aká ide do priznania z Faktera.
 */
+import { kodClenenia } from "./auto-uctovanie";
 
 export type RiadokRozuctovania = {
   predkontacia: string | null;
@@ -266,7 +267,15 @@ export function rozuctovaniePodlaPomeru(
       zvysokD = r2(zvysokD - d);
       out.push({
         predkontacia: c.predkontacia,
-        clenenie: c.odpocet ? clenenie : (p.clenenieBezOdpoctu ?? clenenie),
+        /*
+          Časť bez odpočtu nesmie dostať členenie dokladu (PD) — Pohoda by si
+          odpočítala celú DPH, nielen podiel s nárokom (PHM 50/50 tak išlo
+          s celou DPH na odpočet). Bez vlastného kódu pri pomere platí PN.
+        */
+        clenenie: c.odpocet
+          ? clenenie
+          : (p.clenenieBezOdpoctu ??
+            (clenenie ? kodClenenia("tuzemsko_bez_odpoctu", "prijate", []) : null)),
         sadzba: s.sadzba,
         zaklad: z,
         dph: d,

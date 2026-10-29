@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, MessageSquare, Trash2 } from "lucide-react";
@@ -13,15 +13,19 @@ type Komentar = { id: string; user_id: string; text: string; upozornit: string[]
 /**
  * Komentáre k dokladu — otázka účtovníčke, vysvetlenie výdavku. Označený
  * kolega dostane upozornenie do zvončeka.
+ * `children` sa vykreslí na konci tej istej karty (interná poznámka k dokladu),
+ * aby vedľa seba neboli dve karty s takmer rovnakým názvom.
  */
 export function KomentarePanel({
   companyId,
   agenda,
   id,
+  children,
 }: {
   companyId: string;
   agenda: AgendaSchvalovania;
   id: string;
+  children?: ReactNode;
 }) {
   const { t, jazyk } = useT();
   const nacitajLudi = useServerFn(nastavenieSchvalovaniaFn);
@@ -178,6 +182,7 @@ export function KomentarePanel({
           {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Pridať komentár")}
         </button>
       </div>
+      {children ? <div className="mt-4 border-t border-border pt-3">{children}</div> : null}
     </div>
   );
 }

@@ -338,11 +338,22 @@ export const zmazNespracovaneFn = createServerFn({ method: "POST" })
  * dokladov, aby sa dal zaradiť rovnako ako všetko ostatné — naskenovaná
  * faktúra totiž vznikla ako bloček a človek jej druh musí vedieť zmeniť.
  * PDF sa navrhne ako faktúra, fotka ako bloček.
+ *
+ * Skutočný bloček (eKasa, český QR, druh bloček) sa nepresúva — v
+ * Nespracovaných by sa dal prehodiť na faktúru. Vráti `{ id: null }` a
+ * otvorí sa rovno detail bločku.
  */
 export const blocekDoNespracovanychFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    const { data: e } = await (context.supabase as any)
+      .from("expense_documents")
+      .select("source, qr_raw, document_number, ai_raw")
+      .eq("id", data.id)
+      .maybeSingle();
+    const { jeSkutocnyBlocek } = await import("./doklad-je-blocek");
+    if (jeSkutocnyBlocek(e)) return { id: null as string | null };
     const { presunBlocekDoNespracovanych } = await import("./nespracovane.server");
     return presunBlocekDoNespracovanych(context.supabase as any, data.id, context.userId);
   });

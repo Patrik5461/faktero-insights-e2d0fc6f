@@ -81,7 +81,7 @@ export function VyberStavuDokladu({
 }
 
 /**
- * Komentár k dokladu — pre ľudí vo firme, do účtovníctva sa neprenáša
+ * Interná poznámka k dokladu (stĺpec `komentar`) — pre ľudí vo firme, do účtovníctva sa neprenáša
  * (na rozdiel od účtovnej poznámky). Uloží sa pri opustení políčka.
  */
 export function KomentarDokladu({
@@ -112,19 +112,19 @@ export function KomentarDokladu({
     if (error) return toast.error(error.message);
     setUlozeny(text);
     onZmena?.(text.trim() || null);
-    toast.success(t("Komentár uložený"));
+    toast.success(t("Poznámka uložená"));
   }
 
   return (
     <label className="block min-w-0">
-      <span className="mb-1 block text-sm font-medium">{t("Komentár")}</span>
+      <span className="mb-1 block text-sm font-medium">{t("Interná poznámka")}</span>
       <textarea
         rows={2}
         maxLength={1000}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => void uloz()}
-        placeholder={t("Komentár (do účtovníctva sa neprenáša)")}
+        placeholder={t("Interná poznámka (do účtovníctva sa neprenáša)")}
         className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
       />
       <span className="block text-right text-[11px] text-muted-foreground">{text.length}/1000</span>

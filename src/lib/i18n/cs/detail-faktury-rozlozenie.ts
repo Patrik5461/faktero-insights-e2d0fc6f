@@ -1,0 +1,25 @@
+// Detail faktury s náhledem PDF: karta „Údaje pro účetní“ a interní poznámka.
+export default {
+  "Údaje pre účtovníka": "Údaje pro účetní",
+  "kurz {kurz}": "kurz {kurz}",
+  "Zostáva uhradiť {suma}": "Zbývá uhradit {suma}",
+  "čiastočne uhradená": "částečně uhrazená",
+  "Doklad je zamknutý proti úpravám": "Doklad je zamčený proti úpravám",
+  zamknutá: "zamčená",
+  "Interná poznámka (do účtovníctva sa neprenáša)": "Interní poznámka (do účetnictví se nepřenáší)",
+  "Osobitná úprava — cestovná služba": "Zvláštní režim — cestovní služba",
+  "Osobitná úprava — použitý tovar": "Zvláštní režim — použité zboží",
+  "Osobitná úprava — umelecké diela": "Zvláštní režim — umělecká díla",
+  "Osobitná úprava — zberateľské predmety a starožitnosti":
+    "Zvláštní režim — sběratelské předměty a starožitnosti",
+  "Služba do EÚ (prenesenie daňovej povinnosti)": "Služba do EU (přenesení daňové povinnosti)",
+  "Trojstranný obchod v EÚ": "Třístranný obchod v EU",
+  "Dodanie tovaru do EÚ (oslobodené)": "Dodání zboží do EU (osvobozené)",
+  "Vývoz mimo EÚ (oslobodené)": "Vývoz mimo EU (osvobozené)",
+  "Prenesenie daňovej povinnosti (PDP)": "Přenesení daňové povinnosti (PDP)",
+  "Prenesenie daňovej povinnosti pri časti položiek": "Přenesení daňové povinnosti u části položek",
+  OSS: "OSS",
+  "Služba z EÚ (prenesenie daňovej povinnosti)": "Služba z EU (přenesení daňové povinnosti)",
+  "Bez odpočtu DPH": "Bez odpočtu DPH",
+  "Odovzdaná do účtovníctva": "Předaná do účetnictví",
+};

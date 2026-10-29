@@ -72,8 +72,10 @@ import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
 import { StavDokladuOdznak, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
 import { useCiselnikyDokladov, filtreStavuAStitkov, splnaStavAStitok } from "@/hooks/useCiselnikyDokladov";
 import { dovodZamku, NAZOV_ZAMKU } from "@/lib/faktero/doklady-hromadne";
+import { daSaPresunutMedziPrijate } from "@/lib/faktero/doklad-je-blocek";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
+import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doklady — Faktero") }] }),
@@ -271,6 +273,14 @@ function DokladyPage() {
     reset: [zalozka, month],
     potrebneId: posledny.id,
   });
+  // Sken bločku vedľa zoznamu — pri kontrole netreba otvárať každý doklad zvlášť.
+  const bocny = useBocnyNahlad("doklady");
+  useSipkyNahladu(
+    bocny.zapnuty,
+    rad.zoradene.map((r: any) => r.id),
+    bocny.vybrany,
+    bocny.setVybrany,
+  );
   /** Zmena mesiaca — `?mesiac=` z odkazu sa pri tom zahodí, nech v adrese nie sú dva. */
   function setMonth(m: string) {
     navigate({
@@ -529,7 +539,15 @@ function DokladyPage() {
       .maybeSingle()
       .then(({ data }) => setPolozkyBlockovFirmy(Boolean((data as any)?.pohoda_polozky_blockov)));
   }, [volbyExportu, cid]);
-  async function handleExport(markExported: boolean, volby?: VolbyExportu) {
+  /**
+   * Export do Pohody: `zip` = pohoda.xml + CSV + skeny, `xml` = len pohoda.xml
+   * (pri prelome rokov jeden súbor na rok).
+   */
+  async function handleExport(
+    markExported: boolean,
+    volby?: VolbyExportu,
+    format: "xml" | "zip" = volby?.format ?? "zip",
+  ) {
     if (!cid) return;
     const vyber = selected.size ? rows.filter((r) => selected.has(r.id)) : rows;
     const nesprac = vyber.filter((r) => r.status === "new").length;
@@ -558,20 +576,43 @@ function DokladyPage() {
           aj_odovzdane: volby ? volby.ajOdovzdane : undefined,
           radenie: volby?.radenie ?? null,
           polozky: volby?.polozky ?? null,
+          format,
         },
       });
-      const bin = atob(res.base64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "application/zip" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(t("Exportované doklady: {n}", { n: res.count }));
-      toastNeodovzdane(t, (res as any).preskocene);
+      const stiahni = (blob: Blob, nazov: string) => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = nazov;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      };
+      if (format === "xml") {
+        for (const f of res.subory)
+          stiahni(new Blob([f.xml], { type: "application/xml;charset=utf-8" }), f.fileName);
+        toast.success(
+          t("XML pre Pohodu: {n} dokladov", { n: res.v_xml }) +
+            (res.subory.length > 1 ? " " + t("v {n} súboroch podľa roka", { n: res.subory.length }) : ""),
+        );
+        toastNeodovzdane(t, res.preskocene);
+      } else {
+        const bin = atob(res.base64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        stiahni(new Blob([bytes], { type: "application/zip" }), res.filename);
+        if (!res.v_xml) {
+          // Bez XML je ZIP pre Pohodu nepoužiteľný — povedať to nahlas, nie „Exportované“.
+          toast.error(t("V ZIP-e nie je XML pre Pohodu — žiadny doklad neprešiel kontrolou"), {
+            description: (res.preskocene ?? []).slice(0, 6).join(" · "),
+            duration: 20000,
+          });
+        } else {
+          toast.success(
+            t("Exportované doklady: {n}", { n: res.count }) +
+              (res.v_xml < res.count ? " · " + t("v XML pre Pohodu {n}", { n: res.v_xml }) : ""),
+          );
+          toastNeodovzdane(t, res.preskocene);
+        }
+      }
       if (markExported) refresh();
     } catch (e: any) {
       toast.error(e?.message ?? t("Export zlyhal"));
@@ -664,9 +705,19 @@ function DokladyPage() {
             <button
               onClick={() => handleExport(false)}
               disabled={exporting || !rows.length}
+              title={t("pohoda.xml, súpiska CSV a skeny dokladov")}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
               <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : t("všetko")}
+            </button>
+            <button
+              onClick={() => handleExport(false, undefined, "xml")}
+              disabled={exporting || !rows.length}
+              title={t("Len pohoda.xml na import do Pohody, bez skenov (tie sú v ZIP-e)")}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" /> {t("XML pre Pohodu")}{" "}
+              {selected.size ? `(${selected.size})` : t("všetko")}
             </button>
             <button
               onClick={() => setVolbyExportu(true)}
@@ -750,6 +801,7 @@ function DokladyPage() {
 
         <DocumentListToolbar
           lf={lf}
+          previewToggle={bocny}
           searchPlaceholder="Dodávateľ, IČO, číslo…"
           filters={[
             {
@@ -856,6 +908,7 @@ function DokladyPage() {
               onHotovo={() => void refresh(true)}
               pdfZip={() => void handleExport(false)}
               pdfZipNazov={t("Stiahnuť ZIP (skeny + XML)")}
+              xmlPohoda={() => void handleExport(false, undefined, "xml")}
               zmazat={() => void zmazVybrane()}
             />
           )}
@@ -878,8 +931,9 @@ function DokladyPage() {
           {volbyExportu ? (
             <VolbyExportuOkno
               pocet={selected.size || rows.length}
-              nazov={t("Bločky — ZIP so XML pre Pohodu a skenmi")}
+              nazov={t("Bločky do Pohody — samotné XML na import, alebo ZIP so XML a skenmi")}
               ponukaPolozky={{ predvolene: polozkyBlockovFirmy }}
+              ponukaFormat
               onClose={() => setVolbyExportu(false)}
               onExport={(v) => handleExport(v.oznacit, v)}
             />
@@ -949,6 +1003,19 @@ function DokladyPage() {
                     {z.dovody.map((x: string) => t(x)).join(" · ")}
                   </span>
                 </span>
+                {/* Pred potvrdením si treba bloček pozrieť — v bočnom náhľade, ak je zapnutý, inak v novej karte, aby zoznam návrhov ostal. */}
+                {z.expenseId && (
+                  <button
+                    onClick={() => {
+                      const id = z.expenseId as string;
+                      if (bocny.aktivny() && rows.some((x: any) => x.id === id)) bocny.setVybrany(id);
+                      else window.open(`/doklady/novy?id=${encodeURIComponent(id)}`, "_blank", "noopener");
+                    }}
+                    className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {t("Náhľad bločku")}
+                  </button>
+                )}
                 <button
                   disabled={parujem === z.transactionId}
                   onClick={() => sparuj(z)}
@@ -975,6 +1042,28 @@ function DokladyPage() {
           <SummaryCard label={t("Celkom")} value={totals.total} highlight />
         </div>
 
+        <SNahladom
+          zapnuty={bocny.zapnuty}
+          vybrany={bocny.vybrany}
+          nazov={(() => {
+            const r: any = rows.find((x: any) => x.id === bocny.vybrany);
+            return r ? [r.supplier_name, r.document_number].filter(Boolean).join(" · ") || t("Bloček") : null;
+          })()}
+          nacitaj={async (id) => {
+            const r: any = vsetkyRiadky.find((x: any) => x.id === id);
+            if (!r?.file_path) return null;
+            // Podpísaný odkaz vydá server zo storage `expense-receipts` — sken bločku býva fotka, niekedy PDF.
+            const { url } = await urlFn({ data: { file_path: r.file_path } });
+            if (!url) return null;
+            const pdf = (r.file_mime ?? "").includes("pdf") || /\.pdf$/i.test(r.file_path);
+            return { url, obrazok: !pdf };
+          }}
+          onOtvorit={(id) => {
+            posledny.zapamataj(id);
+            navigate({ to: "/doklady/novy", search: { id } as any });
+          }}
+          onZavriet={() => bocny.setVybrany(null)}
+        >
         <div className="overflow-x-auto rounded-2xl border border-border bg-card">
           {loading ? (
             <div className="p-12 text-center text-sm text-muted-foreground">{t("Načítavam…")}</div>
@@ -1054,7 +1143,16 @@ function DokladyPage() {
                   <tr
                     key={r.id}
                     {...posledny.riadok(r.id)}
-                    className={`border-t border-border ${posledny.riadok(r.id).className}`}
+                    data-nahlad-id={r.id}
+                    className={`border-t border-border ${posledny.riadok(r.id).className} ${bocny.zapnuty ? "cursor-pointer" : ""} ${bocny.zapnuty && bocny.vybrany === r.id ? "bg-primary/10" : ""}`}
+                    onClick={(e) => {
+                      // Pri zapnutom náhľade vyberie riadok; tlačidlá a výbery v riadku robia ďalej svoje.
+                      if (!bocny.aktivny()) return;
+                      const ciel = e.target as HTMLElement;
+                      if (ciel.closest("button, a, input, select, textarea, label, [role='combobox'], [role='button']"))
+                        return;
+                      bocny.setVybrany(r.id);
+                    }}
                   >
                     <td className="px-3 py-2">
                       <input
@@ -1071,7 +1169,9 @@ function DokladyPage() {
                         onClick={() =>
                           {
                           posledny.zapamataj(r.id);
-                          navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+                          // Zapnutý náhľad ukáže sken vedľa zoznamu, detail sa otvorí z neho.
+                          if (bocny.aktivny()) bocny.setVybrany(r.id);
+                          else navigate({ to: "/doklady/novy", search: { id: r.id } as any });
                         }
                         }
                         className="text-left hover:underline"
@@ -1316,14 +1416,17 @@ function DokladyPage() {
                           <FileText className="h-4 w-4" />
                         </button>
                       )}
-                      <button
-                        onClick={() => doPrijatych(r)}
-                        disabled={presuvam === r.id}
-                        title={t("Presunúť medzi prijaté faktúry")}
-                        className="rounded-md p-1.5 hover:bg-secondary disabled:opacity-50"
-                      >
-                        <FileInput className="h-4 w-4" />
-                      </button>
+                      {/* Bloček z pokladnice faktúrou nie je — presun sa ponúka len tomu, čo ňou byť môže. */}
+                      {daSaPresunutMedziPrijate(r) && (
+                        <button
+                          onClick={() => doPrijatych(r)}
+                          disabled={presuvam === r.id}
+                          title={t("Presunúť medzi prijaté faktúry")}
+                          className="rounded-md p-1.5 hover:bg-secondary disabled:opacity-50"
+                        >
+                          <FileInput className="h-4 w-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => del(r.id)}
                         title={t("Zmazať")}
@@ -1352,6 +1455,7 @@ function DokladyPage() {
             </div>
           ) : null}
         </div>
+        </SNahladom>
         {kos && getActiveCompanyId() && (
           <KosDokladovOkno
             companyId={getActiveCompanyId()!}

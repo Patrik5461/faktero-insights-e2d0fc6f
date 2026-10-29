@@ -37,6 +37,7 @@ import type { Kluc } from "@/lib/mobile/preklady";
 import { OznacenieDokladu, PoznamkaDokladu } from "./DokladOznacenie";
 import { FilterChips } from "./ui";
 import { PrijateFaktury } from "./PrijateFaktury";
+import { daSaPresunutMedziPrijate } from "@/lib/faktero/doklad-je-blocek";
 /**
  * Prijaté doklady v mobilnej aplikácii.
  *
@@ -73,6 +74,9 @@ type Doklad = {
   komentar?: string | null;
   stav_id?: string | null;
   stitky?: string[] | null;
+  /* Podľa nich sa pozná bloček z pokladnice — ten sa medzi prijaté faktúry nepresúva. */
+  qr_raw?: string | null;
+  ai_raw?: unknown;
 };
 
 /** Bločky a prijaté faktúry sú v Dokladoch vedľa seba — prepína ich lišta hore. */
@@ -1034,15 +1038,18 @@ function DetailDokladu({
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={doPrijatych}
-          disabled={busy || presuvam}
-          className="flex w-full items-center justify-center gap-2 rounded-app-sm border border-app-ramik px-4 py-3 text-sm disabled:opacity-50"
-        >
-          <FileInput className="h-4 w-4" />
-          {presuvam ? t("pd.presuvam") : t("pd.presunut")}
-        </button>
+        {/* Bloček z pokladnice faktúrou nie je — presun sa ponúka len tomu, čo ňou byť môže. */}
+        {daSaPresunutMedziPrijate(doklad) && (
+          <button
+            type="button"
+            onClick={doPrijatych}
+            disabled={busy || presuvam}
+            className="flex w-full items-center justify-center gap-2 rounded-app-sm border border-app-ramik px-4 py-3 text-sm disabled:opacity-50"
+          >
+            <FileInput className="h-4 w-4" />
+            {presuvam ? t("pd.presuvam") : t("pd.presunut")}
+          </button>
+        )}
 
         {mazem ? (
           <div className="rounded-app border border-app-chyba/40 bg-app-chyba-jemna p-4">

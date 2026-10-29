@@ -563,6 +563,12 @@ const sections: HelpSection[] = [
         <p>Pri exporte prijatých faktúr a bločkov sa otvorí okno s voľbami:</p>
         <ul>
           <li>
+            <strong>Súbor</strong> (bločky) — <strong>XML pre Pohodu</strong> stiahne len pohoda.xml
+            na import (Súbor → Dátová komunikácia → XML import/export),{" "}
+            <strong>ZIP (XML + skeny)</strong> k nemu pridá súpisku v CSV a skeny dokladov. Obe
+            tlačidlá sú aj priamo nad zoznamom Bločkov a v ponuke Hromadná akcia.
+          </li>
+          <li>
             <strong>Dátum zaúčtovania</strong> — pre doklady z už uzavretého obdobia. Prázdne =
             dátum dokladu.
           </li>
@@ -583,6 +589,11 @@ const sections: HelpSection[] = [
             naimportujte do svojho roka.
           </li>
         </ul>
+        <p>
+          Doklad, ktorý by Pohoda zaúčtovala zle, do XML nejde a export vypíše prečo — napríklad
+          hotovostný bloček, keď sa bločky posielajú podľa platby a firma nemá vyplnenú skratku
+          pokladne. V ZIP-e je ten zoznam aj v súbore pohoda-nevyvezene.txt.
+        </p>
         <p>
           Na stránke <Link to="/uctovnictvo/predkontacie">Predkontácie</Link> v časti{" "}
           <em>Export a spracovanie dokladov</em> nastavíte:

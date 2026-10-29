@@ -70,6 +70,10 @@ import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DetailSNahladom, useNahladVDetaile } from "@/components/faktero/BocnyNahlad";
+import { UdajePreUctovnika, useSirokaPreNahlad, type UdajeUctovnika } from "@/components/faktero/UdajePreUctovnika";
+import { ZbaleneK } from "@/components/faktero/DetailDokladuKompaktny";
+import { rezimDphPrijatej, stavZauctovania } from "@/lib/faktero/udaje-pre-uctovnika";
+import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { useDizajn } from "@/hooks/useDizajn";
 import { PrijataDetailKompaktna } from "@/components/faktero/PrijataDetailKompaktna";
 import { KartaUhrady, UhradyOkno, useUhradyPrijatej } from "@/components/faktero/UhradyPrijatej";
@@ -133,6 +137,7 @@ function PurchaseInvoiceDetail() {
   const [nahlad, setNahlad] = useState<string | null>(null);
   // Doklad stále vľavo vedľa údajov — pri účtovaní ho netreba hľadať pod formulárom.
   const nahladDetail = useNahladVDetaile();
+  const sirokaPreNahlad = useSirokaPreNahlad();
   // Kompaktné rozloženie má vlastné usporiadanie detailu (jeden stĺpec kariet).
   const kompaktne = useDizajn() === "kompaktny";
   const [oknoUhrad, setOknoUhrad] = useState(false);
@@ -685,6 +690,376 @@ function PurchaseInvoiceDetail() {
       </>
     );
 
+  /*
+    Kúsky detailu. Skladajú sa v dvoch rozloženiach: bez náhľadu (hlavný
+    stĺpec + bočný 320 px) a s dokladom vľavo — vtedy je vpravo jeden stĺpec,
+    navrchu údaje pre účtovníka a úhrada, a to, čo len opakuje doklad
+    (strany, položky, poznámka), je zbalené v „Údajoch faktúry“.
+  */
+  const pdfRozlozenie = nahladDetail.zapnuty && !!row.file_path && sirokaPreNahlad;
+  const udajeUctovnika: UdajeUctovnika = {
+    cislo: row.invoice_number,
+    druh: titulok,
+    stranaNadpis: "Dodávateľ",
+    strana: {
+      nazov: row.supplier_name,
+      ico: row.supplier_ico,
+      dic: row.supplier_dic,
+      icDph: row.supplier_ic_dph,
+    },
+    vystavenie: row.issue_date,
+    dodanie: row.delivery_date,
+    splatnost: row.due_date ? popisSplatnosti(row) : null,
+    vs: row.variable_symbol,
+    formaUhrady: row.payment_method ? t(row.payment_method) : null,
+    mena: row.currency ?? "EUR",
+    kurz: row.exchange_rate,
+    rozpis: rozpisPrijatej(row).map((x) => ({
+      sadzba: x.sadzba,
+      zaklad: x.zaklad,
+      dan: x.dph,
+      prenesenie: Boolean(x.pdp),
+    })),
+    zaklad: Number(row.amount_without_vat ?? 0),
+    dph: Number(row.vat_amount ?? 0),
+    zlava: Number(row.discount_total ?? 0),
+    zaloha: Number(row.advance_amount ?? 0) > 0 ? Number(row.advance_amount) : null,
+    kUhrade: uhradyFaktury.stav.naUhradu,
+    spolu: Number(row.amount_total ?? 0),
+    rezimy: rezimDphPrijatej(row),
+    uhrada: {
+      uhradena: uhradyFaktury.stav.stav === "uhradena",
+      datum: row.payment_date,
+      zostava: uhradyFaktury.stav.zostava,
+      ciastocne: uhradyFaktury.stav.stav === "ciastocne",
+      bezUhrady: navrh || row.status === "cancelled" || row.status === "draft",
+    },
+    zauctovanie:
+      row.type === "regular" && !navrh
+        ? {
+            ...stavZauctovania(row),
+            predkontacia: row.pohoda_predkontacia,
+            clenenie: row.pohoda_clenenie_dph,
+            kv: row.kv_clenenie,
+          }
+        : null,
+  };
+  const stitkyAStav = !navrh ? (
+    <>
+      <StitkyDokladu
+        tabulka="purchase_invoices"
+        id={row.id}
+        stitky={(row as any).stitky ?? []}
+        zamknute={Boolean(row.exported_at || (row as any).locked_at)}
+        companyId={row.company_id}
+      />
+      {ciselnikyFirmy.stavy.length ? (
+        <label className="mt-3 block sm:max-w-[16rem]">
+          <span className="mb-1 block text-sm font-medium">{t("Stav dokladu")}</span>
+          <VyberStavuDokladu
+            key={row.id}
+            tabulka="purchase_invoices"
+            id={row.id}
+            stavId={(row as any).stav_id}
+            stavy={ciselnikyFirmy.stavy}
+          />
+        </label>
+      ) : null}
+    </>
+  ) : null;
+  /* Interná poznámka je v tej istej karte ako komentáre — dva skoro rovnaké názvy mätli. */
+  const kartaKomentare = !navrh ? (
+    <KomentarePanel companyId={row.company_id} agenda="prijata" id={row.id}>
+      <KomentarDokladu tabulka="purchase_invoices" id={row.id} komentar={(row as any).komentar} />
+    </KomentarePanel>
+  ) : null;
+  const vazbaUhrady = uhrada ? (
+    <div className="mt-1 flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs">
+      <span className="min-w-0">
+        <span className="block font-medium">{t("Zaplatené z účtu")}</span>
+        <span className="block truncate text-muted-foreground">
+          {datumNaDoklade(uhrada.datum)}
+          {uhrada.protistrana ? ` · ${uhrada.protistrana}` : ""}
+        </span>
+      </span>
+      <button
+        onClick={zrusVazbu}
+        className="shrink-0 rounded border border-border px-2 py-1 text-muted-foreground hover:bg-background"
+      >
+        {t("Zrušiť väzbu")}
+      </button>
+    </div>
+
+  ) : null;
+  /* `sVazbou` — väzba na úhradu z banky; pri náhľade je v platbe, inak pri dátumoch. */
+  const kartaStrany = (sVazbou: boolean) => (
+    <div className="grid min-w-0 gap-6 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 sm:p-6">
+      <div className="min-w-0 break-words">
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          {t("Dodávateľ")}
+        </div>
+        <div className="mt-1 font-medium">{row.supplier_name}</div>
+        {(row.supplier_street || row.supplier_city) && (
+          <div className="text-sm text-muted-foreground">
+            {[row.supplier_street, [row.supplier_zip, row.supplier_city].filter(Boolean).join(" ")]
+              .filter(Boolean)
+              .join(", ")}
+          </div>
+        )}
+        <div className="mt-2 text-sm">
+          {t("IČO")}: {row.supplier_ico ?? "—"} · {t("DIČ")}: {row.supplier_dic ?? "—"}
+        </div>
+        {row.supplier_ic_dph && (
+          <div className="text-sm">
+            {t("IČ DPH")}: {row.supplier_ic_dph}
+          </div>
+        )}
+        {row.supplier_iban && (
+          <div className="mt-2 font-mono text-sm">{row.supplier_iban}</div>
+        )}
+        {row.variable_symbol && (
+          <div className="text-sm text-muted-foreground">
+            {t("VS")}: {row.variable_symbol}
+          </div>
+        )}
+      </div>
+      <div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Dátumy")}</div>
+        <Row label={t("Vystavenie")} value={datumNaDoklade(row.issue_date)} />
+        <Row
+          label={t("Dodanie (daňové plnenie)")}
+          value={
+            row.delivery_date
+              ? datumNaDoklade(row.delivery_date)
+              : t("{datum} (ako vystavenie)", { datum: datumNaDoklade(row.issue_date) })
+          }
+        />
+        <Row label={t("Prijatie")} value={datumNaDoklade(row.received_date)} />
+        <Row label={t("Splatnosť")} value={popisSplatnosti(row)} />
+        {row.payment_date && <Row label={t("Úhrada")} value={datumNaDoklade(row.payment_date)} />}
+        {sVazbou && vazbaUhrady}
+      </div>
+    </div>
+  );
+  const kartaPlatba = (sVazbou: boolean) => (
+    <div className="rounded-xl border border-border bg-card p-5 text-sm">
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+        <Wallet className="h-3.5 w-3.5" /> {t("Platba")}
+      </div>
+      <div className="mt-2">
+        {t("Spôsob:")} {row.payment_method ? t(row.payment_method) : "—"}
+      </div>
+      <div>
+        {t("Splatnosť:")} {popisSplatnosti(row)}
+      </div>
+      {predlzena(row) && (
+        <div className="text-xs text-muted-foreground">
+          {t("Oprava odpočtu podľa § 53b sa počíta od pôvodnej splatnosti.")}
+          {row.predlzenie_poznamka
+            ? " " + t("Dohoda: {text}", { text: row.predlzenie_poznamka })
+            : ""}
+        </div>
+      )}
+      <div className="mt-2">
+        <PredlzitSplatnost druh="prijata" faktura={row} onZmena={load} />
+      </div>
+      {row.payment_date && (
+        <div>
+          {t("Uhradené:")} {datumNaDoklade(row.payment_date)}
+        </div>
+      )}
+      {sVazbou && vazbaUhrady}
+    </div>
+  );
+  const kartyHore = (
+    <>
+      {samo && <SamofakturaPanel row={row} onZmena={load} />}
+      <RegistrPlatcuDph
+        companyId={row.company_id}
+        dic={row.supplier_dic}
+        icDph={row.supplier_ic_dph}
+        iban={row.supplier_iban}
+      />
+    </>
+  );
+  const kartaPrilohy = (
+    <>
+      <PrilohyFaktury druh="purchase_invoice" dokladId={row.id} mozeMenit={!row.exported_at} />
+      {presunPrilohy && (
+        <PresunAkoPrilohuOkno
+          companyId={row.company_id}
+          zdroj={{ agenda: "prijata", id: row.id }}
+          onClose={() => setPresunPrilohy(false)}
+        />
+      )}
+    </>
+  );
+  const kartaPolozky = (
+    <PolozkyDokladu
+      items={row.items}
+      vypnute={row.polozky_vypnute}
+      mena={row.currency}
+      samo={samo}
+      mozeMenit={!row.exported_at}
+      onPrepni={prepniPolozky}
+    />
+  );
+  const kartaPoznamka = row.note ? (
+    <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">
+      {row.note}
+    </div>
+
+  ) : null;
+  const kartaUhradyPrijatej = (
+    <>
+      {!navrh && row.status !== "cancelled" && row.status !== "draft" ? (
+        <KartaUhrady
+          row={row}
+          stav={uhradyFaktury.stav}
+          onOznacit={markPaid}
+          onPridat={() => setOknoUhrad(true)}
+        />
+      ) : null}
+      {oknoUhrad ? (
+        <UhradyOkno
+          row={row}
+          uhrady={uhradyFaktury.uhrady}
+          stav={uhradyFaktury.stav}
+          onClose={() => setOknoUhrad(false)}
+          onZmena={() => {
+            void uhradyFaktury.nacitaj();
+            void load();
+          }}
+        />
+      ) : null}
+    </>
+  );
+  const kartaZakazka = (
+    <>
+      {/* Zákazku sa oplatí dať dodatočne aj na starší nákup — vtedy sa
+          náklad prejaví vo vyhodnotení hneď po uložení. */}
+      {/* `empty:hidden` — bez zákaziek JobPicker nevykreslí nič a ostávala prázdna biela karta. */}
+      <div className="rounded-xl border border-border bg-card p-5 empty:hidden">
+        <JobPicker
+          value={row.job_id ?? ""}
+          onChange={(v) => nastavZakazku(v)}
+          label={t("Zákazka")}
+        />
+      </div>
+    </>
+  );
+  const kartaBanka = (
+    <>
+      {accounts.length > 0 && row.status !== "cancelled" && !navrh && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-900/40">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
+            <Landmark className="h-3.5 w-3.5" /> {t("Zaplatiť cez banku")}
+          </div>
+
+          {!row.supplier_iban ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("Faktúra nemá IBAN dodávateľa — bez neho sa príkaz nedá zadať.")}
+            </p>
+          ) : row.status === "paid" ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("Faktúra je označená ako zaplatená.")}
+            </p>
+          ) : (
+            <>
+              <div className="mt-3 space-y-1 text-sm">
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">{t("Príjemca")}</span>
+                  <span className="text-right">{row.supplier_name}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">{t("IBAN")}</span>
+                  <span className="font-mono text-xs">{row.supplier_iban}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">{t("Suma")}</span>
+                  <span className="font-semibold tabular-nums">
+                    {fmt(Number(row.amount_total), row.currency)}
+                  </span>
+                </div>
+                {row.variable_symbol && (
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground">{t("VS")}</span>
+                    <span className="tabular-nums">{row.variable_symbol}</span>
+                  </div>
+                )}
+              </div>
+
+              <label className="mt-3 block text-xs text-muted-foreground">
+                {t("Z účtu")}
+                <select
+                  value={debtorAccountId}
+                  onChange={(e) => setDebtorAccountId(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+                >
+                  <option value="">{t("Vyberiem v banke")}</option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.account_name ?? a.iban}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button
+                onClick={payViaBank}
+                disabled={paying}
+                className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <Landmark className="h-4 w-4" />
+                {paying ? t("Pripravujem…") : t("Zaplatiť cez banku")}
+              </button>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t("Presmerujeme vás do Tatra banky na podpis. Z účtu sa nič nestrhne, kým platbu nepodpíšete.")}
+              </p>
+            </>
+          )}
+
+          {payments.length > 0 && (
+            <div className="mt-4 border-t border-emerald-200 pt-3 dark:border-emerald-900/40">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                {t("História platieb")}
+              </div>
+              <ul className="mt-2 space-y-2">
+                {payments.map((p) => (
+                  <li key={p.id} className="flex items-start justify-between gap-2 text-sm">
+                    <div className="min-w-0">
+                      <div className="font-medium">
+                        {t(
+                          PAYMENT_STATUS_TEXT[p.transaction_status] ??
+                            p.transaction_status ??
+                            p.status,
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(p.created_at).toLocaleString("sk-SK")} ·{" "}
+                        {fmt(Number(p.amount), p.currency)}
+                      </div>
+                      {p.error_message && (
+                        <div className="text-xs text-rose-700">{p.error_message}</div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => onRefreshPayment(p.id)}
+                      title={t("Načítať aktuálny stav z banky")}
+                      className="rounded-md border border-border bg-background p-1.5 hover:bg-secondary"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <>
       {zdrojovyMail && (
@@ -736,34 +1111,7 @@ function PurchaseInvoiceDetail() {
         menuActions={menu}
       />
       <PageBody>
-        {!navrh && (
-          <div className="mb-4">
-            <StitkyDokladu
-              tabulka="purchase_invoices"
-              id={row.id}
-              stitky={(row as any).stitky ?? []}
-              zamknute={Boolean(row.exported_at || (row as any).locked_at)}
-              companyId={row.company_id}
-            />
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] [&>*]:min-w-0">
-              {ciselnikyFirmy.stavy.length ? (
-                <label className="block">
-                  <span className="mb-1 block text-sm font-medium">{t("Stav dokladu")}</span>
-                  <VyberStavuDokladu
-                    key={row.id}
-                    tabulka="purchase_invoices"
-                    id={row.id}
-                    stavId={(row as any).stav_id}
-                    stavy={ciselnikyFirmy.stavy}
-                  />
-                </label>
-              ) : null}
-              <div className={ciselnikyFirmy.stavy.length ? "" : "sm:col-span-2"}>
-                <KomentarDokladu tabulka="purchase_invoices" id={row.id} komentar={(row as any).komentar} />
-              </div>
-            </div>
-          </div>
-        )}
+        {!navrh && !pdfRozlozenie && <div className="mb-4">{stitkyAStav}</div>}
         <DetailSNahladom
           zobrazit={nahladDetail.zapnuty && !!row.file_path}
           subor={nahlad ? { url: nahlad, obrazok: (row.file_mime ?? "").startsWith("image/") } : undefined}
@@ -779,110 +1127,50 @@ function PurchaseInvoiceDetail() {
             </button>
           }
         >
-        {/* `grid-cols-1` + `min-w-0`: bez nich stĺpec na mobile rástol podľa najširšej tabuľky a stránka sa orezávala. */}
-        <div
-          className={
-            nahladDetail.zapnuty && row.file_path
-              ? "grid grid-cols-1 gap-6 min-[1800px]:grid-cols-[minmax(0,1fr)_300px]"
-              : "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
-          }
-        >
+        {pdfRozlozenie ? (
+          <div className="min-w-0 space-y-4">
+            <UdajePreUctovnika u={udajeUctovnika} />
+            {kartaUhradyPrijatej}
+            {kartaPlatba(true)}
+            {kartaBanka}
+            {kartaZakazka}
+            {kartyHore}
+            {!navrh && (
+              <SchvalovaniePanel companyId={row.company_id} agenda="prijata" id={row.id} onZmena={load} />
+            )}
+            {stitkyAStav && (
+              <div className="rounded-xl border border-border bg-card p-4">{stitkyAStav}</div>
+            )}
+            {kartaPrilohy}
+            {kartaKomentare}
+            {!navrh && <SpracovalDokladu companyId={row.company_id} agenda="prijata" row={row} />}
+            {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
+            <ZbaleneK nadpis="Údaje faktúry">
+              <div className="space-y-4">
+                {kartaStrany(false)}
+                {kartaPolozky}
+                {kartaPoznamka}
+              </div>
+            </ZbaleneK>
+            {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} />}
+          </div>
+        ) : (
+        /* `grid-cols-1` + `min-w-0`: bez nich stĺpec na mobile rástol podľa najširšej tabuľky a stránka sa orezávala. */
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 space-y-6">
-            {samo && <SamofakturaPanel row={row} onZmena={load} />}
-            <RegistrPlatcuDph
-              companyId={row.company_id}
-              dic={row.supplier_dic}
-              icDph={row.supplier_ic_dph}
-              iban={row.supplier_iban}
-            />
-            <div className="grid min-w-0 gap-6 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 sm:p-6">
-              <div className="min-w-0 break-words">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {t("Dodávateľ")}
-                </div>
-                <div className="mt-1 font-medium">{row.supplier_name}</div>
-                {(row.supplier_street || row.supplier_city) && (
-                  <div className="text-sm text-muted-foreground">
-                    {[row.supplier_street, [row.supplier_zip, row.supplier_city].filter(Boolean).join(" ")]
-                      .filter(Boolean)
-                      .join(", ")}
-                  </div>
-                )}
-                <div className="mt-2 text-sm">
-                  {t("IČO")}: {row.supplier_ico ?? "—"} · {t("DIČ")}: {row.supplier_dic ?? "—"}
-                </div>
-                {row.supplier_ic_dph && (
-                  <div className="text-sm">
-                    {t("IČ DPH")}: {row.supplier_ic_dph}
-                  </div>
-                )}
-                {row.supplier_iban && (
-                  <div className="mt-2 font-mono text-sm">{row.supplier_iban}</div>
-                )}
-                {row.variable_symbol && (
-                  <div className="text-sm text-muted-foreground">
-                    {t("VS")}: {row.variable_symbol}
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Dátumy")}</div>
-                <Row label={t("Vystavenie")} value={datumNaDoklade(row.issue_date)} />
-                <Row
-                  label={t("Dodanie (daňové plnenie)")}
-                  value={
-                    row.delivery_date
-                      ? datumNaDoklade(row.delivery_date)
-                      : t("{datum} (ako vystavenie)", { datum: datumNaDoklade(row.issue_date) })
-                  }
-                />
-                <Row label={t("Prijatie")} value={datumNaDoklade(row.received_date)} />
-                <Row label={t("Splatnosť")} value={popisSplatnosti(row)} />
-                {row.payment_date && <Row label={t("Úhrada")} value={datumNaDoklade(row.payment_date)} />}
-                {uhrada && (
-                  <div className="mt-1 flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs">
-                    <span className="min-w-0">
-                      <span className="block font-medium">{t("Zaplatené z účtu")}</span>
-                      <span className="block truncate text-muted-foreground">
-                        {datumNaDoklade(uhrada.datum)}
-                        {uhrada.protistrana ? ` · ${uhrada.protistrana}` : ""}
-                      </span>
-                    </span>
-                    <button
-                      onClick={zrusVazbu}
-                      className="shrink-0 rounded border border-border px-2 py-1 text-muted-foreground hover:bg-background"
-                    >
-                      {t("Zrušiť väzbu")}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+            {kartyHore}
+            {kartaStrany(true)}
 
             {!navrh && (
               <SchvalovaniePanel companyId={row.company_id} agenda="prijata" id={row.id} onZmena={load} />
             )}
             {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
-            {!navrh && <KomentarePanel companyId={row.company_id} agenda="prijata" id={row.id} />}
+            {kartaKomentare}
             {!navrh && <SpracovalDokladu companyId={row.company_id} agenda="prijata" row={row} />}
             {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} />}
-            <PrilohyFaktury druh="purchase_invoice" dokladId={row.id} mozeMenit={!row.exported_at} />
-            {presunPrilohy && (
-              <PresunAkoPrilohuOkno
-                companyId={row.company_id}
-                zdroj={{ agenda: "prijata", id: row.id }}
-                onClose={() => setPresunPrilohy(false)}
-              />
-            )}
+            {kartaPrilohy}
 
-            <PolozkyDokladu
-              items={row.items}
-              vypnute={row.polozky_vypnute}
-              mena={row.currency}
-              samo={samo}
-              mozeMenit={!row.exported_at}
-              onPrepni={prepniPolozky}
-            />
+            {kartaPolozky}
 
             {/* Na širokej obrazovke je doklad vľavo; tu ostáva pre mobil a pre toho, kto ho skryl. */}
             <div className={nahladDetail.zapnuty ? "lg:hidden" : ""}>
@@ -895,34 +1183,11 @@ function PurchaseInvoiceDetail() {
               />
             </div>
 
-            {row.note && (
-              <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">
-                {row.note}
-              </div>
-            )}
+            {kartaPoznamka}
           </div>
 
           <aside className="min-w-0 space-y-4">
-            {!navrh && row.status !== "cancelled" && row.status !== "draft" ? (
-              <KartaUhrady
-                row={row}
-                stav={uhradyFaktury.stav}
-                onOznacit={markPaid}
-                onPridat={() => setOknoUhrad(true)}
-              />
-            ) : null}
-            {oknoUhrad ? (
-              <UhradyOkno
-                row={row}
-                uhrady={uhradyFaktury.uhrady}
-                stav={uhradyFaktury.stav}
-                onClose={() => setOknoUhrad(false)}
-                onZmena={() => {
-                  void uhradyFaktury.nacitaj();
-                  void load();
-                }}
-              />
-            ) : null}
+            {kartaUhradyPrijatej}
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
               <div className="mt-3 space-y-1 text-sm">
@@ -933,154 +1198,13 @@ function PurchaseInvoiceDetail() {
                 {fmt(Number(row.amount_total), row.currency)}
               </div>
             </div>
-
-            {/* Zákazku sa oplatí dať dodatočne aj na starší nákup — vtedy sa
-                náklad prejaví vo vyhodnotení hneď po uložení. */}
-            {/* `empty:hidden` — bez zákaziek JobPicker nevykreslí nič a ostávala prázdna biela karta. */}
-            <div className="rounded-xl border border-border bg-card p-5 empty:hidden">
-              <JobPicker
-                value={row.job_id ?? ""}
-                onChange={(v) => nastavZakazku(v)}
-                label={t("Zákazka")}
-              />
-            </div>
-            <div className="rounded-xl border border-border bg-card p-5 text-sm">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                <Wallet className="h-3.5 w-3.5" /> {t("Platba")}
-              </div>
-              <div className="mt-2">
-                {t("Spôsob:")} {row.payment_method ? t(row.payment_method) : "—"}
-              </div>
-              <div>
-                {t("Splatnosť:")} {popisSplatnosti(row)}
-              </div>
-              {predlzena(row) && (
-                <div className="text-xs text-muted-foreground">
-                  {t("Oprava odpočtu podľa § 53b sa počíta od pôvodnej splatnosti.")}
-                  {row.predlzenie_poznamka
-                    ? " " + t("Dohoda: {text}", { text: row.predlzenie_poznamka })
-                    : ""}
-                </div>
-              )}
-              <div className="mt-2">
-                <PredlzitSplatnost druh="prijata" faktura={row} onZmena={load} />
-              </div>
-              {row.payment_date && (
-                <div>
-                  {t("Uhradené:")} {datumNaDoklade(row.payment_date)}
-                </div>
-              )}
-            </div>
-
-            {accounts.length > 0 && row.status !== "cancelled" && !navrh && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-900/40">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
-                  <Landmark className="h-3.5 w-3.5" /> {t("Zaplatiť cez banku")}
-                </div>
-
-                {!row.supplier_iban ? (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {t("Faktúra nemá IBAN dodávateľa — bez neho sa príkaz nedá zadať.")}
-                  </p>
-                ) : row.status === "paid" ? (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {t("Faktúra je označená ako zaplatená.")}
-                  </p>
-                ) : (
-                  <>
-                    <div className="mt-3 space-y-1 text-sm">
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground">{t("Príjemca")}</span>
-                        <span className="text-right">{row.supplier_name}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground">{t("IBAN")}</span>
-                        <span className="font-mono text-xs">{row.supplier_iban}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground">{t("Suma")}</span>
-                        <span className="font-semibold tabular-nums">
-                          {fmt(Number(row.amount_total), row.currency)}
-                        </span>
-                      </div>
-                      {row.variable_symbol && (
-                        <div className="flex justify-between gap-2">
-                          <span className="text-muted-foreground">{t("VS")}</span>
-                          <span className="tabular-nums">{row.variable_symbol}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <label className="mt-3 block text-xs text-muted-foreground">
-                      {t("Z účtu")}
-                      <select
-                        value={debtorAccountId}
-                        onChange={(e) => setDebtorAccountId(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
-                      >
-                        <option value="">{t("Vyberiem v banke")}</option>
-                        {accounts.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.account_name ?? a.iban}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <button
-                      onClick={payViaBank}
-                      disabled={paying}
-                      className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                      <Landmark className="h-4 w-4" />
-                      {paying ? t("Pripravujem…") : t("Zaplatiť cez banku")}
-                    </button>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {t("Presmerujeme vás do Tatra banky na podpis. Z účtu sa nič nestrhne, kým platbu nepodpíšete.")}
-                    </p>
-                  </>
-                )}
-
-                {payments.length > 0 && (
-                  <div className="mt-4 border-t border-emerald-200 pt-3 dark:border-emerald-900/40">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {t("História platieb")}
-                    </div>
-                    <ul className="mt-2 space-y-2">
-                      {payments.map((p) => (
-                        <li key={p.id} className="flex items-start justify-between gap-2 text-sm">
-                          <div className="min-w-0">
-                            <div className="font-medium">
-                              {t(
-                                PAYMENT_STATUS_TEXT[p.transaction_status] ??
-                                  p.transaction_status ??
-                                  p.status,
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {new Date(p.created_at).toLocaleString("sk-SK")} ·{" "}
-                              {fmt(Number(p.amount), p.currency)}
-                            </div>
-                            {p.error_message && (
-                              <div className="text-xs text-rose-700">{p.error_message}</div>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => onRefreshPayment(p.id)}
-                            title={t("Načítať aktuálny stav z banky")}
-                            className="rounded-md border border-border bg-background p-1.5 hover:bg-secondary"
-                          >
-                            <RefreshCw className="h-3.5 w-3.5" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Platba hneď pod sumárom — doteraz bola až pod zákazkou. */}
+            {kartaPlatba(false)}
+            {kartaZakazka}
+            {kartaBanka}
           </aside>
         </div>
+        )}
         </DetailSNahladom>
       </PageBody>
     </>
