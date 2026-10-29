@@ -23,7 +23,7 @@ import {
   type JazykDokladu,
 } from "./faktura-jazyk";
 import { pataFirmyDe } from "./firma-de";
-import { krajinaDane } from "./vat-rates";
+import { krajinaDane, sadzbyKrajiny } from "./vat-rates";
 import { popisColnychUdajov } from "./colny-kod";
 
 
@@ -702,12 +702,27 @@ async function vykresliFakturu(
     // na jednom mieste (základ dane a DPH podľa sadzby, § 74 ods. 1).
     // Zálohová faktúra nie je daňový doklad, tam stačí rozpis až pri viacerých sadzbách.
     if (!skupiny.size || ((invoice as any).type === "proforma" && skupiny.size < 2)) return [];
+    /*
+      Všetky sadzby krajiny firmy (SK 23/19/5/0 %), aj s nulovými riadkami —
+      tak, ako ich účtovník pozná z Pohody a rozpisu DPH. Neplatiteľ DPH a
+      zálohová faktúra dostanú len sadzby, ktoré na doklade naozaj sú, rovnako
+      faktúra s prenesením daňovej povinnosti na celom doklade.
+    */
+    const platitel = (company as any).vat_payer !== false;
+    // Pri prenesení na celom doklade DPH nie je žiadna — nulové sadzby by len mýlili.
+    if (platitel && !rcNaDoklade && (invoice as any).type !== "proforma") {
+      const den = String((invoice as any).delivery_date || invoice.issue_date || "").slice(0, 10) || null;
+      for (const sadzba of sadzbyKrajiny(krajinaDane(company.country), den)) {
+        const kluc = String(sadzba);
+        if (!skupiny.has(kluc)) skupiny.set(kluc, { label: "", zaklad: 0, dph: 0, pdp: false, sadzba });
+      }
+    }
     return [...skupiny.values()].sort((a, b) => Number(a.pdp) - Number(b.pdp) || b.sadzba - a.sadzba);
   })();
 
   // Estimate totals block height
-  const totalsRows = 2 + (discount > 0 ? 2 : 0);
-  const rozpisH = rozpisDph.length ? 13 + rozpisDph.length * 14 + 8 : 0;
+  const totalsRows = (rozpisDph.length ? 1 : 2) + (discount > 0 ? 2 : 0);
+  const rozpisH = rozpisDph.length ? 13 + rozpisDph.length * 13 + 8 : 0;
   const totalsH = totalsRows * 18 + rozpisH + 8 + 60;
   ensureSpace(totalsH);
 
@@ -718,19 +733,22 @@ async function vykresliFakturu(
     potom základ dane. Sumy v `invoice` už zľavu obsahujú, preto sa medzisúčet
     dopočítava naspäť.
   */
-  // Bez zľavy je súčet bez DPH priamo základom dane — tak sa aj volá.
-  drawTotalRow(
-    cur,
-    font,
-    discount > 0 ? t.medzisucet : t.zakladDane,
-    fmt(Number(invoice.subtotal) + discount, invoice.currency),
-    totalsX,
-    ty,
-    totalsBlockW,
-    ink,
-    sub,
-  );
-  ty -= 18;
+  // Bez zľavy je súčet bez DPH priamo základom dane — a ten už ukazuje rozpis
+  // po sadzbách, takže riadok navyše je len pri zľave alebo bez rozpisu.
+  if (discount > 0 || !rozpisDph.length) {
+    drawTotalRow(
+      cur,
+      font,
+      discount > 0 ? t.medzisucet : t.zakladDane,
+      fmt(Number(invoice.subtotal) + discount, invoice.currency),
+      totalsX,
+      ty,
+      totalsBlockW,
+      ink,
+      sub,
+    );
+    ty -= 18;
+  }
   if (discount > 0) {
     drawTotalRow(
       cur,
@@ -744,51 +762,60 @@ async function vykresliFakturu(
       sub,
     );
     ty -= 18;
-    drawTotalRow(
-      cur,
-      font,
-      t.zakladDane,
-      fmt(Number(invoice.subtotal), invoice.currency),
-      totalsX,
-      ty,
-      totalsBlockW,
-      ink,
-      sub,
-    );
-    ty -= 18;
+    if (!rozpisDph.length) {
+      drawTotalRow(
+        cur,
+        font,
+        t.zakladDane,
+        fmt(Number(invoice.subtotal), invoice.currency),
+        totalsX,
+        ty,
+        totalsBlockW,
+        ink,
+        sub,
+      );
+      ty -= 18;
+    }
   }
   // Rozpis ako malá tabuľka Sadzba | Základ | DPH — po riadku na sadzbu, aby
   // faktúra zbytočne nenarástla o stranu.
   if (rozpisDph.length) {
-    const stlpecZaklad = totalsX + totalsBlockW * 0.66;
+    // Sadzba | Základ dane | DPH | Spolu — ako sumár v detaile faktúry.
+    const stlpecZaklad = totalsX + totalsBlockW * 0.47;
+    const stlpecDph = totalsX + totalsBlockW * 0.72;
     const pravy = totalsX + totalsBlockW;
     cur.drawText(san(t.sadzba), { x: totalsX, y: ty, size: 8, font, color: sub });
     drawAligned(cur, font, san(t.zakladDane), stlpecZaklad, ty, 8, sub, "right");
-    drawAligned(cur, font, san(t.dph), pravy, ty, 8, sub, "right");
+    drawAligned(cur, font, san(t.dph), stlpecDph, ty, 8, sub, "right");
+    drawAligned(cur, font, san(t.spolu), pravy, ty, 8, sub, "right");
     ty -= 13;
     for (const r of rozpisDph) {
       const nazov = r.pdp ? t.pdp : `${String(r.sadzba).replace(".", ",")}\u00A0%`;
-      cur.drawText(san(nazov), { x: totalsX, y: ty, size: 9.5, font, color: sub });
-      drawAligned(cur, font, san(fmt(r.zaklad, invoice.currency)), stlpecZaklad, ty, 9.5, ink, "right");
+      const prazdny = !r.zaklad && !r.dph;
+      const farba = prazdny ? sub : ink;
+      cur.drawText(san(nazov), { x: totalsX, y: ty, size: 9, font, color: sub });
+      drawAligned(cur, font, san(fmt(r.zaklad, invoice.currency)), stlpecZaklad, ty, 9, farba, "right");
       drawAligned(
         cur,
         font,
         san(r.pdp ? "—" : fmt(r.dph, invoice.currency)),
-        pravy,
+        stlpecDph,
         ty,
-        9.5,
-        ink,
+        9,
+        farba,
         "right",
       );
-      ty -= 14;
+      drawAligned(cur, font, san(fmt(r.zaklad + (r.pdp ? 0 : r.dph), invoice.currency)), pravy, ty, 9, farba, "right");
+      ty -= 13;
     }
     ty -= 4;
   }
-  if (!rcNaDoklade) {
+  // Bez rozpisu suma DPH; s rozpisom je DPH po sadzbách v tabuľke.
+  if (!rcNaDoklade && !rozpisDph.length) {
     drawTotalRow(
       cur,
       font,
-      rozpisDph.length > 1 ? t.dphSpolu : t.dph,
+      t.dph,
       fmt(Number(invoice.vat_total), invoice.currency),
       totalsX,
       ty,
@@ -797,7 +824,7 @@ async function vykresliFakturu(
       sub,
     );
     ty -= 18;
-  } else {
+  } else if (rcNaDoklade) {
     drawTotalRow(
       cur,
       font,
