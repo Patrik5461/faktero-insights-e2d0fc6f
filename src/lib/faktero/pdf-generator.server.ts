@@ -698,7 +698,10 @@ async function vykresliFakturu(
       s0.dph += pdp ? 0 : Number(it.vat_amount ?? 0);
       skupiny.set(kluc, s0);
     }
-    if (skupiny.size < 2) return [];
+    // Rozpis ide na faktúru vždy, aj pri jedinej sadzbe — účtovník ho hľadá
+    // na jednom mieste (základ dane a DPH podľa sadzby, § 74 ods. 1).
+    // Zálohová faktúra nie je daňový doklad, tam stačí rozpis až pri viacerých sadzbách.
+    if (!skupiny.size || ((invoice as any).type === "proforma" && skupiny.size < 2)) return [];
     return [...skupiny.values()].sort((a, b) => Number(a.pdp) - Number(b.pdp) || b.sadzba - a.sadzba);
   })();
 
@@ -715,10 +718,11 @@ async function vykresliFakturu(
     potom základ dane. Sumy v `invoice` už zľavu obsahujú, preto sa medzisúčet
     dopočítava naspäť.
   */
+  // Bez zľavy je súčet bez DPH priamo základom dane — tak sa aj volá.
   drawTotalRow(
     cur,
     font,
-    t.medzisucet,
+    discount > 0 ? t.medzisucet : t.zakladDane,
     fmt(Number(invoice.subtotal) + discount, invoice.currency),
     totalsX,
     ty,
@@ -784,7 +788,7 @@ async function vykresliFakturu(
     drawTotalRow(
       cur,
       font,
-      rozpisDph.length ? t.dphSpolu : t.dph,
+      rozpisDph.length > 1 ? t.dphSpolu : t.dph,
       fmt(Number(invoice.vat_total), invoice.currency),
       totalsX,
       ty,
