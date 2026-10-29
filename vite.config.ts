@@ -18,6 +18,13 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  /*
+   * Statické súbory sa zbalia už pri builde (gzip aj brotli) a server pošle
+   * zbalenú verziu, keď ju prehliadač prijme. Nginx pred appkou baliť nevie
+   * (chýba mu `gzip_proxied`), takže hlavný skript išiel nezbalený — 4 MB
+   * pri každom novom vydaní namiesto ~1 MB.
+   */
+  nitro: { compressPublicAssets: { gzip: true, brotli: true } },
   vite: {
     define: { __FAKTERO_VYDANIE__: JSON.stringify(vydanie) },
     preview: {
