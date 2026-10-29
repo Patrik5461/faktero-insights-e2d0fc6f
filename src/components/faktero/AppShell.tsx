@@ -519,10 +519,7 @@ export function AppShell({
 
             {/* Right cluster */}
             <div className="ml-auto flex items-center gap-1.5">
-              <PrepinacJazyka
-                className="max-md:border-white/30 max-md:[&_button[aria-pressed=false]]:text-primary-foreground/80"
-                kompaktnyClassName="max-md:border-white/30 max-md:text-primary-foreground"
-              />
+              <PrepinacJazyka className="max-md:border-white/30 max-md:text-primary-foreground max-md:hover:bg-white/15 max-md:hover:text-primary-foreground max-md:data-[state=open]:text-primary-foreground" />
               {/* Nahlásenie chyby priamo v hlavičke — v ponuke pod avatarom ho nikto nenašiel. */}
               <button
                 type="button"
