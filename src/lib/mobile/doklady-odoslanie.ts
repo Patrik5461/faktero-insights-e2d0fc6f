@@ -1,5 +1,6 @@
 import type { BlocekVysledok } from "@/lib/faktero/blocek.functions";
 import { dokladNaZaznam, nahrajPrilohu } from "@/lib/faktero/mobil-doklad";
+import { ZDROJ_APKY } from "@/lib/faktero/blocek-z-appky";
 import { fronta, zapisChybu, zmazZFronty, type CakajuciDoklad } from "./doklady-fronta";
 import { isOnline } from "./offline-queue";
 
@@ -50,9 +51,33 @@ async function odosliJeden(d: CakajuciDoklad, nacitaj: NacitajFn, uloz: UlozFn):
     }
   }
 
+  /*
+   * Fotka je pri bločku z appky povinná. Keď sa ju nepodarí nahrať, doklad
+   * ostáva vo fronte a skúsi sa znova — predtým sa uložil bez nej a v
+   * Bločkoch by bol doklad, ku ktorému účtovník nemá čo založiť.
+   */
   const priloha = d.obrazok ? await nahrajPrilohu(d.company_id, d.obrazok) : null;
-  await uloz({ data: dokladNaZaznam(d.company_id, vysledok, d.uhrada, priloha, d.kategoria, d.predvolby) });
+  if (d.obrazok && !priloha) throw new Error("Fotku dokladu sa nepodarilo nahrať — skúsim to znova.");
+  await uloz({ data: zaznamZFronty(d, vysledok, priloha) });
   await zmazZFronty(d.id);
+}
+
+/**
+ * Záznam pre `vydavok-uloz` z dokladu vo fronte.
+ *
+ * Značka appky (`zdroj: "apka"`) ide s každým dokladom, ktorý vznikol s
+ * povinnou fotkou, alebo fotku má — server ho potom uloží rovno do Bločkov a
+ * bez súboru ho odmietne. Starý záznam bez fotky sa pošle bez nej, po starom.
+ */
+export function zaznamZFronty(
+  d: CakajuciDoklad,
+  vysledok: BlocekVysledok,
+  priloha: { path: string; mime: string; size: number } | null,
+) {
+  const zaznam = dokladNaZaznam(d.company_id, vysledok, d.uhrada, priloha, d.kategoria, d.predvolby);
+  return d.fotkaPovinna || d.obrazok
+    ? { ...zaznam, zdroj: ZDROJ_APKY, ...(vysledok.zalohova ? { zalohova: true } : {}) }
+    : zaznam;
 }
 
 /**

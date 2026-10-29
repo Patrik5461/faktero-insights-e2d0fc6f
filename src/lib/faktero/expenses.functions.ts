@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { daSaPorovnat, jeTenIstyDoklad, type OdtlacokDokladu } from "./doklad-duplikat";
 import { daSaSpracovat } from "./doklad-stav";
+import { chybaFotkyZAppky, jeBlocekDoBlockov, kamUlozitVydavok, ZDROJ_APKY } from "./blocek-z-appky";
 
 export type ExpenseInput = {
   company_id: string;
@@ -40,6 +41,13 @@ export type ExpenseInput = {
   pohoda_rad?: string | null;
   int_poznamka?: string | null;
   pohoda_pokladna?: string | null;
+  /**
+   * Volanie z mobilnej aplikácie. Nie je to stĺpec — rozhoduje len o tom, že
+   * bloček musí mať fotku a ide rovno do Bločkov (`blocek-z-appky.ts`).
+   */
+  zdroj?: typeof ZDROJ_APKY;
+  /** Čítanie bločku v appke ho rozpoznalo ako zálohovú faktúru. Nie je stĺpec. */
+  zalohova?: boolean;
 };
 
 const inputSchema = z.object({
@@ -74,6 +82,8 @@ const inputSchema = z.object({
   file_size: z.number().nullable().optional(),
   qr_raw: z.string().nullable().optional(),
   ai_raw: z.any().optional(),
+  zdroj: z.literal(ZDROJ_APKY).optional(),
+  zalohova: z.boolean().optional(),
   items: z
     .array(
       z.object({
@@ -167,8 +177,19 @@ export const findExpenseDuplicateFn = createServerFn({ method: "POST" })
 export const createExpenseFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: ExpenseInput) => inputSchema.parse(data))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data: vstup, context }) => {
     const { supabase, userId } = context;
+    const { zdroj, zalohova, ...data } = vstup;
+    const zAppky = zdroj === ZDROJ_APKY;
+    /*
+      Bloček z appky bez fotky sa neuloží. Appka má tlačidlo Uložiť dovtedy
+      neaktívne; toto je poistka, keby sa to niekde obišlo. Web (formulár)
+      značku neposiela, tam sa dá uložiť aj bez prílohy ako doteraz. Staršie
+      verzie appky ju tiež neposielajú — ich fronta by inak uviazla na chybe,
+      ktorú ich obrazovka nevie vysvetliť.
+    */
+    const bezFotky = chybaFotkyZAppky({ zAppky, filePath: data.file_path });
+    if (bezFotky) throw new Error(bezFotky);
     /*
       Poistka proti dvojitému zápisu. Appka sa na duplicitu pýta ešte pred
       uložením, ale doklad sa odosiela z fronty na pozadí — pokus, ktorý spadne
@@ -188,24 +209,31 @@ export const createExpenseFn = createServerFn({ method: "POST" })
     }
     /*
       Ako v Doklado: bloček s QR kódom (údaje z Finančnej správy) ide rovno
-      medzi Bločky ako spracovaný — keď má sumu aj dátum. Ostatné doklady
-      (fotka bez QR, ručný zápis) sú nespracované a čakajú na kontrolu
-      v Nespracovaných dokladoch. Firma si môže zapnúť, aby aj QR bločky
-      prešli Nespracovanými. Stav od klienta sa nepreberá: staršie verzie
-      appky posielajú „processed" vždy.
+      medzi Bločky ako spracovaný — keď má sumu aj dátum. Od 2026-10-29 tam
+      ide aj odfotený bloček uložený z appky (Patrik: „ak to uložím z
+      aplikácie"). Ostatné doklady (ručný zápis na webe, PDF, zálohová) sú
+      nespracované a čakajú na kontrolu v Nespracovaných dokladoch. Firma si
+      môže zapnúť, aby bločky prešli Nespracovanými. Stav od klienta sa
+      nepreberá: staršie verzie appky posielajú „processed" vždy.
     */
     const zQr = Boolean(qr) && data.source === "qr";
-    let qrDoNespracovanych = false;
-    if (zQr) {
+    const vstupCiela = { zAppky, zQr, mime: data.file_mime, zalohova };
+    let doNespracovanych = false;
+    if (jeBlocekDoBlockov(vstupCiela)) {
       const { data: firma } = await supabase
         .from("companies")
         .select("qr_blocky_do_nespracovanych")
         .eq("id", data.company_id)
         .maybeSingle();
-      qrDoNespracovanych = Boolean((firma as any)?.qr_blocky_do_nespracovanych);
+      doNespracovanych = Boolean((firma as any)?.qr_blocky_do_nespracovanych);
     }
-    const rovnoSpracovany =
-      zQr && !qrDoNespracovanych && data.total_amount != null && Boolean(data.issue_date);
+    const ciel = kamUlozitVydavok({
+      ...vstupCiela,
+      suma: data.total_amount,
+      datum: data.issue_date,
+      doNespracovanych,
+    });
+    const rovnoSpracovany = ciel === "blocky";
     const { data: row, error } = await supabase
       .from("expense_documents")
       .insert({
@@ -218,7 +246,7 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
-    if (zQr && qrDoNespracovanych) {
+    if (ciel === "presun-do-nespracovanych") {
       const { presunBlocekDoNespracovanych } = await import("./nespracovane.server");
       const n = await presunBlocekDoNespracovanych(supabase as any, row.id, userId).catch(() => ({ id: null }));
       if (n.id) return { ...row, nespracovany_id: n.id };

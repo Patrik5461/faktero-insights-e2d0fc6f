@@ -653,6 +653,10 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.skontrolujteDoklad": "Beleg prüfen",
   "app.odfotitDoklad": "Beleg fotografieren",
   "app.papierovyDoklad": "Den Papierbeleg müssen Sie ohnehin aufbewahren — das Foto ersetzt ihn",
+  "app.fotkaPovinna": "Fotografieren Sie den Kassenbon — ohne Foto lässt er sich nicht speichern",
+  "app.fotkaPovinnaPopis": "Das Foto ist der Beleg für Ihre Buchhaltung und für die Steuerprüfung. Der QR-Code allein ersetzt es nicht.",
+  "app.odfotitBlocekTeraz": "Kassenbon fotografieren",
+  "app.najprvOdfotte": "Zuerst den Kassenbon fotografieren",
   "app.vyplnteEmailHeslo": "Füllen Sie E-Mail und Passwort aus.",
   "app.prilohaNenahrata":
     "Der Anhang konnte nicht hochgeladen werden, der Beleg wird ohne ihn gespeichert.",

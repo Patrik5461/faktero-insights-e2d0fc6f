@@ -42,9 +42,16 @@ const sections: HelpSection[] = [
             Nespracovaných dokladov“.
           </li>
           <li>
-            <strong>Bloček bez QR</strong> (fotka, parkovanie, zahraničný), <strong>faktúra</strong>
-            , <strong>zálohová faktúra</strong> a <strong>iný doklad</strong> z appky, nahratie na
-            webe aj doklad z e-mailu idú do Nespracovaných dokladov.
+            <strong>Bloček uložený v appke</strong> ide tiež rovno do <Link to="/doklady">Bločkov</Link>{" "}
+            — aj s fotkou a s tým, čo sa z QR kódu alebo z fotky prečítalo. Bez fotky ho appka
+            neuloží: po načítaní QR kódu si fotku hneď vypýta. Voľba „Bločky s QR kódom ukladať do
+            Nespracovaných dokladov“ platí aj pre bločky z appky a bloček bez sumy alebo dátumu
+            počká v Nespracovaných.
+          </li>
+          <li>
+            <strong>Bloček bez QR</strong> nahratý na webe (parkovanie, zahraničný),{" "}
+            <strong>faktúra</strong>, <strong>zálohová faktúra</strong> a <strong>iný doklad</strong>{" "}
+            z appky, nahratie na webe aj doklad z e-mailu idú do Nespracovaných dokladov.
           </li>
           <li>
             Po kliknutí na <strong>Vytvoriť</strong> sa doklad presunie do Bločkov, Prijatých faktúr

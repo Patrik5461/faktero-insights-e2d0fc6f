@@ -61,6 +61,8 @@ import { DavkaDokladov, type VstupDavky } from "@/components/faktero/mobil/Davka
 import { KameraDokladuHost } from "@/components/faktero/mobil/KameraDokladu";
 import { vyberSubory } from "@/lib/mobile/vyber-suborov";
 import { jeBlockovyQr } from "@/lib/mobile/sken-rozpoznanie";
+import { coChybaBlocku } from "@/lib/faktero/blocek-z-appky";
+import { kameraVStrankeMozna } from "@/lib/mobile/kamera-dokladu";
 import { StavPushu } from "@/components/faktero/mobil/StavPushu";
 import { CislaDopredu } from "@/components/faktero/mobil/CislaDopredu";
 import { datum } from "@/components/faktero/mobil/PrijateDoklady";
@@ -1660,11 +1662,27 @@ function ZachytDokladu({
       if (!(await isOnline())) {
         const { nedostupnyDoklad } = await import("@/lib/mobile/doklady-odoslanie");
         prijmi(nedostupnyDoklad(vstup.qr), prilozene);
+      } else {
+        toast.error(e?.message ?? t("app.citanieZlyhalo"));
+        setStav("start");
         return;
       }
-      toast.error(e?.message ?? t("app.citanieZlyhalo"));
-      setStav("start");
     }
+    /*
+      Načítaný len QR kód (kamera na skeneri, „Nasnímať QR kód"). Bez fotky
+      sa bloček uložiť nedá, takže kamera sa otvorí hneď — človek drží bloček
+      ešte v ruke. Keď fotenie zruší, na obrazovke ostane výzva odfotiť ho.
+      Bez ťuknutia sa dá otvoriť len kamera v stránke alebo natívna; výber
+      súboru na webe by prehliadač nepustil, tam ostáva tlačidlo.
+    */
+    if (vstup.qr && !prilozene && (Capacitor.isNativePlatform() || kameraVStrankeMozna()))
+      await odfotBlocek();
+  }
+
+  /** Fotka k bločku — jedna strana tou istou kamerou ako všade v appke. */
+  async function odfotBlocek() {
+    const [obrazok] = (await zachytStrany({ jednaStrana: true })) ?? [];
+    if (obrazok) setFoto(obrazok);
   }
 
   /*
@@ -1869,6 +1887,8 @@ function ZachytDokladu({
       obrazok: foto,
       uhrada: uhrada!,
       kategoria: prednastavene?.kategoria ?? null,
+      // Táto verzia nepustí bloček bez fotky — server ho podľa toho uloží do Bločkov.
+      fotkaPovinna: true,
       predvolby: prednastavene
         ? { zakazka: prednastavene.zakazka, predkontacia: prednastavene.predkontacia, poznamka: prednastavene.poznamka }
         : null,
@@ -1925,7 +1945,8 @@ function ZachytDokladu({
   }
 
   async function ulozDoklad() {
-    if (!vysledok || !uhrada) return;
+    // Bez fotky a úhrady sa bloček neuloží; tlačidlo je dovtedy neaktívne.
+    if (!vysledok || !uhrada || coChybaBlocku({ foto, uhrada })) return;
     if (await ulozZalohovuFakturu()) return;
     const { isOnline } = await import("@/lib/mobile/offline-queue");
     const online = await isOnline();
@@ -1984,10 +2005,7 @@ function ZachytDokladu({
         uhrada={uhrada}
         setUhrada={setUhrada}
         foto={foto}
-        onOdfotit={async () => {
-          const [obrazok] = (await zachytStrany({ jednaStrana: true })) ?? [];
-          if (obrazok) setFoto(obrazok);
-        }}
+        onOdfotit={odfotBlocek}
         onUloz={ulozDoklad}
         onSpat={() => {
           /*
@@ -2087,7 +2105,7 @@ function ZachytDokladu({
 
 /* ------------------------- Potvrdenie dokladu ------------------------- */
 
-function Potvrdenie({
+export function Potvrdenie({
   vysledok,
   duplikat,
   uhrada,
@@ -2110,6 +2128,8 @@ function Potvrdenie({
   const { t, locale: loc } = usePreklad();
   const mena = vysledok.currency ?? "EUR";
   const suma = (n?: number) => (n == null ? "—" : formatovacMeny(mena, loc)(n));
+  /* Fotka je povinná (Patrik, 2026-10-29) — chýba skôr než úhrada, pýta sa prvá. */
+  const chyba = coChybaBlocku({ foto, uhrada });
 
   return (
     <MobilObrazovka
@@ -2117,8 +2137,12 @@ function Potvrdenie({
       subtitle={vysledok.zdroj === "ekasa" ? t("pd.zFinancnejSpravy") : t("app.precitaneZDokladu")}
       onBack={onSpat}
       footer={
-        <HlavneTlacidlo onClick={onUloz} disabled={!uhrada}>
-          {uhrada ? (
+        <HlavneTlacidlo onClick={onUloz} disabled={chyba !== null}>
+          {chyba === "foto" ? (
+            <span className="inline-flex items-center gap-1.5" data-chyba-fotka>
+              <Camera className="h-4 w-4" /> {t("app.najprvOdfotte")}
+            </span>
+          ) : uhrada ? (
             /* Pri známom duplikáte sa tlačidlo prizná, čo sa stane. */
             duplikat ? (
               t("app.ulozitAjTak")
@@ -2139,6 +2163,31 @@ function Potvrdenie({
       }
     >
       <div className="space-y-4">
+        {/*
+          Bez fotky sa bloček neuloží. Výzva je hore, nie pri fotke dole —
+          po načítaní QR kódu je to jediná vec, ktorá chýba, a tlačidlo
+          Uložiť je dovtedy neaktívne.
+        */}
+        {!foto && (
+          <div
+            role="alert"
+            data-fotka-povinna
+            className="rounded-app border border-primary/50 bg-primary/5 p-4 ring-4 ring-primary/10"
+          >
+            <div className="text-[15px] font-semibold text-app-zelena">{t("app.fotkaPovinna")}</div>
+            <div className="mt-1 text-[13px] text-app-text-2">{t("app.fotkaPovinnaPopis")}</div>
+            <div className="mt-3">
+              <VelkeTlacidlo
+                icon={Camera}
+                label={t("app.odfotitBlocekTeraz")}
+                hint={t("app.papierovyDoklad")}
+                variant="primary"
+                onClick={onOdfotit}
+              />
+            </div>
+          </div>
+        )}
+
         {/*
           Upozornenie na už uložený doklad. Nie je to zákaz — bloček s tým istým
           číslom môže vzniknúť aj omylom pokladnice — ale má byť vidieť skôr,
@@ -2242,9 +2291,9 @@ function Potvrdenie({
           )}
         </div>
 
-        <div>
-          <div className="mb-2 text-sm font-medium">{t("app.fotkaDokladu")}</div>
-          {foto ? (
+        {foto && (
+          <div>
+            <div className="mb-2 text-sm font-medium">{t("app.fotkaDokladu")}</div>
             <div className="space-y-2">
               <div className="overflow-hidden rounded-app-sm border border-app-ramik">
                 {foto.startsWith("data:application/pdf") ? (
@@ -2262,15 +2311,8 @@ function Potvrdenie({
                 {t("app.odfotitZnova")}
               </button>
             </div>
-          ) : (
-            <VelkeTlacidlo
-              icon={Camera}
-              label={t("app.odfotitDoklad")}
-              hint={t("app.papierovyDoklad")}
-              onClick={onOdfotit}
-            />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </MobilObrazovka>
   );

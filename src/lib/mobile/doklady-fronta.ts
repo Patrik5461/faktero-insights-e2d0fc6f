@@ -28,6 +28,13 @@ export type CakajuciDoklad = {
   kategoria?: string | null;
   /** Zákazka, predkontácia a komentár prednastavené na skeneri. */
   predvolby?: { zakazka?: string | null; predkontacia?: string | null; poznamka?: string | null } | null;
+  /**
+   * Doklad vznikol vo verzii appky, v ktorej je fotka bločku povinná. Server
+   * ho bez fotky odmietne a uloží ho rovno do Bločkov. Staršie záznamy vo
+   * fronte (bez tejto značky a bez fotky) sa pošlú po starom, inak by
+   * uviazli navždy.
+   */
+  fotkaPovinna?: boolean;
   /** Keď sa doklad stihol prečítať ešte online, netreba ho čítať znova. */
   vysledok?: BlocekVysledok | null;
   ts: number;

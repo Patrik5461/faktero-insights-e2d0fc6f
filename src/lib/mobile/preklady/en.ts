@@ -651,6 +651,10 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.skontrolujteDoklad": "Check the receipt",
   "app.odfotitDoklad": "Photograph the receipt",
   "app.papierovyDoklad": "You have to keep the paper receipt anyway — the photo replaces it",
+  "app.fotkaPovinna": "Take a photo of the receipt — it can’t be saved without one",
+  "app.fotkaPovinnaPopis": "The photo is the record for your accountant and for a tax audit. The QR code alone doesn’t replace it.",
+  "app.odfotitBlocekTeraz": "Photograph the receipt",
+  "app.najprvOdfotte": "Photograph the receipt first",
   "app.vyplnteEmailHeslo": "Fill in both the e-mail and the password.",
   "app.prilohaNenahrata":
     "The attachment could not be uploaded, the receipt will be saved without it.",
