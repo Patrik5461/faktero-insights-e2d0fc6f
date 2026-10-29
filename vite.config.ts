@@ -24,7 +24,8 @@ export default defineConfig({
    * (chýba mu `gzip_proxied`), takže hlavný skript išiel nezbalený — 4 MB
    * pri každom novom vydaní namiesto ~1 MB.
    */
-  nitro: { compressPublicAssets: { gzip: true, brotli: true } },
+  // Typy @lovable.dev/vite-tanstack-config poznajú len časť volieb Nitra.
+  nitro: { compressPublicAssets: { gzip: true, brotli: true } } as { preset?: string },
   vite: {
     define: { __FAKTERO_VYDANIE__: JSON.stringify(vydanie) },
     preview: {

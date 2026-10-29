@@ -37,13 +37,13 @@ export async function riadkyPreIds<T = any>(
   dotaz: (kus: string[], od: number, po: number) => Stranka<T>,
   davka = 200,
 ): Promise<T[]> {
-  const out: T[] = [];
   const jedinecne = [...new Set(ids)];
-  for (let i = 0; i < jedinecne.length; i += davka) {
-    const kus = jedinecne.slice(i, i + davka);
-    out.push(...(await vsetkyRiadky<T>((od, po) => dotaz(kus, od, po))));
-  }
-  return out;
+  const kusy: string[][] = [];
+  for (let i = 0; i < jedinecne.length; i += davka) kusy.push(jedinecne.slice(i, i + davka));
+  // Dávky súčasne, nie jedna po druhej — 340 nezaplatených faktúr čakalo na
+  // dve požiadavky za sebou, kým sa zoznam vôbec ukázal.
+  const casti = await Promise.all(kusy.map((kus) => vsetkyRiadky<T>((od, po) => dotaz(kus, od, po))));
+  return casti.flat();
 }
 
 /** To isté ako `vsetkyRiadky`, ale v tvare `{ data }` — dá sa vložiť do `Promise.all` namiesto dotazu. */

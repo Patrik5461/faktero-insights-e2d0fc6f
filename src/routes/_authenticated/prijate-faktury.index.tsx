@@ -617,6 +617,12 @@ function PurchaseInvoicesPage() {
     const { data: nacitane, error } = await q;
     if (cislo !== poslednyDotaz.current) return;
     if (error) toast.error(error.message);
+    // Zoznam sa ukáže hneď; úhrady po častiach (odznak „čiastočne uhradená“)
+    // sa doplnia potom. Len filter „čiastočne uhradené“ na ne musí počkať.
+    if (status !== CIASTOCNE) {
+      setRows(nacitane ?? []);
+      setLoading(false);
+    }
     // Úhrady len pre neuhradené faktúry — zaplatené ani storno čiastočné byť nemôžu.
     const naUhrady = (nacitane ?? [])
       .filter((r: any) => !["paid", "cancelled", "draft"].includes(r.status))
