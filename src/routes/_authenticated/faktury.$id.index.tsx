@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { RozpisDph } from "@/components/faktero/RozpisDph";
 import { rozpisPodlaSadzieb } from "@/lib/faktero/rozpis-dph";
 import { riadkySoZlavou } from "@/lib/faktero/zlavy";
@@ -1019,7 +1020,7 @@ function InvoiceDetail() {
     vystavenie: inv.issue_date,
     dodanie: inv.delivery_date,
     splatnost: popisSplatnosti(inv),
-    vs: inv.variable_symbol,
+    vs: vsVystavenej(inv) || null,
     formaUhrady: t(paymentMethodLabel(inv.payment_method)),
     mena: inv.currency,
     kurz: inv.exchange_rate,
@@ -1394,7 +1395,7 @@ function InvoiceDetail() {
         </div>
         {vyberUctu}
         <div>
-          {t("Variabilný symbol:")} <span className="font-mono">{inv.variable_symbol}</span>
+          {t("Variabilný symbol:")} <span className="font-mono">{vsVystavenej(inv)}</span>
         </div>
         <div>{t("Splatnosť:")} {popisSplatnosti(inv)}</div>
         {predlzenieSplatnosti}

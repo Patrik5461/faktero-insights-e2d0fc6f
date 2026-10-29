@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, Send } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
+import { TelegramAdminKarta } from "@/components/faktero/TelegramAdminKarta";
 import { adminPoziadavkyFn } from "@/lib/faktero/podpora-admin.functions";
 import {
   STAVY_PODPORA,
@@ -64,6 +65,7 @@ function AdminPodporaPage() {
         description="Požiadavky zákazníkov z aplikácie, z mobilnej appky aj z kontaktného formulára na webe."
       />
       <AdminPageBody>
+        <TelegramAdminKarta />
         <div className="flex flex-wrap items-center gap-2">
           {FILTRE.map((f) => (
             <button
@@ -142,9 +144,22 @@ function AdminPodporaPage() {
                         </Link>
                       </td>
                       <td className="p-3">
-                        <div className="truncate">{r.meno || r.email}</div>
+                        <div className="truncate">
+                          {r.zdroj === "telegram" && (
+                            <Send
+                              className="mr-1 inline h-3.5 w-3.5 text-sky-600"
+                              aria-label="Telegram"
+                            />
+                          )}
+                          {r.meno || r.email}
+                        </div>
                         <div className="truncate text-xs text-muted-foreground">
-                          {r.firma ?? (r.zdroj === "web" ? "web (bez účtu)" : r.email)}
+                          {r.firma ??
+                            (r.zdroj === "web"
+                              ? "web (bez účtu)"
+                              : r.zdroj === "telegram"
+                                ? r.email || "Telegram (bez účtu)"
+                                : r.email)}
                         </div>
                       </td>
                       <td className="p-3 text-muted-foreground">{nazovKategorie(r.kategoria)}</td>

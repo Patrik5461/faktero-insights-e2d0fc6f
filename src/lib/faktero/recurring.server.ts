@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 import { nextInvoiceNumberDetailed } from "./invoice-numbering.server";
 import { triggerEvent, invoicePayload } from "./webhook-trigger.server";
 import { advanceNextRun, type Frequency } from "./opakovane";
@@ -50,7 +51,7 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     "regular",
     rec.number_series_id ?? null,
   );
-  const variable_symbol = invoice_number.replace(/\D/g, "");
+  const variable_symbol = vsZCislaDokladu(invoice_number) || null;
 
   /*
     Položka bez sadzby dostane základnú sadzbu krajiny firmy (neplatiteľ 0 %),

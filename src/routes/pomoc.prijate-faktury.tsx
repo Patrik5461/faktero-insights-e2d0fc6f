@@ -319,6 +319,14 @@ const sections: HelpSection[] = [
           <Link to="/uctovnictvo/pohoda">nastavení prepojenia s Pohodou</Link>.
         </p>
         <p>
+          <strong>Hľadanie kódu:</strong> výber predkontácie či členenia DPH sa po kliknutí otvorí s
+          políčkom na hľadanie — stačí napísať časť kódu, názvu alebo účtu (napríklad „phm“ alebo
+          „501“), na diakritike ani veľkých písmenách nezáleží. Šípkami a Enterom vyberiete bez
+          myši, Escape výber zavrie. Kód, ktorý v číselníku nie je, použijete voľbou{" "}
+          <em>Použiť kód</em>. Hneď vedľa členenia DPH je <strong>členenie KV DPH</strong> — prázdne
+          znamená automaticky (faktúra B.2, prenesenie B.1, opravná faktúra C.2).
+        </p>
+        <p>
           Viac faktúr naraz zaúčtujete v zozname: označte ich a kliknite na <em>Zaúčtovať</em>.
           Vyplnené pole sa nastaví všetkým, prázdne nechá, čo na faktúre je. Opakujúcich sa
           dodávateľov zaúčtuje samo <Link to="/uctovnictvo/pravidla">pravidlo účtovania</Link>{" "}

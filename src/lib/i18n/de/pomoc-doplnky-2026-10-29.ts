@@ -1,0 +1,19 @@
+// Handbuch: Empfang von E-Rechnungen und Codesuche (29. 10. 2026).
+export default {
+  "Zaevidovaná faktúra má všetko z eFaktúry: sumu s DPH, základ a DPH po sadzbách, položky, IČO, IBAN aj VS. Ak dodávateľ odpočítal zaplatenú zálohu, prijatá faktúra ju má ako odpočet zálohy a na úhradu (aj v príkaze na úhradu) ostáva len zvyšok.":
+    "Die erfasste Rechnung enthält alles aus der E-Rechnung: Betrag mit USt, Bemessungsgrundlage und USt nach Sätzen, Positionen, IČO, IBAN und VS. Hat der Lieferant eine bezahlte Anzahlung abgezogen, steht sie in der Eingangsrechnung als Anzahlungsabzug, und zur Zahlung (auch im Zahlungsauftrag) bleibt nur der Rest.",
+  "<0>Kam sa zaeviduje</0> si majiteľ alebo správca firmy nastaví v <1>eFaktúra → Prehľad → Príjem eFaktúr</1>:":
+    "<0>Wohin erfasst wird</0>, legt der Inhaber oder Administrator der Firma unter <1>E-Rechnung → Übersicht → Empfang von E-Rechnungen</1> fest:",
+  "<0>Prijaté faktúry</0> (predvolené) — faktúra vznikne hneď, voliteľne v zvolenom stave dokladu. Ak máte zapnuté schvaľovanie prijatých faktúr, pôjde rovno na schválenie.":
+    "<0>Eingangsrechnungen</0> (Standard) — die Rechnung entsteht sofort, optional im gewählten Belegstatus. Ist die Freigabe von Eingangsrechnungen eingeschaltet, geht sie direkt zur Freigabe.",
+  "<0>Nespracované doklady</0> — doklad počká na kontrolu ako doklady z e-mailu; údaje sa prenesú z eFaktúry presne, nič sa nečíta zo skenu. Po kliknutí na Vytvoriť sa eFaktúra spáruje s hotovou faktúrou.":
+    "<0>Unverarbeitete Belege</0> — der Beleg wartet wie Belege aus E-Mails auf die Kontrolle; die Daten werden genau aus der E-Rechnung übernommen, nichts wird aus einem Scan gelesen. Nach Klick auf Erstellen wird die E-Rechnung mit der fertigen Rechnung verknüpft.",
+  "<0>Zaevidovať automaticky hneď po prijatí</0> — bez kliknutia na Zaevidovať. Čo sa nepodarí zaevidovať, ostane v zozname na ručné zaevidovanie.":
+    "<0>Sofort nach Empfang automatisch erfassen</0> — ohne Klick auf Erfassen. Was sich nicht erfassen lässt, bleibt zur manuellen Erfassung in der Liste.",
+  "<0>Po zaevidovaní otvoriť doklad</0> — inak ostanete v zozname a doklad otvoríte odkazom v hlásení.":
+    "<0>Nach dem Erfassen den Beleg öffnen</0> — sonst bleiben Sie in der Liste und öffnen den Beleg über den Link in der Meldung.",
+  "Nastavenie platí pre faktúry a dobropisy. Zálohová faktúra ide vždy medzi prijaté zálohové faktúry. Samofaktúru, ktorú za vás vyhotovil odberateľ, Faktero medzi prijaté nezaradí — je to vaša vydaná faktúra.":
+    "Die Einstellung gilt für Rechnungen und Gutschriften. Eine Anzahlungsrechnung kommt immer zu den empfangenen Anzahlungsrechnungen. Eine Gutschrift im Gutschriftsverfahren, die der Abnehmer für Sie ausgestellt hat, ordnet Faktero nicht den Eingangsrechnungen zu — sie ist Ihre Ausgangsrechnung.",
+  "<0>Hľadanie kódu:</0> výber predkontácie či členenia DPH sa po kliknutí otvorí s políčkom na hľadanie — stačí napísať časť kódu, názvu alebo účtu (napríklad „phm“ alebo „501“), na diakritike ani veľkých písmenách nezáleží. Šípkami a Enterom vyberiete bez myši, Escape výber zavrie. Kód, ktorý v číselníku nie je, použijete voľbou <1>Použiť kód</1>. Hneď vedľa členenia DPH je <2>členenie KV DPH</2> — prázdne znamená automaticky (faktúra B.2, prenesenie B.1, opravná faktúra C.2).":
+    "<0>Code suchen:</0> Die Auswahl des Kontierungsschlüssels oder der USt-Gliederung öffnet sich nach dem Klick mit einem Suchfeld — es genügt ein Teil des Codes, Namens oder Kontos (z. B. „phm“ oder „501“), Diakritik und Groß-/Kleinschreibung spielen keine Rolle. Mit Pfeiltasten und Enter wählen Sie ohne Maus, Escape schließt die Auswahl. Einen Code, der nicht im Verzeichnis steht, verwenden Sie mit <1>Code verwenden</1>. Direkt neben der USt-Gliederung steht die <2>KV-Gliederung</2> — leer bedeutet automatisch (Rechnung B.2, Reverse Charge B.1, Korrekturrechnung C.2).",
+};

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { vynutSvetlyMotiv } from "@/lib/faktero/motiv";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { domacaMena, krajinaKurzu, textPrepoctu } from "@/lib/faktero/kurzy";
@@ -317,7 +318,7 @@ function VerejnaFaktura() {
         <Riadok k={t("Dátum vystavenia")} v={datumNaDoklade(doklad.issue_date, jazyk)} />
         <Riadok k={t("Dátum dodania")} v={datumNaDoklade(doklad.delivery_date, jazyk)} />
         <Riadok k={t("Splatnosť")} v={datumNaDoklade(doklad.due_date, jazyk)} />
-        <Riadok k={t("Variabilný symbol")} v={doklad.variable_symbol} />
+        <Riadok k={t("Variabilný symbol")} v={vsVystavenej(doklad)} />
         <Riadok k={t("IBAN")} v={firma?.iban} />
       </div>
 

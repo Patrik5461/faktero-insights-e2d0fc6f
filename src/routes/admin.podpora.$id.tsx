@@ -206,9 +206,19 @@ function AdminPoziadavka() {
             <div className="space-y-1 rounded-xl border border-border bg-card p-4">
               <div className="text-xs text-muted-foreground">Zákazník</div>
               <div className="font-medium">{p.meno || p.email}</div>
-              <a href={`mailto:${p.email}`} className="block truncate text-primary hover:underline">
-                {p.email}
-              </a>
+              {p.email && (
+                <a
+                  href={`mailto:${p.email}`}
+                  className="block truncate text-primary hover:underline"
+                >
+                  {p.email}
+                </a>
+              )}
+              {p.telegram_chat_id && (
+                <div className="flex items-center gap-1 text-xs text-sky-700 dark:text-sky-400">
+                  <Send className="h-3 w-3" /> Z Telegramu — odpoveď odíde aj do chatu.
+                </div>
+              )}
               {p.user_id ? (
                 <Link
                   to="/admin/users/$id"
@@ -219,7 +229,9 @@ function AdminPoziadavka() {
                 </Link>
               ) : (
                 <div className="text-xs text-muted-foreground">
-                  Bez účtu — odpoveď príde len e-mailom.
+                  {p.telegram_chat_id
+                    ? "Bez prepojeného účtu."
+                    : "Bez účtu — odpoveď príde len e-mailom."}
                 </div>
               )}
               {d.firma && (

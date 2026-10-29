@@ -14,6 +14,7 @@
 */
 
 import { riadkyDokladu, rozpisBlocku, type OdpocetVozidla, type RozpisSadzby } from "./rozuctovanie";
+import { vsPrijatej, vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { odpocetDokladu } from "./vozidlo-odpocet";
 import { rozpisPrijatej } from "./prijate-do-pohody";
 import {
@@ -388,7 +389,7 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     druh: dobropis ? "dobropis" : p?.type === "proforma" ? "zaloha" : "faktura",
     forma: "faktura",
     cislo: t(p?.invoice_number) ?? "",
-    vs: t(p?.variable_symbol),
+    vs: t(vsPrijatej(p)),
     ks: t(p?.constant_symbol),
     ss: t(p?.specific_symbol),
     opravuje: t(p?.opravuje_cislo),
@@ -526,7 +527,7 @@ export function vystavenaNaUctovanie(
     druh,
     forma: "faktura",
     cislo: t(inv?.invoice_number) ?? "",
-    vs: t(inv?.variable_symbol) ?? t(String(inv?.invoice_number ?? "").replace(/\D/g, "")),
+    vs: t(vsVystavenej(inv)),
     ks: t(inv?.constant_symbol),
     ss: t(inv?.specific_symbol),
     opravuje: t(inv?._opravujeCislo),

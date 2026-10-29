@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   buildNotifications,
   applyReadState,
+  kluceNaPrecitanie,
   type AppNotification,
   type NotificationInput,
 } from "./notifications";
@@ -277,6 +278,21 @@ async function notifikacieOdpovediNaPonuky(companyId: string): Promise<AppNotifi
   }));
 }
 
+/*
+  Prijaté eFaktúry, ktoré ešte nikto nezaevidoval. Pri troch a viac jedna
+  zlúčená položka — logika a kľúče sú v `upozornenie-prijatej.ts`.
+*/
+async function notifikacieEfaktur(companyId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { dotazNezaevidovanych, notifikacieEfaktur: zostav, STLPCE_UPOZORNENIA } = await import(
+    "./efaktura/upozornenie-prijatej"
+  );
+  const { data } = await dotazNezaevidovanych(supabaseAdmin, companyId, STLPCE_UPOZORNENIA)
+    .order("received_at", { ascending: false })
+    .limit(LIMIT);
+  return zostav((data ?? []) as any[], new Date().toISOString().slice(0, 10));
+}
+
 const PORADIE_ZAVAZNOSTI = { danger: 0, warning: 1, info: 2 } as const;
 
 /** Faktúry, banka aj zamestnanci v jednom zozname, zoradené rovnako. */
@@ -376,7 +392,7 @@ async function notifikaciaSchvalovania(companyId: string, userId: string): Promi
 
 async function vsetkyNotifikacie(companyId: string, userId: string): Promise<AppNotification[]> {
   const zoznam = await (async () => {
-    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie] = await Promise.all([
+    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie, efaktury] = await Promise.all([
       zozbierajSignaly(companyId),
       notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
       notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
@@ -384,6 +400,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
       notifikacieOdpovediPodpory(userId).catch(() => [] as AppNotification[]),
       notifikacieKomentarov(companyId, userId).catch(() => [] as AppNotification[]),
       notifikaciaSchvalovania(companyId, userId).catch(() => [] as AppNotification[]),
+      notifikacieEfaktur(companyId).catch(() => [] as AppNotification[]),
     ]);
     // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
     // inak najstaršie (najdlhšie po termíne).
@@ -395,6 +412,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
       ...podpora,
       ...komentare,
       ...schvalovanie,
+      ...efaktury,
     ].sort(
       (a, b) => {
         const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
@@ -467,7 +485,7 @@ export const markNotificationsRead = createServerFn({ method: "POST" })
     const keys =
       data.keys && data.keys.length > 0
         ? data.keys
-        : (await vsetkyNotifikacie(data.company_id, context.userId)).map((n) => n.key);
+        : kluceNaPrecitanie(await vsetkyNotifikacie(data.company_id, context.userId));
     if (keys.length === 0) return { ok: true, marked: 0 };
 
     // Kľúč sa môže označiť opakovane — unikátny index to pretečie na no-op.

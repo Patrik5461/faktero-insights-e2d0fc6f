@@ -104,6 +104,25 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "telegram",
+    title: "Cez Telegram",
+    body: (
+      <>
+        <p>
+          Podpore môžete písať aj cez <strong>Telegram</strong> — odkaz{" "}
+          <em>Napíšte nám na Telegram</em> je v Pomoc a podpora. Prvá správa založí požiadavku s
+          číslom, ďalšie správy sa pridajú do nej a odpoveď podpory príde späť do chatu. Poslať
+          môžete aj snímku obrazovky, fotku alebo PDF (do 10 MB).
+        </p>
+        <p>
+          Chybu v aplikácii nahláste príkazom <code>/chyba</code>, novú požiadavku začnete príkazom{" "}
+          <code>/nova</code>. Cez <em>Prepojiť s mojím účtom</em> sa chat priradí k vášmu účtu a
+          požiadavky z Telegramu potom uvidíte aj v <em>Moje požiadavky</em>.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "appka",
     title: "Z mobilnej aplikácie",
     body: (

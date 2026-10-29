@@ -43,7 +43,8 @@ async function posliMail(args: {
   odpovedatNa?: string | null;
 }) {
   const kluc = process.env.RESEND_API_KEY;
-  if (!kluc) return;
+  // Zákazník z Telegramu bez účtu e-mail nemá — odpoveď dostane len do chatu.
+  if (!kluc || !args.komu) return;
   const telo =
     `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;line-height:1.5">` +
     (args.riadky.length ? `<p style="color:#555">${args.riadky.map(html).join("<br>")}</p>` : "") +
@@ -102,8 +103,10 @@ export type NovaPoziadavka = {
   meno?: string | null;
   predmet: string;
   kategoria: KategoriaPoziadavky;
-  zdroj: "aplikacia" | "mobil" | "web";
+  zdroj: "aplikacia" | "mobil" | "web" | "telegram";
   text: string;
+  /** Požiadavka z Telegramu — odpoveď podpory pôjde aj do tohto chatu. */
+  telegramChatId?: number | null;
   url?: string | null;
   userAgent?: string | null;
   /** Prílohy sa nahrávajú až po založení — e-mail podpore len povie, koľko ich príde. */
@@ -125,6 +128,7 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
       zdroj: n.zdroj,
       url: n.url ?? null,
       user_agent: n.userAgent ?? null,
+      telegram_chat_id: n.telegramChatId ?? null,
       posledna_od: "zakaznik",
       zakaznik_videl_at: new Date().toISOString(),
     })
@@ -156,7 +160,8 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
       komu: schrankaPodpory(),
       predmet: `[${c}] ${nazovKategorie(n.kategoria)}: ${n.predmet}`,
       riadky: [
-        `Od: ${n.meno ? `${n.meno} <${n.email}>` : n.email}`,
+        `Od: ${n.meno ? (n.email ? `${n.meno} <${n.email}>` : n.meno) : n.email}`,
+        n.zdroj === "telegram" ? "Zdroj: Telegram (odpoveď z administrácie odíde do chatu)" : "",
         firma ? `Firma: ${firma}` : "",
         n.url ? `Stránka: ${n.url}` : "",
         n.userAgent ? `Prehliadač: ${n.userAgent}` : "",
@@ -168,7 +173,8 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
       odpovedatNa: adresaPreOdpoved(poz.odpoved_token),
     });
     // Potvrdenie zákazníkovi z appky — vie, že správa neodišla do prázdna.
-    if (n.userId) {
+    // Z Telegramu potvrdzuje bot priamo v chate.
+    if (n.userId && n.email && n.zdroj !== "telegram") {
       await posliMail({
         komu: n.email,
         predmet: `Prijali sme vašu požiadavku ${c}`,
@@ -182,23 +188,66 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
       });
     }
   }
+  // Upozornenie aj do Telegramu (ak je spárovaný) — aj pri kontaktnom formulári.
+  await upozorniTelegram({
+    text: [
+      `Nová požiadavka ${cisloPoziadavky(poz.cislo)} · ${nazovKategorie(n.kategoria)}${
+        n.zdroj === "telegram" ? " · z Telegramu" : ""
+      }`,
+      // Do Telegramu bez e-mailu zákazníka — Telegram je ďalší sprostredkovateľ údajov.
+      `Od: ${n.meno || "zákazník"}`,
+      `Predmet: ${n.predmet}`,
+      n.pocetPriloh ? `Prílohy: ${n.pocetPriloh}` : "",
+      "",
+      uryvok(n.text),
+    ],
+    poziadavkaId: poz.id,
+  });
   return { id: poz.id, cislo: poz.cislo };
+}
+
+/** Úryvok správy do upozornenia v Telegrame — celé vlákno je v administrácii. */
+/** Do Telegramu len krátky úryvok — celý text je v administrácii. */
+const uryvok = (t: string) => (t.length > 400 ? `${t.slice(0, 399)}…` : t);
+
+/**
+ * Upozornenie podpore do Telegramu. Pod ním je výzva na Reply a odkaz do
+ * administrácie. Nikdy nič nezhodí — Telegram je len doplnok k e-mailu.
+ */
+async function upozorniTelegram(args: { text: string[]; poziadavkaId: string }): Promise<void> {
+  try {
+    const { upozorniAdminovTelegram, odkazAdmin } = await import("./telegram.server");
+    await upozorniAdminovTelegram({
+      text: [
+        ...args.text,
+        "",
+        "Odpovedzte cez Reply na túto správu — odíde zákazníkovi.",
+        odkazAdmin(args.poziadavkaId),
+      ].join("\n"),
+      poziadavkaId: args.poziadavkaId,
+    });
+  } catch (e: any) {
+    console.error("[podpora] upozornenie do Telegramu zlyhalo:", e?.message ?? e);
+  }
 }
 
 type Poziadavka = {
   id: string;
   cislo: number;
   user_id: string | null;
+  /** Prázdny pri požiadavke z Telegramu bez prepojeného účtu. */
   email: string;
   predmet: string;
   stav: StavPoziadavky;
   odpoved_token: string;
+  telegram_chat_id?: number | null;
+  meno?: string | null;
 };
 
 export async function nacitajPoziadavku(id: string): Promise<Poziadavka | null> {
   const { data } = await supabaseAdmin
     .from("podpora_poziadavky")
-    .select("id, cislo, user_id, email, predmet, stav, odpoved_token")
+    .select("id, cislo, user_id, email, predmet, stav, odpoved_token, telegram_chat_id, meno")
     .eq("id", id)
     .maybeSingle();
   return (data as unknown as Poziadavka) ?? null;
@@ -252,25 +301,46 @@ export async function pridajSpravu(args: {
 
   const c = cisloPoziadavky(p.cislo);
   if (od === "podpora") {
-    await posliMail({
-      komu: p.email,
-      predmet: `Re: [${c}] ${p.predmet}`,
-      riadky: [`Podpora Faktera odpovedala na vašu požiadavku ${c}.`],
-      text: args.text,
-      odkaz: p.user_id
-        ? { url: `${web()}/podpora/${p.id}`, popis: "Zobraziť vo Fakteri" }
-        : undefined,
-      // Odpovedať sa dá rovno na e-mail — príde do vlákna.
-      odpovedatNa: adresaPreOdpoved(p.odpoved_token),
-    });
+    // Požiadavka z Telegramu: odpoveď ide zákazníkovi aj do jeho chatu.
+    if (p.telegram_chat_id) {
+      try {
+        const { posliOdpovedZakaznikovi } = await import("./telegram.server");
+        await posliOdpovedZakaznikovi({ chatId: p.telegram_chat_id, cislo: c, text: args.text });
+      } catch (e: any) {
+        console.error("[podpora] odpoveď do Telegramu zlyhala:", e?.message ?? e);
+      }
+    }
+    if (p.email) {
+      await posliMail({
+        komu: p.email,
+        predmet: `Re: [${c}] ${p.predmet}`,
+        riadky: [`Podpora Faktera odpovedala na vašu požiadavku ${c}.`],
+        text: args.text,
+        odkaz: p.user_id
+          ? { url: `${web()}/podpora/${p.id}`, popis: "Zobraziť vo Fakteri" }
+          : undefined,
+        // Odpovedať sa dá rovno na e-mail — príde do vlákna.
+        odpovedatNa: adresaPreOdpoved(p.odpoved_token),
+      });
+    }
   } else {
+    const kto = p.email || p.meno || "z Telegramu";
     await posliMail({
       komu: schrankaPodpory(),
       predmet: `Re: [${c}] ${p.predmet}`,
-      riadky: [`Zákazník ${p.email} odpísal na ${c}.`],
+      riadky: [`Zákazník ${kto} odpísal na ${c}.`],
       text: args.text,
       odkaz: { url: `${web()}/admin/podpora/${p.id}`, popis: `Otvoriť ${c} v administrácii` },
       odpovedatNa: adresaPreOdpoved(p.odpoved_token),
+    });
+    await upozorniTelegram({
+      text: [
+        `Nová správa v ${c} od ${p.meno || "zákazníka"}`,
+        `Predmet: ${p.predmet}`,
+        "",
+        uryvok(args.text),
+      ],
+      poziadavkaId: p.id,
     });
   }
   return { zapisana: true };
@@ -305,7 +375,7 @@ export async function prijmiOdpovedEmailom(args: {
 }): Promise<"hotovo" | "neznama_adresa" | "chyba"> {
   const { data } = await supabaseAdmin
     .from("podpora_poziadavky")
-    .select("id, cislo, user_id, email, predmet, stav, odpoved_token")
+    .select("id, cislo, user_id, email, predmet, stav, odpoved_token, telegram_chat_id, meno")
     .eq("odpoved_token", args.token)
     .maybeSingle();
   const p = data as unknown as Poziadavka | null;
@@ -340,7 +410,7 @@ export async function prijmiOdpovedEmailom(args: {
       od = "podpora";
       interna = true;
       telo = `E-mail od ${odosielatelMailu || "neznámeho odosielateľa"} neprešiel overením odosielateľa (DMARC) — môže byť podvrhnutý:\n\n${text}`;
-    } else if (odosielatelMailu === p.email.toLowerCase()) {
+    } else if (p.email && odosielatelMailu === p.email.toLowerCase()) {
       autorId = p.user_id;
     } else {
       const { data: profil } = await supabaseAdmin

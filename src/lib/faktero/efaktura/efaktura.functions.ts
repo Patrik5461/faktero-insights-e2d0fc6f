@@ -713,7 +713,7 @@ export const listPrijateEfakturyFn = createServerFn({ method: "POST" })
     const { data: riadky, error } = await supabase
       .from("efaktura_received_documents")
       .select(
-        "id, sender_name, sender_participant_id, document_number, issue_date, due_date, currency, total, vat_total, status, received_at, matched_supplier_invoice_id",
+        "id, sender_name, sender_participant_id, document_number, issue_date, due_date, currency, total, vat_total, status, received_at, matched_supplier_invoice_id, nespracovany_id",
       )
       .eq("company_id", data.company_id)
       .order("received_at", { ascending: false })
@@ -723,15 +723,12 @@ export const listPrijateEfakturyFn = createServerFn({ method: "POST" })
   });
 
 /**
- * Zaeviduje prijatú eFaktúru ako prijatú faktúru.
+ * Zaeviduje prijatú eFaktúru — podľa nastavenia firmy medzi Prijaté faktúry
+ * alebo do Nespracovaných dokladov (zálohová vždy medzi prijaté zálohové).
  *
  * Bez tohto je zoznam doručených eFaktúr len na pozeranie — doklad by sa
- * musel prepísať ručne, hoci všetky údaje sú v ňom rozobraté.
- *
- * Väzba sa ukladá do `matched_supplier_invoice_id`, takže druhé kliknutie
- * nevyrobí druhú faktúru. Sumy, ktoré v doklade chýbajú, sa nedopĺňajú
- * odhadom — nula je v účtovníctve tvrdenie a to sa vymýšľať nemá; človek ich
- * doplní na prijatej faktúre, kde ich aj vidí.
+ * musel prepísať ručne, hoci všetky údaje sú v ňom rozobraté. Druhé kliknutie
+ * nevyrobí druhý doklad (`zaevidovanie-efaktury.server.ts`).
  */
 export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -743,144 +740,108 @@ export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as { supabase: Sb; userId: string };
     await assertCompanyMember(supabase, data.company_id, userId);
-
-    const { data: doklad, error } = await supabase
-      .from("efaktura_received_documents")
-      .select("*")
-      .eq("id", data.received_id)
-      .eq("company_id", data.company_id)
-      .maybeSingle();
-    if (error) throw error;
-    if (!doklad) throw new Error("Prijatá eFaktúra sa nenašla.");
-    if (doklad.matched_supplier_invoice_id) {
-      return { invoiceId: doklad.matched_supplier_invoice_id, uzExistovala: true as const };
-    }
-
-    const dnes = new Date().toISOString().slice(0, 10);
-    let rozobrate = ((doklad as any).parsed_data ?? {}) as {
-      documentKind?: string;
-      precedingInvoiceNumber?: string;
-      prepaid?: number;
-      payable?: number;
+    const { zaevidujPrijatuEfakturu, nastaveniePrijmuFirmy } = await import("./zaevidovanie-efaktury.server");
+    const nastavenie = await nastaveniePrijmuFirmy(supabase, data.company_id);
+    const v = await zaevidujPrijatuEfakturu(supabase, {
+      companyId: data.company_id,
+      receivedId: data.received_id,
+      userId,
+      nastavenie,
+    });
+    return {
+      ...v,
+      // Staršie volania čakajú `invoiceId` / `uzExistovala`.
+      invoiceId: v.kam === "prijate" ? v.id : null,
+      uzExistovala: v.uzExistoval,
+      otvorit: nastavenie.otvorit,
     };
-    // Doklady stiahnuté pred rozlišovaním dobropisov sa prečítajú znova z XML.
-    if (!rozobrate.documentKind && (doklad as any).xml_payload) {
-      const { parseEfakturaEnvelope } = await import("./inbound.server");
-      rozobrate = parseEfakturaEnvelope(String((doklad as any).xml_payload));
-    }
-    /*
-      Samofaktúru za nás vyhotovil náš odberateľ — je to naša vydaná faktúra,
-      medzi prijaté nepatrí. Zaeviduje sa ručne vo Faktúrach.
-    */
-    if (rozobrate.documentKind === "self_billing" || rozobrate.documentKind === "self_billing_credit_note") {
-      throw new Error(
-        "Toto je samofaktúra, ktorú za vás vyhotovil váš odberateľ — je to vaša vydaná faktúra, nie prijatá. Zaevidujte ju vo Faktúrach.",
-      );
-    }
-    /*
-      Dobropis má v UBL kladné sumy (mínus nesie typ 381). Medzi prijatými je
-      záporný a nesie číslo pôvodnej faktúry — inak by výkaz DPH dobropis
-      započítal ako ďalší nákup a odpočet by narástol namiesto poklesu.
-    */
-    const znamienko = rozobrate.documentKind === "credit_note" ? -1 : 1;
-    /*
-      Faktúru so zaplatenou nezdanenou zálohou berieme v plnej sume (základ a
-      DPH musia sedieť), zálohu a zvyšok na úhradu si človek prečíta v poznámke.
-      Doklady stiahnuté skôr majú v `total` sumu na úhradu — tie sa prečítajú
-      znova z XML.
-    */
-    if (rozobrate.prepaid === undefined && (doklad as any).xml_payload) {
-      const { parseEfakturaEnvelope } = await import("./inbound.server");
-      const znova = parseEfakturaEnvelope(String((doklad as any).xml_payload));
-      if (znova.prepaid && znova.total != null) {
-        rozobrate = { ...rozobrate, prepaid: znova.prepaid, payable: znova.payable };
-        (doklad as any).total = znova.total;
-      }
-    }
-    const zaloha = znamienko > 0 && rozobrate.prepaid && rozobrate.prepaid > 0 ? rozobrate.prepaid : 0;
-    const spolu = znamienko * Math.abs(Number(doklad.total ?? 0));
-    const dph = znamienko * Math.abs(Number(doklad.vat_total ?? 0));
-
-    /*
-      Tá istá faktúra už prišla inou cestou (mailom, nahratá, zadaná ručne):
-      eFaktúra sa k nej len pripojí — druhá prijatá faktúra by bola v nákladoch,
-      odpočte DPH aj v príkaze na úhradu dvakrát.
-    */
-    if (doklad.document_number) {
-      const { najdiDuplicituPrijatej } = await import("../prijate-duplicity.server");
-      const dup = await najdiDuplicituPrijatej(supabase, data.company_id, {
-        invoice_number: doklad.document_number,
-        supplier_name: doklad.sender_name ?? null,
-        amount_total: spolu,
-      });
-      if (dup?.kde === "prijate") {
-        await supabase
-          .from("efaktura_received_documents")
-          .update({
-            matched_supplier_invoice_id: dup.id,
-            status: "matched",
-            processed_at: new Date().toISOString(),
-          } as TablesUpdate<"efaktura_received_documents">)
-          .eq("id", data.received_id);
-        // Pripojená faktúra bez prílohy dostane PDF z eFaktúry.
-        if ((doklad as any).xml_payload) {
-          const { prilozPdfKPrijatej } = await import("./nahlad.server");
-          await prilozPdfKPrijatej(supabase, data.company_id, dup.id, String((doklad as any).xml_payload));
-        }
-        return { invoiceId: dup.id, uzExistovala: true as const, pripojena: true as const };
-      }
-    }
-
-    const { data: faktura, error: chybaZapisu } = await supabase
-      .from("purchase_invoices")
-      .insert({
-        company_id: data.company_id,
-        supplier_name: doklad.sender_name ?? "Neznámy dodávateľ",
-        supplier_ic_dph: doklad.sender_vat_id ?? null,
-        invoice_number: doklad.document_number ?? `EF-${data.received_id.slice(0, 8)}`,
-        issue_date: doklad.issue_date ?? dnes,
-        // Za dátum prijatia berieme, kedy eFaktúra naozaj dorazila.
-        received_date: (doklad.received_at ?? dnes).slice(0, 10),
-        due_date: doklad.due_date ?? doklad.issue_date ?? dnes,
-        amount_without_vat: Math.round((spolu - dph) * 100) / 100,
-        vat_amount: dph,
-        amount_total: spolu,
-        currency: doklad.currency ?? "EUR",
-        status: "received",
-        source: "efaktura",
-        opravuje_cislo: znamienko < 0 ? (rozobrate.precedingInvoiceNumber ?? null) : null,
-        note:
-          znamienko < 0
-            ? `Dobropis prijatý cez eFaktúru (Peppol)${rozobrate.precedingInvoiceNumber ? ` k faktúre ${rozobrate.precedingInvoiceNumber}` : ""}.`
-            : `Prijaté cez eFaktúru (Peppol).${
-                zaloha
-                  ? ` Dodávateľ odpočítal zaplatenú zálohu ${zaloha.toFixed(2)} ${doklad.currency ?? "EUR"} — na úhradu ostáva ${(rozobrate.payable ?? spolu - zaloha).toFixed(2)} ${doklad.currency ?? "EUR"}.`
-                  : ""
-              }`,
-      } as TablesInsert<"purchase_invoices">)
-      .select("id")
-      .single();
-    if (chybaZapisu) throw new Error(chybaZapisu.message);
-
-    // Náhľad: PDF z eFaktúry (priložené alebo vykreslené z XML) ako príloha prijatej faktúry.
-    if ((doklad as any).xml_payload) {
-      const { prilozPdfKPrijatej } = await import("./nahlad.server");
-      await prilozPdfKPrijatej(supabase, data.company_id, faktura.id, String((doklad as any).xml_payload));
-    }
-
-    await supabase
-      .from("efaktura_received_documents")
-      .update({
-        matched_supplier_invoice_id: faktura.id,
-        // `matched` je stav pre doklad, ktorý už má svoju prijatú faktúru.
-        status: "matched",
-        processed_at: new Date().toISOString(),
-      } as TablesUpdate<"efaktura_received_documents">)
-      .eq("id", data.received_id);
-
-    return { invoiceId: faktura.id, uzExistovala: false as const };
   });
 
+/** Nastavenie príjmu eFaktúr firmy (kam zaradiť, automaticky, otvoriť) a stavy dokladov na výber. */
+export const nastaveniePrijmuEfakturFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string };
+    if (!v?.company_id) throw new Error("Chýba company_id.");
+    return { company_id: v.company_id };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+    const { nastaveniePrijmuFirmy } = await import("./zaevidovanie-efaktury.server");
+    const [nastavenie, { data: stavy }, { data: spravca }, { data: profil }] = await Promise.all([
+      nastaveniePrijmuFirmy(supabase, data.company_id),
+      supabase
+        .from("stavy_dokladov")
+        .select("id, nazov, farba")
+        .eq("company_id", data.company_id)
+        .eq("aktivne", true)
+        .order("poradie"),
+      supabase.rpc("is_company_admin", { _company_id: data.company_id, _user_id: userId }),
+      supabase.from("efaktura_profiles").select("id").eq("company_id", data.company_id).maybeSingle(),
+    ]);
+    return {
+      nastavenie,
+      stavy: (stavy ?? []) as { id: string; nazov: string; farba: string | null }[],
+      smieMenit: Boolean(spravca),
+      maProfil: Boolean(profil),
+    };
+  });
+
+/** Uloží nastavenie príjmu eFaktúr. Meniť ho smie len majiteľ alebo správca firmy. */
+export const ulozNastaveniePrijmuEfakturFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as {
+      company_id?: string;
+      ciel?: unknown;
+      stav_id?: unknown;
+      automaticky?: unknown;
+      otvorit?: unknown;
+    };
+    if (!v?.company_id) throw new Error("Chýba company_id.");
+    if (v.ciel !== "prijate" && v.ciel !== "nespracovane") throw new Error("Neznáme zaradenie.");
+    const stav = typeof v.stav_id === "string" && /^[0-9a-f-]{36}$/i.test(v.stav_id) ? v.stav_id : null;
+    return {
+      company_id: v.company_id,
+      ciel: v.ciel as "prijate" | "nespracovane",
+      stav_id: v.ciel === "prijate" ? stav : null,
+      automaticky: v.automaticky === true,
+      otvorit: v.otvorit !== false,
+    };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    const { data: spravca, error: chybaRoly } = await supabase.rpc("is_company_admin", {
+      _company_id: data.company_id,
+      _user_id: userId,
+    });
+    if (chybaRoly) throw chybaRoly;
+    if (!spravca) throw new Error("Nastavenie príjmu eFaktúr môže meniť len majiteľ alebo správca firmy.");
+    if (data.stav_id) {
+      const { data: stav } = await supabase
+        .from("stavy_dokladov")
+        .select("id")
+        .eq("id", data.stav_id)
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      if (!stav) throw new Error("Zvolený stav dokladu vo firme neexistuje.");
+    }
+    const { data: profil, error } = await supabase
+      .from("efaktura_profiles")
+      .update({
+        prijem_ciel: data.ciel,
+        prijem_stav_id: data.stav_id,
+        prijem_automaticky: data.automaticky,
+        prijem_otvorit: data.otvorit,
+      } as EfakturaProfileUpdate)
+      .eq("company_id", data.company_id)
+      .select("id")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!profil) throw new Error("Firma ešte nemá profil eFaktúry — najprv ju spárujte s ePoštákom.");
+    return { ok: true as const };
+  });
 
 /**
  * Náhľad prijatej eFaktúry ako PDF (base64). Priložené PDF odosielateľa, inak

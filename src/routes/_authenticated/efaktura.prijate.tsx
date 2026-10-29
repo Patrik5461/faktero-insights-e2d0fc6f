@@ -1,11 +1,11 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Fragment, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Inbox, RefreshCw, FileInput, ExternalLink, Eye, Download, X, Paperclip, Send } from "lucide-react";
+import { Inbox, RefreshCw, FileInput, ExternalLink, Eye, Download, X, Paperclip, Send, Settings2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
@@ -32,6 +32,7 @@ import {
 import { nacitajUlozenuKontrolu } from "@/lib/faktero/efaktura/kontrola/ulozenie";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { odkazNaZaradenie } from "@/lib/faktero/efaktura/zaevidovanie-efaktury";
 
 export const Route = createFileRoute("/_authenticated/efaktura/prijate")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté eFaktúry — Faktero") }] }),
@@ -288,7 +289,7 @@ function ReceivedPage() {
     });
   }
 
-  /** Z prijatej eFaktúry spraví prijatú faktúru — inak by sa prepisovala ručne. */
+  /** Zaeviduje prijatú eFaktúru tam, kam to firma nastavila (eFaktúra → Príjem). */
   async function zaevidujDoklad(receivedId: string) {
     if (!companyId) return;
     const chyby = Number(kontroly.get(receivedId)?.kontrola_chyby ?? 0);
@@ -296,7 +297,7 @@ function ReceivedPage() {
       chyby > 0 &&
       !(await potvrd(
         t(
-          "Automatická kontrola našla v tejto eFaktúre chyby ({n}). Sumy, DPH alebo povinné údaje nemusia byť správne. Zaevidovať ju aj tak ako prijatú faktúru?",
+          "Automatická kontrola našla v tejto eFaktúre chyby ({n}). Sumy, DPH alebo povinné údaje nemusia byť správne. Zaevidovať ju aj tak?",
           { n: chyby },
         ),
         { potvrdit: t("Zaevidovať aj tak") },
@@ -308,12 +309,28 @@ function ReceivedPage() {
     setEvidujem(receivedId);
     try {
       const r: any = await zaeviduj({ data: { company_id: companyId, received_id: receivedId } });
+      const odkaz = odkazNaZaradenie(r);
+      const doNespracovanych = r.kam === "nespracovane";
+      // Toast s odkazom tam, kam doklad išiel — aj keď sa doklad neotvára.
       toast.success(
         r.pripojena
-          ? t("Táto faktúra už medzi prijatými bola (prišla inou cestou) — eFaktúra je pripojená k nej, druhá sa nezakladá.")
+          ? doNespracovanych
+            ? t("Táto faktúra už čaká v Nespracovaných (prišla inou cestou) — eFaktúra je pripojená k nej, druhá sa nezakladá.")
+            : t("Táto faktúra už medzi prijatými bola (prišla inou cestou) — eFaktúra je pripojená k nej, druhá sa nezakladá.")
           : r.uzExistovala
-            ? t("Táto eFaktúra už zaevidovaná je — otváram ju.")
-            : t("Zaevidované ako prijatá faktúra. Skontrolujte sumy a dátumy."),
+            ? t("Táto eFaktúra už zaevidovaná je.")
+            : doNespracovanych
+              ? t("Odložené do Nespracovaných dokladov na kontrolu.")
+              : r.typ === "proforma"
+                ? t("Zaevidované ako prijatá zálohová faktúra.")
+                : t("Zaevidované ako prijatá faktúra. Skontrolujte sumy a dátumy."),
+        {
+          duration: 8000,
+          action: {
+            label: doNespracovanych ? t("Otvoriť v Nespracovaných") : t("Otvoriť doklad"),
+            onClick: () => window.open(odkaz, "_blank", "noopener,noreferrer"),
+          },
+        },
       );
       if (chyby > 0)
         toast.warning(
@@ -322,7 +339,7 @@ function ReceivedPage() {
         );
       q.refetch();
       void kontrolyQ.refetch();
-      window.open(`/prijate-faktury/${r.invoiceId}`, "_blank", "noopener,noreferrer");
+      if (r.otvorit) window.open(odkaz, "_blank", "noopener,noreferrer");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -352,6 +369,8 @@ function ReceivedPage() {
               (r.preskocenych ? " " + t("Už uložené: {n}.", { n: r.preskocenych }) : "")
           : t("Nič nové — všetko doručené už máte."),
       );
+      if (r.zaevidovanych)
+        toast.success(t("Automaticky zaevidované: {n}.", { n: r.zaevidovanych }));
       void kontrolyQ.refetch();
       // Problémy sa nezamlčia: doklad, ktorý sa nepodarilo stiahnuť, by inak
       // ticho chýbal a nikto by nevedel, že vôbec bol.
@@ -438,6 +457,14 @@ function ReceivedPage() {
               <Download className="h-4 w-4" /> {t("XML pre Pohodu (BIS)")}
             </button>
           )}
+          <Link
+            to="/efaktura"
+            hash="prijem"
+            title={t("Kam sa zaevidovaná eFaktúra zaradí, automatické zaevidovanie")}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm hover:bg-secondary"
+          >
+            <Settings2 className="h-4 w-4" /> {t("Nastavenia príjmu")}
+          </Link>
           <button
             onClick={stiahniNove}
             disabled={stahujem || !companyId}
@@ -582,6 +609,13 @@ function ReceivedPage() {
                             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
                           >
                             <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť doklad")}
+                          </a>
+                        ) : r.nespracovany_id ? (
+                          <a
+                            href={`/nespracovane/${r.nespracovany_id}`}
+                            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" /> {t("V Nespracovaných")}
                           </a>
                         ) : (
                           <button

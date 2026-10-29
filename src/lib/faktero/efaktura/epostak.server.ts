@@ -776,7 +776,14 @@ type PrijatyDokument = {
 export async function stiahniPrijate(
   companyId: string,
   firmEpostakId: string,
-): Promise<{ novych: number; preskocenych: number; problemy: string[]; lenOdosielanie?: boolean }> {
+): Promise<{
+  novych: number;
+  preskocenych: number;
+  problemy: string[];
+  lenOdosielanie?: boolean;
+  /** Koľko z nových sa samo zaevidovalo (nastavenie eFaktúra → Príjem). */
+  zaevidovanych?: number;
+}> {
   /*
     Firma „len odosielanie“ prijíma u iného poskytovateľa — ePošták pre ňu
     príjem cez toto napojenie zakazuje, a doklady tu ani nie sú.
@@ -811,6 +818,7 @@ export async function stiahniPrijate(
   let novych = 0;
   let preskocenych = 0;
   const problemy: string[] = [];
+  const noveIds: string[] = [];
 
   for (const d of dokumenty) {
     const znacka = d.peppol_message_id ?? d.id;
@@ -824,7 +832,7 @@ export async function stiahniPrijate(
     }
     try {
       const xml = await epostakFetchText(d.ubl_url, firmEpostakId);
-      await ingestIncoming(
+      const ulozeny = await ingestIncoming(
         {
           companyId,
           channel: "peppol",
@@ -847,17 +855,56 @@ export async function stiahniPrijate(
             } as any)
             .select("id")
             .single();
-          if (error) throw new Error(error.message);
+          if (error) {
+            // Ten istý doklad práve uložilo súbežné stiahnutie (jedinečný index).
+            if ((error as any).code === "23505") throw new UzUlozeny();
+            throw new Error(error.message);
+          }
           return { id: data.id };
         },
       );
       novych += 1;
+      noveIds.push(ulozeny.id);
     } catch (e: any) {
+      if (e instanceof UzUlozeny) {
+        preskocenych += 1;
+        continue;
+      }
       problemy.push(`${d.metadata?.invoice_number ?? d.id}: ${e?.message ?? "nepodarilo sa"}`);
     }
   }
-  return { novych, preskocenych, problemy };
+  /*
+    Automatické zaevidovanie podľa nastavenia firmy (eFaktúra → Príjem).
+    Chyba príjem nezhodí — eFaktúra ostane v zozname na ručné zaevidovanie.
+  */
+  let zaevidovanych = 0;
+  if (noveIds.length) {
+    try {
+      const { zaevidujAutomaticky } = await import("./zaevidovanie-efaktury.server");
+      const z = await zaevidujAutomaticky(supabaseAdmin, companyId, noveIds);
+      zaevidovanych = z.zaevidovanych;
+      if (z.problemy.length) console.warn("[efaktura-zaevidovanie]", z.problemy.join(" · ").slice(0, 500));
+    } catch (e: any) {
+      console.warn("[efaktura-zaevidovanie]", String(e?.message ?? e).slice(0, 300));
+    }
+  }
+  /*
+    E-mail firme o nových eFaktúrach — jeden za celé stiahnutie. Zlyhanie
+    e-mailu stiahnutie nezhodí; zvonček a menu ich ukážu aj tak.
+  */
+  if (noveIds.length) {
+    try {
+      const { upozorniFirmuNaPrijateEfaktury } = await import("./upozornenie-prijatej.server");
+      await upozorniFirmuNaPrijateEfaktury(companyId, noveIds);
+    } catch (e: any) {
+      console.warn("[efaktura-prijata]", String(e?.message ?? e).slice(0, 300));
+    }
+  }
+  return { novych, preskocenych, problemy, zaevidovanych };
 }
+
+/** Doklad už uložilo iné, súbežné stiahnutie — nie je to chyba príjmu. */
+class UzUlozeny extends Error {}
 
 // ─── White Label: registrácia firmy z webhooku Finančnej správy ─────────────
 

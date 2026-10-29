@@ -1,4 +1,5 @@
 import { PDFDocument, PDFString, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { riadkySoZlavou } from "./zlavy";
 import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
@@ -391,7 +392,7 @@ async function vykresliFakturu(
           [t.datumVystavenia, datumNaDoklade(invoice.issue_date, jazyk)],
           [t.datumDodania, datumNaDoklade(invoice.delivery_date, jazyk)],
           [t.datumSplatnosti, datumNaDoklade(invoice.due_date, jazyk)],
-          [t.variabilnySymbol, invoice.variable_symbol ?? "—"],
+          [t.variabilnySymbol, vsVystavenej(invoice) || "—"],
           [t.formaUhrady, sposobUhrady(invoice.payment_method)],
         ]);
   const metaBoxH = 46;
@@ -1131,7 +1132,7 @@ async function vykresliFakturu(
     const rows: [string, string][] = [
       [t.iban, company.iban ?? "—"],
       [t.swift, company.swift ?? "—"],
-      [t.variabilnySymbol, invoice.variable_symbol ?? "—"],
+      [t.variabilnySymbol, vsVystavenej(invoice) || "—"],
       [t.datumSplatnosti, datumNaDoklade(invoice.due_date, jazyk)],
     ];
     const labelColW = 110;
@@ -1160,7 +1161,7 @@ async function vykresliFakturu(
             iban: company.iban,
             suma: naUhradu,
             mena: invoice.currency,
-            vs: invoice.variable_symbol,
+            vs: vsVystavenej(invoice) || null,
             sprava: `${t.spravaQr} ${invoice.invoice_number}`,
             splatnost: invoice.due_date,
             prijemca: company.name,
@@ -1192,7 +1193,7 @@ async function vykresliFakturu(
                 iban: company.iban,
                 suma: naUhradu,
                 mena: invoice.currency,
-                vs: invoice.variable_symbol,
+                vs: vsVystavenej(invoice) || null,
                 sprava: `${t.spravaQr} ${invoice.invoice_number}`,
                 splatnost: invoice.due_date,
                 prijemca: company.name,

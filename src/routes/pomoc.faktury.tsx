@@ -127,6 +127,14 @@ const sections: HelpSection[] = [
           vľavo náhľad PDF, vpravo údaje a akcie; šípkami <strong>Predošlý doklad</strong> a{" "}
           <strong>Ďalší doklad</strong> prejdete na susednú faktúru.
         </p>
+        <p>
+          Pod zoznamom je vždy <strong>Spolu za filter</strong> — základ dane, DPH a celková suma
+          všetkých faktúr, ktoré zodpovedajú filtru (obdobie, stav, hľadanie), nielen tých na
+          zobrazenej strane. Po označení faktúr ukáže to isté lišta výberu. Pri viacerých sadzbách
+          DPH sú sumy rozpísané po sadzbách, rôzne meny sa nesčítavajú. Dobropis sa odpočítava,
+          stornované faktúry sa nepočítajú a koncepty, zálohové faktúry a daňové doklady k platbe
+          len vo svojej záložke.
+        </p>
       </>
     ),
   },

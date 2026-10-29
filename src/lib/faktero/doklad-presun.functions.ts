@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
+import { vsPrijatejNaUlozenie } from "./variabilny-symbol";
 import { CHYBA_PRESUNU_BLOCKU, jeSkutocnyBlocek } from "./doklad-je-blocek";
 
 /**
@@ -93,6 +94,8 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
         // Číslo dokladu je na prijatej faktúre povinné; keď ho bloček nemá,
         // radšej zrozumiteľná náhrada než prázdno.
         invoice_number: doklad.document_number ?? `DOKLAD-${String(doklad.id).slice(0, 8)}`,
+        // VS na doklade nie je — vezme sa číslo, keď je celé z číslic.
+        variable_symbol: vsPrijatejNaUlozenie(null, doklad.document_number),
         /*
           Naskenovaná zálohová faktúra sa nemá tváriť ako daňový doklad —
           rozpozná sa z čísla a poznámky dokladu a zaradí sa medzi prijaté

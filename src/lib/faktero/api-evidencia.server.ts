@@ -33,6 +33,7 @@ import {
   type ZnackyVstupT,
 } from "./api-evidencia";
 import { normalizePaymentMethod } from "./payment-method";
+import { zalohaPrijatej } from "./uhrady-prijatej";
 
 type Odpoved = { status: number; body: any };
 const jeUuid = (v: string) => /^[0-9a-f-]{36}$/i.test(v);
@@ -245,7 +246,7 @@ const STL_UHRADY =
 async function prijataNaUhrady(ctx: ApiCtx, id: string) {
   const { data } = await (ctx.supabase as any)
     .from("purchase_invoices")
-    .select("id, status, amount_total, currency, payment_method, advance_invoice_id")
+    .select("id, status, amount_total, currency, payment_method, advance_invoice_id, advance_amount")
     .eq("company_id", ctx.company_id)
     .eq("id", id)
     .is("deleted_at", null)
@@ -277,7 +278,10 @@ async function uhradySoSuhrnom(ctx: ApiCtx, f: Record<string, any>) {
   ]);
   if (error) throw new Error(error.message);
   const z = zaloha?.data;
-  const zalohaSuma = z?.status === "paid" ? Math.abs(Number(z.amount_total ?? 0)) : 0;
+  const zalohaSuma = zalohaPrijatej(
+    (f as any).advance_amount,
+    z?.status === "paid" ? Number(z.amount_total ?? 0) : 0,
+  );
   return {
     purchase_invoice_id: f.id,
     ...suhrnUhrad(f, uhrady ?? [], zalohaSuma),

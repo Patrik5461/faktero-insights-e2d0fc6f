@@ -15,10 +15,10 @@ import type { ZakladPravidlaZDokladu } from "@/lib/faktero/pravidla-uctovania";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, ExternalLink, RefreshCw } from "lucide-react";
+import { Loader2, Plus, Trash2, ExternalLink, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { NahladSVyberom, poleZPrvku, zablikajPole } from "@/components/faktero/NahladSVyberom";
@@ -414,6 +414,62 @@ function Detail() {
     intPoznamka: u.kody.intPoznamka,
   };
 
+  // Dodávateľ sa kreslí raz — pri bežnom doklade až za sumami, pri ostatných hneď za druhom.
+  const sekciaDodavatela = (
+    <section className="rounded-xl border border-border bg-card p-4">
+      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {druh === "ostatny" ? t("Odosielateľ") : t("Dodávateľ")}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-sm sm:col-span-2">
+          <span className="text-xs text-muted-foreground">{t("Názov")}</span>
+          <input aria-label={t("Dodávateľ")} value={u.dodavatel.nazov} onChange={(e) => setDod({ nazov: e.target.value })} className={`${vstup} ${ram("dodavatel")}`} />
+        </label>
+        {druh !== "ostatny" && (
+          <>
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">{t("IČO")}</span>
+              <input value={u.dodavatel.ico} onChange={(e) => setDod({ ico: e.target.value })} className={`${vstup} border-input`} />
+            </label>
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">{t("IČ DPH")}</span>
+              <input value={u.dodavatel.icDph} onChange={(e) => setDod({ icDph: e.target.value })} className={`${vstup} border-input`} />
+            </label>
+          </>
+        )}
+        {faktura && (
+          // Adresa, krajina, DIČ a e-mail sú menej dôležité — pod „Zobraziť viac“.
+          <ZobrazitViac>
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">{t("DIČ")}</span>
+              <input value={u.dodavatel.dic} onChange={(e) => setDod({ dic: e.target.value })} className={`${vstup} border-input`} />
+            </label>
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">{t("Krajina")}</span>
+              <input aria-label={t("Krajina dodávateľa")} maxLength={2} placeholder="SK" value={u.dodavatel.krajina ?? ""} onChange={(e) => setDod({ krajina: e.target.value.toUpperCase() })} className={`${vstup} border-input`} />
+            </label>
+            <label className="block text-sm sm:col-span-2">
+              <span className="text-xs text-muted-foreground">{t("Ulica a číslo")}</span>
+              <input value={u.dodavatel.ulica} onChange={(e) => setDod({ ulica: e.target.value })} className={`${vstup} border-input`} />
+            </label>
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">{t("Mesto")}</span>
+              <input value={u.dodavatel.mesto} onChange={(e) => setDod({ mesto: e.target.value })} className={`${vstup} border-input`} />
+            </label>
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">{t("PSČ")}</span>
+              <input value={u.dodavatel.psc} onChange={(e) => setDod({ psc: e.target.value })} className={`${vstup} border-input`} />
+            </label>
+            <label className="block text-sm sm:col-span-2">
+              <span className="text-xs text-muted-foreground">{t("E-mail")}</span>
+              <input type="email" aria-label={t("E-mail dodávateľa")} value={u.dodavatel.email ?? ""} onChange={(e) => setDod({ email: e.target.value })} className={`${vstup} border-input`} />
+            </label>
+          </ZobrazitViac>
+        )}
+      </div>
+    </section>
+  );
+
   return (
     <>
       <PageHeader
@@ -502,53 +558,68 @@ function Detail() {
               </label>
             </section>
 
-            <section className="rounded-xl border border-border bg-card p-4">
-              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {druh === "ostatny" ? t("Odosielateľ") : t("Dodávateľ")}
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block text-sm sm:col-span-2">
-                  <span className="text-xs text-muted-foreground">{t("Názov")}</span>
-                  <input aria-label={t("Dodávateľ")} value={u.dodavatel.nazov} onChange={(e) => setDod({ nazov: e.target.value })} className={`${vstup} ${ram("dodavatel")}`} />
-                </label>
-                {druh !== "ostatny" && (
-                  <>
-                    <label className="block text-sm">
-                      <span className="text-xs text-muted-foreground">{t("IČO")}</span>
-                      <input value={u.dodavatel.ico} onChange={(e) => setDod({ ico: e.target.value })} className={`${vstup} border-input`} />
-                    </label>
-                    <label className="block text-sm">
-                      <span className="text-xs text-muted-foreground">{t("IČ DPH")}</span>
-                      <input value={u.dodavatel.icDph} onChange={(e) => setDod({ icDph: e.target.value })} className={`${vstup} border-input`} />
-                    </label>
-                  </>
-                )}
-                {faktura && (
-                  <>
-                    <label className="block text-sm">
-                      <span className="text-xs text-muted-foreground">{t("DIČ")}</span>
-                      <input value={u.dodavatel.dic} onChange={(e) => setDod({ dic: e.target.value })} className={`${vstup} border-input`} />
-                    </label>
-                    <label className="block text-sm">
-                      <span className="text-xs text-muted-foreground">{t("IBAN")}</span>
-                      <input value={u.dodavatel.iban} onChange={(e) => setDod({ iban: e.target.value })} className={`${vstup} border-input`} />
-                    </label>
-                    <label className="block text-sm sm:col-span-2">
-                      <span className="text-xs text-muted-foreground">{t("Ulica a číslo")}</span>
-                      <input value={u.dodavatel.ulica} onChange={(e) => setDod({ ulica: e.target.value })} className={`${vstup} border-input`} />
-                    </label>
-                    <label className="block text-sm">
-                      <span className="text-xs text-muted-foreground">{t("Mesto")}</span>
-                      <input value={u.dodavatel.mesto} onChange={(e) => setDod({ mesto: e.target.value })} className={`${vstup} border-input`} />
-                    </label>
-                    <label className="block text-sm">
-                      <span className="text-xs text-muted-foreground">{t("PSČ")}</span>
-                      <input value={u.dodavatel.psc} onChange={(e) => setDod({ psc: e.target.value })} className={`${vstup} border-input`} />
-                    </label>
-                  </>
-                )}
-              </div>
-            </section>
+            {/* Poradie podľa dôležitosti: zaúčtovanie hneď za druhom, platobné údaje až na konci. */}
+            {druh && druh !== "ostatny" ? (
+              <section className="rounded-xl border border-border bg-card p-4">
+                <h3 className="mb-3 text-base font-semibold">{t("Zaúčtovanie")}</h3>
+                <PoliaZauctovania
+                  siroke
+                  navrhy={navrhy}
+                  doklad={{ typ: druh === "blocek" ? "blocek" : "faktura", platba: u.platba }}
+                  hodnoty={hodnotyKodov}
+                  oznacenia={oznaceniaZUdajov(u)}
+                  setHodnoty={(h: any) =>
+                    setU({
+                      ...u,
+                      kategoria: h.kategoria ?? "",
+                      kody: {
+                        predkontacia: h.predkontacia ?? "",
+                        clenenie: h.clenenie ?? "",
+                        kv: h.kv ?? "",
+                        stredisko: h.stredisko ?? "",
+                        cinnost: h.cinnost ?? "",
+                        rad: h.rad ?? "",
+                        intPoznamka: h.intPoznamka ?? "",
+                      },
+                    })
+                  }
+                />
+                <JobPicker
+                  value={u.jobId}
+                  onChange={(v) => setU((p) => (p ? { ...p, jobId: v } : p))}
+                  companyId={d.companyId}
+                  className={`mt-3 ${zle("zakazka") ? "[&_select]:border-red-500" : ""}`}
+                />
+                <VozidloPicker
+                  value={u.vehicleId ?? ""}
+                  onChange={(v) => setU((p) => (p ? { ...p, vehicleId: v } : p))}
+                  companyId={d.companyId}
+                  className="mt-3"
+                />
+                <PravidloNespracovaneho
+                  companyId={d.companyId}
+                  druh={druh}
+                  u={u}
+                  setU={setU}
+                  createdBy={d.createdBy}
+                  predmetMailu={d.predmetMailu}
+                  odosielatelMailu={d.odosielatelMailu}
+                  krajinaFirmy={d.krajinaFirmy}
+                  aktivne={d.stav !== "cita"}
+                />
+                <NauceneZDodavatela u={u} />
+                <NavrhAiNespracovaneho u={u} setU={setU} stav={navrhAi?.stav} />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t("Prázdne pole = predvolené z")}{" "}
+                  <Link to="/uctovnictvo/predkontacie" className="underline">
+                    {t("nastavení predkontácií")}
+                  </Link>
+                  .
+                </p>
+              </section>
+            ) : null}
+
+            {!druh || druh === "ostatny" ? sekciaDodavatela : null}
 
             {druh === "ostatny" ? (
               <section className="rounded-xl border border-border bg-card p-4">
@@ -582,40 +653,6 @@ function Detail() {
                       <span className="text-xs text-muted-foreground">{t("Číslo dokladu")}</span>
                       <input aria-label={t("Číslo dokladu")} value={u.cislo} onChange={(e) => set({ cislo: e.target.value })} className={`${vstup} ${ram("cislo")}`} />
                     </label>
-                    {faktura && (
-                      <label className="block text-sm sm:col-span-2">
-                        <span className="text-xs text-muted-foreground">{t("Popis plnenia (text faktúry v Pohode)")}</span>
-                        <input value={u.popis ?? ""} onChange={(e) => set({ popis: e.target.value })} className={`${vstup} border-input`} />
-                      </label>
-                    )}
-                    {faktura && (
-                      <label className="block text-sm">
-                        <span className="text-xs text-muted-foreground">{t("Variabilný symbol")}</span>
-                        <input value={u.vs} onChange={(e) => set({ vs: e.target.value })} className={`${vstup} border-input`} />
-                      </label>
-                    )}
-                    {faktura && (
-                      <label className="block text-sm">
-                        <span className="text-xs text-muted-foreground">{t("Konštantný / špecifický symbol")}</span>
-                        <div className="flex gap-2">
-                          <input aria-label={t("Konštantný symbol")} placeholder={t("KS")} maxLength={4} value={u.ks ?? ""} onChange={(e) => set({ ks: e.target.value })} className={`${vstup} border-input`} />
-                          <input aria-label={t("Špecifický symbol")} placeholder={t("ŠS")} maxLength={10} value={u.ss ?? ""} onChange={(e) => set({ ss: e.target.value })} className={`${vstup} border-input`} />
-                        </div>
-                      </label>
-                    )}
-                    {faktura && (
-                      <label className="block text-sm">
-                        <span className="text-xs text-muted-foreground">{t("Číslo objednávky")}</span>
-                        <input value={u.objednavka ?? ""} onChange={(e) => set({ objednavka: e.target.value })} className={`${vstup} border-input`} />
-                        <UpozornenieObjednavky companyId={d.companyId} ico={u.dodavatel.ico} cisloObjednavky={u.objednavka} />
-                      </label>
-                    )}
-                    {faktura && (
-                      <label className="block text-sm">
-                        <span className="text-xs text-muted-foreground">{t("Číslo dodacieho listu")}</span>
-                        <input value={u.dodaciList ?? ""} onChange={(e) => set({ dodaciList: e.target.value })} className={`${vstup} border-input`} />
-                      </label>
-                    )}
                     <label className="block text-sm">
                       <span className="text-xs text-muted-foreground">{t("Dátum vystavenia")}</span>
                       <input type="date" aria-label={t("Dátum vystavenia")} value={u.datumVystavenia} onChange={(e) => set({ datumVystavenia: e.target.value })} className={`${vstup} ${ram("datumVystavenia")}`} />
@@ -638,26 +675,40 @@ function Detail() {
                         <input value={u.opravuje} onChange={(e) => set({ opravuje: e.target.value })} className={`${vstup} ${ram("opravuje")}`} />
                       </label>
                     )}
-                    <label className="block text-sm">
-                      <span className="text-xs text-muted-foreground">{t("Spôsob úhrady")}</span>
-                      <select aria-label={t("Spôsob úhrady")} value={u.platba} onChange={(e) => set({ platba: e.target.value })} className={`${vstup} ${ram("platba")}`}>
-                        <option value="">{blocek ? t("— vyberte —") : t("prevodom (predvolené)")}</option>
-                        <option value="hotovost">{t("Hotovosťou")}</option>
-                        <option value="karta">{t("Kartou")}</option>
-                        <option value="prevod">{t("Prevodom")}</option>
-                        {faktura && <option value="inkaso">{t("Inkasom")}</option>}
-                      </select>
-                    </label>
+                    {!faktura && (
+                        <label className="block text-sm">
+                          <span className="text-xs text-muted-foreground">{t("Spôsob úhrady")}</span>
+                          <select aria-label={t("Spôsob úhrady")} value={u.platba} onChange={(e) => set({ platba: e.target.value })} className={`${vstup} ${ram("platba")}`}>
+                            <option value="">{blocek ? t("— vyberte —") : t("prevodom (predvolené)")}</option>
+                            <option value="hotovost">{t("Hotovosťou")}</option>
+                            <option value="karta">{t("Kartou")}</option>
+                            <option value="prevod">{t("Prevodom")}</option>
+                            {faktura && <option value="inkaso">{t("Inkasom")}</option>}
+                          </select>
+                        </label>
+                    )}
                     <label className="block text-sm">
                       <span className="text-xs text-muted-foreground">{t("Mena")}</span>
                       <input value={u.mena} maxLength={3} onChange={(e) => set({ mena: e.target.value.toUpperCase() })} className={`${vstup} border-input`} />
                     </label>
-                    {faktura && (
-                      <label className="flex items-center gap-2 text-sm sm:col-span-2">
-                        <input type="checkbox" checked={Boolean(u.uhradene)} onChange={(e) => set({ uhradene: e.target.checked || undefined })} />
-                        {t("Faktúra je už uhradená")}
+                    <ZobrazitViac>
+                      {faktura && (
+                        <label className="block text-sm">
+                          <span className="text-xs text-muted-foreground">{t("Dátum prijatia")}</span>
+                          <input type="date" aria-label={t("Dátum prijatia")} value={u.datumPrijatia ?? ""} onChange={(e) => set({ datumPrijatia: e.target.value })} className={`${vstup} border-input`} />
+                        </label>
+                      )}
+                      <label className="block text-sm">
+                        <span className="text-xs text-muted-foreground">{t("Interné číslo")}</span>
+                        <input aria-label={t("Interné číslo")} maxLength={40} value={u.interneCislo ?? ""} onChange={(e) => set({ interneCislo: e.target.value })} className={`${vstup} border-input`} />
                       </label>
-                    )}
+                      {faktura && (
+                        <label className="block text-sm sm:col-span-2">
+                          <span className="text-xs text-muted-foreground">{t("Popis plnenia (text faktúry v Pohode)")}</span>
+                          <input value={u.popis ?? ""} onChange={(e) => set({ popis: e.target.value })} className={`${vstup} border-input`} />
+                        </label>
+                      )}
+                    </ZobrazitViac>
                   </div>
                 </section>
 
@@ -720,68 +771,67 @@ function Detail() {
                   {druh === "dobropis" && <p className="mt-1 text-xs text-muted-foreground">{t("Sumy zadajte kladne — dobropis ich odpočíta sám.")}</p>}
                 </section>
 
-                <section className="rounded-xl border border-border bg-card p-4">
-                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Položky")}</div>
-                  <PolozkyNespracovaneho u={u} setU={setU} sadzby={sadzby} />
-                </section>
+                {sekciaDodavatela}
 
-                <section className="rounded-xl border border-border bg-card p-4">
-                  <h3 className="mb-3 text-base font-semibold">{t("Zaúčtovanie")}</h3>
-                  <PoliaZauctovania
-                    siroke
-                    navrhy={navrhy}
-                    doklad={{ typ: druh === "blocek" ? "blocek" : "faktura", platba: u.platba }}
-                    hodnoty={hodnotyKodov}
-                    oznacenia={oznaceniaZUdajov(u)}
-                    setHodnoty={(h: any) =>
-                      setU({
-                        ...u,
-                        kategoria: h.kategoria ?? "",
-                        kody: {
-                          predkontacia: h.predkontacia ?? "",
-                          clenenie: h.clenenie ?? "",
-                          kv: h.kv ?? "",
-                          stredisko: h.stredisko ?? "",
-                          cinnost: h.cinnost ?? "",
-                          rad: h.rad ?? "",
-                          intPoznamka: h.intPoznamka ?? "",
-                        },
-                      })
-                    }
-                  />
-                  <JobPicker
-                    value={u.jobId}
-                    onChange={(v) => setU((p) => (p ? { ...p, jobId: v } : p))}
-                    companyId={d.companyId}
-                    className={`mt-3 ${zle("zakazka") ? "[&_select]:border-red-500" : ""}`}
-                  />
-                  <VozidloPicker
-                    value={u.vehicleId ?? ""}
-                    onChange={(v) => setU((p) => (p ? { ...p, vehicleId: v } : p))}
-                    companyId={d.companyId}
-                    className="mt-3"
-                  />
-                  <PravidloNespracovaneho
-                    companyId={d.companyId}
-                    druh={druh}
-                    u={u}
-                    setU={setU}
-                    createdBy={d.createdBy}
-                    predmetMailu={d.predmetMailu}
-                    odosielatelMailu={d.odosielatelMailu}
-                    krajinaFirmy={d.krajinaFirmy}
-                    aktivne={d.stav !== "cita"}
-                  />
-                  <NauceneZDodavatela u={u} />
-                  <NavrhAiNespracovaneho u={u} setU={setU} stav={navrhAi?.stav} />
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {t("Prázdne pole = predvolené z")}{" "}
-                    <Link to="/uctovnictvo/predkontacie" className="underline">
-                      {t("nastavení predkontácií")}
-                    </Link>
-                    .
-                  </p>
-                </section>
+                {faktura && (
+                  <section className="rounded-xl border border-border bg-card p-4">
+                    <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Platobné údaje")}</div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {faktura && (
+                        <label className="block text-sm">
+                          <span className="text-xs text-muted-foreground">{t("Variabilný symbol")}</span>
+                          <input value={u.vs} onChange={(e) => set({ vs: e.target.value })} className={`${vstup} border-input`} />
+                        </label>
+                      )}
+                      {faktura && (
+                          <label className="block text-sm">
+                            <span className="text-xs text-muted-foreground">{t("IBAN")}</span>
+                            <input value={u.dodavatel.iban} onChange={(e) => setDod({ iban: e.target.value })} className={`${vstup} border-input`} />
+                          </label>
+                      )}
+                      {faktura && (
+                        <label className="block text-sm">
+                          <span className="text-xs text-muted-foreground">{t("Konštantný / špecifický symbol")}</span>
+                          <div className="flex gap-2">
+                            <input aria-label={t("Konštantný symbol")} placeholder={t("KS")} maxLength={4} value={u.ks ?? ""} onChange={(e) => set({ ks: e.target.value })} className={`${vstup} border-input`} />
+                            <input aria-label={t("Špecifický symbol")} placeholder={t("ŠS")} maxLength={10} value={u.ss ?? ""} onChange={(e) => set({ ss: e.target.value })} className={`${vstup} border-input`} />
+                          </div>
+                        </label>
+                      )}
+                      {faktura && (
+                        <label className="block text-sm">
+                          <span className="text-xs text-muted-foreground">{t("Číslo objednávky")}</span>
+                          <input value={u.objednavka ?? ""} onChange={(e) => set({ objednavka: e.target.value })} className={`${vstup} border-input`} />
+                          <UpozornenieObjednavky companyId={d.companyId} ico={u.dodavatel.ico} cisloObjednavky={u.objednavka} />
+                        </label>
+                      )}
+                      {faktura && (
+                        <label className="block text-sm">
+                          <span className="text-xs text-muted-foreground">{t("Číslo dodacieho listu")}</span>
+                          <input value={u.dodaciList ?? ""} onChange={(e) => set({ dodaciList: e.target.value })} className={`${vstup} border-input`} />
+                        </label>
+                      )}
+                      {faktura && (
+                          <label className="block text-sm">
+                            <span className="text-xs text-muted-foreground">{t("Spôsob úhrady")}</span>
+                            <select aria-label={t("Spôsob úhrady")} value={u.platba} onChange={(e) => set({ platba: e.target.value })} className={`${vstup} ${ram("platba")}`}>
+                              <option value="">{blocek ? t("— vyberte —") : t("prevodom (predvolené)")}</option>
+                              <option value="hotovost">{t("Hotovosťou")}</option>
+                              <option value="karta">{t("Kartou")}</option>
+                              <option value="prevod">{t("Prevodom")}</option>
+                              {faktura && <option value="inkaso">{t("Inkasom")}</option>}
+                            </select>
+                          </label>
+                      )}
+                      {faktura && (
+                        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                          <input type="checkbox" checked={Boolean(u.uhradene)} onChange={(e) => set({ uhradene: e.target.checked || undefined })} />
+                          {t("Faktúra je už uhradená")}
+                        </label>
+                      )}
+                    </div>
+                  </section>
+                )}
               </>
             ) : null}
 
@@ -801,6 +851,13 @@ function Detail() {
                   </label>
                 ) : null}
               </section>
+            ) : null}
+
+            {druh && druh !== "ostatny" ? (
+                <section className="rounded-xl border border-border bg-card p-4">
+                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Položky")}</div>
+                  <PolozkyNespracovaneho u={u} setU={setU} sadzby={sadzby} navrhy={navrhy} />
+                </section>
             ) : null}
 
             <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 p-3 pr-24 backdrop-blur">
@@ -843,6 +900,29 @@ function Detail() {
           <SchvalovaniePanel companyId={d.companyId} agenda="nespracovany" id={d.id} />
         </div>
       </PageBody>
+    </>
+  );
+}
+
+/**
+ * Menej dôležité polia pod „Zobraziť viac“ (v mriežke dvoch stĺpcov) —
+ * dôležité ostávajú vždy viditeľné.
+ */
+function ZobrazitViac({ children }: { children: ReactNode }) {
+  const { t } = useT();
+  const [otvorene, setOtvorene] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        aria-expanded={otvorene}
+        onClick={() => setOtvorene((o) => !o)}
+        className="inline-flex items-center gap-1 justify-self-start text-xs text-primary hover:underline sm:col-span-2"
+      >
+        {otvorene ? t("Zobraziť menej") : t("Zobraziť viac")}
+        {otvorene ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+      </button>
+      {otvorene ? children : null}
     </>
   );
 }

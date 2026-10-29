@@ -1,5 +1,6 @@
 import { unzipSync, strFromU8 } from "fflate";
 import { XMLParser } from "fast-xml-parser";
+import { vsNaUlozenie } from "./variabilny-symbol";
 import * as XLSX from "xlsx";
 import { isdocNaRiadky, jeIsdoc } from "./isdoc";
 import { krajinaDane, zakladnaSadzba } from "./vat-rates";
@@ -1191,7 +1192,17 @@ export async function runImport(args: {
         });
       }
       if (subtotal === 0) subtotal = items.reduce((s, i) => s + i.subtotal, 0);
-      if (vatTotal === 0) vatTotal = items.reduce((s, i) => s + i.vat_amount, 0);
+      /*
+        DPH z položiek len vtedy, keď súbor DPH vôbec neuvádza. Nula v súbore
+        je platná hodnota (neplatiteľ, oslobodené) — prepísaná súčtom položiek
+        vyrábala vymyslenú DPH (MaxiTicket CZ: 9,00 + 1,89 = „9,00“). Ak suma
+        sedí so základom, DPH je nula, nech položky hovoria čokoľvek.
+      */
+      const dphUvedena = (pick(head, mapping, "vat_total") ?? "").toString().trim() !== "";
+      const sumaBezDph = subtotal > 0 && total > 0 && Math.abs(total - subtotal) <= 0.02;
+      if (vatTotal === 0 && !dphUvedena && !sumaBezDph) {
+        vatTotal = items.reduce((s, i) => s + i.vat_amount, 0);
+      }
       if (total === 0) total = items.reduce((s, i) => s + i.total, 0);
 
       const issueDate =
@@ -1214,7 +1225,7 @@ export async function runImport(args: {
         customer_zip: pick(head, mapping, "customer_zip") || null,
         customer_country: pick(head, mapping, "customer_country") || "SK",
         invoice_number: invNo,
-        variable_symbol: pick(head, mapping, "variable_symbol") || invNo.replace(/\D/g, "") || null,
+        variable_symbol: vsNaUlozenie(pick(head, mapping, "variable_symbol"), invNo),
         issue_date: issueDate,
         due_date: dueDate,
         delivery_date: deliveryDate,

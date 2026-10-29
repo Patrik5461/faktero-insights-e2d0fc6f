@@ -78,7 +78,9 @@ export type DruhMailu =
   | "splatnost"
   | "schvalenie"
   | "test_sablony"
-  | "pozvanka";
+  | "pozvanka"
+  /** Upozornenie firme na prijatú eFaktúru (na jej vlastnú adresu). */
+  | "efaktura_prijata";
 
 /** Mail neodišiel kvôli strážcovi — správa je určená človeku. */
 export class OdosielanieZastavene extends Error {

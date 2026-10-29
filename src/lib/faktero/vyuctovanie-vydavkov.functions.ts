@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   polozkaZBlocku,
+  kodyNaDoplnenie,
   polozkaZPrijatej,
   suhrnVyuctovania,
   type PolozkaVyuctovania,
@@ -127,6 +128,7 @@ export const ulozVyuctovanieFn = createServerFn({ method: "POST" })
         mena: z.string().length(3).default("EUR"),
         predkontacia: z.string().max(40).nullable().optional(),
         clenenie_dph: z.string().max(40).nullable().optional(),
+        kv_clenenie: z.enum(["B1", "B2", "B3", "C2", "X"]).nullable().optional(),
         datum_uctovania: z.string().nullable().optional(),
         poznamka: z.string().max(1000).nullable().optional(),
         stav: z.enum(["otvorene", "uzavrete"]).default("otvorene"),
@@ -151,6 +153,7 @@ export const ulozVyuctovanieFn = createServerFn({ method: "POST" })
       mena: data.mena.toUpperCase(),
       predkontacia: t(data.predkontacia),
       clenenie_dph: t(data.clenenie_dph),
+      kv_clenenie: data.kv_clenenie ?? null,
       datum_uctovania: d(data.datum_uctovania),
       poznamka: t(data.poznamka),
       stav: data.stav,
@@ -180,6 +183,7 @@ export const ulozVyuctovanieFn = createServerFn({ method: "POST" })
     const vysledok = await priradDoklady(supabase, data.company_id, id!, data.doklady, true, {
       predkontacia: riadok.predkontacia,
       clenenie: riadok.clenenie_dph,
+      kv: riadok.kv_clenenie,
     });
     return { id, ...vysledok };
   });
@@ -200,7 +204,7 @@ export const pridajDoVyuctovaniaFn = createServerFn({ method: "POST" })
     const supabase = context.supabase as Sb;
     const { data: v } = await supabase
       .from("vyuctovania_vydavkov")
-      .select("id, stav, predkontacia, clenenie_dph")
+      .select("id, stav, predkontacia, clenenie_dph, kv_clenenie")
       .eq("id", data.id)
       .eq("company_id", data.company_id)
       .maybeSingle();
@@ -209,13 +213,14 @@ export const pridajDoVyuctovaniaFn = createServerFn({ method: "POST" })
     return priradDoklady(supabase, data.company_id, v.id, data.doklady, false, {
       predkontacia: v.predkontacia,
       clenenie: v.clenenie_dph,
+      kv: v.kv_clenenie,
     });
   });
 
 /**
  * Priradí doklady k vyúčtovaniu. `nahradit` = zoznam je úplný, čo v ňom nie je,
  * sa z vyúčtovania vyberie. Doklad z iného vyúčtovania sa nepresunie potichu —
- * vráti sa medzi `vInom`. Predkontácia a členenie vyúčtovania sa doplnia
+ * vráti sa medzi `vInom`. Predkontácia, členenie DPH a KV vyúčtovania sa doplnia
  * dokladom, ktoré ich nemajú a ešte neodišli do účtovníctva.
  */
 async function priradDoklady(
@@ -224,7 +229,7 @@ async function priradDoklady(
   id: string,
   doklady: { druh: "blocek" | "prijata"; id: string }[],
   nahradit: boolean,
-  kody: { predkontacia: string | null; clenenie: string | null },
+  kody: { predkontacia: string | null; clenenie: string | null; kv: string | null },
 ): Promise<{ priradenych: number; vInom: number }> {
   let priradenych = 0;
   let vInom = 0;
@@ -254,11 +259,8 @@ async function priradDoklady(
     if (error) throw new Error(error.message);
     priradenych += zmenene?.length ?? 0;
     vInom += ids.length - (zmenene?.length ?? 0);
-    for (const [stlpec, hodnota] of [
-      ["pohoda_predkontacia", kody.predkontacia],
-      ["pohoda_clenenie_dph", kody.clenenie],
-    ] as const) {
-      if (!hodnota) continue;
+    // Zamknutý (odovzdaný) doklad sa nemení — `exported_at is null` a spúšťač zámku.
+    for (const [stlpec, hodnota] of kodyNaDoplnenie(kody)) {
       await supabase
         .from(tabulka)
         .update({ [stlpec]: hodnota })

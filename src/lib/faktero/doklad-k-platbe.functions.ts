@@ -11,6 +11,7 @@
  * dátumom dodania je **deň prijatia platby** — podľa neho patrí do priznania.
  */
 import { createServerFn } from "@tanstack/react-start";
+import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -130,7 +131,7 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
         invoice_number: cislo.invoice_number,
         number_series_id: cislo.series_id,
         sequence_number: cislo.sequence_number,
-        variable_symbol: cislo.invoice_number.replace(/\D/g, "") || null,
+        variable_symbol: vsZCislaDokladu(cislo.invoice_number) || null,
         issue_date: data.datum_platby,
         delivery_date: data.datum_platby,
         due_date: data.datum_platby,

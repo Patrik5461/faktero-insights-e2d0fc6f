@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { toast } from "sonner";
 import { CheckCircle2, FileText, Landmark, Plus, Search, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +7,7 @@ import { potvrd } from "@/lib/potvrdenie";
 import {
   dniPoSplatnosti,
   stavUhradyPrijatej,
+  zalohaPrijatej,
   zostaneKUhrade,
   type UhradaPrijatej,
 } from "@/lib/faktero/uhrady-prijatej";
@@ -307,7 +309,7 @@ function DetailPrijatej({
     ]);
     setUhrady(((u as any).data ?? []) as UhradaPrijatej[]);
     const zd = (z as any).data;
-    setZaloha(zd?.status === "paid" ? Math.abs(Number(zd.amount_total ?? 0)) : 0);
+    setZaloha(zalohaPrijatej((f as any).advance_amount, zd?.status === "paid" ? Number(zd.amount_total ?? 0) : 0));
     const hd = (h as any).data;
     if (hd && (hd.status !== f.status || hd.payment_date !== f.payment_date))
       onZmena({ status: hd.status, payment_date: hd.payment_date });
@@ -562,7 +564,7 @@ function DetailPrijatej({
         <Card className="space-y-2 p-4 text-[14px]">
           <Riadok label={t("pd.ico")} value={f.supplier_ico ?? "—"} />
           <Riadok label={t("pf.cislo")} value={f.invoice_number ?? "—"} />
-          <Riadok label={t("pf.vs")} value={f.variable_symbol ?? "—"} />
+          <Riadok label={t("pf.vs")} value={vsPrijatej(f) || "—"} />
           <Riadok label={t("pf.datumVystavenia")} value={datum(f.issue_date, loc)} />
         </Card>
 

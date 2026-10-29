@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useServerFn } from "@tanstack/react-start";
 import {
   CalendarDays,
@@ -238,24 +239,7 @@ export function PrijataDetailKompaktna({
         ) : null}
       </div>
 
-      {/* 2. Platba | Sumár — hneď pod úhradou */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 [&>*]:min-w-0">
-        <PlatbaK
-          iban={row.supplier_iban}
-          vs={row.variable_symbol}
-          ks={row.constant_symbol}
-          ss={row.specific_symbol}
-          doplnok={bokom}
-        />
-        <SumarK
-          rozpis={rozpisPrijatej(row)}
-          sadzby={sadzbyKrajiny(krajina, row.delivery_date ?? row.issue_date)}
-          mena={menaDokladu}
-          celkom={Number(row.amount_total ?? 0)}
-        />
-      </div>
-
-      {/* 3. Účtovanie priamo v detaile */}
+      {/* 2. Účtovanie priamo v detaile — hneď pod hlavičkou */}
       {row.type === "regular" && !navrh ? (
         <ZauctovaniePanel
           row={row}
@@ -282,6 +266,23 @@ export function PrijataDetailKompaktna({
           }
         />
       ) : null}
+
+      {/* 3. Platba | Sumár — pod účtovaním, platobné údaje sú menej dôležité */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 [&>*]:min-w-0">
+        <PlatbaK
+          iban={row.supplier_iban}
+          vs={vsPrijatej(row) || null}
+          ks={row.constant_symbol}
+          ss={row.specific_symbol}
+          doplnok={bokom}
+        />
+        <SumarK
+          rozpis={rozpisPrijatej(row)}
+          sadzby={sadzbyKrajiny(krajina, row.delivery_date ?? row.issue_date)}
+          mena={menaDokladu}
+          celkom={Number(row.amount_total ?? 0)}
+        />
+      </div>
 
       {/* 4. Prílohy */}
       <PrilohyFaktury

@@ -138,3 +138,27 @@ export function polozkaZPrijatej(p: Record<string, any>): PolozkaVyuctovania {
     mena: p.currency ?? "EUR",
   };
 }
+
+/**
+ * Kódy vyúčtovania, ktoré sa doplnia dokladom bez vlastnej hodnoty — stĺpec
+ * dokladu a hodnota. Prázdne kódy sa nedopĺňajú (nič by neprepísali).
+ */
+export function kodyNaDoplnenie(kody: {
+  predkontacia: string | null;
+  clenenie: string | null;
+  kv: string | null;
+}): [stlpec: "pohoda_predkontacia" | "pohoda_clenenie_dph" | "kv_clenenie", hodnota: string][] {
+  const out: [
+    stlpec: "pohoda_predkontacia" | "pohoda_clenenie_dph" | "kv_clenenie",
+    hodnota: string,
+  ][] = [];
+  for (const [stlpec, hodnota] of [
+    ["pohoda_predkontacia", kody.predkontacia],
+    ["pohoda_clenenie_dph", kody.clenenie],
+    ["kv_clenenie", kody.kv],
+  ] as const) {
+    const h = String(hodnota ?? "").trim();
+    if (h) out.push([stlpec, h]);
+  }
+  return out;
+}

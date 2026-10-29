@@ -344,6 +344,7 @@ import { Route as ApiPublicMailPrijemRouteImport } from './routes/api/public/mai
 import { Route as ApiPublicMobilVerziaRouteImport } from './routes/api/public/mobil/verzia'
 import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/public/tatrabanka/callback'
 import { Route as ApiPublicTatrabankaWebhookRouteImport } from './routes/api/public/tatrabanka/webhook'
+import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
 import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api/public/webhooks/gopay-merchant'
 import { Route as ApiV1CompaniesIdRouteImport } from './routes/api/v1/companies.$id'
@@ -2212,6 +2213,12 @@ const ApiPublicTatrabankaWebhookRoute =
     path: '/api/public/tatrabanka/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicTelegramWebhookRoute =
+  ApiPublicTelegramWebhookRouteImport.update({
+    id: '/api/public/telegram/webhook',
+    path: '/api/public/telegram/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicTeslaCallbackRoute = ApiPublicTeslaCallbackRouteImport.update({
   id: '/api/public/tesla/callback',
   path: '/api/public/tesla/callback',
@@ -2737,6 +2744,7 @@ export interface FileRoutesByFullPath {
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
+  '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
@@ -3101,6 +3109,7 @@ export interface FileRoutesByTo {
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
+  '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
@@ -3476,6 +3485,7 @@ export interface FileRoutesById {
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
+  '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
@@ -3851,6 +3861,7 @@ export interface FileRouteTypes {
     | '/api/public/mobil/verzia'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tatrabanka/webhook'
+    | '/api/public/telegram/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
     | '/api/v1/companies/$id'
@@ -4215,6 +4226,7 @@ export interface FileRouteTypes {
     | '/api/public/mobil/verzia'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tatrabanka/webhook'
+    | '/api/public/telegram/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
     | '/api/v1/companies/$id'
@@ -4589,6 +4601,7 @@ export interface FileRouteTypes {
     | '/api/public/mobil/verzia'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tatrabanka/webhook'
+    | '/api/public/telegram/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
     | '/api/v1/companies/$id'
@@ -4791,6 +4804,7 @@ export interface RootRouteChildren {
   ApiPublicMobilVerziaRoute: typeof ApiPublicMobilVerziaRoute
   ApiPublicTatrabankaCallbackRoute: typeof ApiPublicTatrabankaCallbackRoute
   ApiPublicTatrabankaWebhookRoute: typeof ApiPublicTatrabankaWebhookRoute
+  ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
   ApiPublicWebhooksGopayMerchantRoute: typeof ApiPublicWebhooksGopayMerchantRoute
   ApiV1PohodaDavkaRoute: typeof ApiV1PohodaDavkaRoute
@@ -7150,6 +7164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicTatrabankaWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/telegram/webhook': {
+      id: '/api/public/telegram/webhook'
+      path: '/api/public/telegram/webhook'
+      fullPath: '/api/public/telegram/webhook'
+      preLoaderRoute: typeof ApiPublicTelegramWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/tesla/callback': {
       id: '/api/public/tesla/callback'
       path: '/api/public/tesla/callback'
@@ -8338,6 +8359,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMobilVerziaRoute: ApiPublicMobilVerziaRoute,
   ApiPublicTatrabankaCallbackRoute: ApiPublicTatrabankaCallbackRoute,
   ApiPublicTatrabankaWebhookRoute: ApiPublicTatrabankaWebhookRoute,
+  ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,
   ApiPublicWebhooksGopayMerchantRoute: ApiPublicWebhooksGopayMerchantRoute,
   ApiV1PohodaDavkaRoute: ApiV1PohodaDavkaRoute,

@@ -15,6 +15,7 @@
  */
 
 import { bezVzorca } from "@/lib/bezpecny-text";
+import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 import {
   polozkyOdpoctu,
@@ -219,7 +220,7 @@ export function buildUniverzalCsv(opts: {
       text(invoice.customer_country) || "SK",
       text(invoice.currency) || domaca,
       ...(cudziaMena ? [invoice.exchange_rate ? dveSk(invoice.exchange_rate) : ""] : []),
-      text(invoice.variable_symbol),
+      vsVystavenej(invoice),
       text(invoice.constant_symbol),
       text(invoice.specific_symbol),
       NAZOV_UHRADY[text(invoice.payment_method)] ?? text(invoice.payment_method),
@@ -380,7 +381,7 @@ export function buildFlexiXml(opts: {
     <datVyst>${esc(invoice.issue_date)}</datVyst>
     <duzpPuv>${esc(text(invoice.delivery_date) || text(invoice.issue_date))}</duzpPuv>
     <datSplat>${esc(invoice.due_date)}</datSplat>
-    <varSym>${esc(invoice.variable_symbol)}</varSym>
+    <varSym>${esc(vsVystavenej(invoice))}</varSym>
     <mena>code:${esc(mena)}</mena>${
       cudzia
         ? `\n    <kurz>${kurzFlexi}</kurz>\n    <kurzMnozstvi>${kurzMnozstvi}</kurzMnozstvi>`

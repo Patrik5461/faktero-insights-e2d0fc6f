@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listNotifications, markNotificationsRead } from "@/lib/faktero/notifications.functions";
-import type { AppNotification, NotificationSeverity } from "@/lib/faktero/notifications";
+import { kluceNaPrecitanie, type AppNotification, type NotificationSeverity } from "@/lib/faktero/notifications";
 import { useT } from "@/lib/i18n/useT";
 
 const IKONA: Record<NotificationSeverity, typeof Info> = {
@@ -76,13 +76,15 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
     }
   }
 
-  async function oznacJednu(key: string) {
+  async function oznacJednu(n: AppNotification) {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    setItems((prev) => prev.map((n) => (n.key === key ? { ...n, read: true } : n)));
-    setUnread((n) => Math.max(0, n - 1));
+    const key = n.key;
+    setItems((prev) => prev.map((x) => (x.key === key ? { ...x, read: true } : x)));
+    setUnread((x) => Math.max(0, x - 1));
     try {
-      await oznac({ data: { company_id: cid, keys: [key] } });
+      // Zlúčená položka („3 nové eFaktúry“) sa prečíta aj za svojich členov.
+      await oznac({ data: { company_id: cid, keys: kluceNaPrecitanie([n]) } });
     } catch {
       obnov();
     }
@@ -136,9 +138,10 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
                 <Link
                   key={n.key}
                   to={n.to}
+                  search={n.search as any}
                   onClick={() => {
                     setOpen(false);
-                    if (!n.read) oznacJednu(n.key);
+                    if (!n.read) oznacJednu(n);
                   }}
                   className={`flex gap-2.5 border-b border-border/60 px-3 py-2.5 last:border-b-0 hover:bg-secondary ${
                     n.read ? "opacity-60" : ""
@@ -146,8 +149,8 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
                 >
                   <Ikona className={`mt-0.5 h-4 w-4 shrink-0 ${FARBA[n.severity]}`} />
                   <span className="min-w-0">
-                    <span className="block truncate text-sm text-foreground">{t(n.title)}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{t(n.detail)}</span>
+                    <span className="block truncate text-sm text-foreground">{t(n.title, n.params)}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{t(n.detail, n.params)}</span>
                   </span>
                   {!n.read && (
                     <span

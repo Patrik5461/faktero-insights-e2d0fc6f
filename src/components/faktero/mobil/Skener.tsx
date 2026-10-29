@@ -6,6 +6,7 @@ import { ObrysDokladu, useObrysDokladu, useSnimanie } from "./KameraDokladu";
 import { UpravaDokladu } from "./UpravaDokladu";
 import { POTREBNYCH_VZORIEK, ustalenych, type Vzorka } from "@/lib/mobile/auto-fotenie";
 import { potvrd } from "@/lib/potvrdenie";
+import { filtrujMoznosti } from "@/lib/faktero/vyber-kodu";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
   KATEGORIE_VYDAVKOV,
@@ -95,6 +96,8 @@ export function Skener({
     Doklad“ a ľudia ho museli pri každom doklade prepínať.
   */
   const [nastaveniaOtvorene, setNastaveniaOtvorene] = useState(false);
+  // Hľadanie v predkontáciách — číselník firmy býva dlhý (bez diakritiky, aj podľa kódu).
+  const [hladanePk, setHladanePk] = useState("");
   // Zákazky a predkontácie sa načítajú až pri rozbalení „Ďalších položiek" — bez signálu ostanú skryté.
   useEffect(() => {
     if (!nastaveniaOtvorene || predvolby || !companyId) return;
@@ -516,18 +519,39 @@ export function Skener({
                   <span className="mb-1 block text-[12px] font-medium text-app-text-2">
                     {t("sken.predkontacia")}
                   </span>
+                  {predvolby.predkontacie.length > 8 ? (
+                    <input
+                      type="search"
+                      value={hladanePk}
+                      onChange={(e) => setHladanePk(e.target.value)}
+                      placeholder={t("sken.hladatPredkontaciu")}
+                      aria-label={t("sken.hladatPredkontaciu")}
+                      className="mb-2 min-h-[44px] w-full rounded-app-sm border border-app-ramik bg-transparent px-3 text-[15px]"
+                    />
+                  ) : null}
                   <select
                     value={nastavenie.predkontacia ?? ""}
                     onChange={(e) => nastav({ predkontacia: e.target.value || undefined })}
                     className="min-h-[44px] w-full rounded-app-sm border border-app-ramik bg-transparent px-3 text-[15px]"
                   >
                     <option value="">{t("sken.ziadna")}</option>
-                    {predvolby.predkontacie.map((p) => (
-                      <option key={p.kod} value={p.kod}>
-                        {p.kod}
-                        {p.popis ? ` — ${p.popis}` : ""}
-                      </option>
-                    ))}
+                    {(() => {
+                      const zhodne = new Set(
+                        filtrujMoznosti(
+                          predvolby.predkontacie.map((x) => ({ hodnota: x.kod, text: x.popis || x.kod })),
+                          hladanePk,
+                        ).map((m) => m.hodnota),
+                      );
+                      return predvolby.predkontacie
+                        // Vybraná ostáva v ponuke, aj keď ju hľadanie nezachytí.
+                        .filter((p) => p.kod === nastavenie.predkontacia || zhodne.has(p.kod))
+                        .map((p) => (
+                          <option key={p.kod} value={p.kod}>
+                            {p.kod}
+                            {p.popis ? ` — ${p.popis}` : ""}
+                          </option>
+                        ));
+                    })()}
                   </select>
                 </label>
               ) : null}

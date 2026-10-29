@@ -88,12 +88,17 @@ export function sumy(d: DokladAleboFaktura): Sumy {
       { sadzba: 0, zaklad: cislo(x.freeTaxAmount), dph: 0 },
     ].filter((v) => v.zaklad || v.dph);
   }
-  const zaklad = r2(sadzby.reduce((s: number, v: any) => s + v.zaklad, 0));
+  const zZaznamu = r2(sadzby.reduce((s: number, v: any) => s + v.zaklad, 0));
   const dph = r2(sadzby.reduce((s: number, v: any) => s + v.dph, 0));
-  const spolu = x.totalPrice != null ? r2(cislo(x.totalPrice)) : r2(zaklad + dph);
-  // Bez rozpisu (napr. neplatiteľ) je všetko základ s nulovou sadzbou.
+  const spolu = x.totalPrice != null ? r2(cislo(x.totalPrice)) : r2(zZaznamu + dph);
+  /*
+    Bez rozpisu (napr. neplatiteľ) je všetko základ s nulovou sadzbou. Základ
+    sa berie až po tomto dosadení — inak ostal 0 a hlavička mala základ 0,
+    DPH 0 a sumu 260 € (PALIERA 2022, 10 vystavených a 4 prijaté).
+  */
   if (!sadzby.length && spolu) sadzby = [{ sadzba: 0, zaklad: spolu, dph: 0 }];
-  return { zaklad: sadzby.length ? zaklad : spolu, dph, spolu, sadzby };
+  const zaklad = r2(sadzby.reduce((s: number, v: any) => s + v.zaklad, 0));
+  return { zaklad, dph, spolu, sadzby };
 }
 
 /**

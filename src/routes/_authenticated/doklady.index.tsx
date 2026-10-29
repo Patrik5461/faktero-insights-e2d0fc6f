@@ -66,6 +66,8 @@ import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch, type ListSearch } from "@/hooks/useListFilters";
 import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
+import { SuctovaPatickaZoznamu } from "@/components/faktero/SuctyDokladov";
+import { suhrnZPoloziek } from "@/lib/faktero/suhrn-dph";
 import { polozkaBlocku } from "@/lib/faktero/suhrn-vyberu";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
 import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
@@ -1137,7 +1139,7 @@ function DokladyPage() {
                         )}
                       </button>
                       <span className="ml-1.5 inline-flex align-middle">
-                        <OdovzdaneIkona kedy={r.exported_at} />
+                        <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
                       </span>
                       {r.supplier_ico ? (
                         <div className="text-xs text-muted-foreground">
@@ -1410,16 +1412,20 @@ function DokladyPage() {
             </>
           )}
           {rows.length > 0 ? (
-            <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              {/* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu). */}
-              <span title={t("Spracované a ešte neodovzdané do účtovníctva")}>
-                {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
-                {naExport.length ? ` · ${sumyDokladov(naExport)}` : ""}
-              </span>
-              <span>
-                {t("Spolu:")} <strong className="text-foreground">{rad.zoradene.length}</strong> · {sumyDokladov(rad.zoradene)}
-              </span>
-            </div>
+            /* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu); tu je celý
+               vyfiltrovaný zoznam so základom a DPH, rovnako ako vo vystavených. */
+            <SuctovaPatickaZoznamu
+              nadpis={t("Spolu:")}
+              suhrn={suhrnZPoloziek(
+                rad.zoradene.map((r: any) => polozkaBlocku(r, !!uhrady[r.id])),
+              )}
+              doplnok={
+                <span title={t("Spracované a ešte neodovzdané do účtovníctva")}>
+                  {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
+                  {naExport.length ? ` · ${sumyDokladov(naExport)}` : ""}
+                </span>
+              }
+            />
           ) : null}
         </div>
         </SNahladom>

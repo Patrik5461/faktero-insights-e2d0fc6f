@@ -1,3 +1,4 @@
+import { vsPrijatejNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 /*
   Import prijatých dokladov z inej aplikácie (Doklado, Pohoda, tabuľka).
 
@@ -555,7 +556,7 @@ export function riadokPrijatejFaktury(
     supplier_ic_dph: z.icDph,
     supplier_iban: z.iban,
     invoice_number: z.cislo ?? z.vs ?? "bez čísla",
-    variable_symbol: z.vs,
+    variable_symbol: vsPrijatejNaUlozenie(z.vs, z.cislo),
     issue_date: vystavenie,
     received_date: vystavenie,
     due_date: z.splatnost ?? vystavenie,

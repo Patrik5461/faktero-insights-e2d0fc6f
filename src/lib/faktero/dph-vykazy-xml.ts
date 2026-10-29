@@ -133,6 +133,12 @@ export function kvNaXml(
       `<C2${atr("Dod", sPredponou(c.dod) || null)} FO="${esc(c.fo)}" FP="${esc(c.fp)}" ZR="${suma(c.zr)}" DR="${suma(c.dr)}" S="${c.s}" OR="${suma(c.or)}"${c.onp ? ' ONP="x"' : ""}/>`,
     );
   }
+  // D.2 — ostatné vydané faktúry sumárne (len tie, ktoré si niekto ručne zaradil do D.2).
+  if (vykaz.d2) {
+    riadky.push(
+      `<D2 Z="${suma(vykaz.d2.z)}" D="${suma(vykaz.d2.d)}" ZZn="${suma(vykaz.d2.zzn)}" DZn="${suma(vykaz.d2.dzn)}"/>`,
+    );
+  }
 
   const ns = "https://ekr.financnasprava.sk/Formulare/XSD/kv_dph_2025.xsd";
   return `<?xml version="1.0" encoding="UTF-8"?>

@@ -13,6 +13,7 @@
  */
 import type { EfakturaChannel, EfakturaDocFormat, EfakturaReceivedStatus } from "./types";
 import { skontrolujNaUlozenie, type StlpceKontroly } from "./kontrola/ulozenie";
+import { rozoberPrijatuUbl } from "./prijata-z-ubl";
 
 export type IncomingDocumentInput = {
   companyId: string;
@@ -107,6 +108,15 @@ export function parseEfakturaEnvelope(xml: string): ParsedEfaktura {
     /<cac:AccountingSupplierParty>[\s\S]*?<cac:PartyTaxScheme>[\s\S]*?<cbc:CompanyID>([^<]+)<\/cbc:CompanyID>/,
   );
 
+  /*
+    Sumy z celého XML parsera (menné priestory, TaxTotal v mene dokladu,
+    rozpis po sadzbách) — regulárny výraz vyššie berie prvý výskyt značky a
+    pri inej predpone alebo DPH v mene účtovania (BT-111) sa netrafí.
+  */
+  const presne = rozoberPrijatuUbl(xml);
+  const totalPresne = presne ? presne.celkom : total;
+  const vatPresne = presne ? presne.dph : vatTotal;
+
   if (!documentNumber) errors.push({ code: "PARSE_NO_ID", message: "Missing invoice number" });
   if (!issueDate) errors.push({ code: "PARSE_NO_DATE", message: "Missing issue date" });
 
@@ -116,10 +126,10 @@ export function parseEfakturaEnvelope(xml: string): ParsedEfaktura {
     issueDate,
     dueDate,
     currency,
-    total,
-    vatTotal,
-    prepaid,
-    payable,
+    total: totalPresne,
+    vatTotal: vatPresne,
+    prepaid: presne ? (presne.zaloha || undefined) : prepaid,
+    payable: presne ? presne.naUhradu : payable,
     senderName,
     senderVatId,
     documentKind,

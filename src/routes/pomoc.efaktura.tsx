@@ -360,6 +360,43 @@ const sections: HelpSection[] = [
           Ak tá istá faktúra prišla aj inou cestou (napríklad e-mailom), Faktero ju nezaloží druhý
           raz, ale eFaktúru pripojí k existujúcej.
         </p>
+        <p>
+          Zaevidovaná faktúra má všetko z eFaktúry: sumu s DPH, základ a DPH po sadzbách, položky,
+          IČO, IBAN aj VS. Ak dodávateľ odpočítal zaplatenú zálohu, prijatá faktúra ju má ako odpočet
+          zálohy a na úhradu (aj v príkaze na úhradu) ostáva len zvyšok.
+        </p>
+        <p>
+          <strong>Kam sa zaeviduje</strong> si majiteľ alebo správca firmy nastaví v{" "}
+          <Link to="/efaktura" hash="prijem">
+            eFaktúra → Prehľad → Príjem eFaktúr
+          </Link>
+          :
+        </p>
+        <ul>
+          <li>
+            <strong>Prijaté faktúry</strong> (predvolené) — faktúra vznikne hneď, voliteľne v
+            zvolenom stave dokladu. Ak máte zapnuté schvaľovanie prijatých faktúr, pôjde rovno na
+            schválenie.
+          </li>
+          <li>
+            <strong>Nespracované doklady</strong> — doklad počká na kontrolu ako doklady z e-mailu;
+            údaje sa prenesú z eFaktúry presne, nič sa nečíta zo skenu. Po kliknutí na Vytvoriť sa
+            eFaktúra spáruje s hotovou faktúrou.
+          </li>
+          <li>
+            <strong>Zaevidovať automaticky hneď po prijatí</strong> — bez kliknutia na Zaevidovať.
+            Čo sa nepodarí zaevidovať, ostane v zozname na ručné zaevidovanie.
+          </li>
+          <li>
+            <strong>Po zaevidovaní otvoriť doklad</strong> — inak ostanete v zozname a doklad
+            otvoríte odkazom v hlásení.
+          </li>
+        </ul>
+        <p>
+          Nastavenie platí pre faktúry a dobropisy. Zálohová faktúra ide vždy medzi prijaté zálohové
+          faktúry. Samofaktúru, ktorú za vás vyhotovil odberateľ, Faktero medzi prijaté nezaradí —
+          je to vaša vydaná faktúra.
+        </p>
       </>
     ),
   },

@@ -1685,6 +1685,7 @@ export type Database = {
           invoice_intro_default: string | null
           pohoda_ico_z_mena: boolean
           mail_ukladat_bez_dokladu: boolean
+          efaktura_upozornenie_email: boolean
         }
         Insert: {
           kurz_de_zdroj?: string
@@ -1810,6 +1811,7 @@ export type Database = {
           invoice_intro_default?: string | null
           pohoda_ico_z_mena?: boolean
           mail_ukladat_bez_dokladu?: boolean
+          efaktura_upozornenie_email?: boolean
         }
         Update: {
           kurz_de_zdroj?: string
@@ -1935,6 +1937,7 @@ export type Database = {
           invoice_intro_default?: string | null
           pohoda_ico_z_mena?: boolean
           mail_ukladat_bez_dokladu?: boolean
+          efaktura_upozornenie_email?: boolean
         }
         Relationships: []
       }
@@ -2751,6 +2754,10 @@ export type Database = {
           rezim: string
           test_mode: boolean
           updated_at: string
+          prijem_ciel: string
+          prijem_stav_id: string | null
+          prijem_automaticky: boolean
+          prijem_otvorit: boolean
         }
         Insert: {
           activated_at?: string | null
@@ -2774,6 +2781,10 @@ export type Database = {
           rezim?: string
           test_mode?: boolean
           updated_at?: string
+          prijem_ciel?: string
+          prijem_stav_id?: string | null
+          prijem_automaticky?: boolean
+          prijem_otvorit?: boolean
         }
         Update: {
           activated_at?: string | null
@@ -2797,6 +2808,10 @@ export type Database = {
           rezim?: string
           test_mode?: boolean
           updated_at?: string
+          prijem_ciel?: string
+          prijem_stav_id?: string | null
+          prijem_automaticky?: boolean
+          prijem_otvorit?: boolean
         }
         Relationships: [
           {
@@ -2837,6 +2852,9 @@ export type Database = {
           kontrola_chyby: number | null
           kontrola_varovania: number | null
           skontrolovane_at: string | null
+          upozornenie_odoslane_at: string | null
+          nespracovany_id: string | null
+          zaevidovanie_at: string | null
         }
         Insert: {
           channel?: Database["public"]["Enums"]["efaktura_channel"]
@@ -2866,6 +2884,9 @@ export type Database = {
           kontrola_chyby?: number | null
           kontrola_varovania?: number | null
           skontrolovane_at?: string | null
+          upozornenie_odoslane_at?: string | null
+          nespracovany_id?: string | null
+          zaevidovanie_at?: string | null
         }
         Update: {
           channel?: Database["public"]["Enums"]["efaktura_channel"]
@@ -2895,6 +2916,9 @@ export type Database = {
           kontrola_chyby?: number | null
           kontrola_varovania?: number | null
           skontrolovane_at?: string | null
+          upozornenie_odoslane_at?: string | null
+          nespracovany_id?: string | null
+          zaevidovanie_at?: string | null
         }
         Relationships: [
           {
@@ -3547,6 +3571,12 @@ export type Database = {
           odosielatel_mailu: string | null
           stav_id: string | null
           komentar: string | null
+          prvy_export_at: string | null
+          pocet_exportov: number
+          export_cesta: string | null
+          vratene_z_pohody_at: string | null
+          oprava_zauctovania_at: string | null
+          oprava_zauctovania_povodne: Json | null
         }
         Insert: {
           processed_at?: string | null
@@ -3614,6 +3644,12 @@ export type Database = {
           odosielatel_mailu?: string | null
           stav_id?: string | null
           komentar?: string | null
+          prvy_export_at?: string | null
+          pocet_exportov?: number
+          export_cesta?: string | null
+          vratene_z_pohody_at?: string | null
+          oprava_zauctovania_at?: string | null
+          oprava_zauctovania_povodne?: Json | null
         }
         Update: {
           processed_at?: string | null
@@ -3681,6 +3717,12 @@ export type Database = {
           odosielatel_mailu?: string | null
           stav_id?: string | null
           komentar?: string | null
+          prvy_export_at?: string | null
+          pocet_exportov?: number
+          export_cesta?: string | null
+          vratene_z_pohody_at?: string | null
+          oprava_zauctovania_at?: string | null
+          oprava_zauctovania_povodne?: Json | null
         }
         Relationships: [
           {
@@ -5502,6 +5544,12 @@ export type Database = {
           stav_id: string | null
           komentar: string | null
           stitky: string[]
+          prvy_export_at: string | null
+          pocet_exportov: number
+          export_cesta: string | null
+          vratene_z_pohody_at: string | null
+          oprava_zauctovania_at: string | null
+          oprava_zauctovania_povodne: Json | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -5615,6 +5663,12 @@ export type Database = {
           stav_id?: string | null
           komentar?: string | null
           stitky?: string[]
+          prvy_export_at?: string | null
+          pocet_exportov?: number
+          export_cesta?: string | null
+          vratene_z_pohody_at?: string | null
+          oprava_zauctovania_at?: string | null
+          oprava_zauctovania_povodne?: Json | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -5728,6 +5782,12 @@ export type Database = {
           stav_id?: string | null
           komentar?: string | null
           stitky?: string[]
+          prvy_export_at?: string | null
+          pocet_exportov?: number
+          export_cesta?: string | null
+          vratene_z_pohody_at?: string | null
+          oprava_zauctovania_at?: string | null
+          oprava_zauctovania_povodne?: Json | null
         }
         Relationships: [
           {
@@ -6825,6 +6885,12 @@ export type Database = {
           odosielatel_mailu: string | null
           stav_id: string | null
           komentar: string | null
+          prvy_export_at: string | null
+          pocet_exportov: number
+          export_cesta: string | null
+          vratene_z_pohody_at: string | null
+          oprava_zauctovania_at: string | null
+          oprava_zauctovania_povodne: Json | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -6938,6 +7004,12 @@ export type Database = {
           odosielatel_mailu?: string | null
           stav_id?: string | null
           komentar?: string | null
+          prvy_export_at?: string | null
+          pocet_exportov?: number
+          export_cesta?: string | null
+          vratene_z_pohody_at?: string | null
+          oprava_zauctovania_at?: string | null
+          oprava_zauctovania_povodne?: Json | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -7051,6 +7123,12 @@ export type Database = {
           odosielatel_mailu?: string | null
           stav_id?: string | null
           komentar?: string | null
+          prvy_export_at?: string | null
+          pocet_exportov?: number
+          export_cesta?: string | null
+          vratene_z_pohody_at?: string | null
+          oprava_zauctovania_at?: string | null
+          oprava_zauctovania_povodne?: Json | null
         }
         Relationships: [
           {
@@ -9963,6 +10041,7 @@ export type Database = {
           created_at: string
           updated_at: string
           odpoved_token: string
+          telegram_chat_id: number | null
         }
         Insert: {
           id?: string
@@ -9984,6 +10063,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           odpoved_token?: string
+          telegram_chat_id?: number | null
         }
         Update: {
           id?: string
@@ -10005,6 +10085,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           odpoved_token?: string
+          telegram_chat_id?: number | null
         }
         Relationships: [
           {
@@ -10387,6 +10468,7 @@ export type Database = {
           created_by: string | null
           created_at: string
           updated_at: string
+          kv_clenenie: string | null
         }
         Insert: {
           id?: string
@@ -10408,6 +10490,7 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           updated_at?: string
+          kv_clenenie?: string | null
         }
         Update: {
           id?: string
@@ -10429,6 +10512,7 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           updated_at?: string
+          kv_clenenie?: string | null
         }
         Relationships: [
           {
@@ -11365,6 +11449,151 @@ export type Database = {
           }
         ]
       }
+
+
+      telegram_admin_chaty: {
+        Row: {
+          chat_id: number
+          user_id: string
+          meno: string | null
+          username: string | null
+          created_at: string
+        }
+        Insert: {
+          chat_id: number
+          user_id: string
+          meno?: string | null
+          username?: string | null
+          created_at?: string
+        }
+        Update: {
+          chat_id?: number
+          user_id?: string
+          meno?: string | null
+          username?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      telegram_chaty: {
+        Row: {
+          chat_id: number
+          user_id: string | null
+          meno: string | null
+          username: string | null
+          poziadavka_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          chat_id: number
+          user_id?: string | null
+          meno?: string | null
+          username?: string | null
+          poziadavka_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          chat_id?: number
+          user_id?: string | null
+          meno?: string | null
+          username?: string | null
+          poziadavka_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_chaty_poziadavka_id_fkey"
+            columns: ["poziadavka_id"]
+            isOneToOne: false
+            referencedRelation: "podpora_poziadavky"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      telegram_kody: {
+        Row: {
+          kod_hash: string
+          ucel: string
+          user_id: string
+          plati_do: string
+          created_at: string
+        }
+        Insert: {
+          kod_hash: string
+          ucel: string
+          user_id: string
+          plati_do: string
+          created_at?: string
+        }
+        Update: {
+          kod_hash?: string
+          ucel?: string
+          user_id?: string
+          plati_do?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      telegram_spravy_bota: {
+        Row: {
+          chat_id: number
+          message_id: number
+          poziadavka_id: string | null
+          auto_oprava_id: string | null
+          created_at: string
+        }
+        Insert: {
+          chat_id: number
+          message_id: number
+          poziadavka_id?: string | null
+          auto_oprava_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          chat_id?: number
+          message_id?: number
+          poziadavka_id?: string | null
+          auto_oprava_id?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_spravy_bota_poziadavka_id_fkey"
+            columns: ["poziadavka_id"]
+            isOneToOne: false
+            referencedRelation: "podpora_poziadavky"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_spravy_bota_auto_oprava_id_fkey"
+            columns: ["auto_oprava_id"]
+            isOneToOne: false
+            referencedRelation: "podpora_auto_opravy"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      telegram_updaty: {
+        Row: {
+          update_id: number
+          created_at: string
+        }
+        Insert: {
+          update_id: number
+          created_at?: string
+        }
+        Update: {
+          update_id?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+
+
+
 
 
     }

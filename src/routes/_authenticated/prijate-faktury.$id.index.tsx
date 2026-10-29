@@ -1,4 +1,5 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { OknoZdrojovehoMailu } from "@/components/faktero/ZdrojovyMail";
@@ -712,7 +713,7 @@ function PurchaseInvoiceDetail() {
     vystavenie: row.issue_date,
     dodanie: row.delivery_date,
     splatnost: row.due_date ? popisSplatnosti(row) : null,
-    vs: row.variable_symbol,
+    vs: vsPrijatej(row) || null,
     formaUhrady: row.payment_method ? t(row.payment_method) : null,
     mena: row.currency ?? "EUR",
     kurz: row.exchange_rate,
@@ -819,9 +820,9 @@ function PurchaseInvoiceDetail() {
         {row.supplier_iban && (
           <div className="mt-2 font-mono text-sm">{row.supplier_iban}</div>
         )}
-        {row.variable_symbol && (
+        {vsPrijatej(row) && (
           <div className="text-sm text-muted-foreground">
-            {t("VS")}: {row.variable_symbol}
+            {t("VS")}: {vsPrijatej(row)}
           </div>
         )}
       </div>
@@ -983,10 +984,10 @@ function PurchaseInvoiceDetail() {
                     {fmt(Number(row.amount_total), row.currency)}
                   </span>
                 </div>
-                {row.variable_symbol && (
+                {vsPrijatej(row) && (
                   <div className="flex justify-between gap-2">
                     <span className="text-muted-foreground">{t("VS")}</span>
-                    <span className="tabular-nums">{row.variable_symbol}</span>
+                    <span className="tabular-nums">{vsPrijatej(row)}</span>
                   </div>
                 )}
               </div>
@@ -1136,6 +1137,8 @@ function PurchaseInvoiceDetail() {
           <div className="min-w-0 space-y-4">
             <UdajePreUctovnika u={udajeUctovnika} />
             {kartaUhradyPrijatej}
+            {/* Zaúčtovanie pred platobnými údajmi — je pre účtovníka dôležitejšie. */}
+            {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
             {kartaPlatba(true)}
             {kartaBanka}
             {kartaZakazka}
@@ -1149,7 +1152,6 @@ function PurchaseInvoiceDetail() {
             {kartaPrilohy}
             {kartaKomentare}
             {!navrh && <SpracovalDokladu companyId={row.company_id} agenda="prijata" row={row} />}
-            {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
             <ZbaleneK nadpis="Údaje faktúry">
               <div className="space-y-4">
                 {kartaStrany(false)}

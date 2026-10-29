@@ -1,11 +1,22 @@
 import { popisRoly } from "@/lib/faktero/rola-popis";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { CreateCompanyDialog } from "@/components/faktero/CreateCompanyDialog";
 import { getActiveCompanyId, setActiveCompanyId } from "@/lib/faktero/active-company";
-import { Plus, Check, Trash2, Search, Inbox, Landmark, Receipt } from "lucide-react";
+import {
+  Plus,
+  Check,
+  Trash2,
+  Search,
+  Inbox,
+  Landmark,
+  Receipt,
+  FileWarning,
+  Mail,
+  Send,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { zmazFirmuFn } from "@/lib/faktero/firma-zmazanie.functions";
@@ -17,6 +28,16 @@ import { citajPosledneFirmy, zoradFirmy } from "@/lib/faktero/poradie-firiem";
 import { riadkyPreIds } from "@/lib/faktero/strankovanie";
 import { AvatarFirmy } from "@/components/faktero/PrepinacFiriem";
 import { RozdelovacMailov } from "@/components/faktero/RozdelovacMailov";
+import {
+  ODKAZY_PREHLADU,
+  STITOK_EFAKTURY,
+  kusy,
+  stavBanky,
+  stavZRiadku,
+  ukazatEfakturu,
+  type StavFirmy,
+  type Ton,
+} from "@/lib/faktero/prehlad-firiem";
 
 export const Route = createFileRoute("/_authenticated/firmy")({
   head: ({ match }) => ({
@@ -25,8 +46,22 @@ export const Route = createFileRoute("/_authenticated/firmy")({
   component: CompanyManagementPage,
 });
 
-type Row = { id: string; name: string; ico: string | null; role: string; created_at: string };
-type PrehladFirmy = { blocky: number; uctySpolu: number; uctyNapojene: number };
+type Row = {
+  id: string;
+  name: string;
+  ico: string | null;
+  country: string | null;
+  role: string;
+  created_at: string;
+};
+
+/** Farby štítkov podľa vážnosti — rovnaké ako doteraz pri banke. */
+const TON: Record<Ton, string> = {
+  ok: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  pozor: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  chyba: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  neutralny: "bg-secondary text-foreground",
+};
 
 function CompanyManagementPage() {
   const { t, jazyk } = useT();
@@ -39,10 +74,8 @@ function CompanyManagementPage() {
   const [hladanie, setHladanie] = useState("");
   const [rola, setRola] = useState("");
   const [posledne] = useState(citajPosledneFirmy);
-  /** Nespracované doklady a neskontrolované bločky po firmách; `null` = ešte sa načítava alebo sa nedalo. */
-  const [nespracovane, setNespracovane] = useState<Map<string, number> | null>(null);
-  /** Neexportované bločky a bankové účty po firmách; `null` = ešte sa načítava alebo sa nedalo. */
-  const [prehlad, setPrehlad] = useState<Map<string, PrehladFirmy> | null>(null);
+  /** Stav firiem (eFaktúra, počty, banka); `null` = ešte sa načítava. */
+  const [stav, setStav] = useState<Map<string, StavFirmy> | null>(null);
 
   async function load() {
     // Bez filtra na seba vráti RLS aj členstvá kolegov a firma sa v zozname
@@ -51,7 +84,7 @@ function CompanyManagementPage() {
     if (!auth.user) return;
     const { data, error } = await supabase
       .from("company_users")
-      .select("role, company:companies(id, name, ico, created_at)")
+      .select("role, company:companies(id, name, ico, country, created_at)")
       .eq("user_id", auth.user.id)
       .order("created_at", { ascending: true });
     if (error) {
@@ -64,6 +97,7 @@ function CompanyManagementPage() {
         id: r.company.id,
         name: r.company.name,
         ico: r.company.ico ?? null,
+        country: r.company.country ?? null,
         created_at: r.company.created_at,
       })),
     );
@@ -74,76 +108,29 @@ function CompanyManagementPage() {
   }, []);
 
   /*
-    Počet nespracovaných pri každej firme — to isté číslo, aké ukazuje menu
-    pri Nespracovaných (doklady v Nespracovaných + nové bločky). Takých riadkov
-    je málo, tak sa načítajú len stĺpce `company_id` pre všetky firmy naraz
-    namiesto dvoch dotazov na každú firmu.
+    Stav všetkých firiem naraz — eFaktúra, nespracované, neodovzdané bločky,
+    faktúry po splatnosti a banka. Jedna funkcia v databáze
+    (`prehlad_firiem_stav`) kontroluje členstvo aj vlastný prístup; čo
+    človek v danej firme nesmie vidieť, vráti prázdne. Po 500 firmách na
+    volanie, aby výsledok nenarazil na strop 1 000 riadkov.
   */
   useEffect(() => {
     if (!rows?.length) return;
     let zrusene = false;
-    const ids = rows.map((r) => r.id);
     (async () => {
-      const [a, b] = await Promise.all([
-        riadkyPreIds<{ company_id: string }>(
-          ids,
-          (kus, od, po) =>
-            supabase
-              .from("nespracovane_doklady" as any)
-              .select("id, company_id")
-              .in("company_id", kus)
-              .order("id")
-              .range(od, po) as any,
-        ),
-        riadkyPreIds<{ company_id: string }>(
-          ids,
-          (kus, od, po) =>
-            supabase
-              .from("expense_documents")
-              .select("id, company_id")
-              .in("company_id", kus)
-              .eq("status", "new")
-              .order("id")
-              .range(od, po) as any,
-        ),
-      ]);
-      const pocty = new Map<string, number>();
-      for (const r of [...a, ...b]) pocty.set(r.company_id, (pocty.get(r.company_id) ?? 0) + 1);
-      if (!zrusene) setNespracovane(pocty);
-    })().catch(() => {
-      // Počty sú len pomôcka — bez nich sa stĺpec nezobrazí.
-    });
-    return () => {
-      zrusene = true;
-    };
-  }, [rows]);
-
-  /*
-    Neexportované bločky a bankové účty (napojené / všetky) — jedna funkcia
-    v databáze spočíta všetky firmy naraz (`prehlad_firiem`, cez RLS). Po
-    500 firmách na volanie, aby výsledok nenarazil na strop 1 000 riadkov.
-  */
-  useEffect(() => {
-    if (!rows?.length) return;
-    let zrusene = false;
-    const ids = rows.map((r) => r.id);
-    (async () => {
-      const out = new Map<string, PrehladFirmy>();
-      for (let i = 0; i < ids.length; i += 500) {
-        const { data, error } = await (supabase.rpc as any)("prehlad_firiem", {
-          p_company_ids: ids.slice(i, i + 500),
+      const out = new Map<string, StavFirmy>();
+      for (const kus of kusy(rows.map((r) => r.id))) {
+        const { data, error } = await (supabase.rpc as any)("prehlad_firiem_stav", {
+          p_company_ids: kus,
         });
         if (error) throw error;
-        for (const x of (data ?? []) as any[])
-          out.set(x.company_id, {
-            blocky: Number(x.neexportovane_blocky) || 0,
-            uctySpolu: Number(x.ucty_spolu) || 0,
-            uctyNapojene: Number(x.ucty_napojene) || 0,
-          });
+        for (const x of (data ?? []) as Record<string, unknown>[])
+          out.set(x.company_id as string, stavZRiadku(x));
       }
-      if (!zrusene) setPrehlad(out);
+      if (!zrusene) setStav(out);
     })().catch(() => {
-      // Počty sú len pomôcka — bez nich ostanú stĺpce prázdne.
+      // Počty sú len pomôcka — bez nich ostanú bunky prázdne.
+      if (!zrusene) setStav(new Map());
     });
     return () => {
       zrusene = true;
@@ -182,68 +169,127 @@ function CompanyManagementPage() {
     window.location.assign(kam);
   }
 
-  /** Počet nespracovaných ako odkaz — prepne do firmy rovno na Nespracované. */
-  const pocetNespracovanych = (r: Row) => {
-    if (!nespracovane) return <span className="text-muted-foreground">…</span>;
-    const n = nespracovane.get(r.id) ?? 0;
+  /**
+   * Počet ako odkaz — prepne do firmy rovno na príslušný zoznam. Nula je
+   * šedá, `null` (nesmie vidieť) bunku vynechá, `…` ešte sa načítava.
+   */
+  const pocet = (
+    r: Row,
+    n: number | null | undefined,
+    kam: string,
+    titulok: string,
+    ikona: ReactNode,
+    ton: Ton = "neutralny",
+  ) => {
+    if (!stav) return <span className="text-muted-foreground">…</span>;
+    if (n === null || n === undefined) return <span className="text-muted-foreground">—</span>;
     if (!n) return <span className="text-muted-foreground">0</span>;
     return (
       <button
         type="button"
-        onClick={() => switchTo(r.id, "/nespracovane")}
-        title={t("Otvoriť Nespracované v tejto firme")}
-        className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-500/25 dark:text-amber-300"
+        onClick={() => switchTo(r.id, kam)}
+        title={titulok}
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums hover:opacity-80 ${TON[ton]}`}
       >
-        <Inbox className="h-3 w-3" /> {n}
+        {ikona} {n}
       </button>
     );
   };
+
+  const pocetNespracovanych = (r: Row) =>
+    pocet(
+      r,
+      stav?.get(r.id)?.nespracovane,
+      ODKAZY_PREHLADU.nespracovane,
+      t("Otvoriť Nespracované v tejto firme"),
+      <Inbox className="h-3 w-3" />,
+      "pozor",
+    );
 
   /** Bločky spracované, ale ešte neodovzdané do účtovníctva — odkaz do Dokladov firmy. */
-  const neexportovaneBlocky = (r: Row) => {
-    if (!prehlad) return <span className="text-muted-foreground">…</span>;
-    const n = prehlad.get(r.id)?.blocky ?? 0;
-    if (!n) return <span className="text-muted-foreground">0</span>;
+  const neexportovaneBlocky = (r: Row) =>
+    pocet(
+      r,
+      stav?.get(r.id)?.neodovzdaneBlocky,
+      ODKAZY_PREHLADU.neodovzdaneBlocky,
+      t("Bločky spracované, ale ešte neodovzdané do účtovníctva"),
+      <Receipt className="h-3 w-3" />,
+    );
+
+  const poSplatnosti = (r: Row) =>
+    pocet(
+      r,
+      stav?.get(r.id)?.poSplatnosti,
+      ODKAZY_PREHLADU.poSplatnosti,
+      t("Neuhradené faktúry po splatnosti"),
+      <FileWarning className="h-3 w-3" />,
+      "chyba",
+    );
+
+  /** Stav registrácie na eFaktúre a počet prijatých eFaktúr, ktoré ešte nie sú zaevidované. */
+  const efaktura = (r: Row) => {
+    if (!stav) return <span className="text-muted-foreground">…</span>;
+    const s = stav.get(r.id);
+    if (!s || !ukazatEfakturu(r.country, s) || !s.efaktura)
+      return <span className="text-muted-foreground">—</span>;
+    const st = STITOK_EFAKTURY[s.efaktura.rozsah];
+    const prijate = s.efakturyNezaevidovane ?? 0;
     return (
-      <button
-        type="button"
-        onClick={() => switchTo(r.id, "/doklady")}
-        title={t("Bločky spracované, ale ešte neodovzdané do účtovníctva")}
-        className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium hover:bg-secondary/70"
-      >
-        <Receipt className="h-3 w-3" /> {n}
-      </button>
+      <span className="inline-flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => switchTo(r.id, ODKAZY_PREHLADU.efaktura)}
+          title={
+            s.efaktura.poskytovatel
+              ? t("Príjem u: {poskytovatel}", { poskytovatel: s.efaktura.poskytovatel })
+              : t("Otvoriť eFaktúru v tejto firme")
+          }
+          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium hover:opacity-80 ${TON[st.ton]}`}
+        >
+          <Send className="h-3 w-3" /> {t(st.text)}
+        </button>
+        {prijate > 0 && (
+          <button
+            type="button"
+            onClick={() => switchTo(r.id, ODKAZY_PREHLADU.efakturyNezaevidovane)}
+            title={t("Prijaté eFaktúry, ktoré ešte nie sú zaevidované")}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums hover:opacity-80 ${TON.pozor}`}
+          >
+            <Inbox className="h-3 w-3" /> {prijate}
+          </button>
+        )}
+      </span>
     );
   };
 
-  /** Napojené / všetky bankové účty; oranžovo s „Napojiť“, keď niektorý napojený nie je. */
+  /** Napojené / všetky bankové účty a či niektorému vypršal súhlas alebo pripojenie zlyhalo. */
   const banka = (r: Row) => {
-    if (!prehlad) return <span className="text-muted-foreground">…</span>;
-    const b = prehlad.get(r.id);
-    const spolu = b?.uctySpolu ?? 0;
-    const napojene = b?.uctyNapojene ?? 0;
-    const chyba = spolu === 0 || napojene < spolu;
+    if (!stav) return <span className="text-muted-foreground">…</span>;
+    const b = stav.get(r.id)?.banka;
+    if (!b) return <span className="text-muted-foreground">—</span>;
+    const sb = stavBanky(b);
     return (
       <span className="inline-flex flex-wrap items-center gap-2">
-        <span
-          title={t("Napojené na banku / všetky bankové účty firmy")}
-          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${
-            chyba
-              ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
-              : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-          }`}
+        <button
+          type="button"
+          onClick={() => switchTo(r.id, ODKAZY_PREHLADU.banka)}
+          title={sb.text ? t(sb.text) : t("Napojené na banku / všetky bankové účty firmy")}
+          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums hover:opacity-80 ${TON[sb.ton]}`}
         >
-          <Landmark className="h-3 w-3" /> {napojene}/{spolu}
-        </span>
+          <Landmark className="h-3 w-3" /> {b.napojene}/{b.spolu}
+        </button>
+        {sb.ton === "chyba" && sb.text ? (
+          <span className="text-xs text-rose-700 dark:text-rose-300">{t(sb.text)}</span>
+        ) : null}
         {/* Napojiť banku smie len správa firmy — účtovník k banke prístup nemá. */}
-        {chyba && (r.role === "owner" || r.role === "admin") ? (
+        {sb.ton !== "ok" && (r.role === "owner" || r.role === "admin") ? (
           <button
             type="button"
-            onClick={() => switchTo(r.id, "/bankove-ucty/pripojit")}
+            onClick={() => switchTo(r.id, ODKAZY_PREHLADU.pripojitBanku)}
             title={t("Napojiť bankový účet tejto firmy")}
             className="text-xs font-medium text-primary hover:underline"
           >
-            {t("Napojiť")}
+            {b.suhlas > 0 || b.problem > 0 ? t("Obnoviť") : t("Napojiť")}
           </button>
         ) : null}
       </span>
@@ -265,6 +311,18 @@ function CompanyManagementPage() {
 
   const akcie = (r: Row) => (
     <div className="inline-flex flex-wrap justify-end gap-2">
+      {/* Adresa na príjem dokladov e-mailom — len kto smie doklady. */}
+      {stav?.get(r.id)?.nespracovane !== null && stav?.get(r.id) && (
+        <button
+          type="button"
+          onClick={() => switchTo(r.id, ODKAZY_PREHLADU.dokladyMailom)}
+          title={t("Doklady e-mailom — adresa na príjem dokladov")}
+          aria-label={t("Doklady e-mailom")}
+          className="inline-flex items-center rounded-md border border-border px-2 py-1.5 text-xs hover:bg-secondary"
+        >
+          <Mail className="h-3.5 w-3.5" />
+        </button>
+      )}
       {r.id !== activeId && (
         <button
           onClick={() => switchTo(r.id)}
@@ -391,20 +449,20 @@ function CompanyManagementPage() {
                 <span>
                   {t(popisRoly(r.role))} · {t("vytvorené")} {datum(r.created_at)}
                 </span>
-                {nespracovane && (nespracovane.get(r.id) ?? 0) > 0 && (
-                  <span className="ml-1">{pocetNespracovanych(r)}</span>
-                )}
               </div>
-              {prehlad ? (
-                <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    {t("Neexportované bločky")}: {neexportovaneBlocky(r)}
-                  </span>
-                  <span className="inline-flex flex-wrap items-center gap-1">
-                    {t("Banka")}: {banka(r)}
-                  </span>
-                </div>
-              ) : null}
+              {/* Stav firmy: každé číslo prepne do firmy na príslušný zoznam. */}
+              <dl className="mt-3 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 text-xs">
+                <dt className="text-muted-foreground">{t("eFaktúra")}</dt>
+                <dd className="min-w-0">{efaktura(r)}</dd>
+                <dt className="text-muted-foreground">{t("Nespracované")}</dt>
+                <dd className="min-w-0">{pocetNespracovanych(r)}</dd>
+                <dt className="text-muted-foreground">{t("Neexportované bločky")}</dt>
+                <dd className="min-w-0">{neexportovaneBlocky(r)}</dd>
+                <dt className="text-muted-foreground">{t("Po splatnosti")}</dt>
+                <dd className="min-w-0">{poSplatnosti(r)}</dd>
+                <dt className="text-muted-foreground">{t("Banka")}</dt>
+                <dd className="min-w-0">{banka(r)}</dd>
+              </dl>
               <div className="mt-3 flex justify-start [&>div]:justify-start">{akcie(r)}</div>
             </div>
           ))}
@@ -414,12 +472,12 @@ function CompanyManagementPage() {
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">{t("Firma")}</th>
-                <th className="px-4 py-3">{t("IČO")}</th>
                 <th className="px-4 py-3">{t("Rola")}</th>
+                <th className="px-4 py-3">{t("eFaktúra")}</th>
                 <th className="px-4 py-3">{t("Nespracované")}</th>
                 <th className="px-4 py-3">{t("Neexportované bločky")}</th>
+                <th className="px-4 py-3">{t("Po splatnosti")}</th>
                 <th className="px-4 py-3">{t("Banka")}</th>
-                <th className="px-4 py-3">{t("Vytvorené")}</th>
                 <th className="px-4 py-3 text-right">{t("Akcie")}</th>
               </tr>
             </thead>
@@ -457,13 +515,18 @@ function CompanyManagementPage() {
                         </span>
                       )}
                     </div>
+                    {/* IČO a dátum založenia pod názvom — stĺpce uvoľnili miesto stavu firmy. */}
+                    <div className="mt-0.5 pl-8 text-xs text-muted-foreground">
+                      {r.ico ? `${t("IČO {ico}", { ico: r.ico })} · ` : ""}
+                      {t("vytvorené")} {datum(r.created_at)}
+                    </div>
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.ico ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{t(popisRoly(r.role))}</td>
+                  <td className="px-4 py-3">{efaktura(r)}</td>
                   <td className="px-4 py-3">{pocetNespracovanych(r)}</td>
                   <td className="px-4 py-3">{neexportovaneBlocky(r)}</td>
+                  <td className="px-4 py-3">{poSplatnosti(r)}</td>
                   <td className="px-4 py-3">{banka(r)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{datum(r.created_at)}</td>
                   <td className="px-4 py-3 text-right">{akcie(r)}</td>
                 </tr>
               ))}

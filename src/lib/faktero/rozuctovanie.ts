@@ -298,6 +298,8 @@ export type PolozkaSKodom = {
   unit_price?: number | string | null;
   predkontacia?: string | null;
   clenenie?: string | null;
+  /** Členenie KV položky; prázdne = z dokladu. */
+  kv?: string | null;
 };
 
 const kod = (v: unknown) => {
@@ -316,7 +318,9 @@ function sadzbaPolozky(p: PolozkaSKodom, rozpis: RozpisSadzby[]): number | null 
  * Rozúčtovanie podľa predkontácií pri položkách. Sumy sa berú z rozpisu DPH
  * dokladu (ten sedí na cent) a rozdelia sa v pomere súm položiek s rovnakou
  * sadzbou; posledný riadok sadzby dorovná centy. Položka bez kódu dostane kód
- * hlavičky. Keď položky nesedia so sadzbami dokladu, vráti prázdne pole.
+ * hlavičky (členenie KV prázdne = z dokladu). Rozúčtuje sa, keď má aspoň jedna
+ * položka vlastnú predkontáciu, členenie DPH alebo KV. Keď položky nesedia so
+ * sadzbami dokladu, vráti prázdne pole.
  */
 export function rozuctovaniePolozkami(
   polozky: PolozkaSKodom[] | null | undefined,
@@ -325,17 +329,21 @@ export function rozuctovaniePolozkami(
   clenenie: string | null,
 ): RiadokRozuctovania[] {
   const zoznam = Array.isArray(polozky) ? polozky : [];
-  if (!zoznam.some((p) => kod(p.predkontacia))) return [];
+  if (!zoznam.some((p) => kod(p.predkontacia) || kod(p.clenenie) || kod(p.kv))) return [];
   const out: RiadokRozuctovania[] = [];
   for (const s of rozpis) {
     const tejSadzby = zoznam.filter((p) => sadzbaPolozky(p, rozpis) === s.sadzba);
-    const vahy = new Map<string, { predkontacia: string | null; clenenie: string | null; suma: number }>();
+    const vahy = new Map<
+      string,
+      { predkontacia: string | null; clenenie: string | null; kv: string | null; suma: number }
+    >();
     for (const p of tejSadzby) {
       const pk = kod(p.predkontacia) ?? predkontacia;
       const cl = kod(p.clenenie) ?? clenenie;
-      const k = `${pk}|${cl}`;
+      const kv = kod(p.kv);
+      const k = `${pk}|${cl}|${kv}`;
       const suma = Math.abs(Number(p.total ?? Number(p.quantity ?? 1) * Number(p.unit_price ?? 0)) || 0);
-      const v = vahy.get(k) ?? { predkontacia: pk, clenenie: cl, suma: 0 };
+      const v = vahy.get(k) ?? { predkontacia: pk, clenenie: cl, kv, suma: 0 };
       v.suma += suma;
       vahy.set(k, v);
     }
@@ -353,7 +361,14 @@ export function rozuctovaniePolozkami(
       const d = posledna ? zvD : r2((s.dph * c.suma) / spolu);
       zvZ = r2(zvZ - z);
       zvD = r2(zvD - d);
-      out.push({ predkontacia: c.predkontacia, clenenie: c.clenenie, sadzba: s.sadzba, zaklad: z, dph: d });
+      out.push({
+        predkontacia: c.predkontacia,
+        clenenie: c.clenenie,
+        sadzba: s.sadzba,
+        zaklad: z,
+        dph: d,
+        ...(c.kv ? { kv: c.kv } : {}),
+      });
     });
   }
   // Položka so sadzbou, ktorú doklad nemá — rozpis a položky si odporujú.

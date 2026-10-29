@@ -399,6 +399,23 @@ function CompanyPage() {
               {t("Premenné:")} {"{invoice_number}"}, {"{due_date}"}, {"{total}"}, {"{company_name}"}
             </span>
           </label>
+          {/* Upozornenie ide na e-mail firmy hore; uloží sa tlačidlom Uložiť ako ostatné polia. */}
+          <label className="sm:col-span-2 flex items-start gap-3">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4"
+              checked={c.efaktura_upozornenie_email !== false}
+              onChange={(e) => setC({ ...c, efaktura_upozornenie_email: e.target.checked })}
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium">{t("Upozornenie na prijatú eFaktúru")}</span>
+              <span className="block text-xs text-muted-foreground">
+                {t(
+                  "Keď vám dodávateľ pošle eFaktúru, príde na e-mail firmy správa s odkazom na Prijaté eFaktúry. Viac eFaktúr naraz príde v jednom e-maile.",
+                )}
+              </span>
+            </span>
+          </label>
           <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
             <div className="flex items-center justify-between gap-3">
               <div>

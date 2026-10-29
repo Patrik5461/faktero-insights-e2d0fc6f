@@ -23,6 +23,7 @@ import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
+import { HistoriaOdovzdania, OpravitZauctovanie } from "@/components/faktero/OdovzdanieDokladu";
 import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
@@ -1303,15 +1304,33 @@ function NovyDokladPage() {
                 {ulozeny?.exported_at && (
                   <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">
                     {t("Doklad je odovzdaný do Pohody — zmeny sa tam už neprenesú.")}
-                    <button
-                      type="button"
-                      onClick={vratZPohody}
-                      className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-white px-2 py-1 text-xs font-medium hover:bg-amber-100"
-                    >
-                      {t("Poslať opravu do Pohody")}
-                    </button>
+                    <span className="ml-auto flex flex-wrap gap-2">
+                      <OpravitZauctovanie
+                        row={ulozeny}
+                        druh="doklad"
+                        // Formulár drží kódy vo vlastnom stave — po oprave sa načíta celý znova.
+                        onZmena={() => window.location.reload()}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-white px-2 py-1 text-xs font-medium hover:bg-amber-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={vratZPohody}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-white px-2 py-1 text-xs font-medium hover:bg-amber-100"
+                      >
+                        {t("Poslať opravu do Pohody")}
+                      </button>
+                    </span>
                   </div>
                 )}
+                {ulozeny ? (
+                  <div className="mb-3">
+                    <HistoriaOdovzdania
+                      row={ulozeny}
+                      druh="doklad"
+                      onZmena={() => window.location.reload()}
+                    />
+                  </div>
+                ) : null}
                 {ulozeny && !ulozeny.exported_at && (
                   <div className="mb-3">
                     <AutoZauctovanieOdznak

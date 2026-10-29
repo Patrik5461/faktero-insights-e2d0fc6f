@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileText,
+  Inbox,
   Loader2,
   MessageSquare,
   PartyPopper,
@@ -37,11 +38,15 @@ export const Route = createFileRoute("/_authenticated/moje-ulohy")({
     Odkaz z denného e-mailového súhrnu nesie firmu (`?firma=`) — človek
     s viacerými firmami má v e-maile sekciu za každú a klik musí otvoriť
     úlohy tej firmy, nie tej, ktorá je práve vybraná. `dalej=po-splatnosti`
-    po prepnutí pokračuje na faktúry po splatnosti.
+    po prepnutí pokračuje na faktúry po splatnosti, `dalej=efaktury`
+    (e-mail o prijatej eFaktúre) na Prijaté eFaktúry.
   */
-  validateSearch: (s: Record<string, unknown>): { firma?: string; dalej?: "po-splatnosti" } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { firma?: string; dalej?: "po-splatnosti" | "efaktury" } => ({
     firma: typeof s.firma === "string" && /^[0-9a-f-]{36}$/i.test(s.firma) ? s.firma : undefined,
-    dalej: s.dalej === "po-splatnosti" ? "po-splatnosti" : undefined,
+    dalej:
+      s.dalej === "po-splatnosti" ? "po-splatnosti" : s.dalej === "efaktury" ? "efaktury" : undefined,
   }),
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Moje úlohy — Faktero") }] }),
   component: Stranka,
@@ -67,6 +72,7 @@ function Stranka() {
     if (!prepnut) {
       if (dalej === "po-splatnosti")
         void navigate({ to: "/faktury", search: { poSplatnosti: true }, replace: true });
+      else if (dalej === "efaktury") void navigate({ to: "/efaktura/prijate", replace: true });
       else void navigate({ to: "/moje-ulohy", search: {}, replace: true });
       return;
     }
@@ -75,7 +81,11 @@ function Stranka() {
         if (firmy.some((f: any) => f.id === firma)) {
           setActiveCompanyId(firma);
           window.location.replace(
-            dalej === "po-splatnosti" ? "/faktury?poSplatnosti=true" : "/moje-ulohy",
+            dalej === "po-splatnosti"
+              ? "/faktury?poSplatnosti=true"
+              : dalej === "efaktury"
+                ? "/efaktura/prijate"
+                : "/moje-ulohy",
           );
         } else {
           toast.error(t("K firme z odkazu nemáte prístup — ukazujem úlohy vybranej firmy."));
@@ -106,7 +116,7 @@ function Stranka() {
         .then(setUlohy)
         .catch((e: any) => {
           setChyba(e?.message ?? t("Úlohy sa nepodarilo načítať"));
-          setUlohy({ komentare: [], nespracovane: { pocet: 0, polozky: [] } });
+          setUlohy({ komentare: [], efaktury: [], nespracovane: { pocet: 0, polozky: [] } });
         }),
     ]);
   };
@@ -140,6 +150,7 @@ function Stranka() {
     schvalenie: schvalenie?.polozky.length ?? 0,
     komentare: ulohy?.komentare.length ?? 0,
     nespracovane: ulohy?.nespracovane.pocet ?? 0,
+    efaktury: ulohy?.efaktury.length ?? 0,
   };
 
   return (
@@ -287,6 +298,58 @@ function Stranka() {
                 </ul>
               )}
             </Sekcia>
+
+            {/* Len keď niečo čaká — firma bez eFaktúr túto sekciu vôbec nepotrebuje. */}
+            {ulohy.efaktury.length > 0 && (
+              <Sekcia
+                ikona={<Inbox className="h-4 w-4" />}
+                nadpis="Zaevidovať prijaté eFaktúry"
+                pocet={pocty.efaktury}
+                odkaz={{ to: "/efaktura/prijate", text: "Prijaté eFaktúry" }}
+              >
+                <ul className="space-y-2">
+                  {ulohy.efaktury.map((r) => (
+                    <li key={r.id}>
+                      <Link
+                        to="/efaktura/prijate"
+                        search={(r.cislo ? { q: r.cislo } : {}) as any}
+                        className="block rounded-lg border border-border p-3 hover:bg-muted/30"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                          <div className="min-w-0">
+                            <div className="break-words font-medium">
+                              {r.dodavatel ?? (
+                                <span className="text-muted-foreground">{t("Dodávateľ neurčený")}</span>
+                              )}
+                            </div>
+                            <div className="break-words text-xs text-muted-foreground">
+                              {[
+                                r.cislo ?? t("bez čísla"),
+                                r.prijate ? t("prijatá {datum}", { datum: datumNaDoklade(r.prijate.slice(0, 10)) }) : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </div>
+                          </div>
+                          <div className="shrink-0 whitespace-nowrap font-semibold tabular-nums">
+                            {r.suma != null && Number.isFinite(r.suma) ? formatujMenu(r.suma, r.mena) : "—"}
+                          </div>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                  {ulohy.efaktury.length >= 10 && (
+                    <li className="text-sm text-muted-foreground">
+                      {t("Ďalšie nájdete v")}{" "}
+                      <Link to="/efaktura/prijate" className="underline">
+                        {t("Prijatých eFaktúrach")}
+                      </Link>
+                      .
+                    </li>
+                  )}
+                </ul>
+              </Sekcia>
+            )}
 
             <Sekcia
               ikona={<FileText className="h-4 w-4" />}

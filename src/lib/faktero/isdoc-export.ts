@@ -1,4 +1,5 @@
 import { krajinaDane } from "./vat-rates";
+import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { sUctomFaktury } from "./platobny-ucet";
 import { riadkySoZlavou } from "./zlavy";
 import { odpoctyZapisatelne, suhrnOdpoctov, type OdpocetZalohy } from "./zalohy-odpocty";
@@ -327,7 +328,7 @@ export function buildIsdoc(opts: {
      <Name>${esc(company.bank_name ?? "")}</Name>
      <IBAN>${esc(String(company.iban).replace(/\s+/g, "").toUpperCase())}</IBAN>
      <BIC>${esc(company.swift ?? "")}</BIC>
-     ${tag("VariableSymbol", invoice.variable_symbol || String(invoice.invoice_number ?? "").replace(/\D/g, ""))}
+     ${tag("VariableSymbol", vsVystavenej(invoice))}
      ${tag("ConstantSymbol", invoice.constant_symbol)}
      ${tag("SpecificSymbol", invoice.specific_symbol)}
     </Details>

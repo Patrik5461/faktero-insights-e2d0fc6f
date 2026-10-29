@@ -20,6 +20,21 @@ export type StavUhrady = "uhradena" | "ciastocne" | "neuhradena";
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /**
+ * Záloha, ktorá sa z prijatej faktúry odpočíta: suma odpočtu napísaná na
+ * doklade (`advance_amount` — zaplatená záloha z eFaktúry, samofaktúry či
+ * Nespracovaných), inak zaplatená zálohová faktúra z väzby
+ * (`advance_invoice_id`). Rovnako počíta `prijata_suma_na_uhradu` v databáze.
+ */
+export function zalohaPrijatej(
+  advanceAmount: number | string | null | undefined,
+  zaplatenaZalohova: number | null | undefined,
+): number {
+  const naDoklade = Math.abs(Number(advanceAmount ?? 0)) || 0;
+  if (naDoklade > 0) return r2(naDoklade);
+  return r2(Math.abs(Number(zaplatenaZalohova ?? 0)) || 0);
+}
+
+/**
  * Koľko treba uhradiť, koľko je uhradené a koľko zostáva.
  *
  * - Suma dobropisu je v databáze záporná — platí sa (vracia) jej absolútna hodnota.

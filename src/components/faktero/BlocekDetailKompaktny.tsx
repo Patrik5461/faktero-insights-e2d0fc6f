@@ -40,6 +40,7 @@ import {
 } from "./DetailDokladuKompaktny";
 import { KodPohody } from "./KodPohody";
 import type { Navrhy } from "./ZauctovaniePanel";
+import { HistoriaOdovzdania, OpravitZauctovanie } from "./OdovzdanieDokladu";
 import { ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { KomentarDokladu } from "./StavDokladu";
 import { PrilohyFaktury } from "./PrilohyFaktury";
@@ -269,6 +270,12 @@ export function BlocekDetailKompaktny({
               ? t("Doklad je odovzdaný do Pohody — zmeniť sa dá až po vrátení z Pohody.")
               : t("Doklad je zamknutý proti úpravám — najprv ho odomknite.")}
           </p>
+        ) : null}
+        <HistoriaOdovzdania row={row} druh="doklad" onZmena={onZmena} />
+        {row.exported_at && !row.locked_at ? (
+          <div className="mb-2 mt-2">
+            <OpravitZauctovanie row={row} druh="doklad" onZmena={onZmena} />
+          </div>
         ) : null}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
           <label className="block min-w-0">

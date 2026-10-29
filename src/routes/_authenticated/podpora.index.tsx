@@ -27,6 +27,7 @@ import {
   type KategoriaPoziadavky,
 } from "@/lib/faktero/podpora";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
+import { TelegramOdkaz } from "@/components/faktero/TelegramOdkaz";
 import { hladajVManualoch, type Clanok, type Vysledok } from "@/lib/faktero/pomoc-hladanie";
 
 export const Route = createFileRoute("/_authenticated/podpora/")({
@@ -273,6 +274,7 @@ function PodporaPage() {
             >
               <Phone className="h-4 w-4" /> +421 902 101 967
             </a>
+            <TelegramOdkaz />
           </div>
         </div>
       </PageBody>

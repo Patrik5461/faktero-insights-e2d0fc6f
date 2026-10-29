@@ -1,4 +1,5 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
+import { vsNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import { UctovneNastaveniaFaktury } from "@/components/faktero/UctovneNastaveniaFaktury";
 import { datumPoDnoch, dniMedzi } from "@/lib/faktero/splatnost-dni";
 import { RozpisDph } from "@/components/faktero/RozpisDph";
@@ -1006,7 +1007,7 @@ function NewInvoice() {
         form.type,
         form.number_series_id,
       );
-      const variable_symbol = form.variable_symbol || invoice_number.replace(/\D/g, "");
+      const variable_symbol = vsNaUlozenie(form.variable_symbol, invoice_number);
 
       const { data: inv, error } = await supabase
         .from("invoices")

@@ -591,6 +591,7 @@ function VykazyPage() {
                   ["B.3.2 — bločky po dodávateľoch", data.kv.b32.length],
                   ["C.1 — vystavené opravné doklady", data.kv.c1.length],
                   ["C.2 — prijaté opravné doklady", data.kv.c2.length],
+                  ["D.2 — ostatné vydané faktúry sumárne", data.kv.d2 ? 1 : 0],
                 ].map(([popis, pocet]) => (
                   <li key={String(popis)} className="flex justify-between px-4 py-2">
                     <span className={pocet ? "" : "text-muted-foreground"}>{t(String(popis))}</span>

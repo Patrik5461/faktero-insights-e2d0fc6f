@@ -1,6 +1,7 @@
 // Server-only helpers for accounting exports.
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
 import { intNoteSEfakturou } from "./efaktura-odoslana";
+import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { icoPrePohodu } from "./ico-z-mena";
 
 /**
@@ -928,7 +929,7 @@ export function polozkyFaktur(opts: {
           // VS je číselný; bez vlastného sa berú číslice z čísla faktúry (tak to
           // robí aj Pohoda) — „FA2026/01" by inak párovanie z banky nenašlo.
           skrat(
-            String(invoice.variable_symbol ?? "").trim() || String(invoice.invoice_number ?? "").replace(/\D/g, ""),
+            vsVystavenej(invoice),
             20,
           ),
           "        ",
@@ -1376,7 +1377,7 @@ function dokladKPlatbeAkoDoklad(
     _agenda: "int",
     _typPohody: "danovyDokladKPlatbe",
     _povodneCislo: inv.invoice_number,
-    _symVar: inv.variable_symbol ?? inv.invoice_number,
+    _symVar: vsVystavenej(inv),
     _datumDph: inv.delivery_date || inv.issue_date,
     _text: `Daňový doklad k prijatej platbe ${inv.invoice_number ?? ""}`.trim(),
   } as DokladRow;
@@ -3029,7 +3030,7 @@ export function buildOmegaTxt(opts: {
     set(48, kodIcDph);
     set(49, icDph);
     set(57, pole((invoice as any).payment_iban, 50));
-    set(71, pole(invoice.variable_symbol ?? invoice.invoice_number, 20));
+    set(71, pole(vsVystavenej(invoice), 20));
     set(84, pole(invoice.customer_phone, 25));
     if (znizena2 != null) {
       set(95, String(znizena2));
@@ -3274,7 +3275,7 @@ ${odsadenie}</SouhrnDPH>`;
       <Vystaveno>${esc(invoice.issue_date)}</Vystaveno>
       <PlnenoDPH>${esc(invoice.delivery_date ?? invoice.issue_date)}</PlnenoDPH>
       <Splatno>${esc(invoice.due_date)}</Splatno>
-      <VarSymbol>${esc(skrat(invoice.variable_symbol ?? invoice.invoice_number, 20))}</VarSymbol>${
+      <VarSymbol>${esc(skrat(vsVystavenej(invoice), 20))}</VarSymbol>${
         String(inv.constant_symbol ?? "").trim()
           ? `\n      <KonstSym>${esc(String(inv.constant_symbol).trim().slice(0, 4))}</KonstSym>`
           : ""

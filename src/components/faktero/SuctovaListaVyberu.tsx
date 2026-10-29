@@ -2,12 +2,14 @@ import type { ReactNode } from "react";
 import { X } from "lucide-react";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { suhrnVyberu, type PolozkaSuhrnu, type SumaMeny } from "@/lib/faktero/suhrn-vyberu";
+import { suhrnZPoloziek, type SuhrnDph } from "@/lib/faktero/suhrn-dph";
+import { RozpisSuctov } from "@/components/faktero/SuctyDokladov";
 import { useT } from "@/lib/i18n/useT";
 
 /**
  * Lišta pod zoznamom dokladov, keď sú niektoré označené: koľko ich je, koľko
- * stoja (s DPH aj bez), čo z toho ešte čaká na export do účtovníctva a čo na
- * úhradu. Spoločná pre prijaté, vystavené, bločky aj Nespracované.
+ * stoja (základ dane, DPH a celkom, pri viacerých sadzbách DPH aj rozpis), čo
+ * z toho ešte čaká na export do účtovníctva a čo na úhradu. Spoločná pre prijaté, vystavené, bločky aj Nespracované.
  *
  * Je `sticky` na spodku obrazovky, nie `fixed` — v toku stránky zaberá svoje
  * miesto, takže posledný riadok zoznamu nikdy neostane pod ňou (ani na mobile).
@@ -19,8 +21,15 @@ export function SuctovaListaVyberu({
   exportNazov,
   akcie,
   onZrusit,
+  rozpis,
 }: {
   polozky: PolozkaSuhrnu[];
+  /**
+   * Súčet s rozpisom po sadzbách DPH (vystavené faktúry). Bez neho sa základ
+   * a DPH zložia z `polozky` — prijaté, bločky a Nespracované sadzby v
+   * zozname nemajú.
+   */
+  rozpis?: SuhrnDph | null;
   /** Počet vybraných, keď sa časť výberu nenačítala (iná stránka zoznamu). */
   pocet?: number;
   /** Čo v danom zozname znamená export; predvolene „Na export do účtovníctva“. */
@@ -47,7 +56,9 @@ export function SuctovaListaVyberu({
           )
           .join(" + ")
       : null;
-  const spolu = sumy(s.spolu, true);
+  const spolu = rozpis ?? suhrnZPoloziek(polozky);
+  // Rozpis vystavených pozná aj koncepty mimo záložky Koncepty — jeho počet platí.
+  const mimoSuctu = rozpis ? rozpis.mimo : s.mimoSuctu;
   const naExport = sumy(s.naExport.sumy, false);
   const naUhradu = sumy(s.naUhradu.sumy, false);
 
@@ -61,15 +72,14 @@ export function SuctovaListaVyberu({
         <span className="min-w-0">
           <span className="text-muted-foreground">{t("Vybrané:")}</span>{" "}
           <strong>{doklady(n)}</strong>
-          {spolu ? <span className="tabular-nums"> · {spolu}</span> : null}
-          {s.mimoSuctu > 0 ? (
+          {mimoSuctu > 0 ? (
             <span
               className="ml-1 text-xs text-muted-foreground"
               title={t(
                 "Zálohové, stornované a iné doklady (zmluvy, listy) sa do súčtu nepočítajú.",
               )}
             >
-              ({t("{n} mimo súčtu", { n: s.mimoSuctu })})
+              ({t("{n} mimo súčtu", { n: mimoSuctu })})
             </span>
           ) : null}
           {pocet != null && pocet > polozky.length ? (
@@ -78,6 +88,7 @@ export function SuctovaListaVyberu({
             </span>
           ) : null}
         </span>
+        <RozpisSuctov suhrn={spolu} />
         <span className="min-w-0 text-muted-foreground">
           {exportNazov ?? t("Na export do účtovníctva:")}{" "}
           <strong className="text-foreground">{s.naExport.pocet}</strong>

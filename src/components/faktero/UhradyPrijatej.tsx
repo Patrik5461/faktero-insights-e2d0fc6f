@@ -8,6 +8,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import {
   dniPoSplatnosti,
   stavUhradyPrijatej,
+  zalohaPrijatej,
   zostaneKUhrade,
   type UhradaPrijatej,
 } from "@/lib/faktero/uhrady-prijatej";
@@ -46,9 +47,11 @@ export function useUhradyPrijatej(row: any | null) {
         : Promise.resolve({ data: null as any }),
     ]);
     setUhrady((data ?? []) as UhradaPrijatej[]);
-    setZaloha(z.data?.status === "paid" ? Math.abs(Number(z.data.amount_total ?? 0)) : 0);
+    setZaloha(
+      zalohaPrijatej(row?.advance_amount, z.data?.status === "paid" ? Number(z.data.amount_total ?? 0) : 0),
+    );
     setNacitane(true);
-  }, [id, zalohaId]);
+  }, [id, zalohaId, row?.advance_amount]);
   useEffect(() => {
     void nacitaj();
   }, [nacitaj, row?.status, row?.amount_total]);

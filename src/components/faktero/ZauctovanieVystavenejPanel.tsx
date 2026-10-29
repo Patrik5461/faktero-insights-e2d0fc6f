@@ -17,6 +17,7 @@ import { KodPohody } from "./KodPohody";
 import { VyberPravidla } from "./VyberPravidla";
 import { uplatniPredlohu } from "@/lib/faktero/predlohy-uctovania";
 import type { Navrhy } from "./ZauctovaniePanel";
+import { HistoriaOdovzdania, OpravitZauctovanie, useVarovanieVratenia } from "./OdovzdanieDokladu";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -73,6 +74,7 @@ export function ZauctovanieVystavenejPanel({
   const navigate = useNavigate();
   const zrus = useServerFn(zrusZauctovanieVystavenejFn);
   const vrat = useServerFn(vratVystavenuZPohodyFn);
+  const varovanieVratenia = useVarovanieVratenia();
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
   const [stav, setStav] = useState<{
     vPohode: { kedy: string; cislo: string | null } | null;
@@ -186,11 +188,8 @@ export function ZauctovanieVystavenejPanel({
   const stiahnut = () => void Promise.resolve(onStiahnut()).then(obnov);
   async function vratitZPohody() {
     if (
-      await potvrd(
-        t(
-          "Vrátiť faktúru z Pohody? Pri ďalšom odovzdaní pôjde znova — v Pohode ju preto najprv zmažte, inak tam bude dvakrát.",
-        ),
-      )
+      // Pravdivo podľa cesty: konektor ani súbor doklad v Pohode nezmažú (P-1009).
+      await potvrd(varovanieVratenia("faktura", inv))
     )
       void akcia(
         () => vrat({ data: { company_id: inv.company_id, id: inv.id } }),
@@ -453,6 +452,17 @@ export function ZauctovanieVystavenejPanel({
             {t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")}
           </p>
         ) : null}
+        {koncept ? null : (
+          <HistoriaOdovzdania
+            row={inv}
+            druh="faktura"
+            cisloVPohode={vPohode?.cislo}
+            onZmena={() => {
+              onZmena();
+              void obnov();
+            }}
+          />
+        )}
         {zamknuteObdobie ? (
           <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
             <Lock className="h-3.5 w-3.5 shrink-0" />
@@ -558,6 +568,7 @@ export function ZauctovanieVystavenejPanel({
                 >
                   <Undo2 className="h-3.5 w-3.5" /> {t("Vrátiť z Pohody (opraviť)")}
                 </button>
+                <OpravitZauctovanie row={inv} druh="faktura" onZmena={onZmena} className={male} />
               </>
             ) : (
               <button
@@ -626,6 +637,15 @@ export function ZauctovanieVystavenejPanel({
           </span>
         )}
       </div>
+      <HistoriaOdovzdania
+        row={inv}
+        druh="faktura"
+        cisloVPohode={vPohode?.cislo}
+        onZmena={() => {
+          onZmena();
+          void obnov();
+        }}
+      />
       {!vPohode && <AutoZauctovanieOdznak typ="vystavena" row={inv} onZmena={onZmena} />}
 
       {vPohode ? (
@@ -657,6 +677,12 @@ export function ZauctovanieVystavenejPanel({
             >
               <Undo2 className="h-4 w-4" /> {t("Vrátiť z Pohody (opraviť)")}
             </button>
+            <OpravitZauctovanie
+              row={inv}
+              druh="faktura"
+              onZmena={onZmena}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            />
           </div>
         </>
       ) : (

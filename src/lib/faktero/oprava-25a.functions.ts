@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -242,7 +243,7 @@ export const vystavOpravu25aFn = createServerFn({ method: "POST" })
         language: f.language ?? null,
         payment_method: f.payment_method ?? "bank_transfer",
         payment_account_id: f.payment_account_id ?? null,
-        variable_symbol: String(c.invoice_number).replace(/\D/g, "").slice(-10) || null,
+        variable_symbol: vsZCislaDokladu(String(c.invoice_number)) || null,
         customer_name: f.customer_name,
         customer_ico: f.customer_ico,
         customer_dic: f.customer_dic,

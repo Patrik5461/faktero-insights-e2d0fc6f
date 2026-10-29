@@ -4,6 +4,7 @@
   presné sumy z obchodu a odberateľ správali všade rovnako.
 */
 import { normalizePaymentMethod } from "./payment-method";
+import { vsNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 
 type Klient = any;
 
@@ -136,7 +137,7 @@ export async function vytvorFakturu(
     issue_date,
   );
   const due_date = d.due_date ?? new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-  const variable_symbol = d.variable_symbol ?? invoice_number.replace(/\D/g, "");
+  const variable_symbol = vsNaUlozenie(d.variable_symbol, invoice_number);
 
   const { data: created, error: insErr } = await supabase
     .from("invoices")

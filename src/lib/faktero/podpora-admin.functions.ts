@@ -254,33 +254,16 @@ export const adminAutoOpravaFn = createServerFn({ method: "POST" })
     const ciel = data.id ? riadky.find((r) => r.id === data.id) : undefined;
     if (data.id && !ciel) throw new Error("Návrh opravy sa nenašiel.");
 
-    if (data.akcia === "schvalit") {
-      // Schválenie pošle kód do main a ten sa sám nasadí — smie len superadmin.
-      const { data: rola } = await db
-        .from("platform_admins")
-        .select("role")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if ((rola as { role?: string } | null)?.role !== "superadmin")
-        throw new Error("Opravu na nasadenie smie schváliť len superadmin.");
-      if (ciel?.stav !== "navrh" || !ciel.commit_sha)
-        throw new Error("Schváliť sa dá len hotový návrh opravy.");
-      const { error } = await db
-        .from("podpora_auto_opravy")
-        .update({ stav: "schvalena", schvalil: userId, schvalene_at: teraz, updated_at: teraz })
-        .eq("id", ciel.id)
-        .eq("stav", "navrh");
-      if (error) throw new Error(error.message);
-      return { ok: true };
-    }
-    if (data.akcia === "zamietnut") {
-      if (!ciel || !["navrh", "bez_opravy", "zlyhala", "caka"].includes(ciel.stav))
-        throw new Error("Tento návrh sa už nedá zamietnuť.");
-      const { error } = await db
-        .from("podpora_auto_opravy")
-        .update({ stav: "zamietnuta", updated_at: teraz })
-        .eq("id", ciel.id);
-      if (error) throw new Error(error.message);
+    if (data.akcia === "schvalit" || data.akcia === "zamietnut") {
+      // Tá istá kontrola aj účinok ako tlačidlá v Telegrame (len superadmin schvaľuje).
+      if (!ciel) throw new Error("Návrh opravy sa nenašiel.");
+      const { rozhodniOAutoOprave } = await import("./auto-oprava-rozhodnutie.server");
+      await rozhodniOAutoOprave({
+        userId,
+        id: ciel.id,
+        akcia: data.akcia,
+        poziadavkaId: data.poziadavka_id,
+      });
       return { ok: true };
     }
     // spustit / znova — nový pokus; rozbehnutý alebo schválený beh sa nezdvojí.

@@ -50,6 +50,13 @@ export type VystavenaFaktura = {
   oss?: boolean | null;
   ossStat?: string | null;
   riadky: SadzbovyRiadok[];
+  /**
+   * Ručne zvolené členenie KV (A1, A2, C1, D1, D2, X = nezahŕňať) z faktúry
+   * alebo jej položky, prípadne predvolené firmy; prázdne = automaticky podľa
+   * údajov faktúry. Iné kódy (B…) na vystavenej faktúre nedávajú zmysel a berú
+   * sa ako prázdne.
+   */
+  kv?: string | null;
 };
 
 export type PrijataFaktura = {
@@ -247,6 +254,8 @@ export type KvC1 = {
   /** Oprava z dôvodu nevymožiteľnej pohľadávky (§ 25a) — atribút ONP = „x“. */
   onp?: boolean;
 };
+/** D.2 — ostatné vydané faktúry len sumárne, po základnej a zníženej sadzbe. */
+export type KvD2 = { z: number; d: number; zzn: number; dzn: number };
 export type KvC2 = {
   dod?: string;
   fo: string;
@@ -268,8 +277,18 @@ export type KontrolnyVykaz = {
   b32: KvB32[];
   c1: KvC1[];
   c2: KvC2[];
+  d2: KvD2 | null;
   vytky: Vytka[];
 };
+
+/** Členenia KV, ktoré má zmysel ručne zvoliť na vystavenej faktúre. */
+const KV_VYSTAVENE = ["A1", "A2", "C1", "D1", "D2", "X"];
+
+/** Ručne zvolené členenie vystavenej faktúry, alebo null = automaticky. */
+export function kvVystavenej(kod: string | null | undefined): string | null {
+  const k = String(kod ?? "").trim().toUpperCase();
+  return KV_VYSTAVENE.includes(k) ? k : null;
+}
 
 /** Hranica, od ktorej sa zjednodušené faktúry rozpisujú po dodávateľoch (§ 78a). */
 export const HRANICA_B3 = 3000;
@@ -284,6 +303,7 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
     b32: [],
     c1: [],
     c2: [],
+    d2: null,
     vytky: [],
   };
 
@@ -291,12 +311,50 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
     if (!doVykazov(f)) continue;
 
     /*
+      Ručne zvolené členenie (na faktúre, na položke alebo predvolené firmy)
+      prebije automatiku — rovnako ako v exporte do Pohody. X = do výkazu nepatrí.
+    */
+    const kv = kvVystavenej(f.kv);
+    if (kv === "X") continue;
+    if (kv === "D1") {
+      // D.1 sú súhrnné tržby z eKasy — tie Faktero nepozná, faktúra sa do nich nepripočíta.
+      vykaz.vytky.push({
+        doklad: f.cislo,
+        text: "Faktúra má členenie KV D.1 (tržby z registračnej pokladnice) — časť D.1 sa vypĺňa zo súhrnov eKasy, faktúra do výkazu nevošla.",
+      });
+      continue;
+    }
+    if (kv === "D2") {
+      // D.2 — len súčty po sadzbách; nulová sadzba sa v nej neuvádza.
+      const zakladna = sadzbyKuDnu("SK", f.datumDodania).high;
+      const d2 = vykaz.d2 ?? { z: 0, d: 0, zzn: 0, dzn: 0 };
+      for (const r of f.riadky) {
+        if (r.sadzba <= 0) continue;
+        if (r.sadzba >= zakladna) {
+          d2.z = centy(d2.z + r.zaklad);
+          d2.d = centy(d2.d + r.dan);
+        } else {
+          d2.zzn = centy(d2.zzn + r.zaklad);
+          d2.dzn = centy(d2.dzn + r.dan);
+        }
+      }
+      vykaz.d2 = d2;
+      continue;
+    }
+
+    /*
       Oprava oslobodeného dodania do EÚ alebo vývozu: pôvodné dodanie v KV nie
       je (nepatrí do A.1 ani A.2), preto ani jeho oprava nepatrí do C.1.
     */
-    if (jeOpravna(f) && f.prenosDane && (f.prenosTyp === "eu_b2b" || f.prenosTyp === "export")) continue;
+    if (
+      !kv &&
+      jeOpravna(f) &&
+      f.prenosDane &&
+      (f.prenosTyp === "eu_b2b" || f.prenosTyp === "export")
+    )
+      continue;
 
-    if (jeOpravna(f)) {
+    if (kv === "C1" || (!kv && jeOpravna(f))) {
       // C.1 — opravná faktúra sa páruje s pôvodnou, inak ju daniari nespoja.
       if (!f.opravujeCislo) {
         vykaz.vytky.push({
@@ -320,7 +378,7 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       continue;
     }
 
-    if (f.prenosTyp === "domestic_69") {
+    if (kv === "A2" || (!kv && f.prenosTyp === "domestic_69")) {
       // A.2 — tuzemský prenos daňovej povinnosti; odberateľ musí byť platiteľ.
       const odb = f.odberatelIcDph?.trim();
       if (!odb) {
@@ -339,8 +397,8 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       continue;
     }
 
-    // Oslobodené dodania (do EÚ, vývoz) do kontrolného výkazu nepatria.
-    if (f.prenosDane) continue;
+    // Oslobodené dodania (do EÚ, vývoz) do kontrolného výkazu nepatria — ak ich niekto ručne nedal do A.1.
+    if (!kv && f.prenosDane) continue;
 
     for (const r of f.riadky) {
       if (r.sadzba <= 0) continue;

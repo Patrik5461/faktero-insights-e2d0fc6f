@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -355,7 +356,7 @@ export function VystavenaDetailKompaktna({
       <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2 [&>*]:min-w-0">
         <PlatbaK
           iban={iban}
-          vs={inv.variable_symbol}
+          vs={vsVystavenej(inv) || null}
           ks={inv.constant_symbol}
           ss={inv.specific_symbol}
           doplnok={

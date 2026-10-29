@@ -1,4 +1,5 @@
 import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
+import { vsPrijatejNaUlozenie, vsZCislaPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -425,7 +426,8 @@ export function PrijataFakturaForm({
         supplier_ic_dph: form.supplier_ic_dph.trim() || null,
         // IBAN bez medzier, aby sa dal rovno použiť v platobnom príkaze.
         supplier_iban: form.supplier_iban.replace(/\s+/g, "").toUpperCase() || null,
-        variable_symbol: form.variable_symbol.trim() || null,
+        // Bez VS sa vezme číslo faktúry, keď je celé z číslic (tak ho dáva väčšina dodávateľov).
+        variable_symbol: vsPrijatejNaUlozenie(form.variable_symbol, form.invoice_number),
         constant_symbol: form.constant_symbol.trim() || null,
         specific_symbol: form.specific_symbol.trim() || null,
         order_number: form.order_number.trim() || null,
@@ -624,7 +626,7 @@ export function PrijataFakturaForm({
         <input
           value={form.variable_symbol}
           onChange={(e) => set("variable_symbol", e.target.value)}
-          placeholder={form.invoice_number || t("napr. 20260112")}
+          placeholder={vsZCislaPrijatej(form.invoice_number) || t("napr. 20260112")}
           className="input"
         />
       </Field>
@@ -967,10 +969,7 @@ export function PrijataFakturaForm({
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Dodávateľ")}
             </h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {poliaDodavatela}
-              {poliaPlatby}
-            </div>
+            <div className="grid gap-3 sm:grid-cols-2">{poliaDodavatela}</div>
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
@@ -985,6 +984,14 @@ export function PrijataFakturaForm({
               {t("Sumy")}
             </h3>
             <div className="grid gap-3 sm:grid-cols-4">{poliaSum}</div>
+          </section>
+
+          {/* Platobné údaje až za dokladom a sumami — sú najmenej dôležité. */}
+          <section className="rounded-xl border border-border bg-card p-5">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("Platobné údaje")}
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2">{poliaPlatby}</div>
           </section>
 
           <section className="space-y-4 rounded-xl border border-border bg-card p-5">

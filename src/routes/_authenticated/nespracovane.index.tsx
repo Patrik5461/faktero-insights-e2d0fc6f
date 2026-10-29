@@ -43,6 +43,7 @@ const ZDROJ: Record<string, string> = {
   skener: "skener",
   apka: "appka",
   api: "API",
+  efaktura: "eFaktúra",
   photo: "fotka",
   qr: "eKasa QR",
   upload: "nahraté",

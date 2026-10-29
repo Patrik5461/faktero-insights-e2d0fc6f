@@ -1,4 +1,8 @@
+import { Fragment } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { KodPohody } from "./KodPohody";
+import type { Navrhy } from "./ZauctovaniePanel";
+import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import {
   VYROVNAVACIA_POLOZKA,
   rozdielPoloziek,
@@ -19,15 +23,22 @@ const cislo = (v: string) => {
  * povinnosti pri každej položke. Keď súčet položiek nesedí so sumou dokladu,
  * ukáže rozdiel a ponúkne vyrovnávaciu položku — inak by do účtovníctva
  * odišli položky, ktoré sa so súčtom nezhodujú.
+ *
+ * Pod každou položkou je jej zaúčtovanie: predkontácia (účtovná položka),
+ * členenie DPH a členenie KV. Prázdne pole = kód dokladu (hlavičky); s
+ * položkami sa prenesie do vytvorenej faktúry či bločku.
  */
 export function PolozkyNespracovaneho({
   u,
   setU,
   sadzby,
+  navrhy,
 }: {
   u: UdajeNespracovaneho;
   setU: (u: UdajeNespracovaneho) => void;
   sadzby: number[];
+  /** Číselník kódov firmy — bez neho sa zaúčtovanie položiek neukáže. */
+  navrhy?: Navrhy | null;
 }) {
   const { t } = useT();
   const nesuhlas = rozdielPoloziek(u);
@@ -35,6 +46,14 @@ export function PolozkyNespracovaneho({
   const zmen = (i: number, z: Partial<Polozka>) =>
     setU({ ...u, polozky: u.polozky.map((p, j) => (j === i ? { ...p, ...z } : p)) });
   const pdpCela = Boolean(u.prenesenie);
+  const sKodmi = navrhy !== undefined;
+  // Čo položka zdedí, keď kód nechá prázdny: kód dokladu, inak predvolený firmy.
+  const zdedena = {
+    predkontacia: u.kody.predkontacia.trim() || navrhy?.predvolenaPredkontacia || "",
+    clenenie: u.kody.clenenie.trim() || navrhy?.predvoleneClenenie || "",
+    kv: u.kody.kv.trim(),
+  };
+  const vstupKodu = "h-8 w-full min-w-0 rounded-md border border-input bg-background px-2 text-xs";
 
   return (
     <div className="space-y-2">
@@ -74,7 +93,8 @@ export function PolozkyNespracovaneho({
             </thead>
             <tbody>
               {u.polozky.map((p, i) => (
-                <tr key={i} className="border-t border-border">
+                <Fragment key={i}>
+                <tr className="border-t border-border">
                   <td className="py-1 pr-2">
                     <input
                       aria-label={t("Názov položky {n}", { n: i + 1 })}
@@ -143,6 +163,69 @@ export function PolozkyNespracovaneho({
                     </button>
                   </td>
                 </tr>
+                {sKodmi ? (
+                  <tr>
+                    <td colSpan={6} className="pb-2 pr-2">
+                      <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
+                        <label className="block min-w-0">
+                          <span className="text-[11px] text-muted-foreground">{t("Predkontácia")}</span>
+                          <KodPohody
+                            ariaLabel={t("Predkontácia položky {n}", { n: i + 1 })}
+                            value={p.predkontacia ?? ""}
+                            onChange={(v) => zmen(i, { predkontacia: v.trim() || null })}
+                            moznosti={navrhy?.predkontacie ?? []}
+                            vyber
+                            bezPopisu
+                            placeholder="ako doklad"
+                            className={vstupKodu}
+                          />
+                        </label>
+                        <label className="block min-w-0">
+                          <span className="text-[11px] text-muted-foreground">{t("Členenie DPH")}</span>
+                          <KodPohody
+                            ariaLabel={t("Členenie DPH položky {n}", { n: i + 1 })}
+                            value={p.clenenie ?? ""}
+                            onChange={(v) => zmen(i, { clenenie: v.trim() || null })}
+                            moznosti={navrhy?.clenenia ?? []}
+                            vyber
+                            bezPopisu
+                            placeholder="ako doklad"
+                            className={vstupKodu}
+                          />
+                        </label>
+                        <label className="block min-w-0">
+                          <span className="text-[11px] text-muted-foreground">{t("Členenie KV")}</span>
+                          <select
+                            aria-label={t("Členenie KV položky {n}", { n: i + 1 })}
+                            value={p.kv ?? ""}
+                            onChange={(e) => zmen(i, { kv: e.target.value || null })}
+                            className={vstupKodu}
+                          >
+                            <option value="">
+                              {zdedena.kv ? t("ako doklad ({kod})", { kod: zdedena.kv }) : t("ako doklad")}
+                            </option>
+                            {KV_PRIJATE.map((k) => (
+                              <option key={k.kod} value={k.kod}>
+                                {t(k.nazov)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      {!p.predkontacia && !p.clenenie && (zdedena.predkontacia || zdedena.clenenie) ? (
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                          {t("Zdedí z dokladu: {kody}", {
+                            kody: [zdedena.predkontacia, zdedena.clenenie].filter(Boolean).join(" / "),
+                          })}
+                        </span>
+                      ) : null}
+                      {p.predkontacia && navrhy?.pomerove?.includes(p.predkontacia) ? (
+                        <span className="mt-0.5 block text-[11px] text-primary">{t("rozúčtuje sa pomerom")}</span>
+                      ) : null}
+                    </td>
+                  </tr>
+                ) : null}
+                </Fragment>
               ))}
             </tbody>
           </table>

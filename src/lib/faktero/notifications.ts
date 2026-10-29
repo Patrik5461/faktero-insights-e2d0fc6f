@@ -23,6 +23,15 @@ export type AppNotification = {
   detail: string;
   /** Cesta v aplikácii, kam sa má používateľ po kliknutí dostať. */
   to: string;
+  /** Parametre adresy (`?q=…`) — `to` s otáznikom Link ticho zahodí. */
+  search?: Record<string, string>;
+  /** Hodnoty do `{…}` v `title` a `detail`, nech sa šablóna dá preložiť. */
+  params?: Record<string, string | number>;
+  /**
+   * Zlúčená položka („3 nové eFaktúry“): kľúče jednotlivých upozornení, ktoré
+   * zastupuje. Je prečítaná, keď sú prečítané všetky, a prečítaním sa označia.
+   */
+  kluceClenov?: string[];
   /** Dátum udalosti (YYYY-MM-DD) — podľa neho sa radí. */
   date: string;
   read?: boolean;
@@ -256,12 +265,22 @@ function stavText(status: string | null): string {
   }
 }
 
+/** Kľúče na zápis prečítania — pri zlúčenej položke aj kľúče jej členov. */
+export function kluceNaPrecitanie(items: Pick<AppNotification, "key" | "kluceClenov">[]): string[] {
+  return [...new Set(items.flatMap((n) => [n.key, ...(n.kluceClenov ?? [])]))];
+}
+
 /** Doplní príznak prečítania a spočíta neprečítané. */
 export function applyReadState(
   items: AppNotification[],
   readKeys: Iterable<string>,
 ): { items: AppNotification[]; unread: number } {
   const read = new Set(readKeys);
-  const withState = items.map((n) => ({ ...n, read: read.has(n.key) }));
+  const withState = items.map((n) => ({
+    ...n,
+    read:
+      read.has(n.key) ||
+      (!!n.kluceClenov?.length && n.kluceClenov.every((k) => read.has(k))),
+  }));
   return { items: withState, unread: withState.filter((n) => !n.read).length };
 }

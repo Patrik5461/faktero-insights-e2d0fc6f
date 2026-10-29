@@ -90,6 +90,7 @@ function Sekcia({ nadpis, ok, children }: { nadpis: string; ok?: boolean; childr
   );
 }
 
+/** Menej dôležité polia pod „Zobraziť viac“ — dôležité ostávajú vždy viditeľné. */
 function Rozsirene({ children }: { children: ReactNode }) {
   const { t } = useT();
   const [otvorene, setOtvorene] = useState(false);
@@ -100,7 +101,7 @@ function Rozsirene({ children }: { children: ReactNode }) {
         onClick={() => setOtvorene((o) => !o)}
         className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs text-muted-foreground hover:bg-secondary"
       >
-        {t("Rozšírené položky")}{" "}
+        {otvorene ? t("Zobraziť menej") : t("Zobraziť viac")}{" "}
         {otvorene ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
       </button>
       {otvorene ? <div className="space-y-3.5">{children}</div> : null}
@@ -317,6 +318,43 @@ export function NespracovanyKompaktny({
             </Pole>
             {druh && druh !== "ostatny" ? (
               <>
+                {/* Zaúčtovanie hneď za druhom dokladu — je dôležitejšie než platobné údaje. */}
+                <PoliaZauctovania
+                  navrhy={navrhy}
+                  oznacenia={oznaceniaZUdajov(u)}
+                  doklad={{ typ: druh === "blocek" ? "blocek" : "faktura", platba: u.platba }}
+                  hodnoty={{
+                    predkontacia: u.kody.predkontacia,
+                    clenenie: u.kody.clenenie,
+                    kategoria: u.kategoria,
+                    kv: u.kody.kv,
+                    stredisko: u.kody.stredisko,
+                    cinnost: u.kody.cinnost,
+                    rad: u.kody.rad,
+                  }}
+                  setHodnoty={(h: any) =>
+                    setU({
+                      ...u,
+                      kategoria: h.kategoria ?? "",
+                      kody: {
+                        ...u.kody,
+                        predkontacia: h.predkontacia ?? "",
+                        clenenie: h.clenenie ?? "",
+                        kv: h.kv ?? "",
+                        stredisko: h.stredisko ?? "",
+                        cinnost: h.cinnost ?? "",
+                        rad: h.rad ?? "",
+                      },
+                    })
+                  }
+                />
+                {pravidlo}
+                <NauceneZDodavatela u={u} />
+                <NavrhAiNespracovaneho u={u} setU={setU} stav={stavNavrhuAi} />
+              </>
+            ) : null}
+            {druh && druh !== "ostatny" ? (
+              <>
                 <Pole popis={faktura ? "Číslo faktúry" : "Číslo dokladu"} chyba={zle("cislo")}>
                   <input
                     aria-label={t("Číslo dokladu")}
@@ -362,15 +400,6 @@ export function NespracovanyKompaktny({
                   )}
                 </div>
                 {faktura ? (
-                  <Pole popis="Popis plnenia (text faktúry)">
-                    <input
-                      value={u.popis ?? ""}
-                      onChange={(e) => set({ popis: e.target.value })}
-                      className={ram("")}
-                    />
-                  </Pole>
-                ) : null}
-                {faktura ? (
                   <Pole popis="Dátum dodania (DUZP)">
                     <input
                       type="date"
@@ -389,6 +418,37 @@ export function NespracovanyKompaktny({
                     />
                   </Pole>
                 ) : null}
+                <Rozsirene>
+                  {faktura ? (
+                    <Pole popis="Dátum prijatia">
+                      <input
+                        type="date"
+                        aria-label={t("Dátum prijatia")}
+                        value={u.datumPrijatia ?? ""}
+                        onChange={(e) => set({ datumPrijatia: e.target.value })}
+                        className={ram("")}
+                      />
+                    </Pole>
+                  ) : null}
+                  <Pole popis="Interné číslo">
+                    <input
+                      aria-label={t("Interné číslo")}
+                      maxLength={40}
+                      value={u.interneCislo ?? ""}
+                      onChange={(e) => set({ interneCislo: e.target.value })}
+                      className={ram("")}
+                    />
+                  </Pole>
+                  {faktura ? (
+                    <Pole popis="Popis plnenia (text faktúry)">
+                      <input
+                        value={u.popis ?? ""}
+                        onChange={(e) => set({ popis: e.target.value })}
+                        className={ram("")}
+                      />
+                    </Pole>
+                  ) : null}
+                </Rozsirene>
               </>
             ) : null}
             {druh === "ostatny" ? (
@@ -423,74 +483,41 @@ export function NespracovanyKompaktny({
                 </Pole>
               </>
             ) : null}
-          </Sekcia>
-
-          {druh ? (
-            <Sekcia nadpis={druh === "ostatny" ? "Odosielateľ" : "Dodávateľ"}>
-              <Pole popis="Názov" chyba={zle("dodavatel")}>
-                <input
-                  aria-label={t("Dodávateľ")}
-                  value={u.dodavatel.nazov}
-                  onChange={(e) => setDod({ nazov: e.target.value })}
-                  className={ram("dodavatel")}
+            {druh && druh !== "ostatny" ? (
+              <>
+                <JobPicker
+                  value={u.jobId}
+                  onChange={(v) => set({ jobId: v })}
+                  companyId={companyId}
+                  className={zle("zakazka") ? "[&_select]:border-red-500" : ""}
                 />
-              </Pole>
-              {druh !== "ostatny" ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <Pole popis="IČO">
-                    <input
-                      value={u.dodavatel.ico}
-                      onChange={(e) => setDod({ ico: e.target.value })}
-                      className={ram("")}
-                    />
-                  </Pole>
-                  <Pole popis="IČ DPH">
-                    <input
-                      value={u.dodavatel.icDph}
-                      onChange={(e) => setDod({ icDph: e.target.value })}
-                      className={ram("")}
-                    />
-                  </Pole>
-                </div>
-              ) : null}
-              {faktura ? (
-                <>
-                  <Pole popis="Ulica a číslo">
-                    <input
-                      value={u.dodavatel.ulica}
-                      onChange={(e) => setDod({ ulica: e.target.value })}
-                      className={ram("")}
-                    />
-                  </Pole>
-                  <div className="grid grid-cols-[2fr_1fr] gap-3">
-                    <Pole popis="Mesto">
-                      <input
-                        value={u.dodavatel.mesto}
-                        onChange={(e) => setDod({ mesto: e.target.value })}
-                        className={ram("")}
-                      />
-                    </Pole>
-                    <Pole popis="PSČ">
-                      <input
-                        value={u.dodavatel.psc}
-                        onChange={(e) => setDod({ psc: e.target.value })}
-                        className={ram("")}
-                      />
-                    </Pole>
-                  </div>
-                  <Rozsirene>
-                    <Pole popis="DIČ">
-                      <input
-                        value={u.dodavatel.dic}
-                        onChange={(e) => setDod({ dic: e.target.value })}
-                        className={ram("")}
-                      />
-                    </Pole>
-                  </Rozsirene>
-                </>
-              ) : null}
-            </Sekcia>
-          ) : null}
+                <VozidloPicker
+                  value={u.vehicleId ?? ""}
+                  onChange={(v) => set({ vehicleId: v })}
+                  companyId={companyId}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("Prázdne = predvolené z")}{" "}
+                  <Link to="/uctovnictvo/predkontacie" className="underline">
+                    {t("nastavení predkontácií")}
+                  </Link>
+                  .
+                </p>
+                {companyId && (druh === "blocek" || druh === "faktura") ? (
+                  <NastavitPredvolene
+                    companyId={companyId}
+                    kluc={druh === "blocek" ? "doklady" : "prijata"}
+                    hodnoty={u.kody}
+                    predvolene={{
+                      predkontacia: navrhy?.predvolenaPredkontacia,
+                      clenenie: navrhy?.predvoleneClenenie,
+                      kv: navrhy?.predvoleneKv,
+                    }}
+                  />
+                ) : null}
+              </>
+            ) : null}
+          </Sekcia>
 
           {druh && druh !== "ostatny" ? (
             <Sekcia nadpis="Čiastka a DPH" ok={sumaSedi}>
@@ -581,28 +608,99 @@ export function NespracovanyKompaktny({
             </Sekcia>
           ) : null}
 
+          {druh ? (
+            <Sekcia nadpis={druh === "ostatny" ? "Odosielateľ" : "Dodávateľ"}>
+              <Pole popis="Názov" chyba={zle("dodavatel")}>
+                <input
+                  aria-label={t("Dodávateľ")}
+                  value={u.dodavatel.nazov}
+                  onChange={(e) => setDod({ nazov: e.target.value })}
+                  className={ram("dodavatel")}
+                />
+              </Pole>
+              {druh !== "ostatny" ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <Pole popis="IČO">
+                    <input
+                      value={u.dodavatel.ico}
+                      onChange={(e) => setDod({ ico: e.target.value })}
+                      className={ram("")}
+                    />
+                  </Pole>
+                  <Pole popis="IČ DPH">
+                    <input
+                      value={u.dodavatel.icDph}
+                      onChange={(e) => setDod({ icDph: e.target.value })}
+                      className={ram("")}
+                    />
+                  </Pole>
+                </div>
+              ) : null}
+              {faktura ? (
+                // Adresa, krajina, DIČ a e-mail sú menej dôležité — pod „Zobraziť viac“.
+                <Rozsirene>
+                  <Pole popis="Ulica a číslo">
+                    <input
+                      value={u.dodavatel.ulica}
+                      onChange={(e) => setDod({ ulica: e.target.value })}
+                      className={ram("")}
+                    />
+                  </Pole>
+                  <div className="grid grid-cols-[2fr_1fr] gap-3">
+                    <Pole popis="Mesto">
+                      <input
+                        value={u.dodavatel.mesto}
+                        onChange={(e) => setDod({ mesto: e.target.value })}
+                        className={ram("")}
+                      />
+                    </Pole>
+                    <Pole popis="PSČ">
+                      <input
+                        value={u.dodavatel.psc}
+                        onChange={(e) => setDod({ psc: e.target.value })}
+                        className={ram("")}
+                      />
+                    </Pole>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Pole popis="Krajina">
+                      <input
+                        aria-label={t("Krajina dodávateľa")}
+                        maxLength={2}
+                        placeholder="SK"
+                        value={u.dodavatel.krajina ?? ""}
+                        onChange={(e) => setDod({ krajina: e.target.value.toUpperCase() })}
+                        className={ram("")}
+                      />
+                    </Pole>
+                    <Pole popis="DIČ">
+                      <input
+                        value={u.dodavatel.dic}
+                        onChange={(e) => setDod({ dic: e.target.value })}
+                        className={ram("")}
+                      />
+                    </Pole>
+                  </div>
+                  <Pole popis="E-mail">
+                    <input
+                      type="email"
+                      aria-label={t("E-mail dodávateľa")}
+                      value={u.dodavatel.email ?? ""}
+                      onChange={(e) => setDod({ email: e.target.value })}
+                      className={ram("")}
+                    />
+                  </Pole>
+                </Rozsirene>
+              ) : null}
+            </Sekcia>
+          ) : null}
+
           {faktura ? (
             <Sekcia nadpis="Platobné údaje">
               <Pole popis="Variabilný symbol">
                 <input
                   value={u.vs}
                   onChange={(e) => set({ vs: e.target.value })}
-                  className={ram("")}
-                />
-              </Pole>
-              <Pole popis="Konštantný symbol">
-                <input
-                  maxLength={4}
-                  value={u.ks ?? ""}
-                  onChange={(e) => set({ ks: e.target.value })}
-                  className={ram("")}
-                />
-              </Pole>
-              <Pole popis="Špecifický symbol">
-                <input
-                  maxLength={10}
-                  value={u.ss ?? ""}
-                  onChange={(e) => set({ ss: e.target.value })}
                   className={ram("")}
                 />
               </Pole>
@@ -653,73 +751,24 @@ export function NespracovanyKompaktny({
                 />
                 {t("Faktúra je už uhradená")}
               </label>
-            </Sekcia>
-          ) : null}
-
-          {druh && druh !== "ostatny" ? (
-            <Sekcia nadpis="Zaúčtovanie">
-              <PoliaZauctovania
-                navrhy={navrhy}
-                oznacenia={oznaceniaZUdajov(u)}
-                doklad={{ typ: druh === "blocek" ? "blocek" : "faktura", platba: u.platba }}
-                hodnoty={{
-                  predkontacia: u.kody.predkontacia,
-                  clenenie: u.kody.clenenie,
-                  kategoria: u.kategoria,
-                  kv: u.kody.kv,
-                  stredisko: u.kody.stredisko,
-                  cinnost: u.kody.cinnost,
-                  rad: u.kody.rad,
-                }}
-                setHodnoty={(h: any) =>
-                  setU({
-                    ...u,
-                    kategoria: h.kategoria ?? "",
-                    kody: {
-                      ...u.kody,
-                      predkontacia: h.predkontacia ?? "",
-                      clenenie: h.clenenie ?? "",
-                      kv: h.kv ?? "",
-                      stredisko: h.stredisko ?? "",
-                      cinnost: h.cinnost ?? "",
-                      rad: h.rad ?? "",
-                    },
-                  })
-                }
-              />
-              <JobPicker
-                value={u.jobId}
-                onChange={(v) => set({ jobId: v })}
-                companyId={companyId}
-                className={zle("zakazka") ? "[&_select]:border-red-500" : ""}
-              />
-              <VozidloPicker
-                value={u.vehicleId ?? ""}
-                onChange={(v) => set({ vehicleId: v })}
-                companyId={companyId}
-              />
-              {pravidlo}
-              <NauceneZDodavatela u={u} />
-              <NavrhAiNespracovaneho u={u} setU={setU} stav={stavNavrhuAi} />
-              <p className="text-xs text-muted-foreground">
-                {t("Prázdne = predvolené z")}{" "}
-                <Link to="/uctovnictvo/predkontacie" className="underline">
-                  {t("nastavení predkontácií")}
-                </Link>
-                .
-              </p>
-              {companyId && (druh === "blocek" || druh === "faktura") ? (
-                <NastavitPredvolene
-                  companyId={companyId}
-                  kluc={druh === "blocek" ? "doklady" : "prijata"}
-                  hodnoty={u.kody}
-                  predvolene={{
-                    predkontacia: navrhy?.predvolenaPredkontacia,
-                    clenenie: navrhy?.predvoleneClenenie,
-                    kv: navrhy?.predvoleneKv,
-                  }}
-                />
-              ) : null}
+              <Rozsirene>
+                <Pole popis="Konštantný symbol">
+                  <input
+                    maxLength={4}
+                    value={u.ks ?? ""}
+                    onChange={(e) => set({ ks: e.target.value })}
+                    className={ram("")}
+                  />
+                </Pole>
+                <Pole popis="Špecifický symbol">
+                  <input
+                    maxLength={10}
+                    value={u.ss ?? ""}
+                    onChange={(e) => set({ ss: e.target.value })}
+                    className={ram("")}
+                  />
+                </Pole>
+              </Rozsirene>
             </Sekcia>
           ) : null}
 
@@ -754,13 +803,15 @@ export function NespracovanyKompaktny({
                   rows={2}
                   maxLength={1000}
                   placeholder={
-                    druh === "ostatny"
-                      ? t("Poznámka")
-                      : t("Komentár (do účtovníctva sa neprenáša)")
+                    druh === "ostatny" ? t("Poznámka") : t("Komentár (do účtovníctva sa neprenáša)")
                   }
                   value={druh === "ostatny" ? u.poznamka : (u.komentar ?? "")}
                   onChange={(e) =>
-                    set(druh === "ostatny" ? { poznamka: e.target.value } : { komentar: e.target.value })
+                    set(
+                      druh === "ostatny"
+                        ? { poznamka: e.target.value }
+                        : { komentar: e.target.value },
+                    )
                   }
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 />
@@ -780,7 +831,7 @@ export function NespracovanyKompaktny({
 
           {druh && druh !== "ostatny" ? (
             <Sekcia nadpis="Položky">
-              <PolozkyNespracovaneho u={u} setU={setU} sadzby={sadzby} />
+              <PolozkyNespracovaneho u={u} setU={setU} sadzby={sadzby} navrhy={navrhy} />
             </Sekcia>
           ) : null}
         </div>

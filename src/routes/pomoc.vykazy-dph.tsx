@@ -81,6 +81,13 @@ const sections: HelpSection[] = [
           Doplniť sa dá aj <strong>dátum dodania</strong> prijatej faktúry a či si z nej{" "}
           <strong>odpočítavate daň</strong>.
         </p>
+        <p>
+          Vystavenú faktúru zaradí do kontrolného výkazu Faktero samo (A.1, prenesenie do A.2,
+          dobropis do C.1). Keď na faktúre alebo na jej položke vyberiete{" "}
+          <strong>členenie KV DPH</strong>, výkaz sa riadi ním — <strong>X</strong> faktúru z
+          kontrolného výkazu vynechá (v priznaní ostáva) a <strong>D.2</strong> ju započíta len do
+          súhrnných riadkov časti D.2.
+        </p>
       </>
     ),
   },

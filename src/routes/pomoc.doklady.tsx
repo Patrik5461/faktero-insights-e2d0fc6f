@@ -132,6 +132,14 @@ const sections: HelpSection[] = [
           sama pri vytvorení.
         </p>
         <p>
+          Pri každej položke je aj jej zaúčtovanie: <strong>Predkontácia</strong>,{" "}
+          <strong>Členenie DPH</strong> a <strong>Členenie KV</strong>. Prázdne pole znamená kód
+          dokladu — aj ten, ktorý doplní pravidlo účtovania alebo návrh AI. Po stlačení Vytvoriť sa
+          kódy prenesú s položkami do prijatej faktúry či bločku a export do účtovníctva doklad podľa
+          nich rozúčtuje. Menej používané polia (dátum prijatia, interné číslo, adresa, krajina a
+          e-mail dodávateľa) sú pod <strong>Zobraziť viac</strong>.
+        </p>
+        <p>
           V <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie</Link>, časť{" "}
           <em>Export a spracovanie dokladov</em>, si nastavíte správanie Nespracovaných dokladov: či
           je vytvorená faktúra rovno zaúčtovaná, či sa po vytvorení otvorí ďalší doklad, kontrolu

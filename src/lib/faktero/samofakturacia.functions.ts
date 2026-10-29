@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -257,7 +258,7 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
         .update({
           ...spolocne,
           variable_symbol:
-            prazdne(data.variable_symbol) ?? povodna.invoice_number.replace(/\D/g, "").slice(-10),
+            prazdne(data.variable_symbol) ?? (vsZCislaDokladu(povodna.invoice_number) || null),
           /*
             Zmena po odoslaní: dodávateľ odsúhlasoval inú faktúru, takže sa
             vracia do konceptu a treba ju poslať znova. Starý odkaz prestane
@@ -287,7 +288,7 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
         odpocet: true,
         invoice_number: cislo,
         number_series_id: seriesId,
-        variable_symbol: prazdne(data.variable_symbol) ?? cislo.replace(/\D/g, "").slice(-10),
+        variable_symbol: prazdne(data.variable_symbol) ?? (vsZCislaDokladu(cislo) || null),
         samofakturacia: true,
       })
       .select("id")

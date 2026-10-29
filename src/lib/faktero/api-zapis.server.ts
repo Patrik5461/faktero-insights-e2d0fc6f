@@ -7,6 +7,7 @@
   Všetko ide cez `ctx.supabase` (servisný klient) a vždy s filtrom firmy.
 */
 import { z } from "zod";
+import { vsPrijatejNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import type { ApiCtx } from "./api-auth.server";
 import { err, ok } from "./api-auth.server";
 import { ZnackyVstup, maZnacky } from "./api-evidencia";
@@ -325,6 +326,7 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
     .insert({
       ...riadok,
       ...zn.riadok,
+      variable_symbol: vsPrijatejNaUlozenie(d.variable_symbol, d.invoice_number),
       status: riadok.status ?? "received",
       company_id: ctx.company_id,
       customer_id,

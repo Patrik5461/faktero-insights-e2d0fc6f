@@ -213,3 +213,14 @@ describe("migrácia z Doklada", () => {
     );
   });
 });
+
+describe("sumy dokladu bez rozpisu DPH", () => {
+  it("bez vatSummary a taxBase je celá suma základom (nie 0)", async () => {
+    const { sumy } = await import("./mapovanie");
+    const s = sumy({ totalPrice: 260, vatSummary: [], items: [] } as any);
+    expect(s.zaklad).toBe(260);
+    expect(s.dph).toBe(0);
+    expect(s.spolu).toBe(260);
+    expect(s.sadzby).toEqual([{ sadzba: 0, zaklad: 260, dph: 0 }]);
+  });
+});

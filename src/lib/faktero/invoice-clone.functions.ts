@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { incrementMonthInText } from "./invoice-clone.ts";
@@ -73,7 +74,7 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
       discount_total: src.discount_total ?? 0,
       payment_method: src.payment_method,
       // Variabilný symbol patrí k novému číslu — prázdny by platbu nespároval.
-      variable_symbol: newNumber.replace(/\D/g, "") || null,
+      variable_symbol: vsZCislaDokladu(newNumber) || null,
       constant_symbol: src.constant_symbol,
       specific_symbol: src.specific_symbol,
       order_number: null,

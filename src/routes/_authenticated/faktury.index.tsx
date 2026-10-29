@@ -11,6 +11,8 @@ import { jeOtvorena } from "@/lib/faktero/faktury-sumy";
 import { sumaNaZobrazenie } from "@/lib/faktero/dobropis-zobrazenie";
 import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
 import { polozkaVystavenej } from "@/lib/faktero/suhrn-vyberu";
+import { SuctovaPatickaZoznamu } from "@/components/faktero/SuctyDokladov";
+import { useSuhrnVystavenych, useSuhrnVyberuVystavenych } from "@/hooks/useSuhrnVystavenych";
 import { DNI_PAROVANIA, MAX_PAROVANIA } from "@/lib/faktero/parovanie-limity";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
@@ -209,6 +211,22 @@ function InvoicesPage() {
   // Predkontácie, vlastné stavy, štítky a uzávierka — raz za firmu, nie za riadok.
   const cis = useCiselnikyDokladov(getActiveCompanyId(), "vystavena");
   const stavPodlaId = useMemo(() => new Map(cis.stavy.map((s) => [s.id, s])), [cis.stavy]);
+  /* Voľby predkontácie do riadku — líšia sa len podľa platby, nepočítajú sa
+     znova pre každý zo stoviek riadkov pri každom prekreslení. */
+  const moznostiPredkontacie = useMemo(() => {
+    const pamat = new Map<string, ReturnType<typeof moznostiKodov>>();
+    return (platba: ReturnType<typeof platbaPreZoradenie>) => {
+      const k = String(platba);
+      let m = pamat.get(k);
+      if (!m) {
+        m = moznostiKodov(
+          zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], { typ: "faktura", platba }),
+        );
+        pamat.set(k, m);
+      }
+      return m;
+    };
+  }, [cis.navrhy]);
   /** Predkontácia v riadku — tá istá funkcia ako panel zaúčtovania v detaile (len uloží, nezaúčtuje). */
   async function zmenPredkontaciuRiadku(i: any, kodPk: string) {
     const c = getActiveCompanyId();
@@ -504,6 +522,34 @@ function InvoicesPage() {
   const selectedRows = useMemo(
     () => list.rows.filter((r: any) => list.selected[r.id]),
     [list.rows, list.selected],
+  );
+  /*
+    Súčty (P-1007): za označené z načítaných riadkov, za celý filter z
+    databázy — zoznam je stránkovaný, súčet stránky by klamal. Kontext povie,
+    či sa počítajú koncepty a zálohové (len vo vlastnej záložke).
+  */
+  const kontextSuctu = useMemo(
+    () => ({ typy: (equals as any).type ?? null, status: status ?? null }),
+    [equals, status],
+  );
+  const rozpisVyberu = useSuhrnVyberuVystavenych(selectedRows, kontextSuctu);
+  const sucetFiltra = useSuhrnVystavenych(
+    {
+      companyId: getActiveCompanyId(),
+      typy: kontextSuctu.typy,
+      status: status ?? null,
+      hladanie: list.search,
+      podla,
+      od: obdobieOd || null,
+      do: obdobieDo || null,
+      stav: stavFiltra || null,
+      stitok: stitokFiltra || null,
+      export: exportovane || null,
+      neuhradene: !!neuhradene,
+      poSplatnosti: !!poSplatnosti,
+      bezUpomienky: overdueNoReminder,
+    },
+    { vypnute: list.showDeleted, nonce: list.rows },
   );
   const emailableCount = selectedRows.filter(
     (r: any) => (r.status === "issued" || r.status === "sent") && r.customer_email,
@@ -1164,7 +1210,7 @@ function InvoicesPage() {
               title={
                 <span className="inline-flex items-center gap-2">
                   {i.invoice_number}
-                  <OdovzdaneIkona kedy={i.exported_at} />
+                  <OdovzdaneIkona kedy={i.exported_at} doklad={i} />
                   {i.type === "credit_note" || i.type === "debit_note" ? (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                       {i.type === "credit_note" ? t("Dobropis") : t("Ťarchopis")}
@@ -1294,7 +1340,7 @@ function InvoicesPage() {
                       <td className="p-3 font-medium">
                         <span className="inline-flex items-center gap-2">
                           {i.invoice_number}
-                          <OdovzdaneIkona kedy={i.exported_at} />
+                          <OdovzdaneIkona kedy={i.exported_at} doklad={i} />
                           {i.type === "credit_note" || i.type === "debit_note" ? (
                             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                               {i.type === "credit_note" ? t("Dobropis") : t("Ťarchopis")}
@@ -1339,12 +1385,7 @@ function InvoicesPage() {
                             <VyberVRiadku
                               ariaLabel={t("Účtovná položka faktúry {cislo}", { cislo: i.invoice_number ?? "" })}
                               hodnota={i.pohoda_predkontacia}
-                              moznosti={moznostiKodov(
-                                zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], {
-                                  typ: "faktura",
-                                  platba: platbaPreZoradenie(i.payment_method),
-                                }),
-                              )}
+                              moznosti={moznostiPredkontacie(platbaPreZoradenie(i.payment_method))}
                               zamok={
                                 list.showDeleted ? t("Vymazaná faktúra") : z ? t(NAZOV_ZAMKU[z]) : null
                               }
@@ -1447,6 +1488,10 @@ function InvoicesPage() {
             </SNahladom>
           }
         />
+        {/* Súčet za celý filter (obdobie, stav, hľadanie) — nie za stránku. */}
+        {!list.showDeleted && list.total > 0 ? (
+          <SuctovaPatickaZoznamu suhrn={sucetFiltra.suhrn} nacitava={sucetFiltra.nacitava} />
+        ) : null}
         <ListPagination
           page={list.page}
           pageSize={list.pageSize}
@@ -1469,6 +1514,7 @@ function InvoicesPage() {
         {!list.showDeleted ? (
           <SuctovaListaVyberu
             polozky={selectedRows.map((r: any) => polozkaVystavenej(r))}
+            rozpis={rozpisVyberu}
             pocet={list.selectedIds.length}
             onZrusit={list.clearSelection}
           />

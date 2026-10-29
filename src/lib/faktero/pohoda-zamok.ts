@@ -11,7 +11,14 @@
   Zoznamy tu sú zdrojom pre migráciu (`supabase/migrations/*pohoda_zamok.sql`)
   — test `pohoda-zamok.test.ts` kontroluje, že SQL nesie presne tieto polia.
   Pole, ktoré sa začne zapisovať do XML, patrí sem aj do migrácie.
+
+  „Opraviť zaúčtovanie“ (`oprava_zauctovania_at`) pustí z týchto zoznamov len
+  zaúčtovacie polia `POLIA_OPRAVY` — migrácia `*_odovzdanie_historia_spustace`.
 */
+import { POLIA_OPRAVY } from "./stav-odovzdania";
+
+/** Polia, ktoré zámok pustí pri oprave zaúčtovania (`_polia_opravy` v SQL). */
+export const POLIA_OPRAVY_ZAUCTOVANIA: readonly string[] = POLIA_OPRAVY;
 
 /**
  * Vydaná faktúra (`invoices`) — všetko, čo číta `polozkyFaktur` / `POHODA_XML`
@@ -251,8 +258,10 @@ export function porusenieZamkuFaktury(
   if (!rovnake(stara.exported_at, nova.exported_at)) return "exported_at";
   const storno =
     stornoDoPohody && String(nova.status) === "cancelled" && String(stara.status) !== "cancelled";
+  const oprava = Boolean(nova.oprava_zauctovania_at);
   for (const p of ZAMOK_FAKTURY) {
     if (storno && p === "cancelled_at") continue;
+    if (oprava && POLIA_OPRAVY_ZAUCTOVANIA.includes(p)) continue;
     if (!rovnake(stara[p], nova[p])) return p;
   }
   if (storno) return null;
@@ -295,7 +304,11 @@ export function porusenieZamkuDokladu(
   const odovzdany = Boolean(stary?.exported_at) && Boolean(novy?.exported_at);
   const zamknuty = Boolean(stary?.locked_at) && Boolean(novy?.locked_at);
   if (!odovzdany && !zamknuty) return null;
-  for (const p of polia) if (!rovnake(stary[p], novy[p])) return p;
+  const oprava = odovzdany && !zamknuty && Boolean(novy.oprava_zauctovania_at);
+  for (const p of polia) {
+    if (oprava && POLIA_OPRAVY_ZAUCTOVANIA.includes(p)) continue;
+    if (!rovnake(stary[p], novy[p])) return p;
+  }
   return null;
 }
 

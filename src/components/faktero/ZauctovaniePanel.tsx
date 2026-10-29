@@ -38,6 +38,7 @@ import {
 } from "@/lib/faktero/predkontacie";
 import { KV_PRIJATE, kvAutomaticky, kvSPredvolenym } from "@/lib/faktero/kv-clenenie";
 import { KodPohody } from "./KodPohody";
+import { HistoriaOdovzdania, OpravitZauctovanie, useVarovanieVratenia } from "./OdovzdanieDokladu";
 import { RozuctovaniePanel } from "./RozuctovaniePanel";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { potvrd } from "@/lib/potvrdenie";
@@ -521,6 +522,7 @@ export function ZauctovaniePanel({
   }
   const exportuj = useServerFn(exportPrijatychPohodaFn);
   const vrat = useServerFn(vratZPohodyFn);
+  const varovanieVratenia = useVarovanieVratenia();
   const presun = useServerFn(presunPrijatuDoDokladovFn);
   const navigate = useNavigate();
 
@@ -547,11 +549,8 @@ export function ZauctovaniePanel({
 
   async function vratit() {
     if (
-      !(await potvrd(
-        t(
-          "Vrátiť faktúru z Pohody? Zaúčtovanie sa zruší a pri ďalšom odovzdaní pôjde znova — v Pohode ju preto najprv zmažte, inak tam bude dvakrát.",
-        ),
-      ))
+      // Pravdivo podľa cesty: konektor ani súbor doklad v Pohode nezmažú (P-1009).
+      !(await potvrd(varovanieVratenia("prijata", row)))
     )
       return;
     setBusy(true);
@@ -749,6 +748,7 @@ export function ZauctovaniePanel({
               : t("Faktúra je zamknutá proti úpravám — najprv ju odomknite.")}
           </p>
         ) : null}
+        <HistoriaOdovzdania row={row} druh="prijata" onZmena={onZmena} />
         <AutoZauctovanieOdznak typ="prijata" row={row} onZmena={onZmena} />
 
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
@@ -897,6 +897,7 @@ export function ZauctovaniePanel({
               <button type="button" onClick={vratit} disabled={busy} className={male}>
                 <Undo2 className="h-3.5 w-3.5" /> {t("Vrátiť z Pohody (opraviť)")}
               </button>
+              <OpravitZauctovanie row={row} druh="prijata" onZmena={onZmena} className={male} />
             </>
           ) : zauctovana || row.status === "received" || row.status === "paid" ? (
             <button
@@ -1075,6 +1076,7 @@ export function ZauctovaniePanel({
           </span>
         )}
       </div>
+      <HistoriaOdovzdania row={row} druh="prijata" onZmena={onZmena} />
       <AutoZauctovanieOdznak typ="prijata" row={row} onZmena={onZmena} />
 
       <div className="mt-3">
@@ -1105,6 +1107,12 @@ export function ZauctovaniePanel({
               >
                 <Undo2 className="h-4 w-4" /> {t("Vrátiť z Pohody (opraviť)")}
               </button>
+              <OpravitZauctovanie
+                row={row}
+                druh="prijata"
+                onZmena={onZmena}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+              />
             </div>
           </>
         ) : (

@@ -11,6 +11,7 @@
   {{invoice_number}} doplní ďalej `applyVars` v email.server.
 */
 import { sumaNaZobrazenie } from "./dobropis-zobrazenie";
+import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { datumNaDoklade, jazykDokladu, localeDokladu, type JazykDokladu } from "./faktura-jazyk";
 import { formatujMenu } from "./mena";
 import type { KrajinaDane } from "./vat-rates";
@@ -235,7 +236,7 @@ export function hodnotyPremennych(args: {
           ),
     SPLATNOST: d.due_date ? datumNaDoklade(d.due_date, args.jazyk) : "",
     DATUM_VYSTAVENIA: d.issue_date ? datumNaDoklade(d.issue_date, args.jazyk) : "",
-    VS: d.variable_symbol || (d.invoice_number ?? "").replace(/\D/g, "") || "",
+    VS: vsVystavenej(d),
     ODBERATEL: d.customer_name ?? "",
     FIRMA: args.firma ?? "",
     IBAN: args.iban ?? "",

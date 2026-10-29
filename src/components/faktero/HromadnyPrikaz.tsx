@@ -13,6 +13,7 @@ import {
   type Preskocena,
 } from "@/lib/faktero/hromadny-prikaz";
 import { useT } from "@/lib/i18n/useT";
+import { zalohaPrijatej } from "@/lib/faktero/uhrady-prijatej";
 import { nastaveniaBanky, type TextPrijemcu } from "@/lib/faktero/export-nastavenia";
 
 type Ucet = {
@@ -127,9 +128,11 @@ export function HromadnyPrikaz({
           .map((z) => [String(z.id), Number(z.amount_total ?? 0)]),
       );
       for (const f of faktury as any[]) {
-        const z = f.advance_invoice_id
-          ? zaplateneZalohy.get(String(f.advance_invoice_id))
-          : undefined;
+        // Odpočet na doklade (zaplatená záloha z eFaktúry) má prednosť pred väzbou.
+        const z = zalohaPrijatej(
+          f.advance_amount,
+          f.advance_invoice_id ? zaplateneZalohy.get(String(f.advance_invoice_id)) : 0,
+        );
         if (!z) continue;
         out[f.id] = out[f.id] ?? { uhradene: 0, zaloha: 0 };
         out[f.id].zaloha = z;

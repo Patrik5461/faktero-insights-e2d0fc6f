@@ -9,6 +9,7 @@ import {
   navrhDruhu,
   ostatnyZUdajov,
   prijataZUdajov,
+  polozkyZauctovane,
   udajeZAi,
   doplnUdaje,
   type DruhNespracovaneho,
@@ -223,6 +224,7 @@ const ZDROJ_PRIJATEJ: Record<string, string> = {
   skener: "nahrate",
   apka: "nahrate",
   api: "import",
+  efaktura: "efaktura",
 };
 const ZDROJ_BLOCKU: Record<string, string> = {
   mail: "upload",
@@ -333,7 +335,8 @@ export async function vytvorDoklad(
       if (up.error) throw new Error(`Súbor sa nepodarilo uložiť: ${up.error.message}`);
     }
     const zakl = prijataZUdajov(druh, u, dnes);
-    const zauctovat = Boolean(zakl.pohoda_predkontacia || zakl.pohoda_clenenie_dph);
+    // Zaúčtovaná je aj faktúra, ktorej každá položka má vlastnú predkontáciu (hlavička môže ostať prázdna).
+    const zauctovat = Boolean(zakl.pohoda_predkontacia || zakl.pohoda_clenenie_dph || polozkyZauctovane(u));
     // Zaplatená ostáva zaplatená aj zaúčtovaná (ako po zaúčtovaní v paneli).
     const stav = (zauct: boolean) => (u.uhradene ? "paid" : zauct ? "booked" : "received");
     const { data, error } = await supabase
@@ -516,6 +519,16 @@ export async function vytvorDoklad(
       id: vysledok.id,
       preniest: vysledok.agenda === "prijata" && nepotvrdeneNavrhy.length > 0,
     });
+  }
+
+  /* eFaktúra odložená v Nespracovaných: prijatá eFaktúra dostane väzbu na
+     vytvorenú faktúru (inak by po zmazaní záznamu ponúkala Zaevidovať znova). */
+  if (vysledok.agenda === "prijata") {
+    await supabase
+      .from("efaktura_received_documents")
+      .update({ matched_supplier_invoice_id: vysledok.id, status: "matched", processed_at: teraz })
+      .eq("company_id", r.company_id)
+      .eq("nespracovany_id", r.id);
   }
 
   await supabase.from("nespracovane_doklady").delete().eq("id", r.id);

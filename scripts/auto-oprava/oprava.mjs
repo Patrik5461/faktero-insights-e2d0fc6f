@@ -111,6 +111,70 @@ async function mail(predmet, riadky, odkaz) {
   if (!r.ok) log("e-mail zlyhal", r.status, (await r.text()).slice(0, 200));
 }
 
+/* ------------------------------------------------------------- telegram */
+
+/*
+  To isté upozornenie aj do Telegramu — do chatov spárovaných v Admin →
+  Podpora (`telegram_admin_chaty`). Pri návrhu dostane superadmin tlačidlá
+  „Schváliť a nasadiť“ / „Zamietnuť“ (admin len „Zamietnuť“); kto smie
+  kliknúť, overí znova server podľa chatu (src/lib/faktero/telegram-webhook.server.ts).
+  Bez TELEGRAM_BOT_TOKEN sa nedeje nič a zlyhanie nikdy nezastaví beh.
+*/
+async function telegram(text, { poziadavkaId = null, autoOpravaId = null, tlacidla = false } = {}) {
+  const token = env.TELEGRAM_BOT_TOKEN;
+  if (!token) return;
+  try {
+    const { data: chaty } = await db.from("telegram_admin_chaty").select("chat_id, user_id");
+    if (!chaty?.length) return;
+    const { data: admini } = await db
+      .from("platform_admins")
+      .select("user_id, role")
+      .in(
+        "user_id",
+        chaty.map((c) => c.user_id),
+      );
+    const rola = new Map((admini ?? []).map((a) => [a.user_id, a.role]));
+    for (const c of chaty) {
+      if (!rola.has(c.user_id)) continue;
+      const rad = [];
+      if (tlacidla && autoOpravaId) {
+        /*
+          Schváliť sa dá len v administrácii — tam je rozdiel v kóde aj
+          dvojfaktorové overenie. Jeden klik v Telegrame by nasadil kód
+          z návrhu, ktorý vznikol z textu zákazníka (bezpečnostná kontrola 29. 10.).
+        */
+        rad.push({ text: "Otvoriť v administrácii", url: "https://www.faktero.sk/admin/podpora" });
+        rad.push({ text: "Zamietnuť", callback_data: `ao:z:${autoOpravaId}` });
+      }
+      const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          chat_id: c.chat_id,
+          text: String(text).slice(0, 4000),
+          link_preview_options: { is_disabled: true },
+          ...(rad.length ? { reply_markup: { inline_keyboard: [rad] } } : {}),
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      const j = await r.json().catch(() => null);
+      if (!j?.ok) {
+        log("telegram zlyhal", r.status, String(j?.description ?? "").slice(0, 200));
+        continue;
+      }
+      if (poziadavkaId || autoOpravaId)
+        await db.from("telegram_spravy_bota").insert({
+          chat_id: c.chat_id,
+          message_id: j.result.message_id,
+          poziadavka_id: poziadavkaId,
+          auto_oprava_id: autoOpravaId,
+        });
+    }
+  } catch (e) {
+    log("telegram zlyhal", e?.message ?? e);
+  }
+}
+
 /* ------------------------------------------------------------ tajomstvá */
 
 /** Hodnoty z ecosystem a secrets.env — žiadna z nich sa nesmie objaviť v rozdiele. */
@@ -413,6 +477,10 @@ async function navrhniOpravu(o) {
         ],
         odkaz,
       );
+      await telegram(
+        `Automatická oprava P-${poz.cislo} zastavená: navrhnutá zmena obsahovala hodnotu zo serverových tajomstiev. Návrh bol zahodený.\n\n${odkaz}`,
+        { poziadavkaId: poz.id, autoOpravaId: o.id },
+      );
       return;
     }
 
@@ -451,6 +519,16 @@ async function navrhniOpravu(o) {
           `Prečo bez zmeny: ${vysledok.zmena ?? "—"}`,
         ],
         odkaz,
+      );
+      await telegram(
+        [
+          `P-${poz.cislo}: bez automatickej opravy${a.ok ? "" : " (agent nedobehol)"}`,
+          `Nahlásenie: ${poz.predmet}`,
+          `Príčina: ${vysledok.pricina ?? "—"}`,
+          "",
+          odkaz,
+        ].join("\n"),
+        { poziadavkaId: poz.id, autoOpravaId: o.id },
       );
       git(["worktree", "remove", "--force", wt]);
       git(["branch", "-D", vetva]);
@@ -506,6 +584,19 @@ async function navrhniOpravu(o) {
       ],
       odkaz,
     );
+    await telegram(
+      [
+        `Návrh opravy P-${poz.cislo}: ${poz.predmet}`,
+        `Príčina: ${vysledok.pricina ?? "—"}`,
+        `Zmena: ${vysledok.zmena ?? "—"}`,
+        `Istota: ${vysledok.istota ?? "—"} · tsc ${tsc.ok ? "prešiel" : "NEPREŠIEL"}`,
+        `Súbory: ${subory.join(", ")}`,
+        "",
+        "Nič nie je nasadené. Rozdiel si pozrite v administrácii:",
+        odkaz,
+      ].join("\n"),
+      { poziadavkaId: poz.id, autoOpravaId: o.id, tlacidla: true },
+    );
   } catch (e) {
     log(`P-${poz.cislo}: chyba`, e?.message ?? e);
     await zmen(o.id, {
@@ -513,6 +604,10 @@ async function navrhniOpravu(o) {
       chyba: String(e?.message ?? e).slice(0, 2000),
       koniec_at: new Date().toISOString(),
     });
+    await telegram(
+      `Automatická oprava P-${poz.cislo} zlyhala: ${String(e?.message ?? e).slice(0, 500)}\n\n${odkaz}`,
+      { poziadavkaId: poz.id, autoOpravaId: o.id },
+    );
   }
 }
 
@@ -581,6 +676,11 @@ async function zlucSchvalenu(o) {
       [String(e?.message ?? e)],
       odkaz,
     );
+    // Návrh je znova v stave „navrh“ — dá sa schváliť ešte raz.
+    await telegram(
+      `P-${poz?.cislo}: schválenú opravu sa nepodarilo zlúčiť.\n${String(e?.message ?? e).slice(0, 1500)}\n\n${odkaz}`,
+      { poziadavkaId: o.poziadavka_id, autoOpravaId: o.id, tlacidla: true },
+    );
   } finally {
     git(["worktree", "remove", "--force", wt]);
   }
@@ -612,6 +712,10 @@ async function overNasadenie(o) {
       "Oprava je na faktero.sk. Zákazníkovi môžete odpovedať a požiadavku uzavrieť.",
     ],
     `${WEB}/admin/podpora/${o.poziadavka_id}`,
+  );
+  await telegram(
+    `P-${poz?.cislo}: oprava je nasadená na faktero.sk. Zákazníkovi môžete odpovedať cez Reply.\n\n${WEB}/admin/podpora/${o.poziadavka_id}`,
+    { poziadavkaId: o.poziadavka_id },
   );
 }
 

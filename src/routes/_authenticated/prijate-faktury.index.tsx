@@ -1,7 +1,9 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
+import { stavOdovzdania, textOdznaku } from "@/lib/faktero/stav-odovzdania";
 import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
 import { UpozornenieNespracovane } from "@/components/faktero/UpozornenieNespracovane";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -52,6 +54,8 @@ import { formatovacMeny, formatujMenu } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
 import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
+import { SuctovaPatickaZoznamu } from "@/components/faktero/SuctyDokladov";
+import { suhrnZPoloziek } from "@/lib/faktero/suhrn-dph";
 import { polozkaPrijatej } from "@/lib/faktero/suhrn-vyberu";
 import { ZAPLATENE_NA_MIESTE } from "@/lib/faktero/hromadny-prikaz";
 import { NavrhyAiOkno } from "@/components/faktero/NavrhyAiOkno";
@@ -214,7 +218,7 @@ function PurchaseInvoicesPage() {
     cislo: (r: any) => r.invoice_number,
     dodavatel: (r: any) => r.supplier_name,
     ico: (r: any) => r.supplier_ico,
-    vs: (r: any) => r.variable_symbol,
+    vs: (r: any) => vsPrijatej(r),
     vystavena: (r: any) => r.issue_date,
     duzp: (r: any) => r.delivery_date,
     splatnost: (r: any) => r.due_date,
@@ -343,7 +347,7 @@ function PurchaseInvoicesPage() {
         Number(r.amount_total ?? 0).toFixed(2),
         r.currency ?? "EUR",
         r.status,
-        r.variable_symbol ?? "",
+        vsPrijatej(r),
       ]
         .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`)
         .join(";"),
@@ -409,7 +413,12 @@ function PurchaseInvoicesPage() {
   /* Hromadné zaúčtovanie — ako v Doklado: vybrať faktúry, dať predkontáciu. */
   const [zauctovanie, setZauctovanie] = useState(false);
   const [kodyNavrhy, setKodyNavrhy] = useState<Navrhy | null>(null);
-  const [kody, setKody] = useState({ predkontacia: "", clenenie: "", kategoria: "" });
+  const [kody, setKody] = useState<{ predkontacia: string; clenenie: string; kategoria: string; kv?: string }>({
+    predkontacia: "",
+    clenenie: "",
+    kategoria: "",
+    kv: "",
+  });
   const nacitajKody = useServerFn(navrhyKodovFn);
   const zauctuj = useServerFn(zauctujPrijateFn);
   useZatvorNaEscape(zauctovanie ? () => setZauctovanie(false) : null);
@@ -435,7 +444,7 @@ function PurchaseInvoicesPage() {
   async function otvorZauctovanie() {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    setKody({ predkontacia: "", clenenie: "", kategoria: "" });
+    setKody({ predkontacia: "", clenenie: "", kategoria: "", kv: "" });
     setZauctovanie(true);
     if (!kodyNavrhy)
       nacitajKody({ data: { company_id: cid } })
@@ -505,6 +514,7 @@ function PurchaseInvoicesPage() {
           ids: [...selected],
           predkontacia: kody.predkontacia || undefined,
           clenenie: kody.clenenie || undefined,
+          kv: kody.kv || undefined,
           kategoria: kody.kategoria || undefined,
         },
       });
@@ -730,7 +740,7 @@ function PurchaseInvoicesPage() {
                           { nazov: t("Dodávateľ"), hodnota: (x: any) => x.supplier_name },
                           { nazov: t("IČO"), hodnota: (x: any) => x.supplier_ico },
                           { nazov: t("IČ DPH"), hodnota: (x: any) => x.supplier_ic_dph },
-                          { nazov: t("VS"), hodnota: (x: any) => x.variable_symbol },
+                          { nazov: t("VS"), hodnota: (x: any) => vsPrijatej(x) },
                           { nazov: t("Vystavená"), hodnota: (x: any) => x.issue_date },
                           { nazov: t("DUZP"), hodnota: (x: any) => x.delivery_date },
                           { nazov: t("Splatnosť"), hodnota: (x: any) => x.due_date },
@@ -1146,7 +1156,7 @@ function PurchaseInvoicesPage() {
                   <td className="p-3 font-medium">
                     {r.invoice_number}
                     <span className="ml-1.5 inline-flex align-middle">
-                      <OdovzdaneIkona kedy={r.exported_at} />
+                      <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
                     </span>
                     {duplicity.has(r.id) && (
                       <span
@@ -1176,7 +1186,7 @@ function PurchaseInvoicesPage() {
                   )}
                   {je("vs") && (
                     <td className="p-3 tabular-nums text-muted-foreground">
-                      {r.variable_symbol || "—"}
+                      {vsPrijatej(r) || "—"}
                     </td>
                   )}
                   {je("vystavena") && (
@@ -1296,9 +1306,17 @@ function PurchaseInvoicesPage() {
                           {t(sch.stavy[r.id].odznak)}
                         </div>
                       ) : null}
-                      {r.exported_at ? (
-                        <span className="mt-1 block text-xs text-emerald-700 dark:text-emerald-300">
-                          {t("V Pohode")}
+                      {textOdznaku(stavOdovzdania(r)) ? (
+                        // Vrátená faktúra v Pohode ostala — odznak sa nestratí, len zmení (P-1008).
+                        <span
+                          className={`mt-1 block text-xs ${
+                            stavOdovzdania(r).druh === "odovzdane" ||
+                            stavOdovzdania(r).druh === "odovzdane_znova"
+                              ? "text-emerald-700 dark:text-emerald-300"
+                              : "text-amber-700 dark:text-amber-300"
+                          }`}
+                        >
+                          {t(textOdznaku(stavOdovzdania(r))!)}
                         </span>
                       ) : r.zauctovane_at && r.status !== "booked" ? (
                         <span className="mt-1 block text-xs text-sky-700 dark:text-sky-300">
@@ -1353,16 +1371,22 @@ function PurchaseInvoicesPage() {
             </tbody>
           </table>
           {rows.length > 0 ? (
-            <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              {/* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu). */}
-              <span title={t("Zaúčtované a ešte neodovzdané do účtovníctva")}>
-                {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
-                {naExport.length ? ` · ${sumyPodlaMeny(naExport)}` : ""}
-              </span>
-              <span>
-                {t("Spolu:")} <strong className="text-foreground">{rad.zoradene.length}</strong> · {sumyPodlaMeny(rad.zoradene)}
-              </span>
-            </div>
+            /* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu); tu je celý
+               vyfiltrovaný zoznam so základom a DPH, rovnako ako vo vystavených. */
+            <SuctovaPatickaZoznamu
+              nadpis={t("Spolu:")}
+              suhrn={suhrnZPoloziek(
+                rad.zoradene.map((r: any) =>
+                  polozkaPrijatej(r, { zapocitatelna: zapocitatelna(r), zaplateneNaMieste: ZAPLATENE_NA_MIESTE }),
+                ),
+              )}
+              doplnok={
+                <span title={t("Zaúčtované a ešte neodovzdané do účtovníctva")}>
+                  {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
+                  {naExport.length ? ` · ${sumyPodlaMeny(naExport)}` : ""}
+                </span>
+              }
+            />
           ) : null}
         </div>
         </SNahladom>

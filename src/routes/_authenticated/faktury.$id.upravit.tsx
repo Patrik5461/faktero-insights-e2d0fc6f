@@ -1,4 +1,5 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
+import { vsNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import { MriezkaDokladu, PoleDokladu, SplatnostPole, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -333,7 +334,8 @@ function EditInvoice() {
           // dodania sa nedala uložiť vôbec.
           delivery_date: form.delivery_date || null,
           due_date: form.due_date,
-          variable_symbol: form.variable_symbol,
+          // Prázdny VS sa doplní z čísla faktúry, rovnako ako pri vystavení.
+          variable_symbol: vsNaUlozenie(form.variable_symbol, form.invoice_number),
           currency: form.currency,
           payment_method: form.payment_method,
           job_id: form.job_id || null,

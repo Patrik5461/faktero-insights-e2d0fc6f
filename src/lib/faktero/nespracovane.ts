@@ -37,8 +37,16 @@ export type UdajeNespracovaneho = {
     ulica: string;
     mesto: string;
     psc: string;
+    /** Krajina dodávateľa (kód štátu, napr. SK) — v detaile pod „Zobraziť viac“. */
+    krajina?: string;
+    /** E-mail dodávateľa. */
+    email?: string;
   };
   cislo: string;
+  /** Interné číslo dokladu (číslo v účtovníctve) — ide do `pohoda_cislo`. */
+  interneCislo?: string;
+  /** Dátum prijatia (doručenia) faktúry — prázdne = deň vytvorenia. */
+  datumPrijatia?: string;
   vs: string;
   ks?: string;
   ss?: string;
@@ -82,6 +90,14 @@ export type UdajeNespracovaneho = {
     total: number | null;
     /** Položka v prenesení daňovej povinnosti (§ 69 ods. 12). */
     pdp?: boolean;
+    /**
+     * Zaúčtovanie položky (ako `PolozkaSKodom` v rozuctovanie.ts) — prázdne =
+     * kód hlavičky dokladu. Do prijatej faktúry či bločku sa prenesú v `items`.
+     */
+    predkontacia?: string | null;
+    clenenie?: string | null;
+    /** Členenie kontrolného výkazu položky; prázdne = z dokladu. */
+    kv?: string | null;
   }[];
   /** Celá faktúra je v prenesení daňovej povinnosti. */
   prenesenie?: boolean;
@@ -113,6 +129,11 @@ export type UdajeNespracovaneho = {
   zPravidla?: Record<string, string>;
   /** Faktúra je už zaplatená — vytvorí sa ako uhradená. */
   uhradene?: boolean;
+  /**
+   * Zaplatená nezdanená záloha, ktorú dodávateľ na faktúre odpočítal (BT-113
+   * z eFaktúry). Celková suma ostáva s DPH, na úhradu je len zvyšok.
+   */
+  zaloha?: number;
   /**
    * Nastavenie zo skenera v appke (úhrada, kategória, zákazka, predkontácia,
    * komentár). Uloží sa pri nahratí, aby platilo aj pre doklad, ktorý človek
@@ -262,7 +283,7 @@ export function vsDokladu(vs: unknown, cislo: string): string {
  */
 export function doplnUdaje(povodne: UdajeNespracovaneho, nove: UdajeNespracovaneho): UdajeNespracovaneho {
   const u = { ...povodne, dodavatel: { ...povodne.dodavatel } };
-  for (const k of Object.keys(u.dodavatel) as (keyof UdajeNespracovaneho["dodavatel"])[])
+  for (const k of [...new Set([...Object.keys(u.dodavatel), ...Object.keys(nove.dodavatel)])] as (keyof UdajeNespracovaneho["dodavatel"])[])
     if (!u.dodavatel[k] && nove.dodavatel[k]) u.dodavatel[k] = nove.dodavatel[k];
   for (const k of ["cislo", "popis", "splatnost", "datumVystavenia", "datumDodania", "ks", "ss", "objednavka", "dodaciList"] as const)
     if (!u[k] && nove[k]) u[k] = nove[k];
@@ -305,6 +326,8 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
     ulica: t(ai.supplier_street, 120),
     mesto: t(ai.supplier_city, 80),
     psc: t(ai.supplier_zip, 15),
+    krajina: t(ai.supplier_country, 2).toUpperCase(),
+    email: t(ai.supplier_email, 120),
   };
   u.cislo = t(ai.invoice_number, 60);
   u.popis = t(ai.description, 240);
@@ -475,6 +498,32 @@ export const NAZVY_POLI: Record<string, string> = {
 
 const prazdne = (v: string) => (v.trim() ? v.trim() : null);
 
+/**
+ * Položky na zápis do dokladu: kódy zaúčtovania orezané, prázdne vynechané —
+ * položka bez kódu tak dedí kód hlavičky (`rozuctovaniePolozkami`), aj keď ho
+ * neskôr doplní pravidlo, autopilot alebo človek v detaile dokladu.
+ */
+export function polozkyNaZapis(polozky: UdajeNespracovaneho["polozky"]): UdajeNespracovaneho["polozky"] {
+  return polozky.map((p) => {
+    const { predkontacia, clenenie, kv, ...zvysok } = p;
+    const out: UdajeNespracovaneho["polozky"][number] = { ...zvysok };
+    const pk = String(predkontacia ?? "").trim().slice(0, 30);
+    const cl = String(clenenie ?? "").trim().slice(0, 30);
+    const k = String(kv ?? "").trim().slice(0, 5);
+    if (pk) out.predkontacia = pk;
+    if (cl) out.clenenie = cl;
+    if (k) out.kv = k;
+    return out;
+  });
+}
+
+/** Má každá použitá položka vlastnú predkontáciu? Vtedy je doklad zaúčtovaný aj bez kódu v hlavičke. */
+export function polozkyZauctovane(u: UdajeNespracovaneho): boolean {
+  if (u.polozkyVypnute) return false;
+  const p = u.polozky.filter((x) => x.name?.trim());
+  return p.length > 0 && p.every((x) => String(x.predkontacia ?? "").trim());
+}
+
 /** Údaje formulára z prijatej faktúry — pri vrátení do Nespracovaných. */
 export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovaneho; udaje: UdajeNespracovaneho } {
   const u = prazdneUdaje();
@@ -488,8 +537,12 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
     ulica: s(p.supplier_street),
     mesto: s(p.supplier_city),
     psc: s(p.supplier_zip),
+    krajina: s(p.supplier_country),
+    email: s(p.supplier_email),
   };
   u.cislo = s(p.invoice_number);
+  u.interneCislo = s(p.pohoda_cislo);
+  u.datumPrijatia = s(p.received_date);
   u.vs = s(p.variable_symbol);
   u.ks = s(p.constant_symbol);
   u.ss = s(p.specific_symbol);
@@ -516,6 +569,7 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
   u.polozky = Array.isArray(p.items) && p.items.length ? p.items : Array.isArray(p.polozky_vypnute) ? p.polozky_vypnute : [];
   u.polozkyVypnute = !(Array.isArray(p.items) && p.items.length) && Array.isArray(p.polozky_vypnute) && p.polozky_vypnute.length > 0;
   u.opravuje = s(p.opravuje_cislo);
+  if (Number(p.advance_amount ?? 0) > 0) u.zaloha = Math.abs(Number(p.advance_amount));
   u.jobId = s(p.job_id);
   u.vehicleId = s(p.vehicle_id);
   u.prenesenie = p.reverse_charge === true && p.dph_rezim === "samozdanenie" ? true : undefined;
@@ -550,7 +604,10 @@ export function prijataZUdajov(
     supplier_street: prazdne(u.dodavatel.ulica),
     supplier_city: prazdne(u.dodavatel.mesto),
     supplier_zip: prazdne(u.dodavatel.psc),
+    supplier_country: prazdne(u.dodavatel.krajina ?? "")?.toUpperCase().slice(0, 2) ?? null,
+    supplier_email: prazdne(u.dodavatel.email ?? ""),
     invoice_number: u.cislo.trim() || "bez čísla",
+    pohoda_cislo: prazdne(u.interneCislo ?? ""),
     variable_symbol: prazdne(u.vs),
     constant_symbol: prazdne(u.ks ?? ""),
     specific_symbol: prazdne(u.ss ?? ""),
@@ -559,7 +616,7 @@ export function prijataZUdajov(
     issue_date: u.datumVystavenia || dnes,
     delivery_date: u.datumDodania || u.datumVystavenia || dnes,
     due_date: u.splatnost || u.datumVystavenia || dnes,
-    received_date: dnes,
+    received_date: u.datumPrijatia || dnes,
     amount_without_vat: r2(zn * s.zaklad),
     vat_amount: r2(zn * s.dph),
     amount_total: r2(zn * s.celkom),
@@ -569,12 +626,15 @@ export function prijataZUdajov(
     // Zo zálohovej sa daň neodpočítava.
     odpocet: druh !== "zalohova",
     opravuje_cislo: druh === "dobropis" ? prazdne(u.opravuje) : null,
+    // Odpočet zaplatenej zálohy len na faktúre — na úhradu je potom zvyšok.
+    advance_amount: druh === "faktura" && Number(u.zaloha ?? 0) > 0 ? r2(Math.min(Number(u.zaloha), s.celkom)) : null,
     intro_note: prazdne(u.popis ?? ""),
     category: prazdne(u.kategoria),
     note: prazdne(u.poznamka),
     // Vypnuté položky sa odložia bokom — účtovanie ani export ich nepoužije, ale dajú sa vrátiť.
-    items: u.polozky.length && !u.polozkyVypnute ? u.polozky : null,
-    polozky_vypnute: u.polozkyVypnute && u.polozky.length ? u.polozky : null,
+    // Kódy položiek idú s položkami (`predkontacia`, `clenenie`, `kv`) — prázdne dedia hlavičku.
+    items: u.polozky.length && !u.polozkyVypnute ? polozkyNaZapis(u.polozky) : null,
+    polozky_vypnute: u.polozkyVypnute && u.polozky.length ? polozkyNaZapis(u.polozky) : null,
     // Celá faktúra v prenesení: odberateľ daň samozdaní (KV B.1).
     ...(u.prenesenie ? { reverse_charge: true, dph_rezim: "samozdanenie" } : {}),
     job_id: prazdne(u.jobId),
@@ -599,6 +659,7 @@ export function blocekZUdajov(u: UdajeNespracovaneho) {
     supplier_ico: prazdne(u.dodavatel.ico),
     supplier_ic_dph: prazdne(u.dodavatel.icDph),
     document_number: prazdne(u.cislo),
+    pohoda_cislo: prazdne(u.interneCislo ?? ""),
     issue_date: u.datumVystavenia || null,
     net_amount: s.zaklad,
     vat_amount: s.dph,
@@ -609,7 +670,7 @@ export function blocekZUdajov(u: UdajeNespracovaneho) {
     payment_method: u.platba || "karta",
     category: prazdne(u.kategoria),
     note: prazdne(u.poznamka),
-    items: u.polozky.length && !u.polozkyVypnute ? u.polozky : null,
+    items: u.polozky.length && !u.polozkyVypnute ? polozkyNaZapis(u.polozky) : null,
     job_id: prazdne(u.jobId),
     vehicle_id: prazdne(u.vehicleId ?? ""),
     pohoda_predkontacia: prazdne(u.kody.predkontacia),

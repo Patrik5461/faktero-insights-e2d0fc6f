@@ -24,6 +24,7 @@ import {
   type Vytka,
   type VystavenaFaktura,
   odpocitajZdanenuZalohu,
+  kvVystavenej,
 } from "./dph-vykazy";
 import { domacaMena, domacejZaJednotku } from "./kurzy";
 import { kvSPredvolenym } from "./kv-clenenie";
@@ -88,7 +89,7 @@ export async function nacitajVstup(
       supabase
         .from("invoices")
         .select(
-          "id, invoice_number, type, status, issue_date, delivery_date, paid_at, total, currency, customer_ic_dph, customer_dic, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, invoice_items(vat_rate, subtotal, quantity, unit_price, prenesenie)",
+          "id, invoice_number, type, status, issue_date, delivery_date, paid_at, total, currency, customer_ic_dph, customer_dic, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, kv_clenenie, invoice_items(vat_rate, subtotal, quantity, unit_price, prenesenie, kv_clenenie)",
         )
         .eq("company_id", companyId)
         .is("deleted_at", null)
@@ -135,7 +136,7 @@ export async function nacitajVstup(
     supabase
       .from("companies")
       .select(
-        "pohoda_predkontacia_prijata, pohoda_predkontacia_doklady, country, kv_clenenie_prijata, kv_clenenie_doklady",
+        "pohoda_predkontacia_prijata, pohoda_predkontacia_doklady, country, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady",
       )
       .eq("id", companyId)
       .maybeSingle(),
@@ -296,12 +297,57 @@ export async function nacitajVstup(
       A.2, v CZ do A.1 a ř. 25. Zľava na doklad sa rozdelí pomerom základov.
     */
     const vsetkyPolozky = (f.invoice_items ?? []) as any[];
-    const pdpPolozky = f.reverse_charge ? [] : vsetkyPolozky.filter((x) => x.prenesenie);
+    /*
+      Členenie KV vystavenej faktúry (len SK — KV je slovenský výkaz): ručné na
+      faktúre, inak predvolené firmy pri bežnej tuzemskej faktúre, inak
+      automaticky (null). Rovnako ako v exporte do Pohody.
+    */
+    const slovenska = krajinaDane((firmaKody as any)?.country) === "SK";
+    const kvHlavne: string | null =
+      kvVystavenej(f.kv_clenenie) ??
+      (f.type === "regular" && !f.reverse_charge && !opravna
+        ? kvVystavenej(kvSPredvolenym(null, "faktura", (firmaKody as any)?.kv_clenenie_faktura, slovenska))
+        : null);
+    // Čo by faktúra dostala automaticky — položka s rovnakým kódom sa neoddeľuje.
+    const kvAuto = opravna
+      ? "C1"
+      : f.reverse_charge
+        ? f.reverse_charge_type === "domestic_69"
+          ? "A2"
+          : null
+        : "A1";
+    const jePdpPolozka = (x: any) => !f.reverse_charge && Boolean(x.prenesenie);
+    /*
+      Položka s vlastným členením KV, ktoré sa líši od hlavičky (prenesená
+      položka od A.2), ide do výkazu ako samostatný záznam s týmto členením.
+    */
+    const kvPolozky = (x: any): string | null => {
+      const k = slovenska ? kvVystavenej(x.kv_clenenie) : null;
+      if (!k) return null;
+      if (jePdpPolozka(x)) return k === "A2" ? null : k;
+      return k === (kvHlavne ?? kvAuto) ? null : k;
+    };
+    const pdpPolozky = vsetkyPolozky.filter((x) => jePdpPolozka(x) && !kvPolozky(x));
+    const vlastneKv = new Map<string, { pdp: boolean; kv: string; polozky: any[] }>();
+    for (const x of vsetkyPolozky) {
+      const k = kvPolozky(x);
+      if (!k) continue;
+      const kluc = `${jePdpPolozka(x) ? "pdp" : "bez"}:${k}`;
+      const g = vlastneKv.get(kluc) ?? { pdp: jePdpPolozka(x), kv: k, polozky: [] };
+      g.polozky.push(x);
+      vlastneKv.set(kluc, g);
+    }
+    const hlavnePolozky = vsetkyPolozky.filter((x) => !jePdpPolozka(x) && !kvPolozky(x));
     const zakladPoloziek = (xs: any[]) =>
       xs.reduce((a, x) => a + (x.subtotal != null ? Number(x.subtotal) : Number(x.quantity ?? 0) * Number(x.unit_price ?? 0)), 0);
     const zlavaSpolu = Number(f.discount_total ?? 0);
     const zakladVsetko = zakladPoloziek(vsetkyPolozky);
-    const zlavaPdp = zakladVsetko && pdpPolozky.length ? (zlavaSpolu * zakladPoloziek(pdpPolozky)) / zakladVsetko : 0;
+    const zlavaCasti = (xs: any[]) =>
+      zakladVsetko && xs.length ? (zlavaSpolu * zakladPoloziek(xs)) / zakladVsetko : 0;
+    const zlavaPdp = zlavaCasti(pdpPolozky);
+    const zlavyVlastne = [...vlastneKv.values()].map((g) => zlavaCasti(g.polozky));
+    const zlavaVlastneSpolu = zlavyVlastne.reduce((a, z) => a + z, 0);
+    const oddelene = pdpPolozky.length > 0 || vlastneKv.size > 0;
     const vDomacej = (riadkyX: SadzbovyRiadok[]): SadzbovyRiadok[] => {
       if (!cudzia) return riadkyX;
       // Kurz je v zápise banky krajiny firmy (SK ECB, CZ ČNB).
@@ -316,12 +362,16 @@ export async function nacitajVstup(
     let riadky = vDomacej(
       riadkyZPoloziek(
         riadkySoZlavou(
-          pdpPolozky.length ? vsetkyPolozky.filter((x) => !x.prenesenie) : vsetkyPolozky,
-          pdpPolozky.length ? zlavaSpolu - zlavaPdp : f.discount_total,
+          oddelene ? hlavnePolozky : vsetkyPolozky,
+          oddelene ? zlavaSpolu - zlavaPdp - zlavaVlastneSpolu : f.discount_total,
         ),
       ),
     );
     const riadkyPdp = pdpPolozky.length ? vDomacej(riadkyZPoloziek(riadkySoZlavou(pdpPolozky, zlavaPdp))) : [];
+    const riadkyVlastne = [...vlastneKv.values()].map((g, i) => ({
+      ...g,
+      riadky: vDomacej(riadkyZPoloziek(riadkySoZlavou(g.polozky, zlavyVlastne[i]))),
+    }));
     if (cudzia && !(domacejZaJednotku(f.exchange_rate, (firmaKody as any)?.country) > 0)) {
       vytky.push({
         doklad: f.invoice_number,
@@ -354,6 +404,7 @@ export async function nacitajVstup(
       opravujeCislo: f.opravuje_fakturu_id ? (cisla.get(f.opravuje_fakturu_id) ?? null) : null,
       oprava25a: Boolean(f.oprava_25a),
       riadky: r,
+      kv: kvHlavne,
     });
     if (podlaUhrad) {
       /*
@@ -390,6 +441,23 @@ export async function nacitajVstup(
         opravujeCislo: f.opravuje_fakturu_id ? (cisla.get(f.opravuje_fakturu_id) ?? null) : null,
         riadky: riadkyPdp,
       });
+    }
+    // Položky s vlastným členením KV — priznanie ich vidí rovnako ako doteraz, KV podľa ich kódu.
+    for (const g of riadkyVlastne) {
+      if (!g.riadky.length) continue;
+      vystavene.push(
+        g.pdp
+          ? {
+              ...zaznam(g.riadky),
+              prenosDane: true,
+              prenosTyp: "domestic_69",
+              euPlnenie: null,
+              oss: false,
+              ossStat: null,
+              kv: g.kv,
+            }
+          : { ...zaznam(g.riadky), kv: g.kv },
+      );
     }
   }
 

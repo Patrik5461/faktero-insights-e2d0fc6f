@@ -66,10 +66,21 @@ export function poleProPostgrest(pole: string[]): string {
   return `{${pole.join(",")}}`;
 }
 
-export type PoctyUloh = { schvalenie: number; komentare: number; nespracovane: number };
+export type PoctyUloh = {
+  schvalenie: number;
+  komentare: number;
+  nespracovane: number;
+  /** Prijaté eFaktúry, ktoré ešte nikto nezaevidoval. */
+  efaktury?: number;
+};
 
 export function spoluUloh(p: PoctyUloh): number {
-  return Math.max(0, p.schvalenie) + Math.max(0, p.komentare) + Math.max(0, p.nespracovane);
+  return (
+    Math.max(0, p.schvalenie) +
+    Math.max(0, p.komentare) +
+    Math.max(0, p.nespracovane) +
+    Math.max(0, p.efaktury ?? 0)
+  );
 }
 
 export function nicNecaka(p: PoctyUloh): boolean {

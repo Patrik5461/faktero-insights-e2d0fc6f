@@ -17,6 +17,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { supabase } from "@/integrations/supabase/client";
 import { KodPohody } from "@/components/faktero/KodPohody";
+import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
@@ -72,6 +73,7 @@ type Form = {
   mena: string;
   predkontacia: string;
   clenenie_dph: string;
+  kv_clenenie: string;
   datum_uctovania: string;
   poznamka: string;
   stav: "otvorene" | "uzavrete";
@@ -129,6 +131,7 @@ function Detail() {
           mena: "EUR",
           predkontacia: "",
           clenenie_dph: "",
+          kv_clenenie: "",
           datum_uctovania: dnes(),
           poznamka: "",
           stav: "otvorene",
@@ -167,6 +170,7 @@ function Detail() {
             mena: v.mena ?? "EUR",
             predkontacia: v.predkontacia ?? "",
             clenenie_dph: v.clenenie_dph ?? "",
+            kv_clenenie: v.kv_clenenie ?? "",
             datum_uctovania: v.datum_uctovania ?? "",
             poznamka: v.poznamka ?? "",
             stav: v.stav,
@@ -206,6 +210,7 @@ function Detail() {
           mena: f.mena,
           predkontacia: f.predkontacia || null,
           clenenie_dph: f.clenenie_dph || null,
+          kv_clenenie: (f.kv_clenenie || null) as "B1" | "B2" | "B3" | "C2" | "X" | null,
           datum_uctovania: f.datum_uctovania || null,
           poznamka: f.poznamka || null,
           stav: stav ?? f.stav,
@@ -493,7 +498,7 @@ function Detail() {
             <section className="rounded-xl border border-border bg-card p-5">
               <h2 className="text-sm font-semibold">{t("Účtovné nastavenia")}</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                {t("Predkontácia a členenie sa doplnia dokladom vo vyúčtovaní, ktoré ich ešte nemajú a neodišli do účtovníctva (napr. náklad voči záväzku zamestnancovi, 5xx/335).")}
+                {t("Predkontácia, členenie DPH a KV sa doplnia dokladom vo vyúčtovaní, ktoré ich ešte nemajú a neodišli do účtovníctva (napr. náklad voči záväzku zamestnancovi, 5xx/335).")}
               </p>
               <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
                 <label className="block text-sm">
@@ -517,6 +522,21 @@ function Detail() {
                     className={vstupZauctovania}
                     vyber
                   />
+                </label>
+                <label className="block text-sm">
+                  <span className="font-medium">{t("Členenie KV DPH")}</span>
+                  <select
+                    value={f.kv_clenenie}
+                    onChange={(e) => zmen({ kv_clenenie: e.target.value })}
+                    className={vstupZauctovania}
+                  >
+                    <option value="">{t("nemeniť")}</option>
+                    {KV_PRIJATE.map((k) => (
+                      <option key={k.kod} value={k.kod}>
+                        {t(k.nazov)}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="block text-sm">
                   <span className="font-medium">{t("Dátum účtovania")}</span>

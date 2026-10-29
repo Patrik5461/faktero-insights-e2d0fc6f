@@ -16,6 +16,8 @@ import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { filtrujObdobie, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { SuctovaPatickaZoznamu } from "@/components/faktero/SuctyDokladov";
+import { useSuhrnVystavenych } from "@/hooks/useSuhrnVystavenych";
 
 export const Route = createFileRoute("/_authenticated/zalohove/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vydané zálohové faktúry — Faktero") }] }),
@@ -47,6 +49,18 @@ function ProformaListPage() {
     riadenie: lf,
     filterKey: `${podla}|${obdobieOd}|${obdobieDo}`,
   });
+  // Súčet za celý filter (P-1007) — v tejto záložke sa zálohové počítajú.
+  const sucetFiltra = useSuhrnVystavenych(
+    {
+      companyId: getActiveCompanyId(),
+      typy: ["proforma"],
+      hladanie: list.search,
+      podla,
+      od: obdobieOd || null,
+      do: obdobieDo || null,
+    },
+    { vypnute: list.showDeleted, nonce: list.rows },
+  );
   // „Zobraziť vymazané“ je filter v adrese, kôš však prepína zoznam.
   const ajVymazane = lf.zapnute("vymazane");
   const setShowDeleted = list.setShowDeleted;
@@ -303,6 +317,9 @@ function ProformaListPage() {
             </div>
           }
         />
+        {!list.showDeleted && list.total > 0 ? (
+          <SuctovaPatickaZoznamu suhrn={sucetFiltra.suhrn} nacitava={sucetFiltra.nacitava} />
+        ) : null}
         <ListPagination
           page={list.page}
           pageSize={list.pageSize}

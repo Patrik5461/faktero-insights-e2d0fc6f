@@ -6,6 +6,7 @@ import {
   ChevronDown,
   FilePlus2,
   FileText,
+  Inbox,
   Landmark,
   Receipt,
   TriangleAlert,
@@ -37,6 +38,7 @@ import {
 } from "./ui";
 import { PrebiehaJazda } from "./PrebiehaJazda";
 import { OznamEfaktury } from "./OznamEfaktury";
+import { dotazNezaevidovanych } from "@/lib/faktero/efaktura/upozornenie-prijatej";
 
 /**
  * Úvodná obrazovka appky (smer „A · Svetlý a pokojný").
@@ -119,6 +121,8 @@ export function Prehlad({
   const [doklady, setDoklady] = useState<Doklad[] | null>(null);
   const [mesiac, setMesiac] = useState<CislaMesiaca | null>(null);
   const [jazdaBezi, setJazdaBezi] = useState(false);
+  /* Prijaté eFaktúry, ktoré ešte nikto nezaevidoval — to isté, čo počíta menu na webe. */
+  const [efaktury, setEfaktury] = useState(0);
 
   useEffect(() => {
     let zrusene = false;
@@ -152,6 +156,14 @@ export function Prehlad({
     void beziacaJazda()
       .then((j) => !zrusene && setJazdaBezi(!!j))
       .catch(() => {});
+    setEfaktury(0);
+    void Promise.resolve(dotazNezaevidovanych(supabase, firma.id, "id", true))
+      .then((r: { count: number | null; error: unknown }) => {
+        if (!zrusene && !r.error) setEfaktury(r.count ?? 0);
+      })
+      .catch(() => {
+        /* bez signálu riadok jednoducho chýba */
+      });
     return () => {
       zrusene = true;
     };
@@ -217,7 +229,8 @@ export function Prehlad({
     })}`;
 
   const nacitava = faktury === null || doklady === null;
-  const maCoVybavit = poSplatnosti.pocet > 0 || naKontrolu > 0 || (jazdaBezi && !!onJazda);
+  const maCoVybavit =
+    poSplatnosti.pocet > 0 || naKontrolu > 0 || efaktury > 0 || (jazdaBezi && !!onJazda);
 
   /* Len čísla, ktoré sa dali spočítať — chýbajúce sa vynechajú, nehádajú. */
   const stlpce = mesiac
@@ -358,6 +371,14 @@ export function Prehlad({
                   subtitle={t("tab.doklady")}
                   chevron
                   onClick={onDoklady}
+                />
+              )}
+              {efaktury > 0 && (
+                <ListRow
+                  icon={Inbox}
+                  ikonaTon="pozor"
+                  title={t("ph.efakturyNaZaevidovanie", { pocet: efaktury })}
+                  subtitle={t("ph.efakturyNaZaevidovaniePopis")}
                 />
               )}
               {jazdaBezi && onJazda && (

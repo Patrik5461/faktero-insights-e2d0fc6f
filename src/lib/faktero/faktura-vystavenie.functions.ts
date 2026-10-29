@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -273,7 +274,7 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
         sequence_number,
         // Variabilný symbol nesmie byť prázdny reťazec — z čísla faktúry
         // ostanú len číslice, presne ako to robí web aj API.
-        variable_symbol: invoice_number.replace(/\D/g, "") || null,
+        variable_symbol: vsZCislaDokladu(invoice_number) || null,
         issue_date: data.issue_date,
         delivery_date: data.issue_date,
         due_date: data.due_date,

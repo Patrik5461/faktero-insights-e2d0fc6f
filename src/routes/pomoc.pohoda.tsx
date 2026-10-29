@@ -769,6 +769,38 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "vratenie-a-oprava",
+    title: "Vrátenie a oprava zaúčtovania",
+    body: (
+      <>
+        <p>
+          Doklad, ktorý raz odišiel do Pohody, si Faktero pamätá natrvalo — kedy prvýkrát, akou
+          cestou (konektorom alebo XML súborom) a koľkokrát. Odznak odovzdania sa preto nikdy
+          nestratí: po vrátení sa zmení na <strong>Odovzdané, vrátené na opravu</strong> a po novom
+          odovzdaní na <strong>V Pohode (odovzdané znova)</strong>.
+        </p>
+        <p>
+          <strong>Faktero doklad v Pohode zmazať ani prepísať nevie — ani konektor.</strong> Pohoda
+          cez XML import doklady len zakladá; faktúry, prijaté faktúry a bločky neprepíše ani
+          nezmaže. Zmenu v Pohode preto vždy urobí účtovník.
+        </p>
+        <p>
+          <strong>Opraviť zaúčtovanie</strong> použite, keď treba zmeniť len predkontáciu, členenie
+          DPH alebo KV DPH, stredisko, činnosť či účtovnú poznámku. Sumy, dátumy ani odberateľ či
+          dodávateľ sa tu nemenia. Doklad ostane odovzdaný a znova sa neposiela — Faktero ukáže,
+          ktoré kódy treba prepísať v Pohode (napríklad predkontácia 1 → 518000). Po prepísaní
+          kliknite <strong>Prepísané v Pohode</strong>.
+        </p>
+        <p>
+          <strong>Vrátiť z Pohody</strong> použite, keď treba opraviť sumy, dátumy alebo strany.
+          Doklad sa odomkne a pri ďalšom odovzdaní pôjde znova. Pôvodný doklad v Pohode zmažte
+          ručne, inak tam bude dvakrát — pri konektore ešte pred jeho najbližším behom, lebo
+          opravený doklad pošle sám.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "otazky",
     title: "Časté otázky",
     body: (

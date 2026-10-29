@@ -4,6 +4,14 @@ import { potvrd } from "@/lib/potvrdenie";
 import { vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
 import { vratVystavenuZPohodyFn } from "@/lib/faktero/zauctovanie.functions";
 import { useT } from "@/lib/i18n/useT";
+import { supabase } from "@/integrations/supabase/client";
+import { stavOdovzdania, textVarovaniaVratenia } from "@/lib/faktero/stav-odovzdania";
+
+const TABULKA = {
+  faktura: "invoices",
+  prijata: "purchase_invoices",
+  doklad: "expense_documents",
+} as const;
 
 export type DruhOpravy = "faktura" | "prijata" | "doklad";
 
@@ -12,10 +20,11 @@ export type DruhOpravy = "faktura" | "prijata" | "doklad";
  * operácia ako „Vrátiť z Pohody“), aby sa dal upraviť; pri ďalšom odovzdaní
  * (konektor, balík, export) pôjde znova.
  *
- * Pohoda doklad z XML neprepíše: agenda faktúr nemá v schéme `actionType`
- * (aktualizácia podľa `extId` je len v adresári a zásobách), a druhý import
- * s tým istým identifikátorom Pohoda odmietne ako duplicitu. Pôvodný doklad
- * preto treba v Pohode zmazať — rozhranie to povie pred kliknutím.
+ * Pohoda doklad z XML neprepíše ani nezmaže: agenda faktúr nemá v schéme
+ * `actionType` (aktualizácia podľa `extId` je len v adresári a zásobách) —
+ * nevie to súbor ani konektor. Pôvodný doklad preto treba v Pohode zmazať
+ * ručne; keď ide len o kódy, je lepšia „Opraviť zaúčtovanie“
+ * (OdovzdanieDokladu.tsx), ktorá doklad z Pohody nevracia.
  */
 export function usePoslatOpravuDoPohody() {
   const { t } = useT();
@@ -26,12 +35,15 @@ export function usePoslatOpravuDoPohody() {
     companyId: string,
     id: string,
   ): Promise<boolean> {
-    const ok = await potvrd(
-      t(
-        "Poslať opravu do Pohody? Doklad sa vráti z Pohody, takže ho môžete upraviť, a pri ďalšom odovzdaní (konektor, balík alebo export) pôjde znova. Pohoda doklad neprepíše — pôvodný v nej najprv zmažte, inak tam bude dvakrát.",
-      ),
-      { potvrdit: t("Vrátiť a opraviť") },
-    );
+    // Varovanie podľa toho, ako doklad odišiel — konektor ani súbor ho v Pohode nezmažú.
+    const { data: riadok } = await (supabase as any)
+      .from(TABULKA[druh])
+      .select("export_cesta, exported_at, pocet_exportov")
+      .eq("id", id)
+      .maybeSingle();
+    const ok = await potvrd(t(textVarovaniaVratenia(druh, stavOdovzdania(riadok ?? {}).cesta)), {
+      potvrdit: t("Vrátiť a opraviť"),
+    });
     if (!ok) return false;
     try {
       if (druh === "faktura") await vratFakturu({ data: { company_id: companyId, id } });

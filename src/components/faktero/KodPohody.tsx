@@ -1,13 +1,14 @@
-import { useId, useState } from "react";
+import { useId } from "react";
 import { Link } from "@tanstack/react-router";
 import { textMoznosti, type MoznostKodu } from "@/lib/faktero/predkontacie";
 import { useT } from "@/lib/i18n/useT";
+import { VyberKodu } from "./VyberKodu";
+import { moznostiKodov } from "./VyberVRiadku";
 
 /**
  * Políčko na kód Pohody — predkontáciu alebo členenie DPH.
  *
- * Píše sa voľne (kód nemusí byť v číselníku), ale ponúka sa zoznam s popisom,
- * ako v Doklado. Pod políčkom je popis vybraného kódu, nech je vidieť, čo
+ * Píše sa voľne (kód nemusí byť v číselníku), ale ponúka sa zoznam s popisom. Pod políčkom je popis vybraného kódu, nech je vidieť, čo
  * skratka znamená.
  */
 export function KodPohody({
@@ -29,8 +30,8 @@ export function KodPohody({
   bezPopisu?: boolean;
   ariaLabel?: string;
   /**
-   * Rozbaľovacie menu namiesto písania — kódy z číselníka, posledná voľba
-   * „Iný kód…“ prepne na písanie. Bez číselníka ostane políčko na písanie.
+   * Výber s hľadaním namiesto písania — kódy z číselníka, napísaný kód mimo
+   * neho sa dá použiť voľbou „Použiť kód…“. Bez číselníka ostane políčko na písanie.
    */
   vyber?: boolean;
   /** Pri prázdnom číselníku ukáže odkaz na jeho načítanie (len pri hlavnej predkontácii). */
@@ -38,7 +39,6 @@ export function KodPohody({
 }) {
   const { t } = useT();
   const id = useId();
-  const [pisat, setPisat] = useState(false);
   const vybrany = moznosti.find((m) => m.kod === value.trim());
   const neznamy = value.trim() && moznosti.length > 0 && !vybrany;
   /*
@@ -46,41 +46,37 @@ export function KodPohody({
     ďalšia voľba — inak by sa menu prepínalo na písanie a po kliknutí by sa
     nič neponúklo.
   */
-  if (vyber && moznosti.length > 0 && !pisat) {
+  if (vyber && moznosti.length > 0) {
+    const prazdne =
+      placeholder && /^[\w.\-]{1,20}$/.test(placeholder) && placeholder !== "nemeniť"
+        ? t("predvolené: {kod}", { kod: placeholder })
+        : placeholder === "nemeniť" || placeholder?.startsWith("ako ")
+          ? t(placeholder)
+          : "—";
     return (
       <>
-        <select
-          aria-label={ariaLabel ? t(ariaLabel) : ariaLabel}
-          value={value.trim()}
-          onChange={(e) => {
-            if (e.target.value === "__iny__") {
-              setPisat(true);
-              onChange("");
-            } else onChange(e.target.value);
-          }}
+        {/* Výber s hľadaním podľa kódu, názvu aj účtov; napísaný kód mimo číselníka sa dá použiť tiež. */}
+        <VyberKodu
+          ariaLabel={(ariaLabel ? t(ariaLabel) : ariaLabel) ?? t("Kód")}
+          hodnota={value.trim()}
+          moznosti={moznostiKodov(moznosti)}
+          textHodnoty={
+            vybrany
+              ? // Názov ako hlavný text (ako účtovné položky): „Nákup PHM – karta · 1Fk · 501/325".
+                textMoznosti(vybrany)
+              : value.trim()
+                ? `${value.trim()} — ${t("nie je v číselníku")}`
+                : undefined
+          }
+          prazdne={prazdne}
+          nazovPrazdnej={prazdne}
+          vlastny
+          onVyber={(v) => onChange(v)}
           className={
             className ??
             "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           }
-        >
-          <option value="">
-            {placeholder && /^[\w.\-]{1,20}$/.test(placeholder) && placeholder !== "nemeniť"
-              ? t("predvolené: {kod}", { kod: placeholder })
-              : placeholder === "nemeniť" || placeholder?.startsWith("ako ")
-                ? t(placeholder)
-                : "—"}
-          </option>
-          {neznamy ? (
-            <option value={value.trim()}>{value.trim()} — {t("nie je v číselníku")}</option>
-          ) : null}
-          {moznosti.map((m) => (
-            <option key={m.kod} value={m.kod}>
-              {/* Názov ako hlavný text (ako účtovné položky): „Nákup PHM – karta · 1Fk · 501/325". */}
-              {textMoznosti(m)}
-            </option>
-          ))}
-          <option value="__iny__">{t("Iný kód…")}</option>
-        </select>
+        />
         {!bezPopisu && neznamy ? (
           <span className="mt-0.5 block truncate text-xs text-amber-700">
             {t("Kód nie je v číselníku — skontrolujte, či ho Pohoda pozná")}

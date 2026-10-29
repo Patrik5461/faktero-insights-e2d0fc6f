@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 
 export const Route = createFileRoute("/api/v1/quotes/$id/convert")({
   server: {
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/api/v1/quotes/$id/convert")({
             today,
           );
           const due = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-          const variable_symbol = invoice_number.replace(/\D/g, "");
+          const variable_symbol = vsZCislaDokladu(invoice_number) || null;
 
           const { data: inv, error: insErr } = await ctx.supabase
             .from("invoices")

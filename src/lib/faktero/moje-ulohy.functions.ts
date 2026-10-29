@@ -41,7 +41,10 @@ export const mojeUlohyFn = createServerFn({ method: "POST" })
     await overPristup(context as any, data.company_id);
     const uid = context.userId;
 
-    const [kom, nesp, bloc] = await Promise.all([
+    const { dotazNezaevidovanych, STLPCE_UPOZORNENIA } = await import(
+      "./efaktura/upozornenie-prijatej"
+    );
+    const [kom, nesp, bloc, efak] = await Promise.all([
       dotazKomentarov(supabase, data.company_id, uid, KOMENTARE_STLPCE)
         .order("created_at", { ascending: false })
         .limit(100),
@@ -65,6 +68,10 @@ export const mojeUlohyFn = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id)
         .eq("status", "new")
         .order("created_at", { ascending: false })
+        .limit(10),
+      // Prijaté eFaktúry na zaevidovanie — cez RLS, vlastný prístup bez Dokladov nevidí nič.
+      dotazNezaevidovanych(supabase, data.company_id, STLPCE_UPOZORNENIA)
+        .order("received_at", { ascending: false })
         .limit(10),
     ]);
     if (kom.error) throw new Error(kom.error.message);
@@ -132,6 +139,14 @@ export const mojeUlohyFn = createServerFn({ method: "POST" })
           vytvorene: k.created_at as string,
         };
       }),
+      efaktury: ((efak.error ? [] : (efak.data ?? [])) as any[]).map((r) => ({
+        id: r.id as string,
+        dodavatel: (r.sender_name as string | null) ?? null,
+        cislo: (r.document_number as string | null) ?? null,
+        suma: r.total == null ? null : Number(r.total),
+        mena: (r.currency as string | null) ?? "EUR",
+        prijate: (r.received_at as string | null) ?? null,
+      })),
       nespracovane: {
         pocet: (nesp.count ?? 0) + (bloc.count ?? 0),
         polozky: najnovsie(
@@ -159,7 +174,8 @@ export const pocetMojichUlohFn = createServerFn({ method: "POST" })
     const uid = context.userId;
     const { nastavenieFirmy } = await import("./schvalovanie.server");
 
-    const [kom, nesp, bloc, n] = await Promise.all([
+    const { dotazNezaevidovanych } = await import("./efaktura/upozornenie-prijatej");
+    const [kom, nesp, bloc, n, efak] = await Promise.all([
       dotazKomentarov(supabase, data.company_id, uid, "id", true),
       supabase
         .from("nespracovane_doklady")
@@ -171,6 +187,7 @@ export const pocetMojichUlohFn = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id)
         .eq("status", "new"),
       nastavenieFirmy(supabase, data.company_id),
+      dotazNezaevidovanych(supabase, data.company_id, "id", true),
     ]);
 
     let schvalenie = 0;
@@ -193,6 +210,7 @@ export const pocetMojichUlohFn = createServerFn({ method: "POST" })
       // Kým migrácia `vyriesili` nie je v databáze, dotaz zlyhá — vtedy radšej 0 než pád menu.
       komentare: kom.error ? 0 : (kom.count ?? 0),
       nespracovane: (nesp.count ?? 0) + (bloc.count ?? 0),
+      efaktury: efak.error ? 0 : (efak.count ?? 0),
     };
     const { spoluUloh } = await import("./moje-ulohy");
     return { ...pocty, spolu: spoluUloh(pocty) };

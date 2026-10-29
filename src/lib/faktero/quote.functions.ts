@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -70,7 +71,7 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
       today,
     );
     const due = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-    const variable_symbol = invoice_number.replace(/\D/g, "");
+    const variable_symbol = vsZCislaDokladu(invoice_number) || null;
 
     const { data: inv, error: insErr } = await supabase
       .from("invoices")

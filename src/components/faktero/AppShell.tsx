@@ -89,6 +89,10 @@ import {
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import type { KrajinaDane } from "@/lib/faktero/vat-rates";
+import {
+  CESTA_PRIJATYCH_EFAKTUR,
+  dotazNezaevidovanych,
+} from "@/lib/faktero/efaktura/upozornenie-prijatej";
 type Company = {
   id: string;
   name: string;
@@ -256,6 +260,34 @@ export function AppShell({
   }, [pathname]);
 
   /*
+    Počet prijatých eFaktúr, ktoré ešte nikto nezaevidoval — pri položke
+    Prijaté eFaktúry. Prihláseným klientom, takže vlastný prístup bez oblasti
+    Doklady dostane 0. Obnovuje sa ako počet nespracovaných.
+  */
+  const [pocetEfaktur, setPocetEfaktur] = useState(0);
+  useEffect(() => {
+    let zrusene = false;
+    const nacitaj = async () => {
+      const cid = getActiveCompanyId();
+      if (!cid) return;
+      const { count, error } = await dotazNezaevidovanych(supabase, cid, "id", true);
+      if (!zrusene && !error) setPocetEfaktur(count ?? 0);
+    };
+    void nacitaj().catch(() => {});
+    const casovac = setInterval(() => void nacitaj().catch(() => {}), 60_000);
+    return () => {
+      zrusene = true;
+      clearInterval(casovac);
+    };
+  }, [pathname]);
+  const pocetPriPolozke = (to: string) =>
+    to === "/nespracovane"
+      ? pocetNespracovanych
+      : to === CESTA_PRIJATYCH_EFAKTUR
+        ? pocetEfaktur
+        : undefined;
+
+  /*
     Počet pri „Moje úlohy": schválenie, komentáre na vyriešenie a nespracované
     doklady — to isté, čo stránka vypíše. Obnovuje sa rovnako ako počet
     nespracovaných.
@@ -294,7 +326,7 @@ export function AppShell({
       to: c.to,
       search: c.search,
       label: c.label,
-      pocet: c.to === "/nespracovane" ? pocetNespracovanych : undefined,
+      pocet: pocetPriPolozke(c.to),
     })),
   }));
 
@@ -367,6 +399,7 @@ export function AppShell({
               <SheetContent side="left" className="w-80 overflow-y-auto p-0">
                 <MobileNav
                   pocetNespracovanych={pocetNespracovanych}
+                  pocetEfaktur={pocetEfaktur}
                   pocetUloh={pocetUloh}
                   pathname={pathname}
                   active={active}
@@ -628,9 +661,9 @@ export function AppShell({
                         }`}
                       >
                         {t(c.label)}
-                        {c.to === "/nespracovane" && pocetNespracovanych ? (
+                        {pocetPriPolozke(c.to) ? (
                           <span className="rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
-                            {pocetNespracovanych > 99 ? "99+" : pocetNespracovanych}
+                            {pocetPriPolozke(c.to)! > 99 ? "99+" : pocetPriPolozke(c.to)}
                           </span>
                         ) : null}
                       </Link>
@@ -706,6 +739,7 @@ function MobileNav({
   onAddCompany,
   onClose,
   pocetNespracovanych,
+  pocetEfaktur,
   pocetUloh,
 }: {
   pathname: string;
@@ -721,6 +755,7 @@ function MobileNav({
   onAddCompany: () => void;
   onClose: () => void;
   pocetNespracovanych?: number;
+  pocetEfaktur?: number;
   pocetUloh?: number;
 }) {
   const { t } = useT();
@@ -735,7 +770,12 @@ function MobileNav({
       to: c.to,
       search: c.search,
       label: c.label,
-      pocet: c.to === "/nespracovane" ? pocetNespracovanych : undefined,
+      pocet:
+        c.to === "/nespracovane"
+          ? pocetNespracovanych
+          : c.to === CESTA_PRIJATYCH_EFAKTUR
+            ? pocetEfaktur
+            : undefined,
     })),
   }));
   const aktivnaSekcia = nav.find((g) => isPathActive(pathname, g))?.key ?? null;

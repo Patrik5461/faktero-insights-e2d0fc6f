@@ -10,6 +10,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { CheckCircle2, Circle, Clock, Info, Mail, AlertTriangle, Link2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { AktivaciaEfakturyKroky } from "@/components/faktero/AktivaciaEfakturyKroky";
+import { EfakturaPrijemNastavenia } from "@/components/faktero/EfakturaPrijemNastavenia";
 import { dicPrePortal, jeEfakturaAktivovana } from "@/lib/faktero/efaktura-oznam";
 import {
   getEfakturaReadinessFn,
@@ -368,6 +369,8 @@ function EFakturaPage() {
         {!lenOdosielanie && !odosielanieBezi && (
           <SparovanieSPostakom companyId={companyId} profil={profil} />
         )}
+        {/* Kam sa zaradí zaevidovaná prijatá eFaktúra — len pri vlastnom príjme. */}
+        {!lenOdosielanie && profil?.epostak_firm_id && <EfakturaPrijemNastavenia companyId={companyId} />}
         {readinessQuery.data && (
           <div className="mb-6 rounded-xl border border-border bg-card p-6">
             <div className="flex items-center justify-between gap-4">
