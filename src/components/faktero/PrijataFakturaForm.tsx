@@ -23,6 +23,7 @@ import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { PravidloZDokladu } from "@/components/faktero/PravidloZDokladu";
 import { PrijataUpravaKompaktna } from "@/components/faktero/PrijataUpravaKompaktna";
 import type { PolozkaK } from "@/components/faktero/DetailDokladuKompaktny";
+import { vsDokladu } from "@/lib/faktero/nespracovane";
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -425,7 +426,8 @@ export function PrijataFakturaForm({
         supplier_ic_dph: form.supplier_ic_dph.trim() || null,
         // IBAN bez medzier, aby sa dal rovno použiť v platobnom príkaze.
         supplier_iban: form.supplier_iban.replace(/\s+/g, "").toUpperCase() || null,
-        variable_symbol: form.variable_symbol.trim() || null,
+        // Bez VS sa použije číselné číslo faktúry (ako ukazuje placeholder), inak sa platba nespáruje.
+        variable_symbol: form.variable_symbol.trim() || vsDokladu(null, form.invoice_number) || null,
         constant_symbol: form.constant_symbol.trim() || null,
         specific_symbol: form.specific_symbol.trim() || null,
         order_number: form.order_number.trim() || null,

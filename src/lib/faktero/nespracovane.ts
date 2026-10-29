@@ -551,7 +551,8 @@ export function prijataZUdajov(
     supplier_city: prazdne(u.dodavatel.mesto),
     supplier_zip: prazdne(u.dodavatel.psc),
     invoice_number: u.cislo.trim() || "bez čísla",
-    variable_symbol: prazdne(u.vs),
+    // Prázdny VS (vymazaný alebo zo starších údajov) — číselné číslo faktúry.
+    variable_symbol: prazdne(u.vs) ?? prazdne(vsDokladu(null, u.cislo)),
     constant_symbol: prazdne(u.ks ?? ""),
     specific_symbol: prazdne(u.ss ?? ""),
     order_number: prazdne(u.objednavka ?? ""),
