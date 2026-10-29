@@ -536,7 +536,7 @@ export const odoslatSamofakturuEfakturouFn = createServerFn({ method: "POST" })
     }
     const { sendSamofakturaEfaktura } = await import("./efaktura/epostak.server");
     const r = await sendSamofakturaEfaktura(sf.id, profil.epostak_firm_id);
-    return { status: r.status };
+    return { status: r.status, varovania: r.varovania ?? [] };
   });
 
 /** Stav eFaktúry k samofaktúre (či a kedy odišla). */

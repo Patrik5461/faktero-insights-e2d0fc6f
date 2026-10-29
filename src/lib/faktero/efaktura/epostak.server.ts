@@ -271,6 +271,8 @@ export type SendEfakturaResult = {
   documentId: string;
   status: string;
   providerResponse: unknown;
+  /** Varovania kontroly pred odoslaním — odoslaniu nebránili. */
+  varovania?: import("./kontrola-odoslania").NalezOdoslania[];
 };
 
 /**
@@ -358,17 +360,42 @@ export async function sendEfaktura(
   const { druhZFaktury, teloOdoslania, zlavaNaPercento } = await import("./epostak-telo");
   const druh = druhZFaktury((invoice as any).type, Number((invoice as any).total ?? 0));
   let povodneCislo: string | null = null;
+  let povodnaVystavena: string | null = null;
   if ((invoice as any).opravuje_fakturu_id) {
     const { data: povodna } = await supabaseAdmin
       .from("invoices")
-      .select("invoice_number")
+      .select("invoice_number, issue_date")
       .eq("id", (invoice as any).opravuje_fakturu_id)
       .maybeSingle();
     povodneCislo = povodna?.invoice_number ?? null;
+    povodnaVystavena = povodna?.issue_date ?? null;
   }
   const zakladPredZlavou = (items ?? []).reduce((s: number, it: any) => s + Number(it.subtotal ?? 0), 0);
   const { nacitajOdpocty } = await import("../zalohy-odpocty.server");
   const zalohy = (await nacitajOdpocty(supabaseAdmin, invoice.company_id, [invoiceId]))[invoiceId] ?? null;
+
+  /*
+    Kontrola pred odoslaním — vlastné UBL z tých istých údajov a pravidlá
+    EN 16931 / Peppol BIS. Chyba odoslanie zastaví (ePošták by doklad aj tak
+    odmietol, alebo by odišiel chybný), varovania sa vrátia. Keby padla sama
+    kontrola, odoslanie nezastaví — rozhodne ePošták.
+  */
+  const { skontrolujFakturuPredOdoslanim } = await import("./kontrola-odoslania.server");
+  const { ChybaKontrolyEfaktury } = await import("./kontrola-odoslania");
+  let kontrola: import("./kontrola-odoslania").KontrolaPredOdoslanim | null = null;
+  try {
+    kontrola = skontrolujFakturuPredOdoslanim({
+      company: company as any,
+      profile,
+      invoice: invoice as any,
+      items: (items ?? []) as any,
+      povodnaFaktura: povodneCislo ? { cislo: povodneCislo, vystavena: povodnaVystavena } : null,
+      zalohy,
+    });
+  } catch (e) {
+    console.warn("[efaktura] kontrola pred odoslaním zlyhala:", String((e as Error)?.message ?? e));
+  }
+  if (kontrola && !kontrola.mozno) throw new ChybaKontrolyEfaktury(kontrola);
   const { pripravPrilohyEfaktury, odtlacokTela } = await import("./prilohy-efaktury.server");
   const prilohy = await pripravPrilohyEfaktury(invoice as any, company as any, volbyPriloh);
 
@@ -480,6 +507,7 @@ export async function sendEfaktura(
     documentId: providerMessageId ?? doc.id,
     status: transportStatus,
     providerResponse: response,
+    varovania: kontrola?.varovania ?? [],
   };
 }
 
@@ -1032,6 +1060,26 @@ export async function sendSamofakturaEfaktura(
   const zakladPredZlavou = polozky.reduce((s: number, p: any) => s + p.total, 0);
   const dobropis = Boolean(sf.opravuje_cislo);
 
+  /*
+    Kontrola pred odoslaním. Samofaktúra (Peppol BIS Self-Billing 3.0) nemá
+    vlastný generátor UBL — skladá sa z mapovania bežnej faktúry s vymenenými
+    stranami, preto je len orientačná a nálezy vráti ako varovania.
+  */
+  let kontrola: import("./kontrola-odoslania").KontrolaPredOdoslanim | null = null;
+  try {
+    const { data: firma } = await supabaseAdmin
+      .from("companies")
+      .select("*")
+      .eq("id", sf.company_id)
+      .maybeSingle();
+    if (firma) {
+      const { skontrolujSamofakturuPredOdoslanim } = await import("./kontrola-odoslania.server");
+      kontrola = skontrolujSamofakturuPredOdoslanim(sf, firma as any, polozky);
+    }
+  } catch (e) {
+    console.warn("[efaktura] kontrola samofaktúry zlyhala:", String((e as Error)?.message ?? e));
+  }
+
   const body = teloOdoslania({
     druh: dobropis ? "self_billing_credit_note" : "self_billing",
     cislo: sf.invoice_number,
@@ -1114,7 +1162,12 @@ export async function sendSamofakturaEfaktura(
     attempt_count: 1,
   } as any);
 
-  return { documentId: providerMessageId ?? doc.id, status: transportStatus, providerResponse: response };
+  return {
+    documentId: providerMessageId ?? doc.id,
+    status: transportStatus,
+    providerResponse: response,
+    varovania: kontrola?.varovania ?? [],
+  };
 }
 
 // ─── Onboarding „iba odosielanie“ (Enterprise API, controlled preview) ──────

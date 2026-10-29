@@ -18,6 +18,7 @@ import {
   SekundarnaAkcia,
   StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
+import { UpozornenieKontrolyEfaktury } from "@/components/faktero/NalezyKontrolyEfaktury";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
@@ -618,6 +619,7 @@ function PurchaseInvoiceDetail() {
                   </div>
                 ) : null}
                 {samo && <SamofakturaPanel row={row} onZmena={load} />}
+                <UpozornenieKontrolyEfaktury invoiceId={row.id} />
                 <RegistrPlatcuDph
                   companyId={row.company_id}
                   dic={row.supplier_dic}
@@ -1111,6 +1113,9 @@ function PurchaseInvoiceDetail() {
         menuActions={menu}
       />
       <PageBody>
+        <div className="mb-4 empty:hidden">
+          <UpozornenieKontrolyEfaktury invoiceId={row.id} />
+        </div>
         {!navrh && !pdfRozlozenie && <div className="mb-4">{stitkyAStav}</div>}
         <DetailSNahladom
           zobrazit={nahladDetail.zapnuty && !!row.file_path}

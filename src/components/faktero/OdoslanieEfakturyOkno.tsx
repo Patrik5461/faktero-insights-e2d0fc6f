@@ -5,7 +5,15 @@ import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useT } from "@/lib/i18n/useT";
 import { velkost } from "@/lib/faktero/faktura-prilohy";
 import { prilohyFakturyFn } from "@/lib/faktero/faktura-prilohy.functions";
-import { posliEfakturuFn } from "@/lib/faktero/efaktura/efaktura.functions";
+import {
+  posliEfakturuFn,
+  skontrolujPredOdoslanimFn,
+} from "@/lib/faktero/efaktura/efaktura.functions";
+import {
+  KontrolaPredOdoslanimPanel,
+  blokujeOdoslanie,
+  type StavKontroly,
+} from "@/components/faktero/KontrolaPredOdoslanim";
 import { useAktualnyDatum } from "@/components/faktero/AktualnyDatumOkno";
 import {
   EF_MAX_SPOLU,
@@ -21,6 +29,10 @@ import {
  * Okno odoslania eFaktúry: potvrdenie (odoslanie sa nedá vziať späť),
  * „Priložiť PDF faktúry" a výber príloh dokladu. Limity ePoštáka sa
  * kontrolujú ešte pred odoslaním; server ich overí znova.
+ *
+ * Po otvorení sa faktúra skontroluje podľa pravidiel EN 16931 a Peppol BIS
+ * (`skontrolujPredOdoslanimFn`) — pri chybe je Odoslať zablokované. Server
+ * tú istú kontrolu spraví znova pri odoslaní.
  */
 export function OdoslanieEfakturyOkno({
   companyId,
@@ -44,6 +56,8 @@ export function OdoslanieEfakturyOkno({
   const { t } = useT();
   const nacitaj = useServerFn(prilohyFakturyFn);
   const posli = useServerFn(posliEfakturuFn);
+  const skontroluj = useServerFn(skontrolujPredOdoslanimFn);
+  const [stavKontroly, setStavKontroly] = useState<StavKontroly>({ druh: "nacitavam" });
   const [prilohy, setPrilohy] = useState<PrilohaNaVyber[] | null>(null);
   const [sPdf, setSPdf] = useState(true);
   const [vybrane, setVybrane] = useState<string[]>([]);
@@ -71,6 +85,34 @@ export function OdoslanieEfakturyOkno({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoiceId]);
   useZatvorNaEscape(odosielam || !datumVyrieseny ? null : onClose);
+
+  // Kontrola až po vyriešení dátumu — zmena dátumu vystavenia mení aj UBL.
+  const [kolo, setKolo] = useState(0);
+  useEffect(() => {
+    if (!datumVyrieseny) return;
+    let zive = true;
+    setStavKontroly({ druh: "nacitavam" });
+    skontroluj({ data: { company_id: companyId, invoice_ids: [invoiceId] } })
+      .then((r) => {
+        if (!zive) return;
+        const v = r[invoiceId];
+        if (!v) setStavKontroly({ druh: "nedaSa", dovod: t("Faktúra nepatrí tejto firme.") });
+        else if (v.kontrola) setStavKontroly({ druh: "hotovo", kontrola: v.kontrola });
+        else
+          setStavKontroly({
+            druh: "nedaSa",
+            dovod: v.nedaSa ?? t("eFaktúru nie je možné odoslať."),
+          });
+      })
+      .catch(
+        (e) =>
+          zive && setStavKontroly({ druh: "zlyhala", dovod: String((e as Error)?.message ?? e) }),
+      );
+    return () => {
+      zive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datumVyrieseny, invoiceId, companyId, kolo]);
 
   useEffect(() => {
     let zive = true;
@@ -211,6 +253,8 @@ export function OdoslanieEfakturyOkno({
             limit: velkost(EF_MAX_SPOLU),
           })}
         </p>
+        <KontrolaPredOdoslanimPanel stav={stavKontroly} onZnova={() => setKolo((k) => k + 1)} />
+
         {kontrola.chyby.length > 0 && (
           <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -240,7 +284,17 @@ export function OdoslanieEfakturyOkno({
           </button>
           <button
             onClick={odosli}
-            disabled={odosielam || prilohy === null || kontrola.chyby.length > 0}
+            disabled={
+              odosielam ||
+              prilohy === null ||
+              kontrola.chyby.length > 0 ||
+              blokujeOdoslanie(stavKontroly)
+            }
+            title={
+              stavKontroly.druh === "hotovo" && !stavKontroly.kontrola.mozno
+                ? t("Najprv opravte chyby z kontroly eFaktúry.")
+                : undefined
+            }
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {odosielam

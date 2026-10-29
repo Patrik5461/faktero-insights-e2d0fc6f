@@ -1,7 +1,7 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -24,6 +24,12 @@ import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { velkost } from "@/lib/faktero/faktura-prilohy";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { potvrd } from "@/lib/potvrdenie";
+import {
+  NalezyKontrolyEfaktury,
+  OdznakKontrolyEfaktury,
+} from "@/components/faktero/NalezyKontrolyEfaktury";
+import { nacitajUlozenuKontrolu } from "@/lib/faktero/efaktura/kontrola/ulozenie";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 
@@ -56,6 +62,48 @@ function StavDokladu({ stav }: { stav: string | null }) {
 }
 
 type Nahlad = { url: string; nazov: string; prilozene: boolean };
+
+/**
+ * Nálezy automatickej kontroly jednej prijatej eFaktúry — uložené pri príjme,
+ * načítajú sa až po rozbalení (zoznam ťahá len počty).
+ */
+function NalezyPrijatej({ receivedId }: { receivedId: string }) {
+  const { t } = useT();
+  const q = useQuery({
+    queryKey: ["efaktura-prijata-kontrola", receivedId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("efaktura_received_documents")
+        .select("kontrola_vysledok, skontrolovane_at")
+        .eq("id", receivedId)
+        .maybeSingle();
+      if (error) throw error;
+      return {
+        kontrola: nacitajUlozenuKontrolu(data?.kontrola_vysledok),
+        kedy: data?.skontrolovane_at ?? null,
+      };
+    },
+  });
+  if (q.isLoading) return <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>;
+  const k = q.data?.kontrola;
+  if (!k) return <p className="text-sm text-muted-foreground">{t("Výsledok kontroly nie je k dispozícii.")}</p>;
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">
+        {t(
+          "Automatická kontrola podľa EN 16931 a Peppol BIS Billing 3.0 pri prijatí. eFaktúra je prijatá aj s chybami — chyby sú na strane dodávateľa, dajte mu o nich vedieť.",
+        )}
+        {q.data?.kedy ? ` ${t("Skontrolované {kedy}.", { kedy: new Date(q.data.kedy).toLocaleString("sk-SK") })}` : ""}
+      </p>
+      <NalezyKontrolyEfaktury nalezy={k.nalezy} pocetChyb={k.pocetChyb} pocetVarovani={k.pocetVarovani} />
+      {k.orezane > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {t("Ďalšie nálezy sa neuložili: {n}.", { n: k.orezane })}
+        </p>
+      )}
+    </div>
+  );
+}
 
 type PrilohaPrijatej = {
   index: number;
@@ -213,6 +261,7 @@ function ReceivedPage() {
   const [nacitavamNahlad, setNacitavamNahlad] = useState<string | null>(null);
   const [nahlad, setNahlad] = useState<Nahlad | null>(null);
   const [prilohyOkno, setPrilohyOkno] = useState<{ id: string; cislo: string } | null>(null);
+  const [rozbalene, setRozbalene] = useState<string | null>(null);
   const lf = useListFilters();
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
   const podla = lf.filter("podla") || "vystavenie";
@@ -242,6 +291,20 @@ function ReceivedPage() {
   /** Z prijatej eFaktúry spraví prijatú faktúru — inak by sa prepisovala ručne. */
   async function zaevidujDoklad(receivedId: string) {
     if (!companyId) return;
+    const chyby = Number(kontroly.get(receivedId)?.kontrola_chyby ?? 0);
+    if (
+      chyby > 0 &&
+      !(await potvrd(
+        t(
+          "Automatická kontrola našla v tejto eFaktúre chyby ({n}). Sumy, DPH alebo povinné údaje nemusia byť správne. Zaevidovať ju aj tak ako prijatú faktúru?",
+          { n: chyby },
+        ),
+        { potvrdit: t("Zaevidovať aj tak") },
+      ))
+    ) {
+      setRozbalene(receivedId);
+      return;
+    }
     setEvidujem(receivedId);
     try {
       const r: any = await zaeviduj({ data: { company_id: companyId, received_id: receivedId } });
@@ -252,7 +315,13 @@ function ReceivedPage() {
             ? t("Táto eFaktúra už zaevidovaná je — otváram ju.")
             : t("Zaevidované ako prijatá faktúra. Skontrolujte sumy a dátumy."),
       );
+      if (chyby > 0)
+        toast.warning(
+          t("Pozor: eFaktúra má podľa automatickej kontroly chyby ({n}) — skontrolujte sumy a DPH na prijatej faktúre.", { n: chyby }),
+          { duration: 10000 },
+        );
       q.refetch();
+      void kontrolyQ.refetch();
       window.open(`/prijate-faktury/${r.invoiceId}`, "_blank", "noopener,noreferrer");
     } catch (e) {
       toast.error((e as Error).message);
@@ -283,6 +352,7 @@ function ReceivedPage() {
               (r.preskocenych ? " " + t("Už uložené: {n}.", { n: r.preskocenych }) : "")
           : t("Nič nové — všetko doručené už máte."),
       );
+      void kontrolyQ.refetch();
       // Problémy sa nezamlčia: doklad, ktorý sa nepodarilo stiahnuť, by inak
       // ticho chýbal a nikto by nevedel, že vôbec bol.
       if (r.problemy?.length)
@@ -298,6 +368,23 @@ function ReceivedPage() {
   }
 
   const riadky = (q.data ?? []) as any[];
+
+  /* Počty z automatickej kontroly — rovnaký výber ako zoznam (posledných 200). */
+  const kontrolyQ = useQuery({
+    queryKey: ["efaktura-prijate-kontroly", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("efaktura_received_documents")
+        .select("id, kontrola_chyby, kontrola_varovania")
+        .eq("company_id", companyId!)
+        .order("received_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!companyId,
+  });
+  const kontroly = new Map((kontrolyQ.data ?? []).map((k) => [k.id, k]));
 
   // Hľadanie a obdobie len prechádzajú načítané eFaktúry.
   const hladane = lf.q.trim().toLowerCase();
@@ -421,26 +508,28 @@ function ReceivedPage() {
                   <th className="p-3">{t("Splatnosť")}</th>
                   <th className="p-3 text-right">{t("Suma")}</th>
                   <th className="p-3">{t("Stav")}</th>
+                  <th className="p-3">{t("Kontrola")}</th>
                   <th className="p-3 text-right">{t("Akcie")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {q.isLoading && (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-muted-foreground">
+                    <td colSpan={9} className="p-6 text-center text-muted-foreground">
                       {t("Načítavam…")}
                     </td>
                   </tr>
                 )}
                 {riadky.length > 0 && zobrazene.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-muted-foreground">
+                    <td colSpan={9} className="p-6 text-center text-muted-foreground">
                       {t("Nič nevyhovuje filtru.")}
                     </td>
                   </tr>
                 )}
                 {zobrazene.map((r) => (
-                  <tr key={r.id}>
+                  <Fragment key={r.id}>
+                  <tr>
                     <td className="p-3 text-xs text-muted-foreground">
                       {r.received_at ? new Date(r.received_at).toLocaleString("sk-SK") : "—"}
                     </td>
@@ -462,6 +551,14 @@ function ReceivedPage() {
                     <td className="p-3 text-right tabular-nums">{suma(r.total, r.currency)}</td>
                     <td className="p-3">
                       <StavDokladu stav={r.status} />
+                    </td>
+                    <td className="p-3">
+                      <OdznakKontrolyEfaktury
+                        chyby={kontroly.get(r.id)?.kontrola_chyby}
+                        varovania={kontroly.get(r.id)?.kontrola_varovania}
+                        rozbalene={rozbalene === r.id}
+                        onClick={() => setRozbalene((x) => (x === r.id ? null : r.id))}
+                      />
                     </td>
                     <td className="p-3">
                       <div className="flex flex-wrap justify-end gap-1.5">
@@ -499,6 +596,14 @@ function ReceivedPage() {
                       </div>
                     </td>
                   </tr>
+                  {rozbalene === r.id && (
+                    <tr className="bg-muted/20">
+                      <td colSpan={9} className="p-3">
+                        <NalezyPrijatej receivedId={r.id} />
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

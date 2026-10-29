@@ -277,6 +277,13 @@ const sections: HelpSection[] = [
           podľa nich sa v sieti hľadá.
         </p>
         <p>
+          <strong>Kontrola eFaktúry:</strong> po otvorení okna sa faktúra sama skontroluje podľa
+          pravidiel EN 16931 a Peppol BIS. Zelené <strong>Kontrola prešla</strong> znamená, že je v
+          poriadku. Pri chybe okno vypíše, čo opraviť (s odkazom na pravidlo), a tlačidlo Odoslať
+          ostane zablokované; varovania odoslaniu nebránia. Pri hromadnom odoslaní sa faktúry s
+          chybou preskočia.
+        </p>
+        <p>
           <strong>Viac faktúr naraz:</strong> v zozname faktúr ich zaškrtnite a v lište hore zvoľte{" "}
           <strong>Odoslať eFaktúrou</strong>. Odídu s PDF faktúry; koncepty, storná, zálohové a už
           odoslané sa preskočia. Ďalšie prílohy pošlite jednotlivo z detailu faktúry.
@@ -340,6 +347,13 @@ const sections: HelpSection[] = [
             <strong>Zaevidovať</strong> z nej spraví{" "}
             <Link to="/prijate-faktury">prijatú faktúru</Link> aj s PDF v prílohe — netreba nič
             prepisovať. Potom ju zaúčtujete, uhradíte alebo pošlete do Pohody ako každú inú.
+          </li>
+          <li>
+            <strong>Kontrola</strong> — každú prijatú eFaktúru Faktero hneď skontroluje podľa EN
+            16931 a Peppol BIS 3.0 a v zozname ukáže „Kontrola: OK“, počet varovaní alebo chýb.
+            Kliknutím na odznak uvidíte nálezy s kódom pravidla. eFaktúra s chybami sa prijme tiež;
+            pri zaevidovaní sa Faktero opýta, či ju naozaj chcete zaevidovať, a na prijatej faktúre
+            ostane upozornenie. Chyby sú na strane dodávateľa — dajte mu o nich vedieť.
           </li>
         </ul>
         <p>

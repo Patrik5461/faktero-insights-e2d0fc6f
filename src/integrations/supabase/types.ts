@@ -2833,6 +2833,10 @@ export type Database = {
           updated_at: string
           vat_total: number | null
           xml_payload: string | null
+          kontrola_vysledok: Json | null
+          kontrola_chyby: number | null
+          kontrola_varovania: number | null
+          skontrolovane_at: string | null
         }
         Insert: {
           channel?: Database["public"]["Enums"]["efaktura_channel"]
@@ -2858,6 +2862,10 @@ export type Database = {
           updated_at?: string
           vat_total?: number | null
           xml_payload?: string | null
+          kontrola_vysledok?: Json | null
+          kontrola_chyby?: number | null
+          kontrola_varovania?: number | null
+          skontrolovane_at?: string | null
         }
         Update: {
           channel?: Database["public"]["Enums"]["efaktura_channel"]
@@ -2883,6 +2891,10 @@ export type Database = {
           updated_at?: string
           vat_total?: number | null
           xml_payload?: string | null
+          kontrola_vysledok?: Json | null
+          kontrola_chyby?: number | null
+          kontrola_varovania?: number | null
+          skontrolovane_at?: string | null
         }
         Relationships: [
           {
@@ -11353,6 +11365,7 @@ export type Database = {
           }
         ]
       }
+
 
     }
     Views: {

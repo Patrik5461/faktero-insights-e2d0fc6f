@@ -8,6 +8,8 @@ import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { DetailSNahladom, useNahladVDetaile, type SuborNahladu } from "@/components/faktero/BocnyNahlad";
 import { UdajePreUctovnika, useSirokaPreNahlad, type UdajeUctovnika } from "@/components/faktero/UdajePreUctovnika";
 import { ZbaleneK } from "@/components/faktero/DetailDokladuKompaktny";
+import { useDizajn } from "@/hooks/useDizajn";
+import { VystavenaDetailKompaktna } from "@/components/faktero/VystavenaDetailKompaktna";
 import { rezimDphVystavenej, stavZauctovania } from "@/lib/faktero/udaje-pre-uctovnika";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -145,6 +147,10 @@ function InvoiceDetail() {
   // PDF stále vľavo vedľa údajov — pri účtovaní ho netreba otvárať zvlášť.
   const nahladDetail = useNahladVDetaile();
   const sirokaPreNahlad = useSirokaPreNahlad();
+  // Kompaktné rozloženie má vlastné usporiadanie detailu (jeden stĺpec kariet).
+  const kompaktne = useDizajn() === "kompaktny";
+  /* Číslo faktúry v Pohode — kompaktná hlavička ho ukazuje ako interné číslo. */
+  const [interneCislo, setInterneCislo] = useState<string | null>(null);
   const [pdfVedla, setPdfVedla] = useState<SuborNahladu | undefined>(undefined);
   const [emailOpen, setEmailOpen] = useState(false);
   /* Koľko príloh doklad má — podľa toho sa v maile ponúkne, či ich priložiť. */
@@ -671,6 +677,18 @@ function InvoiceDetail() {
         console.warn("[webhook] invoice.* trigger zlyhal", e);
       }
     }
+    load();
+  }
+
+  /* Späť medzi otvorené — ako po zrušení párovania; „po splatnosti“ sa počíta z dátumu. */
+  async function oznacNeuhradenu() {
+    if (!(await potvrd(t("Označiť faktúru ako neuhradenú?")))) return;
+    const { error } = await supabase
+      .from("invoices")
+      .update({ status: inv?.sent_at ? "sent" : "issued", paid_at: null })
+      .eq("id", id);
+    if (error) return toast.error(t(friendlyError(error, error.message)));
+    toast.success(t("Stav aktualizovaný"));
     load();
   }
 
@@ -1282,6 +1300,57 @@ function InvoiceDetail() {
       <KomentarDokladu tabulka="invoices" id={inv.id} komentar={(inv as any).komentar} />
     </KomentarePanel>
   );
+  /* Iný účet aj na vystavenej faktúre — PDF a QR sa pregenerujú samé. */
+  const vyberUctu = inv.status !== "cancelled" && (
+    <VyberUctu
+      className="mt-2"
+      predvyplnit={false}
+      companyId={inv.company_id}
+      value={inv.payment_account_id ?? null}
+      onChange={async (id) => {
+        if (id === inv.payment_account_id) return;
+        const { error } = await supabase
+          .from("invoices")
+          .update({ payment_account_id: id })
+          .eq("id", inv.id);
+        if (error) return toast.error(error.message);
+        toast.success(t("Účet na úhradu zmenený."));
+        void load();
+      }}
+    />
+  );
+  const predlzenieSplatnosti = (
+    <>
+      {predlzena(inv) && (
+        <div className="text-xs text-muted-foreground">
+          {t("Lehoty DPH (§ 25a) sa počítajú od pôvodnej splatnosti.")}
+          {inv.predlzenie_poznamka ? ` ${t("Dohoda:")} ${inv.predlzenie_poznamka}` : ""}
+        </div>
+      )}
+      <div className="my-2">
+        <PredlzitSplatnost druh="vydana" faktura={inv} onZmena={() => void load()} />
+      </div>
+    </>
+  );
+  /*
+    Bez IBAN-u nemá odberateľ kam zaplatiť a na doklade nie je ani
+    QR kód. Pri novej firme sa toto pole preskočí ľahko — register
+    ho nedopĺňa — a chyba sa ukáže až vtedy, keď peniaze neprídu.
+  */
+  const chybaIban = !sUctomFaktury(company ?? {}, inv).iban && (
+    <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
+      <div className="font-medium text-foreground">{t("Chýba IBAN")}</div>
+      <p className="mt-0.5 text-muted-foreground">
+        {t("Odberateľ nemá kam zaplatiť a na doklade nebude QR kód.")}
+      </p>
+      <Link
+        to="/firma"
+        className="mt-1 inline-block font-medium text-primary hover:underline"
+      >
+        {t("Doplniť v údajoch firmy")}
+      </Link>
+    </div>
+  );
   const kartaPlatba = (sumaHore: boolean) =>
     inv.status === "paid" ? (
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100 dark:border-emerald-900/40">
@@ -1323,58 +1392,14 @@ function InvoiceDetail() {
               : "—"}
           </span>
         </div>
-        {/* Iný účet aj na vystavenej faktúre — PDF a QR sa pregenerujú samé. */}
-        {inv.status !== "cancelled" && (
-          <VyberUctu
-            className="mt-2"
-            predvyplnit={false}
-            companyId={inv.company_id}
-            value={inv.payment_account_id ?? null}
-            onChange={async (id) => {
-              if (id === inv.payment_account_id) return;
-              const { error } = await supabase
-                .from("invoices")
-                .update({ payment_account_id: id })
-                .eq("id", inv.id);
-              if (error) return toast.error(error.message);
-              toast.success(t("Účet na úhradu zmenený."));
-              void load();
-            }}
-          />
-        )}
+        {vyberUctu}
         <div>
           {t("Variabilný symbol:")} <span className="font-mono">{inv.variable_symbol}</span>
         </div>
         <div>{t("Splatnosť:")} {popisSplatnosti(inv)}</div>
-        {predlzena(inv) && (
-          <div className="text-xs text-muted-foreground">
-            {t("Lehoty DPH (§ 25a) sa počítajú od pôvodnej splatnosti.")}
-            {inv.predlzenie_poznamka ? ` ${t("Dohoda:")} ${inv.predlzenie_poznamka}` : ""}
-          </div>
-        )}
-        <div className="my-2">
-          <PredlzitSplatnost druh="vydana" faktura={inv} onZmena={() => void load()} />
-        </div>
+        {predlzenieSplatnosti}
         <div>{t("Forma úhrady:")} {t(paymentMethodLabel(inv.payment_method))}</div>
-        {/*
-          Bez IBAN-u nemá odberateľ kam zaplatiť a na doklade nie je ani
-          QR kód. Pri novej firme sa toto pole preskočí ľahko — register
-          ho nedopĺňa — a chyba sa ukáže až vtedy, keď peniaze neprídu.
-        */}
-        {!sUctomFaktury(company ?? {}, inv).iban && (
-          <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
-            <div className="font-medium text-foreground">{t("Chýba IBAN")}</div>
-            <p className="mt-0.5 text-muted-foreground">
-              {t("Odberateľ nemá kam zaplatiť a na doklade nebude QR kód.")}
-            </p>
-            <Link
-              to="/firma"
-              className="mt-1 inline-block font-medium text-primary hover:underline"
-            >
-              {t("Doplniť v údajoch firmy")}
-            </Link>
-          </div>
-        )}
+        {chybaIban}
       </div>
     );
   const kartyZalohySklad = (
@@ -1555,6 +1580,74 @@ function InvoiceDetail() {
       )}
     </>
   );
+
+  /*
+    Kompaktné rozloženie — tie isté kúsky v jednom stĺpci kariet. Pri
+    zapnutom náhľade PDF ostáva PDF vľavo a karty idú vpravo.
+  */
+  const zamknuteObdobie = Boolean(
+    ciselnikyFirmy.zamknuteDo && inv.issue_date && inv.issue_date <= ciselnikyFirmy.zamknuteDo,
+  );
+  const kompaktnyDetail = kompaktne ? (
+    <VystavenaDetailKompaktna
+      inv={inv}
+      company={company}
+      u={udajeUctovnika}
+      poSplatnosti={isOverdue}
+      interneCislo={interneCislo}
+      hore={kartaStitky}
+      zauctovanie={
+        <ZauctovanieVystavenejPanel
+          inv={inv}
+          onZmena={() => void load()}
+          onStiahnut={handlePohodaExport}
+          kompaktne
+          zamknuteObdobie={zamknuteObdobie}
+          onVPohode={(v) => setInterneCislo(v?.cislo ?? null)}
+        />
+      }
+      prilohy={
+        <PrilohyFaktury
+          dokladId={inv.id}
+          mozeMenit={inv.status !== "cancelled"}
+          onZmena={setPocetPriloh}
+          kompaktne
+          hlavny={{
+            nazov: `${inv.invoice_number ?? t("Faktúra")}.pdf`,
+            url: null,
+            mime: "application/pdf",
+            stiahni: () => void handleNahlad(),
+          }}
+        />
+      }
+      polozky={
+        <>
+          {kartaUvod}
+          {kartaPolozky}
+          {kartaPoznamka}
+        </>
+      }
+      platbaDoplnok={
+        <>
+          {vyberUctu}
+          {predlzenieSplatnosti}
+          {chybaIban}
+        </>
+      }
+      dalsie={
+        <>
+          {kartaZasielkovna}
+          {kartyOpravaSchvalovanie}
+          {kartyZalohySklad}
+        </>
+      }
+      komentare={<KomentarePanel companyId={inv.company_id} agenda="vystavena" id={inv.id} />}
+      historia={<ZbaleneK nadpis="História dokladu">{kartaHistoria}</ZbaleneK>}
+      onUhradena={() => void setStatus("paid")}
+      onNeuhradena={() => void oznacNeuhradenu()}
+      onZmena={() => void load()}
+    />
+  ) : null;
 
   return (
     <>
@@ -1921,7 +2014,9 @@ function InvoiceDetail() {
           nazov={inv.invoice_number}
           onSkryt={() => nahladDetail.prepni(false)}
         >
-        {pdfRozlozenie ? (
+        {kompaktnyDetail ? (
+          kompaktnyDetail
+        ) : pdfRozlozenie ? (
           <div className="min-w-0 space-y-4">
             <UdajePreUctovnika u={udajeUctovnika} />
             {kartaPlatba(true)}

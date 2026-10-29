@@ -580,7 +580,46 @@ export const posliEfakturuFn = createServerFn({ method: "POST" })
     }, { potvrdenyStaryDatum: data.potvrdeny_stary_datum });
     // Surová odpoveď poskytovateľa sa neposiela do stránky — je uložená
     // v `efaktura_deliveries.raw_response` a v prehliadači nemá čo robiť.
-    return { documentId: vysledok.documentId, status: vysledok.status };
+    return {
+      documentId: vysledok.documentId,
+      status: vysledok.status,
+      varovania: vysledok.varovania ?? [],
+    };
+  });
+
+/**
+ * Kontrola eFaktúry pred odoslaním — to isté, čo spraví `sendEfaktura`, len
+ * bez odoslania. Okno odoslania ju volá pri otvorení, hromadné odosielanie
+ * pred začatím. Vracia výsledok pre každú faktúru (`null` = nepatrí firme).
+ */
+export const skontrolujPredOdoslanimFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string; invoice_ids?: unknown };
+    const ids = Array.isArray(v?.invoice_ids) ? v.invoice_ids : [];
+    if (!v?.company_id || !ids.length) throw new Error("Chýba company_id alebo invoice_ids.");
+    if (ids.length > 200 || ids.some((x) => typeof x !== "string" || !/^[0-9a-f-]{36}$/i.test(x))) {
+      throw new Error("Neplatný zoznam faktúr.");
+    }
+    return { company_id: v.company_id, invoice_ids: ids as string[] };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+    const { nacitajAKontrolujFakturu } = await import("./kontrola-odoslania.server");
+    const out: Record<
+      string,
+      Awaited<ReturnType<typeof nacitajAKontrolujFakturu>>
+    > = {};
+    // Po piatich — každá faktúra sú štyri dotazy.
+    for (let i = 0; i < data.invoice_ids.length; i += 5) {
+      const davka = data.invoice_ids.slice(i, i + 5);
+      const vysledky = await Promise.all(
+        davka.map((id) => nacitajAKontrolujFakturu(supabase, data.company_id, id)),
+      );
+      davka.forEach((id, j) => (out[id] = vysledky[j]));
+    }
+    return out;
   });
 
 /**

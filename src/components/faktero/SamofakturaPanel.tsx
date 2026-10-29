@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { parametreNalezu } from "@/lib/faktero/efaktura/kontrola-odoslania";
 import { CheckCircle2, Download, Loader2, Pencil, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { createStockMovementDebug } from "@/lib/faktero/stock.functions";
@@ -74,8 +75,18 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
   async function odosliEfakturou() {
     setBusy("efaktura");
     try {
-      await posliEfakturou({ data: { id: row.id } });
+      const r = await posliEfakturou({ data: { id: row.id } });
       toast.success(t("Odoslané cez eFaktúru — dodávateľ ju dostane do svojho systému."));
+      // Kontrola samofaktúry je len orientačná — nálezy odoslaniu nebránia.
+      if (r.varovania?.length) {
+        toast.warning(t("Kontrola eFaktúry našla varovania: {n}", { n: r.varovania.length }), {
+          description: r.varovania
+            .slice(0, 5)
+            .map((n) => `${n.kod}: ${t(n.popis, parametreNalezu(n, t))}`)
+            .join("\n"),
+          duration: 15000,
+        });
+      }
       setEfaktura(await stavEfaktury({ data: { id: row.id } }));
     } catch (e: any) {
       toast.error(t(e?.message ?? "Odoslanie cez eFaktúru zlyhalo"));

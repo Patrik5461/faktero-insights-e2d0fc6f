@@ -65,7 +65,10 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
-import { posliEfakturuFn } from "@/lib/faktero/efaktura/efaktura.functions";
+import {
+  posliEfakturuFn,
+  skontrolujPredOdoslanimFn,
+} from "@/lib/faktero/efaktura/efaktura.functions";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
@@ -263,6 +266,7 @@ function InvoicesPage() {
   const emailFn = useServerFn(sendInvoiceEmailFn);
   const kontrolaDatumuFn = useServerFn(kontrolaDatumuVystaveniaFn);
   const posliEfakturu = useServerFn(posliEfakturuFn);
+  const skontrolujEfaktury = useServerFn(skontrolujPredOdoslanimFn);
   const efakturaTest = useEfakturaTestovaciRezim();
   const zmenDatumFn = useServerFn(zmenDatumVystaveniaNaDnesFn);
   const reminderFn = useServerFn(sendReminderFn);
@@ -590,6 +594,65 @@ function InvoicesPage() {
     );
   const efakturaCount = efakturovatelne(selectedRows).length;
 
+  /*
+    Kontrola eFaktúr pred hromadným odoslaním (EN 16931, Peppol BIS). Faktúry
+    s chybou sa neodošlú — server by ich aj tak odmietol; zvyšok po súhlase
+    áno. Keď sa kontrola nespustí, rozhodne server pri každej faktúre.
+  */
+  async function bezChybKontroly(faktury: any[]): Promise<any[] | null> {
+    setBusy(true);
+    const zle: string[] = [];
+    const vyradit = new Set<string>();
+    try {
+      const podlaFirmy = new Map<string, any[]>();
+      for (const f of faktury) podlaFirmy.set(f.company_id, [...(podlaFirmy.get(f.company_id) ?? []), f]);
+      for (const [firma, zoznam] of podlaFirmy) {
+        for (let i = 0; i < zoznam.length; i += 200) {
+          const davka = zoznam.slice(i, i + 200);
+          const r = await skontrolujEfaktury({
+            data: { company_id: firma, invoice_ids: davka.map((f: any) => f.id) },
+          });
+          for (const f of davka) {
+            const v = r[f.id];
+            if (!v) continue;
+            if (!v.kontrola) zle.push(`${f.invoice_number}: ${t(v.nedaSa ?? "eFaktúru nie je možné odoslať.")}`);
+            else if (!v.kontrola.mozno)
+              zle.push(
+                `${f.invoice_number}: ${v.kontrola.chyby
+                  .slice(0, 3)
+                  .map((n) => n.kod)
+                  .join(", ")}${v.kontrola.chyby.length > 3 ? "…" : ""}`,
+              );
+            else continue;
+            vyradit.add(f.id);
+          }
+        }
+      }
+    } catch {
+      /* kontrolu spraví server pri odoslaní */
+    } finally {
+      setBusy(false);
+    }
+    if (!vyradit.size) return faktury;
+    const ostatne = faktury.filter((f) => !vyradit.has(f.id));
+    const sprava = [
+      t("Faktúry, ktoré neprešli kontrolou eFaktúry a neodošlú sa: {n}. Chyby ukáže okno odoslania v detaile faktúry.", {
+        n: vyradit.size,
+      }),
+      ...zle.slice(0, 10),
+      zle.length > 10 ? "…" : "",
+    ].filter(Boolean);
+    if (!ostatne.length) {
+      toast.error(sprava[0], { description: zle.slice(0, 10).join("\n"), duration: 15000 });
+      return null;
+    }
+    const ano = await potvrd(sprava.join("\n"), {
+      potvrdit: t("Odoslať ostatné ({n})", { n: ostatne.length }),
+      nebezpecne: false,
+    });
+    return ano ? ostatne : null;
+  }
+
   async function runBulkEfaktura() {
     setBulkAction(null);
     const targets = efakturovatelne(selectedRows);
@@ -600,7 +663,9 @@ function InvoicesPage() {
     }
     const pripravene = await overDatumy(targets, prazdne);
     if (!pripravene) return;
-    const { naOdoslanie, menit } = pripravene;
+    const { menit } = pripravene;
+    const naOdoslanie = await bezChybKontroly(pripravene.naOdoslanie);
+    if (!naOdoslanie) return;
     setBusy(true);
     setProgress({ current: 0, total: naOdoslanie.length });
     let ok = 0;

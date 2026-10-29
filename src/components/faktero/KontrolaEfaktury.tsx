@@ -1,30 +1,8 @@
 import { useRef, useState } from "react";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ExternalLink,
-  FileCode2,
-  Loader2,
-  Upload,
-  XCircle,
-} from "lucide-react";
+import { CheckCircle2, FileCode2, Loader2, Upload, XCircle } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
-import {
-  NAZVY_KATEGORII,
-  odkazNaPravidlo,
-  skontrolujEfakturu,
-  type NalezKontroly,
-  type VysledokKontroly,
-} from "@/lib/faktero/efaktura/kontrola";
-
-type Filter = "vsetko" | "chyba" | "varovanie";
-
-const OBLASTI: Record<NalezKontroly["oblast"], string> = {
-  xml: "XML",
-  en16931: "EN 16931",
-  peppol: "Peppol BIS",
-  sk: "Slovensko",
-};
+import { skontrolujEfakturu, type VysledokKontroly } from "@/lib/faktero/efaktura/kontrola";
+import { NalezyKontrolyEfaktury } from "@/components/faktero/NalezyKontrolyEfaktury";
 
 /**
  * Kontrola e-faktúry — nahratie UBL XML a zoznam chýb a varovaní.
@@ -43,7 +21,8 @@ export function KontrolaEfaktury({ maxVelkost }: { maxVelkost: number }) {
   const [tahanie, setTahanie] = useState(false);
   const [vlozit, setVlozit] = useState(false);
   const [text, setText] = useState("");
-  const [filter, setFilter] = useState<Filter>("vsetko");
+  // Nová kontrola začne znova s filtrom „Všetko“.
+  const [kolo, setKolo] = useState(0);
 
   const mb = Math.round(maxVelkost / 1024 / 1024);
 
@@ -51,7 +30,7 @@ export function KontrolaEfaktury({ maxVelkost }: { maxVelkost: number }) {
     setChyba(null);
     setPracujem(true);
     setNazov(meno);
-    setFilter("vsetko");
+    setKolo((k) => k + 1);
     // Prenechá prehliadaču vykresliť „Kontrolujem…“ pred dlhším výpočtom.
     setTimeout(() => {
       try {
@@ -73,19 +52,6 @@ export function KontrolaEfaktury({ maxVelkost }: { maxVelkost: number }) {
       return;
     }
     skontroluj(await f.text(), f.name);
-  };
-
-  const zobrazene = (vysledok?.nalezy ?? []).filter(
-    (n) => filter === "vsetko" || n.zavaznost === filter,
-  );
-
-  const popisNalezu = (n: NalezKontroly) => {
-    const p: Record<string, string | number> = { ...n.parametre };
-    if (n.kategoria) {
-      const nazovKat = NAZVY_KATEGORII[n.kategoria];
-      p.kat = nazovKat ? `${n.kategoria} (${t(nazovKat)})` : n.kategoria;
-    }
-    return t(n.popis, p);
   };
 
   return (
@@ -247,87 +213,12 @@ export function KontrolaEfaktury({ maxVelkost }: { maxVelkost: number }) {
             </dl>
           )}
 
-          {vysledok.nalezy.length > 0 && (
-            <>
-              <div className="flex flex-wrap gap-1" role="tablist">
-                {(
-                  [
-                    ["vsetko", t("Všetko ({n})", { n: vysledok.nalezy.length })],
-                    ["chyba", t("Chyby ({n})", { n: vysledok.pocetChyb })],
-                    ["varovanie", t("Varovania ({n})", { n: vysledok.pocetVarovani })],
-                  ] as const
-                ).map(([k, popis]) => (
-                  <button
-                    key={k}
-                    type="button"
-                    role="tab"
-                    aria-selected={filter === k}
-                    onClick={() => setFilter(k)}
-                    className={`rounded-lg px-3 py-1.5 text-sm ${
-                      filter === k
-                        ? "bg-primary text-primary-foreground"
-                        : "border border-border hover:bg-secondary"
-                    }`}
-                  >
-                    {popis}
-                  </button>
-                ))}
-              </div>
-              <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-                {zobrazene.map((n, i) => {
-                  const odkaz = odkazNaPravidlo(n.kod);
-                  return (
-                    <li key={`${n.kod}-${i}`} className="flex gap-3 p-3 text-sm">
-                      {n.zavaznost === "chyba" ? (
-                        <XCircle
-                          className="mt-0.5 h-4 w-4 shrink-0 text-destructive"
-                          aria-label={t("Chyba")}
-                        />
-                      ) : (
-                        <AlertTriangle
-                          className="mt-0.5 h-4 w-4 shrink-0 text-amber-500"
-                          aria-label={t("Varovanie")}
-                        />
-                      )}
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <p className="break-words">{popisNalezu(n)}</p>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                          {odkaz ? (
-                            <a
-                              href={odkaz}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 font-mono font-semibold text-primary hover:underline"
-                            >
-                              {n.kod} <ExternalLink className="h-3 w-3" />
-                            </a>
-                          ) : (
-                            <span
-                              className="font-mono font-semibold"
-                              title={t("Vlastná kontrola Faktera")}
-                            >
-                              {n.kod}
-                            </span>
-                          )}
-                          <span>{n.oblast === "sk" ? t("Slovensko") : OBLASTI[n.oblast]}</span>
-                          {n.riadok != null && (
-                            <span>
-                              {t("riadok {r}, stĺpec {s}", { r: n.riadok, s: n.stlpec ?? 1 })}
-                            </span>
-                          )}
-                        </div>
-                        {n.cesta && (
-                          <p className="break-all font-mono text-[11px] text-muted-foreground">
-                            {n.cesta}
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </>
-          )}
+          <NalezyKontrolyEfaktury
+            key={kolo}
+            nalezy={vysledok.nalezy}
+            pocetChyb={vysledok.pocetChyb}
+            pocetVarovani={vysledok.pocetVarovani}
+          />
         </section>
       )}
 

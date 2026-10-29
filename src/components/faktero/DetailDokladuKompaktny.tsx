@@ -126,7 +126,7 @@ export function Kopirovat({
   );
 }
 
-function RiadokK({
+export function RiadokK({
   popis,
   hodnota,
   kopirovat,
@@ -158,13 +158,22 @@ export type Strana = {
   icDph?: string | null;
 };
 
-function StranaK({ nadpis, s }: { nadpis: string; s: Strana | null }) {
+/** Jedna strana dokladu — názov, adresa, IČO, DIČ, IČ DPH; `akcia` napr. odkaz „Zmeniť“. */
+export function StranaK({
+  nadpis,
+  s,
+  akcia,
+}: {
+  nadpis: string;
+  s: Strana | null;
+  akcia?: ReactNode;
+}) {
   const { t } = useT();
   const adresa = s
     ? [s.ulica, [s.psc, s.mesto].filter(Boolean).join(" "), s.krajina].filter(Boolean).join(", ")
     : "";
   return (
-    <KartaK nadpis={nadpis}>
+    <KartaK nadpis={nadpis} akcia={akcia}>
       {s ? (
         <div className="space-y-0.5 text-sm">
           <div className="break-words font-medium">{s.nazov || "—"}</div>
@@ -378,11 +387,14 @@ export function SumarK({
   sadzby,
   mena,
   celkom,
+  pod,
 }: {
   rozpis: { sadzba: number; zaklad: number; dph: number; pdp?: boolean }[];
   sadzby: number[];
   mena: string;
   celkom: number;
+  /** Riadky pod celkovou sumou (zľava, záloha, suma na úhradu). */
+  pod?: ReactNode;
 }) {
   const { t } = useT();
   const s = sumarPoSadzbach(rozpis, sadzby);
@@ -421,6 +433,7 @@ export function SumarK({
         <span className="text-sm font-medium">{t("Celková suma")}</span>
         <span className="text-lg font-semibold tabular-nums">{formatujMenu(celkom, mena)}</span>
       </div>
+      {pod ? <div className="mt-2 space-y-1 border-t border-border pt-2 text-sm">{pod}</div> : null}
     </KartaK>
   );
 }

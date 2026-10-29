@@ -12,6 +12,7 @@
  * module is a future step.
  */
 import type { EfakturaChannel, EfakturaDocFormat, EfakturaReceivedStatus } from "./types";
+import { skontrolujNaUlozenie, type StlpceKontroly } from "./kontrola/ulozenie";
 
 export type IncomingDocumentInput = {
   companyId: string;
@@ -157,13 +158,20 @@ export type PersistIncoming = (row: {
   sender_scheme?: string;
   received_at: string;
   parse_errors: ParsedEfaktura["errors"];
-}) => Promise<{ id: string }>;
+} & Partial<StlpceKontroly>) => Promise<{ id: string }>;
 
 export async function ingestIncoming(input: IncomingDocumentInput, persist: PersistIncoming) {
   const parsed = parseEfakturaEnvelope(input.xml);
   const status = statusFromParse(parsed);
   const receivedAt = input.receivedAt ?? new Date().toISOString();
+  /*
+    Automatická kontrola EN 16931 / Peppol BIS. Príjem nezastaví — chybná
+    eFaktúra sa uloží tiež, len s nálezmi; keď spadne samotná kontrola,
+    stĺpce ostanú prázdne a chyba ide len do logu.
+  */
+  const kontrola = skontrolujNaUlozenie(input.xml);
   const result = await persist({
+    ...(kontrola ?? {}),
     company_id: input.companyId,
     channel: input.channel,
     format: input.format ?? parsed.format,
@@ -183,5 +191,5 @@ export async function ingestIncoming(input: IncomingDocumentInput, persist: Pers
     received_at: receivedAt,
     parse_errors: parsed.errors,
   });
-  return { id: result.id, parsed, status };
+  return { id: result.id, parsed, status, kontrola };
 }
