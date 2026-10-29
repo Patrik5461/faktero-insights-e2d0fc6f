@@ -61,8 +61,8 @@ export default {
   "<0>Platby kartou pre vašich zákazníkov Faktero neponúka.</0> Aby firma mohla prijímať karty pod vlastným účtom, potrebuje poskytovateľ platobnej brány zmluvu, ktorá to na spoločnej doméne umožňuje — kým ju nemáme, funkciu nesľubujeme. Netýka sa to platenia <1>predplatného za Faktero</1>, to cez bránu funguje bežne.":
     "<0>Platby kartou pro vaše zákazníky Faktero nenabízí.</0> Aby firma mohla přijímat karty pod vlastním účtem, potřebuje poskytovatel platební brány smlouvu, která to na společné doméně umožňuje — dokud ji nemáme, funkci neslibujeme. Netýká se to placení <1>předplatného za Faktero</1>, to přes bránu funguje běžně.",
   "Zálohové faktúry (proforma)": "Zálohové faktury (proforma)",
-  "Zálohová faktúra je <0>výzva na zaplatenie preddavku</0>, nie daňový doklad. Vystavíte ju v <1>Zálohové faktúry → Nová zálohová faktúra</1>.":
-    "Zálohová faktura je <0>výzva k zaplacení zálohy</0>, ne daňový doklad. Vystavíte ji v <1>Zálohové faktury → Nová zálohová faktura</1>.",
+  "Zálohová faktúra je <0>výzva na zaplatenie preddavku</0>, nie daňový doklad. Vystavíte ju v <1>Vydané zálohové faktúry → Nová zálohová faktúra</1>.":
+    "Zálohová faktura je <0>výzva k zaplacení zálohy</0>, ne daňový doklad. Vystavíte ji v <1>Vydané zálohové faktury → Nová zálohová faktura</1>.",
   "Má <0>vlastnú číselnú radu</0> (<1>ZF…</1>), aby v rade riadnych faktúr nevznikali diery. Do <2>obratu ani do DPH</2> sa nepočíta — plnenie nastáva až riadnou faktúrou.":
     "Má <0>vlastní číselnou řadu</0> (<1>ZF…</1>), aby v řadě řádných faktur nevznikaly díry. Do <2>obratu ani do DPH</2> se nepočítá — plnění nastává až řádnou fakturou.",
   "Keď zákazník zálohu zaplatí, vystavíte <0>riadnu faktúru</0> a v nej zálohu odpočítate: v novej faktúre je na to voľba <1>Pridať zálohovú faktúru</1>. Zaplatená časť sa odráta, takže zákazník doplatí len rozdiel a tá istá suma nie je vo výnosoch dvakrát. V zozname zálohových faktúr potom vidno, ktoré sú už zúčtované.":

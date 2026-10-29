@@ -25,7 +25,7 @@ export type DruhRadu = (typeof DRUHY_RADOV)[number];
 
 export const NAZVY_DRUHOV: Record<DruhRadu, string> = {
   invoice: "Faktúry",
-  proforma: "Zálohové faktúry",
+  proforma: "Vydané zálohové faktúry",
   credit_note: "Dobropisy",
   debit_note: "Ťarchopisy",
   advance_payment: "Doklady k prijatej platbe",

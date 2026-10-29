@@ -18,7 +18,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/zalohove/")({
-  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zálohové faktúry — Faktero") }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vydané zálohové faktúry — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: ProformaListPage,
 });
@@ -120,7 +120,7 @@ function ProformaListPage() {
   return (
     <>
       <PageHeader
-        title={t("Zálohové faktúry")}
+        title={t("Vydané zálohové faktúry")}
         description={t("Proforma / zálohové faktúry. Po prijatí platby ich zúčtujete vo finálnej faktúre.")}
         action={
           <div className="flex flex-wrap gap-2">

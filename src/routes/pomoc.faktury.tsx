@@ -262,7 +262,7 @@ const sections: HelpSection[] = [
       <>
         <p>
           Zálohová faktúra je <strong>výzva na zaplatenie preddavku</strong>, nie daňový doklad.
-          Vystavíte ju v <Link to="/zalohove">Zálohové faktúry → Nová zálohová faktúra</Link>.
+          Vystavíte ju v <Link to="/zalohove">Vydané zálohové faktúry → Nová zálohová faktúra</Link>.
         </p>
         <p>
           Má <strong>vlastnú číselnú radu</strong> (<code>ZF…</code>), aby v rade riadnych faktúr

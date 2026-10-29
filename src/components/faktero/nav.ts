@@ -82,7 +82,7 @@ export const NAV: NavGroup[] = [
       */
       { to: "/faktury", search: { type: "vydane" }, label: "Vydané faktúry" },
       { to: "/faktury", search: { type: "danove" }, label: "Daňové doklady" },
-      { to: "/zalohove", label: "Zálohové faktúry" },
+      { to: "/zalohove", label: "Vydané zálohové faktúry" },
       { to: "/prijate-faktury", label: "Prijaté faktúry" },
       { to: "/prijate-zalohove", label: "Prijaté zálohové faktúry" },
       { to: "/ponuky", label: "Cenové ponuky" },
