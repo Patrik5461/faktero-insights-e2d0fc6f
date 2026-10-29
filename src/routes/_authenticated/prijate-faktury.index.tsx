@@ -56,7 +56,7 @@ import { polozkaPrijatej } from "@/lib/faktero/suhrn-vyberu";
 import { ZAPLATENE_NA_MIESTE } from "@/lib/faktero/hromadny-prikaz";
 import { NavrhyAiOkno } from "@/components/faktero/NavrhyAiOkno";
 import { jeCiastocneUhradena, sumyUhradPodlaFaktury } from "@/lib/faktero/uhrady-prijatej";
-import { riadkyPreIds } from "@/lib/faktero/strankovanie";
+import { riadkyPreIds, vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
@@ -601,25 +601,39 @@ function PurchaseInvoicesPage() {
     }
     const cislo = ++poslednyDotaz.current;
     setLoading(true);
-    let q = supabase
-      .from("purchase_invoices")
-      .select("*")
-      .eq("company_id", cid)
-      // Prijaté zálohy majú vlastný zoznam — tu by len nafukovali sumy.
-      .eq("type", "regular")
-      .is("deleted_at", null)
-      .order("issue_date", { ascending: false })
-      .limit(500);
-    if (status === CIASTOCNE) q = q.not("status", "in", "(paid,cancelled,draft)");
-    else if (status) q = q.eq("status", status);
-    if (obdobieOd || obdobieDo) q = filtrujObdobie(q, podla, obdobieOd || null, obdobieDo || null);
-    if (exportovane === "ano") q = q.not("exported_at", "is", null);
-    if (exportovane === "nie") q = q.is("exported_at", null).neq("status", "cancelled");
-    if (supplier.trim()) q = q.ilike("supplier_name", `%${supplier.trim()}%`);
-    if (stavFiltra === "_bez") q = q.is("stav_id", null);
-    else if (stavFiltra) q = q.eq("stav_id", stavFiltra);
-    if (stitokFiltra) q = q.contains("stitky", [stitokFiltra]);
-    const { data: nacitane, error } = await q;
+    /*
+      Celý zoznam po stránkach — strop 500 skrýval staršie faktúry aj zo súčtov
+      (PALIERA ich má cez 1 100). Kreslí sa po dávkach (usePostupneZobrazenie).
+    */
+    const dotaz = (od: number, po: number) => {
+      let q = supabase
+        .from("purchase_invoices")
+        .select("*")
+        .eq("company_id", cid)
+        // Prijaté zálohy majú vlastný zoznam — tu by len nafukovali sumy.
+        .eq("type", "regular")
+        .is("deleted_at", null)
+        .order("issue_date", { ascending: false })
+        .order("id")
+        .range(od, po);
+      if (status === CIASTOCNE) q = q.not("status", "in", "(paid,cancelled,draft)");
+      else if (status) q = q.eq("status", status);
+      if (obdobieOd || obdobieDo) q = filtrujObdobie(q, podla, obdobieOd || null, obdobieDo || null);
+      if (exportovane === "ano") q = q.not("exported_at", "is", null);
+      if (exportovane === "nie") q = q.is("exported_at", null).neq("status", "cancelled");
+      if (supplier.trim()) q = q.ilike("supplier_name", `%${supplier.trim()}%`);
+      if (stavFiltra === "_bez") q = q.is("stav_id", null);
+      else if (stavFiltra) q = q.eq("stav_id", stavFiltra);
+      if (stitokFiltra) q = q.contains("stitky", [stitokFiltra]);
+      return q;
+    };
+    let nacitane: any[] | null = null;
+    let error: { message: string } | null = null;
+    try {
+      nacitane = await vsetkyRiadky<any>(dotaz);
+    } catch (e: any) {
+      error = { message: e?.message ?? String(e) };
+    }
     if (cislo !== poslednyDotaz.current) return;
     if (error) toast.error(error.message);
     // Zoznam sa ukáže hneď; úhrady po častiach (odznak „čiastočne uhradená“)
@@ -658,11 +672,17 @@ function PurchaseInvoicesPage() {
     setRows(data ?? []);
     setLoading(false);
 
-    const ids = (data ?? []).map((r: any) => r.id).slice(0, 300);
+    // Väzba na banku po 300 (strop serverovej funkcie), dávky súčasne.
+    const ids = (data ?? []).map((r: any) => r.id);
     if (ids.length) {
       try {
-        const u: any = await uhradyFn({ data: { company_id: cid, ids } });
-        setUhrady(u?.uhrady ?? {});
+        const kusy: string[][] = [];
+        for (let i = 0; i < ids.length; i += 300) kusy.push(ids.slice(i, i + 300));
+        const vysledky: any[] = await Promise.all(
+          kusy.map((kus) => uhradyFn({ data: { company_id: cid, ids: kus } })),
+        );
+        if (cislo !== poslednyDotaz.current) return;
+        setUhrady(Object.assign({}, ...vysledky.map((u) => u?.uhrady ?? {})));
       } catch {
         setUhrady({});
       }
@@ -1030,12 +1050,6 @@ function PurchaseInvoicesPage() {
           </div>
         )}
 
-        {/* Zoznam berie najviac 500 faktúr — bez tejto vety by staršie ticho chýbali aj v súčtoch. */}
-        {!loading && rows.length >= 500 && (
-          <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-            {t("Zobrazuje sa 500 najnovších prijatých faktúr. Staršie nájdete výberom mesiaca alebo hľadaním.")}
-          </p>
-        )}
         <div className="mt-4">
         <SNahladom
           zapnuty={bocny.zapnuty}
