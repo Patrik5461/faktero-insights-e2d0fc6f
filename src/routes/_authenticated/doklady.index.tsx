@@ -60,6 +60,7 @@ import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
+import { usePostupneZobrazenie } from "@/hooks/usePostupneZobrazenie";
 import { spracovanieDokladu, menoSpracovatela } from "@/lib/faktero/spracoval";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
@@ -214,6 +215,22 @@ function DokladyPage() {
   // Číselník predkontácií sa načíta raz (len keď je stĺpec zapnutý), stavy a uzávierka vždy.
   const cis = useCiselnikyDokladov(getActiveCompanyId(), "doklad", je("predkontacia"));
   const stavPodlaId = useMemo(() => new Map(cis.stavy.map((s) => [s.id, s])), [cis.stavy]);
+  /* Predkontácie pre výber v riadku — líšia sa len podľa spôsobu platby, tak
+     nech sa celý číselník nezoraďuje pre každý riadok pri každom prekreslení. */
+  const moznostiPredkontacie = useMemo(() => {
+    const pamat = new Map<string, ReturnType<typeof moznostiKodov>>();
+    return (platba: string | null) => {
+      const k = String(platba);
+      let m = pamat.get(k);
+      if (!m) {
+        m = moznostiKodov(
+          zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], { typ: "blocek", platba }),
+        );
+        pamat.set(k, m);
+      }
+      return m;
+    };
+  }, [cis.navrhy]);
   const program = useExportDoProgramu();
   const rad = useRadenie(rows, {
     datum: (r: any) => r.issue_date,
@@ -249,6 +266,11 @@ function DokladyPage() {
       : /^\d{4}-\d{2}$/.test(mesiacFiltra)
         ? mesiacFiltra
         : (mesiacZAdresy ?? new Date().toISOString().slice(0, 7));
+  // Stovky bločkov naraz zablokovali prehliadač — kreslí sa po dávkach.
+  const postupne = usePostupneZobrazenie(rad.zoradene, {
+    reset: [zalozka, month],
+    potrebneId: posledny.id,
+  });
   /** Zmena mesiaca — `?mesiac=` z odkazu sa pri tom zahodí, nech v adrese nie sú dva. */
   function setMonth(m: string) {
     navigate({
@@ -1028,7 +1050,7 @@ function DokladyPage() {
                 </tr>
               </thead>
               <tbody>
-                {rad.zoradene.map((r) => (
+                {postupne.viditelne.map((r) => (
                   <tr
                     key={r.id}
                     {...posledny.riadok(r.id)}
@@ -1104,12 +1126,7 @@ function DokladyPage() {
                             <VyberVRiadku
                               ariaLabel={t("Účtovná položka dokladu {cislo}", { cislo: r.document_number ?? "" })}
                               hodnota={r.pohoda_predkontacia}
-                              moznosti={moznostiKodov(
-                                zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], {
-                                  typ: "blocek",
-                                  platba: r.payment_method,
-                                }),
-                              )}
+                              moznosti={moznostiPredkontacie(r.payment_method)}
                               zamok={z ? t(NAZOV_ZAMKU[z]) : null}
                               onVyber={(v) => zmenPredkontaciuRiadku(r.id, v)}
                             />
@@ -1317,6 +1334,7 @@ function DokladyPage() {
                     </td>
                   </tr>
                 ))}
+                {postupne.zarazkaRiadok(100)}
               </tbody>
             </table>
             </>

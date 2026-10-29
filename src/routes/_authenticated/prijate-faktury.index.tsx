@@ -11,6 +11,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrijemMailom } from "@/components/faktero/PrijemMailom";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
+import { usePostupneZobrazenie } from "@/hooks/usePostupneZobrazenie";
 import { useRadenie } from "@/hooks/useRadenie";
 import { stiahniExcel, tabulka } from "@/lib/faktero/excel-zoznamu";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
@@ -186,6 +187,23 @@ function PurchaseInvoicesPage() {
   // Číselník predkontácií raz (keď je stĺpec zapnutý), stavy, štítky a uzávierka vždy.
   const cis = useCiselnikyDokladov(getActiveCompanyId(), "prijata", je("predkontacia"));
   const stavPodlaId = useMemo(() => new Map(cis.stavy.map((s) => [s.id, s])), [cis.stavy]);
+  /* Zoznam predkontácií pre výber v riadku — zoradenie celého číselníka pre
+     každý z päťsto riadkov pri každom prekreslení bolo zbytočné, líši sa len
+     podľa spôsobu platby. */
+  const moznostiPredkontacie = useMemo(() => {
+    const pamat = new Map<string, ReturnType<typeof moznostiKodov>>();
+    return (platba: ReturnType<typeof platbaPreZoradenie>) => {
+      const k = String(platba);
+      let m = pamat.get(k);
+      if (!m) {
+        m = moznostiKodov(
+          zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], { typ: "faktura", platba }),
+        );
+        pamat.set(k, m);
+      }
+      return m;
+    };
+  }, [cis.navrhy]);
   const pocetStlpcov = zobrazenie.viditelne.length + 1;
   const rad = useRadenie(rows, {
     cislo: (r: any) => r.invoice_number,
@@ -200,6 +218,11 @@ function PurchaseInvoicesPage() {
     suma: (r: any) => Number(r.amount_total ?? 0),
     predkontacia: (r: any) => r.pohoda_predkontacia,
     stav: (r: any) => r.status,
+  });
+  // Stovky riadkov naraz zablokovali prehliadač — kreslí sa po dávkach.
+  const postupne = usePostupneZobrazenie(rad.zoradene, {
+    reset: [status, obdobieOd, obdobieDo, supplier, podla, exportovane, stavFiltra, stitokFiltra],
+    potrebneId: posledny.id,
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // Náhľad vedľa zoznamu — pri účtovaní netreba otvárať každú faktúru zvlášť.
@@ -1055,7 +1078,7 @@ function PurchaseInvoicesPage() {
                   </td>
                 </tr>
               )}
-              {rad.zoradene.map((r) => (
+              {postupne.viditelne.map((r) => (
                 /*
                   Otvárať detail vedeli len dve bunky z deviatich a robili to
                   cez `window.location`, teda celým znovunačítaním stránky.
@@ -1175,12 +1198,7 @@ function PurchaseInvoicesPage() {
                           <VyberVRiadku
                             ariaLabel={t("Predkontácia faktúry {cislo}", { cislo: r.invoice_number })}
                             hodnota={r.pohoda_predkontacia}
-                            moznosti={moznostiKodov(
-                              zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], {
-                                typ: "faktura",
-                                platba: platbaPreZoradenie(r.payment_method),
-                              }),
-                            )}
+                            moznosti={moznostiPredkontacie(platbaPreZoradenie(r.payment_method))}
                             zamok={z ? t(NAZOV_ZAMKU[z]) : null}
                             prazdne={t("Nedefinované")}
                             onVyber={(v) => zmenPredkontaciuRiadku(r.id, v)}
@@ -1292,6 +1310,7 @@ function PurchaseInvoicesPage() {
                   )}
                 </tr>
               ))}
+              {postupne.zarazkaRiadok(pocetStlpcov)}
             </tbody>
           </table>
           {rows.length > 0 ? (
