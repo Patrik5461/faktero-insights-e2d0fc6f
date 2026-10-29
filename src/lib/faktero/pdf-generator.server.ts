@@ -722,7 +722,7 @@ async function vykresliFakturu(
 
   // Estimate totals block height
   const totalsRows = (rozpisDph.length ? 1 : 2) + (discount > 0 ? 2 : 0);
-  const rozpisH = rozpisDph.length ? 13 + rozpisDph.length * 13 + 8 : 0;
+  const rozpisH = rozpisDph.length ? 11 + rozpisDph.length * 11.5 + 2 : 0;
   const totalsH = totalsRows * 18 + rozpisH + 8 + 60;
   ensureSpace(totalsH);
 
@@ -788,34 +788,34 @@ async function vykresliFakturu(
     drawAligned(cur, font, san(t.zakladDane), stlpecZaklad, ty, 8, sub, "right");
     drawAligned(cur, font, san(t.dph), stlpecDph, ty, 8, sub, "right");
     drawAligned(cur, font, san(t.spolu), pravy, ty, 8, sub, "right");
-    ty -= 13;
+    ty -= 11;
     for (const r of rozpisDph) {
       const nazov = r.pdp ? t.pdp : `${String(r.sadzba).replace(".", ",")}\u00A0%`;
       const prazdny = !r.zaklad && !r.dph;
       const farba = prazdny ? sub : ink;
       cur.drawText(san(nazov), { x: totalsX, y: ty, size: 9, font, color: sub });
-      drawAligned(cur, font, san(fmt(r.zaklad, invoice.currency)), stlpecZaklad, ty, 9, farba, "right");
+      drawAligned(cur, font, san(fmt(r.zaklad, invoice.currency)), stlpecZaklad, ty, 8.5, farba, "right");
       drawAligned(
         cur,
         font,
         san(r.pdp ? "—" : fmt(r.dph, invoice.currency)),
         stlpecDph,
         ty,
-        9,
+        8.5,
         farba,
         "right",
       );
-      drawAligned(cur, font, san(fmt(r.zaklad + (r.pdp ? 0 : r.dph), invoice.currency)), pravy, ty, 9, farba, "right");
-      ty -= 13;
+      drawAligned(cur, font, san(fmt(r.zaklad + (r.pdp ? 0 : r.dph), invoice.currency)), pravy, ty, 8.5, farba, "right");
+      ty -= 11.5;
     }
-    ty -= 4;
+    ty -= 2;
   }
-  // Bez rozpisu suma DPH; s rozpisom je DPH po sadzbách v tabuľke.
-  if (!rcNaDoklade && !rozpisDph.length) {
+  // Celková suma dane patrí na faktúru vždy (§ 74 ods. 1), aj pod rozpis.
+  if (!rcNaDoklade) {
     drawTotalRow(
       cur,
       font,
-      t.dph,
+      rozpisDph.filter((r) => r.dph).length > 1 ? t.dphSpolu : t.dph,
       fmt(Number(invoice.vat_total), invoice.currency),
       totalsX,
       ty,
