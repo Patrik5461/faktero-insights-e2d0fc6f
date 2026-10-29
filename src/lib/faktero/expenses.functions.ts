@@ -514,18 +514,29 @@ export const listExpensesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { company_id: string; month?: string | null; status?: string | null }) => data)
   .handler(async ({ data, context }) => {
-    let q = context.supabase
-      .from("expense_documents")
-      .select("*")
-      .eq("company_id", data.company_id)
-      .order("issue_date", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (data.status && data.status !== "all") q = q.eq("status", data.status);
-    if (data.month) q = vMesiaci(q, data.month);
-    const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
-    return rows ?? [];
+    /*
+      Bločky sa otvárajú na všetkých mesiacoch (P-1005), takže strop 500 by
+      väčšej firme (PALIERA ich má cez 2 000) ukázal len najnovšie a aj súčty
+      by boli len z nich. Načíta sa všetko po stránkach; kreslí sa po dávkach.
+    */
+    const rows: any[] = [];
+    for (let od = 0; ; od += 1000) {
+      let q = context.supabase
+        .from("expense_documents")
+        .select("*")
+        .eq("company_id", data.company_id)
+        .order("issue_date", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(od, od + 999);
+      if (data.status && data.status !== "all") q = q.eq("status", data.status);
+      if (data.month) q = vMesiaci(q, data.month);
+      const { data: stranka, error } = await q;
+      if (error) throw new Error(error.message);
+      rows.push(...(stranka ?? []));
+      if ((stranka ?? []).length < 1000) break;
+    }
+    return rows;
   });
 
 /**
