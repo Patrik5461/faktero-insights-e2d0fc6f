@@ -7,7 +7,7 @@
 // Vyrobí klientský build (`vite.config.mobile.ts` → `dist-mobile`) a prekopíruje
 // ho do natívnych projektov cez `cap sync`.
 import { spawnSync } from "node:child_process";
-import { renameSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { rmSync, renameSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 
 function spusti(prikaz, args) {
   const r = spawnSync(prikaz, args, { stdio: "inherit" });
@@ -16,6 +16,9 @@ function spusti(prikaz, args) {
 
 spusti("npx", ["vite", "build", "--config", "vite.config.mobile.ts"]);
 // Vite pomenuje výstup podľa vstupného súboru; Capacitor chce index.html.
+// PDF manuály a dokumentácia API z `public/docs` sú pre web — v appke by
+// pridali 8 MB a nikto by ich tam neotvoril (pomoc v appke ide na web).
+rmSync("dist-mobile/docs", { recursive: true, force: true });
 if (existsSync("dist-mobile/index.mobile.html")) {
   renameSync("dist-mobile/index.mobile.html", "dist-mobile/index.html");
 }

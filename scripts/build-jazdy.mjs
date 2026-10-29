@@ -9,7 +9,7 @@
 // spustiť človek tam. Obe strany si appku vyberajú premennou `CAPACITOR_APP`,
 // lebo Capacitor číta vždy len `capacitor.config.ts`.
 import { spawnSync } from "node:child_process";
-import { renameSync, existsSync } from "node:fs";
+import { rmSync, renameSync, existsSync } from "node:fs";
 
 function spusti(prikaz, args) {
   const r = spawnSync(prikaz, args, {
@@ -21,6 +21,9 @@ function spusti(prikaz, args) {
 
 spusti("npx", ["vite", "build", "--config", "vite.config.jazdy.ts"]);
 // Vite pomenuje výstup podľa vstupného súboru; Capacitor chce index.html.
+// PDF manuály a dokumentácia API z `public/docs` sú pre web — v appke by
+// pridali 8 MB a nikto by ich tam neotvoril (pomoc v appke ide na web).
+rmSync("dist-jazdy/docs", { recursive: true, force: true });
 if (existsSync("dist-jazdy/index.jazdy.html")) {
   renameSync("dist-jazdy/index.jazdy.html", "dist-jazdy/index.html");
 }
