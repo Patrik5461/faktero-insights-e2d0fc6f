@@ -81,8 +81,7 @@ export const Route = createFileRoute("/_authenticated/doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doklady — Faktero") }] }),
   /*
    * `mesiac` v adrese otvorí zoznam rovno na mesiaci dokladu. Bez neho sa
-   * zoznam otvára na tomto mesiaci a doklad vystavený v minulom mesiaci sa hneď
-   * po uložení stratí z dohľadu — vyzerá to, že sa neuložil.
+   * zoznam otvára na všetkých mesiacoch — obdobie sa navolí filtrom.
    */
   /*
    * `stav` vyberá záložku. Bez neho sa zoznam otvára na spracovaných —
@@ -131,16 +130,6 @@ const STLPCE_DOKLADOV: StlpecZoznamu[] = [
   { kluc: "spracoval", nazov: "Spracoval" },
   { kluc: "uhrada", nazov: "Úhrada z účtu" },
 ];
-
-/** „2026-08" → „august 2026" — do vety, nie do tabuľky. */
-function nazovMesiaca(m: string, jazyk: string = "sk"): string {
-  const [r, me] = m.split("-").map(Number);
-  if (!r || !me) return m;
-  return new Date(r, me - 1, 1).toLocaleDateString(lokalJazyka(jazyk), {
-    month: "long",
-    year: "numeric",
-  });
-}
 
 const STATUS_LABEL: Record<string, string> = STAV_DOKLADU_NAZOV;
 const ZDROJ_DOKLADU: Record<string, string> = {
@@ -260,14 +249,15 @@ function DokladyPage() {
   /** Nespracované sa ukazujú zo všetkých mesiacov — nič nesmie ostať schované. */
   const bezMesiaca = zalozka === "nespracovane";
   // Mesiac zvolený v zozname (`f.mesiac`) má prednosť pred `?mesiac=` z odkazu;
-  // bez oboch sa zoznam otvára na tomto mesiaci. „vsetky“ = všetky mesiace.
+  // bez oboch sa zoznam otvára na všetkých mesiacoch — obdobie si používateľ
+  // navolí filtrom. „vsetky“ = všetky mesiace.
   const mesiacFiltra = lf.filter("mesiac");
   const month =
     mesiacFiltra === "vsetky"
       ? ""
       : /^\d{4}-\d{2}$/.test(mesiacFiltra)
         ? mesiacFiltra
-        : (mesiacZAdresy ?? new Date().toISOString().slice(0, 7));
+        : (mesiacZAdresy ?? "");
   // Stovky bločkov naraz zablokovali prehliadač — kreslí sa po dávkach.
   const postupne = usePostupneZobrazenie(rad.zoradene, {
     reset: [zalozka, month],
@@ -939,35 +929,6 @@ function DokladyPage() {
             />
           ) : null}
         </div>
-
-        {month && !bezMesiaca && mimo.pocet > 0 && (
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
-            <span>
-              {rows.length === 0
-                ? t("V tomto mesiaci nie je žiadny doklad.")
-                : mimo.pocet === 1
-                  ? t("Mimo tohto mesiaca je ešte 1 doklad.")
-                  : t("Mimo tohto mesiaca je ešte {n} dokladov.", { n: mimo.pocet })}{" "}
-              {t("Doklady sa radia podľa dátumu vystavenia, nie podľa dňa nahratia.")}
-            </span>
-            {mimo.mesiac && (
-              <button
-                type="button"
-                onClick={() => setMonth(mimo.mesiac!)}
-                className="rounded-md border border-border bg-card px-2 py-1 text-xs font-medium hover:bg-secondary"
-              >
-                {t("Zobraziť {mesiac}", { mesiac: nazovMesiaca(mimo.mesiac, jazyk) })}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setMonth("")}
-              className="rounded-md border border-border bg-card px-2 py-1 text-xs hover:bg-secondary"
-            >
-              {t("Zobraziť všetky")}
-            </button>
-          </div>
-        )}
 
         <p className="mb-4 text-xs text-muted-foreground">
           {t("V balíku je")} <strong>{t("pohoda.xml")}</strong>{" "}
