@@ -992,6 +992,19 @@ function PurchaseInvoicesPage() {
                     {z.dovody.map((x: string) => t(x)).join(" · ")}
                   </span>
                 </span>
+                {/* Pred potvrdením si treba faktúru pozrieť — v bočnom náhľade, ak je zapnutý, inak v novej karte, aby zoznam návrhov ostal. */}
+                {z.purchaseInvoiceId && (
+                  <button
+                    onClick={() => {
+                      const id = z.purchaseInvoiceId as string;
+                      if (bocny.aktivny() && rows.some((x: any) => x.id === id)) bocny.setVybrany(id);
+                      else window.open(`/prijate-faktury/${id}`, "_blank", "noopener");
+                    }}
+                    className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {t("Náhľad faktúry")}
+                  </button>
+                )}
                 <button
                   disabled={parujem === z.transactionId}
                   onClick={() => sparuj(z)}
