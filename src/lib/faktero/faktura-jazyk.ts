@@ -188,7 +188,7 @@ const SK: Popisky = {
   poznamky: "POZNÁMKY",
   fakturaOnline: "FAKTÚRA ONLINE",
   naskenujteKod: "Naskenujte kód a faktúra sa otvorí v prehliadači.",
-  vystaveneCez: "Vystavené cez Faktero — faktero.app",
+  vystaveneCez: "Vystavené cez Faktero — faktero.sk",
   prenosEu:
     "Intrakomunitárne dodanie tovaru/služby oslobodené od DPH podľa §43 zákona č. 222/2004 Z. z. Daň je povinný priznať odberateľ.",
   prenosVyvoz:
@@ -199,6 +199,7 @@ const SK: Popisky = {
 
 const CS: Popisky = {
   ...SK,
+  vystaveneCez: "Vystaveno ve Faktero — faktero.sk",
   dphPdp: "DPH (PDP)",
   polozkyPdp: "Položky označené PDP:",
   uhradeneDna: "Uhrazeno",
@@ -311,7 +312,7 @@ const EN: Popisky = {
   poznamky: "NOTES",
   fakturaOnline: "INVOICE ONLINE",
   naskenujteKod: "Scan the code to open the invoice in your browser.",
-  vystaveneCez: "Issued with Faktero — faktero.app",
+  vystaveneCez: "Issued with Faktero — faktero.sk",
   prenosEu:
     "Intra-Community supply of goods/services exempt from VAT under §43 of Slovak Act No. 222/2004 Coll. VAT is payable by the customer.",
   prenosVyvoz:
@@ -378,7 +379,7 @@ const DE: Popisky = {
   poznamky: "ANMERKUNGEN",
   fakturaOnline: "RECHNUNG ONLINE",
   naskenujteKod: "Scannen Sie den Code, die Rechnung öffnet sich im Browser.",
-  vystaveneCez: "Erstellt mit Faktero — faktero.app",
+  vystaveneCez: "Erstellt mit Faktero — faktero.sk",
   prenosEu:
     "Innergemeinschaftliche Lieferung/Leistung, steuerfrei nach §43 des slowakischen Gesetzes Nr. 222/2004 Slg. Die Steuer schuldet der Leistungsempfänger.",
   prenosVyvoz:
@@ -389,6 +390,7 @@ const DE: Popisky = {
 
 const HU: Popisky = {
   ...EN,
+  vystaveneCez: "Kiállítva a Faktero rendszerrel — faktero.sk",
   mj: "M.E.",
   pdp: "FAD",
   dphPdp: "ÁFA (fordított adózás)",
