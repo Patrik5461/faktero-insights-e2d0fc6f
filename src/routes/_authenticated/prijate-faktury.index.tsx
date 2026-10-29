@@ -187,6 +187,11 @@ function PurchaseInvoicesPage() {
   // Číselník predkontácií raz (keď je stĺpec zapnutý), stavy, štítky a uzávierka vždy.
   const cis = useCiselnikyDokladov(getActiveCompanyId(), "prijata", je("predkontacia"));
   const stavPodlaId = useMemo(() => new Map(cis.stavy.map((s) => [s.id, s])), [cis.stavy]);
+  /* Prázdne stĺpce zaberali šírku a stĺpec Stav na konci tabuľky sa už
+     nezmestil — „Stav dokladu“ len keď má firma stavy, „Spracoval“ len keď
+     ho má aspoň jedna faktúra v zozname. */
+  const stlpecStavDokladu = je("stavDokladu") && cis.stavy.length > 0;
+  const stlpecSpracoval = je("spracoval") && rows.some((r: any) => spracovanieDokladu(r, "prijata"));
   /* Zoznam predkontácií pre výber v riadku — zoradenie celého číselníka pre
      každý z päťsto riadkov pri každom prekreslení bolo zbytočné, líši sa len
      podľa spôsobu platby. */
@@ -1071,9 +1076,9 @@ function PurchaseInvoicesPage() {
                 {je("dph") && <th className="p-3 text-right">{rad.hlavicka("dph", t("DPH"))}</th>}
                 {je("suma") && <th className="p-3 text-right">{rad.hlavicka("suma", t("Suma"))}</th>}
                 {je("predkontacia") && <th className="p-3">{rad.hlavicka("predkontacia", t("Účtovná položka"))}</th>}
-                {je("stavDokladu") && <th className="p-3">{t("Stav dokladu")}</th>}
+                {stlpecStavDokladu && <th className="p-3">{t("Stav dokladu")}</th>}
                 {je("zapisal") && <th className="p-3">{t("Zapísal")}</th>}
-                {je("spracoval") && <th className="hidden p-3 md:table-cell">{t("Spracoval")}</th>}
+                {stlpecSpracoval && <th className="hidden p-3 md:table-cell">{t("Spracoval")}</th>}
                 {je("stav") && <th className="p-3">{rad.hlavicka("stav", t("Stav"))}</th>}
               </tr>
             </thead>
@@ -1227,7 +1232,7 @@ function PurchaseInvoicesPage() {
                       {r.pohoda_clenenie_dph ? <div className="mt-0.5">{r.pohoda_clenenie_dph}</div> : null}
                     </td>
                   )}
-                  {je("stavDokladu") && (
+                  {stlpecStavDokladu && (
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       {cis.stavy.length ? (
                         <VyberStavuDokladu
@@ -1248,7 +1253,7 @@ function PurchaseInvoicesPage() {
                       <Zapisal zdroj={r.source} autor={r.created_by ? mena[r.created_by] : null} />
                     </td>
                   )}
-                  {je("spracoval") && (
+                  {stlpecSpracoval && (
                     <td className="hidden p-3 text-xs md:table-cell">
                       <Spracoval s={spracovanieDokladu(r, "prijata")} mena={mena} loc={lokalJazyka(jazyk)} />
                     </td>
@@ -1286,7 +1291,8 @@ function PurchaseInvoicesPage() {
                           {t("Zaúčtovaná")}
                         </span>
                       ) : null}
-                      {(r.pohoda_predkontacia || r.pohoda_clenenie_dph) && (
+                      {/* Účtovnú položku netreba opakovať, keď má vlastný stĺpec. */}
+                      {!je("predkontacia") && (r.pohoda_predkontacia || r.pohoda_clenenie_dph) && (
                         <span className="mt-0.5 block text-[11px] text-muted-foreground">
                           {[r.pohoda_predkontacia, r.pohoda_clenenie_dph]
                             .filter(Boolean)
