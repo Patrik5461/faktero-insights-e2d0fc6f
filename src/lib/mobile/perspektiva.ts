@@ -65,23 +65,121 @@ export function zobraz(h: Homografia, b: Bod): Bod {
 const dlzka = (a: Bod, b: Bod) => Math.hypot(a.x - b.x, a.y - b.y);
 
 /**
- * Rozmer vyrovnaného dokladu podľa dĺžok jeho strán. Dlhšia z protiľahlých
- * strán vyhráva — kratšia je skrátená perspektívou, nie skutočnosťou.
- * Väčšie než `max` sa to nespraví, menšie áno (nezväčšujeme to, čo kamera
- * nezachytila).
+ * Ohnisková vzdialenosť kamery ako násobok dlhšej strany obrazu, keď sa
+ * nedá zistiť zo štvoruholníka. Hlavná kamera telefónu má zorný uhol okolo
+ * 65–75°, čo dáva 0,7–0,85.
+ */
+export const OHNISKOVA_PREDVOLENA = 0.8;
+/** Rozumný rozsah ohniskovej (širokouhlý … dvojnásobný zoom). */
+const OHNISKOVA_MIN = 0.35;
+const OHNISKOVA_MAX = 4;
+
+type V3 = [number, number, number];
+const krizV = (a: V3, b: V3): V3 => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+const skalar = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+/**
+ * Skutočný pomer šírka / výška dokladu na fotke.
+ *
+ * Priemer protiľahlých strán to len odhadne: keď je telefón naklonený,
+ * obe bočné strany sú skrátené rovnako a dlhý bloček by vyšiel zavalitý.
+ * Presnejšie to dá geometria kamery (Zhang, „Whiteboard scanning", 2002):
+ * z rohov sa spočíta ohnisková vzdialenosť a z nej skutočné dĺžky strán.
+ * Keď sa ohnisková nedá zistiť (len jeden úbežník) alebo vyjde nezmyselne,
+ * použije sa typická ohnisková telefónu. Keď by výsledok od priemeru
+ * strán ušiel priveľmi, ostane priemer — radšej mierne nepresný než
+ * zdeformovaný doklad.
+ *
+ * `sirka` a `vyska` sú rozmery celého obrazu (stred obrazu = os kamery).
+ */
+export function pomerStran(rohy: Rohy, sirka: number, vyska: number): number {
+  const [lh, ph, pd, ld] = rohy;
+  const priemer =
+    (dlzka(lh, ph) + dlzka(ld, pd)) / Math.max(1e-9, dlzka(lh, ld) + dlzka(ph, pd)) || 1;
+  const s = Math.max(sirka, vyska, 1);
+  const m = (b: Bod): V3 => [(b.x - sirka / 2) / s, (b.y - vyska / 2) / s, 1];
+  const m1 = m(lh);
+  const m2 = m(ph);
+  const m3 = m(ld);
+  const m4 = m(pd);
+  const k2 = skalar(krizV(m1, m4), m3) / skalar(krizV(m2, m4), m3);
+  const k3 = skalar(krizV(m1, m4), m2) / skalar(krizV(m3, m4), m2);
+  if (!Number.isFinite(k2) || !Number.isFinite(k3)) return priemer;
+  const n2 = m2.map((v, i) => k2 * v - m1[i]) as V3;
+  const n3 = m3.map((v, i) => k3 * v - m1[i]) as V3;
+  let f2 = OHNISKOVA_PREDVOLENA ** 2;
+  const men = n2[2] * n3[2];
+  if (Math.abs(men) > 1e-6) {
+    const odhad = -(n2[0] * n3[0] + n2[1] * n3[1]) / men;
+    if (odhad >= OHNISKOVA_MIN ** 2 && odhad <= OHNISKOVA_MAX ** 2) f2 = odhad;
+  }
+  const d = (n: V3) => (n[0] * n[0] + n[1] * n[1]) / f2 + n[2] * n[2];
+  const pomer = Math.sqrt(d(n2) / d(n3));
+  if (!Number.isFinite(pomer) || pomer <= 0) return priemer;
+  if (pomer / priemer > 1.8 || priemer / pomer > 1.8) return priemer;
+  return pomer;
+}
+
+/**
+ * Rozmer vyrovnaného dokladu. Dlhšia strana je najdlhšia zo strán
+ * štvoruholníka (kratšie sú skrátené perspektívou, nie skutočnosťou), druhá
+ * sa dopočíta zo skutočného pomeru strán (`pomerStran`). Bez rozmeru
+ * zdroja sa pomer berie z priemeru protiľahlých strán. Väčšie než `max`
+ * sa to nespraví, menšie áno (nezväčšujeme to, čo kamera nezachytila).
  */
 export function rozmerVystupu(
   rohy: Rohy,
   max = MAX_STRANA_VYSTUPU,
+  zdroj?: { sirka: number; vyska: number },
 ): { sirka: number; vyska: number } {
   const [lh, ph, pd, ld] = rohy;
-  const sirka = Math.max(dlzka(lh, ph), dlzka(ld, pd));
-  const vyska = Math.max(dlzka(lh, ld), dlzka(ph, pd));
+  const dlhsia = Math.max(dlzka(lh, ph), dlzka(ld, pd), dlzka(lh, ld), dlzka(ph, pd), 1);
+  const pomer = zdroj
+    ? pomerStran(rohy, zdroj.sirka, zdroj.vyska)
+    : (dlzka(lh, ph) + dlzka(ld, pd)) / Math.max(1e-9, dlzka(lh, ld) + dlzka(ph, pd)) || 1;
+  const sirka = pomer >= 1 ? dlhsia : dlhsia * pomer;
+  const vyska = pomer >= 1 ? dlhsia / pomer : dlhsia;
   const k = Math.min(1, max / Math.max(sirka, vyska, 1));
   return {
     sirka: Math.max(1, Math.round(sirka * k)),
     vyska: Math.max(1, Math.round(vyska * k)),
   };
+}
+
+/**
+ * Rohy zoradené tak, ako ich čaká `vyrovnaj` (ľavý horný, pravý horný,
+ * pravý dolný, ľavý dolný). Keď človek potiahne roh cez iný, štvoruholník
+ * by sa prekrížil a výstup by bol prevrátený nezmysel.
+ */
+export function usporiadajRohy(rohy: Rohy): Rohy {
+  // Neprekrížený štvoruholník ostáva, ako je (aj otočený doklad).
+  let znamienko = 0;
+  let konvexny = true;
+  for (let i = 0; i < 4; i++) {
+    const a = rohy[i];
+    const b = rohy[(i + 1) % 4];
+    const c = rohy[(i + 2) % 4];
+    const z = Math.sign((b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x));
+    if (!z || (znamienko && z !== znamienko)) konvexny = false;
+    znamienko = z || znamienko;
+  }
+  // Kladné znamienko = v smere hodinových ručičiek (y ide nadol), nie zrkadlovo.
+  if (konvexny && znamienko > 0) return rohy;
+  const sx = (rohy[0].x + rohy[1].x + rohy[2].x + rohy[3].x) / 4;
+  const sy = (rohy[0].y + rohy[1].y + rohy[2].y + rohy[3].y) / 4;
+  // Podľa uhla okolo stredu v smere hodinových ručičiek (y ide nadol).
+  const podlaUhla = [...rohy].sort(
+    (a, b) => Math.atan2(a.y - sy, a.x - sx) - Math.atan2(b.y - sy, b.x - sx),
+  );
+  // Začne sa rohom najbližšie k ľavému hornému (najmenší súčet x + y).
+  let start = 0;
+  for (let i = 1; i < 4; i++)
+    if (podlaUhla[i].x + podlaUhla[i].y < podlaUhla[start].x + podlaUhla[start].y) start = i;
+  return [0, 1, 2, 3].map((i) => podlaUhla[(start + i) % 4]) as Rohy;
 }
 
 /**
@@ -154,7 +252,10 @@ export async function vyrovnaj(
     riadkovNaraz?: number;
   } = {},
 ): Promise<Obraz> {
-  const { sirka, vyska } = rozmerVystupu(rohy, moznosti.max);
+  const { sirka, vyska } = rozmerVystupu(rohy, moznosti.max, {
+    sirka: zdroj.width,
+    vyska: zdroj.height,
+  });
   const vystup = moznosti.vytvor
     ? moznosti.vytvor(sirka, vyska)
     : { data: new Uint8ClampedArray(sirka * vyska * 4), width: sirka, height: vyska };

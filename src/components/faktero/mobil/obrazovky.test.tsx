@@ -294,7 +294,14 @@ describe("skener a výber dokladov", () => {
     );
     expect(html).toContain('role="dialog"');
     expect(html.match(/data-roh="/g)).toHaveLength(4);
-    for (const text of ["Upraviť doklad", "Filtre", "Otočiť", "Odfotiť znova", "Uložiť doklad"])
+    for (const text of [
+      "Upraviť doklad",
+      "Filtre",
+      "Celý obraz",
+      "Otočiť",
+      "Odfotiť znova",
+      "Uložiť doklad",
+    ])
       expect(html).toContain(text);
     // Jedna strana — „Pridať stranu" tu nemá čo robiť.
     expect(html).not.toContain("Pridať stranu");

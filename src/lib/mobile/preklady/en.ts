@@ -930,6 +930,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "uprava.upravujem": "Processing…",
   "uprava.roh": "Document corner {n}",
   "uprava.nepodarilo": "The document couldn't be processed, please take the photo again",
+  "uprava.celyObraz": "Full image",
+  "uprava.automaticky": "Auto detect",
   "kamera.nazov": "Photograph document",
   "kamera.zrusit": "Cancel",
   "kamera.viacstranovy": "Multi-page document",

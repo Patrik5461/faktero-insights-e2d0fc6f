@@ -6,6 +6,13 @@ import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { najdiOkraje, STRANA_DETEKCIE, zvacsiRohy } from "@/lib/mobile/okraje-dokladu";
 import type { Rohy } from "@/lib/mobile/perspektiva";
 import {
+  dalsiObrys,
+  PRAZDNY_OBRYS,
+  vyberRohyFotky,
+  type StavObrysu,
+  type Vzorka,
+} from "@/lib/mobile/orez-dokladu";
+import {
   registrujKameruDokladu,
   type VysledokKamery,
   type ZiadostKamery,
@@ -19,8 +26,11 @@ import { UpravaDokladu, type Snimka } from "./UpravaDokladu";
   - `odfotZVidea` vezme snímku priamo z bežiaceho videa v plnom rozlíšení
     prúdu. Žiadna druhá kamera, žiadne čakanie na fotoaparát.
   - `useObrysDokladu` počas mierenia raz za 300 ms nájde na zmenšenom rámci
-    doklad a `ObrysDokladu` ho nakreslí cez video.
-  - `useSnimanie` drží odfotené strany a otvára „Upraviť doklad".
+    doklad a `ObrysDokladu` ho nakreslí cez video. Rohy sa vyhladzujú cez
+    viac rámcov (`orez-dokladu.ts`), aby obrys neposkakoval.
+  - `useSnimanie` drží odfotené strany a otvára „Upraviť doklad". Rohy pre
+    fotku sa hľadajú znova na nej v ostrejšom rozlíšení; živý obrys je len
+    záloha.
   - `KameraDokladuHost` je tá istá kamera na celú obrazovku pre miesta mimo
     skenera (dávka, „Pridať stranu", prefotenie fotky) — otvára ju
     `zachytStrany` cez `kamera-dokladu.ts`.
@@ -38,30 +48,42 @@ export function odfotZVidea(video: HTMLVideoElement | null): HTMLCanvasElement |
   return c;
 }
 
-/** Zmenší zdroj na ~320 px a nájde na ňom doklad; rohy sú v pixeloch zdroja. */
+/** Na akú dlhšiu stranu sa zmenší odfotená snímka pred hľadaním okrajov. */
+export const STRANA_FOTKY = 640;
+
+/**
+ * Zmenší zdroj na `strana` px (živý obraz ~320, fotka 640) a nájde na ňom
+ * doklad; rohy sú v pixeloch zdroja.
+ */
 export function hladajOkraje(
   zdroj: CanvasImageSource,
   sirka: number,
   vyska: number,
   pomocne?: HTMLCanvasElement,
+  strana = STRANA_DETEKCIE,
 ): Rohy | null {
   if (!sirka || !vyska) return null;
-  const k = Math.min(1, STRANA_DETEKCIE / Math.max(sirka, vyska));
+  const k = Math.min(1, strana / Math.max(sirka, vyska));
   const c = pomocne ?? document.createElement("canvas");
   c.width = Math.max(1, Math.round(sirka * k));
   c.height = Math.max(1, Math.round(vyska * k));
   const ctx = c.getContext("2d", { willReadFrequently: true });
   if (!ctx) return null;
+  // Zmenšenie zo 1920 px bez vyhladenia zrní a okraje papiera by trhalo.
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   ctx.drawImage(zdroj, 0, 0, c.width, c.height);
   const rohy = najdiOkraje(ctx.getImageData(0, 0, c.width, c.height));
   return rohy ? zvacsiRohy(rohy, sirka / c.width) : null;
 }
 
-export type Obrys = { rohy: Rohy; sirka: number; vyska: number };
+export type Obrys = Vzorka;
 
 /**
- * Živý obrys dokladu. Jeden prázdny rámec obrys ešte nezhasne — inak by pri
- * každom trasení ruky blikal; zhasne až po dvoch za sebou.
+ * Živý obrys dokladu. Rohy sú medián z posledných rámcov a drobný posun sa
+ * neprejaví — obrys stojí, kým sa ruka len trasie, a pri naozajstnom pohybe
+ * skočí hneď. Jeden prázdny rámec obrys ešte nezhasne, až dva za sebou
+ * (`dalsiObrys` v `orez-dokladu.ts`).
  */
 export function useObrysDokladu(videoRef: RefObject<HTMLVideoElement | null>, aktivne: boolean) {
   const [obrys, setObrys] = useState<Obrys | null>(null);
@@ -71,7 +93,7 @@ export function useObrysDokladu(videoRef: RefObject<HTMLVideoElement | null>, ak
       return;
     }
     const pomocne = document.createElement("canvas");
-    let prazdnych = 0;
+    let stav: StavObrysu = PRAZDNY_OBRYS;
     const id = window.setInterval(() => {
       const v = videoRef.current;
       if (!v || !v.videoWidth || v.readyState < 2) return;
@@ -81,21 +103,10 @@ export function useObrysDokladu(videoRef: RefObject<HTMLVideoElement | null>, ak
       } catch {
         rohy = null;
       }
-      if (rohy) {
-        prazdnych = 0;
-        setObrys((p) => ({
-          sirka: v.videoWidth,
-          vyska: v.videoHeight,
-          // Kúsok k predchádzajúcej polohe — obrys sa hýbe plynulo, netrasie sa.
-          rohy:
-            p && p.sirka === v.videoWidth
-              ? (rohy!.map((b, i) => ({
-                  x: (b.x + p.rohy[i].x) / 2,
-                  y: (b.y + p.rohy[i].y) / 2,
-                })) as Rohy)
-              : rohy!,
-        }));
-      } else if (++prazdnych >= 2) setObrys(null);
+      const pred = stav;
+      stav = dalsiObrys(stav, rohy ? { rohy, sirka: v.videoWidth, vyska: v.videoHeight } : null);
+      // Prázdny rámec, po ktorom obrys ešte svieti, nič neprekresľuje.
+      if (stav.zobrazene !== pred.zobrazene) setObrys(stav.zobrazene);
     }, 300);
     return () => window.clearInterval(id);
   }, [aktivne, videoRef]);
@@ -136,17 +147,25 @@ export function useSnimanie() {
   const [strany, setStrany] = useState<string[]>([]);
   const [snimka, setSnimka] = useState<Snimka | null>(null);
 
-  /** Odfotí z videa a otvorí „Upraviť doklad". `false`, keď video nemá obraz. */
-  function odfot(video: HTMLVideoElement | null): boolean {
+  /**
+   * Odfotí z videa a otvorí „Upraviť doklad". `false`, keď video nemá obraz.
+   *
+   * Doklad sa hľadá znova na fotke — najprv ostrejšie (640 px), potom ako
+   * pri mierení (320 px). Živý obrys `obrys` je záloha, keď fotka nedá nič.
+   * Malý okraj, aby orez neodrezal kraj papiera, pridáva už `najdiOkraje`.
+   * Keď sa nenájde nič, ostane `null` a úprava ukáže celý záber.
+   */
+  function odfot(video: HTMLVideoElement | null, obrys?: Obrys | null): boolean {
     const platno = odfotZVidea(video);
     if (!platno) return false;
-    let rohy: Rohy | null = null;
-    try {
-      rohy = hladajOkraje(platno, platno.width, platno.height);
-    } catch {
-      rohy = null;
-    }
-    setSnimka({ platno, sirka: platno.width, vyska: platno.height, rohy });
+    const { width: w, height: h } = platno;
+    const rohy = vyberRohyFotky(
+      [() => hladajOkraje(platno, w, h, undefined, STRANA_FOTKY), () => hladajOkraje(platno, w, h)],
+      obrys ?? null,
+      w,
+      h,
+    );
+    setSnimka({ platno, sirka: w, vyska: h, rohy });
     return true;
   }
 
@@ -285,7 +304,7 @@ function KameraNaCeluObrazovku({
         <div />
         <div className="flex justify-center">
           <button
-            onClick={() => sn.odfot(videoRef.current)}
+            onClick={() => sn.odfot(videoRef.current, obrys)}
             aria-label={t("sken.odfotit")}
             disabled={!bezi}
             className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white bg-app-zelena-plocha transition active:scale-95 disabled:opacity-50"

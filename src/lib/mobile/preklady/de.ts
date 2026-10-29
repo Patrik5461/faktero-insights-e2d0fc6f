@@ -939,6 +939,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "uprava.upravujem": "Wird bearbeitet…",
   "uprava.roh": "Belegecke {n}",
   "uprava.nepodarilo": "Der Beleg konnte nicht bearbeitet werden, bitte neu aufnehmen",
+  "uprava.celyObraz": "Ganzes Bild",
+  "uprava.automaticky": "Automatisch",
   "kamera.nazov": "Beleg fotografieren",
   "kamera.zrusit": "Abbrechen",
   "kamera.viacstranovy": "Mehrseitiger Beleg",

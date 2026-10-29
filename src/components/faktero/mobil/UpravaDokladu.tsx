@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, RotateCw, SlidersHorizontal } from "lucide-react";
+import { Camera, Maximize2, RotateCw, ScanLine, SlidersHorizontal } from "lucide-react";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import {
@@ -7,11 +7,13 @@ import {
   otocRohy,
   pouziFilter,
   predvoleneRohy,
+  usporiadajRohy,
   vyrovnaj,
   type Bod,
   type Filter,
   type Rohy,
 } from "@/lib/mobile/perspektiva";
+import { rovnakeRohy } from "@/lib/mobile/orez-dokladu";
 
 /** Snímka z kamery: plné rozlíšenie prúdu a rohy, ktoré na nej našla detekcia. */
 export type Snimka = {
@@ -26,14 +28,19 @@ export type Snimka = {
 export const KVALITA_ULOZENIA = 0.82;
 /** Najdlhšia strana náhľadu v „Upraviť doklad" — viac oko na telefóne nevidí. */
 const STRANA_NAHLADU = 1400;
+/** Lupa pri ťahaní rohu: priemer v CSS px a zväčšenie oproti náhľadu. */
+const LUPA = 112;
+const ZVACSENIE_LUPY = 2.5;
 
 /**
  * Upraviť doklad — po odfotení, pred uložením.
  *
  * Rovnaká tmavá obrazovka ako skener: snímka, cez ňu štyri rohy dokladu,
  * ktoré sa dajú potiahnuť prstom (predvyplnené z detekcie okrajov; keď
- * detekcia nič nenašla, celý obraz s malým okrajom). Pod tým filtre,
- * otočenie, „Odfotiť znova" a hlavné „Uložiť doklad".
+ * detekcia nič nenašla, celý záber s rohmi v kútoch). Pri ťahaní ukáže
+ * lupa, kde presne roh leží. „Celý obraz" / „Automaticky" prepína medzi
+ * celým záberom a tým, čo našla detekcia. Pod tým filtre, otočenie,
+ * „Odfotiť znova" a hlavné „Uložiť doklad".
  *
  * Uloženie vyrovná perspektívu (`perspektiva.ts`), použije filter a odovzdá
  * hotový JPEG ďalej. Čo sa s ním stane potom (QR bločku, PDF zo strán,
@@ -65,8 +72,10 @@ export function UpravaDokladu({
   const { t, mnozne } = usePreklad();
   const [platno, setPlatno] = useState(snimka.platno);
   const [rozmer, setRozmer] = useState({ sirka: snimka.sirka, vyska: snimka.vyska });
+  /** Čo našla detekcia (otáča sa so snímkou) — pre „Automaticky". */
+  const [automaticke, setAutomaticke] = useState<Rohy | null>(snimka.rohy ?? null);
   const [rohy, setRohy] = useState<Rohy>(
-    () => snimka.rohy ?? predvoleneRohy(snimka.sirka, snimka.vyska),
+    () => snimka.rohy ?? predvoleneRohy(snimka.sirka, snimka.vyska, 0),
   );
   const [filter, setFilter] = useState<Filter>("povodny");
   const [jas, setJas] = useState(0);
@@ -109,16 +118,87 @@ export function UpravaDokladu({
     ? { width: rozmer.sirka * mierka, height: rozmer.vyska * mierka }
     : { width: "100%", aspectRatio: `${rozmer.sirka} / ${rozmer.vyska}` };
 
-  /* --- Ťahanie rohov --- */
+  /*
+    --- Ťahanie rohov ---
+    Pri chytení sa zapamätá, o koľko je prst vedľa stredu rohu, aby roh
+    neskočil pod prst hneď pri prvom pohybe.
+  */
   const ramikRef = useRef<HTMLDivElement | null>(null);
   const tahany = useRef<number | null>(null);
-  function posun(i: number, e: React.PointerEvent) {
+  const uchop = useRef<Bod>({ x: 0, y: 0 });
+  const [tahanyRoh, setTahanyRoh] = useState<number | null>(null);
+  function bodPodPrstom(e: React.PointerEvent): Bod | null {
     const r = ramikRef.current?.getBoundingClientRect();
-    if (!r || !r.width || !r.height) return;
-    const x = Math.min(Math.max(((e.clientX - r.left) / r.width) * rozmer.sirka, 0), rozmer.sirka);
-    const y = Math.min(Math.max(((e.clientY - r.top) / r.height) * rozmer.vyska, 0), rozmer.vyska);
+    if (!r || !r.width || !r.height) return null;
+    return {
+      x: ((e.clientX - r.left) / r.width) * rozmer.sirka,
+      y: ((e.clientY - r.top) / r.height) * rozmer.vyska,
+    };
+  }
+  function chyt(i: number, e: React.PointerEvent) {
+    const b = bodPodPrstom(e);
+    uchop.current = b ? { x: rohy[i].x - b.x, y: rohy[i].y - b.y } : { x: 0, y: 0 };
+    tahany.current = i;
+    setTahanyRoh(i);
+  }
+  function pusti() {
+    tahany.current = null;
+    setTahanyRoh(null);
+  }
+  function posun(i: number, e: React.PointerEvent) {
+    const b = bodPodPrstom(e);
+    if (!b) return;
+    const x = Math.min(Math.max(b.x + uchop.current.x, 0), rozmer.sirka);
+    const y = Math.min(Math.max(b.y + uchop.current.y, 0), rozmer.vyska);
     setRohy((p) => p.map((b, j) => (j === i ? { x, y } : b)) as Rohy);
   }
+
+  /* --- Lupa: okolie ťahaného rohu zväčšené, aby ho prst nezakryl --- */
+  const lupaRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const l = lupaRef.current;
+    const n = nahladRef.current;
+    if (tahanyRoh === null || !l || !n || !n.width || !mierka) return;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    l.width = l.height = Math.round(LUPA * dpr);
+    const ctx = l.getContext("2d");
+    if (!ctx) return;
+    // Pixely snímky na 1 px lupy: náhľad je zmenšená snímka, lupa je zväčšený rámik.
+    const k = mierka * ZVACSENIE_LUPY * dpr;
+    const b = rohy[tahanyRoh];
+    const nk = n.width / rozmer.sirka;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, l.width, l.height);
+    ctx.save();
+    ctx.translate(l.width / 2, l.height / 2);
+    ctx.scale(k, k);
+    ctx.translate(-b.x, -b.y);
+    ctx.drawImage(n, 0, 0, n.width, n.height, 0, 0, n.width / nk, n.height / nk);
+    // Strany pri ťahanom rohu.
+    ctx.beginPath();
+    rohy.forEach((r, j) => (j ? ctx.lineTo(r.x, r.y) : ctx.moveTo(r.x, r.y)));
+    ctx.closePath();
+    ctx.lineWidth = 2 / k;
+    ctx.strokeStyle = getComputedStyle(l).getPropertyValue("--app-zelena").trim() || "#22c55e";
+    ctx.stroke();
+    ctx.restore();
+    // Nitkový kríž v strede.
+    const c = l.width / 2;
+    const d = 9 * dpr;
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.strokeStyle = "#fff";
+    ctx.beginPath();
+    ctx.moveTo(c - d, c);
+    ctx.lineTo(c + d, c);
+    ctx.moveTo(c, c - d);
+    ctx.lineTo(c, c + d);
+    ctx.stroke();
+  }, [tahanyRoh, rohy, mierka, rozmer]);
+
+  /* --- Celý obraz / Automaticky --- */
+  const celyObraz = predvoleneRohy(rozmer.sirka, rozmer.vyska, 0);
+  const jeCely = rovnakeRohy(rohy, celyObraz);
+  const vratAutomaticke = !!automaticke && jeCely;
 
   /** Otočí snímku aj rohy o 90° v smere hodinových ručičiek. */
   function otoc() {
@@ -134,6 +214,7 @@ export function UpravaDokladu({
       setPlatno(nove);
     }
     setRohy((r) => otocRohy(r, rozmer.vyska));
+    setAutomaticke((r) => (r ? otocRohy(r, rozmer.vyska) : r));
     setRozmer((r) => ({ sirka: r.vyska, vyska: r.sirka }));
   }
 
@@ -151,7 +232,7 @@ export function UpravaDokladu({
       const vctx = vystup.getContext("2d");
       if (!vctx) return null;
       let data: ImageData | null = null;
-      await vyrovnaj(zdroj, rohy, {
+      await vyrovnaj(zdroj, usporiadajRohy(rohy), {
         vytvor: (w, h) => {
           vystup.width = w;
           vystup.height = h;
@@ -222,7 +303,7 @@ export function UpravaDokladu({
       </p>
 
       {/* Miesto pre snímku. Rohy majú okolo seba voľno, aby sa dali chytiť aj pri okraji. */}
-      <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-4">
+      <div className="relative flex min-h-0 flex-1 items-center justify-center px-6 py-4">
         <div ref={miestoRef} className="flex h-full w-full items-center justify-center">
           <div
             ref={ramikRef}
@@ -260,12 +341,12 @@ export function UpravaDokladu({
                 aria-label={t("uprava.roh", { n: i + 1 })}
                 aria-valuetext={`${Math.round(b.x)} × ${Math.round(b.y)}`}
                 onPointerDown={(e) => {
-                  tahany.current = i;
+                  chyt(i, e);
                   e.currentTarget.setPointerCapture?.(e.pointerId);
                 }}
                 onPointerMove={(e) => tahany.current === i && posun(i, e)}
-                onPointerUp={() => (tahany.current = null)}
-                onPointerCancel={() => (tahany.current = null)}
+                onPointerUp={pusti}
+                onPointerCancel={pusti}
                 /* Dotyková plocha 48 px, viditeľný krúžok menší — prst ho nezakryje celý. */
                 className="absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none place-items-center"
                 style={{
@@ -278,6 +359,18 @@ export function UpravaDokladu({
             ))}
           </div>
         </div>
+        {tahanyRoh !== null && (
+          /* Lupa na opačnej strane, než je prst — vľavo hore alebo vpravo hore. */
+          <canvas
+            ref={lupaRef}
+            aria-hidden
+            data-lupa
+            className={`pointer-events-none absolute top-2 rounded-full border-2 border-white shadow-lg ${
+              rohy[tahanyRoh].x < rozmer.sirka / 2 ? "right-3" : "left-3"
+            }`}
+            style={{ width: LUPA, height: LUPA, filter: css === "none" ? undefined : css }}
+          />
+        )}
       </div>
 
       <div
@@ -335,12 +428,18 @@ export function UpravaDokladu({
           </section>
         )}
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-1">
           <Nastroj
             icon={SlidersHorizontal}
             label={t("uprava.filtre")}
             onClick={() => setFiltreOtvorene((v) => !v)}
             stlacene={filtreOtvorene}
+          />
+          <Nastroj
+            icon={vratAutomaticke ? ScanLine : Maximize2}
+            label={vratAutomaticke ? t("uprava.automaticky") : t("uprava.celyObraz")}
+            onClick={() => setRohy(vratAutomaticke ? automaticke! : celyObraz)}
+            disabled={jeCely && !automaticke}
           />
           <Nastroj icon={RotateCw} label={t("uprava.otocit")} onClick={otoc} />
           <Nastroj icon={Camera} label={t("uprava.znova")} onClick={onZnova} />
@@ -384,17 +483,20 @@ function Nastroj({
   label,
   onClick,
   stlacene,
+  disabled,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   onClick: () => void;
   stlacene?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       aria-pressed={stlacene}
-      className={`flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-app-sm text-[12px] ${
+      disabled={disabled}
+      className={`flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-app-sm text-[12px] disabled:opacity-40 ${
         stlacene ? "bg-white/20 text-white" : "text-white/85 active:bg-white/10"
       }`}
     >

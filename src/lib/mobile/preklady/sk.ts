@@ -933,6 +933,8 @@ export const sk = {
   "uprava.upravujem": "Upravujem…",
   "uprava.roh": "Roh dokladu {n}",
   "uprava.nepodarilo": "Doklad sa nepodarilo upraviť, skúste ho odfotiť znova",
+  "uprava.celyObraz": "Celý obraz",
+  "uprava.automaticky": "Automaticky",
   "kamera.nazov": "Odfotiť doklad",
   "kamera.zrusit": "Zrušiť",
   "kamera.viacstranovy": "Viacstranový doklad",

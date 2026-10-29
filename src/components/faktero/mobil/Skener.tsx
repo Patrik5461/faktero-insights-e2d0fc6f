@@ -147,7 +147,7 @@ export function Skener({
   const obrys = useObrysDokladu(videoRef, bezi && vpredu && !sn.snimka);
 
   function spust() {
-    if (fotimTu && sn.odfot(videoRef.current)) return;
+    if (fotimTu && sn.odfot(videoRef.current, obrys)) return;
     if (viacstranovy) onViacstranovy();
     else onOdfotit();
   }

@@ -919,6 +919,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "uprava.upravujem": "Upravuji…",
   "uprava.roh": "Roh dokladu {n}",
   "uprava.nepodarilo": "Doklad se nepodařilo upravit, zkuste ho vyfotit znovu",
+  "uprava.celyObraz": "Celý snímek",
+  "uprava.automaticky": "Automaticky",
   "kamera.nazov": "Vyfotit doklad",
   "kamera.zrusit": "Zrušit",
   "kamera.viacstranovy": "Vícestránkový doklad",

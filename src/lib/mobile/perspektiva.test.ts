@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   homografia,
   otocRohy,
+  pomerStran,
   pouziFilter,
   rozmerVystupu,
+  usporiadajRohy,
   vyrovnaj,
   zobraz,
   type Obraz,
@@ -133,5 +135,100 @@ describe("otočenie a filtre", () => {
     pouziFilter(obr, "ciernobiely");
     expect(obr.data[0]).toBe(obr.data[1]);
     expect(obr.data[1]).toBe(obr.data[2]);
+  });
+});
+
+describe("pomer strán a poradie rohov", () => {
+  /*
+    Obdĺžnik s × v v rovine stola, telefón nad ním naklonený o `skx` okolo
+    vodorovnej a `sky` okolo zvislej osi, premietnutý kamerou s ohniskovou
+    `f` (v pixeloch) na obraz w × h. Rohy v poradí ĽH, PH, PD, ĽD.
+  */
+  function premietni(
+    s: number,
+    v: number,
+    skx: number,
+    sky: number,
+    f: number,
+    w: number,
+    h: number,
+    // Doklad mimo stredu záberu (v rovine stola).
+    posun = { x: 0, y: 0 },
+  ): Rohy {
+    const body = [
+      [posun.x - s / 2, posun.y - v / 2],
+      [posun.x + s / 2, posun.y - v / 2],
+      [posun.x + s / 2, posun.y + v / 2],
+      [posun.x - s / 2, posun.y + v / 2],
+    ];
+    return body.map(([x0, y0]) => {
+      // Najprv okolo osi x, potom okolo osi y.
+      const y1 = y0 * Math.cos(skx);
+      const z1 = y0 * Math.sin(skx);
+      const x2 = x0 * Math.cos(sky) + z1 * Math.sin(sky);
+      const z2 = -x0 * Math.sin(sky) + z1 * Math.cos(sky);
+      const z = z2 + 3 * Math.max(s, v);
+      return { x: w / 2 + (f * x2) / z, y: h / 2 + (f * y1) / z };
+    }) as Rohy;
+  }
+
+  it("rovno odfotený obdĺžnik má presne svoj pomer", () => {
+    expect(pomerStran(obdlznik(300, 900), 1080, 1920)).toBeCloseTo(1 / 3, 6);
+  });
+
+  it("naklonený dlhý bloček nevyjde zavalitý", () => {
+    // Bloček 8 × 30 cm, telefón naklonený o 35° — bočné strany sú skrátené.
+    const w = 1080;
+    const h = 1920;
+    const rohy = premietni(80, 300, (35 * Math.PI) / 180, 0, 0.8 * 1920, w, h);
+    const [lh, ph, pd, ld] = rohy;
+    const d = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+      Math.hypot(a.x - b.x, a.y - b.y);
+    const priemer = (d(lh, ph) + d(ld, pd)) / (d(lh, ld) + d(ph, pd));
+    const skutocny = 80 / 300;
+    // Priemer strán sa mýli o viac než 15 %, výpočet cez kameru do 2 %.
+    expect(Math.abs(priemer / skutocny - 1)).toBeGreaterThan(0.15);
+    expect(pomerStran(rohy, w, h) / skutocny).toBeCloseTo(1, 1);
+    expect(Math.abs(pomerStran(rohy, w, h) / skutocny - 1)).toBeLessThan(0.02);
+  });
+
+  it("pri dvoch úbežníkoch zistí ohniskovú sám", () => {
+    // Iná ohnisková než predvolená — musí ju zistiť z rohov.
+    const rohy = premietni(210, 297, 0.6, 0.35, 1.3 * 1920, 1080, 1920);
+    expect(Math.abs(pomerStran(rohy, 1080, 1920) / (210 / 297) - 1)).toBeLessThan(0.02);
+    // Aj keď doklad neleží v strede záberu.
+    const bokom = premietni(210, 297, 0.5, 0.3, 1.1 * 1920, 1080, 1920, { x: 60, y: -90 });
+    expect(Math.abs(pomerStran(bokom, 1080, 1920) / (210 / 297) - 1)).toBeLessThan(0.02);
+  });
+
+  it("rozmer výstupu drží pomer a dlhšiu stranu", () => {
+    const rohy = premietni(80, 300, 0.6, 0, 0.8 * 1920, 1080, 1920);
+    const r = rozmerVystupu(rohy, 2400, { sirka: 1080, vyska: 1920 });
+    expect(r.sirka / r.vyska).toBeCloseTo(80 / 300, 1);
+    expect(Math.abs(r.sirka / r.vyska / (80 / 300) - 1)).toBeLessThan(0.03);
+  });
+
+  it("nezmyselný štvoruholník nespadne, vráti priemer strán", () => {
+    const r = pomerStran(
+      [
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+        { x: 10, y: 10 },
+        { x: 0, y: 10 },
+      ],
+      100,
+      100,
+    );
+    expect(Number.isFinite(r)).toBe(true);
+    expect(r).toBeGreaterThan(0);
+  });
+
+  it("prekrížené rohy zoradí, správne nechá tak", () => {
+    const dobre = obdlznik(100, 200);
+    expect(usporiadajRohy(dobre)).toBe(dobre);
+    const prekrizene: Rohy = [dobre[1], dobre[0], dobre[2], dobre[3]];
+    expect(usporiadajRohy(prekrizene)).toEqual(dobre);
+    const zrkadlo: Rohy = [dobre[0], dobre[3], dobre[2], dobre[1]];
+    expect(usporiadajRohy(zrkadlo)).toEqual(dobre);
   });
 });

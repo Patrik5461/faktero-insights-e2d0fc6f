@@ -925,6 +925,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "uprava.upravujem": "Feldolgozás…",
   "uprava.roh": "Bizonylat {n}. sarka",
   "uprava.nepodarilo": "A bizonylatot nem sikerült feldolgozni, fotózza le újra",
+  "uprava.celyObraz": "Teljes kép",
+  "uprava.automaticky": "Automatikus",
   "kamera.nazov": "Bizonylat fotózása",
   "kamera.zrusit": "Mégse",
   "kamera.viacstranovy": "Többoldalas bizonylat",
