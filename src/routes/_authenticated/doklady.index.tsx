@@ -1365,8 +1365,19 @@ function DokladyPage() {
                     <td className="px-3 py-2 text-right">
                       {r.file_path && (
                         <button
-                          onClick={() => openFile(r.file_path)}
-                          title={t("Otvoriť súbor")}
+                          onClick={(e) => {
+                            /*
+                              Sken sa ukáže v náhľade vedľa zoznamu (P-1006), nie na
+                              inej stránke. Na úzkej obrazovke bočný náhľad nie je,
+                              tam sa súbor otvorí ako doteraz.
+                            */
+                            e.stopPropagation();
+                            if (window.matchMedia("(min-width: 1024px)").matches) {
+                              if (!bocny.zapnuty) bocny.prepni(true);
+                              bocny.setVybrany(r.id);
+                            } else void openFile(r.file_path);
+                          }}
+                          title={t("Náhľad dokladu")}
                           className="rounded-md p-1.5 hover:bg-secondary"
                         >
                           <FileText className="h-4 w-4" />
