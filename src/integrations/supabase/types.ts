@@ -5326,6 +5326,7 @@ export type Database = {
           status: string
           subject: string | null
           triggered_by: string
+          sent_by: string | null
         }
         Insert: {
           company_id: string
@@ -5341,6 +5342,7 @@ export type Database = {
           status?: string
           subject?: string | null
           triggered_by?: string
+          sent_by?: string | null
         }
         Update: {
           company_id?: string
@@ -5356,6 +5358,7 @@ export type Database = {
           status?: string
           subject?: string | null
           triggered_by?: string
+          sent_by?: string | null
         }
         Relationships: [
           {
@@ -11350,6 +11353,7 @@ export type Database = {
           }
         ]
       }
+
     }
     Views: {
       stock_items_with_availability: {

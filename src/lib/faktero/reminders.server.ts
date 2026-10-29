@@ -1,4 +1,5 @@
 import { runInBatches, selectByIds } from "./batch.server";
+import { upomienkaNaRade } from "./upomienky-poradie";
 import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { podpisHtml, podpisText } from "./email-podpis";
@@ -326,6 +327,8 @@ export async function sendReminder(input: SendReminderInput) {
     error_message: errorMessage,
     triggered_by: input.triggeredBy ?? "manual",
     provider_message_id: providerId,
+    // Kto odoslal — zoznam Odoslané upomienky ho ukazuje pri ručných.
+    sent_by: input.userId ?? null,
   });
 
   if (status === "failed")
@@ -338,33 +341,48 @@ export async function sendReminder(input: SendReminderInput) {
 /** Cron: iterate all overdue invoices and send due reminders. */
 export async function runOverdueReminders() {
   const today = new Date().toISOString().slice(0, 10);
-  const { data: invoices, error } = await supabaseAdmin
-    .from("invoices")
-    .select(
-      "id, company_id, invoice_number, due_date, status, paid_at, deleted_at, reminders_enabled, customer_id",
-    )
-    .in("status", ["issued", "sent"])
-    .lt("due_date", today)
-    .is("paid_at", null)
-    .is("deleted_at", null)
-    .eq("reminders_enabled", true)
-    /*
-      Upomínať sa dá len ostrá faktúra. Dobropis je peniaz, ktorý firma dlhuje
-      zákazníkovi — výzva na zaplatenie po splatnosti by mu prišla naopak.
-      Zálohová faktúra zase v celej aplikácii nie je pohľadávka (`jeOtvorena`
-      ju vynecháva), takže ju nemá čo upomínať ani cron. `reminders_enabled`
-      je v databáze štandardne zapnuté, takže bez tohto filtra by sa oboje
-      odoslalo samo, hneď ako by taký doklad prešiel splatnosťou.
-    */
-    .or("type.is.null,type.eq.regular")
-    .limit(1000);
-  if (error) throw new Error(error.message);
+  // Po stránkach: importované faktúry po splatnosti by inak zaplnili limit
+  // PostgRESTu a skutočné faktúry na rade by sa do výberu nedostali.
+  const invoices: Array<{
+    id: string;
+    company_id: string;
+    invoice_number: string;
+    due_date: string;
+    created_at: string;
+    customer_id: string | null;
+  }> = [];
+  for (let od = 0; ; od += 1000) {
+    const { data, error } = await supabaseAdmin
+      .from("invoices")
+      .select("id, company_id, invoice_number, due_date, created_at, customer_id")
+      .in("status", ["issued", "sent"])
+      .lt("due_date", today)
+      .is("paid_at", null)
+      .is("deleted_at", null)
+      .eq("reminders_enabled", true)
+      /*
+        Upomínať sa dá len ostrá faktúra. Dobropis je peniaz, ktorý firma dlhuje
+        zákazníkovi — výzva na zaplatenie po splatnosti by mu prišla naopak.
+        Zálohová faktúra zase v celej aplikácii nie je pohľadávka (`jeOtvorena`
+        ju vynecháva), takže ju nemá čo upomínať ani cron. `reminders_enabled`
+        je v databáze štandardne zapnuté, takže bez tohto filtra by sa oboje
+        odoslalo samo, hneď ako by taký doklad prešiel splatnosťou.
+      */
+      .or("type.is.null,type.eq.regular")
+      .order("id")
+      .range(od, od + 999);
+    if (error) throw new Error(error.message);
+    invoices.push(...((data ?? []) as any[]));
+    if ((data ?? []).length < 1000) break;
+  }
 
-  const companyIds = Array.from(new Set((invoices ?? []).map((i) => i.company_id)));
-  const { data: companies } = await supabaseAdmin
-    .from("companies")
-    .select("id, reminders_enabled, reminder_days_1, reminder_days_2, reminder_days_3")
-    .in("id", companyIds);
+  const companyIds = Array.from(new Set(invoices.map((i) => i.company_id)));
+  const { data: companies } = companyIds.length
+    ? await supabaseAdmin
+        .from("companies")
+        .select("id, reminders_enabled, reminder_days_1, reminder_days_2, reminder_days_3")
+        .in("id", companyIds)
+    : { data: [] as any[] };
   const companyMap = new Map((companies ?? []).map((c) => [c.id, c]));
 
   const results: Array<{
@@ -375,55 +393,51 @@ export async function runOverdueReminders() {
     skipped?: string;
   }> = [];
 
-  // Krok 1 — rozhodnutie, ktorá upomienka je na rade. Čistý výpočet, bez DB.
-  const candidates: Array<{ invoice: (typeof invoices)[number]; reminderNumber: ReminderNumber }> =
-    [];
-  for (const inv of invoices ?? []) {
+  /*
+    Odoslané upomienky naraz pre všetky faktúry — stránkovane, lebo chýbajúci
+    riadok by znamenal odoslať tú istú upomienku druhýkrát. Podľa nich sa
+    určí ďalší stupeň (1 → 2 → 3), nie podľa samotných dní po splatnosti.
+  */
+  const aktivne = invoices.filter((inv) => {
     const co: any = companyMap.get(inv.company_id);
     if (!co || co.reminders_enabled === false) {
-      results.push({
-        invoice_id: inv.id,
-        reminder_number: 0,
-        ok: false,
-        skipped: "company_disabled",
-      });
-      continue;
+      results.push({ invoice_id: inv.id, reminder_number: 0, ok: false, skipped: "company_disabled" });
+      return false;
     }
-    const dueDate = new Date(inv.due_date + "T00:00:00Z");
-    const daysOverdue = Math.floor((Date.now() - dueDate.getTime()) / 86400000);
-    const thresholds: Array<[ReminderNumber, number]> = [
-      [3, co.reminder_days_3 ?? 14],
-      [2, co.reminder_days_2 ?? 7],
-      [1, co.reminder_days_1 ?? 3],
-    ];
-    let targetNumber: ReminderNumber | null = null;
-    for (const [n, d] of thresholds) {
-      if (daysOverdue >= d) {
-        targetNumber = n;
-        break;
-      }
-    }
-    if (!targetNumber) continue;
-    candidates.push({ invoice: inv, reminderNumber: targetNumber });
-  }
-
-  // Krok 2 — hromadný dotaz na už odoslané upomienky namiesto COUNT na každú
-  // faktúru. Stránkovaný zámerne: ak by odpoveď orezal limit PostgRESTu,
-  // chýbajúci riadok znamená odoslanie tej istej upomienky druhýkrát.
-  const alreadySent = new Set<string>();
-  const sentRows = await selectByIds<{ invoice_id: string; reminder_number: number }>(
-    candidates.map((c) => c.invoice.id),
+    return true;
+  });
+  const sentRows = await selectByIds<{ invoice_id: string; reminder_number: number; sent_at: string }>(
+    aktivne.map((i) => i.id),
     (part, from, to) =>
       supabaseAdmin
         .from("invoice_reminders")
-        .select("invoice_id, reminder_number")
+        .select("invoice_id, reminder_number, sent_at")
         .in("invoice_id", part)
         .eq("status", "sent")
         .range(from, to),
   );
-  for (const r of sentRows) alreadySent.add(`${r.invoice_id}:${r.reminder_number}`);
+  const odoslanePodlaFaktury = new Map<string, { stupen: number; kedy: string }[]>();
+  for (const r of sentRows) {
+    const z = odoslanePodlaFaktury.get(r.invoice_id) ?? [];
+    z.push({ stupen: r.reminder_number, kedy: r.sent_at });
+    odoslanePodlaFaktury.set(r.invoice_id, z);
+  }
 
-  const toSend = candidates.filter((c) => !alreadySent.has(`${c.invoice.id}:${c.reminderNumber}`));
+  const toSend: Array<{ invoice: (typeof invoices)[number]; reminderNumber: ReminderNumber }> = [];
+  for (const inv of aktivne) {
+    const co: any = companyMap.get(inv.company_id);
+    const naRade = upomienkaNaRade({
+      splatnost: inv.due_date,
+      zalozena: inv.created_at,
+      dnes: today,
+      prahy: [co.reminder_days_1 ?? 3, co.reminder_days_2 ?? 7, co.reminder_days_3 ?? 14],
+      odoslane: odoslanePodlaFaktury.get(inv.id) ?? [],
+    });
+    if (naRade.stupen) toSend.push({ invoice: inv, reminderNumber: naRade.stupen });
+    else if (naRade.dovod === "importovana") {
+      results.push({ invoice_id: inv.id, reminder_number: 0, ok: false, skipped: "imported_after_due" });
+    }
+  }
 
   // Krok 3 — odoslanie po dávkach. Každý sendReminder je e-mail cez Resend,
   // takže sa nesmie spustiť tisíc naraz, ale ani jeden po druhom.
@@ -447,5 +461,5 @@ export async function runOverdueReminders() {
   });
   results.push(...sendResults);
 
-  return { checked: invoices?.length ?? 0, results };
+  return { checked: invoices.length, results };
 }

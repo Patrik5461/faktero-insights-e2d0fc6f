@@ -458,6 +458,26 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "odoslane-upomienky",
+    title: "Odoslané upomienky",
+    body: (
+      <>
+        <p>
+          Zoznam všetkých e-mailov upomienok nájdete v{" "}
+          <strong>Fakturácia → Odoslané upomienky</strong>. Hore vidíte, koľko e-mailov odišlo,
+          koľkým klientom a ku koľkým faktúram a koľko sa odoslať nepodarilo. Pri každej upomienke
+          je dátum a čas, klient, e-mail, faktúra, stupeň, či ju poslal Faktero automaticky alebo
+          niekto ručne, a pri chybe aj jej dôvod.
+        </p>
+        <p>
+          Zoznam sa dá filtrovať podľa obdobia, klienta a stavu, prepnúť na pohľad{" "}
+          <em>Podľa klienta</em> a stiahnuť do Excelu. Kedy majú automatické upomienky odchádzať,
+          nastavíte v <em>Nastavenia → Firma</em>.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "odberatel-zmenit",
     title: "Zmena odberateľa na vystavenej faktúre",
     body: (

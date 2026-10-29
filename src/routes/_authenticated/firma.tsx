@@ -444,6 +444,13 @@ function CompanyPage() {
               />
               {t("Zapnúť automatické upomienky")}
             </label>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t("Komu a kedy upomienky odišli, nájdete v")}{" "}
+              <Link to="/faktury/upomienky" className="font-medium text-primary hover:underline">
+                {t("Odoslaných upomienkach")}
+              </Link>
+              .
+            </p>
           </div>
           <label className="block">
             <span className="text-sm font-medium">{t("Dní po splatnosti — 1. upomienka")}</span>

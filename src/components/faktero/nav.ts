@@ -90,6 +90,8 @@ export const NAV: NavGroup[] = [
       { to: "/opakovane", label: "Opakované faktúry" },
       { to: "/faktury", search: { type: "credit" }, label: "Dobropisy" },
       { to: "/faktury", search: { status: "draft" }, label: "Koncepty" },
+      // Komu a kedy odišli upomienky — automatické aj ručné, aj neúspešné.
+      { to: "/faktury/upomienky", label: "Odoslané upomienky" },
       { to: "/faktury/skener", label: "Skener dokladov" },
     ],
   },

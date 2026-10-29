@@ -174,6 +174,7 @@ import { Route as AuthenticatedFakturyNovaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedFakturyParovanieRouteImport } from './routes/_authenticated/faktury.parovanie'
 import { Route as AuthenticatedFakturyRychlaRouteImport } from './routes/_authenticated/faktury.rychla'
 import { Route as AuthenticatedFakturySkenerRouteImport } from './routes/_authenticated/faktury.skener'
+import { Route as AuthenticatedFakturyUpomienkyRouteImport } from './routes/_authenticated/faktury.upomienky'
 import { Route as AuthenticatedFinancovanieIndexRouteImport } from './routes/_authenticated/financovanie.index'
 import { Route as AuthenticatedFinancovanieIdRouteImport } from './routes/_authenticated/financovanie.$id'
 import { Route as AuthenticatedFinancovanieNovaRouteImport } from './routes/_authenticated/financovanie.nova'
@@ -1240,6 +1241,12 @@ const AuthenticatedFakturySkenerRoute =
   AuthenticatedFakturySkenerRouteImport.update({
     id: '/faktury/skener',
     path: '/faktury/skener',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFakturyUpomienkyRoute =
+  AuthenticatedFakturyUpomienkyRouteImport.update({
+    id: '/faktury/upomienky',
+    path: '/faktury/upomienky',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedFinancovanieIndexRoute =
@@ -2562,6 +2569,7 @@ export interface FileRoutesByFullPath {
   '/faktury/parovanie': typeof AuthenticatedFakturyParovanieRoute
   '/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
+  '/faktury/upomienky': typeof AuthenticatedFakturyUpomienkyRoute
   '/financovanie/$id': typeof AuthenticatedFinancovanieIdRoute
   '/financovanie/nova': typeof AuthenticatedFinancovanieNovaRoute
   '/importy/doklady': typeof AuthenticatedImportyDokladyRoute
@@ -2926,6 +2934,7 @@ export interface FileRoutesByTo {
   '/faktury/parovanie': typeof AuthenticatedFakturyParovanieRoute
   '/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
+  '/faktury/upomienky': typeof AuthenticatedFakturyUpomienkyRoute
   '/financovanie/$id': typeof AuthenticatedFinancovanieIdRoute
   '/financovanie/nova': typeof AuthenticatedFinancovanieNovaRoute
   '/importy/doklady': typeof AuthenticatedImportyDokladyRoute
@@ -3299,6 +3308,7 @@ export interface FileRoutesById {
   '/_authenticated/faktury/parovanie': typeof AuthenticatedFakturyParovanieRoute
   '/_authenticated/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/_authenticated/faktury/skener': typeof AuthenticatedFakturySkenerRoute
+  '/_authenticated/faktury/upomienky': typeof AuthenticatedFakturyUpomienkyRoute
   '/_authenticated/financovanie/$id': typeof AuthenticatedFinancovanieIdRoute
   '/_authenticated/financovanie/nova': typeof AuthenticatedFinancovanieNovaRoute
   '/_authenticated/importy/doklady': typeof AuthenticatedImportyDokladyRoute
@@ -3673,6 +3683,7 @@ export interface FileRouteTypes {
     | '/faktury/parovanie'
     | '/faktury/rychla'
     | '/faktury/skener'
+    | '/faktury/upomienky'
     | '/financovanie/$id'
     | '/financovanie/nova'
     | '/importy/doklady'
@@ -4037,6 +4048,7 @@ export interface FileRouteTypes {
     | '/faktury/parovanie'
     | '/faktury/rychla'
     | '/faktury/skener'
+    | '/faktury/upomienky'
     | '/financovanie/$id'
     | '/financovanie/nova'
     | '/importy/doklady'
@@ -4409,6 +4421,7 @@ export interface FileRouteTypes {
     | '/_authenticated/faktury/parovanie'
     | '/_authenticated/faktury/rychla'
     | '/_authenticated/faktury/skener'
+    | '/_authenticated/faktury/upomienky'
     | '/_authenticated/financovanie/$id'
     | '/_authenticated/financovanie/nova'
     | '/_authenticated/importy/doklady'
@@ -5945,6 +5958,13 @@ declare module '@tanstack/react-router' {
       path: '/faktury/skener'
       fullPath: '/faktury/skener'
       preLoaderRoute: typeof AuthenticatedFakturySkenerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/faktury/upomienky': {
+      id: '/_authenticated/faktury/upomienky'
+      path: '/faktury/upomienky'
+      fullPath: '/faktury/upomienky'
+      preLoaderRoute: typeof AuthenticatedFakturyUpomienkyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/financovanie/': {
@@ -7526,6 +7546,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFakturyParovanieRoute: typeof AuthenticatedFakturyParovanieRoute
   AuthenticatedFakturyRychlaRoute: typeof AuthenticatedFakturyRychlaRoute
   AuthenticatedFakturySkenerRoute: typeof AuthenticatedFakturySkenerRoute
+  AuthenticatedFakturyUpomienkyRoute: typeof AuthenticatedFakturyUpomienkyRoute
   AuthenticatedFinancovanieIdRoute: typeof AuthenticatedFinancovanieIdRoute
   AuthenticatedFinancovanieNovaRoute: typeof AuthenticatedFinancovanieNovaRoute
   AuthenticatedImportyDokladyRoute: typeof AuthenticatedImportyDokladyRoute
@@ -7647,6 +7668,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFakturyParovanieRoute: AuthenticatedFakturyParovanieRoute,
   AuthenticatedFakturyRychlaRoute: AuthenticatedFakturyRychlaRoute,
   AuthenticatedFakturySkenerRoute: AuthenticatedFakturySkenerRoute,
+  AuthenticatedFakturyUpomienkyRoute: AuthenticatedFakturyUpomienkyRoute,
   AuthenticatedFinancovanieIdRoute: AuthenticatedFinancovanieIdRoute,
   AuthenticatedFinancovanieNovaRoute: AuthenticatedFinancovanieNovaRoute,
   AuthenticatedImportyDokladyRoute: AuthenticatedImportyDokladyRoute,
