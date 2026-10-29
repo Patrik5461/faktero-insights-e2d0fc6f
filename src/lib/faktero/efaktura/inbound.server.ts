@@ -67,7 +67,13 @@ export function parseEfakturaEnvelope(xml: string): ParsedEfaktura {
 
   const dobropisKoren = /<(?:\w+:)?CreditNote[\s>]/.test(xml);
   const typeCode = pick(/<cbc:(?:Invoice|CreditNote)TypeCode[^>]*>([^<]+)<\/cbc:(?:Invoice|CreditNote)TypeCode>/);
-  const samofaktura = typeCode === "389" || typeCode === "261";
+  // 389 samofaktúra, 527 samofakturovaný ťarchopis, 261 samofakturovaný dobropis
+  // (Peppol BIS Self-Billing 3.0); proces prezradí aj ProfileID.
+  const samofaktura =
+    typeCode === "389" ||
+    typeCode === "527" ||
+    typeCode === "261" ||
+    /<cbc:ProfileID>\s*urn:fdc:peppol\.eu:2017:poacc:selfbilling:/.test(xml);
   const dobropis = dobropisKoren || typeCode === "381" || typeCode === "261";
   const documentKind = samofaktura
     ? dobropis

@@ -217,10 +217,10 @@ export default {
     "Der Betrag {prvok} darf höchstens 2 Nachkommastellen haben (ist {hodnota}).",
   "Chýba identifikátor obchodného procesu (ProfileID).":
     "Die Kennung des Geschäftsprozesses fehlt (ProfileID).",
-  "ProfileID „{hodnota}“ nie je schválený proces Peppol BIS (očakáva sa urn:fdc:peppol.eu:2017:poacc:billing:01:1.0).":
-    "ProfileID „{hodnota}“ ist kein zugelassener Peppol-BIS-Prozess (erwartet: urn:fdc:peppol.eu:2017:poacc:billing:01:1.0).",
-  "CustomizationID musí začínať urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0 (je „{hodnota}“).":
-    "CustomizationID muss mit urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0 beginnen (ist „{hodnota}“).",
+  "ProfileID „{hodnota}“ nie je schválený proces Peppol BIS (očakáva sa urn:fdc:peppol.eu:2017:poacc:billing:01:1.0, pri samofaktúre urn:fdc:peppol.eu:2017:poacc:selfbilling:01:1.0).":
+    "ProfileID „{hodnota}“ ist kein zugelassener Peppol-BIS-Prozess (erwartet: urn:fdc:peppol.eu:2017:poacc:billing:01:1.0, bei Gutschriften im Gutschriftsverfahren urn:fdc:peppol.eu:2017:poacc:selfbilling:01:1.0).",
+  "CustomizationID musí začínať {ocakava} (je „{hodnota}“).":
+    "CustomizationID muss mit {ocakava} beginnen (ist „{hodnota}“).",
   "V hlavičke dokladu smie byť najviac jedna poznámka (Note), je ich {pocet}.":
     "Im Belegkopf ist höchstens eine Bemerkung (Note) erlaubt, vorhanden: {pocet}.",
   "Chýba referencia kupujúceho (BuyerReference) aj číslo objednávky (OrderReference/ID) — aspoň jedno je povinné.":
@@ -241,10 +241,10 @@ export default {
     "Die Währung {kod} im Attribut currencyID ist kein gültiger ISO-4217-Code.",
   "Dátum {prvok} musí byť v tvare RRRR-MM-DD (je „{hodnota}“).":
     "Das Datum {prvok} muss das Format JJJJ-MM-TT haben (ist „{hodnota}“).",
-  "Typ faktúry {kod} nie je v Peppol BIS Billing 3.0 povolený.":
-    "Die Rechnungsart {kod} ist in Peppol BIS Billing 3.0 nicht erlaubt.",
-  "Typ dobropisu {kod} nie je v Peppol BIS Billing 3.0 povolený.":
-    "Die Art der Rechnungskorrektur {kod} ist in Peppol BIS Billing 3.0 nicht erlaubt.",
+  "Typ faktúry {kod} nie je v tomto profile Peppol BIS povolený.":
+    "Die Rechnungsart {kod} ist in diesem Peppol-BIS-Profil nicht erlaubt.",
+  "Typ dobropisu {kod} nie je v tomto profile Peppol BIS povolený.":
+    "Die Art der Rechnungskorrektur {kod} ist in diesem Peppol-BIS-Profil nicht erlaubt.",
   "Typ dokladu {kod} je povolený len medzi dvoma nemeckými firmami (384 aj medzi dvoma slovenskými).":
     "Die Belegart {kod} ist nur zwischen zwei deutschen Unternehmen erlaubt (384 auch zwischen zwei slowakischen).",
   "Kód oslobodenia {kod} vyžaduje kategóriu DPH {ocakavana}, nie {skutocna}.":

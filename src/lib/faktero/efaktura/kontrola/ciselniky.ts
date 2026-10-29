@@ -86,9 +86,22 @@ export const TYPY_FAKTURY_PEPPOL = new Set(
 /** Typy dobropisu povolené v Peppol BIS profile 01 (PEPPOL-EN16931-P0101). */
 export const TYPY_DOBROPISU_PEPPOL = new Set("381 396 81 83 532".split(" "));
 
+/**
+ * Proces Peppol BIS Self-Billing 3.0 — samofaktúru vyhotovuje odberateľ za
+ * dodávateľa (docs.peppol.eu/poacc/self-billing/3.0). Má vlastný CustomizationID
+ * aj vlastné typy dokladov: 389 a 527 pre faktúru, 261 pre dobropis.
+ */
+export const PROFIL_SAMOFAKTURY = "urn:fdc:peppol.eu:2017:poacc:selfbilling:01:1.0";
+export const CUSTOMIZATION_SAMOFAKTURY =
+  "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:selfbilling:3.0";
+/** Typy faktúry v profile samofakturácie (PEPPOL-EN16931-P0100, UNCL1001-sbinv). */
+export const TYPY_SAMOFAKTURY = new Set(["389", "527"]);
+/** Typy dobropisu v profile samofakturácie (PEPPOL-EN16931-P0101, UNCL1001-sbcn). */
+export const TYPY_SAMODOBROPISU = new Set(["261"]);
+
 /** Schvaľované procesy Peppol BIS (ProfileID → profil 01, PEPPOL-EN16931-R007). */
 export const PROFILY_PEPPOL = new Set(
-  "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0 urn:peppol:france:billing:regulated urn:peppol:france:billing:non-regulated".split(
+  `urn:fdc:peppol.eu:2017:poacc:billing:01:1.0 urn:peppol:france:billing:regulated urn:peppol:france:billing:non-regulated ${PROFIL_SAMOFAKTURY}`.split(
     " ",
   ),
 );

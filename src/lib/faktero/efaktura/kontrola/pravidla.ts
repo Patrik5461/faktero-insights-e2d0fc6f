@@ -16,6 +16,10 @@
  */
 import {
   CUSTOMIZATION_PEPPOL,
+  CUSTOMIZATION_SAMOFAKTURY,
+  PROFIL_SAMOFAKTURY,
+  TYPY_SAMOFAKTURY,
+  TYPY_SAMODOBROPISU,
   JEDNOTKY_REC20,
   KATEGORIE_DPH,
   KRAJINY_ISO3166,
@@ -48,6 +52,12 @@ import {
 } from "./doklad";
 import type { XmlUzol } from "./xml-strom";
 import { jeZnamaSadzba, sadzbyKrajiny } from "../../vat-rates";
+
+
+/** Doklad v procese Peppol BIS Self-Billing 3.0 (podľa ProfileID). */
+function jeSamofakturaPeppol(d: { koren: Parameters<typeof text>[0] }): boolean {
+  return text(d.koren, "cbc:ProfileID") === PROFIL_SAMOFAKTURY;
+}
 
 export type Zavaznost = "chyba" | "varovanie";
 export type Oblast = "xml" | "en16931" | "peppol" | "sk";
@@ -1207,7 +1217,7 @@ export const PRAVIDLA: Pravidlo[] = [
     oblast: "peppol",
     zavaznost: "chyba",
     popis:
-      "ProfileID „{hodnota}“ nie je schválený proces Peppol BIS (očakáva sa urn:fdc:peppol.eu:2017:poacc:billing:01:1.0).",
+      "ProfileID „{hodnota}“ nie je schválený proces Peppol BIS (očakáva sa urn:fdc:peppol.eu:2017:poacc:billing:01:1.0, pri samofaktúre urn:fdc:peppol.eu:2017:poacc:selfbilling:01:1.0).",
     over: (d) => {
       const u = prvy(d.koren, "cbc:ProfileID");
       const h = text(u);
@@ -1219,11 +1229,14 @@ export const PRAVIDLA: Pravidlo[] = [
     oblast: "peppol",
     zavaznost: "chyba",
     popis:
-      "CustomizationID musí začínať urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0 (je „{hodnota}“).",
+      "CustomizationID musí začínať {ocakava} (je „{hodnota}“).",
     over: (d) => {
       const u = prvy(d.koren, "cbc:CustomizationID");
       const h = text(u);
-      return ak(h && (!h.startsWith(CUSTOMIZATION_PEPPOL) || h.includes("::")), u, {
+      // Samofaktúra (Self-Billing 3.0) má vlastný identifikátor špecifikácie.
+      const ocakava = jeSamofakturaPeppol(d) ? CUSTOMIZATION_SAMOFAKTURY : CUSTOMIZATION_PEPPOL;
+      return ak(h && (!h.startsWith(ocakava) || h.includes("::")), u, {
+        ocakava,
         hodnota: h ?? "",
       });
     },
@@ -1359,24 +1372,26 @@ export const PRAVIDLA: Pravidlo[] = [
     kod: "PEPPOL-EN16931-P0100",
     oblast: "peppol",
     zavaznost: "chyba",
-    popis: "Typ faktúry {kod} nie je v Peppol BIS Billing 3.0 povolený.",
+    popis: "Typ faktúry {kod} nie je v tomto profile Peppol BIS povolený.",
     over: (d) => {
       if (d.dobropis || !PROFILY_PEPPOL.has(text(d.koren, "cbc:ProfileID") ?? "")) return [];
       const u = prvy(d.koren, "cbc:InvoiceTypeCode");
       const kod = text(u);
-      return ak(kod && !TYPY_FAKTURY_PEPPOL.has(kod), u, { kod: kod ?? "" });
+      const povolene = jeSamofakturaPeppol(d) ? TYPY_SAMOFAKTURY : TYPY_FAKTURY_PEPPOL;
+      return ak(kod && !povolene.has(kod), u, { kod: kod ?? "" });
     },
   },
   {
     kod: "PEPPOL-EN16931-P0101",
     oblast: "peppol",
     zavaznost: "chyba",
-    popis: "Typ dobropisu {kod} nie je v Peppol BIS Billing 3.0 povolený.",
+    popis: "Typ dobropisu {kod} nie je v tomto profile Peppol BIS povolený.",
     over: (d) => {
       if (!d.dobropis || !PROFILY_PEPPOL.has(text(d.koren, "cbc:ProfileID") ?? "")) return [];
       const u = prvy(d.koren, "cbc:CreditNoteTypeCode");
       const kod = text(u);
-      return ak(kod && !TYPY_DOBROPISU_PEPPOL.has(kod), u, { kod: kod ?? "" });
+      const povolene = jeSamofakturaPeppol(d) ? TYPY_SAMODOBROPISU : TYPY_DOBROPISU_PEPPOL;
+      return ak(kod && !povolene.has(kod), u, { kod: kod ?? "" });
     },
   },
   {
@@ -1389,6 +1404,8 @@ export const PRAVIDLA: Pravidlo[] = [
       const u = prvy(d.koren, "cbc:InvoiceTypeCode");
       const kod = text(u);
       if (!kod || !["326", "384", "389"].includes(kod)) return [];
+      // 389 je v profile samofakturácie bežný typ, obmedzenie platí len v Billing 3.0.
+      if (kod === "389" && jeSamofakturaPeppol(d)) return [];
       const de = d.krajinaPredavajuceho === "DE" && d.krajinaKupujuceho === "DE";
       const sk = kod === "384" && d.krajinaPredavajuceho === "SK" && d.krajinaKupujuceho === "SK";
       return ak(!de && !sk, u, { kod });

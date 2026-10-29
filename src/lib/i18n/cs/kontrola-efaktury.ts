@@ -213,10 +213,10 @@ export default {
     "Částka {prvok} smí mít nejvýše 2 desetinná místa (je {hodnota}).",
   "Chýba identifikátor obchodného procesu (ProfileID).":
     "Chybí identifikátor obchodního procesu (ProfileID).",
-  "ProfileID „{hodnota}“ nie je schválený proces Peppol BIS (očakáva sa urn:fdc:peppol.eu:2017:poacc:billing:01:1.0).":
-    "ProfileID „{hodnota}“ není schválený proces Peppol BIS (očekává se urn:fdc:peppol.eu:2017:poacc:billing:01:1.0).",
-  "CustomizationID musí začínať urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0 (je „{hodnota}“).":
-    "CustomizationID musí začínat urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0 (je „{hodnota}“).",
+  "ProfileID „{hodnota}“ nie je schválený proces Peppol BIS (očakáva sa urn:fdc:peppol.eu:2017:poacc:billing:01:1.0, pri samofaktúre urn:fdc:peppol.eu:2017:poacc:selfbilling:01:1.0).":
+    "ProfileID „{hodnota}“ není schválený proces Peppol BIS (očekává se urn:fdc:peppol.eu:2017:poacc:billing:01:1.0, u samofaktury urn:fdc:peppol.eu:2017:poacc:selfbilling:01:1.0).",
+  "CustomizationID musí začínať {ocakava} (je „{hodnota}“).":
+    "CustomizationID musí začínat {ocakava} (je „{hodnota}“).",
   "V hlavičke dokladu smie byť najviac jedna poznámka (Note), je ich {pocet}.":
     "V hlavičce dokladu smí být nejvýše jedna poznámka (Note), je jich {pocet}.",
   "Chýba referencia kupujúceho (BuyerReference) aj číslo objednávky (OrderReference/ID) — aspoň jedno je povinné.":
@@ -237,10 +237,10 @@ export default {
     "Měna {kod} v atributu currencyID není platný kód ISO 4217.",
   "Dátum {prvok} musí byť v tvare RRRR-MM-DD (je „{hodnota}“).":
     "Datum {prvok} musí být ve tvaru RRRR-MM-DD (je „{hodnota}“).",
-  "Typ faktúry {kod} nie je v Peppol BIS Billing 3.0 povolený.":
-    "Typ faktury {kod} není v Peppol BIS Billing 3.0 povolen.",
-  "Typ dobropisu {kod} nie je v Peppol BIS Billing 3.0 povolený.":
-    "Typ dobropisu {kod} není v Peppol BIS Billing 3.0 povolen.",
+  "Typ faktúry {kod} nie je v tomto profile Peppol BIS povolený.":
+    "Typ faktury {kod} není v tomto profilu Peppol BIS povolen.",
+  "Typ dobropisu {kod} nie je v tomto profile Peppol BIS povolený.":
+    "Typ dobropisu {kod} není v tomto profilu Peppol BIS povolen.",
   "Typ dokladu {kod} je povolený len medzi dvoma nemeckými firmami (384 aj medzi dvoma slovenskými).":
     "Typ dokladu {kod} je povolen jen mezi dvěma německými firmami (384 i mezi dvěma slovenskými).",
   "Kód oslobodenia {kod} vyžaduje kategóriu DPH {ocakavana}, nie {skutocna}.":
