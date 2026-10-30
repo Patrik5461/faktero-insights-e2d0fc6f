@@ -1,4 +1,5 @@
 import { krajinaDane } from "./vat-rates";
+import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { sUctomFaktury } from "./platobny-ucet";
 import { riadkySoZlavou } from "./zlavy";
@@ -201,11 +202,29 @@ export function buildIsdoc(opts: {
   const dobropis = String(invoice.type ?? "") === "credit_note";
   const mena = String(invoice.currency ?? company.default_currency ?? "CZK").toUpperCase();
   /*
-   * Sumy v doklade sú vždy v mene faktúry — prepočet na domácu menu Faktero
-   * drží len v hlavičke, nie po položkách. Ako `LocalCurrencyCode` sa preto
-   * hlási mena dokladu a `ForeignCurrencyCode` s kurzom sa nepíše vôbec:
-   * dvojica „domáca mena + kurz 1" by z 10 000 Kč spravila 10 000 €.
+   * Cudzia mena s kurzom: ISDOC chce sumy bez prípony v **domácej** mene firmy
+   * (`LocalCurrencyCode`) a sumy v mene faktúry v prvkoch `…Curr`, k tomu
+   * `ForeignCurrencyCode` a kurz (`CurrRate` domácej za `RefCurrRate` jednotiek
+   * cudzej). Kurz je v zápise banky krajiny, prevod cez `domacejZaJednotku`.
+   * Bez kurzu sa ako domáca hlási mena dokladu s kurzom 1 — dvojica „domáca
+   * mena + kurz 1" by z 10 000 € spravila 10 000 Kč.
    */
+  const domaca = domacaMena(opts.company?.country);
+  const zaJednotku = mena !== domaca ? domacejZaJednotku(invoice.exchange_rate, opts.company?.country) : 0;
+  const cudzia = zaJednotku > 0;
+  const hlavickaKurzu = cudzia
+    ? kurzZaMnozstvo(invoice.exchange_rate, opts.company?.country)
+    : { kurz: 1, mnozstvo: 1 };
+  const naDomacu = (x: number) => (cudzia ? Math.round(x * zaJednotku * 100) / 100 : x);
+  /** Suma s variantom v cudzej mene pred ňou (riadky, rekapitulácia, zálohy). */
+  // Súčet sa v domácej mene skladá z prepočítaných častí, nech sedí na halier.
+  const naDomacuSpolu = (...xs: number[]) =>
+    Math.round(xs.reduce((a, x) => a + naDomacu(x), 0) * 100) / 100;
+  const sumaCurrPred = (meno: string, x: number, domacou = naDomacu(x)) =>
+    (cudzia ? `<${meno}Curr>${c2(x)}</${meno}Curr>` : "") + `<${meno}>${c2(domacou)}</${meno}>`;
+  /** Suma s variantom v cudzej mene za ňou (LegalMonetaryTotal). */
+  const sumaCurrPo = (meno: string, x: number, domacou = naDomacu(x)) =>
+    `<${meno}>${c2(domacou)}</${meno}>` + (cudzia ? `<${meno}Curr>${c2(x)}</${meno}Curr>` : "");
 
   const odberatel = opts.customer ?? {
     name: invoice.customer_name,
@@ -234,11 +253,11 @@ export function buildIsdoc(opts: {
    <InvoiceLine>
     <ID>${i + 1}</ID>
     <InvoicedQuantity unitCode="${esc(String(it.unit ?? "ks").slice(0, 20))}">${c2(mnozstvo)}</InvoicedQuantity>
-    <LineExtensionAmount>${c2(zaklad)}</LineExtensionAmount>
-    <LineExtensionAmountTaxInclusive>${c2(sDanou)}</LineExtensionAmountTaxInclusive>
-    <LineExtensionTaxAmount>${c2(sDanou - zaklad)}</LineExtensionTaxAmount>
-    <UnitPrice>${c4(jc)}</UnitPrice>
-    <UnitPriceTaxInclusive>${c4(jc * (1 + sadzba / 100))}</UnitPriceTaxInclusive>
+    ${sumaCurrPred("LineExtensionAmount", zaklad)}
+    ${sumaCurrPred("LineExtensionAmountTaxInclusive", sDanou)}
+    <LineExtensionTaxAmount>${c2(naDomacu(sDanou) - naDomacu(zaklad))}</LineExtensionTaxAmount>
+    <UnitPrice>${c4(cudzia ? jc * zaJednotku : jc)}</UnitPrice>
+    <UnitPriceTaxInclusive>${c4((cudzia ? jc * zaJednotku : jc) * (1 + sadzba / 100))}</UnitPriceTaxInclusive>
     <ClassifiedTaxCategory>
      <Percent>${c2(sadzba)}</Percent>
      <VATCalculationMethod>0</VATCalculationMethod>
@@ -270,21 +289,31 @@ export function buildIsdoc(opts: {
   const uplatDan = [...uplatnene.values()].reduce((a, r) => a + r.dph, 0);
   const rozdielZaklad = zakladSpolu - uplatZaklad;
   const rozdielDan = danSpolu - uplatDan;
+  // Súčty v domácej mene z prepočítanej rekapitulácie (pri domácej mene to isté).
+  const dZaklad = naDomacuSpolu(...sumare.map((r) => r.zaklad));
+  const dDan = naDomacuSpolu(...sumare.map((r) => r.dan));
+  const dUplatZaklad = naDomacuSpolu(...[...uplatnene.values()].map((r) => r.zaklad));
+  const dUplatDan = naDomacuSpolu(...[...uplatnene.values()].map((r) => r.dph));
+  const dRozdiel = Math.round((dZaklad + dDan - dUplatZaklad - dUplatDan) * 100) / 100;
 
   const taxSubTotals = sumare
     .map((r) => {
       const u = claimed(r.sadzba);
       return `
    <TaxSubTotal>
-    <TaxableAmount>${c2(r.zaklad)}</TaxableAmount>
-    <TaxAmount>${c2(r.dan)}</TaxAmount>
-    <TaxInclusiveAmount>${c2(r.zaklad + r.dan)}</TaxInclusiveAmount>
-    <AlreadyClaimedTaxableAmount>${c2(u.zaklad)}</AlreadyClaimedTaxableAmount>
-    <AlreadyClaimedTaxAmount>${c2(u.dph)}</AlreadyClaimedTaxAmount>
-    <AlreadyClaimedTaxInclusiveAmount>${c2(u.zaklad + u.dph)}</AlreadyClaimedTaxInclusiveAmount>
-    <DifferenceTaxableAmount>${c2(r.zaklad - u.zaklad)}</DifferenceTaxableAmount>
-    <DifferenceTaxAmount>${c2(r.dan - u.dph)}</DifferenceTaxAmount>
-    <DifferenceTaxInclusiveAmount>${c2(r.zaklad + r.dan - u.zaklad - u.dph)}</DifferenceTaxInclusiveAmount>
+    ${sumaCurrPred("TaxableAmount", r.zaklad)}
+    ${sumaCurrPred("TaxAmount", r.dan)}
+    ${sumaCurrPred("TaxInclusiveAmount", r.zaklad + r.dan, naDomacuSpolu(r.zaklad, r.dan))}
+    ${sumaCurrPred("AlreadyClaimedTaxableAmount", u.zaklad)}
+    ${sumaCurrPred("AlreadyClaimedTaxAmount", u.dph)}
+    ${sumaCurrPred("AlreadyClaimedTaxInclusiveAmount", u.zaklad + u.dph, naDomacuSpolu(u.zaklad, u.dph))}
+    ${sumaCurrPred("DifferenceTaxableAmount", r.zaklad - u.zaklad, naDomacuSpolu(r.zaklad, -u.zaklad))}
+    ${sumaCurrPred("DifferenceTaxAmount", r.dan - u.dph, naDomacuSpolu(r.dan, -u.dph))}
+    ${sumaCurrPred(
+      "DifferenceTaxInclusiveAmount",
+      r.zaklad + r.dan - u.zaklad - u.dph,
+      naDomacuSpolu(r.zaklad, r.dan, -u.zaklad, -u.dph),
+    )}
     <TaxCategory>
      <Percent>${c2(r.sadzba)}</Percent>
     </TaxCategory>
@@ -298,8 +327,8 @@ export function buildIsdoc(opts: {
    <TaxedDeposit>
     <ID>${esc(o.doklad ?? o.zaloha)}</ID>
     <VariableSymbol>${esc(String(o.vs ?? o.zaloha).replace(/\D/g, "").slice(0, 10))}</VariableSymbol>
-    <TaxableDepositAmount>${c2(r.zaklad)}</TaxableDepositAmount>
-    <TaxInclusiveDepositAmount>${c2(r.zaklad + r.dph)}</TaxInclusiveDepositAmount>
+    ${sumaCurrPred("TaxableDepositAmount", r.zaklad)}
+    ${sumaCurrPred("TaxInclusiveDepositAmount", r.zaklad + r.dph)}
     <ClassifiedTaxCategory>
      <Percent>${c2(r.sadzba)}</Percent>
      <VATCalculationMethod>0</VATCalculationMethod>
@@ -351,25 +380,27 @@ export function buildIsdoc(opts: {
   -->
   <ElectronicPossibilityAgreementReference>${esc(invoice.electronic_agreement_ref ?? "")}</ElectronicPossibilityAgreementReference>
   ${tag("Note", invoice.notes ?? invoice.note)}
-  <LocalCurrencyCode>${esc(mena)}</LocalCurrencyCode>
-  <CurrRate>1</CurrRate>
-  <RefCurrRate>1</RefCurrRate>${strana(company, "AccountingSupplierParty")}${strana(odberatel, "AccountingCustomerParty")}
+  <LocalCurrencyCode>${esc(cudzia ? domaca : mena)}</LocalCurrencyCode>${
+    cudzia ? `\n  <ForeignCurrencyCode>${esc(mena)}</ForeignCurrencyCode>` : ""
+  }
+  <CurrRate>${hlavickaKurzu.kurz}</CurrRate>
+  <RefCurrRate>${hlavickaKurzu.mnozstvo}</RefCurrRate>${strana(company, "AccountingSupplierParty")}${strana(odberatel, "AccountingCustomerParty")}
   <InvoiceLines>${riadky}
   </InvoiceLines>
 ${zalohyXml}
   <TaxTotal>${taxSubTotals}
-   <TaxAmount>${c2(rozdielDan)}</TaxAmount>
+   ${sumaCurrPred("TaxAmount", rozdielDan, Math.round((dDan - dUplatDan) * 100) / 100)}
   </TaxTotal>
   <LegalMonetaryTotal>
-   <TaxExclusiveAmount>${c2(zakladSpolu)}</TaxExclusiveAmount>
-   <TaxInclusiveAmount>${c2(sDanouSpolu)}</TaxInclusiveAmount>
-   <AlreadyClaimedTaxExclusiveAmount>${c2(uplatZaklad)}</AlreadyClaimedTaxExclusiveAmount>
-   <AlreadyClaimedTaxInclusiveAmount>${c2(uplatZaklad + uplatDan)}</AlreadyClaimedTaxInclusiveAmount>
-   <DifferenceTaxExclusiveAmount>${c2(rozdielZaklad)}</DifferenceTaxExclusiveAmount>
-   <DifferenceTaxInclusiveAmount>${c2(rozdielZaklad + rozdielDan)}</DifferenceTaxInclusiveAmount>
-   <PayableRoundingAmount>0.00</PayableRoundingAmount>
-   <PaidDepositsAmount>0.00</PaidDepositsAmount>
-   <PayableAmount>${c2(rozdielZaklad + rozdielDan)}</PayableAmount>
+   ${sumaCurrPo("TaxExclusiveAmount", zakladSpolu, dZaklad)}
+   ${sumaCurrPo("TaxInclusiveAmount", sDanouSpolu, Math.round((dZaklad + dDan) * 100) / 100)}
+   ${sumaCurrPo("AlreadyClaimedTaxExclusiveAmount", uplatZaklad, dUplatZaklad)}
+   ${sumaCurrPo("AlreadyClaimedTaxInclusiveAmount", uplatZaklad + uplatDan, Math.round((dUplatZaklad + dUplatDan) * 100) / 100)}
+   ${sumaCurrPo("DifferenceTaxExclusiveAmount", rozdielZaklad, Math.round((dZaklad - dUplatZaklad) * 100) / 100)}
+   ${sumaCurrPo("DifferenceTaxInclusiveAmount", rozdielZaklad + rozdielDan, dRozdiel)}
+   ${sumaCurrPo("PayableRoundingAmount", 0)}
+   ${sumaCurrPo("PaidDepositsAmount", 0)}
+   ${sumaCurrPo("PayableAmount", rozdielZaklad + rozdielDan, dRozdiel)}
   </LegalMonetaryTotal>${platba}
 </Invoice>`;
 }

@@ -311,7 +311,8 @@ export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUcto
     datumPrijatia: t(String(d?.created_at ?? "").slice(0, 10)) ?? datum,
     datumZauctovania: datumPoUzavierke(datum, nast.zamknuteDo),
     mena: String(d?.currency ?? "EUR").toUpperCase(),
-    kurz: null,
+    // Kurz si bloček ukladá pri založení (kurz-dokladu.server.ts); staršie ho nemajú.
+    kurz: Number(d?.exchange_rate) || null,
     platba,
     partner: partnerZDodavatela(d),
     zaklad,

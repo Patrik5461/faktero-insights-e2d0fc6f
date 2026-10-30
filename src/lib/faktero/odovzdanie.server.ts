@@ -1,5 +1,6 @@
 import { riadkyPreIds, vsetkoAkoData } from "./strankovanie";
 import { bezVzorca } from "@/lib/bezpecny-text";
+import { dokladDoBalika } from "./odovzdanie-faktury";
 
 /**
  * Riadky z databázy sa tu netypujú — modul ich len prehadzuje do XML, CSV a
@@ -179,6 +180,8 @@ export async function zostavBalik(
           .from("expense_documents")
           .select("*")
           .eq("company_id", vstup.companyId)
+          // Nespracovaný bloček (`new`) účtovníčke nejde — ešte ho nik neskontroloval.
+          .neq("status", "new")
           .gte("issue_date", od)
           .lt("issue_date", doDatumu)
           .order("issue_date")
@@ -215,7 +218,9 @@ export async function zostavBalik(
     supabase,
     vstup.companyId,
     "doklad",
-    (vsetkyDoklady ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at),
+    (vsetkyDoklady ?? []).filter(
+      (d: Riadok) => dokladDoBalika(d) && (!vstup.lenNove || !d.exported_at),
+    ),
   );
 
   /*
@@ -367,23 +372,30 @@ export async function zostavBalik(
       invoice,
       items: (polozky ?? []).filter((p: Riadok) => p.invoice_id === invoice.id),
     }));
-    const vystup = await EXPORT_STRATEGIES.pohoda_xml.build({
-      company,
-      invoices: balikFaktur,
-      nastavenia,
-      zalohy,
-      opravovane,
-      povodneCisla,
-      zakazky,
-    });
+    // Jedna nevyviezteľná faktúra nesmie zhodiť celý balík — pôjde do vynechaných.
+    const { fakturyDoBalika } = await import("./odovzdanie-faktury");
+    const vystup = await fakturyDoBalika(
+      balikFaktur,
+      (b) => String(b.invoice.invoice_number ?? b.invoice.id),
+      (vyber) =>
+        EXPORT_STRATEGIES.pohoda_xml.build({
+          company,
+          invoices: vyber,
+          nastavenia,
+          zalohy,
+          opravovane,
+          povodneCisla,
+          zakazky,
+        }),
+    );
     xmlFaktur = vystup.content;
-    preskocene = vystup.preskocene ?? [];
+    preskocene = vystup.preskocene;
     if (cakajuNaSchvalenie)
       preskocene.push(`${cakajuNaSchvalenie} dokladov čaká na schválenie — pôjdu v ďalšom odovzdaní`);
     const cislaPreskocenych = new Set(preskocene.map((d) => String(d).split(" — ")[0]));
     vyvezene = faktury.filter((f: Riadok) => !cislaPreskocenych.has(f.invoice_number));
 
-    zip.file("pohoda-faktury.xml", xmlFaktur);
+    if (xmlFaktur) zip.file("pohoda-faktury.xml", xmlFaktur);
     zip.file(
       "faktury.csv",
       csvSubor(
@@ -442,7 +454,8 @@ export async function zostavBalik(
     }
     if (dokladyDoXml.length) {
       xmlDokladov = buildPohodaExpensesXml({ company, doklady: dokladyDoXml, nastavenia: nastDokladov });
-      zip.file("pohoda-prijate-doklady.xml", xmlDokladov);
+      if (xmlDokladov) zip.file("pohoda-prijate-doklady.xml", xmlDokladov);
+      else dokladyDoXml = [];
     }
     zip.file(
       "prijate-doklady.csv",
@@ -499,7 +512,8 @@ export async function zostavBalik(
         doklady: prijateDoXml.map(prijataAkoDoklad),
         nastavenia: nastPrijatych,
       });
-      zip.file("pohoda-prijate-faktury.xml", xmlPrijatych);
+      if (xmlPrijatych) zip.file("pohoda-prijate-faktury.xml", xmlPrijatych);
+      else prijateDoXml = [];
     }
     zip.file(
       "prijate-faktury.csv",

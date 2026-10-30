@@ -321,10 +321,16 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
   const zn = await riadokZnaciek(ctx, d, []);
   if (!zn.ok) return zn.odpoved;
   const customer_id = await partnerId(ctx, d.supplier, "dodavatel");
+  // Cudzia mena: kurz ECB/ČNB hneď do riadku, inak by ho exporty vynechali.
+  const kurz = await (await import("./kurz-dokladu.server")).doplnovacKurzov(ctx.company_id)(
+    "purchase_invoices",
+    riadok,
+  );
   const { data, error } = await db
     .from("purchase_invoices")
     .insert({
       ...riadok,
+      ...kurz,
       ...zn.riadok,
       variable_symbol: vsPrijatejNaUlozenie(d.variable_symbol, d.invoice_number),
       status: riadok.status ?? "received",
@@ -490,10 +496,16 @@ export async function zalozBlocek(ctx: ApiCtx): Promise<Odpoved> {
   const zn = await riadokZnaciek(ctx, d, []);
   if (!zn.ok) return zn.odpoved;
   const teraz = new Date().toISOString();
+  const blocek = riadokBlocku(d, teraz);
+  const kurz = await (await import("./kurz-dokladu.server")).doplnovacKurzov(ctx.company_id)(
+    "expense_documents",
+    blocek,
+  );
   const { data, error } = await db
     .from("expense_documents")
     .insert({
-      ...riadokBlocku(d, teraz),
+      ...blocek,
+      ...kurz,
       ...zn.riadok,
       company_id: ctx.company_id,
       external_id: d.external_id ?? null,

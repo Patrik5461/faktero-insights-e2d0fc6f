@@ -1024,6 +1024,8 @@ export async function runImport(args: {
   const { jobId, companyId, rows, mapping, options } = args;
   // Pôvod sa písal natvrdo ako „SuperFaktúra" aj pri importe z iDokladu.
   const zdroj = args.source ?? "SuperFaktúra";
+  // Faktúra v cudzej mene dostane kurz už pri importe — bez neho ju exporty vynechajú.
+  const kurzDoRiadku = (await import("./kurz-dokladu.server")).doplnovacKurzov(companyId);
 
   const result: ImportResult = {
     imported_customers: 0,
@@ -1241,6 +1243,7 @@ export async function runImport(args: {
         imported_at: new Date().toISOString(),
         original_external_id: externalId || null,
       };
+      Object.assign(payload, await kurzDoRiadku("invoices", payload));
 
       let invoiceId: string;
       if (existingId && options.updateExisting) {

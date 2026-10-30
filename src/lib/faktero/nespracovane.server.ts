@@ -433,10 +433,16 @@ export async function vytvorDoklad(
       const up = await supabase.storage.from("expense-receipts").upload(cesta, bajty, { contentType: mime });
       if (up.error) throw new Error(`Súbor sa nepodarilo uložiť: ${up.error.message}`);
     }
+    // Bloček v cudzej mene si kurz pamätá ako faktúra (export ho inak nemá z čoho prepočítať).
+    const kurzBlocku = await (await import("./kurz-dokladu.server")).doplnovacKurzov(r.company_id)(
+      "expense_documents",
+      blocekZUdajov(u),
+    );
     const { data, error } = await supabase
       .from("expense_documents")
       .insert({
         ...blocekZUdajov(u),
+        ...kurzBlocku,
         ...(await zPravidla(blocekZUdajov(u), true)),
         predmet_mailu: predmetMailu,
         inbox_message_id: r.inbox_message_id ?? null,
