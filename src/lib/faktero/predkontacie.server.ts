@@ -206,9 +206,24 @@ export async function nastaveniaDokladov(
     .select("kod, agenda")
     .eq("company_id", company.id)
     .eq("druh", "predkontacia")
-    .in("agenda", ["commitment", "receivedInvoice"])
     .eq("aktivne", true);
   out.zavazkovePredkontacie = (await import("./uctovanie-agenda")).zavazkoveKody(zavazky ?? []);
+  // Všetky agendy — zavazkoveKody si berie len záväzky a prijaté. Kódy, ktoré
+  // Pohoda v prijatých faktúrach pozná (+ ručne pridané bez agendy) —
+  // len keď je číselník z Pohody načítaný (pohoda-kontrola varovanieNeznamehoKodu).
+  {
+    const riadky = (zavazky ?? []) as { kod: unknown; agenda: unknown }[];
+    out.predkontaciePrijatych = riadky.some((r) => r.agenda === "receivedInvoice")
+      ? [
+          ...new Set(
+            riadky
+              .filter((r) => r.agenda === "receivedInvoice" || !r.agenda)
+              .map((r) => String(r.kod ?? "").trim())
+              .filter(Boolean),
+          ),
+        ]
+      : [];
+  }
   out.pomeryPredkontacii = await pomeryPredkontacii(supabase, company.id);
   // Vozidlo s odpočtom DPH 50 % (zmiešané použitie) rozúčtuje doklad samo.
   out.odpocetVozidiel = await (

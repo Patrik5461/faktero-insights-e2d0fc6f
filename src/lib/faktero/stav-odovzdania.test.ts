@@ -262,3 +262,17 @@ describe.skipIf(!existsSync(`${XSD}/data.xsd`))(
     }, 30000);
   },
 );
+
+describe("textVarovaniaVratenia pri inom programe (test 30. 10.)", () => {
+  it("doklad poslaný do Money nespomína Pohodu", () => {
+    const f = textVarovaniaVratenia("prijata", "subor", "Money S3");
+    expect(f).toContain("{program}");
+    expect(f).not.toMatch(/Pohod/);
+    expect(textVarovaniaVratenia("doklad", null, "KROS Omega")).toMatch(
+      /^Vrátiť doklad z účtovníctva/,
+    );
+  });
+  it("bez programu ostáva text pre Pohodu", () => {
+    expect(textVarovaniaVratenia("faktura", "konektor", null)).toMatch(/^Vrátiť faktúru z Pohody/);
+  });
+});

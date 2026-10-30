@@ -77,7 +77,7 @@ export function ZauctovanieVystavenejPanel({
   const varovanieVratenia = useVarovanieVratenia();
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
   const [stav, setStav] = useState<{
-    vPohode: { kedy: string; cislo: string | null } | null;
+    vPohode: { kedy: string; cislo: string | null; program?: string | null } | null;
   } | null>(null);
   const [h, setH] = useState({
     predkontacia: "",
@@ -189,7 +189,7 @@ export function ZauctovanieVystavenejPanel({
   async function vratitZPohody() {
     if (
       // Pravdivo podľa cesty: konektor ani súbor doklad v Pohode nezmažú (P-1009).
-      await potvrd(varovanieVratenia("faktura", inv))
+      await potvrd(varovanieVratenia("faktura", inv, stav?.vPohode?.program))
     )
       void akcia(
         () => vrat({ data: { company_id: inv.company_id, id: inv.id } }),
@@ -438,7 +438,12 @@ export function ZauctovanieVystavenejPanel({
           </h2>
           {koncept ? null : vPohode ? (
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              {t("V Pohode od {kedy}", { kedy: kedy(vPohode.kedy, loc) })}
+              {vPohode.program
+                ? t("V účtovníctve ({program}) od {kedy}", {
+                    program: vPohode.program,
+                    kedy: kedy(vPohode.kedy, loc),
+                  })
+                : t("V Pohode od {kedy}", { kedy: kedy(vPohode.kedy, loc) })}
               {vPohode.cislo ? ` · ${t("č. {cislo}", { cislo: vPohode.cislo })}` : ""}
             </span>
           ) : zauctovana ? (
@@ -453,7 +458,11 @@ export function ZauctovanieVystavenejPanel({
         </div>
         {zamknute ? (
           <p className="mt-1 text-xs text-muted-foreground">
-            {t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")}
+            {vPohode?.program
+              ? t("Faktúra je odovzdaná do účtovníctva ({program}) — zmeniť sa dá až po vrátení.", {
+                  program: vPohode.program,
+                })
+              : t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")}
           </p>
         ) : null}
         {koncept ? null : (
@@ -561,16 +570,22 @@ export function ZauctovanieVystavenejPanel({
             ) : null}
             {vPohode ? (
               <>
-                <button type="button" onClick={stiahnut} disabled={busy} className={male}>
-                  <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML znova")}
-                </button>
+                {/* XML pre Pohodu len pri faktúre, ktorá odišla do Pohody. */}
+                {vPohode.program ? null : (
+                  <button type="button" onClick={stiahnut} disabled={busy} className={male}>
+                    <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML znova")}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => void vratitZPohody()}
                   disabled={busy}
                   className={male}
                 >
-                  <Undo2 className="h-3.5 w-3.5" /> {t("Vrátiť z Pohody (opraviť)")}
+                  <Undo2 className="h-3.5 w-3.5" />{" "}
+                  {vPohode.program
+                    ? t("Vrátiť z účtovníctva (opraviť)")
+                    : t("Vrátiť z Pohody (opraviť)")}
                 </button>
                 <OpravitZauctovanie row={inv} druh="faktura" onZmena={onZmena} className={male} />
               </>
@@ -628,7 +643,12 @@ export function ZauctovanieVystavenejPanel({
         </div>
         {vPohode ? (
           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-            {t("V Pohode od {kedy}", { kedy: kedy(vPohode.kedy, loc) })}
+            {vPohode.program
+              ? t("V účtovníctve ({program}) od {kedy}", {
+                  program: vPohode.program,
+                  kedy: kedy(vPohode.kedy, loc),
+                })
+              : t("V Pohode od {kedy}", { kedy: kedy(vPohode.kedy, loc) })}
             {vPohode.cislo ? ` · ${t("č. {cislo}", { cislo: vPohode.cislo })}` : ""}
           </span>
         ) : zauctovana ? (
@@ -664,22 +684,30 @@ export function ZauctovanieVystavenejPanel({
                 , KV <strong>{inv.kv_clenenie}</strong>
               </>
             ) : null}
-            . {t("Faktúra je v Pohode.")}
+            .{" "}
+            {vPohode.program
+              ? t("Faktúra je odovzdaná do účtovníctva ({program}).", { program: vPohode.program })
+              : t("Faktúra je v Pohode.")}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              onClick={stiahnut}
-              disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" /> {t("Stiahnuť XML znova")}
-            </button>
+            {vPohode.program ? null : (
+              <button
+                onClick={stiahnut}
+                disabled={busy}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" /> {t("Stiahnuť XML znova")}
+              </button>
+            )}
             <button
               onClick={() => void vratitZPohody()}
               disabled={busy}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <Undo2 className="h-4 w-4" /> {t("Vrátiť z Pohody (opraviť)")}
+              <Undo2 className="h-4 w-4" />{" "}
+              {vPohode.program
+                ? t("Vrátiť z účtovníctva (opraviť)")
+                : t("Vrátiť z Pohody (opraviť)")}
             </button>
             <OpravitZauctovanie
               row={inv}

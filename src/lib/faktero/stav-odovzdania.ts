@@ -123,8 +123,17 @@ export type DruhDokladuOdovzdania = "faktura" | "prijata" | "doklad";
 export function textVarovaniaVratenia(
   druh: DruhDokladuOdovzdania,
   cesta: CestaOdovzdania | null,
+  /**
+   * Iný program než Pohoda (`nazovProgramuExportu`) — text má zástupný znak
+   * `{program}`, volajúci ho dosadí v `t()`. Null/prázdne = Pohoda.
+   */
+  program?: string | null,
 ): string {
   const doklad = druh === "doklad";
+  if (program)
+    return doklad
+      ? "Vrátiť doklad z účtovníctva ({program})? Vráti sa medzi nespracované a po oprave ho môžete exportovať znova. Faktero doklad v programe {program} nezmaže — zmažte ho tam ručne, inak tam po ďalšom exporte bude dvakrát. Ak treba opraviť len predkontáciu, členenie alebo stredisko, použite radšej „Opraviť zaúčtovanie“."
+      : "Vrátiť faktúru z účtovníctva ({program})? Zaúčtovanie sa zruší a po oprave ju môžete exportovať znova. Faktero doklad v programe {program} nezmaže — zmažte ho tam ručne, inak tam po ďalšom exporte bude dvakrát. Ak treba opraviť len predkontáciu, členenie alebo stredisko, použite radšej „Opraviť zaúčtovanie“.";
   const uvod = doklad
     ? "Vrátiť doklad z Pohody? Vráti sa medzi nespracované a po oprave pri ďalšom odovzdaní pôjde do Pohody znova."
     : "Vrátiť faktúru z Pohody? Zaúčtovanie sa zruší a po oprave pri ďalšom odovzdaní pôjde do Pohody znova.";
