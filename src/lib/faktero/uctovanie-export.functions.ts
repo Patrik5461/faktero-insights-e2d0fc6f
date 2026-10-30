@@ -80,10 +80,17 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
         zle.has(d.id) ? (preskocene.push(`${d.cislo} — neodsúhlasená samofaktúra`), false) : true,
       );
     }
-    const { ok, cakaju } = await (
+    const { ok: schvalene, cakaju } = await (
       await import("./schvalovanie.server")
     ).lenSchvalene(supabase, data.company_id, data.agenda, kandidati);
     if (cakaju) preskocene.push(`${cakaju} čaká na schválenie`);
+    // Doklad, ktorého riadky nesedia so sumou o viac než euro, by išiel s vymysleným zaokrúhlením.
+    const { prekazkaZaokruhlenia } = await import("./zauctovanie-export");
+    const ok = schvalene.filter((d) => {
+      const dovod = prekazkaZaokruhlenia(d);
+      if (dovod) preskocene.push(dovod);
+      return !dovod;
+    });
     if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
 
     const kody = await kodyUctovania(supabase, data.company_id);

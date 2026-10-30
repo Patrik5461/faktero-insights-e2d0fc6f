@@ -227,3 +227,41 @@ describe("Omega EUD", () => {
     expect(bezEvidencie.obsah.trimEnd().split("\r\n")).toHaveLength(1);
   });
 });
+
+describe("Omega EUD — dátum odpočtu a záporné riadky prijatých", () => {
+  it("bloček: dátum prijatia a DUUP podľa dokladu, voľba doručenia posunie DUUP", () => {
+    const b = { id: "b-dat", payment_method: "prevod", issue_date: "2026-09-28", created_at: "2026-10-03T08:00:00Z", total_amount: 12.3, vat_breakdown: [{ sadzba: 23, zaklad: 10, dph: 2.3 }] };
+    const h = vetvy(buildOmegaUctovanie({ firma, doklady: [blocekNaUctovanie(b, nast)], kody, nastavenia }).obsah)[1]!;
+    expect(h[10]).toBe("28.09.2026");
+    expect(h[13]).toBe("28.09.2026");
+    const h2 = vetvy(
+      buildOmegaUctovanie({ firma, doklady: [blocekNaUctovanie(b, { ...nast, datumOdpoctu: "dorucenie" })], kody, nastavenia }).obsah,
+    )[1]!;
+    expect(h2[13]).toBe("03.10.2026");
+  });
+
+  it("prijatá so zľavou a odpočtom zálohy v 0 %: zápisy sedia so sumou dokladu", () => {
+    const d = prijataNaUctovanie(
+      {
+        id: "p-zf",
+        invoice_number: "40260037",
+        issue_date: "2026-10-14",
+        supplier_name: "Auto a.s.",
+        amount_total: 59920,
+        amount_without_vat: 45914.31,
+        vat_amount: 14005.69,
+        items: [
+          { name: "Vozidlo", total: 70123.57, quantity: 1, vat_rate: 23 },
+          { name: "Akciová zľava", total: -9229.27, quantity: 1, vat_rate: 23 },
+          { name: "ZF 9180431", total: -14980, quantity: 1, vat_rate: 0 },
+          { name: "Vyrovnanie", total: 0.01, quantity: 1, vat_rate: 0 },
+        ],
+      },
+      nast,
+    );
+    const { obsah, preskocene } = buildOmegaUctovanie({ firma, doklady: [d], kody, nastavenia });
+    expect(preskocene).toEqual([]);
+    expect(vetvy(obsah)[1]![19]).toBe("59920,00");
+    expect(zapisy(obsah).some((z) => cislo(z[6]!) === 14979.99)).toBe(false);
+  });
+});

@@ -32,7 +32,11 @@
   - Databáza MRP je vo Windows-1250 — znaky mimo nej sa nahradia.
 */
 
-import type { DokladUctovania, RiadokUctovania } from "./zauctovanie-export";
+import {
+  prekazkaZaokruhlenia,
+  type DokladUctovania,
+  type RiadokUctovania,
+} from "./zauctovanie-export";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 
 export type NastaveniaMrp = {
@@ -249,9 +253,32 @@ function riadkyMrp(d: DokladUctovania, typ: number): RiadokMrp[] {
 
   const bezne = d.riadky.filter((r) => !(r.zaklad < 0 && /^Odpočet zálohy/.test(r.text ?? "")));
   const odpocty = d.riadky.filter((r) => !bezne.includes(r));
-  const sucet = (rr: { zaklad: number; dph: number }[]) =>
-    r2(rr.reduce((a, r) => a + r.zaklad + r.dph, 0));
-  const polozkySedia = d.polozky.length > 0 && Math.abs(sucet(d.polozky) - sucet(bezne)) < 0.01;
+  /*
+    Položky sa pošlú, len keď sedia so zaúčtovaním v každej sadzbe zvlášť
+    v základe aj v dani — súčet s DPH by pustil položku, ktorá má celú
+    sumu v základe a nulovú daň.
+  */
+  const poSadzbach = (rr: { sadzba: number; zaklad: number; dph: number }[]) => {
+    const m = new Map<number, { zaklad: number; dph: number }>();
+    for (const r of rr) {
+      const x = m.get(Number(r.sadzba) || 0) ?? { zaklad: 0, dph: 0 };
+      x.zaklad = r2(x.zaklad + r.zaklad);
+      x.dph = r2(x.dph + r.dph);
+      m.set(Number(r.sadzba) || 0, x);
+    }
+    return m;
+  };
+  const sedia = () => {
+    const a = poSadzbach(d.polozky);
+    const b = poSadzbach(bezne);
+    for (const k of new Set([...a.keys(), ...b.keys()])) {
+      const x = a.get(k) ?? { zaklad: 0, dph: 0 };
+      const y = b.get(k) ?? { zaklad: 0, dph: 0 };
+      if (Math.abs(x.zaklad - y.zaklad) >= 0.01 || Math.abs(x.dph - y.dph) >= 0.01) return false;
+    }
+    return true;
+  };
+  const polozkySedia = d.polozky.length > 0 && sedia();
 
   let out: RiadokMrp[];
   if (vydana && d.polozky.length) {
@@ -438,8 +465,12 @@ function doklad(
   const h = hlavickaSum(sumy, m);
   const pk = cisloPredkontacie(d.riadky[0]?.predkontacia ?? d.predkontacia);
   const docType = d.druh === "dobropis" ? "D" : vydana && d.opravuje ? "V" : "";
-  // Prijatá: dátum odpočtu dane = dátum zaúčtovania (uzamknuté obdobie) alebo prijatia.
-  const odpocetDane = d.datumZauctovania ?? d.datumPrijatia ?? d.datumVystavenia;
+  /*
+    Prijatá a bloček: dátum odpočtu dane podľa voľby „Dátum odpočtu" v
+    nastaveniach exportu (`datumOdpoctu`, predvolene dodanie — ako Pohoda);
+    nie dátum nahratia bločku.
+  */
+  const odpocetDane = d.datumOdpoctu ?? d.datumZauctovania ?? d.datumDodania ?? d.datumVystavenia;
   const vs = String(d.vs ?? "")
     .replace(/\D/g, "")
     .slice(0, 10);
@@ -559,6 +590,12 @@ export function buildMrpUctovanie(opts: {
     }
     if (d.odpocetZalohy > 0 && !d.odpocetVRiadkoch) {
       preskocene.push(`${nazov} — odpočet zálohy treba v MRP zaúčtovať ručne`);
+      continue;
+    }
+    // Aj pre export vystavených faktúr mimo zaúčtovania (MRP_XML) — vymyslené zaokrúhlenie nie.
+    const zaokr = prekazkaZaokruhlenia(d);
+    if (zaokr) {
+      preskocene.push(zaokr);
       continue;
     }
     if (d.oss) {

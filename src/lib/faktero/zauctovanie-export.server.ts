@@ -13,6 +13,7 @@ import {
   type KodUctovania,
   type NastaveniaUctovania,
 } from "./zauctovanie-export";
+import { nastaveniaExportu } from "./export-nastavenia";
 
 type Klient = any;
 
@@ -62,6 +63,11 @@ export async function nastaveniaUctovania(
     radInterne: company.pohoda_rad_interne,
     pokladna: company.pohoda_pokladna,
     zamknuteDo: company.locked_until ?? null,
+    // Dátum odpočtu prijatých dokladov ako v Pohode (Predkontácie → Export).
+    ...(() => {
+      const ex = nastaveniaExportu(company.uctovanie_nastavenia);
+      return { datumZapisu: ex.datumZapisu, datumOdpoctu: ex.datumOdpoctu };
+    })(),
     zakazkyDokladov,
   };
 }

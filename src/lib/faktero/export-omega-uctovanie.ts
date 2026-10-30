@@ -383,8 +383,17 @@ export function buildOmegaUctovanie(opts: {
     set(11, datumSk(d.datumPrijatia ?? d.datumVystavenia));
     set(12, datumSk(d.datumSplatnosti ?? d.datumVystavenia));
     set(13, datumSk(d.datumDodania ?? d.datumVystavenia));
-    // DUUP — dátum účtovného prípadu; z uzamknutého obdobia ide na deň po uzávierke.
-    set(14, datumSk(d.datumZauctovania ?? d.datumDodania ?? d.datumVystavenia));
+    /*
+      DUUP — dátum účtovného prípadu, podľa neho Omega zaradí doklad do
+      obdobia DPH; z uzamknutého obdobia ide na deň po uzávierke. Prijatý
+      doklad a bloček ho majú podľa voľby „Dátum odpočtu" (`datumOdpoctu`).
+    */
+    set(
+      14,
+      datumSk(
+        (vystup ? null : d.datumOdpoctu) ?? d.datumZauctovania ?? d.datumDodania ?? d.datumVystavenia,
+      ),
+    );
     set(15, cudzia ? pole(d.mena, 5) : "EUR");
     set(16, "1");
     // Kurz ECB a kurz pre DPH — Faktero pozná jeden, ten zo dňa pred dodaním.
