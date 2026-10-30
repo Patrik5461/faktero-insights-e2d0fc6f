@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { MoznostKodu } from "./predkontacie";
 import { POLIA_ZAUCTOVANIA_DOKLADU, zmenaZauctovaniaDokladu } from "./zauctovanie-dokladu";
+import { DOVOD_BEZ_CLENENIA } from "./clenenie-zauctovania";
 
 /*
   Zaúčtovanie prijatých faktúr — predkontácia, členenie DPH, kategória a
@@ -208,6 +209,80 @@ async function opravaAutomatu(
   }
 }
 
+/**
+ * Členenie DPH pre zaúčtovanie prijatých faktúr: čo doplniť z návrhu a ktoré
+ * faktúry platiteľ DPH bez členenia nezaúčtuje. Rozhoduje `clenenieFaktur`.
+ */
+async function clenenieNaZauctovanie(
+  supabase: any,
+  data: { company_id: string; ids: string[]; clenenie?: string | null; kategoria?: string | null },
+  riadky: any[],
+): Promise<{ doplnit: Record<string, string>; bez: string[] }> {
+  const { clenenieFaktur, potrebujeNavrh } = await import("./clenenie-zauctovania");
+  const { rezimFirmy } = await import("./dph-rezim");
+  // Detail posiela členenie vždy — prázdne tam znamená „zmazať z faktúry“.
+  const o = {
+    zvolene: data.clenenie?.trim() || null,
+    vymazat: data.ids.length === 1 && data.clenenie !== undefined && !data.clenenie?.trim(),
+  };
+  const [{ data: firma }, { data: kategorie }] = await Promise.all([
+    supabase
+      .from("companies")
+      .select("country, ic_dph, vat_payer, vat_scheme, pohoda_clenenie_dph_prijata")
+      .eq("id", data.company_id)
+      .maybeSingle(),
+    supabase
+      .from("predkontacie")
+      .select("kod, kategoria, aktivne")
+      .eq("company_id", data.company_id)
+      .eq("druh", "clenenie_dph")
+      .not("kategoria", "is", null),
+  ]);
+  const podlaKategorie: Record<string, { clenenie: string }> = {};
+  for (const r of (kategorie ?? []) as any[])
+    if (r.aktivne !== false) podlaKategorie[r.kategoria] ??= { clenenie: r.kod };
+
+  const navrhy: Record<string, string> = {};
+  const treba = riadky.filter((r) => potrebujeNavrh({ clenenie: r.pohoda_clenenie_dph }, o));
+  if (treba.length) {
+    // Návrh potrebuje celý riadok (položky, rozpis DPH) — načíta sa len pre tieto.
+    const { nacitajKontext, navrhBezAiPrijatej } = await import("./ai-predkontacia.server");
+    const kontext = await nacitajKontext(supabase, data.company_id);
+    const { data: cele } = await supabase
+      .from("purchase_invoices")
+      .select("*")
+      .in(
+        "id",
+        treba.map((r) => r.id),
+      );
+    const zoznam = (cele ?? []) as any[];
+    for (let i = 0; i < zoznam.length; i += 10) {
+      await Promise.all(
+        zoznam.slice(i, i + 10).map(async (r) => {
+          const n = await navrhBezAiPrijatej(supabase, r, kontext).catch(() => ({}) as any);
+          const k = n?.clenenie?.zdroj !== "doklad" ? n?.clenenie?.hodnota : null;
+          if (k) navrhy[r.id] = k;
+        }),
+      );
+    }
+  }
+  return clenenieFaktur(
+    riadky.map((r) => ({
+      id: r.id,
+      clenenie: r.pohoda_clenenie_dph,
+      kategoria: data.kategoria?.trim() || r.category,
+      rozuctovanie: r.rozuctovanie,
+      navrh: navrhy[r.id] ?? null,
+    })),
+    {
+      ...o,
+      podlaKategorie,
+      predvolene: firma?.pohoda_clenenie_dph_prijata ?? null,
+      platitel: rezimFirmy(firma).platitel,
+    },
+  );
+}
+
 export const zauctujPrijateFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
@@ -225,6 +300,8 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
         rad: kod,
         intPoznamka: z.string().max(240).optional().nullable(),
         lenUlozit: z.boolean().optional(),
+        /** Len kontrola členenia DPH pred zaúčtovaním — nič sa nezapíše. */
+        kontrolaClenenia: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -234,7 +311,7 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
     const { data: riadky, error } = await supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, status, exported_at, deleted_at, samofakturacia, samofakturacia_stav, type, supplier_ico, supplier_ic_dph, supplier_name, amount_total, opravuje_cislo, pohoda_predkontacia, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh, odberatel_nesedi",
+        "id, invoice_number, status, exported_at, deleted_at, samofakturacia, samofakturacia_stav, type, supplier_ico, supplier_ic_dph, supplier_name, amount_total, opravuje_cislo, pohoda_predkontacia, pohoda_clenenie_dph, category, rozuctovanie, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh, odberatel_nesedi",
       )
       .eq("company_id", data.company_id)
       .in("id", data.ids);
@@ -265,6 +342,33 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
       ok.push(r.id);
     }
 
+    /*
+      Členenie DPH: kde ho okno nevybralo a faktúra ho nemá, doplní sa z
+      návrhu pre faktúru (pravidlo, návyk dodávateľa — ako na detaile, bez AI).
+      Platiteľ DPH faktúru bez členenia nezaúčtuje (clenenie-zauctovania.ts).
+    */
+    let doplnitClenenie: Record<string, string> = {};
+    const bezClenenia: string[] = [];
+    if (!data.lenUlozit && ok.length) {
+      const c = await clenenieNaZauctovanie(supabase, data, (riadky ?? []).filter((x: any) => ok.includes(x.id)));
+      doplnitClenenie = c.doplnit;
+      for (const id of c.bez) {
+        const r = (riadky ?? []).find((x: any) => x.id === id);
+        bezClenenia.push(String(r?.invoice_number ?? id));
+        if (!data.kontrolaClenenia) preskocene.push(`${r?.invoice_number ?? id}: ${DOVOD_BEZ_CLENENIA}`);
+      }
+      ok.splice(0, ok.length, ...ok.filter((id) => !c.bez.includes(id)));
+    }
+    if (data.kontrolaClenenia)
+      return {
+        zauctovanych: 0,
+        ulozenych: 0,
+        preskocene,
+        ponukaPravidla: null,
+        bezClenenia,
+        doplneneClenenie: Object.keys(doplnitClenenie).length,
+      };
+
     if (ok.length) {
       const zmena: Record<string, unknown> = {};
       if (data.predkontacia !== undefined) zmena.pohoda_predkontacia = data.predkontacia?.trim() || null;
@@ -287,6 +391,16 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
       if (Object.keys(zmena).length) {
         const { error: e2 } = await supabase.from("purchase_invoices").update(zmena).in("id", ok);
         if (e2) throw new Error(e2.message);
+      }
+      // Členenie z návrhu — po kódoch, nech je to pár volaní aj pre stovky faktúr.
+      const podlaKodu = new Map<string, string[]>();
+      for (const id of ok) {
+        const k = doplnitClenenie[id];
+        if (k) podlaKodu.set(k, [...(podlaKodu.get(k) ?? []), id]);
+      }
+      for (const [k, ids] of podlaKodu) {
+        const { error: e3 } = await supabase.from("purchase_invoices").update({ pohoda_clenenie_dph: k }).in("id", ids);
+        if (e3) throw new Error(e3.message);
       }
       if (!data.lenUlozit) {
         // „Prijatá“ sa zaúčtovaním stáva „zaúčtovanou“; zaplatená ostáva zaplatená.
@@ -329,7 +443,14 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
         }
       }
     }
-    return { zauctovanych: data.lenUlozit ? 0 : ok.length, ulozenych: ok.length, preskocene, ponukaPravidla };
+    return {
+      zauctovanych: data.lenUlozit ? 0 : ok.length,
+      ulozenych: ok.length,
+      preskocene,
+      ponukaPravidla,
+      bezClenenia,
+      doplneneClenenie: ok.filter((id) => doplnitClenenie[id]).length,
+    };
   });
 
 export const zrusZauctovanieFn = createServerFn({ method: "POST" })

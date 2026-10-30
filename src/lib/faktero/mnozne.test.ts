@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FAKTURY, mnozne, POLOZKY, sPoctom } from "./mnozne";
+import { CAKAJUCE_BLOCKY, FAKTURY, mnozne, POLOZKY, sPoctom } from "./mnozne";
 
 describe("mnozne", () => {
   it("berie tvar podľa počtu", () => {
@@ -17,5 +17,11 @@ describe("mnozne", () => {
 
   it("sPoctom pridá číslo", () => {
     expect(sPoctom(3, POLOZKY)).toBe("3 položky");
+  });
+
+  it("upozornenie na čakajúce bločky má správny tvar aj sloveso", () => {
+    expect(mnozne(1, CAKAJUCE_BLOCKY)).toMatch(/^1 bloček čaká/);
+    expect(mnozne(3, CAKAJUCE_BLOCKY)).toMatch(/^\{n\} bločky čakajú/);
+    expect(mnozne(5, CAKAJUCE_BLOCKY)).toMatch(/^\{n\} bločkov čaká/);
   });
 });

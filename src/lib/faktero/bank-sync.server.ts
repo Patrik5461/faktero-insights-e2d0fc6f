@@ -439,62 +439,12 @@ export async function syncPripojenie(
       .eq("id", conn.id);
 
     /*
-     * Nové pohyby hneď spárujeme. Zapíše sa len isté (sedí variabilný symbol
-     * aj suma) — sporné ostávajú návrhmi, presne ako pri ručnom párovaní.
-     * Bez tohto kroku by peniaze na účte ležali nespárované až dovtedy, kým
-     * si niekto otvorí párovanie, a upozornenie o úhrade by nemalo vzniknúť.
+     * Nové pohyby hneď spárujeme (faktúry, splátky, kontokorent) — to isté
+     * beží aj po nahratí výpisu, pozri `parovanie-po-pohyboch.server.ts`.
      */
     if (inserted > 0 && conn.company_id) {
-      try {
-        const { sparujFirmuAutomaticky } = await import("./parovanie.functions");
-        const { uhradene } = await sparujFirmuAutomaticky(conn.company_id);
-        if (uhradene.length) {
-          const { oznamUhradu } = await import("./push-uhrada.server");
-          await oznamUhradu(conn.company_id, uhradene);
-        }
-      } catch (e: any) {
-        // Párovanie je nadstavba — keď zlyhá, stiahnuté pohyby ostávajú.
-        console.error(`[bank-sync] párovanie firmy ${conn.company_id} zlyhalo:`, e?.message ?? e);
-      }
-
-      /*
-        To isté pre splátky leasingov a úverov. Je to samostatný prechod:
-        faktúry sa párujú z prichádzajúcich platieb, splátky z odchádzajúcich,
-        a pravidlá sú iné — pri splátkach nestačí suma, lebo sú každý mesiac
-        rovnaké.
-      */
-      try {
-        const { sparujSplatkyFirmyAutomaticky } = await import("./financovanie.functions");
-        const { zapisanych } = await sparujSplatkyFirmyAutomaticky(conn.company_id);
-        if (zapisanych > 0) {
-          console.log(`[bank-sync] firma ${conn.company_id}: spárovaných splátok ${zapisanych}`);
-        }
-      } catch (e: any) {
-        console.error(
-          `[bank-sync] párovanie splátok firmy ${conn.company_id} zlyhalo:`,
-          e?.message ?? e,
-        );
-      }
-
-      /*
-        Úroky a poplatky z kontokorentu. Až po splátkach: čo si vzala splátka
-        úveru, sem už neprejde. Párujú sa len pohyby z účtu, na ktorom rámec
-        je, a len tie, ktoré o kontokorente výslovne hovoria.
-      */
-      try {
-        const { sparujKontokorentyFirmyAutomaticky } = await import("./kontokorent.server");
-        const { zapisanych } = await sparujKontokorentyFirmyAutomaticky(conn.company_id);
-        if (zapisanych > 0) {
-          console.log(
-            `[bank-sync] firma ${conn.company_id}: spárovaných úrokov a poplatkov z kontokorentu ${zapisanych}`,
-          );
-        }
-      } catch (e: any) {
-        console.error(
-          `[bank-sync] párovanie kontokorentu firmy ${conn.company_id} zlyhalo:`,
-          e?.message ?? e,
-        );
-      }
+      const { sparujNovePohybyFirmy } = await import("./parovanie-po-pohyboch.server");
+      await sparujNovePohybyFirmy(conn.company_id, "bank-sync");
     }
 
     return {

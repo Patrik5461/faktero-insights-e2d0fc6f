@@ -82,6 +82,9 @@ function ImportVypisuPage() {
         r.preskocenych
           ? t("Nahraných {n} pohybov, {m} už v evidencii bolo.", { n: r.vlozenych, m: r.preskocenych })
           : t("Nahraných {n} pohybov.", { n: r.vlozenych }),
+        r.sparovanych
+          ? { description: t("Automaticky spárovaných: {n}.", { n: r.sparovanych }) }
+          : undefined,
       );
       navigate({ to: "/bankove-ucty" });
     } catch (e) {

@@ -263,3 +263,17 @@ export function textyPreObjednavku(ai: Record<string, unknown> | null | undefine
     ...polozky,
   ].filter(Boolean);
 }
+
+/**
+ * Zdroj zaúčtovania dokladu vytvoreného z Nespracovaných. Kódy (vlastné,
+ * z pravidla aj z potvrdeného návrhu AI) človek videl a potvrdil tlačidlom
+ * Vytvoriť — je to ručné zaúčtovanie (`manual`), rovnako ako keď doklad
+ * zaúčtuje v paneli. Bez toho mal doklad `zauctovane_at`, ale prázdny zdroj,
+ * a v prehľade automatického zaúčtovania nebolo vidno, kto ho zaúčtoval.
+ * Nezaúčtovaný doklad nedostane nič — zdroj mu neskôr dá fronta alebo človek.
+ */
+export function zdrojZauctovaniaPriVytvoreni(
+  zauctovany: boolean,
+): { zauctovanie_zdroj: "manual"; zauctovanie_istota: null } | Record<string, never> {
+  return zauctovany ? { zauctovanie_zdroj: "manual", zauctovanie_istota: null } : {};
+}

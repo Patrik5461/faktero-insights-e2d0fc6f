@@ -107,13 +107,14 @@ function CompanyPage() {
               />
             </div>
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="text-sm font-medium">{t(popisky.ico)}</span>
-            <div className="mt-1 flex -space-x-px items-start">
+            {/* Políčko sa zmenší (min-w-0), tlačidlo nie — česky je jeho text dlhší. */}
+            <div className="mt-1 flex min-w-0 -space-x-px items-start">
               <input
                 value={c.ico ?? ""}
                 onChange={(e) => f("ico")(e.target.value)}
-                className={`w-full border border-input bg-background px-3 py-2 text-sm focus:z-10 ${jeDe ? "rounded-md" : "rounded-l-md"}`}
+                className={`h-10 w-full min-w-0 flex-1 border border-input bg-background px-3 py-2 text-sm focus:z-10 ${jeDe ? "rounded-md" : "rounded-l-md"}`}
               />
               {!jeDe && (
                 <IcoLookupButton

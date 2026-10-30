@@ -3,6 +3,7 @@ import {
   cisloObjednavkyPodlaPredpon,
   kodyPrijatejUrcene,
   blocekZauctovanyPriVytvoreni,
+  zdrojZauctovaniaPriVytvoreni,
   maPredponu,
   textyPreObjednavku,
   nastaveniaNespracovanych,
@@ -174,5 +175,17 @@ describe("blocekZauctovanyPriVytvoreni", () => {
   });
   it("bez predkontácie ostane nezaúčtovaný", () => {
     expect(blocekZauctovanyPriVytvoreni({ ...z, predkontaciaPoZapise: "  " })).toBe(false);
+  });
+});
+
+describe("zdrojZauctovaniaPriVytvoreni", () => {
+  it("zaúčtovaný doklad z Nespracovaných je ručné zaúčtovanie", () => {
+    expect(zdrojZauctovaniaPriVytvoreni(true)).toEqual({
+      zauctovanie_zdroj: "manual",
+      zauctovanie_istota: null,
+    });
+  });
+  it("nezaúčtovaný doklad zdroj nedostane", () => {
+    expect(zdrojZauctovaniaPriVytvoreni(false)).toEqual({});
   });
 });

@@ -53,6 +53,8 @@ import {
   type OznaceniaNavrhu,
 } from "./NavrhAi";
 import type { PoleNavrhu } from "@/lib/faktero/ai-predkontacia";
+import { chybaClenenie, ucinneClenenie } from "@/lib/faktero/clenenie-zauctovania";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 
 export type Navrhy = {
   predkontacie: MoznostKodu[];
@@ -132,6 +134,7 @@ export function PoliaZauctovania({
             {stitok("predkontacia")}
           </span>
           <KodPohody
+            ariaLabel="Predkontácia"
             odkazNaCiselnik
             value={hodnoty.predkontacia}
             placeholder={
@@ -152,6 +155,7 @@ export function PoliaZauctovania({
               {stitok("clenenie")}
             </span>
             <KodPohody
+              ariaLabel="Členenie DPH"
               value={hodnoty.clenenie}
               placeholder={
                 hromadne
@@ -211,6 +215,7 @@ export function PoliaZauctovania({
             <label className="block">
               <span className={popis}>{t("Stredisko")}</span>
               <KodPohody
+                ariaLabel="Stredisko"
                 value={hodnoty.stredisko}
                 onChange={(v) => setHodnoty({ ...hodnoty, stredisko: v })}
                 moznosti={navrhy?.strediska ?? []}
@@ -224,6 +229,7 @@ export function PoliaZauctovania({
             <label className="block">
               <span className={popis}>{t("Činnosť")}</span>
               <KodPohody
+                ariaLabel="Činnosť"
                 value={hodnoty.cinnost}
                 onChange={(v) => setHodnoty({ ...hodnoty, cinnost: v })}
                 moznosti={navrhy?.cinnosti ?? []}
@@ -237,6 +243,7 @@ export function PoliaZauctovania({
             <label className="block">
               <span className={popis}>{t("Číselný rad v Pohode")}</span>
               <KodPohody
+                ariaLabel="Číselný rad v Pohode"
                 value={hodnoty.rad}
                 onChange={(v) => setHodnoty({ ...hodnoty, rad: v })}
                 moznosti={navrhy?.rady ?? []}
@@ -273,6 +280,7 @@ export function PoliaZauctovania({
           {stitok("predkontacia")}
         </span>
         <KodPohody
+          ariaLabel="Predkontácia"
           odkazNaCiselnik
           value={hodnoty.predkontacia}
           placeholder={
@@ -292,6 +300,7 @@ export function PoliaZauctovania({
           {stitok("clenenie")}
         </span>
         <KodPohody
+          ariaLabel="Členenie DPH"
           value={hodnoty.clenenie}
           placeholder={
             hromadne
@@ -349,6 +358,7 @@ export function PoliaZauctovania({
         <label className="block">
           <span className={popis}>{t("Stredisko")}</span>
           <KodPohody
+            ariaLabel="Stredisko"
             value={hodnoty.stredisko}
             onChange={(v) => setHodnoty({ ...hodnoty, stredisko: v })}
             moznosti={navrhy?.strediska ?? []}
@@ -362,6 +372,7 @@ export function PoliaZauctovania({
         <label className="block">
           <span className={popis}>{t("Činnosť")}</span>
           <KodPohody
+            ariaLabel="Činnosť"
             value={hodnoty.cinnost}
             onChange={(v) => setHodnoty({ ...hodnoty, cinnost: v })}
             moznosti={navrhy?.cinnosti ?? []}
@@ -375,6 +386,7 @@ export function PoliaZauctovania({
         <label className="block">
           <span className={popis}>{t("Číselný rad v Pohode")}</span>
           <KodPohody
+            ariaLabel="Číselný rad v Pohode"
             value={hodnoty.rad}
             onChange={(v) => setHodnoty({ ...hodnoty, rad: v })}
             moznosti={navrhy?.rady ?? []}
@@ -520,6 +532,29 @@ export function ZauctovaniePanel({
     setH(h2);
     setPredvyplnene({});
   }
+  // Platiteľ DPH bez členenia nezaúčtuje — to isté pravidlo ako hromadné zaúčtovanie.
+  const rezimDph = useRezimDph();
+  const bezClenenia =
+    navrhy != null &&
+    chybaClenenie(
+      rezimDph.platitel,
+      ucinneClenenie({
+        zvolene: h.clenenie,
+        kategoria: navrhy.podlaKategorie?.[h.kategoria]?.clenenie,
+        predvolene: navrhy.predvoleneClenenie,
+        rozuctovanie: Array.isArray(row.rozuctovanie) ? row.rozuctovanie : null,
+      }),
+    );
+  const upozornenieClenenia = bezClenenia ? (
+    <p
+      role="alert"
+      className="mt-2 w-full rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300"
+    >
+      {t(
+        "Chýba členenie DPH. Platiteľ DPH faktúru bez neho nezaúčtuje — vyberte ho, alebo ho nastavte v predvolených predkontáciách.",
+      )}
+    </p>
+  ) : null;
   const exportuj = useServerFn(exportPrijatychPohodaFn);
   const vrat = useServerFn(vratZPohodyFn);
   const varovanieVratenia = useVarovanieVratenia();
@@ -863,12 +898,13 @@ export function ZauctovaniePanel({
         {aktivneAi && <NavrhAiInfo dovod={navrh?.dovod ?? null} onZahod={zahodNavrh} />}
         {navrh?.stav === "bez_ciselnika" && <NavrhBezCiselnika />}
 
+        {!odovzdana && !zauctovana && upozornenieClenenia}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {!odovzdana && !zauctovana ? (
             <button
               type="button"
               onClick={() => uloz(false)}
-              disabled={busy || Boolean(row.locked_at)}
+              disabled={busy || Boolean(row.locked_at) || bezClenenia}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {busy ? (
@@ -954,6 +990,7 @@ export function ZauctovaniePanel({
               <label className="block">
                 <span className={popisK}>{t("Stredisko")}</span>
                 <KodPohody
+                  ariaLabel="Stredisko"
                   value={h.stredisko ?? ""}
                   onChange={(v) => setH({ ...h, stredisko: v })}
                   moznosti={navrhy?.strediska ?? []}
@@ -965,6 +1002,7 @@ export function ZauctovaniePanel({
               <label className="block">
                 <span className={popisK}>{t("Činnosť")}</span>
                 <KodPohody
+                  ariaLabel="Činnosť"
                   value={h.cinnost ?? ""}
                   onChange={(v) => setH({ ...h, cinnost: v })}
                   moznosti={navrhy?.cinnosti ?? []}
@@ -976,6 +1014,7 @@ export function ZauctovaniePanel({
               <label className="block">
                 <span className={popisK}>{t("Číselný rad v Pohode")}</span>
                 <KodPohody
+                  ariaLabel="Číselný rad v Pohode"
                   value={h.rad ?? ""}
                   onChange={(v) => setH({ ...h, rad: v })}
                   moznosti={navrhy?.rady ?? []}
@@ -1205,11 +1244,12 @@ export function ZauctovaniePanel({
               }}
               onZmena={onZmena}
             />
+            {!zauctovana && upozornenieClenenia}
             <div className="mt-3 flex flex-wrap gap-2">
               {!zauctovana && (
                 <button
                   onClick={() => uloz(false)}
-                  disabled={busy}
+                  disabled={busy || bezClenenia}
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />}

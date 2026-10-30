@@ -18,7 +18,7 @@ import {
 import { fronta, zmazZFronty, type CakajuciDoklad } from "@/lib/mobile/doklady-fronta";
 import { odosliCakajuce } from "@/lib/mobile/doklady-odoslanie";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
-import { formatovacMeny, formatujMenu } from "@/lib/faktero/mena";
+import { formatovacMeny, formatujMenu, formatujMnozstvo } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import {
@@ -999,7 +999,8 @@ function DetailDokladu({
                 <span className="min-w-0">
                   <span className="block">{p.name || "—"}</span>
                   <span className="block text-xs text-app-text-2">
-                    {p.quantity} × {suma(p.unit_price, mena, loc)} · {p.vat_rate} %
+                    {formatujMnozstvo(p.quantity, loc)} × {suma(p.unit_price, mena, loc)} ·{" "}
+                    {p.vat_rate} %
                   </span>
                 </span>
                 <span className="shrink-0 tabular-nums">

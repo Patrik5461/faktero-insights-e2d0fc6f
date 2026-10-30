@@ -16,6 +16,7 @@
 import { jeZnamaSadzba, krajinaDane } from "./vat-rates";
 import { DOVOD_CUDZIA } from "./cudzia-faktura";
 import { rozpisBlocku } from "./rozuctovanie";
+import { ucinneClenenie as clenenieZauctovania } from "./clenenie-zauctovania";
 import { domacaMena } from "./kurzy";
 import {
   DOVOD_NEPLATITEL_PRIJATY,
@@ -312,11 +313,13 @@ export function prekazkaDokladu(
       kod(nastavenia?.predkontaciaPrijata) ||
       (rozuctovane("predkontacia") ? "x" : "");
     if (!pk) return `${cislo} — zaúčtovaná bez predkontácie — doplňte ju v zaúčtovaní`;
-    const cl =
-      vlastneClenenie ||
-      kod(podlaKat?.clenenie) ||
-      kod(nastavenia?.clenenieDphPrijata) ||
-      (rozuctovane("clenenie") ? "x" : "");
+    // To isté pravidlo ako pri zaúčtovaní (clenenie-zauctovania.ts).
+    const cl = clenenieZauctovania({
+      naDoklade: vlastneClenenie,
+      kategoria: podlaKat?.clenenie,
+      predvolene: nastavenia?.clenenieDphPrijata,
+      rozuctovanie: rozuct,
+    }).kod;
     if (!cl) return `${cislo} — zaúčtovaná bez členenia DPH — doplňte ho v zaúčtovaní`;
   }
 
@@ -332,6 +335,36 @@ export function prekazkaDokladu(
     return `${cislo} — hotovostný bloček bez pokladne pre Pohodu — nastavte skratku pokladne v Účtovníctvo → Prepojenie s Pohodou`;
   }
   return null;
+}
+
+/**
+ * Upozornenie (doklad sa nezastaví): rozúčtovanie prijatej faktúry používa
+ * predkontáciu, ktorú firma má len v agende Ostatné záväzky. Faktúra ide do
+ * Pohody ako prijatá faktúra (o agende rozhoduje kód hlavičky), takže taký kód
+ * v riadku Pohoda v agende Prijaté faktúry nenájde a riadok zaúčtuje zle.
+ * Zoznam kódov je `nastavenia.zavazkovePredkontacie` (`zavazkoveKody`).
+ */
+export function varovanieDokladu(d: Riadok, nastavenia?: Riadok | null): string | null {
+  if (!d?._typPohody) return null; // len prijaté faktúry
+  const zavazkove: string[] = Array.isArray(nastavenia?.zavazkovePredkontacie)
+    ? nastavenia.zavazkovePredkontacie.map((x: unknown) => kod(x))
+    : [];
+  if (!zavazkove.length) return null;
+  const rozuctovanie: Riadok[] = Array.isArray(d?.rozuctovanie) ? d.rozuctovanie : [];
+  if (!rozuctovanie.length) return null;
+  const podlaKat = nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
+  const hlavicka =
+    kod(d?.pohoda_predkontacia) ||
+    kod(podlaKat?.predkontacia) ||
+    kod(nastavenia?.predkontaciaPrijata);
+  // Hlavička so záväzkovým kódom → celý doklad ide ako záväzok, riadky sedia.
+  if (hlavicka && zavazkove.includes(hlavicka)) return null;
+  const zle = [
+    ...new Set(rozuctovanie.map((r) => kod(r?.predkontacia)).filter((k) => zavazkove.includes(k))),
+  ];
+  if (!zle.length) return null;
+  const cislo = d?._povodneCislo || d?.document_number || "?";
+  return `${cislo} — rozúčtovanie používa predkontáciu ${zle.map((k) => `„${k}“`).join(", ")} len z agendy Ostatné záväzky — faktúra ide do Pohody ako prijatá faktúra a tam kód nenájde; založte ho aj pre Prijaté faktúry alebo vyberte iný`;
 }
 
 /** Číslo dokladu z textu dôvodu („číslo — dôvod“). */

@@ -2,11 +2,12 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Check, ChevronDown, ChevronUp, Copy, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
+import { formatujMenu, formatujMnozstvo } from "@/lib/faktero/mena";
 import { formatujIban, upravIban } from "@/lib/faktero/platobny-ucet";
 import { bicZIban, kodBankyZIban } from "@/lib/faktero/bic-z-iban";
 import { sumarPoSadzbach } from "@/lib/faktero/uhrady-prijatej";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 /*
   Spoločné kúsky detailu dokladu v kompaktnom rozložení (prijatá faktúra,
@@ -250,7 +251,7 @@ export function PolozkyK({
   akcia?: ReactNode;
   poznamka?: string;
 }) {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const [vsetky, setVsetky] = useState(false);
   if (!polozky.length && !akcia) return null;
   const zobraz = vsetky ? polozky : polozky.slice(0, 3);
@@ -296,7 +297,7 @@ export function PolozkyK({
                   <tr key={i}>
                     <td className="py-2 pr-3">{p.name ?? "—"}</td>
                     <td className="px-2 py-2 text-right tabular-nums">
-                      {p.quantity != null ? formatujCislo(p.quantity, 0, 4) : "—"}
+                      {p.quantity != null ? formatujMnozstvo(p.quantity, lokalJazyka(jazyk)) : "—"}
                     </td>
                     <td className="px-2 py-2">{p.unit ?? ""}</td>
                     <td className="px-2 py-2 text-right tabular-nums">{cena(p.unit_price)}</td>

@@ -334,6 +334,30 @@ function krajinaNavrhu(k: KontextFirmy): Krajina | null {
   return k.krajina === "SK" || k.krajina === "CZ" ? k.krajina : null;
 }
 
+/** Pravidlo účtovania, ktoré na prijatú faktúru sedí ako prvé. */
+function pravidloPrijatej(row: Record<string, any>, kontext: KontextFirmy) {
+  return prvePravidlo(kontext.pravidla, {
+    supplier_ico: row.supplier_ico ?? null,
+    supplier_name: row.supplier_name ?? null,
+    payment_method: row.payment_method ?? null,
+    created_by: row.created_by ?? null,
+    predmet_mailu: row.predmet_mailu ?? null,
+    odosielatel_mailu: row.odosielatel_mailu ?? null,
+    krajina: krajinaDokladu(row.supplier_country, row.supplier_ic_dph),
+    krajina_firmy: kontext.krajina,
+    variabilny_symbol: row.variable_symbol ?? null,
+    druh: "prijata",
+    typ: typPrijatej(row.type, row.amount_total, row.opravuje_cislo),
+  });
+}
+
+const kodyPrijatej = (row: Record<string, any>) => ({
+  predkontacia: row.pohoda_predkontacia,
+  clenenie: row.pohoda_clenenie_dph,
+  kv: row.kv_clenenie,
+  kategoria: row.category,
+});
+
 /** Návrh pre prijatú faktúru (riadok `purchase_invoices`). */
 export async function navrhPrijatej(
   supabase: Klient,
@@ -347,34 +371,43 @@ export async function navrhPrijatej(
   if (row.deleted_at || row.exported_at || row.zauctovane_at) return prazdnyVysledok("netreba");
   const { rozpisPrijatej } = await import("./prijate-do-pohody");
   const vstup = vstupZPrijatej(row, krajina, rozpisPrijatej(row));
-  const pravidlo = prvePravidlo(kontext.pravidla, {
-    supplier_ico: row.supplier_ico ?? null,
-    supplier_name: row.supplier_name ?? null,
-    payment_method: row.payment_method ?? null,
-    created_by: row.created_by ?? null,
-    predmet_mailu: row.predmet_mailu ?? null,
-    odosielatel_mailu: row.odosielatel_mailu ?? null,
-    krajina: krajinaDokladu(row.supplier_country, row.supplier_ic_dph),
-    krajina_firmy: kontext.krajina,
-    variabilny_symbol: row.variable_symbol ?? null,
-    druh: "prijata",
-    typ: typPrijatej(row.type, row.amount_total, row.opravuje_cislo),
-  });
   return navrhni(supabase, {
     companyId: row.company_id,
     typ: "prijata",
     id: row.id,
     userId,
     vstup,
-    doklad: {
-      predkontacia: row.pohoda_predkontacia,
-      clenenie: row.pohoda_clenenie_dph,
-      kv: row.kv_clenenie,
-      kategoria: row.category,
-    },
-    pravidlo: zPravidla(pravidlo),
+    doklad: kodyPrijatej(row),
+    pravidlo: zPravidla(pravidloPrijatej(row, kontext)),
     kontext,
     vynutit,
+  });
+}
+
+/**
+ * Návrh pre prijatú faktúru bez AI — to isté poradie ako na detaile (faktúra >
+ * pravidlo > návyk dodávateľa), len bez volania modelu. Hromadné zaúčtovanie
+ * ním dopĺňa členenie DPH, keď ho v okne nik nevybral.
+ */
+export async function navrhBezAiPrijatej(
+  supabase: Klient,
+  row: Record<string, any>,
+  kontext: KontextFirmy,
+): Promise<ZlucenyNavrh> {
+  const krajina = krajinaNavrhu(kontext);
+  if (!krajina) return {};
+  const { rozpisPrijatej } = await import("./prijate-do-pohody");
+  const vstup = vstupZPrijatej(row, krajina, rozpisPrijatej(row));
+  const navyk = await navykDodavatela(
+    supabase,
+    row.company_id,
+    { ico: vstup.dodavatel.ico, icDph: vstup.dodavatel.icDph, nazov: vstup.dodavatel.nazov },
+    vstup.druh,
+  ).catch(() => ({}));
+  return zlucNavrhy({
+    doklad: kodyPrijatej(row),
+    pravidlo: zPravidla(pravidloPrijatej(row, kontext)),
+    navyk,
   });
 }
 

@@ -83,6 +83,21 @@ describe("pripravPlatby", () => {
     ]);
   });
 
+  it("koncept prijatej faktúry vynechá s dôvodom", () => {
+    const { platby, preskocene } = pripravPlatby([
+      f({ invoice_number: "K-1", status: "draft" }),
+      f({ invoice_number: "K-2", status: "received" }),
+    ]);
+    expect(platby.map((p) => p.cisloFaktury)).toEqual(["K-2"]);
+    expect(preskocene).toEqual([
+      {
+        id: expect.any(String),
+        cisloFaktury: "K-1",
+        dovod: "je len koncept — najprv ju dokončite",
+      },
+    ]);
+  });
+
   it("automaticky zaradenú eFaktúru pustí až po kontrole", () => {
     const { platby, preskocene } = pripravPlatby([
       f({ invoice_number: "EF-1", na_kontrolu: true }),

@@ -19,6 +19,7 @@ import {
   vysledokCz,
   vysledokSk,
   zdrojPreFirmu,
+  zmenaPriPrevzati,
   zmenaRegistracie,
   type FirmaNaOverenie,
   type Porovnanie,
@@ -193,8 +194,9 @@ export async function overFirmu(
 
 /**
  * Prevezme režim DPH z registra — na výslovnú žiadosť správcu firmy. IČ DPH
- * sa zapíše len vtedy, keď ho registrácia má; existujúce sa pri zrušení
- * registrácie nemaže (môže byť na starších dokladoch).
+ * sa zapíše, keď ho registrácia má; keď register firmu nevedie, IČ DPH sa
+ * vymaže a predošlé sa zapíše do histórie (`doplnene.vymazane_ic_dph`).
+ * Vystavené doklady nesú vlastnú kópiu údajov firmy, nezmenia sa.
  */
 export async function prevezmiZRegistra(db: Db, companyId: string, userId: string | null) {
   const { data: firma } = await db
@@ -207,14 +209,12 @@ export async function prevezmiZRegistra(db: Db, companyId: string, userId: strin
   if (!v || v.stav === "chyba" || !v.schema)
     throw new Error(v?.chyba ?? "Register pre túto firmu nič nevrátil.");
   const predtym = nastavenieFirmy(firma as any);
-  const { schema } = await import("./dph-rezim");
+  const { nove: zmena, vymazaneIcDph } = zmenaPriPrevzati(firma as any, v);
   const nove: Record<string, unknown> = {
-    vat_scheme: v.schema,
-    vat_payer: schema(v.schema).platitel,
+    ...zmena,
     dph_overene_at: new Date().toISOString(),
     dph_overit_od: null,
   };
-  if (v.icDph) nove.ic_dph = v.icDph;
   const { error } = await db.from("companies").update(nove).eq("id", companyId);
   if (error) throw new Error(error.message);
   const predosly = await poslednyZaznam(db, companyId);
@@ -230,9 +230,8 @@ export async function prevezmiZRegistra(db: Db, companyId: string, userId: strin
     zmena: zmenaRegistracie(predosly, v),
     predosla_schema: predosly?.schema ?? null,
     doplnene: {
-      vat_scheme: v.schema,
-      vat_payer: nove.vat_payer,
-      ...(v.icDph ? { ic_dph: v.icDph } : {}),
+      ...zmena,
+      ...(vymazaneIcDph ? { vymazane_ic_dph: vymazaneIcDph } : {}),
       predtym,
     },
     nesulad: null,
@@ -240,7 +239,7 @@ export async function prevezmiZRegistra(db: Db, companyId: string, userId: strin
     sposob: "prevzatie",
     created_by: userId,
   });
-  return v;
+  return { ...v, vat_payer: zmena.vat_payer, ic_dph: zmena.ic_dph, vymazaneIcDph };
 }
 
 /**

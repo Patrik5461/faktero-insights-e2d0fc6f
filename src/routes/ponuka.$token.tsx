@@ -6,7 +6,8 @@ import { ponukaPodlaTokenuFn, odpovedzNaPonukuFn } from "@/lib/faktero/ponuka-od
 import { datumSlovom } from "@/lib/faktero/ponuka-odpoved";
 import { CheckCircle2, FileText, Loader2, XCircle } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { formatujMnozstvo } from "@/lib/faktero/mena";
 
 /**
  * Cenová ponuka očami odberateľa.
@@ -40,7 +41,7 @@ function suma(n: unknown, mena: string | null | undefined): string {
 }
 
 function PonukaPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const { token } = Route.useParams();
   const { odpoved } = useSearch({ from: "/ponuka/$token" });
   const nacitaj = useServerFn(ponukaPodlaTokenuFn);
@@ -140,7 +141,7 @@ function PonukaPage() {
                   )}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
-                  {Number(r.quantity)} {r.unit}
+                  {formatujMnozstvo(r.quantity, lokalJazyka(jazyk))} {r.unit}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
                   {suma(r.unit_price, p.currency)}

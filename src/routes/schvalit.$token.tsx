@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getApprovalInvoice, respondToApproval } from "@/lib/faktero/invoice-approval.functions";
 import { CheckCircle2, XCircle, Loader2, FileText } from "lucide-react";
-import { formatujMenu } from "@/lib/faktero/mena";
+import { formatujMenu, formatujMnozstvo } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
@@ -202,7 +202,7 @@ function ApprovalPage() {
                         )}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">
-                        {Number(it.quantity ?? 0)} {it.unit ?? ""}
+                        {formatujMnozstvo(it.quantity, lokalJazyka(jazyk))} {it.unit ?? ""}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">
                         {fmt(Number(it.unit_price ?? 0), inv.currency)}

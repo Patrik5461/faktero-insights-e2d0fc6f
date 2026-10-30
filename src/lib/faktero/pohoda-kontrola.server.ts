@@ -11,7 +11,7 @@ import {
   nastaveniaFaktur,
   pripravFaktury,
 } from "./export-priprava.server";
-import { prekazkaDokladu } from "./pohoda-kontrola";
+import { prekazkaDokladu, varovanieDokladu } from "./pohoda-kontrola";
 import { poliaDokladovXml, rozdielyPoli, type RozdielPola } from "./pohoda-rozdiely";
 import { prijataAkoDoklad } from "./prijate-do-pohody";
 import { vsetkoAkoData } from "./strankovanie";
@@ -20,7 +20,14 @@ type Klient = any;
 type Riadok = Record<string, any>;
 export type DruhDokladu = "faktura" | "prijata" | "doklad";
 
-export type ZastavenyDoklad = { druh: DruhDokladu; id: string; cislo: string; dovod: string };
+export type ZastavenyDoklad = {
+  druh: DruhDokladu;
+  id: string;
+  cislo: string;
+  dovod: string;
+  /** Len upozornenie — doklad odíde, no v Pohode ho treba skontrolovať. */
+  varovanie?: boolean;
+};
 
 /** Firma bez odkazov na skeny — kontrola nemá zakladať tokeny. */
 const bezOdkazov = (company: Riadok) => ({
@@ -102,8 +109,20 @@ export async function zastaveneDoklady(
   if (vsetkyDoklady.length) {
     const nast = await nastaveniaDokladovPohody(supabase, bezOdkazov(company), vsetkyDoklady);
     for (const p of prijate.data ?? []) {
-      const dovod = prekazkaDokladu(prijataAkoDoklad(p), company, nast as any);
+      const doklad = prijataAkoDoklad(p);
+      const dovod = prekazkaDokladu(doklad, company, nast as any);
       if (dovod) out.push({ druh: "prijata", id: p.id, cislo: p.invoice_number, dovod });
+      else {
+        const varovanie = varovanieDokladu(doklad, nast as any);
+        if (varovanie)
+          out.push({
+            druh: "prijata",
+            id: p.id,
+            cislo: p.invoice_number,
+            dovod: varovanie,
+            varovanie: true,
+          });
+      }
     }
     for (const d of doklady.data ?? []) {
       const dovod = prekazkaDokladu(d, company, nast as any);

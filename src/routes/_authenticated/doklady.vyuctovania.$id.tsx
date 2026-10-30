@@ -504,6 +504,7 @@ function Detail() {
                 <label className="block text-sm">
                   <span className="font-medium">{t("Predkontácia (Pohoda)")}</span>
                   <KodPohody
+                    ariaLabel="Predkontácia"
                     value={f.predkontacia}
                     onChange={(v) => zmen({ predkontacia: v })}
                     moznosti={navrhy?.predkontacie ?? []}
@@ -515,6 +516,7 @@ function Detail() {
                 <label className="block text-sm">
                   <span className="font-medium">{t("Členenie DPH")}</span>
                   <KodPohody
+                    ariaLabel="Členenie DPH"
                     value={f.clenenie_dph}
                     onChange={(v) => zmen({ clenenie_dph: v })}
                     moznosti={navrhy?.clenenia ?? []}

@@ -29,3 +29,13 @@ export const NOVE_PRODUKTY: [string, string, string] = [
   "nové produkty",
   "nových produktov",
 ];
+
+/**
+ * Upozornenie nad zoznamom bločkov — celé vety, lebo s počtom sa mení aj
+ * sloveso („3 bločky čakajú“, „5 bločkov čaká“). Kľúče idú do `t()` s `{n}`.
+ */
+export const CAKAJUCE_BLOCKY: [string, string, string] = [
+  "1 bloček čaká na kontrolu v Nespracovaných dokladoch — sem sa presunie, keď ho spracujete.",
+  "{n} bločky čakajú na kontrolu v Nespracovaných dokladoch — sem sa presunú, keď ich spracujete.",
+  "{n} bločkov čaká na kontrolu v Nespracovaných dokladoch — sem sa presunú, keď ich spracujete.",
+];

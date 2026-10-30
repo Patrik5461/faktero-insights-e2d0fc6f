@@ -100,6 +100,7 @@ export function ZauctovanieFakturOkno({
               {t("Predkontácia (Pohoda)")}
             </span>
             <KodPohody
+              ariaLabel="Predkontácia"
               value={h.predkontacia}
               onChange={(v) => setH({ ...h, predkontacia: v })}
               moznosti={navrhy?.predkontacie ?? []}
@@ -111,6 +112,7 @@ export function ZauctovanieFakturOkno({
           <label className="block">
             <span className="text-sm font-medium text-foreground">{t("Členenie DPH")}</span>
             <KodPohody
+              ariaLabel="Členenie DPH"
               value={h.clenenie}
               onChange={(v) => setH({ ...h, clenenie: v })}
               moznosti={navrhy?.clenenia ?? []}

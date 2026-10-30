@@ -75,6 +75,7 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
   const nacitajRozdiely = useServerFn(rozdielyOprotiPohodeFn);
   const poslatOpravu = usePoslatOpravuDoPohody();
   const [zastavene, setZastavene] = useState<Zastaveny[] | null>(null);
+  const [varovania, setVarovania] = useState<Zastaveny[]>([]);
   const [rozdiely, setRozdiely] = useState<{
     doklady: Rozdiel[];
     skontrolovanych: number;
@@ -87,6 +88,7 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
     try {
       const r = await nacitajZastavene({ data: { company_id: companyId } });
       setZastavene(r.doklady as Zastaveny[]);
+      setVarovania(((r as any).varovania ?? []) as Zastaveny[]);
     } catch (e: any) {
       toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
@@ -134,6 +136,29 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
           <p className="mt-3 text-sm text-emerald-700">
             {t("Všetko neodovzdané prejde kontrolou.")}
           </p>
+        )}
+        {varovania.length > 0 && (
+          <div className="mt-3">
+            <p className="flex items-center gap-1.5 text-sm font-medium text-sky-800 dark:text-sky-200">
+              <AlertTriangle className="h-4 w-4" />
+              {t("Odíde, ale skontrolujte v Pohode: {n}", { n: varovania.length })}
+            </p>
+            <ul className="mt-2 max-h-60 divide-y divide-border overflow-y-auto text-sm">
+              {varovania.map((z) => (
+                <li key={`v-${z.druh}-${z.id}`} className="py-2">
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-xs text-muted-foreground">{t(DRUH[z.druh])}</span>
+                    <OdkazDokladu druh={z.druh} id={z.id}>
+                      {z.cislo || t("bez čísla")}
+                    </OdkazDokladu>
+                  </div>
+                  <div className="min-w-0 break-words text-muted-foreground">
+                    {z.dovod.split(" — ").slice(1).join(" — ") || z.dovod}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         {zastavene && zastavene.length > 0 && (
           <>

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nahrajNespracovaneFn } from "@/lib/faktero/nespracovane.functions";
@@ -11,7 +11,7 @@ import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Camera, Loader2, QrCode, BadgeCheck, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, formatujMnozstvo } from "@/lib/faktero/mena";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 
 type Uhrada = "hotovost" | "karta" | "prevod";
@@ -27,7 +27,7 @@ function fmt(n?: number, mena = "EUR") {
 }
 
 function ScannerPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const navigate = useNavigate();
   const nacitaj = useServerFn(nacitajBlocekFn);
   /*
@@ -286,7 +286,7 @@ function ScannerPage() {
                         <tr key={i} className="border-t border-border first:border-t-0">
                           <td className="px-3 py-1.5">{p.name || "—"}</td>
                           <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
-                            {p.quantity} × {fmt(p.unit_price, result.currency ?? "EUR")}
+                            {formatujMnozstvo(p.quantity, lokalJazyka(jazyk))} × {fmt(p.unit_price, result.currency ?? "EUR")}
                           </td>
                           <td className="px-3 py-1.5 text-right tabular-nums">{p.vat_rate} %</td>
                           <td className="px-3 py-1.5 text-right tabular-nums font-medium">

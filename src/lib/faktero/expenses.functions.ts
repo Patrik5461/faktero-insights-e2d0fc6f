@@ -5,6 +5,7 @@ import { daSaPorovnat, jeTenIstyDoklad, type OdtlacokDokladu } from "./doklad-du
 import { daSaSpracovat } from "./doklad-stav";
 import { chybaFotkyZAppky, jeBlocekDoBlockov, kamUlozitVydavok, ZDROJ_APKY } from "./blocek-z-appky";
 import { vMesiaci } from "./doklady-mesiac";
+import { zdrojVydavku } from "./zdroj-vydavku";
 
 export type ExpenseInput = {
   company_id: string;
@@ -244,6 +245,8 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       .from("expense_documents")
       .insert({
         ...data,
+        // Ručný zápis bez obrázka nesmie mať zdroj „fotka“.
+        source: zdrojVydavku(data.source, Boolean(data.file_path)),
         ...kurz,
         created_by: userId,
         ...(rovnoSpracovany

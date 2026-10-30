@@ -1,4 +1,4 @@
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -71,7 +71,7 @@ import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { KomentarDokladu, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
 import { DokladPoradie } from "@/components/faktero/DokladPoradie";
 import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
-import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
+import { formatovacMeny, formatujMnozstvo } from "@/lib/faktero/mena";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DetailSNahladom, useNahladVDetaile } from "@/components/faktero/BocnyNahlad";
@@ -1315,7 +1315,7 @@ function PolozkyDokladu({
   mozeMenit?: boolean;
   onPrepni?: (vypnut: boolean) => void;
 }) {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const jeVypnute = Array.isArray(vypnute) && vypnute.length > 0 && (!Array.isArray(items) || items.length === 0);
   const zoznam = (jeVypnute ? vypnute : items) as any[];
   if (!Array.isArray(zoznam) || zoznam.length === 0) return null;
@@ -1374,7 +1374,7 @@ function PolozkyDokladu({
               <tr key={i}>
                 <td className="p-3">{p?.name ?? "—"}</td>
                 <td className="p-3 text-right tabular-nums">
-                  {p?.quantity != null ? `${formatujCislo(p.quantity, 0, 4)}${p?.unit ? ` ${p.unit}` : ""}` : "—"}
+                  {p?.quantity != null ? `${formatujMnozstvo(p.quantity, lokalJazyka(jazyk))}${p?.unit ? ` ${p.unit}` : ""}` : "—"}
                 </td>
                 <td className="p-3 text-right tabular-nums">{cena(p?.unit_price)}</td>
                 <td className="p-3 text-right tabular-nums">

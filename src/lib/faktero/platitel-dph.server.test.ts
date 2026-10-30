@@ -236,6 +236,26 @@ describe("prevezmiZRegistra", () => {
     expect(t.dph_overenia[0]).toMatchObject({ sposob: "prevzatie", created_by: "u1" });
     expect(t.dph_overenia[0].doplnene.predtym.vat_scheme).toBe("sk_neplatitel");
   });
+
+  it("neregistrovanej firme vymaže IČ DPH a predošlé zapíše do histórie", async () => {
+    registerFs.odpoved = { dphs: [], dphz: [], dphv: [], zoznamK: "2026-10-30" };
+    const t = {
+      companies: [firma({ vat_scheme: "sk_4", vat_payer: true, ic_dph: "SK2020317068" })],
+      dph_overenia: [] as any[],
+    };
+    const r = await prevezmiZRegistra(pametovaDb(t), "f1", "u1");
+    expect(r.vymazaneIcDph).toBe("SK2020317068");
+    expect(t.companies[0]).toMatchObject({
+      vat_scheme: "sk_neplatitel",
+      vat_payer: false,
+      ic_dph: null,
+    });
+    expect(t.dph_overenia[0].doplnene).toMatchObject({
+      ic_dph: null,
+      vymazane_ic_dph: "SK2020317068",
+      predtym: { ic_dph: "SK2020317068", vat_scheme: "sk_4" },
+    });
+  });
 });
 
 describe("overCakajuceFirmy", () => {

@@ -108,3 +108,21 @@ export function zaciatocnyAktivny(
   const i = polozky.findIndex((p) => p.druh !== "vlastny" && p.hodnota === (hodnota ?? ""));
   return i >= 0 ? i : 0;
 }
+
+/**
+ * Popisy otvoreného výberu pre čítačku. Na stránke býva predkontácia,
+ * členenie DPH aj riadok KV vedľa seba — keď sa všetky hľadania volali
+ * „Hľadať kód…“ a zoznamy „Voľby“, nedali sa od seba rozlíšiť. S názvom
+ * poľa (`nazov`, už preložený) nesú obe aj to, čo sa vyberá.
+ */
+export function popisyVyberu(
+  nazov: string | null | undefined,
+  t: (text: string, p?: Record<string, string | number>) => string,
+): { hladanie: string; zoznam: string } {
+  const n = String(nazov ?? "").trim();
+  if (!n) return { hladanie: t("Hľadať kód, názov alebo účet"), zoznam: t("Voľby") };
+  return {
+    hladanie: t("{nazov} — hľadať kód, názov alebo účet", { nazov: n }),
+    zoznam: t("{nazov} — voľby", { nazov: n }),
+  };
+}

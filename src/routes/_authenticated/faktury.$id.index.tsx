@@ -3,7 +3,7 @@ import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { RozpisDph } from "@/components/faktero/RozpisDph";
 import { rozpisPodlaSadzieb } from "@/lib/faktero/rozpis-dph";
 import { riadkySoZlavou } from "@/lib/faktero/zlavy";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { DetailSNahladom, useNahladVDetaile, type SuborNahladu } from "@/components/faktero/BocnyNahlad";
@@ -109,7 +109,7 @@ import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
-import { formatujMenu, formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
+import { formatujMenu, formatujCislo, formatujJednotkovuCenu, formatujMnozstvo } from "@/lib/faktero/mena";
 /** Ako sa doklad volá — rovnako v hlavičke stránky aj v PDF. */
 const NAZOV_TYPU: Record<string, string> = {
   proforma: "Zálohová faktúra",
@@ -129,7 +129,7 @@ export const Route = createFileRoute("/_authenticated/faktury/$id/")({
 });
 
 function InvoiceDetail() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const { id } = Route.useParams();
   const navigate = useNavigate();
   // Vlastné stavy dokladov firmy (číselník v Účtovníctvo → Predkontácie).
@@ -1149,7 +1149,7 @@ function InvoiceDetail() {
                   </div>
                 )}
               </td>
-              <td className="p-3 text-right">{Number(it.quantity)}</td>
+              <td className="p-3 text-right">{formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}</td>
               <td className="p-3">{it.unit}</td>
               <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
               <td className="p-3 text-right">

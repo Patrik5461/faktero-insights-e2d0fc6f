@@ -19,14 +19,25 @@ export function ZoznamMoznosti({
   hodnota,
   onVyber,
   prazdne,
+  nazov,
 }: {
   moznosti: MoznostVyberu[];
   hodnota?: string | null;
   onVyber: (v: string) => void;
   /** Text voľby „bez hodnoty" (napr. „Nedefinované"); bez neho sa vyčistiť nedá. */
   prazdne?: string;
+  /** Čo sa vyberá (preložené) — popis hľadania a zoznamu pre čítačku. */
+  nazov?: string;
 }) {
-  return <ZoznamKodov moznosti={moznosti} hodnota={hodnota} onVyber={onVyber} prazdne={prazdne} />;
+  return (
+    <ZoznamKodov
+      moznosti={moznosti}
+      hodnota={hodnota}
+      onVyber={onVyber}
+      prazdne={prazdne}
+      nazov={nazov}
+    />
+  );
 }
 
 /**

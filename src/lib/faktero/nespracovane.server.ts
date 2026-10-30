@@ -16,6 +16,7 @@ import {
   type PredvolbySkenu,
   type UdajeNespracovaneho,
 } from "./nespracovane";
+import { zdrojZauctovaniaPriVytvoreni } from "./nespracovane-nastavenia";
 
 type Klient = any;
 export const KOS_NESPRACOVANYCH = "nespracovane";
@@ -365,6 +366,7 @@ export async function vytvorDoklad(
         // Kto vyplnil predkontáciu či členenie, doklad tým zaúčtoval.
         zauctovane_at: zauctovat ? teraz : null,
         zauctoval: zauctovat ? userId : null,
+        ...zdrojZauctovaniaPriVytvoreni(zauctovat),
         ...(cudzia ? { odberatel_nesedi: { ...cudzia, zistene_at: teraz } } : {}),
       })
       .select("id, pohoda_predkontacia, pohoda_clenenie_dph, category, reverse_charge")
@@ -396,7 +398,7 @@ export async function vytvorDoklad(
       if (kodyPrijatejUrcene(data, firma, await kodyPodlaKategorie(supabase, r.company_id))) {
         const { error: eZ } = await supabase
           .from("purchase_invoices")
-          .update({ zauctovane_at: teraz, zauctoval: userId, status: stav(true) })
+          .update({ zauctovane_at: teraz, zauctoval: userId, status: stav(true), ...zdrojZauctovaniaPriVytvoreni(true) })
           .eq("id", data.id);
         if (!eZ) zauctovana = true;
       }
@@ -488,7 +490,7 @@ export async function vytvorDoklad(
     if (zauctovanyBlocek)
       await supabase
         .from("expense_documents")
-        .update({ zauctovane_at: teraz, zauctoval: userId })
+        .update({ zauctovane_at: teraz, zauctoval: userId, ...zdrojZauctovaniaPriVytvoreni(true) })
         .eq("id", data.id)
         .is("zauctovane_at", null);
     vysledok = { agenda: "doklad", id: data.id, zauctovana: zauctovanyBlocek };

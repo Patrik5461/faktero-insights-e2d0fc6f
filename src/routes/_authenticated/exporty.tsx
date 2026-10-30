@@ -30,6 +30,7 @@ import { useT } from "@/lib/i18n/useT";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { KontrolaPohody } from "@/components/faktero/KontrolaPohody";
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
+import { PROGRAM_FORMATU, predvoleneOznacit } from "@/lib/faktero/odovzdanie-exportu";
 
 /** Kľúč podľa počtu: 1 / 2–4 / 5 a viac (slovenské tvary, preklad ich zjednotí). */
 const tvar = (n: number, jeden: string, dva: string, pat: string) =>
@@ -104,6 +105,12 @@ function ExportsPage() {
   const [lenNeexportovane, setLenNeexportovane] = useState(false);
   const [busy, setBusy] = useState(false);
   const [efOdoslane, setEfOdoslane] = useState<Record<string, string>>({});
+  /** Program, ktorý firma vedie ako účtovný — len preň sa export predvolene označí ako odovzdaný. */
+  const [uctovnyProgram, setUctovnyProgram] = useState<string | null>(null);
+  const [oznacit, setOznacit] = useState(true);
+  useEffect(() => {
+    setOznacit(predvoleneOznacit(format, uctovnyProgram));
+  }, [format, uctovnyProgram]);
   const exportFn = useServerFn(exportInvoicesFn);
   const getContent = useServerFn(getExportContentFn);
   const poslatOpravu = usePoslatOpravuDoPohody();
@@ -119,7 +126,7 @@ function ExportsPage() {
   async function load() {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    const [{ data: js }, { data: inv }] = await Promise.all([
+    const [{ data: js }, { data: inv }, { data: firma }] = await Promise.all([
       supabase
         .from("export_jobs")
         .select("*")
@@ -148,7 +155,9 @@ function ExportsPage() {
           nullsFirst: false,
         });
       })(),
+      supabase.from("companies").select("uctovny_program").eq("id", cid).maybeSingle(),
     ]);
+    setUctovnyProgram((firma as any)?.uctovny_program ?? "pohoda");
     setJobs(js ?? []);
     setInvoices(inv ?? []);
     // Ktoré už odišli ako eFaktúra — v Pohode sa nesmú poslať cez Peppol znova.
@@ -184,10 +193,14 @@ function ExportsPage() {
     setBusy(true);
     try {
       const r = await exportFn({
-        data: { companyId: cid, invoiceIds: selectedIds, format },
+        data: { companyId: cid, invoiceIds: selectedIds, format, oznacit },
       });
       downloadFile(r.fileName, r.content, r.mime, r.encoding);
-      toast.success(t("Exportovaných faktúr: {n}", { n: r.invoiceCount }));
+      toast.success(
+        r.oznacene
+          ? t("Exportovaných faktúr: {n}", { n: r.invoiceCount })
+          : t("Exportovaných faktúr: {n} (neoznačené ako odovzdané)", { n: r.invoiceCount }),
+      );
       // Vynechaný doklad sa musí povedať nahlas — inak by účtovníčke ticho chýbal.
       toastNeodovzdane(t, r.preskocene);
       setPicked({});
@@ -409,6 +422,24 @@ function ExportsPage() {
                   </button>
                 </div>
               </div>
+              <label className="mt-3 flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={oznacit}
+                  onChange={(e) => setOznacit(e.target.checked)}
+                />
+                <span className="min-w-0">
+                  {t("Označiť ako odovzdané (zamknú sa a nepôjdu druhýkrát)")}
+                  {!PROGRAM_FORMATU[format] ? (
+                    <span className="block text-xs text-muted-foreground">
+                      {t(
+                        "Tento formát nie je účtovný program — predvolene sa faktúry neoznačia ani nezamknú.",
+                      )}
+                    </span>
+                  ) : null}
+                </span>
+              </label>
             </div>
 
             {/* History */}

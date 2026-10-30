@@ -44,6 +44,7 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 import { NastaveniaBanky } from "@/components/faktero/banka/NastaveniaBanky";
 import { pohybyZastarane } from "@/lib/faktero/bank-stav-pohybov";
+import { akciePripojenia } from "@/lib/faktero/akcie-pripojenia";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Bankové účty — Faktero") }] }),
@@ -487,22 +488,35 @@ function BankAccountsPage() {
                   </>
                 ) : (
                   <>
-                    <button
-                      onClick={() => onSync(c.id)}
-                      disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
-                    >
-                      <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
-                      {t("Načítať účty")}
-                    </button>
-                    <button
-                      onClick={() => onRenew(c.id)}
-                      disabled={busy === c.id}
-                      title={t("Prihlásite sa znova do banky. Účty, transakcie ani výpisy sa nezmažú.")}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
-                    >
-                      <ShieldCheck className="h-3.5 w-3.5" /> {t("Obnoviť súhlas")}
-                    </button>
+                    {/* Nahratý výpis nemá banku ani súhlas — len nahrať ďalší. */}
+                    {akciePripojenia(c.provider).nahratVypis && (
+                      <Link
+                        to="/bankove-ucty/import"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary"
+                      >
+                        <Upload className="h-3.5 w-3.5" /> {t("Nahrať výpis")}
+                      </Link>
+                    )}
+                    {akciePripojenia(c.provider).nacitatUcty && (
+                      <button
+                        onClick={() => onSync(c.id)}
+                        disabled={busy === c.id}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
+                        {t("Načítať účty")}
+                      </button>
+                    )}
+                    {akciePripojenia(c.provider).obnovitSuhlas && (
+                      <button
+                        onClick={() => onRenew(c.id)}
+                        disabled={busy === c.id}
+                        title={t("Prihlásite sa znova do banky. Účty, transakcie ani výpisy sa nezmažú.")}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" /> {t("Obnoviť súhlas")}
+                      </button>
+                    )}
                     <button
                       onClick={() => onDisconnect(c.id)}
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +38,7 @@ import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade, predvolenyJazykFirmy } from "@/lib/faktero/faktura-jazyk";
 import { hodnotyPremennych } from "@/lib/faktero/email-sablony";
 import { VyberEmailSablony } from "@/components/faktero/VyberEmailSablony";
-import { formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
+import { formatujCislo, formatujJednotkovuCenu, formatujMnozstvo } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ponuky/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Detail ponuky — Faktero") }] }),
@@ -63,7 +63,7 @@ const STATUS_CLS: Record<string, string> = {
 };
 
 function QuoteDetail() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [q, setQ] = useState<any>(null);
@@ -406,7 +406,7 @@ function QuoteDetail() {
                           <div className="text-xs text-muted-foreground">{it.description}</div>
                         )}
                       </td>
-                      <td className="p-3 text-right">{Number(it.quantity)}</td>
+                      <td className="p-3 text-right">{formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}</td>
                       <td className="p-3">{it.unit}</td>
                       <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
                       <td className="p-3 text-right">{it.vat_rate}%</td>

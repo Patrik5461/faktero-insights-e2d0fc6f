@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { formatujMenu, formatujJednotkovuCenu, KROK_CENY, cenaZoSumySDph } from "./mena";
+import {
+  formatujMenu,
+  formatujJednotkovuCenu,
+  KROK_CENY,
+  cenaZoSumySDph,
+  formatujMnozstvo,
+} from "./mena";
 
 const bezMedzier = (s: string) => s.replace(/ | /g, " ");
 
@@ -78,5 +84,20 @@ describe("cenaZoSumySDph", () => {
   it("bez množstva počíta s jedným kusom a nečíslo nezhodí výpočet", () => {
     expect(cenaZoSumySDph(123, 0, 23)).toBe(100);
     expect(cenaZoSumySDph("x", 1, 23)).toBe(0);
+  });
+});
+
+describe("formatujMnozstvo", () => {
+  it("desatinná čiarka podľa jazyka", () => {
+    expect(formatujMnozstvo(1.5)).toBe("1,5");
+    expect(formatujMnozstvo("2.25", "cs-CZ")).toBe("2,25");
+    expect(formatujMnozstvo(0.125, "de-DE")).toBe("0,125");
+    expect(formatujMnozstvo(1.5, "en-GB")).toBe("1.5");
+  });
+
+  it("celé číslo bez desatinných miest, najviac štyri miesta", () => {
+    expect(formatujMnozstvo(3)).toBe("3");
+    expect(formatujMnozstvo(1.23456)).toBe("1,2346");
+    expect(formatujMnozstvo(null)).toBe("0");
   });
 });

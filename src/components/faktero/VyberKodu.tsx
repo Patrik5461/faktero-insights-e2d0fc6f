@@ -11,6 +11,7 @@ import { Check, ChevronDown, Lock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   polozkyZoznamu,
+  popisyVyberu,
   posunAktivny,
   zaciatocnyAktivny,
   type Klavesa,
@@ -41,6 +42,7 @@ export function ZoznamKodov({
   prazdne,
   vlastny,
   onZavri,
+  nazov,
 }: {
   moznosti: MoznostVyberu[];
   hodnota?: string | null;
@@ -51,8 +53,11 @@ export function ZoznamKodov({
   vlastny?: boolean;
   /** Escape — zavrie výber. */
   onZavri?: () => void;
+  /** Čo sa vyberá (preložené, napr. „Predkontácia“) — rozlíši hľadanie a zoznam pre čítačku. */
+  nazov?: string;
 }) {
   const { t } = useT();
+  const popisy = popisyVyberu(nazov, t);
   const id = useId();
   const [hladane, setHladane] = useState("");
   const polozky = useMemo(
@@ -126,7 +131,7 @@ export function ZoznamKodov({
           aria-controls={`${id}-zoznam`}
           aria-autocomplete="list"
           aria-activedescendant={aktivny >= 0 ? idPolozky(aktivny) : undefined}
-          aria-label={t("Hľadať kód, názov alebo účet")}
+          aria-label={popisy.hladanie}
           autoFocus
           value={hladane}
           onChange={(e) => setHladane(e.target.value)}
@@ -139,7 +144,7 @@ export function ZoznamKodov({
         ref={zoznam}
         id={`${id}-zoznam`}
         role="listbox"
-        aria-label={t("Voľby")}
+        aria-label={popisy.zoznam}
         className="min-h-0 flex-1 overflow-y-auto p-1"
       >
         {viditelne.length ? (
@@ -276,6 +281,7 @@ export function VyberKodu({
           hodnota={hodnota}
           prazdne={prazdne}
           vlastny={vlastny}
+          nazov={ariaLabel}
           onZavri={() => setOtvorene(false)}
           onVyber={async (v) => {
             setOtvorene(false);

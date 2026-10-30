@@ -243,8 +243,20 @@ export const importujVypisFn = createServerFn({ method: "POST" })
     */
     await obnovZostatok(supabaseAdmin, ucet.id, r);
 
+    /*
+      Isté dvojice (faktúry, splátky, kontokorent) sa spárujú hneď — rovnako
+      ako po synchronizácii s bankou. Prístup k firme overil `overPristup` vyššie.
+    */
+    let sparovanych = 0;
+    if (vlozenych > 0) {
+      const { sparujNovePohybyFirmy } = await import("./parovanie-po-pohyboch.server");
+      const v = await sparujNovePohybyFirmy(data.company_id, "import-vypisu");
+      sparovanych = v.faktur + v.splatok + v.kontokorent;
+    }
+
     return {
       vlozenych,
+      sparovanych,
       preskocenych: vsetkyRiadky.length - vlozenych,
       ucetId: ucet.id,
       odDna: r.odDna,

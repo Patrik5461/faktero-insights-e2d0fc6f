@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import {
   datumFs,
   dicPreCz,
+  icDphNaVymazanie,
   dphsNaRiadok,
   najdiVIndexe,
   polozkyXml,
@@ -19,6 +20,7 @@ import {
   vysledokSk,
   zaznamDphs,
   zaznamZrusenia,
+  zmenaPriPrevzati,
   zmenaRegistracie,
   type ZaznamOverenia,
 } from "./platitel-dph";
@@ -373,5 +375,47 @@ describe("zvonček", () => {
     );
     expect(u.map((x) => x.key)).toEqual(["dph_dovody_zrusenia:z1"]);
     expect(u[0].params).toEqual({ datum: "20. 3. 2026" });
+  });
+});
+
+describe("prevzatie z registra a IČ DPH", () => {
+  const neregistrovana = vysledokSk(
+    { country: "SK", ico: "1" } as any,
+    { dphs: [], dphz: [], dphv: [] },
+    null,
+  );
+
+  it("IČ DPH sa vymaže len neregistrovanej firme, ktorá ho má", () => {
+    expect(icDphNaVymazanie("neregistrovany", " SK2020317068 ")).toBe("SK2020317068");
+    expect(icDphNaVymazanie("neregistrovany", "")).toBeNull();
+    expect(icDphNaVymazanie("neregistrovany", null)).toBeNull();
+    expect(icDphNaVymazanie("registrovany", "SK2122358579")).toBeNull();
+    expect(icDphNaVymazanie("platitel", "SK2020317068")).toBeNull();
+    expect(icDphNaVymazanie(undefined, "SK2020317068")).toBeNull();
+  });
+
+  it("neregistrovaná firma: režim neplatiteľa a IČ DPH null", () => {
+    const r = zmenaPriPrevzati({ country: "SK", ic_dph: "SK2020317068" } as any, neregistrovana);
+    expect(r).toEqual({
+      nove: { vat_scheme: "sk_neplatitel", vat_payer: false, ic_dph: null },
+      vymazaneIcDph: "SK2020317068",
+    });
+  });
+
+  it("neregistrovaná firma bez IČ DPH: ic_dph sa nemení", () => {
+    const r = zmenaPriPrevzati({ country: "SK", ic_dph: null } as any, neregistrovana);
+    expect(r.nove).not.toHaveProperty("ic_dph");
+    expect(r.vymazaneIcDph).toBeNull();
+  });
+
+  it("registrovaná firma dostane IČ DPH z registra", () => {
+    const v = vysledokCz("12345678", "IDENTIFIKOVANA_OSOBA", false, null, null);
+    const r = zmenaPriPrevzati({ country: "CZ", ic_dph: "CZ999" } as any, v);
+    expect(r.nove).toEqual({
+      vat_scheme: "cz_identifikovana",
+      vat_payer: false,
+      ic_dph: "CZ12345678",
+    });
+    expect(r.vymazaneIcDph).toBeNull();
   });
 });

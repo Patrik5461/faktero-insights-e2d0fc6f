@@ -765,6 +765,7 @@ function Predvolene({
             <label key={o.kod} className="block">
               <span className="text-xs text-muted-foreground">{t(o.nazov)}</span>
               <KodPohody
+                ariaLabel={`${t("Predkontácia")} — ${t(o.nazov)}`}
                 value={oznaceni[o.kod] ?? ""}
                 onChange={(v) => setOznaceni({ ...oznaceni, [o.kod]: v })}
                 moznosti={ponuka(zaznamy, "predkontacia", ["bankIssued", "bankReceived"])}
