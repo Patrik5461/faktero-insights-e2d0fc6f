@@ -287,53 +287,74 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
     }
     const zalohaSpolu = Math.round(zalohy.reduce((s, z) => s + z.suma, 0) * 100) / 100;
 
-    const { data: faktura, error: chyba } = await supabase
-      .from("invoices")
-      .insert({
-        company_id: data.company_id,
-        created_by: userId,
-        customer_id: odberatel.id,
-        type: data.type,
-        status: data.status,
-        invoice_number,
-        sequence_number,
-        // Variabilný symbol nesmie byť prázdny reťazec — z čísla faktúry
-        // ostanú len číslice, presne ako to robí web aj API.
-        variable_symbol: vsZCislaDokladu(invoice_number) || null,
-        issue_date: data.issue_date,
-        delivery_date: data.issue_date,
-        due_date: data.due_date,
-        currency: data.currency,
-        payment_method: data.payment_method,
-        customer_name: odberatel.name,
-        customer_email: odberatel.email,
-        customer_ico: odberatel.ico,
-        customer_dic: odberatel.dic,
-        customer_ic_dph: odberatel.ic_dph,
-        customer_street: odberatel.street,
-        customer_city: odberatel.city,
-        customer_zip: odberatel.zip,
-        customer_country: odberatel.country ?? "SK",
-        number_series_id,
-        subtotal: suctyPoZlave.subtotal,
-        vat_total: suctyPoZlave.vat_total,
-        total: Math.round((suctyPoZlave.subtotal + suctyPoZlave.vat_total) * 100) / 100,
-        discount_type: zlavaDokladu > 0 ? (data.discount_type ?? "percent") : null,
-        discount_value: zlavaDokladu > 0 ? data.discount_value : 0,
-        discount_total: zlavaDokladu,
-        notes: data.notes || null,
-        intro_note: data.intro_note || null,
-        // Prvá záloha ostáva aj v stĺpci kvôli staršiemu rozhraniu; úplný
-        // zoznam je v `invoice_advances` a `advance_amount` je ich súčet.
-        advance_invoice_id: zalohy[0]?.id ?? null,
-        advance_amount: zalohy.length ? zalohaSpolu : null,
-        external_id: data.external_id || null,
-        reverse_charge: rezim.reverse_charge,
-        reverse_charge_type: rezim.reverse_charge_type,
-        eu_plnenie: rezim.eu_plnenie,
-      })
-      .select("id, invoice_number, total, currency, status, customer_id, external_id")
-      .single();
+    /*
+      Číslo mohla medzitým obsadiť súbežne vystavená faktúra (web, iný
+      telefón) — vtedy sa vypýta ďalšie. Číslo z rezervácie (bez signálu) sa
+      nemení: to už človek má na papieri.
+    */
+    const { sOpakovanimPriKoliziiCisla } = await import("./kolizia-cisla");
+    const { data: faktura, error: chyba } = await sOpakovanimPriKoliziiCisla<any>(
+      async (pokus) => {
+        if (pokus > 0 && !rezervacia) {
+          const dalsie = await nextInvoiceNumberDetailed(
+            data.company_id,
+            data.issue_date,
+            data.type,
+          );
+          invoice_number = dalsie.invoice_number;
+          sequence_number = dalsie.sequence_number;
+          number_series_id = dalsie.series_id;
+        }
+        return supabase
+          .from("invoices")
+          .insert({
+            company_id: data.company_id,
+            created_by: userId,
+            customer_id: odberatel.id,
+            type: data.type,
+            status: data.status,
+            invoice_number,
+            sequence_number,
+            // Variabilný symbol nesmie byť prázdny reťazec — z čísla faktúry
+            // ostanú len číslice, presne ako to robí web aj API.
+            variable_symbol: vsZCislaDokladu(invoice_number) || null,
+            issue_date: data.issue_date,
+            delivery_date: data.issue_date,
+            due_date: data.due_date,
+            currency: data.currency,
+            payment_method: data.payment_method,
+            customer_name: odberatel.name,
+            customer_email: odberatel.email,
+            customer_ico: odberatel.ico,
+            customer_dic: odberatel.dic,
+            customer_ic_dph: odberatel.ic_dph,
+            customer_street: odberatel.street,
+            customer_city: odberatel.city,
+            customer_zip: odberatel.zip,
+            customer_country: odberatel.country ?? "SK",
+            number_series_id,
+            subtotal: suctyPoZlave.subtotal,
+            vat_total: suctyPoZlave.vat_total,
+            total: Math.round((suctyPoZlave.subtotal + suctyPoZlave.vat_total) * 100) / 100,
+            discount_type: zlavaDokladu > 0 ? (data.discount_type ?? "percent") : null,
+            discount_value: zlavaDokladu > 0 ? data.discount_value : 0,
+            discount_total: zlavaDokladu,
+            notes: data.notes || null,
+            intro_note: data.intro_note || null,
+            // Prvá záloha ostáva aj v stĺpci kvôli staršiemu rozhraniu; úplný
+            // zoznam je v `invoice_advances` a `advance_amount` je ich súčet.
+            advance_invoice_id: zalohy[0]?.id ?? null,
+            advance_amount: zalohy.length ? zalohaSpolu : null,
+            external_id: data.external_id || null,
+            reverse_charge: rezim.reverse_charge,
+            reverse_charge_type: rezim.reverse_charge_type,
+            eu_plnenie: rezim.eu_plnenie,
+          })
+          .select("id, invoice_number, total, currency, status, customer_id, external_id")
+          .single();
+      },
+      rezervacia ? 1 : 5,
+    );
     if (chyba || !faktura) {
       const { friendlyError } = await import("./plan-error");
       throw new Error(friendlyError(chyba, "Faktúru sa nepodarilo vystaviť."));

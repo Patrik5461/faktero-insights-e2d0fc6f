@@ -10,6 +10,7 @@ import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
+import { csvBunka } from "@/lib/faktero/export-helpers";
 export const Route = createFileRoute("/_authenticated/sklad/hodnota")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Hodnota skladu — Faktero") }],
@@ -44,13 +45,9 @@ function ValuationPage() {
     ];
     for (const p of data.by_product) {
       lines.push(
-        [
-          p.name.replaceAll(";", ","),
-          p.sku ?? "",
-          String(p.qty),
-          p.purchase.toFixed(2),
-          p.sale.toFixed(2),
-        ].join(";"),
+        [p.name, p.sku ?? "", String(p.qty), p.purchase.toFixed(2), p.sale.toFixed(2)]
+          .map(csvBunka)
+          .join(";"),
       );
     }
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });

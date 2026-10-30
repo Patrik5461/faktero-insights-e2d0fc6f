@@ -54,6 +54,9 @@ function dbMessage(err: unknown): string | null {
   if (!msg) return null;
   if (/duplicate key value|already exists/i.test(msg)) {
     if (/_name_key|_name_uniq/i.test(msg)) return "Taký názov už existuje.";
+    // Číslo faktúry medzitým obsadila iná, súbežne vystavená faktúra.
+    if (/invoices_cislo_uniq/i.test(msg))
+      return "Toto číslo faktúry medzitým dostala iná faktúra. Uložte ju znova — dostane ďalšie voľné číslo.";
     if (/number/i.test(msg)) return "Doklad s týmto číslom už existuje.";
     if (/ico|email/i.test(msg)) return "Záznam s týmito údajmi už existuje.";
     return "Taký záznam už existuje.";

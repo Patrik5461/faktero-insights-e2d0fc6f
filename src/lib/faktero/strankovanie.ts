@@ -90,3 +90,32 @@ export async function vsetkoAkoData<T = any>(
 ): Promise<{ data: T[]; error: null }> {
   return { data: await vsetkyRiadky<T>(dotaz), error: null };
 }
+
+/** Najviac id v jednom `.in()` — URL nad ~14 kB server odmietne (pri 400 UUID už áno). */
+export const DAVKA_IDS = 200;
+
+/**
+ * Dotaz s `.in(stĺpec, ids)` po dávkach id. Pre zoznam, kde na jedno id pripadá
+ * najviac pár riadkov (hlavičky dokladov, väzby); kde ich môže byť viac než
+ * 1 000 na dávku, patrí `riadkyPreIds`.
+ *
+ * Bez dávkovania sa pri ~400 vybraných dokladoch dotaz nevykonal vôbec: export
+ * spadol s prázdnou chybou a dotazy bez kontroly chyby vrátili ticho nič —
+ * napríklad odpočty záloh v exporte by jednoducho chýbali.
+ */
+export async function poDavkach<T = any>(
+  ids: readonly string[],
+  dotaz: (kus: string[]) => PromiseLike<{ data: T[] | null; error?: { message: string } | null }>,
+  davka = DAVKA_IDS,
+): Promise<T[]> {
+  const jedinecne = [...new Set(ids)];
+  const kusy: string[][] = [];
+  for (let i = 0; i < jedinecne.length; i += davka) kusy.push(jedinecne.slice(i, i + davka));
+  const casti = await Promise.all(kusy.map((kus) => dotaz(kus)));
+  const out: T[] = [];
+  for (const c of casti) {
+    if (c.error) throw new Error(c.error.message || "Dotaz do databázy zlyhal.");
+    out.push(...(c.data ?? []));
+  }
+  return out;
+}

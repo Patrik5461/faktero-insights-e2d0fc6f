@@ -114,6 +114,7 @@ import { nastaveniaExportu } from "@/lib/faktero/export-nastavenia";
 import { OKNO_STORNO_DOKLADU_K_PLATBE, stornoLenRucne } from "@/lib/faktero/storno-dokladu-k-platbe";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu, formatujCislo, formatujJednotkovuCenu, formatujMnozstvo } from "@/lib/faktero/mena";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /** Ako sa doklad volá — rovnako v hlavičke stránky aj v PDF. */
 const NAZOV_TYPU: Record<string, string> = {
   proforma: "Zálohová faktúra",
@@ -441,7 +442,7 @@ function InvoiceDetail() {
         data: {
           proforma_id: inv.id,
           // Deň prijatia platby — podľa neho vzniká daňová povinnosť.
-          datum_platby: (inv.paid_at ?? "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+          datum_platby: (inv.paid_at ?? "").slice(0, 10) || dnesBratislava(),
         },
       });
       toast.success(t("Vystavený doklad {cislo}", { cislo: doklad.invoice_number }));

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /*
   Nespracované doklady (ako v Doklado) — zoznam, nahratie, detail, uloženie
   rozpracovaného, vytvorenie dokladu a zmazanie do koša.
@@ -81,7 +82,7 @@ export const nespracovaneNaUhraduFn = createServerFn({ method: "POST" })
     const { firmaNaPorovnanie, nesediNespracovany } = await import("./cudzia-faktura.server");
     const { DOVOD_CUDZIA } = await import("./cudzia-faktura");
     const firma = await firmaNaPorovnanie(supabase, data.company_id);
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     return ((rows ?? []) as any[]).map((r) => {
       const d = naUhraduZNespracovaneho(r, dnes);
       // Faktúra inej firmy sa z tejto firmy neplatí.
@@ -144,7 +145,7 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
     const { data: r } = await supabase.from("nespracovane_doklady").select("*").eq("id", data.id).maybeSingle();
     if (!r) throw new Error("Doklad sa nenašiel — možno ho už niekto spracoval.");
     const { nacitajUdaje, udajeZAi } = await import("./nespracovane");
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     const ulozene = nacitajUdaje(r.udaje);
     const udaje = ulozene.dodavatel.nazov || ulozene.cislo || !r.ai ? ulozene : udajeZAi(r.ai, dnes);
     let url: string | null = null;

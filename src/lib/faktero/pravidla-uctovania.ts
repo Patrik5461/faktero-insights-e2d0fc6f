@@ -11,6 +11,7 @@ import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
 import { nazovOznacenia } from "./vypis-oznacenie";
 import { nacitajPomer } from "./rozuctovanie";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Na čo pravidlo platí. `null` sú pôvodné pravidlá — bločky aj prijaté faktúry.
  * Banka sa uplatňuje pri vývoze výpisu do Pohody, ostatné spúšťač v databáze.
@@ -163,7 +164,7 @@ export const PREMENNE_POZNAMKY: { kod: string; popis: string }[] = [
 ];
 
 export function premennePoznamky(text: string, den: string | null | undefined): string {
-  const d = /^\d{4}-\d{2}/.test(String(den ?? "")) ? String(den) : new Date().toISOString().slice(0, 10);
+  const d = /^\d{4}-\d{2}/.test(String(den ?? "")) ? String(den) : dnesBratislava();
   const r = Number(d.slice(0, 4));
   const m = Number(d.slice(5, 7));
   const pr = m === 1 ? r - 1 : r;

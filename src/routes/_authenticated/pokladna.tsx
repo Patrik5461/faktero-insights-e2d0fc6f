@@ -14,6 +14,7 @@ import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/pokladna")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Pokladňa — Faktero") }] }),
   component: PokladnaPage,
@@ -50,7 +51,7 @@ function PokladnaPage() {
     type: "vydaj" as "prijem" | "vydaj",
     amount: "",
     description: "",
-    entry_date: new Date().toISOString().slice(0, 10),
+    entry_date: dnesBratislava(),
     category: "",
     /* Číselný rad dokladu; prázdne = predvolený. */
     number_series_id: "",

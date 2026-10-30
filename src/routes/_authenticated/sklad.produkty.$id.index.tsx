@@ -14,6 +14,7 @@ import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
+import { csvBunka } from "@/lib/faktero/export-helpers";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Skladová karta — Faktero") }] }),
   component: ProductStockDetail,
@@ -89,8 +90,10 @@ function ProductStockDetail() {
           String(m.quantity),
           Number(m.unit_price).toFixed(5),
           Number(m.total_value).toFixed(2),
-          (m.note ?? "").replaceAll(";", ","),
-        ].join(";"),
+          m.note ?? "",
+        ]
+          .map(csvBunka)
+          .join(";"),
       );
     }
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });

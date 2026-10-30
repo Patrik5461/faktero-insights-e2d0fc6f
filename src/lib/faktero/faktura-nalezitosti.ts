@@ -1,5 +1,6 @@
 import { VETA_SAMOFAKTURACIA } from "./samofakturacia";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Náležitosti faktúry, ktoré zákon vyžaduje a program ich vie ustrážiť.
  *
@@ -34,7 +35,7 @@ export function skontrolujDatumy(
     datumDodania?: string | null;
     datumVystavenia?: string | null;
   },
-  dnes: string = new Date().toISOString().slice(0, 10),
+  dnes: string = dnesBratislava(),
 ): KontrolaFaktury {
   const dodanie = String(vstup.datumDodania ?? "").trim();
   if (vstup.platitel && !dodanie) {

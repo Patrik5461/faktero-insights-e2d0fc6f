@@ -10,6 +10,7 @@ import { jePodnikatel, omeskanieDe, upomienkaDe } from "./upomienky-de";
 import { datumNaDoklade } from "./faktura-jazyk";
 import { jazykFaktury } from "./email-jazyk";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export type ReminderNumber = 1 | 2 | 3;
 
 /** Koľko upomienok naraz. Resend má rate limit, tisíc naraz by ho prekročilo. */
@@ -100,7 +101,7 @@ export function buildReminderContent({
   overrideSubject,
   overrideMessage,
   prvaUpomienka,
-  dnes = new Date().toISOString().slice(0, 10),
+  dnes = dnesBratislava(),
 }: BuildReminderInput) {
   /*
     Nemecká firma: predvolený text je nemecký a podľa § 286/288 BGB (úroky
@@ -366,7 +367,7 @@ export async function sendReminder(input: SendReminderInput) {
 
 /** Cron: iterate all overdue invoices and send due reminders. */
 export async function runOverdueReminders() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dnesBratislava();
   // Po stránkach: importované faktúry po splatnosti by inak zaplnili limit
   // PostgRESTu a skutočné faktúry na rade by sa do výberu nedostali.
   const invoices: Array<{

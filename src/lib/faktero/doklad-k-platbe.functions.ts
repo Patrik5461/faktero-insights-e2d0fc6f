@@ -85,11 +85,8 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
     );
 
     const { nextInvoiceNumberDetailed } = await import("./invoice-numbering.server");
-    const cislo = await nextInvoiceNumberDetailed(
-      zf.company_id,
-      data.datum_platby,
-      "advance_payment",
-    );
+    const novehoCisla = () =>
+      nextInvoiceNumberDetailed(zf.company_id, data.datum_platby, "advance_payment");
 
     type NovaPolozka = {
       name: string;
@@ -119,48 +116,53 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
       enriched: rozpis.riadky,
     };
 
-    const { data: doklad, error: chyba } = await supabase
-      .from("invoices")
-      .insert({
-        company_id: zf.company_id,
-        created_by: userId,
-        customer_id: zf.customer_id,
-        type: "advance_payment",
-        // Doklad vzniká až po zaplatení, takže je uhradený od prvej chvíle.
-        status: "paid",
-        invoice_number: cislo.invoice_number,
-        number_series_id: cislo.series_id,
-        sequence_number: cislo.sequence_number,
-        variable_symbol: vsZCislaDokladu(cislo.invoice_number) || null,
-        issue_date: data.datum_platby,
-        delivery_date: data.datum_platby,
-        due_date: data.datum_platby,
-        paid_at: data.datum_platby,
-        currency: zf.currency,
-        payment_method: zf.payment_method,
-        customer_name: zf.customer_name,
-        customer_email: zf.customer_email,
-        customer_ico: zf.customer_ico,
-        customer_dic: zf.customer_dic,
-        customer_ic_dph: zf.customer_ic_dph,
-        customer_street: zf.customer_street,
-        customer_city: zf.customer_city,
-        customer_zip: zf.customer_zip,
-        customer_country: zf.customer_country,
-        reverse_charge: zf.reverse_charge,
-        reverse_charge_type: zf.reverse_charge_type,
-        eu_plnenie: zf.eu_plnenie,
-        oss: zf.oss,
-        oss_country: zf.oss_country,
-        subtotal: sumy.subtotal,
-        vat_total: sumy.vat_total,
-        total: sumy.total,
-        advance_invoice_id: zf.id,
-        advance_amount: prijate,
-        notes: `Daňový doklad k platbe prijatej ${data.datum_platby} k zálohovej faktúre ${zf.invoice_number}.`,
-      })
-      .select("id, invoice_number, total, currency")
-      .single();
+    // Číslo sa pri kolízii so súbežne vystavenou faktúrou vypýta znova.
+    const { sOpakovanimPriKoliziiCisla } = await import("./kolizia-cisla");
+    const { data: doklad, error: chyba } = await sOpakovanimPriKoliziiCisla<any>(async () => {
+      const cislo = await novehoCisla();
+      return supabase
+        .from("invoices")
+        .insert({
+          company_id: zf.company_id,
+          created_by: userId,
+          customer_id: zf.customer_id,
+          type: "advance_payment",
+          // Doklad vzniká až po zaplatení, takže je uhradený od prvej chvíle.
+          status: "paid",
+          invoice_number: cislo.invoice_number,
+          number_series_id: cislo.series_id,
+          sequence_number: cislo.sequence_number,
+          variable_symbol: vsZCislaDokladu(cislo.invoice_number) || null,
+          issue_date: data.datum_platby,
+          delivery_date: data.datum_platby,
+          due_date: data.datum_platby,
+          paid_at: data.datum_platby,
+          currency: zf.currency,
+          payment_method: zf.payment_method,
+          customer_name: zf.customer_name,
+          customer_email: zf.customer_email,
+          customer_ico: zf.customer_ico,
+          customer_dic: zf.customer_dic,
+          customer_ic_dph: zf.customer_ic_dph,
+          customer_street: zf.customer_street,
+          customer_city: zf.customer_city,
+          customer_zip: zf.customer_zip,
+          customer_country: zf.customer_country,
+          reverse_charge: zf.reverse_charge,
+          reverse_charge_type: zf.reverse_charge_type,
+          eu_plnenie: zf.eu_plnenie,
+          oss: zf.oss,
+          oss_country: zf.oss_country,
+          subtotal: sumy.subtotal,
+          vat_total: sumy.vat_total,
+          total: sumy.total,
+          advance_invoice_id: zf.id,
+          advance_amount: prijate,
+          notes: `Daňový doklad k platbe prijatej ${data.datum_platby} k zálohovej faktúre ${zf.invoice_number}.`,
+        })
+        .select("id, invoice_number, total, currency")
+        .single();
+    });
     if (chyba || !doklad) throw new Error(chyba?.message ?? "Doklad sa nepodarilo vystaviť.");
 
     const { error: chybaPoloziek } = await supabase.from("invoice_items").insert(

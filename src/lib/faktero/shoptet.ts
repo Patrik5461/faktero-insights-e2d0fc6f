@@ -6,6 +6,7 @@
 */
 import type { VstupFaktury } from "./vytvor-fakturu.server";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export type ObjednavkaShoptet = {
   code: string;
   creationTime?: string | null;
@@ -68,10 +69,7 @@ export function uhradaZoShoptetu(nazov: string | null | undefined): {
   return { kod: "bank_transfer", dobierka: false };
 }
 
-export function fakturaZObjednavky(
-  o: ObjednavkaShoptet,
-  dnes = new Date().toISOString().slice(0, 10),
-): VstupFaktury {
+export function fakturaZObjednavky(o: ObjednavkaShoptet, dnes = dnesBratislava()): VstupFaktury {
   const b = o.billingAddress ?? {};
   const uhrada = uhradaZoShoptetu(o.paymentMethod?.name);
   const items = (o.items ?? [])

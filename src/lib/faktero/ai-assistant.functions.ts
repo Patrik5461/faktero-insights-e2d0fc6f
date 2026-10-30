@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getProductCapabilitiesMarkdown } from "./product-capabilities";
 import { krajinaDane } from "./vat-rates";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 const SYSTEM_PROMPT = `Si Faktero AI — asistent pre slovenských živnostníkov a firmy používajúcich Faktero (fakturačný systém).
 Odpovedaj VŽDY v slovenčine, stručne, prakticky, vo formáte markdown.
 Pomáhaš s: faktúrami, opakovanými faktúrami, neuhradenými faktúrami, odberateľmi, predplatným, eFaktúrou, exportmi do účtovníctva.
@@ -48,7 +49,7 @@ type Ctx = {
 };
 
 async function buildCompanyContext(supabase: any, companyId: string): Promise<Ctx> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dnesBratislava();
 
   const [companyRes, overdueRes, draftsRes, unsentRes, customersRes, webhookRes, recurringRes] =
     await Promise.all([

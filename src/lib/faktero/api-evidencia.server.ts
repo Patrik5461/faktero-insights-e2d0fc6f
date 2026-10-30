@@ -35,6 +35,7 @@ import {
 import { normalizePaymentMethod } from "./payment-method";
 import { zalohaPrijatej } from "./uhrady-prijatej";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 type Odpoved = { status: number; body: any };
 const jeUuid = (v: string) => /^[0-9a-f-]{36}$/i.test(v);
 
@@ -339,7 +340,7 @@ export async function pridajUhradu(ctx: ApiCtx, id: string): Promise<Odpoved> {
       purchase_invoice_id: id,
       amount: Math.round(d.amount * 100) / 100,
       currency: f.currency ?? "EUR",
-      paid_at: d.paid_at ?? new Date().toISOString().slice(0, 10),
+      paid_at: d.paid_at ?? dnesBratislava(),
       method: metoda,
       zdroj: "rucne",
       note: d.note?.trim() || null,

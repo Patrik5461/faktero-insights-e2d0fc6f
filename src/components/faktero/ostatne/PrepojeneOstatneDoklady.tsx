@@ -9,6 +9,7 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Iné doklady priradené k zamestnancovi (exekúcie) alebo k zmluve
  * o leasingu či úvere. Tá istá tabuľka na karte zamestnanca aj v detaile
@@ -35,7 +36,7 @@ export function PrepojeneOstatneDoklady({
   const zoznamFn = useServerFn(zoznamOstatnychFn);
   const [rows, setRows] = useState<any[] | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
 
   useEffect(() => {
     zoznamFn({

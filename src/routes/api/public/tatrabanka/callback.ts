@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { zasifrujBankToken } from "@/lib/faktero/bank-tokens.server";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/api/public/tatrabanka/callback")({
   server: {
     handlers: {
@@ -176,7 +177,7 @@ async function handlePaymentCallback(
     if (done && row.purchase_invoice_id) {
       await supabaseAdmin
         .from("purchase_invoices")
-        .update({ status: "paid", payment_date: new Date().toISOString().slice(0, 10) })
+        .update({ status: "paid", payment_date: dnesBratislava() })
         .eq("id", row.purchase_invoice_id);
     }
     return back(`platba=${encodeURIComponent(result.transactionStatus)}`);

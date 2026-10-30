@@ -40,6 +40,7 @@ import { PrebiehaJazda } from "./PrebiehaJazda";
 import { OznamEfaktury } from "./OznamEfaktury";
 import { dotazNezaevidovanych } from "@/lib/faktero/efaktura/upozornenie-prijatej";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Úvodná obrazovka appky (smer „A · Svetlý a pokojný").
  *
@@ -85,7 +86,7 @@ type Riadok = {
   cas: string;
 };
 
-const DNES = () => new Date().toISOString().slice(0, 10);
+const DNES = () => dnesBratislava();
 
 export function Prehlad({
   firma,

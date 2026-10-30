@@ -17,6 +17,7 @@ import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Tá istá stránka zakladá aj upravuje. Kniha jázd je účtovný záznam a preklep v
  * tachometri alebo zle označená súkromná jazda sa musia dať opraviť — bez toho
@@ -116,7 +117,7 @@ function NewTripPage() {
         setUlozenaTrasa((data as any).route ?? null);
         setForm({
           vehicle_id: data.vehicle_id ?? "",
-          trip_date: data.trip_date ?? new Date().toISOString().slice(0, 10),
+          trip_date: data.trip_date ?? dnesBratislava(),
           driver_name: data.driver_name ?? "",
           start_location: data.start_location ?? "",
           end_location: data.end_location ?? "",

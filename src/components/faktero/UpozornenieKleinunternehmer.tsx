@@ -7,6 +7,7 @@ import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Upozornenie pre nemeckú firmu v režime Kleinunternehmer (§ 19 UStG), keď sa
  * obrat z vystavených faktúr blíži k hranici 25 000 € / 100 000 € alebo ju
@@ -19,7 +20,7 @@ export function UpozornenieKleinunternehmer({
 }) {
   const { t } = useT();
   const ku = Boolean(firma?.id) && rezimFirmy(firma).schema === "de_kleinunternehmer";
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
   const od = `${Number(dnes.slice(0, 4)) - 1}-01-01`;
   const { data: stav } = useQuery({
     queryKey: ["kleinunternehmer-obrat", firma?.id, od],

@@ -20,6 +20,7 @@ import {
   StatusBadge,
 } from "./ui";
 import type { Kluc } from "@/lib/mobile/preklady";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Bankové pohyby v telefóne.
  *
@@ -129,7 +130,7 @@ function podnadpisPohybu(p: Pohyb, firma: string, t: (k: Kluc, p?: Record<string
 
 /* Aj tu `t` ako vstup — a locale, aby sa dátum písal v jazyku appky. */
 function denNazov(iso: string, t: (k: Kluc, p?: Record<string, string | number>) => string, loc: string): string {
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
   if (iso === dnes) return t("banka.dnes");
   const v = new Date();
   v.setDate(v.getDate() - 1);

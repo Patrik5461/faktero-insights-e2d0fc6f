@@ -102,15 +102,18 @@ export async function nacitajNaUctovanie(
   ids: string[],
 ): Promise<DokladUctovania[]> {
   if (!ids.length) return [];
+  // Výber celého mesiaca môžu byť tisíce dokladov — `.in()` ide po dávkach.
+  const { poDavkach } = await import("./strankovanie");
   if (agenda === "vystavena") {
-    const { data: invs, error } = await supabase
-      .from("invoices")
-      .select("*")
-      .eq("company_id", company.id)
-      .in("id", ids)
-      .is("deleted_at", null);
-    if (error) throw new Error(error.message);
-    const rows = (invs ?? []).filter((i: any) => i.status !== "draft");
+    const invs = await poDavkach<any>(ids, (kus) =>
+      supabase
+        .from("invoices")
+        .select("*")
+        .eq("company_id", company.id)
+        .in("id", kus)
+        .is("deleted_at", null),
+    );
+    const rows = invs.filter((i: any) => i.status !== "draft");
     const { riadkyPreIds } = await import("./strankovanie");
     const items = await riadkyPreIds<any>(
       rows.map((i: any) => i.id),
@@ -128,8 +131,10 @@ export async function nacitajNaUctovanie(
     const opr = [...new Set(rows.map((i: any) => i.opravuje_fakturu_id).filter(Boolean))];
     const cisla: Record<string, string> = {};
     if (opr.length) {
-      const { data } = await supabase.from("invoices").select("id, invoice_number").in("id", opr);
-      for (const r of data ?? []) cisla[r.id] = r.invoice_number;
+      const data = await poDavkach<any>(opr as string[], (kus) =>
+        supabase.from("invoices").select("id, invoice_number").in("id", kus),
+      );
+      for (const r of data) cisla[r.id] = r.invoice_number;
     }
     const nast = await nastaveniaUctovania(supabase, company, rows);
     const { nacitajOdpocty } = await import("./zalohy-odpocty.server");
@@ -151,24 +156,20 @@ export async function nacitajNaUctovanie(
     );
   }
   if (agenda === "prijata") {
-    const { data, error } = await supabase
-      .from("purchase_invoices")
-      .select("*")
-      .eq("company_id", company.id)
-      .in("id", ids)
-      .is("deleted_at", null);
-    if (error) throw new Error(error.message);
-    const rows = data ?? [];
+    const rows = await poDavkach<any>(ids, (kus) =>
+      supabase
+        .from("purchase_invoices")
+        .select("*")
+        .eq("company_id", company.id)
+        .in("id", kus)
+        .is("deleted_at", null),
+    );
     const nast = await nastaveniaUctovania(supabase, company, rows);
     return rows.map((p: any) => prijataNaUctovanie(p, nast));
   }
-  const { data, error } = await supabase
-    .from("expense_documents")
-    .select("*")
-    .eq("company_id", company.id)
-    .in("id", ids);
-  if (error) throw new Error(error.message);
-  const rows = data ?? [];
+  const rows = await poDavkach<any>(ids, (kus) =>
+    supabase.from("expense_documents").select("*").eq("company_id", company.id).in("id", kus),
+  );
   const nast = await nastaveniaUctovania(supabase, company, rows);
   return rows.map((d: any) => blocekNaUctovanie(d, nast));
 }
