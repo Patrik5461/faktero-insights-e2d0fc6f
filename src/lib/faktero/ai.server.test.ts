@@ -175,3 +175,44 @@ describe("výber poskytovateľa", () => {
     await expect(aiText("pokyn")).rejects.toThrow(/429/);
   });
 });
+
+describe("kto odpovedal", () => {
+  it("ohlási Gemini, keď odpovedal on", async () => {
+    geminiVision.mockResolvedValueOnce('{"z":"gemini"}');
+    const { aiVision } = await import("./ai.server");
+    const odpovedal = vi.fn();
+    await aiVision("base64", "image/png", "pokyn", { odpovedal });
+    expect(odpovedal).toHaveBeenCalledWith("gemini");
+    expect(odpovedal).toHaveBeenCalledTimes(1);
+  });
+
+  it("ohlási OpenAI, keď ho zastúpil", async () => {
+    geminiVision.mockRejectedValueOnce(new Error("Gemini 429: RESOURCE_EXHAUSTED"));
+    const { aiVision } = await import("./ai.server");
+    const odpovedal = vi.fn();
+    await aiVision("base64", "image/png", "pokyn", { odpovedal });
+    expect(odpovedal.mock.calls.map((c) => c[0])).toEqual(["openai"]);
+  });
+
+  it("čítanie dokladu nechá polohy údajov len od Gemini", async () => {
+    vi.doMock("./pdf-prilohy.server", () => ({ dokladZPrilohy: async () => null }));
+    const odpoved = JSON.stringify({
+      invoice_number: "FA1",
+      field_locations: { invoice_number: { page: 1, box_2d: [10, 10, 20, 50] } },
+    });
+    geminiVision.mockResolvedValueOnce(odpoved);
+    const { precitajDoklad } = await import("./mail-prijem.server");
+    expect((await precitajDoklad("eA==", "image/png"))?.field_locations).toBeTruthy();
+
+    vi.resetModules();
+    geminiVision.mockRejectedValueOnce(new Error("Gemini 429: RESOURCE_EXHAUSTED"));
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: odpoved } }] }),
+    });
+    const druhy = await import("./mail-prijem.server");
+    const ai = await druhy.precitajDoklad("eA==", "image/png");
+    expect(ai?.invoice_number).toBe("FA1");
+    expect(ai?.field_locations).toBeUndefined();
+  });
+});

@@ -162,10 +162,20 @@ const sections: HelpSection[] = [
           do poľa Číslo objednávky.
         </p>
         <p>
-          V náhľade PDF sú <strong>modrým rámčekom</strong> vyznačené miesta, odkiaľ sa vzali číslo
-          faktúry, VS, IBAN, IČO, DIČ, IČ DPH, dátumy a suma. Keď kliknete do poľa, jeho miesto sa
-          zvýrazní silnejšie a náhľad sa naň posunie. Zvýraznenie vypnete ikonou zvýrazňovača nad
-          náhľadom. Pri fotkách a skenoch bez textu sa nič nevyznačí.
+          Typ podľa IBAN-u je <strong>predvolene zapnutý</strong> a porovnáva IBAN na doklade so
+          všetkými vašimi účtami — zadanými v nastaveniach firmy aj napojenými bankami. Nad údajmi
+          vždy uvidíte dôvod: „IBAN patrí vášmu účtu …“ pri vlastnej vystavenej faktúre, a pri
+          prijatej faktúre, že IBAN nepatrí žiadnemu vášmu účtu alebo že váš účet je na doklade ako
+          účet odberateľa.
+        </p>
+        <p>
+          V náhľade dokladu sú <strong>modrým rámčekom</strong> vyznačené miesta, odkiaľ sa vzali
+          číslo faktúry, VS, IBAN, IČO, DIČ, IČ DPH, dátumy a suma. Keď kliknete do poľa alebo naň
+          ukážete myšou, jeho miesto sa zvýrazní silnejšie a náhľad sa naň posunie. Pri PDF sa
+          miesto hľadá v texte dokladu, pri fotkách a skenoch ho určí AI pri vyťažení (aj názov
+          dodávateľa). Keď hodnotu v poli prepíšete, rámček zmizne. Zvýraznenie vypnete ikonou
+          zvýrazňovača nad náhľadom. Doklady vyťažené pred touto zmenou majú rámčeky len v PDF s
+          textom.
         </p>
         <p>
           Keď sú položky vyčítané úplne zle, stlačte <strong>Vypnúť položky</strong>. Doklad sa

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Crosshair, Loader2, X } from "lucide-react";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import {
+  ObrazokSoZvyraznenim,
   PrepinacZvyraznenia,
   usePosunNaAktivne,
   useZvyraznenia,
@@ -210,7 +211,12 @@ export function NahladSVyberom(props: Props) {
     return jePdf ? (
       <NahladPdf url={subor.url} zvyraznenie={props.zvyraznenie} />
     ) : (
-      <img src={subor.url} alt={subor.nazov ?? t("Doklad")} className="w-full rounded-md" />
+      <ObrazokSoZvyraznenim
+        url={subor.url}
+        alt={subor.nazov ?? t("Doklad")}
+        className="w-full rounded-md"
+        zvyraznenie={props.zvyraznenie}
+      />
     );
   return <Vyber {...props} url={subor.url} jePdf={jePdf} />;
 }
@@ -524,7 +530,7 @@ function Vyber({
           {citamVyrez && (
             <Loader2 className="h-4 w-4 animate-spin" aria-label={t("Čítam označenú oblasť")} />
           )}
-          {onPrepniZvyraznenie && maText ? (
+          {onPrepniZvyraznenie && (maText || zvyraznenia.length > 0) ? (
             <PrepinacZvyraznenia
               zap={zobrazitZvyraznenie}
               onPrepni={onPrepniZvyraznenie}
@@ -565,7 +571,7 @@ function Vyber({
           >
             <Crosshair className="h-3.5 w-3.5" /> {t("Vybrať z dokladu")}
           </button>
-          {onPrepniZvyraznenie && maText ? (
+          {onPrepniZvyraznenie && (maText || zvyraznenia.length > 0) ? (
             <PrepinacZvyraznenia
               zap={zobrazitZvyraznenie}
               onPrepni={onPrepniZvyraznenie}
@@ -639,6 +645,11 @@ function Vyber({
             }
             oznacene={oznacene?.strana === 0 ? oznacene.r : null}
             hotovo={poslednyVyber?.strana === 0 ? poslednyVyber.r : null}
+            zvyraznenia={
+              zobrazitZvyraznenie && strany.length ? (
+                <ZvyrazneniaStrany zvyraznenia={zvyraznenia} strana={0} aktivne={aktivne} />
+              ) : null
+            }
             obdlznik={obdlznik}
             onDole={dole}
             onPohyb={pohyb}

@@ -1,0 +1,13 @@
+// Rechnungstyp nach IBAN und Hervorhebung ausgelesener Daten in der Vorschau (unverarbeitete Belege).
+export default {
+  "IBAN {iban} patrí vášmu účtu {nazov} a je na doklade ako účet odberateľa.":
+    "Die IBAN {iban} gehört zu Ihrem Konto {nazov} und steht auf dem Beleg als Konto des Abnehmers.",
+  "IBAN {iban} patrí vašej firme a je na doklade ako účet odberateľa.":
+    "Die IBAN {iban} gehört Ihrer Firma und steht auf dem Beleg als Konto des Abnehmers.",
+  "IBAN {iban} nepatrí žiadnemu vášmu účtu, platba ide dodávateľovi.":
+    "Die IBAN {iban} gehört zu keinem Ihrer Konten, die Zahlung geht an den Lieferanten.",
+  "Typ podľa IBAN-u je <0>predvolene zapnutý</0> a porovnáva IBAN na doklade so všetkými vašimi účtami — zadanými v nastaveniach firmy aj napojenými bankami. Nad údajmi vždy uvidíte dôvod: „IBAN patrí vášmu účtu …“ pri vlastnej vystavenej faktúre, a pri prijatej faktúre, že IBAN nepatrí žiadnemu vášmu účtu alebo že váš účet je na doklade ako účet odberateľa.":
+    "Der Typ nach IBAN ist <0>standardmäßig eingeschaltet</0> und vergleicht die IBAN auf dem Beleg mit allen Ihren Konten — den in den Firmeneinstellungen eingetragenen und den verbundenen Banken. Über den Daten sehen Sie immer den Grund: „Die IBAN gehört zu Ihrem Konto …“ bei Ihrer eigenen ausgestellten Rechnung, und bei einer Eingangsrechnung, dass die IBAN zu keinem Ihrer Konten gehört oder dass Ihr Konto auf dem Beleg als Konto des Abnehmers steht.",
+  "V náhľade dokladu sú <0>modrým rámčekom</0> vyznačené miesta, odkiaľ sa vzali číslo faktúry, VS, IBAN, IČO, DIČ, IČ DPH, dátumy a suma. Keď kliknete do poľa alebo naň ukážete myšou, jeho miesto sa zvýrazní silnejšie a náhľad sa naň posunie. Pri PDF sa miesto hľadá v texte dokladu, pri fotkách a skenoch ho určí AI pri vyťažení (aj názov dodávateľa). Keď hodnotu v poli prepíšete, rámček zmizne. Zvýraznenie vypnete ikonou zvýrazňovača nad náhľadom. Doklady vyťažené pred touto zmenou majú rámčeky len v PDF s textom.":
+    "In der Belegvorschau sind mit einem <0>blauen Rahmen</0> die Stellen markiert, aus denen Rechnungsnummer, VS, IBAN, IČO, DIČ, USt-IdNr., Daten und Betrag stammen. Wenn Sie in ein Feld klicken oder mit der Maus darauf zeigen, wird seine Stelle stärker hervorgehoben und die Vorschau springt dorthin. Bei PDFs wird die Stelle im Text des Belegs gesucht, bei Fotos und Scans bestimmt sie die KI beim Auslesen (auch den Namen des Lieferanten). Wenn Sie den Wert im Feld überschreiben, verschwindet der Rahmen. Die Hervorhebung schalten Sie mit dem Textmarker-Symbol über der Vorschau aus. Belege, die vor dieser Änderung ausgelesen wurden, haben Rahmen nur in PDFs mit Text.",
+};

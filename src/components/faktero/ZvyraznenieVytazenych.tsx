@@ -1,16 +1,18 @@
-import { useCallback, useEffect, useMemo, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Highlighter } from "lucide-react";
 import type { UdajeNespracovaneho } from "@/lib/faktero/nespracovane";
 import type { KlucPola, SlovoNahladu } from "@/lib/faktero/vyber-z-dokladu";
 import { poleVyberu } from "@/lib/faktero/vyber-z-dokladu";
 import { zvyrazneniaUdajov, type Zvyraznenie } from "@/lib/faktero/zvyraznenie-vytazenych";
+import type { PolohaAi } from "@/lib/faktero/polohy-ai";
 import { useT } from "@/lib/i18n/useT";
 
 /*
   Zvýraznenie vyťažených údajov v náhľade dokladu — rámčeky okolo miest,
-  odkiaľ sa vzali hodnoty polí (hľadajú sa v textovej vrstve PDF, AI súradnice
-  nedáva). Pole, do ktorého človek klikne, sa zvýrazní silnejšie a náhľad sa
-  posunie na jeho miesto.
+  odkiaľ sa vzali hodnoty polí. Hľadajú sa v textovej vrstve PDF; na obrázku,
+  skene a pri poliach, ktoré sa v texte nenašli, pomôže poloha, ktorú vrátila
+  AI. Pole, do ktorého človek klikne alebo na ktoré ukáže myšou, sa zvýrazní
+  silnejšie a náhľad sa posunie na jeho miesto.
 */
 
 /** Čo náhľad potrebuje na zvýraznenie. */
@@ -22,6 +24,8 @@ export type ZvyraznenieNahladu = {
   zobrazit: boolean;
   /** Pole, na ktorom je práve kurzor. */
   aktivne?: KlucPola | null;
+  /** Polohy údajov od AI (prázdne = len textová vrstva PDF). */
+  polohy?: PolohaAi[];
 };
 
 const KLUC_ULOZENIA = "faktero.nespracovane.zvyraznenie";
@@ -55,14 +59,20 @@ export function useZvyraznenia(
   z: ZvyraznenieNahladu | undefined,
 ): Zvyraznenie[] {
   const udaje = z?.udaje;
+  const polohy = z?.polohy;
   // Zoznam polí býva pri každom vykreslení nové pole — porovnáva sa obsah.
   const polia = z?.polia?.join(",");
   return useMemo(
     () =>
-      udaje && strany.some((s) => s.length)
-        ? zvyrazneniaUdajov(strany, udaje, polia ? (polia.split(",") as KlucPola[]) : undefined)
+      udaje && (strany.some((s) => s.length) || polohy?.length)
+        ? zvyrazneniaUdajov(
+            strany,
+            udaje,
+            polia ? (polia.split(",") as KlucPola[]) : undefined,
+            polohy,
+          )
         : [],
-    [strany, udaje, polia],
+    [strany, udaje, polia, polohy],
   );
 }
 
@@ -181,3 +191,67 @@ export function PrepinacZvyraznenia({
     </button>
   );
 }
+
+/**
+ * Pole formulára pod myšou — zvýraznenie jeho miesta v náhľade bez kliknutia.
+ * `poleZ` je prevod prvku na kľúč poľa (`poleZPrvku` z NahladSVyberom).
+ */
+export function useHoverPola(poleZ: (el: EventTarget | null) => KlucPola | null) {
+  const [pole, setPole] = useState<KlucPola | null>(null);
+  const posledne = useRef<KlucPola | null>(null);
+  const casovac = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => void (casovac.current && clearTimeout(casovac.current)), []);
+  /*
+    S krátkym oneskorením — myš idúca cez formulár by inak náhľad posúvala
+    pri každom poli, ktoré len prejde.
+  */
+  const nastav = (k: KlucPola | null) => {
+    if (posledne.current === k) return;
+    posledne.current = k;
+    if (casovac.current) clearTimeout(casovac.current);
+    casovac.current = setTimeout(() => setPole(k), k ? 150 : 0);
+  };
+  return {
+    pole,
+    onMouseOver: (e: { target: EventTarget | null }) => {
+      const el = e.target as Element | null;
+      // Popis aj pole sú v jednom <label> — myš na popise ukazuje na to isté pole.
+      const vstup =
+        el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
+          ? el
+          : (el?.closest?.("label")?.querySelector("input, textarea") ?? null);
+      nastav(vstup ? poleZ(vstup) : null);
+    },
+    onMouseLeave: () => nastav(null),
+  };
+}
+
+/** Obrázok dokladu s rámčekmi vyťažených údajov (polohy od AI). */
+export function ObrazokSoZvyraznenim({
+  url,
+  alt,
+  className,
+  zvyraznenie,
+}: {
+  url: string;
+  alt: string;
+  className?: string;
+  zvyraznenie?: ZvyraznenieNahladu;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  const zvyraznenia = useZvyraznenia(BEZ_SLOV, zvyraznenie);
+  const zobrazit = Boolean(zvyraznenie?.zobrazit);
+  usePosunNaAktivne(box, zvyraznenie?.aktivne, zvyraznenia, zobrazit);
+  if (!zvyraznenia.length) return <img src={url} alt={alt} className={className} />;
+  return (
+    <div ref={box} className="relative mx-auto w-fit max-w-full">
+      <img src={url} alt={alt} className={`${className ?? ""} block`} />
+      {zobrazit ? (
+        <ZvyrazneniaStrany zvyraznenia={zvyraznenia} strana={0} aktivne={zvyraznenie?.aktivne} />
+      ) : null}
+    </div>
+  );
+}
+
+/** Obrázok nemá textovú vrstvu — jedna strana bez slov (stála hodnota pre useMemo). */
+const BEZ_SLOV: SlovoNahladu[][] = [[]];

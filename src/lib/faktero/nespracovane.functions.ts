@@ -152,22 +152,37 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       .eq("id", r.company_id)
       .maybeSingle();
     /*
-      Firemné účty — podľa nich sa spozná vlastná vystavená faktúra (nastavenie
-      „Automaticky určiť typ faktúry podľa firemných IBAN-ov"). Číta sa cez RLS.
+      Firemné účty — podľa nich sa spozná vlastná vystavená faktúra aj cudzí
+      IBAN prijatej (nastavenie „Automaticky určiť typ faktúry podľa firemných
+      IBAN-ov"). Ručne zadané účty, napojené banky aj IBAN firmy. Číta sa cez RLS.
     */
     let vlastneUcty: { iban: string; nazov: string | null }[] = [];
     if (nastavenia.typPodlaIban) {
-      const { data: ucty } = await supabase
-        .from("company_bank_accounts")
-        .select("iban, name")
-        .eq("company_id", r.company_id);
-      vlastneUcty = ((ucty ?? []) as { iban: string; name: string | null }[])
-        .filter((x) => x.iban)
-        .map((x) => ({ iban: x.iban, nazov: x.name }));
-      if (firma?.iban && !vlastneUcty.length) vlastneUcty = [{ iban: firma.iban, nazov: null }];
+      const { uctyFirmy } = await import("./nespracovane-iban");
+      const [{ data: ucty }, { data: banky }] = await Promise.all([
+        supabase.from("company_bank_accounts").select("iban, name").eq("company_id", r.company_id),
+        supabase.from("bank_accounts").select("iban, account_name").eq("company_id", r.company_id),
+      ]);
+      vlastneUcty = uctyFirmy(
+        ((ucty ?? []) as { iban: string | null; name: string | null }[]).map((x) => ({
+          iban: x.iban ?? "",
+          nazov: x.name,
+        })),
+        ((banky ?? []) as { iban: string | null; account_name: string | null }[]).map((x) => ({
+          iban: x.iban ?? "",
+          nazov: x.account_name,
+        })),
+        firma?.iban ? [{ iban: firma.iban, nazov: null }] : [],
+      ) as { iban: string; nazov: string | null }[];
     }
+    const { polohyZAi } = await import("./polohy-ai");
+    const ai = (r.ai ?? null) as Record<string, unknown> | null;
     return {
       vlastneUcty,
+      /** IBAN odberateľa z dokladu — firemný znamená, že faktúra je prijatá. */
+      ibanOdberatela: typeof ai?.buyer_iban === "string" ? (ai.buyer_iban as string) : null,
+      /** Kde AI údaje na doklade našla — zvýraznenie na obrázku a skene. */
+      polohyAi: polohyZAi(ai),
       povinne: (firma?.povinne_polia_dokladu ?? []) as string[],
       varovania: await varovaniaNespracovaneho(supabase, r, udaje, firma),
       id: r.id as string,

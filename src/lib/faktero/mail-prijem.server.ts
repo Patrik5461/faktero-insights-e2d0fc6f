@@ -23,6 +23,7 @@ import {
   type OdosielatelPotvrdeni,
 } from "./mail-potvrdenie";
 import { DRUHY_PRE_AI } from "./ostatne-doklady-citanie.server";
+import { POKYN_POLOH } from "./polohy-ai";
 
 /**
  * `%` a `_` sú v adrese povolené znaky, ale v `ilike` zastupujú čokoľvek —
@@ -137,7 +138,8 @@ Pri bločku pridaj "payment_method": "hotovost" (hotovosť, v hotovosti, cash), 
 platobná karta, kartou, Visa, Mastercard) alebo "prevod"; keď na doklade nie je, null.
 Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď doklad
 položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
-Čo na doklade nie je, nechaj null — nič si nevymýšľaj.`;
+Čo na doklade nie je, nechaj null — nič si nevymýšľaj.
+${POKYN_POLOH}`;
 
 /** Prečíta doklad cez Gemini. Keď sa to nepodarí, vráti null a doklad vznikne prázdny. */
 export async function precitajDoklad(
@@ -161,9 +163,16 @@ export async function precitajDoklad(
     const { aiVision } = await import("./ai.server");
     // Uprednostnená domáca mena firmy (nastavenie Nespracovaných) — doplnok pokynu.
     const { pokynCitania } = await import("./vytazenie-mena");
-    const odpoved = await aiVision(base64, mimeType, pokynCitania(PROMPT, volby), { ucel: "doklad-z-posty" });
+    let kto: "gemini" | "openai" | null = null;
+    const odpoved = await aiVision(base64, mimeType, pokynCitania(PROMPT, volby), {
+      ucel: "doklad-z-posty",
+      odpovedal: (p) => (kto = p),
+    });
     const json = odpoved.match(/\{[\s\S]*\}/)?.[0];
-    return json ? JSON.parse(json) : null;
+    const ai = json ? (JSON.parse(json) as Record<string, unknown>) : null;
+    // Polohy údajov (zvýraznenie v náhľade) vie presne len Gemini — od náhrady sa zahodia.
+    if (ai && kto !== "gemini") delete ai.field_locations;
+    return ai;
   } catch (e: any) {
     console.error("[mail-prijem] čítanie dokladu zlyhalo:", e?.message ?? e);
     return null;
