@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { potrebujeKurz, stlpceKurzu, udajeNaKurz } from "./kurz-dokladu";
+import { kurzTrebaPrepocitat, potrebujeKurz, stlpceKurzu, udajeNaKurz } from "./kurz-dokladu";
 import { blocekNaUctovanie } from "./zauctovanie-export";
 
 describe("kurz pri importe dokladu v cudzej mene", () => {
@@ -80,5 +80,34 @@ describe("kurz pri importe dokladu v cudzej mene", () => {
     expect(
       blocekNaUctovanie({ id: "b2", issue_date: "2026-09-05", total_amount: 1 }, {} as any).kurz,
     ).toBeNull();
+  });
+});
+
+describe("kurz po úprave bločku", () => {
+  const blocek = { currency: "EUR", issue_date: "2026-10-15", exchange_rate: null };
+  it("zmena meny alebo dňa nákupu kurz prepočíta", () => {
+    expect(kurzTrebaPrepocitat(blocek, { currency: "USD" })).toBe(true);
+    expect(
+      kurzTrebaPrepocitat(
+        { ...blocek, currency: "CZK", exchange_rate: 24.357 },
+        { issue_date: "2026-10-20" },
+      ),
+    ).toBe(true);
+    // Späť na euro — starý kurz treba zmazať.
+    expect(
+      kurzTrebaPrepocitat(
+        { ...blocek, currency: "CZK", exchange_rate: 24.357 },
+        { currency: "EUR" },
+      ),
+    ).toBe(true);
+  });
+  it("úprava bez zmeny meny a dňa kurz nechá", () => {
+    expect(
+      kurzTrebaPrepocitat(blocek, { currency: "eur ", issue_date: "2026-10-15", note: "x" }),
+    ).toBe(false);
+    expect(kurzTrebaPrepocitat(blocek, { supplier_name: "Albert" })).toBe(false);
+  });
+  it("kurz zadaný v tej istej úprave má prednosť", () => {
+    expect(kurzTrebaPrepocitat(blocek, { currency: "USD", exchange_rate: 1.1 })).toBe(false);
   });
 });

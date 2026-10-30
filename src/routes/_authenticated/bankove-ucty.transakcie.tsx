@@ -10,6 +10,7 @@ import {
 } from "@/lib/faktero/tatrabanka.functions";
 import type { SucetMeny } from "@/lib/faktero/bank-sumy";
 import { toast } from "sonner";
+import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { RefreshCw, Link2, Unlink } from "lucide-react";
@@ -40,6 +41,7 @@ const NAZVY_BANK: Record<string, string> = {
   revolut: "Revolutu",
   wallester: "Wallesteru",
   email: "e-mailových notifikácií",
+  import: "nahratých výpisov",
 };
 
 /** Podnadpis podľa toho, čo je naozaj pripojené — nie natvrdo Tatra banka. */
@@ -188,6 +190,9 @@ function TxPage() {
   async function odparuj(id: string) {
     const cid = getActiveCompanyId();
     if (!cid) return;
+    // Malá ikona hneď vedľa čísla faktúry — jedným preklepom by sa zaplatená
+    // faktúra vrátila medzi otvorené (a mohla by dostať upomienku).
+    if (!(await potvrd(t("Zrušiť párovanie? Faktúra sa vráti medzi otvorené.")))) return;
     try {
       await zrus({ data: { companyId: cid, transactionId: id } });
       toast.success(t("Párovanie zrušené, faktúra je znovu otvorená."));

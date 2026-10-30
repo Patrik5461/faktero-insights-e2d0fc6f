@@ -133,7 +133,7 @@ describe("pohodaXmlBlockov", () => {
     expect(subory[0].doklady.map((d) => d.id)).toEqual(["b1"]);
     expect(polozkyBalika(subory[0].xml)).toHaveLength(1);
     expect(preskocene).toHaveLength(1);
-    expect(preskocene[0]).toMatch(/^X1 — bloček v mene CZK/);
+    expect(preskocene[0]).toMatch(/^X1 — bloček v mene CZK nemá kurz/);
   });
 
   it("pri označení ako odovzdané vynechá už odovzdané", () => {
@@ -192,5 +192,69 @@ describe("pohodaXmlBlockov", () => {
       ["5PHMN", "PN"],
     ]);
     expect(chybySchemy(subory[0].xml)).toEqual([]);
+  });
+
+  describe("bloček v cudzej mene s kurzom ECB", () => {
+    const czk = {
+      ...blocek,
+      id: "c1",
+      document_number: "CZ-1",
+      currency: "CZK",
+      net_amount: 1000,
+      vat_amount: 230,
+      total_amount: 1230,
+      vat_rate: 23,
+      vat_breakdown: [{ sadzba: 23, zaklad: 1000, dph: 230 }],
+      exchange_rate: 24.357,
+      exchange_rate_date: "2026-10-14",
+      exchange_rate_source: "ecb",
+    };
+    const kurzVSuhrne = (xml: string) =>
+      /<typ:currency><typ:ids>CZK<\/typ:ids><\/typ:currency>/.test(xml);
+
+    it("ako prijatá faktúra: súhrn a položky v mene dokladu, prejde schémou", () => {
+      const { subory, preskocene } = pohodaXmlBlockov({
+        ...zaklad,
+        firma,
+        rows: [czk],
+        nastavenia: {},
+      });
+      expect(preskocene).toEqual([]);
+      const xml = subory[0].xml;
+      expect(kurzVSuhrne(xml)).toBe(true);
+      expect(xml).not.toMatch(/<inv:homeCurrency>/);
+      expect(chybySchemy(xml)).toEqual([]);
+    });
+
+    it("kartou ako interný doklad aj s položkami z bločku, prejde schémou", () => {
+      const nastavenia = { blockyPodlaPlatby: true, polozkyBlockov: true };
+      const sPolozkami = {
+        ...czk,
+        items: [{ name: "Nafta", quantity: 10, unit_price: 123, total: 1230, vat_rate: 23 }],
+      };
+      const { subory, preskocene } = pohodaXmlBlockov({
+        ...zaklad,
+        firma,
+        rows: [sPolozkami],
+        nastavenia,
+      });
+      expect(preskocene).toEqual([]);
+      const xml = subory[0].xml;
+      expect(xml).toMatch(/<int:intDoc\b/);
+      expect(kurzVSuhrne(xml)).toBe(true);
+      expect(xml).not.toMatch(/<int:homeCurrency>/);
+      expect(chybySchemy(xml)).toEqual([]);
+    });
+
+    it("hotovosť v cudzej mene do XML nejde — pokladňa je v domácej mene", () => {
+      const { subory, preskocene } = pohodaXmlBlockov({
+        ...zaklad,
+        firma,
+        rows: [{ ...czk, payment_method: "hotovost" }],
+        nastavenia: { blockyPodlaPlatby: true, pokladna: "HP" },
+      });
+      expect(subory).toEqual([]);
+      expect(preskocene[0]).toMatch(/^CZ-1 — hotovostný bloček v mene CZK/);
+    });
   });
 });

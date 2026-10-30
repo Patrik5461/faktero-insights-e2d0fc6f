@@ -1185,6 +1185,15 @@ function PurchaseInvoicesPage() {
                     {r.odberatel_nesedi ? (
                       <CudziaFakturaZnak nesedi={nacitajNesedi(r.odberatel_nesedi)} className="mr-1.5 align-middle" />
                     ) : null}
+                    {/* eFaktúra zaradená automaticky, ktorú ešte nikto neotvoril — hromadný príkaz ju vynechá. */}
+                    {r.na_kontrolu_at ? (
+                      <span
+                        title={t("Zaradila sa automaticky z eFaktúry — kým ju neotvoríte a neskontrolujete, hromadný príkaz na úhradu ju vynechá.")}
+                        className="mr-1.5 inline-flex rounded bg-amber-100 px-1.5 py-0.5 align-middle text-[11px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                      >
+                        {t("Na kontrolu")}
+                      </span>
+                    ) : null}
                     {r.supplier_name}
                     {r.stitky?.length ? (
                         <div className="mt-0.5 flex flex-wrap gap-1">
