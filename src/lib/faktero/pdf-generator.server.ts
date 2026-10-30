@@ -22,6 +22,7 @@ import {
   vetyDe,
   vetaPreneseniaDe,
   predvolenyJazykFirmy,
+  jednotkaNaDoklade,
   type JazykDokladu,
 } from "./faktura-jazyk";
 import { pataFirmyDe } from "./firma-de";
@@ -198,6 +199,19 @@ async function vykresliFakturu(
   const rcNaDoklade =
     Boolean(invoice.reverse_charge) &&
     (!kuFirma || (invoice.reverse_charge_type === "eu_b2b" && invoice.eu_plnenie === "sluzba"));
+  /*
+    Nemecká firma: dodanie tovaru do EÚ a vývoz sú oslobodené (§ 4 Nr. 1a/1b
+    UStG), nie prenesenie daňovej povinnosti — „RC“ a „USt. (Reverse-Charge)“
+    by odberateľa mýlili. Sadzba sa vytlačí ako 0 % a daň ako USt. 0,00;
+    zákonný dôvod nesie veta pod súčtami. Pri službe ostáva „RC“, tam daň
+    naozaj platí odberateľ (§ 13b UStG v jeho štáte).
+  */
+  const oslobodenieDe =
+    rcNaDoklade &&
+    krajinaDane(company.country) === "DE" &&
+    (invoice.reverse_charge_type === "export" ||
+      (invoice.reverse_charge_type === "eu_b2b" && invoice.eu_plnenie !== "sluzba"));
+  const stitokPdp = oslobodenieDe ? "0\u00A0%" : t.pdp;
   const fmt = (n: number, currency = "EUR") => sumaVJazyku(n, currency, jazyk);
   const fmtCenaJ = (n: number, currency = "EUR") => cenaVJazyku(n, currency, jazyk);
   /* Spôsob úhrady číta odberateľ, nie účtovník — preto v jeho jazyku. */
@@ -635,7 +649,7 @@ async function vykresliFakturu(
       ink,
       "right",
     );
-    cur.drawText(String(it.unit ?? ""), {
+    cur.drawText(jednotkaNaDoklade(it.unit, jazyk), {
       x: cols.unit.x + PAD,
       y: numBaseline,
       size: 10,
@@ -655,7 +669,7 @@ async function vykresliFakturu(
     drawAligned(
       cur,
       font,
-      rcNaDoklade || (it as any).prenesenie ? t.pdp : `${Number(it.vat_rate)}%`,
+      rcNaDoklade || (it as any).prenesenie ? stitokPdp : `${Number(it.vat_rate)}%`,
       cols.vat.x + cols.vat.w - PAD,
       numBaseline,
       10,
@@ -861,7 +875,7 @@ async function vykresliFakturu(
         cur.drawText(san(`${t.odpocetZalohy} ${r.odpocet}`), { x: totalsX, y: ty, size: 8, font, color: sub });
         ty -= 11.5;
       }
-      const nazov = r.pdp ? t.pdp : `${String(r.sadzba).replace(".", ",")}\u00A0%`;
+      const nazov = r.pdp ? stitokPdp : `${String(r.sadzba).replace(".", ",")}\u00A0%`;
       const prazdny = !r.zaklad && !r.dph;
       const farba = prazdny ? sub : ink;
       cur.drawText(san(nazov), { x: totalsX, y: ty, size: 9, font, color: sub });
@@ -869,7 +883,7 @@ async function vykresliFakturu(
       drawAligned(
         cur,
         font,
-        san(r.pdp ? "—" : fmt(r.dph, invoice.currency)),
+        san(r.pdp && !oslobodenieDe ? "—" : fmt(r.dph, invoice.currency)),
         stlpecDph,
         ty,
         8.5,
@@ -904,7 +918,7 @@ async function vykresliFakturu(
     drawTotalRow(
       cur,
       font,
-      t.dphPdp,
+      oslobodenieDe ? t.dph : t.dphPdp,
       fmt(0, invoice.currency),
       totalsX,
       ty,

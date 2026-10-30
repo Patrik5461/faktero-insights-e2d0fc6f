@@ -105,3 +105,37 @@ export function hodnotyMailu(
     due_date: invoice.due_date ? datumNaDoklade(invoice.due_date, jazyk) : "",
   };
 }
+
+/*
+  Stĺpce `companies.email_default_subject` a `email_default_message` majú v
+  databáze slovenskú predvolenú hodnotu — každá nová firma ju dostane, aj
+  nemecká či česká. Vlastný text firmy to teda nie je, a predvolený mail v
+  jazyku dokladu sa tak nikdy neuplatnil: nemecký odberateľ dostal „Faktúra
+  20260001 / Dobrý deň, v prílohe Vám posielame…“. Hodnota zhodná s
+  predvolenou z databázy sa preto pri doklade v inom jazyku než slovenčine
+  berie ako nevyplnená. Slovenský doklad ju dostane ako doteraz.
+*/
+export const DB_PREDVOLENY_PREDMET = "Faktúra {invoice_number}";
+export const DB_PREDVOLENY_TEXT =
+  "Dobrý deň,\r\n\r\nv prílohe Vám posielame faktúru {invoice_number} so splatnosťou {due_date}.\r\n\r\nĎakujeme za spoluprácu.";
+
+const normalizuj = (s: string) => s.replace(/\r\n/g, "\n").trim();
+
+/** Predvolený predmet a text, ktoré si firma naozaj nastavila (inak `null`). */
+export function vlastnyMailFirmy(
+  company:
+    | { email_default_subject?: string | null; email_default_message?: string | null }
+    | null
+    | undefined,
+  jazyk: unknown,
+): { predmet: string | null; text: string | null } {
+  const slovensky = jazykDokladu(jazyk) === "sk";
+  const vlastne = (v: string | null | undefined, db: string) => {
+    if (v == null || !v.trim()) return null;
+    return !slovensky && normalizuj(v) === normalizuj(db) ? null : v;
+  };
+  return {
+    predmet: vlastne(company?.email_default_subject, DB_PREDVOLENY_PREDMET),
+    text: vlastne(company?.email_default_message, DB_PREDVOLENY_TEXT),
+  };
+}

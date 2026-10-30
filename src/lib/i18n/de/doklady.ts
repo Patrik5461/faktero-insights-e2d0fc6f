@@ -100,7 +100,7 @@ export default {
   "Dobropis (samofaktúra)": "Korrektur der Gutschrift (Selbstfakturierung)",
   "Dobré vedieť": "Gut zu wissen",
   "Dodanie (daňové plnenie)": "Lieferung (Steuertatbestand)",
-  "Dodanie (DUZP)": "Lieferung (DUZP)",
+  "Dodanie (DUZP)": "Leistungsdatum",
   Dodávateľ: "Lieferant",
   dodávateľ: "Lieferant",
   "Dodávateľ k eFaktúre PDF nepriložil — náhľad je vykreslený z údajov eFaktúry.":
@@ -187,7 +187,7 @@ export default {
   Dátum: "Datum",
   dátum: "Datum",
   "Dátum dodania (daňového plnenia)": "Leistungsdatum (Steuerzeitpunkt)",
-  "Dátum dodania (DUZP)": "Leistungsdatum (DUZP)",
+  "Dátum dodania (DUZP)": "Leistungsdatum",
   "Dátum doručenia": "Eingangsdatum",
   "Dátum vystavenia": "Rechnungsdatum",
   "dátum vystavenia": "Rechnungsdatum",

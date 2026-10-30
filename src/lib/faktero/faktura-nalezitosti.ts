@@ -14,7 +14,26 @@ import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /** Do koľkých dní od dodania treba faktúru vyhotoviť. */
 export const LEHOTA_VYSTAVENIA_DNI = 15;
 
-export type KontrolaFaktury = { chyba?: string; upozornenie?: string };
+export type KontrolaFaktury = {
+  chyba?: string;
+  /** Hotový slovenský text (s dosadenými číslami). */
+  upozornenie?: string;
+  /** Kľúč prekladu s `{n}` a jeho parametre — `t(kluc, parametre)`. */
+  kluc?: string;
+  parametre?: Record<string, number>;
+};
+
+/** Nemecká firma: faktúra do šiestich mesiacov od dodania (§ 14 Abs. 2 Satz 2 Nr. 1 UStG). */
+export const LEHOTA_VYSTAVENIA_DE_MESIACOV = 6;
+
+const LEHOTA_SK =
+  "Od dodania uplynulo {n} dní. Faktúra sa má vyhotoviť do 15 dní od dodania alebo od prijatia platby (§ 73 zákona o DPH).";
+const LEHOTA_DE =
+  "Od dodania uplynulo {n} dní. Faktúru treba vystaviť do šiestich mesiacov od dodania (§ 14 ods. 2 UStG).";
+const CHYBA_DODANIA_SK =
+  "Doplňte dátum dodania — na faktúre platiteľa je povinný (§ 74 ods. 1 zákona o DPH) a určuje aj obdobie DPH.";
+const CHYBA_DODANIA_DE =
+  "Doplňte dátum dodania (Leistungsdatum) — na faktúre je povinný (§ 14 ods. 4 č. 6 UStG) a určuje aj obdobie UStVA.";
 
 function dni(od: string, do_: string): number {
   const a = new Date(`${od}T00:00:00Z`).getTime();
@@ -23,34 +42,53 @@ function dni(od: string, do_: string): number {
   return Math.round((b - a) / 86_400_000);
 }
 
+/** Deň, keď uplynie `mesiacov` od dátumu (posledný deň mesiaca, keď taký deň chýba). */
+function poMesiacoch(iso: string, mesiacov: number): string {
+  const [r, m, d] = iso.split("-").map(Number);
+  const ciel = new Date(Date.UTC(r, m - 1 + mesiacov, 1));
+  const posledny = new Date(
+    Date.UTC(ciel.getUTCFullYear(), ciel.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  ciel.setUTCDate(Math.min(d, posledny));
+  return ciel.toISOString().slice(0, 10);
+}
+
 /**
  * Dátum dodania a lehota na vystavenie.
  *
  * Neplatiteľ dátum dodania mať nemusí, preto sa od neho nevyžaduje — vyžadovať
  * ho od každého by bola prekážka tam, kde zákon nič nežiada.
+ *
+ * Nemecká firma (`krajina` „DE“) sa riadi UStG: lehota je šesť mesiacov od
+ * dodania, nie slovenských 15 dní (§ 73 zákona o DPH).
  */
 export function skontrolujDatumy(
   vstup: {
     platitel: boolean;
     datumDodania?: string | null;
     datumVystavenia?: string | null;
+    krajina?: string | null;
   },
   dnes: string = dnesBratislava(),
 ): KontrolaFaktury {
+  const de = String(vstup.krajina ?? "").toUpperCase() === "DE";
   const dodanie = String(vstup.datumDodania ?? "").trim();
   if (vstup.platitel && !dodanie) {
-    return {
-      chyba:
-        "Doplňte dátum dodania — na faktúre platiteľa je povinný (§ 74 ods. 1 zákona o DPH) a určuje aj obdobie DPH.",
-    };
+    return { chyba: de ? CHYBA_DODANIA_DE : CHYBA_DODANIA_SK };
   }
   if (!dodanie) return {};
 
   const vystavenie = String(vstup.datumVystavenia ?? dnes).trim() || dnes;
   const odstup = dni(dodanie, vystavenie);
-  if (odstup > LEHOTA_VYSTAVENIA_DNI) {
+  const neskoro = de
+    ? vystavenie > poMesiacoch(dodanie, LEHOTA_VYSTAVENIA_DE_MESIACOV)
+    : odstup > LEHOTA_VYSTAVENIA_DNI;
+  if (neskoro) {
+    const kluc = de ? LEHOTA_DE : LEHOTA_SK;
     return {
-      upozornenie: `Od dodania uplynulo ${odstup} dní. Faktúra sa má vyhotoviť do ${LEHOTA_VYSTAVENIA_DNI} dní od dodania alebo od prijatia platby (§ 73 zákona o DPH).`,
+      upozornenie: kluc.replace("{n}", String(odstup)),
+      kluc,
+      parametre: { n: odstup },
     };
   }
   if (odstup < 0) {

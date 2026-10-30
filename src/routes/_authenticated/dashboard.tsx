@@ -63,6 +63,7 @@ import {
   Cell,
 } from "recharts";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { rezimFirmy } from "@/lib/faktero/dph-rezim";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Prehľad — Faktero") }] }),
@@ -385,7 +386,8 @@ function Dashboard() {
               tone={metrics.vatOut - metrics.vatIn > 0 ? "destructive" : undefined}
             />
             <p className="mt-3 text-xs text-muted-foreground">
-              {company?.ic_dph ? t("Ste platiteľ DPH.") : t("Nie ste platiteľ DPH.")}
+              {/* Platiteľ podľa režimu firmy, nie podľa IČ DPH — Kleinunternehmer či § 7 ho majú tiež. */}
+              {company && rezimFirmy(company).platitel ? t("Ste platiteľ DPH.") : t("Nie ste platiteľ DPH.")}
             </p>
           </Panel>
 

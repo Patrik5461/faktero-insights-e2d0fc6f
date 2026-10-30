@@ -653,3 +653,55 @@ export function datumNaDoklade(v: unknown, jazyk: unknown = "sk"): string {
   if (j === "en") return `${d}/${mes}/${r}`;
   return `${Number(d)}. ${Number(mes)}. ${r}`;
 }
+
+/*
+  Merná jednotka na doklade. Formulár dáva predvolene slovenské „ks“ a
+  „hod“ — na nemeckej faktúre z toho bolo „3 ks“. Bežné skratky sa preložia
+  do jazyka dokladu, čokoľvek iné (m, kg, vlastný text) ostáva, ako je.
+*/
+const JEDNOTKY: Record<string, Partial<Record<JazykDokladu, string>>> = {
+  ks: { de: "Stk.", en: "pcs", hu: "db" },
+  kus: { de: "Stk.", en: "pcs", hu: "db" },
+  hod: { de: "Std.", en: "h", hu: "óra" },
+  hodina: { de: "Std.", en: "h", hu: "óra" },
+  "deň": { de: "Tag", en: "day", hu: "nap", cs: "den" },
+  den: { de: "Tag", en: "day", hu: "nap" },
+  mes: { de: "Monat", en: "month", hu: "hó", cs: "měs." },
+  "mesiac": { de: "Monat", en: "month", hu: "hónap", cs: "měsíc" },
+  rok: { de: "Jahr", en: "year", hu: "év" },
+};
+
+export function jednotkaNaDoklade(unit: unknown, jazyk: unknown = "sk"): string {
+  const s = String(unit ?? "").trim();
+  const j = jazykDokladu(jazyk);
+  return JEDNOTKY[s.toLowerCase()]?.[j] ?? s;
+}
+
+/**
+ * Úvod opravného dokladu nad položkami („Dobropis k faktúre č. …“) v jazyku
+ * dokladu. Predtým bol vždy po slovensky — nemecká Rechnungskorrektur niesla
+ * „Dobropis k faktúre č. 20260001“. Nemecká firma volá dobropis
+ * „Rechnungskorrektur“, ostatné v nemčine „Gutschrift“ (`dobropis-de.ts`).
+ */
+export function uvodOpravnehoDokladu(
+  druh: "credit_note" | "debit_note",
+  cislo: string,
+  jazyk: unknown = "sk",
+  krajina?: KrajinaDane | null,
+): string {
+  const tarchopis = druh === "debit_note";
+  switch (jazykDokladu(jazyk)) {
+    case "de":
+      return tarchopis
+        ? `Belastungsanzeige zur Rechnung Nr. ${cislo}`
+        : `${krajina && krajina !== "DE" ? "Gutschrift" : "Rechnungskorrektur"} zur Rechnung Nr. ${cislo}`;
+    case "en":
+      return `${tarchopis ? "Debit note" : "Credit note"} for invoice No. ${cislo}`;
+    case "cs":
+      return `${tarchopis ? "Vrubopis" : "Dobropis"} k faktuře č. ${cislo}`;
+    case "hu":
+      return `${tarchopis ? "Terhelési értesítő" : "Jóváírás"} a(z) ${cislo} számú számlához`;
+    default:
+      return `${tarchopis ? "Ťarchopis" : "Dobropis"} k faktúre č. ${cislo}`;
+  }
+}

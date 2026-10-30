@@ -102,7 +102,7 @@ import { sendReminderFn, previewReminderFn } from "@/lib/faktero/reminders.funct
 
 import { isdocFakturyFn } from "@/lib/faktero/isdoc.functions";
 import { xrechnungFakturyFn } from "@/lib/faktero/xrechnung.functions";
-import { hodnotyMailu, jazykFaktury, predvolenyMailFaktury } from "@/lib/faktero/email-jazyk";
+import { hodnotyMailu, jazykFaktury, predvolenyMailFaktury, vlastnyMailFirmy } from "@/lib/faktero/email-jazyk";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { hodnotyPremennych } from "@/lib/faktero/email-sablony";
 import { VyberEmailSablony } from "@/components/faktero/VyberEmailSablony";
@@ -951,12 +951,14 @@ function InvoiceDetail() {
       krajinaDane((company as any)?.country),
     );
     const hodnoty = hodnotyMailu(fa, jazykMailu);
+    // Slovenská hodnota z databázy nie je vlastný text firmy — dokladu v inom jazyku sa neprikladá.
+    const vlastny = vlastnyMailFirmy(company, jazykMailu);
     const predvolenyMail = {
-      predmet: (company?.email_default_subject ?? predvoleny.predmet).replaceAll(
+      predmet: (vlastny.predmet ?? predvoleny.predmet).replaceAll(
         "{invoice_number}",
         fa.invoice_number,
       ),
-      text: (company?.email_default_message ?? predvoleny.text)
+      text: (vlastny.text ?? predvoleny.text)
         .replaceAll("{invoice_number}", fa.invoice_number)
         .replaceAll("{due_date}", hodnoty.due_date)
         .replaceAll("{total}", hodnoty.total)
