@@ -27,7 +27,8 @@ import {
   type KategoriaPoziadavky,
 } from "@/lib/faktero/podpora";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
-import { TelegramOdkaz } from "@/components/faktero/TelegramOdkaz";
+import { TelegramOdkaz, TelegramTlacidlo } from "@/components/faktero/TelegramOdkaz";
+import { useTelegramPodpora } from "@/hooks/useTelegramPodpora";
 import { hladajVManualoch, type Clanok, type Vysledok } from "@/lib/faktero/pomoc-hladanie";
 
 export const Route = createFileRoute("/_authenticated/podpora/")({
@@ -63,6 +64,8 @@ function PodporaPage() {
   const [clanky, setClanky] = useState<Clanok[] | null>(null);
   const [poziadavky, setPoziadavky] = useState<RiadokPoziadavky[] | null>(null);
   const [nova, setNova] = useState(false);
+  // Bez nastaveného bota hlavička nedostane prázdny stĺpec akcií.
+  const telegram = useTelegramPodpora();
 
   const nacitaj = useCallback(async () => {
     const { data, error } = await supabase
@@ -100,6 +103,7 @@ function PodporaPage() {
         title={t("Pomoc a podpora")}
         description={t("Nájdite odpoveď v manuáloch, opýtajte sa Faktero AI alebo napíšte nám — odpoveď uvidíte tu aj v e‑maile.")}
         help="/pomoc/podpora"
+        action={telegram ? <TelegramTlacidlo /> : undefined}
       />
       <PageBody>
         <div className="mx-auto max-w-4xl space-y-6">

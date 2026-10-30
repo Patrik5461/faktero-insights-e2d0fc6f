@@ -35,6 +35,8 @@ import {
   Send,
   ArrowLeft,
 } from "lucide-react";
+import { useTelegramPodpora } from "@/hooks/useTelegramPodpora";
+import { odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
 import {
   MANUALY,
   manualPre,
@@ -297,6 +299,8 @@ export function AppShell({
 
   /* Okno na nahlásenie chyby má stav tu — otvára sa z ponuky pod avatarom. */
   const [nahlasenieOtvorene, setNahlasenieOtvorene] = useState(false);
+  // Ponuka pod avatarom je miesto, kde človek pomoc hľadá — Telegram sem patrí, nie len na stránku podpory.
+  const telegram = useTelegramPodpora();
 
   /* Ten istý zoznam, len v tvare, aký čaká bočný panel. Filtre (produkt,
      práva, krajina) sa už uplatnili v `filterNav` — tu sa nič nevyberá. */
@@ -580,6 +584,13 @@ export function AppShell({
                       <HelpCircle className="mr-2 h-3.5 w-3.5" /> {t("Pomoc a podpora")}
                     </Link>
                   </DropdownMenuItem>
+                  {telegram?.bot && (
+                    <DropdownMenuItem asChild>
+                      <a href={odkazNaTelegram(telegram.bot)} target="_blank" rel="noopener noreferrer">
+                        <Send className="mr-2 h-3.5 w-3.5" /> {t("Napísať na Telegram")}
+                      </a>
+                    </DropdownMenuItem>
+                  )}
                   {/* Nahlásiť sa dá z každej stránky — chyba sa nájde tam, kde človek pracuje. */}
                   <DropdownMenuItem
                     onSelect={(e) => {

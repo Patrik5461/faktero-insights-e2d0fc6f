@@ -504,6 +504,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "panel.ucetPamat": "Účet a jeho zrušení, paměť, připojení, verze",
   "panel.ekasaPopis": "Jak se čtou doklady z eKasy",
   "panel.napisteNam": "Napište nám, co nefunguje nebo co by pomohlo",
+  "panel.telegram": "Napsat na Telegram",
+  "panel.telegramPopis": "Odpovíme přímo v Telegramu",
   "panel.zvysokAplikacie": "Faktury, sklad a zbytek aplikace",
   "panel.zvysokAplikacieJazdy": "Jízdy, vozidla a export",
   "panel.pravnePopis": "Podmínky, ochrana údajů a ostatní — otevře se v prohlížeči",

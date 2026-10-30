@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Mail, Phone, MapPin, Building2, Loader2 } from "lucide-react";
+import { Mail, Phone, MapPin, Building2, Loader2, Send } from "lucide-react";
+import { TELEGRAM_PODPORA_BOT, odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { LEGAL_COMPANY } from "@/components/faktero/LegalShell";
 import { z } from "zod";
@@ -152,6 +153,14 @@ function KontaktPage() {
                 className="flex items-center gap-2 hover:text-primary"
               >
                 <Phone className="h-4 w-4" /> {LEGAL_COMPANY.phone}
+              </a>
+              <a
+                href={odkazNaTelegram()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-primary"
+              >
+                <Send className="h-4 w-4" /> Telegram @{TELEGRAM_PODPORA_BOT}
               </a>
               <p className="text-xs text-muted-foreground pt-2">
                 {t("Fakturačné a právne otázky:")}{" "}

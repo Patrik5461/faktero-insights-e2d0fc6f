@@ -109,10 +109,12 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Podpore môžete písať aj cez <strong>Telegram</strong> — odkaz{" "}
-          <em>Napíšte nám na Telegram</em> je v Pomoc a podpora. Prvá správa založí požiadavku s
-          číslom, ďalšie správy sa pridajú do nej a odpoveď podpory príde späť do chatu. Poslať
-          môžete aj snímku obrazovky, fotku alebo PDF (do 10 MB).
+          Podpore môžete písať aj cez <strong>Telegram</strong> — tlačidlo{" "}
+          <em>Napíšte nám na Telegram</em> je hore na stránke Pomoc a podpora, hneď pri nadpise.
+          Nájdete ho aj v ponuke pod avatarom (<em>Napísať na Telegram</em>) a v mobilnej appke v
+          bočnom paneli. Prvá správa založí požiadavku s číslom, ďalšie správy sa pridajú do nej a
+          odpoveď podpory príde späť do chatu. Poslať môžete aj snímku obrazovky, fotku alebo PDF
+          (do 10 MB).
         </p>
         <p>
           Chybu v aplikácii nahláste príkazom <code>/chyba</code>, novú požiadavku začnete príkazom{" "}

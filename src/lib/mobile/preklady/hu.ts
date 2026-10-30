@@ -506,6 +506,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "panel.ucetPamat": "Fiók és megszüntetése, tárhely, kapcsolat, verzió",
   "panel.ekasaPopis": "Hogyan olvassuk be az eKasa bizonylatokat",
   "panel.napisteNam": "Írja meg, mi nem működik, vagy mi segítene",
+  "panel.telegram": "Írjon nekünk Telegramon",
+  "panel.telegramPopis": "Közvetlenül a Telegramban válaszolunk",
   "panel.zvysokAplikacie": "Számlák, készlet és az alkalmazás többi része",
   "panel.zvysokAplikacieJazdy": "Utak, járművek és export",
   "panel.pravnePopis": "Feltételek, adatvédelem és a többi — a böngészőben nyílik meg",

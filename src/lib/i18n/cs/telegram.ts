@@ -33,8 +33,8 @@ export default {
   "Súbor {nazov} sa nepodarilo uložiť. Skúste ho poslať znova.":
     "Soubor {nazov} se nepodařilo uložit. Zkuste ho poslat znovu.",
   "Cez Telegram": "Přes Telegram",
-  "Podpore môžete písať aj cez <0>Telegram</0> — odkaz <1>Napíšte nám na Telegram</1> je v Pomoc a podpora. Prvá správa založí požiadavku s číslom, ďalšie správy sa pridajú do nej a odpoveď podpory príde späť do chatu. Poslať môžete aj snímku obrazovky, fotku alebo PDF (do 10 MB).":
-    "Podpoře můžete psát i přes <0>Telegram</0> — odkaz <1>Napište nám na Telegram</1> je v Nápověda a podpora. První zpráva založí požadavek s číslem, další zprávy se přidají do něj a odpověď podpory přijde zpět do chatu. Poslat můžete i snímek obrazovky, fotku nebo PDF (do 10 MB).",
+  "Podpore môžete písať aj cez <0>Telegram</0> — tlačidlo <1>Napíšte nám na Telegram</1> je hore na stránke Pomoc a podpora, hneď pri nadpise. Nájdete ho aj v ponuke pod avatarom (<2>Napísať na Telegram</2>) a v mobilnej appke v bočnom paneli. Prvá správa založí požiadavku s číslom, ďalšie správy sa pridajú do nej a odpoveď podpory príde späť do chatu. Poslať môžete aj snímku obrazovky, fotku alebo PDF (do 10 MB).":
+    "Podpoře můžete psát i přes <0>Telegram</0> — tlačítko <1>Napište nám na Telegram</1> je nahoře na stránce Nápověda a podpora, hned u nadpisu. Najdete ho i v nabídce pod avatarem (<2>Napsat na Telegram</2>) a v mobilní aplikaci v bočním panelu. První zpráva založí požadavek s číslem, další zprávy se přidají do něj a odpověď podpory přijde zpět do chatu. Poslat můžete i snímek obrazovky, fotku nebo PDF (do 10 MB).",
   "Chybu v aplikácii nahláste príkazom <0>/chyba</0>, novú požiadavku začnete príkazom <1>/nova</1>. Cez <2>Prepojiť s mojím účtom</2> sa chat priradí k vášmu účtu a požiadavky z Telegramu potom uvidíte aj v <3>Moje požiadavky</3>.":
     "Chybu v aplikaci nahlaste příkazem <0>/chyba</0>, nový požadavek začnete příkazem <1>/nova</1>. Přes <2>Propojit s mým účtem</2> se chat přiřadí k vašemu účtu a požadavky z Telegramu pak uvidíte i v <3>Moje požadavky</3>.",
   "Schváliť a nasadiť sa dá len v administrácii (Admin → Podpora), kde vidíte zmeny v kóde.":

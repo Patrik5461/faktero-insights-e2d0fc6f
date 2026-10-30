@@ -21,6 +21,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Send,
 } from "lucide-react";
 import {
   disableBiometric,
@@ -29,6 +30,7 @@ import {
   isBiometricEnabled,
 } from "@/lib/mobile/biometric";
 import { JE_KNIHA_JAZD } from "@/lib/mobile/apka";
+import { odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
 import { agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { VERZIA_APKY } from "@/lib/mobile/brand";
@@ -383,6 +385,16 @@ export function MobilPanel({
             label={t("panel.nahlasitChybu")}
             hint={t("panel.napisteNam")}
             onClick={() => setNahlasenie(true)}
+          />
+          {/*
+            Podpora cez Telegram. Meno bota je pevné — appka nemá prihlásené
+            volanie, ktoré by ho zistilo, a bot je jeden pre obe appky.
+          */}
+          <Polozka
+            icon={Send}
+            label={t("panel.telegram")}
+            hint={t("panel.telegramPopis")}
+            onClick={() => window.open(odkazNaTelegram(), "_blank", "noopener")}
           />
           <Polozka
             icon={Globe}

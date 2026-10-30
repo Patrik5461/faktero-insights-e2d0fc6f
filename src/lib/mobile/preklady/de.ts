@@ -509,6 +509,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "panel.ucetPamat": "Konto und dessen Löschung, Speicher, Verbindung, Version",
   "panel.ekasaPopis": "Wie eKasa-Belege gelesen werden",
   "panel.napisteNam": "Schreiben Sie uns, was nicht funktioniert oder helfen würde",
+  "panel.telegram": "Auf Telegram schreiben",
+  "panel.telegramPopis": "Wir antworten direkt in Telegram",
   "panel.zvysokAplikacie": "Rechnungen, Lager und der Rest der App",
   "panel.zvysokAplikacieJazdy": "Fahrten, Fahrzeuge und Export",
   "panel.pravnePopis": "Bedingungen, Datenschutz und mehr — öffnet im Browser",

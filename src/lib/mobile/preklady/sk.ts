@@ -517,6 +517,8 @@ export const sk = {
   "panel.ucetPamat": "Účet a jeho zrušenie, pamäť, pripojenie, verzia",
   "panel.ekasaPopis": "Ako sa čítajú doklady z eKasy",
   "panel.napisteNam": "Napíšte nám, čo nefunguje alebo čo by pomohlo",
+  "panel.telegram": "Napísať na Telegram",
+  "panel.telegramPopis": "Odpovieme priamo v Telegrame",
   "panel.zvysokAplikacie": "Faktúry, sklad a zvyšok aplikácie",
   "panel.zvysokAplikacieJazdy": "Jazdy, vozidlá a export",
   "panel.pravnePopis": "Podmienky, ochrana údajov a ostatné — otvorí sa v prehliadači",
