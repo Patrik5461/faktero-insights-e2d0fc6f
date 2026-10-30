@@ -214,9 +214,18 @@ export function prekazkaDokladu(
   const domaca = domacaMena(company?.country);
   const mena = String(d?.currency ?? domaca).toUpperCase() || domaca;
   if (mena !== domaca) {
-    if (blocek)
-      return `${cislo} — bloček v mene ${mena} — Pohoda ho bez kurzu neprijme, zadajte ho ručne`;
-    if (!(Number(d?._kurz) > 0)) return `${cislo} — doklad v mene ${mena} nemá kurz`;
+    /*
+      Bloček v cudzej mene si od 30. 10. 2026 pamätá kurz ECB/ČNB
+      (`exchange_rate`) a ide do Pohody ako prijatá faktúra alebo interný
+      doklad v cudzej mene. Hotovosť nie — pokladňa v Pohode je v domácej mene.
+    */
+    if (blocek && String(d?.payment_method ?? "") === "hotovost")
+      return `${cislo} — hotovostný bloček v mene ${mena} — pokladňa v Pohode je v domácej mene, zadajte ho ručne`;
+    const kurz = blocek ? Number(d?.exchange_rate) : Number(d?._kurz);
+    if (!(kurz > 0))
+      return blocek
+        ? `${cislo} — bloček v mene ${mena} nemá kurz — otvorte ho a uložte znova, kurz sa doplní`
+        : `${cislo} — doklad v mene ${mena} nemá kurz`;
   }
 
   const krajina = krajinaDane(company?.country);

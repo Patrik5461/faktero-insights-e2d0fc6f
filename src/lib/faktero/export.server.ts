@@ -1341,6 +1341,15 @@ export function buildPohodaExpensesXml(opts: {
   });
 }
 
+/**
+ * Kurz prijatého dokladu v cudzej mene: prijatá faktúra ho nesie ako `_kurz`,
+ * bloček vo vlastnom stĺpci `exchange_rate` (ECB/ČNB k dňu nákupu).
+ */
+function kurzDokladu(d: any): number {
+  const k = Number(d?._kurz);
+  return k > 0 ? k : Number(d?.exchange_rate) || 0;
+}
+
 /** Daňový doklad k prijatej platbe ako interný doklad pre {@link polozkyDokladov}. */
 function dokladKPlatbeAkoDoklad(
   invoice: InvoiceRow,
@@ -1739,8 +1748,8 @@ export function polozkyDokladov(opts: {
           <${p}:quantity>${mnozstvoPohody(Number(it?.quantity ?? 1) || 1)}</${p}:quantity>
           <${p}:payVAT>true</${p}:payVAT>
           <${p}:rateVAT>${kodSadzby(Number(it?.vat_rate ?? 0), tab)}</${p}:rateVAT>
-          <${p}:homeCurrency>${elSuma("typ:unitPrice", Number(it?.unit_price ?? it?.total ?? 0), "            ")}
-          </${p}:homeCurrency>
+          <${p}:${mb}>${elSuma("typ:unitPrice", Number(it?.unit_price ?? it?.total ?? 0), "            ")}
+          </${p}:${mb}>
         </${p}:${koren}Item>`,
         )
         .join("")}
@@ -2003,7 +2012,7 @@ export function polozkyDokladov(opts: {
         zaokruhlenie && !zaokrPolozkou ? "" : `\n        <${p}:roundingDocument>none</${p}:roundingDocument>`
       }
         <${p}:roundingVAT>none</${p}:roundingVAT>${cudziaD ? cudziaMenaSuhrn(
-menaDokladu, Number(d?._kurz), celkom, zaokruhlenie, "        ", (company as any)?.country).replace(/inv:foreignCurrency/g, `${p}:foreignCurrency`) : `
+menaDokladu, kurzDokladu(d), celkom, zaokruhlenie, "        ", (company as any)?.country).replace(/inv:foreignCurrency/g, `${p}:foreignCurrency`) : `
         <${p}:homeCurrency>${elSuma("typ:priceNone", zaklad(s0), "          ")}${elSuma(
           "typ:price3",
           zaklad(s3),

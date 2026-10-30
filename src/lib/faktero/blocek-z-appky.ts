@@ -91,3 +91,12 @@ export function coChybaBlocku(v: {
   if (!v.uhrada) return "uhrada";
   return null;
 }
+
+/**
+ * Prečítal sa QR kód pokladnice (eKasa z Finančnej správy, eKasa priamo z
+ * kódu alebo český EET)? Len taký nahratý obrázok je bloček do Bločkov — QR
+ * na faktúre (PAY by square) sa ako bloček neprečíta a ostáva na kontrolu.
+ */
+export function jeQrPokladnice(r: { zdroj?: string | null } | null | undefined): boolean {
+  return r?.zdroj === "ekasa" || r?.zdroj === "qr";
+}

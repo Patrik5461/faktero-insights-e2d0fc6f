@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n/useT";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { SpracovalDokladu } from "@/components/faktero/SpracovalDokladu";
 import { jePalivo } from "@/lib/faktero/palivo";
+import { jeQrPokladnice } from "@/lib/faktero/blocek-z-appky";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { KomentarDokladu, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
@@ -438,7 +439,14 @@ function NovyDokladPage() {
       if (file.type.startsWith("image/")) {
         const qr = await scanQrFromImage(dataUrl);
         if (qr?.raw) setQrRaw(qr.raw);
-        await precitaj(qr?.raw, dataUrl);
+        const r = await precitaj(qr?.raw, dataUrl);
+        /*
+          Nahratá fotka bločku s QR kódom pokladnice je ten istý bloček ako
+          odfotený — ide rovno medzi Bločky. So zdrojom „upload“ ho server
+          posielal do Nespracovaných. Iný QR (napr. PAY by square na faktúre)
+          sa ako bloček nečíta a zdroj ostáva „upload“.
+        */
+        if (qr?.raw && jeQrPokladnice(r)) setSource("qr");
       } else if (file.type === "application/pdf") {
         await precitaj(undefined, dataUrl);
       }
@@ -506,12 +514,13 @@ function NovyDokladPage() {
     else toast.success(t("Polia predvyplnené — skontrolujte ich a uložte"));
   }
 
-  async function precitaj(qr: string | undefined, dataUrl?: string) {
+  async function precitaj(qr: string | undefined, dataUrl?: string): Promise<BlocekVysledok> {
     const r = (await nacitaj({
       data: { qr, image_data_url: dataUrl, krajina },
     })) as BlocekVysledok;
     applyBlocek(r);
     void overDuplicitu(r);
+    return r;
   }
 
   /*
@@ -594,9 +603,18 @@ function NovyDokladPage() {
         items: polozky.length ? polozky : null,
         vat_breakdown: rozpisDph?.length ? rozpisDph : null,
       };
-      if (search.id) await updateFn({ data: { id: search.id, patch: payload } });
-      else await createFn({ data: payload });
       let stav = search.id ? stavDokladu : "new";
+      if (search.id) await updateFn({ data: { id: search.id, patch: payload } });
+      else {
+        /*
+          Server rozhodne sám, kam nový doklad patrí — bloček s QR kódom ide
+          rovno medzi Bločky (spracovaný). Hláška aj záložka sa riadia tým, čo
+          naozaj uložil, nie predpokladom „nový = nespracovaný“.
+        */
+        const novy: any = await createFn({ data: payload });
+        if (novy?.status === "processed" && !novy?.nespracovany_id) stav = "processed";
+      }
+      const rovnoSpracovany = !search.id && stav === "processed";
       if (spracovat && search.id) {
         const v = await stavFn({ data: { company_id: cid, ids: [search.id], stav: "processed" } });
         if (v.zmenene) stav = "processed";
@@ -604,7 +622,7 @@ function NovyDokladPage() {
           toast.warning(t("Doklad je uložený, ale bez sumy a dátumu sa nedá označiť ako spracovaný."));
       }
       toast.success(
-        stav === "processed" && spracovat
+        stav === "processed" && (spracovat || rovnoSpracovany)
           ? t("Doklad uložený a spracovaný")
           : search.id
             ? t("Doklad uložený")

@@ -14,6 +14,7 @@ import {
 } from "@/lib/faktero/hromadny-prikaz";
 import { useT } from "@/lib/i18n/useT";
 import { zalohaPrijatej } from "@/lib/faktero/uhrady-prijatej";
+import { riadkyPreIds } from "@/lib/faktero/strankovanie";
 import { nastaveniaBanky, type TextPrijemcu } from "@/lib/faktero/export-nastavenia";
 
 type Ucet = {
@@ -99,40 +100,69 @@ export function HromadnyPrikaz({
       const zalohoveIds = [
         ...new Set(faktury.map((f: any) => f.advance_invoice_id).filter(Boolean) as string[]),
       ];
-      const [{ data: pohyby }, { data: zalohove }, kontrola] = await Promise.all([
+      /*
+        Po dávkach (`riadkyPreIds`): výber celého zoznamu má stovky faktúr
+        a jeden `in(id, …)` s viac ako ~350 id brána neprepustí. Chyba
+        úhrad sa predtým tíško zahodila — faktúra by išla do príkazu celá,
+        hoci časť už bola zaplatená. Bez odpovede radšej nepustiť žiadnu.
+      */
+      const nacitaj = async <T,>(f: () => Promise<T[]>): Promise<{ data: T[]; error: unknown }> => {
+        try {
+          return { data: await f(), error: null };
+        } catch (e) {
+          return { data: [], error: e };
+        }
+      };
+      const [pohybyR, { data: zalohove }, kontrola] = await Promise.all([
         // Úhrady faktúry — spárované pohyby z banky aj ručne zapísané čiastočné úhrady.
-        ids.length
-          ? supabase
+        nacitaj<any>(() =>
+          riadkyPreIds(ids, (kus, od, po) =>
+            supabase
               .from("purchase_invoice_payments")
-              .select("purchase_invoice_id, amount")
+              .select("id, purchase_invoice_id, amount")
               .eq("company_id", companyId)
-              .in("purchase_invoice_id", ids)
-          : Promise.resolve({ data: [] as any[] }),
-        zalohoveIds.length
-          ? supabase
+              .in("purchase_invoice_id", kus)
+              .order("id")
+              .range(od, po),
+          ),
+        ),
+        nacitaj<any>(() =>
+          riadkyPreIds(zalohoveIds, (kus, od, po) =>
+            supabase
               .from("purchase_invoices")
               .select("id, amount_total, status")
               .eq("company_id", companyId)
-              .in("id", zalohoveIds)
-          : Promise.resolve({ data: [] as any[] }),
+              .in("id", kus)
+              .order("id")
+              .range(od, po),
+          ),
+        ),
         /* Automaticky zaradené eFaktúry, ktoré ešte nikto neotvoril — čítané
            tu, nie zo zoznamu, aby nezáležalo na tom, aké stĺpce zoznam načítal. */
-        ids.length
-          ? supabase
+        nacitaj<any>(() =>
+          riadkyPreIds(ids, (kus, od, po) =>
+            supabase
               .from("purchase_invoices")
               .select("id, na_kontrolu_at, odberatel_nesedi" as "id")
               .eq("company_id", companyId)
-              .in("id", ids)
-          : Promise.resolve({ data: [] as any[], error: null }),
+              .in("id", kus)
+              .order("id")
+              .range(od, po),
+          ),
+        ),
       ]);
+      const pohyby = pohybyR.data;
       const out: Record<
         string,
         { uhradene: number; zaloha: number; naKontrolu?: boolean; cudzia?: boolean }
       > = {};
       for (const f of faktury) out[f.id] = { uhradene: 0, zaloha: 0 };
-      if (kontrola.error) {
-        // Bez odpovede nevieme, ktorá je skontrolovaná — radšej žiadnu nepustiť.
+      if (kontrola.error || pohybyR.error) {
+        // Bez odpovede nevieme, ktorá je skontrolovaná a čo je už zaplatené — radšej žiadnu nepustiť.
         for (const f of faktury) out[f.id].naKontrolu = true;
+        toast.error(
+          t("Úhrady a kontrolu faktúr sa nepodarilo načítať — zavrite okno a skúste to znova."),
+        );
       }
       for (const k of (kontrola.data ?? []) as any[]) {
         if (k.na_kontrolu_at) out[String(k.id)] = { ...out[String(k.id)], naKontrolu: true };

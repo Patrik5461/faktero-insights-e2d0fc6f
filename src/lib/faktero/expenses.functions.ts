@@ -272,9 +272,35 @@ export const updateExpenseFn = createServerFn({ method: "POST" })
       poslal by sa účtovníkovi druhý raz.
     */
     const { status: _stav, ...patch } = data.patch;
+    /*
+      Zmena meny alebo dňa nákupu: pôvodný kurz neplatí (bloček prepísaný
+      z EUR na CZK ostával bez kurzu). Starý sa zmaže a doplní sa kurz ECB/ČNB
+      k novému dňu; v domácej mene ostane bez kurzu.
+    */
+    let kurz: Record<string, any> = {};
+    if ("currency" in patch || "issue_date" in patch) {
+      const { data: povodny } = await supabase
+        .from("expense_documents")
+        .select("company_id, currency, issue_date, exchange_rate, total_amount, net_amount, vat_amount")
+        .eq("id", data.id)
+        .maybeSingle();
+      const { kurzTrebaPrepocitat } = await import("./kurz-dokladu");
+      const zmena = Boolean(povodny) && kurzTrebaPrepocitat(povodny, patch);
+      // Starší bloček v cudzej mene bez kurzu ho dostane pri ďalšom uložení.
+      const bezKurzu =
+        Boolean(povodny) && !(Number(povodny?.exchange_rate) > 0) && !("exchange_rate" in patch);
+      if (povodny && (zmena || bezKurzu)) {
+        const riadok = { ...povodny, ...patch, exchange_rate: null };
+        const { doplnovacKurzov } = await import("./kurz-dokladu.server");
+        kurz = {
+          ...(zmena ? { exchange_rate: null, exchange_rate_date: null, exchange_rate_source: null } : {}),
+          ...(await doplnovacKurzov(String(povodny.company_id))("expense_documents", riadok)),
+        };
+      }
+    }
     const { data: row, error } = await supabase
       .from("expense_documents")
-      .update(patch as any)
+      .update({ ...patch, ...kurz } as any)
       .eq("id", data.id)
       .select("*")
       .single();
@@ -601,12 +627,23 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    let q = supabase.from("expense_documents").select("*").eq("company_id", data.company_id);
-    if (data.ids?.length) q = q.in("id", data.ids);
-    if (data.month) q = vMesiaci(q, data.month);
-    const { data: vsetky, error } = await q;
-    if (error) throw new Error(error.message);
-    if (!vsetky?.length) throw new Error("Žiadne doklady na export");
+    /*
+      „ZIP/XML všetko“ posiela id všetkého na obrazovke a bločky sa otvárajú
+      na všetkých mesiacoch (PALIERA ich má cez 2 000). Jeden `in(id, …)`
+      s viac ako ~350 id je dlhšia adresa, než brána prepustí, a bez
+      stránkovania by sa vrátilo najviac 1 000 riadkov — číta sa po dávkach.
+    */
+    const { riadkyPreIds, vsetkyRiadky } = await import("./strankovanie");
+    const dotaz = (od: number, po: number, kus?: string[]) => {
+      let q = supabase.from("expense_documents").select("*").eq("company_id", data.company_id);
+      if (kus) q = q.in("id", kus);
+      if (data.month) q = vMesiaci(q, data.month);
+      return q.order("id").range(od, po);
+    };
+    const vsetky: any[] = data.ids?.length
+      ? await riadkyPreIds<any>(data.ids, (kus, od, po) => dotaz(od, po, kus))
+      : await vsetkyRiadky<any>((od, po) => dotaz(od, po));
+    if (!vsetky.length) throw new Error("Žiadne doklady na export");
     if (data.aj_odovzdane === false) {
       const neodovzdane = vsetky.filter((r: any) => !r.exported_at);
       if (!neodovzdane.length) throw new Error("Všetky vybrané doklady už boli odovzdané.");
@@ -759,13 +796,15 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
           xml: x.xml,
           pocet: x.doklady.length,
         });
-        await supabase
-          .from("expense_documents")
-          .update({ status: "exported", exported_at: new Date().toISOString(), export_job_id: jobId })
-          .in(
-            "id",
-            x.doklady.map((r: any) => r.id),
-          );
+        // Po dávkach — dlhý zoznam id v jednej adrese brána neprepustí.
+        const idsXml = x.doklady.map((r: any) => r.id as string);
+        for (let i = 0; i < idsXml.length; i += 200) {
+          const { error: chybaOznacenia } = await supabase
+            .from("expense_documents")
+            .update({ status: "exported", exported_at: new Date().toISOString(), export_job_id: jobId })
+            .in("id", idsXml.slice(i, i + 200));
+          if (chybaOznacenia) console.error("[export-blockov] označenie zlyhalo:", chybaOznacenia.message);
+        }
       }
     }
 
