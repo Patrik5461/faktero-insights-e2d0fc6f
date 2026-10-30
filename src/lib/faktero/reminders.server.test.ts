@@ -46,7 +46,13 @@ describe("upomienka českej firmy", () => {
         due_date: "2026-09-30",
         variable_symbol: "20260011",
       },
-      company: { name: "QA Česká s.r.o.", country: "CZ", dic: "CZ25097563", ic_dph: "CZ25097563", iban: "CZ6508000000192000145399" },
+      company: {
+        name: "QA Česká s.r.o.",
+        country: "CZ",
+        dic: "CZ25097563",
+        ic_dph: "CZ25097563",
+        iban: "CZ6508000000192000145399",
+      },
       reminderNumber: 2,
     });
     expect(r.subject).toBe("2. upomínka: Faktura 20260011 je po splatnosti");
@@ -61,7 +67,12 @@ describe("upomienka českej firmy", () => {
   it("slovenská faktúra v češtine dostane českú upomienku, slovenská ostáva slovenská", () => {
     const sk = { name: "Test", country: "SK" };
     const inv = { invoice_number: "1", total: 1, currency: "EUR", due_date: "2026-09-30" };
-    expect(buildReminderContent({ invoice: { ...inv, language: "cs" }, company: sk, reminderNumber: 1 }).subject).toMatch(/^Upomínka/);
-    expect(buildReminderContent({ invoice: inv, company: sk, reminderNumber: 1 }).subject).toMatch(/^Upomienka/);
+    expect(
+      buildReminderContent({ invoice: { ...inv, language: "cs" }, company: sk, reminderNumber: 1 })
+        .subject,
+    ).toMatch(/^Upomínka/);
+    expect(buildReminderContent({ invoice: inv, company: sk, reminderNumber: 1 }).subject).toMatch(
+      /^Upomienka/,
+    );
   });
 });

@@ -66,7 +66,16 @@ const fakturaUsd: any = {
   total: 123,
 };
 const polozky: any[] = [
-  { name: "Služba", quantity: 1, unit: "ks", unit_price: 100, vat_rate: 23, subtotal: 100, vat_amount: 23, total: 123 },
+  {
+    name: "Služba",
+    quantity: 1,
+    unit: "ks",
+    unit_price: 100,
+    vat_rate: 23,
+    subtotal: 100,
+    vat_amount: 23,
+    total: 123,
+  },
 ];
 
 describe("eFaktúra v cudzej mene", () => {
@@ -125,7 +134,13 @@ describe("eFaktúra v cudzej mene", () => {
         total: -123,
         vat_total_eur: -21.2,
       },
-      items: polozky.map((p) => ({ ...p, quantity: -1, subtotal: -100, vat_amount: -23, total: -123 })),
+      items: polozky.map((p) => ({
+        ...p,
+        quantity: -1,
+        subtotal: -100,
+        vat_amount: -23,
+        total: -123,
+      })),
       povodnaFaktura: { cislo: "FA2026900", vystavena: "2026-10-12" },
     });
     expect(dto.taxCurrency).toEqual({ code: "EUR", taxAmount: 21.2 });

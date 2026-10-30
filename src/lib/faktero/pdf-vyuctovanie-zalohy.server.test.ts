@@ -50,7 +50,16 @@ const vstup = (zalohy: any) =>
       advance_amount: 123,
     },
     items: [
-      { name: "Dielo", quantity: 1, unit: "ks", unit_price: 300, vat_rate: 23, subtotal: 300, vat_amount: 69, total: 369 },
+      {
+        name: "Dielo",
+        quantity: 1,
+        unit: "ks",
+        unit_price: 300,
+        vat_rate: 23,
+        subtotal: 300,
+        vat_amount: 69,
+        total: 369,
+      },
     ],
     zalohy,
   }) as any;
