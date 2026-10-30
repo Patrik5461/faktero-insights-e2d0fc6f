@@ -296,6 +296,7 @@ import { Route as AuthenticatedDokladyVyuctovaniaIdRouteImport } from './routes/
 import { Route as AuthenticatedFakturyIdIndexRouteImport } from './routes/_authenticated/faktury.$id.index'
 import { Route as AuthenticatedFakturyIdUpravitRouteImport } from './routes/_authenticated/faktury.$id.upravit'
 import { Route as AuthenticatedJazdyIntegracieIndexRouteImport } from './routes/_authenticated/jazdy.integracie.index'
+import { Route as AuthenticatedJazdyIntegraciePoskytovatelRouteImport } from './routes/_authenticated/jazdy.integracie.$poskytovatel'
 import { Route as AuthenticatedJazdyIntegracieCommanderRouteImport } from './routes/_authenticated/jazdy.integracie.commander'
 import { Route as AuthenticatedJazdyIntegracieTeslaRouteImport } from './routes/_authenticated/jazdy.integracie.tesla'
 import { Route as AuthenticatedPrijateFakturyIdIndexRouteImport } from './routes/_authenticated/prijate-faktury.$id.index'
@@ -325,6 +326,7 @@ import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/pu
 import { Route as ApiPublicHooksDennySuhrnRouteImport } from './routes/api/public/hooks/denny-suhrn'
 import { Route as ApiPublicHooksEfakturaRegistracieRouteImport } from './routes/api/public/hooks/efaktura-registracie'
 import { Route as ApiPublicHooksEfakturaSyncRouteImport } from './routes/api/public/hooks/efaktura-sync'
+import { Route as ApiPublicHooksGpsSyncRouteImport } from './routes/api/public/hooks/gps-sync'
 import { Route as ApiPublicHooksJazdyDoplnenieRouteImport } from './routes/api/public/hooks/jazdy-doplnenie'
 import { Route as ApiPublicHooksKurzyEcbRouteImport } from './routes/api/public/hooks/kurzy-ecb'
 import { Route as ApiPublicHooksOdovzdanieMesacneRouteImport } from './routes/api/public/hooks/odovzdanie-mesacne'
@@ -1938,6 +1940,12 @@ const AuthenticatedJazdyIntegracieIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedJazdyIntegracieRoute,
   } as any)
+const AuthenticatedJazdyIntegraciePoskytovatelRoute =
+  AuthenticatedJazdyIntegraciePoskytovatelRouteImport.update({
+    id: '/$poskytovatel',
+    path: '/$poskytovatel',
+    getParentRoute: () => AuthenticatedJazdyIntegracieRoute,
+  } as any)
 const AuthenticatedJazdyIntegracieCommanderRoute =
   AuthenticatedJazdyIntegracieCommanderRouteImport.update({
     id: '/commander',
@@ -2107,6 +2115,11 @@ const ApiPublicHooksEfakturaSyncRoute =
     path: '/api/public/hooks/efaktura-sync',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksGpsSyncRoute = ApiPublicHooksGpsSyncRouteImport.update({
+  id: '/api/public/hooks/gps-sync',
+  path: '/api/public/hooks/gps-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksJazdyDoplnenieRoute =
   ApiPublicHooksJazdyDoplnenieRouteImport.update({
     id: '/api/public/hooks/jazdy-doplnenie',
@@ -2729,6 +2742,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/': typeof AdminUsersIndexRoute
   '/doklady/vyuctovania/$id': typeof AuthenticatedDokladyVyuctovaniaIdRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
+  '/jazdy/integracie/$poskytovatel': typeof AuthenticatedJazdyIntegraciePoskytovatelRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/prijate-faktury/$id/upravit': typeof AuthenticatedPrijateFakturyIdUpravitRoute
@@ -2753,6 +2767,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/denny-suhrn': typeof ApiPublicHooksDennySuhrnRoute
   '/api/public/hooks/efaktura-registracie': typeof ApiPublicHooksEfakturaRegistracieRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
+  '/api/public/hooks/gps-sync': typeof ApiPublicHooksGpsSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
@@ -3098,6 +3113,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersIndexRoute
   '/doklady/vyuctovania/$id': typeof AuthenticatedDokladyVyuctovaniaIdRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
+  '/jazdy/integracie/$poskytovatel': typeof AuthenticatedJazdyIntegraciePoskytovatelRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/prijate-faktury/$id/upravit': typeof AuthenticatedPrijateFakturyIdUpravitRoute
@@ -3122,6 +3138,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/denny-suhrn': typeof ApiPublicHooksDennySuhrnRoute
   '/api/public/hooks/efaktura-registracie': typeof ApiPublicHooksEfakturaRegistracieRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
+  '/api/public/hooks/gps-sync': typeof ApiPublicHooksGpsSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
@@ -3478,6 +3495,7 @@ export interface FileRoutesById {
   '/admin/users/': typeof AdminUsersIndexRoute
   '/_authenticated/doklady/vyuctovania/$id': typeof AuthenticatedDokladyVyuctovaniaIdRoute
   '/_authenticated/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
+  '/_authenticated/jazdy/integracie/$poskytovatel': typeof AuthenticatedJazdyIntegraciePoskytovatelRoute
   '/_authenticated/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/_authenticated/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/_authenticated/prijate-faktury/$id/upravit': typeof AuthenticatedPrijateFakturyIdUpravitRoute
@@ -3502,6 +3520,7 @@ export interface FileRoutesById {
   '/api/public/hooks/denny-suhrn': typeof ApiPublicHooksDennySuhrnRoute
   '/api/public/hooks/efaktura-registracie': typeof ApiPublicHooksEfakturaRegistracieRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
+  '/api/public/hooks/gps-sync': typeof ApiPublicHooksGpsSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
@@ -3858,6 +3877,7 @@ export interface FileRouteTypes {
     | '/admin/users/'
     | '/doklady/vyuctovania/$id'
     | '/faktury/$id/upravit'
+    | '/jazdy/integracie/$poskytovatel'
     | '/jazdy/integracie/commander'
     | '/jazdy/integracie/tesla'
     | '/prijate-faktury/$id/upravit'
@@ -3882,6 +3902,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/denny-suhrn'
     | '/api/public/hooks/efaktura-registracie'
     | '/api/public/hooks/efaktura-sync'
+    | '/api/public/hooks/gps-sync'
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
@@ -4227,6 +4248,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/doklady/vyuctovania/$id'
     | '/faktury/$id/upravit'
+    | '/jazdy/integracie/$poskytovatel'
     | '/jazdy/integracie/commander'
     | '/jazdy/integracie/tesla'
     | '/prijate-faktury/$id/upravit'
@@ -4251,6 +4273,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/denny-suhrn'
     | '/api/public/hooks/efaktura-registracie'
     | '/api/public/hooks/efaktura-sync'
+    | '/api/public/hooks/gps-sync'
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
@@ -4606,6 +4629,7 @@ export interface FileRouteTypes {
     | '/admin/users/'
     | '/_authenticated/doklady/vyuctovania/$id'
     | '/_authenticated/faktury/$id/upravit'
+    | '/_authenticated/jazdy/integracie/$poskytovatel'
     | '/_authenticated/jazdy/integracie/commander'
     | '/_authenticated/jazdy/integracie/tesla'
     | '/_authenticated/prijate-faktury/$id/upravit'
@@ -4630,6 +4654,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/denny-suhrn'
     | '/api/public/hooks/efaktura-registracie'
     | '/api/public/hooks/efaktura-sync'
+    | '/api/public/hooks/gps-sync'
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
@@ -4837,6 +4862,7 @@ export interface RootRouteChildren {
   ApiPublicHooksDennySuhrnRoute: typeof ApiPublicHooksDennySuhrnRoute
   ApiPublicHooksEfakturaRegistracieRoute: typeof ApiPublicHooksEfakturaRegistracieRoute
   ApiPublicHooksEfakturaSyncRoute: typeof ApiPublicHooksEfakturaSyncRoute
+  ApiPublicHooksGpsSyncRoute: typeof ApiPublicHooksGpsSyncRoute
   ApiPublicHooksJazdyDoplnenieRoute: typeof ApiPublicHooksJazdyDoplnenieRoute
   ApiPublicHooksKurzyEcbRoute: typeof ApiPublicHooksKurzyEcbRoute
   ApiPublicHooksOdovzdanieMesacneRoute: typeof ApiPublicHooksOdovzdanieMesacneRoute
@@ -6884,6 +6910,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJazdyIntegracieIndexRouteImport
       parentRoute: typeof AuthenticatedJazdyIntegracieRoute
     }
+    '/_authenticated/jazdy/integracie/$poskytovatel': {
+      id: '/_authenticated/jazdy/integracie/$poskytovatel'
+      path: '/$poskytovatel'
+      fullPath: '/jazdy/integracie/$poskytovatel'
+      preLoaderRoute: typeof AuthenticatedJazdyIntegraciePoskytovatelRouteImport
+      parentRoute: typeof AuthenticatedJazdyIntegracieRoute
+    }
     '/_authenticated/jazdy/integracie/commander': {
       id: '/_authenticated/jazdy/integracie/commander'
       path: '/commander'
@@ -7085,6 +7118,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/efaktura-sync'
       fullPath: '/api/public/hooks/efaktura-sync'
       preLoaderRoute: typeof ApiPublicHooksEfakturaSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/gps-sync': {
+      id: '/api/public/hooks/gps-sync'
+      path: '/api/public/hooks/gps-sync'
+      fullPath: '/api/public/hooks/gps-sync'
+      preLoaderRoute: typeof ApiPublicHooksGpsSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/jazdy-doplnenie': {
@@ -7595,6 +7635,7 @@ const AuthenticatedSkladRouteWithChildren =
   AuthenticatedSkladRoute._addFileChildren(AuthenticatedSkladRouteChildren)
 
 interface AuthenticatedJazdyIntegracieRouteChildren {
+  AuthenticatedJazdyIntegraciePoskytovatelRoute: typeof AuthenticatedJazdyIntegraciePoskytovatelRoute
   AuthenticatedJazdyIntegracieCommanderRoute: typeof AuthenticatedJazdyIntegracieCommanderRoute
   AuthenticatedJazdyIntegracieTeslaRoute: typeof AuthenticatedJazdyIntegracieTeslaRoute
   AuthenticatedJazdyIntegracieIndexRoute: typeof AuthenticatedJazdyIntegracieIndexRoute
@@ -7602,6 +7643,8 @@ interface AuthenticatedJazdyIntegracieRouteChildren {
 
 const AuthenticatedJazdyIntegracieRouteChildren: AuthenticatedJazdyIntegracieRouteChildren =
   {
+    AuthenticatedJazdyIntegraciePoskytovatelRoute:
+      AuthenticatedJazdyIntegraciePoskytovatelRoute,
     AuthenticatedJazdyIntegracieCommanderRoute:
       AuthenticatedJazdyIntegracieCommanderRoute,
     AuthenticatedJazdyIntegracieTeslaRoute:
@@ -8422,6 +8465,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksEfakturaRegistracieRoute:
     ApiPublicHooksEfakturaRegistracieRoute,
   ApiPublicHooksEfakturaSyncRoute: ApiPublicHooksEfakturaSyncRoute,
+  ApiPublicHooksGpsSyncRoute: ApiPublicHooksGpsSyncRoute,
   ApiPublicHooksJazdyDoplnenieRoute: ApiPublicHooksJazdyDoplnenieRoute,
   ApiPublicHooksKurzyEcbRoute: ApiPublicHooksKurzyEcbRoute,
   ApiPublicHooksOdovzdanieMesacneRoute: ApiPublicHooksOdovzdanieMesacneRoute,

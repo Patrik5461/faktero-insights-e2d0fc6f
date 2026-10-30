@@ -33,8 +33,6 @@ export default {
   "GPS a automatický záznam": "GPS a automatický záznam",
   "<0>GPS jazda</0> zaznamená trasu priamo v mobile — stačí spustiť na začiatku a ukončiť na konci cesty. Kilometre sa dopočítajú samy.":
     "<0>GPS jízda</0> zaznamená trasu přímo v mobilu — stačí spustit na začátku a ukončit na konci cesty. Kilometry se dopočítají samy.",
-  "Cez <0>Integrácie</0> sa dajú jazdy sťahovať automaticky z jednotky Commander GPS alebo z vozidla Tesla.":
-    "Přes <0>Integrace</0> lze jízdy stahovat automaticky z jednotky Commander GPS nebo z vozidla Tesla.",
   "<0>V mobilnej aplikácii si jazdu všimne telefón sám.</0> Keď rozpozná, že idete autom, začne merať a spýta sa až na konci — jazdu potom buď potvrdíte, alebo zahodíte. Kým meranie beží, je to vidieť: v aplikácii svieti pruh „Nahrávam jazdu“ a <1>na uzamknutej obrazovke</1> beží čas a narastajúce kilometre, takže sa nemusíte prepínať do aplikácie ani ju nechať otvorenú. Potrebuje to iPhone s iOS 16.1 alebo novším.":
     "<0>V mobilní aplikaci si jízdy všimne telefon sám.</0> Když rozpozná, že jedete autem, začne měřit a zeptá se až na konci — jízdu pak buď potvrdíte, nebo zahodíte. Dokud měření běží, je to vidět: v aplikaci svítí pruh „Nahrávám jízdu“ a <1>na zamčené obrazovce</1> běží čas a přibývající kilometry, takže se nemusíte přepínat do aplikace ani ji nechávat otevřenou. Potřebuje to iPhone s iOS 16.1 nebo novějším.",
   "Automatické rozpoznávanie sa dá vypnúť priamo na obrazovke <0>Jazda</0> prepínačom „Rozpoznávať jazdy automaticky“; vtedy sa meranie spúšťa ručne tlačidlom.":

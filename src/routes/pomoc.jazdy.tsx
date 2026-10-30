@@ -108,7 +108,8 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Cez <Link to="/jazdy/integracie">Integrácie</Link> sa dajú jazdy sťahovať automaticky z
-          jednotky Commander GPS alebo z vozidla Tesla.
+          GPS systému vo vozidle (Commander, GPS Dozor a ďalšie) alebo z vozidla Tesla — pozri časť
+          Integrácie GPS nižšie.
         </p>
         <p>
           <strong>V mobilnej aplikácii si jazdu všimne telefón sám.</strong> Keď rozpozná, že idete
@@ -121,6 +122,38 @@ const sections: HelpSection[] = [
         <p>
           Automatické rozpoznávanie sa dá vypnúť priamo na obrazovke <strong>Jazda</strong>{" "}
           prepínačom „Rozpoznávať jazdy automaticky“; vtedy sa meranie spúšťa ručne tlačidlom.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "integracie",
+    title: "Integrácie GPS",
+    body: (
+      <>
+        <p>
+          V <Link to="/jazdy/integracie">Integráciách</Link> vyberte svoj GPS systém a zadajte
+          prihlasovacie údaje — tie isté, ktorými sa prihlasujete u poskytovateľa, alebo API kľúč,
+          ak ho poskytovateľ vydáva. Tlačidlo <strong>Otestovať pripojenie</strong> overí údaje bez
+          uloženia. Heslá a kľúče sa ukladajú zašifrované a po uložení sa už nezobrazujú.
+        </p>
+        <p>
+          Po pripojení sa načítajú vozidlá a{" "}
+          <strong>spárujú sa s vozidlami knihy jázd podľa EČV</strong>. Vozidlo, ktoré sa
+          nespárovalo, priraďte ručne alebo ho tlačidlom <strong>Založiť vozidlo</strong> pridajte.
+          Jazdy sa sťahujú len pre spárované vozidlá.
+        </p>
+        <p>
+          Prvé stiahnutie vezme <strong>posledných 30 dní</strong>, potom sa jazdy sťahujú každú
+          noc. Tlačidlo <strong>Synchronizovať teraz</strong> ich stiahne hneď; pri veľa vozidlách
+          sa stiahne len časť a zvyšok dokončí ďalšie spustenie. Tá istá jazda sa do knihy nikdy
+          nezapíše dvakrát. Ak systém rozlišuje súkromné a služobné jazdy, prevezme sa aj to,
+          rovnako ako vodič, adresy a spotreba. Systémy, ktoré evidujú tankovania, ich pridajú k
+          vozidlu.
+        </p>
+        <p>
+          Odpojením účtu sa zastaví sťahovanie; jazdy a tankovania, ktoré už sú v knihe jázd,
+          ostávajú.
         </p>
       </>
     ),

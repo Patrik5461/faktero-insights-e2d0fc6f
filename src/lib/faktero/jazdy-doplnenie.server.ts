@@ -12,9 +12,30 @@
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { dekoduj } from "./polyline";
 import { adresaZBodu } from "./geokodovanie.server";
+import { zdrojeGps } from "./gps/register";
 
-/** Zdroje, ktorých jazdy si adresy nenesú so sebou. */
-const ZDROJE = ["drive_detector"];
+/**
+ * Zdroje, ktorých jazdy si adresy nenesú so sebou. Jazdy z GPS integrácií
+ * (GPS Dozor, …) majú adresy väčšinou od poskytovateľa; keď chýbajú, berú sa
+ * súradnice z `raw_provider_data.suradnice`.
+ */
+const ZDROJE = ["drive_detector", ...zdrojeGps()];
+
+type Bod = { lat: number; lng: number };
+
+/** Prvý a posledný bod jazdy: z trasy, inak zo súradníc od GPS poskytovateľa. */
+export function krajneBody(
+  route: string | null,
+  suradnice: any,
+): { prvy: Bod; posledny: Bod } | null {
+  const body = route ? dekoduj(route) : [];
+  if (body.length) return { prvy: body[0], posledny: body[body.length - 1] };
+  const s = suradnice && typeof suradnice === "object" ? suradnice : null;
+  const c = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  if (!s || c(s.odLat) == null || c(s.odLng) == null || c(s.doLat) == null || c(s.doLng) == null)
+    return null;
+  return { prvy: { lat: s.odLat, lng: s.odLng }, posledny: { lat: s.doLat, lng: s.doLng } };
+}
 
 /*
   Jazdu, ktorú sa doplniť nedarí (bez trasy, adresa netrafí, autor bez mena),
@@ -53,7 +74,9 @@ export async function doplnJazdy(limit = 200): Promise<VysledokDoplnenia> {
   // Dve `or` sa v PostgREST spoja cez AND. Stĺpce pokusov typy ešte nepoznajú.
   const { data: jazdy } = await (supabaseAdmin as any)
     .from("trips")
-    .select("id, route, created_by, start_location, end_location, driver_name, doplnenie_pokusy")
+    .select(
+      "id, route, created_by, start_location, end_location, driver_name, doplnenie_pokusy, suradnice:raw_provider_data->suradnice",
+    )
     .in("external_source", ZDROJE)
     .or("start_location.is.null,end_location.is.null,driver_name.is.null")
     .lt("doplnenie_pokusy", MAX_POKUSOV)
@@ -72,10 +95,9 @@ export async function doplnJazdy(limit = 200): Promise<VysledokDoplnenia> {
 
     try {
       if (!j.start_location || !j.end_location) {
-        const body = dekoduj(j.route);
-        if (body.length) {
-          const prvy = body[0];
-          const posledny = body[body.length - 1];
+        const kraje = krajneBody(j.route, j.suradnice);
+        if (kraje) {
+          const { prvy, posledny } = kraje;
           if (!j.start_location) {
             const a = await adresaZBodu(supabaseAdmin, prvy.lat, prvy.lng);
             if (a) zmena.start_location = a;

@@ -16,6 +16,7 @@ import {
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { useServerFn } from "@tanstack/react-start";
 import { trasaMedziBodmi } from "@/lib/faktero/trasa.server";
+import { gpsZapisZaradenie } from "@/lib/faktero/gps.functions";
 import { BulkBar, ConfirmDialog } from "@/components/faktero/ListControls";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -101,6 +102,7 @@ function TripsPage() {
   const [navrhy, setNavrhy] = useState<Record<string, string>>({});
   const [navrhujem, setNavrhujem] = useState(false);
   const ziadajTrasu = useServerFn(trasaMedziBodmi);
+  const zapisZaradenieDoGps = useServerFn(gpsZapisZaradenie);
   const [mazem, setMazem] = useState(false);
 
   async function load() {
@@ -199,6 +201,25 @@ function TripsPage() {
     if (error) return toast.error(error.message);
 
     const zmenenych = data?.length ?? 0;
+    // Jazdy z GPS, ktorého API to vie, dostanú zmenu aj u poskytovateľa.
+    // V knihe jázd je už uložená — chyba zápisu späť ju nevracia.
+    if (zmenenych) {
+      zapisZaradenieDoGps({
+        data: {
+          companyId: cid,
+          ids: (data ?? []).map((r) => r.id),
+          sukromna: classification === "private",
+        },
+      }).then(
+        (r) => {
+          if (r.chyby)
+            toast.warning(
+              t("Do GPS systému sa zmenu nepodarilo zapísať pri {n} jazdách.", { n: r.chyby }),
+            );
+        },
+        () => {},
+      );
+    }
     if (zmenenych === vybraneIds.length) {
       toast.success(
         classification === "private"
