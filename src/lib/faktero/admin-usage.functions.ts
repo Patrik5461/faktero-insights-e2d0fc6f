@@ -35,8 +35,10 @@ let cache: { data: Prehlad; cas: number } | null = null;
 async function nacitajPrehlad(supabaseAdmin: any) {
   const { nacitajManagementUdaje } = await import("./admin-zdroje-api.server");
   const { jeDocasnyKos } = await import("./admin-zdroje");
+  const { suctyMesiaca } = await import("./zdroje-logy");
+  const teraz = new Date();
 
-  const [sqlVysledok, api, rowCounts] = await Promise.all([
+  const [sqlVysledok, api, rowCounts, logy] = await Promise.all([
     supabaseAdmin.rpc("admin_zdroje_prehlad"),
     nacitajManagementUdaje(),
     (async () => {
@@ -49,7 +51,16 @@ async function nacitajPrehlad(supabaseAdmin: any) {
       );
       return out;
     })().catch(() => ({}) as Record<string, number>),
+    // Denné odhady z logov (cron zdroje-logy) za aktuálny kalendárny mesiac.
+    supabaseAdmin
+      .from("admin_usage_daily")
+      .select(
+        "date, egress_bytes, egress_measured_bytes, responses_total, responses_without_length, realtime_messages, edge_invocations",
+      )
+      .gte("date", `${teraz.toISOString().slice(0, 7)}-01`)
+      .order("date"),
   ]);
+  if (logy.error) console.error("[admin-zdroje] admin_usage_daily:", logy.error.message);
 
   if (sqlVysledok.error) {
     console.error("[admin-zdroje] admin_zdroje_prehlad:", sqlVysledok.error.message);
@@ -102,6 +113,21 @@ async function nacitajPrehlad(supabaseAdmin: any) {
     })),
     usd_kurz: p.usd_kurz ? { den: String(p.usd_kurz.den), kurz: Number(p.usd_kurz.kurz) } : null,
     api,
+    // null = tabuľku sa nepodarilo prečítať (karty ostanú „nedostupné“).
+    logy: logy.error
+      ? null
+      : suctyMesiaca(
+          ((logy.data ?? []) as any[]).map((r) => ({
+            date: String(r.date),
+            egress_bytes: Number(r.egress_bytes ?? 0),
+            egress_measured_bytes: Number(r.egress_measured_bytes ?? 0),
+            responses_total: Number(r.responses_total ?? 0),
+            responses_without_length: Number(r.responses_without_length ?? 0),
+            realtime_messages: Number(r.realtime_messages ?? 0),
+            edge_invocations: Number(r.edge_invocations ?? 0),
+          })),
+          teraz,
+        ),
     row_counts: rowCounts,
     generated_at: new Date().toISOString(),
   };
