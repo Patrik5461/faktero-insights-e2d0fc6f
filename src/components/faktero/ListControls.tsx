@@ -76,7 +76,7 @@ export function Pagination({
           ? t("Žiadne výsledky")
           : t("Zobrazuje sa {from}–{to} z {total}", { from, to, total })}
       </span>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
@@ -555,7 +555,13 @@ export function ListPagination({
           ))}
         </select>
       </label>
-      <div className="min-w-0 flex-1">
+      {/*
+        Bez spodnej hranice šírky sa stránkovanie na telefóne natlačilo vedľa
+        výberu počtu do ~130 px a tlačidlo „Ďalšia“ ostalo za okrajom obrazovky
+        (html má overflow-x: clip, takže sa k nemu nedalo ani posunúť). Takto sa
+        radšej zalomí na vlastný riadok.
+      */}
+      <div className="min-w-[16rem] flex-1">
         <Pagination page={page} pageSize={pageSize} total={total} onPageChange={onPageChange} />
       </div>
     </div>
