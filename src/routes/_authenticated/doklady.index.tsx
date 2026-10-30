@@ -10,6 +10,9 @@ import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
 import { useRadenie } from "@/hooks/useRadenie";
 import { stiahniExcel, tabulka } from "@/lib/faktero/excel-zoznamu";
+import { sPolozkami, SELECT_DOKLADOV } from "@/lib/faktero/stlpce-zoznamov";
+import { vsetkyRiadkySubezne } from "@/lib/faktero/strankovanie";
+import { vMesiaci } from "@/lib/faktero/doklady-mesiac";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import { useServerFn } from "@tanstack/react-start";
@@ -23,7 +26,6 @@ import {
   zrusParovanieDokladu,
 } from "@/lib/faktero/doklad-parovanie.functions";
 import {
-  listExpensesFn,
   deleteExpenseFn,
   exportExpensesZipFn,
   getExpenseFileUrlFn,
@@ -150,7 +152,6 @@ const STATUS_STYLE: Record<string, string> = {
 function DokladyPage() {
   const { t, jazyk } = useT();
   const navigate = useNavigate();
-  const listFn = useServerFn(listExpensesFn);
   const mimoFn = useServerFn(dokladyMimoMesiacaFn);
   const deleteFn = useServerFn(deleteExpenseFn);
   const exportFn = useServerFn(exportExpensesZipFn);
@@ -382,8 +383,24 @@ function DokladyPage() {
     if (!cid) return;
     setLoading(true);
     try {
-      const data = await listFn({
-        data: { company_id: cid, status, month: bezMesiaca ? null : month || null },
+      /*
+        Priamo z databázy (RLS), nie cez serverovú funkciu — tá ten istý
+        zoznam prenášala dvakrát (databáza → server → prehliadač, PALIERA
+        5,8 MB). Bez položiek a rozpisu DPH, stránky po prvej naraz.
+      */
+      const mesiacFiltra = bezMesiaca ? null : month || null;
+      const data = await vsetkyRiadkySubezne<any>((od, po, spocitaj) => {
+        let q = supabase
+          .from("expense_documents")
+          .select(SELECT_DOKLADOV, spocitaj ? { count: "exact" } : undefined)
+          .eq("company_id", cid)
+          .order("issue_date", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(od, po);
+        if (status && status !== "all") q = q.eq("status", status);
+        if (mesiacFiltra) q = vMesiaci(q, mesiacFiltra);
+        return q;
       });
       setRows(data ?? []);
       if (ponechatVyber) {
@@ -614,8 +631,15 @@ function DokladyPage() {
   }
 
   /** Excel z toho, čo je na obrazovke — v poradí, ako je zoznam zoradený. */
-  function stiahniExcelDokladov() {
-    const r = rad.zoradene as any[];
+  async function stiahniExcelDokladov() {
+    // Zoznam položky nenesie (zbytočne by vážil megabajty) — dotiahnu sa teraz.
+    let r: any[];
+    try {
+      r = await sPolozkami("expense_documents", rad.zoradene as any[]);
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+      return;
+    }
     void stiahniExcel(`doklady-${new Date().toISOString().slice(0, 10)}.xlsx`, [
       {
         nazov: t("Doklady"),

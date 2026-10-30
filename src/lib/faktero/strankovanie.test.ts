@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { riadkyPreIds, vsetkyRiadky } from "./strankovanie";
+import { riadkyPreIds, vsetkyRiadky, vsetkyRiadkySubezne } from "./strankovanie";
 
 /*
   Supabase vráti najviac 1 000 riadkov na dotaz aj pri `.limit(5000)` — overené
@@ -35,5 +35,63 @@ describe("stránkovanie", () => {
     expect(r).toHaveLength(450 * 5);
     expect(new Set(r).size).toBe(450 * 5);
     expect(dotazy[0]).toBe(200);
+  });
+
+  it("súbežne: prvá stránka s počtom, zvyšok naraz", async () => {
+    const volania: { od: number; spocitaj: boolean }[] = [];
+    let bezi = 0;
+    let najviacNaraz = 0;
+    const r = await vsetkyRiadkySubezne(async (od, po, spocitaj) => {
+      volania.push({ od, spocitaj });
+      bezi++;
+      najviacNaraz = Math.max(najviacNaraz, bezi);
+      await new Promise((ok) => setTimeout(ok, 5));
+      bezi--;
+      return { data: tabulka.slice(od, Math.min(po + 1, od + 1000)), error: null, count: spocitaj ? tabulka.length : null };
+    });
+    expect(r).toHaveLength(2345);
+    expect(r.map((x) => x.id)).toEqual(tabulka.map((x) => x.id));
+    expect(volania).toEqual([
+      { od: 0, spocitaj: true },
+      { od: 1000, spocitaj: false },
+      { od: 2000, spocitaj: false },
+    ]);
+    expect(najviacNaraz).toBe(2);
+  });
+
+  it("súbežne: bez počtu dočíta po starom", async () => {
+    const r = await vsetkyRiadkySubezne((od, po) =>
+      Promise.resolve({ data: tabulka.slice(od, Math.min(po + 1, od + 1000)), error: null, count: null }),
+    );
+    expect(r).toHaveLength(2345);
+  });
+
+  it("súbežne: riadky pribudli po počte — nič nechýba", async () => {
+    const r = await vsetkyRiadkySubezne((od, po, spocitaj) =>
+      Promise.resolve({ data: tabulka.slice(od, Math.min(po + 1, od + 1000)), error: null, count: spocitaj ? 1500 : null }),
+    );
+    expect(r).toHaveLength(2345);
+  });
+
+  it("súbežne: malý zoznam = jeden dotaz", async () => {
+    let n = 0;
+    const r = await vsetkyRiadkySubezne((od, po) => {
+      n++;
+      return Promise.resolve({ data: tabulka.slice(0, 10), error: null, count: 10 });
+    });
+    expect(r).toHaveLength(10);
+    expect(n).toBe(1);
+  });
+
+  it("súbežne: chybu stránky nezamlčí", async () => {
+    await expect(
+      vsetkyRiadkySubezne((od, po, spocitaj) =>
+        Promise.resolve(
+          spocitaj
+            ? { data: tabulka.slice(0, 1000), error: null, count: 2345 }
+            : { data: null, error: { message: "zlé" } },
+        ),
+      ),
+    ).rejects.toThrow("zlé");
   });
 });

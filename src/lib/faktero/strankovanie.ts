@@ -28,6 +28,44 @@ export async function vsetkyRiadky<T = any>(
   }
 }
 
+type StrankaSPoctom<T> = PromiseLike<{
+  data: T[] | null;
+  error?: { message: string } | null;
+  count?: number | null;
+}>;
+
+/**
+ * Všetky riadky ako `vsetkyRiadky`, ale stránky po prvej idú naraz. Prvá
+ * stránka si vypýta aj počet (`spocitaj = true` → `select(…, { count: "exact" })`),
+ * ostatné sa potom stiahnu súčasne — zoznam s 2 000 bločkami nečaká na tri
+ * odpovede za sebou. Keď počet nepríde (alebo medzitým riadky pribudli),
+ * dočíta sa zvyšok po starom.
+ */
+export async function vsetkyRiadkySubezne<T = any>(
+  dotaz: (od: number, po: number, spocitaj: boolean) => StrankaSPoctom<T>,
+  velkost = STRANKA,
+): Promise<T[]> {
+  const prva = await dotaz(0, velkost - 1, true);
+  if (prva.error) throw new Error(prva.error.message);
+  const out: T[] = [...(prva.data ?? [])];
+  if (out.length < velkost) return out;
+  const pocet = typeof prva.count === "number" ? prva.count : null;
+  const zaciatky: number[] = [];
+  if (pocet != null) for (let od = velkost; od < pocet; od += velkost) zaciatky.push(od);
+  const stranky = await Promise.all(zaciatky.map((od) => dotaz(od, od + velkost - 1, false)));
+  for (const s of stranky) {
+    if (s.error) throw new Error(s.error.message);
+    out.push(...(s.data ?? []));
+  }
+  // Posledná stránka plná (alebo počet neprišiel) — mohlo pribudnúť, dočítať.
+  const posledna = stranky.length ? stranky[stranky.length - 1].data : prva.data;
+  if ((posledna ?? []).length === velkost) {
+    const dalsieOd = velkost * (zaciatky.length + 1);
+    out.push(...(await vsetkyRiadky<T>((od, po) => dotaz(dalsieOd + od, dalsieOd + po, false), velkost)));
+  }
+  return out;
+}
+
 /**
  * Riadky pre veľký zoznam id: po dávkach (URL s tisíckami id by bola pridlhá)
  * a v každej dávke po stránkach (položiek býva viac než faktúr).

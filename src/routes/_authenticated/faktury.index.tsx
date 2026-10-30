@@ -52,6 +52,7 @@ import { sendReminderFn } from "@/lib/faktero/reminders.functions";
 import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
+import { SELECT_VYSTAVENYCH } from "@/lib/faktero/stlpce-zoznamov";
 import {
   ListPagination,
   type MoznostZoradenia,
@@ -198,6 +199,8 @@ function InvoicesPage() {
   );
   const list = usePagedList({
     resource: "invoices",
+    // Bez `select *` — stránka 100 faktúr COPY PRINTU 276 kB → 183 kB.
+    stlpce: SELECT_VYSTAVENYCH,
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
     equals: Object.keys(equals).length ? equals : undefined,
     // Od najnovšej. Predtým sa radilo podľa `created_at`, čo je pri

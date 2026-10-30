@@ -3,10 +3,15 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
-  jeOtvorena,
-  jePoSplatnosti,
-  sucetDokladov,
-} from "@/lib/faktero/faktury-sumy";
+  apiStatistika,
+  dsoPrehladu,
+  metrikyPrehladu,
+  miestnyDatum,
+  normalizujPrehlad,
+  PRAZDNY_PREHLAD,
+  type KosVeku,
+  type PrehladSuhrn,
+} from "@/lib/faktero/prehlad-suhrn";
 import { mnozne } from "@/lib/faktero/mnozne";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -57,7 +62,6 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { vsetkoAkoData } from "@/lib/faktero/strankovanie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -74,30 +78,6 @@ let menaPrehladu = "EUR";
 
 function fmt(n: number, currency: string | null | undefined = menaPrehladu) {
   return formatujMenu(n, currency || menaPrehladu);
-}
-
-function naDomacuMenu(invoices: any[], domaca: string): any[] {
-  return invoices.map((i) =>
-    (i.currency || domaca) !== domaca && i.total_eur != null
-      ? {
-          ...i,
-          total: Number(i.total_eur),
-          subtotal: i.subtotal_eur != null ? Number(i.subtotal_eur) : i.subtotal,
-          vat_total: i.vat_total_eur != null ? Number(i.vat_total_eur) : i.vat_total,
-        }
-      : i,
-  );
-}
-
-function prijateNaDomacuMenu(rows: any[], domaca: string): any[] {
-  return rows.map((p) =>
-    (p.currency || domaca) !== domaca && p.amount_without_vat_eur != null
-      ? {
-          ...p,
-          amount_total: Number(p.amount_without_vat_eur) + Number(p.vat_amount_eur ?? 0),
-        }
-      : p,
-  );
 }
 
 function fmtCompact(n: number) {
@@ -143,6 +123,8 @@ function Dashboard() {
   /* Slovenské povinnosti sa českej firme neponúkajú. */
   const krajina = useKrajinaDane();
   menaPrehladu = krajina === "CZ" ? "CZK" : "EUR";
+  /* Súčty počíta databáza (`prehlad_suhrn`); tu sú len posledné záznamy do aktivity. */
+  const [suhrn, setSuhrn] = useState<PrehladSuhrn>(PRAZDNY_PREHLAD);
   const [allInvoices, setAllInvoices] = useState<any[]>([]);
   const [activeRecurring, setActiveRecurring] = useState<any[]>([]);
   const [recurringStats, setRecurringStats] = useState<{
@@ -153,21 +135,13 @@ function Dashboard() {
   } | null>(null);
   const fetchRecurringStats = useServerFn(getRecurringWidgetStats);
   const [pendingQuotes, setPendingQuotes] = useState<any[]>([]);
-  const [payments, setPayments] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [company, setCompany] = useState<any | null>(null);
   const [apiLogs, setApiLogs] = useState<any[]>([]);
   const [apiKeysCount, setApiKeysCount] = useState(0);
   const [webhooksCount, setWebhooksCount] = useState(0);
   const [webhookDeliveries, setWebhookDeliveries] = useState<any[]>([]);
-  const [lowStockCount, setLowStockCount] = useState<number>(0);
-  const [tripStats, setTripStats] = useState<{ km_month: number; last: any | null } | null>(null);
-  const [payables, setPayables] = useState<{
-    unpaid: number;
-    overdueCount: number;
-    count: number;
-  } | null>(null);
-  const [purchaseInvoices, setPurchaseInvoices] = useState<any[]>([]);
+  const [lastTrip, setLastTrip] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -177,49 +151,41 @@ function Dashboard() {
       const yearAgo = new Date();
       yearAgo.setMonth(yearAgo.getMonth() - 13);
       const yearAgoISO = yearAgo.toISOString().slice(0, 10);
-      const todayISO = new Date().toISOString().slice(0, 10);
-      const monthStartISO = new Date(
-        new Date().getFullYear(),
-        new Date().getMonth(),
-        1,
-      ).toISOString();
+      const polnoc = new Date();
+      polnoc.setHours(0, 0, 0, 0);
 
-      const [inv, pay, cust, comp, logs, keys, hooks, deliv, recur, quotesPend] = await Promise.all(
-        [
-          // Súčty nástenky z úplných dát — strop 1 000 riadkov by ich ticho skrátil.
-          vsetkoAkoData((zac, kon) =>
-            supabase
-              .from("invoices")
-              .select(
-                "id, invoice_number, customer_name, customer_id, total, subtotal, vat_total, currency, subtotal_eur, vat_total_eur, total_eur, status, type, issue_date, due_date, paid_at, created_at",
-              )
-              .eq("company_id", companyId)
-              .is("deleted_at", null)
-              .gte("issue_date", yearAgoISO)
-              .order("created_at", { ascending: false })
-              .order("id")
-              .range(zac, kon),
-          ),
-          vsetkoAkoData((zac, kon) =>
-            supabase
-              .from("payments")
-              .select("id, amount, paid_at, invoice_id")
-              .eq("company_id", companyId)
-              .gte("paid_at", yearAgoISO)
-              .order("id")
-              .range(zac, kon),
-          ),
-          vsetkoAkoData((zac, kon) =>
-            supabase.from("customers").select("id, name, created_at").eq("company_id", companyId).eq("odberatel", true).is("deleted_at", null).order("id").range(zac, kon),
-          ),
+      const [sum, inv, cust, comp, logs, keys, hooks, deliv, recur, quotesPend, trip] =
+        await Promise.all([
+          supabase.rpc("prehlad_suhrn" as any, {
+            p_company_id: companyId,
+            p_dnes: miestnyDatum(),
+            p_mena: menaPrehladu,
+            p_dnes_od: polnoc.toISOString(),
+          } as any),
+          // Len posledné faktúry do aktivity — súčty sú v `prehlad_suhrn`.
+          supabase
+            .from("invoices")
+            .select("id, invoice_number, customer_name, total, currency, status, paid_at, created_at")
+            .eq("company_id", companyId)
+            .is("deleted_at", null)
+            .gte("issue_date", yearAgoISO)
+            .order("created_at", { ascending: false })
+            .limit(30),
+          supabase
+            .from("customers")
+            .select("id, name, created_at")
+            .eq("company_id", companyId)
+            .eq("odberatel", true)
+            .is("deleted_at", null)
+            .order("created_at", { ascending: false })
+            .limit(10),
           supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
           supabase
             .from("api_logs")
             .select("id, status, created_at, path")
             .eq("company_id", companyId)
-            .gte("created_at", new Date(Date.now() - 31 * 86400000).toISOString())
             .order("created_at", { ascending: false })
-            .limit(1000),
+            .limit(5),
           supabase
             .from("api_keys")
             .select("id", { count: "exact", head: true })
@@ -254,11 +220,17 @@ function Dashboard() {
             .in("status", ["draft", "sent"])
             .order("created_at", { ascending: false })
             .limit(5),
-        ],
-      );
+          supabase
+            .from("trips")
+            .select("trip_date, distance_km, start_location, end_location")
+            .eq("company_id", companyId)
+            .order("trip_date", { ascending: false })
+            .limit(1),
+        ]);
 
+      if (sum.error) console.error("[prehlad_suhrn]", sum.error);
+      setSuhrn(normalizujPrehlad(sum.data));
       setAllInvoices(inv.data ?? []);
-      setPayments(pay.data ?? []);
       setCustomers(cust.data ?? []);
       setCompany(comp.data ?? null);
       setApiLogs(logs.data ?? []);
@@ -267,139 +239,51 @@ function Dashboard() {
       setWebhookDeliveries(deliv.data ?? []);
       setActiveRecurring(recur.data ?? []);
       setPendingQuotes(quotesPend.data ?? []);
+      setLastTrip(trip.data?.[0] ?? null);
       setLoading(false);
-      // keep refs to avoid unused warnings
-      void todayISO;
-      void monthStartISO;
     })();
     fetchRecurringStats()
       .then(setRecurringStats)
       .catch(() => {});
-    (async () => {
-      const cid = getActiveCompanyId();
-      if (!cid) return;
-      const [{ data: items }, { data: lvl }] = await Promise.all([
-        vsetkoAkoData((zac, kon) =>
-          supabase
-            .from("stock_items")
-            .select("id, min_stock, track_stock")
-            .eq("company_id", cid)
-            .eq("track_stock", true)
-            .order("id")
-            .range(zac, kon),
-        ),
-        vsetkoAkoData((zac, kon) =>
-          supabase.from("stock_levels").select("id, stock_item_id, quantity").eq("company_id", cid).order("id").range(zac, kon),
-        ),
-      ]);
-      const qty: Record<string, number> = {};
-      (lvl ?? []).forEach((l: any) => {
-        qty[l.stock_item_id] = (qty[l.stock_item_id] ?? 0) + Number(l.quantity);
-      });
-      const low = (items ?? []).filter(
-        (s: any) => (qty[s.id] ?? 0) < Number(s.min_stock ?? 0),
-      ).length;
-      setLowStockCount(low);
-    })();
-    (async () => {
-      const cid = getActiveCompanyId();
-      if (!cid) return;
-      const monthStart = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-01`;
-      const [{ data: month }, { data: last }] = await Promise.all([
-        vsetkoAkoData((zac, kon) =>
-          supabase
-            .from("trips")
-            .select("id, distance_km")
-            .eq("company_id", cid)
-            .gte("trip_date", monthStart)
-            .order("id")
-            .range(zac, kon),
-        ),
-        supabase
-          .from("trips")
-          .select("trip_date, distance_km, start_location, end_location")
-          .eq("company_id", cid)
-          .order("trip_date", { ascending: false })
-          .limit(1),
-      ]);
-      const km = (month ?? []).reduce((a: number, r: any) => a + Number(r.distance_km), 0);
-      setTripStats({ km_month: km, last: last?.[0] ?? null });
-    })();
-    (async () => {
-      const cid = getActiveCompanyId();
-      if (!cid) return;
-      const { data: vsetky } = await vsetkoAkoData((zac, kon) =>
-        supabase
-          .from("purchase_invoices")
-          .select(
-            "id, amount_total, currency, amount_without_vat, amount_without_vat_eur, vat_amount, vat_amount_eur, odpocet, status, issue_date, delivery_date, due_date, supplier_name, invoice_number, type, advance_invoice_id",
-          )
-          .eq("company_id", cid)
-          .is("deleted_at", null)
-          .order("id")
-          .range(zac, kon),
-      );
-      /*
-        Zálohu treba zaplatiť, takže do záväzkov patrí — ale len dovtedy, kým
-        ju nezúčtuje ostrá faktúra. Inak by tá istá dodávka visela dvakrát.
-      */
-      const zuctovane = new Set(
-        (vsetky ?? []).map((r: any) => r.advance_invoice_id).filter(Boolean),
-      );
-      const data = (vsetky ?? []).filter(
-        (r: any) => r.type !== "proforma" || !zuctovane.has(r.id),
-      );
-      setPurchaseInvoices(data ?? []);
-      const today = new Date().toISOString().slice(0, 10);
-      let unpaid = 0,
-        overdueCount = 0;
-      // V domácej mene (cudzia mena prepočítaná) a bez konceptov — koncept ešte nie je záväzok.
-      prijateNaDomacuMenu(data ?? [], menaPrehladu).forEach((r: any) => {
-        if (r.status !== "paid" && r.status !== "cancelled" && r.status !== "draft") {
-          unpaid += Number(r.amount_total ?? 0);
-          if (r.due_date < today) overdueCount++;
-        }
-      });
-      setPayables({ unpaid, overdueCount, count: data?.length ?? 0 });
-    })();
   }, []);
 
   /*
-    Súčty, grafy a splatnosti v domácej mene firmy. Faktúra v cudzej mene ide
-    do súčtu prepočítaná (sumy `*_eur` nesú domácu menu firmy) — inak by sa
-    1 210 € pripočítalo ku korunám ako 1 210 Kč.
+    Súčty, grafy a splatnosti sú v domácej mene firmy. Faktúra v cudzej mene
+    ide do súčtu prepočítaná (sumy `*_eur` nesú domácu menu firmy) — to robí
+    `prehlad_suhrn` podľa `p_mena`.
   */
-  const invDomace = useMemo(() => naDomacuMenu(allInvoices, menaPrehladu), [allInvoices, krajina]);
-  const prijateDomace = useMemo(
-    () => prijateNaDomacuMenu(purchaseInvoices, menaPrehladu),
-    [purchaseInvoices, krajina],
-  );
-  const metrics = useMemo(
-    () => computeMetrics(invDomace, payments, customers, purchaseInvoices),
-    [invDomace, payments, customers, purchaseInvoices],
-  );
+  const metrics = useMemo(() => metrikyPrehladu(suhrn), [suhrn]);
+  const payables = loading
+    ? null
+    : {
+        unpaid: suhrn.zavazky_neuhradene,
+        overdueCount: suhrn.zavazky_po_splatnosti,
+        count: suhrn.zavazky_pocet,
+      };
+  const lowStockCount = suhrn.sklad_pod_minimom;
+  const tripStats = loading ? null : { km_month: suhrn.km_mesiac, last: lastTrip };
   const statusData = useMemo(
-    () => buildStatusDistribution(invDomace).map((d) => ({ ...d, name: t(d.name) })),
-    [invDomace, t],
+    () => buildStatusDistribution(suhrn.stavy).map((d) => ({ ...d, name: t(d.name) })),
+    [suhrn, t],
   );
-  const topDebtors = useMemo(() => buildTopDebtors(invDomace), [invDomace]);
+  const topDebtors = useMemo(
+    () => suhrn.dlznici.map((d) => ({ name: d.meno, amount: d.suma, neznamy: !d.meno })),
+    [suhrn],
+  );
   const activity = useMemo(
     () => buildActivity(allInvoices, customers, webhookDeliveries, apiLogs),
     [allInvoices, customers, webhookDeliveries, apiLogs],
   );
-  const apiStats = useMemo(() => computeApiStats(apiLogs), [apiLogs]);
-  const agingReceivables = useMemo(() => buildAging(invDomace, "receivable"), [invDomace]);
-  const agingPayables = useMemo(() => buildAging(prijateDomace, "payable"), [prijateDomace]);
-  const dso = useMemo(() => computeDSO(invDomace), [invDomace]);
-  const forecast = useMemo(
-    () => buildCashflowForecast(invDomace, prijateDomace),
-    [invDomace, prijateDomace],
-  );
+  const apiStats = useMemo(() => apiStatistika(suhrn), [suhrn]);
+  const agingReceivables = useMemo(() => buildAging(suhrn.vek_pohladavok), [suhrn]);
+  const agingPayables = useMemo(() => buildAging(suhrn.vek_zavazkov), [suhrn]);
+  const dso = useMemo(() => dsoPrehladu(suhrn), [suhrn]);
+  const forecast = useMemo(() => buildCashflowForecast(suhrn.vyhlad), [suhrn]);
 
   const countdown = useCountdown(new Date("2027-01-01T00:00:00"));
 
-  const isEmpty = !loading && allInvoices.length === 0;
-  const hasPaidInvoice = useMemo(() => allInvoices.some((i) => i.status === "paid"), [allInvoices]);
+  const isEmpty = !loading && suhrn.pocet_faktur === 0;
+  const hasPaidInvoice = suhrn.ma_zaplatenu;
 
   return (
     <>
@@ -1159,108 +1043,8 @@ export function StatusBadge({ status }: { status: string }) {
 
 /* ---------- Pure data helpers ---------- */
 
-function computeMetrics(invoices: any[], payments: any[], customers: any[], prijate: any[]) {
-  const now = new Date();
-  const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const pmStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const pmEnd = mStart;
-  const yStart = new Date(now.getFullYear(), 0, 1);
-
-  const inMonth = (d: string, a: Date, b: Date) => {
-    const x = new Date(d);
-    return x >= a && x < b;
-  };
-
-  /*
-   * Obrat sa počíta cez spoločné pravidlá: koncept ešte nie je doklad,
-   * zálohová faktúra to isté plnenie zdvojuje a dobropis sumu znižuje.
-   */
-  const monthRevenue = sucetDokladov(
-    invoices.filter((i) => new Date(i.issue_date) >= mStart),
-    "total",
-  );
-  const prevMonthRevenue = sucetDokladov(
-    invoices.filter((i) => inMonth(i.issue_date, pmStart, pmEnd)),
-    "total",
-  );
-  const monthRevenueDelta =
-    prevMonthRevenue > 0 ? ((monthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100 : 0;
-
-  const unpaid = invoices.filter(jeOtvorena);
-  const unpaidAmount = sucetDokladov(unpaid, "total");
-  // Po splatnosti podľa dátumu — stav `overdue` do databázy nikto nezapisuje,
-  // takže filter podľa neho ukazoval nulu aj pri kope dlžníkov.
-  const dnesISO = new Date().toISOString().slice(0, 10);
-  const overdueArr = invoices.filter((i) => jePoSplatnosti(i, dnesISO));
-  const overdueAmount = sucetDokladov(overdueArr, "total");
-
-  const last30 = Date.now() - 30 * 86400000;
-  const paidLast30 = payments
-    .filter((p) => new Date(p.paid_at).getTime() >= last30)
-    .reduce((a, p) => a + Number(p.amount ?? 0), 0);
-  const cashflow = paidLast30 - overdueAmount;
-  const cashflowDelta = paidLast30 > 0 ? ((paidLast30 - overdueAmount) / paidLast30) * 100 : 0;
-
-  const receivables = unpaidAmount;
-  const debtorIds = new Set(unpaid.map((i) => i.customer_id ?? i.customer_name).filter(Boolean));
-  const debtorCount = debtorIds.size;
-
-  // avg payment days
-  const paid = invoices.filter((i) => i.status === "paid" && i.paid_at && i.issue_date);
-  const avgPayDays = paid.length
-    ? paid.reduce(
-        (a, i) => a + (new Date(i.paid_at).getTime() - new Date(i.issue_date).getTime()) / 86400000,
-        0,
-      ) / paid.length
-    : null;
-
-  // VAT — YTD
-  const ytd = invoices.filter((i) => new Date(i.issue_date) >= yStart && i.status !== "cancelled");
-  const vatOut = sucetDokladov(ytd, "vat_total");
-  /*
-    Odpočet a výdavky sú z prijatých faktúr tohto roka — predtým tu bolo
-    35 % z DPH na odvod a 40 % z príjmov, čísla bez vzťahu k dokladom.
-    Záloha nie je náklad (zúčtuje ju ostrá faktúra), faktúra bez nároku na
-    odpočet (`odpocet = false`) do odpočtu nejde. `*_eur` je domáca mena.
-  */
-  const prijateRok = prijate.filter(
-    (p) =>
-      p.type !== "proforma" &&
-      p.status !== "cancelled" &&
-      new Date(p.delivery_date ?? p.issue_date ?? 0) >= yStart,
-  );
-  const vatIn = prijateRok
-    .filter((p) => p.odpocet !== false)
-    .reduce((a, p) => a + Number(p.vat_amount_eur ?? p.vat_amount ?? 0), 0);
-
-  const yearIncome = sucetDokladov(ytd, "subtotal");
-  const yearExpenses = prijateRok.reduce(
-    (a, p) => a + Number(p.amount_without_vat_eur ?? p.amount_without_vat ?? 0),
-    0,
-  );
-
-  void customers;
-  return {
-    monthRevenue,
-    prevMonthRevenue,
-    monthRevenueDelta,
-    unpaidAmount,
-    unpaidCount: unpaid.length,
-    overdueAmount,
-    overdueCount: overdueArr.length,
-    cashflow,
-    cashflowDelta,
-    receivables,
-    debtorCount,
-    avgPayDays,
-    vatOut,
-    vatIn,
-    yearIncome,
-    yearExpenses,
-  };
-}
-
-function buildStatusDistribution(invoices: any[]) {
+/** Výseky grafu stavov z počtov `prehlad_suhrn` (po splatnosti už z dátumu). */
+function buildStatusDistribution(stavy: Record<string, number>) {
   const counts: Record<string, number> = {
     draft: 0,
     issued: 0,
@@ -1268,33 +1052,13 @@ function buildStatusDistribution(invoices: any[]) {
     paid: 0,
     overdue: 0,
     cancelled: 0,
+    ...stavy,
   };
-  const dnesISO = new Date().toISOString().slice(0, 10);
-  invoices.forEach((i) => {
-    // `overdue` je stav, ktorý nikto nezapisuje — bez tohto ostal výsek grafu
-    // navždy prázdny. Po splatnosti sa počíta z dátumu.
-    const kluc = jePoSplatnosti(i, dnesISO) ? "overdue" : i.status;
-    counts[kluc] = (counts[kluc] ?? 0) + 1;
-  });
   return Object.entries(counts).map(([k, v]) => ({
     name: STATUS_LABEL[k] ?? k,
     value: v,
     color: STATUS_COLOR[k] ?? "var(--muted-foreground)",
   }));
-}
-
-function buildTopDebtors(invoices: any[]) {
-  const map = new Map<string, number>();
-  // Podľa stavu sa to filtrovať nedá: zálohová faktúra býva tiež „sent" a
-  // zaplatená faktúra so `paid_at` môže stav ešte niesť starý.
-  invoices.filter(jeOtvorena).forEach((i) => {
-    const name = i.customer_name || "";
-    map.set(name, (map.get(name) ?? 0) + Number(i.total ?? 0));
-  });
-  return [...map.entries()]
-    .map(([name, amount]) => ({ name, amount, neznamy: !name }))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 4);
 }
 
 function buildActivity(invoices: any[], customers: any[], deliveries: any[], apiLogs: any[]) {
@@ -1410,28 +1174,12 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
   return items.sort((a, b) => b.at - a.at).slice(0, 12);
 }
 
-function computeApiStats(logs: any[]) {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const today = logs.filter((l) => new Date(l.created_at) >= todayStart).length;
-  const month = logs.length;
-  const success = logs.filter((l) => Number(l.status) >= 200 && Number(l.status) < 400).length;
-  const successRate = month > 0 ? (success / month) * 100 : 100;
-  return { today, month, successRate };
-}
-
 /* ---------- Aging / DSO / Forecast ---------- */
 
 type AgingBucket = { key: string; label: string; count: number; amount: number; tone: string };
 
-function buildAging(rows: any[], kind: "receivable" | "payable"): AgingBucket[] {
-  // Pohľadávky si stav neriešia, tie idú cez `jeOtvorena`; toto je len pre
-  // prijaté faktúry, kde vlastné pravidlo nemáme.
-  const openStatuses = new Set(["received", "booked"]);
-  const amountField = kind === "receivable" ? "total" : "amount_total";
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+/** Koše veku (v termíne, 1–30, 31–60, 61–90, 90+ dní) z `prehlad_suhrn`. */
+function buildAging(kose: KosVeku[]): AgingBucket[] {
   const buckets: AgingBucket[] = [
     {
       key: "current",
@@ -1463,39 +1211,7 @@ function buildAging(rows: any[], kind: "receivable" | "payable"): AgingBucket[] 
       tone: "text-destructive font-semibold",
     },
   ];
-
-  rows.forEach((r) => {
-    // Pohľadávky majú vlastné pravidlo — okrem typu dokladu pozerá aj na
-    // `paid_at`, ktorý stav nemusí stíhať.
-    if (kind === "receivable" ? !jeOtvorena(r) : !openStatuses.has(r.status)) return;
-    if (!r.due_date) return;
-    const due = new Date(r.due_date);
-    due.setHours(0, 0, 0, 0);
-    const daysOver = Math.floor((today.getTime() - due.getTime()) / 86400000);
-    const amt = Number(r[amountField] ?? 0);
-    let idx = 0;
-    if (daysOver <= 0) idx = 0;
-    else if (daysOver <= 30) idx = 1;
-    else if (daysOver <= 60) idx = 2;
-    else if (daysOver <= 90) idx = 3;
-    else idx = 4;
-    buckets[idx].count += 1;
-    buckets[idx].amount += amt;
-  });
-
-  return buckets;
-}
-
-function computeDSO(invoices: any[]) {
-  const now = Date.now();
-  const yearAgo = now - 365 * 86400000;
-  const receivables = sucetDokladov(invoices.filter(jeOtvorena), "total");
-  const revenue365 = sucetDokladov(
-    invoices.filter((i) => new Date(i.issue_date).getTime() >= yearAgo),
-    "total",
-  );
-  const days = revenue365 > 0 ? (receivables / revenue365) * 365 : 0;
-  return { days, receivables, revenue365 };
+  return buckets.map((b, i) => ({ ...b, count: kose[i]?.pocet ?? 0, amount: kose[i]?.suma ?? 0 }));
 }
 
 type ForecastRow = {
@@ -1507,27 +1223,16 @@ type ForecastRow = {
   balance: number;
 };
 
-function buildCashflowForecast(invoices: any[], purchases: any[]): ForecastRow[] {
+/** Výhľad na 4 týždne — sumy z `prehlad_suhrn`, tu len popisy týždňov. */
+function buildCashflowForecast(vyhlad: { prijem: number; vydaj: number }[]): ForecastRow[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const openPur = new Set(["received", "booked"]);
   const rows: ForecastRow[] = [];
   for (let w = 0; w < 4; w++) {
     const start = new Date(today.getTime() + w * 7 * 86400000);
     const end = new Date(today.getTime() + (w + 1) * 7 * 86400000);
-    const inRange = (d?: string) => {
-      if (!d) return false;
-      const x = new Date(d).getTime();
-      return x >= start.getTime() && x < end.getTime();
-    };
-    // Zálohová faktúra do očakávaných príjmov nepatrí — plnenie príde až
-    // s ostrou faktúrou a inak by sa tá istá suma čakala dvakrát.
-    const income = invoices
-      .filter((i) => jeOtvorena(i) && inRange(i.due_date))
-      .reduce((a, i) => a + Number(i.total ?? 0), 0);
-    const expense = purchases
-      .filter((p) => openPur.has(p.status) && inRange(p.due_date))
-      .reduce((a, p) => a + Number(p.amount_total ?? 0), 0);
+    const income = vyhlad[w]?.prijem ?? 0;
+    const expense = vyhlad[w]?.vydaj ?? 0;
     const fmtD = (d: Date) => `${d.getDate()}.${d.getMonth() + 1}.`;
     rows.push({
       label: `Týždeň ${w + 1}`,
