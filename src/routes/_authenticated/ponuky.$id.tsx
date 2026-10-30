@@ -242,7 +242,9 @@ function QuoteDetail() {
         meta={
           <MetaRiadok
             polozky={[
-              t("Vystavená {datum}", { datum: datumNaDoklade(q.issue_date) }),
+              q.status === "draft"
+                ? t("Koncept, dátum vystavenia {datum}", { datum: datumNaDoklade(q.issue_date) })
+                : t("Vystavená {datum}", { datum: datumNaDoklade(q.issue_date) }),
               <PoTermine aktivne={propadla}>
                 {t("platná do {platnost}", { platnost: datumNaDoklade(q.valid_until) })}
               </PoTermine>,

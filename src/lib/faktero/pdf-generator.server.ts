@@ -688,7 +688,7 @@ async function vykresliFakturu(
     sa miešajú položky s DPH a bez nej (PDP, 0 %). Zľava na doklad sa do
     sadzieb rozpočíta rovnako ako do exportov.
   */
-  const rozpisDph = (() => {
+  let rozpisDph = (() => {
     const skupiny = new Map<string, { label: string; zaklad: number; dph: number; pdp: boolean; sadzba: number }>();
     for (const it of riadkySoZlavou(items as any[], discount)) {
       const pdp = Boolean(rcNaDoklade || (it as any).prenesenie);
@@ -723,8 +723,23 @@ async function vykresliFakturu(
 
   // Estimate totals block height
   const totalsRows = (rozpisDph.length ? 1 : 2) + (discount > 0 ? 2 : 0);
-  const rozpisH = rozpisDph.length ? 11 + rozpisDph.length * 11.5 + 2 : 0;
-  const totalsH = totalsRows * 18 + rozpisH + 8 + 60;
+  const vyskaSuctov = (riadkovRozpisu: number) =>
+    totalsRows * 18 + (riadkovRozpisu ? 11 + riadkovRozpisu * 11.5 + 2 : 0) + 8 + 60;
+  /*
+    Nulové sadzby (19 % a 0 % bez základu) sú v rozpise len pre prehľad. Keď
+    by kvôli nim blok súčtov odišiel na novú stranu, vynechajú sa — doklad na
+    jednej strane je dôležitejší (QA 30. 10.: tri položky, zľava a päť riadkov
+    textu skončili na dvoch stranách o 8 bodov).
+  */
+  const bezNulovych = rozpisDph.filter((r) => r.zaklad || r.dph || r.pdp);
+  if (
+    bezNulovych.length &&
+    bezNulovych.length < rozpisDph.length &&
+    y - vyskaSuctov(rozpisDph.length) < BOTTOM_LIMIT &&
+    y - vyskaSuctov(bezNulovych.length) >= BOTTOM_LIMIT
+  )
+    rozpisDph = bezNulovych;
+  const totalsH = vyskaSuctov(rozpisDph.length);
   ensureSpace(totalsH);
 
   const totalsTop = y;
