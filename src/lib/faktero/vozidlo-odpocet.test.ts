@@ -338,3 +338,25 @@ describe("výkaz DPH s vozidlom 50 %", () => {
     expect(p.r21).toBe(27.68);
   });
 });
+
+describe("kodyBezOdpoctu — číselník bez kódu bez nároku", () => {
+  it("neodpočítateľná časť nikdy nezdedí PD (číselník len PD/UD → PN)", () => {
+    const ciselnik = [
+      {
+        druh: "clenenie_dph",
+        kod: "PD",
+        popis: "Tuzemské plnenie s nárokom na odpočet",
+        agenda: "prijaté plnenia",
+        aktivne: true,
+      },
+      {
+        druh: "clenenie_dph",
+        kod: "UD",
+        popis: "Tuzemské plnenie",
+        agenda: "uskutočnené plnenia",
+        aktivne: true,
+      },
+    ] as any;
+    expect(kodyBezOdpoctu({}, ciselnik).clenenie).toBe("PN");
+  });
+});

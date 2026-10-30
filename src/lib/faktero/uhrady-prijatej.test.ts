@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  nezaplateneZoznamu,
   dniPoSplatnosti,
   jeCiastocneUhradena,
   sumyUhradPodlaFaktury,
@@ -153,5 +154,37 @@ describe("čiastočne uhradená v zozname", () => {
     expect(jeCiastocneUhradena({ status: "paid", amount_total: 100 }, 30)).toBe(false);
     expect(jeCiastocneUhradena({ status: "draft", amount_total: 100 }, 30)).toBe(false);
     expect(jeCiastocneUhradena({ status: "cancelled", amount_total: 100 }, 30)).toBe(false);
+  });
+});
+
+describe("nezaplateneZoznamu", () => {
+  it("odpočíta úhrady a zálohy, koncept a storno nie sú dlh", () => {
+    const r = nezaplateneZoznamu(
+      [
+        {
+          id: "a",
+          status: "received",
+          amount_total: 140,
+          advance_invoice_id: "z",
+          due_date: "2026-11-30",
+        },
+        { id: "b", status: "received", amount_total: 100, due_date: "2026-09-01" },
+        { id: "c", status: "draft", amount_total: 500, due_date: "2026-09-01" },
+        { id: "d", status: "cancelled", amount_total: 50, due_date: "2026-09-01" },
+        {
+          id: "e",
+          status: "booked",
+          amount_total: 200,
+          advance_amount: 200,
+          due_date: "2026-09-01",
+        },
+        { id: "f", status: "paid", amount_total: 70, due_date: "2026-09-01" },
+      ],
+      { b: 30 },
+      { z: 40 },
+      "2026-10-30",
+    );
+    expect(r.nezaplatene).toBe(170); // 140 − 40 + 100 − 30
+    expect(r.poSplatnosti).toBe(1); // len b
   });
 });

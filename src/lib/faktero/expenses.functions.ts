@@ -745,7 +745,15 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       ...(typeof data.polozky === "boolean" ? { polozkyBlockov: data.polozky } : {}),
     };
     // Kontrola pred odovzdaním a XML podľa rokov — rovnaké pre ZIP aj samotné XML.
-    const obdobie = data.month ?? new Date().toISOString().slice(0, 7);
+    /*
+      Obrazovka posiela vybrané id bez mesiaca — názov súboru a záznam
+      v histórii exportov potom niesli dnešný mesiac aj pri decembrových
+      bločkoch. Keď sú všetky doklady z jedného mesiaca, platí ten.
+    */
+    const mesiaceDokladov = new Set(rows.map((r: any) => String(r.issue_date ?? "").slice(0, 7)));
+    const jedenMesiac = mesiaceDokladov.size === 1 ? [...mesiaceDokladov][0] : "";
+    const obdobie =
+      data.month ?? (/^\d{4}-\d{2}$/.test(jedenMesiac) ? jedenMesiac : new Date().toISOString().slice(0, 7));
     const { pohodaXmlBlockov } = await import("./blocky-pohoda-xml.server");
     const { subory: xmlPodlaRoka, preskocene } = pohodaXmlBlockov({
       firma,
