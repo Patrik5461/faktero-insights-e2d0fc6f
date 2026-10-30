@@ -9,6 +9,7 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
+import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 
 type Polozka = {
   id: string;
@@ -60,6 +61,8 @@ export function KosDokladovOkno({
     try {
       await fn();
       toast.success(ok);
+      // Obnovený doklad sa vráti medzi Nespracované — odznak v menu to má ukázať hneď, nie až po odchode z koša.
+      obnovPoctyMenu();
       await nacitajZnova();
       onObnovene();
     } catch (e: any) {

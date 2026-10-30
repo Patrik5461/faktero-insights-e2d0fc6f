@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/opakovane")({
           "Opakované faktúry vo Faktere: interval, automatické vystavovanie, odosielanie a pozastavenie.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/opakovane" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/opakovane" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/opakovane" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/opakovane" }],
   }),
   component: Page,
 });

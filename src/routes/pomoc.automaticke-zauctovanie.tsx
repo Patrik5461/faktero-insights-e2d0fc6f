@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/automaticke-zauctovanie")({
           "Autopilot zaúčtovania vo Fakteri: predkontácia z pravidla, zo zvyku partnera alebo od AI, členenie DPH a KV z režimu dane, blokátory a stránka Na kontrolu.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/automaticke-zauctovanie" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/automaticke-zauctovanie" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/automaticke-zauctovanie" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/automaticke-zauctovanie" }],
   }),
   component: Page,
 });

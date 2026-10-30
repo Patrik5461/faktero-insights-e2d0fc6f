@@ -6,7 +6,7 @@ import { MAX_VELKOST_VEREJNA } from "@/lib/faktero/efaktura/kontrola";
 import { preloz, type Jazyk } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 
-const URL_STRANKY = "https://faktero.sk/nastroje/kontrola-efaktury";
+const URL_STRANKY = "https://www.faktero.sk/nastroje/kontrola-efaktury";
 
 /*
   Verejný nástroj bez prihlásenia. Kontrola beží celá v prehliadači — server

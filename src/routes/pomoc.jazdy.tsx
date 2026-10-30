@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/jazdy")({
           "Kniha jázd vo Faktere: vozidlá, spotreba, tankovanie, GPS záznam, priradenie jazdy na zákazku a export.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/jazdy" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/jazdy" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/jazdy" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/jazdy" }],
   }),
   component: Page,
 });

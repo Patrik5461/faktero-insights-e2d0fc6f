@@ -25,9 +25,9 @@ export const Route = createFileRoute("/pravne/spracovanie-udajov")({
         property: "og:title",
         content: preloz(match.context.jazyk, "Spracúvanie osobných údajov — Faktero"),
       },
-      { property: "og:url", content: "https://faktero.sk/pravne/spracovanie-udajov" },
+      { property: "og:url", content: "https://www.faktero.sk/pravne/spracovanie-udajov" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pravne/spracovanie-udajov" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pravne/spracovanie-udajov" }],
   }),
   component: Page,
 });

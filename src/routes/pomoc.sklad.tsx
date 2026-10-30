@@ -19,9 +19,9 @@ export const Route = createFileRoute("/pomoc/sklad")({
         property: "og:description",
         content: preloz(match.context.jazyk, "Kompletný manuál k skladu vo Faktere."),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/sklad" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/sklad" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/sklad" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/sklad" }],
   }),
   component: Page,
 });

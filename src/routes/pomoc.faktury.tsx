@@ -24,9 +24,9 @@ export const Route = createFileRoute("/pomoc/faktury")({
         property: "og:description",
         content: preloz(match.context.jazyk, "Návod na vystavovanie a správu faktúr vo Faktere."),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/faktury" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/faktury" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/faktury" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/faktury" }],
     scripts: [VIDEO_PRVA_FAKTURA, VIDEO_UHRADENA]
       .filter((v) => v !== undefined)
       .map((v) => ({ type: "application/ld+json", children: JSON.stringify(videoJsonLd(v)) })),

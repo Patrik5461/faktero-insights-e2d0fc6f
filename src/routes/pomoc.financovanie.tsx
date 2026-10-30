@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/financovanie")({
           "Leasingy, úvery a kontokorent vo Faktere: splátkový kalendár s rozpadom na istinu, úrok a DPH, načítanie zmluvy z PDF, párovanie splátok s platbami z banky a úroky z kontokorentu.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/financovanie" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/financovanie" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/financovanie" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/financovanie" }],
   }),
   component: Page,
 });

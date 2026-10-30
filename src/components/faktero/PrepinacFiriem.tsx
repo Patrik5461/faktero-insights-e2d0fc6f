@@ -251,6 +251,7 @@ export function PrepinacFiriem({
       </PopoverTrigger>
       <PopoverContent
         align="start"
+        aria-label={t("Firmy")}
         className="w-[min(22rem,calc(100vw-2rem))] p-0"
         // Fokus dostane pole na hľadanie (ZoznamFiriem), nie prvý prvok okna.
         onOpenAutoFocus={(e) => e.preventDefault()}

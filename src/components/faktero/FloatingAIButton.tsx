@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
@@ -151,6 +152,8 @@ function CompactChat({
 }) {
   const { t } = useT();
   const okno = usePresuvanie({ kluc: KLUC_OKNO, povolene: presuvatelne, ignorujTlacidla: true });
+  // Ručne kreslené okno — Esc ho zatvára ako ostatné okná (Radix to robí sám, toto nie je Radix).
+  useZatvorNaEscape(onClose);
   // Pôvodné miesto okna, keď je tlačidlo odtiahnuté inam: pri tlačidle, nie vpravo dole.
   const [priTlacidle, setPriTlacidle] = useState<Poloha | null>(null);
 
@@ -193,6 +196,8 @@ function CompactChat({
     <div
       ref={okno.nastavPrvok}
       data-plavajuce=""
+      role="dialog"
+      aria-label={t("Faktero AI asistent")}
       className={`fixed ${VRSTVA_AI} flex w-[calc(100vw-1.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 ${
         p ? "" : "bottom-[4.25rem] right-4 sm:bottom-[4.75rem] sm:right-6"
       }`}

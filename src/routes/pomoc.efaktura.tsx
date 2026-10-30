@@ -22,9 +22,9 @@ export const Route = createFileRoute("/pomoc/efaktura")({
           "eFaktúra vo Fakteri — zapnutie, odoslanie a príjem cez sieť Peppol.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/efaktura" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/efaktura" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/efaktura" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/efaktura" }],
   }),
   component: Page,
 });

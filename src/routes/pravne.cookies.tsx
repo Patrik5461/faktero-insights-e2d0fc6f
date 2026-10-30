@@ -19,9 +19,9 @@ export const Route = createFileRoute("/pravne/cookies")({
         name: "description",
         content: preloz(match.context.jazyk, "Informácie o používaní cookies v službe Faktero."),
       },
-      { property: "og:url", content: "https://faktero.sk/pravne/cookies" },
+      { property: "og:url", content: "https://www.faktero.sk/pravne/cookies" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pravne/cookies" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pravne/cookies" }],
   }),
   component: Page,
 });

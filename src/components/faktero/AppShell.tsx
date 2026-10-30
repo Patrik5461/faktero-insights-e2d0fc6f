@@ -498,7 +498,8 @@ export function AppShell({
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder={t("Hľadať")}
-                    className="h-8 w-full rounded-full bg-muted/60 pl-8 pr-12 text-[12.5px] placeholder:text-muted-foreground focus:bg-muted focus:outline-none"
+                    aria-label={t("Hľadať")}
+                    className="h-8 w-full rounded-full bg-muted/60 pl-8 pr-12 text-[12.5px] placeholder:text-muted-foreground focus:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                   <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">
                     ⌘K
@@ -656,8 +657,11 @@ export function AppShell({
             panel je len pás ikon.
           */}
           {dizajn === "kompaktny" && activeGroup && activeGroup.children.length > 1 && (
-            <nav aria-label={t(activeGroup.label)} className="hidden overflow-x-auto border-t border-border px-4 lg:block lg:px-6">
-              <ul className="flex items-center gap-1 py-2">
+            /* Lišta sa zalamuje: pri posúvaní do strany (overflow-x-auto) bolo na Macu a pri
+               myši bez vodorovného kolieska vidno len prvých ~9 podstránok, zvyšok — aj
+               aktívna podstránka — ostal za okrajom bez náznaku, že tam niečo je. */
+            <nav aria-label={t(activeGroup.label)} className="hidden border-t border-border px-4 lg:block lg:px-6">
+              <ul className="flex flex-wrap items-center gap-1 py-2">
                 <li className="mr-2 shrink-0 text-sm font-semibold text-foreground">{t(activeGroup.label)}</li>
                 {activeGroup.children.map((c) => {
                   const je = activeKey === c.to + c.label;

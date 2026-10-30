@@ -5,7 +5,17 @@ import {
   daysBetween,
   dniText,
   notifikaciaNespracovanych,
+  textNotifikacie,
+  type AppNotification,
 } from "./notifications";
+import { preloz } from "@/lib/i18n/jazyk";
+
+/** Text tak, ako ho ukáže zvonček (šablóna + params) v danom jazyku. */
+const text = (
+  n: AppNotification,
+  pole: "title" | "detail" = "title",
+  j: "sk" | "cs" | "de" = "sk",
+) => preloz(j, n[pole], n.params);
 
 const PRAZDNE = {
   today: "2026-08-07",
@@ -61,10 +71,10 @@ describe("buildNotifications", () => {
     });
     expect(n.key).toBe("invoice_overdue:abc");
     expect(n.to).toBe("/faktury/abc");
-    expect(n.title).toContain("FV2026001");
-    expect(n.title).toContain("6 dní");
-    expect(n.detail).toContain("ACME s.r.o.");
-    expect(n.detail).toMatch(/120,50/);
+    expect(text(n)).toContain("FV2026001");
+    expect(text(n)).toContain("6 dní");
+    expect(text(n, "detail")).toContain("ACME s.r.o.");
+    expect(text(n, "detail")).toMatch(/120,50/);
     expect(n.severity).toBe("warning");
   });
 
@@ -83,7 +93,7 @@ describe("buildNotifications", () => {
       ],
     });
     expect(n.severity).toBe("danger");
-    expect(n.detail).toContain("Neznámy odberateľ");
+    expect(text(n, "detail")).toContain("Neznámy odberateľ");
   });
 
   it("faktúra, ktorej splatnosť ešte nenastala, sa nehlási", () => {
@@ -314,8 +324,72 @@ describe("buildNotifications", () => {
     });
     // Slovenské formátovanie používa desatinnú čiarku; podstatné je, že sa
     // suma vypíše aj s nezmyselným kódom a nič sa nezhodí.
-    expect(n.title).toContain("12,30");
-    expect(n.title).toContain("XYZ!");
+    expect(text(n)).toContain("12,30");
+    expect(text(n)).toContain("XYZ!");
+  });
+
+  it("zvonček sa dá preložiť — číslo, dni a suma sú v params, nie v šablóne", () => {
+    const out = buildNotifications({
+      ...PRAZDNE,
+      overdueInvoices: [
+        {
+          id: "a",
+          invoice_number: "FV1",
+          customer_name: "ACME",
+          total: 10,
+          currency: "EUR",
+          due_date: "2026-08-06",
+        },
+        {
+          id: "b",
+          invoice_number: "FV2",
+          customer_name: "ACME",
+          total: 10,
+          currency: "EUR",
+          due_date: "2026-08-04",
+        },
+        {
+          id: "c",
+          invoice_number: "FV3",
+          customer_name: "ACME",
+          total: 10,
+          currency: "EUR",
+          due_date: "2026-07-01",
+        },
+      ],
+      overduePurchases: [
+        {
+          id: "p",
+          invoice_number: "D1",
+          supplier_name: null,
+          amount_total: 5,
+          currency: "EUR",
+          due_date: "2026-08-05",
+        },
+      ],
+    });
+    const nadpis = (id: string, j: "sk" | "cs" | "de") =>
+      text(
+        out.find((n) => n.to.endsWith(`/${id}`))!,
+        "title",
+        j,
+      );
+    expect(nadpis("a", "sk")).toBe("Faktúra FV1 je 1 deň po splatnosti");
+    expect(nadpis("b", "sk")).toBe("Faktúra FV2 je 3 dni po splatnosti");
+    expect(nadpis("c", "sk")).toBe("Faktúra FV3 je 37 dní po splatnosti");
+    expect(nadpis("a", "cs")).toBe("Faktura FV1 je 1 den po splatnosti");
+    expect(nadpis("b", "cs")).toBe("Faktura FV2 je 3 dny po splatnosti");
+    expect(nadpis("c", "de")).toBe("Rechnung FV3 ist seit 37 Tagen überfällig");
+    const prijata = out.find((n) => n.key === "purchase_overdue:p")!;
+    expect(text(prijata, "title", "de")).toBe("Unbezahlte Eingangsrechnung D1");
+    expect(text(prijata, "detail", "cs")).toMatch(
+      /^Neznámý dodavatel · 5,00\s€ · 2 dny po splatnosti$/,
+    );
+    // Žiadna šablóna z buildNotifications neostane bez prekladu.
+    for (const n of out)
+      for (const j of ["cs", "de"] as const) {
+        expect(text(n, "title", j)).not.toBe(text(n, "title", "sk"));
+      }
   });
 });
 
@@ -448,5 +522,33 @@ describe("notifikaciaNespracovanych", () => {
       "{n} nespracované doklady",
     );
     expect(notifikaciaNespracovanych([{ pocet: 0, najnovsi: null }, null])).toEqual([]);
+  });
+
+  it("popis má rovnaké číslo ako nadpis (jeden čaká, viac čakajú)", () => {
+    const jeden = notifikaciaNespracovanych([{ pocet: 1, najnovsi: blocek }])[0];
+    expect(jeden.detail).toBe("Čaká na kontrolu a označenie ako spracovaný.");
+    for (const pocet of [2, 5]) {
+      const n = notifikaciaNespracovanych([{ pocet, najnovsi: blocek }])[0];
+      expect(n.detail).toBe("Čakajú na kontrolu a označenie ako spracované.");
+    }
+  });
+});
+
+describe("textNotifikacie", () => {
+  it("preloží aj textové hodnoty v params (režim DPH), mená nechá tak", () => {
+    const n = {
+      title: "Nastavenie DPH firmy nesedí s registrom",
+      detail: "Podľa registra: {rezim}. Vo Faktere: {nastavene}.",
+      params: { rezim: "Neplatiteľ DPH", nastavene: "Platiteľ DPH podľa § 4" },
+    };
+    const cs = (x: string, p?: Record<string, string | number>) => preloz("cs", x, p);
+    expect(textNotifikacie(n, "detail", cs)).toContain("Neplátce DPH");
+    expect(textNotifikacie(n, "detail", cs)).toContain("Plátce DPH podle § 4");
+    const meno = {
+      title: "Neuhradená prijatá faktúra {cislo}",
+      detail: "",
+      params: { cislo: "NK1" },
+    };
+    expect(textNotifikacie(meno, "title", cs)).toBe("Neuhrazená přijatá faktura NK1");
   });
 });

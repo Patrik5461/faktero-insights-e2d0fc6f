@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import type { HelpSection } from "@/components/faktero/HelpArticle";
 import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
+import { useWhatsAppVerejne } from "@/hooks/useWhatsAppPodpora";
 
 export const Route = createFileRoute("/pomoc/podpora")({
   head: ({ match }) => ({
@@ -18,9 +19,9 @@ export const Route = createFileRoute("/pomoc/podpora")({
         property: "og:title",
         content: preloz(match.context.jazyk, "Pomoc — Pomoc a podpora — Faktero"),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/podpora" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/podpora" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/podpora" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/podpora" }],
   }),
   component: Page,
 });
@@ -163,13 +164,22 @@ const sections: HelpSection[] = [
   },
 ];
 
+/**
+ * Časť o WhatsAppe sa ukáže, až keď je integrácia zapnutá — dovtedy by manuál
+ * sľuboval tlačidlá a číslo, ktoré nikde nie sú.
+ */
+function sekciePodpory(whatsappZapnuty: boolean): HelpSection[] {
+  return whatsappZapnuty ? sections : sections.filter((s) => s.id !== "whatsapp");
+}
+
 function Page() {
+  const whatsapp = useWhatsAppVerejne();
   return (
     <PrelozenyManual
       category="Pomoc · Podpora"
       title="Pomoc a podpora"
       intro={<p>Manuály, Faktero AI a požiadavky na podporu na jednom mieste.</p>}
-      sections={sections}
+      sections={sekciePodpory(!!whatsapp)}
     />
   );
 }

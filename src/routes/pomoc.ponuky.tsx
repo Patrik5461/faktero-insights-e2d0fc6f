@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/ponuky")({
           "Cenové ponuky vo Faktere: vystavenie, PDF, odoslanie e-mailom, rezervácia tovaru a premena na objednávku alebo faktúru.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/ponuky" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/ponuky" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/ponuky" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/ponuky" }],
   }),
   component: Page,
 });

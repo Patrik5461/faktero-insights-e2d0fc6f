@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/vykazy-dph")({
           "Priznanie k DPH, kontrolný výkaz a súhrnný výkaz vo Faktere: čo treba vyplniť na dokladoch, ako sa výkazy zostavia a ako sa XML podá cez eDane.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/vykazy-dph" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/vykazy-dph" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/vykazy-dph" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/vykazy-dph" }],
   }),
   component: Page,
 });

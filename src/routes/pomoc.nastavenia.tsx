@@ -32,9 +32,9 @@ export const Route = createFileRoute("/pomoc/nastavenia")({
           "Údaje firmy, vzhľad faktúry, číslovanie a e-mailové šablóny.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/nastavenia" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/nastavenia" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/nastavenia" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/nastavenia" }],
   }),
   component: Page,
 });

@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/dph")({
           "Prehľad DPH vo Faktere: sadzby 23, 19, 5 a 0 %, daň na výstupe a vstupe, prenesenie daňovej povinnosti a podklady pre priznanie.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/dph" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/dph" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/dph" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/dph" }],
   }),
   component: Page,
 });

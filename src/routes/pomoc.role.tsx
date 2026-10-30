@@ -26,9 +26,9 @@ export const Route = createFileRoute("/pomoc/role")({
           "Kto vo firme čo smie: majiteľ, administrátor, účtovník, zamestnanec.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/role" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/role" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/role" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/role" }],
   }),
   component: Page,
 });

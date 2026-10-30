@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/banka")({
           "Pripojenie banky, sťahovanie transakcií, párovanie úhrad s faktúrami a bankové výpisy vo Faktere.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/banka" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/banka" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/banka" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/banka" }],
   }),
   component: Page,
 });

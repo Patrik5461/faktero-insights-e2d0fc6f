@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/vozovy-park")({
           "Vozový park vo Faktere: vozidlá firmy s technickým preukazom, vlastníctvom, leasingom, poistkami a upozornením na STK.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/vozovy-park" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/vozovy-park" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/vozovy-park" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/vozovy-park" }],
   }),
   component: Page,
 });

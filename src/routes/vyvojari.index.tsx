@@ -2,11 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { HubPage } from "@/components/faktero/MarketingSectionPage";
 import { vyvojari } from "@/lib/faktero/marketing-content";
 import { preloz } from "@/lib/i18n/jazyk";
+import { kanonicka } from "@/lib/faktero/kanonicka";
 
 export const Route = createFileRoute("/vyvojari/")({
   head: ({ match }) => {
     const j = match.context.jazyk;
     return {
+      links: kanonicka("/vyvojari"),
       meta: [
         { title: preloz(j, "API a pre vývojárov — Faktero") },
         { name: "description", content: preloz(j, vyvojari.hubDescription) },

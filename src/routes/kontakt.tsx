@@ -28,9 +28,9 @@ export const Route = createFileRoute("/kontakt")({
           property: "og:description",
           content: preloz(j, "Kontaktné údaje prevádzkovateľa Faktera."),
         },
-        { property: "og:url", content: "https://faktero.sk/kontakt" },
+        { property: "og:url", content: "https://www.faktero.sk/kontakt" },
       ],
-      links: [{ rel: "canonical", href: "https://faktero.sk/kontakt" }],
+      links: [{ rel: "canonical", href: "https://www.faktero.sk/kontakt" }],
     };
   },
   component: KontaktPage,

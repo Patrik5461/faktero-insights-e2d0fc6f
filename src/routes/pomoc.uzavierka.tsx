@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/uzavierka")({
           "Uzamknutie účtovného obdobia vo Faktere: čo sa zamkne, čo ostane možné a ako obdobie odomknúť.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/uzavierka" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/uzavierka" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/uzavierka" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/uzavierka" }],
   }),
   component: Page,
 });

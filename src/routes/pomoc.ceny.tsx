@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/ceny")({
           "Cenové skupiny, individuálne ceny odberateľov, množstevné ceny a časovo ohraničené cenové akcie vo Faktere.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/ceny" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/ceny" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/ceny" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/ceny" }],
   }),
   component: Page,
 });

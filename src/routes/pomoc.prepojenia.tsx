@@ -19,9 +19,9 @@ export const Route = createFileRoute("/pomoc/prepojenia")({
         property: "og:title",
         content: preloz(match.context.jazyk, "Pomoc — API a prepojenia — Faktero"),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/prepojenia" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/prepojenia" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/prepojenia" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/prepojenia" }],
   }),
   component: Page,
 });

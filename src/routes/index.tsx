@@ -76,6 +76,9 @@ import { PartneriPas } from "@/components/faktero/PartneriPas";
 import { zoznamPartnerovPublic } from "@/lib/partneri.functions";
 import { useT } from "@/lib/i18n/useT";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { kanonicka } from "@/lib/faktero/kanonicka";
+import { TELEGRAM_PODPORA_BOT, odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
+import { WhatsAppVerejnyOdkaz } from "@/components/faktero/WhatsAppOdkaz";
 
 export const Route = createFileRoute("/")({
   /*
@@ -94,6 +97,7 @@ export const Route = createFileRoute("/")({
   head: ({ match }) => {
     const j = match.context.jazyk;
     return {
+      links: kanonicka("/"),
       meta: [
         { title: preloz(j, "Faktero — Fakturácia pre moderné firmy. API a eFaktúra v jednom.") },
         {
@@ -1793,6 +1797,20 @@ function SiteFooter() {
             <a href="/kontakt" className="hover:text-foreground">
               {t("Kontakt")}
             </a>
+            {/* Úvodná stránka má vlastnú pätičku — Telegram musí byť aj tu, nielen v MarketingShell. */}
+            <a
+              href={odkazNaTelegram()}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-telegram-pata=""
+              className="hover:text-foreground"
+            >
+              Telegram @{TELEGRAM_PODPORA_BOT}
+            </a>
+            <WhatsAppVerejnyOdkaz
+              className="inline-flex items-center gap-1 hover:text-foreground"
+              ikona="h-3.5 w-3.5"
+            />
           </div>
         </div>
         <div

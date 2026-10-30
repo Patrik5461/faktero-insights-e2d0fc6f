@@ -6,6 +6,7 @@ import { getPost, postsByDate } from "@/lib/faktero/blog-content";
 import { BlogCover } from "@/components/faktero/BlogCover";
 import { preloz, type Jazyk, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { kanonicka } from "@/lib/faktero/kanonicka";
 
 export const Route = createFileRoute("/blog/$slug")({
   head: ({ match, params }) => {
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/blog/$slug")({
     const p = getPost(params.slug);
     if (!p) return { meta: [{ title: preloz(j, "Článok — Faktero") }] };
     return {
+      links: kanonicka(`/blog/${params.slug}`),
       meta: [
         { title: `${preloz(j, p.title)} — Faktero` },
         { name: "description", content: preloz(j, p.excerpt) },

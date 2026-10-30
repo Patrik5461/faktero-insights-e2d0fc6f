@@ -52,9 +52,9 @@ export const Route = createFileRoute("/pomoc/")({
           "Centrum pomoci Faktero — manuály k faktúram, skladu, cenníku, zákazkám, pokladni, DPH, banke, knihe jázd a API.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc" }],
   }),
   component: Page,
 });
