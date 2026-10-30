@@ -342,6 +342,7 @@ import { Route as ApiPublicHooksUcetZrusenieRouteImport } from './routes/api/pub
 import { Route as ApiPublicHooksVozovyParkPripomienkyRouteImport } from './routes/api/public/hooks/vozovy-park-pripomienky'
 import { Route as ApiPublicHooksWebhookOutboxRouteImport } from './routes/api/public/hooks/webhook-outbox'
 import { Route as ApiPublicHooksZamestnanciPripomienkyRouteImport } from './routes/api/public/hooks/zamestnanci-pripomienky'
+import { Route as ApiPublicHooksZdrojeLogyRouteImport } from './routes/api/public/hooks/zdroje-logy'
 import { Route as ApiPublicMailPrijemRouteImport } from './routes/api/public/mail/prijem'
 import { Route as ApiPublicMobilVerziaRouteImport } from './routes/api/public/mobil/verzia'
 import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/public/tatrabanka/callback'
@@ -2206,6 +2207,12 @@ const ApiPublicHooksZamestnanciPripomienkyRoute =
     path: '/api/public/hooks/zamestnanci-pripomienky',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksZdrojeLogyRoute =
+  ApiPublicHooksZdrojeLogyRouteImport.update({
+    id: '/api/public/hooks/zdroje-logy',
+    path: '/api/public/hooks/zdroje-logy',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicMailPrijemRoute = ApiPublicMailPrijemRouteImport.update({
   id: '/api/public/mail/prijem',
   path: '/api/public/mail/prijem',
@@ -2763,6 +2770,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
   '/api/public/hooks/webhook-outbox': typeof ApiPublicHooksWebhookOutboxRoute
   '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
+  '/api/public/hooks/zdroje-logy': typeof ApiPublicHooksZdrojeLogyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
@@ -3131,6 +3139,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
   '/api/public/hooks/webhook-outbox': typeof ApiPublicHooksWebhookOutboxRoute
   '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
+  '/api/public/hooks/zdroje-logy': typeof ApiPublicHooksZdrojeLogyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
@@ -3510,6 +3519,7 @@ export interface FileRoutesById {
   '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
   '/api/public/hooks/webhook-outbox': typeof ApiPublicHooksWebhookOutboxRoute
   '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
+  '/api/public/hooks/zdroje-logy': typeof ApiPublicHooksZdrojeLogyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
@@ -3889,6 +3899,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/vozovy-park-pripomienky'
     | '/api/public/hooks/webhook-outbox'
     | '/api/public/hooks/zamestnanci-pripomienky'
+    | '/api/public/hooks/zdroje-logy'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
     | '/api/public/tatrabanka/callback'
@@ -4257,6 +4268,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/vozovy-park-pripomienky'
     | '/api/public/hooks/webhook-outbox'
     | '/api/public/hooks/zamestnanci-pripomienky'
+    | '/api/public/hooks/zdroje-logy'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
     | '/api/public/tatrabanka/callback'
@@ -4635,6 +4647,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/vozovy-park-pripomienky'
     | '/api/public/hooks/webhook-outbox'
     | '/api/public/hooks/zamestnanci-pripomienky'
+    | '/api/public/hooks/zdroje-logy'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
     | '/api/public/tatrabanka/callback'
@@ -4841,6 +4854,7 @@ export interface RootRouteChildren {
   ApiPublicHooksVozovyParkPripomienkyRoute: typeof ApiPublicHooksVozovyParkPripomienkyRoute
   ApiPublicHooksWebhookOutboxRoute: typeof ApiPublicHooksWebhookOutboxRoute
   ApiPublicHooksZamestnanciPripomienkyRoute: typeof ApiPublicHooksZamestnanciPripomienkyRoute
+  ApiPublicHooksZdrojeLogyRoute: typeof ApiPublicHooksZdrojeLogyRoute
   ApiPublicMailPrijemRoute: typeof ApiPublicMailPrijemRoute
   ApiPublicMobilVerziaRoute: typeof ApiPublicMobilVerziaRoute
   ApiPublicTatrabankaCallbackRoute: typeof ApiPublicTatrabankaCallbackRoute
@@ -7192,6 +7206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksZamestnanciPripomienkyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/zdroje-logy': {
+      id: '/api/public/hooks/zdroje-logy'
+      path: '/api/public/hooks/zdroje-logy'
+      fullPath: '/api/public/hooks/zdroje-logy'
+      preLoaderRoute: typeof ApiPublicHooksZdrojeLogyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mail/prijem': {
       id: '/api/public/mail/prijem'
       path: '/api/public/mail/prijem'
@@ -8420,6 +8441,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksWebhookOutboxRoute: ApiPublicHooksWebhookOutboxRoute,
   ApiPublicHooksZamestnanciPripomienkyRoute:
     ApiPublicHooksZamestnanciPripomienkyRoute,
+  ApiPublicHooksZdrojeLogyRoute: ApiPublicHooksZdrojeLogyRoute,
   ApiPublicMailPrijemRoute: ApiPublicMailPrijemRoute,
   ApiPublicMobilVerziaRoute: ApiPublicMobilVerziaRoute,
   ApiPublicTatrabankaCallbackRoute: ApiPublicTatrabankaCallbackRoute,

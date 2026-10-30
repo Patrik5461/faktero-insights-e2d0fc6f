@@ -36,7 +36,6 @@ export type ManagementUdaje = {
   diskAutoscale: Hodnota<DiskAutoscale>;
   compute: Hodnota<string>;
   edgeFunkcie: Hodnota<number>;
-  edgeVolania24h: Hodnota<number>;
   poziadavky7d: Hodnota<{ auth: number; realtime: number; rest: number; storage: number }>;
 };
 
@@ -98,26 +97,19 @@ export async function nacitajManagementUdaje(): Promise<ManagementUdaje> {
       diskAutoscale: n,
       compute: n,
       edgeFunkcie: n,
-      edgeVolania24h: n,
       poziadavky7d: n,
     };
   }
   const p = `/v1/projects/${encodeURIComponent(ref)}`;
-  const koniec = new Date();
-  const zaciatok = new Date(koniec.getTime() - 24 * 3600 * 1000);
-  const sql = "select count() as pocet from logs where source = 'function_edge_logs'";
-  const logy =
-    `${p}/analytics/endpoints/logs?sql=${encodeURIComponent(sql)}` +
-    `&iso_timestamp_start=${encodeURIComponent(zaciatok.toISOString())}` +
-    `&iso_timestamp_end=${encodeURIComponent(koniec.toISOString())}`;
-
-  const [disk, util, autoscale, addons, funkcie, volania, poziadavky] = await Promise.all([
+  // Logy sa tu nedotazujú: API logov má prísny limit rýchlosti a stránka by ho
+  // míňala pri každom načítaní. Denné súčty z logov ťahá cron do admin_usage_daily
+  // (zdroje-logy.server.ts).
+  const [disk, util, autoscale, addons, funkcie, poziadavky] = await Promise.all([
     volaj(token, `${p}/config/disk`),
     volaj(token, `${p}/config/disk/util`),
     volaj(token, `${p}/config/disk/autoscale`),
     volaj(token, `${p}/billing/addons`),
     volaj(token, `${p}/functions`),
-    volaj(token, logy),
     volaj(token, `${p}/analytics/endpoints/usage.api-counts?interval=7day`),
   ]);
 
@@ -153,10 +145,6 @@ export async function nacitajManagementUdaje(): Promise<ManagementUdaje> {
       return typeof c?.variant?.name === "string" ? c.variant.name : null;
     }),
     edgeFunkcie: mapuj(funkcie, (v) => (Array.isArray(v) ? v.length : null)),
-    edgeVolania24h: mapuj(volania, (v) => {
-      if (v?.error) return null;
-      return cislo(v?.result?.[0]?.pocet);
-    }),
     poziadavky7d: mapuj(poziadavky, (v) => {
       if (v?.error || !Array.isArray(v?.result)) return null;
       const s = { auth: 0, realtime: 0, rest: 0, storage: 0 };

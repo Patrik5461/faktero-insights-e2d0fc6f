@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Database, HardDrive, Users, Globe, Zap, Radio, RefreshCw, Table2 } from "lucide-react";
+import {
+  Database,
+  HardDrive,
+  Users,
+  Globe,
+  Zap,
+  Radio,
+  RefreshCw,
+  Table2,
+  ExternalLink,
+} from "lucide-react";
 import { getSupabaseUsage } from "@/lib/faktero/admin-usage.functions";
 import {
   formatBajty,
@@ -10,6 +20,11 @@ import {
   type LimitPlanu,
   type Ton,
 } from "@/lib/faktero/admin-zdroje";
+import {
+  ODKAZ_SUPABASE_USAGE,
+  podielDopocitaneho,
+  zobrazitEdgeFunkcie,
+} from "@/lib/faktero/zdroje-logy";
 import { useT } from "@/lib/i18n/useT";
 
 type Usage = Awaited<ReturnType<typeof getSupabaseUsage>>;
@@ -128,6 +143,25 @@ function Metrika({
   );
 }
 
+/** Odkaz na presné čísla v dashboarde Supabase (karty s odhadom z logov). */
+function OdkazSupabase() {
+  const { t } = useT();
+  return (
+    <a
+      href={ODKAZ_SUPABASE_USAGE}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-primary hover:underline"
+    >
+      {t("Presné číslo v Supabase")}
+      <ExternalLink className="h-3 w-3" />
+    </a>
+  );
+}
+
+const datum = (d: string) =>
+  new Date(`${d}T00:00:00Z`).toLocaleDateString("sk-SK", { timeZone: "UTC" });
+
 function hodnota<T>(h: Hodnota<T>): T | null {
   return h.dostupne ? h.hodnota : null;
 }
@@ -195,6 +229,21 @@ export function AdminVyuzitieZdrojov() {
     : 0;
 
   const overene = usage?.limits[0]?.overene;
+
+  // Denné odhady z logov (admin_usage_daily) za aktuálny kalendárny mesiac.
+  const logy = usage?.logy && usage.logy.dni > 0 ? usage.logy : null;
+  const dovodLogy = usage?.logy ? t("zatiaľ žiadny deň z logov") : t("tabuľka odhadov nedostupná");
+  const pocetFunkcii = api ? hodnota(api.edgeFunkcie) : null;
+  const ukazEdge = zobrazitEdgeFunkcie(pocetFunkcii, logy?.edge_invocations ?? null);
+  const dopocitane = logy ? podielDopocitaneho(logy) : null;
+  const obdobie = logy ? (
+    <div>
+      {t("Odhad z logov")}: {datum(logy.od)} – {logy.do ? datum(logy.do) : "—"} (
+      {t("kalendárny mesiac, dní s údajmi: {n}", { n: logy.dni })})
+    </div>
+  ) : (
+    <div>{t("Odhad z logov")}</div>
+  );
 
   return (
     <div className="mt-8 space-y-4">
@@ -328,46 +377,61 @@ export function AdminVyuzitieZdrojov() {
             <Metrika
               icon={Globe}
               nazov={t("Egress (nekešovaný)")}
-              vyuzite={null}
+              vyuzite={logy ? logy.egress_bytes : null}
               limit={limit("egress")}
               kurz={kurz}
-              dovod={t("Management API ho neposkytuje")}
+              dovod={dovodLogy}
             >
-              <div>
-                {t("Kešovaný egress")}: {t("nedostupné")}
-              </div>
+              {obdobie}
+              {logy && (
+                <div>
+                  {t(
+                    "Súčet veľkosti odpovedí API brány vrátane kešovaných; {p} % odpovedí veľkosť neuvádza, tie sú dopočítané priemerom služby.",
+                    {
+                      p: cislo(
+                        logy.responses_total > 0
+                          ? (logy.responses_without_length / logy.responses_total) * 100
+                          : 0,
+                      ),
+                    },
+                  )}
+                  {dopocitane != null &&
+                    ` ${t("Dopočítaná časť: {p} % objemu.", { p: cislo(dopocitane, 1) })}`}
+                </div>
+              )}
+              <OdkazSupabase />
             </Metrika>
 
-            <Metrika
-              icon={Zap}
-              nazov={t("Volania edge funkcií")}
-              vyuzite={null}
-              limit={limit("edge_invocations")}
-              kurz={kurz}
-              dovod={t("mesačný súčet API neposkytuje")}
-            >
-              <div>
-                {t("Za posledných 24 h")}:{" "}
-                {api.edgeVolania24h.dostupne
-                  ? cislo(api.edgeVolania24h.hodnota)
-                  : `${t("nedostupné")} (${prevod(api.edgeVolania24h)})`}
-              </div>
-              <div>
-                {t("Počet funkcií")}:{" "}
-                {api.edgeFunkcie.dostupne
-                  ? api.edgeFunkcie.hodnota
-                  : `${t("nedostupné")} (${prevod(api.edgeFunkcie)})`}
-              </div>
-            </Metrika>
+            {ukazEdge && (
+              <Metrika
+                icon={Zap}
+                nazov={t("Volania edge funkcií")}
+                vyuzite={logy ? logy.edge_invocations : null}
+                limit={limit("edge_invocations")}
+                kurz={kurz}
+                dovod={dovodLogy}
+              >
+                {obdobie}
+                <div>
+                  {t("Počet funkcií")}:{" "}
+                  {api.edgeFunkcie.dostupne
+                    ? api.edgeFunkcie.hodnota
+                    : `${t("nedostupné")} (${prevod(api.edgeFunkcie)})`}
+                </div>
+                <OdkazSupabase />
+              </Metrika>
+            )}
 
             <Metrika
               icon={Radio}
               nazov={t("Realtime – správy")}
-              vyuzite={null}
+              vyuzite={logy ? logy.realtime_messages : null}
               limit={limit("realtime_messages")}
               kurz={kurz}
-              dovod={t("Management API ho neposkytuje")}
+              dovod={dovodLogy}
             >
+              {obdobie}
+              {logy && <div>{t("Počet záznamov v logu Realtime, nie presný počet správ.")}</div>}
               <div>
                 {t("Súčasné pripojenia (špička)")}: {t("nedostupné")}
               </div>
@@ -377,6 +441,7 @@ export function AdminVyuzitieZdrojov() {
                   ? cislo(api.poziadavky7d.hodnota.realtime)
                   : `${t("nedostupné")} (${prevod(api.poziadavky7d)})`}
               </div>
+              <OdkazSupabase />
             </Metrika>
           </div>
 
