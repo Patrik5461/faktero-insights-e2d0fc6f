@@ -89,8 +89,9 @@ const html = (v) =>
     (z) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[z],
   );
 
-async function mail(predmet, riadky, odkaz) {
+async function mail(predmet, riadkyPovodne, odkaz) {
   if (!env.RESEND_API_KEY) return;
+  const riadky = riadkyPovodne.map((r) => bezTajomstiev(r));
   const komu = env.FEEDBACK_TO_EMAIL || "servis@faktero.sk";
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -151,7 +152,7 @@ async function telegram(text, { poziadavkaId = null, autoOpravaId = null, tlacid
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           chat_id: c.chat_id,
-          text: String(text).slice(0, 4000),
+          text: bezTajomstiev(text).slice(0, 4000),
           link_preview_options: { is_disabled: true },
           ...(rad.length ? { reply_markup: { inline_keyboard: [rad] } } : {}),
         }),
@@ -176,6 +177,36 @@ async function telegram(text, { poziadavkaId = null, autoOpravaId = null, tlacid
 }
 
 /* ------------------------------------------------------------ tajomstvá */
+
+/*
+  Text do Telegramu a mailu ide cez túto kontrolu: chyby z gitu či testov
+  môžu niesť hodnotu z prostredia alebo prihlasovacie údaje v adrese
+  (https://token@github.com/…). Telegram nie je miesto, kam smú odísť.
+*/
+let skryt = null;
+function bezTajomstiev(text) {
+  /* Adresy webu, e-maily a cesty z prostredia tajomstvom nie sú — ich
+     skrytie by len pokazilo odkaz do administrácie. */
+  skryt ??= tajomstva().filter(
+    (h) => !/^(https?:\/\/|\/)\S*$/.test(h) && !/^[^\s@:/]+@[^\s@]+\.[a-z]{2,}$/i.test(h),
+  );
+  let t = String(text ?? "");
+  for (const h of skryt) t = t.split(h).join("[skryté]");
+  return t
+    .replace(/(https?:\/\/)[^\s/@]+@/gi, "$1[skryté]@")
+    .replace(
+      /\b(gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)/g,
+      "[skryté]",
+    );
+}
+
+/** Krátky popis chyby pre Telegram — prvý riadok, bez tajomstiev; celé znenie je v administrácii. */
+function kratkaChyba(e) {
+  const prvy = String(e?.message ?? e ?? "")
+    .split("\n")
+    .find((r) => r.trim());
+  return bezTajomstiev(prvy ?? "neznáma chyba").slice(0, 160);
+}
 
 /** Hodnoty z ecosystem a secrets.env — žiadna z nich sa nesmie objaviť v rozdiele. */
 function tajomstva() {
@@ -605,7 +636,7 @@ async function navrhniOpravu(o) {
       koniec_at: new Date().toISOString(),
     });
     await telegram(
-      `Automatická oprava P-${poz.cislo} zlyhala: ${String(e?.message ?? e).slice(0, 500)}\n\n${odkaz}`,
+      `Automatická oprava P-${poz.cislo} zlyhala: ${kratkaChyba(e)}\nPodrobnosti sú v administrácii.\n\n${odkaz}`,
       { poziadavkaId: poz.id, autoOpravaId: o.id },
     );
   }
@@ -678,7 +709,7 @@ async function zlucSchvalenu(o) {
     );
     // Návrh je znova v stave „navrh“ — dá sa schváliť ešte raz.
     await telegram(
-      `P-${poz?.cislo}: schválenú opravu sa nepodarilo zlúčiť.\n${String(e?.message ?? e).slice(0, 1500)}\n\n${odkaz}`,
+      `P-${poz?.cislo}: schválenú opravu sa nepodarilo zlúčiť: ${kratkaChyba(e)}\nPodrobnosti sú v administrácii.\n\n${odkaz}`,
       { poziadavkaId: o.poziadavka_id, autoOpravaId: o.id, tlacidla: true },
     );
   } finally {

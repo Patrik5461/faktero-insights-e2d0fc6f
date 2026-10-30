@@ -77,6 +77,7 @@ import { ZbaleneK } from "@/components/faktero/DetailDokladuKompaktny";
 import { rezimDphPrijatej, stavZauctovania } from "@/lib/faktero/udaje-pre-uctovnika";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { useDizajn } from "@/hooks/useDizajn";
+import { AutomatickyZaradena } from "@/components/faktero/AutomatickyZaradena";
 import { PrijataDetailKompaktna } from "@/components/faktero/PrijataDetailKompaktna";
 import { KartaUhrady, UhradyOkno, useUhradyPrijatej } from "@/components/faktero/UhradyPrijatej";
 
@@ -620,6 +621,7 @@ function PurchaseInvoiceDetail() {
                   </div>
                 ) : null}
                 {samo && <SamofakturaPanel row={row} onZmena={load} />}
+                <AutomatickyZaradena id={row.id} naKontroluAt={(row as any).na_kontrolu_at} />
                 <UpozornenieKontrolyEfaktury invoiceId={row.id} />
                 <RegistrPlatcuDph
                   companyId={row.company_id}
@@ -1114,7 +1116,8 @@ function PurchaseInvoiceDetail() {
         menuActions={menu}
       />
       <PageBody>
-        <div className="mb-4 empty:hidden">
+        <div className="mb-4 space-y-3 empty:hidden">
+          <AutomatickyZaradena id={row.id} naKontroluAt={(row as any).na_kontrolu_at} />
           <UpozornenieKontrolyEfaktury invoiceId={row.id} />
         </div>
         {!navrh && !pdfRozlozenie && <div className="mb-4">{stitkyAStav}</div>}

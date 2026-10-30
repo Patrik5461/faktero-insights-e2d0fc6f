@@ -83,6 +83,22 @@ describe("pripravPlatby", () => {
     ]);
   });
 
+  it("automaticky zaradenú eFaktúru pustí až po kontrole", () => {
+    const { platby, preskocene } = pripravPlatby([
+      f({ invoice_number: "EF-1", na_kontrolu: true }),
+      f({ invoice_number: "EF-2", na_kontrolu: false }),
+    ]);
+    expect(platby.map((p) => p.cisloFaktury)).toEqual(["EF-2"]);
+    expect(preskocene).toEqual([
+      {
+        id: expect.any(String),
+        cisloFaktury: "EF-1",
+        dovod:
+          "zaradila sa automaticky z eFaktúry — najprv ju otvorte a skontrolujte dodávateľa a IBAN",
+      },
+    ]);
+  });
+
   it("bez variabilného symbolu vezme číslo faktúry, len keď je celé z číslic", () => {
     expect(
       pripravPlatby([f({ variable_symbol: null, invoice_number: "2026 0042" })]).platby[0].vs,
