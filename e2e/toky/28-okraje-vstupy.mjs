@@ -57,7 +57,8 @@ function polozky(znacka) {
 }
 
 export default {
-  popis: "veľké a zlomyseľné vstupy: 200 položiek, 1 mil. €, XSS, CSV vzorce, RTL → web, PDF, XML, CSV",
+  popis:
+    "veľké a zlomyseľné vstupy: 200 položiek, 1 mil. €, XSS, CSV vzorce, RTL → web, PDF, XML, CSV",
   limit: 240000,
   async spusti(t) {
     const page = t.page;
@@ -141,7 +142,9 @@ export default {
     });
 
     await t.krok("PDF: viac strán, suma 1 000 000,00, posledná položka", async () => {
-      const tlacidlo = page.getByRole("button", { name: /^(Stiahnuť PDF|Vygenerovať PDF)$/ }).first();
+      const tlacidlo = page
+        .getByRole("button", { name: /^(Stiahnuť PDF|Vygenerovať PDF)$/ })
+        .first();
       await tlacidlo.waitFor();
       const subor = await t.stiahni(() => tlacidlo.click(), "faktura-200");
       const strany = await textPdf(subor);
@@ -155,7 +158,9 @@ export default {
 
     const zaciatok = new Date().toISOString();
     t.uprac("história exportov", () =>
-      t.rest.delete(`export_jobs?company_id=eq.${firma}&created_at=gte.${zaciatok}&invoice_count=eq.1`),
+      t.rest.delete(
+        `export_jobs?company_id=eq.${firma}&created_at=gte.${zaciatok}&invoice_count=eq.1`,
+      ),
     );
 
     /** Účtovné exporty → jedna faktúra, bez označenia ako odovzdaná. */
@@ -201,7 +206,10 @@ export default {
         .split(/\r?\n/)
         .flatMap((r) => r.split(";"))
         .filter((b) => /^"?[=+@]/.test(b.trim()) || /^"?-[^\d]/.test(b.trim()));
-      t.over(!zle.length, `CSV má bunky, ktoré Excel spustí ako vzorec: ${zle.slice(0, 3).join(" | ")}`);
+      t.over(
+        !zle.length,
+        `CSV má bunky, ktoré Excel spustí ako vzorec: ${zle.slice(0, 3).join(" | ")}`,
+      );
       t.over(text.includes(fa.invoice_number), "v CSV chýba faktúra");
     });
 
