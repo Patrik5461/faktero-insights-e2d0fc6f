@@ -197,3 +197,43 @@ export function typPrijatejFaktury(
     Boolean(krajina && !(DOMACE[krajinaFirmy] ?? [krajinaFirmy]).includes(krajina));
   return druh[zahranicna ? 1 : 0];
 }
+
+/**
+ * Súčty zoznamu prijatých faktúr: koľko ešte treba zaplatiť a koľko faktúr je
+ * po splatnosti. Koncept ani storno nie sú dlh; čiastočná úhrada a zaplatená
+ * záloha (na doklade aj z väzby) sa odpočítajú — predtým bola v „Nezaplatené“
+ * celá suma faktúry aj s konceptmi.
+ */
+export function nezaplateneZoznamu(
+  riadky: {
+    id: string;
+    status?: string | null;
+    amount_total?: number | string | null;
+    advance_amount?: number | string | null;
+    advance_invoice_id?: string | null;
+    due_date?: string | null;
+  }[],
+  uhradene: Record<string, number>,
+  zaplateneZalohy: Record<string, number>,
+  dnes: string,
+): { nezaplatene: number; poSplatnosti: number } {
+  let nezaplatene = 0;
+  let poSplatnosti = 0;
+  for (const r of riadky) {
+    if (["paid", "cancelled", "draft"].includes(String(r.status))) continue;
+    const s = stavUhradyPrijatej({
+      amount_total: r.amount_total,
+      status: r.status,
+      uhrady: [{ amount: uhradene[r.id] ?? 0 } as UhradaPrijatej],
+      zaloha: zalohaPrijatej(
+        r.advance_amount,
+        r.advance_invoice_id ? zaplateneZalohy[r.advance_invoice_id] : 0,
+      ),
+    });
+    if (s.zostava < 0.005) continue;
+    // Dobropis (záporná suma) zmenšuje dlh voči dodávateľovi.
+    nezaplatene += Number(r.amount_total ?? 0) < 0 ? -s.zostava : s.zostava;
+    if (r.due_date && r.due_date < dnes) poSplatnosti++;
+  }
+  return { nezaplatene: r2(nezaplatene), poSplatnosti };
+}

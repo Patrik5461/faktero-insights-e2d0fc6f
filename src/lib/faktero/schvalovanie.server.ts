@@ -114,13 +114,31 @@ export async function zabezpecSchvalovanie(
   const n = await nastavenieFirmy(admin, companyId);
   if (!n.zapnute || !n.agendy.includes(agenda)) return;
   const t = TABULKY[agenda];
-  const [{ data: doklady }, { data: existujuce }, { data: cesty }] = await Promise.all([
-    admin
-      .from(t.tabulka)
-      .select(t.podmienky)
-      .eq("company_id", companyId)
-      .in("id", ids),
-    admin.from("schvalovanie").select("doklad_id").eq("agenda", agenda).in("doklad_id", ids),
+  /*
+    Po dávkach id: „Odovzdať účtovníkovi“ pri 400+ bločkoch posiela stovky id
+    a jeden `in(…)` brána neprepustí — chyba sa zahodila a doklady sa ticho
+    vynechali z exportu, akoby čakali na schválenie.
+  */
+  const { riadkyPreIds } = await import("./strankovanie");
+  const [doklady, existujuce, { data: cesty }] = await Promise.all([
+    riadkyPreIds<any>(ids, (kus, od, po) =>
+      admin
+        .from(t.tabulka)
+        .select(t.podmienky)
+        .eq("company_id", companyId)
+        .in("id", kus)
+        .order("id")
+        .range(od, po),
+    ),
+    riadkyPreIds<any>(ids, (kus, od, po) =>
+      admin
+        .from("schvalovanie")
+        .select("doklad_id")
+        .eq("agenda", agenda)
+        .in("doklad_id", kus)
+        .order("doklad_id")
+        .range(od, po),
+    ),
     admin.from("schvalovacie_cesty").select("*").eq("company_id", companyId),
   ]);
   const uz = new Set((existujuce ?? []).map((r: any) => r.doklad_id));
@@ -187,11 +205,17 @@ export async function schvaleneIds(
   const n = await nastavenieFirmy(supabase, companyId);
   if (!n.zapnute || !n.agendy.includes(agenda)) return vsetky;
   const ids = doklady.map((d) => String(d.id));
-  const { data } = await supabase
-    .from("schvalovanie")
-    .select("doklad_id, stav")
-    .eq("agenda", agenda)
-    .in("doklad_id", ids);
+  // Po dávkach — pri stovkách id by `in(…)` brána odmietla a nič by neprešlo.
+  const { riadkyPreIds } = await import("./strankovanie");
+  const data = await riadkyPreIds<any>(ids, (kus, od, po) =>
+    supabase
+      .from("schvalovanie")
+      .select("doklad_id, stav")
+      .eq("agenda", agenda)
+      .in("doklad_id", kus)
+      .order("doklad_id")
+      .range(od, po),
+  );
   const stav = new Map((data ?? []).map((r: any) => [String(r.doklad_id), String(r.stav)]));
   return new Set(
     doklady

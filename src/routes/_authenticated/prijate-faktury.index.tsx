@@ -62,7 +62,7 @@ import { suhrnZPoloziek } from "@/lib/faktero/suhrn-dph";
 import { polozkaPrijatej } from "@/lib/faktero/suhrn-vyberu";
 import { ZAPLATENE_NA_MIESTE } from "@/lib/faktero/hromadny-prikaz";
 import { NavrhyAiOkno } from "@/components/faktero/NavrhyAiOkno";
-import { jeCiastocneUhradena, sumyUhradPodlaFaktury } from "@/lib/faktero/uhrady-prijatej";
+import { jeCiastocneUhradena, nezaplateneZoznamu, sumyUhradPodlaFaktury } from "@/lib/faktero/uhrady-prijatej";
 import { riadkyPreIds, vsetkyRiadkySubezne } from "@/lib/faktero/strankovanie";
 import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
@@ -170,6 +170,8 @@ function PurchaseInvoicesPage() {
   const [rows, setRows] = useState<any[]>([]);
   // Súčet úhrad (aj čiastočných) po faktúrach — pre stav „Čiastočne uhradená“.
   const [uhradene, setUhradene] = useState<Record<string, number>>({});
+  /** Zaplatené zálohové faktúry, ktoré faktúry v zozname zúčtovávajú (id → suma). */
+  const [zaplateneZalohy, setZaplateneZalohy] = useState<Record<string, number>>({});
   // Tá istá faktúra v zozname dvakrát (prišla mailom znova) — označí sa pri čísle.
   const duplicity = useMemo(() => duplicityVZozname(rows), [rows]);
   const sch = useStavSchvalovania(
@@ -711,7 +713,33 @@ function PurchaseInvoicesPage() {
     } catch {
       sumy = {};
     }
+    // Zaplatené zálohové faktúry z väzby — „Nezaplatené“ ich odpočíta ako detail.
+    const zalohoveIds = [
+      ...new Set(
+        (nacitane ?? [])
+          .filter((r: any) => naUhrady.includes(r.id) && r.advance_invoice_id)
+          .map((r: any) => String(r.advance_invoice_id)),
+      ),
+    ];
+    let zalohy: Record<string, number> = {};
+    try {
+      if (zalohoveIds.length)
+        for (const z of await riadkyPreIds<any>(zalohoveIds, (kus, od, po) =>
+          supabase
+            .from("purchase_invoices")
+            .select("id, amount_total")
+            .eq("company_id", cid)
+            .eq("status", "paid")
+            .in("id", kus)
+            .order("id")
+            .range(od, po),
+        ))
+          zalohy[String(z.id)] = Number(z.amount_total ?? 0);
+    } catch {
+      zalohy = {};
+    }
     if (cislo !== poslednyDotaz.current) return;
+    setZaplateneZalohy(zalohy);
     const data =
       status === CIASTOCNE
         ? (nacitane ?? []).filter((r: any) => jeCiastocneUhradena(r, sumy[r.id]))
@@ -753,19 +781,12 @@ function PurchaseInvoicesPage() {
   }, []);
 
   const totals = useMemo(() => {
-    let total = 0,
-      unpaid = 0,
-      overdueCount = 0;
-    const today = new Date().toISOString().slice(0, 10);
-    rows.forEach((r) => {
-      total += Number(r.amount_total ?? 0);
-      if (r.status !== "paid" && r.status !== "cancelled") {
-        unpaid += Number(r.amount_total ?? 0);
-        if (r.due_date < today) overdueCount++;
-      }
-    });
-    return { total, unpaid, overdueCount, count: rows.length };
-  }, [rows]);
+    const total = rows.reduce((s, r) => s + Number(r.amount_total ?? 0), 0);
+    const today = new Date().toLocaleDateString("sv-SE");
+    // Koncept a storno nie sú dlh; čiastočná úhrada a zaplatená záloha sa odpočítajú.
+    const { nezaplatene, poSplatnosti } = nezaplateneZoznamu(rows, uhradene, zaplateneZalohy, today);
+    return { total, unpaid: nezaplatene, overdueCount: poSplatnosti, count: rows.length };
+  }, [rows, uhradene, zaplateneZalohy]);
 
   /** Excel s práve vyfiltrovanými a zoradenými faktúrami (aj s položkami). */
   async function stiahniExcelPrijatych() {
@@ -1558,6 +1579,16 @@ function PurchaseInvoicesPage() {
               zapocitatelna(r) &&
               (!sch.zapnute || !sch.stavy[r.id] || sch.stavy[r.id].stav === "schvaleny"),
           )}
+          // Čo vo výbere bolo a do príkazu nejde, musí okno povedať — nie vynechať potichu.
+          vynechane={rows
+            .filter((r) => selected.has(r.id))
+            .flatMap((r) =>
+              !zapocitatelna(r)
+                ? [{ id: r.id, cisloFaktury: r.invoice_number || "bez čísla", dovod: "samofaktúra ešte nie je odsúhlasená" }]
+                : sch.zapnute && sch.stavy[r.id] && sch.stavy[r.id].stav !== "schvaleny"
+                  ? [{ id: r.id, cisloFaktury: r.invoice_number || "bez čísla", dovod: "čaká na schválenie" }]
+                  : [],
+            )}
           onClose={() => setPrikaz(false)}
         />
       )}

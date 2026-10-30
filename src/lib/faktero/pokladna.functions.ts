@@ -52,6 +52,12 @@ export const getCashBook = createServerFn({ method: "POST" })
           .eq("payment_method", "hotovost")
           // Starý doklad z importu, ktorý sa do pokladne vedome nezapočítal.
           .eq("mimo_pokladne", false)
+          /*
+            Bloček z vyúčtovania výdavkov zaplatil zamestnanec (zo zálohy alebo
+            z vlastného) — firemná pokladňa sa ním nemení. Do Pohody ide ako
+            interný doklad, nie pokladničný (export.server), a tu to musí sedieť.
+          */
+          .is("vyuctovanie_id", null)
           .order("id")
           .range(zac, kon),
       ),
