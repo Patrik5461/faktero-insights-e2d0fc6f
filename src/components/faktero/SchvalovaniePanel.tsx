@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, Undo2, XCircle } from "lucide-react";
@@ -74,6 +75,8 @@ export function SchvalovaniePanel({
       });
       if (!r.hotovo) toast.error(t("Na toto nemáte oprávnenie."));
       else toast.success(t("Uložené"));
+      // Moje úlohy v menu počítajú doklady čakajúce na schválenie.
+      if (r.hotovo) obnovPoctyMenu();
       setPoznamka("");
       await obnov();
       onZmena?.();
