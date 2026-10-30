@@ -4,6 +4,7 @@ import {
   chybaFotkyZAppky,
   coChybaBlocku,
   jeBlocekDoBlockov,
+  jeQrPokladnice,
   kamUlozitVydavok,
 } from "./blocek-z-appky";
 
@@ -108,5 +109,17 @@ describe("coChybaBlocku", () => {
 
   it("fotka aj úhrada — dá sa uložiť", () => {
     expect(coChybaBlocku({ foto: "data:image/jpeg;base64,AA", uhrada: "hotovost" })).toBeNull();
+  });
+});
+
+describe("jeQrPokladnice", () => {
+  it("bloček z Finančnej správy alebo z kódu pokladnice áno", () => {
+    expect(jeQrPokladnice({ zdroj: "ekasa" })).toBe(true);
+    expect(jeQrPokladnice({ zdroj: "qr" })).toBe(true);
+  });
+  it("prečítaný len z fotky alebo nič — nie (napr. PAY by square na faktúre)", () => {
+    expect(jeQrPokladnice({ zdroj: "foto" })).toBe(false);
+    expect(jeQrPokladnice({ zdroj: "nic" })).toBe(false);
+    expect(jeQrPokladnice(null)).toBe(false);
   });
 });

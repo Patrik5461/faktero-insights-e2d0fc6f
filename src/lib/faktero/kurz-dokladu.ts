@@ -85,3 +85,21 @@ export function stlpceKurzu(
     };
   return { exchange_rate: k.kurz, exchange_rate_date: k.den, exchange_rate_source: k.zdroj };
 }
+
+/**
+ * Zmenila úprava bločku menu alebo deň nákupu? Vtedy pôvodný kurz neplatí —
+ * bloček prepísaný z EUR na CZK by inak ostal bez kurzu a s inou menou či
+ * dňom by niesol kurz iného dňa. Kurz zadaný v tej istej úprave má prednosť.
+ */
+export function kurzTrebaPrepocitat(povodny: Riadok | null | undefined, patch: Riadok): boolean {
+  if (!povodny || !patch) return false;
+  if ("exchange_rate" in patch) return false;
+  const mena = (x: unknown) =>
+    String(x ?? "")
+      .trim()
+      .toUpperCase();
+  const den = (x: unknown) => String(x ?? "").slice(0, 10);
+  const zmenaMeny = "currency" in patch && mena(patch.currency) !== mena(povodny.currency);
+  const zmenaDna = "issue_date" in patch && den(patch.issue_date) !== den(povodny.issue_date);
+  return zmenaMeny || zmenaDna;
+}
