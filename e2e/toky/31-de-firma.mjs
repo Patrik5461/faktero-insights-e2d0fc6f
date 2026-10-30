@@ -53,7 +53,7 @@ function prilohaPdf(cesta) {
 }
 
 async function zmazFirmu(t, page, f) {
-  await t.go("/firmy");
+  await t.go("/firmy", page);
   const riadok = page.locator("tr", { hasText: f.name });
   await riadok.getByRole("button", { name: /Löschen/ }).click();
   const dd = page.getByRole("dialog");
@@ -98,7 +98,15 @@ async function zalozFirmu(t, page, nazov) {
   ]);
   const f = (await t.rest.get(`companies?name=eq.${encodeURIComponent(nazov)}&select=*`)).data?.[0];
   t.over(f, "firma sa nezaložila");
-  t.uprac("firma", () => zmazFirmu(t, page, f));
+  t.uprac("firma", async () => {
+    // Keď stránka toku spadla, upratuje sa v novej (aj tá musí byť po nemecky).
+    let p = page;
+    if (p.isClosed()) {
+      p = await t.novaStranka();
+      await p.context().addCookies([{ name: "faktero_jazyk", value: "de", url: t.base }]);
+    }
+    await zmazFirmu(t, p, f);
+  });
   return f;
 }
 
@@ -273,6 +281,10 @@ export default {
           ["Buch", 3, 10, 7],
         ],
       });
+      poOprave(
+        !t.hlasky.some((h) => /Firmen-ID|IČO/.test(h)),
+        "nemecká firma dostala výzvu doplniť IČO",
+      );
       blizko(x.subtotal, 230, "základ");
       blizko(x.vat_total, 40.1, "USt.");
       blizko(x.total, 270.1, "spolu");
@@ -496,10 +508,13 @@ export default {
         .locator("tr", { hasText: fa.usd.invoice_number })
         .first()
         .waitFor({ timeout: 20000 });
-      await page
-        .getByRole("checkbox", { name: "Alle auswählen" })
-        .first()
-        .check({ timeout: 20000 });
+      // Zoznam sa po načítaní programu načíta ešte raz a výber zahodí — preto znova, kým neostane.
+      await t.cakajNa("výber dokladov na export", async () => {
+        const vsetko = page.getByRole("checkbox", { name: "Alle auswählen" }).first();
+        await vsetko.check({ timeout: 5000 }).catch(() => {});
+        await page.waitForTimeout(700);
+        return vsetko.isChecked().catch(() => false);
+      });
       const oz = page.getByRole("checkbox", { name: /Als übergeben markieren/ }).first();
       if (await oz.isChecked().catch(() => false)) await oz.uncheck();
       const s = await t.stiahni(

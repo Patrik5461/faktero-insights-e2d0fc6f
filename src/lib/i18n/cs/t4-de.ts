@@ -20,4 +20,5 @@ export default {
   "Doplňte dátum dodania (Leistungsdatum) — na faktúre je povinný (§ 14 ods. 4 č. 6 UStG) a určuje aj obdobie UStVA.":
     "Doplňte datum plnění (Leistungsdatum) — na faktuře je povinné (§ 14 odst. 4 č. 6 UStG) a určuje i období UStVA.",
   "Predkontácia (účet DATEV)": "Předkontace (účet DATEV)",
+  "Steuernummer alebo USt-IdNr.": "Steuernummer nebo USt-IdNr.",
 };
