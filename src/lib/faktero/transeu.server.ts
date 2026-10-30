@@ -518,6 +518,7 @@ export async function vystavFakturu(
       .select("id, invoice_number")
       .eq("company_id", companyId)
       .eq("external_id", externe)
+      .is("deleted_at", null)
       .maybeSingle();
     if (f) return { invoice_id: f.id, invoice_number: f.invoice_number, nova: false };
     throw new Error("Objednávka je už celá vyfakturovaná.");

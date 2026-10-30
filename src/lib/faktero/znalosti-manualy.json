@@ -1150,6 +1150,10 @@
      "text": "<>\n-\nWooCommerce — doplnok pre WordPress vystaví faktúru k objednávke a\npošle ju zákazníkovi.\n-\nShoptet — objednávky sa prenesú do Faktera a vyfakturujú.\n-\nZásielkovňa — zásielka k faktúre jedným klikom, sledovanie stavu.\n-\nOstatné e-shopy a pokladne sa napoja cez API (/docs/api).\nPodrobne v manuáli E-shop na WooCommerce (/pomoc/woocommerce)."
     },
     {
+     "nadpis": "Trans.eu pre dopravcov",
+     "text": "<>\nDopravca, ktorý berie prepravy z burzy Trans.eu, ich vo Fakteri nemusí prepisovať. V\nNastavenia → Trans.eu pripojíte účet (Trans.eu vás požiada o povolenie;\nheslo Faktero nevidí) a tlačidlom Stiahnuť z Trans.eu načítate prijaté\nprepravné objednávky — zákazníka, trasu, termíny nakládky a vykládky, cenu a menu. Nové\nobjednávky sa môžu sťahovať aj samy každú hodinu.\n-\nZaložiť objednávku — z prepravy vznikne prijatá objednávka. Zákazníka\nFaktero nájde v adresári podľa IČ DPH, inak ho založí aj s adresou z Trans.eu.\n-\nVystaviť faktúru — faktúra jedným klikom. Režim DPH sa navrhne podľa\nzákazníka: firma s IČ DPH iného štátu EÚ dostane faktúru bez DPH s prenesením daňovej\npovinnosti (služba, § 15 ods. 1), zákazník mimo EÚ tiež bez DPH, tuzemský so základnou\nsadzbou. Ak chcete faktúru pred vystavením upraviť, otvorte ju vo formulári.\n-\nPoslať faktúru do Trans.eu — PDF faktúry sa priloží k objednávke a\nzákazník ho uvidí priamo v Trans.eu.\nÚhradu faktúry Trans.eu od dopravcu neprijíma — sledujete ju vo Fakteri ako pri ostatných\nfaktúrach (párovanie s bankou). Cena za kilometer sa prepočíta podľa vzdialenosti, ktorú\nTrans.eu k objednávke uvádza."
+    },
+    {
      "nadpis": "Kniha jázd a vozidlá",
      "text": "<>\n-\nCommander — jazdy z GPS jednotiek vozidiel.\n-\nTesla — jazdy priamo z auta.\n-\nAplikácia Kniha jázd — jazdu rozpozná telefón sám, adresy a vodiča\ndoplní Faktero.\nPodrobne v manuáloch Kniha jázd (/pomoc/jazdy) a\nVozový park (/pomoc/vozovy-park)."
     },
