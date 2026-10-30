@@ -50,7 +50,7 @@ describe("prepočet", () => {
     const t = textPrepoctu("CZK", 25.4, "2026-09-09", 40.16);
     expect(t).toContain("40,16 EUR");
     expect(t).toContain("9. 9. 2026");
-    expect(t).toContain("1 EUR = 25.4 CZK");
+    expect(t).toContain("1 EUR = 25,4 CZK");
   });
 });
 

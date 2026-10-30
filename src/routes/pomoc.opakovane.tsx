@@ -48,6 +48,14 @@ const sections: HelpSection[] = [
           sa deň drží tak, aby dával zmysel: šablóna nastavená na 31. sa vo februári vystaví
           posledný februárový deň, nie začiatkom marca.
         </p>
+        <p>
+          Obdobie v texte sa posúva samo. Do textu nad položkami, názvu či popisu položky a poznámky
+          napíšte značku a pri vystavení sa doplní podľa dátumu vystavenia:{" "}
+          <strong>[MESIAC]</strong> (október), <strong>[ROK]</strong> (2026),{" "}
+          <strong>[MESIAC_ROK]</strong> (október 2026), <strong>[MINULY_MESIAC]</strong> (september
+          2026) a <strong>[BUDUCI_MESIAC]</strong> (november 2026). Napríklad „Paušál za
+          [MINULY_MESIAC]“ dá v novembri „Paušál za október 2026“.
+        </p>
       </>
     ),
   },
@@ -60,7 +68,10 @@ const sections: HelpSection[] = [
           Faktero kontroluje šablóny každý deň. Faktúra dostane riadne poradové číslo a správa sa
           ako každá iná — dá sa upraviť, odoslať aj stornovať.
         </p>
-        <p>Ak má šablóna zapnuté odosielanie, faktúra rovno odíde odberateľovi na e-mail.</p>
+        <p>
+          Odberateľovi sa faktúra sama neposiela — nájdete ju medzi vystavenými a odošlete e-mailom
+          alebo eFaktúrou ako každú inú.
+        </p>
       </>
     ),
   },

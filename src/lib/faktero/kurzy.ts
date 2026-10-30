@@ -111,7 +111,9 @@ export function textPrepoctu(
     const k = kurz.toLocaleString(loc, { maximumFractionDigits: 4 });
     return `${uvod}: ${suma} CZK (kurz ČNB z ${datum}: 1 ${mena} = ${k} CZK)`;
   }
-  return `${uvod}: ${suma} EUR (kurz ECB z ${datum}: 1 EUR = ${kurz} ${mena})`;
+  // Kurz v zápise jazyka dokladu (1,113 — nie 1.113 ako v JavaScripte).
+  const k = kurz.toLocaleString(loc, { maximumFractionDigits: 6 });
+  return `${uvod}: ${suma} EUR (kurz ECB z ${datum}: 1 EUR = ${k} ${mena})`;
 }
 
 /* ─── Nemecko: mesačný kurz BMF (§ 16 Abs. 6 UStG) ──────────────────────
