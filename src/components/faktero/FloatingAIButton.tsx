@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
-import { Sparkles, X, Minus, Send, Loader2, Plus } from "lucide-react";
+import { Sparkles, X, Minus, Send, Loader2, Plus, RotateCcw } from "lucide-react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   listConversationsFn,
@@ -16,6 +17,14 @@ import {
 } from "@/lib/faktero/ai-assistant.functions";
 import { getAiAvailabilityFn } from "@/lib/faktero/ai-availability.functions";
 import { useT } from "@/lib/i18n/useT";
+import { usePresuvanie } from "@/hooks/usePresuvanie";
+import {
+  KLUC_OKNO,
+  KLUC_TLACIDLO,
+  SIROKA_OBRAZOVKA,
+  polohaOknaPriTlacidle,
+  type Poloha,
+} from "@/lib/faktero/ai-okno-poloha";
 
 const SUGGESTED = [
   "Ktoré faktúry sú po splatnosti?",
@@ -26,12 +35,36 @@ const SUGGESTED = [
   "Čo mám poslať účtovníčke?",
 ];
 
+/**
+ * Vrstva plávajúceho asistenta: nad lepiacou hlavičkou stránky (z-40), ale pod
+ * všetkým, čo Radix kreslí do portálu — ponuky (DropdownMenu, Popover, Select),
+ * tooltipy aj dialógy majú z-50. Predtým bolo tlačidlo na z-[60] a prekrývalo
+ * napríklad rozbalenú ponuku účtu pod avatarom vpravo hore.
+ */
+const VRSTVA_AI = "z-[45]";
+
+function useSirokaObrazovka(): boolean {
+  const [siroka, setSiroka] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mql = window.matchMedia(`(min-width: ${SIROKA_OBRAZOVKA}px)`);
+    const zmena = () => setSiroka(mql.matches);
+    zmena();
+    mql.addEventListener("change", zmena);
+    return () => mql.removeEventListener("change", zmena);
+  }, []);
+  return siroka;
+}
+
 export function FloatingAIButton() {
   const { t } = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const oknoOtvorene = useOtvoreneOkno();
   const [open, setOpen] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const siroka = useSirokaObrazovka();
+  // Tlačidlo sa dá odtiahnuť z cesty (len na širokej obrazovke).
+  const tlacidlo = usePresuvanie({ kluc: KLUC_TLACIDLO, povolene: siroka });
   const availabilityFn = useServerFn(getAiAvailabilityFn);
   const availability = useQuery({
     queryKey: ["ai-availability"],
@@ -58,36 +91,92 @@ export function FloatingAIButton() {
   if (pathname.startsWith("/ai-asistent")) return null;
   if (availability.data && !availability.data.available) return null;
 
+  const pt = tlacidlo.poloha;
+
   return (
-    <div
-      data-plavajuce=""
-      className="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6"
-    >
-      {open && <CompactChat companyId={companyId} onClose={() => setOpen(false)} />}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        data-ai-prepinac=""
-        aria-label={t("Faktero AI asistent")}
-        title={t("Faktero AI asistent")}
-        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary/80 p-3 text-sm sm:px-4 font-semibold text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-primary/30 transition-transform hover:scale-105"
+    <>
+      {open && (
+        <CompactChat
+          companyId={companyId}
+          onClose={() => setOpen(false)}
+          presuvatelne={siroka}
+          tlacidloPoloha={pt}
+          tlacidloPrvok={tlacidlo.prvok}
+          vratitTlacidlo={tlacidlo.vratit}
+        />
+      )}
+      <div
+        ref={tlacidlo.nastavPrvok}
+        data-plavajuce=""
+        className={`fixed ${VRSTVA_AI} ${pt ? "" : "bottom-4 right-4 sm:bottom-6 sm:right-6"}`}
+        style={pt ? { left: pt.x, top: pt.y } : undefined}
       >
-        {open ? <X className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-        <span className="sr-only sm:not-sr-only">{open ? t("Zavrieť") : "AI"}</span>
-      </button>
-    </div>
+        <button
+          type="button"
+          onClick={() => {
+            // Pustenie po ťahaní nie je klik.
+            if (tlacidlo.boloTahanie()) return;
+            setOpen((v) => !v);
+          }}
+          {...tlacidlo.uchyt}
+          data-ai-prepinac=""
+          aria-label={t("Faktero AI asistent")}
+          title={
+            siroka ? t("Faktero AI asistent — potiahnutím ho presuniete") : t("Faktero AI asistent")
+          }
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary/80 p-3 text-sm sm:px-4 font-semibold text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-primary/30 transition-transform hover:scale-105 sm:touch-none"
+        >
+          {open ? <X className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+          <span className="sr-only sm:not-sr-only">{open ? t("Zavrieť") : "AI"}</span>
+        </button>
+      </div>
+    </>
   );
 }
 
-function CompactChat({ companyId, onClose }: { companyId: string | null; onClose: () => void }) {
+function CompactChat({
+  companyId,
+  onClose,
+  presuvatelne,
+  tlacidloPoloha,
+  tlacidloPrvok,
+  vratitTlacidlo,
+}: {
+  companyId: string | null;
+  onClose: () => void;
+  presuvatelne: boolean;
+  tlacidloPoloha: Poloha | null;
+  tlacidloPrvok: RefObject<HTMLElement | null>;
+  vratitTlacidlo: () => void;
+}) {
   const { t } = useT();
-  const ref = useRef<HTMLDivElement>(null);
+  const okno = usePresuvanie({ kluc: KLUC_OKNO, povolene: presuvatelne, ignorujTlacidla: true });
+  // Pôvodné miesto okna, keď je tlačidlo odtiahnuté inam: pri tlačidle, nie vpravo dole.
+  const [priTlacidle, setPriTlacidle] = useState<Poloha | null>(null);
+
+  useLayoutEffect(() => {
+    if (okno.poloha || !tlacidloPoloha) {
+      setPriTlacidle(null);
+      return;
+    }
+    const o = okno.prvok.current?.getBoundingClientRect();
+    const b = tlacidloPrvok.current?.getBoundingClientRect();
+    if (!o || !b) return;
+    setPriTlacidle(
+      polohaOknaPriTlacidle(
+        { x: b.left, y: b.top, sirka: b.width, vyska: b.height },
+        { sirka: o.width, vyska: o.height },
+        { sirka: window.innerWidth, vyska: window.innerHeight },
+      ),
+    );
+  }, [okno.poloha, okno.prvok, tlacidloPoloha, tlacidloPrvok]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (!ref.current) return;
+      const el = okno.prvok.current;
+      if (!el) return;
       const target = e.target as Node;
-      if (!ref.current.contains(target)) {
+      if (!el.contains(target)) {
         // Don't close when clicking the toggle button itself (parent handles toggle)
         const btn = (target as HTMLElement).closest?.("[data-ai-prepinac]");
         if (!btn) onClose();
@@ -95,15 +184,37 @@ function CompactChat({ companyId, onClose }: { companyId: string | null; onClose
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
-  }, [onClose]);
+  }, [onClose, okno.prvok]);
+
+  const p = okno.poloha ?? priTlacidle;
+  const presunute = presuvatelne && (okno.poloha !== null || tlacidloPoloha !== null);
 
   return (
     <div
-      ref={ref}
-      className="flex w-[calc(100vw-1.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10"
-      style={{ maxHeight: "min(560px, 70vh)" }}
+      ref={okno.nastavPrvok}
+      data-plavajuce=""
+      className={`fixed ${VRSTVA_AI} flex w-[calc(100vw-1.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 ${
+        p ? "" : "bottom-[4.25rem] right-4 sm:bottom-[4.75rem] sm:right-6"
+      }`}
+      style={{ maxHeight: "min(560px, 70vh)", ...(p ? { left: p.x, top: p.y } : {}) }}
     >
-      <Header onClose={onClose} />
+      <Header
+        onClose={onClose}
+        presuvatelne={presuvatelne}
+        uchyt={okno.uchyt}
+        onDoubleClick={(e) => {
+          if ((e.target as HTMLElement).closest("button")) return;
+          okno.vratit();
+        }}
+        onVratit={
+          presunute
+            ? () => {
+                okno.vratit();
+                vratitTlacidlo();
+              }
+            : undefined
+        }
+      />
       {companyId ? (
         <ChatBody companyId={companyId} />
       ) : (
@@ -116,25 +227,61 @@ function CompactChat({ companyId, onClose }: { companyId: string | null; onClose
   );
 }
 
-function Header({ onClose }: { onClose: () => void }) {
+function Header({
+  onClose,
+  presuvatelne,
+  uchyt,
+  onDoubleClick,
+  onVratit,
+}: {
+  onClose: () => void;
+  presuvatelne: boolean;
+  uchyt: ReturnType<typeof usePresuvanie>["uchyt"];
+  onDoubleClick: (e: ReactMouseEvent<HTMLDivElement>) => void;
+  onVratit?: () => void;
+}) {
   const { t } = useT();
   return (
-    <div className="flex items-center justify-between gap-2 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3">
-      <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
+    <div
+      {...(presuvatelne
+        ? {
+            ...uchyt,
+            onDoubleClick,
+            role: "group",
+            "aria-label": t("Presunúť okno"),
+            title: t("Presunúť okno — dvojklikom ho vrátite na pôvodné miesto"),
+          }
+        : {})}
+      className={`flex items-center justify-between gap-2 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3 ${
+        presuvatelne ? "cursor-move touch-none select-none" : ""
+      }`}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
           <Sparkles className="h-4 w-4" />
         </div>
-        <div className="leading-tight">
+        <div className="min-w-0 leading-tight">
           <div className="text-sm font-semibold">{t("Faktero AI asistent")}</div>
           <div className="text-[11px] text-muted-foreground">{t("Pomocník pre vašu firmu")}</div>
         </div>
       </div>
       <div className="flex items-center gap-1">
+        {onVratit && (
+          <button
+            type="button"
+            aria-label={t("Vrátiť na pôvodné miesto")}
+            title={t("Vrátiť na pôvodné miesto")}
+            onClick={onVratit}
+            className="cursor-pointer rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+        )}
         <button
           type="button"
           aria-label={t("Minimalizovať")}
           onClick={onClose}
-          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="cursor-pointer rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <Minus className="h-4 w-4" />
         </button>
@@ -142,7 +289,7 @@ function Header({ onClose }: { onClose: () => void }) {
           type="button"
           aria-label={t("Zatvoriť")}
           onClick={onClose}
-          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="cursor-pointer rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>
