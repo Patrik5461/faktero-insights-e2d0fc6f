@@ -538,6 +538,8 @@ async function navrhniOpravu(o) {
       .join("\n");
 
     if (!subory.length) {
+      // Bez riadku v logu to vyzeralo, že beh po „štart“ zamrzol (P-1003, P-1007, P-1009).
+      log(`P-${poz.cislo}: bez opravy${a.ok ? "" : " (agent nedobehol)"}`);
       await zmen(o.id, {
         stav: a.ok ? "bez_opravy" : "zlyhala",
         pricina: vysledok.pricina ?? null,

@@ -384,6 +384,16 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
   );
 }
 
+/** Nezaplatené po splatnosti — každá mena zvlášť (CZ firma má aj eurové faktúry). */
+function sumyNezaplatenych(
+  data: { unpaidTotal: number; unpaidByCurrency?: { mena: string; suma: number }[] },
+  domaca: string,
+): string {
+  const meny = data.unpaidByCurrency ?? [];
+  if (!meny.length) return formatujMenu(data.unpaidTotal, domaca);
+  return meny.map((m) => formatujMenu(m.suma, m.mena)).join(" + ");
+}
+
 function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab }) {
   const { t } = useT();
   const mena = useMenaFirmy();
@@ -409,7 +419,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             color: "text-amber-600",
             title: "Faktúry po splatnosti",
             value: data.overdueCount,
-            hint: t("{suma} nezaplatených", { suma: formatujMenu(data.unpaidTotal, mena.kod) }),
+            hint: t("{suma} nezaplatených", { suma: sumyNezaplatenych(data, mena.kod) }),
             to: "/faktury",
             search: { poSplatnosti: true as const },
           },
@@ -455,7 +465,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               color: "text-amber-600",
               title: "Faktúry po splatnosti",
               value: data.overdueCount,
-              hint: t("{suma} nezaplatených", { suma: formatujMenu(data.unpaidTotal, mena.kod) }),
+              hint: t("{suma} nezaplatených", { suma: sumyNezaplatenych(data, mena.kod) }),
               to: "/faktury",
               search: { poSplatnosti: true as const },
             },

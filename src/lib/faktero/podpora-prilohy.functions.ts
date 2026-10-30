@@ -6,6 +6,7 @@ import {
   MAX_PRILOHA_PODPORY,
   MAX_PRILOH_NA_POZIADAVKU,
   cestaPrilohyPodpory,
+  obsahZodpovedaTypu,
   typPrilohyPodpory,
 } from "./podpora-prilohy";
 
@@ -43,6 +44,8 @@ export const nahrajPrilohuPodporyFn = createServerFn({ method: "POST" })
     const bajty = Buffer.from(data.base64, "base64");
     if (!bajty.length) throw new Error("Súbor je prázdny.");
     if (bajty.length > MAX_PRILOHA_PODPORY) throw new Error("Súbor je väčší než 10 MB.");
+    if (!obsahZodpovedaTypu(typ, bajty))
+      throw new Error("Súbor nie je obrázok ani PDF — priložte snímku obrazovky, fotku alebo PDF.");
 
     // Overenie prístupu je hore — odtiaľto už servisným kľúčom.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
