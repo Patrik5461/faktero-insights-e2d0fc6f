@@ -407,6 +407,11 @@ function QuoteDetail() {
                         {it.description && (
                           <div className="text-xs text-muted-foreground">{it.description}</div>
                         )}
+                        {Number(it.discount_percent ?? 0) > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            {t("Zľava {n} %", { n: formatujMnozstvo(Number(it.discount_percent), lokalJazyka(jazyk)) })}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3 text-right">{formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}</td>
                       <td className="p-3">{it.unit}</td>
@@ -463,13 +468,13 @@ function QuoteDetail() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t("Medzisúčet")}</span>
                       <span>
-                        {(Number(q.subtotal) + Number(q.discount_total)).toFixed(2)} {q.currency}
+                        {formatujCislo(Number(q.subtotal) + Number(q.discount_total), 2)} {q.currency}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t("Zľava")}</span>
                       <span>
-                        −{Number(q.discount_total).toFixed(2)} {q.currency}
+                        −{formatujCislo(Number(q.discount_total), 2)} {q.currency}
                       </span>
                     </div>
                   </>
@@ -477,18 +482,18 @@ function QuoteDetail() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t("Bez DPH")}</span>
                   <span>
-                    {Number(q.subtotal).toFixed(2)} {q.currency}
+                    {formatujCislo(Number(q.subtotal), 2)} {q.currency}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t("DPH")}</span>
                   <span>
-                    {Number(q.vat_total).toFixed(2)} {q.currency}
+                    {formatujCislo(Number(q.vat_total), 2)} {q.currency}
                   </span>
                 </div>
               </div>
               <div className="mt-3 border-t border-border pt-3 text-lg font-semibold">
-                {Number(q.total).toFixed(2)} {q.currency}
+                {formatujCislo(Number(q.total), 2)} {q.currency}
               </div>
             </div>
             <div className="rounded-xl border border-border bg-card p-5 text-sm">

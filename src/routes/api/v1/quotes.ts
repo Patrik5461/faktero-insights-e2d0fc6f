@@ -7,7 +7,8 @@ const Item = z.object({
   quantity: z.number().positive().max(1000000),
   unit: z.string().max(20).optional().default("ks"),
   unit_price: z.number().nonnegative().max(10000000),
-  vat_rate: z.number().min(0).max(100).optional().default(23),
+  // Bez sadzby platí základná sadzba krajiny firmy (SK 23 %, CZ 21 %), neplatiteľ 0 %.
+  vat_rate: z.number().min(0).max(100).optional(),
 });
 const QuoteInput = z.object({
   customer_id: z.string().uuid().optional().nullable(),
@@ -91,17 +92,33 @@ export const Route = createFileRoute("/api/v1/quotes")({
             return err("validation_error", "Vyžaduje sa customer_id alebo customer.", 400);
           }
 
+          const { data: firma } = await ctx.supabase
+            .from("companies")
+            .select("country, vat_payer")
+            .eq("id", ctx.company_id)
+            .maybeSingle();
+          const { krajinaDane, zakladnaSadzba } = await import("@/lib/faktero/vat-rates");
+          const predvolena =
+            firma?.vat_payer === false
+              ? 0
+              : zakladnaSadzba(krajinaDane(firma?.country), d.issue_date ?? null);
+          const polozky = d.items.map((i) => ({ ...i, vat_rate: i.vat_rate ?? predvolena }));
+
           const totals = computeQuoteTotals(
-            d.items.map((i) => ({
+            polozky.map((i) => ({
               quantity: i.quantity,
               unit_price: i.unit_price,
               vat_rate: i.vat_rate,
             })),
           );
           const quote_number = await nextQuoteNumber(ctx.company_id);
-          const today = new Date().toISOString().slice(0, 10);
-          const valid_until =
-            d.valid_until ?? new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+          // Dnešok podľa Bratislavy — v UTC by ponuka po polnoci vznikla včerajším dátumom.
+          const { dnesBratislava } = await import("@/lib/faktero/datum-vystavenia");
+          const today = dnesBratislava();
+          let platnost = new Date(`${d.issue_date ?? today}T12:00:00Z`);
+          if (Number.isNaN(platnost.getTime())) platnost = new Date(`${today}T12:00:00Z`);
+          platnost.setUTCDate(platnost.getUTCDate() + 30);
+          const valid_until = d.valid_until ?? platnost.toISOString().slice(0, 10);
 
           const { data: created, error: insErr } = await ctx.supabase
             .from("quotes")
@@ -133,7 +150,7 @@ export const Route = createFileRoute("/api/v1/quotes")({
           if (insErr || !created)
             return err("db_error", insErr?.message ?? "Vloženie zlyhalo.", 500);
 
-          const rows = d.items.map((it, i) => ({
+          const rows = polozky.map((it, i) => ({
             quote_id: created.id,
             position: i,
             name: it.name,
