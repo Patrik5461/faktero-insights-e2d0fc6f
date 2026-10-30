@@ -643,6 +643,8 @@ function InvoiceDetail() {
     if (status === "paid") patch.paid_at = new Date().toISOString();
     if (status === "cancelled") patch.cancelled_at = new Date().toISOString();
     if (status === "sent") patch.sent_at = new Date().toISOString();
+    // Koncept bez dátumu dodania (staršia kópia) sa nesmie vystaviť bez DUZP.
+    if (status === "issued" && inv?.status === "draft" && !inv?.delivery_date) patch.delivery_date = inv.issue_date;
     const { error } = await supabase.from("invoices").update(patch).eq("id", id);
     if (error) return toast.error(t(friendlyError(error, error.message)));
     toast.success(
