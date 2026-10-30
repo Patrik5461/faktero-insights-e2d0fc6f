@@ -53,11 +53,24 @@ function suma(hodnota: unknown, mena: string | null): string {
 }
 
 /** Stav rozobratia dokladu — nie stav úhrady. */
+/* Stav po slovensky — zoznam ukazoval kódy „parsed“, „matched“. */
+const NAZVY_STAVOV: Record<string, string> = {
+  received: "Prijatá",
+  parsed: "Na zaevidovanie",
+  parse_error: "Nečitateľná",
+  matched: "Zaevidovaná",
+  accepted: "Akceptovaná",
+  rejected: "Odmietnutá",
+  archived: "Archivovaná",
+};
+
 function StavDokladu({ stav }: { stav: string | null }) {
+  const { t } = useT();
   const zle = stav === "parse_error" || stav === "rejected";
+  const nazov = stav ? NAZVY_STAVOV[stav] : null;
   return (
     <span className={`text-xs ${zle ? "text-destructive" : "text-muted-foreground"}`}>
-      {stav ?? "—"}
+      {nazov ? t(nazov) : (stav ?? "—")}
     </span>
   );
 }
