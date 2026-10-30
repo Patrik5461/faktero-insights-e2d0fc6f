@@ -16,6 +16,7 @@ import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
 import { usePostupneZobrazenie } from "@/hooks/usePostupneZobrazenie";
 import { useRadenie } from "@/hooks/useRadenie";
 import { stiahniExcel, tabulka } from "@/lib/faktero/excel-zoznamu";
+import { sPolozkami, SELECT_PRIJATYCH } from "@/lib/faktero/stlpce-zoznamov";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import {
@@ -60,7 +61,7 @@ import { polozkaPrijatej } from "@/lib/faktero/suhrn-vyberu";
 import { ZAPLATENE_NA_MIESTE } from "@/lib/faktero/hromadny-prikaz";
 import { NavrhyAiOkno } from "@/components/faktero/NavrhyAiOkno";
 import { jeCiastocneUhradena, sumyUhradPodlaFaktury } from "@/lib/faktero/uhrady-prijatej";
-import { riadkyPreIds, vsetkyRiadky } from "@/lib/faktero/strankovanie";
+import { riadkyPreIds, vsetkyRiadkySubezne } from "@/lib/faktero/strankovanie";
 import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
@@ -615,10 +616,14 @@ function PurchaseInvoicesPage() {
       Celý zoznam po stránkach — strop 500 skrýval staršie faktúry aj zo súčtov
       (PALIERA ich má cez 1 100). Kreslí sa po dávkach (usePostupneZobrazenie).
     */
-    const dotaz = (od: number, po: number) => {
+    /*
+      Len stĺpce, ktoré zoznam číta (bez položiek `items`, PALIERA: 3,9 MB →
+      2,8 MB) a stránky po prvej naraz. Položky si Excel dotiahne sám.
+    */
+    const dotaz = (od: number, po: number, spocitaj = false) => {
       let q = supabase
         .from("purchase_invoices")
-        .select("*")
+        .select(SELECT_PRIJATYCH, spocitaj ? { count: "exact" } : undefined)
         .eq("company_id", cid)
         // Prijaté zálohy majú vlastný zoznam — tu by len nafukovali sumy.
         .eq("type", "regular")
@@ -640,7 +645,7 @@ function PurchaseInvoicesPage() {
     let nacitane: any[] | null = null;
     let error: { message: string } | null = null;
     try {
-      nacitane = await vsetkyRiadky<any>(dotaz);
+      nacitane = await vsetkyRiadkySubezne<any>(dotaz);
     } catch (e: any) {
       error = { message: e?.message ?? String(e) };
     }
@@ -730,8 +735,15 @@ function PurchaseInvoicesPage() {
   }, [rows]);
 
   /** Excel s práve vyfiltrovanými a zoradenými faktúrami (aj s položkami). */
-  function stiahniExcelPrijatych() {
-                    const r = rad.zoradene as any[];
+  async function stiahniExcelPrijatych() {
+                    // Zoznam položky nenesie (zbytočne by vážil megabajty) — dotiahnu sa teraz.
+                    let r: any[];
+                    try {
+                      r = await sPolozkami("purchase_invoices", rad.zoradene as any[]);
+                    } catch (e: any) {
+                      toast.error(e?.message ?? t("Nepodarilo sa"));
+                      return;
+                    }
                     void stiahniExcel(`prijate-faktury-${new Date().toISOString().slice(0, 10)}.xlsx`, [
                       {
                         nazov: t("Prijaté faktúry"),

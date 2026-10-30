@@ -29,6 +29,11 @@ export type PagedListOptions = {
    * a zoradenie sa potom neriadia vnútorným stavom, ale adresou.
    */
   riadenie?: ListFilters;
+  /**
+   * Stĺpce pre `select` — predvolene všetky. Zoznam, ktorý číta len časť,
+   * si tu povie, čo potrebuje (menšia stránka, rýchlejšie spracovanie).
+   */
+  stlpce?: string;
 };
 
 /** Zapamätané zoradenie zoznamu — nech si to klient nemusí prestavovať zakaždým. */
@@ -56,6 +61,7 @@ export function usePagedList({
   upravDotaz,
   filterKey,
   riadenie,
+  stlpce = "*",
 }: PagedListOptions) {
   const [pageSize, setPageSize] = useStoredPageSize(pageSizeKey ?? resource);
   const vychodzieZoradenie = orderBy ?? { column: "created_at", ascending: false };
@@ -123,7 +129,7 @@ export function usePagedList({
       const to = from + pageSizeV - 1;
       let q = supabase
         .from(resource as any)
-        .select("*", { count: "exact" })
+        .select(stlpce, { count: "exact" })
         .eq("company_id", cid);
       if (equals) {
         for (const [k, v] of Object.entries(equals)) {
@@ -159,6 +165,7 @@ export function usePagedList({
     };
   }, [
     resource,
+    stlpce,
     pageV,
     pageSizeV,
     searchV,
