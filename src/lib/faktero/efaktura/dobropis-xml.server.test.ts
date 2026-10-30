@@ -112,3 +112,16 @@ describe("ťarchopis v Peppol BIS", () => {
     expect(JSON.stringify(r)).toContain("SK-BT-25");
   });
 });
+
+describe("Peppol BIS — nebezpečný text z dokladu", () => {
+  it("&, <, ]]> a riadiace znaky ostanú dobre postaveným XML", async () => {
+    const { XmlDocument } = await import("libxml2-wasm");
+    const zly = 'A&B <b>x</b> ]]> "q"\u000B\u0001￿';
+    const f = { ...dobropis, type: "regular", subtotal: 10, vat_total: 2.3, total: 12.3, customer_name: zly, customer_street: zly, notes: zly, order_number: zly };
+    const p = [{ ...polozky[0], name: zly, quantity: 1, subtotal: 10, vat_amount: 2.3, total: 12.3 }];
+    const r = generatePeppolBisXml(mapToEN16931({ company: firma, invoice: f, items: p }));
+    expect(r.xml).not.toMatch(/[\u0001\u000B￿]/);
+    expect(r.xml).toContain("A&amp;B &lt;b&gt;");
+    XmlDocument.fromString(r.xml).dispose();
+  });
+});

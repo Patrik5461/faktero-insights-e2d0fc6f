@@ -1,5 +1,6 @@
 // Server-only helpers for accounting exports.
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import { intNoteSEfakturou } from "./efaktura-odoslana";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { icoPrePohodu } from "./ico-z-mena";
@@ -61,7 +62,7 @@ type DokladRow = any;
 
 function esc(s: any): string {
   if (s === null || s === undefined) return "";
-  return String(s)
+  return bezZakazanychXml(s)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")

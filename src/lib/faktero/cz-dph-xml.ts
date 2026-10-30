@@ -7,6 +7,7 @@
  * odmietne celý.
  */
 
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import {
   datumCz,
   type SouhrnneHlaseni,
@@ -49,7 +50,7 @@ export type HlavickaCz = {
 export type FormaCz = "B" | "O" | "D" | "E" | "N";
 
 function esc(v: unknown): string {
-  return String(v ?? "")
+  return bezZakazanychXml(v)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

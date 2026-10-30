@@ -960,3 +960,33 @@ describe("Pohoda — pokladňa, banka a číselníky", () => {
     expect(chybySchemy(x).length).toBeGreaterThan(0);
   });
 });
+
+/* ----------------------------------------------- nebezpečné vstupy */
+
+describe("Pohoda — text z dokladu s &, <, ]]> a riadiacimi znakmi", () => {
+  // \u000B je „ručné zalomenie“ z Wordu, \u0001 a ￿ sa do XML 1.0 nesmú dostať ani ako entita.
+  const zly = "A&B <script>x</script> ]]> \"q\" 'a'\u000B\u0001￿=1+1";
+  it("faktúra ostane platná podľa invoice.xsd a text sa zachová bez zakázaných znakov", () => {
+    const x = buildPohodaInvoiceXml({
+      company: firmaSK,
+      nastavenia,
+      invoices: [
+        {
+          invoice: faktura({
+            customer_name: zly,
+            customer_street: zly,
+            order_number: zly,
+            notes: zly,
+            intro_note: zly,
+          }),
+          items: [polozka({ name: zly })],
+        },
+      ],
+    });
+    expect(chybySchemy(x)).toEqual([]);
+    expect(x).not.toMatch(/[\u0001\u000B￿]/);
+    expect(x).not.toContain("<script>");
+    expect(x).not.toContain("]]>");
+    expect(x).toContain("A&amp;B &lt;script&gt;");
+  });
+});

@@ -27,6 +27,7 @@
   v cudzej mene má navyše blok `Valuty` s kurzom.
 */
 
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import type { DokladUctovania, KodUctovania, RiadokUctovania } from "./zauctovanie-export";
 import { kodPreDoklad } from "./uctovanie-agenda";
 import { rozdelUcet } from "./zauctovanie-export";
@@ -49,7 +50,7 @@ export type NastaveniaMoney = {
 };
 
 const esc = (s: unknown) =>
-  String(s ?? "")
+  bezZakazanychXml(s)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

@@ -7,6 +7,7 @@
  * nesedí, takže „skoro správne" XML je horšie než žiadne.
  */
 
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import {
   centy,
   verziaPriznania,
@@ -37,7 +38,7 @@ export type UdajeFirmy = {
 export type TypVykazu = "R" | "O" | "D";
 
 function esc(v: unknown): string {
-  return String(v ?? "")
+  return bezZakazanychXml(v)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

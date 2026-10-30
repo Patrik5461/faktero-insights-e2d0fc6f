@@ -75,3 +75,19 @@ export function cistyText(
     .slice(0, max)
     .trim();
 }
+
+/**
+ * Znaky, ktoré XML 1.0 nepovoľuje ani ako entitu: riadiace znaky okrem
+ * tabulátora a nových riadkov, osamelé polovice náhradných párov a U+FFFE/FFFF.
+ * Do mena odberateľa sa dostanú skopírovaním z Wordu (U+000B je jeho „ručné
+ * zalomenie“) alebo z PDF — a jediný taký znak spraví z celého exportu do
+ * Pohody, Money či eFaktúry súbor, ktorý program odmietne načítať.
+ */
+export function bezZakazanychXml(v: unknown): string {
+  return (
+    String(v ?? "")
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, "")
+      .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "")
+  );
+}

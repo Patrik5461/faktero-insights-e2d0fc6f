@@ -25,6 +25,7 @@
  * Dobropis má sumy záporné (tak ich má aj Flexi na opravnom doklade).
  */
 
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import type { DokladUctovania, KodUctovania, RiadokUctovania } from "./zauctovanie-export";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 
@@ -49,7 +50,7 @@ const r2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 const dve = (n: number) => r2(n).toFixed(2);
 
 const esc = (h: unknown): string =>
-  String(h ?? "")
+  bezZakazanychXml(h)
     .trim()
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

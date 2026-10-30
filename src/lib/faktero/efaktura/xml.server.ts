@@ -4,12 +4,13 @@
  * Schema/Schematron validation is a future step but the hook is in place via
  * `validationErrors`.
  */
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import { createHash } from "crypto";
 import type { EN16931Invoice, EN16931Party, XmlGenerationResult } from "./types";
 
 export function esc(value: unknown): string {
   if (value === null || value === undefined) return "";
-  return String(value)
+  return bezZakazanychXml(value)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

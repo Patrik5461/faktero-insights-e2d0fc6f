@@ -161,3 +161,31 @@ describe("ABRA Flexi so zaúčtovaním", () => {
     expect(xml).not.toContain("<faktura-prijata>");
   });
 });
+
+describe("Flexi — nebezpečný text z dokladu", () => {
+  it("&, <, ]]> a riadiace znaky nerozbijú XML", async () => {
+    const { XmlDocument } = await import("libxml2-wasm");
+    const zly = 'A&B <b>x</b> ]]> "q"\u000B\u0001￿';
+    const d = prijataNaUctovanie(
+      {
+        id: "p9",
+        invoice_number: "FV-9",
+        supplier_name: zly,
+        supplier_street: zly,
+        note: zly,
+        issue_date: "2026-10-01",
+        delivery_date: "2026-10-01",
+        amount_without_vat: 100,
+        vat_amount: 23,
+        amount_total: 123,
+      },
+      nast,
+    );
+    const r = buildFlexiUctovanie({ firma, doklady: [d], kody: {}, nastavenia: {} });
+    expect(r.xml).not.toMatch(/[\u0001\u000B￿]/);
+    expect(r.xml).toContain("A&amp;B &lt;b&gt;");
+    // libxml2 na rozdiel od fast-xml-parser odmietne aj zakázané znaky.
+    const doc = XmlDocument.fromString(r.xml);
+    doc.dispose();
+  });
+});
