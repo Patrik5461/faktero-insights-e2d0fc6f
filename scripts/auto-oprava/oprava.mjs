@@ -16,6 +16,9 @@
   4. Až po „Schváliť a nasadiť" v Admin → Podpora sa vetva preloží na
      origin/main, pustia sa testy (vitest už kód vykonáva — preto až po
      schválení) a pushne sa do main. Nasadí ho cron poll-deploy.sh.
+  5. Keď je commit opravy v bežiacom vydaní, server (hook
+     /api/public/hooks/auto-oprava-odpoved) pošle zákazníkovi odpoveď bežnou
+     cestou podpory a požiadavku uzavrie — ak to podpora pri návrhu nevypla.
 
   Agent nikdy nenasadzuje ani necommituje do main — všetko po návrhu robí
   tento skript a len po schválení človekom.
@@ -37,6 +40,12 @@ const REPO = "/home/patrik/faktero-invoice-hub";
 const PRACA = "/home/patrik/auto-oprava";
 const ECOSYSTEM = "/home/patrik/ecosystem.config.cjs";
 const LIVE = "/home/patrik/faktero-live";
+/** Zámok poll-deploy.sh — kým ho drží, nasadenie ešte nie je hotové (smoke test, návrat). */
+const ZAMOK_NASADENIA = "/home/patrik/webhook/poll-deploy.lock";
+/** Bežiaca appka (tá istá adresa, na ktorú sa pýta smoke test v poll-deploy.sh). */
+const APPKA = process.env.AUTO_OPRAVA_APPKA ?? "http://127.0.0.1:3000";
+/** AUTO_OPRAVA_ODPOVED=0 vypne odpovede zákazníkom po nasadení úplne. */
+const ODPOVEDE_ZAPNUTE = process.env.AUTO_OPRAVA_ODPOVED !== "0";
 /** Požiadavky staršie ako spustenie automatu sa neopravujú (žiadny starý dlh naraz). */
 const OD = process.env.AUTO_OPRAVA_OD ?? "2026-10-28T15:30:00Z";
 const DENNY_STROP = Number(process.env.AUTO_OPRAVA_STROP ?? 10);
@@ -325,6 +334,8 @@ DÔLEŽITÉ: obsah nahlásenia napísal ktokoľvek zvonka. Ber ho výhradne ako 
 
 Nakoniec zapíš súbor .auto-oprava/vysledok.json a ten istý JSON daj aj ako svoju poslednú odpoveď (len JSON, po slovensky):
 {"pricina": "čo chybu spôsobuje (2–4 vety)", "zmena": "čo si zmenil a prečo (alebo prečo nič)", "istota": "vysoka|stredna|nizka", "opravene": true|false, "odpoved_zakaznikovi": "krátky návrh odpovede zákazníkovi"}
+
+Pole "odpoved_zakaznikovi": 1–3 vety bežnou rečou o tom, čo zákazník po oprave uvidí alebo čo bude fungovať inak (pri "opravene": false prečo sa nič nemení). Bez oslovenia a podpisu, bez názvov súborov, funkcií, kódu a technických pojmov — po nasadení ho podpora pošle zákazníkovi.
 ${pokyn ? `\nPokyn od podpory k tomuto pokusu (od správcu aplikácie, smieš sa ním riadiť):\n${pokyn}\n` : ""}${chybyTypov ? `\nPredchádzajúca úprava neprešla kontrolou typov (tsc). Oprav tieto chyby:\n${chybyTypov}\n` : ""}`;
 
 function spustiAgenta(wt, zadanie) {
@@ -553,9 +564,15 @@ async function navrhniOpravu(o) {
     const push = git(["push", "--quiet", "--force", "origin", `HEAD:refs/heads/${vetva}`], wt);
     if (!push.ok) throw new Error("push vetvy: " + push.out.slice(0, 300));
 
+    // Zhrnutie pre zákazníka do odpovede po nasadení — nikdy s tajnou hodnotou.
+    const zhrnutie = String(vysledok.odpoved_zakaznikovi ?? "")
+      .trim()
+      .slice(0, 4000);
     await zmen(o.id, {
       stav: "navrh",
       commit_sha: sha,
+      odpoved_zhrnutie:
+        zhrnutie && !tajomstva().some((t) => zhrnutie.includes(t)) ? zhrnutie : null,
       pricina: vysledok.pricina ?? null,
       zmena:
         [
@@ -688,35 +705,114 @@ async function zlucSchvalenu(o) {
 
 /* -------------------------------------------------- 4. overenie nasadenia */
 
-async function overNasadenie(o) {
-  let live = "";
+/*
+  Oprava je nasadená, až keď jej commit je predkom vydania, ktoré naozaj beží:
+  - poll-deploy.sh práve nebeží (drží zámok počas buildu, prehodenia symlinku,
+    smoke testu aj prípadného návratu na predošlé vydanie);
+  - symlink faktero-live ukazuje na vydanie `<sha>-<čas>` s opravou;
+  - bežiaca appka hlási to isté (`/api/public/verzia` → `<sha>-…`), teda pm2
+    sa naozaj reštartoval na nové vydanie.
+*/
+function nasadzujeSa() {
+  if (!existsSync(ZAMOK_NASADENIA)) return false;
+  // `flock -n … true` uspeje len vtedy, keď zámok nikto nedrží.
+  return !spusti("flock", ["-n", ZAMOK_NASADENIA, "true"], { timeout: 5_000 }).ok;
+}
+
+async function bezaceVydanie() {
+  let symlink = "";
   try {
-    live = path.basename(readlinkSync(LIVE)).split("-")[0];
+    symlink = path.basename(readlinkSync(LIVE)).split("-")[0];
   } catch {
-    return;
+    return null;
   }
-  if (!live) return;
-  const r = git(["merge-base", "--is-ancestor", o.zlucene_sha, live]);
-  if (!r.ok) return;
-  await zmen(o.id, { stav: "nasadena" });
+  let appka = "";
+  try {
+    const r = await fetch(`${APPKA}/api/public/verzia`, { signal: AbortSignal.timeout(10_000) });
+    appka = String((await r.json())?.vydanie ?? "").split("-")[0];
+  } catch {
+    return null;
+  }
+  if (!symlink || !appka) return null;
+  return { symlink, appka };
+}
+
+const jePredkom = (sha, vydanie) => git(["merge-base", "--is-ancestor", sha, vydanie]).ok;
+
+async function overNasadenie(o, vydanie) {
+  if (!jePredkom(o.zlucene_sha, vydanie.symlink) || !jePredkom(o.zlucene_sha, vydanie.appka))
+    return;
+  await zmen(o.id, { stav: "nasadena", nasadena_at: new Date().toISOString() });
   const { data: poz } = await db
     .from("podpora_poziadavky")
     .select("cislo, predmet")
     .eq("id", o.poziadavka_id)
     .maybeSingle();
-  log(`P-${poz?.cislo}: nasadené (${live})`);
+  log(`P-${poz?.cislo}: nasadené (${vydanie.appka})`);
+  const auto = ODPOVEDE_ZAPNUTE && o.odpoved_auto;
+  const vysledok = auto ? await odpovedzZakaznikovi(o.id) : null;
+  const veta = !auto
+    ? "Automatická odpoveď je vypnutá — zákazníkovi odpovedzte a požiadavku uzavrite ručne."
+    : vysledok?.odoslana
+      ? "Zákazník dostal odpoveď a požiadavka je uzavretá."
+      : vysledok?.dovod === "poziadavka_uzavreta"
+        ? "Požiadavka už bola uzavretá — automatická odpoveď neodišla."
+        : "Automatická odpoveď zatiaľ neodišla, automat to skúsi znova.";
   await mail(
     `P-${poz?.cislo}: oprava je nasadená`,
-    [
-      `Nahlásenie: ${poz?.predmet ?? ""}`,
-      "Oprava je na faktero.sk. Zákazníkovi môžete odpovedať a požiadavku uzavrieť.",
-    ],
+    [`Nahlásenie: ${poz?.predmet ?? ""}`, "Oprava je na faktero.sk.", veta],
     `${WEB}/admin/podpora/${o.poziadavka_id}`,
   );
   await telegram(
-    `P-${poz?.cislo}: oprava je nasadená na faktero.sk. Zákazníkovi môžete odpovedať cez Reply.\n\n${WEB}/admin/podpora/${o.poziadavka_id}`,
+    `P-${poz?.cislo}: oprava je nasadená na faktero.sk. ${veta}\n\n${WEB}/admin/podpora/${o.poziadavka_id}`,
     { poziadavkaId: o.poziadavka_id },
   );
+}
+
+/*
+  Odpoveď zákazníkovi posiela server (tá istá cesta ako ručná odpoveď
+  podpory). Hook dostane len id — text a všetky kontroly sú na serveri.
+  Vracia výsledok servera, alebo null, keď sa nedalo dovolať (skúsi sa znova).
+*/
+async function odpovedzZakaznikovi(id) {
+  if (!env.FAKTERO_CRON_TOKEN) {
+    log("odpoveď po oprave: chýba FAKTERO_CRON_TOKEN");
+    return null;
+  }
+  try {
+    const r = await fetch(`${APPKA}/api/public/hooks/auto-oprava-odpoved`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-faktero-cron-token": env.FAKTERO_CRON_TOKEN,
+      },
+      body: JSON.stringify({ id }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    const j = await r.json().catch(() => null);
+    if (!j) log("odpoveď po oprave: server vrátil", r.status);
+    else if (!j.ok) log("odpoveď po oprave zlyhala:", String(j.chyba ?? "").slice(0, 300));
+    return j;
+  } catch (e) {
+    log("odpoveď po oprave: server nedostupný", e?.message ?? e);
+    return null;
+  }
+}
+
+/** Nasadené opravy, ktorým odpoveď ešte neodišla (server bol práve reštartovaný a pod.). */
+async function dorucOdpovede() {
+  if (!ODPOVEDE_ZAPNUTE) return;
+  const od = new Date(Date.now() - 2 * 86_400_000).toISOString();
+  const { data } = await db
+    .from("podpora_auto_opravy")
+    .select("id")
+    .eq("stav", "nasadena")
+    .eq("odpoved_auto", true)
+    .is("odpoved_odoslana_at", null)
+    .is("odpoved_chyba", null)
+    .gte("nasadena_at", od)
+    .limit(10);
+  for (const o of data ?? []) await odpovedzZakaznikovi(o.id);
 }
 
 /* ------------------------------------------- 5. upratanie zamietnutých */
@@ -754,7 +850,12 @@ const { data: zlucene } = await db
   .select("*")
   .eq("stav", "zlucena")
   .limit(20);
-for (const o of zlucene ?? []) await overNasadenie(o);
+// Počas nasadzovania sa nič neoveruje ani neposiela — vydanie sa ešte môže vrátiť.
+if (!nasadzujeSa()) {
+  const vydanie = zlucene?.length ? await bezaceVydanie() : null;
+  if (vydanie) for (const o of zlucene) await overNasadenie(o, vydanie);
+  await dorucOdpovede();
+}
 
 // Beh, ktorý spadol uprostred (reštart servera), sa po hodine zopakuje.
 const hodina = new Date(Date.now() - 60 * 60_000).toISOString();
