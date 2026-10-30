@@ -62,8 +62,8 @@ export const prilohyFakturyFn = createServerFn({ method: "POST" })
 const Nahratie = Doklad.extend({
   name: z.string().min(1).max(200),
   mime: z.string().max(150),
-  /** Obsah súboru; 15 MB v base64 narastie zhruba na 20 MB textu. */
-  base64: z.string().min(1).max(21_000_000),
+  /** Obsah súboru; 15 MB v base64 narastie na 20 000 000 znakov. */
+  base64: z.string().min(1).max(20_000_100),
 });
 
 export const nahrajPrilohuFn = createServerFn({ method: "POST" })

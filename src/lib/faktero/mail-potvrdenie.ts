@@ -47,12 +47,43 @@ export function poskytovatelPotvrdenia(from?: string | null): OdosielatelPotvrde
 */
 export type VysledokPravosti = { ok: true } | { ok: false; dovod: string };
 
+/**
+ * `Authentication-Results`, ktorú pridal náš prijímajúci server.
+ *
+ * Odosielateľ si do mailu môže vložiť vlastnú hlavičku `Authentication-Results:
+ * x; spf=pass; dkim=pass header.d=google.com`. Prijímajúci server pridáva svoju
+ * navrch (RFC 8601) — preto sa berie len prvá, a keď poznáme authserv-id nášho
+ * servera, len tá, ktorá ním začína. Spojiť všetky do jedného textu (ako
+ * kedysi `String(pole)`) by podvrh pustilo.
+ */
+export function prvaAuthResults(
+  headers: Record<string, unknown> | null | undefined,
+  authservId?: string | null,
+): string {
+  const hodnoty: string[] = [];
+  for (const [k, v] of Object.entries(headers ?? {})) {
+    if (k.toLowerCase() !== "authentication-results") continue;
+    if (Array.isArray(v)) hodnoty.push(...v.map((x) => String(x ?? "")));
+    else if (v != null) hodnoty.push(String(v));
+  }
+  const id = String(authservId ?? "")
+    .trim()
+    .toLowerCase();
+  if (id) return hodnoty.find((h) => h.trim().toLowerCase().startsWith(id)) ?? "";
+  return hodnoty[0] ?? "";
+}
+
 export function overPravostPotvrdenia(args: {
   headers?: Record<string, unknown> | null;
   /** Ak by ich Resend niekedy dal priamo do odpovede, majú prednosť. */
   spf?: unknown;
   dkim?: unknown;
   domena: string;
+  /**
+   * Identita nášho prijímajúceho servera (`MAIL_AUTHSERV_ID`, napr. `amazonses.com`).
+   * Keď je zadaná, berie sa len hlavička, ktorá ňou začína.
+   */
+  authservId?: string | null;
 }): VysledokPravosti {
   const { domena } = args;
 
@@ -73,9 +104,7 @@ export function overPravostPotvrdenia(args: {
     return { ok: true };
   }
 
-  const hlavicky = args.headers ?? {};
-  const kluc = Object.keys(hlavicky).find((k) => k.toLowerCase() === "authentication-results");
-  const riadok = kluc ? String((hlavicky as Record<string, unknown>)[kluc] ?? "") : "";
+  const riadok = prvaAuthResults(args.headers, args.authservId);
   if (!riadok) return { ok: false, dovod: "chýba hlavička Authentication-Results" };
 
   const nizko = riadok.toLowerCase();

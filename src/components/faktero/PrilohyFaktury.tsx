@@ -29,7 +29,11 @@ export type Priloha = {
 
 /** Text chyby pre človeka; server posiela zrozumiteľné hlášky. */
 function hlaska(e: unknown, nahrada: string): string {
-  return e instanceof Error && e.message ? e.message : nahrada;
+  const sprava = e instanceof Error ? e.message : "";
+  // nginx odmietne priveľké telo vlastnou HTML stránkou — tá do hlášky nepatrí.
+  if (/413|Request Entity Too Large/i.test(sprava)) return "Súbor je väčší než 15 MB.";
+  if (/^\s*</.test(sprava)) return nahrada;
+  return sprava || nahrada;
 }
 
 /** Súbor na base64 bez toho, aby sa celý držal v pamäti dvakrát ako reťazec. */

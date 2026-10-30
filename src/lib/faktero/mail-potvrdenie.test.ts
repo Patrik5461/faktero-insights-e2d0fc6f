@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   adresaOdosielatela,
+  prvaAuthResults,
   poskytovatelPotvrdenia,
   overPravostPotvrdenia,
   rozbalTelo,
@@ -234,6 +235,37 @@ visit: http://support.google.com/mail/bin/answer.py?answer=184973.`;
           domena: "google.com",
         }),
       ).toEqual({ ok: false, dovod: "DKIM fail" });
+    });
+
+    it("podvrhnutá Authentication-Results pod našou sa neberie", () => {
+      // Odosielateľ vloží vlastnú hlavičku; Resend vráti obe (naša je prvá).
+      const headers = {
+        "Authentication-Results": [
+          "amazonses.com; spf=fail smtp.mailfrom=utocnik.sk; dkim=none",
+          "x; spf=pass; dkim=pass header.d=google.com",
+        ],
+      };
+      expect(overPravostPotvrdenia({ headers, domena: "google.com" }).ok).toBe(false);
+      expect(
+        overPravostPotvrdenia({ headers, domena: "google.com", authservId: "amazonses.com" }).ok,
+      ).toBe(false);
+      // Podvrh navrchu: s authserv-id nášho servera sa vezme naša hlavička.
+      const navrchu = {
+        "authentication-results": [
+          "x; spf=pass; dkim=pass header.d=google.com",
+          "amazonses.com; spf=fail; dkim=fail header.d=google.com",
+        ],
+      };
+      expect(
+        overPravostPotvrdenia({
+          headers: navrchu,
+          domena: "google.com",
+          authservId: "amazonses.com",
+        }).ok,
+      ).toBe(false);
+      expect(prvaAuthResults(navrchu, "amazonses.com")).toMatch(/^amazonses\.com; spf=fail/);
+      expect(prvaAuthResults({ "Authentication-Results": "mx; spf=pass" })).toBe("mx; spf=pass");
+      expect(prvaAuthResults(null)).toBe("");
     });
 
     it("veľkosť písmen v názve hlavičky nerozhoduje", () => {

@@ -166,10 +166,12 @@ async function posliCezResend(m: Omit<MailFirmy, "ochrana">): Promise<string | n
   return json?.id ?? null;
 }
 
-export async function posliMailFirmy(companyId: string, m: MailFirmy): Promise<VysledokMailu> {
+export async function posliMailFirmy(companyId: string, mail: MailFirmy): Promise<VysledokMailu> {
   // Strážca: stropy adresátov, kontrola obsahu, pozastavenie. Keď mail
   // neprejde, vyhodí OdosielanieZastavene a nič neodíde.
-  const { strazOdoslanie } = await import("./ochrana-odosielania.server");
+  const { strazOdoslanie, rozdelAdresy } = await import("./ochrana-odosielania.server");
+  // „a@x.sk, b@y.sk" v jednej položke: strážca aj odoslanie dostanú adresy jednotlivo.
+  const m: MailFirmy = { ...mail, to: rozdelAdresy(mail.to) };
   const povolenie = await strazOdoslanie({
     companyId,
     userId: m.ochrana.userId,
