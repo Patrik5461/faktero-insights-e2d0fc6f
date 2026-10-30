@@ -56,3 +56,24 @@ export function oMesiacNeskor(od: Date | string = new Date()): Date {
   const cas = d.toISOString().slice(10); // „THH:MM:SS.sssZ"
   return new Date(den + cas);
 }
+
+/**
+ * Ktorá veta o obnove patrí pod aktuálny plán na obrazovke Predplatné.
+ * Skúšobná verzia bez uloženej karty nemá čo obnovovať ani rušiť — predtým
+ * dostala vetu „obnovuje sa každý mesiac… kliknite na Zrušiť predplatné“,
+ * hoci také tlačidlo sa pri nej ani neukazuje.
+ */
+export type VetaObnovy = "zdarma" | "zrusene" | "karta" | "skusobna" | "mesacne";
+export function vetaObnovy(plan: {
+  zdarma?: boolean;
+  cancel_at_period_end?: boolean;
+  next_billing_at?: string | null;
+  ma_ulozenu_kartu?: boolean;
+  is_trialing?: boolean;
+}): VetaObnovy {
+  if (plan.zdarma) return "zdarma";
+  if (plan.cancel_at_period_end) return "zrusene";
+  if (plan.next_billing_at && plan.ma_ulozenu_kartu) return "karta";
+  if (plan.is_trialing && !plan.ma_ulozenu_kartu) return "skusobna";
+  return "mesacne";
+}
