@@ -11942,6 +11942,45 @@ export type Database = {
           }
         ]
       }
+      admin_usage_daily: {
+        Row: {
+          date: string
+          egress_bytes: number
+          realtime_messages: number
+          edge_invocations: number
+          egress_measured_bytes: number
+          responses_total: number
+          responses_without_length: number
+          detail: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          date: string
+          egress_bytes?: number
+          realtime_messages?: number
+          edge_invocations?: number
+          egress_measured_bytes?: number
+          responses_total?: number
+          responses_without_length?: number
+          detail: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          date?: string
+          egress_bytes?: number
+          realtime_messages?: number
+          edge_invocations?: number
+          egress_measured_bytes?: number
+          responses_total?: number
+          responses_without_length?: number
+          detail?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       stock_items_with_availability: {
