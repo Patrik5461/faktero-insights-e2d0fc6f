@@ -333,7 +333,7 @@
     },
     {
      "nadpis": "Platiteľ, alebo len registrovaná osoba",
-     "text": "<>\nV Nastaveniach firmy (/firma) sa zaškrtáva, či je firma platiteľ DPH, a\nvyberá sa typ registrácie. Nestačí totiž vyplnené IČ DPH: osoba registrovaná podľa\n§ 7 (nadobudnutie tovaru z EÚ) alebo § 7a (služby v\nrámci EÚ) IČ DPH má, ale platiteľom nie je — faktúry vystavuje bez dane.\n-\nPlatiteľ: § 4 (bežná registrácia), § 4b (skupinová), § 5 (zahraničná\nosoba).\n-\nBez postavenia platiteľa: § 7, § 7a alebo neregistrovaná osoba.\n- Pre českú firmu: plátce, identifikovaná osoba, neplátce.\nNeplatiteľovi sa v doklade ponúka len nulová sadzba a na faktúru pribudne veta, prečo na\nnej daň nie je. Z registra sa ťahá len IČ DPH — paragraf treba vybrať ručne."
+     "text": "<>\nV Nastaveniach firmy (/firma) sa zaškrtáva, či je firma platiteľ DPH, a\nvyberá sa typ registrácie. Nestačí totiž vyplnené IČ DPH: osoba registrovaná podľa\n§ 7 (nadobudnutie tovaru z EÚ) alebo § 7a (služby v\nrámci EÚ) IČ DPH má, ale platiteľom nie je — faktúry vystavuje bez dane.\n-\nPlatiteľ: § 4 (bežná registrácia), § 4b (skupinová), § 5 (zahraničná\nosoba).\n-\nBez postavenia platiteľa: § 7, § 7a alebo neregistrovaná osoba.\n- Pre českú firmu: plátce, identifikovaná osoba, neplátce.\nNeplatiteľovi sa v doklade ponúka len nulová sadzba a na faktúru pribudne veta, prečo na\nnej daň nie je. Typ registrácie Faktero overuje v zozname Finančnej správy (paragraf\nregistrácie a dátum) a českej firme v Registri plátců DPH — pozri\nNastavenia firmy (/pomoc/nastavenia)."
     },
     {
      "nadpis": "Faktúra v cudzej mene",
@@ -673,7 +673,7 @@
     },
     {
      "nadpis": "Postavenie k DPH",
-     "text": "<>\nV údajoch firmy sa zaškrtáva Firma je platiteľ DPH a vyberá typ\nregistrácie — § 4, § 4b alebo § 5 pre platiteľa, § 7, § 7a alebo bez registrácie pre\nostatných. Z registra sa ťahá len IČ DPH, paragraf v ňom nie je.\nVoľba rozhoduje o tom, či sa v dokladoch ponúkajú sadzby DPH a aká veta pribudne na\nfaktúru. Podrobnosti sú v manuáli k DPH (/pomoc/dph)."
+     "text": "<>\nV údajoch firmy sa zaškrtáva Firma je platiteľ DPH a vyberá typ\nregistrácie — § 4, § 4b alebo § 5 pre platiteľa, § 7, § 7a alebo bez registrácie pre\nostatných. Pri vyhľadaní podľa IČO sa typ registrácie vyplní zo zoznamu Finančnej správy\n(českej firme z Registra plátců DPH).\nPod výberom je Overenie v registri DPH : kedy a čo register naposledy\npovedal a história registrácie. Zapnuté\nAutomaticky overovať platiteľstvo DPH overuje firmu raz denne a po zmene\nIČO alebo IČ DPH. Prázdny režim DPH sa doplní sám, vyplnený sa nikdy neprepíše — keď s\nregistrom nesedí, ukáže sa upozornenie s tlačidlom Prevziať z registra a\nozve sa zvonček. Zvonček hlási aj novú registráciu, jej zrušenie a dôvody na zrušenie,\nktoré zverejnila Finančná správa.\nVoľba rozhoduje o tom, či sa v dokladoch ponúkajú sadzby DPH a aká veta pribudne na\nfaktúru. Podrobnosti sú v manuáli k DPH (/pomoc/dph)."
     },
     {
      "nadpis": "Bankové účty firmy",

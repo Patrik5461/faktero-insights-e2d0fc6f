@@ -1686,6 +1686,9 @@ export type Database = {
           pohoda_ico_z_mena: boolean
           mail_ukladat_bez_dokladu: boolean
           efaktura_upozornenie_email: boolean
+          dph_auto_overenie: boolean
+          dph_overit_od: string | null
+          dph_overene_at: string | null
         }
         Insert: {
           kurz_de_zdroj?: string
@@ -1812,6 +1815,9 @@ export type Database = {
           pohoda_ico_z_mena?: boolean
           mail_ukladat_bez_dokladu?: boolean
           efaktura_upozornenie_email?: boolean
+          dph_auto_overenie?: boolean
+          dph_overit_od?: string | null
+          dph_overene_at?: string | null
         }
         Update: {
           kurz_de_zdroj?: string
@@ -1938,6 +1944,9 @@ export type Database = {
           pohoda_ico_z_mena?: boolean
           mail_ukladat_bez_dokladu?: boolean
           efaktura_upozornenie_email?: boolean
+          dph_auto_overenie?: boolean
+          dph_overit_od?: string | null
+          dph_overene_at?: string | null
         }
         Relationships: []
       }
@@ -11709,6 +11718,77 @@ export type Database = {
       }
 
 
+      dph_overenia: {
+        Row: {
+          id: string
+          company_id: string
+          overene_at: string
+          naposledy_at: string
+          zdroj: string
+          stav: string
+          schema: string | null
+          ic_dph: string | null
+          platne_od: string | null
+          zrusene_od: string | null
+          zoznam_k: string | null
+          zmena: string | null
+          predosla_schema: string | null
+          doplnene: Json | null
+          nesulad: Json | null
+          odpoved: Json | null
+          sposob: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          overene_at?: string
+          naposledy_at?: string
+          zdroj: string
+          stav: string
+          schema?: string | null
+          ic_dph?: string | null
+          platne_od?: string | null
+          zrusene_od?: string | null
+          zoznam_k?: string | null
+          zmena?: string | null
+          predosla_schema?: string | null
+          doplnene?: Json | null
+          nesulad?: Json | null
+          odpoved?: Json | null
+          sposob?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          overene_at?: string
+          naposledy_at?: string
+          zdroj?: string
+          stav?: string
+          schema?: string | null
+          ic_dph?: string | null
+          platne_od?: string | null
+          zrusene_od?: string | null
+          zoznam_k?: string | null
+          zmena?: string | null
+          predosla_schema?: string | null
+          doplnene?: Json | null
+          nesulad?: Json | null
+          odpoved?: Json | null
+          sposob?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dph_overenia_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       stock_items_with_availability: {
