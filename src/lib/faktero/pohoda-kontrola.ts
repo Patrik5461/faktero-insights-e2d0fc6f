@@ -16,12 +16,21 @@
 import { jeZnamaSadzba, krajinaDane } from "./vat-rates";
 import { rozpisBlocku } from "./rozuctovanie";
 import { domacaMena } from "./kurzy";
+import {
+  DOVOD_NEPLATITEL_PRIJATY,
+  DOVOD_NEPLATITEL_VYSTAVENA,
+  jeNeplatitel,
+  jeNezahrnovat,
+  prekazkaClenenia,
+} from "./uctovanie-agenda";
 
 /**
  * Členenie DPH vydanej faktúry v tuzemskom prenesení (§ 69 ods. 12), keď
  * firma vlastné nenastavila. Kód zo základných členení SK Pohody
  * (`ZAKLADNE_CLENENIA_DPH` v `predkontacie.ts`); Stormware ho opisuje ako
  * členenie typu „pdp“, ktoré nuluje daň a doplní text o prenesení.
+ * Len pre slovenské firmy — česká Pohoda má vlastný číselník a kód „UDpdp“
+ * v ňom nie je; českej firme bez nastaveného členenia sa doklad ohlási.
  */
 export const PREDVOLENE_CLENENIE_PDP_VYDANE = "UDpdp";
 /** Kontrolný výkaz DPH — vydané faktúry v prenesení (§ 69 ods. 12 písm. f) až j)). */
@@ -94,6 +103,36 @@ export function prekazkaVydanej(
       return `${cislo} — prenesenie daňovej povinnosti bez IČ DPH odberateľa (kontrolný výkaz ${cz ? "A.1" : "A.2"} ho vyžaduje) — doplňte IČ DPH alebo prenesenie zrušte`;
   }
 
+  // Česká firma: predvolené členenie pre prenesenie nie je (UDpdp je slovenské).
+  if (cz && !zalohova) {
+    const bezClenenia =
+      (tuzemskePdp &&
+        !kod(invoice?.pohoda_clenenie_dph) &&
+        !clenenieVydanejPdp(nastavenia, company)) ||
+      (pdpPolozky &&
+        !clenenieVydanejPdp(nastavenia, company) &&
+        (items ?? []).some((it) => it?.prenesenie && !kod(it?.pohoda_clenenie_dph)));
+    if (bezClenenia)
+      return `${cislo} — prenesenie daňovej povinnosti (§ 92a) bez členenia DPH — nastavte členenie pre prenesenie v Účtovníctvo → Predkontácie (Vydaná faktúra — prenesenie daňovej povinnosti)`;
+  }
+
+  // Neplatiteľ daň nevyčísľuje — faktúra s DPH by v Pohode išla do priznania.
+  if (jeNeplatitel(company) && Math.abs(Number(invoice?.vat_total ?? 0)) > 0.005)
+    return `${cislo} — ${DOVOD_NEPLATITEL_VYSTAVENA}`;
+
+  // Členenie a KV musia patriť vydaným dokladom (PALIERA FA20260004 odišla s PD).
+  {
+    const dovod = prekazkaClenenia(
+      "vydane",
+      [
+        kod(invoice?.pohoda_clenenie_dph) || kod(nastavenia?.clenenieDph),
+        ...(items ?? []).map((it) => it?.pohoda_clenenie_dph),
+      ],
+      [invoice?.kv_clenenie, ...(items ?? []).map((it) => it?.kv_clenenie)],
+    );
+    if (dovod) return `${cislo} — ${dovod}`;
+  }
+
   // DPH po sadzbách musí sedieť so základom (audit: DPH = základ).
   const poSadzbach = new Map<number, { zaklad: number; dph: number; n: number }>();
   for (const it of items ?? []) {
@@ -139,7 +178,7 @@ export function prekazkaVydanej(
     if (!zalohova) {
       const cl =
         kod(invoice?.pohoda_clenenie_dph) ||
-        (tuzemskePdp ? clenenieVydanejPdp(nastavenia) : kod(nastavenia?.clenenieDph)) ||
+        (tuzemskePdp ? clenenieVydanejPdp(nastavenia, company) : kod(nastavenia?.clenenieDph)) ||
         (vsetkyPolozky("pohoda_clenenie_dph") ? "x" : "");
       if (!cl) return `${cislo} — zaúčtovaná bez členenia DPH — doplňte ho v zaúčtovaní faktúry`;
     }
@@ -147,9 +186,14 @@ export function prekazkaVydanej(
   return null;
 }
 
-/** Členenie pre tuzemské prenesenie na vydanej faktúre: nastavenie firmy, inak predvolené. */
-export function clenenieVydanejPdp(nastavenia?: Riadok | null): string {
-  return kod(nastavenia?.clenenieDphPdp) || PREDVOLENE_CLENENIE_PDP_VYDANE;
+/**
+ * Členenie pre tuzemské prenesenie na vydanej faktúre: nastavenie firmy,
+ * inak predvolené SK. Česká firma predvolené nedostane — vráti sa „“.
+ */
+export function clenenieVydanejPdp(nastavenia?: Riadok | null, company?: Riadok | null): string {
+  const vlastne = kod(nastavenia?.clenenieDphPdp);
+  if (vlastne) return vlastne;
+  return krajinaDane(company?.country) === "CZ" ? "" : PREDVOLENE_CLENENIE_PDP_VYDANE;
 }
 
 /**
@@ -209,6 +253,40 @@ export function prekazkaDokladu(
   ) {
     return `${cislo} — prenesenie daňovej povinnosti bez členenia DPH pre samozdanenie — nastavte ho v Účtovníctvo → Predkontácie (Prijatá faktúra — prenesenie daňovej povinnosti)`;
   }
+
+  // Členenie a KV musia patriť prijatým dokladom (UD či A.1 na prijatej nie).
+  const podlaKategorie = nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
+  const rozuctovanie: Riadok[] = Array.isArray(d?.rozuctovanie) ? d.rozuctovanie : [];
+  const ucinneClenenie =
+    vlastneClenenie ||
+    kod(podlaKategorie?.clenenie) ||
+    (blocek ? kod(nastavenia?.clenenieDphDoklady) : "") ||
+    kod(nastavenia?.clenenieDphPrijata);
+  {
+    const dovod = prekazkaClenenia(
+      "prijate",
+      [
+        ucinneClenenie,
+        ...rozuctovanie.map((r) => r?.clenenie),
+        ...(Array.isArray(d?._polozkyPrijatej)
+          ? d._polozkyPrijatej.map((x: any) => x?.clenenie)
+          : []),
+      ],
+      [d?.kv_clenenie, ...rozuctovanie.map((r) => r?.kv)],
+    );
+    if (dovod) return `${cislo} — ${dovod}`;
+  }
+
+  // Neplatiteľ si DPH neodpočíta — doklad s odpočtom by išiel do priznania.
+  if (
+    jeNeplatitel(company) &&
+    !pdpHlavicka &&
+    d?.odpocet !== false &&
+    kod(d?.kv_clenenie) !== "X" &&
+    !jeNezahrnovat(ucinneClenenie) &&
+    rozpis.some((r) => !r?.pdp && Math.abs(Number(r?.dph ?? 0)) > 0.005)
+  )
+    return `${cislo} — ${DOVOD_NEPLATITEL_PRIJATY}`;
 
   // Zaúčtovaná prijatá faktúra musí mať predkontáciu aj členenie.
   if (d?._zauctovane) {

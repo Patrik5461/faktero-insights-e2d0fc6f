@@ -196,15 +196,19 @@ export async function nastaveniaDokladov(
       ]),
     );
   }
-  // Predkontácie s agendou Ostatné záväzky — faktúra s nimi ide ako záväzok.
+  /*
+    Predkontácie s agendou Ostatné záväzky — faktúra s nimi ide ako záväzok.
+    Kód, ktorý firma má aj v prijatých faktúrach, záväzkom nie je (BÝVAJLEPŠIE
+    má „2“ v oboch agendách a prijaté faktúry odchádzali ako záväzky).
+  */
   const { data: zavazky } = await supabase
     .from("predkontacie")
-    .select("kod")
+    .select("kod, agenda")
     .eq("company_id", company.id)
     .eq("druh", "predkontacia")
-    .eq("agenda", "commitment")
+    .in("agenda", ["commitment", "receivedInvoice"])
     .eq("aktivne", true);
-  out.zavazkovePredkontacie = (zavazky ?? []).map((r: any) => String(r.kod));
+  out.zavazkovePredkontacie = (await import("./uctovanie-agenda")).zavazkoveKody(zavazky ?? []);
   out.pomeryPredkontacii = await pomeryPredkontacii(supabase, company.id);
   // Vozidlo s odpočtom DPH 50 % (zmiešané použitie) rozúčtuje doklad samo.
   out.odpocetVozidiel = await (

@@ -28,6 +28,7 @@
 */
 
 import type { DokladUctovania, KodUctovania, RiadokUctovania } from "./zauctovanie-export";
+import { kodPreDoklad } from "./uctovanie-agenda";
 import { rozdelUcet } from "./zauctovanie-export";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 
@@ -375,7 +376,7 @@ function interny(
   const ucetDph = ucet(nast.ucetDph);
   const polozky: string[] = [];
   for (const r of d.riadky) {
-    const k = kody[String(r.predkontacia ?? "")];
+    const k = kodPreDoklad(kody, r.predkontacia, d);
     const md = ucet(k?.ucetMd);
     const dal = ucet(k?.ucetD);
     if (!md || !dal)

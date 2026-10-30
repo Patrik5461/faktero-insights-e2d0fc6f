@@ -80,10 +80,18 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
         zle.has(d.id) ? (preskocene.push(`${d.cislo} — neodsúhlasená samofaktúra`), false) : true,
       );
     }
-    const { ok, cakaju } = await (
+    const { ok: schvalene, cakaju } = await (
       await import("./schvalovanie.server")
     ).lenSchvalene(supabase, data.company_id, data.agenda, kandidati);
     if (cakaju) preskocene.push(`${cakaju} čaká na schválenie`);
+    // Členenie z opačnej strany (PD na vystavenej) a odpočet DPH u neplatiteľa
+    // by program prijal a zaúčtoval zle — taký doklad sa vynechá s dôvodom.
+    const { prekazkaUctovania } = await import("./uctovanie-agenda");
+    const ok = schvalene.filter((d) => {
+      const dovod = prekazkaUctovania(d, firma);
+      if (dovod) preskocene.push(dovod);
+      return !dovod;
+    });
     if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
 
     const kody = await kodyUctovania(supabase, data.company_id);

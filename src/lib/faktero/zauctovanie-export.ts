@@ -139,6 +139,8 @@ export type DokladUctovania = {
 /** Kód predkontácie s účtami (MD/Dal) z číselníka firmy. */
 export type KodUctovania = {
   kod: string;
+  /** Agenda Pohody z číselníka („“ = všetky); kód sa hľadá podľa agendy dokladu (`kodPreDoklad`). */
+  agenda?: string;
   popis: string | null;
   ucetMd: string | null;
   ucetD: string | null;
