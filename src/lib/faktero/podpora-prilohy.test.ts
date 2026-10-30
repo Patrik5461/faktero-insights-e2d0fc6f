@@ -6,6 +6,7 @@ import {
   cestaPrilohyPodpory,
   jeNahladovyObrazok,
   menoVlozenejSnimky,
+  obsahZodpovedaTypu,
   roztriedPrilohy,
   typPrilohyPodpory,
 } from "./podpora-prilohy";
@@ -89,5 +90,31 @@ describe("drobnosti", () => {
   it("cesta v koši je pod priečinkom požiadavky a bez pôvodného mena", () => {
     const c = cestaPrilohyPodpory("11111111-1111-1111-1111-111111111111", "image/heic");
     expect(c).toMatch(/^11111111-1111-1111-1111-111111111111\/[0-9a-f-]{36}\.heic$/);
+  });
+});
+
+describe("obsahZodpovedaTypu", () => {
+  const b = (...x: (number | string)[]) =>
+    new Uint8Array(
+      x.flatMap((v) => (typeof v === "string" ? [...v].map((z) => z.charCodeAt(0)) : [v])),
+    );
+  it("pozná skutočné obrázky a PDF", () => {
+    expect(obsahZodpovedaTypu("image/png", b(0x89, "PNG", 0x0d, 0x0a, 0x1a, 0x0a, 0))).toBe(true);
+    expect(obsahZodpovedaTypu("image/jpeg", b(0xff, 0xd8, 0xff, 0xe0))).toBe(true);
+    expect(obsahZodpovedaTypu("image/webp", b("RIFF", 0, 0, 0, 0, "WEBPVP8 "))).toBe(true);
+    expect(obsahZodpovedaTypu("image/heic", b(0, 0, 0, 0x18, "ftypheic"))).toBe(true);
+    expect(obsahZodpovedaTypu("application/pdf", b("%PDF-1.7\n"))).toBe(true);
+    // Hlavička PDF smie mať pred sebou pár bajtov smetí.
+    expect(obsahZodpovedaTypu("application/pdf", b(0xef, 0xbb, 0xbf, "%PDF-1.4"))).toBe(true);
+  });
+  it("odmietne HTML či text vydávaný za obrázok alebo PDF (skúška naostro 30. 10.)", () => {
+    const html = b("<html><script>alert(1)</script></html>");
+    expect(obsahZodpovedaTypu("image/png", html)).toBe(false);
+    expect(obsahZodpovedaTypu("image/jpeg", html)).toBe(false);
+    expect(obsahZodpovedaTypu("image/webp", html)).toBe(false);
+    expect(obsahZodpovedaTypu("image/heic", html)).toBe(false);
+    expect(obsahZodpovedaTypu("application/pdf", html)).toBe(false);
+    expect(obsahZodpovedaTypu("text/html", html)).toBe(false);
+    expect(obsahZodpovedaTypu("image/png", new Uint8Array())).toBe(false);
   });
 });
