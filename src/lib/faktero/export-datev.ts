@@ -33,6 +33,7 @@ import { jeEuIcDph, rozdelIcDph } from "./vies";
 import { krajinaDane } from "./vat-rates";
 import { pomenovanieDobropisu } from "@/lib/i18n/dobropis-de";
 import type { DokladUctovania, KodUctovania, RiadokUctovania } from "./zauctovanie-export";
+import { kodPreDoklad } from "./uctovanie-agenda";
 
 export type OsnovaDatev = "SKR03" | "SKR04";
 
@@ -722,7 +723,7 @@ export function buildDatevBuchungsstapel(opts: {
     let chyba: string | null = null;
     for (const r of riadky) {
       const sadzba = sadzbaZRiadku(r);
-      const kod = r.predkontacia ? kody[r.predkontacia] : undefined;
+      const kod = kodPreDoklad(kody, r.predkontacia, d);
       let gegenkonto: string;
       let buKluc = "";
       /** Netto: daň dopočíta automatický účet (prenesenie, nadobudnutie). */

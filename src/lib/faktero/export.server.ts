@@ -712,7 +712,7 @@ export function polozkyFaktur(opts: {
       const clenenieJedno =
         String((invoice as any).pohoda_clenenie_dph ?? "").trim() ||
         (tuzemskePdp
-          ? clenenieVydanejPdp(nastavenia)
+          ? clenenieVydanejPdp(nastavenia, company as any)
           : invoice.reverse_charge
             ? (nastavenia?.clenenieDphPdp ?? nastavenia?.clenenieDph)
             : nastavenia?.clenenieDph);
@@ -774,7 +774,7 @@ export function polozkyFaktur(opts: {
         const cl = zalohova
           ? ""
           : String((it as any).pohoda_clenenie_dph ?? "").trim() ||
-            (pdpRiadok ? clenenieVydanejPdp(nastavenia) : "");
+            (pdpRiadok ? clenenieVydanejPdp(nastavenia, company as any) : "");
         // KV DPH (SK A.2). CZ verzia element nemá — kontrolné hlásenie A.1 si
         // Pohoda odvodí z členenia DPH položky.
         const kvp =
@@ -2751,15 +2751,23 @@ export const MRP_XML: ExportStrategy = {
   async build({ invoices, company, nastavenia }) {
     const { vystavenaNaUctovanie } = await import("./zauctovanie-export");
     const { buildMrpUctovanie } = await import("./export-mrp-uctovanie");
-    const doklady = invoices.map(({ invoice, items }) =>
-      vystavenaNaUctovanie(invoice, items, (nastavenia ?? {}) as never),
-    );
+    const { prekazkaUctovania } = await import("./uctovanie-agenda");
+    const vynechane: string[] = [];
+    // Členenie z prijatej strany či DPH u neplatiteľa — doklad sa vynechá s dôvodom.
+    const doklady = invoices
+      .map(({ invoice, items }) => vystavenaNaUctovanie(invoice, items, (nastavenia ?? {}) as never))
+      .filter((d) => {
+        const dovod = prekazkaUctovania(d, company as never);
+        if (dovod) vynechane.push(dovod);
+        return !dovod;
+      });
     // Upozornenia (nečíselná predkontácia) tu nehlásime — doklad v súbore je a vynechaný by sa rátal ako neodovzdaný.
-    const { xml, preskocene } = buildMrpUctovanie({
+    const { xml, preskocene: zMrp } = buildMrpUctovanie({
       firma: company as Record<string, any>,
       doklady,
       nastavenia: ((company as any)?.uctovanie_nastavenia ?? {})?.mrp ?? {},
     });
+    const preskocene = [...vynechane, ...zMrp];
     if (preskocene.length === invoices.length) {
       throw new Error(`Do MRP sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
     }

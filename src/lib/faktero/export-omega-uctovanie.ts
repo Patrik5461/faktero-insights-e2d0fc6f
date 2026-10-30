@@ -27,6 +27,7 @@
 */
 
 import { rozdelUcet, type DokladUctovania, type KodUctovania, type RiadokUctovania } from "./zauctovanie-export";
+import { kodPreDoklad } from "./uctovanie-agenda";
 
 export type DruhOmega = "OF" | "OD" | "OPF" | "DF" | "DD" | "DPF" | "PD" | "ID";
 
@@ -265,7 +266,7 @@ export function buildOmegaUctovanie(opts: {
     const zapisy: Zapis[] = [];
     let chyba: string | null = null;
     for (const r of d.riadky as RiadokUctovania[]) {
-      const kod = r.predkontacia ? kody[r.predkontacia] : undefined;
+      const kod = kodPreDoklad(kody, r.predkontacia, d);
       // Výnos/náklad z predkontácie; protistrana je partner (pri PD a ID pokladňa či interný účet).
       const vlastny = vystup ? (kod?.ucetD ?? n.ucetVynosy) : (kod?.ucetMd ?? n.ucetNaklady);
       if (!vlastny || !rozdelUcet(vlastny)) {

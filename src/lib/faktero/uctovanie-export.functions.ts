@@ -85,9 +85,12 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
     ).lenSchvalene(supabase, data.company_id, data.agenda, kandidati);
     if (cakaju) preskocene.push(`${cakaju} čaká na schválenie`);
     // Doklad, ktorého riadky nesedia so sumou o viac než euro, by išiel s vymysleným zaokrúhlením.
+    // Členenie z opačnej strany (PD na vystavenej) a odpočet DPH u neplatiteľa
+    // by program prijal a zaúčtoval zle — taký doklad sa vynechá s dôvodom.
     const { prekazkaZaokruhlenia } = await import("./zauctovanie-export");
+    const { prekazkaUctovania } = await import("./uctovanie-agenda");
     const ok = schvalene.filter((d) => {
-      const dovod = prekazkaZaokruhlenia(d);
+      const dovod = prekazkaUctovania(d, firma) ?? prekazkaZaokruhlenia(d);
       if (dovod) preskocene.push(dovod);
       return !dovod;
     });

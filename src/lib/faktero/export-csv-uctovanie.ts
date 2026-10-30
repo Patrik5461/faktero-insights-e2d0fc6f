@@ -12,6 +12,7 @@ import { bezVzorca } from "@/lib/bezpecny-text";
 */
 
 import { rozdelUcet, type DokladUctovania, type KodUctovania } from "./zauctovanie-export";
+import { kodPreDoklad } from "./uctovanie-agenda";
 
 const dveSk = (n: unknown): string => {
   const x = Number(n);
@@ -103,7 +104,7 @@ export function buildCsvUctovanie(opts: {
           },
         ];
     for (const r of zoznam) {
-      const kod = r.predkontacia ? opts.kody[r.predkontacia] : undefined;
+      const kod = kodPreDoklad(opts.kody, r.predkontacia, d);
       const md = rozdelUcet(kod?.ucetMd);
       const dal = rozdelUcet(kod?.ucetD);
       riadky.push(

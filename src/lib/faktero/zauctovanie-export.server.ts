@@ -72,28 +72,23 @@ export async function nastaveniaUctovania(
   };
 }
 
-/** Číselník predkontácií s účtami — kód → MD/Dal. */
+/**
+ * Číselník predkontácií s účtami — kľúč agenda + kód (`mapaKodov`). Ten istý
+ * kód môže mať firma v rôznych agendách s inými účtami; riadok dokladu si
+ * ho vyberie cez `kodPreDoklad` podľa svojej agendy.
+ */
 export async function kodyUctovania(
   supabase: Klient,
   companyId: string,
 ): Promise<Record<string, KodUctovania>> {
   const { data } = await supabase
     .from("predkontacie")
-    .select("kod, popis, ucet_md, ucet_d")
+    .select("kod, agenda, popis, ucet_md, ucet_d")
     .eq("company_id", companyId)
     .eq("druh", "predkontacia")
     .eq("aktivne", true);
-  return Object.fromEntries(
-    (data ?? []).map((r: any) => [
-      String(r.kod),
-      {
-        kod: String(r.kod),
-        popis: r.popis ?? null,
-        ucetMd: r.ucet_md ?? null,
-        ucetD: r.ucet_d ?? null,
-      },
-    ]),
-  );
+  const { mapaKodov } = await import("./uctovanie-agenda");
+  return mapaKodov(data ?? []);
 }
 
 /**
