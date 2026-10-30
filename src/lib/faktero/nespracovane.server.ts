@@ -178,6 +178,7 @@ export async function vytazNespracovany(id: string): Promise<void> {
       bajty.toString("base64"),
       r.file_mime ?? "application/pdf",
       r.company_id ? await volbyCitaniaFirmy(supabaseAdmin, r.company_id) : null,
+      { ucel: "nespracovane", firma: r.company_id ?? null },
     );
     const dnes = new Date().toISOString().slice(0, 10);
     const povodne = nacitajUdaje(r.udaje);

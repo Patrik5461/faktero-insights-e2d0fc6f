@@ -130,6 +130,7 @@ export const NAZOV_POSKYTOVATELA: Record<string, string> = {
 export const NAZOV_UCELU: Record<string, string> = {
   blocek: "Bločky (pokladňa)",
   "doklad-z-posty": "Doklady z e-mailu",
+  nespracovane: "Nahraté doklady (appka, web)",
   "dodaci-list": "Dodacie listy",
   financovanie: "Leasingy a úvery",
   vozidlo: "Vozový park (technický preukaz)",

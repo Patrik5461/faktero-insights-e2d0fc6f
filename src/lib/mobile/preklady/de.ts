@@ -104,6 +104,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "faktury.stav.neuhradena": "Offen",
   "faktury.stav.splatna": "Fällig",
   "faktury.stav.poSplatnosti": "Überfällig",
+  "faktury.stav.dobropis": "Gutschrift",
   "faktury.stav.stornovana": "Storniert",
   "faktury.otvoritPdf": "PDF öffnen",
   "faktury.zdielat": "Rechnung teilen",
@@ -476,6 +477,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "ponuky.vytvaram": "Angebot wird erstellt…",
 
   /* kniha jázd — zvyšok */
+  "jz.odHodiny": "seit {cas}",
   "jz.odCasu":
     "Ab {cas}. Beenden Sie sie nach der Ankunft — sonst stoppt sie erst nach fünf Minuten Stillstand von selbst.",
   "jz.rozpoznalaJazdu": "Die App hat eine Fahrt erkannt",
@@ -537,7 +539,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "faktury.uhradena": "Bezahlt",
   "faktury.odoslana": "Gesendet",
   "faktury.cisloOstava":
-    "Sie verschwindet aus der Liste, die Nummer bleibt aber vergeben — in der Reihe entsteht keine Lücke.",
+    "Sie verschwindet aus der Liste und ihre Nummer wird frei — die nächste ausgestellte Rechnung erhält sie, sodass in der Reihe keine Lücke entsteht.",
   "jazdy.nacitavam": "Fahrten werden geladen…",
   "jazdy.prvaPribudne":
     "Die erste erscheint nach dem Beenden einer Messung — oder wird aus der GPS-Einheit geholt, wenn das Fahrzeug verbunden ist.",

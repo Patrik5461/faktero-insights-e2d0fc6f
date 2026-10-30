@@ -766,6 +766,23 @@ function ObsahApky() {
       }
     }
 
+    /*
+      Nepoužité rezervované čísla treba vrátiť ešte s platnou reláciou — po
+      odhlásení by ich appka zabudla, ale server by ich držal dva týždne.
+    */
+    try {
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      if (await isOnline()) {
+        const { uvolniNepouziteCisla } = await import("@/lib/mobile/faktury-fronta");
+        const { volajOperaciu } = await import("@/lib/mobile/server-most-volanie");
+        await uvolniNepouziteCisla((companyId, cisla) =>
+          volajOperaciu("cisla-uvolni", { company_id: companyId, numbers: cisla }),
+        );
+      }
+    } catch {
+      /* čísla prepadnú samy po vypršaní */
+    }
+
     // Odhlásenie odvoláva token na serveri, takže bez signálu zlyhá. Relácia v
     // telefóne sa musí zmazať tak či tak — na požičanom telefóne by inak ostala.
     // `scope: "local"` odhlási len tento telefón; bez neho by Supabase odvolal

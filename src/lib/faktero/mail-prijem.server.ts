@@ -141,11 +141,19 @@ položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie s
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.
 ${POKYN_POLOH}`;
 
+/**
+ * Odkiaľ čítanie prišlo — pre prehľad využitia AI v admine (`ai_pouzitie`).
+ * Bez neho sa každé čítanie zapísalo ako „Doklady z e-mailu“ bez firmy, aj keď
+ * doklad odfotili v appke alebo nahrali na webe.
+ */
+export type KontextCitania = { ucel?: string; firma?: string | null };
+
 /** Prečíta doklad cez Gemini. Keď sa to nepodarí, vráti null a doklad vznikne prázdny. */
 export async function precitajDoklad(
   base64: string,
   mimeType: string,
   volby?: import("./vytazenie-mena").VolbyCitania | null,
+  kontext?: KontextCitania,
 ): Promise<Record<string, unknown> | null> {
   /*
     Faktúra so strojovými údajmi (ISDOC, ZUGFeRD / Factur-X, UBL — vložené v
@@ -165,7 +173,8 @@ export async function precitajDoklad(
     const { pokynCitania } = await import("./vytazenie-mena");
     let kto: "gemini" | "openai" | null = null;
     const odpoved = await aiVision(base64, mimeType, pokynCitania(PROMPT, volby), {
-      ucel: "doklad-z-posty",
+      ucel: kontext?.ucel ?? "doklad-z-posty",
+      firma: kontext?.firma ?? null,
       odpovedal: (p) => (kto = p),
     });
     const json = odpoved.match(/\{[\s\S]*\}/)?.[0];
@@ -697,7 +706,9 @@ export async function spracujPrijatyMail(
       const ai = uz
         ? uz.ai
         : ((await zXmlVedla(priloha).catch(() => null)) ??
-          (await precitajDoklad(bajty.toString("base64"), mime, volbyCitania)));
+          (await precitajDoklad(bajty.toString("base64"), mime, volbyCitania, {
+            firma: adresa.company_id,
+          })));
 
       /*
         Z prílohy, z ktorej sa nedá prečítať ani dodávateľ, ani číslo, ani

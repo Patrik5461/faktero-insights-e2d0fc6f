@@ -46,6 +46,7 @@ import { HlavneTlacidlo, MobilObrazovka, Pracujem } from "./MobilChrome";
 import { PrebiehaJazda } from "./PrebiehaJazda";
 import { HistoriaJazd } from "./HistoriaJazd";
 
+import { kilometre } from "@/lib/mobile/km";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { potvrd } from "@/lib/potvrdenie";
 /**
@@ -291,7 +292,7 @@ export function Jazda({
             } else {
               toast.success(
                 t("jz.rozpoznanaUlozena", {
-                  km: (jazda.distanceMeters / 1000).toFixed(1),
+                  km: kilometre(jazda.distanceMeters / 1000, loc),
                   auto: vozidla.find((v) => v.id === auto)?.name ?? "",
                 }),
               );
@@ -483,10 +484,12 @@ export function Jazda({
           zapis,
           chyba: error.message,
         });
-        toast.success(t("jz.ulozenaVTelefone", { km: vysledok.distance_km }), { duration: 6000 });
+        toast.success(t("jz.ulozenaVTelefone", { km: kilometre(vysledok.distance_km, loc) }), {
+          duration: 6000,
+        });
       } else {
         toast.success(
-          `${t("jz.ulozenaKm", { km: vysledok.distance_km })}${vozidlo ? `, ${vozidlo.name}` : ""}`,
+          `${t("jz.ulozenaKm", { km: kilometre(vysledok.distance_km, loc) })}${vozidlo ? `, ${vozidlo.name}` : ""}`,
         );
       }
       setUcel("");
@@ -578,7 +581,7 @@ export function Jazda({
         <div className="flex items-center justify-between gap-4 rounded-app border border-app-ramik bg-app-karta px-4 py-3 shadow-app">
           <div className="min-w-0">
             <div className="text-[34px] font-semibold leading-none tabular-nums">
-              {km.toFixed(1)}
+              {kilometre(km, loc)}
               <span className="ml-1.5 text-[15px] font-normal text-app-text-2">km</span>
             </div>
             <div className="mt-1.5 text-[12px] text-app-text-2">
@@ -632,7 +635,7 @@ export function Jazda({
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-sm font-medium text-app-zelena">{t("jz.rozpoznanaBezi")}</span>
               <span className="text-[17px] font-semibold tabular-nums">
-                {rozpoznana.km.toFixed(1)} km
+                {kilometre(rozpoznana.km, loc)} km
               </span>
             </div>
             <p className="mt-1 text-xs text-app-text-2">
@@ -703,7 +706,7 @@ export function Jazda({
                 <div key={j.id} className="rounded-app-sm border border-app-ramik bg-app-karta p-3">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-[17px] font-semibold tabular-nums">
-                      {(j.distanceMeters / 1000).toFixed(1)} km
+                      {kilometre(j.distanceMeters / 1000, loc)} km
                     </span>
                     <span className="text-[12px] text-app-text-2">
                       {new Date(j.startedAt).toLocaleString(loc, {

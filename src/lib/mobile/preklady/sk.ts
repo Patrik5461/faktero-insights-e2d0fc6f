@@ -121,6 +121,7 @@ export const sk = {
   "faktury.stav.neuhradena": "Neuhradená",
   "faktury.stav.splatna": "Splatná",
   "faktury.stav.poSplatnosti": "Po splatnosti",
+  "faktury.stav.dobropis": "Dobropis",
   "faktury.stav.stornovana": "Stornovaná",
   "faktury.otvoritPdf": "Otvoriť PDF",
   "faktury.zdielat": "Zdieľať faktúru",
@@ -486,6 +487,7 @@ export const sk = {
   "ponuky.vytvaram": "Vytváram ponuku…",
 
   /* kniha jázd — zvyšok */
+  "jz.odHodiny": "od {cas}",
   "jz.odCasu":
     "Od {cas}. Keď ste dojazdili, ukončite ju — inak sa zastaví sama až po piatich minútach státia.",
   "jz.rozpoznalaJazdu": "Appka rozpoznala jazdu",
@@ -544,7 +546,7 @@ export const sk = {
   "faktury.uhradena": "Uhradená",
   "faktury.odoslana": "Odoslaná",
   "faktury.cisloOstava":
-    "Zmizne zo zoznamu, ale číslo ostáva obsadené — v číselnom rade nevznikne diera.",
+    "Zmizne zo zoznamu a jej číslo sa uvoľní — dostane ho ďalšia vystavená faktúra, takže v číselnom rade nevznikne diera.",
   "jazdy.nacitavam": "Načítavam jazdy…",
   "jazdy.prvaPribudne":
     "Prvá pribudne po ukončení merania — alebo sa natiahne z GPS jednotky, keď je vozidlo prepojené.",

@@ -109,6 +109,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "faktury.stav.neuhradena": "Neuhrazená",
   "faktury.stav.splatna": "Splatná",
   "faktury.stav.poSplatnosti": "Po splatnosti",
+  "faktury.stav.dobropis": "Dobropis",
   "faktury.stav.stornovana": "Stornovaná",
   "faktury.otvoritPdf": "Otevřít PDF",
   "faktury.zdielat": "Sdílet fakturu",
@@ -473,6 +474,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "ponuky.vytvaram": "Vytvářím nabídku…",
 
   /* kniha jázd — zvyšok */
+  "jz.odHodiny": "od {cas}",
   "jz.odCasu":
     "Od {cas}. Když jste dojeli, ukončete ji — jinak se zastaví sama až po pěti minutách stání.",
   "jz.rozpoznalaJazdu": "Aplikace rozpoznala jízdu",
@@ -531,7 +533,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "faktury.uhradena": "Uhrazena",
   "faktury.odoslana": "Odeslána",
   "faktury.cisloOstava":
-    "Zmizí ze seznamu, ale číslo zůstává obsazené — v číselné řadě nevznikne díra.",
+    "Zmizí ze seznamu a její číslo se uvolní — dostane ho další vystavená faktura, takže v číselné řadě nevznikne díra.",
   "jazdy.nacitavam": "Načítám jízdy…",
   "jazdy.prvaPribudne":
     "První přibude po ukončení měření — nebo se natáhne z GPS jednotky, když je vozidlo propojené.",

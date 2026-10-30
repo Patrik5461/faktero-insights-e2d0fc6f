@@ -155,7 +155,8 @@ describe("údaje faktúry z XML", () => {
     expect((d.items as any[])[0]).toMatchObject({
       name: "Wartung Server",
       quantity: 2,
-      unit: "HUR",
+      // Kód UN/ECE Rec. 20 sa preloží na jednotku, ktorú pozná človek.
+      unit: "hod",
       unit_price: 50,
       vat_rate: 19,
       total: 119,
@@ -173,6 +174,7 @@ describe("údaje faktúry z XML", () => {
       amount_total: 12.3,
       document_subtype: "dobropis",
     });
+    expect((d.items as any[])[0].unit).toBe("ks");
     expect(navrhDruhu(d)).toBe("dobropis");
   });
 

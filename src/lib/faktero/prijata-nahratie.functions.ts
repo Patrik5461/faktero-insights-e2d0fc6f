@@ -58,7 +58,10 @@ export const nahrajPrijatuFakturuFn = createServerFn({ method: "POST" })
     await assertCompanyActive(data.company_id);
 
     const { precitajDoklad } = await import("./mail-prijem.server");
-    const ai = await precitajDoklad(bajty.toString("base64"), data.mime);
+    const ai = await precitajDoklad(bajty.toString("base64"), data.mime, null, {
+      ucel: "nespracovane",
+      firma: data.company_id,
+    });
 
     const { zostavPrijatuFakturu } = await import("./mail-prijem");
     const dnes = new Date().toISOString().slice(0, 10);

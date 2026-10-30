@@ -404,7 +404,10 @@ export async function vykonajImport(args: {
             continue;
           }
           const mime = mimeZMena(sken.meno);
-          const ai = await precitajDoklad(Buffer.from(sken.bajty).toString("base64"), mime);
+          const ai = await precitajDoklad(Buffer.from(sken.bajty).toString("base64"), mime, null, {
+            ucel: "import-dokladov",
+            firma: args.companyId,
+          });
           if (ai && jeOstatnyZMailu(ai)) {
             const id = crypto.randomUUID();
             const cesta = `${args.companyId}/${id}/${Date.now()}-${bezpecneMeno(sken.meno)}`;

@@ -109,6 +109,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "faktury.stav.neuhradena": "Unpaid",
   "faktury.stav.splatna": "Due",
   "faktury.stav.poSplatnosti": "Overdue",
+  "faktury.stav.dobropis": "Credit note",
   "faktury.stav.stornovana": "Cancelled",
   "faktury.otvoritPdf": "Open PDF",
   "faktury.zdielat": "Share invoice",
@@ -477,6 +478,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "ponuky.vytvaram": "Creating the quote…",
 
   /* kniha jázd — zvyšok */
+  "jz.odHodiny": "since {cas}",
   "jz.odCasu":
     "From {cas}. When you have arrived, end it — otherwise it stops on its own only after five minutes of standing.",
   "jz.rozpoznalaJazdu": "The app detected a trip",
@@ -537,7 +539,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "faktury.uhradena": "Paid",
   "faktury.odoslana": "Sent",
   "faktury.cisloOstava":
-    "It disappears from the list, but the number stays taken — no gap appears in the sequence.",
+    "It disappears from the list and its number is released — the next invoice you issue gets it, so no gap appears in the sequence.",
   "jazdy.nacitavam": "Loading trips…",
   "jazdy.prvaPribudne":
     "The first one appears after you end a measurement — or is pulled from the GPS unit when the vehicle is connected.",

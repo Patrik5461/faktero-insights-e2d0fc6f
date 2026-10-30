@@ -11,6 +11,7 @@
  * `total` sú s DPH a `unit_price` bez DPH — tak ich chápe `rozpisZAi`.
  */
 import { XMLParser } from "fast-xml-parser";
+import { jednotkaZKodu } from "./efaktura/prijata-z-ubl";
 
 export type ZdrojXml = "isdoc" | "zugferd" | "ubl";
 
@@ -91,7 +92,8 @@ function polozka(
   return {
     name: nazov,
     quantity: mnozstvo,
-    unit: jednotka || null,
+    // CII a UBL nesú kód UN/ECE Rec. 20 („C62", „HUR") — na doklade má stáť „ks", „hod".
+    unit: jednotkaZKodu(jednotka),
     unit_price: cenaBezDph,
     vat_rate: sadzba,
     total: zaklad === null ? null : r2(zaklad * (1 + (sadzba ?? 0) / 100)),
