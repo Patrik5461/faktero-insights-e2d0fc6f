@@ -3577,6 +3577,9 @@ export type Database = {
           vratene_z_pohody_at: string | null
           oprava_zauctovania_at: string | null
           oprava_zauctovania_povodne: Json | null
+          exchange_rate: number | null
+          exchange_rate_date: string | null
+          exchange_rate_source: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -3650,6 +3653,9 @@ export type Database = {
           vratene_z_pohody_at?: string | null
           oprava_zauctovania_at?: string | null
           oprava_zauctovania_povodne?: Json | null
+          exchange_rate?: number | null
+          exchange_rate_date?: string | null
+          exchange_rate_source?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -3723,6 +3729,9 @@ export type Database = {
           vratene_z_pohody_at?: string | null
           oprava_zauctovania_at?: string | null
           oprava_zauctovania_povodne?: Json | null
+          exchange_rate?: number | null
+          exchange_rate_date?: string | null
+          exchange_rate_source?: string | null
         }
         Relationships: [
           {
@@ -9042,6 +9051,8 @@ export type Database = {
           trip_date: string
           updated_at: string
           vehicle_id: string
+          doplnenie_pokusy: number
+          doplnenie_skusane_at: string | null
         }
         Insert: {
           average_speed_kmh?: number | null
@@ -9075,6 +9086,8 @@ export type Database = {
           trip_date: string
           updated_at?: string
           vehicle_id: string
+          doplnenie_pokusy?: number
+          doplnenie_skusane_at?: string | null
         }
         Update: {
           average_speed_kmh?: number | null
@@ -9108,6 +9121,8 @@ export type Database = {
           trip_date?: string
           updated_at?: string
           vehicle_id?: string
+          doplnenie_pokusy?: number
+          doplnenie_skusane_at?: string | null
         }
         Relationships: [
           {
@@ -10972,6 +10987,12 @@ export type Database = {
           koniec_at: string | null
           created_at: string
           updated_at: string
+          odpoved_zhrnutie: string | null
+          odpoved_text: string | null
+          odpoved_auto: boolean
+          nasadena_at: string | null
+          odpoved_odoslana_at: string | null
+          odpoved_chyba: string | null
         }
         Insert: {
           id?: string
@@ -10995,6 +11016,12 @@ export type Database = {
           koniec_at?: string | null
           created_at?: string
           updated_at?: string
+          odpoved_zhrnutie?: string | null
+          odpoved_text?: string | null
+          odpoved_auto?: boolean
+          nasadena_at?: string | null
+          odpoved_odoslana_at?: string | null
+          odpoved_chyba?: string | null
         }
         Update: {
           id?: string
@@ -11018,6 +11045,12 @@ export type Database = {
           koniec_at?: string | null
           created_at?: string
           updated_at?: string
+          odpoved_zhrnutie?: string | null
+          odpoved_text?: string | null
+          odpoved_auto?: boolean
+          nasadena_at?: string | null
+          odpoved_odoslana_at?: string | null
+          odpoved_chyba?: string | null
         }
         Relationships: [
           {
@@ -11596,6 +11629,51 @@ export type Database = {
 
 
 
+      admin_plan_limits: {
+        Row: {
+          kluc: string
+          plan: string
+          nazov: string
+          jednotka: string
+          zahrnute: number
+          cena_usd: number | null
+          za_mnozstvo: number
+          poradie: number
+          poznamka: string | null
+          zdroj: string
+          overene: string
+          updated_at: string
+        }
+        Insert: {
+          kluc: string
+          plan?: string
+          nazov: string
+          jednotka: string
+          zahrnute: number
+          cena_usd?: number | null
+          za_mnozstvo?: number
+          poradie?: number
+          poznamka?: string | null
+          zdroj?: string
+          overene: string
+          updated_at?: string
+        }
+        Update: {
+          kluc?: string
+          plan?: string
+          nazov?: string
+          jednotka?: string
+          zahrnute?: number
+          cena_usd?: number | null
+          za_mnozstvo?: number
+          poradie?: number
+          poznamka?: string | null
+          zdroj?: string
+          overene?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       stock_items_with_availability: {
