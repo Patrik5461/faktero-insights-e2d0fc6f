@@ -42,9 +42,13 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     }
   };
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Dnešok podľa Bratislavy (toISOString() je UTC — po polnoci by vyšiel včerajšok).
+  const { dnesBratislava } = await import("./datum-vystavenia");
+  const today = dnesBratislava();
   const dueDays = Number(rec.due_days ?? 14);
-  const due = new Date(Date.now() + dueDays * 86400000).toISOString().slice(0, 10);
+  const due = new Date(new Date(`${today}T00:00:00Z`).getTime() + dueDays * 86400000)
+    .toISOString()
+    .slice(0, 10);
   const { invoice_number, sequence_number, series_id } = await nextInvoiceNumberDetailed(
     rec.company_id,
     today,
@@ -76,38 +80,48 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
   const subtotal = +riadky.reduce((a: number, r: any) => a + r.line, 0).toFixed(2);
   const vatTotal = +riadky.reduce((a: number, r: any) => a + r.vat, 0).toFixed(2);
 
+  const hlavicka: Record<string, any> = {
+    company_id: rec.company_id,
+    customer_id: rec.customer_id ?? null,
+    invoice_number,
+    sequence_number,
+    // Rad, z ktorého číslo naozaj prišlo — aj keď šablóna nemá vybraný vlastný.
+    number_series_id: series_id,
+    variable_symbol,
+    issue_date: today,
+    // Dátum dodania patrí na faktúru (§ 74 ods. 1 písm. f); bez neho PDF
+    // ukazovalo „Dátum dodania —“.
+    delivery_date: today,
+    due_date: due,
+    currency: rec.currency ?? "EUR",
+    payment_method: rec.payment_method ?? "bank_transfer",
+    customer_name: rec.customer_name,
+    customer_ico: rec.customer_ico,
+    customer_dic: rec.customer_dic,
+    customer_ic_dph: rec.customer_ic_dph,
+    customer_street: rec.customer_street,
+    customer_city: rec.customer_city,
+    customer_zip: rec.customer_zip,
+    customer_country: rec.customer_country ?? "SK",
+    customer_email: rec.customer_email,
+    subtotal,
+    vat_total: vatTotal,
+    total: +(subtotal + vatTotal).toFixed(2),
+    notes: rec.notes ?? null,
+    // Text nad položkami zo šablóny — bez neho by faktúra z paušálu
+    // nepovedala, za čo je.
+    intro_note: rec.intro_note ?? null,
+    status: "issued",
+  };
+  /*
+    Faktúra v cudzej mene potrebuje daň aj v domácej mene firmy (kurz ECB/ČNB)
+    — formulár ju dopĺňa po vystavení, šablóna ju doteraz vynechávala.
+  */
+  const { doplnovacKurzov } = await import("./kurz-dokladu.server");
+  Object.assign(hlavicka, await doplnovacKurzov(rec.company_id)("invoices", hlavicka));
   const { data: inv, error: insErr } = await supabaseAdmin
     .from("invoices")
-    .insert({
-      company_id: rec.company_id,
-      customer_id: rec.customer_id ?? null,
-      invoice_number,
-      sequence_number,
-      // Rad, z ktorého číslo naozaj prišlo — aj keď šablóna nemá vybraný vlastný.
-      number_series_id: series_id,
-      variable_symbol,
-      issue_date: today,
-      due_date: due,
-      currency: rec.currency ?? "EUR",
-      payment_method: rec.payment_method ?? "bank_transfer",
-      customer_name: rec.customer_name,
-      customer_ico: rec.customer_ico,
-      customer_dic: rec.customer_dic,
-      customer_ic_dph: rec.customer_ic_dph,
-      customer_street: rec.customer_street,
-      customer_city: rec.customer_city,
-      customer_zip: rec.customer_zip,
-      customer_country: rec.customer_country ?? "SK",
-      customer_email: rec.customer_email,
-      subtotal,
-      vat_total: vatTotal,
-      total: +(subtotal + vatTotal).toFixed(2),
-      notes: rec.notes ?? null,
-      // Text nad položkami zo šablóny — bez neho by faktúra z paušálu
-      // nepovedala, za čo je.
-      intro_note: rec.intro_note ?? null,
-      status: "issued",
-    })
+    .insert(hlavicka as any)
     .select()
     .single();
   if (insErr || !inv) {
