@@ -37,6 +37,22 @@ export type PrijataFakturaRiadok = {
   deleted_at?: string | null;
 };
 
+/** Bloček (expense_documents) priradený k zákazke. */
+export type BlocekRiadok = {
+  net_amount?: unknown;
+  vat_amount?: unknown;
+  total_amount?: unknown;
+};
+
+/**
+ * Náklad z bločku bez DPH — DPH ide do odpočtu, nie do nákladu zákazky.
+ * Bloček bez rozpisu (neplatiteľ, starý záznam) sa berie celou sumou.
+ */
+export function nakladZBlocku(b: BlocekRiadok): number {
+  if (b.net_amount != null && b.net_amount !== "") return cislo(b.net_amount);
+  return cislo(b.total_amount) - cislo(b.vat_amount);
+}
+
 export type PohybRiadok = {
   type?: string | null;
   quantity?: unknown;
@@ -111,6 +127,8 @@ export function nakladZJazdy(j: JazdaRiadok): number {
 export type VyhodnotenieVstup = {
   faktury?: FakturaRiadok[];
   prijateFaktury?: PrijataFakturaRiadok[];
+  /** Bločky s vybranou zákazkou — nákup na zákazku cez pokladňu alebo kartu. */
+  blocky?: BlocekRiadok[];
   pohyby?: PohybRiadok[];
   jazdy?: JazdaRiadok[];
   planovanyVynos?: unknown;
@@ -149,7 +167,7 @@ export function vyhodnotZakazku(vstup: VyhodnotenieVstup): Vyhodnotenie {
     (vstup.prijateFaktury ?? []).reduce(
       (s, f) => s + (f.deleted_at ? 0 : cislo(f.amount_without_vat)),
       0,
-    ),
+    ) + (vstup.blocky ?? []).reduce((s, b) => s + nakladZBlocku(b), 0),
   );
   const naklad_doprava = centy((vstup.jazdy ?? []).reduce((s, j) => s + nakladZJazdy(j), 0));
 

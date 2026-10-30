@@ -864,6 +864,16 @@ function NovyDokladPage() {
                   {ulozeny.locked_at ? t("Odomknúť") : t("Zamknúť")}
                 </button>
               ) : null}
+              {/* Do koša sa dalo predtým len z Kompaktného rozloženia alebo hromadne zo zoznamu. */}
+              {ulozeny && !ulozeny.exported_at ? (
+                <button
+                  type="button"
+                  onClick={() => void zmazDoklad()}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-destructive hover:bg-secondary"
+                >
+                  <Trash2 className="h-4 w-4" /> {t("Vymazať")}
+                </button>
+              ) : null}
               {ulozeny?.file_path && !ulozeny?.exported_at ? (
                 <button
                   type="button"

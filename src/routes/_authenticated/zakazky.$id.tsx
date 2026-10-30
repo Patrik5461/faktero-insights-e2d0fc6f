@@ -14,7 +14,7 @@ import {
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { deleteJob, getJob, setJobStatus, updateJob } from "@/lib/faktero/jobs.functions";
 import { nastavenieSchvalovaniaFn } from "@/lib/faktero/schvalovanie.functions";
-import { STAV_ZAKAZKY_POPIS, nakladZJazdy, type StavZakazky } from "@/lib/faktero/zakazky";
+import { STAV_ZAKAZKY_POPIS, nakladZBlocku, nakladZJazdy, type StavZakazky } from "@/lib/faktero/zakazky";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { pohybNazov } from "@/lib/faktero/stock-pohyb";
 import { Lock, Unlock, Pencil, Trash2 } from "lucide-react";
@@ -180,6 +180,7 @@ function JobDetail() {
   const maDoklady = Boolean(
     data.faktury?.length ||
     data.prijate_faktury?.length ||
+    data.blocky?.length ||
     data.pohyby?.length ||
     data.jazdy?.length ||
     data.objednavky?.length,
@@ -417,7 +418,11 @@ function JobDetail() {
             hodnota={suma(v.naklad_material)}
             poznamka="Vo váženej nákupnej cene"
           />
-          <Karta titulok="Prijaté faktúry" hodnota={suma(v.naklad_sluzby)} poznamka="Bez DPH" />
+          <Karta
+            titulok="Prijaté faktúry a bločky"
+            hodnota={suma(v.naklad_sluzby)}
+            poznamka="Bez DPH"
+          />
           <Karta
             titulok="Doprava"
             hodnota={suma(v.naklad_doprava)}
@@ -516,6 +521,18 @@ function JobDetail() {
             f.supplier_name,
             f.issue_date,
             suma(Number(f.amount_without_vat)),
+          ])}
+        />
+
+        <Zoznam
+          titulok="Bločky"
+          prazdne="Žiadny bloček priradený k zákazke."
+          hlavicka={["Číslo", "Dodávateľ", "Dátum", "Bez DPH"]}
+          riadky={(data.blocky ?? []).map((b: any) => [
+            b.document_number ?? "—",
+            b.supplier_name,
+            b.issue_date,
+            suma(nakladZBlocku(b)),
           ])}
         />
 

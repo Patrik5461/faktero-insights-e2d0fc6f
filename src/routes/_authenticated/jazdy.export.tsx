@@ -84,7 +84,7 @@ function ExportPage() {
       let q = supabase
         .from("trips")
         .select(
-          "trip_date, driver_name, start_location, end_location, purpose, classification, distance_km, duration_seconds, average_speed_kmh, start_time, end_time, external_source, note, route, vehicles(name, license_plate)",
+          "trip_date, driver_name, start_location, end_location, purpose, classification, distance_km, start_odometer, end_odometer, duration_seconds, average_speed_kmh, start_time, end_time, external_source, note, route, vehicles(name, license_plate)",
         )
         .eq("company_id", cid)
         .gte("trip_date", from)
@@ -106,9 +106,12 @@ function ExportPage() {
         "Do",
         "Trvanie",
         "Km",
+        // Stav tachometra patrí do knihy jázd — bez neho sa nedá overiť nadväznosť jázd.
+        "Tachometer začiatok",
+        "Tachometer koniec",
         "Priemerná rýchlosť (km/h)",
         "Vodič",
-        "Typ jazdy",
+        "Účel cesty",
         "Charakter",
         "Zdroj",
         "Poznámka",
@@ -129,6 +132,8 @@ function ExportPage() {
             r.end_location,
             formatDuration(r.duration_seconds),
             r.distance_km,
+            r.start_odometer,
+            r.end_odometer,
             speedTxt,
             r.driver_name,
             r.purpose,
@@ -165,9 +170,12 @@ function ExportPage() {
         "Do",
         "Trvanie",
         "Km",
+        // Stav tachometra patrí do knihy jázd — bez neho sa nedá overiť nadväznosť jázd.
+        "Tachometer začiatok",
+        "Tachometer koniec",
         "Priemerná rýchlosť",
         "Vodič",
-        "Typ jazdy",
+        "Účel cesty",
         "Charakter",
         "Zdroj",
         "Poznámka",
@@ -191,6 +199,8 @@ function ExportPage() {
             cell(r.end_location ?? ""),
             cell(formatDuration(r.duration_seconds)),
             cell(r.distance_km ?? 0, "Number"),
+            r.start_odometer != null ? cell(r.start_odometer, "Number") : cell(""),
+            r.end_odometer != null ? cell(r.end_odometer, "Number") : cell(""),
             cell(speedTxt),
             cell(r.driver_name ?? ""),
             cell(r.purpose ?? ""),
@@ -225,6 +235,10 @@ function ExportPage() {
     try {
       const rows = await fetchRows();
       const total = rows.reduce((a: number, r: any) => a + Number(r.distance_km), 0);
+      // Súkromné kilometre sa pri uplatnení nákladov odpočítavajú — súčet ich ukazuje zvlášť.
+      const sukromne = rows
+        .filter((r: any) => r.classification === "private")
+        .reduce((a: number, r: any) => a + Number(r.distance_km), 0);
 
       const sTrasou = rows.filter((r: any) => r.route);
       const mapy: Array<{ r: any; obrazok: string }> = [];
@@ -239,7 +253,7 @@ function ExportPage() {
       const tr = rows
         .map(
           (r: any) =>
-            `<tr><td>${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)}</td><td>${escHtml(r.trip_date)}</td><td>${escHtml(r.start_location)}</td><td>${escHtml(r.end_location)}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${formatujCislo(r.distance_km, 1)}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${escHtml(r.driver_name)}</td><td>${escHtml(r.purpose)}</td><td>${escHtml(t(charakterJazdy(r.classification)))}</td><td>${escHtml(t(sourceLabel(r.external_source)))}</td></tr>`,
+            `<tr><td>${escHtml(r.vehicles?.name)} ${escHtml(r.vehicles?.license_plate)}</td><td>${escHtml(r.trip_date)}</td><td>${escHtml(r.start_location)}</td><td>${escHtml(r.end_location)}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${formatujCislo(r.distance_km, 1)}</td><td style="text-align:right;white-space:nowrap">${r.start_odometer != null ? formatujCislo(r.start_odometer, 0) : ""} – ${r.end_odometer != null ? formatujCislo(r.end_odometer, 0) : ""}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${escHtml(r.driver_name)}</td><td>${escHtml(r.purpose)}</td><td>${escHtml(t(charakterJazdy(r.classification)))}</td><td>${escHtml(t(sourceLabel(r.external_source)))}</td></tr>`,
         )
         .join("");
 
@@ -258,7 +272,7 @@ function ExportPage() {
 
       w.document.open();
       w.document.write(
-        `<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(t("Kniha jázd"))} ${escHtml(from)} – ${escHtml(to)}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}.trasy-nadpis{page-break-before:always;margin:0 0 8px}.poznamka{font-size:11px;color:#555;margin-bottom:8px}.trasa{page-break-inside:avoid;margin-bottom:14px}.trasa-hlavicka{font-size:11px;font-weight:600;margin-bottom:4px}.trasa img{width:100%;max-width:640px;border:1px solid #ddd}</style></head><body><h1>${escHtml(t("Kniha jázd"))}</h1><div>${escHtml(t("Obdobie: {od} – {do}", { od: from, do: to }))}</div><table><thead><tr><th>${t("Vozidlo")}</th><th>${t("Dátum")}</th><th>${t("Od")}</th><th>${t("Do")}</th><th>${t("Trvanie")}</th><th style="text-align:right">${t("Km")}</th><th style="text-align:right">${t("Priemer")}</th><th>${t("Vodič")}</th><th>${t("Typ")}</th><th>${t("Charakter")}</th><th>${t("Zdroj")}</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">${t("Spolu")}</td><td style="text-align:right">${formatujCislo(total, 1)} km</td><td colspan="5"></td></tr></tfoot></table>${trasyHtml}<script>window.onload=()=>window.print()</script></body></html>`,
+        `<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(t("Kniha jázd"))} ${escHtml(from)} – ${escHtml(to)}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}.trasy-nadpis{page-break-before:always;margin:0 0 8px}.poznamka{font-size:11px;color:#555;margin-bottom:8px}.trasa{page-break-inside:avoid;margin-bottom:14px}.trasa-hlavicka{font-size:11px;font-weight:600;margin-bottom:4px}.trasa img{width:100%;max-width:640px;border:1px solid #ddd}</style></head><body><h1>${escHtml(t("Kniha jázd"))}</h1><div>${escHtml(t("Obdobie: {od} – {do}", { od: from, do: to }))}</div><table><thead><tr><th>${t("Vozidlo")}</th><th>${t("Dátum")}</th><th>${t("Od")}</th><th>${t("Do")}</th><th>${t("Trvanie")}</th><th style="text-align:right">${t("Km")}</th><th style="text-align:right">${t("Tachometer")}</th><th style="text-align:right">${t("Priemer")}</th><th>${t("Vodič")}</th><th>${t("Účel")}</th><th>${t("Charakter")}</th><th>${t("Zdroj")}</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">${t("Spolu")}</td><td style="text-align:right">${formatujCislo(total, 1)} km</td><td colspan="6">${sukromne > 0 ? escHtml(t("služobné {sluzobne} km, súkromné {sukromne} km", { sluzobne: formatujCislo(total - sukromne, 1), sukromne: formatujCislo(sukromne, 1) })) : ""}</td></tr></tfoot></table>${trasyHtml}<script>window.onload=()=>window.print()</script></body></html>`,
       );
       w.document.close();
     } catch (e: any) {
