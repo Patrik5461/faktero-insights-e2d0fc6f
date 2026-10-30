@@ -241,10 +241,21 @@ async function zapisZaznam(
   if (z.typ === "faktura") {
     const subor = sken ? await nahrajSubor(klient, "purchase-invoices", o.companyId, sken) : null;
     const riadok = riadokPrijatejFaktury(z, o);
+    // Sken prečítaný AI s odberateľom inej firmy — faktúra dostane príznak a nezaúčtuje sa.
+    const { priznakPrijatej } = await import("./cudzia-faktura.server");
+    const cudzia = z.odberatel
+      ? await priznakPrijatej(klient, o.companyId, z.odberatel, {
+          nazov: z.dodavatel,
+          ico: z.ico,
+          dic: z.dic,
+          icDph: z.icDph,
+        })
+      : {};
     const { data, error } = await klient
       .from("purchase_invoices")
       .insert({
         ...riadok,
+        ...cudzia,
         ...(o.kurz ? await o.kurz("purchase_invoices", riadok) : {}),
         company_id: o.companyId,
         created_by: o.userId,

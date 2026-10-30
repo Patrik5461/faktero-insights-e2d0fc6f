@@ -15,6 +15,7 @@
 
 import { rezimFirmy, type FirmaDph } from "./dph-rezim";
 import type { DokladUctovania, KodUctovania } from "./zauctovanie-export";
+import { DOVOD_CUDZIA } from "./cudzia-faktura";
 
 /** Riadok číselníka predkontácií, ako ho vráti databáza. */
 export type RiadokKodu = {
@@ -192,6 +193,8 @@ export function prekazkaUctovania(
   firma: FirmaDph | null | undefined,
 ): string | null {
   const cislo = d.cislo || (d.agenda === "doklad" ? "bloček" : "?");
+  // Faktúra inej firmy (iný odberateľ) — kým človek nepotvrdí, že patrí tejto firme.
+  if (d.odberatelNesedi) return `${cislo} — ${DOVOD_CUDZIA}`;
   const smer: SmerDokladu = d.agenda === "vystavena" ? "vydane" : "prijate";
   const clenenie = prekazkaClenenia(
     smer,

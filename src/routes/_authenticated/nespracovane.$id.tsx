@@ -45,6 +45,8 @@ import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
 import { potvrd } from "@/lib/potvrdenie";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
+import { nesediZChyby } from "@/lib/faktero/cudzia-faktura";
+import { CudziaFakturaUpozornenie, textCudzejFaktury } from "@/components/faktero/CudziaFaktura";
 import { zapamatajOtvoreny } from "@/lib/faktero/posledny-otvoreny";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { smerPodlaIban } from "@/lib/faktero/nespracovane-iban";
@@ -198,7 +200,27 @@ function Detail() {
     ucty: d.vlastneUcty ?? [],
   });
   const vlastnyUcet = smer?.smer === "vystavena" ? smer.ucet : null;
-  const upozornenieVlastnej = vlastnyUcet ? (
+  /*
+    Odberateľ na doklade je iná firma — upozornenie s voľbami Zmazať, Uložiť
+    aj tak (faktúra vznikne s červeným výkričníkom a nezaúčtuje sa) a Presunúť
+    k firme, ku ktorej patrí. Len pri prijatých druhoch.
+  */
+  const jePrijata = druh === "faktura" || druh === "zalohova" || druh === "dobropis" || druh === "";
+  const upozornenieCudzej =
+    d.odberatelNesedi && jePrijata ? (
+      <CudziaFakturaUpozornenie
+        nesedi={d.odberatelNesedi}
+        druh="nespracovany"
+        id={d.id}
+        busy={busy}
+        onZmaz={() => void zmazDoklad()}
+        onUlozit={() => void vytvorDoklad(false, true)}
+        onPresunute={() =>
+          navigate({ to: d.dalsiId ? "/nespracovane/$id" : "/nespracovane", params: { id: d.dalsiId ?? "" } } as any)
+        }
+      />
+    ) : null;
+  const upozornenieIban = vlastnyUcet ? (
     <VlastnaFakturaUpozornenie
       ucet={vlastnyUcet}
       onInyDoklad={() => setDruh("ostatny")}
@@ -207,6 +229,13 @@ function Detail() {
   ) : smer?.smer === "prijata" ? (
     <PrijataPodlaIbanPoznamka smer={smer} />
   ) : null;
+  const upozornenieVlastnej =
+    upozornenieCudzej || upozornenieIban ? (
+      <div className="space-y-2">
+        {upozornenieCudzej}
+        {upozornenieIban}
+      </div>
+    ) : null;
   const zvyraznenie = {
     udaje: u,
     polia: druh ? poliaPreDruh(druh) : POLIA_ZVYRAZNENIA,
@@ -226,7 +255,7 @@ function Detail() {
     }
   }
 
-  async function vytvorDoklad(ajDuplicitu = false) {
+  async function vytvorDoklad(ajDuplicitu = false, ajCudziu = false) {
     if (chyby.length) {
       toast.error(
         t("Doplňte: {polia}", { polia: chyby.map((k) => t(NAZVY_POLI[k] ?? k)).join(", ") }),
@@ -247,10 +276,12 @@ function Detail() {
     setBusy(true);
     try {
       const r = await vytvor({
-        data: { id, druh: druh as DruhNespracovaneho, udaje: u as any, ajDuplicitu },
+        data: { id, druh: druh as DruhNespracovaneho, udaje: u as any, ajDuplicitu, ajCudziu },
       });
       const kam =
-        r.agenda === "prijata" && r.zauctovana === false
+        r.agenda === "prijata" && r.cudzia
+          ? t("Faktúra je uložená medzi prijatými faktúrami s červeným výkričníkom — nepatrí tejto firme a nedá sa zaúčtovať, kým to nepotvrdíte")
+          : r.agenda === "prijata" && r.zauctovana === false
           ? t("Faktúra je vytvorená medzi prijatými faktúrami — čaká na zaúčtovanie (chýba predkontácia alebo členenie DPH)")
           : r.agenda === "prijata"
           ? t("Doklad je vytvorený a presunutý medzi prijaté faktúry")
@@ -283,7 +314,24 @@ function Detail() {
             nebezpecne: true,
           })
         )
-          await vytvorDoklad(true);
+          await vytvorDoklad(true, ajCudziu);
+        return;
+      }
+      // Odberateľ na doklade je iná firma — bez výslovného „Uložiť aj tak“ sa faktúra nezaloží.
+      const cudzia = nesediZChyby(sprava);
+      if (cudzia) {
+        setBusy(false);
+        if (
+          await potvrd(
+            textCudzejFaktury(cudzia, t) +
+              "\n" +
+              t(
+                "Uložiť ju aj tak? Ostane označená červeným výkričníkom a nedá sa zaúčtovať, kým nepotvrdíte, že patrí tejto firme. Zmazať alebo presunúť ju môžete v upozornení nad údajmi.",
+              ),
+            { potvrdit: t("Uložiť aj tak"), zrusit: t("Späť"), nebezpecne: true },
+          )
+        )
+          await vytvorDoklad(ajDuplicitu, true);
         return;
       }
       toast.error(sprava || t("Doklad sa nepodarilo vytvoriť"));

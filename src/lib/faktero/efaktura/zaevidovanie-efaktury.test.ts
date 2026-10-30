@@ -317,7 +317,8 @@ describe("zaevidovanie je idempotentné", () => {
       zdroj: "efaktura",
       stav: "vytazene",
       druh: "faktura",
-      ai: null,
+      // Z UBL ide len odberateľ a dodávateľ — na kontrolu, či faktúra patrí firme.
+      ai: { zdroj_udajov: "ubl", buyer_ico: "43291067", supplier_ico: "86179504" },
     });
     expect(db.nespracovane_doklady[0].udaje).toMatchObject({
       cislo: "FA2026001",

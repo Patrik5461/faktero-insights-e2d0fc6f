@@ -141,6 +141,8 @@ export type DokladUctovania = {
    */
   dphRezim?: string | null;
   polozky: PolozkaUctovania[];
+  /** Prijatá faktúra nepatrí firme (iný odberateľ) — do účtovníctva nejde. */
+  odberatelNesedi?: boolean;
 };
 
 /** Kód predkontácie s účtami (MD/Dal) z číselníka firmy. */
@@ -449,6 +451,7 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
   const celkom = r2(zn * spolu || zaklad + dph);
   const dodanie = t(p?.delivery_date) ?? t(p?.issue_date);
   return {
+    ...(p?.odberatel_nesedi ? { odberatelNesedi: true } : {}),
     id: String(p.id),
     agenda: "prijata",
     druh: dobropis ? "dobropis" : p?.type === "proforma" ? "zaloha" : "faktura",

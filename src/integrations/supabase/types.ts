@@ -6901,6 +6901,9 @@ export type Database = {
           oprava_zauctovania_at: string | null
           oprava_zauctovania_povodne: Json | null
           na_kontrolu_at: string | null
+          odberatel_nesedi: Json | null
+          odberatel_potvrdene_at: string | null
+          odberatel_potvrdil: string | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -7021,6 +7024,9 @@ export type Database = {
           oprava_zauctovania_at?: string | null
           oprava_zauctovania_povodne?: Json | null
           na_kontrolu_at?: string | null
+          odberatel_nesedi?: Json | null
+          odberatel_potvrdene_at?: string | null
+          odberatel_potvrdil?: string | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -7141,6 +7147,9 @@ export type Database = {
           oprava_zauctovania_at?: string | null
           oprava_zauctovania_povodne?: Json | null
           na_kontrolu_at?: string | null
+          odberatel_nesedi?: Json | null
+          odberatel_potvrdene_at?: string | null
+          odberatel_potvrdil?: string | null
         }
         Relationships: [
           {
@@ -11698,6 +11707,7 @@ export type Database = {
         }
         Relationships: []
       }
+
     }
     Views: {
       stock_items_with_availability: {

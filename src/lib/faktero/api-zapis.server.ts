@@ -194,6 +194,18 @@ const PrijataVstup = z.object({
   payment_date: DATUM.nullish(),
   accounting: Zauctovanie.optional(),
   file: Subor.optional(),
+  /**
+   * Odberateľ z dokladu (voliteľné). Keď nesedí na firmu kľúča, faktúra
+   * vznikne s príznakom `odberatel_nesedi` a nedá sa zaúčtovať.
+   */
+  buyer: z
+    .object({
+      name: z.string().max(255).nullish(),
+      ico: z.string().max(32).nullish(),
+      dic: z.string().max(32).nullish(),
+      ic_dph: z.string().max(32).nullish(),
+    })
+    .nullish(),
 }).merge(ZnackyVstup);
 
 function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string) {
@@ -273,7 +285,7 @@ function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string)
 }
 
 const STL_PRIJATEJ =
-  "id, external_id, invoice_number, type, status, supplier_name, supplier_ico, issue_date, due_date, payment_date, currency, amount_without_vat, vat_amount, amount_total, stav_id, stitky, komentar, int_poznamka, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie, zauctovane_at, exported_at, source, created_at, updated_at";
+  "id, external_id, invoice_number, type, status, supplier_name, supplier_ico, issue_date, due_date, payment_date, currency, amount_without_vat, vat_amount, amount_total, stav_id, stitky, komentar, int_poznamka, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie, zauctovane_at, exported_at, source, created_at, updated_at, odberatel_nesedi";
 
 export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
   const v = PrijataVstup.safeParse(ctx.requestBody);
@@ -321,6 +333,16 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
   const zn = await riadokZnaciek(ctx, d, []);
   if (!zn.ok) return zn.odpoved;
   const customer_id = await partnerId(ctx, d.supplier, "dodavatel");
+  // Odberateľ z dokladu nesedí na firmu — príznak, zaúčtovanie z `accounting.booked` sa nezapíše.
+  const { priznakPrijatej } = await import("./cudzia-faktura.server");
+  const cudzia = d.buyer
+    ? await priznakPrijatej(
+        db,
+        ctx.company_id,
+        { nazov: d.buyer.name, ico: d.buyer.ico, dic: d.buyer.dic, icDph: d.buyer.ic_dph },
+        { nazov: d.supplier.name, ico: d.supplier.ico, dic: d.supplier.dic, icDph: d.supplier.ic_dph },
+      )
+    : {};
   // Cudzia mena: kurz ECB/ČNB hneď do riadku, inak by ho exporty vynechali.
   const kurz = await (await import("./kurz-dokladu.server")).doplnovacKurzov(ctx.company_id)(
     "purchase_invoices",
@@ -339,6 +361,7 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
       external_id: d.external_id ?? null,
       source: "api",
       ...subor,
+      ...cudzia,
     })
     .select(STL_PRIJATEJ)
     .single();
@@ -367,6 +390,16 @@ export async function upravPrijatu(ctx: ApiCtx, id: string): Promise<Odpoved> {
   // Zámok odovzdaného dokladu: servisný kľúč spúšťač púšťa, stráži ho API.
   const zamok = strazZamku("purchase_invoices", stary, riadok);
   if (zamok) return zamok;
+  // Faktúra inej firmy (iný odberateľ) sa nezaúčtuje, kým to človek nepotvrdí vo Fakteri.
+  if (stary.odberatel_nesedi && riadok.zauctovane_at && !stary.zauctovane_at) {
+    const { nacitajNesedi, textNesedi } = await import("./cudzia-faktura");
+    const n = nacitajNesedi(stary.odberatel_nesedi);
+    return err(
+      "buyer_mismatch",
+      `${n ? `${textNesedi(n)} ` : ""}Kým vo Fakteri nepotvrdíte, že faktúra patrí tejto firme, nedá sa zaúčtovať.`,
+      409,
+    );
+  }
   if (v.data.file) {
     try {
       Object.assign(riadok, await ulozSubor(ctx, "purchase-invoices", v.data.file));

@@ -120,12 +120,15 @@ export function HromadnyPrikaz({
         ids.length
           ? supabase
               .from("purchase_invoices")
-              .select("id, na_kontrolu_at" as "id")
+              .select("id, na_kontrolu_at, odberatel_nesedi" as "id")
               .eq("company_id", companyId)
               .in("id", ids)
           : Promise.resolve({ data: [] as any[], error: null }),
       ]);
-      const out: Record<string, { uhradene: number; zaloha: number; naKontrolu?: boolean }> = {};
+      const out: Record<
+        string,
+        { uhradene: number; zaloha: number; naKontrolu?: boolean; cudzia?: boolean }
+      > = {};
       for (const f of faktury) out[f.id] = { uhradene: 0, zaloha: 0 };
       if (kontrola.error) {
         // Bez odpovede nevieme, ktorá je skontrolovaná — radšej žiadnu nepustiť.
@@ -133,6 +136,7 @@ export function HromadnyPrikaz({
       }
       for (const k of (kontrola.data ?? []) as any[]) {
         if (k.na_kontrolu_at) out[String(k.id)] = { ...out[String(k.id)], naKontrolu: true };
+        if (k.odberatel_nesedi) out[String(k.id)] = { ...out[String(k.id)], cudzia: true };
       }
       for (const p of (pohyby ?? []) as any[]) {
         if (!(Number(p.amount) > 0)) continue;
@@ -166,6 +170,7 @@ export function HromadnyPrikaz({
         uhradene: uhrady?.[f.id]?.uhradene ?? 0,
         zaloha: uhrady?.[f.id]?.zaloha ?? 0,
         na_kontrolu: !!uhrady?.[f.id]?.naKontrolu,
+        odberatel_nesedi: (f as any).odberatel_nesedi || uhrady?.[f.id]?.cudzia || null,
       })),
     );
     return { platby: p.platby, preskocene: [...(vynechane ?? []), ...p.preskocene] };

@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { DOVOD_CUDZIA_ZAUCTOVANIE } from "./cudzia-faktura";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { MoznostKodu } from "./predkontacie";
@@ -233,7 +234,7 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
     const { data: riadky, error } = await supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, status, exported_at, deleted_at, samofakturacia, samofakturacia_stav, type, supplier_ico, supplier_ic_dph, supplier_name, amount_total, opravuje_cislo, pohoda_predkontacia, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh",
+        "id, invoice_number, status, exported_at, deleted_at, samofakturacia, samofakturacia_stav, type, supplier_ico, supplier_ic_dph, supplier_name, amount_total, opravuje_cislo, pohoda_predkontacia, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh, odberatel_nesedi",
       )
       .eq("company_id", data.company_id)
       .in("id", data.ids);
@@ -254,6 +255,11 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
       }
       if (!data.lenUlozit && !zapocitatelna(r)) {
         preskocene.push(`${r.invoice_number}: samofaktúra ešte nie je odsúhlasená`);
+        continue;
+      }
+      // Odberateľ na doklade je iná firma — zaúčtovať až po potvrdení „patrí tejto firme“.
+      if (!data.lenUlozit && r.odberatel_nesedi) {
+        preskocene.push(`${r.invoice_number}: ${DOVOD_CUDZIA_ZAUCTOVANIE}`);
         continue;
       }
       ok.push(r.id);

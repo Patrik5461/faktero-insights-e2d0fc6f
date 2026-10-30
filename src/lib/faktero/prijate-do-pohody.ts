@@ -245,5 +245,7 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     _pdp: celaPdp(p),
     // Zaúčtovaná vo Fakteri — pred odovzdaním musí mať predkontáciu aj členenie.
     _zauctovane: Boolean(p.zauctovane_at),
+    // Odberateľ na doklade je iná firma — do Pohody nejde, kým to človek nepotvrdí.
+    _odberatelNesedi: Boolean(p.odberatel_nesedi),
   };
 }

@@ -50,7 +50,8 @@ export type Blokator =
   | "clenenie"
   | "predkontacia"
   | "rezim_dph"
-  | "uzamknuty";
+  | "uzamknuty"
+  | "cudzi_odberatel";
 
 export const TEXTY_BLOKATOROV: Record<Blokator, string> = {
   polozky: "Súčet položiek nesedí so sumou dokladu",
@@ -62,6 +63,7 @@ export const TEXTY_BLOKATOROV: Record<Blokator, string> = {
   predkontacia: "Chýba predkontácia",
   rezim_dph: "Režim DPH treba skontrolovať (zahraničný partner)",
   uzamknuty: "Doklad je odovzdaný alebo uzamknutý",
+  cudzi_odberatel: "Faktúra nepatrí tejto firme (odberateľ na doklade je iná firma)",
 };
 
 export type NavrhZauctovania = {
@@ -449,11 +451,14 @@ export type VstupBlokatorov = {
   clenenieDph?: string | null;
   predkontacia?: string | null;
   uzamknuty?: boolean;
+  /** Prijatá faktúra nepatrí firme (`odberatel_nesedi`) — automat ju nezaúčtuje. */
+  cudziOdberatel?: boolean;
 };
 
 export function blokatory(v: VstupBlokatorov): Blokator[] {
   const out: Blokator[] = [];
   if (v.uzamknuty) return ["uzamknuty"];
+  if (v.cudziOdberatel) return ["cudzi_odberatel"];
   if (v.polozkyNesedia) out.push("polozky");
   if (v.zaklad != null && v.dph != null && v.celkom != null) {
     const rozdiel = Math.abs(Number(v.zaklad) + Number(v.dph) - Number(v.celkom));

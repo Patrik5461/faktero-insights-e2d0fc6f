@@ -17,7 +17,9 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
     const [{ data: rows }, { data: blocky }] = await Promise.all([
       supabase
         .from("nespracovane_doklady")
-        .select("id, zdroj, stav, druh, file_name, udaje, chyba, created_at, created_by, inbox_message_id")
+        .select(
+          "id, zdroj, stav, druh, file_name, udaje, chyba, created_at, created_by, inbox_message_id, buyer_name:ai->>buyer_name, buyer_ico:ai->>buyer_ico, buyer_dic:ai->>buyer_dic, buyer_ic_dph:ai->>buyer_ic_dph, supplier_name:ai->>supplier_name, supplier_ico:ai->>supplier_ico, supplier_dic:ai->>supplier_dic, supplier_ic_dph:ai->>supplier_ic_dph",
+        )
         .eq("company_id", data.company_id)
         .order("created_at", { ascending: false })
         .limit(300),
@@ -31,8 +33,28 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
         .limit(300),
     ]);
     const { zhrnutieNespracovaneho, zhrnutieBlocku } = await import("./nespracovane");
+    // Červený výkričník: odberateľ na doklade je iná firma (z AI, počíta sa pri čítaní).
+    const { firmaNaPorovnanie, nesediNespracovany } = await import("./cudzia-faktura.server");
+    const firma = await firmaNaPorovnanie(supabase, data.company_id);
+    const nesedi = (r: any) =>
+      nesediNespracovany(
+        {
+          druh: r.druh,
+          ai: {
+            buyer_name: r.buyer_name,
+            buyer_ico: r.buyer_ico,
+            buyer_dic: r.buyer_dic,
+            buyer_ic_dph: r.buyer_ic_dph,
+            supplier_name: r.supplier_name,
+            supplier_ico: r.supplier_ico,
+            supplier_dic: r.supplier_dic,
+            supplier_ic_dph: r.supplier_ic_dph,
+          },
+        },
+        firma,
+      );
     return {
-      doklady: (rows ?? []).map((r: any) => zhrnutieNespracovaneho(r)),
+      doklady: (rows ?? []).map((r: any) => ({ ...zhrnutieNespracovaneho(r), odberatelNesedi: nesedi(r) })),
       blocky: (blocky ?? []).map((b: any) => zhrnutieBlocku(b)),
     };
   });
@@ -56,8 +78,15 @@ export const nespracovaneNaUhraduFn = createServerFn({ method: "POST" })
       .in("id", data.ids);
     if (error) throw new Error(error.message);
     const { naUhraduZNespracovaneho } = await import("./nespracovane");
+    const { firmaNaPorovnanie, nesediNespracovany } = await import("./cudzia-faktura.server");
+    const { DOVOD_CUDZIA } = await import("./cudzia-faktura");
+    const firma = await firmaNaPorovnanie(supabase, data.company_id);
     const dnes = new Date().toISOString().slice(0, 10);
-    return ((rows ?? []) as any[]).map((r) => naUhraduZNespracovaneho(r, dnes));
+    return ((rows ?? []) as any[]).map((r) => {
+      const d = naUhraduZNespracovaneho(r, dnes);
+      // Faktúra inej firmy sa z tejto firmy neplatí.
+      return !d.dovod && nesediNespracovany(r, firma) ? { ...d, dovod: DOVOD_CUDZIA } : d;
+    });
   });
 
 export const nahrajNespracovaneFn = createServerFn({ method: "POST" })
@@ -148,7 +177,7 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
     const { varovaniaNespracovaneho } = await import("./nespracovane.server");
     const { data: firma } = await supabase
       .from("companies")
-      .select("ico, ic_dph, dic, iban, povinne_polia_dokladu, country")
+      .select("name, ico, ic_dph, dic, iban, povinne_polia_dokladu, country")
       .eq("id", r.company_id)
       .maybeSingle();
     /*
@@ -177,7 +206,12 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
     }
     const { polohyZAi } = await import("./polohy-ai");
     const ai = (r.ai ?? null) as Record<string, unknown> | null;
+    // Odberateľ na doklade je iná firma — upozornenie s voľbami Zmazať / Uložiť aj tak / Presunúť.
+    const { nesediNespracovany } = await import("./cudzia-faktura.server");
+    const { firmaZRiadku } = await import("./cudzia-faktura");
+    const odberatelNesedi = firma ? nesediNespracovany(r, firmaZRiadku(firma as any)) : null;
     return {
+      odberatelNesedi,
       vlastneUcty,
       /** IBAN odberateľa z dokladu — firemný znamená, že faktúra je prijatá. */
       ibanOdberatela: typeof ai?.buyer_iban === "string" ? (ai.buyer_iban as string) : null,
@@ -264,6 +298,8 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
         udaje: UdajeVstup,
         /** Človek videl upozornenie na duplicitu a chce doklad aj tak. */
         ajDuplicitu: z.boolean().optional(),
+        /** Človek videl, že faktúra nepatrí firme (iný odberateľ), a ukladá ju aj tak. */
+        ajCudziu: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -319,6 +355,16 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
       );
       if (dup?.kde === "prijate")
         throw new Error(`${PREDPONA_DUPLICITY}${textDuplicity(dup)}\nVytvoriť ju aj tak druhýkrát?`);
+    }
+    /*
+      Odberateľ na doklade je iná firma — bez výslovného „Uložiť aj tak“ sa
+      prijatá faktúra nezaloží. Rozhranie podľa predpony chyby ukáže voľby.
+    */
+    if (!data.ajCudziu && (data.druh === "faktura" || data.druh === "zalohova" || data.druh === "dobropis")) {
+      const { nesediNespracovany, firmaNaPorovnanie } = await import("./cudzia-faktura.server");
+      const { chybaCudzej } = await import("./cudzia-faktura");
+      const n = nesediNespracovany({ ...r, druh: data.druh }, await firmaNaPorovnanie(supabase, r.company_id));
+      if (n) throw new Error(chybaCudzej(n));
     }
     const { vytvorDoklad } = await import("./nespracovane.server");
     return vytvorDoklad(supabase, context.userId, r, data.druh, u);
@@ -421,7 +467,15 @@ export const prijataDoNespracovanychFn = createServerFn({ method: "POST" })
       file_name: p.file_path ? String(p.file_path).split("/").pop() : null,
       file_mime: p.file_mime,
       file_size: p.file_size,
-      ai: null,
+      // Odberateľ, ktorý nesedel na firmu, ide späť ako z AI — príznak sa vrátením nestratí.
+      ai: p.odberatel_nesedi?.odberatel
+        ? {
+            buyer_name: p.odberatel_nesedi.odberatel.nazov ?? null,
+            buyer_ico: p.odberatel_nesedi.odberatel.ico ?? null,
+            buyer_dic: p.odberatel_nesedi.odberatel.dic ?? null,
+            buyer_ic_dph: p.odberatel_nesedi.odberatel.ic_dph ?? null,
+          }
+        : null,
       udaje,
     });
     if (error) {

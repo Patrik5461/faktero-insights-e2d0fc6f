@@ -245,7 +245,7 @@ export async function vytvorDoklad(
   r: Record<string, any>,
   druh: DruhNespracovaneho,
   u: UdajeNespracovaneho,
-): Promise<{ agenda: "prijata" | "doklad" | "ostatny"; id: string; zauctovana?: boolean }> {
+): Promise<{ agenda: "prijata" | "doklad" | "ostatny"; id: string; zauctovana?: boolean; cudzia?: boolean }> {
   const dnes = new Date().toISOString().slice(0, 10);
   const teraz = new Date().toISOString();
   let bajty: Uint8Array | null = null;
@@ -327,7 +327,7 @@ export async function vytvorDoklad(
     };
   };
 
-  let vysledok: { agenda: "prijata" | "doklad" | "ostatny"; id: string; zauctovana?: boolean };
+  let vysledok: { agenda: "prijata" | "doklad" | "ostatny"; id: string; zauctovana?: boolean; cudzia?: boolean };
   if (druh === "faktura" || druh === "zalohova" || druh === "dobropis") {
     const cesta = bajty ? `${r.company_id}/${crypto.randomUUID()}.${pripona}` : null;
     if (cesta && bajty) {
@@ -335,8 +335,16 @@ export async function vytvorDoklad(
       if (up.error) throw new Error(`Súbor sa nepodarilo uložiť: ${up.error.message}`);
     }
     const zakl = prijataZUdajov(druh, u, dnes);
+    /*
+      Odberateľ na doklade je iná firma — faktúra vznikne (človek zvolil
+      „Uložiť aj tak“) s príznakom a nezaúčtuje sa, kým nepotvrdí, že patrí
+      tejto firme. Spúšťač v databáze to stráži aj sám.
+    */
+    const { nesediNespracovany, firmaNaPorovnanie } = await import("./cudzia-faktura.server");
+    const cudzia = nesediNespracovany({ ...r, druh }, await firmaNaPorovnanie(supabase, r.company_id));
     // Zaúčtovaná je aj faktúra, ktorej každá položka má vlastnú predkontáciu (hlavička môže ostať prázdna).
-    const zauctovat = Boolean(zakl.pohoda_predkontacia || zakl.pohoda_clenenie_dph || polozkyZauctovane(u));
+    const zauctovat =
+      !cudzia && Boolean(zakl.pohoda_predkontacia || zakl.pohoda_clenenie_dph || polozkyZauctovane(u));
     // Zaplatená ostáva zaplatená aj zaúčtovaná (ako po zaúčtovaní v paneli).
     const stav = (zauct: boolean) => (u.uhradene ? "paid" : zauct ? "booked" : "received");
     const { data, error } = await supabase
@@ -357,6 +365,7 @@ export async function vytvorDoklad(
         // Kto vyplnil predkontáciu či členenie, doklad tým zaúčtoval.
         zauctovane_at: zauctovat ? teraz : null,
         zauctoval: zauctovat ? userId : null,
+        ...(cudzia ? { odberatel_nesedi: { ...cudzia, zistene_at: teraz } } : {}),
       })
       .select("id, pohoda_predkontacia, pohoda_clenenie_dph, category, reverse_charge")
       .single();
@@ -376,7 +385,7 @@ export async function vytvorDoklad(
       návrh AI počká na potvrdenie v zaúčtovaní faktúry.
     */
     let zauctovana = zauctovat;
-    if (!zauctovat && nastavenia.zauctovat && !nepotvrdeneNavrhy.length) {
+    if (!cudzia && !zauctovat && nastavenia.zauctovat && !nepotvrdeneNavrhy.length) {
       const { kodyPrijatejUrcene } = await import("./nespracovane-nastavenia");
       const { kodyPodlaKategorie } = await import("./predkontacie.server");
       const { data: firma } = await supabase
@@ -426,7 +435,7 @@ export async function vytvorDoklad(
         /* Kurz je doplnok — doklad je uložený. */
       }
     }
-    vysledok = { agenda: "prijata", id: data.id, zauctovana };
+    vysledok = { agenda: "prijata", id: data.id, zauctovana, ...(cudzia ? { cudzia: true } : {}) };
   } else if (druh === "blocek") {
     const cesta = bajty ? `${r.company_id}/${crypto.randomUUID()}.${pripona}` : null;
     if (cesta && bajty) {
@@ -608,19 +617,11 @@ export async function varovaniaNespracovaneho(
     )
       out.push(`Ten istý doklad ${cislo} čaká v Nespracovaných ešte raz.`);
   }
-  // Odberateľ z dokladu — bloček ho nemá, vtedy sa nekontroluje.
-  const ai = (r.ai ?? {}) as Record<string, unknown>;
-  const norm = (v: unknown) => String(v ?? "").replace(/\s/g, "").toUpperCase();
-  const odbIco = norm(ai.buyer_ico);
-  const odbDph = norm(ai.buyer_ic_dph);
-  if (firma && (odbIco || odbDph)) {
-    const nase = [norm(firma.ico), norm(firma.ic_dph), norm(firma.dic)].filter(Boolean);
-    const sedi = [odbIco, odbDph].filter(Boolean).some((x) => nase.some((n) => x.includes(n) || n.includes(x)));
-    if (nase.length && !sedi)
-      out.push(
-        `Doklad nepatrí do firmy — odberateľ na ňom je ${String(ai.buyer_name ?? "") || "iná firma"} (IČO ${odbIco || "—"}${odbDph ? `, IČ DPH ${odbDph}` : ""}).`,
-      );
-  }
+  /*
+    Odberateľ z dokladu, ktorý nesedí na firmu, ukazuje detail zvlášť
+    (upozornenie s voľbami Zmazať / Uložiť aj tak / Presunúť) — `cudzia-faktura.ts`.
+  */
+  void firma;
   return out;
 }
 

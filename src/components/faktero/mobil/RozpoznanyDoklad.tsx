@@ -16,6 +16,7 @@ import {
   type UdajeNespracovaneho,
 } from "@/lib/faktero/nespracovane";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
+import { cislaOdberatela, nesediZChyby } from "@/lib/faktero/cudzia-faktura";
 import {
   doplnZNastavenia,
   hodnotaPola,
@@ -251,14 +252,21 @@ export function RozpoznanyDoklad({
     druh && finalne ? chybajuce(druh, finalne, detail?.povinne, detail?.nastavenia) : ["druh"];
   const daSaUlozit = !!druh && chyba.length === 0 && !ukladam;
 
-  async function uloz(ajDuplicitu = false) {
+  async function uloz(ajDuplicitu = false, ajCudziu = false) {
     if (!druh || !finalne || !id) return;
     setUkladam(true);
     try {
-      await vytvor({
-        data: { id, druh, udaje: finalne, ...(ajDuplicitu ? { ajDuplicitu: true } : {}) },
+      const r = await vytvor({
+        data: {
+          id,
+          druh,
+          udaje: finalne,
+          ...(ajDuplicitu ? { ajDuplicitu: true } : {}),
+          ...(ajCudziu ? { ajCudziu: true } : {}),
+        },
       });
-      toast.success(t(ULOZENE_AKO[druh]));
+      if ((r as { cudzia?: boolean } | null)?.cudzia) toast.warning(t("rd.cudziaUlozena"));
+      else toast.success(t(ULOZENE_AKO[druh]));
       onUlozene(druh);
     } catch (e) {
       const sprava = e instanceof Error ? e.message : String(e ?? "");
@@ -269,7 +277,23 @@ export function RozpoznanyDoklad({
           potvrdit: t("rd.ulozitAjTak"),
           zrusit: t("spolocne.zrusit"),
         });
-        if (ano) await uloz(true);
+        if (ano) await uloz(true, ajCudziu);
+        return;
+      }
+      /* Odberateľ na doklade je iná firma — uloží sa len na výslovné „Uložiť aj tak“. */
+      const cudzia = nesediZChyby(sprava);
+      if (cudzia && !ajCudziu) {
+        setUkladam(false);
+        const c = cislaOdberatela(cudzia);
+        const odberatel = cudzia.odberatel.nazov || t("rd.inaFirma");
+        const ano = await potvrd(
+          t("rd.cudziaFaktura", {
+            firma: cudzia.firma.nazov || firma.name || "",
+            odberatel: c ? `${odberatel} (${c})` : odberatel,
+          }),
+          { potvrdit: t("rd.ulozitAjTak"), zrusit: t("spolocne.zrusit"), nebezpecne: true },
+        );
+        if (ano) await uloz(ajDuplicitu, true);
         return;
       }
       toast.error(sprava || t("rd.chybaUlozenia"));

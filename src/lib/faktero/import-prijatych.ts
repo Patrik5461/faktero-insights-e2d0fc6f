@@ -40,6 +40,8 @@ export type PrijatyZaznam = {
   /** Dobropis či zálohová faktúra — do poznámky, nech to účtovník vidí. */
   druh: string | null;
   polozky: PolozkaPrijateho[];
+  /** Odberateľ zo skenu prečítaného AI — podľa neho sa spozná faktúra inej firmy. */
+  odberatel?: { nazov: string | null; ico: string | null; dic: string | null; icDph: string | null } | null;
 };
 
 /* ---------------- pomocníci ---------------- */
@@ -633,7 +635,12 @@ export function zaznamZAI(ai: Record<string, unknown>, meno: string): PrijatyZaz
           total: cisloZTextu(p.total) ?? 0,
         }))
     : [];
+  const odberatel =
+    t(ai.buyer_name) || t(ai.buyer_ico) || t(ai.buyer_dic) || t(ai.buyer_ic_dph)
+      ? { nazov: t(ai.buyer_name), ico: t(ai.buyer_ico), dic: t(ai.buyer_dic), icDph: t(ai.buyer_ic_dph) }
+      : null;
   return {
+    ...(odberatel ? { odberatel } : {}),
     typ: jeFaktura ? "faktura" : "blocek",
     zdroj: `sken ${meno}`,
     cislo: t(ai.invoice_number),

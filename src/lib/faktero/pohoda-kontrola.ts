@@ -14,6 +14,7 @@
 */
 
 import { jeZnamaSadzba, krajinaDane } from "./vat-rates";
+import { DOVOD_CUDZIA } from "./cudzia-faktura";
 import { rozpisBlocku } from "./rozuctovanie";
 import { domacaMena } from "./kurzy";
 import {
@@ -207,6 +208,8 @@ export function prekazkaDokladu(
 ): string | null {
   const blocek = !d?._typPohody;
   const cislo = d?._povodneCislo || d?.document_number || (blocek ? "bloček" : "?");
+  // Faktúra inej firmy (iný odberateľ) — kým človek nepotvrdí, že patrí tejto firme.
+  if (d?._odberatelNesedi) return `${cislo} — ${DOVOD_CUDZIA}`;
   const cz = krajinaDane(company?.country) === "CZ";
   const domaca = domacaMena(company?.country);
   const mena = String(d?.currency ?? domaca).toUpperCase() || domaca;

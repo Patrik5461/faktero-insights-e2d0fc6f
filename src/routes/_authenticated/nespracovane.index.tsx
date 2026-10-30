@@ -1,3 +1,4 @@
+import { CudziaFakturaZnak } from "@/components/faktero/CudziaFaktura";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -465,7 +466,12 @@ function Stranka() {
                     {druhText(r)}
                     {r.subor ? <div className="max-w-[16rem] truncate text-xs text-muted-foreground">{r.subor}</div> : null}
                   </td>
-                  <td className="p-3">{r.dodavatel ?? <span className="text-muted-foreground">—</span>}</td>
+                  <td className="p-3">
+                    <span className="inline-flex min-w-0 items-center gap-1.5">
+                      <CudziaFakturaZnak nesedi={r.odberatelNesedi} />
+                      {r.dodavatel ?? <span className="text-muted-foreground">—</span>}
+                    </span>
+                  </td>
                   <td className="p-3">{r.cislo ?? "—"}</td>
                   <td className="p-3 whitespace-nowrap">{datumText(r)}</td>
                   <td className="p-3 text-right tabular-nums whitespace-nowrap">{sumaText(r)}</td>
@@ -523,7 +529,10 @@ function Stranka() {
                 <div className="shrink-0 whitespace-nowrap font-semibold tabular-nums">{sumaText(r)}</div>
               </div>
               <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
-                <span className="min-w-0 truncate">{r.dodavatel ?? <span className="text-muted-foreground">—</span>}</span>
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <CudziaFakturaZnak nesedi={r.odberatelNesedi} />
+                  <span className="min-w-0 truncate">{r.dodavatel ?? <span className="text-muted-foreground">—</span>}</span>
+                </span>
                 <span className="whitespace-nowrap text-muted-foreground">
                   {r.cislo ? `${r.cislo} · ` : ""}
                   {datumText(r)}

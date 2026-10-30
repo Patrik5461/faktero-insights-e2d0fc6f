@@ -132,6 +132,48 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "cudzia",
+    title: "Faktúra, ktorá nepatrí vašej firme",
+    body: (
+      <>
+        <p>
+          Faktero pri každej prijatej faktúre porovná odberateľa na doklade s vašou firmou — podľa
+          IČO, DIČ a IČ DPH, a keď čísla na doklade chýbajú, aj podľa názvu. Keď odberateľ nesedí,
+          faktúra pravdepodobne patrí inej firme: prišla na zlú adresu, preposlal ju kolega alebo
+          účtovník s viacerými klientmi.
+        </p>
+        <p>
+          V Nespracovaných dokladoch sa vtedy nad údajmi ukáže červené upozornenie „Faktúra nepatrí
+          firme …, odberateľ je …“ a pri Vytvoriť máte tri možnosti: faktúru zmazať do koša,
+          presunúť k firme, ktorej patrí, alebo ju uložiť aj tak.
+        </p>
+        <ul>
+          <li>
+            Uložená faktúra má v zozname aj v detaile červený výkričník a kým ho má, nedá sa
+            zaúčtovať — ručne, hromadne, pravidlom ani automatickým zaúčtovaním. Export a odovzdanie
+            do Pohody či iného programu ju vynechajú s dôvodom a do hromadného príkazu na úhradu sa
+            nedostane.
+          </li>
+          <li>
+            Keď je odberateľ zle prečítaný alebo ste ho opravili, v detaile faktúry kliknite na
+            „Faktúra patrí tejto firme“. Potvrdenie sa zapíše do histórie dokladu a faktúra sa dá
+            zaúčtovať.
+          </li>
+          <li>
+            Presunúť sa dá len do firmy, ku ktorej máte vo Faktere prístup a smiete v nej zapisovať
+            doklady. Faktúra prejde aj so súbormi a väzby z vašej firmy (párovanie s bankou,
+            zaúčtovanie, pravidlo, štítky) sa zrušia. O firmách, ku ktorým prístup nemáte, Faktero
+            nič neprezradí — ani to, či vôbec existujú.
+          </li>
+        </ul>
+        <p>
+          Rovnako sa kontrolujú faktúry z eFaktúry, z importu a z API. Keď údaje odberateľa na
+          doklade nie sú, Faktero nič neblokuje.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "hromadne",
     title: "Práca s viacerými naraz",
     body: (

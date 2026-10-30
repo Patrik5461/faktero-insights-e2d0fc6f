@@ -62,6 +62,13 @@ export type PrijataZUbl = {
     krajina: string | null;
     email: string | null;
   };
+  /** Odberateľ z AccountingCustomerParty — na kontrolu, či faktúra patrí firme. */
+  odberatel?: {
+    nazov: string | null;
+    ico: string | null;
+    dic: string | null;
+    icDph: string | null;
+  };
   iban: string | null;
   vs: string | null;
   objednavka: string | null;
@@ -258,6 +265,26 @@ export function rozoberPrijatuUbl(xml: string): PrijataZUbl | null {
       ? endpoint.text.trim()
       : null;
   const dicZIcDph = icDphText && /^SK\d{10}$/i.test(icDphText) ? icDphText.slice(2) : null;
+  const kupujuci = d.kupujuci;
+  const icDphKupujuceho = kupujuci ? text(icDph(kupujuci), "cbc:CompanyID") : null;
+  const endpointKupujuceho = kupujuci ? prvy(kupujuci, "cbc:EndpointID") : null;
+  const odberatel = kupujuci
+    ? {
+        nazov:
+          text(kupujuci, "cac:PartyLegalEntity/cbc:RegistrationName") ??
+          text(kupujuci, "cac:PartyName/cbc:Name"),
+        ico: icoStrany(kupujuci),
+        dic:
+          endpointKupujuceho &&
+          endpointKupujuceho.atributy.schemeID === "0245" &&
+          /^\d{10}$/.test(endpointKupujuceho.text.trim())
+            ? endpointKupujuceho.text.trim()
+            : icDphKupujuceho && /^SK\d{10}$/i.test(icDphKupujuceho)
+              ? icDphKupujuceho.slice(2)
+              : null,
+        icDph: icDphKupujuceho,
+      }
+    : undefined;
   const platobne = vsetky(koren, "cac:PaymentMeans");
   const iban =
     platobne
@@ -302,6 +329,7 @@ export function rozoberPrijatuUbl(xml: string): PrijataZUbl | null {
       krajina: d.krajinaPredavajuceho,
       email: text(predavajuci, "cac:Contact/cbc:ElectronicMail"),
     },
+    ...(odberatel ? { odberatel } : {}),
     iban,
     vs,
     objednavka: text(koren, "cac:OrderReference/cbc:ID"),
