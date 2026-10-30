@@ -105,6 +105,8 @@ type Popisky = {
   iban: string;
   swift: string;
   qrPlatba: string;
+  /** Tlačidlo PAYME na platobnej karte (otvorí bankovú appku). */
+  paymeTlacidlo: string;
   poznamky: string;
   fakturaOnline: string;
   naskenujteKod: string;
@@ -185,6 +187,7 @@ const SK: Popisky = {
   iban: "IBAN",
   swift: "SWIFT/BIC",
   qrPlatba: "QR PLATBA PREVODOM",
+  paymeTlacidlo: "PAYME · zaplatiť v mobile",
   poznamky: "POZNÁMKY",
   fakturaOnline: "FAKTÚRA ONLINE",
   naskenujteKod: "Naskenujte kód a faktúra sa otvorí v prehliadači.",
@@ -244,6 +247,7 @@ const CS: Popisky = {
   prevzal: "Převzal",
   platobneUdaje: "PLATEBNÍ ÚDAJE",
   qrPlatba: "QR PLATBA PŘEVODEM",
+  paymeTlacidlo: "PAYME · zaplatit v mobilu",
   poznamky: "POZNÁMKY",
   fakturaOnline: "FAKTURA ONLINE",
   naskenujteKod: "Naskenujte kód a faktura se otevře v prohlížeči.",
@@ -309,6 +313,7 @@ const EN: Popisky = {
   iban: "IBAN",
   swift: "SWIFT/BIC",
   qrPlatba: "QR BANK TRANSFER",
+  paymeTlacidlo: "PAYME · pay on mobile",
   poznamky: "NOTES",
   fakturaOnline: "INVOICE ONLINE",
   naskenujteKod: "Scan the code to open the invoice in your browser.",
@@ -376,6 +381,7 @@ const DE: Popisky = {
   iban: "IBAN",
   swift: "SWIFT/BIC",
   qrPlatba: "QR-ÜBERWEISUNG",
+  paymeTlacidlo: "PAYME · mobil bezahlen",
   poznamky: "ANMERKUNGEN",
   fakturaOnline: "RECHNUNG ONLINE",
   naskenujteKod: "Scannen Sie den Code, die Rechnung öffnet sich im Browser.",
@@ -443,6 +449,7 @@ const HU: Popisky = {
   prevzal: "Átvette",
   platobneUdaje: "FIZETÉSI ADATOK",
   qrPlatba: "QR ÁTUTALÁS",
+  paymeTlacidlo: "PAYME · fizetés mobilon",
   poznamky: "MEGJEGYZÉSEK",
   fakturaOnline: "SZÁMLA ONLINE",
   naskenujteKod: "Olvassa be a kódot, a számla megnyílik a böngészőben.",
@@ -594,11 +601,13 @@ export function vetaPreneseniaDe(
 
 /**
  * Predvolený jazyk dokladu podľa krajiny firmy, keď ho nedá faktúra ani
- * odberateľ. Nemecká firma fakturuje po nemecky; ostatné ostávajú pri
- * slovenčine, ako doteraz.
+ * odberateľ. Nemecká firma fakturuje po nemecky, česká po česky (inak jej
+ * faktúra vyšla celá po slovensky — „FAKTÚRA“, „Bankový prevod“, „Vystavené
+ * cez Faktero“); ostatné ostávajú pri slovenčine.
  */
 export function predvolenyJazykFirmy(country: string | null | undefined): JazykDokladu {
-  return krajinaDane(country) === "DE" ? "de" : VYCHODZI_JAZYK;
+  const k = krajinaDane(country);
+  return k === "DE" ? "de" : k === "CZ" ? "cs" : VYCHODZI_JAZYK;
 }
 
 /**

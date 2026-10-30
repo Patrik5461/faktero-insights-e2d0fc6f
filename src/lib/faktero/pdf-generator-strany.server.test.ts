@@ -171,3 +171,63 @@ describe("faktúra na jednu stranu", () => {
     expect(await strany(b)).toBe(1);
   });
 });
+
+/*
+  Rozpis DPH so všetkými sadzbami krajiny (23/19/5/0 %) zväčšil blok súčtov
+  a faktúra s troma položkami mala platobné údaje osamelé na druhej strane
+  (NK20260032 v QA firme Test, 30. 10. 2026). Keď sa karta pod súčty
+  nezmestí, kreslí sa vedľa nich.
+*/
+describe("platobné údaje vedľa súčtov", () => {
+  const firma = { ...dodavatel, swift: "TATRSKBX" };
+  const faktura = (pocet: number, sadzby: number[]) => {
+    const items = Array.from({ length: pocet }, (_, i) => {
+      const sadzba = sadzby[i % sadzby.length];
+      return {
+        name: `Položka ${i + 1}`,
+        quantity: 1,
+        unit: "ks",
+        unit_price: 100,
+        discount_percent: 0,
+        vat_rate: sadzba,
+        subtotal: 100,
+        vat_amount: sadzba,
+        total: 100 + sadzba,
+      };
+    });
+    const zaklad = 100 * pocet;
+    const dph = items.reduce((s, it) => s + it.vat_amount, 0);
+    return {
+      company: firma,
+      invoice: {
+        ...odberatel,
+        invoice_number: "NK20260032",
+        type: "regular",
+        issue_date: "2026-10-30",
+        delivery_date: "2026-10-30",
+        due_date: "2026-11-13",
+        variable_symbol: "20260032",
+        payment_method: "bank_transfer",
+        currency: "EUR",
+        intro_note: "Fakturujeme Vám",
+        subtotal: zaklad,
+        vat_total: dph,
+        total: zaklad + dph,
+      },
+      items,
+    } as any;
+  };
+
+  it.each([
+    [3, [23, 19, 5]],
+    [3, [23]],
+    [4, [23]],
+    [5, [23, 19]],
+  ])("%i položky so sadzbami %j sú na jednej strane aj s platobnými údajmi", async (pocet, sadzby) => {
+    const b = await generateInvoicePdfBytes(faktura(pocet, sadzby));
+    const pdf = await PDFDocument.load(b);
+    expect(pdf.getPageCount()).toBe(1);
+    // Odkaz PAYME (kreslí sa len s QR platbou) je na prvej strane.
+    expect(pdf.getPage(0).node.Annots()?.size() ?? 0).toBeGreaterThan(0);
+  });
+});

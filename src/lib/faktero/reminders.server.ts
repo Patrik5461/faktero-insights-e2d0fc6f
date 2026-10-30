@@ -37,7 +37,13 @@ function applyVars(s: string, inv: any, company: any) {
   const total = formatujMenu(inv.total ?? 0, inv.currency ?? "EUR");
   const pairs: Array<[string, string]> = [
     ["invoice_number", inv.invoice_number ?? ""],
-    ["due_date", inv.due_date ?? ""],
+    // Dátum ako na doklade („30. 9. 2026“), nie „2026-09-30“.
+    [
+      "due_date",
+      inv.due_date
+        ? datumNaDoklade(inv.due_date, krajinaDane(company?.country) === "DE" ? "de" : "sk")
+        : "",
+    ],
     ["total", total],
     ["company_name", company?.name ?? ""],
     ["customer_name", inv.customer_name ?? ""],
@@ -130,7 +136,7 @@ export function buildReminderContent({
       : `${L.vs}: ${invoice.invoice_number ?? ""}`,
     `${L.suma}: ${formatujMenu(invoice.total ?? 0, invoice.currency ?? "EUR", jeDe ? "de-DE" : undefined)}`,
     invoice?.due_date
-      ? `${L.splatnost}: ${jeDe ? datumNaDoklade(invoice.due_date, "de") : invoice.due_date}`
+      ? `${L.splatnost}: ${datumNaDoklade(invoice.due_date, jeDe ? "de" : "sk")}`
       : null,
   ]
     .filter(Boolean)
