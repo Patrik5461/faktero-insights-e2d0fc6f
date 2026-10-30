@@ -268,6 +268,7 @@ describe("KV pri vystavených faktúrach — ručné členenie", () => {
       cislo: "1",
       typ: "regular",
       datumDodania: "2026-09-10",
+      odberatelIcDph: "SK2021111111",
       riadky: [{ sadzba: 23, zaklad: 10, dan: 2.3 }],
       kv: "B2",
     };

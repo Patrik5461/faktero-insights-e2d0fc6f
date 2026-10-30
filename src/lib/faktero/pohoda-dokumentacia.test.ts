@@ -230,7 +230,14 @@ describe("členenie KV DPH (príručka SK: prázdne pole = doklad do KV nevstúp
       kvVystavenehoPrePohodu({ ...zaklad, typ: "regular", icDphOdberatela: "SK2020202020" }),
     ).toBe("A1");
     expect(kvVystavenehoPrePohodu({ ...zaklad, typ: "regular", icDphOdberatela: "" })).toBe("D2");
-    expect(kvVystavenehoPrePohodu({ ...zaklad, typ: "credit_note" })).toBe("C1");
+    expect(
+      kvVystavenehoPrePohodu({ ...zaklad, typ: "credit_note", icDphOdberatela: "SK2020202020" }),
+    ).toBe("C1");
+    // Podnikateľ bez IČ DPH (len IČO/DIČ) ide do A.1, občan do D.2 aj s dobropisom.
+    expect(kvVystavenehoPrePohodu({ ...zaklad, typ: "regular", icoOdberatela: "12345678" })).toBe(
+      "A1",
+    );
+    expect(kvVystavenehoPrePohodu({ ...zaklad, typ: "credit_note" })).toBe("D2");
     // Dobropis k tuzemskému preneseniu ide tiež do C.1 (KV metodický pokyn, časť C.1).
     expect(
       kvVystavenehoPrePohodu({

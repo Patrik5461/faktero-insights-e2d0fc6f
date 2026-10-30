@@ -27,8 +27,32 @@ import {
   kvVystavenej,
 } from "./dph-vykazy";
 import { domacaMena, domacejZaJednotku } from "./kurzy";
-import { kvSPredvolenym } from "./kv-clenenie";
+import { KV_PREDVOLENE, kvSPredvolenym } from "./kv-clenenie";
+import { clenenieDphPrijateho, odberatelPodnikatel } from "./kv-urcenie";
+import { jeNezahrnovat } from "./uctovanie-agenda";
+import { jeTuzemskePdp } from "./pohoda-kontrola";
 import { krajinaDane } from "./vat-rates";
+
+/**
+ * Riadky dokladu bez riadkov rozúčtovania s členením „nezahrnovať do
+ * priznania“ (PN) — tie nejdú ani do priznania, ani do KV (ako v Pohode).
+ * Odčíta sa po sadzbách; znamienko sa riadi riadkom (dobropis je záporný).
+ */
+export function bezNezahrnovanych(
+  riadky: SadzbovyRiadok[],
+  pn: { sadzba: number; zaklad: number; dph: number }[],
+): SadzbovyRiadok[] {
+  if (!pn.length) return riadky;
+  const out = riadky.map((r) => ({ ...r }));
+  for (const x of pn) {
+    const r = out.find((y) => Math.round(y.sadzba) === Math.round(x.sadzba)) ?? out[0];
+    if (!r) continue;
+    const zn = r.zaklad < 0 || r.dan < 0 ? -1 : 1;
+    r.zaklad = Math.round((r.zaklad - zn * Math.abs(x.zaklad)) * 100) / 100;
+    r.dan = Math.round((r.dan - zn * Math.abs(x.dph)) * 100) / 100;
+  }
+  return out.filter((r) => Math.abs(r.zaklad) >= 0.005 || Math.abs(r.dan) >= 0.005);
+}
 
 type Klient = {
   from: (t: string) => any;
@@ -89,7 +113,7 @@ export async function nacitajVstup(
       supabase
         .from("invoices")
         .select(
-          "id, invoice_number, type, status, issue_date, delivery_date, paid_at, total, currency, customer_ic_dph, customer_dic, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, kv_clenenie, invoice_items(vat_rate, subtotal, quantity, unit_price, prenesenie, kv_clenenie)",
+          "id, invoice_number, type, status, issue_date, delivery_date, paid_at, total, currency, customer_ic_dph, customer_dic, customer_ico, customer_country, customer_name, pohoda_clenenie_dph, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, kv_clenenie, invoice_items(vat_rate, subtotal, quantity, unit_price, prenesenie, kv_clenenie)",
         )
         .eq("company_id", companyId)
         .is("deleted_at", null)
@@ -100,7 +124,7 @@ export async function nacitajVstup(
       supabase
         .from("purchase_invoices")
         .select(
-          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi",
+          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, pohoda_clenenie_dph, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi",
         )
         .eq("company_id", companyId)
         /*
@@ -116,7 +140,7 @@ export async function nacitajVstup(
       supabase
         .from("expense_documents")
         .select(
-          "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, status, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie, pohoda_predkontacia, category, items, rozuctovanie, total_amount, vehicle_id",
+          "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, status, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie, pohoda_predkontacia, pohoda_clenenie_dph, category, items, rozuctovanie, total_amount, vehicle_id",
         )
         .eq("company_id", companyId)
         .order("id")
@@ -129,14 +153,14 @@ export async function nacitajVstup(
     z predkontácie dokladu — vlastnej, podľa kategórie alebo predvolenej.
   */
   const { pomeryPredkontacii, kodyPodlaKategorie } = await import("./predkontacie.server");
-  const { riadkyDokladu, podielOdpoctuRiadkov, rozpisBlocku } = await import("./rozuctovanie");
+  const { riadkyDokladu, podielOdpoctuRiadkov, rozpisBlocku, jeRozuctovane } = await import("./rozuctovanie");
   const [pomery, podlaKat, { data: firmaKody }] = await Promise.all([
     pomeryPredkontacii(supabase, companyId),
     kodyPodlaKategorie(supabase, companyId),
     supabase
       .from("companies")
       .select(
-        "pohoda_predkontacia_prijata, pohoda_predkontacia_doklady, country, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady",
+        "pohoda_predkontacia_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_prijata, pohoda_clenenie_dph_doklady, country, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady",
       )
       .eq("id", companyId)
       .maybeSingle(),
@@ -150,16 +174,42 @@ export async function nacitajVstup(
   const vozidla = await odpocetVozidielFirmy(supabase, companyId, pomery);
   // Do výkazu ide domáca mena firmy (SK eurá, CZ koruny); cudzia je všetko ostatné.
   const domaca = domacaMena((firmaKody as any)?.country);
+
   /*
     Podiel odpočítateľnej DPH dokladu z jeho riadkov zaúčtovania — pomer
     predkontácie v hlavičke aj pri jednotlivých položkách (nafta 50/50 na
     bločku s bagetou), aj ručné rozúčtovanie.
+
+    Členenie DPH „nezahrnovať do priznania“ (PN, UN) — to isté, čo ide do
+    Pohody (`clenenieDphPrijateho`). Celý doklad s PN do odpočtu ani do KV
+    nepatrí; pri rozúčtovanom doklade len riadky s PN. Vráti členenie hlavičky
+    (null pri rozúčtovanom), riadky s PN a podiel odpočtu zo zvyšku.
   */
-  const podiel = (doklad: any, rozpis: { sadzba: number; zaklad: number; dph: number }[], kod: unknown): number | undefined => {
+  const rozborPrijateho = (
+    doklad: any,
+    rozpis: { sadzba: number; zaklad: number; dph: number }[],
+    kod: unknown,
+    blocek: boolean,
+  ) => {
+    const clenenie = clenenieDphPrijateho({
+      vlastne: doklad.pohoda_clenenie_dph,
+      podlaKategorie: podlaKat[String(doklad.category ?? "")]?.clenenie,
+      blocek,
+      predvoleneDoklady: (firmaKody as any)?.pohoda_clenenie_dph_doklady,
+      predvolenePrijata: (firmaKody as any)?.pohoda_clenenie_dph_prijata,
+    });
     const k = String(kod ?? "").trim() || null;
-    const r = riadkyDokladu(doklad, rozpis, k, null, pomery, odpocetDokladu(doklad, vozidla));
-    const v = podielOdpoctuRiadkov(r);
-    return v === 1 ? undefined : v;
+    const r = riadkyDokladu(doklad, rozpis, k, clenenie, pomery, odpocetDokladu(doklad, vozidla));
+    const rozuctovany = jeRozuctovane(r);
+    const pn = rozuctovany ? r.filter((x) => jeNezahrnovat(x.clenenie)) : [];
+    const zvysok = rozuctovany ? r.filter((x) => !jeNezahrnovat(x.clenenie)) : r;
+    const v = podielOdpoctuRiadkov(zvysok);
+    return {
+      clenenie: rozuctovany ? null : clenenie,
+      nezahrnovat: !rozuctovany && jeNezahrnovat(clenenie),
+      pn,
+      podiel: v === 1 ? undefined : v,
+    };
   };
 
   const vDobe = (d: string | null | undefined) => {
@@ -303,19 +353,28 @@ export async function nacitajVstup(
       automaticky (null). Rovnako ako v exporte do Pohody.
     */
     const slovenska = krajinaDane((firmaKody as any)?.country) === "SK";
-    const kvHlavne: string | null =
-      kvVystavenej(f.kv_clenenie) ??
-      (f.type === "regular" && !f.reverse_charge && !opravna
+    // Ručne zvolené na faktúre; predvolené firmy ide zvlášť (`kv-urcenie.ts` ho použije len pri bežnej faktúre).
+    const kvHlavne: string | null = kvVystavenej(f.kv_clenenie);
+    const kvPredvolene: string | null =
+      f.type === "regular" || f.type === "advance_payment"
         ? kvVystavenej(kvSPredvolenym(null, "faktura", (firmaKody as any)?.kv_clenenie_faktura, slovenska))
-        : null);
+        : null;
+    const podnikatel = odberatelPodnikatel({
+      icDph: f.customer_ic_dph,
+      ico: f.customer_ico,
+      dic: f.customer_dic,
+    });
+    const tuzemskePdpF = jeTuzemskePdp(f, firmaKody as any);
     // Čo by faktúra dostala automaticky — položka s rovnakým kódom sa neoddeľuje.
     const kvAuto = opravna
-      ? "C1"
+      ? podnikatel || tuzemskePdpF
+        ? "C1"
+        : "D2"
       : f.reverse_charge
-        ? f.reverse_charge_type === "domestic_69"
+        ? tuzemskePdpF
           ? "A2"
           : null
-        : "A1";
+        : (kvPredvolene ?? (podnikatel ? "A1" : "D2"));
     const jePdpPolozka = (x: any) => !f.reverse_charge && Boolean(x.prenesenie);
     /*
       Položka s vlastným členením KV, ktoré sa líši od hlavičky (prenesená
@@ -395,9 +454,13 @@ export async function nacitajVstup(
       datumDodania: String(den),
       odberatelIcDph: f.customer_ic_dph,
       odberatelDic: f.customer_dic,
+      odberatelIco: f.customer_ico,
       odberatelNazov: f.customer_name,
       prenosDane: Boolean(f.reverse_charge),
       prenosTyp: f.reverse_charge_type,
+      tuzemskePdp: tuzemskePdpF,
+      clenenieDph: f.pohoda_clenenie_dph,
+      kvPredvolene,
       euPlnenie: f.eu_plnenie,
       oss: Boolean(f.oss),
       ossStat: f.oss_country,
@@ -435,6 +498,7 @@ export async function nacitajVstup(
         datumDodania: String(den),
         odberatelIcDph: f.customer_ic_dph,
         odberatelDic: f.customer_dic,
+        odberatelIco: f.customer_ico,
         odberatelNazov: f.customer_name,
         prenosDane: true,
         prenosTyp: "domestic_69",
@@ -451,6 +515,7 @@ export async function nacitajVstup(
               ...zaznam(g.riadky),
               prenosDane: true,
               prenosTyp: "domestic_69",
+              tuzemskePdp: true,
               euPlnenie: null,
               oss: false,
               ossStat: null,
@@ -546,6 +611,28 @@ export async function nacitajVstup(
     }
     // Celá prenesená faktúra už ide vyššie; druhý, prázdny záznam by KV zdvojil.
     if (tuzemske && !tuzemske.length) continue;
+    const rozbor = rozborPrijateho(
+      p,
+      rozpisPrijatej(p).map((x) => ({ sadzba: x.sadzba, zaklad: Math.abs(x.zaklad), dph: Math.abs(x.dph) })),
+      p.pohoda_predkontacia || firmaKody?.pohoda_predkontacia_prijata,
+      false,
+    );
+    if (rozbor.pn.length && cudziaP) {
+      vytky.push({
+        doklad: p.invoice_number ?? p.supplier_name ?? "prijatá faktúra",
+        text: "Rozúčtovaná faktúra v cudzej mene má riadky s členením „nezahrnovať do priznania“ — do výkazu vošla celá, skontrolujte ju.",
+      });
+    }
+    const predvolenaPrijata = String((firmaKody as any)?.kv_clenenie_prijata ?? "").trim();
+    const riadkyP: SadzbovyRiadok[] = tuzemske
+      ? tuzemske.map((x) => ({ sadzba: x.sadzba, zaklad: x.zaklad, dan: x.dph }))
+      : rezimP === "samozdanenie" && !dan && zaklad
+        ? // Faktúra v prenesení nesie nulovú daň; odberateľ ju samozdaní základnou sadzbou.
+          (() => {
+            const sz = sadzbyKrajiny(krajinaDane((firmaKody as any)?.country), String(den))[0] ?? 23;
+            return [{ sadzba: sz, zaklad, dan: Math.round(zaklad * sz) / 100 }];
+          })()
+        : riadkyPrijatej(p, zaklad, dan, den, cudziaP);
     prijate.push({
       cislo: String(p.invoice_number ?? ""),
       dodavatelNazov: p.supplier_name,
@@ -553,30 +640,20 @@ export async function nacitajVstup(
       dodavatelDic: p.supplier_dic,
       datumDodania: String(den),
       rezim: rezimP,
-      odpocet: p.odpocet !== false,
+      /*
+        Členenie „nezahrnovať do priznania“ (PN) na tuzemskej faktúre: DPH
+        ide do nákladu, odpočet ani KV B.2 z nej nie sú — ako v Pohode.
+      */
+      odpocet: p.odpocet !== false && !(rozbor.nezahrnovat && rezimP === "tuzemsko"),
       opravujeCislo: p.opravuje_cislo,
-      riadky: tuzemske
-        ? tuzemske.map((x) => ({ sadzba: x.sadzba, zaklad: x.zaklad, dan: x.dph }))
-        : rezimP === "samozdanenie" && !dan && zaklad
-          ? // Faktúra v prenesení nesie nulovú daň; odberateľ ju samozdaní základnou sadzbou.
-            (() => {
-              const sz = sadzbyKrajiny(krajinaDane((firmaKody as any)?.country), String(den))[0] ?? 23;
-              return [{ sadzba: sz, zaklad, dan: Math.round(zaklad * sz) / 100 }];
-            })()
-          : riadkyPrijatej(p, zaklad, dan, den, cudziaP),
-      // Predvolené KV firmy len pre bežnú tuzemskú faktúru (nie prenesenie ani opravnú).
-      kv:
-        p.kv_clenenie ||
-        kvSPredvolenym(
-          rezimP === "samozdanenie" || rezimP === "nadobudnutie" || p.opravuje_cislo ? null : "B2",
-          "prijata",
-          (firmaKody as any)?.kv_clenenie_prijata,
-        ),
-      podielOdpoctu: podiel(
-        p,
-        rozpisPrijatej(p).map((x) => ({ sadzba: x.sadzba, zaklad: Math.abs(x.zaklad), dph: Math.abs(x.dph) })),
-        p.pohoda_predkontacia || firmaKody?.pohoda_predkontacia_prijata,
-      ),
+      dobropis: dobropisP,
+      // Riadky rozúčtovania s PN do výkazu nejdú (sumy rozúčtovania sú v mene faktúry).
+      riadky: cudziaP ? riadkyP : bezNezahrnovanych(riadkyP, rozbor.pn),
+      kv: String(p.kv_clenenie ?? "").trim() || null,
+      // Predvolené KV firmy použije `kv-urcenie.ts` len pri bežnej tuzemskej faktúre.
+      kvPredvolene: KV_PREDVOLENE.prijata.kody.includes(predvolenaPrijata) ? predvolenaPrijata : null,
+      clenenieDph: rozbor.clenenie,
+      podielOdpoctu: rozbor.podiel,
     });
     if (!p.invoice_number) {
       vytky.push({
@@ -620,22 +697,28 @@ export async function nacitajVstup(
           ),
         )
       : [riadokZoSum(Number(d.net_amount ?? 0), dan, d.issue_date)];
+    const rozbor = rozborPrijateho(
+      d,
+      rozpisBlocku(d),
+      d.pohoda_predkontacia ||
+        podlaKat[String(d.category ?? "")]?.predkontacia ||
+        firmaKody?.pohoda_predkontacia_doklady ||
+        firmaKody?.pohoda_predkontacia_prijata,
+      true,
+    );
+    const predvolenyBlocek = String((firmaKody as any)?.kv_clenenie_doklady ?? "").trim();
     doklady.push({
       dodavatelNazov: d.supplier_name,
       dodavatelIcDph: d.supplier_ic_dph,
-      odpocet: d.odpocet !== false,
-      riadky,
-      kv: d.kv_clenenie || kvSPredvolenym("B3", "doklady", (firmaKody as any)?.kv_clenenie_doklady),
+      // Bloček s členením „nezahrnovať do priznania“ (PN) sa neodpočíta — ako v Pohode.
+      odpocet: d.odpocet !== false && !rozbor.nezahrnovat,
+      riadky: bezNezahrnovanych(riadky, rozbor.pn),
+      kv: String(d.kv_clenenie ?? "").trim() || null,
+      kvPredvolene: KV_PREDVOLENE.doklady.kody.includes(predvolenyBlocek) ? predvolenyBlocek : null,
+      clenenieDph: rozbor.clenenie,
       cislo: d.document_number,
       datum: d.issue_date,
-      podielOdpoctu: podiel(
-        d,
-        rozpisBlocku(d),
-        d.pohoda_predkontacia ||
-          podlaKat[String(d.category ?? "")]?.predkontacia ||
-          firmaKody?.pohoda_predkontacia_doklady ||
-          firmaKody?.pohoda_predkontacia_prijata,
-      ),
+      podielOdpoctu: rozbor.podiel,
     });
   }
 
@@ -673,7 +756,17 @@ export async function nacitajVstup(
         dodavatelIcDph: p.supplier_ic_dph,
         rezim: ((p.dph_rezim as PrijataFaktura["rezim"]) ??
           odvodRezimPrijatej(p.supplier_ic_dph, dan, String(krajinaDane((firmaKody as any)?.country)))) as PrijataFaktura["rezim"],
-        odpocet: p.odpocet !== false,
+        // Faktúra s PN sa neodpočítala, nie je teda čo opravovať podľa § 53b.
+        odpocet:
+          p.odpocet !== false &&
+          !jeNezahrnovat(
+            clenenieDphPrijateho({
+              vlastne: p.pohoda_clenenie_dph,
+              podlaKategorie: podlaKat[String(p.category ?? "")]?.clenenie,
+              blocek: false,
+              predvolenePrijata: (firmaKody as any)?.pohoda_clenenie_dph_prijata,
+            }),
+          ),
         dobropis: Boolean(p.opravuje_cislo) || zaklad < 0,
         splatnost: String(p.povodna_splatnost || p.due_date),
         zaplatenaDna: p.payment_date ? String(p.payment_date).slice(0, 10) : null,

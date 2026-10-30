@@ -2442,7 +2442,7 @@ function NewInvoice() {
             typ={form.type}
             odberatel={(() => {
               const c = customers.find((x) => x.id === form.customer_id);
-              return c ? { ico: c.ico, name: c.name } : null;
+              return c ? { ico: c.ico, name: c.name, dic: c.dic, icDph: c.ic_dph } : null;
             })()}
             reverseCharge={form.reverse_charge}
             kody={{ predkontacia: form.predkontacia, clenenie: form.clenenie, kv: form.kv }}

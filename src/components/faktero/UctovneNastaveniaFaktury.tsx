@@ -5,6 +5,7 @@ import { BookCheck, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
+import { upozornenieA1 } from "@/lib/faktero/kv-urcenie";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { prvePravidlo, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
 import { useT } from "@/lib/i18n/useT";
@@ -42,7 +43,12 @@ export function UctovneNastaveniaFaktury({
 }: {
   companyId: string | null;
   typ: string;
-  odberatel: { ico?: string | null; name?: string | null } | null;
+  odberatel: {
+    ico?: string | null;
+    name?: string | null;
+    dic?: string | null;
+    icDph?: string | null;
+  } | null;
   reverseCharge?: boolean;
   kody: UctovneKody;
   onKody: (k: UctovneKody) => void;
@@ -246,6 +252,14 @@ export function UctovneNastaveniaFaktury({
                   </option>
                 ))}
               </select>
+              {/* A.1 pri občanovi (bez IČ DPH, IČO aj DIČ) — patrí do D.2 (kv-urcenie.ts). */}
+              {odberatel && upozornenieA1({ kv: kody.kv, ...odberatel }) && (
+                <p role="alert" className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                  {t(
+                    "Odberateľ nemá IČ DPH, IČO ani DIČ — faktúra súkromnej osobe patrí do D.2, nie do A.1.",
+                  )}
+                </p>
+              )}
             </PoleDokladu>
           </MriezkaDokladu>
           <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">

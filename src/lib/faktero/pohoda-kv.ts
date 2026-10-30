@@ -12,19 +12,16 @@
 
   Preto sa členenie posiela vždy, keď doklad do KV patrí: ručne zvolené,
   inak predvolené firmy, inak to, čo určuje zákon — rovnako ako ho skladajú
-  výkazy Faktera (`kv-clenenie.ts`, `dph-vykazy.ts`). Česká Pohoda element
+  výkazy Faktera (`kv-urcenie.ts`). Česká Pohoda element
   nemá (kontrolné hlásenie si odvodí z členenia DPH).
 */
 
-import { KV_PDP_PRIJATE, KV_PDP_VYDANE } from "./pohoda-kontrola";
-import { jeNezahrnovat } from "./uctovanie-agenda";
+import { kvPrijatehoDokladu, kvVystavenehoDokladu } from "./kv-urcenie";
 
-/** Ručne zvolené členenie: „X“ (nezahŕňať) = nič, prázdne = automaticky (null). */
-function rucne(kod: unknown): string | null {
-  const k = String(kod ?? "").trim();
-  if (!k) return null;
-  return k.toUpperCase() === "X" ? "" : k;
-}
+/*
+  Samotné pravidlá sú v `kv-urcenie.ts` — tie isté používa výkaz Faktera.
+  Tu sa pridáva len to, čo je osobitné pre Pohodu: česká Pohoda element nemá.
+*/
 
 /**
  * Vystavený doklad (faktúra, dobropis, vrubopis, daňový doklad k platbe).
@@ -45,25 +42,14 @@ export function kvVystavenehoPrePohodu(o: {
   maDph: boolean;
   /** IČ DPH odberateľa. */
   icDphOdberatela?: string | null;
+  /** IČO a DIČ odberateľa — podnikateľ bez IČ DPH ide do A.1, občan do D.2. */
+  icoOdberatela?: string | null;
+  dicOdberatela?: string | null;
   /** Členenie DPH dokladu — „nezahrnovať do priznania“ (UN) do KV nepatrí. */
   clenenieDph?: string | null;
 }): string {
-  if (o.cz || o.typ === "proforma") return "";
-  const r = rucne(o.kvDokladu);
-  if (r !== null) return r;
-  const opravny = o.typ === "credit_note" || o.typ === "debit_note";
-  // C.1 — opravná faktúra, aj k tuzemskému preneseniu (oprava A.2), ako výkazy Faktera.
-  if (opravny && (o.tuzemskePdp || (!o.reverseCharge && o.maDph))) return "C1";
-  // A.2 — tuzemské prenesenie (dodávateľ uvádza aj bez dane).
-  if (o.tuzemskePdp) return KV_PDP_VYDANE;
-  if (jeNezahrnovat(o.clenenieDph)) return "";
-  // Oslobodené dodanie do EÚ a vývoz do KV nepatria — ani ich oprava.
-  if (o.reverseCharge || opravny) return "";
-  if (!o.maDph) return "";
-  const p = rucne(o.predvolene);
-  if (p !== null) return p;
-  // A.1 len pre odberateľa platiteľa (IČ DPH); ostatné vydané faktúry sú D.2.
-  return String(o.icDphOdberatela ?? "").trim() ? "A1" : "D2";
+  if (o.cz) return "";
+  return kvVystavenehoDokladu(o);
 }
 
 /** Prijatý doklad (prijatá faktúra, dobropis, bloček). */
@@ -85,18 +71,6 @@ export function kvPrijatehoPrePohodu(o: {
   clenenieDph?: string | null;
 }): string {
   if (o.cz) return "";
-  const r = rucne(o.kvDokladu);
-  if (r !== null) return r;
-  if (jeNezahrnovat(o.clenenieDph)) return "";
-  if (o.pdp) return KV_PDP_PRIJATE;
-  // Dovoz ide len do priznania; nadobudnutie z EÚ samozdaní interný doklad (B.1).
-  if (o.rezim === "dovoz" || o.rezim === "nadobudnutie" || o.rezim === "bez_dane") return "";
-  if (!o.maDph) return "";
-  // C.2 aj bez nároku na odpočet (odpočítaná daň je vtedy nula) — ako výkazy Faktera.
-  if (o.dobropis) return "C2";
-  // Bez nároku na odpočet sa faktúra do B.2/B.3 neuvádza.
-  if (o.odpocet === false) return "";
-  const p = rucne(o.predvolene);
-  if (p !== null) return p;
-  return o.blocek ? "B3" : "B2";
+  // Nadobudnutie z EÚ samozdaní v Pohode interný doklad (B.1), faktúra ide bez členenia.
+  return kvPrijatehoDokladu({ ...o, nadobudnutieDoB1: false });
 }

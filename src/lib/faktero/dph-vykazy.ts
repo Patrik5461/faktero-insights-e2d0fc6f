@@ -15,6 +15,7 @@
 
 import { najblizsiaSadzba, sadzbyKuDnu } from "./vat-rates";
 import type { Oprava53b } from "./dph-nezaplatene";
+import { kvPrijatehoDokladu, kvVystavenehoDokladu, upozornenieA1 } from "./kv-urcenie";
 
 export type Obdobie = {
   rok: number;
@@ -57,6 +58,17 @@ export type VystavenaFaktura = {
    * sa ako prázdne.
    */
   kv?: string | null;
+  /** IČO odberateľa — podnikateľ bez IČ DPH ide do A.1, občan do D.2. */
+  odberatelIco?: string | null;
+  /** Predvolené členenie KV firmy (bežná faktúra); ručné `kv` ho prebije. */
+  kvPredvolene?: string | null;
+  /** Členenie DPH dokladu (Pohoda) — „nezahrnovať“ (UN) do KV nepatrí. */
+  clenenieDph?: string | null;
+  /**
+   * Tuzemské prenesenie podľa § 69 ods. 12 aj bez vyplneného druhu prenesenia
+   * (ako v exporte do Pohody); chýba = podľa `prenosTyp`.
+   */
+  tuzemskePdp?: boolean;
 };
 
 export type PrijataFaktura = {
@@ -71,6 +83,12 @@ export type PrijataFaktura = {
   riadky: SadzbovyRiadok[];
   /** Ručne zvolené členenie KV (B1, B2, X = nezahŕňať); prázdne = automaticky. */
   kv?: string | null;
+  /** Predvolené členenie KV firmy (bežná tuzemská faktúra); ručné `kv` ho prebije. */
+  kvPredvolene?: string | null;
+  /** Členenie DPH dokladu (Pohoda) — „nezahrnovať do priznania“ (PN) do KV nepatrí. */
+  clenenieDph?: string | null;
+  /** Dobropis aj bez čísla pôvodnej faktúry (záporná suma); chýba = podľa `opravujeCislo`. */
+  dobropis?: boolean;
   /** Podiel odpočítateľnej DPH (účtovanie pomerom, napr. auto 50/50); chýba = celá. */
   podielOdpoctu?: number;
 };
@@ -87,6 +105,10 @@ export type PrijatyDoklad = {
    * B.2 s číslom a IČ DPH), X = do výkazu nepatrí; inak B.3.
    */
   kv?: string | null;
+  /** Predvolené členenie KV firmy pre bločky; ručné `kv` ho prebije. */
+  kvPredvolene?: string | null;
+  /** Členenie DPH dokladu (Pohoda) — „nezahrnovať do priznania“ (PN) do KV nepatrí. */
+  clenenieDph?: string | null;
   cislo?: string | null;
   datum?: string | null;
   /** Podiel odpočítateľnej DPH (účtovanie pomerom); chýba = celá. */
@@ -311,12 +333,26 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
     if (!doVykazov(f)) continue;
 
     /*
-      Ručne zvolené členenie (na faktúre, na položke alebo predvolené firmy)
-      prebije automatiku — rovnako ako v exporte do Pohody. X = do výkazu nepatrí.
+      Riadok KV určuje `kv-urcenie.ts` — to isté pravidlo ako v exporte do
+      Pohody. Ručne zvolené členenie (na faktúre, na položke) prebije
+      automatiku, predvolené firmy platí len pre bežnú tuzemskú faktúru.
     */
-    const kv = kvVystavenej(f.kv);
-    if (kv === "X") continue;
-    if (kv === "D1") {
+    const rucne = kvVystavenej(f.kv);
+    const kod = kvVystavenehoDokladu({
+      typ: f.typ,
+      opravny: jeOpravna(f),
+      kvDokladu: rucne,
+      predvolene: kvVystavenej(f.kvPredvolene),
+      reverseCharge: Boolean(f.prenosDane),
+      tuzemskePdp: f.tuzemskePdp ?? f.prenosTyp === "domestic_69",
+      maDph: f.riadky.some((r) => Math.abs(r.dan) >= 0.005),
+      icDphOdberatela: f.odberatelIcDph,
+      icoOdberatela: f.odberatelIco,
+      dicOdberatela: f.odberatelDic,
+      clenenieDph: f.clenenieDph,
+    });
+    if (!kod) continue;
+    if (kod === "D1") {
       // D.1 sú súhrnné tržby z eKasy — tie Faktero nepozná, faktúra sa do nich nepripočíta.
       vykaz.vytky.push({
         doklad: f.cislo,
@@ -324,8 +360,8 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       });
       continue;
     }
-    if (kv === "D2") {
-      // D.2 — len súčty po sadzbách; nulová sadzba sa v nej neuvádza.
+    if (kod === "D2") {
+      // D.2 — len súčty po sadzbách (aj opravy faktúr občanom); nulová sadzba sa v nej neuvádza.
       const zakladna = sadzbyKuDnu("SK", f.datumDodania).high;
       const d2 = vykaz.d2 ?? { z: 0, d: 0, zzn: 0, dzn: 0 };
       for (const r of f.riadky) {
@@ -342,19 +378,7 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       continue;
     }
 
-    /*
-      Oprava oslobodeného dodania do EÚ alebo vývozu: pôvodné dodanie v KV nie
-      je (nepatrí do A.1 ani A.2), preto ani jeho oprava nepatrí do C.1.
-    */
-    if (
-      !kv &&
-      jeOpravna(f) &&
-      f.prenosDane &&
-      (f.prenosTyp === "eu_b2b" || f.prenosTyp === "export")
-    )
-      continue;
-
-    if (kv === "C1" || (!kv && jeOpravna(f))) {
+    if (kod === "C1") {
       // C.1 — opravná faktúra sa páruje s pôvodnou, inak ju daniari nespoja.
       if (!f.opravujeCislo) {
         vykaz.vytky.push({
@@ -378,7 +402,7 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       continue;
     }
 
-    if (kv === "A2" || (!kv && f.prenosTyp === "domestic_69")) {
+    if (kod === "A2") {
       // A.2 — tuzemský prenos daňovej povinnosti; odberateľ musí byť platiteľ.
       const odb = f.odberatelIcDph?.trim();
       if (!odb) {
@@ -397,9 +421,19 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       continue;
     }
 
-    // Oslobodené dodania (do EÚ, vývoz) do kontrolného výkazu nepatria — ak ich niekto ručne nedal do A.1.
-    if (!kv && f.prenosDane) continue;
-
+    if (kod !== "A1") continue;
+    /*
+      A.1 bez IČ DPH je v poriadku pri podnikateľovi neplatiteľovi (stĺpec
+      ostane prázdny). Ručne zvolené A.1 pri odberateľovi bez akéhokoľvek
+      identifikátora vyzerá na faktúru občanovi — tá patrí do D.2.
+    */
+    const pozor = upozornenieA1({
+      kv: rucne,
+      icDph: f.odberatelIcDph,
+      ico: f.odberatelIco,
+      dic: f.odberatelDic,
+    });
+    if (pozor) vykaz.vytky.push({ doklad: f.cislo, text: pozor });
     for (const r of f.riadky) {
       if (r.sadzba <= 0) continue;
       vykaz.a1.push({
@@ -413,11 +447,36 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
     }
   }
 
+  /** Prijaté faktúry, ktoré majú ručne zvolené B.3 — idú do súhrnu so zjednodušenými. */
+  const prijateDoB3: PrijatyDoklad[] = [];
   for (const p of vstup.prijate) {
-    if (p.rezim === "bez_dane") continue;
-    if (p.kv === "X") continue;
+    /*
+      Riadok KV určuje `kv-urcenie.ts` ako v exporte do Pohody: bez nároku na
+      odpočet a s členením „nezahrnovať“ (PN) do B.2 nepatrí. Nadobudnutie
+      z EÚ samozdaní Faktero priamo z faktúry (B.1).
+    */
+    const kod = kvPrijatehoDokladu({
+      kvDokladu: p.kv,
+      predvolene: p.kvPredvolene,
+      blocek: false,
+      dobropis: p.dobropis ?? Boolean(p.opravujeCislo),
+      pdp: p.rezim === "samozdanenie",
+      rezim: p.rezim,
+      maDph: p.riadky.some((r) => Math.abs(r.dan) >= 0.005),
+      odpocet: p.odpocet,
+      clenenieDph: p.clenenieDph,
+      nadobudnutieDoB1: true,
+    });
+    if (!kod) continue;
 
-    if (p.opravujeCislo) {
+    if (kod === "C2") {
+      if (!p.opravujeCislo) {
+        vykaz.vytky.push({
+          doklad: p.cislo,
+          text: "Prijatý dobropis nemá vyplnené číslo pôvodnej faktúry — do časti C.2 ho bez neho poslať nemožno.",
+        });
+        continue;
+      }
       for (const r of p.riadky) {
         vykaz.c2.push({
           dod: p.dodavatelIcDph?.trim() || undefined,
@@ -432,9 +491,28 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       continue;
     }
 
-    const doB1 =
-      p.kv === "B1" ? true : p.kv === "B2" ? false : p.rezim === "samozdanenie" || p.rezim === "nadobudnutie";
-    if (!doB1 && !p.odpocet) continue; // bez odpočtu sa faktúra do B.2 neuvádza
+    if (kod === "B3") {
+      prijateDoB3.push({
+        dodavatelNazov: p.dodavatelNazov,
+        dodavatelIcDph: p.dodavatelIcDph,
+        dodavatelDic: p.dodavatelDic,
+        odpocet: p.odpocet,
+        riadky: p.riadky,
+        cislo: p.cislo,
+        datum: p.datumDodania,
+        podielOdpoctu: p.podielOdpoctu,
+      });
+      continue;
+    }
+
+    if (kod !== "B1" && kod !== "B2") {
+      vykaz.vytky.push({
+        doklad: p.cislo,
+        text: "Prijatá faktúra má členenie KV, ktoré patrí vystaveným dokladom — do výkazu nevošla.",
+      });
+      continue;
+    }
+    const doB1 = kod === "B1";
     if (p.rezim === "dovoz") continue; // dovoz sa vykazuje len v priznaní
 
     for (const r of p.riadky) {
@@ -490,8 +568,19 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
     medzi doklady) — ide po riadkoch s číslom a IČ DPH dodávateľa. „X" do
     výkazu nejde vôbec. Ostatné sú zjednodušené faktúry v B.3.
   */
+  const kodDokladu = (d: PrijatyDoklad) =>
+    kvPrijatehoDokladu({
+      kvDokladu: d.kv,
+      predvolene: d.kvPredvolene,
+      blocek: true,
+      dobropis: false,
+      pdp: false,
+      maDph: d.riadky.some((r) => Math.abs(r.dan) >= 0.005),
+      odpocet: d.odpocet,
+      clenenieDph: d.clenenieDph,
+    });
   for (const d of vstup.doklady) {
-    if (d.kv !== "B2" || !d.odpocet) continue;
+    if (kodDokladu(d) !== "B2" || !d.odpocet) continue;
     for (const r of d.riadky) {
       if (r.sadzba <= 0 && r.dan === 0) continue;
       const dod = d.dodavatelIcDph?.trim() || undefined;
@@ -513,7 +602,17 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       });
     }
   }
-  const sOdpoctom = vstup.doklady.filter((d) => d.odpocet && d.kv !== "B2" && d.kv !== "X");
+  /*
+    Do B.3 ide bloček s odpočtom, ktorý nie je B.2 ani „nezahŕňať“ (X, PN) —
+    a prijatá faktúra, ktorej niekto ručne zvolil B.3.
+  */
+  const sOdpoctom = [
+    ...vstup.doklady.filter((d) => {
+      const k = kodDokladu(d);
+      return d.odpocet && k !== "" && k !== "B2";
+    }),
+    ...prijateDoB3.filter((d) => d.odpocet),
+  ];
   const danSpolu = centy(
     sOdpoctom.reduce((a, d) => a + d.riadky.reduce((b, r) => b + r.dan, 0), 0),
   );

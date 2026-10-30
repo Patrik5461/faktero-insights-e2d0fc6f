@@ -1088,7 +1088,16 @@ function EditInvoice() {
           <UctovneNastaveniaFaktury
             companyId={inv.company_id}
             typ={inv.type}
-            odberatel={odberatel ? { ico: odberatel.customer_ico, name: odberatel.customer_name } : null}
+            odberatel={
+              odberatel
+                ? {
+                    ico: odberatel.customer_ico,
+                    name: odberatel.customer_name,
+                    dic: odberatel.customer_dic,
+                    icDph: odberatel.customer_ic_dph,
+                  }
+                : null
+            }
             reverseCharge={Boolean(inv.reverse_charge)}
             kody={{ predkontacia: form.predkontacia, clenenie: form.clenenie, kv: form.kv }}
             onKody={(k) => setForm((f) => ({ ...f, ...k }))}

@@ -209,10 +209,13 @@ function skrat(v: unknown, max: number): string {
     .slice(0, max);
 }
 
-/** Predvolené KV firmy do Pohody — „X" (nezahŕňať) nemá v Pohode skratku. */
+/**
+ * Predvolené KV firmy. „X" (nezahŕňať) sa posiela ďalej: `kv-urcenie.ts` z neho
+ * urobí prázdne členenie (doklad do KV nevstúpi), rovnako ako výkaz Faktera.
+ * Predtým sa „X" zahodilo a doklad dostal automatické B.2/A.1.
+ */
 function kvZPredvoleneho(kod: string | null | undefined): string {
-  const k = String(kod ?? "").trim();
-  return k && k !== "X" ? k : "";
+  return String(kod ?? "").trim();
 }
 
 /** Predkontácia a členenie DPH — kódy z Pohody účtovníka, ak si ich vyplnil. */
@@ -782,6 +785,8 @@ export function polozkyFaktur(opts: {
         tuzemskePdp,
         maDph: items.some((it) => Math.abs(Number(it.vat_amount ?? 0)) >= 0.005),
         icDphOdberatela: invoice.customer_ic_dph,
+        icoOdberatela: invoice.customer_ico,
+        dicOdberatela: invoice.customer_dic,
         clenenieDph: clenenie,
       });
       /*
@@ -1749,6 +1754,8 @@ export function polozkyDokladov(opts: {
             predvolene: kvZPredvoleneho(nastavenia?.kvFaktura),
             maDph: maDphDokladu,
             icDphOdberatela: d?.supplier_ic_dph,
+            icoOdberatela: d?.supplier_ico,
+            dicOdberatela: d?.supplier_dic,
             clenenieDph: clenenie,
           });
       const kvHlavicka = rozuctovany || cz ? "" : kvAuto;
