@@ -6900,6 +6900,7 @@ export type Database = {
           vratene_z_pohody_at: string | null
           oprava_zauctovania_at: string | null
           oprava_zauctovania_povodne: Json | null
+          na_kontrolu_at: string | null
         }
         Insert: {
           exchange_rate_source?: string | null
@@ -7019,6 +7020,7 @@ export type Database = {
           vratene_z_pohody_at?: string | null
           oprava_zauctovania_at?: string | null
           oprava_zauctovania_povodne?: Json | null
+          na_kontrolu_at?: string | null
         }
         Update: {
           exchange_rate_source?: string | null
@@ -7138,6 +7140,7 @@ export type Database = {
           vratene_z_pohody_at?: string | null
           oprava_zauctovania_at?: string | null
           oprava_zauctovania_povodne?: Json | null
+          na_kontrolu_at?: string | null
         }
         Relationships: [
           {
@@ -11671,6 +11674,27 @@ export type Database = {
           zdroj?: string
           overene?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      telegram_strop: {
+        Row: {
+          id: number
+          chat_id: number
+          druh: string
+          created_at: string
+        }
+        Insert: {
+          id: number
+          chat_id: number
+          druh: string
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          chat_id?: number
+          druh?: string
+          created_at?: string
         }
         Relationships: []
       }
