@@ -316,6 +316,7 @@ import { Route as ApiPublicDokladTokenRouteImport } from './routes/api/public/do
 import { Route as ApiPublicEfakturaEpostakRouteImport } from './routes/api/public/efaktura/epostak'
 import { Route as ApiPublicEfakturaPdsRouteImport } from './routes/api/public/efaktura/pds'
 import { Route as ApiPublicFakturaTokenRouteImport } from './routes/api/public/faktura.$token'
+import { Route as ApiPublicHooksAutoOpravaOdpovedRouteImport } from './routes/api/public/hooks/auto-oprava-odpoved'
 import { Route as ApiPublicHooksAutoUctovanieRouteImport } from './routes/api/public/hooks/auto-uctovanie'
 import { Route as ApiPublicHooksBankStatementsRouteImport } from './routes/api/public/hooks/bank-statements'
 import { Route as ApiPublicHooksBankStatementsRestoreRouteImport } from './routes/api/public/hooks/bank-statements-restore'
@@ -2050,6 +2051,12 @@ const ApiPublicFakturaTokenRoute = ApiPublicFakturaTokenRouteImport.update({
   path: '/api/public/faktura/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksAutoOpravaOdpovedRoute =
+  ApiPublicHooksAutoOpravaOdpovedRouteImport.update({
+    id: '/api/public/hooks/auto-oprava-odpoved',
+    path: '/api/public/hooks/auto-oprava-odpoved',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksAutoUctovanieRoute =
   ApiPublicHooksAutoUctovanieRouteImport.update({
     id: '/api/public/hooks/auto-uctovanie',
@@ -2716,6 +2723,7 @@ export interface FileRoutesByFullPath {
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
+  '/api/public/hooks/auto-oprava-odpoved': typeof ApiPublicHooksAutoOpravaOdpovedRoute
   '/api/public/hooks/auto-uctovanie': typeof ApiPublicHooksAutoUctovanieRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
@@ -3081,6 +3089,7 @@ export interface FileRoutesByTo {
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
+  '/api/public/hooks/auto-oprava-odpoved': typeof ApiPublicHooksAutoOpravaOdpovedRoute
   '/api/public/hooks/auto-uctovanie': typeof ApiPublicHooksAutoUctovanieRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
@@ -3457,6 +3466,7 @@ export interface FileRoutesById {
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
+  '/api/public/hooks/auto-oprava-odpoved': typeof ApiPublicHooksAutoOpravaOdpovedRoute
   '/api/public/hooks/auto-uctovanie': typeof ApiPublicHooksAutoUctovanieRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
@@ -3833,6 +3843,7 @@ export interface FileRouteTypes {
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
+    | '/api/public/hooks/auto-oprava-odpoved'
     | '/api/public/hooks/auto-uctovanie'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
@@ -4198,6 +4209,7 @@ export interface FileRouteTypes {
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
+    | '/api/public/hooks/auto-oprava-odpoved'
     | '/api/public/hooks/auto-uctovanie'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
@@ -4573,6 +4585,7 @@ export interface FileRouteTypes {
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
+    | '/api/public/hooks/auto-oprava-odpoved'
     | '/api/public/hooks/auto-uctovanie'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
@@ -4776,6 +4789,7 @@ export interface RootRouteChildren {
   ApiPublicEfakturaEpostakRoute: typeof ApiPublicEfakturaEpostakRoute
   ApiPublicEfakturaPdsRoute: typeof ApiPublicEfakturaPdsRoute
   ApiPublicFakturaTokenRoute: typeof ApiPublicFakturaTokenRoute
+  ApiPublicHooksAutoOpravaOdpovedRoute: typeof ApiPublicHooksAutoOpravaOdpovedRoute
   ApiPublicHooksAutoUctovanieRoute: typeof ApiPublicHooksAutoUctovanieRoute
   ApiPublicHooksBankStatementsRoute: typeof ApiPublicHooksBankStatementsRoute
   ApiPublicHooksBankStatementsRestoreRoute: typeof ApiPublicHooksBankStatementsRestoreRoute
@@ -6968,6 +6982,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFakturaTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/auto-oprava-odpoved': {
+      id: '/api/public/hooks/auto-oprava-odpoved'
+      path: '/api/public/hooks/auto-oprava-odpoved'
+      fullPath: '/api/public/hooks/auto-oprava-odpoved'
+      preLoaderRoute: typeof ApiPublicHooksAutoOpravaOdpovedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/auto-uctovanie': {
       id: '/api/public/hooks/auto-uctovanie'
       path: '/api/public/hooks/auto-uctovanie'
@@ -8327,6 +8348,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEfakturaEpostakRoute: ApiPublicEfakturaEpostakRoute,
   ApiPublicEfakturaPdsRoute: ApiPublicEfakturaPdsRoute,
   ApiPublicFakturaTokenRoute: ApiPublicFakturaTokenRoute,
+  ApiPublicHooksAutoOpravaOdpovedRoute: ApiPublicHooksAutoOpravaOdpovedRoute,
   ApiPublicHooksAutoUctovanieRoute: ApiPublicHooksAutoUctovanieRoute,
   ApiPublicHooksBankStatementsRoute: ApiPublicHooksBankStatementsRoute,
   ApiPublicHooksBankStatementsRestoreRoute:

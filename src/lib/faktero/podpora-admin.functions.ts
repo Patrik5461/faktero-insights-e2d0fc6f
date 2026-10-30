@@ -226,7 +226,66 @@ export const adminAutoOpravyFn = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(10);
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    // Text odpovede, ktorý po nasadení odíde (predvolený alebo upravený podporou).
+    const { data: poz } = await db
+      .from("podpora_poziadavky")
+      .select("cislo, predmet")
+      .eq("id", data.poziadavka_id)
+      .maybeSingle();
+    const { textOdpovede } = await import("./auto-oprava-odpoved");
+    return ((rows ?? []) as any[]).map((r) => ({
+      ...r,
+      odpoved_vysledny: poz
+        ? textOdpovede({ ...r, cislo: (poz as any).cislo, predmet: (poz as any).predmet })
+        : null,
+    }));
+  });
+
+/*
+  Odpoveď zákazníkovi po nasadení opravy: podpora môže text upraviť, automatiku
+  vypnúť (zapnúť) alebo odpoveď po nasadení poslať hneď ručne.
+*/
+export const adminAutoOpravaOdpovedFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        poziadavka_id: z.string().uuid(),
+        id: z.string().uuid(),
+        akcia: z.enum(["ulozit", "odoslat"]),
+        /** Prázdny text = vrátiť sa k predvolenému zo zhrnutia opravy. */
+        text: z.string().max(10000).optional(),
+        auto: z.boolean().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const db = (await admin((context as { userId: string }).userId)) as any;
+    const { data: o } = await db
+      .from("podpora_auto_opravy")
+      .select("id, poziadavka_id, odpoved_odoslana_at")
+      .eq("id", data.id)
+      .eq("poziadavka_id", data.poziadavka_id)
+      .maybeSingle();
+    if (!o) throw new Error("Návrh opravy sa nenašiel.");
+    if (o.odpoved_odoslana_at) throw new Error("Odpoveď už bola odoslaná.");
+    const zmena: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (data.text !== undefined) zmena.odpoved_text = data.text.trim() || null;
+    if (data.auto !== undefined) zmena.odpoved_auto = data.auto;
+    const { error } = await db.from("podpora_auto_opravy").update(zmena).eq("id", o.id);
+    if (error) throw new Error(error.message);
+    if (data.akcia === "odoslat") {
+      const { odosliOdpovedPoOprave } = await import("./auto-oprava-odpoved.server");
+      const r = await odosliOdpovedPoOprave({ id: o.id, rucne: true });
+      if (!r.ok) throw new Error(r.chyba);
+      if (!r.odoslana)
+        throw new Error(
+          r.dovod === "nie_je_nasadena"
+            ? "Oprava ešte nie je nasadená."
+            : "Odpoveď už bola odoslaná.",
+        );
+    }
+    return { ok: true };
   });
 
 export const adminAutoOpravaFn = createServerFn({ method: "POST" })

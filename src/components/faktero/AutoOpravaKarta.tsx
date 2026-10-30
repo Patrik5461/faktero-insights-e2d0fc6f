@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Bot, Check, Loader2, RotateCcw, X } from "lucide-react";
-import { adminAutoOpravaFn, adminAutoOpravyFn } from "@/lib/faktero/podpora-admin.functions";
+import { Bot, Check, Loader2, RotateCcw, Send, X } from "lucide-react";
+import {
+  adminAutoOpravaFn,
+  adminAutoOpravaOdpovedFn,
+  adminAutoOpravyFn,
+} from "@/lib/faktero/podpora-admin.functions";
 import { potvrd } from "@/lib/potvrdenie";
 
 /*
@@ -46,6 +50,8 @@ const POPIS_STAVU: Record<string, { text: string; trieda: string }> = {
 };
 const BEZI = ["caka", "bezi", "schvalena", "zlucuje", "zlucena"];
 const ISTOTA: Record<string, string> = { vysoka: "vysoká", stredna: "stredná", nizka: "nízka" };
+/** Pri týchto stavoch má zmysel pripraviť odpoveď zákazníkovi po nasadení. */
+const S_ODPOVEDOU = ["navrh", "schvalena", "zlucuje", "zlucena", "nasadena"];
 
 export function AutoOpravaKarta({ poziadavkaId }: { poziadavkaId: string }) {
   const zoznamFn = useServerFn(adminAutoOpravyFn);
@@ -202,6 +208,10 @@ export function AutoOpravaKarta({ poziadavkaId }: { poziadavkaId: string }) {
         </div>
       )}
 
+      {o && S_ODPOVEDOU.includes(o.stav) ? (
+        <OdpovedPoNasadeni o={o} poziadavkaId={poziadavkaId} poZmene={nacitaj} />
+      ) : null}
+
       {pisePokyn ? (
         <textarea
           value={pokyn}
@@ -245,5 +255,163 @@ export function AutoOpravaKarta({ poziadavkaId }: { poziadavkaId: string }) {
         ) : null}
       </div>
     </section>
+  );
+}
+
+/*
+  Odpoveď zákazníkovi po nasadení: keď je oprava na webe, spúšťač ju pošle sám
+  (e-mail, Telegram) a požiadavku uzavrie. Podpora tu text upraví, automatiku
+  vypne, alebo po nasadení odpoveď pošle hneď.
+*/
+function OdpovedPoNasadeni({
+  o,
+  poziadavkaId,
+  poZmene,
+}: {
+  o: any;
+  poziadavkaId: string;
+  poZmene: () => Promise<void>;
+}) {
+  const odpovedFn = useServerFn(adminAutoOpravaOdpovedFn);
+  const [text, setText] = useState<string>(o.odpoved_vysledny ?? "");
+  const [upravuje, setUpravuje] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!upravuje) setText(o.odpoved_vysledny ?? "");
+  }, [o.odpoved_vysledny, upravuje]);
+
+  async function uloz(zmena: { text?: string; auto?: boolean }, odoslat = false) {
+    setBusy(true);
+    try {
+      await odpovedFn({
+        data: {
+          poziadavka_id: poziadavkaId,
+          id: o.id,
+          akcia: odoslat ? "odoslat" : "ulozit",
+          ...zmena,
+        },
+      });
+      setUpravuje(false);
+      toast.success(
+        odoslat
+          ? "Odpoveď odoslaná, požiadavka uzavretá."
+          : zmena.auto === undefined
+            ? "Text odpovede uložený."
+            : zmena.auto
+              ? "Po nasadení sa zákazníkovi odpovie automaticky."
+              : "Automatická odpoveď vypnutá.",
+      );
+      await poZmene();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (o.odpoved_odoslana_at) {
+    return (
+      <div className="mt-3 rounded-md border border-border p-3 text-sm">
+        <p className="font-medium">
+          Odpoveď zákazníkovi odoslaná {new Date(o.odpoved_odoslana_at).toLocaleString("sk-SK")}
+        </p>
+        <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{o.odpoved_text}</p>
+      </div>
+    );
+  }
+
+  const nasadena = o.stav === "nasadena";
+  return (
+    <div className="mt-3 space-y-2 rounded-md border border-border p-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium">Odpoveď zákazníkovi po nasadení</span>
+        <label className="inline-flex items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={!!o.odpoved_auto}
+            disabled={busy}
+            onChange={(e) => void uloz({ auto: e.target.checked })}
+          />
+          Poslať automaticky a uzavrieť požiadavku
+        </label>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {o.odpoved_auto
+          ? nasadena
+            ? "Oprava je nasadená — odpoveď odíde pri najbližšom behu automatu (do 2 minút)."
+            : "Keď bude oprava naozaj na faktero.sk, tento text odíde e-mailom (a do Telegramu, ak ho zákazník má spárovaný) a požiadavka sa uzavrie."
+          : "Automatika je vypnutá — zákazníkovi sa nič nepošle, kým to nezapnete alebo neodošlete ručne."}
+      </p>
+      {upravuje ? (
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={10}
+          maxLength={10000}
+          aria-label="Text odpovede zákazníkovi"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        />
+      ) : (
+        <p className="whitespace-pre-wrap rounded-md bg-secondary p-2 text-xs">{text}</p>
+      )}
+      {o.odpoved_chyba ? (
+        <p className="whitespace-pre-wrap rounded-md bg-red-50 p-2 text-xs text-red-900 dark:bg-red-950/40 dark:text-red-200">
+          {o.odpoved_chyba}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        {upravuje ? (
+          <>
+            <button
+              onClick={() => void uloz({ text })}
+              disabled={busy || !text.trim()}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              <Check className="h-4 w-4" /> Uložiť text
+            </button>
+            <button
+              onClick={() => void uloz({ text: "" })}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              <RotateCcw className="h-4 w-4" /> Predvolený text
+            </button>
+            <button
+              onClick={() => setUpravuje(false)}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              <X className="h-4 w-4" /> Zrušiť
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setUpravuje(true)}
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+          >
+            Upraviť text
+          </button>
+        )}
+        {nasadena ? (
+          <button
+            onClick={async () => {
+              if (
+                !(await potvrd("Poslať zákazníkovi túto odpoveď a uzavrieť požiadavku?", {
+                  potvrdit: "Odoslať",
+                }))
+              )
+                return;
+              await uloz(upravuje ? { text } : {}, true);
+            }}
+            disabled={busy || !text.trim()}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+          >
+            <Send className="h-4 w-4" /> Odoslať teraz
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 }
