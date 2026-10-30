@@ -21,7 +21,12 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { NahladPdf } from "./NahladPdf";
-import { PrepinacZvyraznenia, type ZvyraznenieNahladu } from "./ZvyraznenieVytazenych";
+import {
+  ObrazokSoZvyraznenim,
+  PrepinacZvyraznenia,
+  useHoverPola,
+  type ZvyraznenieNahladu,
+} from "./ZvyraznenieVytazenych";
 import { poleZPrvku } from "./NahladSVyberom";
 import type { KlucPola } from "@/lib/faktero/vyber-z-dokladu";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
@@ -171,6 +176,9 @@ export function NespracovanyKompaktny({
   const [zvacsenie, setZvacsenie] = useState(1);
   // Pole s kurzorom — jeho miesto sa v náhľade zvýrazní a náhľad sa naň posunie.
   const [aktivnePole, setAktivnePole] = useState<KlucPola | null>(null);
+  // Pole pod myšou má prednosť pred poľom s kurzorom.
+  const hoverPola = useHoverPola(poleZPrvku);
+  const zvyraznenePole = hoverPola.pole ?? aktivnePole;
   const blocek = druh === "blocek";
   const faktura = druh === "faktura" || druh === "zalohova" || druh === "dobropis";
   const zle = (k: string) => chyby.includes(k);
@@ -218,7 +226,7 @@ export function NespracovanyKompaktny({
                 <I className="h-4 w-4" />
               </button>
             ))}
-            {pdf && zvyraznenie && onPrepniZvyraznenie ? (
+            {(pdf || Boolean(zvyraznenie?.polohy?.length)) && zvyraznenie && onPrepniZvyraznenie ? (
               <PrepinacZvyraznenia zap={zvyraznenie.zobrazit} onPrepni={onPrepniZvyraznenie} />
             ) : null}
             {subor.url ? (
@@ -257,13 +265,18 @@ export function NespracovanyKompaktny({
               {pdf ? (
                 <NahladPdf
                   url={subor.url}
-                  zvyraznenie={zvyraznenie ? { ...zvyraznenie, aktivne: aktivnePole } : undefined}
+                  zvyraznenie={
+                    zvyraznenie ? { ...zvyraznenie, aktivne: zvyraznenePole } : undefined
+                  }
                 />
               ) : (
-                <img
-                  src={subor.url}
+                <ObrazokSoZvyraznenim
+                  url={subor.url}
                   alt={subor.nazov ?? t("Doklad")}
                   className="mx-auto max-w-full rounded-md"
+                  zvyraznenie={
+                    zvyraznenie ? { ...zvyraznenie, aktivne: zvyraznenePole } : undefined
+                  }
                 />
               )}
             </div>
@@ -276,6 +289,8 @@ export function NespracovanyKompaktny({
       {/* Panel s údajmi */}
       <div
         onFocusCapture={(e) => setAktivnePole(poleZPrvku(e.target))}
+        onMouseOver={hoverPola.onMouseOver}
+        onMouseLeave={hoverPola.onMouseLeave}
         className="flex min-w-0 flex-col rounded-2xl border border-border bg-card lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)]"
       >
         <div className="min-h-0 flex-1 overflow-auto">

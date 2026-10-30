@@ -8,10 +8,14 @@
   v slovách textovej vrstvy PDF. Medzery medzi slovami sú voliteľné, takže
   „SK31 1200 0000…" nájde aj IBAN zapísaný bez medzier.
 
-  Obrázky ani skeny bez textovej vrstvy slová nemajú — nezvýrazní sa nič.
+  Obrázky ani skeny bez textovej vrstvy slová nemajú — pre ne (a pre polia,
+  ktoré sa v texte nenašli) sa použije poloha, ktorú vrátila AI
+  (`polohy-ai.ts`), ak hodnota poľa ešte sedí s tým, čo AI prečítala.
+  Bez polôh od AI sa na obrázku nezvýrazní nič.
   Čisté funkcie bez Reactu, aby sa dali otestovať.
 */
 import { sucty, type UdajeNespracovaneho } from "./nespracovane";
+import type { PolohaAi } from "./polohy-ai";
 import {
   poleVyberu,
   type KlucPola,
@@ -220,8 +224,49 @@ export function zvyrazneniaUdajov(
   strany: SlovoNahladu[][],
   u: UdajeNespracovaneho,
   polia: KlucPola[] = POLIA_ZVYRAZNENIA,
+  polohy: PolohaAi[] = [],
 ): Zvyraznenie[] {
-  if (!strany.some((s) => s.length)) return [];
+  const out: Zvyraznenie[] = [];
+  if (strany.some((s) => s.length)) out.push(...zTextu(strany, u, polia));
+  // Čo sa v textovej vrstve nenašlo (alebo žiadna nie je), doplní poloha od AI.
+  const najdene = new Set(out.map((z) => z.kluc));
+  for (const p of polohy) {
+    if (najdene.has(p.kluc) || !polia.includes(p.kluc) || !POLIA_POLOH.includes(p.kluc)) continue;
+    if (!polohaPlati(p, u)) continue;
+    out.push({ kluc: p.kluc, strana: p.strana, r: [p.r] });
+  }
+  return out;
+}
+
+/** Polia, ktoré sa smú zvýrazniť podľa polohy od AI (aj názov dodávateľa). */
+const POLIA_POLOH: KlucPola[] = [...POLIA_ZVYRAZNENIA, "dodavatel.nazov"];
+
+/**
+ * Platí ešte poloha od AI? Len keď hodnota poľa je tá istá, akú AI prečítala —
+ * prepísané pole by inak ukazovalo na iné miesto, než odkiaľ hodnota je.
+ */
+export function polohaPlati(p: PolohaAi, u: UdajeNespracovaneho): boolean {
+  const teraz = hodnotaPola(u, p.kluc);
+  if (teraz == null || p.hodnota == null || p.hodnota === "") return false;
+  const typ = poleVyberu(p.kluc).typ;
+  if (typ === "suma") {
+    const a = Number(String(teraz).replace(",", "."));
+    const b = Number(String(p.hodnota).replace(",", "."));
+    // Dobropis je v údajoch záporný, AI ho môže vrátiť kladný.
+    return Number.isFinite(a) && Number.isFinite(b) && Math.abs(Math.abs(a) - Math.abs(b)) < 0.005;
+  }
+  const norm = (v: string | number) => {
+    const n = normalizujText(String(v)).replace(/[-./]/g, "");
+    return typ === "ico" ? n.replace(/^0+/, "") : n;
+  };
+  return norm(teraz) === norm(p.hodnota);
+}
+
+function zTextu(
+  strany: SlovoNahladu[][],
+  u: UdajeNespracovaneho,
+  polia: KlucPola[],
+): Zvyraznenie[] {
   const out: Zvyraznenie[] = [];
   for (const kluc of polia) {
     if (!POLIA_ZVYRAZNENIA.includes(kluc)) continue;

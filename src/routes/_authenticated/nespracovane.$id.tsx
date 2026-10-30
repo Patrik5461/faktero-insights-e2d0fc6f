@@ -47,9 +47,12 @@ import { potvrd } from "@/lib/potvrdenie";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
 import { zapamatajOtvoreny } from "@/lib/faktero/posledny-otvoreny";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { vystavenaPodlaIban } from "@/lib/faktero/nespracovane-iban";
-import { VlastnaFakturaUpozornenie } from "@/components/faktero/VlastnaFakturaUpozornenie";
-import { useZobrazitZvyraznenie } from "@/components/faktero/ZvyraznenieVytazenych";
+import { smerPodlaIban } from "@/lib/faktero/nespracovane-iban";
+import {
+  PrijataPodlaIbanPoznamka,
+  VlastnaFakturaUpozornenie,
+} from "@/components/faktero/VlastnaFakturaUpozornenie";
+import { useHoverPola, useZobrazitZvyraznenie } from "@/components/faktero/ZvyraznenieVytazenych";
 import { POLIA_ZVYRAZNENIA } from "@/lib/faktero/zvyraznenie-vytazenych";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/$id")({
@@ -87,6 +90,8 @@ function Detail() {
   const { vzhlad, zmen: zmenVzhlad } = useVzhladNespracovanych();
   // Zvýraznenie vyťažených údajov v náhľade (prepínač si pamätá prehliadač).
   const [zobrazitZvyraznenie, prepniZvyraznenie] = useZobrazitZvyraznenie();
+  // Pole pod myšou — jeho miesto sa v náhľade zvýrazní aj bez kliknutia.
+  const hoverPola = useHoverPola(poleZPrvku);
 
   async function obnov() {
     try {
@@ -180,28 +185,33 @@ function Detail() {
     set({ rozpis: u.rozpis.map((r, j) => (j === i ? { ...r, ...z } : r)), celkom: null });
 
   /*
-    Vlastná vystavená faktúra (IBAN príjemcu platby je firemný) — nastavenie
-    „Automaticky určiť typ faktúry podľa firemných IBAN-ov". Nespracované
-    vystavené faktúry nezakladajú, takže upozornia a medzi prijaté ju pustia
-    len po potvrdení.
+    Smer faktúry podľa IBAN-u — nastavenie „Automaticky určiť typ faktúry
+    podľa firemných IBAN-ov". Vlastná vystavená faktúra (IBAN príjemcu platby
+    je firemný): Nespracované vystavené faktúry nezakladajú, takže upozornia
+    a medzi prijaté ju pustia len po potvrdení. Cudzí IBAN potvrdí prijatú.
   */
-  const vlastnyUcet = vystavenaPodlaIban({
+  const smer = smerPodlaIban({
     zapnute: Boolean(d.nastavenia.typPodlaIban),
     druh,
     ibanDokladu: u.dodavatel.iban,
+    ibanOdberatela: d.ibanOdberatela,
     ucty: d.vlastneUcty ?? [],
   });
+  const vlastnyUcet = smer?.smer === "vystavena" ? smer.ucet : null;
   const upozornenieVlastnej = vlastnyUcet ? (
     <VlastnaFakturaUpozornenie
       ucet={vlastnyUcet}
       onInyDoklad={() => setDruh("ostatny")}
       onZmaz={() => void zmazDoklad()}
     />
+  ) : smer?.smer === "prijata" ? (
+    <PrijataPodlaIbanPoznamka smer={smer} />
   ) : null;
   const zvyraznenie = {
     udaje: u,
     polia: druh ? poliaPreDruh(druh) : POLIA_ZVYRAZNENIA,
     zobrazit: zobrazitZvyraznenie,
+    polohy: d.polohyAi,
   };
 
   async function ulozZmeny() {
@@ -499,7 +509,7 @@ function Detail() {
                     setVyberPole(null);
                     zablikajPole(udajeRef.current, kluc);
                   }}
-                  zvyraznenie={{ ...zvyraznenie, aktivne: vyberPole }}
+                  zvyraznenie={{ ...zvyraznenie, aktivne: hoverPola.pole ?? vyberPole }}
                   onPrepniZvyraznenie={prepniZvyraznenie}
                 />
                 <a
@@ -518,7 +528,13 @@ function Detail() {
           </div>
 
           {/* Údaje — kliknutie do poľa zapne výber z náhľadu */}
-          <div ref={udajeRef} onFocusCapture={(e) => setVyberPole(poleZPrvku(e.target))} className="min-w-0 space-y-4">
+          <div
+            ref={udajeRef}
+            onFocusCapture={(e) => setVyberPole(poleZPrvku(e.target))}
+            onMouseOver={hoverPola.onMouseOver}
+            onMouseLeave={hoverPola.onMouseLeave}
+            className="min-w-0 space-y-4"
+          >
             {d.stav === "cita" && (
               <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" /> {t("Čítam doklad — údaje sa doplnia samy.")}

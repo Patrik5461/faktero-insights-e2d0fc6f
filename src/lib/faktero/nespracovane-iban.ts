@@ -44,7 +44,62 @@ export function vystavenaPodlaIban(args: {
   ibanDokladu: string | null | undefined;
   ucty: UcetFirmy[];
 }): UcetFirmy | null {
-  if (!args.zapnute) return null;
+  const s = smerPodlaIban(args);
+  return s?.smer === "vystavena" ? s.ucet : null;
+}
+
+/**
+ * Účty firmy z oboch zdrojov — ručne zadané (`company_bank_accounts`),
+ * napojené banky (`bank_accounts`) a IBAN z hlavičky firmy. Ten istý IBAN
+ * sa ráta raz; meno má prednosť to, ktoré je vyplnené.
+ */
+export function uctyFirmy(...zdroje: (UcetFirmy[] | null | undefined)[]): UcetFirmy[] {
+  const out = new Map<string, UcetFirmy>();
+  for (const zdroj of zdroje)
+    for (const u of zdroj ?? []) {
+      const kluc = normalizujIban(u?.iban);
+      if (kluc.length < 15) continue;
+      const bolo = out.get(kluc);
+      if (!bolo) out.set(kluc, { iban: String(u.iban).trim(), nazov: u.nazov?.trim() || null });
+      else if (!bolo.nazov && u.nazov?.trim()) bolo.nazov = u.nazov.trim();
+    }
+  return [...out.values()];
+}
+
+/**
+ * Smer faktúry podľa IBAN-ov na nej — silný signál pri rozhodovaní, či je to
+ * prijatá, alebo vlastná vystavená faktúra. Dôvod sa ukazuje v rozhraní.
+ *
+ * - `vystavena` — IBAN príjemcu platby je firemný (peniaze majú prísť firme);
+ * - `prijata` + `odberatel` — firemný IBAN je na doklade ako účet odberateľa;
+ * - `prijata` + `cudzi` — IBAN príjemcu platby nepatrí žiadnemu účtu firmy.
+ *
+ * Null = nedá sa povedať (vypnuté, bloček/iný doklad, firma nemá účty, na
+ * doklade IBAN nie je).
+ */
+export type SmerPodlaIban =
+  | { smer: "vystavena"; iban: string; ucet: UcetFirmy }
+  | { smer: "prijata"; dovod: "odberatel"; iban: string; ucet: UcetFirmy }
+  | { smer: "prijata"; dovod: "cudzi"; iban: string };
+
+export function smerPodlaIban(args: {
+  zapnute: boolean;
+  druh: string | null | undefined;
+  /** IBAN príjemcu platby (AI ho vyčíta ako IBAN dodávateľa). */
+  ibanDokladu: string | null | undefined;
+  /** IBAN odberateľa / platiteľa, ak je na doklade. */
+  ibanOdberatela?: string | null;
+  ucty: UcetFirmy[];
+}): SmerPodlaIban | null {
+  if (!args.zapnute || !args.ucty.length) return null;
   if (args.druh && !PRIJATE.has(args.druh)) return null;
-  return vlastnyUcetDokladu(args.ibanDokladu, args.ucty);
+  const vlastny = vlastnyUcetDokladu(args.ibanDokladu, args.ucty);
+  if (vlastny) return { smer: "vystavena", iban: vlastny.iban, ucet: vlastny };
+  const odberatel = vlastnyUcetDokladu(args.ibanOdberatela, args.ucty);
+  if (odberatel)
+    return { smer: "prijata", dovod: "odberatel", iban: odberatel.iban, ucet: odberatel };
+  const iban = normalizujIban(args.ibanDokladu);
+  if (iban.length >= 15 && /^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(iban))
+    return { smer: "prijata", dovod: "cudzi", iban: String(args.ibanDokladu).trim() };
+  return null;
 }

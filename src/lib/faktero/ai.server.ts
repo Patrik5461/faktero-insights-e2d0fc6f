@@ -32,6 +32,11 @@ export type AiNastavenie = {
    * OpenAI dostane len `json_object` — volajúci odpoveď aj tak overuje.
    */
   schema?: Record<string, unknown>;
+  /**
+   * Ohlási, kto naozaj odpovedal (Gemini, alebo OpenAI ako náhrada). Polohy
+   * údajov na doklade vie presne len Gemini — OpenAI si ich vymýšľa.
+   */
+  odpovedal?: (poskytovatel: "gemini" | "openai") => void;
 };
 
 /**
@@ -215,8 +220,9 @@ export async function aiVision(
   pokyn: string,
   nastavenie?: AiNastavenie,
 ): Promise<string> {
-  const naOpenAi = (nahrada = false) =>
-    cezOpenAi(
+  const naOpenAi = (nahrada = false) => {
+    nastavenie?.odpovedal?.("openai");
+    return cezOpenAi(
       pokyn,
       mimeType === "application/pdf"
         ? [
@@ -234,6 +240,7 @@ export async function aiVision(
       true,
       nahrada,
     );
+  };
 
   if (!maGemini()) {
     if (!maOpenAi()) bezPoskytovatela();
@@ -249,7 +256,11 @@ export async function aiVision(
         ucel: nastavenie?.ucel,
         firma: nastavenie?.firma,
       },
-      (ohlasTokeny) => geminiVision(base64, mimeType, pokyn, nastavenie, ohlasTokeny),
+      async (ohlasTokeny) => {
+        const odpoved = await geminiVision(base64, mimeType, pokyn, nastavenie, ohlasTokeny);
+        nastavenie?.odpovedal?.("gemini");
+        return odpoved;
+      },
     );
   } catch (e) {
     umlcGemini(e);

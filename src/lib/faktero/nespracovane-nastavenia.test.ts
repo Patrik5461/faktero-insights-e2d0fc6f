@@ -103,9 +103,11 @@ describe("predpony čísla objednávky", () => {
     });
     expect(n.predponyObjednavky).toEqual(["OBJ-", "PO", "5"]);
     expect(PREDVOLENE_NESPRACOVANE.predponyObjednavky).toEqual([]);
-    expect(PREDVOLENE_NESPRACOVANE.typPodlaIban).toBe(false);
-    expect(nastaveniaNespracovanych({ nespracovane: { typPodlaIban: true } }).typPodlaIban).toBe(
-      true,
+    // Typ podľa IBAN-u je predvolene zapnutý, firma ho môže vypnúť.
+    expect(PREDVOLENE_NESPRACOVANE.typPodlaIban).toBe(true);
+    expect(nastaveniaNespracovanych({}).typPodlaIban).toBe(true);
+    expect(nastaveniaNespracovanych({ nespracovane: { typPodlaIban: false } }).typPodlaIban).toBe(
+      false,
     );
   });
 

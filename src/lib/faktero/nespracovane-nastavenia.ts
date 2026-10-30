@@ -54,7 +54,7 @@ export const PREDVOLENE_NESPRACOVANE: NastaveniaNespracovanych = {
   polozkyBlockov: true,
   dodaciList: true,
   domacaMena: true,
-  typPodlaIban: false,
+  typPodlaIban: true,
   predponyObjednavky: [],
 };
 
