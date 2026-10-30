@@ -270,7 +270,9 @@ export function buildFlexiUctovanie(opts: {
         pole("cisDosle", d.cislo, o, 40) +
         pole("varSym", d.vs, o, 20) +
         pole("datVyst", d.datumVystavenia, o) +
-        pole("duzpPuv", d.datumDodania, o);
+        pole("duzpPuv", d.datumDodania, o) +
+        // „Uplatnit zdaň. plnění" — obdobie odpočtu podľa voľby „Dátum odpočtu".
+        pole("duzpUcto", d.datumOdpoctu, o);
     } else if (d.forma === "interny") {
       tag = "interni-doklad";
       tagPolozky = "interni-doklad-polozka";
@@ -293,6 +295,9 @@ export function buildFlexiUctovanie(opts: {
         // Pri prijatej faktúre je `datVyst` dátum prijatia („Přijato").
         pole("datVyst", d.datumPrijatia || d.datumVystavenia, o) +
         pole("duzpPuv", d.datumDodania, o) +
+        // „Uplatnit zdaň. plnění" — obdobie odpočtu DPH (dodanie, doručenie
+        // alebo neskorší, z uzamknutého obdobia deň po uzávierke).
+        pole("duzpUcto", d.datumOdpoctu, o) +
         pole("datSplat", d.datumSplatnosti, o) +
         pole("iban", d.partner.iban, o, 50);
     }

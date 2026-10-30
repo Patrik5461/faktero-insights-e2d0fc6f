@@ -3,7 +3,7 @@ import { buildMoneyS3Xml, buildOmegaTxt, buildPohodaExpensesXml, EXPORT_STRATEGI
 import { buildIsdoc } from "./isdoc-export";
 import { prijataAkoDoklad } from "./prijate-do-pohody";
 import { prijataNaUctovanie, vystavenaNaUctovanie } from "./zauctovanie-export";
-import { buildCsvUctovanie } from "./export-csv-uctovanie";
+import { buildCsvUctovanie, STLPCE_CSV_UCTOVANIA } from "./export-csv-uctovanie";
 
 /*
   Chyby z prechodu exportov proti skutočným dokladom (október 2026). Každá
@@ -134,7 +134,7 @@ describe("daňový doklad k prijatej platbe v zaúčtovaní", () => {
     const fin = vystavenaNaUctovanie({ ...faktura, discount_total: 0, advance_amount: 246 }, polozky, {});
     const csv = buildCsvUctovanie({ doklady: [ddp, fin], kody: {} });
     expect(csv).toContain("daňový doklad k platbe");
-    expect(csv.split("\r\n")[2].split(";").at(-2)).toBe("246,00");
+    expect(csv.split("\r\n")[2].split(";")[STLPCE_CSV_UCTOVANIA.indexOf("odpocet_zalohy")]).toBe("246,00");
   });
 
   it("Omega TXT ho vynechá a povie prečo", () => {

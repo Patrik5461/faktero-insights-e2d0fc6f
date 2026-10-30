@@ -133,6 +133,24 @@ export function polozkyPrijatej(p: any): PolozkaPrijatej[] | null {
     if (!naj) return null;
     naj.dph = r2(naj.dph + rozdiel);
   }
+  /*
+    Základ dorovná položka s najväčším základom. Ceny položiek z čítania sú
+    s DPH zaokrúhlené po riadkoch a ich súčet sa od faktúry líši o pár centov
+    (PALIERA 4226035034: 486,10 proti 486,08) — bez dorovnania by do
+    programov išiel základ 395,20 namiesto 395,18 z faktúry a k tomu
+    vymyslené zaokrúhlenie. Len keď hlavička sama sedí (základ + daň = spolu).
+  */
+  const zakladPoloziek = out.reduce((a, x) => a + x.zaklad, 0);
+  const rozdielZakladu = r2(bezDph - zakladPoloziek);
+  if (
+    rozdielZakladu &&
+    Math.abs(rozdielZakladu) <= tol &&
+    Math.abs(bezDph + dphFaktury - sDph) <= 0.01
+  ) {
+    const naj = [...out].sort((a, b) => Math.abs(b.zaklad) - Math.abs(a.zaklad))[0];
+    naj.zaklad = r2(naj.zaklad + rozdielZakladu);
+    naj.cena = r2(naj.zaklad / naj.mnozstvo);
+  }
   return out;
 }
 
