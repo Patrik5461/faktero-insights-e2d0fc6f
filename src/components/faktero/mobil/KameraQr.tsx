@@ -31,8 +31,14 @@ export function useKameraQr({
   aktivne = true,
   citajQr = true,
   naFotenie = false,
+  prijmi,
 }: {
   onNajdene: (raw: string) => void;
+  /**
+   * Ktorý kód stojí za to odovzdať. Iný (napr. platobný QR na faktúre pred
+   * skenerom bločkov) sa prejde a číta sa ďalej — doklad sa potom odfotí.
+   */
+  prijmi?: (raw: string) => boolean;
   /** Kým je `false`, kamera nebeží — nesvieti kontrolka a nežerie batériu. */
   aktivne?: boolean;
   /**
@@ -55,6 +61,8 @@ export function useKameraQr({
   posledny.current = onNajdene;
   const citajRef = useRef(citajQr);
   citajRef.current = citajQr;
+  const prijmiRef = useRef(prijmi);
+  prijmiRef.current = prijmi;
 
   useEffect(() => {
     if (!aktivne) return;
@@ -105,7 +113,7 @@ export function useKameraQr({
             const kod = jsQR(data.data, canvas.width, canvas.height, {
               inversionAttempts: "attemptBoth",
             });
-            if (kod?.data) {
+            if (kod?.data && (!prijmiRef.current || prijmiRef.current(kod.data))) {
               citaj = false;
               posledny.current(kod.data);
               return;

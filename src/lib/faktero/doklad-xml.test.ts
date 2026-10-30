@@ -185,6 +185,35 @@ describe("údaje faktúry z XML", () => {
   });
 });
 
+describe("ISDOC v cudzej mene", () => {
+  it("sumy a mena sa berú z mena faktúry (…Curr), nie z domácej meny vystaviteľa", () => {
+    // Slovenská firma fakturuje v korunách: domáca mena EUR, faktúra v CZK.
+    const xml = buildIsdoc({
+      invoice: {
+        ...invoice,
+        currency: "CZK",
+        exchange_rate: 25,
+        subtotal: 1000,
+        vat_total: 230,
+        total: 1230,
+      },
+      items: [
+        { ...items[0], quantity: 4, unit_price: 250, subtotal: 1000, vat_amount: 230, total: 1230 },
+      ],
+      company,
+    });
+    expect(xml).toContain("<ForeignCurrencyCode>CZK</ForeignCurrencyCode>");
+    const d = dokladZXml(xml)!;
+    expect(d).toMatchObject({
+      currency: "CZK",
+      amount_without_vat: 1000,
+      vat_amount: 230,
+      amount_total: 1230,
+    });
+    expect((d.items as any[])[0]).toMatchObject({ quantity: 4, unit_price: 250, total: 1230 });
+  });
+});
+
 describe("XML vložené v PDF", () => {
   async function pdfSPrilohou(nazov: string, obsah: string) {
     const pdf = await PDFDocument.create();

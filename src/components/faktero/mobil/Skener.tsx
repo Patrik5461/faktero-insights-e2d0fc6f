@@ -2,6 +2,7 @@ import { useOperacia } from "@/lib/mobile/server-most";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Files, Image as ImageIcon, Layers, X } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
+import { jeBlockovyQr } from "@/lib/mobile/sken-rozpoznanie";
 import { ObrysDokladu, useObrysDokladu, useSnimanie } from "./KameraDokladu";
 import { UpravaDokladu } from "./UpravaDokladu";
 import { POTREBNYCH_VZORIEK, ustalenych, type Vzorka } from "@/lib/mobile/auto-fotenie";
@@ -145,6 +146,12 @@ export function Skener({
     aktivne: vpredu,
     citajQr: !sn.snimka && sn.strany.length === 0,
     naFotenie: true,
+    /*
+      Sám od seba odvádza len kód bločku (eKasa, český EET). Platobný QR na
+      faktúre (PAY by square, SPD) by inak faktúru hneď poslal čítať ako
+      bloček do Finančnej správy, ktorá ju nepozná — človek ju má odfotiť.
+    */
+    prijmi: jeBlockovyQr,
   });
   const fotimTu = bezi && !!onZachytene;
   const obrys = useObrysDokladu(videoRef, bezi && vpredu && !sn.snimka);

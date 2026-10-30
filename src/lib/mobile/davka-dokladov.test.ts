@@ -17,6 +17,7 @@ import {
   vyhodnotDetail,
   zmen,
   type DokladVDavke,
+  chybaNahratia,
 } from "./davka-dokladov";
 import { STROP_CITANIA_MS } from "./sken-rozpoznanie";
 
@@ -259,5 +260,39 @@ describe("„Uložiť a ďalší“ v dávke", () => {
   it("nenahratý doklad sa otvoriť nedá", () => {
     const d = davka(["rozpoznane", "caka"]).map((x, i) => (i === 0 ? { ...x, id: "u-0" } : x));
     expect(dalsiNaOtvorenie(d, "k0")).toBeNull();
+  });
+});
+
+describe("chyba nahratia: opakovať, či nie", () => {
+  it("sieť a výpadok servera sa dajú skúsiť znova", () => {
+    expect(chybaNahratia("Failed to fetch")).toEqual({ chyba: "Failed to fetch", natrvalo: null });
+    expect(chybaNahratia("")).toEqual({ chyba: null, natrvalo: null });
+  });
+
+  it("prázdny súbor, odmietnutý vstup a neaktívne predplatné sú natrvalo", () => {
+    expect(chybaNahratia("Súbor je prázdny.").natrvalo).toBe("prazdny");
+    expect(chybaNahratia("Súbor je väčší než 15 MB.").natrvalo).toBe("velky");
+    expect(
+      chybaNahratia("Vaše predplatné nie je aktívne. Pre pokračovanie si aktivujte plán.").natrvalo,
+    ).toBe("predplatne");
+    // Takto vráti server zamietnutý vstup — človeku sa JSON nesmie ukázať.
+    const zod = chybaNahratia(
+      '[{"code":"too_small","minimum":16,"type":"string","inclusive":true,"message":"String must contain at least 16 character(s)","path":["subor"]}]',
+    );
+    expect(zod).toEqual({ chyba: null, natrvalo: "prazdny" });
+    expect(
+      chybaNahratia('[{"code":"invalid_type","expected":"string","path":["mime"]}]').natrvalo,
+    ).toBe("neplatny");
+  });
+
+  it("trvalá chyba sa ťuknutím neopakuje a pri zatvorení nestráca", () => {
+    const d = {
+      ...novyDoklad({ subor: "data:image/jpeg;base64,AAAA" }, "d1", 0),
+      stav: "chyba" as const,
+      natrvalo: "prazdny" as const,
+    };
+    expect(poTuknuti(d)).toBeNull();
+    expect(poTuknuti({ ...d, natrvalo: null })).toBe("znova");
+    expect(suhrn([d]).nenahrane).toBe(0);
   });
 });

@@ -20,6 +20,7 @@ import { vyberSubory } from "@/lib/mobile/vyber-suborov";
 import { INTERVAL_CITANIA_MS, polaNaDoplnenie } from "@/lib/mobile/sken-rozpoznanie";
 import {
   MAX_V_DAVKE,
+  chybaNahratia,
   dalsiNaOtvorenie,
   naCitanie,
   naHromadneUlozenie,
@@ -125,10 +126,12 @@ export function DavkaDokladov({
           setDavka((p) => zmen(p, kluc, { stav: "citam", id: r.id, zaciatokCitania: Date.now() }));
         } catch (e) {
           rozbehnute.current.delete(kluc);
+          const { chyba, natrvalo } = chybaNahratia(e instanceof Error ? e.message : "");
           setDavka((p) =>
             zmen(p, kluc, {
               stav: "chyba",
-              chyba: e instanceof Error ? e.message : t("rd.chybaNahratia"),
+              chyba: chyba ?? (natrvalo ? null : t("rd.chybaNahratia")),
+              natrvalo,
             }),
           );
         }
@@ -450,7 +453,14 @@ function PolozkaDavky({
       break;
     default:
       stav = {
-        text: d.prilisVelky ? t("davka.prilisVelky") : t("davka.stav.chyba"),
+        text:
+          d.prilisVelky || d.natrvalo === "velky"
+            ? t("davka.prilisVelky")
+            : d.natrvalo
+              ? t(`davka.natrvalo.${d.natrvalo}`)
+              : d.id
+                ? t("davka.stav.chybaUlozenia")
+                : t("davka.stav.chyba"),
         ikona: <AlertTriangle className="h-3.5 w-3.5" />,
         farba: "text-app-pozor",
       };

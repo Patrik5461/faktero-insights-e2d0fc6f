@@ -149,6 +149,16 @@ describe("QR kód bločku", () => {
     expect(jeBlockovyQr("EET*1.0*BKP:01234567-89abcdef*DIC:CZ12345678")).toBe(true);
   });
 
+  it("holý UID z eKasy a offline doklad (OKP + kód pokladnice) sú bloček", () => {
+    // Takto vyzerá QR na bežnom bločku — predtým išla jeho fotka na AI.
+    expect(jeBlockovyQr("O-9D031B68CBFD4C76831B68CBFD2C765E")).toBe(true);
+    expect(
+      jeBlockovyQr(
+        "1a2b3c4d-5e6f7081-92a3b4c5-d6e7f809-0a1b2c3d|88812345678900001|2026-08-09T14:32|42|17,90",
+      ),
+    ).toBe(true);
+  });
+
   it("platobný QR z faktúry bloček nerobí", () => {
     expect(
       jeBlockovyQr(
