@@ -139,8 +139,32 @@ export const adminPoziadavkaFn = createServerFn({ method: "POST" })
       .update({ podpora_videla_at: new Date().toISOString() })
       .eq("id", data.id);
 
+    /*
+      Požiadavka z WhatsAppu: len maskované číslo a stav 24 h okna — celé
+      telefónne číslo do administrácie nejde.
+    */
+    const { data: waChat } = poz.whatsapp_chat_id
+      ? await db
+          .from("whatsapp_chaty")
+          .select("cislo_maska, user_id, posledna_od_zakaznika_at, nedorucene_od, posledna_chyba")
+          .eq("id", poz.whatsapp_chat_id)
+          .maybeSingle()
+      : { data: null };
+    const { jeVOkne, koniecOkna } = await import("./whatsapp");
+    const whatsapp = waChat
+      ? {
+          cislo: waChat.cislo_maska,
+          prepojeny: !!waChat.user_id,
+          vOkne: jeVOkne(waChat.posledna_od_zakaznika_at),
+          oknoDo: koniecOkna(waChat.posledna_od_zakaznika_at),
+          nedorucene: !!waChat.nedorucene_od,
+          poslednaChyba: waChat.posledna_chyba,
+        }
+      : null;
+
     return {
       poziadavka: poz,
+      whatsapp,
       firma: firma as { id: string; name: string; ico: string | null } | null,
       spravy: ((spravy ?? []) as any[]).map((s) => ({
         ...s,
@@ -167,14 +191,15 @@ export const adminOdpovedzFn = createServerFn({ method: "POST" })
     const { nacitajPoziadavku, pridajSpravu } = await import("./podpora.server");
     const p = await nacitajPoziadavku(data.id);
     if (!p) throw new Error("Požiadavka sa nenašla.");
-    await pridajSpravu({
+    const r = await pridajSpravu({
       poziadavka: p,
       autorId: userId,
       od: "podpora",
       text: data.text,
       interna: data.interna,
     });
-    return { ok: true };
+    // Napr. odpoveď do WhatsAppu mimo 24 h okna — admin to má vedieť hneď.
+    return { ok: true, upozornenie: r.upozornenie ?? null };
   });
 
 export const adminStavFn = createServerFn({ method: "POST" })

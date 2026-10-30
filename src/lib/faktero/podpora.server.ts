@@ -43,7 +43,7 @@ async function posliMail(args: {
   odpovedatNa?: string | null;
 }) {
   const kluc = process.env.RESEND_API_KEY;
-  // Zákazník z Telegramu bez účtu e-mail nemá — odpoveď dostane len do chatu.
+  // Zákazník z Telegramu či WhatsAppu bez účtu e-mail nemá — odpoveď dostane len do chatu.
   if (!kluc || !args.komu) return;
   const telo =
     `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;line-height:1.5">` +
@@ -103,10 +103,12 @@ export type NovaPoziadavka = {
   meno?: string | null;
   predmet: string;
   kategoria: KategoriaPoziadavky;
-  zdroj: "aplikacia" | "mobil" | "web" | "telegram";
+  zdroj: "aplikacia" | "mobil" | "web" | "telegram" | "whatsapp";
   text: string;
   /** Požiadavka z Telegramu — odpoveď podpory pôjde aj do tohto chatu. */
   telegramChatId?: number | null;
+  /** Požiadavka z WhatsAppu (`whatsapp_chaty.id`) — odpoveď podpory pôjde aj tam. */
+  whatsappChatId?: string | null;
   url?: string | null;
   userAgent?: string | null;
   /** Prílohy sa nahrávajú až po založení — e-mail podpore len povie, koľko ich príde. */
@@ -129,6 +131,7 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
       url: n.url ?? null,
       user_agent: n.userAgent ?? null,
       telegram_chat_id: n.telegramChatId ?? null,
+      whatsapp_chat_id: n.whatsappChatId ?? null,
       posledna_od: "zakaznik",
       zakaznik_videl_at: new Date().toISOString(),
     })
@@ -162,6 +165,10 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
       riadky: [
         `Od: ${n.meno ? (n.email ? `${n.meno} <${n.email}>` : n.meno) : n.email}`,
         n.zdroj === "telegram" ? "Zdroj: Telegram (odpoveď z administrácie odíde do chatu)" : "",
+        // Telefónne číslo zo WhatsAppu je v `meno` len maskované.
+        n.zdroj === "whatsapp"
+          ? "Zdroj: WhatsApp (odpoveď z administrácie odíde do WhatsAppu)"
+          : "",
         firma ? `Firma: ${firma}` : "",
         n.url ? `Stránka: ${n.url}` : "",
         n.userAgent ? `Prehliadač: ${n.userAgent}` : "",
@@ -173,8 +180,8 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
       odpovedatNa: adresaPreOdpoved(poz.odpoved_token),
     });
     // Potvrdenie zákazníkovi z appky — vie, že správa neodišla do prázdna.
-    // Z Telegramu potvrdzuje bot priamo v chate.
-    if (n.userId && n.email && n.zdroj !== "telegram") {
+    // Z Telegramu a WhatsAppu sa potvrdzuje priamo v chate.
+    if (n.userId && n.email && n.zdroj !== "telegram" && n.zdroj !== "whatsapp") {
       await posliMail({
         komu: n.email,
         predmet: `Prijali sme vašu požiadavku ${c}`,
@@ -192,7 +199,7 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
   await upozorniTelegram({
     text: [
       `Nová požiadavka ${cisloPoziadavky(poz.cislo)} · ${nazovKategorie(n.kategoria)}${
-        n.zdroj === "telegram" ? " · z Telegramu" : ""
+        n.zdroj === "telegram" ? " · z Telegramu" : n.zdroj === "whatsapp" ? " · z WhatsAppu" : ""
       }`,
       // Do Telegramu bez e-mailu zákazníka — Telegram je ďalší sprostredkovateľ údajov.
       `Od: ${n.meno || "zákazník"}`,
@@ -206,7 +213,6 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
   return { id: poz.id, cislo: poz.cislo };
 }
 
-/** Úryvok správy do upozornenia v Telegrame — celé vlákno je v administrácii. */
 /** Do Telegramu len krátky úryvok — celý text je v administrácii. */
 const uryvok = (t: string) => (t.length > 400 ? `${t.slice(0, 399)}…` : t);
 
@@ -241,13 +247,16 @@ type Poziadavka = {
   stav: StavPoziadavky;
   odpoved_token: string;
   telegram_chat_id?: number | null;
+  whatsapp_chat_id?: string | null;
   meno?: string | null;
 };
 
 export async function nacitajPoziadavku(id: string): Promise<Poziadavka | null> {
   const { data } = await supabaseAdmin
     .from("podpora_poziadavky")
-    .select("id, cislo, user_id, email, predmet, stav, odpoved_token, telegram_chat_id, meno")
+    .select(
+      "id, cislo, user_id, email, predmet, stav, odpoved_token, telegram_chat_id, whatsapp_chat_id, meno",
+    )
     .eq("id", id)
     .maybeSingle();
   return (data as unknown as Poziadavka) ?? null;
@@ -262,18 +271,22 @@ export async function pridajSpravu(args: {
   interna?: boolean;
   /** Id mailu od Resendu, keď správa prišla e-mailom — opakovaný webhook ju nezdvojí. */
   providerEmailId?: string | null;
-}): Promise<{ zapisana: boolean }> {
+}): Promise<{ zapisana: boolean; upozornenie?: string }> {
   const { poziadavka: p, od } = args;
   const interna = od === "podpora" && !!args.interna;
-  const { error } = await supabaseAdmin.from("podpora_spravy").insert({
-    poziadavka_id: p.id,
-    autor_id: args.autorId,
-    od_podpory: od === "podpora",
-    interna,
-    text: args.text.slice(0, 10000),
-    provider_email_id: args.providerEmailId ?? null,
-    cez_email: !!args.providerEmailId,
-  });
+  const { data: zapisana, error } = await supabaseAdmin
+    .from("podpora_spravy")
+    .insert({
+      poziadavka_id: p.id,
+      autor_id: args.autorId,
+      od_podpory: od === "podpora",
+      interna,
+      text: args.text.slice(0, 10000),
+      provider_email_id: args.providerEmailId ?? null,
+      cez_email: !!args.providerEmailId,
+    })
+    .select("created_at")
+    .single();
   // Tá istá odpoveď z opakovaného webhooku — už je vo vlákne, nič ďalšie.
   if (error && (error as any).code === "23505" && args.providerEmailId) return { zapisana: false };
   if (error) throw new Error(error.message);
@@ -300,7 +313,34 @@ export async function pridajSpravu(args: {
     .eq("id", p.id);
 
   const c = cisloPoziadavky(p.cislo);
+  let upozornenie: string | undefined;
   if (od === "podpora") {
+    /*
+      Požiadavka z WhatsAppu: voľný text len v 24 h okne od poslednej správy
+      zákazníka, mimo neho schválená šablóna. Čo neodíde, admin uvidí ako
+      upozornenie a doručí sa, keď zákazník znova napíše.
+    */
+    if (p.whatsapp_chat_id) {
+      try {
+        const { posliOdpovedWhatsApp } = await import("./whatsapp.server");
+        const r = await posliOdpovedWhatsApp({
+          chatId: p.whatsapp_chat_id,
+          poziadavkaId: p.id,
+          cislo: c,
+          text: args.text,
+          // Čas správy z databázy — od neho sa nedoručené odpovede pošlú neskôr.
+          casSpravy: (zapisana as { created_at: string } | null)?.created_at ?? teraz,
+        });
+        if (r.stav === "nedorucene")
+          upozornenie = p.email ? `${r.dovod} Odpoveď odišla e-mailom.` : r.dovod;
+        else if (r.stav === "sablona")
+          upozornenie =
+            "Zákazník nepísal viac ako 24 hodín — do WhatsAppu odišla len šablóna s číslom požiadavky. Text odpovede dostane, keď odpíše.";
+      } catch (e: any) {
+        console.error("[podpora] odpoveď do WhatsAppu zlyhala:", e?.message ?? e);
+        upozornenie = "Odpoveď do WhatsAppu zlyhala.";
+      }
+    }
     // Požiadavka z Telegramu: odpoveď ide zákazníkovi aj do jeho chatu.
     if (p.telegram_chat_id) {
       try {
@@ -324,7 +364,7 @@ export async function pridajSpravu(args: {
       });
     }
   } else {
-    const kto = p.email || p.meno || "z Telegramu";
+    const kto = p.email || p.meno || (p.whatsapp_chat_id ? "z WhatsAppu" : "z Telegramu");
     await posliMail({
       komu: schrankaPodpory(),
       predmet: `Re: [${c}] ${p.predmet}`,
@@ -343,7 +383,7 @@ export async function pridajSpravu(args: {
       poziadavkaId: p.id,
     });
   }
-  return { zapisana: true };
+  return { zapisana: true, ...(upozornenie ? { upozornenie } : {}) };
 }
 
 /** Holý text z HTML tela, keď mail textovú časť nemá. */
@@ -375,7 +415,9 @@ export async function prijmiOdpovedEmailom(args: {
 }): Promise<"hotovo" | "neznama_adresa" | "chyba"> {
   const { data } = await supabaseAdmin
     .from("podpora_poziadavky")
-    .select("id, cislo, user_id, email, predmet, stav, odpoved_token, telegram_chat_id, meno")
+    .select(
+      "id, cislo, user_id, email, predmet, stav, odpoved_token, telegram_chat_id, whatsapp_chat_id, meno",
+    )
     .eq("odpoved_token", args.token)
     .maybeSingle();
   const p = data as unknown as Poziadavka | null;

@@ -7,6 +7,7 @@ import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell"
 import { PodporaStav } from "@/components/faktero/PodporaStav";
 import { PrilohyPoziadavky } from "@/components/faktero/PrilohyPoziadavky";
 import { AutoOpravaKarta } from "@/components/faktero/AutoOpravaKarta";
+import { WhatsAppIkona } from "@/components/faktero/WhatsAppIkona";
 import {
   adminOdpovedzFn,
   adminPoziadavkaFn,
@@ -51,8 +52,9 @@ function AdminPoziadavka() {
     if (!text.trim()) return;
     setBusy(true);
     try {
-      await odpovedzFn({ data: { id, text: text.trim(), interna } });
-      toast.success(interna ? "Interná poznámka uložená." : "Odpoveď odoslaná zákazníkovi.");
+      const r = await odpovedzFn({ data: { id, text: text.trim(), interna } });
+      if (r.upozornenie) toast.warning(r.upozornenie, { duration: 12_000 });
+      else toast.success(interna ? "Interná poznámka uložená." : "Odpoveď odoslaná zákazníkovi.");
       setText("");
       setInterna(false);
       await nacitaj();
@@ -219,6 +221,7 @@ function AdminPoziadavka() {
                   <Send className="h-3 w-3" /> Z Telegramu — odpoveď odíde aj do chatu.
                 </div>
               )}
+              {d.whatsapp && <WhatsAppStav w={d.whatsapp} />}
               {p.user_id ? (
                 <Link
                   to="/admin/users/$id"
@@ -229,7 +232,7 @@ function AdminPoziadavka() {
                 </Link>
               ) : (
                 <div className="text-xs text-muted-foreground">
-                  {p.telegram_chat_id
+                  {p.telegram_chat_id || p.whatsapp_chat_id
                     ? "Bez prepojeného účtu."
                     : "Bez účtu — odpoveď príde len e-mailom."}
                 </div>
@@ -262,5 +265,51 @@ function AdminPoziadavka() {
         </div>
       </AdminPageBody>
     </>
+  );
+}
+
+/**
+ * Požiadavka z WhatsAppu: maskované číslo a či sa ešte dá odpovedať voľným
+ * textom (24 h okno od poslednej správy zákazníka).
+ */
+function WhatsAppStav({
+  w,
+}: {
+  w: {
+    cislo: string;
+    vOkne: boolean;
+    oknoDo: string | null;
+    nedorucene: boolean;
+    poslednaChyba: string | null;
+  };
+}) {
+  return (
+    <div className="space-y-0.5 text-xs">
+      <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+        <WhatsAppIkona className="h-3 w-3" /> Z WhatsAppu ({w.cislo}) — odpoveď odíde aj tam.
+      </div>
+      {w.vOkne && w.oknoDo ? (
+        <div className="text-muted-foreground">
+          Voľnou odpoveďou do{" "}
+          {new Date(w.oknoDo).toLocaleString("sk-SK", {
+            day: "numeric",
+            month: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+          .
+        </div>
+      ) : (
+        <div className="text-amber-700 dark:text-amber-400">
+          Zákazník nepísal viac ako 24 hodín — do WhatsAppu odíde len šablóna (ak je schválená),
+          text dostane, keď odpíše.
+        </div>
+      )}
+      {w.nedorucene && (
+        <div className="text-amber-700 dark:text-amber-400">
+          Čaká nedoručená odpoveď{w.poslednaChyba ? `: ${w.poslednaChyba}` : "."}
+        </div>
+      )}
+    </div>
   );
 }

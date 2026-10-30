@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { MessageCircle, X, Send, Loader2, Minus, Mail, Phone } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
 import { odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
+import { WhatsAppVerejnyOdkaz } from "./WhatsAppOdkaz";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -214,6 +215,11 @@ export function PublicSupportWidget() {
                   >
                     <Send className="h-3.5 w-3.5" /> Telegram
                   </a>
+                  <WhatsAppVerejnyOdkaz
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-primary/50"
+                    ikona="h-3.5 w-3.5"
+                    sCislom={false}
+                  />
                 </div>
               </div>
             )}

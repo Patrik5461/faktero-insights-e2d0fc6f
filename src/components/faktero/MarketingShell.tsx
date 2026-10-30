@@ -5,6 +5,7 @@ import { Logo } from "./Logo";
 import { LEGAL_COMPANY } from "./LegalShell";
 import { Mail, Phone, Send, ShieldCheck, Lock } from "lucide-react";
 import { TELEGRAM_PODPORA_BOT, odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
+import { WhatsAppVerejnyOdkaz } from "@/components/faktero/WhatsAppOdkaz";
 import { useT } from "@/lib/i18n/useT";
 
 export function MarketingShell({ children }: { children: React.ReactNode }) {
@@ -49,6 +50,10 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
                 <Send className="h-3.5 w-3.5" />
                 Telegram @{TELEGRAM_PODPORA_BOT}
               </a>
+              <WhatsAppVerejnyOdkaz
+                className="flex items-center gap-2 hover:text-foreground"
+                ikona="h-3.5 w-3.5"
+              />
               <Link to="/kontakt" className="inline-block underline hover:text-foreground">
                 {t("Kontaktný formulár")}
               </Link>

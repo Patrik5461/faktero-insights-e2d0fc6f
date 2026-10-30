@@ -37,6 +37,9 @@ import {
 } from "lucide-react";
 import { useTelegramPodpora } from "@/hooks/useTelegramPodpora";
 import { odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
+import { useWhatsAppPodpora } from "@/hooks/useWhatsAppPodpora";
+import { odkazNaWhatsApp } from "@/lib/faktero/whatsapp";
+import { WhatsAppIkona } from "./WhatsAppIkona";
 import {
   MANUALY,
   manualPre,
@@ -301,6 +304,7 @@ export function AppShell({
   const [nahlasenieOtvorene, setNahlasenieOtvorene] = useState(false);
   // Ponuka pod avatarom je miesto, kde človek pomoc hľadá — Telegram sem patrí, nie len na stránku podpory.
   const telegram = useTelegramPodpora();
+  const whatsapp = useWhatsAppPodpora();
 
   /* Ten istý zoznam, len v tvare, aký čaká bočný panel. Filtre (produkt,
      práva, krajina) sa už uplatnili v `filterNav` — tu sa nič nevyberá. */
@@ -588,6 +592,20 @@ export function AppShell({
                     <DropdownMenuItem asChild>
                       <a href={odkazNaTelegram(telegram.bot)} target="_blank" rel="noopener noreferrer">
                         <Send className="mr-2 h-3.5 w-3.5" /> {t("Napísať na Telegram")}
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  {whatsapp?.cislo && (
+                    <DropdownMenuItem asChild>
+                      <a
+                        href={odkazNaWhatsApp(
+                          whatsapp.cislo,
+                          t("Dobrý deň, potrebujem pomoc s Fakterom."),
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <WhatsAppIkona className="mr-2 h-3.5 w-3.5" /> {t("Napísať na WhatsApp")}
                       </a>
                     </DropdownMenuItem>
                   )}

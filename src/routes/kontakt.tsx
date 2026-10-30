@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Mail, Phone, MapPin, Building2, Loader2, Send } from "lucide-react";
 import { TELEGRAM_PODPORA_BOT, odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
+import { WhatsAppVerejnyOdkaz } from "@/components/faktero/WhatsAppOdkaz";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { LEGAL_COMPANY } from "@/components/faktero/LegalShell";
 import { z } from "zod";
@@ -162,6 +163,7 @@ function KontaktPage() {
               >
                 <Send className="h-4 w-4" /> Telegram @{TELEGRAM_PODPORA_BOT}
               </a>
+              <WhatsAppVerejnyOdkaz className="flex items-center gap-2 hover:text-primary" />
               <p className="text-xs text-muted-foreground pt-2">
                 {t("Fakturačné a právne otázky:")}{" "}
                 <a className="underline" href={`mailto:${LEGAL_COMPANY.email}`}>

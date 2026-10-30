@@ -29,6 +29,8 @@ import {
 import { PodporaStav } from "@/components/faktero/PodporaStav";
 import { TelegramOdkaz, TelegramTlacidlo } from "@/components/faktero/TelegramOdkaz";
 import { useTelegramPodpora } from "@/hooks/useTelegramPodpora";
+import { WhatsAppOdkaz, WhatsAppTlacidlo } from "@/components/faktero/WhatsAppOdkaz";
+import { useWhatsAppPodpora } from "@/hooks/useWhatsAppPodpora";
 import { hladajVManualoch, type Clanok, type Vysledok } from "@/lib/faktero/pomoc-hladanie";
 
 export const Route = createFileRoute("/_authenticated/podpora/")({
@@ -66,6 +68,7 @@ function PodporaPage() {
   const [nova, setNova] = useState(false);
   // Bez nastaveného bota hlavička nedostane prázdny stĺpec akcií.
   const telegram = useTelegramPodpora();
+  const whatsapp = useWhatsAppPodpora();
 
   const nacitaj = useCallback(async () => {
     const { data, error } = await supabase
@@ -103,7 +106,14 @@ function PodporaPage() {
         title={t("Pomoc a podpora")}
         description={t("Nájdite odpoveď v manuáloch, opýtajte sa Faktero AI alebo napíšte nám — odpoveď uvidíte tu aj v e‑maile.")}
         help="/pomoc/podpora"
-        action={telegram ? <TelegramTlacidlo /> : undefined}
+        action={
+          telegram || whatsapp ? (
+            <div className="flex min-w-0 flex-wrap items-start gap-3 lg:justify-end">
+              {telegram && <TelegramTlacidlo />}
+              {whatsapp && <WhatsAppTlacidlo />}
+            </div>
+          ) : undefined
+        }
       />
       <PageBody>
         <div className="mx-auto max-w-4xl space-y-6">
@@ -279,6 +289,7 @@ function PodporaPage() {
               <Phone className="h-4 w-4" /> +421 902 101 967
             </a>
             <TelegramOdkaz />
+            <WhatsAppOdkaz />
           </div>
         </div>
       </PageBody>

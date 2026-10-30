@@ -125,6 +125,33 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "whatsapp",
+    title: "Cez WhatsApp",
+    body: (
+      <>
+        <p>
+          Podpore môžete písať aj cez <strong>WhatsApp</strong> na číslo +421 902 101 967 — tlačidlo{" "}
+          <em>Napíšte nám na WhatsApp</em> je hore na stránke Pomoc a podpora, v ponuke pod avatarom
+          aj v pätičke webu. Prvá správa založí požiadavku s číslom, ďalšie správy sa pridajú do nej
+          a odpoveď podpory príde späť do WhatsAppu. Poslať môžete aj snímku obrazovky, fotku alebo
+          PDF (do 10 MB). Príkazy <code>/chyba</code> a <code>/nova</code> fungujú rovnako ako v
+          Telegrame.
+        </p>
+        <p>
+          Cez <em>Prepojiť s mojím účtom</em> sa otvorí WhatsApp s predvyplnenou správou s kódom —
+          stačí ju odoslať. Požiadavky z WhatsAppu potom uvidíte aj v <em>Moje požiadavky</em>. Vaše
+          telefónne číslo vidí podpora len skrátené (napríklad +421 ••• ••• 967).
+        </p>
+        <p>
+          WhatsApp dovoľuje firmám odpovedať voľným textom len do 24 hodín od vašej poslednej
+          správy. Ak podpora odpovie neskôr, príde vám krátka správa s číslom požiadavky a celú
+          odpoveď dostanete, keď nám znova napíšete (alebo ju uvidíte vo Fakteri a v e-maile, ak
+          máte prepojený účet).
+        </p>
+      </>
+    ),
+  },
+  {
     id: "appka",
     title: "Z mobilnej aplikácie",
     body: (
