@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
+    "e2e": "node e2e/spusti.mjs",
     "format": "prettier --write .",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
