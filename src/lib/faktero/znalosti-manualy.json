@@ -563,7 +563,7 @@
     },
     {
      "nadpis": "Faktúra do zahraničia",
-     "text": "<>\nTri rôzne situácie, tri rôzne nastavenia:\n-\nFirme v EÚ s IČ DPH — prenesenie daňovej povinnosti, dodanie bez dane.\nVyberie sa aj druh plnenia (tovar, služba, trojstranný obchod) kvôli súhrnnému výkazu a\nodberateľovo IČ DPH sa dá overiť vo VIES priamo z faktúry.\n-\nSpotrebiteľovi v EÚ — zaškrtne sa „Predaj spotrebiteľovi v EÚ (OSS)“ a\nvyberie štát; sadzby položiek sa prepnú na sadzby jeho štátu. Viac v\nmanuáli k OSS (/pomoc/oss).\n-\nMimo EÚ — vývoz oslobodený podľa § 47."
+     "text": "<>\nTri rôzne situácie, tri rôzne nastavenia:\n-\nFirme v EÚ s IČ DPH — prenesenie daňovej povinnosti, dodanie bez dane.\nVyberie sa aj druh plnenia (tovar, služba, trojstranný obchod) kvôli súhrnnému výkazu a\nodberateľovo IČ DPH sa dá overiť vo VIES priamo z faktúry.\n-\nSpotrebiteľovi v EÚ — zaškrtne sa „Predaj spotrebiteľovi v EÚ (OSS)“ a\nvyberie štát; sadzby položiek sa prepnú na sadzby jeho štátu. Viac v\nmanuáli k OSS (/pomoc/oss).\n-\nMimo EÚ — tovar je vývoz oslobodený podľa § 47, služba má miesto\ndodania mimo EÚ (§ 15 ods. 1) a slovenskej DPH nepodlieha.\nRežim sa nastaví sám podľa odberateľa: firma s IČ DPH iného štátu EÚ dostane faktúru bez\nDPH ako dodanie do EÚ, odberateľ mimo EÚ ako vývoz alebo službu mimo EÚ — s príslušnou\nvetou na faktúre. Či ide o tovar, Faktero pozná zo skladu alebo colného kódu položky,\ninak navrhne službu; druh plnenia vždy skontrolujte. Občanovi z EÚ bez IČ DPH ostáva DPH a\nformulár pripomenie OSS. Keď režim zmeníte ručne, návrh ho už neprepíše. Rovnako to robí\nappka aj API, ak im režim výslovne nepošlete."
     }
    ]
   },
@@ -1401,7 +1401,7 @@
     },
     {
      "nadpis": "Upozornenia pred podaním",
-     "text": "<>\nNad výkazmi sa vypíše, čo chýba: faktúra bez IČ DPH odberateľa pri dodaní do EÚ, prijatá\nfaktúra bez čísla, dobropis bez väzby na pôvodný doklad, doklad v cudzej mene. Výkaz sa dá\nstiahnuť aj tak, ale tie riadky budú neúplné — cudzia mena sa navyše do výkazov uvádza\nprepočítaná na eurá.\nFaktúra s DPH iného štátu (rakúsky hotel, nemecké palivo) do priznania\nnepatrí — výkaz ju vynechá a upozorní na ňu. Takú daň si vraciate cez portál toho štátu.\nAk ide v skutočnosti o prenesenie daňovej povinnosti, nastavte ho na faktúre. Pri českej\nfirme sa faktúra od českého dodávateľa s DPH počíta ako bežný tuzemský odpočet, nie ako\nprenesenie § 92a."
+     "text": "<>\nNad výkazmi sa vypíše, čo chýba: faktúra bez IČ DPH odberateľa pri dodaní do EÚ, prijatá\nfaktúra bez čísla, dobropis bez väzby na pôvodný doklad, doklad v cudzej mene. Výkaz sa dá\nstiahnuť aj tak, ale tie riadky budú neúplné — cudzia mena sa navyše do výkazov uvádza\nprepočítaná na eurá.\nPrijatá faktúra bez IČ DPH dodávateľa nejde do odpočtu v priznaní ani do\nčasti B.2 kontrolného výkazu — bez IČ DPH dodávateľa sa daň odpočítať nedá. Keď IČ DPH na\nfaktúre doplníte, faktúra sa do oboch výkazov vráti sama (odpočet sa dá uplatniť aj\nneskôr, najneskôr v poslednom období roka).\nFaktúra s DPH iného štátu (rakúsky hotel, nemecké palivo) do priznania\nnepatrí — výkaz ju vynechá a upozorní na ňu. Takú daň si vraciate cez portál toho štátu.\nAk ide v skutočnosti o prenesenie daňovej povinnosti, nastavte ho na faktúre. Pri českej\nfirme sa faktúra od českého dodávateľa s DPH počíta ako bežný tuzemský odpočet, nie ako\nprenesenie § 92a."
     },
     {
      "nadpis": "Nezaplatené faktúry — § 25a a § 53b",
@@ -1465,7 +1465,7 @@
     },
     {
      "nadpis": "Stiahnutie všetkých dát",
-     "text": "<>\nV Nastaveniach (/nastavenia) je tlačidlo\nStiahnuť všetky dáta . Pripraví balík ZIP s tabuľkami všetkých agend v CSV\n— faktúry a ich položky, prijaté faktúry, doklady, odberatelia, cenník, pokladňa, banka,\njazdy, zákazky — a voliteľne aj s PDF vystavených faktúr.\nSúbory otvorí Excel bez nastavovania. Odkaz na stiahnutie platí sedem dní; balík sa dá\npripraviť kedykoľvek znova. Celý archív aj s PDF faktúr a skenmi dokladov si majiteľ alebo\nadmin vytvorí v Nastavenia → Zálohy dokladov (/nastavenia/zalohy)\ntlačidlom Vytvoriť zálohu — beží na pozadí (pri väčšej firme aj niekoľko\nminút), dobehne aj bez vás a ponecháva sa posledných päť záloh."
+     "text": "<>\nV Nastaveniach (/nastavenia) je tlačidlo\nStiahnuť všetky dáta . Pripraví balík ZIP s tabuľkami všetkých agend v CSV\n— faktúry a ich položky, prijaté faktúry, doklady, odberatelia, cenník, pokladňa, banka,\njazdy, zákazky — a voliteľne aj s PDF vystavených faktúr.\nSúbory otvorí Excel bez nastavovania. Odkaz na stiahnutie platí sedem dní; balík sa dá\npripraviť kedykoľvek znova. Celý archív aj s PDF faktúr a skenmi dokladov si majiteľ alebo\nadmin vytvorí v Nastavenia → Zálohy dokladov (/nastavenia/zalohy)\ntlačidlom Vytvoriť zálohu — beží na pozadí (pri väčšej firme aj niekoľko\nminút), dobehne aj bez vás a ponecháva sa posledných päť záloh.\nDoklady a karty z koša balík nevynechá — sú v samostatnom priečinku „kos“ a do hlavných\nsúborov sa nezapočítavajú. Zmazaná faktúra mohla byť už vystavená a zaúčtovaná, preto ju\narchivujte rovnako ako ostatné doklady."
     },
     {
      "nadpis": "Zrušenie účtu",
