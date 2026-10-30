@@ -1329,11 +1329,15 @@ export function buildPohodaExpensesXml(opts: {
   doklady: DokladRow[];
   nastavenia?: PohodaNastavenia;
 }): string {
+  const entries = polozkyDokladov(opts);
+  // Prázdny dataPack schéma Pohody nepripúšťa (chce aspoň jeden dataPackItem);
+  // keď neprejde žiadny doklad, súbor nevznikne a volajúci to povie.
+  if (!entries.trim()) return "";
   return obalka({
     ico: opts.company?.ico,
     note: "Prijaté doklady z Faktero",
     prefixy: ["inv", "vch", "int"],
-    entries: polozkyDokladov(opts),
+    entries,
   });
 }
 

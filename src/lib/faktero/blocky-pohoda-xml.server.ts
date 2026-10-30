@@ -50,13 +50,16 @@ export function pohodaXmlBlockov(opts: {
   const subory: XmlBlockovRoka[] = [];
   for (const r of roky) {
     if (!r.doklady.length) continue;
+    const xml = buildPohodaExpensesXml({ company: firma ?? {}, doklady: r.doklady, nastavenia });
+    // Prázdny dataPack by Pohoda neprijala — taký súbor nevznikne.
+    if (!xml) continue;
     const viac = roky.length > 1;
     subory.push({
       nazov: viac ? `pohoda-${r.rok}.xml` : "pohoda.xml",
       fileName: viac
         ? `pohoda-blocky-${r.rok}-${opts.obdobie}.xml`
         : `pohoda-blocky-${opts.obdobie}.xml`,
-      xml: buildPohodaExpensesXml({ company: firma ?? {}, doklady: r.doklady, nastavenia }),
+      xml,
       doklady: r.doklady,
     });
   }

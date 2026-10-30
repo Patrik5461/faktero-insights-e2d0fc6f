@@ -173,6 +173,8 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
           .from("expense_documents")
           .select("id, exported_at")
           .eq("company_id", data.companyId)
+          // Nespracované bločky balík nenesie, tak ich nepočítať ani tu.
+          .neq("status", "new")
           .gte("issue_date", od)
           .lt("issue_date", doDatumu)
           .order("id")

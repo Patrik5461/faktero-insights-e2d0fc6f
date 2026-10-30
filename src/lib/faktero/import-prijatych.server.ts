@@ -225,16 +225,27 @@ async function nahrajSubor(klient: any, kbelik: string, companyId: string, sken:
 
 async function zapisZaznam(
   klient: any,
-  o: { companyId: string; userId: string; stav: StavImportu; doPokladne: boolean; zdrojAplikacie: string; dnes: string },
+  o: {
+    companyId: string;
+    userId: string;
+    stav: StavImportu;
+    doPokladne: boolean;
+    zdrojAplikacie: string;
+    dnes: string;
+    /** Kurz cudzej meny do vkladaného riadku (prázdne pri domácej mene). */
+    kurz?: (tabulka: "purchase_invoices" | "expense_documents", riadok: Record<string, any>) => Promise<Record<string, any>>;
+  },
   z: PrijatyZaznam,
   sken: Vstup | null,
 ): Promise<Zapisany> {
   if (z.typ === "faktura") {
     const subor = sken ? await nahrajSubor(klient, "purchase-invoices", o.companyId, sken) : null;
+    const riadok = riadokPrijatejFaktury(z, o);
     const { data, error } = await klient
       .from("purchase_invoices")
       .insert({
-        ...riadokPrijatejFaktury(z, o),
+        ...riadok,
+        ...(o.kurz ? await o.kurz("purchase_invoices", riadok) : {}),
         company_id: o.companyId,
         created_by: o.userId,
         file_path: subor?.cesta ?? null,
@@ -247,10 +258,12 @@ async function zapisZaznam(
     return { tabulka: "purchase_invoices", id: data.id, zaznam: z, maSubor: Boolean(subor) };
   }
   const subor = sken ? await nahrajSubor(klient, "expense-receipts", o.companyId, sken) : null;
+  const blocek = riadokBlocku(z, o);
   const { data, error } = await klient
     .from("expense_documents")
     .insert({
-      ...riadokBlocku(z, o),
+      ...blocek,
+      ...(o.kurz ? await o.kurz("expense_documents", blocek) : {}),
       company_id: o.companyId,
       created_by: o.userId,
       file_path: subor?.cesta ?? null,
@@ -304,6 +317,7 @@ export async function vykonajImport(args: {
     doPokladne: args.doPokladne,
     zdrojAplikacie: args.zdrojAplikacie,
     dnes: new Date().toISOString().slice(0, 10),
+    kurz: (await import("./kurz-dokladu.server")).doplnovacKurzov(args.companyId),
   };
   const vysledok = { faktury: 0, blocky: 0, ostatne: 0, skenyPriradene: 0, preskocene: 0, chyby: [] as string[] };
   const zapisane: Zapisany[] = [];

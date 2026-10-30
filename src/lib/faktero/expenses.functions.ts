@@ -234,10 +234,16 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       doNespracovanych,
     });
     const rovnoSpracovany = ciel === "blocky";
+    // Bloček v cudzej mene dostane kurz ECB/ČNB ako faktúra.
+    const kurz = await (await import("./kurz-dokladu.server")).doplnovacKurzov(data.company_id)(
+      "expense_documents",
+      data,
+    );
     const { data: row, error } = await supabase
       .from("expense_documents")
       .insert({
         ...data,
+        ...kurz,
         created_by: userId,
         ...(rovnoSpracovany
           ? { status: "processed", processed_at: new Date().toISOString(), processed_by: userId }

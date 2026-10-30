@@ -191,16 +191,18 @@ describe("ISDOC vývoz", () => {
     doc.dispose();
   });
 
-  it("doklad v cudzej mene hlási menu dokladu, nie domácu", () => {
-    /* Slovenská firma fakturuje v korunách: keby sa ako LocalCurrencyCode
-       zapísalo EUR, príjemca prečíta 10 000 Kč ako 10 000 €. */
+  it("doklad v cudzej mene s kurzom: domáca mena, cudzia mena a kurz", () => {
+    /* Slovenská firma fakturuje v korunách: sumy bez prípony sú v eurách
+       (prepočítané kurzom), sumy v korunách idú v prvkoch …Curr. Bez kurzu
+       ostáva mena dokladu s kurzom 1 (isdoc-cudzia-mena.test.ts). */
     const x = buildIsdoc({
       invoice: { ...faktura, currency: "CZK", exchange_rate: 25.3 },
       items: polozky,
       company: { ...firma, country: "SK", default_currency: "EUR" },
     });
-    expect(x).toContain("<LocalCurrencyCode>CZK</LocalCurrencyCode>");
-    expect(x).not.toContain("ForeignCurrencyCode");
+    expect(x).toContain("<LocalCurrencyCode>EUR</LocalCurrencyCode>");
+    expect(x).toContain("<ForeignCurrencyCode>CZK</ForeignCurrencyCode>");
+    expect(x).toContain("<TaxExclusiveAmountCurr>1590.00</TaxExclusiveAmountCurr>");
     const doc = XmlDocument.fromString(x);
     expect(() => validator.validate(doc)).not.toThrow();
     doc.dispose();
