@@ -23,7 +23,7 @@ import { formatujCislo } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { paymentMethodLabel } from "@/lib/faktero/payment-method";
 import { KomentarDokladu } from "./StavDokladu";
-import { useT } from "@/lib/i18n/useT";
+import { useKrajinaFirmyKontext, useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 const KV_VYDANE = KV_CLENENIA.filter((k) => ["A1", "A2", "C1", "D1", "D2", "X"].includes(k.kod));
@@ -68,6 +68,12 @@ export function ZauctovanieVystavenejPanel({
 }) {
   const { t, jazyk } = useT();
   const loc = lokalJazyka(jazyk);
+  /*
+    Nemecká firma účtuje cez DATEV: kontrolný výkaz (KV) je slovenský a XML
+    pre Pohodu jej nič nedá. Predkontácia je pre ňu číslo účtu DATEV
+    (export-datev.ts ho berie pred predvoleným účtom osnovy).
+  */
+  const de = useKrajinaFirmyKontext() === "DE";
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const nacitajStav = useServerFn(stavVystavenejFn);
   const zauctuj = useServerFn(zauctujVystavenuFn);
@@ -523,10 +529,12 @@ export function ZauctovanieVystavenejPanel({
                 <span className={popisK}>{t("Členenie DPH")}</span>
                 {kodClenenie(vstupK)}
               </label>
-              <label className="block @md:col-span-2">
-                <span className={popisK}>{t("Členenie KV DPH")}</span>
-                {kodKv(vstupK)}
-              </label>
+              {de ? null : (
+                <label className="block @md:col-span-2">
+                  <span className={popisK}>{t("Členenie KV DPH")}</span>
+                  {kodKv(vstupK)}
+                </label>
+              )}
             </>
           )}
         </fieldset>
@@ -589,7 +597,7 @@ export function ZauctovanieVystavenejPanel({
                 </button>
                 <OpravitZauctovanie row={inv} druh="faktura" onZmena={onZmena} className={male} />
               </>
-            ) : (
+            ) : de ? null : (
               <button
                 type="button"
                 onClick={stiahnut}
@@ -722,7 +730,7 @@ export function ZauctovanieVystavenejPanel({
           <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
             <label className="block">
               <span className="text-sm font-medium text-foreground">
-                {t("Predkontácia (Pohoda)")}
+                {t(de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)")}
               </span>
               {kodPredkontacia(vstup)}
             </label>
@@ -730,10 +738,12 @@ export function ZauctovanieVystavenejPanel({
               <span className="text-sm font-medium text-foreground">{t("Členenie DPH")}</span>
               {kodClenenie(vstup)}
             </label>
-            <label className="block">
-              <span className="text-sm font-medium text-foreground">{t("Členenie KV DPH")}</span>
-              {kodKv(vstup)}
-            </label>
+            {de ? null : (
+              <label className="block">
+                <span className="text-sm font-medium text-foreground">{t("Členenie KV DPH")}</span>
+                {kodKv(vstup)}
+              </label>
+            )}
           </div>
           {vyberPravidla}
 
@@ -772,14 +782,16 @@ export function ZauctovanieVystavenejPanel({
             >
               {t("Uložiť bez zaúčtovania")}
             </button>
-            <button
-              onClick={stiahnut}
-              disabled={busy}
-              title={t("Stiahne XML na import do Pohody a zapíše faktúru ako odovzdanú.")}
-              className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" /> {t("Stiahnuť XML pre Pohodu")}
-            </button>
+            {de ? null : (
+              <button
+                onClick={stiahnut}
+                disabled={busy}
+                title={t("Stiahne XML na import do Pohody a zapíše faktúru ako odovzdanú.")}
+                className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" /> {t("Stiahnuť XML pre Pohodu")}
+              </button>
+            )}
             {zauctovana && (
               <button
                 onClick={() =>

@@ -1,7 +1,7 @@
 import { sUctomFaktury } from "./platobny-ucet";
 import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { hodnotyMailu, jazykFaktury, predvolenyMailFaktury } from "./email-jazyk";
+import { hodnotyMailu, jazykFaktury, predvolenyMailFaktury, vlastnyMailFirmy } from "./email-jazyk";
 import { krajinaDane } from "./vat-rates";
 import { doplnPremenne, hodnotyPremennych } from "./email-sablony";
 
@@ -192,9 +192,9 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       (invoice as any).type,
       krajinaDane(company?.country),
     );
-    const subject =
-      input.subject ?? tplSubject ?? company?.email_default_subject ?? predvoleny.predmet;
-    const message = input.message ?? tplBody ?? company?.email_default_message ?? predvoleny.text;
+    const vlastny = vlastnyMailFirmy(company, jazykFaktury(invoice, company));
+    const subject = input.subject ?? tplSubject ?? vlastny.predmet ?? predvoleny.predmet;
+    const message = input.message ?? tplBody ?? vlastny.text ?? predvoleny.text;
     const finalSubject = applyVars(subject, invoice, company);
     const finalMessage = applyVars(message, invoice, company);
 

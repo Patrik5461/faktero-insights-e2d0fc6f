@@ -5,7 +5,8 @@ import type { SkupinaRozpisu } from "@/lib/faktero/rozpis-dph";
 import type { StavZauctovania } from "@/lib/faktero/udaje-pre-uctovnika";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
-import { useT } from "@/lib/i18n/useT";
+import { useKrajinaFirmyKontext, useT } from "@/lib/i18n/useT";
+import { popiskyIdentifikatorov } from "@/lib/faktero/firma-de";
 
 /**
  * Šírka, pri ktorej je PDF vedľa údajov (rovnaká hranica ako v
@@ -87,7 +88,15 @@ export type UdajeUctovnika = {
  * mriežke štítok → hodnota. Spoločná pre vystavenú aj prijatú faktúru.
  */
 export function UdajePreUctovnika({ u }: { u: UdajeUctovnika }) {
-  const { t } = useT();
+  const { t, jazyk } = useT();
+  /*
+    Nemecká firma: Steuernummer je v poli DIČ a USt-IdNr. v IČ DPH
+    (`firma-de.ts`), IČO Nemecko nepozná — riadok sa ukáže, len keď je vyplnené.
+    Dátumy v jazyku rozhrania (nemecky 30.10.2026, nie 30. 10. 2026).
+  */
+  const de = useKrajinaFirmyKontext() === "DE";
+  const popisky = popiskyIdentifikatorov(de ? "DE" : "SK");
+  const datum = (v: unknown) => datumNaDoklade(v, jazyk);
   const z = u.naZobrazenie ?? ((n: number) => n);
   const suma = (n: number) => formatujMenu(z(n), u.mena);
   const cudzia = u.kurz != null && Number(u.kurz) > 0 && u.mena !== "EUR";
@@ -115,11 +124,11 @@ export function UdajePreUctovnika({ u }: { u: UdajeUctovnika }) {
         >
           {u.strana.nazov || "—"}
         </Udaj>
-        <Udaj popis={t("IČO")}>{u.strana.ico || "—"}</Udaj>
-        <Udaj popis={t("DIČ")}>{u.strana.dic || "—"}</Udaj>
-        <Udaj popis={t("IČ DPH")}>{u.strana.icDph || "—"}</Udaj>
-        <Udaj popis={t("Vystavenie")}>{datumNaDoklade(u.vystavenie)}</Udaj>
-        <Udaj popis={t("Dodanie (DUZP)")}>{datumNaDoklade(u.dodanie || u.vystavenie)}</Udaj>
+        {!de || u.strana.ico ? <Udaj popis={t("IČO")}>{u.strana.ico || "—"}</Udaj> : null}
+        <Udaj popis={t(popisky.dic)}>{u.strana.dic || "—"}</Udaj>
+        <Udaj popis={t(popisky.icDph)}>{u.strana.icDph || "—"}</Udaj>
+        <Udaj popis={t("Vystavenie")}>{datum(u.vystavenie)}</Udaj>
+        <Udaj popis={t("Dodanie (DUZP)")}>{datum(u.dodanie || u.vystavenie)}</Udaj>
         <Udaj popis={t("Splatnosť")}>{u.splatnost || "—"}</Udaj>
         <Udaj popis={t("VS")}>
           <span className="font-mono">{u.vs || "—"}</span>
@@ -129,7 +138,7 @@ export function UdajePreUctovnika({ u }: { u: UdajeUctovnika }) {
           {u.mena}
           {cudzia
             ? ` · ${t("kurz {kurz}", { kurz: formatujCislo(u.kurz, 2, 4) })}${
-                u.kurzDatum ? ` (${datumNaDoklade(u.kurzDatum)})` : ""
+                u.kurzDatum ? ` (${datum(u.kurzDatum)})` : ""
               }`
             : ""}
         </Udaj>
@@ -174,7 +183,7 @@ export function UdajePreUctovnika({ u }: { u: UdajeUctovnika }) {
               <span className="inline-flex items-center gap-1 text-primary">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 {u.uhrada.datum
-                  ? t("Uhradená {datum}", { datum: datumNaDoklade(u.uhrada.datum) })
+                  ? t("Uhradená {datum}", { datum: datum(u.uhrada.datum) })
                   : t("Uhradená")}
               </span>
             ) : (

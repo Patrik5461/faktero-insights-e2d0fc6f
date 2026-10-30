@@ -1169,7 +1169,7 @@ export default {
   Karta: "Karte",
   Prevod: "Überweisung",
   "Popis plnenia (text faktúry)": "Leistungsbeschreibung (Rechnungstext)",
-  "Dátum dodania (DUZP)": "Leistungsdatum (DUZP)",
+  "Dátum dodania (DUZP)": "Leistungsdatum",
   "Opravuje faktúru č.": "Korrigiert Rechnung Nr.",
   Odosielateľ: "Absender",
   Dodávateľ: "Lieferant",

@@ -27,6 +27,7 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { prveOdoslanie } from "@/lib/faktero/efaktura-odoslana";
 import { useT } from "@/lib/i18n/useT";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { KontrolaPohody } from "@/components/faktero/KontrolaPohody";
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
@@ -601,7 +602,7 @@ type Prehlad = {
 };
 
 function OdovzdanieZaMesiac() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const [mesiac, setMesiac] = useState(() => new Date().toISOString().slice(0, 7));
   const [prehlad, setPrehlad] = useState<Prehlad | null>(null);
   const [busy, setBusy] = useState<null | "stiahnut" | "odovzdat" | "mail">(null);
@@ -784,7 +785,16 @@ function OdovzdanieZaMesiac() {
             <span className="text-muted-foreground">{t("Zisťujem…")}</span>
           ) : !jeCo ? (
             <span className="text-muted-foreground">
-              {t("Za {obdobie} nie sú žiadne doklady.", { obdobie: prehlad.obdobie })}
+              {t("Za {obdobie} nie sú žiadne doklady.", {
+                // Server skladá názov mesiaca po slovensky („október 2026“) — v inom jazyku ho napíše prehliadač.
+                obdobie:
+                  jazyk === "sk"
+                    ? prehlad.obdobie
+                    : new Date(`${mesiac}-01T12:00:00`).toLocaleDateString(lokalJazyka(jazyk), {
+                        month: "long",
+                        year: "numeric",
+                      }),
+              })}
             </span>
           ) : (
             <>

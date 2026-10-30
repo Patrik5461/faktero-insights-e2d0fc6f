@@ -114,9 +114,10 @@ import {
   znamienkoZobrazenia,
 } from "@/lib/faktero/dobropis-zobrazenie";
 import { riadokNaZapis, sumyFormulara, sumyNaZapis } from "@/lib/faktero/faktura-formular-sumy";
-import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { datumNaDoklade, uvodOpravnehoDokladu } from "@/lib/faktero/faktura-jazyk";
 import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 import { sOpakovanimPriKoliziiCisla } from "@/lib/faktero/kolizia-cisla";
+import { textRezimuDe } from "@/lib/faktero/rezim-texty-de";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová faktúra — Faktero") }] }),
   /**
@@ -465,7 +466,6 @@ function NewInvoice() {
   ) {
     // Ťarchopis nesie len zvýšenie ceny — položky pôvodnej faktúry sa nekopírujú.
     const tarchopis = druh === "debit_note";
-    const nazovDokladu = tarchopis ? "Ťarchopis" : "Dobropis";
     // Opravný doklad preberá režim opravovanej faktúry — návrh podľa odberateľa ho nemení.
     rezimRucneRef.current = true;
     const cid = getActiveCompanyId();
@@ -487,7 +487,16 @@ function NewInvoice() {
       setForm((x) =>
         !jeUvodFaktury(x.intro_note)
           ? x
-          : { ...x, intro_note: `${nazovDokladu} k faktúre č. ${(f as any).invoice_number}` },
+          : {
+              ...x,
+              // V jazyku dokladu — nemecká Rechnungskorrektur nemá niesť „Dobropis k faktúre č.“.
+              intro_note: uvodOpravnehoDokladu(
+                druh,
+                String((f as any).invoice_number ?? ""),
+                (f as any).language || x.language,
+                krajina,
+              ),
+            },
       );
       if (!sPolozkami || tarchopis) {
         if (tarchopis) {
@@ -671,6 +680,12 @@ function NewInvoice() {
     režimu nikto nedotkol — ručnú voľbu ani režim prevzatý z opravovanej
     faktúry neprepíše.
   */
+  /*
+    Texty daňového režimu odkazujú na slovenský zákon (§ 69, § 47, riadky
+    priznania). Nemecká firma sa riadi UStG a podáva UStVA/ZM — dostane
+    vlastné znenie (`rezim-texty-de.ts`).
+  */
+  const textRezimu = (sk: string) => (krajina === "DE" ? textRezimuDe(sk) : sk);
   const rezimRucneRef = useRef(false);
   const odberatelFormulara = customers.find((c) => c.id === form.customer_id) as any;
   const signalTovaru = druhPlneniaZPoloziek(items).plnenie === "tovar";
@@ -1092,9 +1107,11 @@ function NewInvoice() {
       platitel: rezim.platitel,
       datumDodania: form.delivery_date,
       datumVystavenia: form.issue_date,
+      krajina,
     });
     if (datumy.chyba) return toast.error(t(datumy.chyba));
-    if (datumy.upozornenie) toast.warning(t(datumy.upozornenie));
+    // Text s počtom dní sa prekladá cez kľúč s {n} — hotová slovenská veta by ostala nepreložená.
+    if (datumy.upozornenie) toast.warning(t(datumy.kluc ?? datumy.upozornenie, datumy.parametre));
     // Reverse charge validations
     if (form.reverse_charge && form.reverse_charge_type === "eu_b2b") {
       const vat = (cust.ic_dph || "").trim();
@@ -1882,7 +1899,10 @@ function NewInvoice() {
                 >
                   <option value="per_item">{t("Po položkách (zaokrúhli každú položku zvlášť)")}</option>
                   <option value="per_document">{t("Za celý doklad (zaokrúhli až finálny súčet)")}</option>
-                  <option value="retail">{t("Maloobchod (na 0,05 €, SK pravidlá)")}</option>
+                  {/* Zaokrúhlenie hotovosti na 0,05 € je slovenské pravidlo — Nemecko ho nepozná. */}
+                  {krajina !== "DE" || form.rounding_mode === "retail" ? (
+                    <option value="retail">{t("Maloobchod (na 0,05 €, SK pravidlá)")}</option>
+                  ) : null}
                 </select>
               </PoleDokladu>
             </MriezkaDokladu>
@@ -1921,7 +1941,7 @@ function NewInvoice() {
           <section className="rounded-2xl border border-border bg-card p-5">
             <SectionHeader icon={Percent} title={t("Daňový režim")} />
             <p className="-mt-1 mb-4 text-xs text-muted-foreground">
-              {t("Bežne sa fakturuje so slovenskou DPH. Prepnite len vtedy, keď daň odvedie odberateľ alebo predávate spotrebiteľovi v inom štáte EÚ.")}
+              {t(textRezimu("Bežne sa fakturuje so slovenskou DPH. Prepnite len vtedy, keď daň odvedie odberateľ alebo predávate spotrebiteľovi v inom štáte EÚ."))}
             </p>
             <UpozornenieRezimu
               navrh={navrhRezimu}
@@ -1985,7 +2005,7 @@ function NewInvoice() {
                   <span className="text-sm">
                     <strong>{t("Predaj spotrebiteľovi v EÚ (OSS)")}</strong>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {t("Sadzba štátu zákazníka; daň sa odvádza cez jedno kontaktné miesto, nie v slovenskom priznaní.")}
+                      {t(textRezimu("Sadzba štátu zákazníka; daň sa odvádza cez jedno kontaktné miesto, nie v slovenskom priznaní."))}
                     </span>
                   </span>
                 </label>
@@ -2013,7 +2033,7 @@ function NewInvoice() {
                     className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="domestic_69">
-                      {t("Tuzemský prenos podľa §69 zákona o DPH (stavebné práce, kovový odpad…)")}
+                      {t(textRezimu("Tuzemský prenos podľa §69 zákona o DPH (stavebné práce, kovový odpad…)"))}
                     </option>
                     <option value="eu_b2b">
                       {t("Intrakomunitárne dodanie do EÚ (B2B, odberateľ má IČ DPH)")}
@@ -2032,11 +2052,11 @@ function NewInvoice() {
                       }}
                       className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
-                      <option value="tovar">{t("Vývoz tovaru (oslobodené podľa § 47)")}</option>
-                      <option value="sluzba">{t("Služba mimo EÚ (miesto dodania podľa § 15 ods. 1)")}</option>
+                      <option value="tovar">{t(textRezimu("Vývoz tovaru (oslobodené podľa § 47)"))}</option>
+                      <option value="sluzba">{t(textRezimu("Služba mimo EÚ (miesto dodania podľa § 15 ods. 1)"))}</option>
                     </select>
                     <span className="mt-1 block text-xs text-muted-foreground">
-                      {t("Vývoz tovaru ide do priznania (r. 13 a 15), služba s miestom dodania mimo EÚ do priznania nepatrí.")}
+                      {t(textRezimu("Vývoz tovaru ide do priznania (r. 13 a 15), služba s miestom dodania mimo EÚ do priznania nepatrí."))}
                     </span>
                   </label>
                 )}
@@ -2057,11 +2077,11 @@ function NewInvoice() {
                       className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value="tovar">{t("Dodanie tovaru")}</option>
-                      <option value="sluzba">{t("Dodanie služby (§ 15 ods. 1)")}</option>
+                      <option value="sluzba">{t(textRezimu("Dodanie služby (§ 15 ods. 1)"))}</option>
                       <option value="trojstranny">{t("Trojstranný obchod")}</option>
                     </select>
                     <span className="mt-1 block text-xs text-muted-foreground">
-                      {t("Tovar ide aj do priznania (r. 13 a 14), služba len do súhrnného výkazu.")}
+                      {t(textRezimu("Tovar ide aj do priznania (r. 13 a 14), služba len do súhrnného výkazu."))}
                     </span>
                   </label>
                 )}

@@ -102,11 +102,15 @@ export function useRezimDph(): RezimDph {
   useEffect(() => {
     const id = getActiveCompanyId();
     if (!id) return;
+    /*
+      Z úložiska sa režim len ukáže hneď po načítaní stránky — do pamäte sa
+      nedáva, aby ho `nacitajRezimDph` overil v databáze. Predtým sa uložená
+      hodnota brala ako platná navždy: firma, ktorú niekto prepol na
+      neplatiteľa (Kleinunternehmer) na inom zariadení či cez API, tu ďalej
+      dostávala faktúry s 19 % DPH.
+    */
     const hned = pamat.get(id) ?? zUloziska(id);
-    if (hned) {
-      pamat.set(id, hned);
-      setRezim(hned);
-    }
+    if (hned) setRezim(hned);
     let zrusene = false;
     nacitajRezimDph(id)
       .then((r) => !zrusene && setRezim(r))
