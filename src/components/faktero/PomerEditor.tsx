@@ -184,6 +184,7 @@ export function PomerEditor({
             <label key={k} className="block text-xs">
               <span className="text-muted-foreground">{t(n)}</span>
               <KodPohody
+                ariaLabel={`${t("Predkontácia")} — ${t(n)}`}
                 value={value[k]}
                 onChange={(v) => onChange({ ...value, [k]: v })}
                 moznosti={predkontacie}
@@ -201,6 +202,7 @@ export function PomerEditor({
         <label className="mt-2 block max-w-xs text-xs">
           <span className="text-muted-foreground">{t("Členenie DPH pre časti bez odpočtu")}</span>
           <KodPohody
+            ariaLabel="Členenie DPH pre časti bez odpočtu"
             value={value.clenenieBezOdpoctu ?? ""}
             onChange={(v) => onChange({ ...value, clenenieBezOdpoctu: v })}
             moznosti={clenenia}

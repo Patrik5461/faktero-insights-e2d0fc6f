@@ -200,6 +200,7 @@ export function ZauctovanieVystavenejPanel({
   /* Úlomky formulára — skladajú sa v klasickom aj kompaktnom rozložení. */
   const kodPredkontacia = (trieda: string) => (
     <KodPohody
+      ariaLabel="Predkontácia"
       odkazNaCiselnik
       value={h.predkontacia}
       onChange={(v) => setH({ ...h, predkontacia: v })}
@@ -211,6 +212,7 @@ export function ZauctovanieVystavenejPanel({
   );
   const kodClenenie = (trieda: string) => (
     <KodPohody
+      ariaLabel="Členenie DPH"
       value={h.clenenie}
       onChange={(v) => setH({ ...h, clenenie: v })}
       moznosti={navrhy?.clenenia ?? []}
@@ -255,6 +257,7 @@ export function ZauctovanieVystavenejPanel({
     <label className="block">
       <span className="text-sm font-medium text-foreground">{t("Stredisko")}</span>
       <KodPohody
+        ariaLabel="Stredisko"
         value={h.stredisko}
         onChange={(v) => setH({ ...h, stredisko: v })}
         moznosti={navrhy?.strediska ?? []}
@@ -268,6 +271,7 @@ export function ZauctovanieVystavenejPanel({
     <label className="block">
       <span className="text-sm font-medium text-foreground">{t("Činnosť")}</span>
       <KodPohody
+        ariaLabel="Činnosť"
         value={h.cinnost}
         onChange={(v) => setH({ ...h, cinnost: v })}
         moznosti={navrhy?.cinnosti ?? []}

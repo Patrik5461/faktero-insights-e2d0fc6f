@@ -2,6 +2,7 @@ import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { useT } from "@/lib/i18n/useT";
+import { mnozne, CAKAJUCE_BLOCKY } from "@/lib/faktero/mnozne";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
@@ -141,7 +142,7 @@ const ZDROJ_DOKLADU: Record<string, string> = {
   photo: "fotka",
   qr: "QR kód",
   upload: "nahratý",
-  web: "web",
+  web: "ručne zapísaný",
   import: "import",
 };
 const STATUS_STYLE: Record<string, string> = {
@@ -804,11 +805,7 @@ function DokladyPage() {
             className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
           >
             <span>
-              {nespracovanych === 1
-                ? t("1 bloček čaká na kontrolu v Nespracovaných dokladoch — sem sa presunie, keď ho spracujete.")
-                : t("{n} bločkov čaká na kontrolu v Nespracovaných dokladoch — sem sa presunú, keď ich spracujete.", {
-                    n: nespracovanych,
-                  })}
+              {t(mnozne(nespracovanych, CAKAJUCE_BLOCKY), { n: nespracovanych })}
             </span>
             <span className="shrink-0 font-medium">{t("Otvoriť")} →</span>
           </Link>

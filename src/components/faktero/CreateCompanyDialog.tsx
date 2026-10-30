@@ -164,7 +164,7 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
                 <input
                   value={form.ico}
                   onChange={(e) => set("ico", e.target.value)}
-                  className={`w-full border border-input bg-background px-3 py-2 text-sm focus:z-10 ${jeDe ? "rounded-md" : "rounded-l-md"}`}
+                  className={`w-full min-w-0 border border-input bg-background px-3 py-2 text-sm focus:z-10 ${jeDe ? "rounded-md" : "rounded-l-md"}`}
                 />
                 {!jeDe && (
                   <IcoLookupButton

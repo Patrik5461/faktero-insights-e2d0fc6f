@@ -5,7 +5,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { domacaMena, krajinaKurzu, textPrepoctu } from "@/lib/faktero/kurzy";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { formatujMenu } from "@/lib/faktero/mena";
+import { formatujMenu, formatujMnozstvo } from "@/lib/faktero/mena";
 import { datumNaDoklade, localeDokladu, popisky } from "@/lib/faktero/faktura-jazyk";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { useT } from "@/lib/i18n/useT";
@@ -291,7 +291,7 @@ function VerejnaFaktura() {
                   )}
                 </td>
                 <td className="py-2 text-right tabular-nums">
-                  {Number(p.quantity)} {p.unit}
+                  {formatujMnozstvo(p.quantity, localeDokladu(jazyk))} {p.unit}
                 </td>
                 <td className="py-2 text-right tabular-nums">{suma(p.unit_price)}</td>
                 <td className="py-2 text-right tabular-nums">{Number(p.vat_rate)} %</td>

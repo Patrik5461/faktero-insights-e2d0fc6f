@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { BlocekVysledok } from "./blocek.functions";
+import { zdrojVydavku } from "./zdroj-vydavku";
 
 /**
  * Uloženie dokladu z mobilnej aplikácie.
@@ -70,7 +71,8 @@ export function dokladNaZaznam(
     company_id: companyId,
     // Neprečítaný doklad (odložený bez signálu) je fotka, nie QR — inak má
     // v zozname ikonu QR kódu a tvári sa, že z neho niečo prišlo.
-    source: (r.zdroj === "ekasa" || r.zdroj === "qr" ? "qr" : "photo") as "photo" | "qr",
+    // Bez prílohy a bez QR je to ručný zápis, nie fotka.
+    source: zdrojVydavku(r.zdroj === "ekasa" || r.zdroj === "qr" ? "qr" : "photo", Boolean(priloha)),
     status: "processed" as const,
     supplier_name: r.supplier ?? null,
     supplier_ico: r.supplier_ico ?? null,

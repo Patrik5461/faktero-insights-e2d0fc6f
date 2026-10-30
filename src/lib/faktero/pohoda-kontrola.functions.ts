@@ -13,7 +13,12 @@ export const zastaveneDokladyFn = createServerFn({ method: "POST" })
   .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { zastaveneDoklady } = await import("./pohoda-kontrola.server");
-    return { doklady: await zastaveneDoklady(context.supabase as any, data.company_id) };
+    const vsetky = await zastaveneDoklady(context.supabase as any, data.company_id);
+    return {
+      doklady: vsetky.filter((d) => !d.varovanie),
+      // Upozornenia doklad nezastavia (napr. záväzkový kód v rozúčtovaní).
+      varovania: vsetky.filter((d) => d.varovanie),
+    };
   });
 
 /** Odovzdané doklady, ktoré sa od odoslaného XML zmenili (alebo by dnes neprešli). */

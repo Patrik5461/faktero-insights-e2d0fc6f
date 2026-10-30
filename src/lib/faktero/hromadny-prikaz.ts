@@ -145,6 +145,11 @@ export function pripravPlatby(faktury: FakturaNaUhradu[]): {
       skip("je stornovaná");
       continue;
     }
+    // Koncept ešte nikto nepotvrdil (suma, IBAN) — platiť sa nesmie.
+    if (f.status === "draft") {
+      skip("je len koncept — najprv ju dokončite");
+      continue;
+    }
     if (f.odberatel_nesedi) {
       skip(DOVOD_CUDZIA_PRIKAZ);
       continue;

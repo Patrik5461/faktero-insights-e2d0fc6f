@@ -305,6 +305,7 @@ export function OpravitZauctovanie({
               <label className="block">
                 <span className="text-xs text-muted-foreground">{t("Stredisko")}</span>
                 <KodPohody
+                  ariaLabel="Stredisko"
                   value={h.stredisko}
                   onChange={(v) => setH({ ...h, stredisko: v })}
                   moznosti={navrhy?.strediska ?? []}
@@ -316,6 +317,7 @@ export function OpravitZauctovanie({
               <label className="block">
                 <span className="text-xs text-muted-foreground">{t("Činnosť")}</span>
                 <KodPohody
+                  ariaLabel="Činnosť"
                   value={h.cinnost}
                   onChange={(v) => setH({ ...h, cinnost: v })}
                   moznosti={navrhy?.cinnosti ?? []}

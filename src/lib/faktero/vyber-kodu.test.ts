@@ -3,6 +3,7 @@ import {
   bezDiakritiky,
   filtrujMoznosti,
   polozkyZoznamu,
+  popisyVyberu,
   posunAktivny,
   zaciatocnyAktivny,
   type MoznostVyberu,
@@ -87,5 +88,29 @@ describe("KV z vyúčtovania sa uloží na doklady", () => {
     expect(kodyNaDoplnenie({ predkontacia: null, clenenie: " ", kv: "X" })).toEqual([
       ["kv_clenenie", "X"],
     ]);
+  });
+});
+
+describe("popisyVyberu", () => {
+  const t = (text: string, p?: Record<string, string | number>) =>
+    text.replace(/\{(\w+)\}/g, (_, k) => String(p?.[k] ?? ""));
+
+  it("hľadanie aj zoznam nesú názov poľa", () => {
+    const pk = popisyVyberu("Predkontácia", t);
+    const cl = popisyVyberu("Členenie DPH", t);
+    expect(pk).toEqual({
+      hladanie: "Predkontácia — hľadať kód, názov alebo účet",
+      zoznam: "Predkontácia — voľby",
+    });
+    expect(cl.hladanie).not.toBe(pk.hladanie);
+    expect(cl.zoznam).not.toBe(pk.zoznam);
+  });
+
+  it("bez názvu ostanú všeobecné popisy", () => {
+    expect(popisyVyberu("  ", t)).toEqual({
+      hladanie: "Hľadať kód, názov alebo účet",
+      zoznam: "Voľby",
+    });
+    expect(popisyVyberu(undefined, t).zoznam).toBe("Voľby");
   });
 });

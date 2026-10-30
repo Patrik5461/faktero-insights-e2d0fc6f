@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -30,7 +30,7 @@ import {
 } from "@/lib/faktero/objednavky-odberatel";
 import { FileText, Pencil, Trash2, Ban, Check } from "lucide-react";
 import { toast } from "sonner";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, formatujMnozstvo } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/objednavky/$id")({
@@ -62,7 +62,7 @@ function datum(s?: string | null) {
 }
 
 function OrderDetail() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const { id } = Route.useParams();
   const nav = useNavigate();
   const nacitaj = useServerFn(getSalesOrder);
@@ -298,10 +298,10 @@ function OrderDetail() {
                         )}
                       </td>
                       <td className="px-4 py-2 text-right tabular-nums">
-                        {Number(p.quantity)} {p.unit}
+                        {formatujMnozstvo(p.quantity, lokalJazyka(jazyk))} {p.unit}
                       </td>
                       <td className="px-4 py-2 text-right tabular-nums">
-                        {Number(p.invoiced_quantity)}
+                        {formatujMnozstvo(p.invoiced_quantity, lokalJazyka(jazyk))}
                       </td>
                       <td
                         className={`px-4 py-2 text-right tabular-nums ${zostava > 0 ? "font-medium" : "text-emerald-600"}`}

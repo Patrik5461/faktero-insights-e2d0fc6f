@@ -1070,6 +1070,7 @@ function UpravaPravidla({
           <label className="block text-sm">
             <span className="font-medium">{t("Predkontácia (Pohoda)")}</span>
             <KodPohody
+              ariaLabel="Predkontácia"
               value={p.predkontacia ?? ""}
               onChange={(v) => zmen({ predkontacia: v })}
               moznosti={kody?.predkontacie ?? []}
@@ -1082,6 +1083,7 @@ function UpravaPravidla({
             <label className="block text-sm">
               <span className="font-medium">{t("Členenie DPH (Pohoda)")}</span>
               <KodPohody
+                ariaLabel="Členenie DPH"
                 value={p.clenenie_dph ?? ""}
                 onChange={(v) => zmen({ clenenie_dph: v })}
                 moznosti={kody?.clenenia ?? []}
@@ -1128,6 +1130,7 @@ function UpravaPravidla({
             <label className="block text-sm">
               <span className="font-medium">{t("Pokladňa (hotovostný bloček)")}</span>
               <KodPohody
+                ariaLabel="Pokladňa v Pohode"
                 value={p.pokladna ?? ""}
                 onChange={(v) => zmen({ pokladna: v })}
                 moznosti={kody?.pokladne ?? []}

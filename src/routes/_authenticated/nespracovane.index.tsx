@@ -49,7 +49,7 @@ const ZDROJ: Record<string, string> = {
   photo: "fotka",
   qr: "eKasa QR",
   upload: "nahraté",
-  web: "web",
+  web: "ručne zapísaný",
 };
 
 function naBase64(f: File): Promise<string> {

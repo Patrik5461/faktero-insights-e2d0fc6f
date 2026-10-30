@@ -425,6 +425,37 @@ function PurchaseInvoicesPage() {
   const nacitajKody = useServerFn(navrhyKodovFn);
   const zauctuj = useServerFn(zauctujPrijateFn);
   useZatvorNaEscape(zauctovanie ? () => setZauctovanie(false) : null);
+  /*
+    Kontrola členenia DPH pred zaúčtovaním: koľkým faktúram sa doplní z
+    pravidla či návyku a ktoré by ostali bez neho (platiteľ ich nezaúčtuje).
+  */
+  const [kontrolaCl, setKontrolaCl] = useState<{ bez: string[]; doplnene: number } | null>(null);
+  useEffect(() => {
+    setKontrolaCl(null);
+    const cid = getActiveCompanyId();
+    if (!zauctovanie || !cid || !selected.size) return;
+    let zrusene = false;
+    const casovac = setTimeout(() => {
+      zauctuj({
+        data: {
+          company_id: cid,
+          ids: [...selected],
+          clenenie: kody.clenenie || undefined,
+          kategoria: kody.kategoria || undefined,
+          kontrolaClenenia: true,
+        },
+      })
+        .then((r) => {
+          if (!zrusene) setKontrolaCl({ bez: r.bezClenenia ?? [], doplnene: r.doplneneClenenie ?? 0 });
+        })
+        .catch(() => {});
+    }, 300);
+    return () => {
+      zrusene = true;
+      clearTimeout(casovac);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zauctovanie, kody.clenenie, kody.kategoria, selected]);
 
   // Predkontácie do stĺpca v riadku sa načítajú, keď je stĺpec zapnutý.
   const stlpecPredkontacie = zobrazenie.viditelne.includes("predkontacia");
@@ -1471,6 +1502,21 @@ function PurchaseInvoicesPage() {
             <div className="mt-4">
               <PoliaZauctovania navrhy={kodyNavrhy} hodnoty={kody} setHodnoty={setKody} hromadne />
             </div>
+            {kontrolaCl && kontrolaCl.doplnene > 0 && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                {t("Členenie DPH sa doplní z pravidla alebo zo zvyku dodávateľa: {n}", { n: kontrolaCl.doplnene })}
+              </p>
+            )}
+            {kontrolaCl && kontrolaCl.bez.length > 0 && (
+              <div
+                role="alert"
+                className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300"
+              >
+                {t("Bez členenia DPH: {zoznam}. Platiteľ DPH ich nezaúčtuje — vyberte členenie DPH, alebo ich nastavte v pravidle či v predvolených predkontáciách.", {
+                  zoznam: kontrolaCl.bez.slice(0, 8).join(", ") + (kontrolaCl.bez.length > 8 ? ` +${kontrolaCl.bez.length - 8}` : ""),
+                })}
+              </div>
+            )}
             <div className="mt-5 flex justify-end gap-2">
               <button
                 onClick={() => setZauctovanie(false)}
@@ -1480,7 +1526,7 @@ function PurchaseInvoicesPage() {
               </button>
               <button
                 onClick={hromadneZauctovat}
-                disabled={hromadneBusy}
+                disabled={hromadneBusy || Boolean(kontrolaCl?.bez.length)}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
                 {hromadneBusy && <Loader2 className="h-4 w-4 animate-spin" />}

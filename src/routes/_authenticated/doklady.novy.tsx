@@ -1,6 +1,7 @@
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { AutoZauctovanieOdznak } from "@/components/faktero/AutoZauctovanieOdznak";
 import { useT } from "@/lib/i18n/useT";
+import { zdrojVydavku } from "@/lib/faktero/zdroj-vydavku";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { SpracovalDokladu } from "@/components/faktero/SpracovalDokladu";
 import { jePalivo } from "@/lib/faktero/palivo";
@@ -52,7 +53,7 @@ import { Camera, CheckCircle2, Loader2, Lock, LockOpen, QrCode, Save, Upload as 
 import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
-import { MENY, formatujMenu, formatujCislo } from "@/lib/faktero/mena";
+import { MENY, formatujMenu, formatujCislo, formatujMnozstvo } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useDizajn } from "@/hooks/useDizajn";
@@ -143,7 +144,7 @@ const EMPTY: Form = {
 };
 
 function NovyDokladPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const navigate = useNavigate();
   /* Podľa krajiny firmy sa čítajú sadzby DPH a mena z fotky dokladu. */
   const krajina = useKrajinaDane();
@@ -569,7 +570,8 @@ function NovyDokladPage() {
     try {
       const payload = {
         company_id: cid,
-        source,
+        // Ručne zapísaný doklad bez obrázka nie je „fotka“.
+        source: zdrojVydavku(source, Boolean(uploadedFile)),
         supplier_name: form.supplier_name || null,
         supplier_ico: form.supplier_ico || null,
         supplier_ic_dph: form.supplier_ic_dph || null,
@@ -1076,7 +1078,7 @@ function NovyDokladPage() {
                     <tr key={i} className="border-t border-border">
                       <td className="px-5 py-2">{p.name || "—"}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                        {p.quantity} ×{" "}
+                        {formatujMnozstvo(p.quantity, lokalJazyka(jazyk))} ×{" "}
                         {formatovacMeny(form.currency || "EUR", "sk-SK")(p.unit_price)}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">

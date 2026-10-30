@@ -121,8 +121,13 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
     return () => clearTimeout(handle);
   }, [ico, enabled, autoLookup]);
 
+  /*
+    Obal sa nesmie zmenšiť (shrink-0) a text sa nesmie lámať — česky je
+    „Načíst / podle IČO“ dlhšie a tlačidlo sa vedľa políčka IČO stláčalo
+    do dvoch-troch riadkov. Zmenšuje sa radšej políčko (min-w-0 u volajúceho).
+  */
   return (
-    <div className="flex flex-col items-start gap-1">
+    <div className="flex shrink-0 flex-col items-start gap-1">
       <button
         type="button"
         onClick={() => run(false)}
@@ -138,10 +143,12 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
         ) : (
           <Download className="h-4 w-4 text-muted-foreground" />
         )}
-        <span className="leading-tight text-left">
+        <span className="whitespace-nowrap text-left leading-tight">
           {loading ? t("Vyhľadávam...") : t("Načítať")}
           {!loading && (
-            <span className="block text-[10px] uppercase tracking-wider opacity-60">{t("podľa IČO")}</span>
+            <span className="block whitespace-nowrap text-[10px] uppercase tracking-wider opacity-60">
+              {t("podľa IČO")}
+            </span>
           )}
         </span>
       </button>

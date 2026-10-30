@@ -6,7 +6,13 @@ import {
   prevezmiPlatitelaDphFn,
   stavPlatitelaDphFn,
 } from "@/lib/faktero/platitel-dph.functions";
-import { datumSk, nazovRezimu, porovnaj, type ZdrojRegistra } from "@/lib/faktero/platitel-dph";
+import {
+  datumSk,
+  icDphNaVymazanie,
+  nazovRezimu,
+  porovnaj,
+  type ZdrojRegistra,
+} from "@/lib/faktero/platitel-dph";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
@@ -40,7 +46,7 @@ export function PlatitelDphRegister({
   firma: Firma;
   onAuto: (zapnute: boolean) => void;
   /** Zmena, ktorú server zapísal do firmy — formulár si ju prevezme, nech ju neprepíše starou. */
-  onPrevzate: (zmena: { vat_scheme?: string; vat_payer?: boolean; ic_dph?: string }) => void;
+  onPrevzate: (zmena: { vat_scheme?: string; vat_payer?: boolean; ic_dph?: string | null }) => void;
 }) {
   const { t, jazyk } = useT();
   const nacitajStav = useServerFn(stavPlatitelaDphFn);
@@ -102,11 +108,19 @@ export function PlatitelDphRegister({
   }
 
   async function prevezmiZRegistra() {
+    // Register firmu nevedie → jej IČ DPH sa vymaže; povedať to vopred.
+    const vymaze = icDphNaVymazanie(p?.stav, firma.ic_dph);
+    const otazka = t(
+      "Prevziať nastavenie DPH z registra? Režim DPH firmy sa nastaví na „{rezim}“. Ovplyvní sadzby a vety na nových dokladoch, vystavené doklady sa nemenia.",
+      { rezim },
+    );
     const ok = await potvrd(
-      t(
-        "Prevziať nastavenie DPH z registra? Režim DPH firmy sa nastaví na „{rezim}“. Ovplyvní sadzby a vety na nových dokladoch, vystavené doklady sa nemenia.",
-        { rezim },
-      ),
+      vymaze
+        ? `${otazka} ${t(
+            "IČ DPH {ic} sa z firmy vymaže, lebo ho register nevedie. Predošlá hodnota ostane v histórii registrácie DPH.",
+            { ic: vymaze },
+          )}`
+        : otazka,
       { potvrdit: t("Prevziať z registra"), nebezpecne: false },
     );
     if (!ok) return;
@@ -116,7 +130,7 @@ export function PlatitelDphRegister({
       onPrevzate({
         vat_scheme: String(r.schema),
         vat_payer: r.vat_payer,
-        ...(r.ic_dph ? { ic_dph: r.ic_dph } : {}),
+        ...(r.ic_dph ? { ic_dph: r.ic_dph } : r.vymazane_ic_dph ? { ic_dph: null } : {}),
       });
       toast.success(t("Nastavenie DPH je prevzaté z registra"));
       obnov();
@@ -253,6 +267,11 @@ export function PlatitelDphRegister({
                 )}
                 {h.sposob === "prevzatie" && (
                   <span className="text-muted-foreground">{t("prevzaté z registra")}</span>
+                )}
+                {h.doplnene?.vymazane_ic_dph && (
+                  <span className="text-muted-foreground">
+                    {t("vymazané IČ DPH {ic}", { ic: h.doplnene.vymazane_ic_dph })}
+                  </span>
                 )}
               </li>
             ))}

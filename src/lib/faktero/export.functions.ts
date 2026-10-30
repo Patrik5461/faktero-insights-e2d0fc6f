@@ -23,6 +23,12 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
        * histórie a odovzdané faktúry sa nevynechajú.
        */
       kopia?: boolean;
+      /**
+       * Označiť ako odovzdané (zápis do `export_logs` → `exported_at` a zámok).
+       * Bez neho sa súbor len uloží do histórie exportov. Nezadané = áno
+       * (staršie volania z detailu a zoznamu faktúr).
+       */
+      oznacit?: boolean;
     }) => input,
   )
   .handler(async ({ data, context }) => {
@@ -61,15 +67,30 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       Kópiu na stiahnutie dostať možno vždy, len sa nezapíše.
     */
     const uzOdovzdane: string[] = [];
-    if (data.format === "pohoda_xml" && !data.kopia) {
-      for (const i of invs as any[])
-        if (i.exported_at)
-          uzOdovzdane.push(
-            `${i.invoice_number} — už je odovzdaná do Pohody — znova ju pošlete až po vrátení (Vrátiť z Pohody)`,
-          );
+    const oznacit = data.oznacit !== false;
+    if (data.format === "pohoda_xml" && !data.kopia && oznacit) {
+      const odovzdane = (invs as any[]).filter((i) => i.exported_at);
+      // Kam išla naposledy — hláška nesmie hovoriť o Pohode, keď išla do Money.
+      const formatPodlaFaktury = new Map<string, string>();
+      if (odovzdane.length) {
+        const { data: logy } = await supabase
+          .from("export_logs")
+          .select("invoice_id, created_at, export_jobs(format)")
+          .in(
+            "invoice_id",
+            odovzdane.map((i) => i.id),
+          )
+          .eq("status", "ok")
+          .order("created_at", { ascending: true });
+        for (const l of (logy ?? []) as any[])
+          formatPodlaFaktury.set(l.invoice_id, l.export_jobs?.format ?? "");
+      }
+      const { uzOdovzdanaRiadok } = await import("./odovzdanie-exportu");
+      for (const i of odovzdane)
+        uzOdovzdane.push(uzOdovzdanaRiadok(i.invoice_number, formatPodlaFaktury.get(i.id)));
       if (uzOdovzdane.length === invs.length) throw new Error(uzOdovzdane.join(" · "));
-      const ids = new Set(uzOdovzdane.map((d) => d.split(" — ")[0]));
-      invs.splice(0, invs.length, ...(invs as any[]).filter((i) => !ids.has(i.invoice_number)));
+      const ids = new Set(odovzdane.map((i) => i.id));
+      invs.splice(0, invs.length, ...(invs as any[]).filter((i) => !ids.has(i.id)));
     }
 
     // Položky, čísla opravovaných faktúr a odpočty záloh — rovnako ako
@@ -103,6 +124,7 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
         mime: built.mime,
         encoding: strategy.encoding,
         invoiceCount: vyvezene.length,
+        oznacene: false,
         preskocene: built.preskocene ?? [],
       };
     }
@@ -129,7 +151,9 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       .single();
     if (jErr) throw new Error(jErr.message);
 
-    if (job) {
+    // Bez označenia ostane súbor len v histórii — doklad sa nezamkne a
+    // export_logs sa nezapíšu (ich posledný stav určuje `exported_at`).
+    if (job && oznacit) {
       await supabase.from("export_logs").insert(
         invs.map((inv) => ({
           export_job_id: job.id,
@@ -150,6 +174,7 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       // Omega chce Windows-1250; prevod robí až sťahovanie v prehliadači.
       encoding: strategy.encoding,
       invoiceCount: vyvezene.length,
+      oznacene: oznacit,
       preskocene: [...uzOdovzdane, ...(built.preskocene ?? [])],
     };
   });

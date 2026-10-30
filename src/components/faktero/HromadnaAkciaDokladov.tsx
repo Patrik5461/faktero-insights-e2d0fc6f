@@ -314,6 +314,7 @@ export function HromadnaAkciaDokladov({
           {navrhy ? (
             <div className="rounded-md border border-border">
               <ZoznamMoznosti
+                nazov={okno === "clenenie" ? t("Členenie DPH") : t("Predkontácia")}
                 moznosti={moznostiKodov(
                   okno === "clenenie"
                     ? navrhy.clenenia

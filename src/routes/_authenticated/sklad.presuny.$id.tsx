@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
+import { formatujJednotkovuCenu, formatujMenu, formatujMnozstvo } from "@/lib/faktero/mena";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getTransferDetail, completeTransfer, cancelTransfer } from "@/lib/faktero/stock.functions";
@@ -9,7 +9,7 @@ import { ArrowRightLeft, CheckCircle2, XCircle } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/$id")({
   head: ({ match }) => ({
@@ -30,7 +30,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 function TransferDetailPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const mena = useMenaFirmy();
   const { id } = Route.useParams();
   const nav = useNavigate();
@@ -225,7 +225,9 @@ function TransferDetailPage() {
                     <tr key={it.id} className="border-t">
                       <td className="px-3 py-2">{name ?? "—"}</td>
                       <td className="px-3 py-2">{src?.sku ?? "—"}</td>
-                      <td className="px-3 py-2 text-right">{Number(it.quantity)}</td>
+                      <td className="px-3 py-2 text-right">
+                        {formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}
+                      </td>
                       <td className="px-3 py-2 text-right">
                         {formatujJednotkovuCenu(it.unit_price, mena.kod)}
                       </td>

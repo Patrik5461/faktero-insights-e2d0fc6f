@@ -192,7 +192,7 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
                   <input
                     value={f.ico}
                     onChange={(e) => setF({ ...f, ico: e.target.value })}
-                    className={`${input} rounded-l-md focus:z-10`}
+                    className={`${input} min-w-0 rounded-l-md focus:z-10`}
                   />
                   <IcoLookupButton
                     ico={f.ico}

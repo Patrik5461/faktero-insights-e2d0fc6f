@@ -283,7 +283,8 @@ const SEKCIE: HelpSection[] = [
           IČO alebo IČ DPH. Prázdny režim DPH sa doplní sám, vyplnený sa nikdy neprepíše — keď s
           registrom nesedí, ukáže sa upozornenie s tlačidlom <strong>Prevziať z registra</strong> a
           ozve sa zvonček. Zvonček hlási aj novú registráciu, jej zrušenie a dôvody na zrušenie,
-          ktoré zverejnila Finančná správa.
+          ktoré zverejnila Finančná správa. Keď register firmu nevedie, prevzatie IČ DPH z firmy
+          vymaže — okno to povie vopred a predošlé číslo ostane v histórii registrácie.
         </p>
         <p>
           Voľba rozhoduje o tom, či sa v dokladoch ponúkajú sadzby DPH a aká veta pribudne na

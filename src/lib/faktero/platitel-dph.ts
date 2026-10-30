@@ -475,6 +475,43 @@ export function nastavenieFirmy(f: FirmaNaOverenie) {
   };
 }
 
+/**
+ * IČ DPH, ktoré „Prevziať z registra“ firme vymaže: keď ju register nevedie
+ * (neplatiteľ, nikdy neregistrovaná alebo vymazaná), IČ DPH k jej nastaveniu
+ * nepatrí — na nových dokladoch by sa tvárila ako platiteľ. Inak null.
+ */
+export function icDphNaVymazanie(
+  stav: StavRegistra | null | undefined,
+  icDphFirmy: string | null | undefined,
+): string | null {
+  if (stav !== "neregistrovany") return null;
+  const ic = String(icDphFirmy ?? "").trim();
+  return ic || null;
+}
+
+/**
+ * Čo „Prevziať z registra“ zapíše do firmy. IČ DPH sa zapíše, keď ho
+ * registrácia má; neregistrovanej firme sa vymaže (predošlé ide do histórie
+ * cez `vymazaneIcDph`). Vystavené doklady nesú vlastnú kópiu údajov firmy.
+ */
+export function zmenaPriPrevzati(
+  f: FirmaNaOverenie,
+  v: VysledokRegistra,
+): {
+  nove: { vat_scheme: SchemaDph; vat_payer: boolean; ic_dph?: string | null };
+  vymazaneIcDph: string | null;
+} {
+  if (!v.schema) throw new Error("Register pre túto firmu nič nevrátil.");
+  const nove: { vat_scheme: SchemaDph; vat_payer: boolean; ic_dph?: string | null } = {
+    vat_scheme: v.schema,
+    vat_payer: schemaZaznam(v.schema).platitel,
+  };
+  const vymazaneIcDph = v.icDph ? null : icDphNaVymazanie(v.stav, f.ic_dph);
+  if (v.icDph) nove.ic_dph = v.icDph;
+  else if (vymazaneIcDph) nove.ic_dph = null;
+  return { nove, vymazaneIcDph };
+}
+
 /** Riadok `dph_overenia`, ako ho číta zvonček a nastavenia firmy. */
 export type ZaznamOverenia = {
   id: string;

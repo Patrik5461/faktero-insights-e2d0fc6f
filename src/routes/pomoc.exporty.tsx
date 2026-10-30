@@ -251,6 +251,13 @@ const sections: HelpSection[] = [
           Formát si vyberiete v <Link to="/exporty">Účtovných exportoch</Link> nad zoznamom faktúr.
           Každý export sa uloží do histórie, takže sa dá stiahnuť znova.
         </p>
+        <p>
+          Pod tlačidlom Exportovať je pole <strong>Označiť ako odovzdané</strong>. Zaškrtnuté
+          faktúry zamkne, aby sa po odovzdaní nemenili ani neodišli druhýkrát. Predvolene je zapnuté
+          len pri formáte programu, v ktorom účtujete. Pri ISDOC-u, súpiske CSV a Peppol BIS je
+          vypnuté, lebo tie sa často sťahujú len na pozretie. Hláška pri zamknutej faktúre povie, do
+          ktorého programu odišla; upraviť ju môžete po vrátení (Exporty → Vrátiť).
+        </p>
         <ul>
           <li>
             <strong>Pohoda XML</strong> — natívny dátový balík. Predkontácie a členenie DPH sa

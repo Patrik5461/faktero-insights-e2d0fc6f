@@ -93,5 +93,10 @@ export const prevezmiPlatitelaDphFn = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { prevezmiZRegistra } = await import("./platitel-dph.server");
     const v = await prevezmiZRegistra(supabaseAdmin as any, data.company_id, context.userId);
-    return { schema: v.schema, vat_payer: v.stav === "platitel", ic_dph: v.icDph };
+    return {
+      schema: v.schema,
+      vat_payer: v.vat_payer,
+      ic_dph: v.icDph,
+      vymazane_ic_dph: v.vymazaneIcDph,
+    };
   });

@@ -249,7 +249,7 @@ function Onboarding() {
               <input
                 value={form.ico}
                 onChange={(e) => set("ico", e.target.value)}
-                className={`w-full border border-input bg-background px-3 py-2 text-sm outline-none focus:z-10 focus:ring-2 focus:ring-ring ${jeDe ? "rounded-md" : "rounded-l-md"}`}
+                className={`w-full min-w-0 border border-input bg-background px-3 py-2 text-sm outline-none focus:z-10 focus:ring-2 focus:ring-ring ${jeDe ? "rounded-md" : "rounded-l-md"}`}
               />
               {!jeDe && (
                 <IcoLookupButton

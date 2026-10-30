@@ -115,7 +115,9 @@ const sections: HelpSection[] = [
           (predkontácia v hlavičke) aj na <strong>položku</strong>: pri bločku z čerpačky dáte
           predkontáciu s pomerom len k nafte a bageta ostane s predkontáciou dokladu — v tabuľke
           položiek je pri každej sadzba DPH a výber predkontácie. Predkontácia s agendou{" "}
-          <em>Ostatné záväzky</em> pošle faktúru do tejto agendy.
+          <em>Ostatné záväzky</em> pošle faktúru do tejto agendy. O agende rozhoduje predkontácia
+          hlavičky. Keď je takýto kód len v riadku rozúčtovania, faktúra ide ako prijatá faktúra a
+          Pohoda kód v nej nenájde. Kontrola pred odovzdaním v Exportoch na to upozorní.
         </p>
         <p>
           Účtovná kancelária nastaví jednu firmu a ostatným ju skopíruje: tlačidlo{" "}

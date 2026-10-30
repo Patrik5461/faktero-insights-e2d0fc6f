@@ -54,6 +54,14 @@ export function formatujCislo(hodnota: unknown, min = 2, max = min, locale = "sk
 }
 
 /**
+ * Množstvo položky podľa jazyka — „1,5“ v slovenčine, češtine aj nemčine,
+ * „1.5“ v angličtine. Celé čísla bez desatinných miest, inak najviac štyri.
+ */
+export function formatujMnozstvo(hodnota: unknown, locale = "sk-SK"): string {
+  return formatujCislo(hodnota, 0, 4, locale);
+}
+
+/**
  * Formátovač pre jednu menu — náhrada za `new Intl.NumberFormat(...).format`.
  *
  * Zámerne má rovnaký tvar volania ako pôvodný kód, aby sa dali všetky miesta
