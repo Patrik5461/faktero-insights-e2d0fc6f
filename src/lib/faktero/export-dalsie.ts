@@ -25,6 +25,7 @@ import {
   type OdpocetZalohy,
 } from "./zalohy-odpocty";
 import { riadkySoZlavou } from "./zlavy";
+import { kodStatu } from "./company-autofill";
 
 export type RiadokFaktury = {
   invoice_number?: unknown;
@@ -78,6 +79,18 @@ const dve = (h: unknown): string => cislo(h).toFixed(2);
 
 /** Desatinná čiarka a bodkočiarka ako oddeľovač — tak to číta slovenský Excel. */
 const dveSk = (h: unknown): string => dve(h).replace(".", ",");
+
+/**
+ * Kurz s desatinnou čiarkou a s presnosťou, akú má doklad (ECB 4 miesta,
+ * ČNB 3, prepočet až 6) — aspoň dve miesta. Zaokrúhlenie na dve by z 1,1377
+ * USD urobilo 1,14 a prepočet v Exceli by sa rozišiel so „Celkom v EUR“.
+ */
+export function kurzSk(h: unknown): string {
+  const k = Number(h);
+  if (!Number.isFinite(k) || k <= 0) return "";
+  const [cele, des = ""] = (Math.round(k * 1e6) / 1e6).toFixed(6).split(".");
+  return `${cele},${des.replace(/0+$/, "").padEnd(2, "0")}`;
+}
 
 const text = (h: unknown): string => String(h ?? "").trim();
 
@@ -217,9 +230,10 @@ export function buildUniverzalCsv(opts: {
       text(invoice.customer_street),
       text(invoice.customer_city),
       text(invoice.customer_zip),
-      text(invoice.customer_country) || "SK",
+      // Kód krajiny ako v ostatných exportoch — „Slovensko“ by import do MRP/Premier nespároval.
+      kodStatu(invoice.customer_country) ?? (text(invoice.customer_country) || "SK"),
       text(invoice.currency) || domaca,
-      ...(cudziaMena ? [invoice.exchange_rate ? dveSk(invoice.exchange_rate) : ""] : []),
+      ...(cudziaMena ? [kurzSk(invoice.exchange_rate)] : []),
       vsVystavenej(invoice),
       text(invoice.constant_symbol),
       text(invoice.specific_symbol),

@@ -115,6 +115,33 @@ describe("účtovanie pomerom", () => {
     expect(rozuctovaniePodlaPomeru(p, rozpisAuto, null).map((x) => x.clenenie)).toEqual([null, null, null]);
   });
 
+  it("prázdne členenie bez odpočtu z editora („“) = nezadané, časť bez nároku dostane PN", async () => {
+    // QA Test 30. 10.: pomer 80/20 uložený s clenenieBezOdpoctu "" — 20 % išlo do Pohody s PD a B3.
+    const { nacitajPomer, rozuctovaniePodlaPomeru } = await import("./rozuctovanie");
+    for (const prazdne of ["", "  "]) {
+      const p = nacitajPomer({
+        typ: "pomer",
+        casti: [
+          { podiel: 80, predkontacia: "501100 211000", odpocet: true },
+          { podiel: 20, predkontacia: "501999 211000", odpocet: false },
+        ],
+        clenenieBezOdpoctu: prazdne,
+      })!;
+      expect(p.clenenieBezOdpoctu).toBeNull();
+      expect(rozuctovaniePodlaPomeru(p, rozpisAuto, "PD").map((x) => [x.clenenie, x.odpocet])).toEqual([
+        ["PD", true],
+        ["PN", false],
+      ]);
+    }
+    // Aj pomer poslaný rovno (bez nacitajPomer) s prázdnym textom.
+    const priamo = rozuctovaniePodlaPomeru(
+      { typ: "dph5050", zaklad: 100, zdanitelna: "PHM", lenZaklad: "PHM", nezdanitelna: "PHM", clenenieBezOdpoctu: "" },
+      rozpisAuto,
+      "PD",
+    );
+    expect(priamo.map((x) => x.clenenie)).toEqual(["PD", "PN"]);
+  });
+
   it("pomer 80/20 s odpočtom len z prvej časti; nesúci pomer sa odmietne", async () => {
     const { nacitajPomer, rozuctovaniePodlaPomeru, podielOdpoctu } = await import("./rozuctovanie");
     const p = nacitajPomer({ typ: "pomer", casti: [{ podiel: 80, predkontacia: "1Fp" }, { podiel: 20, predkontacia: "5Fp", odpocet: false }] })!;

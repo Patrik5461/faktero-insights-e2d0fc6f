@@ -30,7 +30,12 @@ import { useT } from "@/lib/i18n/useT";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { KontrolaPohody } from "@/components/faktero/KontrolaPohody";
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
-import { PROGRAM_FORMATU, predvoleneOznacit } from "@/lib/faktero/odovzdanie-exportu";
+import {
+  PROGRAM_FORMATU,
+  nazovProgramuExportu,
+  predvoleneOznacit,
+} from "@/lib/faktero/odovzdanie-exportu";
+import { riadkyPreIds, vsetkyRiadky } from "@/lib/faktero/strankovanie";
 
 /** Kľúč podľa počtu: 1 / 2–4 / 5 a viac (slovenské tvary, preklad ich zjednotí). */
 const tvar = (n: number, jeden: string, dva: string, pat: string) =>
@@ -105,6 +110,8 @@ function ExportsPage() {
   const [lenNeexportovane, setLenNeexportovane] = useState(false);
   const [busy, setBusy] = useState(false);
   const [efOdoslane, setEfOdoslane] = useState<Record<string, string>>({});
+  /** Formát posledného odovzdania faktúry (`export_jobs.format`) — „V Pohode“ len pri Pohode. */
+  const [formatOdovzdania, setFormatOdovzdania] = useState<Record<string, string>>({});
   /** Program, ktorý firma vedie ako účtovný — len preň sa export predvolene označí ako odovzdaný. */
   const [uctovnyProgram, setUctovnyProgram] = useState<string | null>(null);
   const [oznacit, setOznacit] = useState(true);
@@ -133,7 +140,8 @@ function ExportsPage() {
         .eq("company_id", cid)
         .order("created_at", { ascending: false })
         .limit(50),
-      (() => {
+      // Celé obdobie po stránkach — Supabase vráti najviac 1 000 riadkov naraz.
+      vsetkyRiadky<any>((od, po) => {
         let q = filtrujObdobie(
           supabase
             .from("invoices")
@@ -150,32 +158,63 @@ function ExportsPage() {
           // Zmazaná faktúra sa do účtovníctva posielať nesmie.
           .is("deleted_at", null);
         if (lenNeexportovane) q = q.is("exported_at", null);
-        return q.order(podla === "dodanie" ? "delivery_date" : "issue_date", {
-          ascending: false,
-          nullsFirst: false,
-        });
-      })(),
+        return q
+          .order(podla === "dodanie" ? "delivery_date" : "issue_date", {
+            ascending: false,
+            nullsFirst: false,
+          })
+          .order("id")
+          .range(od, po);
+      }).then((data) => ({ data })),
       supabase.from("companies").select("uctovny_program").eq("id", cid).maybeSingle(),
     ]);
     setUctovnyProgram((firma as any)?.uctovny_program ?? "pohoda");
     setJobs(js ?? []);
     setInvoices(inv ?? []);
     // Ktoré už odišli ako eFaktúra — v Pohode sa nesmú poslať cez Peppol znova.
+    // Zoznamy id po dávkach — viac ako ~350 id v jednej adrese brána neprepustí.
     const ids = (inv ?? []).map((i: any) => i.id);
     if (ids.length) {
-      const { data: docs } = await supabase
-        .from("efaktura_documents")
-        .select("id, invoice_id")
-        .in("invoice_id", ids.slice(0, 500));
-      const docIds = (docs ?? []).map((d) => d.id);
-      const { data: dor } = docIds.length
-        ? await supabase
-            .from("efaktura_deliveries")
-            .select("document_id, status, created_at")
-            .in("document_id", docIds)
-        : { data: [] as any[] };
-      setEfOdoslane(prveOdoslanie((docs ?? []) as any, (dor ?? []) as any));
+      const docs = await riadkyPreIds<any>(ids, (kus, od, po) =>
+        supabase
+          .from("efaktura_documents")
+          .select("id, invoice_id")
+          .in("invoice_id", kus)
+          .order("id")
+          .range(od, po),
+      );
+      const docIds = docs.map((d) => d.id);
+      const dor = docIds.length
+        ? await riadkyPreIds<any>(docIds, (kus, od, po) =>
+            supabase
+              .from("efaktura_deliveries")
+              .select("document_id, status, created_at")
+              .in("document_id", kus)
+              .order("created_at")
+              .range(od, po),
+          )
+        : [];
+      setEfOdoslane(prveOdoslanie(docs as any, dor as any));
     } else setEfOdoslane({});
+    // Kam odovzdaná faktúra odišla naposledy (Pohoda, Money, Omega…).
+    const odovzdane = (inv ?? []).filter((i: any) => i.exported_at).map((i: any) => i.id);
+    if (odovzdane.length) {
+      const logy = await riadkyPreIds<any>(odovzdane, (kus, od, po) =>
+        supabase
+          .from("export_logs")
+          .select("invoice_id, created_at, export_jobs(format)")
+          .in("invoice_id", kus)
+          .eq("status", "ok")
+          .order("created_at")
+          .range(od, po),
+      );
+      const mapa: Record<string, string> = {};
+      for (const l of [...logy].sort((a, b) =>
+        String(a.created_at).localeCompare(String(b.created_at)),
+      ))
+        mapa[l.invoice_id] = l.export_jobs?.format ?? "";
+      setFormatOdovzdania(mapa);
+    } else setFormatOdovzdania({});
   }
   useEffect(() => {
     load();
@@ -340,7 +379,12 @@ function ExportsPage() {
                           {i.exported_at ? (
                             <span className="ml-2 inline-flex flex-wrap items-center gap-1 align-middle text-xs font-normal">
                               <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-emerald-800">
-                                {t("V Pohode")}
+                                {/* Faktúra poslaná do Money nie je „v Pohode“ — povie sa, kam odišla. */}
+                                {nazovProgramuExportu(formatOdovzdania[i.id])
+                                  ? t("Odovzdaná ({program})", {
+                                      program: t(nazovProgramuExportu(formatOdovzdania[i.id])!),
+                                    })
+                                  : t("V Pohode")}
                               </span>
                               {/* Odovzdaná faktúra je zamknutá; „Vrátiť“ ju pustí na opravu. */}
                               <button
@@ -350,7 +394,9 @@ function ExportsPage() {
                                 }}
                                 className="rounded-md border border-border px-1.5 py-0.5 hover:bg-secondary"
                               >
-                                {t("Vrátiť z Pohody")}
+                                {nazovProgramuExportu(formatOdovzdania[i.id])
+                                  ? t("Vrátiť")
+                                  : t("Vrátiť z Pohody")}
                               </button>
                             </span>
                           ) : null}

@@ -208,6 +208,25 @@ describe("dobropis a cudzia mena", () => {
     expect(buildUniverzalCsv({ invoices: [faktura] }).split("\r\n")[0]).not.toContain("Kurz");
   });
 
+  it("súpiska nezaokrúhli kurz na dve miesta a krajinu dá kódom", async () => {
+    // Test exportov 30. 10.: kurz 1,1377 USD/EUR išiel ako 1,14, krajina ako „Slovensko“.
+    const { kurzSk } = await import("./export-dalsie");
+    expect(kurzSk(1.1377)).toBe("1,1377");
+    expect(kurzSk(24.365)).toBe("24,365");
+    expect(kurzSk(25.3)).toBe("25,30");
+    expect(kurzSk(0.0645123)).toBe("0,064512");
+    expect(kurzSk(null)).toBe("");
+    const usd = {
+      ...vCudzejMene,
+      invoice: { ...vCudzejMene.invoice, exchange_rate: 1.1377, customer_country: "Slovensko" },
+    };
+    const r = buildUniverzalCsv({ invoices: [usd as any] }).trim().split("\r\n");
+    const hlavicka = r[0].split(";");
+    const riadok = r[1].split(";");
+    expect(riadok[hlavicka.indexOf("Kurz")]).toBe("1,1377");
+    expect(riadok[hlavicka.indexOf("Štát")]).toBe("SK");
+  });
+
   it("Flexi pošle dobropis ako DOBROPIS a so zápornými sumami", () => {
     const { xml, preskocene } = buildFlexiXml({ invoices: [dobropis] });
     expect(xml).toContain("<typDokl>code:DOBROPIS</typDokl>");
