@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { useT } from "@/lib/i18n/useT";
 
 type Hodnota = string | number | null | undefined;
 
@@ -9,6 +10,7 @@ type Hodnota = string | number | null | undefined;
  * text podľa slovenskej abecedy.
  */
 export function useRadenie<T>(riadky: T[], hodnoty: Record<string, (r: T) => Hodnota>) {
+  const { t } = useT();
   const [stav, setStav] = useState<{ kluc: string; smer: 1 | -1 } | null>(null);
   const zoradene = useMemo(() => {
     if (!stav) return riadky;
@@ -43,7 +45,7 @@ export function useRadenie<T>(riadky: T[], hodnoty: Record<string, (r: T) => Hod
         type="button"
         onClick={() => prepni(kluc)}
         className="inline-flex items-center gap-1 uppercase hover:text-foreground"
-        aria-label={`Zoradiť podľa: ${typeof obsah === "string" ? obsah : kluc}`}
+        aria-label={t("Zoradiť podľa: {stlpec}", { stlpec: typeof obsah === "string" ? obsah : kluc })}
       >
         {obsah}
         <Ikona className={`h-3 w-3 ${aktivny ? "text-foreground" : "opacity-40"}`} />

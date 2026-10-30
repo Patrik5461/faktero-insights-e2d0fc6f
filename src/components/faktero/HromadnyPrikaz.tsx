@@ -91,7 +91,7 @@ export function HromadnyPrikaz({
   */
   const [uhrady, setUhrady] = useState<Record<
     string,
-    { uhradene: number; zaloha: number; naKontrolu?: boolean }
+    { uhradene: number; zaloha: number; naKontrolu?: boolean; cudzia?: boolean }
   > | null>(null);
   useEffect(() => {
     void (async () => {

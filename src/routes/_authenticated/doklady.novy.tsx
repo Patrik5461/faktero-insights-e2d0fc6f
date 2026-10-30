@@ -1201,7 +1201,7 @@ function NovyDokladPage() {
                 >
                   {MENY.map((m) => (
                     <option key={m.code} value={m.code}>
-                      {m.code} {m.symbol} — {m.name}
+                      {m.code} {m.symbol} — {t(m.name)}
                     </option>
                   ))}
                 </select>

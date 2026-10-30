@@ -1478,7 +1478,7 @@ function NewInvoice() {
                 >
                   {MENY.map((c) => (
                     <option key={c.code} value={c.code}>
-                      {c.code} {c.symbol} — {c.name}
+                      {c.code} {c.symbol} — {t(c.name)}
                     </option>
                   ))}
                 </select>
