@@ -40,3 +40,52 @@ describe("kodKrajiny", () => {
     expect((r as any).vat_scheme).toBe("cz_platce");
   });
 });
+
+describe("režim DPH z registra (FS SR / Registr plátců DPH)", () => {
+  const zRegistra = (vatScheme: string) =>
+    ({
+      ico: "56607016",
+      name: "Tobify s. r. o.",
+      country: "SK",
+      ic_dph: "SK2122358579",
+      vatScheme,
+    }) as any;
+
+  it("prebije predvoleného neplatiteľa aj pri automatickom vyhľadaní", () => {
+    const r = mergeCompanyAutofill(
+      { name: "", country: "SK", vat_payer: false, vat_scheme: "sk_neplatitel", ic_dph: "" } as any,
+      zRegistra("sk_7"),
+      { mode: "fill-empty" },
+    );
+    expect(r).toMatchObject({ vat_payer: false, vat_scheme: "sk_7", ic_dph: "SK2122358579" });
+  });
+
+  it("§ 4 zaškrtne platiteľa", () => {
+    const r = mergeCompanyAutofill(
+      { name: "", country: "SK", vat_payer: false, vat_scheme: "sk_neplatitel" } as any,
+      zRegistra("sk_4"),
+      { mode: "fill-empty" },
+    );
+    expect(r).toMatchObject({ vat_payer: true, vat_scheme: "sk_4" });
+  });
+
+  it("vlastnú voľbu pri automatickom vyhľadaní neprepíše, výslovné áno", () => {
+    const prev = { name: "", country: "SK", vat_payer: true, vat_scheme: "sk_4" } as any;
+    expect(mergeCompanyAutofill(prev, zRegistra("sk_7a"), { mode: "fill-empty" })).toMatchObject({
+      vat_scheme: "sk_4",
+    });
+    expect(mergeCompanyAutofill(prev, zRegistra("sk_7a"), { mode: "overwrite" })).toMatchObject({
+      vat_payer: false,
+      vat_scheme: "sk_7a",
+    });
+  });
+
+  it("režim inej krajiny sa nepoužije", () => {
+    const r = mergeCompanyAutofill(
+      { name: "", country: "SK", vat_payer: false, vat_scheme: "sk_neplatitel" } as any,
+      { ...zRegistra("cz_platce"), country: "SK" },
+      { mode: "overwrite" },
+    );
+    expect((r as any).vat_scheme).not.toBe("cz_platce");
+  });
+});

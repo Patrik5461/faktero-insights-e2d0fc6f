@@ -55,6 +55,11 @@ export type NormalizedCompany = {
   registrationNumber: string | null;
   registrationDate: string | null;
   vatStatus: VatStatus;
+  /**
+   * Režim DPH podľa registra (FS SR / Registr plátců DPH) — kód z `dph-rezim`.
+   * FinStat ho nedáva; dopĺňa ho `lookupCompany`, keď register odpovie.
+   */
+  vatScheme?: string | null;
   financials: FinancialsSummary;
   riskIndicators: RiskIndicators | null;
   statutoryRepresentatives: StatutoryRepresentative[];

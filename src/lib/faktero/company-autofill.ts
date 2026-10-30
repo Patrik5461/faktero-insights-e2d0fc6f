@@ -1,5 +1,11 @@
 import type { NormalizedCompany } from "./company-registry.server";
-import { jeSchemaDph, predvolenaSchema, zosuladSchemu, type SchemaDph } from "./dph-rezim";
+import {
+  jeSchemaDph,
+  predvolenaSchema,
+  schema as schemaDph,
+  zosuladSchemu,
+  type SchemaDph,
+} from "./dph-rezim";
 import { krajinaDane } from "./vat-rates";
 
 export type AutofillTarget = {
@@ -49,6 +55,24 @@ export function mergeCompanyAutofill<T extends AutofillTarget>(
     to platí aj nad skôr predvoleným „neplatiteľom“. Slovenské IČ DPH samo
     platiteľstvo neznamená (§ 7), tam ostáva voľba človeka.
   */
+  /*
+    Režim priamo z registra DPH (FS SR s paragrafom registrácie, Registr
+    plátců DPH s typom subjektu). Ten je presný, a tak prebije aj predvoleného
+    „neplatiteľa“, s ktorým formulár začína. Režim, ktorý človek vybral inak,
+    ostáva — prepíše ho len výslovné vyhľadanie (mode „overwrite“).
+  */
+  const rezimRegistra =
+    jeSchemaDph(d.vatScheme) && schemaDph(d.vatScheme).krajina === krajina ? d.vatScheme : null;
+  const predvoleny =
+    !uzVybrate ||
+    (!(prev as any).vat_payer && (prev as any).vat_scheme === predvolenaSchema(krajina, false));
+  if (rezimRegistra && "vat_scheme" in prev && (opts.mode === "overwrite" || predvoleny)) {
+    return {
+      ...zaklad(prev, d, take, icDph),
+      vat_payer: schemaDph(rezimRegistra).platitel,
+      vat_scheme: rezimRegistra,
+    } as T;
+  }
   const zRegistraPlatitel = krajina === "CZ" && d.vatStatus === "Áno";
   const platitel = zRegistraPlatitel
     ? true
@@ -62,8 +86,19 @@ export function mergeCompanyAutofill<T extends AutofillTarget>(
     : predvolenaSchema(krajina, Boolean(platitel));
 
   return {
-    ...prev,
+    ...zaklad(prev, d, take, icDph),
     ...("vat_scheme" in prev ? { vat_payer: Boolean(platitel), vat_scheme: schema } : {}),
+  } as T;
+}
+
+function zaklad<T extends AutofillTarget>(
+  prev: T,
+  d: NormalizedCompany,
+  take: <K extends keyof AutofillTarget>(key: K, value: AutofillTarget[K]) => AutofillTarget[K],
+  icDph: AutofillTarget["ic_dph"],
+) {
+  return {
+    ...prev,
     ico: take("ico", d.ico),
     name: take("name", d.name) || (prev as any).name || "",
     dic: take("dic", d.dic ?? null),
@@ -72,7 +107,7 @@ export function mergeCompanyAutofill<T extends AutofillTarget>(
     city: take("city", d.city ?? null),
     zip: take("zip", d.zip ?? null),
     country: take("country", kodKrajiny(d.country) || "SK"),
-  } as T;
+  };
 }
 
 /**

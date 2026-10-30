@@ -12,6 +12,7 @@ import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 
 import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
 import { VyberRezimuDph } from "@/components/faktero/VyberRezimuDph";
+import { PlatitelDphRegister } from "@/components/faktero/PlatitelDphRegister";
 import { UpozornenieKleinunternehmer } from "@/components/faktero/UpozornenieKleinunternehmer";
 import { zosuladSchemu } from "@/lib/faktero/dph-rezim";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
@@ -51,7 +52,18 @@ function CompanyPage() {
     e.preventDefault();
     // IBAN a SWIFT spravujú Bankové účty nižšie — uloženie firmy ich nesmie
     // prepísať hodnotou z času, keď sa stránka otvorila.
-    const { id, created_at, updated_at, created_by, iban: _iban, swift: _swift, ...patch } = c;
+    // Stav overenia v registri DPH zapisuje len server — staré hodnoty z načítania sa neposielajú.
+    const {
+      id,
+      created_at,
+      updated_at,
+      created_by,
+      iban: _iban,
+      swift: _swift,
+      dph_overit_od: _overit,
+      dph_overene_at: _overene,
+      ...patch
+    } = c;
     const { error } = await supabase.from("companies").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
     // Krajina určuje sadzby DPH a formuláre si ju pamätajú — po zmene sa musí
@@ -188,6 +200,16 @@ function CompanyPage() {
             onZmena={({ platitel, schema }) =>
               setC((prev: any) => ({ ...prev, vat_payer: platitel, vat_scheme: schema }))
             }
+          />
+          <PlatitelDphRegister
+            companyId={c.id}
+            firma={c}
+            onAuto={(zapnute) => setC((prev: any) => ({ ...prev, dph_auto_overenie: zapnute }))}
+            onPrevzate={(zmena) => {
+              setC((prev: any) => ({ ...prev, ...zmena }));
+              // Formuláre si pamätajú režim DPH firmy — po zmene ho treba zabudnúť.
+              zabudniRezimDph(c.id);
+            }}
           />
           <div className="sm:col-span-2 empty:hidden">
             <UpozornenieKleinunternehmer firma={c} />

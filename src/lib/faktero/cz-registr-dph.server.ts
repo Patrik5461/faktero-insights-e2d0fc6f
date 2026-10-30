@@ -99,3 +99,74 @@ export async function stavPlatceDph(
   if (pamat.size > 5000) pamat.clear();
   return stav;
 }
+
+const AKCIA_SUBJEKT = "http://adis.mfcr.cz/rozhraniCRPDPH/getStatusNespolehlivySubjektRozsirenyV2";
+
+export type TypSubjektu = {
+  dic: string;
+  /** PLATCE_DPH, IDENTIFIKOVANA_OSOBA, SKUPINA_DPH, NENALEZEN, NESPOLEHLIVA_OSOBA. */
+  typ: string;
+  nespolehlivy: boolean;
+  nazov: string | null;
+  cisloFu: string | null;
+  odpovedGenerovana: string | null;
+};
+
+/** Odpoveď `getStatusNespolehlivySubjektRozsirenyV2` — typ subjektu DPH. */
+export function rozparsujSubjekt(xml: string): {
+  kod: number;
+  text: string;
+  subjekty: TypSubjektu[];
+} {
+  const p = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "",
+    removeNSPrefix: true,
+    isArray: (meno) => meno === "statusSubjektu",
+  });
+  const d: any = p.parse(xml);
+  const telo = d?.Envelope?.Body?.StatusNespolehlivySubjektRozsirenyResponse ?? {};
+  const status = telo.status ?? {};
+  const subjekty: TypSubjektu[] = (telo.statusSubjektu ?? []).map((s: any) => ({
+    dic: text(s.dic),
+    typ: text(s.typSubjektu) || "NENALEZEN",
+    nespolehlivy: text(s.nespolehlivyPlatce) === "ANO",
+    nazov: s.nazevSubjektu ? text(s.nazevSubjektu).replace(/\s+/g, " ") : null,
+    cisloFu: s.cisloFu ? text(s.cisloFu) : null,
+    odpovedGenerovana: status.odpovedGenerovana ? text(status.odpovedGenerovana) : null,
+  }));
+  return { kod: Number(status.statusCode ?? -1), text: text(status.statusText), subjekty };
+}
+
+/**
+ * Typ subjektu DPH podľa DIČ (bez CZ) — plátce, identifikovaná osoba, skupina,
+ * alebo nenalezen. Na rozdiel od `stavPlatceDph` rozlíši identifikovanú osobu,
+ * ktorá DIČ má, no plátcom nie je. Vyhodí chybu, keď je služba nedostupná.
+ */
+export async function typSubjektuDph(dic: string): Promise<{ subjekt: TypSubjektu; xml: string }> {
+  const kluc = dic.replace(/\D/g, "");
+  const telo =
+    `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:roz="http://adis.mfcr.cz/rozhraniCRPDPH/">` +
+    `<soapenv:Body><roz:StatusNespolehlivySubjektRozsirenyV2Request><roz:dic>${kluc}</roz:dic>` +
+    `</roz:StatusNespolehlivySubjektRozsirenyV2Request></soapenv:Body></soapenv:Envelope>`;
+  const res = await fetch(URL_SLUZBY, {
+    method: "POST",
+    headers: { "content-type": "text/xml; charset=utf-8", SOAPAction: `"${AKCIA_SUBJEKT}"` },
+    body: telo,
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) throw new Error(`Registr plátců DPH odpověděl ${res.status}.`);
+  const xml = await res.text();
+  const o = rozparsujSubjekt(xml);
+  if (o.kod !== 0 && o.kod !== 1)
+    throw new Error(`Registr plátců DPH je nedostupný (${o.text || o.kod}).`);
+  const subjekt = o.subjekty.find((s) => s.dic === kluc) ?? {
+    dic: kluc,
+    typ: "NENALEZEN",
+    nespolehlivy: false,
+    nazov: null,
+    cisloFu: null,
+    odpovedGenerovana: null,
+  };
+  return { subjekt, xml };
+}

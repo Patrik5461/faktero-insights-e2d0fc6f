@@ -328,6 +328,7 @@ import { Route as ApiPublicHooksEfakturaSyncRouteImport } from './routes/api/pub
 import { Route as ApiPublicHooksJazdyDoplnenieRouteImport } from './routes/api/public/hooks/jazdy-doplnenie'
 import { Route as ApiPublicHooksKurzyEcbRouteImport } from './routes/api/public/hooks/kurzy-ecb'
 import { Route as ApiPublicHooksOdovzdanieMesacneRouteImport } from './routes/api/public/hooks/odovzdanie-mesacne'
+import { Route as ApiPublicHooksPlatitelDphRouteImport } from './routes/api/public/hooks/platitel-dph'
 import { Route as ApiPublicHooksPodporaPristupyRouteImport } from './routes/api/public/hooks/podpora-pristupy'
 import { Route as ApiPublicHooksPohodaStrazcaRouteImport } from './routes/api/public/hooks/pohoda-strazca'
 import { Route as ApiPublicHooksPredplatneObnovaRouteImport } from './routes/api/public/hooks/predplatne-obnova'
@@ -2121,6 +2122,12 @@ const ApiPublicHooksOdovzdanieMesacneRoute =
     path: '/api/public/hooks/odovzdanie-mesacne',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksPlatitelDphRoute =
+  ApiPublicHooksPlatitelDphRouteImport.update({
+    id: '/api/public/hooks/platitel-dph',
+    path: '/api/public/hooks/platitel-dph',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksPodporaPristupyRoute =
   ApiPublicHooksPodporaPristupyRouteImport.update({
     id: '/api/public/hooks/podpora-pristupy',
@@ -2735,6 +2742,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/platitel-dph': typeof ApiPublicHooksPlatitelDphRoute
   '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
@@ -3101,6 +3109,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/platitel-dph': typeof ApiPublicHooksPlatitelDphRoute
   '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
@@ -3478,6 +3487,7 @@ export interface FileRoutesById {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/platitel-dph': typeof ApiPublicHooksPlatitelDphRoute
   '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
@@ -3855,6 +3865,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/platitel-dph'
     | '/api/public/hooks/podpora-pristupy'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/predplatne-obnova'
@@ -4221,6 +4232,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/platitel-dph'
     | '/api/public/hooks/podpora-pristupy'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/predplatne-obnova'
@@ -4597,6 +4609,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/platitel-dph'
     | '/api/public/hooks/podpora-pristupy'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/predplatne-obnova'
@@ -4801,6 +4814,7 @@ export interface RootRouteChildren {
   ApiPublicHooksJazdyDoplnenieRoute: typeof ApiPublicHooksJazdyDoplnenieRoute
   ApiPublicHooksKurzyEcbRoute: typeof ApiPublicHooksKurzyEcbRoute
   ApiPublicHooksOdovzdanieMesacneRoute: typeof ApiPublicHooksOdovzdanieMesacneRoute
+  ApiPublicHooksPlatitelDphRoute: typeof ApiPublicHooksPlatitelDphRoute
   ApiPublicHooksPodporaPristupyRoute: typeof ApiPublicHooksPodporaPristupyRoute
   ApiPublicHooksPohodaStrazcaRoute: typeof ApiPublicHooksPohodaStrazcaRoute
   ApiPublicHooksPredplatneObnovaRoute: typeof ApiPublicHooksPredplatneObnovaRoute
@@ -7066,6 +7080,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksOdovzdanieMesacneRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/platitel-dph': {
+      id: '/api/public/hooks/platitel-dph'
+      path: '/api/public/hooks/platitel-dph'
+      fullPath: '/api/public/hooks/platitel-dph'
+      preLoaderRoute: typeof ApiPublicHooksPlatitelDphRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/podpora-pristupy': {
       id: '/api/public/hooks/podpora-pristupy'
       path: '/api/public/hooks/podpora-pristupy'
@@ -8362,6 +8383,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksJazdyDoplnenieRoute: ApiPublicHooksJazdyDoplnenieRoute,
   ApiPublicHooksKurzyEcbRoute: ApiPublicHooksKurzyEcbRoute,
   ApiPublicHooksOdovzdanieMesacneRoute: ApiPublicHooksOdovzdanieMesacneRoute,
+  ApiPublicHooksPlatitelDphRoute: ApiPublicHooksPlatitelDphRoute,
   ApiPublicHooksPodporaPristupyRoute: ApiPublicHooksPodporaPristupyRoute,
   ApiPublicHooksPohodaStrazcaRoute: ApiPublicHooksPohodaStrazcaRoute,
   ApiPublicHooksPredplatneObnovaRoute: ApiPublicHooksPredplatneObnovaRoute,

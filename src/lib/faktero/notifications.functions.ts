@@ -391,6 +391,33 @@ async function notifikaciaSchvalovania(companyId: string, userId: string): Promi
   ];
 }
 
+/*
+  Registrácia DPH podľa registra (FS SR / Registr plátců DPH): zmena
+  registrácie, nesúlad s nastavením firmy, dôvody na zrušenie. Výsledky
+  overení sú v `dph_overenia`, nesúlad sa počíta proti dnešnému nastaveniu.
+*/
+async function notifikacieDph(companyId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const db = supabaseAdmin as any;
+  const [{ data: firma }, { data: zaznamy }] = await Promise.all([
+    db
+      .from("companies")
+      .select("country, ico, dic, ic_dph, vat_payer, vat_scheme")
+      .eq("id", companyId)
+      .maybeSingle(),
+    db
+      .from("dph_overenia")
+      .select("id, overene_at, stav, zdroj, schema, ic_dph, platne_od, zrusene_od, zmena, odpoved")
+      .eq("company_id", companyId)
+      .neq("stav", "chyba")
+      .order("overene_at", { ascending: false })
+      .limit(10),
+  ]);
+  if (!firma) return [];
+  const { upozorneniaDph } = await import("./platitel-dph");
+  return upozorneniaDph(firma, (zaznamy ?? []) as any[], new Date().toISOString().slice(0, 10));
+}
+
 async function vsetkyNotifikacie(companyId: string, userId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // Rola a krajina sa pýtajú súčasne so signálmi, nie až po nich.
@@ -404,7 +431,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
     supabaseAdmin.from("companies").select("country").eq("id", companyId).maybeSingle(),
   ]);
   const zoznam = await (async () => {
-    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie, efaktury] = await Promise.all([
+    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie, efaktury, dph] = await Promise.all([
       zozbierajSignaly(companyId),
       notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
       notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
@@ -413,6 +440,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
       notifikacieKomentarov(companyId, userId).catch(() => [] as AppNotification[]),
       notifikaciaSchvalovania(companyId, userId).catch(() => [] as AppNotification[]),
       notifikacieEfaktur(companyId).catch(() => [] as AppNotification[]),
+      notifikacieDph(companyId).catch(() => [] as AppNotification[]),
     ]);
     // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
     // inak najstaršie (najdlhšie po termíne).
@@ -425,6 +453,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
       ...komentare,
       ...schvalovanie,
       ...efaktury,
+      ...dph,
     ].sort(
       (a, b) => {
         const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];

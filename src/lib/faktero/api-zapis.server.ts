@@ -1119,6 +1119,7 @@ export async function zalozFirmu(ctx: ApiCtx): Promise<Odpoved> {
       .from("api_keys")
       .update({ firmy: [...k.firmy, f.id] })
       .eq("id", k.id);
+  overPlatitelstvoNaPozadi(db, f.id);
   return ok({ objekt: "company", ...f }, 201);
 }
 
@@ -1152,7 +1153,21 @@ export async function upravFirmu(ctx: ApiCtx, id: string): Promise<Odpoved> {
     .select(STL_FIRMY)
     .maybeSingle();
   if (error) return chybaDb(error);
+  if (["ico", "dic", "ic_dph", "country"].some((k) => k in zmena))
+    overPlatitelstvoNaPozadi(ctx.supabase as any, id);
   return ok({ objekt: "company", ...data });
+}
+
+/**
+ * Overenie platiteľstva DPH v registri (FS SR / Registr plátců DPH) po
+ * založení firmy alebo zmene IČO / IČ DPH. Prázdny režim DPH doplní, vyplnený
+ * neprepíše. Beží na pozadí — odpoveď API naň nečaká; keby zlyhalo, firmu
+ * aj tak overí najbližší beh cronu (spúšťač ju zaradil na overenie).
+ */
+function overPlatitelstvoNaPozadi(db: any, companyId: string) {
+  void import("./platitel-dph.server")
+    .then((m) => m.overFirmu(db, companyId, { sposob: "zmena" }))
+    .catch((e) => console.warn("[platitel-dph] API:", String(e?.message ?? e)));
 }
 
 /** Členovia firmy — e-mail a rola (kľúč účtu aj kľúč firmy). */

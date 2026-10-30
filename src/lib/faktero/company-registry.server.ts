@@ -129,6 +129,49 @@ export async function clearCompanyCache(icoInput: string): Promise<void> {
  * ďalej len cez FinStat.
  */
 export async function lookupCompany(icoInput: string): Promise<RegistryLookupResult> {
+  return sRezimomDph(await lookupCompanyBezRezimu(icoInput));
+}
+
+/** Na odpoveď registra sa nečaká dlhšie — formulár sa vyplní aj bez režimu DPH. */
+const CAKANIE_NA_REZIM_MS = 8000;
+
+/**
+ * Doplní režim DPH (paragraf registrácie) z registra FS SR alebo z Registra
+ * plátců DPH. FinStat a ARES povedia len IČ DPH, z ktorého sa platiteľstvo
+ * odvodiť nedá (§ 7, § 7a, identifikovaná osoba). Výpadok registra lookup
+ * nezhodí — režim potom ostane prázdny a vyberie ho človek.
+ */
+async function sRezimomDph(r: RegistryLookupResult): Promise<RegistryLookupResult> {
+  if (r.status !== "ok") return r;
+  try {
+    const { overVRegistri } = await import("./platitel-dph.server");
+    const krajina = /^(CZ|ČESK|CESK|CZECH)/i.test(String(r.data.country ?? "")) ? "CZ" : "SK";
+    const v = await Promise.race([
+      overVRegistri({
+        country: krajina,
+        ico: r.data.ico,
+        dic: r.data.dic,
+        ic_dph: r.data.ic_dph,
+      }),
+      new Promise<null>((res) => setTimeout(() => res(null), CAKANIE_NA_REZIM_MS)),
+    ]);
+    if (!v || v.stav === "chyba" || !v.schema) return r;
+    return {
+      ...r,
+      data: {
+        ...r.data,
+        vatScheme: v.schema,
+        ic_dph: r.data.ic_dph || v.icDph,
+        vatStatus: v.stav === "platitel" ? "Áno" : r.data.vatStatus,
+      },
+    };
+  } catch (e) {
+    console.warn("[company-registry] režim DPH:", String((e as Error)?.message ?? e));
+    return r;
+  }
+}
+
+async function lookupCompanyBezRezimu(icoInput: string): Promise<RegistryLookupResult> {
   const r = await lookupCompanyFinstat(icoInput);
   const cz = r.status === "ok" ? /^(CZ|ČESK|CESK|CZECH)/i.test(String(r.data.country ?? "")) : true;
   if (!cz) return r;

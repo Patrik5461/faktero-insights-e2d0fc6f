@@ -8,7 +8,14 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
-import { popisSchemy, schemyKrajiny, zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
+import {
+  jePlatitel,
+  jeSchemaDph,
+  popisSchemy,
+  schemyKrajiny,
+  zosuladSchemu,
+  type SchemaDph,
+} from "@/lib/faktero/dph-rezim";
 import { krajinaDane } from "@/lib/faktero/vat-rates";
 /**
  * Založenie firmy priamo v telefóne.
@@ -79,9 +86,11 @@ export function VytvorFirmu({
           name: p.name || d.name || "",
           dic: p.dic || d.dic || "",
           ic_dph: p.ic_dph || d.ic_dph || "",
-          // Register povie len IČ DPH, nie podľa ktorého paragrafu — platiteľa
-          // teda navrhne a človek si typ registrácie prípadne opraví.
-          vat_payer: p.vat_payer || Boolean(String(d.ic_dph ?? "").trim()),
+          // Režim z registra DPH (paragraf registrácie), keď ho server zistil;
+          // inak sa platiteľ len navrhne podľa IČ DPH a typ si človek opraví.
+          ...(jeSchemaDph(d.vatScheme) && !p.vat_payer
+            ? { vat_payer: jePlatitel(d.vatScheme), vat_scheme: d.vatScheme as SchemaDph }
+            : { vat_payer: p.vat_payer || Boolean(String(d.ic_dph ?? "").trim()) }),
           street: p.street || d.street || "",
           city: p.city || d.city || "",
           zip: p.zip || d.zip || "",

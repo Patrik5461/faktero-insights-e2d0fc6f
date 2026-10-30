@@ -162,7 +162,9 @@ const sections: HelpSection[] = [
         </ul>
         <p>
           Neplatiteľovi sa v doklade ponúka len nulová sadzba a na faktúru pribudne veta, prečo na
-          nej daň nie je. Z registra sa ťahá len IČ DPH — paragraf treba vybrať ručne.
+          nej daň nie je. Typ registrácie Faktero overuje v zozname Finančnej správy (paragraf
+          registrácie a dátum) a českej firme v Registri plátců DPH — pozri{" "}
+          <Link to="/pomoc/nastavenia">Nastavenia firmy</Link>.
         </p>
       </>
     ),

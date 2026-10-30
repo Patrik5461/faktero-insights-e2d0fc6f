@@ -273,7 +273,17 @@ const SEKCIE: HelpSection[] = [
         <p>
           V údajoch firmy sa zaškrtáva <strong>Firma je platiteľ DPH</strong> a vyberá typ
           registrácie — § 4, § 4b alebo § 5 pre platiteľa, § 7, § 7a alebo bez registrácie pre
-          ostatných. Z registra sa ťahá len IČ DPH, paragraf v ňom nie je.
+          ostatných. Pri vyhľadaní podľa IČO sa typ registrácie vyplní zo zoznamu Finančnej správy
+          (českej firme z Registra plátců DPH).
+        </p>
+        <p>
+          Pod výberom je <strong>Overenie v registri DPH</strong>: kedy a čo register naposledy
+          povedal a história registrácie. Zapnuté{" "}
+          <strong>Automaticky overovať platiteľstvo DPH</strong> overuje firmu raz denne a po zmene
+          IČO alebo IČ DPH. Prázdny režim DPH sa doplní sám, vyplnený sa nikdy neprepíše — keď s
+          registrom nesedí, ukáže sa upozornenie s tlačidlom <strong>Prevziať z registra</strong> a
+          ozve sa zvonček. Zvonček hlási aj novú registráciu, jej zrušenie a dôvody na zrušenie,
+          ktoré zverejnila Finančná správa.
         </p>
         <p>
           Voľba rozhoduje o tom, či sa v dokladoch ponúkajú sadzby DPH a aká veta pribudne na
