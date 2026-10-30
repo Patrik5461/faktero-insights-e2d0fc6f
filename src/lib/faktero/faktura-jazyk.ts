@@ -93,6 +93,8 @@ type Popisky = {
   zlava: string;
   spolu: string;
   zuctovanaZaloha: string;
+  /** Riadok rozpisu DPH: záloha zdanená dokladom k prijatej platbe (číslo dokladu za ním). */
+  odpocetZalohy: string;
   uhradene: string;
   spoluKUhrade: string;
   peciatkaPodpis: string;
@@ -177,6 +179,7 @@ const SK: Popisky = {
   zlava: "Zľava",
   spolu: "Spolu",
   zuctovanaZaloha: "Zúčtovaná záloha",
+  odpocetZalohy: "Záloha",
   uhradene: "UHRADENÉ",
   spoluKUhrade: "SPOLU K ÚHRADE",
   peciatkaPodpis: "Pečiatka a podpis",
@@ -239,6 +242,7 @@ const CS: Popisky = {
   zlava: "Sleva",
   spolu: "Celkem",
   zuctovanaZaloha: "Zúčtovaná záloha",
+  odpocetZalohy: "Záloha",
   uhradene: "UHRAZENO",
   spoluKUhrade: "CELKEM K ÚHRADĚ",
   peciatkaPodpis: "Razítko a podpis",
@@ -303,6 +307,7 @@ const EN: Popisky = {
   zlava: "Discount",
   spolu: "Total",
   zuctovanaZaloha: "Advance settled",
+  odpocetZalohy: "Advance",
   uhradene: "PAID",
   spoluKUhrade: "TOTAL DUE",
   peciatkaPodpis: "Stamp and signature",
@@ -371,6 +376,7 @@ const DE: Popisky = {
   zlava: "Rabatt",
   spolu: "Summe",
   zuctovanaZaloha: "Verrechnete Anzahlung",
+  odpocetZalohy: "Anzahlung",
   uhradene: "BEZAHLT",
   spoluKUhrade: "ZAHLBETRAG",
   peciatkaPodpis: "Stempel und Unterschrift",
@@ -441,6 +447,7 @@ const HU: Popisky = {
   zlava: "Kedvezmény",
   spolu: "Összesen",
   zuctovanaZaloha: "Beszámított előleg",
+  odpocetZalohy: "Előleg",
   uhradene: "KIFIZETVE",
   spoluKUhrade: "FIZETENDŐ",
   peciatkaPodpis: "Bélyegző és aláírás",
