@@ -920,10 +920,6 @@
      "text": "<>\nPodpore môžete písať aj cez Telegram — tlačidlo\nNapíšte nám na Telegram je hore na stránke Pomoc a podpora, hneď pri nadpise.\nNájdete ho aj v ponuke pod avatarom ( Napísať na Telegram ) a v mobilnej appke v\nbočnom paneli. Prvá správa založí požiadavku s číslom, ďalšie správy sa pridajú do nej a\nodpoveď podpory príde späť do chatu. Poslať môžete aj snímku obrazovky, fotku alebo PDF\n(do 10 MB).\nChybu v aplikácii nahláste príkazom /chyba , novú požiadavku začnete príkazom\n/nova . Cez Prepojiť s mojím účtom sa chat priradí k vášmu účtu a\npožiadavky z Telegramu potom uvidíte aj v Moje požiadavky ."
     },
     {
-     "nadpis": "Cez WhatsApp",
-     "text": "<>\nPodpore môžete písať aj cez WhatsApp na číslo +421 902 101 967 — tlačidlo\nNapíšte nám na WhatsApp je hore na stránke Pomoc a podpora, v ponuke pod avatarom\naj v pätičke webu. Prvá správa založí požiadavku s číslom, ďalšie správy sa pridajú do nej\na odpoveď podpory príde späť do WhatsAppu. Poslať môžete aj snímku obrazovky, fotku alebo\nPDF (do 10 MB). Príkazy /chyba a /nova fungujú rovnako ako v\nTelegrame.\nCez Prepojiť s mojím účtom sa otvorí WhatsApp s predvyplnenou správou s kódom —\nstačí ju odoslať. Požiadavky z WhatsAppu potom uvidíte aj v Moje požiadavky . Vaše\ntelefónne číslo vidí podpora len skrátené (napríklad +421 ••• ••• 967).\nWhatsApp dovoľuje firmám odpovedať voľným textom len do 24 hodín od vašej poslednej\nsprávy. Ak podpora odpovie neskôr, príde vám krátka správa s číslom požiadavky a celú\nodpoveď dostanete, keď nám znova napíšete (alebo ju uvidíte vo Fakteri a v e-maile, ak\nmáte prepojený účet)."
-    },
-    {
      "nadpis": "Z mobilnej aplikácie",
      "text": "Nahlásenie chyby a odoslanie diagnostiky z appky založí požiadavku rovnako. V appke\ndostanete jej číslo, odpoveď príde e-mailom a celé vlákno uvidíte vo Fakteri na webe."
     }

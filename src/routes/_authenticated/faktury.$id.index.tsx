@@ -76,6 +76,8 @@ import {
   SendHorizontal,
 } from "lucide-react";
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
+import { useProgramOdovzdaniaFaktury } from "@/components/faktero/OdovzdanieDokladu";
+import { popisPoslatOpravu, textPoslatOpravu } from "@/lib/faktero/stav-odovzdania";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { requestInvoiceApproval } from "@/lib/faktero/invoice-approval.functions";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
@@ -108,6 +110,8 @@ import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
+import { nastaveniaExportu } from "@/lib/faktero/export-nastavenia";
+import { OKNO_STORNO_DOKLADU_K_PLATBE, stornoLenRucne } from "@/lib/faktero/storno-dokladu-k-platbe";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu, formatujCislo, formatujJednotkovuCenu, formatujMnozstvo } from "@/lib/faktero/mena";
 /** Ako sa doklad volá — rovnako v hlavičke stránky aj v PDF. */
@@ -187,6 +191,8 @@ function InvoiceDetail() {
   const triggerEvt = useServerFn(triggerEventFn);
   const exportFn = useServerFn(exportInvoicesFn);
   const poslatOpravu = usePoslatOpravuDoPohody();
+  // Kam faktúra odišla (Money, Omega…) — akcia „Poslať opravu“ nesmie tvrdiť Pohodu.
+  const programOdovzdania = useProgramOdovzdaniaFaktury(inv?.id, Boolean(inv?.exported_at));
   const cloneFn = useServerFn(cloneInvoiceFn);
   const [exportBusy, setExportBusy] = useState(false);
   const [cloneBusy, setCloneBusy] = useState(false);
@@ -638,7 +644,18 @@ function InvoiceDetail() {
     // Production-readiness checks
     if (status === "paid" && inv?.status === "cancelled")
       return toast.error(t("Stornovanú faktúru nemožno označiť ako uhradenú."));
-    if (status === "cancelled" && inv?.status === "paid") {
+    if (
+      status === "cancelled" &&
+      inv?.exported_at &&
+      stornoLenRucne(inv.type, nastaveniaExportu(company?.uctovanie_nastavenia).dokladKPlatbe)
+    ) {
+      // Daňový doklad k platbe je v Pohode interný doklad — storno tam treba urobiť ručne.
+      const ok = await potvrd(t(OKNO_STORNO_DOKLADU_K_PLATBE, { cislo: inv.invoice_number ?? "" }), {
+        potvrdit: t("Stornovať"),
+        nebezpecne: true,
+      });
+      if (!ok) return;
+    } else if (status === "cancelled" && inv?.status === "paid") {
       if (!(await potvrd(t("Faktúra je uhradená. Naozaj ju chcete stornovať?")))) return;
     }
     const patch: any = { status };
@@ -1797,9 +1814,11 @@ function InvoiceDetail() {
                   onClick={async () => {
                     if (await poslatOpravu("faktura", inv.company_id, inv.id)) void load();
                   }}
-                  title={t("Faktúra sa vráti z Pohody, aby sa dala opraviť a odovzdať znova")}
+                  title={t(popisPoslatOpravu(programOdovzdania), {
+                    program: programOdovzdania ?? "",
+                  })}
                 >
-                  {t("Poslať opravu do Pohody")}
+                  {t(textPoslatOpravu(programOdovzdania), { program: programOdovzdania ?? "" })}
                 </MenuAkcia>
               )}
               {inv.status !== "sent" && inv.status !== "paid" && (

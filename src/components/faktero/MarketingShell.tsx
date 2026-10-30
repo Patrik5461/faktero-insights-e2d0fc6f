@@ -13,7 +13,9 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <MarketingNav />
-      <main>{children}</main>
+      <main id="obsah" tabIndex={-1} className="outline-none">
+        {children}
+      </main>
       <footer className="border-t border-border/60 bg-card/30">
         <div className="mx-auto max-w-6xl px-6 py-10 space-y-6 text-sm text-muted-foreground">
           <div className="grid gap-6 md:grid-cols-3">

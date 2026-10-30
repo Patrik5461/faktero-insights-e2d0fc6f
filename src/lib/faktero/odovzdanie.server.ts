@@ -326,7 +326,7 @@ export async function zostavBalik(
 
   const cisla = await cislaVPohode(supabase, vstup.companyId);
   const { zalohy, opravovane, povodneCisla } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
-  const storna = await nacitajStorna(supabase, vstup.companyId, cisla);
+  const vsetkyStorna = await nacitajStorna(supabase, vstup.companyId, cisla);
 
   /*
     Partneri „pridať alebo aktualizovať a párovať" (Predkontácie → Export):
@@ -334,6 +334,15 @@ export async function zostavBalik(
   */
   const { nastaveniaExportu } = await import("./export-nastavenia");
   const parovatPartnerov = nastaveniaExportu(company.uctovanie_nastavenia).partneri === "parovat";
+  /*
+    Daňový doklad k platbe je v Pohode interný doklad — ten sa cez XML
+    stornovať nedá. Do storien nejde, súhrn povie, čo urobiť v Pohode ručne.
+  */
+  const { rozdelStorna, hlaskaRucnychStorien } = await import("./storno-dokladu-k-platbe");
+  const { doXml: storna, rucne: stornaRucne } = rozdelStorna(
+    vsetkyStorna,
+    nastaveniaExportu(company.uctovanie_nastavenia).dokladKPlatbe,
+  );
   const partneriDokladov = new Set(
     [...faktury, ...prijate].map((d: Riadok) => String(d.customer_id ?? "")).filter(Boolean),
   );
@@ -602,6 +611,8 @@ export async function zostavBalik(
       buildPohodaMovementsXml({ company, skupiny: zoskupPohyby(pohyby), nastavenia }),
     );
   }
+  const hlaskaStorien = hlaskaRucnychStorien(stornaRucne);
+  if (hlaskaStorien) preskocene.push(hlaskaStorien);
   if (storna.length) {
     // Storno je samostatný súbor zámerne: ruší doklad, ktorý v Pohode už je, a
     // účtovníčka si ho má naimportovať vedome.
@@ -760,7 +771,8 @@ export async function zostavBalik(
           id: String(m.id),
           verzia: String(m.created_at),
         })),
-        ...storna.map((x: { id: string }) => ({
+        // Aj ručné storná — zapíšu sa ako vybavené, aby sa hláška neopakovala.
+        ...[...storna, ...stornaRucne].map((x: { id: string }) => ({
           agenda: "storno",
           id: x.id,
           verzia: new Date().toISOString(),

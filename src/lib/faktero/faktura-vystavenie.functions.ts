@@ -94,6 +94,13 @@ const NovaFaktura = z.object({
    * očísluje nanovo: ľudia už to číslo majú na papieri.
    */
   reserved_number: z.string().max(60).optional().nullable(),
+  /*
+    Daňový režim podľa odberateľa (dodanie do EÚ, vývoz). Appka ho posiela
+    výslovne; staršia verzia ho nepozná a jej faktúra ostáva, ako bola.
+  */
+  reverse_charge: z.boolean().optional(),
+  reverse_charge_type: z.enum(["domestic_69", "eu_b2b", "export"]).nullable().optional(),
+  eu_plnenie: z.enum(["tovar", "sluzba", "trojstranny"]).nullable().optional(),
 });
 
 export const vystavFakturuFn = createServerFn({ method: "POST" })
@@ -145,6 +152,23 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       .is("deleted_at", null)
       .maybeSingle();
     if (!odberatel) throw new Error("Odberateľ sa nenašiel.");
+
+    const { rezimNovejFaktury } = await import("./rezim-odberatela");
+    const { data: firma } = await supabase
+      .from("companies")
+      .select("vat_payer, country")
+      .eq("id", data.company_id)
+      .maybeSingle();
+    const { krajinaDane } = await import("./vat-rates");
+    const rezim = rezimNovejFaktury({
+      vstup: data,
+      krajinaFirmy: krajinaDane(firma?.country),
+      platitel: firma?.vat_payer !== false,
+      odberatel,
+      // Z telefónu sa fakturujú hlavne práce a služby; appka to aj tak posiela výslovne.
+      predvolenePlnenie: "sluzba",
+    });
+    if ("chyba" in rezim) throw new Error(rezim.chyba);
 
     const { computeInvoiceTotals, nextInvoiceNumberDetailed } =
       await import("./invoice-numbering.server");
@@ -303,6 +327,9 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
         advance_invoice_id: zalohy[0]?.id ?? null,
         advance_amount: zalohy.length ? zalohaSpolu : null,
         external_id: data.external_id || null,
+        reverse_charge: rezim.reverse_charge,
+        reverse_charge_type: rezim.reverse_charge_type,
+        eu_plnenie: rezim.eu_plnenie,
       })
       .select("id, invoice_number, total, currency, status, customer_id, external_id")
       .single();

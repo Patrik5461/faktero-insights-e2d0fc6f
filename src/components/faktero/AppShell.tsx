@@ -691,7 +691,7 @@ export function AppShell({
           )}
         </header>
 
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main id="obsah" tabIndex={-1} className="flex min-w-0 flex-1 flex-col outline-none">
           {/* Účtovník doklady zapisuje aj mení. Nedostane sa len k tomu, čo je
             správa firmy — nech to vie skôr, než to začne hľadať. */}
           {active?.role === "accountant" && (

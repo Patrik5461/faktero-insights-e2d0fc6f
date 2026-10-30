@@ -507,7 +507,7 @@ function Landing() {
     <div className="min-h-screen overflow-x-clip bg-background text-foreground antialiased">
       <MarketingNav />
 
-      <main>
+      <main id="obsah" tabIndex={-1} className="outline-none">
         <Hero />
         <TrustRow />
         <PartneriSection />

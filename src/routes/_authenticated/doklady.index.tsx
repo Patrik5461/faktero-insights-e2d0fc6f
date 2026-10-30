@@ -12,6 +12,7 @@ import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
 import { useRadenie } from "@/hooks/useRadenie";
 import { stiahniExcel, tabulka } from "@/lib/faktero/excel-zoznamu";
+import { uhradaSlovom } from "@/lib/faktero/payment-method";
 import { sPolozkami, SELECT_DOKLADOV } from "@/lib/faktero/stlpce-zoznamov";
 import { vsetkyRiadkySubezne } from "@/lib/faktero/strankovanie";
 import { vMesiaci } from "@/lib/faktero/doklady-mesiac";
@@ -659,7 +660,7 @@ function DokladyPage() {
           { nazov: t("DPH"), hodnota: (x: any) => (x.vat_amount == null ? null : Number(x.vat_amount)) },
           { nazov: t("Spolu"), hodnota: (x: any) => (x.total_amount == null ? null : Number(x.total_amount)) },
           { nazov: t("Mena"), hodnota: (x: any) => x.currency },
-          { nazov: t("Úhrada"), hodnota: (x: any) => x.payment_method },
+          { nazov: t("Úhrada"), hodnota: (x: any) => uhradaSlovom(x.payment_method, t) },
           { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
           { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
           { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },

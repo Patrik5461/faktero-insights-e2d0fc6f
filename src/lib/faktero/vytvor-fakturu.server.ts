@@ -42,6 +42,10 @@ export type VstupFaktury = {
   payment_method?: string;
   notes?: string | null;
   job_id?: string | null;
+  /** Daňový režim; bez neho ho určí odberateľ (`rezimNovejFaktury`). */
+  reverse_charge?: boolean;
+  reverse_charge_type?: "domestic_69" | "eu_b2b" | "export" | null;
+  eu_plnenie?: "tovar" | "sluzba" | "trojstranny" | null;
   items: PolozkaFaktury[];
   /**
    * Ďalšie stĺpce faktúry z verejného API (dodaci_list, zobrazit_peciatku,
@@ -107,18 +111,29 @@ export async function vytvorFakturu(
 
   const today = new Date().toISOString().slice(0, 10);
   const issue_date = d.issue_date ?? today;
-  let predvolenaSadzba = 23;
-  if (d.items.some((i) => i.vat_rate === undefined)) {
-    const { krajinaDane, zakladnaSadzba } = await import("./vat-rates");
-    const { data: firma } = await supabase
-      .from("companies")
-      .select("vat_payer, country")
-      .eq("id", companyId)
-      .maybeSingle();
-    predvolenaSadzba =
-      firma?.vat_payer === false ? 0 : zakladnaSadzba(krajinaDane(firma?.country), issue_date);
-  }
-  const polozky = d.items.map((i) => ({ ...i, vat_rate: i.vat_rate ?? predvolenaSadzba }));
+  const { krajinaDane, zakladnaSadzba } = await import("./vat-rates");
+  const { data: firma } = await supabase
+    .from("companies")
+    .select("vat_payer, country")
+    .eq("id", companyId)
+    .maybeSingle();
+  const predvolenaSadzba =
+    firma?.vat_payer === false ? 0 : zakladnaSadzba(krajinaDane(firma?.country), issue_date);
+  const { rezimNovejFaktury } = await import("./rezim-odberatela");
+  const rezim = rezimNovejFaktury({
+    vstup: d,
+    krajinaFirmy: krajinaDane(firma?.country),
+    platitel: firma?.vat_payer !== false,
+    odberatel: cust,
+  });
+  if ("chyba" in rezim)
+    return { ok: false, kod: "validation_error", sprava: rezim.chyba, status: 400 };
+  // Pri prenesení / oslobodení je na riadkoch nula — inak ich odmietne spúšťač v DB.
+  const polozky = d.items.map((i) => ({
+    ...i,
+    vat_rate: rezim.reverse_charge ? 0 : (i.vat_rate ?? predvolenaSadzba),
+    ...(rezim.reverse_charge && i.subtotal !== undefined ? { vat_amount: 0 } : {}),
+  }));
   const { sumyRiadkov } = await import("./api-sumy-riadkov");
   const presne = sumyRiadkov(polozky);
   if ("chyba" in presne)
@@ -168,6 +183,9 @@ export async function vytvorFakturu(
       order_number: d.order_number ?? null,
       external_id: d.external_id ?? null,
       job_id: d.job_id ?? null,
+      reverse_charge: rezim.reverse_charge,
+      reverse_charge_type: rezim.reverse_charge_type,
+      eu_plnenie: rezim.eu_plnenie,
       ...(d.doplnky ?? {}),
       status: "issued",
     })

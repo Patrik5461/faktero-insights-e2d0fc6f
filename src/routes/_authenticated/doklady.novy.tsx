@@ -25,7 +25,12 @@ import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
-import { HistoriaOdovzdania, OpravitZauctovanie } from "@/components/faktero/OdovzdanieDokladu";
+import {
+  HistoriaOdovzdania,
+  OpravitZauctovanie,
+  useProgramOdovzdania,
+} from "@/components/faktero/OdovzdanieDokladu";
+import { textOdovzdanyDoklad, textPoslatOpravu } from "@/lib/faktero/stav-odovzdania";
 import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
@@ -216,6 +221,11 @@ function NovyDokladPage() {
   }, [cid, nacitajKody]);
   // „Poslať opravu do Pohody“ = vrátenie z Pohody (doklad ide späť medzi nespracované).
   const poslatOpravu = usePoslatOpravuDoPohody();
+  // Kam bloček odišiel (Money, Omega…) — štítok a akcia nesmú tvrdiť Pohodu.
+  const programOdovzdania = useProgramOdovzdania(
+    ulozeny?.export_job_id,
+    Boolean(ulozeny?.exported_at),
+  );
   async function vratZPohody() {
     if (!cid || !search.id) return;
     if (!(await poslatOpravu("doklad", cid, search.id))) return;
@@ -721,7 +731,7 @@ function NovyDokladPage() {
               <MenuSkupina label={t("Úpravy a zaúčtovanie")}>
                 {ulozeny.exported_at ? (
                   <MenuAkcia ikona={SendHorizontal} onClick={() => void vratZPohody()}>
-                    {t("Poslať opravu do Pohody")}
+                    {t(textPoslatOpravu(programOdovzdania), { program: programOdovzdania ?? "" })}
                   </MenuAkcia>
                 ) : (
                   <MenuAkcia ikona={ulozeny.locked_at ? LockOpen : Lock} onClick={() => void prepniZamok()}>
@@ -1323,7 +1333,7 @@ function NovyDokladPage() {
                 </div>
                 {ulozeny?.exported_at && (
                   <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">
-                    {t("Doklad je odovzdaný do Pohody — zmeny sa tam už neprenesú.")}
+                    {t(textOdovzdanyDoklad(programOdovzdania), { program: programOdovzdania ?? "" })}
                     <span className="ml-auto flex flex-wrap gap-2">
                       <OpravitZauctovanie
                         row={ulozeny}
@@ -1337,7 +1347,7 @@ function NovyDokladPage() {
                         onClick={vratZPohody}
                         className="inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-white px-2 py-1 text-xs font-medium hover:bg-amber-100"
                       >
-                        {t("Poslať opravu do Pohody")}
+                        {t(textPoslatOpravu(programOdovzdania), { program: programOdovzdania ?? "" })}
                       </button>
                     </span>
                   </div>

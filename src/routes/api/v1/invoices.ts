@@ -46,6 +46,13 @@ const InvoiceInput = z.object({
   payment_method: z.string().max(40).optional().default("bank_transfer"),
   notes: z.string().max(5000).optional().nullable(),
   job_id: z.string().uuid().optional().nullable(),
+  /*
+    Daňový režim. Bez neho ho určí odberateľ (IČ DPH iného štátu EÚ → dodanie
+    do EÚ, krajina mimo EÚ → vývoz) — pozri `navrhRezimuDph`.
+  */
+  reverse_charge: z.boolean().optional(),
+  reverse_charge_type: z.enum(["domestic_69", "eu_b2b", "export"]).optional().nullable(),
+  eu_plnenie: z.enum(["tovar", "sluzba", "trojstranny"]).optional().nullable(),
   items: z.array(Item).min(1).max(200),
 });
 

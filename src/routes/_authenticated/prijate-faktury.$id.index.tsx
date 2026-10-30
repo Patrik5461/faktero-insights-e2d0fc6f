@@ -64,6 +64,8 @@ import {
   Printer,
 } from "lucide-react";
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
+import { useProgramOdovzdania } from "@/components/faktero/OdovzdanieDokladu";
+import { popisPoslatOpravu, textPoslatOpravu } from "@/lib/faktero/stav-odovzdania";
 import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 import { SpracovalDokladu } from "@/components/faktero/SpracovalDokladu";
@@ -157,6 +159,8 @@ function PurchaseInvoiceDetail() {
   const payInvoice = useServerFn(payPurchaseInvoice);
   const loadPayments = useServerFn(listPayments);
   const poslatOpravu = usePoslatOpravuDoPohody();
+  // Kam faktúra odišla (Money, Omega…) — akcia „Poslať opravu“ nesmie tvrdiť Pohodu.
+  const programOdovzdania = useProgramOdovzdania(row?.export_job_id, Boolean(row?.exported_at));
   const refreshPayment = useServerFn(refreshPaymentStatus);
   const uhradyFaktury = useUhradyPrijatej(row);
 
@@ -479,9 +483,11 @@ function PurchaseInvoiceDetail() {
             onClick={async () => {
               if (await poslatOpravu("prijata", row.company_id, row.id)) void load();
             }}
-            title={t("Faktúra sa vráti z Pohody, aby sa dala opraviť a odovzdať znova")}
+            title={t(popisPoslatOpravu(programOdovzdania), {
+              program: programOdovzdania ?? "",
+            })}
           >
-            {t("Poslať opravu do Pohody")}
+            {t(textPoslatOpravu(programOdovzdania), { program: programOdovzdania ?? "" })}
           </MenuAkcia>
         )}
         {!row.exported_at && !samo && (

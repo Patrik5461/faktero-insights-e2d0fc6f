@@ -106,6 +106,11 @@ const sections: HelpSection[] = [
           tlačidlom <strong>Vytvoriť zálohu</strong> — beží na pozadí (pri väčšej firme aj niekoľko
           minút), dobehne aj bez vás a ponecháva sa posledných päť záloh.
         </p>
+        <p>
+          Doklady a karty z koša balík nevynechá — sú v samostatnom priečinku „kos“ a do hlavných
+          súborov sa nezapočítavajú. Zmazaná faktúra mohla byť už vystavená a zaúčtovaná, preto ju
+          archivujte rovnako ako ostatné doklady.
+        </p>
       </>
     ),
   },

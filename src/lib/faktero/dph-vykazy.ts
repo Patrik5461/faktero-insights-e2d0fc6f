@@ -315,6 +315,77 @@ export function kvVystavenej(kod: string | null | undefined): string | null {
 /** Hranica, od ktorej sa zjednodušené faktúry rozpisujú po dodávateľoch (§ 78a). */
 export const HRANICA_B3 = 3000;
 
+/**
+ * Riadok KV prijatej faktúry (`kv-urcenie.ts`, rovnako ako export do Pohody):
+ * bez nároku na odpočet a s členením „nezahrnovať“ (PN) do B.2 nepatrí,
+ * nadobudnutie z EÚ samozdaní Faktero priamo z faktúry (B.1).
+ */
+function kodPrijatejFaktury(p: PrijataFaktura): string {
+  return kvPrijatehoDokladu({
+    kvDokladu: p.kv,
+    predvolene: p.kvPredvolene,
+    blocek: false,
+    dobropis: p.dobropis ?? Boolean(p.opravujeCislo),
+    pdp: p.rezim === "samozdanenie",
+    rezim: p.rezim,
+    maDph: p.riadky.some((r) => Math.abs(r.dan) >= 0.005),
+    odpocet: p.odpocet,
+    clenenieDph: p.clenenieDph,
+    nadobudnutieDoB1: true,
+  });
+}
+
+/** Riadok KV bločku / zjednodušenej faktúry: B2 = plnohodnotná faktúra, inak B.3. */
+function kodPrijatehoDokladu(d: PrijatyDoklad): string {
+  return kvPrijatehoDokladu({
+    kvDokladu: d.kv,
+    predvolene: d.kvPredvolene,
+    blocek: true,
+    dobropis: false,
+    pdp: false,
+    maDph: d.riadky.some((r) => Math.abs(r.dan) >= 0.005),
+    odpocet: d.odpocet,
+    clenenieDph: d.clenenieDph,
+  });
+}
+
+/*
+  Odpočet bez IČ DPH dodávateľa. Právo na odpočet podľa § 49 ods. 2 písm. a)
+  sa uplatní, len ak platiteľ „má faktúru od dodávateľa (platiteľa) vyhotovenú
+  podľa § 71“ (poučenie k DPH2025, bod 37; § 51 ods. 1 písm. a)) a faktúra
+  podľa § 74 ods. 1 písm. a) nesie IČ DPH dodávateľa. Časť B.2 KV obsahuje
+  práve faktúry, „z ktorých uplatňuje odpočítanie dane“ (MP ku KV, 3.2.2) —
+  čo nejde do B.2, nejde ani do r. 18–21 priznania a naopak. Keď IČ DPH
+  dodávateľa chýba (často je na papieri, len nebolo prepísané), faktúra
+  vypadne z oboch a výtka povie, čo doplniť. Neskôr ju možno odpočítať
+  do konca roka (§ 51 ods. 2) — po doplnení vojde do výkazu sama.
+*/
+
+/** Text výtky — aj kľúč prekladu (výkazy ho ukážu cez t()). */
+export const VYTKA_ODPOCET_BEZ_IC_DPH =
+  "Chýba IČ DPH dodávateľa — bez neho sa DPH odpočítať nedá, faktúra preto nie je v odpočte priznania (r. 18–21) ani v časti B.2. Doplňte IČ DPH dodávateľa na faktúre.";
+export const VYTKA_DOKLAD_B2_BEZ_UDAJOV =
+  "Doklad označený pre B.2 nemá číslo alebo IČ DPH dodávateľa — nie je v odpočte priznania ani v kontrolnom výkaze. Doplňte ich, alebo doklad preraďte do B.3 (zjednodušená faktúra).";
+
+/** Prijatá faktúra patrí do B.2, ale bez IČ DPH dodávateľa sa z nej odpočítať nedá. */
+export function prijataBezIcDphNaOdpocet(p: PrijataFaktura): boolean {
+  return (
+    p.odpocet &&
+    p.rezim !== "dovoz" &&
+    kodPrijatejFaktury(p) === "B2" &&
+    !p.dodavatelIcDph?.trim()
+  );
+}
+
+/** Doklad ručne označený pre B.2 bez čísla alebo IČ DPH — do odpočtu ani do KV nejde. */
+export function dokladB2BezUdajov(d: PrijatyDoklad): boolean {
+  return (
+    d.odpocet &&
+    kodPrijatehoDokladu(d) === "B2" &&
+    (!d.dodavatelIcDph?.trim() || !String(d.cislo ?? "").trim())
+  );
+}
+
 export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
   const vykaz: KontrolnyVykaz = {
     a1: [],
@@ -450,23 +521,7 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
   /** Prijaté faktúry, ktoré majú ručne zvolené B.3 — idú do súhrnu so zjednodušenými. */
   const prijateDoB3: PrijatyDoklad[] = [];
   for (const p of vstup.prijate) {
-    /*
-      Riadok KV určuje `kv-urcenie.ts` ako v exporte do Pohody: bez nároku na
-      odpočet a s členením „nezahrnovať“ (PN) do B.2 nepatrí. Nadobudnutie
-      z EÚ samozdaní Faktero priamo z faktúry (B.1).
-    */
-    const kod = kvPrijatehoDokladu({
-      kvDokladu: p.kv,
-      predvolene: p.kvPredvolene,
-      blocek: false,
-      dobropis: p.dobropis ?? Boolean(p.opravujeCislo),
-      pdp: p.rezim === "samozdanenie",
-      rezim: p.rezim,
-      maDph: p.riadky.some((r) => Math.abs(r.dan) >= 0.005),
-      odpocet: p.odpocet,
-      clenenieDph: p.clenenieDph,
-      nadobudnutieDoB1: true,
-    });
+    const kod = kodPrijatejFaktury(p);
     if (!kod) continue;
 
     if (kod === "C2") {
@@ -514,6 +569,11 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
     }
     const doB1 = kod === "B1";
     if (p.rezim === "dovoz") continue; // dovoz sa vykazuje len v priznaní
+    if (!doB1 && !p.dodavatelIcDph?.trim()) {
+      // Rovnaké pravidlo vyradí faktúru aj z odpočtu v priznaní (prijataBezIcDphNaOdpocet).
+      vykaz.vytky.push({ doklad: p.cislo, text: VYTKA_ODPOCET_BEZ_IC_DPH });
+      continue;
+    }
 
     for (const r of p.riadky) {
       if (r.sadzba <= 0 && r.dan === 0) continue;
@@ -526,18 +586,8 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
         s: Math.round(r.sadzba),
         o: centy(p.odpocet ? r.dan * (p.podielOdpoctu ?? 1) : 0),
       };
-      if (doB1) {
-        vykaz.b1.push(riadok);
-      } else {
-        if (!riadok.dod) {
-          vykaz.vytky.push({
-            doklad: p.cislo,
-            text: "Prijatá faktúra nemá IČ DPH dodávateľa — časť B.2 ho vyžaduje.",
-          });
-          continue;
-        }
-        vykaz.b2.push(riadok);
-      }
+      if (doB1) vykaz.b1.push(riadok);
+      else vykaz.b2.push(riadok);
     }
   }
 
@@ -568,32 +618,24 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
     medzi doklady) — ide po riadkoch s číslom a IČ DPH dodávateľa. „X" do
     výkazu nejde vôbec. Ostatné sú zjednodušené faktúry v B.3.
   */
-  const kodDokladu = (d: PrijatyDoklad) =>
-    kvPrijatehoDokladu({
-      kvDokladu: d.kv,
-      predvolene: d.kvPredvolene,
-      blocek: true,
-      dobropis: false,
-      pdp: false,
-      maDph: d.riadky.some((r) => Math.abs(r.dan) >= 0.005),
-      odpocet: d.odpocet,
-      clenenieDph: d.clenenieDph,
-    });
+  const kodDokladu = kodPrijatehoDokladu;
   for (const d of vstup.doklady) {
     if (kodDokladu(d) !== "B2" || !d.odpocet) continue;
+    if (dokladB2BezUdajov(d)) {
+      // Vypadne aj z odpočtu v priznaní — KV a priznanie musia sedieť.
+      vykaz.vytky.push({
+        doklad: d.cislo || d.dodavatelNazov || "doklad",
+        text: VYTKA_DOKLAD_B2_BEZ_UDAJOV,
+      });
+      continue;
+    }
+    const dod = String(d.dodavatelIcDph).trim();
+    const cislo = String(d.cislo).trim();
     for (const r of d.riadky) {
       if (r.sadzba <= 0 && r.dan === 0) continue;
-      const dod = d.dodavatelIcDph?.trim() || undefined;
-      if (!dod || !d.cislo) {
-        vykaz.vytky.push({
-          doklad: d.cislo || d.dodavatelNazov || "doklad",
-          text: "Doklad označený pre B.2 potrebuje číslo a IČ DPH dodávateľa.",
-        });
-        break;
-      }
       vykaz.b2.push({
         dod,
-        f: d.cislo,
+        f: cislo,
         den: String(d.datum ?? ""),
         z: centy(r.zaklad),
         d: centy(r.dan),
@@ -783,6 +825,9 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
       continue;
     }
     if (f.prenosDane && f.prenosTyp === "export") {
+      // Služba s miestom dodania mimo EÚ (§ 15 ods. 1) nie je predmetom dane
+      // v tuzemsku a v priznaní sa neuvádza; r. 15 je vývoz tovaru (§ 47).
+      if (f.euPlnenie === "sluzba") continue;
       const zaklad = oslobodeny();
       pripocitaj("r13", zaklad);
       pripocitaj("r15", zaklad);
@@ -818,6 +863,8 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
 
   for (const p of vstup.prijate) {
     if (p.rezim === "bez_dane") continue;
+    // Bez IČ DPH dodávateľa niet z čoho odpočítať — vypadne aj z B.2 (výtka v KV).
+    const bezOdpoctu = prijataBezIcDphNaOdpocet(p);
     for (const x of p.riadky) {
       const pasmo = pasmoSadzby(x.sadzba, p.datumDodania);
 
@@ -849,7 +896,7 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
         pripocitaj(rd, x.dan);
       }
 
-      if (!p.odpocet || !pasmo) continue;
+      if (!p.odpocet || bezOdpoctu || !pasmo) continue;
       const odp = centy(x.dan * (p.podielOdpoctu ?? 1));
       const [celkom, tuzemsko, dovoz] =
         pasmo === "zakladna"
@@ -869,7 +916,7 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
   }
 
   for (const d of vstup.doklady) {
-    if (!d.odpocet) continue;
+    if (!d.odpocet || dokladB2BezUdajov(d)) continue;
     for (const x of d.riadky) {
       if (x.dan === 0) continue;
       // Bloček je vždy tuzemské plnenie; sadzbu posúdi cenník ku dňu dokladu.

@@ -778,9 +778,18 @@ const sections: HelpSection[] = [
             <Link to="/pomoc/oss">manuáli k OSS</Link>.
           </li>
           <li>
-            <strong>Mimo EÚ</strong> — vývoz oslobodený podľa § 47.
+            <strong>Mimo EÚ</strong> — tovar je vývoz oslobodený podľa § 47, služba má miesto
+            dodania mimo EÚ (§ 15 ods. 1) a slovenskej DPH nepodlieha.
           </li>
         </ul>
+        <p>
+          Režim sa nastaví sám podľa odberateľa: firma s IČ DPH iného štátu EÚ dostane faktúru bez
+          DPH ako dodanie do EÚ, odberateľ mimo EÚ ako vývoz alebo službu mimo EÚ — s príslušnou
+          vetou na faktúre. Či ide o tovar, Faktero pozná zo skladu alebo colného kódu položky,
+          inak navrhne službu; druh plnenia vždy skontrolujte. Občanovi z EÚ bez IČ DPH ostáva DPH a
+          formulár pripomenie OSS. Keď režim zmeníte ručne, návrh ho už neprepíše. Rovnako to robí
+          appka aj API, ak im režim výslovne nepošlete.
+        </p>
       </>
     ),
   },

@@ -8,6 +8,8 @@ import {
   type AppNotification,
   type NotificationInput,
   notifikaciaNespracovanych,
+  notifikaciaLehoty,
+  notifikaciaOdpovedeNaPonuku,
 } from "./notifications";
 import { pripomienkyZamestnancov } from "./zamestnanci";
 import { agendaPreKrajinu } from "./agendy-krajiny";
@@ -174,14 +176,9 @@ async function lehotyOstatnych(companyId: string): Promise<AppNotification[]> {
     .lte("due_date", o7.toISOString().slice(0, 10))
     .order("due_date")
     .limit(LIMIT);
-  return lehotyNaUpozornenie((data ?? []) as any, dnes).map((d) => ({
-    key: `ostatne-lehota:${d.id}:${d.due_date}`,
-    severity: d.po ? ("danger" as const) : ("warning" as const),
-    title: `${d.po ? "Zmeškaná lehota" : "Blíži sa lehota"}: ${nazovDruhu(d.kind)}`,
-    detail: [d.sender, d.subject, `lehota ${d.due_date}`].filter(Boolean).join(" · "),
-    to: "/ostatne-doklady",
-    date: String(d.due_date),
-  }));
+  return lehotyNaUpozornenie((data ?? []) as any, dnes).map((d) =>
+    notifikaciaLehoty(d, nazovDruhu(d.kind)),
+  );
 }
 
 /** Iné doklady (listy, predpisy, exekúcie) čakajúce na spracovanie. */
@@ -273,21 +270,7 @@ async function notifikacieOdpovediNaPonuky(companyId: string): Promise<AppNotifi
     .order("responded_at", { ascending: false })
     .limit(10);
 
-  return (data ?? []).map((q: any) => ({
-    key: `ponuka-odpoved:${q.id}:${q.status}`,
-    severity: q.status === "accepted" ? "info" : "info",
-    title:
-      q.status === "accepted" ? "Ponuka {cislo} bola prijatá" : "Ponuka {cislo} bola zamietnutá",
-    params: { cislo: q.quote_number ?? "" },
-    detail:
-      q.status === "accepted"
-        ? `${q.customer_name ?? "Odberateľ"} ponuku prijal — dá sa premeniť na faktúru.`
-        : q.response_note
-          ? `${q.customer_name ?? "Odberateľ"}: ${String(q.response_note).slice(0, 120)}`
-          : `${q.customer_name ?? "Odberateľ"} ponuku zamietol.`,
-    to: "/ponuky",
-    date: String(q.responded_at ?? "").slice(0, 10),
-  }));
+  return (data ?? []).map((q: any) => notifikaciaOdpovedeNaPonuku(q));
 }
 
 /*

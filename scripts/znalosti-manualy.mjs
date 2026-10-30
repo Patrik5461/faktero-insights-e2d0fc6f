@@ -12,10 +12,13 @@
  */
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { vyradPodmienene, zapnutePodmienky } from "./znalosti-podmienky.mjs";
 
 const KOREN = path.resolve(import.meta.dirname, "..");
 const PRIECINOK = path.join(KOREN, "src/routes");
 const VYSTUP = path.join(KOREN, "src/lib/faktero/znalosti-manualy.json");
+/** Podmienené sekcie (WhatsApp…) idú do bázy len pri zapnutej integrácii. */
+const ZAPNUTE = zapnutePodmienky(process.env);
 
 /** JSX na čistý text: značky preč, odkazy ostanú ako „text (cesta)". */
 function naText(jsx) {
@@ -64,12 +67,13 @@ function vytiahni(subor) {
     path.basename(subor);
 
   const sekcie = [];
-  // Každá položka poľa `sections` má `title` a `body`.
-  const re = /title:\s*"([^"]+)",\s*\n\s*body:\s*\(([\s\S]*?)\n\s*\),\s*\n\s*\},/g;
+  // Každá položka poľa `sections` má `title` a `body`, väčšinou aj `id`.
+  const re =
+    /(?:id:\s*"([^"]+)",\s*\n\s*)?title:\s*"([^"]+)",\s*\n\s*body:\s*\(([\s\S]*?)\n\s*\),\s*\n\s*\},/g;
   let m;
   while ((m = re.exec(zdroj))) {
-    const text = naText(m[2]);
-    if (text.length > 20) sekcie.push({ nadpis: m[1], text });
+    const text = naText(m[3]);
+    if (text.length > 20) sekcie.push({ id: m[1], nadpis: m[2], text });
   }
   /*
     Dve stránky (online platby, videá) sekcie nemajú — sú napísané ako obyčajné
@@ -87,7 +91,12 @@ function vytiahni(subor) {
     }
   }
 
-  return sekcie.length ? { cesta, titulok, sekcie } : null;
+  // `id` slúži len na vyradenie podmienených sekcií — do JSON nejde.
+  const ostatne = vyradPodmienene(cesta, sekcie, ZAPNUTE).map(({ nadpis, text }) => ({
+    nadpis,
+    text,
+  }));
+  return ostatne.length ? { cesta, titulok, sekcie: ostatne } : null;
 }
 
 const subory = readdirSync(PRIECINOK)

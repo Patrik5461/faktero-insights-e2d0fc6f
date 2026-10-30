@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Split, Trash2 } from "lucide-react";
 import { ulozRozuctovanieFn } from "@/lib/faktero/zauctovanie.functions";
 import {
+  bezPrazdnychRiadkov,
   chybaRozuctovania,
   dorovnaj,
   dphZoZakladu,
@@ -60,8 +61,10 @@ export function RozuctovaniePanel({
     [rozpis],
   );
   const zvysok = zostava(riadky, rozpis);
-  const chyba = chybaRozuctovania(riadky, rozpis);
-  const zmenene = JSON.stringify(riadky) !== JSON.stringify(povodne);
+  // Nevyplnený riadok (bez predkontácie, s nulovou sumou) sa neuloží ani nekontroluje.
+  const naUlozenie = bezPrazdnychRiadkov(riadky);
+  const chyba = chybaRozuctovania(naUlozenie, rozpis);
+  const zmenene = JSON.stringify(naUlozenie) !== JSON.stringify(povodne);
 
   if (!rozpis.length) return null;
 
@@ -308,7 +311,7 @@ export function RozuctovaniePanel({
         <button
           type="button"
           disabled={busy || zamknute || !!chyba || !zmenene}
-          onClick={() => ulozit(riadky)}
+          onClick={() => ulozit(naUlozenie)}
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}

@@ -344,7 +344,17 @@ export async function zostavDavku(
   // Väzby na doklady, ktoré v Pohode už sú: storno zrušenej faktúry, dobropis k
   // pôvodnej faktúre a odpočet zálohy na konečnej.
   const cisla = await cislaVPohode(supabase, vstup.companyId);
-  const storna = lenBezny ? await nacitajStorna(supabase, vstup.companyId, cisla) : [];
+  const vsetkyStorna = lenBezny ? await nacitajStorna(supabase, vstup.companyId, cisla) : [];
+  /*
+    Daňový doklad k platbe je v Pohode interný doklad — ten sa cez XML
+    stornovať nedá. Do dávky nejde, súhrn povie, čo urobiť v Pohode ručne.
+  */
+  const { rozdelStorna, hlaskaRucnychStorien } = await import("./storno-dokladu-k-platbe");
+  const { doXml: storna, rucne: stornaRucne } = rozdelStorna(
+    vsetkyStorna,
+    nastaveniaExportu(company.uctovanie_nastavenia).dokladKPlatbe,
+  );
+  const hlaskaStorien = hlaskaRucnychStorien(stornaRucne);
   const { zalohy, opravovane, povodneCisla } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
 
   const prazdna =
@@ -549,7 +559,8 @@ export async function zostavDavku(
       zasoby,
       zakazkyNove,
       pohyby,
-      storna,
+      // Aj ručné storná — zapíšu sa ako vybavené, aby sa hláška neopakovala v každej dávke.
+      storna: [...storna, ...stornaRucne],
     });
   }
 
@@ -566,7 +577,7 @@ export async function zostavDavku(
     zakaziek: zakazkyNove.length,
     pohybov: pohyby.length,
     storien: storna.length,
-    preskocene: [...preskocene, ...preskoceneDoklady],
+    preskocene: [...preskocene, ...preskoceneDoklady, ...(hlaskaStorien ? [hlaskaStorien] : [])],
     ciselniky,
   };
 }

@@ -46,7 +46,8 @@ export async function zostavBalikFirmy(
   data: VstupBalika,
   limity: { maxPdf: number; maxSkenov: number },
 ): Promise<VysledokBalika> {
-  const { naCsv, nazovSuboru, sprievodnyText } = await import("./export-firmy");
+  const { naCsv, nazovSuboru, sprievodnyText, rozdelPodlaKosa, PRIECINOK_KOSA } =
+    await import("./export-firmy");
   const JSZip = (await import("jszip")).default;
 
   const { data: firma } = await supabase
@@ -123,35 +124,63 @@ export async function zostavBalikFirmy(
         .range(zac, kon),
   );
 
+  // Kôš (`deleted_at`) ide do samostatného priečinka, nie preč — pozri
+  // `rozdelPodlaKosa`. Rozdeľuje sa každá tabuľka, aby sa na stĺpec
+  // nezabudlo, keď ho niektorá ďalšia dostane.
+  const fakturyKos = rozdelPodlaKosa(faktury);
+  const idVKosi = new Set(fakturyKos.vKosi.map((f) => String(f.id)));
+  const polozkyKos = {
+    zive: polozky.filter((p) => !idVKosi.has(String(p.invoice_id))),
+    vKosi: polozky.filter((p) => idVKosi.has(String(p.invoice_id))),
+  };
+  const prijateKos = rozdelPodlaKosa(prijate);
+  const dokladyKos = rozdelPodlaKosa(doklady);
+
+  const subory: [
+    string,
+    string,
+    { zive: Record<string, unknown>[]; vKosi: Record<string, unknown>[] },
+  ][] = [
+    ["faktúry", "faktury.csv", fakturyKos],
+    ["položky faktúr", "faktury-polozky.csv", polozkyKos],
+    ["prijaté faktúry", "prijate-faktury.csv", prijateKos],
+    ["doklady", "doklady.csv", dokladyKos],
+    ["iné doklady", "ostatne-doklady.csv", rozdelPodlaKosa(ostatne)],
+    ["odberatelia", "odberatelia.csv", rozdelPodlaKosa(odberatelia)],
+    ["produkty", "produkty.csv", rozdelPodlaKosa(produkty)],
+    ["pokladňa", "pokladna.csv", rozdelPodlaKosa(pokladna)],
+    ["banka", "banka.csv", rozdelPodlaKosa(banka)],
+    ["jazdy", "jazdy.csv", rozdelPodlaKosa(jazdy)],
+    ["zákazky", "zakazky.csv", rozdelPodlaKosa(zakazky)],
+  ];
+
   const pocty: Record<string, number> = {};
   pocty["firma"] = pridaj("firma.csv", [firma as Record<string, unknown>]);
-  pocty["faktúry"] = pridaj("faktury.csv", faktury);
-  pocty["položky faktúr"] = pridaj("faktury-polozky.csv", polozky);
-  pocty["prijaté faktúry"] = pridaj("prijate-faktury.csv", prijate);
-  pocty["doklady"] = pridaj("doklady.csv", doklady);
-  pocty["iné doklady"] = pridaj("ostatne-doklady.csv", ostatne);
-  pocty["odberatelia"] = pridaj("odberatelia.csv", odberatelia);
-  pocty["produkty"] = pridaj("produkty.csv", produkty);
-  pocty["pokladňa"] = pridaj("pokladna.csv", pokladna);
-  pocty["banka"] = pridaj("banka.csv", banka);
-  pocty["jazdy"] = pridaj("jazdy.csv", jazdy);
-  pocty["zákazky"] = pridaj("zakazky.csv", zakazky);
+  for (const [popis, subor, { zive }] of subory) pocty[popis] = pridaj(subor, zive);
+  // Počty z koša idú za hlavnými, aby ich prehľad po stiahnutí ukázal oddelene.
+  for (const [popis, subor, { vKosi }] of subory)
+    pocty[`kôš — ${popis}`] = pridaj(`${PRIECINOK_KOSA}/${subor}`, vKosi);
 
   let pdfka = 0;
   if (data.s_pdf) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const priecinok = zip.folder("faktury-pdf");
     // Len súbory z priečinka tejto firmy — cestu v riadku mohol niekto prepísať.
     const vlastny = (cesta: unknown) => String(cesta ?? "").startsWith(`${data.company_id}/`);
-    const sPdf = faktury.filter((f) => vlastny(f.pdf_url)).slice(0, limity.maxPdf);
-    for (const f of sPdf) {
+    // Najprv živé faktúry, potom kôš — strop nesmie zobrať miesto živým.
+    const sPdf = [
+      ...fakturyKos.zive.map((f) => ({ f, priecinok: "faktury-pdf" })),
+      ...fakturyKos.vKosi.map((f) => ({ f, priecinok: `${PRIECINOK_KOSA}/faktury-pdf` })),
+    ]
+      .filter(({ f }) => vlastny(f.pdf_url))
+      .slice(0, limity.maxPdf);
+    for (const { f, priecinok } of sPdf) {
       try {
         const { data: blob } = await supabaseAdmin.storage
           .from("invoice-pdfs")
           .download(String(f.pdf_url));
         if (!blob) continue;
-        priecinok?.file(
-          nazovSuboru(String(f.invoice_number ?? f.id), "pdf"),
+        zip.file(
+          `${priecinok}/${nazovSuboru(String(f.invoice_number ?? f.id), "pdf")}`,
           new Uint8Array(await blob.arrayBuffer()),
         );
         pdfka++;
@@ -173,18 +202,29 @@ export async function zostavBalikFirmy(
       {
         kos: "purchase-invoices",
         priecinok: "skeny/prijate-faktury",
-        riadky: prijate,
+        riadky: prijateKos.zive,
         cislo: "invoice_number",
       },
       {
         kos: "expense-receipts",
         priecinok: "skeny/blocky",
-        riadky: doklady,
+        riadky: dokladyKos.zive,
+        cislo: "document_number",
+      },
+      {
+        kos: "purchase-invoices",
+        priecinok: `${PRIECINOK_KOSA}/skeny/prijate-faktury`,
+        riadky: prijateKos.vKosi,
+        cislo: "invoice_number",
+      },
+      {
+        kos: "expense-receipts",
+        priecinok: `${PRIECINOK_KOSA}/skeny/blocky`,
+        riadky: dokladyKos.vKosi,
         cislo: "document_number",
       },
     ];
     for (const z of zdroje) {
-      const priec = zip.folder(z.priecinok);
       for (const r of z.riadky.filter((x) =>
         String(x.file_path ?? "").startsWith(`${data.company_id}/`),
       )) {
@@ -197,7 +237,11 @@ export async function zostavBalikFirmy(
           const pripona = String(r.file_path).split(".").pop()?.slice(0, 5) || "pdf";
           const meno =
             [r.issue_date, r.supplier_name, r[z.cislo]].filter(Boolean).join("_") || String(r.id);
-          priec?.file(nazovSuboru(meno, pripona), new Uint8Array(await blob.arrayBuffer()));
+          // Cesta celá v názve — prázdny priečinok (napr. kôš bez skenov) tak nevznikne.
+          zip.file(
+            `${z.priecinok}/${nazovSuboru(meno, pripona)}`,
+            new Uint8Array(await blob.arrayBuffer()),
+          );
           skenov++;
         } catch {
           /* chýbajúci sken nezhodí balík */

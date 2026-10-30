@@ -5,7 +5,12 @@ import { vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
 import { vratVystavenuZPohodyFn } from "@/lib/faktero/zauctovanie.functions";
 import { useT } from "@/lib/i18n/useT";
 import { supabase } from "@/integrations/supabase/client";
-import { stavOdovzdania, textVarovaniaVratenia } from "@/lib/faktero/stav-odovzdania";
+import {
+  stavOdovzdania,
+  textPoVrateni,
+  textVarovaniaVratenia,
+} from "@/lib/faktero/stav-odovzdania";
+import { nacitajProgramOdovzdania } from "./OdovzdanieDokladu";
 
 const TABULKA = {
   faktura: "invoices",
@@ -25,6 +30,9 @@ export type DruhOpravy = "faktura" | "prijata" | "doklad";
  * nevie to súbor ani konektor. Pôvodný doklad preto treba v Pohode zmazať
  * ručne; keď ide len o kódy, je lepšia „Opraviť zaúčtovanie“
  * (OdovzdanieDokladu.tsx), ktorá doklad z Pohody nevracia.
+ *
+ * Doklad odovzdaný do iného programu (Money, Omega…) dostane okno aj hlášku
+ * s menom toho programu, nie s Pohodou.
  */
 export function usePoslatOpravuDoPohody() {
   const { t } = useT();
@@ -38,21 +46,28 @@ export function usePoslatOpravuDoPohody() {
     // Varovanie podľa toho, ako doklad odišiel — konektor ani súbor ho v Pohode nezmažú.
     const { data: riadok } = await (supabase as any)
       .from(TABULKA[druh])
-      .select("export_cesta, exported_at, pocet_exportov")
+      .select(
+        druh === "faktura"
+          ? "export_cesta, exported_at, pocet_exportov"
+          : "export_cesta, exported_at, pocet_exportov, export_job_id",
+      )
       .eq("id", id)
       .maybeSingle();
-    const ok = await potvrd(t(textVarovaniaVratenia(druh, stavOdovzdania(riadok ?? {}).cesta)), {
-      potvrdit: t("Vrátiť a opraviť"),
-    });
+    // Program sa musí zistiť pred vrátením — vrátenie dávku pri doklade zmaže.
+    const program = await nacitajProgramOdovzdania(druh, id, riadok?.export_job_id).catch(
+      () => null,
+    );
+    const ok = await potvrd(
+      t(textVarovaniaVratenia(druh, stavOdovzdania(riadok ?? {}).cesta, program), {
+        program: program ?? "",
+      }),
+      { potvrdit: t("Vrátiť a opraviť") },
+    );
     if (!ok) return false;
     try {
       if (druh === "faktura") await vratFakturu({ data: { company_id: companyId, id } });
       else await vratDoklad({ data: { company_id: companyId, druh, ids: [id] } });
-      toast.success(
-        druh === "doklad"
-          ? t("Vrátené medzi nespracované — opravte a spracujte znova")
-          : t("Vrátené z Pohody — opravte doklad a odovzdajte ho znova"),
-      );
+      toast.success(t(textPoVrateni(druh, program), { program: program ?? "" }));
       return true;
     } catch (e: any) {
       toast.error(t(e?.message ?? "Nepodarilo sa"));

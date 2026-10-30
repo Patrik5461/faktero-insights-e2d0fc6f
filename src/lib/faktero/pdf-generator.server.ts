@@ -499,16 +499,22 @@ async function vykresliFakturu(
           ? vetyCz.euSluzba
           : vetyCz.euTovar
         : invoice.reverse_charge_type === "export"
-          ? vetyCz.vyvoz
+          ? invoice.eu_plnenie === "sluzba"
+            ? vetyCz.euSluzba
+            : vetyCz.vyvoz
           : vetyCz.tuzemsko
       : invoice.reverse_charge_type === "eu_b2b"
       ? cudziVystavovatel
         ? invoice.eu_plnenie === "sluzba"
           ? t.prenosEuSluzbaSmernica
           : t.prenosEuTovarSmernica
-        : t.prenosEu
+        : invoice.eu_plnenie === "sluzba"
+          ? t.prenosEuSluzba
+          : t.prenosEu
       : invoice.reverse_charge_type === "export"
-        ? t.prenosVyvoz
+        ? invoice.eu_plnenie === "sluzba"
+          ? t.prenosMimoEuSluzba
+          : t.prenosVyvoz
         : t.prenosTuzemsko;
 
   /*

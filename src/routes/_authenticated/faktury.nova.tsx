@@ -83,6 +83,14 @@ import { skontrolujDatumy, upravyNaVyber } from "@/lib/faktero/faktura-nalezitos
 import { OverenieVies } from "@/components/faktero/OverenieVies";
 import { SADZBY_EU, sadzbyStatu, zakladnaSadzbaStatu } from "@/lib/faktero/sadzby-eu";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import {
+  druhPlneniaZPoloziek,
+  klucNavrhu,
+  navrhRezimuDph,
+  poliaZNavrhu,
+  sedisNavrhom,
+  type NavrhRezimu,
+} from "@/lib/faktero/rezim-odberatela";
 import { historickeSadzby } from "@/lib/faktero/vat-rates";
 import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
 import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
@@ -405,6 +413,8 @@ function NewInvoice() {
     // Ťarchopis nesie len zvýšenie ceny — položky pôvodnej faktúry sa nekopírujú.
     const tarchopis = druh === "debit_note";
     const nazovDokladu = tarchopis ? "Ťarchopis" : "Dobropis";
+    // Opravný doklad preberá režim opravovanej faktúry — návrh podľa odberateľa ho nemení.
+    rezimRucneRef.current = true;
     const cid = getActiveCompanyId();
     if (!cid) return;
     {
@@ -599,6 +609,53 @@ function NewInvoice() {
         : predvolenyJazykFirmy(krajina),
     }));
   }, [form.customer_id, customers]);
+
+  /*
+    Daňový režim podľa odberateľa. Firma s IČ DPH iného štátu EÚ nedostáva
+    slovenskú DPH (§ 43 tovar, § 15 ods. 1 služba s prenesením), odberateľ mimo
+    EÚ tiež nie (vývoz, služba mimo EÚ). Predtým ostal predvolený tuzemský režim
+    a nemeckej firme odišla faktúra s 23 % DPH. Návrh sa uplatní, kým sa
+    režimu nikto nedotkol — ručnú voľbu ani režim prevzatý z opravovanej
+    faktúry neprepíše.
+  */
+  const rezimRucneRef = useRef(false);
+  const odberatelFormulara = customers.find((c) => c.id === form.customer_id) as any;
+  const signalTovaru = druhPlneniaZPoloziek(items).plnenie === "tovar";
+  const navrhRezimu = useMemo(
+    () =>
+      navrhRezimuDph({
+        krajinaFirmy: krajina,
+        platitel: rezim.platitel,
+        odberatel: odberatelFormulara
+          ? { country: odberatelFormulara.country, ic_dph: odberatelFormulara.ic_dph }
+          : null,
+        // Bez skladu či colného kódu je návrh služba a upozornenie vyzve na kontrolu.
+        plnenie: signalTovaru ? "tovar" : null,
+      }),
+    [krajina, rezim.platitel, odberatelFormulara?.country, odberatelFormulara?.ic_dph, signalTovaru],
+  );
+  const klucRezimu = klucNavrhu(navrhRezimu);
+  /* Či súčasný režim nastavil návrh — vtedy ho smie aj vrátiť späť. */
+  const rezimZNavrhuRef = useRef(false);
+  useEffect(() => {
+    if (rezimRucneRef.current) return;
+    if (form.type === "credit_note" || form.type === "debit_note") return;
+    const ciel = poliaZNavrhu(navrhRezimu);
+    if (!ciel.reverse_charge && !rezimZNavrhuRef.current) return;
+    rezimZNavrhuRef.current = ciel.reverse_charge;
+    setForm((f) =>
+      f.reverse_charge === ciel.reverse_charge &&
+      f.reverse_charge_type === ciel.reverse_charge_type &&
+      (!ciel.reverse_charge || f.eu_plnenie === ciel.eu_plnenie)
+        ? f
+        : { ...f, ...ciel, oss: ciel.reverse_charge ? false : f.oss, oss_country: ciel.reverse_charge ? "" : f.oss_country },
+    );
+  }, [klucRezimu, form.type]);
+  /** Človek zmenil režim sám — návrh ho odteraz nechá tak. */
+  const rezimRucne = () => {
+    rezimRucneRef.current = true;
+    rezimZNavrhuRef.current = false;
+  };
 
   /*
     Bez jazyka pri odberateľovi rozhoduje krajina firmy — nemecká fakturuje po
@@ -1042,7 +1099,13 @@ function NewInvoice() {
           rounding_mode: form.rounding_mode,
           reverse_charge: form.reverse_charge,
           eu_plnenie:
-            form.reverse_charge && form.reverse_charge_type === "eu_b2b" ? form.eu_plnenie : null,
+            form.reverse_charge && form.reverse_charge_type === "eu_b2b"
+              ? form.eu_plnenie
+              : form.reverse_charge && form.reverse_charge_type === "export"
+                ? form.eu_plnenie === "sluzba"
+                  ? "sluzba"
+                  : "tovar"
+                : null,
           oss: form.oss,
           oss_country: form.oss ? form.oss_country : null,
           osobitna_uprava: form.osobitna_uprava || null,
@@ -1734,6 +1797,14 @@ function NewInvoice() {
             <p className="-mt-1 mb-4 text-xs text-muted-foreground">
               {t("Bežne sa fakturuje so slovenskou DPH. Prepnite len vtedy, keď daň odvedie odberateľ alebo predávate spotrebiteľovi v inom štáte EÚ.")}
             </p>
+            <UpozornenieRezimu
+              navrh={navrhRezimu}
+              form={form}
+              onNastav={() => {
+                rezimRucne();
+                setForm((f) => ({ ...f, ...poliaZNavrhu(navrhRezimu), oss: false, oss_country: "" }));
+              }}
+            />
             <div className="grid gap-4 md:grid-cols-2">
               <label
                 className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
@@ -1745,15 +1816,16 @@ function NewInvoice() {
                 <input
                   type="checkbox"
                   checked={form.reverse_charge}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    rezimRucne();
                     setForm({
                       ...form,
                       reverse_charge: e.target.checked,
                       reverse_charge_type: e.target.checked
                         ? form.reverse_charge_type || "domestic_69"
                         : "",
-                    })
-                  }
+                    });
+                  }}
                   className="mt-0.5 h-4 w-4 rounded border-input"
                 />
                 <span className="text-sm">
@@ -1774,13 +1846,14 @@ function NewInvoice() {
                   <input
                     type="checkbox"
                     checked={form.oss}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      rezimRucne();
                       setForm((f) => ({
                         ...f,
                         oss: e.target.checked,
                         oss_country: e.target.checked ? f.oss_country || "AT" : "",
-                      }))
-                    }
+                      }));
+                    }}
                     className="mt-0.5 h-4 w-4 rounded border-input"
                   />
                   <span className="text-sm">
@@ -1800,9 +1873,17 @@ function NewInvoice() {
                   <span className="text-[13px] font-semibold text-foreground">{t("Druh prenosu")}</span>
                   <select
                     value={form.reverse_charge_type || "domestic_69"}
-                    onChange={(e) =>
-                      setForm({ ...form, reverse_charge_type: e.target.value as any })
-                    }
+                    onChange={(e) => {
+                      rezimRucne();
+                      const typ = e.target.value as typeof form.reverse_charge_type;
+                      // Trojstranný obchod je len v EÚ; pri vývoze ostáva tovar alebo služba.
+                      setForm({
+                        ...form,
+                        reverse_charge_type: typ,
+                        eu_plnenie:
+                          typ === "export" && form.eu_plnenie === "trojstranny" ? "tovar" : form.eu_plnenie,
+                      });
+                    }}
                     className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="domestic_69">
@@ -1811,9 +1892,28 @@ function NewInvoice() {
                     <option value="eu_b2b">
                       {t("Intrakomunitárne dodanie do EÚ (B2B, odberateľ má IČ DPH)")}
                     </option>
-                    <option value="export">{t("Vývoz mimo EÚ (oslobodené podľa §47)")}</option>
+                    <option value="export">{t("Odberateľ mimo EÚ — vývoz tovaru alebo služba mimo EÚ")}</option>
                   </select>
                 </label>
+                {form.reverse_charge_type === "export" && (
+                  <label className="block">
+                    <span className="text-[13px] font-semibold text-foreground">{t("Druh plnenia")}</span>
+                    <select
+                      value={form.eu_plnenie === "sluzba" ? "sluzba" : "tovar"}
+                      onChange={(e) => {
+                        rezimRucne();
+                        setForm({ ...form, eu_plnenie: e.target.value as "tovar" | "sluzba" });
+                      }}
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="tovar">{t("Vývoz tovaru (oslobodené podľa § 47)")}</option>
+                      <option value="sluzba">{t("Služba mimo EÚ (miesto dodania podľa § 15 ods. 1)")}</option>
+                    </select>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {t("Vývoz tovaru ide do priznania (r. 13 a 15), služba s miestom dodania mimo EÚ do priznania nepatrí.")}
+                    </span>
+                  </label>
+                )}
                 {form.reverse_charge_type === "eu_b2b" && (
                   <label className="block">
                     <span className="text-[13px] font-semibold text-foreground">
@@ -1821,12 +1921,13 @@ function NewInvoice() {
                     </span>
                     <select
                       value={form.eu_plnenie}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        rezimRucne();
                         setForm({
                           ...form,
                           eu_plnenie: e.target.value as typeof form.eu_plnenie,
-                        })
-                      }
+                        });
+                      }}
                       className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value="tovar">{t("Dodanie tovaru")}</option>
@@ -3035,6 +3136,97 @@ function InvoicePickerModal({
           ))}
         </ul>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Upozornenie k daňovému režimu podľa odberateľa — čo sme nastavili sami,
+ * alebo prečo sa súčasný režim s odberateľom nezhoduje.
+ */
+function UpozornenieRezimu({
+  navrh,
+  form,
+  onNastav,
+}: {
+  navrh: NavrhRezimu;
+  form: { reverse_charge: boolean; reverse_charge_type: string; eu_plnenie: string; oss: boolean };
+  onNastav: () => void;
+}) {
+  const { t } = useT();
+  if (navrh.druh === "tuzemsko") return null;
+  if (navrh.druh === "eu_spotrebitel") {
+    if (form.oss || form.reverse_charge) return null;
+    return (
+      <p role="note" className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+        {t(
+          "Odberateľ z krajiny {krajina} nemá IČ DPH — ako spotrebiteľovi mu fakturujete s DPH. Ak ste za rok prekročili 10 000 € predaja spotrebiteľom v celej EÚ alebo ste prihlásený do OSS, zapnite Predaj spotrebiteľovi v EÚ (OSS). Ak ide o firmu, doplňte jej IČ DPH v karte odberateľa.",
+          { krajina: navrh.krajina },
+        )}
+      </p>
+    );
+  }
+  const sedi = sedisNavrhom(navrh, form);
+  if (!sedi) {
+    return (
+      <div
+        role="alert"
+        className="mb-4 flex flex-wrap items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100"
+      >
+        <span className="min-w-0 flex-1">
+          {navrh.druh === "eu_b2b"
+            ? t(
+                "Odberateľ má IČ DPH iného štátu EÚ ({ic}), faktúra však nie je nastavená ako dodanie do EÚ. Firme z EÚ sa DPH zvyčajne neúčtuje — tovar je oslobodený podľa § 43, pri službe daň prizná odberateľ.",
+                { ic: navrh.icDph },
+              )
+            : t(
+                "Odberateľ je mimo EÚ ({krajina}), faktúra však nie je nastavená ako vývoz ani služba mimo EÚ. DPH sa mu zvyčajne neúčtuje.",
+                { krajina: navrh.krajina },
+              )}
+        </span>
+        <button
+          type="button"
+          onClick={onNastav}
+          className="rounded-md bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:opacity-90"
+        >
+          {navrh.druh === "eu_b2b" ? t("Nastaviť dodanie do EÚ") : t("Nastaviť plnenie mimo EÚ")}
+        </button>
+      </div>
+    );
+  }
+  const sluzba = form.eu_plnenie === "sluzba";
+  return (
+    <div role="note" className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+      <p>
+        {navrh.druh === "eu_b2b"
+          ? sluzba
+            ? t(
+                "Odberateľ má IČ DPH iného štátu EÚ ({ic}) — faktúra je bez DPH: služba s miestom dodania u odberateľa (§ 15 ods. 1), daň prizná odberateľ (prenesenie daňovej povinnosti). Veta o tom sa vytlačí na faktúru.",
+                { ic: navrh.icDph },
+              )
+            : form.eu_plnenie === "trojstranny"
+              ? t("Odberateľ má IČ DPH iného štátu EÚ ({ic}) — faktúra je bez DPH ako trojstranný obchod.", {
+                  ic: navrh.icDph,
+                })
+              : t(
+                  "Odberateľ má IČ DPH iného štátu EÚ ({ic}) — faktúra je bez DPH: dodanie tovaru do iného členského štátu oslobodené podľa § 43. Veta o tom sa vytlačí na faktúru.",
+                  { ic: navrh.icDph },
+                )
+          : sluzba
+            ? t(
+                "Odberateľ je mimo EÚ ({krajina}) — faktúra je bez DPH: služba s miestom dodania mimo EÚ (§ 15 ods. 1). Veta o tom sa vytlačí na faktúru.",
+                { krajina: navrh.krajina },
+              )
+            : t(
+                "Odberateľ je mimo EÚ ({krajina}) — faktúra je bez DPH: vývoz tovaru oslobodený podľa § 47. Doklad o vývoze (colné vyhlásenie) si odložte.",
+                { krajina: navrh.krajina },
+              )}
+      </p>
+      {!navrh.isteZPoloziek && sluzba && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("Z položiek nevieme, či ide o tovar — navrhli sme službu. Ak dodávate tovar, zmeňte druh plnenia nižšie.")}
+        </p>
+      )}
     </div>
   );
 }

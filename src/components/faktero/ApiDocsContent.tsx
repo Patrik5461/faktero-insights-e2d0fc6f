@@ -1213,6 +1213,12 @@ $customer = json_decode(curl_exec($ch), true);`}
   }'`}
             />
 
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                'Daňový režim: bez poľa reverse_charge ho Faktero určí podľa odberateľa. Firma s IČ DPH iného štátu EÚ dostane faktúru bez DPH ako dodanie do EÚ (reverse_charge_type "eu_b2b"), odberateľ mimo EÚ ako vývoz ("export"); tovar alebo službu povie eu_plnenie ("tovar", "sluzba"; predvolene tovar). Ak niektorá položka nesie nenulovú sadzbu DPH, režim sa nemení — počíta sa s tým, že DPH ste účtovali zámerne. Režim nastavíte aj sami: "reverse_charge": true s reverse_charge_type ("domestic_69", "eu_b2b", "export"), alebo "reverse_charge": false pre tuzemskú DPH.',
+              )}
+            </p>
+
             <h3 className="mt-6 font-semibold">{t("Stiahnutie PDF")}</h3>
             <CodeBlock
               lang="JavaScript"

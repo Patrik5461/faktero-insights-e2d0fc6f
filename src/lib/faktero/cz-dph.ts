@@ -323,7 +323,9 @@ export function priznaniCz(vstup: Vstup): { riadky: PriznaniCz; vytky: Vytka[] }
         if (f.euPlnenie === "sluzba") add("pln_sluzby", zaklad);
         else if (f.euPlnenie === "trojstranny") add("tri_dozb", zaklad);
         else add("dod_zb", zaklad);
-      } else if (f.prenosTyp === "export") add("pln_vyvoz", zaklad);
+      } else if (f.prenosTyp === "export")
+        // Služba s místem plnění mimo EU nie je vývoz zboží (ř. 22), ale ř. 26.
+        add(f.euPlnenie === "sluzba" ? "pln_ost" : "pln_vyvoz", zaklad);
       else add("pln_rez_pren", zaklad);
       continue;
     }

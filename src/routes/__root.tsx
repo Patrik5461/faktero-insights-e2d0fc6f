@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { PotvrdzovacieOkno } from "@/components/faktero/PotvrdzovacieOkno";
 import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
 import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
+import { PreskocitNaObsah } from "@/components/faktero/PreskocitNaObsah";
 import { listSeoPagesPublic } from "@/lib/seo.functions";
 import { SKRIPT_DO_HLAVICKY } from "@/lib/faktero/motiv";
 import { preloz, type Jazyk } from "@/lib/i18n/jazyk";
@@ -124,8 +125,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const meta: any[] = [
       { charSet: "utf-8" },
       {
+        // Bez `maximum-scale` — priblíženie prstami nesmie byť zakázané (WCAG
+        // 1.4.4). Automatické priblíženie iPhonu pri ťuknutí do poľa rieši
+        // písmo polí 16 px na telefóne (styles.css). Natívna appka má vlastnú
+        // hlavičku v index.mobile.html.
         name: "viewport",
-        content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       { title: nazov },
       {
@@ -257,6 +262,8 @@ function RootComponent() {
   return (
     <JazykProvider jazyk={jazyk ?? "sk"}>
       <QueryClientProvider client={queryClient}>
+        {/* Prvý prvok pre Tab na každej stránke — web, aplikácia aj verejné odkazy. */}
+        <PreskocitNaObsah />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <NativeRouteGuard />
         <Outlet />

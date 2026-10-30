@@ -128,9 +128,27 @@ export function dorovnaj(
   );
 }
 
-/** Uloženie: čísla zaokrúhlené, kódy orezané, prázdne texty preč. */
+/**
+ * Prázdny riadok — bez predkontácie a s nulovým základom aj DPH. Vzniká, keď
+ * človek pridá riadok a nevyplní ho; do Pohody by išiel ako nulová položka
+ * bez zaúčtovania, preto sa pri ukladaní (aj pri čítaní starších) zahodí.
+ */
+export function jePrazdnyRiadok(r: RiadokRozuctovania): boolean {
+  return (
+    !String(r.predkontacia ?? "").trim() &&
+    Math.abs(Number(r.zaklad) || 0) < 0.005 &&
+    Math.abs(Number(r.dph) || 0) < 0.005
+  );
+}
+
+/** Rozúčtovanie bez prázdnych riadkov (`jePrazdnyRiadok`). */
+export function bezPrazdnychRiadkov<T extends RiadokRozuctovania>(riadky: T[]): T[] {
+  return riadky.filter((r) => !jePrazdnyRiadok(r));
+}
+
+/** Uloženie: prázdne riadky preč, čísla zaokrúhlené, kódy orezané, prázdne texty preč. */
 export function ocisti(riadky: RiadokRozuctovania[]): RiadokRozuctovania[] {
-  return riadky.map((r) => ({
+  return bezPrazdnychRiadkov(riadky).map((r) => ({
     predkontacia: String(r.predkontacia ?? "").trim().slice(0, 30) || null,
     clenenie: String(r.clenenie ?? "").trim().slice(0, 30) || null,
     sadzba: Number(r.sadzba) || 0,
@@ -144,17 +162,19 @@ export function ocisti(riadky: RiadokRozuctovania[]): RiadokRozuctovania[] {
 /** Rozúčtovanie z JSON stĺpca — čokoľvek iné ako pole riadkov je „žiadne". */
 export function nacitajRozuctovanie(v: unknown): RiadokRozuctovania[] {
   if (!Array.isArray(v)) return [];
-  return v
-    .filter((x) => x && typeof x === "object")
-    .map((x: any) => ({
-      predkontacia: x.predkontacia ?? null,
-      clenenie: x.clenenie ?? null,
-      sadzba: Number(x.sadzba) || 0,
-      zaklad: Number(x.zaklad) || 0,
-      dph: Number(x.dph) || 0,
-      text: x.text ?? null,
-      kv: x.kv ?? null,
-    }));
+  return bezPrazdnychRiadkov(
+    v
+      .filter((x) => x && typeof x === "object")
+      .map((x: any) => ({
+        predkontacia: x.predkontacia ?? null,
+        clenenie: x.clenenie ?? null,
+        sadzba: Number(x.sadzba) || 0,
+        zaklad: Number(x.zaklad) || 0,
+        dph: Number(x.dph) || 0,
+        text: x.text ?? null,
+        kv: x.kv ?? null,
+      })),
+  );
 }
 
 /**

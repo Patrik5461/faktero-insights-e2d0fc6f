@@ -114,7 +114,11 @@ type Popisky = {
   naskenujteKod: string;
   vystaveneCez: string;
   prenosEu: string;
+  /** Služba podnikateľovi z iného štátu EÚ — miesto dodania u neho (§ 15 ods. 1), daň prizná on. */
+  prenosEuSluzba: string;
   prenosVyvoz: string;
+  /** Služba odberateľovi mimo EÚ — miesto dodania mimo tuzemska (§ 15 ods. 1), DPH v SR nepodlieha. */
+  prenosMimoEuSluzba: string;
   prenosTuzemsko: string;
   /** Skratka prenesenia daňovej povinnosti v stĺpci DPH („PDP“, „RC“). */
   pdp: string;
@@ -197,8 +201,12 @@ const SK: Popisky = {
   vystaveneCez: "Vystavené cez Faktero — faktero.sk",
   prenosEu:
     "Intrakomunitárne dodanie tovaru/služby oslobodené od DPH podľa §43 zákona č. 222/2004 Z. z. Daň je povinný priznať odberateľ.",
+  prenosEuSluzba:
+    "Dodanie služby s miestom dodania v inom členskom štáte podľa §15 ods. 1 zákona č. 222/2004 Z. z. Prenesenie daňovej povinnosti – daň je povinný priznať odberateľ.",
   prenosVyvoz:
     "Vývoz tovaru mimo územia EÚ oslobodený od DPH podľa §47 zákona č. 222/2004 Z. z.",
+  prenosMimoEuSluzba:
+    "Dodanie služby s miestom dodania mimo územia EÚ podľa §15 ods. 1 zákona č. 222/2004 Z. z. – nepodlieha DPH v Slovenskej republike.",
   prenosTuzemsko:
     "Prenesenie daňovej povinnosti podľa §69 ods. 12 zákona č. 222/2004 Z. z. o DPH. Daň je povinný priznať a odviesť odberateľ.",
 };
@@ -257,7 +265,11 @@ const CS: Popisky = {
   naskenujteKod: "Naskenujte kód a faktura se otevře v prohlížeči.",
   prenosEu:
     "Intrakomunitární dodání zboží/služby osvobozené od DPH podle §43 slovenského zákona č. 222/2004 Z. z. Daň je povinen přiznat odběratel.",
+  prenosEuSluzba:
+    "Poskytnutí služby s místem plnění v jiném členském státě podle §15 odst. 1 slovenského zákona č. 222/2004 Z. z. Přenesení daňové povinnosti – daň je povinen přiznat odběratel.",
   prenosVyvoz: "Vývoz zboží mimo území EU osvobozený od DPH podle §47 zákona č. 222/2004 Z. z.",
+  prenosMimoEuSluzba:
+    "Poskytnutí služby s místem plnění mimo území EU podle §15 odst. 1 slovenského zákona č. 222/2004 Z. z. – nepodléhá DPH na Slovensku.",
   prenosTuzemsko:
     "Přenesení daňové povinnosti podle §69 odst. 12 slovenského zákona č. 222/2004 Z. z. Daň je povinen přiznat a odvést odběratel.",
 };
@@ -325,8 +337,12 @@ const EN: Popisky = {
   vystaveneCez: "Issued with Faktero — faktero.sk",
   prenosEu:
     "Intra-Community supply of goods/services exempt from VAT under §43 of Slovak Act No. 222/2004 Coll. VAT is payable by the customer.",
+  prenosEuSluzba:
+    "Supply of services with the place of supply in another Member State under §15(1) of Slovak Act No. 222/2004 Coll. Reverse charge – VAT is payable by the customer.",
   prenosVyvoz:
     "Export of goods outside the EU exempt from VAT under §47 of Slovak Act No. 222/2004 Coll.",
+  prenosMimoEuSluzba:
+    "Supply of services with the place of supply outside the EU under §15(1) of Slovak Act No. 222/2004 Coll. – not subject to Slovak VAT.",
   prenosTuzemsko:
     "Reverse charge under §69(12) of Slovak Act No. 222/2004 Coll. VAT is to be reported and paid by the customer.",
 };
@@ -394,8 +410,12 @@ const DE: Popisky = {
   vystaveneCez: "Erstellt mit Faktero — faktero.sk",
   prenosEu:
     "Innergemeinschaftliche Lieferung/Leistung, steuerfrei nach §43 des slowakischen Gesetzes Nr. 222/2004 Slg. Die Steuer schuldet der Leistungsempfänger.",
+  prenosEuSluzba:
+    "Sonstige Leistung mit Leistungsort in einem anderen Mitgliedstaat nach §15 Abs. 1 des slowakischen Gesetzes Nr. 222/2004 Slg. Steuerschuldnerschaft des Leistungsempfängers.",
   prenosVyvoz:
     "Ausfuhrlieferung in ein Drittland, steuerfrei nach §47 des slowakischen Gesetzes Nr. 222/2004 Slg.",
+  prenosMimoEuSluzba:
+    "Sonstige Leistung mit Leistungsort außerhalb der EU nach §15 Abs. 1 des slowakischen Gesetzes Nr. 222/2004 Slg. – in der Slowakei nicht steuerbar.",
   prenosTuzemsko:
     "Übergang der Steuerschuld nach §69 Abs. 12 des slowakischen Gesetzes Nr. 222/2004 Slg. Die Steuer schuldet der Leistungsempfänger.",
 };
@@ -601,7 +621,8 @@ export function vetaPreneseniaDe(
   const v = vetyDe(jazyk);
   if (typ === "eu_b2b")
     return euPlnenie === "sluzba" ? v.euSluzba : euPlnenie === "trojstranny" ? v.trojstranny : v.euTovar;
-  if (typ === "export") return v.vyvoz;
+  // Služba odberateľovi mimo EÚ nie je vývoz tovaru — v tuzemsku nie je zdaniteľná.
+  if (typ === "export") return euPlnenie === "sluzba" ? v.euSluzba : v.vyvoz;
   if (typ === "domestic_69") return v.tuzemsko;
   return null;
 }

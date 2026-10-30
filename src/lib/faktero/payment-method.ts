@@ -41,3 +41,16 @@ export function normalizePaymentMethod(code?: string | null): string {
   if (k === "gopay") return "online";
   return k;
 }
+
+/**
+ * Spôsob úhrady slovom v jazyku rozhrania — pre export do Excelu, kde kód
+ * (`bank_transfer`, `hotovost`) nikomu nič nepovie. Prázdny = prázdna bunka.
+ * Bločky majú vlastné kódy (`hotovost`, `karta`, `prevod`), `LABELS` pozná oboje.
+ */
+export function uhradaSlovom(
+  code: string | null | undefined,
+  t: (text: string) => string,
+): string | null {
+  if (!code) return null;
+  return t(paymentMethodLabel(code));
+}

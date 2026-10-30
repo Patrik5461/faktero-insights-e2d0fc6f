@@ -144,6 +144,40 @@ export function textVarovaniaVratenia(
   return `${uvod} ${zmaz} Ak treba opraviť len predkontáciu, členenie alebo stredisko, použite radšej „Opraviť zaúčtovanie“ — doklad ostane v Pohode a nič sa nemaže.`;
 }
 
+/*
+  Texty okolo vrátenia dokladu podľa programu, do ktorého odišiel
+  (`nazovProgramuExportu`; null = Pohoda). Vracajú slovenský kľúč pre `t()` so
+  zástupným `{program}` — volajúci ho dosadí. „Vrátené z Pohody“ pri faktúre
+  poslanej do Money by klamalo.
+*/
+
+/** Hláška po vrátení (toast). */
+export function textPoVrateni(druh: DruhDokladuOdovzdania, program?: string | null): string {
+  if (druh === "doklad") return "Vrátené medzi nespracované — opravte a spracujte znova";
+  return program
+    ? "Vrátené z účtovníctva ({program}) — opravte doklad a odovzdajte ho znova"
+    : "Vrátené z Pohody — opravte doklad a odovzdajte ho znova";
+}
+
+/** Názov akcie „Poslať opravu do …“ v menu a na štítku odovzdaného dokladu. */
+export function textPoslatOpravu(program?: string | null): string {
+  return program ? "Poslať opravu do účtovníctva ({program})" : "Poslať opravu do Pohody";
+}
+
+/** Bublina k akcii „Poslať opravu do …“ pri faktúre (vystavenej aj prijatej). */
+export function popisPoslatOpravu(program?: string | null): string {
+  return program
+    ? "Faktúra sa vráti z účtovníctva ({program}), aby sa dala opraviť a odovzdať znova"
+    : "Faktúra sa vráti z Pohody, aby sa dala opraviť a odovzdať znova";
+}
+
+/** Štítok nad zaúčtovaním odovzdaného bločku. */
+export function textOdovzdanyDoklad(program?: string | null): string {
+  return program
+    ? "Doklad je odovzdaný do účtovníctva ({program}) — zmeny sa tam už neprenesú."
+    : "Doklad je odovzdaný do Pohody — zmeny sa tam už neprenesú.";
+}
+
 /** Polia, ktoré „Opraviť zaúčtovanie“ odomkne — rovnaké v migrácii (`_polia_opravy`). */
 export const POLIA_OPRAVY = [
   "pohoda_predkontacia",

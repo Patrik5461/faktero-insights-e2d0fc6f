@@ -598,3 +598,17 @@ select.input {
     break-after: avoid;
   }
 }
+
+/*
+  Viewport už nemá `maximum-scale=1` (priblíženie nesmie byť zakázané), takže
+  iPhone by pri ťuknutí do poľa s písmom pod 16 px stránku sám priblížil.
+  Na dotykovom telefóne preto majú polia aspoň 16 px — rovnako ako `ui/input`
+  (`text-base md:text-sm`), len aj pre holé polia s `text-sm`.
+*/
+@media (pointer: coarse) and (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}

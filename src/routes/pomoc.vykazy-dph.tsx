@@ -103,6 +103,12 @@ const sections: HelpSection[] = [
           prepočítaná na eurá.
         </p>
         <p>
+          <strong>Prijatá faktúra bez IČ DPH dodávateľa</strong> nejde do odpočtu v priznaní ani do
+          časti B.2 kontrolného výkazu — bez IČ DPH dodávateľa sa daň odpočítať nedá. Keď IČ DPH na
+          faktúre doplníte, faktúra sa do oboch výkazov vráti sama (odpočet sa dá uplatniť aj
+          neskôr, najneskôr v poslednom období roka).
+        </p>
+        <p>
           <strong>Faktúra s DPH iného štátu</strong> (rakúsky hotel, nemecké palivo) do priznania
           nepatrí — výkaz ju vynechá a upozorní na ňu. Takú daň si vraciate cez portál toho štátu.
           Ak ide v skutočnosti o prenesenie daňovej povinnosti, nastavte ho na faktúre. Pri českej

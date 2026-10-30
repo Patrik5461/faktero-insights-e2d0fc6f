@@ -73,6 +73,55 @@ export function useProgramOdovzdania(exportJobId: string | null | undefined, odo
 }
 
 /**
+ * Program, do ktorého doklad odišiel — na jedno použitie (pred vrátením).
+ * Prijatá faktúra a bloček ho majú v dávke `export_job_id`, vystavená faktúra
+ * v poslednom úspešnom `export_logs`. Null = Pohoda (aj keď sa nedá zistiť).
+ */
+export async function nacitajProgramOdovzdania(
+  druh: DruhDokladuOdovzdania,
+  id: string,
+  exportJobId?: string | null,
+): Promise<string | null> {
+  if (druh === "faktura") {
+    const { data } = await (supabase as any)
+      .from("export_logs")
+      .select("created_at, export_jobs(format)")
+      .eq("invoice_id", id)
+      .eq("status", "ok")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    return nazovProgramuExportu(data?.[0]?.export_jobs?.format);
+  }
+  if (!exportJobId) return null;
+  const { data } = await supabase
+    .from("export_jobs")
+    .select("format")
+    .eq("id", exportJobId)
+    .maybeSingle();
+  return nazovProgramuExportu((data as { format?: string } | null)?.format);
+}
+
+/** Ako `useProgramOdovzdania`, pre vystavenú faktúru (tá dávku pri sebe nemá). */
+export function useProgramOdovzdaniaFaktury(
+  invoiceId: string | null | undefined,
+  odovzdana: boolean,
+) {
+  const [program, setProgram] = useState<string | null>(null);
+  useEffect(() => {
+    setProgram(null);
+    if (!odovzdana || !invoiceId) return;
+    let zrusene = false;
+    void nacitajProgramOdovzdania("faktura", invoiceId).then((p) => {
+      if (!zrusene) setProgram(p);
+    });
+    return () => {
+      zrusene = true;
+    };
+  }, [invoiceId, odovzdana]);
+  return program;
+}
+
+/**
  * Riadok histórie pod odznakom: kedy a ako doklad odišiel, či bol vrátený a
  * čo treba prepísať v Pohode po oprave zaúčtovania.
  */

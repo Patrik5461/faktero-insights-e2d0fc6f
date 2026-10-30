@@ -35,6 +35,7 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { pomenovanieDobropisu } from "@/lib/i18n/dobropis-de";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { navrhRezimuDph, type NavrhRezimu } from "@/lib/faktero/rezim-odberatela";
 import { SectionHeader, StepIndicator } from "./ui";
 import {
   kodyUpozorneni,
@@ -220,6 +221,22 @@ export function NovaFaktura({
   const mena = podklady?.firma.mena ?? "EUR";
   const zakladnaSadzba = platca ? sadzbyKrajiny(krajina)[0] : 0;
 
+  /*
+    Firma s IČ DPH iného štátu EÚ alebo odberateľ mimo EÚ: faktúra ide bez DPH
+    (dodanie do EÚ, vývoz). Návrh sa dá na obrazovke Kontrola vypnúť. Oprava
+    existujúcej faktúry režim nemení.
+  */
+  const navrhRezimu: NavrhRezimu = navrhRezimuDph({
+    krajinaFirmy: krajina,
+    platitel: platca,
+    odberatel,
+  });
+  const [bezDphPodlaOdberatela, setBezDphPodlaOdberatela] = useState(true);
+  const [plnenieBezDph, setPlnenieBezDph] = useState<"sluzba" | "tovar">("sluzba");
+  const navrhBezDph =
+    !upravuje && (navrhRezimu.druh === "eu_b2b" || navrhRezimu.druh === "mimo_eu");
+  const bezDph = navrhBezDph && bezDphPodlaOdberatela;
+
   useEffect(() => {
     (async () => {
       const { ulozDoPamate, zPamate } = await import("@/lib/mobile/jazdy-lokalne");
@@ -393,10 +410,10 @@ export function NovaFaktura({
     for (const r of riadky) {
       const s = +(cislo(r.quantity) * cislo(r.unit_price)).toFixed(2);
       zaklad += s;
-      dph += +((s * r.vat_rate) / 100).toFixed(2);
+      dph += bezDph ? 0 : +((s * r.vat_rate) / 100).toFixed(2);
     }
     return { zaklad: +zaklad.toFixed(2), dph: +dph.toFixed(2), spolu: +(zaklad + dph).toFixed(2) };
-  }, [riadky]);
+  }, [riadky, bezDph]);
 
   const pouzitelne = riadky.filter((r) => r.name.trim() && cislo(r.quantity) > 0);
 
@@ -515,13 +532,22 @@ export function NovaFaktura({
       type: druh,
       advance_invoice_id: zaloha?.id ?? null,
       advance_amount: zaloha ? zaloha.total : null,
+      // Režim výslovne — server by ho inak odhadoval sám.
+      ...(bezDph
+        ? {
+            reverse_charge: true,
+            reverse_charge_type:
+              navrhRezimu.druh === "eu_b2b" ? ("eu_b2b" as const) : ("export" as const),
+            eu_plnenie: plnenieBezDph,
+          }
+        : { reverse_charge: false }),
       items: pouzitelne.map((x) => ({
         name: x.name.trim(),
         description: x.popis?.trim() || null,
         quantity: cislo(x.quantity),
         unit: x.unit || "ks",
         unit_price: cislo(x.unit_price),
-        vat_rate: platca ? x.vat_rate : 0,
+        vat_rate: platca && !bezDph ? x.vat_rate : 0,
         product_id: x.product_id,
       })),
     };
@@ -656,6 +682,17 @@ export function NovaFaktura({
       poznamka={poznamka}
       setPoznamka={setPoznamka}
       maIban={podklady.firma.maIban}
+      rezimBezDph={
+        navrhBezDph
+          ? {
+              navrh: navrhRezimu,
+              zapnute: bezDphPodlaOdberatela,
+              setZapnute: setBezDphPodlaOdberatela,
+              plnenie: plnenieBezDph,
+              setPlnenie: setPlnenieBezDph,
+            }
+          : null
+      }
       onSpat={() => setKrok("polozky")}
       onUloz={uloz}
       onZmenOdberatela={
@@ -1377,7 +1414,16 @@ function KrokSuhrn({
   onZmenOdberatela,
   povodnyOdberatel,
   upozornenia = [],
+  rezimBezDph = null,
 }: {
+  /** Návrh faktúry bez DPH podľa odberateľa (EÚ s IČ DPH, mimo EÚ). */
+  rezimBezDph?: {
+    navrh: NavrhRezimu;
+    zapnute: boolean;
+    setZapnute: (v: boolean) => void;
+    plnenie: "sluzba" | "tovar";
+    setPlnenie: (v: "sluzba" | "tovar") => void;
+  } | null;
   onZmenOdberatela?: () => void;
   povodnyOdberatel?: string | null;
   upozornenia?: ReturnType<typeof kodyUpozorneni>;
@@ -1445,6 +1491,56 @@ function KrokSuhrn({
               </li>
             ))}
           </ul>
+        )}
+        {rezimBezDph && (
+          <div
+            role="note"
+            className="space-y-2 rounded-app border border-app-ramik bg-app-karta p-3 text-[13px] leading-snug"
+          >
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={rezimBezDph.zapnute}
+                onChange={(e) => rezimBezDph.setZapnute(e.target.checked)}
+                className="mt-0.5 h-5 w-5"
+              />
+              <span className="min-w-0">
+                <span className="block font-semibold">
+                  {rezimBezDph.navrh.druh === "eu_b2b" ? t("nf.bezDphEu") : t("nf.bezDphMimoEu")}
+                </span>
+                <span className="block text-app-text-2">
+                  {rezimBezDph.navrh.druh === "eu_b2b"
+                    ? t("nf.bezDphEuPopis", { ic: rezimBezDph.navrh.icDph })
+                    : t("nf.bezDphMimoEuPopis", {
+                        krajina: "krajina" in rezimBezDph.navrh ? rezimBezDph.navrh.krajina : "",
+                      })}
+                </span>
+              </span>
+            </label>
+            {rezimBezDph.zapnute && (
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ["sluzba", t("nf.plnenieSluzba")],
+                    ["tovar", t("nf.plnenieTovar")],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => rezimBezDph.setPlnenie(id)}
+                    className={`rounded-app-sm border py-2 text-[14px] ${
+                      rezimBezDph.plnenie === id
+                        ? "border-app-zelena bg-app-zelena-jemna font-semibold text-app-zelena"
+                        : "border-app-ramik bg-app-pozadie"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
         <div className="rounded-app border border-app-ramik bg-app-karta p-4 shadow-app">
           <div className="text-[32px] font-semibold leading-none tabular-nums">
