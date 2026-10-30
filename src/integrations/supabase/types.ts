@@ -11981,6 +11981,7 @@ export type Database = {
         }
         Relationships: []
       }
+
     }
     Views: {
       stock_items_with_availability: {
