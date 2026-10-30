@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { History, Loader2, PencilLine } from "lucide-react";
@@ -21,6 +21,8 @@ import {
   type PoleOpravy,
 } from "@/lib/faktero/stav-odovzdania";
 import { KV_CLENENIA, KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
+import { nazovProgramuExportu } from "@/lib/faktero/odovzdanie-exportu";
+import { supabase } from "@/integrations/supabase/client";
 import { KodPohody } from "./KodPohody";
 import type { Navrhy } from "./ZauctovaniePanel";
 
@@ -35,11 +37,39 @@ const KV_VYDANE = KV_CLENENIA.filter((k) => ["A1", "A2", "C1", "D1", "D2", "X"].
 const kedy = (iso: string | null, loc: string) =>
   iso ? new Date(iso).toLocaleString(loc, { dateStyle: "medium", timeStyle: "short" }) : "";
 
-/** Text potvrdenia pred „Vrátiť z Pohody“ — podľa toho, ako doklad odišiel. */
+/** Text potvrdenia pred „Vrátiť z Pohody“ — podľa toho, ako doklad odišiel (a kam). */
 export function useVarovanieVratenia() {
   const { t } = useT();
-  return (druh: DruhDokladuOdovzdania, row: any) =>
-    t(textVarovaniaVratenia(druh, stavOdovzdania(row).cesta));
+  return (druh: DruhDokladuOdovzdania, row: any, program?: string | null) =>
+    t(textVarovaniaVratenia(druh, stavOdovzdania(row).cesta, program), { program: program ?? "" });
+}
+
+/**
+ * Program, do ktorého prijatá faktúra či bloček odišli (podľa dávky
+ * `export_job_id`) — null = Pohoda. Zámok v databáze hovorí podľa toho istého
+ * (`zamok_odovzdaneho_dokladu`); detail nesmie tvrdiť „v Pohode“, keď doklad
+ * odišiel do Money či Omegy.
+ */
+export function useProgramOdovzdania(exportJobId: string | null | undefined, odovzdany: boolean) {
+  const [program, setProgram] = useState<string | null>(null);
+  useEffect(() => {
+    setProgram(null);
+    if (!odovzdany || !exportJobId) return;
+    let zrusene = false;
+    void supabase
+      .from("export_jobs")
+      .select("format")
+      .eq("id", exportJobId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!zrusene)
+          setProgram(nazovProgramuExportu((data as { format?: string } | null)?.format));
+      });
+    return () => {
+      zrusene = true;
+    };
+  }, [exportJobId, odovzdany]);
+  return program;
 }
 
 /**

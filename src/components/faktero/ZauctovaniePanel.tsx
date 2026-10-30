@@ -38,7 +38,12 @@ import {
 } from "@/lib/faktero/predkontacie";
 import { KV_PRIJATE, kvAutomaticky, kvSPredvolenym } from "@/lib/faktero/kv-clenenie";
 import { KodPohody } from "./KodPohody";
-import { HistoriaOdovzdania, OpravitZauctovanie, useVarovanieVratenia } from "./OdovzdanieDokladu";
+import {
+  HistoriaOdovzdania,
+  OpravitZauctovanie,
+  useProgramOdovzdania,
+  useVarovanieVratenia,
+} from "./OdovzdanieDokladu";
 import { RozuctovaniePanel } from "./RozuctovaniePanel";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { potvrd } from "@/lib/potvrdenie";
@@ -54,6 +59,7 @@ import {
 } from "./NavrhAi";
 import type { PoleNavrhu } from "@/lib/faktero/ai-predkontacia";
 import { chybaClenenie, ucinneClenenie } from "@/lib/faktero/clenenie-zauctovania";
+import { jeCudzia } from "@/lib/faktero/cudzia-faktura";
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 
 export type Navrhy = {
@@ -482,6 +488,8 @@ export function ZauctovaniePanel({
   ]);
 
   const odovzdana = Boolean(row.exported_at);
+  // Iný program než Pohoda (Money, Omega…) — null = Pohoda.
+  const program = useProgramOdovzdania(row.export_job_id, odovzdana);
   const zauctovana = Boolean(row.zauctovane_at);
 
   /*
@@ -585,7 +593,7 @@ export function ZauctovaniePanel({
   async function vratit() {
     if (
       // Pravdivo podľa cesty: konektor ani súbor doklad v Pohode nezmažú (P-1009).
-      !(await potvrd(varovanieVratenia("prijata", row)))
+      !(await potvrd(varovanieVratenia("prijata", row, program)))
     )
       return;
     setBusy(true);
@@ -764,7 +772,12 @@ export function ZauctovaniePanel({
           </h2>
           {odovzdana ? (
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              {t("V Pohode od {kedy}", { kedy: kedy(row.exported_at, loc) })}
+              {program
+                ? t("V účtovníctve ({program}) od {kedy}", {
+                    program,
+                    kedy: kedy(row.exported_at, loc),
+                  })
+                : t("V Pohode od {kedy}", { kedy: kedy(row.exported_at, loc) })}
             </span>
           ) : zauctovana ? (
             <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium">
@@ -779,7 +792,12 @@ export function ZauctovaniePanel({
         {zamknutaUprava ? (
           <p className="mt-1 text-xs text-muted-foreground">
             {odovzdana
-              ? t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")
+              ? program
+                ? t(
+                    "Faktúra je odovzdaná do účtovníctva ({program}) — zmeniť sa dá až po vrátení.",
+                    { program },
+                  )
+                : t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")
               : t("Faktúra je zamknutá proti úpravám — najprv ju odomknite.")}
           </p>
         ) : null}
@@ -904,7 +922,8 @@ export function ZauctovaniePanel({
             <button
               type="button"
               onClick={() => uloz(false)}
-              disabled={busy || Boolean(row.locked_at) || bezClenenia}
+              // Cudzia faktúra sa zaúčtuje až po potvrdení „patrí tejto firme“ (server ju aj tak vynechá).
+              disabled={busy || Boolean(row.locked_at) || bezClenenia || jeCudzia(row)}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {busy ? (
@@ -922,16 +941,20 @@ export function ZauctovaniePanel({
           ) : null}
           {odovzdana ? (
             <>
-              <button
-                type="button"
-                onClick={() => stiahniXml(false)}
-                disabled={busy}
-                className={male}
-              >
-                <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML znova")}
-              </button>
+              {/* XML pre Pohodu len pri doklade, ktorý odišiel do Pohody. */}
+              {program ? null : (
+                <button
+                  type="button"
+                  onClick={() => stiahniXml(false)}
+                  disabled={busy}
+                  className={male}
+                >
+                  <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML znova")}
+                </button>
+              )}
               <button type="button" onClick={vratit} disabled={busy} className={male}>
-                <Undo2 className="h-3.5 w-3.5" /> {t("Vrátiť z Pohody (opraviť)")}
+                <Undo2 className="h-3.5 w-3.5" />{" "}
+                {program ? t("Vrátiť z účtovníctva (opraviť)") : t("Vrátiť z Pohody (opraviť)")}
               </button>
               <OpravitZauctovanie row={row} druh="prijata" onZmena={onZmena} className={male} />
             </>
@@ -1103,7 +1126,12 @@ export function ZauctovaniePanel({
         </div>
         {odovzdana ? (
           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-            {t("V Pohode od {kedy}", { kedy: kedy(row.exported_at, loc) })}
+            {program
+              ? t("V účtovníctve ({program}) od {kedy}", {
+                  program,
+                  kedy: kedy(row.exported_at, loc),
+                })
+              : t("V Pohode od {kedy}", { kedy: kedy(row.exported_at, loc) })}
           </span>
         ) : zauctovana ? (
           <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
@@ -1129,22 +1157,28 @@ export function ZauctovaniePanel({
               {Array.isArray(row.rozuctovanie) && row.rozuctovanie.length > 1
                 ? ` ${t("(rozúčtovaná na {n} riadky)", { n: row.rozuctovanie.length })}`
                 : ""}
-              . {t("Faktúra je odovzdaná do Pohody.")}
+              .{" "}
+              {program
+                ? t("Faktúra je odovzdaná do účtovníctva ({program}).", { program })
+                : t("Faktúra je odovzdaná do Pohody.")}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                onClick={() => stiahniXml(false)}
-                disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-              >
-                <Download className="h-4 w-4" /> {t("Stiahnuť XML znova")}
-              </button>
+              {program ? null : (
+                <button
+                  onClick={() => stiahniXml(false)}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4" /> {t("Stiahnuť XML znova")}
+                </button>
+              )}
               <button
                 onClick={vratit}
                 disabled={busy}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
               >
-                <Undo2 className="h-4 w-4" /> {t("Vrátiť z Pohody (opraviť)")}
+                <Undo2 className="h-4 w-4" />{" "}
+                {program ? t("Vrátiť z účtovníctva (opraviť)") : t("Vrátiť z Pohody (opraviť)")}
               </button>
               <OpravitZauctovanie
                 row={row}
@@ -1249,7 +1283,7 @@ export function ZauctovaniePanel({
               {!zauctovana && (
                 <button
                   onClick={() => uloz(false)}
-                  disabled={busy || bezClenenia}
+                  disabled={busy || bezClenenia || jeCudzia(row)}
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />}

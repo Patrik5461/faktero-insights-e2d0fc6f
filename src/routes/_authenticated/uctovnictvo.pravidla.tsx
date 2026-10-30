@@ -33,6 +33,7 @@ import {
   PREMENNE_POZNAMKY,
   premennePoznamky,
   pravidloSedi,
+  ponukaKodovPravidla,
   krajinaDokladu,
   type DokladNaPorovnanie,
   type Pravidlo,
@@ -670,7 +671,7 @@ function UpravaPravidla({
   const [kody, setKody] = useState<Navrhy | null>(null);
   useEffect(() => {
     nacitajKody({
-      data: { company_id: companyId, pre: p.druh === "vystavena" ? "vystavena" : "doklad" },
+      data: { company_id: companyId, pre: ponukaKodovPravidla(p.druh) },
     })
       .then(setKody)
       .catch(() => {});

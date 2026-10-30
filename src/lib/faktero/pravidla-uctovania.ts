@@ -25,6 +25,20 @@ export const DRUHY_PRAVIDIEL: { kod: DruhPravidla | null; nazov: string }[] = [
   { kod: "banka", nazov: "Banka" },
 ];
 
+/**
+ * Pre ktorý druh dokladu ponúknuť kódy vo formulári pravidla (`navrhyKodovFn`
+ * `pre`). Pravidlo len pre prijaté faktúry dostane predkontácie agendy
+ * Prijaté faktúry — Pohoda má ten istý kód v rôznych agendách s iným
+ * významom („7“ = Nákup materiálu v prijatých, Hrubá mzda v interných
+ * dokladoch). S ponukou bločkov sa „Nákup materiálu“ nedal nájsť a človek
+ * cez „Použiť kód…“ uložil do pravidla názov namiesto kódu.
+ */
+export function ponukaKodovPravidla(druh: DruhPravidla | null | undefined): "prijata" | "doklad" | "vystavena" {
+  if (druh === "vystavena") return "vystavena";
+  if (druh === "prijata") return "prijata";
+  return "doklad";
+}
+
 /** Typ faktúry ako podmienka — prijaté poznajú len prvé tri. */
 export const TYPY_DOKLADU: { kod: string; nazov: string; prijata: boolean }[] = [
   { kod: "regular", nazov: "Faktúra", prijata: true },

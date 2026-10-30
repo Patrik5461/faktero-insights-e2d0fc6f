@@ -283,6 +283,8 @@ export type PohodaNastavenia = {
   zaokruhlenieFirmy?: Record<string, unknown> | null;
   /** Predkontácie s agendou „Ostatné záväzky" — faktúra s nimi ide ako záväzok. */
   zavazkovePredkontacie?: string[];
+  /** Predkontácie, ktoré Pohoda v agende Prijaté faktúry pozná (prázdne = číselník nenačítaný). */
+  predkontaciePrijatych?: string[];
   /** Bločky aj s položkami (inak len súhrn po sadzbách). */
   polozkyBlockov?: boolean;
   /** Účtovanie pomerom podľa kódu predkontácie (napr. auto 50/50). */

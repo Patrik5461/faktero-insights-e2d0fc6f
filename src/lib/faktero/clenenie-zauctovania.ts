@@ -119,3 +119,15 @@ export function clenenieFaktur(
   }
   return { doplnit, bez };
 }
+
+/**
+ * Doplniť faktúre predkontáciu z návrhu (pravidlo, návyk dodávateľa)? Len pri
+ * hromadnom zaúčtovaní bez predkontácie v okne (`zOkna` = okno ju poslalo,
+ * aj prázdnu — detail prázdnou predkontáciou kód maže) a keď ju faktúra nemá.
+ */
+export function potrebujePredkontaciu(
+  f: { predkontacia?: string | null },
+  o: { zOkna: boolean },
+): boolean {
+  return !o.zOkna && !kod(f.predkontacia);
+}

@@ -338,13 +338,55 @@ export function prekazkaDokladu(
 }
 
 /**
- * Upozornenie (doklad sa nezastaví): rozúčtovanie prijatej faktúry používa
- * predkontáciu, ktorú firma má len v agende Ostatné záväzky. Faktúra ide do
- * Pohody ako prijatá faktúra (o agende rozhoduje kód hlavičky), takže taký kód
- * v riadku Pohoda v agende Prijaté faktúry nenájde a riadok zaúčtuje zle.
- * Zoznam kódov je `nastavenia.zavazkovePredkontacie` (`zavazkoveKody`).
+ * Upozornenie (doklad sa nezastaví) pri prijatej faktúre: záväzkový kód
+ * v rozúčtovaní (`varovanieZavazku`) alebo predkontácia, ktorú číselník
+ * Pohody nepozná (`varovanieNeznamehoKodu`).
  */
 export function varovanieDokladu(d: Riadok, nastavenia?: Riadok | null): string | null {
+  return varovanieZavazku(d, nastavenia) ?? varovanieNeznamehoKodu(d, nastavenia);
+}
+
+/**
+ * Predkontácia prijatej faktúry, ktorú číselník Pohody v agende Prijaté
+ * faktúry nemá (test 30. 10.: pravidlo uložilo názov „Nákup materiálu“
+ * namiesto kódu „7“ a automat podľa neho faktúru zaúčtoval). Pohoda kód pri
+ * importe nenájde. Kontroluje sa len pri firme s načítaným číselníkom
+ * (`nastavenia.predkontaciePrijatych` — kódy agendy Prijaté faktúry a ručne
+ * pridané bez agendy); záväzkové kódy hlási `varovanieZavazku`.
+ */
+function varovanieNeznamehoKodu(d: Riadok, nastavenia?: Riadok | null): string | null {
+  if (!d?._typPohody) return null;
+  const zname: string[] = Array.isArray(nastavenia?.predkontaciePrijatych)
+    ? nastavenia.predkontaciePrijatych.map((x: unknown) => kod(x))
+    : [];
+  if (!zname.length) return null;
+  const zavazkove = new Set<string>(
+    Array.isArray(nastavenia?.zavazkovePredkontacie)
+      ? nastavenia.zavazkovePredkontacie.map((x: unknown) => kod(x))
+      : [],
+  );
+  const podlaKat = nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
+  const rozuctovanie: Riadok[] = Array.isArray(d?.rozuctovanie) ? d.rozuctovanie : [];
+  const kody = [
+    kod(d?.pohoda_predkontacia) ||
+      kod(podlaKat?.predkontacia) ||
+      kod(nastavenia?.predkontaciaPrijata),
+    ...rozuctovanie.map((r) => kod(r?.predkontacia)),
+  ].filter(Boolean);
+  const nezname = [...new Set(kody.filter((k) => !zname.includes(k) && !zavazkove.has(k)))];
+  if (!nezname.length) return null;
+  const cislo = d?._povodneCislo || d?.document_number || "?";
+  return `${cislo} — predkontácia ${nezname.map((k) => `„${k}“`).join(", ")} nie je v číselníku Pohody pre prijaté faktúry — Pohoda ju pri importe nenájde; vyberte kód z číselníka alebo ho v Pohode založte`;
+}
+
+/**
+ * Rozúčtovanie prijatej faktúry používa predkontáciu, ktorú firma má len
+ * v agende Ostatné záväzky. Faktúra ide do Pohody ako prijatá faktúra
+ * (o agende rozhoduje kód hlavičky), takže taký kód v riadku Pohoda v agende
+ * Prijaté faktúry nenájde a riadok zaúčtuje zle. Zoznam kódov je
+ * `nastavenia.zavazkovePredkontacie` (`zavazkoveKody`).
+ */
+function varovanieZavazku(d: Riadok, nastavenia?: Riadok | null): string | null {
   if (!d?._typPohody) return null; // len prijaté faktúry
   const zavazkove: string[] = Array.isArray(nastavenia?.zavazkovePredkontacie)
     ? nastavenia.zavazkovePredkontacie.map((x: unknown) => kod(x))

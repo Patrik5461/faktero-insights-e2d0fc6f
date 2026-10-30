@@ -3,6 +3,7 @@ import {
   chybaClenenie,
   clenenieFaktur,
   potrebujeNavrh,
+  potrebujePredkontaciu,
   ucinneClenenie,
 } from "./clenenie-zauctovania";
 
@@ -93,5 +94,16 @@ describe("clenenieFaktur — hromadné zaúčtovanie", () => {
       platitel: true,
     });
     expect(r).toEqual({ doplnit: {}, bez: ["a"] });
+  });
+});
+
+describe("potrebujePredkontaciu (hromadné zaúčtovanie, test 30. 10.)", () => {
+  it("bez predkontácie v okne aj na faktúre sa doplní z návrhu", () => {
+    expect(potrebujePredkontaciu({ predkontacia: null }, { zOkna: false })).toBe(true);
+    expect(potrebujePredkontaciu({ predkontacia: "  " }, { zOkna: false })).toBe(true);
+  });
+  it("kód na faktúre ani voľba v okne sa neprepíše", () => {
+    expect(potrebujePredkontaciu({ predkontacia: "7" }, { zOkna: false })).toBe(false);
+    expect(potrebujePredkontaciu({ predkontacia: null }, { zOkna: true })).toBe(false);
   });
 });
