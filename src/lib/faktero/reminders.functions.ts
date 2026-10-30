@@ -20,6 +20,9 @@ export const sendReminderFn = createServerFn({ method: "POST" })
       .eq("id", data.invoiceId)
       .maybeSingle();
     if (!inv) throw new Error("Faktúra nenájdená");
+    // Upomienku zapíše a pošle server cez supabaseAdmin — RLS ani vlastný prístup ho nestráži.
+    const { overPristup } = await import("./over-pristup");
+    await overPristup(context, inv.company_id, { oblast: "faktury", zapis: true });
     const { sendReminder } = await import("./reminders.server");
     return sendReminder({
       company_id: inv.company_id,

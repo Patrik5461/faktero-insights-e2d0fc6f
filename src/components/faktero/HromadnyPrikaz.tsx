@@ -89,16 +89,17 @@ export function HromadnyPrikaz({
     spárované pohyby z banky aj ručne zapísané čiastočné úhrady) a zaplatená
     prijatá zálohová faktúra, ktorú faktúra vyúčtováva. Kým sa to nenačíta, príkaz sa nedá stiahnuť.
   */
-  const [uhrady, setUhrady] = useState<Record<string, { uhradene: number; zaloha: number }> | null>(
-    null,
-  );
+  const [uhrady, setUhrady] = useState<Record<
+    string,
+    { uhradene: number; zaloha: number; naKontrolu?: boolean }
+  > | null>(null);
   useEffect(() => {
     void (async () => {
       const ids = faktury.map((f) => f.id);
       const zalohoveIds = [
         ...new Set(faktury.map((f: any) => f.advance_invoice_id).filter(Boolean) as string[]),
       ];
-      const [{ data: pohyby }, { data: zalohove }] = await Promise.all([
+      const [{ data: pohyby }, { data: zalohove }, kontrola] = await Promise.all([
         // Úhrady faktúry — spárované pohyby z banky aj ručne zapísané čiastočné úhrady.
         ids.length
           ? supabase
@@ -114,8 +115,25 @@ export function HromadnyPrikaz({
               .eq("company_id", companyId)
               .in("id", zalohoveIds)
           : Promise.resolve({ data: [] as any[] }),
+        /* Automaticky zaradené eFaktúry, ktoré ešte nikto neotvoril — čítané
+           tu, nie zo zoznamu, aby nezáležalo na tom, aké stĺpce zoznam načítal. */
+        ids.length
+          ? supabase
+              .from("purchase_invoices")
+              .select("id, na_kontrolu_at" as "id")
+              .eq("company_id", companyId)
+              .in("id", ids)
+          : Promise.resolve({ data: [] as any[], error: null }),
       ]);
-      const out: Record<string, { uhradene: number; zaloha: number }> = {};
+      const out: Record<string, { uhradene: number; zaloha: number; naKontrolu?: boolean }> = {};
+      for (const f of faktury) out[f.id] = { uhradene: 0, zaloha: 0 };
+      if (kontrola.error) {
+        // Bez odpovede nevieme, ktorá je skontrolovaná — radšej žiadnu nepustiť.
+        for (const f of faktury) out[f.id].naKontrolu = true;
+      }
+      for (const k of (kontrola.data ?? []) as any[]) {
+        if (k.na_kontrolu_at) out[String(k.id)] = { ...out[String(k.id)], naKontrolu: true };
+      }
       for (const p of (pohyby ?? []) as any[]) {
         if (!(Number(p.amount) > 0)) continue;
         const k = String(p.purchase_invoice_id);
@@ -147,6 +165,7 @@ export function HromadnyPrikaz({
         ...f,
         uhradene: uhrady?.[f.id]?.uhradene ?? 0,
         zaloha: uhrady?.[f.id]?.zaloha ?? 0,
+        na_kontrolu: !!uhrady?.[f.id]?.naKontrolu,
       })),
     );
     return { platby: p.platby, preskocene: [...(vynechane ?? []), ...p.preskocene] };

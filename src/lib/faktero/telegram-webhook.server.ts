@@ -27,6 +27,7 @@ import {
 } from "./podpora-prilohy";
 import {
   MAX_NOVYCH_ZA_DEN,
+  MAX_NOVYCH_ZA_HODINU_SPOLU,
   MAX_SUBOR_TELEGRAMU,
   StropNaChat,
   cistyTextTelegramu,
@@ -38,6 +39,7 @@ import {
 import {
   posliSpravuTelegram,
   pouziKodTelegram,
+  pustiTelegram,
   stiahniSuborTelegram,
   volajTelegram,
 } from "./telegram.server";
@@ -69,10 +71,18 @@ type TgCallback = {
 };
 export type TgUpdate = { update_id: number; message?: TgMessage; callback_query?: TgCallback };
 
+/*
+  Stropy držia v databáze (`pustiTelegram`); objekty v pamäti sú len záloha,
+  keď databáza neodpovie.
+*/
 /** Správy zákazníka: najviac 20 za 10 minút na chat. */
-const stropSprav = new StropNaChat(20, 10 * 60_000);
+const SPRAVY = { max: 20, oknoMs: 10 * 60_000 };
+const stropSprav = new StropNaChat(SPRAVY.max, SPRAVY.oknoMs);
 /** Pokusy o spárovanie: 5 za 10 minút — kód sa nedá skúšať naslepo. */
-const stropParovania = new StropNaChat(5, 10 * 60_000);
+const PAROVANIE = { max: 5, oknoMs: 10 * 60_000 };
+const stropParovania = new StropNaChat(PAROVANIE.max, PAROVANIE.oknoMs);
+/** Nové požiadavky zo všetkých chatov spolu za hodinu (chat 0 = spolu). */
+const stropNovychSpolu = new StropNaChat(MAX_NOVYCH_ZA_HODINU_SPOLU, 3_600_000);
 
 /** Jazyk odpovedí bota podľa nastavenia Telegramu; inak slovenčina. */
 function jazyk(from?: TgUser): Jazyk {
@@ -165,7 +175,8 @@ export async function spracujUpdate(u: TgUpdate): Promise<Vysledok> {
   const prikaz = rozoberPrikaz(msg.text ?? msg.caption);
 
   if (prikaz.druh === "admin") {
-    if (!stropParovania.pusti(chatId)) return "strop";
+    if (!(await pustiTelegram(chatId, "parovanie", PAROVANIE.max, PAROVANIE.oknoMs, stropParovania)))
+      return "strop";
     return parujAdmina(msg, prikaz.kod);
   }
 
@@ -176,7 +187,7 @@ export async function spracujUpdate(u: TgUpdate): Promise<Vysledok> {
     .maybeSingle();
   if (admin) return spracujAdmina(msg, (admin as { user_id: string }).user_id);
 
-  if (!stropSprav.pusti(chatId)) {
+  if (!(await pustiTelegram(chatId, "spravy", SPRAVY.max, SPRAVY.oknoMs, stropSprav))) {
     console.warn(`[telegram] chat ${chatId} prekročil strop správ`);
     return "strop";
   }
@@ -502,6 +513,19 @@ async function spracujZakaznika(
         preloz(
           j,
           "Za posledný deň ste založili veľa požiadaviek. Skúste to prosím neskôr alebo nám napíšte na servis@faktero.sk.",
+        ),
+      );
+      return "strop";
+    }
+    if (
+      !(await pustiTelegram(0, "nove_spolu", MAX_NOVYCH_ZA_HODINU_SPOLU, 3_600_000, stropNovychSpolu))
+    ) {
+      console.warn("[telegram] prekročený spoločný strop nových požiadaviek za hodinu");
+      await odpovedz(
+        msg,
+        preloz(
+          j,
+          "Práve prijímame veľa požiadaviek naraz. Skúste to prosím o chvíľu znova alebo nám napíšte na servis@faktero.sk.",
         ),
       );
       return "strop";

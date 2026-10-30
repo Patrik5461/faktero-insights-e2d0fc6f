@@ -177,8 +177,8 @@ export function najvacsiaFotka(
 
 /**
  * Strop správ na chat v klzavom okne — aby niekto botom nezahltil help desk.
- * Drží sa v pamäti procesu (appka beží ako jeden proces); nové požiadavky
- * za deň stráži navyše databáza.
+ * Hlavný strop drží databáza (`pustiTelegram`); tento v pamäti procesu je
+ * záloha, keď databáza neodpovie.
  */
 export class StropNaChat {
   private historia = new Map<number, number[]>();
@@ -206,3 +206,9 @@ export class StropNaChat {
 
 /** Najviac nových požiadaviek z jedného chatu za 24 hodín. */
 export const MAX_NOVYCH_ZA_DEN = 5;
+
+/**
+ * Najviac nových požiadaviek z Telegramu za hodinu zo všetkých chatov spolu —
+ * proti zaplaveniu help desku z mnohých účtov naraz.
+ */
+export const MAX_NOVYCH_ZA_HODINU_SPOLU = 30;

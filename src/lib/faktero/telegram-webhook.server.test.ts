@@ -169,6 +169,19 @@ class Dotaz implements PromiseLike<any> {
 vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: {
     from: (t: string) => new Dotaz(t),
+    // `telegram_pusti` ako v databáze: počet v okne, potom zápis.
+    rpc: (meno: string, a: any) => {
+      if (meno !== "telegram_pusti")
+        return Promise.resolve({ data: null, error: { message: `neznáma funkcia ${meno}` } });
+      const teraz = Date.now();
+      const v = tab("telegram_strop").filter(
+        (r) =>
+          r.druh === a._druh && r.chat_id === a._chat_id && teraz - r.cas < a._okno_sekund * 1000,
+      );
+      if (v.length >= a._max) return Promise.resolve({ data: false, error: null });
+      tab("telegram_strop").push({ chat_id: a._chat_id, druh: a._druh, cas: teraz });
+      return Promise.resolve({ data: true, error: null });
+    },
     storage: {
       from: () => ({
         upload: (cesta: string) => {
@@ -448,6 +461,37 @@ describe("webhook bota podpory", () => {
     // Ten istý kód druhýkrát nefunguje.
     await posli(sprava(CUDZI, `/admin ${kod}`));
     expect(tab("telegram_admin_chaty")).toHaveLength(1);
+  });
+
+  it("strop správ na chat drží databáza", async () => {
+    for (let i = 0; i < 20; i++)
+      tab("telegram_strop").push({ chat_id: ZAKAZNIK, druh: "spravy", cas: Date.now() });
+    await posli(sprava(ZAKAZNIK, "Dvadsiata prvá"));
+    expect(tab("podpora_poziadavky")).toHaveLength(0);
+    // Iný chat strop nezdieľa.
+    await posli(sprava(CUDZI, "Prvá správa"));
+    expect(tab("podpora_poziadavky")).toHaveLength(1);
+    expect(
+      tab("telegram_strop").filter((r) => r.chat_id === CUDZI && r.druh === "spravy"),
+    ).toHaveLength(1);
+  });
+
+  it("spoločný strop nových požiadaviek za hodinu zo všetkých chatov", async () => {
+    for (let i = 0; i < 30; i++)
+      tab("telegram_strop").push({ chat_id: 0, druh: "nove_spolu", cas: Date.now() });
+    await posli(sprava(ZAKAZNIK, "Nová otázka"));
+    expect(tab("podpora_poziadavky")).toHaveLength(0);
+    expect(odoslane(ZAKAZNIK).at(-1)!.telo.text).toContain("veľa požiadaviek");
+  });
+
+  it("kód na spárovanie sa spotrebuje aj pri nesprávnom účele", async () => {
+    const { vytvorKodTelegram, pouziKodTelegram } = await import("./telegram.server");
+    const { kod } = await vytvorKodTelegram("user-1", "zakaznik");
+    expect(await pouziKodTelegram(kod, "admin")).toBeNull();
+    expect(await pouziKodTelegram(kod, "zakaznik")).toBeNull();
+    const { kod: druhy } = await vytvorKodTelegram("user-1", "zakaznik");
+    expect(await pouziKodTelegram(druhy, "zakaznik")).toBe("user-1");
+    expect(tab("telegram_kody")).toHaveLength(0);
   });
 
   it("bez tokenu bota sa upozornenia ani odpovede neposielajú a nič nespadne", async () => {

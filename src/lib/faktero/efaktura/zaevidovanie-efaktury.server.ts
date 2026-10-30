@@ -267,6 +267,9 @@ export async function zaevidujPrijatuEfakturu(
         source: "efaktura",
         ...(zaradenie.stavId ? { stav_id: zaradenie.stavId } : {}),
         ...(advanceInvoiceId ? { advance_invoice_id: advanceInvoiceId } : {}),
+        /* Zaradené bez človeka: eFaktúru môže poslať ktokoľvek z Peppolu, preto
+           ide do hromadného príkazu na úhradu až po otvorení (AutomatickyZaradena). */
+        ...(args.userId ? {} : { na_kontrolu_at: new Date().toISOString() }),
       } as TablesInsert<"purchase_invoices">)
       .select("id")
       .single();

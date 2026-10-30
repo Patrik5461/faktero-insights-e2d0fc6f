@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   PLATNOST_KODU_MIN,
+  StropNaChat,
   dataTlacidla,
   novyKod,
   normalizujKod,
@@ -218,15 +219,46 @@ export async function pouziKodTelegram(
   const kod = normalizujKod(surovyKod);
   if (!kod) return null;
   const h = hashKodu(kod);
+  /* Spotrebuje sa jedným príkazom (delete … returning): dva súbežné pokusy
+     s tým istým kódom nemôžu oba prejsť. Spotrebuje sa vždy, aj keď nesedí
+     účel — druhý pokus s ním nevyjde. */
   const { data } = await supabaseAdmin
     .from("telegram_kody")
-    .select("user_id, ucel, plati_do")
+    .delete()
     .eq("kod_hash", h)
+    .select("user_id, ucel, plati_do")
     .maybeSingle();
   const r = data as { user_id: string; ucel: string; plati_do: string } | null;
   if (!r) return null;
-  // Kód sa spotrebuje vždy, aj keď nesedí účel — druhý pokus s ním nevyjde.
-  await supabaseAdmin.from("telegram_kody").delete().eq("kod_hash", h);
   if (r.ucel !== ucel || new Date(r.plati_do).getTime() < Date.now()) return null;
   return r.user_id;
+}
+
+/* ------------------------------------------------------------- stropy */
+
+/**
+ * Strop v klzavom okne, držaný v databáze (`telegram_pusti`, atomicky so
+ * zámkom) — prežije reštart a platí pre všetky procesy. Keď databáza
+ * neodpovie, stráži aspoň `zaloha` v pamäti procesu.
+ */
+export async function pustiTelegram(
+  chatId: number,
+  druh: string,
+  max: number,
+  oknoMs: number,
+  zaloha: StropNaChat,
+): Promise<boolean> {
+  try {
+    const { data, error } = await (supabaseAdmin as any).rpc("telegram_pusti", {
+      _chat_id: chatId,
+      _druh: druh,
+      _max: max,
+      _okno_sekund: Math.ceil(oknoMs / 1000),
+    });
+    if (!error && typeof data === "boolean") return data;
+    if (error) console.warn("[telegram] strop z databázy:", String(error.message ?? error));
+  } catch (e: any) {
+    console.warn("[telegram] strop z databázy:", e?.message ?? e);
+  }
+  return zaloha.pusti(chatId);
 }

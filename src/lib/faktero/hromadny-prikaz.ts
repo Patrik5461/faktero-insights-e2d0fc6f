@@ -34,6 +34,12 @@ export type FakturaNaUhradu = {
   vyuctovanie_id?: string | null;
   /** Účtovná poznámka faktúry — do správy pre príjemcu, keď si to firma zvolí. */
   note?: string | null;
+  /**
+   * Zaradená automaticky (eFaktúra) a ešte ju nikto neotvoril
+   * (`purchase_invoices.na_kontrolu_at`). Faktúru do Peppolu pošle hocikto —
+   * bez kontroly človekom by cudzí IBAN prešiel rovno do platby.
+   */
+  na_kontrolu?: boolean | null;
 };
 
 export type Platba = {
@@ -131,6 +137,12 @@ export function pripravPlatby(faktury: FakturaNaUhradu[]): {
     }
     if (f.status === "cancelled") {
       skip("je stornovaná");
+      continue;
+    }
+    if (f.na_kontrolu) {
+      skip(
+        "zaradila sa automaticky z eFaktúry — najprv ju otvorte a skontrolujte dodávateľa a IBAN",
+      );
       continue;
     }
     if (f.vyuctovanie_id) {
