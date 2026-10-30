@@ -4306,6 +4306,10 @@ export type Database = {
           station_name: string | null
           total_amount: number
           vehicle_id: string
+          external_source: string | null
+          external_id: string | null
+          imported_at: string | null
+          raw_provider_data: Json | null
         }
         Insert: {
           company_id: string
@@ -4318,6 +4322,10 @@ export type Database = {
           station_name?: string | null
           total_amount: number
           vehicle_id: string
+          external_source?: string | null
+          external_id?: string | null
+          imported_at?: string | null
+          raw_provider_data?: Json | null
         }
         Update: {
           company_id?: string
@@ -4330,6 +4338,10 @@ export type Database = {
           station_name?: string | null
           total_amount?: number
           vehicle_id?: string
+          external_source?: string | null
+          external_id?: string | null
+          imported_at?: string | null
+          raw_provider_data?: Json | null
         }
         Relationships: [
           {
@@ -11984,6 +11996,369 @@ export type Database = {
 
 
 
+      gps_pripojenia: {
+        Row: {
+          id: string
+          company_id: string
+          poskytovatel: string
+          nazov: string
+          prihlasenie_sifrovane: string
+          prihlasenie_verejne: Json
+          aktivne: boolean
+          auto_sync: boolean
+          stav: string
+          neuplne: boolean
+          posledna_sync_at: string | null
+          posledna_chyba: string | null
+          tankovania_do: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          poskytovatel: string
+          nazov?: string
+          prihlasenie_sifrovane: string
+          prihlasenie_verejne: Json
+          aktivne?: boolean
+          auto_sync?: boolean
+          stav?: string
+          neuplne?: boolean
+          posledna_sync_at?: string | null
+          posledna_chyba?: string | null
+          tankovania_do?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          poskytovatel?: string
+          nazov?: string
+          prihlasenie_sifrovane?: string
+          prihlasenie_verejne?: Json
+          aktivne?: boolean
+          auto_sync?: boolean
+          stav?: string
+          neuplne?: boolean
+          posledna_sync_at?: string | null
+          posledna_chyba?: string | null
+          tankovania_do?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_pripojenia_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      gps_sync_logy: {
+        Row: {
+          id: string
+          company_id: string
+          pripojenie_id: string
+          druh: string
+          stav: string
+          sprava: string | null
+          detail: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          pripojenie_id: string
+          druh: string
+          stav: string
+          sprava?: string | null
+          detail?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          pripojenie_id?: string
+          druh?: string
+          stav?: string
+          sprava?: string | null
+          detail?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_sync_logy_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_sync_logy_pripojenie_id_fkey"
+            columns: ["pripojenie_id"]
+            isOneToOne: false
+            referencedRelation: "gps_pripojenia"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      gps_vozidla_vazby: {
+        Row: {
+          id: string
+          company_id: string
+          pripojenie_id: string
+          externe_id: string
+          nazov: string | null
+          spz: string | null
+          vin: string | null
+          vehicle_id: string | null
+          jazdy_do: string | null
+          posledna_sync_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          pripojenie_id: string
+          externe_id: string
+          nazov?: string | null
+          spz?: string | null
+          vin?: string | null
+          vehicle_id?: string | null
+          jazdy_do?: string | null
+          posledna_sync_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          pripojenie_id?: string
+          externe_id?: string
+          nazov?: string | null
+          spz?: string | null
+          vin?: string | null
+          vehicle_id?: string | null
+          jazdy_do?: string | null
+          posledna_sync_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_vozidla_vazby_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_vozidla_vazby_pripojenie_id_fkey"
+            columns: ["pripojenie_id"]
+            isOneToOne: false
+            referencedRelation: "gps_pripojenia"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_vozidla_vazby_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      transeu_napojenia: {
+        Row: {
+          company_id: string
+          client_id: string | null
+          client_secret_sifrovany: string | null
+          api_kluc_sifrovany: string | null
+          access_token_sifrovany: string | null
+          refresh_token_sifrovany: string | null
+          token_plati_do: string | null
+          stav: string
+          firma_nazov: string | null
+          firma_vat_id: string | null
+          auto_sync: boolean
+          auto_od: string | null
+          posledna_sync_at: string | null
+          posledna_chyba: string | null
+          updated_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          client_id?: string | null
+          client_secret_sifrovany?: string | null
+          api_kluc_sifrovany?: string | null
+          access_token_sifrovany?: string | null
+          refresh_token_sifrovany?: string | null
+          token_plati_do?: string | null
+          stav?: string
+          firma_nazov?: string | null
+          firma_vat_id?: string | null
+          auto_sync?: boolean
+          auto_od?: string | null
+          posledna_sync_at?: string | null
+          posledna_chyba?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          client_id?: string | null
+          client_secret_sifrovany?: string | null
+          api_kluc_sifrovany?: string | null
+          access_token_sifrovany?: string | null
+          refresh_token_sifrovany?: string | null
+          token_plati_do?: string | null
+          stav?: string
+          firma_nazov?: string | null
+          firma_vat_id?: string | null
+          auto_sync?: boolean
+          auto_od?: string | null
+          posledna_sync_at?: string | null
+          posledna_chyba?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transeu_napojenia_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      transeu_objednavky: {
+        Row: {
+          id: string
+          company_id: string
+          transeu_id: string
+          cislo: string | null
+          referencia: string | null
+          stav: string | null
+          zakaznik_nazov: string | null
+          zakaznik_vat_id: string | null
+          nakladka: string | null
+          nakladka_krajina: string | null
+          nakladka_od: string | null
+          vykladka: string | null
+          vykladka_krajina: string | null
+          vykladka_do: string | null
+          vzdialenost_km: number | null
+          cena: number | null
+          mena: string | null
+          typ_ceny: string | null
+          splatnost_dni: number | null
+          ma_fakturu_v_transeu: boolean
+          data: Json | null
+          sales_order_id: string | null
+          invoice_id: string | null
+          faktura_odoslana_at: string | null
+          faktura_media_id: string | null
+          chyba: string | null
+          stiahnuta_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          transeu_id: string
+          cislo?: string | null
+          referencia?: string | null
+          stav?: string | null
+          zakaznik_nazov?: string | null
+          zakaznik_vat_id?: string | null
+          nakladka?: string | null
+          nakladka_krajina?: string | null
+          nakladka_od?: string | null
+          vykladka?: string | null
+          vykladka_krajina?: string | null
+          vykladka_do?: string | null
+          vzdialenost_km?: number | null
+          cena?: number | null
+          mena?: string | null
+          typ_ceny?: string | null
+          splatnost_dni?: number | null
+          ma_fakturu_v_transeu?: boolean
+          data?: Json | null
+          sales_order_id?: string | null
+          invoice_id?: string | null
+          faktura_odoslana_at?: string | null
+          faktura_media_id?: string | null
+          chyba?: string | null
+          stiahnuta_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          transeu_id?: string
+          cislo?: string | null
+          referencia?: string | null
+          stav?: string | null
+          zakaznik_nazov?: string | null
+          zakaznik_vat_id?: string | null
+          nakladka?: string | null
+          nakladka_krajina?: string | null
+          nakladka_od?: string | null
+          vykladka?: string | null
+          vykladka_krajina?: string | null
+          vykladka_do?: string | null
+          vzdialenost_km?: number | null
+          cena?: number | null
+          mena?: string | null
+          typ_ceny?: string | null
+          splatnost_dni?: number | null
+          ma_fakturu_v_transeu?: boolean
+          data?: Json | null
+          sales_order_id?: string | null
+          invoice_id?: string | null
+          faktura_odoslana_at?: string | null
+          faktura_media_id?: string | null
+          chyba?: string | null
+          stiahnuta_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transeu_objednavky_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transeu_objednavky_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transeu_objednavky_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       stock_items_with_availability: {
