@@ -196,6 +196,17 @@ export type PomerPredkontacie =
       clenenieBezOdpoctu?: string | null;
     };
 
+/**
+ * Členenie pre časť bez odpočtu. Prázdny text (editor pomeru ukladá "", keď
+ * pole nikto nevyplní) znamená „nezadané“ — inak by sa „??“ na prázdnom
+ * reťazci nezastavil a časť bez nároku by dostala členenie dokladu (PD),
+ * teda odpočet celej DPH.
+ */
+function clenenieBezOdpoctu(v: unknown): string | null {
+  const s = String(v ?? "").trim();
+  return s || null;
+}
+
 /** Pomer z JSON stĺpca, alebo `null`, keď nedáva zmysel. */
 export function nacitajPomer(v: unknown): PomerPredkontacie | null {
   const x = v as any;
@@ -210,7 +221,7 @@ export function nacitajPomer(v: unknown): PomerPredkontacie | null {
       .filter((c: any) => c.podiel > 0 && c.predkontacia);
     const spolu = casti.reduce((a: number, c: any) => a + c.podiel, 0);
     if (casti.length < 2 || Math.abs(spolu - 100) > 0.001) return null;
-    return { typ: "pomer", casti, clenenieBezOdpoctu: x.clenenieBezOdpoctu ?? null };
+    return { typ: "pomer", casti, clenenieBezOdpoctu: clenenieBezOdpoctu(x.clenenieBezOdpoctu) };
   }
   if (x.typ === "dph5050") {
     const zaklad = Math.min(100, Math.max(0, Number(x.zaklad) || 0));
@@ -221,7 +232,7 @@ export function nacitajPomer(v: unknown): PomerPredkontacie | null {
       zdanitelna: String(x.zdanitelna),
       lenZaklad: String(x.lenZaklad ?? x.zdanitelna),
       nezdanitelna: String(x.nezdanitelna ?? x.zdanitelna),
-      clenenieBezOdpoctu: x.clenenieBezOdpoctu ?? null,
+      clenenieBezOdpoctu: clenenieBezOdpoctu(x.clenenieBezOdpoctu),
     };
   }
   return null;
@@ -274,7 +285,7 @@ export function rozuctovaniePodlaPomeru(
         */
         clenenie: c.odpocet
           ? clenenie
-          : (p.clenenieBezOdpoctu ??
+          : (clenenieBezOdpoctu(p.clenenieBezOdpoctu) ??
             (clenenie ? kodClenenia("tuzemsko_bez_odpoctu", "prijate", []) : null)),
         sadzba: s.sadzba,
         zaklad: z,
