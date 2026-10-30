@@ -43,8 +43,16 @@ export const DRUHY_S_PRILOHAMI = {
 
 export type DruhSPrilohou = keyof typeof DRUHY_S_PRILOHAMI;
 
-/** 15 MB na súbor; toľko znesie aj úložisko (`invoice-attachments`). */
-export const MAX_PRILOHA = 15 * 1024 * 1024;
+/**
+ * 15 MB na súbor (desiatkovo, 15 000 000 B). Súbor ide na server v base64 —
+ * narastie o tretinu — a nginx pustí telo požiadavky najviac 20 MiB
+ * (`client_max_body_size 20M`). Pri 15 MiB by base64 vyšlo presne na 20 MiB
+ * a s obalom požiadavky by ho nginx odmietol (413). Úložisko berie 15 MiB.
+ */
+export const MAX_PRILOHA = 15_000_000;
+
+/** Strop tela požiadavky v nginx (`client_max_body_size 20M`). */
+export const STROP_POZIADAVKY = 20 * 1024 * 1024;
 
 /** Viac než desať príloh na doklad už nie je príloha, ale archív. */
 export const MAX_PRILOH = 10;

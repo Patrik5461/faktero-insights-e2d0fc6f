@@ -3,6 +3,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import {
   DRUHY_S_PRILOHAMI,
   MAX_PRILOH,
+  MAX_PRILOHA,
+  STROP_POZIADAVKY,
   nazvyDoZipu,
   POVOLENE_TYPY,
   PRIPONY_PRE_VYBER,
@@ -60,6 +62,17 @@ describe("hláška, prečo sa súbor priložiť nedá", () => {
     const velky = chybaPrilohy(subor("velky.pdf", 16 * 1024 * 1024, "application/pdf"), 0);
     expect(velky).toContain("velky.pdf");
     expect(velky).toContain("15 MB");
+  });
+
+  it("najväčšia povolená príloha sa v base64 zmestí pod strop nginx (20 MiB)", () => {
+    // Zistené naostro 30. 10. 2026: súbor s 15 MiB nginx odmietol (413).
+    const base64 = Math.ceil(MAX_PRILOHA / 3) * 4;
+    // Rezerva na obal požiadavky (JSON, názov súboru, id dokladu).
+    expect(base64 + 4096).toBeLessThan(STROP_POZIADAVKY);
+    expect(chybaPrilohy(subor("presne.pdf", MAX_PRILOHA, "application/pdf"), 0)).toBeNull();
+    expect(chybaPrilohy(subor("o-bajt.pdf", MAX_PRILOHA + 1, "application/pdf"), 0)).toContain(
+      "15 MB",
+    );
   });
 
   it("nad desať príloh sa už nepridáva", () => {

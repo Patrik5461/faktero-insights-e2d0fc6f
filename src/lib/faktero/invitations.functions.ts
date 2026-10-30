@@ -23,7 +23,8 @@ export const createInvitationFn = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const email = data.email.trim().toLowerCase();
-    if (!email || !email.includes("@")) throw new Error("Neplatný email");
+    // Jedna adresa — „a@x.sk, b@y.sk" by poslalo pozvánku viacerým naraz.
+    if (!z.string().email().max(255).safeParse(email).success) throw new Error("Neplatný email");
 
     const { data: admin } = await context.supabase.rpc("is_company_admin", {
       _company_id: data.company_id,

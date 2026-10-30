@@ -271,6 +271,7 @@ async function ulozPotvrdeniePreposielania(args: {
     spf: obsah.spf,
     dkim: obsah.dkim,
     domena: args.poskytovatel.domena,
+    authservId: process.env.MAIL_AUTHSERV_ID ?? null,
   });
   if (!pravost.ok) {
     // Do logu ide len zoznam názvov hlavičiek — podľa neho sa dá zistiť, či ich

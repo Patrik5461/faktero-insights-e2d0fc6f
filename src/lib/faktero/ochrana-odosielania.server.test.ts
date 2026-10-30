@@ -52,6 +52,7 @@ import {
   strazOdoslanie,
   stropyFirmy,
   upravAdresatov,
+  rozdelAdresy,
 } from "./ochrana-odosielania.server";
 
 const dniDozadu = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
@@ -122,6 +123,13 @@ describe("stropy", () => {
   });
   it("adresáti bez duplicít a veľkých písmen", () => {
     expect(upravAdresatov([" A@b.sk", "a@B.sk", "", "c@d.sk"])).toEqual(["a@b.sk", "c@d.sk"]);
+    // Viac adries v jednej položke (karta odberateľa, API) sa ráta jednotlivo.
+    expect(upravAdresatov(["a@b.sk, c@d.sk;e@f.sk", "A@b.sk"])).toEqual([
+      "a@b.sk",
+      "c@d.sk",
+      "e@f.sk",
+    ]);
+    expect(rozdelAdresy(["X@y.sk ,", " ; "])).toEqual(["X@y.sk"]);
   });
   it("hláška pre novú firmu spomína 10 adresátov a podporu", () => {
     expect(HLASKY.novaDen).toContain("10 adresátom denne");
@@ -160,6 +168,14 @@ describe("strážca", () => {
     );
     expect(e?.message).toBe(HLASKY.novaMail);
     expect(stav.rpc.map((r) => r.fn)).toEqual(["odosielanie_zapis_blok"]);
+  });
+
+  it("nová firma: 4 adresy v jednej položke „a, b; c, d“ tiež neprejdú", async () => {
+    stav.firma = zakladFirmy({ created_at: dniDozadu(0) });
+    const e = await chyba(
+      strazOdoslanie(odoslanie({ adresati: ["a@x.sk, b@x.sk; c@x.sk,d@x.sk"] })),
+    );
+    expect(e?.message).toBe(HLASKY.novaMail);
   });
 
   it("phishing z útoku sa zastaví a zapíše", async () => {
