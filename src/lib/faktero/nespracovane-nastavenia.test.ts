@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cisloObjednavkyPodlaPredpon,
   kodyPrijatejUrcene,
+  blocekZauctovanyPriVytvoreni,
   maPredponu,
   textyPreObjednavku,
   nastaveniaNespracovanych,
@@ -146,5 +147,32 @@ describe("predpony čísla objednávky", () => {
       ]).objednavka,
     ).toBe("12345");
     expect(maPredponu("obj-1", ["OBJ-"])).toBe(true);
+  });
+});
+
+describe("blocekZauctovanyPriVytvoreni", () => {
+  const z = {
+    odCloveka: false,
+    predkontaciaPoZapise: null,
+    zauctovat: true,
+    nepotvrdenychNavrhov: 0,
+  };
+  it("predkontácia od človeka bloček zaúčtuje vždy", () => {
+    expect(
+      blocekZauctovanyPriVytvoreni({ ...z, odCloveka: true, predkontaciaPoZapise: "4V" }),
+    ).toBe(true);
+    expect(blocekZauctovanyPriVytvoreni({ ...z, odCloveka: true, zauctovat: false })).toBe(true);
+  });
+  it("predkontácia od pravidla len pri zapnutom nastavení a bez nepotvrdeného návrhu AI", () => {
+    expect(blocekZauctovanyPriVytvoreni({ ...z, predkontaciaPoZapise: "4V" })).toBe(true);
+    expect(
+      blocekZauctovanyPriVytvoreni({ ...z, predkontaciaPoZapise: "4V", zauctovat: false }),
+    ).toBe(false);
+    expect(
+      blocekZauctovanyPriVytvoreni({ ...z, predkontaciaPoZapise: "4V", nepotvrdenychNavrhov: 1 }),
+    ).toBe(false);
+  });
+  it("bez predkontácie ostane nezaúčtovaný", () => {
+    expect(blocekZauctovanyPriVytvoreni({ ...z, predkontaciaPoZapise: "  " })).toBe(false);
   });
 });

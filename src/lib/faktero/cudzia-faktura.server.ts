@@ -157,7 +157,33 @@ export async function presunPrijatu(
     if (c) noveCesty.set(p.id, c);
   }
 
-  // Väzby v zdrojovej firme — servisným kľúčom (overené vyššie), banka nemusí byť v práve custom roly.
+  // Samotný presun klientom prihláseného — RLS pustí len firmu, kam smie zapisovať.
+  const { error } = await ctx.supabase
+    .from("purchase_invoices")
+    .update({
+      ...VYPRAZDNIT_PRI_PRESUNE,
+      company_id: args.cielovaFirmaId,
+      file_path: novaCesta,
+      status: "received",
+      odberatel_nesedi: null,
+      odberatel_potvrdene_at: null,
+      odberatel_potvrdil: null,
+      note: [r.note, `Presunuté z inej firmy (odberateľ na doklade).`].filter(Boolean).join(" "),
+    })
+    .eq("id", r.id)
+    .eq("company_id", zdroj);
+  if (error) {
+    // Prenesené kópie súborov nenecháme visieť.
+    if (novaCesta) await ctx.supabase.storage.from("purchase-invoices").remove([novaCesta]);
+    if (noveCesty.size)
+      await ctx.supabase.storage.from("invoice-attachments").remove([...noveCesty.values()]);
+    throw new Error(error.message);
+  }
+  /*
+    Väzby v zdrojovej firme — servisným kľúčom (overené vyššie), banka nemusí
+    byť v práve custom roly. Až po úspešnom presune: keby presun zlyhal,
+    faktúra by v zdrojovej firme ostala bez párovania a úhrad.
+  */
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const adm = supabaseAdmin as any;
   await adm
@@ -188,28 +214,6 @@ export async function presunPrijatu(
   await adm.from("schvalovanie").delete().eq("company_id", zdroj).eq("doklad_id", r.id);
   await adm.from("komentare_dokladov").delete().eq("company_id", zdroj).eq("doklad_id", r.id);
 
-  // Samotný presun klientom prihláseného — RLS pustí len firmu, kam smie zapisovať.
-  const { error } = await ctx.supabase
-    .from("purchase_invoices")
-    .update({
-      ...VYPRAZDNIT_PRI_PRESUNE,
-      company_id: args.cielovaFirmaId,
-      file_path: novaCesta,
-      status: "received",
-      odberatel_nesedi: null,
-      odberatel_potvrdene_at: null,
-      odberatel_potvrdil: null,
-      note: [r.note, `Presunuté z inej firmy (odberateľ na doklade).`].filter(Boolean).join(" "),
-    })
-    .eq("id", r.id)
-    .eq("company_id", zdroj);
-  if (error) {
-    // Prenesené kópie súborov nenecháme visieť.
-    if (novaCesta) await ctx.supabase.storage.from("purchase-invoices").remove([novaCesta]);
-    if (noveCesty.size)
-      await ctx.supabase.storage.from("invoice-attachments").remove([...noveCesty.values()]);
-    throw new Error(error.message);
-  }
   for (const [pid, cesta] of noveCesty)
     await ctx.supabase
       .from("prilohy_dokladov")

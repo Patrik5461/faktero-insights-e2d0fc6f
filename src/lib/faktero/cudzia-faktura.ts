@@ -299,7 +299,7 @@ export function cieleNaPresun(
  * väzby na číselníky, pravidlá a zaúčtovanie zdrojovej firmy. Cieľová firma
  * ich nemá a zaúčtuje si faktúru po svojom.
  */
-export const VYPRAZDNIT_PRI_PRESUNE: Record<string, null | boolean | string> = {
+export const VYPRAZDNIT_PRI_PRESUNE: Record<string, null | boolean | string | string[]> = {
   pravidlo_id: null,
   pohoda_predkontacia: null,
   pohoda_clenenie_dph: null,
@@ -328,7 +328,8 @@ export const VYPRAZDNIT_PRI_PRESUNE: Record<string, null | boolean | string> = {
   vyuctovanie_id: null,
   export_job_id: null,
   inbox_message_id: null,
-  stitky: null,
+  // Štítky sú NOT NULL (predvolene prázdne pole) — null by presun zhodil.
+  stitky: [],
   komentar: null,
   int_poznamka: null,
   spracoval: null,

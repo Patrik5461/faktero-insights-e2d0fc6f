@@ -38,7 +38,11 @@ const NESEDI = {
   firma: { nazov: "Alfa s.r.o." },
 };
 
-function klient(opts: { sPravom: string[]; riadok?: Record<string, unknown> }) {
+function klient(opts: {
+  sPravom: string[];
+  riadok?: Record<string, unknown>;
+  chybaZapisu?: string;
+}) {
   const zapisy: { tabulka: string; zmena: unknown }[] = [];
   const firmy = [
     { id: "zdroj", name: "Alfa s.r.o.", ico: "12345678", dic: null, ic_dph: null },
@@ -76,7 +80,7 @@ function klient(opts: { sPravom: string[]; riadok?: Record<string, unknown> }) {
       then: (res: (v: unknown) => unknown) =>
         res(
           zmena
-            ? { error: null }
+            ? { error: opts.chybaZapisu ? { message: opts.chybaZapisu } : null }
             : tabulka === "companies"
               ? { data: firmy.filter((f) => !ids || ids.includes(f.id)) }
               : { data: [] },
@@ -152,12 +156,28 @@ describe("presunPrijatu — kontrola práv", () => {
       pravidlo_id: null,
       pohoda_predkontacia: null,
       zauctovane_at: null,
-      stitky: null,
+      stitky: [],
       status: "received",
     });
     expect(zapisyAdmina).toEqual(
       expect.arrayContaining(["bank_transactions", "purchase_invoice_payments", "schvalovanie"]),
     );
+  });
+
+  it("štítky pri presune vyprázdni na [], nie null (stĺpec je NOT NULL)", async () => {
+    const { VYPRAZDNIT_PRI_PRESUNE } = await import("./cudzia-faktura");
+    expect(VYPRAZDNIT_PRI_PRESUNE.stitky).toEqual([]);
+  });
+
+  it("keď presun zlyhá, väzby v zdrojovej firme nechá tak", async () => {
+    pristup.firmy = new Set(["zdroj", "beta"]);
+    zapisyAdmina.length = 0;
+    const k = klient({ sPravom: ["zdroj", "beta"], chybaZapisu: "violates not-null constraint" });
+    const { presunPrijatu } = await import("./cudzia-faktura.server");
+    await expect(
+      presunPrijatu({ supabase: k.supabase, userId: "u" }, { id: "p1", cielovaFirmaId: "beta" }),
+    ).rejects.toThrow(/not-null/);
+    expect(zapisyAdmina).toEqual([]);
   });
 
   it("ponuka firiem nevráti firmu bez práva zapisovať doklady", async () => {

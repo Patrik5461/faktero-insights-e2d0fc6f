@@ -467,13 +467,31 @@ export async function vytvorDoklad(
         file_size: bajty?.length ?? null,
         ai_raw: r.ai ?? null,
       })
-      .select("id")
+      .select("id, pohoda_predkontacia")
       .single();
     if (error) {
       if (cesta) await supabase.storage.from("expense-receipts").remove([cesta]);
       throw new Error(error.message);
     }
-    vysledok = { agenda: "doklad", id: data.id };
+    /*
+      Vytvorením s predkontáciou je bloček zaúčtovaný (ako ručná predkontácia
+      v Dokladoch). Inak by ho fronta automatického zaúčtovania vzala ako nový
+      a položila na kontrolu, hoci ho človek práve zaúčtoval.
+    */
+    const { blocekZauctovanyPriVytvoreni } = await import("./nespracovane-nastavenia");
+    const zauctovanyBlocek = blocekZauctovanyPriVytvoreni({
+      odCloveka: Boolean(blocekZUdajov(u).pohoda_predkontacia || polozkyZauctovane(u)),
+      predkontaciaPoZapise: data.pohoda_predkontacia,
+      zauctovat: nastavenia.zauctovat,
+      nepotvrdenychNavrhov: nepotvrdeneNavrhy.length,
+    });
+    if (zauctovanyBlocek)
+      await supabase
+        .from("expense_documents")
+        .update({ zauctovane_at: teraz, zauctoval: userId })
+        .eq("id", data.id)
+        .is("zauctovane_at", null);
+    vysledok = { agenda: "doklad", id: data.id, zauctovana: zauctovanyBlocek };
   } else {
     const idDokladu = crypto.randomUUID();
     const { error } = await supabase.from("other_documents").insert({
