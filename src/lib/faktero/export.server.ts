@@ -3,6 +3,7 @@
 import { intNoteSEfakturou } from "./efaktura-odoslana";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { icoPrePohodu } from "./ico-z-mena";
+import { kodStatu } from "./company-autofill";
 
 /**
  * Množstvo najviac na štyri desatinné miesta. POHODA od verzie Jeseň 2026
@@ -871,8 +872,8 @@ export function polozkyFaktur(opts: {
         el("typ:street", skrat(invoice.customer_street, 64), "            "),
         el("typ:city", skrat(invoice.customer_city, 45), "            "),
         el("typ:zip", skrat(invoice.customer_zip, 15), "            "),
-        invoice.customer_country
-          ? `\n            <typ:country><typ:ids>${esc(invoice.customer_country)}</typ:ids></typ:country>`
+        kodStatu(invoice.customer_country)
+          ? `\n            <typ:country><typ:ids>${kodStatu(invoice.customer_country)}</typ:ids></typ:country>`
           : "",
         el("typ:ico", skrat(icoPrePohodu(invoice.customer_ico, invoice.customer_name, invoice.customer_country, (company as any)?.pohoda_ico_z_mena), 15), "            "),
         el("typ:dic", skrat(invoice.customer_dic, 18), "            "),
@@ -2101,8 +2102,8 @@ export function polozkyAdresara(opts: { zakaznici: DokladRow[]; company?: Compan
         el("typ:street", skrat(z?.street, 64), "              "),
         el("typ:city", skrat(z?.city, 45), "              "),
         el("typ:zip", skrat(z?.zip, 15), "              "),
-        z?.country
-          ? `\n              <typ:country><typ:ids>${esc(z.country)}</typ:ids></typ:country>`
+        kodStatu(z?.country)
+          ? `\n              <typ:country><typ:ids>${kodStatu(z?.country)}</typ:ids></typ:country>`
           : "",
         el("typ:ico", skrat(icoPrePohodu(z?.ico, z?.name, z?.country, (opts.company as any)?.pohoda_ico_z_mena), 15), "              "),
         el("typ:dic", skrat(z?.dic, 18), "              "),
@@ -3316,8 +3317,12 @@ ${odsadenie}</SouhrnDPH>`;
         <Adresa>
           <Ulice>${esc(skrat(invoice.customer_street, 50))}</Ulice>
           <Misto>${esc(skrat(invoice.customer_city, 40))}</Misto>
-          <PSC>${esc(skrat(invoice.customer_zip, 10))}</PSC>
-          <KodStatu>${esc(invoice.customer_country ?? "SK")}</KodStatu>
+          <PSC>${esc(skrat(invoice.customer_zip, 10))}</PSC>${
+            // „Slovensko" namiesto kódu by Money odmietlo (KodStatu má presne 2 znaky).
+            kodStatu(invoice.customer_country ?? "SK")
+              ? `\n          <KodStatu>${kodStatu(invoice.customer_country ?? "SK")}</KodStatu>`
+              : ""
+          }
         </Adresa>
         <ICO>${esc(icoPreMoney(invoice.customer_ico))}</ICO>
         <DIC>${esc(skrat(invoice.customer_ic_dph || invoice.customer_dic, 20))}</DIC>

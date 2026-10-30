@@ -123,3 +123,17 @@ export function kodKrajiny(v: string | null | undefined): string | null {
   if (/^(SK|SVK|SLOVENSK|SLOVAK)/.test(n)) return "SK";
   return s;
 }
+
+/**
+ * Dvojpísmenový kód krajiny pre exporty (Money `KodStatu`, MRP `CountryCode`,
+ * Pohoda `typ:country`, ISDOC) — „Slovensko" na odberateľovi dalo v Money
+ * neplatné XML a skrátené „SL" by bola Sierra Leone. Čo sa na kód previesť
+ * nedá, vráti null a pole sa vynechá.
+ */
+export function kodStatu(v: unknown): string | null {
+  const k = kodKrajiny(typeof v === "string" ? v : v == null ? null : String(v));
+  const u = String(k ?? "")
+    .trim()
+    .toUpperCase();
+  return /^[A-Z]{2}$/.test(u) ? u : null;
+}

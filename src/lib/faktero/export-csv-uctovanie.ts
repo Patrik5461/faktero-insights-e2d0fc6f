@@ -79,6 +79,9 @@ export const STLPCE_CSV_UCTOVANIA = [
   "kurz",
   "odpocet_zalohy",
   "poznamka",
+  // Prijatý doklad: kedy prišiel a do ktorého obdobia ide odpočet DPH (voľba „Dátum odpočtu").
+  "datum_prijatia",
+  "datum_odpoctu",
 ];
 
 export function buildCsvUctovanie(opts: {
@@ -143,6 +146,8 @@ export function buildCsvUctovanie(opts: {
           d.kurz ? String(d.kurz).replace(".", ",") : "",
           d.odpocetZalohy ? dveSk(d.odpocetZalohy) : "",
           pole(d.poznamka),
+          d.agenda === "vystavena" ? "" : (d.datumPrijatia ?? ""),
+          d.agenda === "vystavena" ? "" : (d.datumOdpoctu ?? ""),
         ].join(";"),
       );
     }

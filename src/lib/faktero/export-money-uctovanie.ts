@@ -31,6 +31,7 @@ import type { DokladUctovania, KodUctovania, RiadokUctovania } from "./zauctovan
 import { kodPreDoklad } from "./uctovanie-agenda";
 import { rozdelUcet } from "./zauctovanie-export";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
+import { kodStatu } from "./company-autofill";
 
 export type NastaveniaMoney = {
   /** Zkratky číselných řad v Money (max. 5 znakov). */
@@ -114,7 +115,7 @@ function firma(d: DokladUctovania, tag: string, o: string): string {
   const icDph = skrat(p.icDph, 20);
   return `<${tag}>
 ${o}  <ObchNazev>${esc(p.nazov)}</ObchNazev>
-${o}  <ObchAdresa>${el("Ulice", p.ulica, `${o}    `)}${el("Misto", p.mesto, `${o}    `)}${el("PSC", p.psc, `${o}    `)}${el("KodStatu", skrat(p.stat, 2).toUpperCase(), `${o}    `)}
+${o}  <ObchAdresa>${el("Ulice", skrat(p.ulica, 50), `${o}    `)}${el("Misto", skrat(p.mesto, 40), `${o}    `)}${el("PSC", skrat(p.psc, 10), `${o}    `)}${el("KodStatu", kodStatu(p.stat), `${o}    `)}
 ${o}  </ObchAdresa>${el("ICO", skrat(p.ico, 10), `${o}  `)}${el("DIC", icDph, `${o}  `)}${el("DICSK", skrat(p.dic, 20), `${o}  `)}${el("EMail", skrat(p.email, 50), `${o}  `)}
 ${o}</${tag}>`;
 }

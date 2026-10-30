@@ -38,6 +38,7 @@ import {
   type RiadokUctovania,
 } from "./zauctovanie-export";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
+import { kodStatu } from "./company-autofill";
 
 export type NastaveniaMrp = {
   /** Verzia programu — SK alebo CZ (predvolene podľa krajiny firmy). */
@@ -350,7 +351,7 @@ function partner(d: DokladUctovania, verzia: "SK" | "CZ", o: string): string {
       ? `\n${o}  <BankAccounts>\n${o}    <BankAccount>\n${o}      <IBAN>${esc(iban)}</IBAN>\n${o}      <DefaultForDoc>T</DefaultForDoc>\n${o}    </BankAccount>\n${o}  </BankAccounts>`
       : "";
   return `\n${o}<Company>${el("CompanyId", skrat(p.ico, 12), `${o}  `)}
-${o}  <Name>${esc(nazov.slice(0, 50).trim())}</Name>${el("Name2", nazov.slice(50, 100), `${o}  `)}${el("Street", skrat(p.ulica, 30), `${o}  `)}${el("City", skrat(p.mesto, 30), `${o}  `)}${el("CountryCode", skrat(p.stat, 2).toUpperCase(), `${o}  `)}${el("ZipCode", skrat(p.psc, 15), `${o}  `)}${el("VatNumber", skrat(dic, 17), `${o}  `)}${
+${o}  <Name>${esc(nazov.slice(0, 50).trim())}</Name>${el("Name2", nazov.slice(50, 100), `${o}  `)}${el("Street", skrat(p.ulica, 30), `${o}  `)}${el("City", skrat(p.mesto, 30), `${o}  `)}${el("CountryCode", kodStatu(p.stat), `${o}  `)}${el("ZipCode", skrat(p.psc, 15), `${o}  `)}${el("VatNumber", skrat(dic, 17), `${o}  `)}${
     verzia === "SK" ? el("VatNumberSK", skrat(p.icDph, 14), `${o}  `) : ""
   }${String(p.email ?? "").length <= 256 ? el("Email", p.email, `${o}  `) : ""}${ucet}
 ${o}</Company>`;

@@ -149,7 +149,7 @@ export function prekazkaClenenia(
   clenenia: unknown[],
   kvs: unknown[] = [],
 ): string | null {
-  const doklad = smer === "vydane" ? "vystavenej faktúre" : "prijatom doklade";
+  const doklad = smer === "vydane" ? "vystavenej faktúre" : "prijatému dokladu";
   for (const c of clenenia) {
     const s = smerClenenia(c);
     if (s && s !== smer)

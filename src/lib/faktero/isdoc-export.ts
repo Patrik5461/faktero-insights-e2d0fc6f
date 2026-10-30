@@ -1,4 +1,5 @@
 import { krajinaDane } from "./vat-rates";
+import { kodStatu } from "./company-autofill";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { sUctomFaktury } from "./platobny-ucet";
@@ -125,7 +126,7 @@ function strana(o: Riadok, meno: string): string {
      <CityName>${esc(o.city ?? "")}</CityName>
      <PostalZone>${esc(o.zip ?? "")}</PostalZone>
      <Country>
-      <IdentificationCode>${esc((o.country || "CZ").toUpperCase().slice(0, 2))}</IdentificationCode>
+      <IdentificationCode>${esc(kodStatu(o.country) ?? "CZ")}</IdentificationCode>
       <Name>${esc(o.country_name ?? "")}</Name>
      </Country>
     </PostalAddress>

@@ -16,6 +16,7 @@
 import { riadkyDokladu, rozpisBlocku, type OdpocetVozidla, type RozpisSadzby } from "./rozuctovanie";
 import { vsPrijatej, vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { odpocetDokladu } from "./vozidlo-odpocet";
+import { kodStatu } from "./company-autofill";
 import { polozkyPrijatej, rozpisPrijatej } from "./prijate-do-pohody";
 import { datumyPrijateho, type DatumOdpoctu, type DatumZapisu } from "./export-nastavenia";
 import {
@@ -229,6 +230,13 @@ export function datumOdpoctuPrijateho(
  * Odpočet zálohy mimo riadkov rieši každý program sám (ručné zúčtovanie).
  */
 export function prekazkaZaokruhlenia(d: DokladUctovania): string | null {
+  /*
+    Prijatá zálohová faktúra bez dane (BÝVAJLEPŠIE 20260037: základ 0, DPH 0,
+    spolu 900) nemá čo zaúčtovať — nie je daňový doklad. Hláška o rozpise DPH
+    by človeka poslala opravovať niečo, čo je v poriadku.
+  */
+  if (d.druh === "zaloha" && d.agenda === "prijata" && !d.riadky.length && d.celkom)
+    return `${d.cislo || d.partner.nazov || d.id} — zálohová faktúra bez DPH nie je daňový doklad, do účtovníctva ide až úhrada alebo daňový doklad k prijatej platbe`;
   if (d.odpocetZalohy > 0 && !d.odpocetVRiadkoch) return null;
   if (Math.abs(d.zaokruhlenie) <= 1) return null;
   return `${d.cislo || d.partner.nazov || d.id} — súčet riadkov (${r2(d.zaklad + d.dph)}) nesedí s celkovou sumou (${d.celkom}), skontrolujte rozpis DPH`;
@@ -306,7 +314,7 @@ function partnerZDodavatela(r: any): PartnerUctovania {
     ulica: t(r?.supplier_street),
     mesto: t(r?.supplier_city),
     psc: t(r?.supplier_zip),
-    stat: t(r?.supplier_country),
+    stat: kodStatu(r?.supplier_country),
     iban: t(r?.supplier_iban),
     email: t(r?.supplier_email),
   };
@@ -637,7 +645,7 @@ export function vystavenaNaUctovanie(
       ulica: t(inv?.customer_street),
       mesto: t(inv?.customer_city),
       psc: t(inv?.customer_zip),
-      stat: t(inv?.customer_country),
+      stat: kodStatu(inv?.customer_country),
       iban: null,
       email: t(inv?.customer_email),
     },
