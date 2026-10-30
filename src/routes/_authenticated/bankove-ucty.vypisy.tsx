@@ -265,8 +265,8 @@ function BankStatementsPage() {
                   {nepodporovane.map((a) => (
                     <li key={a.id}>
                       <span className="font-mono">{a.iban ?? a.account_name}</span>
-                      {a.dovod && !a.dovod.includes("PRODUCT_UNKNOWN") && (
-                        <span className="ml-2">— {a.dovod}</span>
+                      {dovodPreLudi(a.dovod) && (
+                        <span className="ml-2">— {t(dovodPreLudi(a.dovod)!)}</span>
                       )}
                     </li>
                   ))}
@@ -278,4 +278,18 @@ function BankStatementsPage() {
       </PageBody>
     </>
   );
+}
+
+/**
+ * Dôvod chýbajúceho výpisu bez odpovede banky v JSON-e. Do zoznamu sa
+ * dostávalo „tb_statement_task_failed: 403 {"errorCode": …}“.
+ */
+function dovodPreLudi(dovod: string | null | undefined): string | null {
+  if (!dovod || dovod.includes("PRODUCT_UNKNOWN")) return null;
+  if (/DATE_F_ACC_NOT_OPEN|precedes account opening/i.test(dovod))
+    return "účet bol otvorený až počas mesiaca, banka za celý mesiac výpis nevydá";
+  if (/NO_ACCOUNT|Account does not exist/i.test(dovod))
+    return "banka účet pod týmto pripojením nepozná";
+  if (/tb_statement|errorCode|^\d{3}\b/.test(dovod)) return null;
+  return dovod;
 }

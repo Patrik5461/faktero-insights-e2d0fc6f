@@ -33,7 +33,9 @@ import {
   REPO_DIR,
   SUBOR_TAJOMSTIEV,
   dnes,
+  klucRelacie,
   nacitajPlaywright,
+  prihlasOdkazom,
   prihlasRest,
   qaHeslo,
   restKlient,
@@ -127,6 +129,7 @@ const ZNACKA = `E2E-${cas.slice(4)}`; // napr. E2E-1030-163012
 
 let rest = null;
 let ulozenaRelacia = null;
+let relaciaOdkazom = null;
 
 /** Prihlásenie cez formulár; relácia sa potom použije v každom toku. */
 async function prihlas() {
@@ -146,7 +149,21 @@ async function prihlas() {
     await page.fill('input[type="email"]', QA_EMAIL);
     await page.fill('input[type="password"]', heslo);
     await page.click('button[type="submit"]');
-    await page.waitForURL((u) => !u.pathname.startsWith("/prihlasenie"), { timeout: 40000 });
+    try {
+      await page.waitForURL((u) => !u.pathname.startsWith("/prihlasenie"), { timeout: 40000 });
+    } catch (e) {
+      // Heslo neplatí (súbežný test ho mohol zmeniť) — skúsi sa jednorazový odkaz.
+      const relacia = await prihlasOdkazom();
+      if (!relacia) throw e;
+      log("! heslo QA účtu neplatí, prihlasujem jednorazovým odkazom");
+      relaciaOdkazom = relacia;
+      await page.evaluate(
+        ([k, v]) => localStorage.setItem(k, v),
+        [klucRelacie(), JSON.stringify(relacia)],
+      );
+      await page.goto(`${BASE}/prehlad`, { waitUntil: "domcontentloaded" });
+      await page.waitForURL((u) => !u.pathname.startsWith("/prihlasenie"), { timeout: 40000 });
+    }
     await page
       .getByRole("button", { name: /Prijať všetko/ })
       .first()
@@ -360,7 +377,7 @@ let chybaPrihlasenia = null;
 try {
   log(`E2E ${BASE} commit ${COMMIT}, ${toky.length} tokov, výstup ${VYSTUP}`);
   await prihlas();
-  rest = restKlient((await prihlasRest(heslo)).jwt);
+  rest = restKlient(relaciaOdkazom?.access_token ?? (await prihlasRest(heslo)).jwt);
 } catch (e) {
   chybaPrihlasenia = `prihlásenie zlyhalo: ${String(e?.message ?? e).slice(0, 300)}`;
   log(chybaPrihlasenia);

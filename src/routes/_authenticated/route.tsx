@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { bezpecnyNavrat } from "@/lib/faktero/navrat-po-prihlaseni";
 import { EfakturaOznam } from "@/components/faktero/EfakturaOznam";
 import { AppShell, type ProductMode } from "@/components/faktero/AppShell";
 import {
@@ -50,7 +51,9 @@ export const Route = createFileRoute("/_authenticated")({
     } catch {
       // network error — treat as unauthenticated
     }
-    throw redirect({ to: "/prihlasenie" });
+    // Po prihlásení späť tam, kde človek bol (napr. k rozpísanej faktúre).
+    const dalej = bezpecnyNavrat(location.href);
+    throw redirect({ to: "/prihlasenie", search: (dalej ? { dalej } : {}) as never });
   },
   component: AuthedLayout,
 });

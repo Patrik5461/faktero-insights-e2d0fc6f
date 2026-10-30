@@ -4,6 +4,7 @@ import "./lib/sucet-presne";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { metodaApiNaJson } from "./lib/faktero/api-metoda";
+import { jeOdpojenieKlienta } from "./lib/odpojenie-klienta";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -22,7 +23,10 @@ async function getServerEntry(): Promise<ServerEntry> {
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
-async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
+async function normalizeCatastrophicSsrResponse(
+  response: Response,
+  request?: Request,
+): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) return response;
@@ -32,7 +36,17 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
     return response;
   }
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  const zachytena = consumeLastCapturedError();
+  /*
+    Klient odišiel skôr, než prišla odpoveď (zavrel kartu, prešiel inam,
+    nginx po 30 s vzdal čakanie). Nie je to chyba aplikácie a nikto odpoveď
+    neuvidí — no každé také odpojenie písalo do chybového logu 30 riadkov
+    (za 29.–30. 10. 2026 ~700 krát) a skutočné chyby sa v nich strácali.
+  */
+  if (jeOdpojenieKlienta(zachytena, request)) {
+    return new Response(null, { status: 499 });
+  }
+  console.error(zachytena ?? new Error(`h3 swallowed SSR error: ${body}`));
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
@@ -86,7 +100,7 @@ export default {
       const response = await handler.fetch(request, env, ctx);
       return sPlatnostou(
         request,
-        await metodaApiNaJson(request, await normalizeCatastrophicSsrResponse(response)),
+        await metodaApiNaJson(request, await normalizeCatastrophicSsrResponse(response, request)),
       );
     } catch (error) {
       console.error(error);

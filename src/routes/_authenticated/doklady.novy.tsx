@@ -562,6 +562,12 @@ function NovyDokladPage() {
     }
   }
 
+  /*
+    Id nového dokladu pre všetky pokusy o uloženie — keď zápis prešiel, ale
+    odpoveď pre výpadok nedošla, ďalší klik nezaloží druhý doklad.
+  */
+  const idNovehoRef = useRef<string | null>(null);
+
   async function handleSave(spracovat = false) {
     if (!cid) {
       toast.error(t("Vyberte firmu"));
@@ -623,7 +629,8 @@ function NovyDokladPage() {
           rovno medzi Bločky (spracovaný). Hláška aj záložka sa riadia tým, čo
           naozaj uložil, nie predpokladom „nový = nespracovaný“.
         */
-        const novy: any = await createFn({ data: payload });
+        idNovehoRef.current ??= crypto.randomUUID();
+        const novy: any = await createFn({ data: { ...payload, id: idNovehoRef.current } });
         if (novy?.status === "processed" && !novy?.nespracovany_id) stav = "processed";
       }
       const rovnoSpracovany = !search.id && stav === "processed";

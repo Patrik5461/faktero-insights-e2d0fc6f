@@ -17,6 +17,7 @@ import {
   zakladRiadku,
   type TypZlavy,
 } from "@/lib/faktero/zlavy";
+import { technickaChyba } from "@/lib/faktero/chyba-pre-ludi";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -323,6 +324,9 @@ function EditInvoice() {
       }
     }
     setSaving(true);
+    // Medzi zmazaním a zápisom položiek je faktúra bez nich — výpadok siete tam
+    // musí človeku povedať, že treba uložiť znova (formulár údaje drží).
+    let polozkyZmazane = false;
     try {
       const { error: upErr } = await supabase
         .from("invoices")
@@ -369,6 +373,7 @@ function EditInvoice() {
 
       const { error: delErr } = await supabase.from("invoice_items").delete().eq("invoice_id", id);
       if (delErr) throw delErr;
+      polozkyZmazane = true;
 
       const rows = riadkyZapis.map((it, idx) => {
         const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
@@ -399,6 +404,7 @@ function EditInvoice() {
         const { error: insErr } = await supabase.from("invoice_items").insert(rows);
         if (insErr) throw insErr;
       }
+      polozkyZmazane = false;
 
       /*
         „Pokračovať v tomto rade" — až po uložení dokladu. Keby sa rad zmenil
@@ -429,7 +435,13 @@ function EditInvoice() {
       const po = poUlozeniRef.current;
       navigate({ to: "/faktury/$id", params: { id }, search: po ? { po } : {} });
     } catch (err: any) {
-      toast.error(t(zrozumitelnaChyba(err?.message)));
+      const veta = t(zrozumitelnaChyba(err?.message));
+      toast.error(
+        polozkyZmazane
+          ? t("Položky faktúry sa neuložili: {chyba} Kliknite znova na Uložiť — kým sa to nepodarí, faktúra je bez položiek.", { chyba: veta })
+          : veta,
+        polozkyZmazane ? { duration: 20000 } : undefined,
+      );
     } finally {
       setSaving(false);
     }
@@ -1243,6 +1255,8 @@ function CellSpolu({
  */
 function zrozumitelnaChyba(sprava: string | undefined): string {
   const s = sprava ?? "Chyba pri ukladaní";
+  const technicka = technickaChyba(s);
+  if (technicka) return technicka;
   if (s.includes("invoices_cislo_uniq") || s.includes("duplicate key")) {
     return "Faktúra s týmto číslom už existuje. Zvoľte iné číslo.";
   }

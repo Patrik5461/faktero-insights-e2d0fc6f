@@ -12,6 +12,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "sonner";
+import "@/lib/faktero/toast-chyby";
 import { PotvrdzovacieOkno } from "@/components/faktero/PotvrdzovacieOkno";
 import { ODSADENIE_TOASTOV } from "@/components/ui/sonner";
 import { MobilnaApka } from "@/components/faktero/mobil/MobilApp";

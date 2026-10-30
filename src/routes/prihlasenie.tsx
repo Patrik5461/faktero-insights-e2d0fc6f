@@ -6,6 +6,7 @@ import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric
 
 import { toast } from "sonner";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
+import { bezpecnyNavrat } from "@/lib/faktero/navrat-po-prihlaseni";
 import { Logo } from "@/components/faktero/Logo";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -17,13 +18,13 @@ import {
 } from "@/lib/faktero/active-product";
 
 /**
- * Kam po prihlásení: `?dalej=` z povolenia prístupu AI asistentovi (OAuth),
- * inak úvodná stránka produktu. Len cesta na tomto webe — nie cudzia adresa.
+ * Kam po prihlásení: `?dalej=` z povolenia prístupu AI asistentovi (OAuth)
+ * alebo zo stránky, z ktorej človeka vyhodilo vypršané prihlásenie (vráti sa
+ * k rozpísanej faktúre). Inak úvodná stránka produktu.
  */
 function dalejPoPrihlaseni(): string | null {
   if (typeof window === "undefined") return null;
-  const d = new URLSearchParams(window.location.search).get("dalej");
-  return d && d.startsWith("/oauth/") && !d.startsWith("//") ? d : null;
+  return bezpecnyNavrat(new URLSearchParams(window.location.search).get("dalej"));
 }
 
 export const Route = createFileRoute("/prihlasenie")({

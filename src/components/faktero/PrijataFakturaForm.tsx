@@ -1,7 +1,7 @@
 import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
 import { vsPrijatejNaUlozenie, vsZCislaPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -183,6 +183,12 @@ export function PrijataFakturaForm({
     }
   }
   const [busy, setBusy] = useState(false);
+  /*
+    Id novej prijatej faktúry pre všetky pokusy o uloženie. Keď sa zápis
+    podaril, ale odpoveď pre výpadok siete nedošla, ďalší klik by založil
+    druhú — teraz nájde tú istú a len ju zosúladí s formulárom.
+  */
+  const idNovejRef = useRef<string | null>(null);
   const [nacitavam, setNacitavam] = useState(Boolean(id));
   /*
     Doklad, ktorý sa nenačítal. Bez tohto sa vykreslil prázdny formulár
@@ -366,6 +372,17 @@ export function PrijataFakturaForm({
 
     setBusy(true);
     try {
+      let cielId: string | null = id ?? null;
+      if (!cielId) {
+        idNovejRef.current ??= crypto.randomUUID();
+        const { data: uz, error: eUz } = await supabase
+          .from("purchase_invoices")
+          .select("id")
+          .eq("id", idNovejRef.current)
+          .maybeSingle();
+        if (eUz) throw eUz;
+        if (uz) cielId = uz.id;
+      }
       /*
         Tá istá faktúra už v evidencii je (prišla mailom, zadal ju niekto iný)?
         Druhýkrát by bola náklad, odpočet DPH aj platba. Pýta sa pri novej
@@ -375,7 +392,7 @@ export function PrijataFakturaForm({
         .map((x) => String(x ?? "").trim())
         .join("|");
       const dup =
-        id && kluc === povodnyKluc
+        (id && kluc === povodnyKluc) || (cielId && !id)
           ? null
           : await hladajDuplicitu({
               data: {
@@ -385,7 +402,7 @@ export function PrijataFakturaForm({
                 supplier_name: form.supplier_name.trim(),
                 supplier_iban: form.supplier_iban.replace(/\s+/g, "") || null,
                 amount_total: sumaZPola(form.amount_total || "0") || null,
-                vylucit_id: id ?? null,
+                vylucit_id: cielId,
               },
             }).catch(() => null);
       if (
@@ -457,7 +474,7 @@ export function PrijataFakturaForm({
         file_mime,
         file_size,
       };
-      if (id) {
+      if (cielId) {
         // Autora ani firmu úprava nemení; nová príloha sa doplní, len keď je.
         const { created_by, company_id, ...zmeny } = payload;
         const uprava: Record<string, unknown> = { ...zmeny };
@@ -469,25 +486,33 @@ export function PrijataFakturaForm({
         const { error } = await supabase
           .from("purchase_invoices")
           .update(uprava as never)
-          .eq("id", id);
+          .eq("id", cielId);
         if (error) throw error;
-        await doplnKurz(id);
-        toast.success(t("Zmeny sú uložené"));
-        navigate({ to: "/prijate-faktury/$id", params: { id } });
+        if (!id) await ulozDodavatelaDoAdresara(cid);
+        await doplnKurz(cielId);
+        idNovejRef.current = null;
+        toast.success(id ? t("Zmeny sú uložené") : t("Prijatá faktúra bola uložená"));
+        navigate({ to: "/prijate-faktury/$id", params: { id: cielId } });
         return;
       }
       const { data, error } = await supabase
         .from("purchase_invoices")
-        .insert({ ...(znamyDodavatel && adresaDodavatela ? adresaDodavatela : {}), ...payload })
+        .insert({
+          ...(znamyDodavatel && adresaDodavatela ? adresaDodavatela : {}),
+          ...payload,
+          id: idNovejRef.current ?? undefined,
+        })
         .select("id")
         .single();
       if (error) throw error;
       await ulozDodavatelaDoAdresara(cid);
       await doplnKurz(data!.id);
+      idNovejRef.current = null;
       toast.success(t("Prijatá faktúra bola uložená"));
       navigate({ to: "/prijate-faktury/$id", params: { id: data!.id } });
     } catch (e: any) {
-      toast.error(t(e?.message ?? "Uloženie zlyhalo"));
+      const { friendlyError } = await import("@/lib/faktero/plan-error");
+      toast.error(t(friendlyError(e, "Uloženie zlyhalo")));
     } finally {
       setBusy(false);
     }

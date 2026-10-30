@@ -23,6 +23,12 @@ describe("jeTrvalaChyba", () => {
     expect(jeTrvalaChyba('403 {"errorDescription": "Account does not exist"}')).toBe("nepozna");
   });
 
+  it("obdobie pred otvorením účtu je trvalé (každú noc to isté 400)", () => {
+    const skutocna =
+      'tb_statement_task_failed: 400 {\r\n"errorCode": "DATE_F_ACC_NOT_OPEN",\r\n"errorDescription": "DateFrom precedes account opening date."\r\n}';
+    expect(jeTrvalaChyba(skutocna)).toBe("pred-otvorenim");
+  });
+
   it("výpadok ani vypršaný token trvalé nie sú — na tie sa beh vráti", () => {
     expect(jeTrvalaChyba("tb_statement_task_failed: 500 Internal Server Error")).toBeNull();
     expect(jeTrvalaChyba("401 Unauthorized")).toBeNull();

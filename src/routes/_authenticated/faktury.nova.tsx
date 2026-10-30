@@ -4,11 +4,18 @@ import { UctovneNastaveniaFaktury } from "@/components/faktero/UctovneNastavenia
 import { datumPoDnoch, dniMedzi } from "@/lib/faktero/splatnost-dni";
 import { RozpisDph } from "@/components/faktero/RozpisDph";
 import { rozpisPodlaSadzieb } from "@/lib/faktero/rozpis-dph";
-import { preloz } from "@/lib/i18n/jazyk";
+import { lokalJazyka, preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { chybajuceUdajeFirmy } from "@/lib/faktero/udaje-firmy-na-fakture";
+import {
+  bezDatumov,
+  nacitajRozpisanu,
+  odlozRozpisanu,
+  zahodRozpisanu,
+} from "@/lib/faktero/rozpisana-faktura";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nezuctovaneZalohyFn, type NezuctovanaZaloha } from "@/lib/faktero/zalohy-odberatela.functions";
@@ -208,7 +215,7 @@ function useModKlaves(): string {
 }
 
 function NewInvoice() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const mena = useMenaFirmy();
   const mod = useModKlaves();
   const navigate = useNavigate();
@@ -281,6 +288,15 @@ function NewInvoice() {
   });
   /* Čo sa má stať po vystavení — „Vystaviť a stiahnuť PDF“ / „… a odoslať e-mailom“. */
   const poVystaveniRef = useRef<"" | "pdf" | "email">("");
+  /*
+    Id novej faktúry pre všetky pokusy o uloženie z tohto formulára.
+
+    Hlavička a položky sa zapisujú zvlášť. Keď vypadla sieť medzi nimi (alebo
+    sa hlavička zapísala, len odpoveď nedošla), ostala vystavená faktúra bez
+    položiek a ďalší klik na „Vystaviť“ založil druhú s ďalším číslom. Opakovaný
+    pokus preto nájde tú istú hlavičku podľa id a len ju dokončí.
+  */
+  const idNovejFakturyRef = useRef<string | null>(null);
   /* Predvolený text nad položkami z nastavení firmy (napr. „Fakturujeme vám:“). */
   const uvodFirmyRef = useRef<string>("");
   /* Jazyk dokladu zvolený ručne alebo z opravovanej faktúry — pozri efekt jazyka odberateľa. */
@@ -305,6 +321,41 @@ function NewInvoice() {
       },
     ];
   });
+  /*
+    Rozpísaná faktúra prežije vypršané prihlásenie aj zatvorenú kartu.
+    Len pri čistej novej faktúre — dobropis k faktúre, faktúra z objednávky
+    či zo skenera majú svoje predvyplnenie a staré údaje by ho prepísali.
+  */
+  const odkladat = !search.opravuje && !search.sales_order && !search.supplier_hint && !search.total_hint;
+  useEffect(() => {
+    if (!odkladat) return;
+    const d = nacitajRozpisanu<typeof form, Item>(getActiveCompanyId(), form.type);
+    if (!d) return;
+    const cas = new Date(d.ulozene).toLocaleString(lokalJazyka(jazyk), {
+      day: "numeric",
+      month: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    toast(t("Máte rozpísanú faktúru z {cas}.", { cas }), {
+      id: "rozpisana-faktura",
+      duration: 60000,
+      action: {
+        label: t("Obnoviť"),
+        onClick: () => {
+          setForm((f) => ({ ...f, ...bezDatumov(d.form) }));
+          if (d.items.length) setItems(d.items);
+        },
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!odkladat || submitting) return;
+    const h = setTimeout(() => odlozRozpisanu(getActiveCompanyId(), form.type, form, items), 500);
+    return () => clearTimeout(h);
+  }, [form, items, odkladat, submitting]);
+
   /* Pri predaji do EÚ cez OSS sa účtuje sadzbami štátu zákazníka. */
   const sadzbyPolozky =
     form.oss && form.oss_country ? sadzbyStatu(form.oss_country) : sadzbyRezimu(rezim);
@@ -1073,25 +1124,20 @@ function NewInvoice() {
     setSubmitting(true);
 
     try {
-      const { invoice_number, sequence_number, series_id } = await generateNumber(
-        cid,
-        form.issue_date,
-        form.type,
-        form.number_series_id,
-      );
-      const variable_symbol = vsNaUlozenie(form.variable_symbol, invoice_number);
-
-      const { data: inv, error } = await supabase
+      if (!idNovejFakturyRef.current) idNovejFakturyRef.current = crypto.randomUUID();
+      const novaId = idNovejFakturyRef.current;
+      const { data: uzZapisana, error: eUz } = await supabase
         .from("invoices")
-        .insert({
+        .select("*")
+        .eq("id", novaId)
+        .maybeSingle();
+      if (eUz) throw eUz;
+
+      const hlavicka = {
           company_id: cid,
           customer_id: cust.id,
           type: form.type,
-          status: "issued",
-          invoice_number,
-          sequence_number,
-          number_series_id: series_id,
-          variable_symbol,
+          status: "issued" as const,
           constant_symbol: form.constant_symbol || null,
           specific_symbol: form.specific_symbol || null,
           order_number: form.order_number || null,
@@ -1154,9 +1200,45 @@ function NewInvoice() {
           discount_type: totals.zlava > 0 ? form.discount_type || "percent" : null,
           discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
           discount_total: totals.zlava,
-        })
-        .select()
-        .single();
+        };
+
+      let inv: typeof uzZapisana;
+      let error: unknown = null;
+      if (uzZapisana) {
+        // Opakovanie po výpadku: číslo ostáva, hlavička sa zosúladí s formulárom.
+        const r = await supabase
+          .from("invoices")
+          .update({
+            ...hlavicka,
+            variable_symbol: vsNaUlozenie(form.variable_symbol, uzZapisana.invoice_number),
+          })
+          .eq("id", novaId)
+          .select()
+          .single();
+        inv = r.data;
+        error = r.error;
+      } else {
+        const { invoice_number, sequence_number, series_id } = await generateNumber(
+          cid,
+          form.issue_date,
+          form.type,
+          form.number_series_id,
+        );
+        const r = await supabase
+          .from("invoices")
+          .insert({
+            ...hlavicka,
+            id: novaId,
+            invoice_number,
+            sequence_number,
+            number_series_id: series_id,
+            variable_symbol: vsNaUlozenie(form.variable_symbol, invoice_number),
+          })
+          .select()
+          .single();
+        inv = r.data;
+        error = r.error;
+      }
       if (error || !inv) {
         const { friendlyError } = await import("@/lib/faktero/plan-error");
         toast.error(t(friendlyError(error)));
@@ -1188,15 +1270,36 @@ function NewInvoice() {
           total: cisla.total,
         };
       });
-      const { error: e2 } = rows.length
-        ? await supabase.from("invoice_items").insert(rows)
+      // Pri opakovaní mohli položky z minulého pokusu doraziť (nedošla len odpoveď).
+      const { error: e2a } = uzZapisana
+        ? await supabase.from("invoice_items").delete().eq("invoice_id", inv.id)
         : { error: null };
+      const { error: e2 } = e2a
+        ? { error: e2a }
+        : rows.length
+          ? await supabase.from("invoice_items").insert(rows)
+          : { error: null };
       if (e2) {
-        toast.error(e2.message);
+        const { friendlyError } = await import("@/lib/faktero/plan-error");
+        toast.error(
+          t("Faktúra {cislo} sa neuložila celá: {chyba} Kliknite znova na vystavenie — doplní sa tá istá faktúra.", {
+            cislo: inv.invoice_number,
+            chyba: t(friendlyError(e2)),
+          }),
+        );
         setSubmitting(false);
         return;
       }
 
+      if (uzZapisana) {
+        const { error: e3a } = await supabase.from("invoice_advances").delete().eq("invoice_id", inv.id);
+        if (e3a) {
+          const { friendlyError } = await import("@/lib/faktero/plan-error");
+          toast.error(t(friendlyError(e3a)));
+          setSubmitting(false);
+          return;
+        }
+      }
       if (odpocty.length) {
         const { error: e3 } = await supabase.from("invoice_advances").insert(
           odpocty.map((z) => ({
@@ -1280,9 +1383,23 @@ function NewInvoice() {
               ? t("Zálohová faktúra vytvorená")
               : t("Faktúra vytvorená"),
       );
+      const chyba = chybajuceUdajeFirmy(company as any, inv as any);
+      if (chyba.length)
+        toast.warning(
+          t("Na faktúre chýbajú údaje vašej firmy: {co}. Doplňte ich v Nastaveniach firmy a PDF pregenerujte.", {
+            co: chyba.map((x) => t(x)).join(", "),
+          }),
+          { duration: 15000 },
+        );
       // „Vystaviť a stiahnuť PDF / odoslať e-mailom“ — detail to po načítaní spraví sám.
       const po = poVystaveniRef.current;
+      idNovejFakturyRef.current = null;
+      zahodRozpisanu(cid, form.type);
       navigate({ to: "/faktury/$id", params: { id: inv.id }, search: po ? { po } : {} });
+    } catch (chyba) {
+      // Výpadok pri čísle alebo pri kontrole predošlého pokusu — doteraz bez hlášky.
+      const { friendlyError } = await import("@/lib/faktero/plan-error");
+      toast.error(t(friendlyError(chyba, "Faktúru sa nepodarilo uložiť. Skúste to znova.")));
     } finally {
       setSubmitting(false);
     }

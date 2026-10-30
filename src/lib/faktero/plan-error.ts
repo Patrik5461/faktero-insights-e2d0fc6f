@@ -1,3 +1,5 @@
+import { technickaChyba } from "./chyba-pre-ludi";
+
 /**
  * Map DB-side FAKTERO_PLAN_BLOCK:<kind> errors raised by the
  * faktero_enforce_write triggers into friendly Slovak messages.
@@ -71,5 +73,11 @@ function dbMessage(err: unknown): string | null {
 
 /** Wraps a thrown error: returns plan message when applicable, else generic. */
 export function friendlyError(err: unknown, fallback = "Chyba"): string {
-  return planBlockMessage(err) ?? dbMessage(err) ?? (err as any)?.message ?? fallback;
+  return (
+    planBlockMessage(err) ??
+    dbMessage(err) ??
+    technickaChyba(err) ??
+    (err as any)?.message ??
+    fallback
+  );
 }

@@ -183,3 +183,38 @@ export function restKlient(jwt) {
 export function dnes() {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(new Date());
 }
+
+/**
+ * Náhradné prihlásenie jednorazovým odkazom (admin API), keď heslo z
+ * `SUBOR_TAJOMSTIEV` neplatí — napríklad keď ho súbežný test zmenil.
+ * Heslo sa pritom nemení; potrebuje servisný kľúč z `.env` hlavného repa.
+ * Vráti celú reláciu Supabase (access_token, refresh_token, user …) alebo null.
+ */
+export async function prihlasOdkazom() {
+  const env = citajEnvSubor(path.join(HLAVNE_REPO, ".env"));
+  const servis = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!servis) return null;
+  const odkaz = await fetch(`${SUPABASE.url}/auth/v1/admin/generate_link`, {
+    method: "POST",
+    headers: {
+      apikey: servis,
+      Authorization: `Bearer ${servis}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ type: "magiclink", email: QA_EMAIL }),
+  }).then((r) => r.json());
+  const hash = odkaz.hashed_token ?? odkaz.properties?.hashed_token;
+  if (!hash) return null;
+  const r = await fetch(`${SUPABASE.url}/auth/v1/verify`, {
+    method: "POST",
+    headers: { apikey: SUPABASE.kluc, "content-type": "application/json" },
+    body: JSON.stringify({ type: "magiclink", token_hash: hash }),
+  });
+  const j = await r.json().catch(() => ({}));
+  return j.access_token ? j : null;
+}
+
+/** Kľúč, pod ktorým si supabase-js v prehliadači drží reláciu. */
+export function klucRelacie() {
+  return `sb-${new URL(SUPABASE.url).hostname.split(".")[0]}-auth-token`;
+}

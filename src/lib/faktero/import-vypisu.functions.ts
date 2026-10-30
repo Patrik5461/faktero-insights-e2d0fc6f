@@ -171,6 +171,21 @@ export const importujVypisFn = createServerFn({ method: "POST" })
       if (!r0.ucet) {
         throw new Error("Vo výpise nie je číslo účtu — vyberte účet, do ktorého sa má nahrať.");
       }
+      /*
+        Účet s týmto číslom už firma má? Stáva sa to pri opakovaní: prvý pokus
+        účet založil, ale odpoveď pre výpadok siete nedošla (alebo zlyhal až
+        zápis pohybov) a formulár ostal na „nový účet“. Každé ďalšie „Nahrať“
+        potom založilo ďalší účet s tým istým IBAN-om.
+      */
+      const { data: existujuce } = await supabaseAdmin
+        .from("bank_accounts")
+        .select("id, iban, currency")
+        .eq("company_id", data.company_id);
+      const rovnaky = (existujuce ?? []).find((u: any) => rovnakyUcet(r0.ucet, u.iban));
+      if (rovnaky) ucet = rovnaky;
+    }
+    if (!ucet) {
+      const r0 = precitaj(data.obsah);
       const { data: spojenie, error: e1 } = await supabaseAdmin
         .from("bank_connections")
         .insert({
@@ -188,8 +203,8 @@ export const importujVypisFn = createServerFn({ method: "POST" })
         .insert({
           company_id: data.company_id,
           bank_connection_id: spojenie.id,
-          iban: r0.ucet,
-          account_name: r0.ucet,
+          iban: r0.ucet!,
+          account_name: r0.ucet!,
           currency: (r0.mena ?? "EUR").toUpperCase(),
           balance: r0.konecnyZostatok ?? 0,
           booked_balance: r0.konecnyZostatok ?? null,

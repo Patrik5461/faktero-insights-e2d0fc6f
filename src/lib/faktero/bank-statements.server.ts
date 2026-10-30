@@ -185,12 +185,17 @@ async function processRow(supabaseAdmin: any, accessToken: string, row: any, acc
  * - `mimo-tb` — `PRODUCT_UNKNOWN`, účet nie je vedený v Tatra banke, Premium
  *   API ho len agreguje cez multibanking. Výpis preň nevydá nikdy.
  * - `nepozna` — `NO_ACCOUNT`, banka účet pod týmto súhlasom nepozná.
+ * - `pred-otvorenim` — `DATE_F_ACC_NOT_OPEN`, mesiac začína pred otvorením
+ *   účtu. Septembrový výpis účtu otvoreného v septembri sa dovtedy skúšal
+ *   každú noc celý október a každá noc skončila v chybovom logu.
  *
  * Všetko ostatné (výpadok, 500, vypršaný token) je dočasné a riadok ostáva
  * `failed`, takže sa naň nočný beh vráti.
  */
-export function jeTrvalaChyba(sprava: string): "mimo-tb" | "nepozna" | null {
+export function jeTrvalaChyba(sprava: string): "mimo-tb" | "nepozna" | "pred-otvorenim" | null {
   if (/PRODUCT_UNKNOWN/.test(sprava)) return "mimo-tb";
+  // Obdobie začína pred otvorením účtu — banka za ten mesiac výpis nevydá nikdy.
+  if (/DATE_F_ACC_NOT_OPEN|precedes account opening/i.test(sprava)) return "pred-otvorenim";
   if (/NO_ACCOUNT|Account does not exist/i.test(sprava)) return "nepozna";
   return null;
 }
@@ -324,7 +329,7 @@ export async function runMonthlyStatements(period?: { start: string; end: string
             Nasledujúci mesiac vznikne nový riadok a skúsi sa znova — keby banka
             účet sprístupnila, výpisy sa rozbehnú samy.
           */
-          const bankaUcetNepozna = jeTrvalaChyba(msg) === "nepozna";
+          const bankaUcetNepozna = ["nepozna", "pred-otvorenim"].includes(jeTrvalaChyba(msg) ?? "");
           const trvale = isForeignBank || bankaUcetNepozna;
           await supabaseAdmin
             .from("bank_statements")
@@ -339,7 +344,7 @@ export async function runMonthlyStatements(period?: { start: string; end: string
           } else if (bankaUcetNepozna) {
             nedostupne++;
             console.log(
-              `[bank-statements] ${acc.iban ?? acc.id} ${exportType}: banka účet nepozná, ďalej ho v tomto období neskúšam`,
+              `[bank-statements] ${acc.iban ?? acc.id} ${exportType}: banka výpis za toto obdobie nevydá (${jeTrvalaChyba(msg)}), ďalej ho neskúšam`,
             );
           } else {
             console.error(`[bank-statements] ${acc.id} ${exportType}: ${msg}`);

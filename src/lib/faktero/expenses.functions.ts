@@ -8,6 +8,7 @@ import { vMesiaci } from "./doklady-mesiac";
 import { zdrojVydavku } from "./zdroj-vydavku";
 
 export type ExpenseInput = {
+  id?: string;
   company_id: string;
   status?: "new" | "processed" | "exported";
   source?: "photo" | "qr" | "upload" | "web";
@@ -53,6 +54,8 @@ export type ExpenseInput = {
 };
 
 const inputSchema = z.object({
+  /** Id určené klientom — opakovaný pokus po výpadku siete nezaloží druhý doklad. */
+  id: z.string().uuid().optional(),
   company_id: z.string().uuid(),
   status: z.enum(["new", "processed", "exported"]).optional(),
   source: z.enum(["photo", "qr", "upload", "web"]).optional(),
@@ -198,6 +201,19 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       až po zápise, by sa zopakoval a bloček by bol v účtovníctve dvakrát.
       Rovnaký QR kód preto nezapisujeme druhý raz a vrátime, čo už je uložené.
     */
+    /*
+      Opakovaný pokus z formulára: prvý doklad zapísal, ale odpoveď nedošla.
+      Klient posiela pri každom pokuse to isté id, takže sa vráti uložený.
+    */
+    if (data.id) {
+      const { data: uz } = await supabase
+        .from("expense_documents")
+        .select("*")
+        .eq("id", data.id)
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      if (uz) return uz;
+    }
     const qr = data.qr_raw?.trim();
     if (qr) {
       const { data: uz } = await supabase
