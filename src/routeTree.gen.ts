@@ -349,6 +349,7 @@ import { Route as ApiPublicTatrabankaWebhookRouteImport } from './routes/api/pub
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
 import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api/public/webhooks/gopay-merchant'
+import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiV1CompaniesIdRouteImport } from './routes/api/v1/companies.$id'
 import { Route as ApiV1CustomersIdRouteImport } from './routes/api/v1/customers.$id'
 import { Route as ApiV1CustomersImportRouteImport } from './routes/api/v1/customers.import'
@@ -2244,6 +2245,12 @@ const ApiPublicWebhooksGopayMerchantRoute =
     path: '/api/public/webhooks/gopay-merchant',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicWhatsappWebhookRoute =
+  ApiPublicWhatsappWebhookRouteImport.update({
+    id: '/api/public/whatsapp/webhook',
+    path: '/api/public/whatsapp/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiV1CompaniesIdRoute = ApiV1CompaniesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -2763,6 +2770,7 @@ export interface FileRoutesByFullPath {
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
   '/api/v1/customers/import': typeof ApiV1CustomersImportRoute
@@ -3130,6 +3138,7 @@ export interface FileRoutesByTo {
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
   '/api/v1/customers/import': typeof ApiV1CustomersImportRoute
@@ -3508,6 +3517,7 @@ export interface FileRoutesById {
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
   '/api/v1/customers/import': typeof ApiV1CustomersImportRoute
@@ -3886,6 +3896,7 @@ export interface FileRouteTypes {
     | '/api/public/telegram/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
+    | '/api/public/whatsapp/webhook'
     | '/api/v1/companies/$id'
     | '/api/v1/customers/$id'
     | '/api/v1/customers/import'
@@ -4253,6 +4264,7 @@ export interface FileRouteTypes {
     | '/api/public/telegram/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
+    | '/api/public/whatsapp/webhook'
     | '/api/v1/companies/$id'
     | '/api/v1/customers/$id'
     | '/api/v1/customers/import'
@@ -4630,6 +4642,7 @@ export interface FileRouteTypes {
     | '/api/public/telegram/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
+    | '/api/public/whatsapp/webhook'
     | '/api/v1/companies/$id'
     | '/api/v1/customers/$id'
     | '/api/v1/customers/import'
@@ -4835,6 +4848,7 @@ export interface RootRouteChildren {
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
   ApiPublicWebhooksGopayMerchantRoute: typeof ApiPublicWebhooksGopayMerchantRoute
+  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   ApiV1PohodaDavkaRoute: typeof ApiV1PohodaDavkaRoute
   ApiV1PohodaOdpovedRoute: typeof ApiV1PohodaOdpovedRoute
   ApiV1SkladParseDeliveryNoteRoute: typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
@@ -7227,6 +7241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksGopayMerchantRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/whatsapp/webhook': {
+      id: '/api/public/whatsapp/webhook'
+      path: '/api/public/whatsapp/webhook'
+      fullPath: '/api/public/whatsapp/webhook'
+      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/companies/$id': {
       id: '/api/v1/companies/$id'
       path: '/$id'
@@ -8406,6 +8427,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,
   ApiPublicWebhooksGopayMerchantRoute: ApiPublicWebhooksGopayMerchantRoute,
+  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   ApiV1PohodaDavkaRoute: ApiV1PohodaDavkaRoute,
   ApiV1PohodaOdpovedRoute: ApiV1PohodaOdpovedRoute,
   ApiV1SkladParseDeliveryNoteRoute:

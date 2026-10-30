@@ -5,6 +5,8 @@ import { Loader2, Search, Send } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
 import { TelegramAdminKarta } from "@/components/faktero/TelegramAdminKarta";
+import { WhatsAppAdminKarta } from "@/components/faktero/WhatsAppAdminKarta";
+import { WhatsAppIkona } from "@/components/faktero/WhatsAppIkona";
 import { adminPoziadavkyFn } from "@/lib/faktero/podpora-admin.functions";
 import {
   STAVY_PODPORA,
@@ -66,6 +68,7 @@ function AdminPodporaPage() {
       />
       <AdminPageBody>
         <TelegramAdminKarta />
+        <WhatsAppAdminKarta />
         <div className="flex flex-wrap items-center gap-2">
           {FILTRE.map((f) => (
             <button
@@ -151,6 +154,12 @@ function AdminPodporaPage() {
                               aria-label="Telegram"
                             />
                           )}
+                          {r.zdroj === "whatsapp" && (
+                            <WhatsAppIkona
+                              className="mr-1 inline h-3.5 w-3.5 text-emerald-600"
+                              aria-label="WhatsApp"
+                            />
+                          )}
                           {r.meno || r.email}
                         </div>
                         <div className="truncate text-xs text-muted-foreground">
@@ -159,7 +168,9 @@ function AdminPodporaPage() {
                               ? "web (bez účtu)"
                               : r.zdroj === "telegram"
                                 ? r.email || "Telegram (bez účtu)"
-                                : r.email)}
+                                : r.zdroj === "whatsapp"
+                                  ? r.email || "WhatsApp (bez účtu)"
+                                  : r.email)}
                         </div>
                       </td>
                       <td className="p-3 text-muted-foreground">{nazovKategorie(r.kategoria)}</td>

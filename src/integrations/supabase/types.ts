@@ -10078,6 +10078,7 @@ export type Database = {
           updated_at: string
           odpoved_token: string
           telegram_chat_id: number | null
+          whatsapp_chat_id: string | null
         }
         Insert: {
           id?: string
@@ -10100,6 +10101,7 @@ export type Database = {
           updated_at?: string
           odpoved_token?: string
           telegram_chat_id?: number | null
+          whatsapp_chat_id?: string | null
         }
         Update: {
           id?: string
@@ -10122,6 +10124,7 @@ export type Database = {
           updated_at?: string
           odpoved_token?: string
           telegram_chat_id?: number | null
+          whatsapp_chat_id?: string | null
         }
         Relationships: [
           {
@@ -11641,6 +11644,156 @@ export type Database = {
         }
         Update: {
           update_id?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_chaty: {
+        Row: {
+          id: string
+          wa_id: string
+          cislo_maska: string
+          meno: string | null
+          user_id: string | null
+          poziadavka_id: string | null
+          posledna_od_zakaznika_at: string | null
+          nedorucene_od: string | null
+          posledna_chyba: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          wa_id: string
+          cislo_maska: string
+          meno?: string | null
+          user_id?: string | null
+          poziadavka_id?: string | null
+          posledna_od_zakaznika_at?: string | null
+          nedorucene_od?: string | null
+          posledna_chyba?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          wa_id?: string
+          cislo_maska?: string
+          meno?: string | null
+          user_id?: string | null
+          poziadavka_id?: string | null
+          posledna_od_zakaznika_at?: string | null
+          nedorucene_od?: string | null
+          posledna_chyba?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_kody: {
+        Row: {
+          kod_hash: string
+          user_id: string
+          plati_do: string
+          created_at: string
+        }
+        Insert: {
+          kod_hash: string
+          user_id: string
+          plati_do: string
+          created_at?: string
+        }
+        Update: {
+          kod_hash?: string
+          user_id?: string
+          plati_do?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_prijate: {
+        Row: {
+          message_id: string
+          created_at: string
+        }
+        Insert: {
+          message_id: string
+          created_at?: string
+        }
+        Update: {
+          message_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_odoslane: {
+        Row: {
+          wamid: string
+          chat_id: string
+          poziadavka_id: string | null
+          druh: string
+          created_at: string
+        }
+        Insert: {
+          wamid: string
+          chat_id: string
+          poziadavka_id?: string | null
+          druh?: string
+          created_at?: string
+        }
+        Update: {
+          wamid?: string
+          chat_id?: string
+          poziadavka_id?: string | null
+          druh?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_stav: {
+        Row: {
+          id: number
+          webhook_overeny_at: string | null
+          posledna_udalost_at: string | null
+          posledna_sprava_at: string | null
+          posledna_chyba: string | null
+          posledna_chyba_at: string | null
+        }
+        Insert: {
+          id?: number
+          webhook_overeny_at?: string | null
+          posledna_udalost_at?: string | null
+          posledna_sprava_at?: string | null
+          posledna_chyba?: string | null
+          posledna_chyba_at?: string | null
+        }
+        Update: {
+          id?: number
+          webhook_overeny_at?: string | null
+          posledna_udalost_at?: string | null
+          posledna_sprava_at?: string | null
+          posledna_chyba?: string | null
+          posledna_chyba_at?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_strop: {
+        Row: {
+          id: number
+          kluc: string
+          druh: string
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          kluc: string
+          druh: string
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          kluc?: string
+          druh?: string
           created_at?: string
         }
         Relationships: []
