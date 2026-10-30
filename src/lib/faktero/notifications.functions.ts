@@ -463,13 +463,9 @@ export const listNotifications = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    /*
-      Členstvo sa overuje súčasne so zbieraním — za sebou to bola cesta k
-      databáze navyše pri každom otvorení zvončeka. Zbieranie len číta, a keď
-      overenie zlyhá, `Promise.all` skončí chybou a z nazbieraného neodíde nič.
-    */
-    const [, vsetky, precitane] = await Promise.all([
-      assertMember(context.supabase, context.userId, data.company_id),
+    // Najprv členstvo, až potom čítanie servisným kľúčom (supabaseAdmin len po overení).
+    await assertMember(context.supabase, context.userId, data.company_id);
+    const [vsetky, precitane] = await Promise.all([
       vsetkyNotifikacie(data.company_id, context.userId),
       supabaseAdmin
         .from("notification_reads")
