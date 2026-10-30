@@ -351,8 +351,8 @@ describe("MRP-K/S — vystavené faktúry", () => {
   });
 
   it("dlhé číslo, OSS a nečíselná predkontácia", () => {
-    const dlhe = vystavena({ invoice_number: "FA-2026-00001", total: 123 }, dveSadzby);
-    const oss = vystavena({ invoice_number: "2026006", oss: true, total: 123 }, dveSadzby);
+    const dlhe = vystavena({ invoice_number: "FA-2026-00001", total: 128.25 }, dveSadzby);
+    const oss = vystavena({ invoice_number: "2026006", oss: true, total: 128.25 }, dveSadzby);
     const pohodova = vystavena(
       { invoice_number: "2026007", total: 128.25, pohoda_predkontacia: "3Fv" },
       dveSadzby,
@@ -405,7 +405,8 @@ describe("MRP-K/S — prijaté faktúry a bločky", () => {
     expect(f.OriginalDocumentNumber).toBe("FA-2026/0815");
     expect(f.VariableSymbol).toBe("20260815");
     expect(f.TaxCode).toBe("40");
-    expect(f.TaxPointDate).toBe("2026-09-30");
+    // Odpočet predvolene podľa dodania (ako Pohoda), nie podľa doručenia.
+    expect(f.TaxPointDate).toBe("2026-09-27");
     expect(f.TaxPointDate2).toBe("2026-09-27");
     expect(f.DoubleEntryBookkeepingCode).toBe("501.000");
     expect(f.BaseTaxRateAmount).toBe("200.00");
@@ -576,5 +577,149 @@ describe("MRP-K/S — formát v Účtovných exportoch", () => {
     const f = citaj(r.content).IssuedInvoices.Invoice[0];
     expect(f.TaxCode).toBe("15");
     expect(f.DoubleEntryBookkeepingCode).toBe("311.000");
+  });
+});
+
+describe("MRP-K/S — položky prijatej faktúry, záporné riadky a dátum odpočtu", () => {
+  const zaklad = {
+    id: "6f1c2c1e-2222-4a5b-8c9d-000000000009",
+    invoice_number: "260100210",
+    issue_date: "2026-10-05",
+    delivery_date: "2026-10-05",
+    supplier_name: "Poradca s.r.o.",
+    currency: "EUR",
+  };
+
+  it("položka z čítania len s celkovou sumou s DPH ide ako základ 1400 + DPH 322", () => {
+    const d = prijataNaUctovanie(
+      {
+        ...zaklad,
+        amount_total: 1722,
+        amount_without_vat: 1400,
+        vat_amount: 322,
+        items: [
+          { name: "Poradenské služby", total: 1722, quantity: 1, vat_rate: 23, unit_price: 1400 },
+        ],
+      },
+      nast,
+    );
+    expect(d.polozky).toMatchObject([{ zaklad: 1400, dph: 322, sadzba: 23, cena: 1400 }]);
+    const { xml } = buildMrpUctovanie({ firma: firmaSk, doklady: [d] });
+    expect(chybaSchemy(xml)).toBeNull();
+    const f = citaj(xml).IncomingInvoices.Invoice[0];
+    expect(f.BaseTaxRateAmount).toBe("1400.00");
+    expect(f.BaseTaxRateTax).toBe("322.00");
+    expect(f.Items.Item[0]).toMatchObject({ UnitPrice: "1400.000000", TaxAmount: "322.000000" });
+  });
+
+  it("položky, ktoré sedia len v súčte s DPH (celé v základe), sa nepošlú", () => {
+    const d = prijataNaUctovanie(
+      { ...zaklad, amount_total: 1722, amount_without_vat: 1400, vat_amount: 322 },
+      nast,
+    );
+    // Ako keby model dal položku s celou sumou v základe a nulovou daňou.
+    d.polozky = [
+      {
+        nazov: "Služby",
+        mnozstvo: 1,
+        mj: null,
+        cena: 1722,
+        sadzba: 23,
+        zaklad: 1722,
+        dph: 0,
+        predkontacia: null,
+        clenenie: null,
+      },
+    ];
+    const f = citaj(buildMrpUctovanie({ firma: firmaSk, doklady: [d] }).xml).IncomingInvoices
+      .Invoice[0];
+    expect(f.BaseTaxRateAmount).toBe("1400.00");
+    expect(f.BaseTaxRateTax).toBe("322.00");
+    expect(f.Items.Item).toHaveLength(1);
+    expect(f.Items.Item[0].TaxAmount).toBe("322.000000");
+  });
+
+  it("zľava a odpočet zálohy v 0 % sa odpočítajú, zaokrúhlenie ostane nulové (BÝVAJLEPŠIE 40260037)", () => {
+    const d = prijataNaUctovanie(
+      {
+        ...zaklad,
+        invoice_number: "40260037",
+        amount_total: 59920,
+        amount_without_vat: 45914.31,
+        vat_amount: 14005.69,
+        items: [
+          { name: "Vozidlo", total: 63151.22, quantity: 1, vat_rate: 23, unit_price: 63151.22 },
+          { name: "Doplnky", total: 6972.35, quantity: 1, vat_rate: 23, unit_price: 7972.35 },
+          {
+            name: "Akciová zľava 13.2%",
+            total: -9229.27,
+            quantity: 1,
+            vat_rate: 23,
+            unit_price: -9229.27,
+          },
+          { name: "ZF 9180431", total: -14980, quantity: 1, vat_rate: 0, unit_price: -14980 },
+          {
+            name: "Vyrovnanie centového rozdielu",
+            total: 0.01,
+            quantity: 1,
+            vat_rate: 0,
+            unit_price: 0.01,
+          },
+        ],
+      },
+      nast,
+    );
+    expect(d.zaklad).toBe(45914.31);
+    expect(d.dph).toBe(14005.69);
+    expect(d.zaokruhlenie).toBe(0);
+    expect(d.riadky.find((r) => r.sadzba === 0)?.zaklad).toBe(-14979.99);
+    const { xml } = buildMrpUctovanie({ firma: firmaSk, doklady: [d] });
+    expect(chybaSchemy(xml)).toBeNull();
+    const f = citaj(xml).IncomingInvoices.Invoice[0];
+    expect(f.RoundingAmount).toBe("0.00");
+    expect(f.ZeroTaxRateAmount).toBe("-14979.99");
+    expect(f.BaseTaxRateAmount).toBe("60894.30");
+  });
+
+  it("bloček má odpočet podľa dátumu dokladu, nie podľa nahratia; voľba doručenia ho zmení", () => {
+    const blocek = {
+      id: "6f1c2c1e-2222-4a5b-8c9d-00000000000b",
+      issue_date: "2026-09-28",
+      created_at: "2026-10-03T08:00:00Z",
+      payment_method: "prevod",
+      total_amount: 12.3,
+      vat_breakdown: [{ sadzba: 23, zaklad: 10, dph: 2.3 }],
+    };
+    const d = blocekNaUctovanie(blocek, nast);
+    expect(d.datumPrijatia).toBe("2026-09-28");
+    expect(d.datumOdpoctu).toBe("2026-09-28");
+    const f = citaj(buildMrpUctovanie({ firma: firmaSk, doklady: [d] }).xml).IncomingInvoices
+      .Invoice[0];
+    expect(f.TaxPointDate).toBe("2026-09-28");
+    const d2 = blocekNaUctovanie(blocek, { ...nast, datumOdpoctu: "dorucenie" });
+    expect(d2.datumOdpoctu).toBe("2026-10-03");
+    expect(
+      citaj(buildMrpUctovanie({ firma: firmaSk, doklady: [d2] }).xml).IncomingInvoices.Invoice[0]
+        .TaxPointDate,
+    ).toBe("2026-10-03");
+  });
+
+  it("prijatá: voľba „neskorší z dodania a doručenia“ a uzamknuté obdobie", () => {
+    const p = {
+      ...zaklad,
+      delivery_date: "2026-09-27",
+      received_date: "2026-10-02",
+      amount_total: 246,
+      amount_without_vat: 200,
+      vat_amount: 46,
+    };
+    expect(prijataNaUctovanie(p, nast).datumOdpoctu).toBe("2026-09-27");
+    expect(prijataNaUctovanie(p, { ...nast, datumOdpoctu: "neskorsi" }).datumOdpoctu).toBe(
+      "2026-10-02",
+    );
+    // September uzamknutý — odpočet nemôže ísť do podaného obdobia.
+    expect(prijataNaUctovanie(p, { ...nast, zamknuteDo: "2026-09-30" }).datumOdpoctu).toBe(
+      "2026-10-01",
+    );
   });
 });

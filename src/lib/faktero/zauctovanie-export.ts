@@ -16,7 +16,8 @@
 import { riadkyDokladu, rozpisBlocku, type OdpocetVozidla, type RozpisSadzby } from "./rozuctovanie";
 import { vsPrijatej, vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { odpocetDokladu } from "./vozidlo-odpocet";
-import { rozpisPrijatej } from "./prijate-do-pohody";
+import { polozkyPrijatej, rozpisPrijatej } from "./prijate-do-pohody";
+import { datumyPrijateho, type DatumOdpoctu, type DatumZapisu } from "./export-nastavenia";
 import {
   odpoctyZapisatelne,
   sumaOdpoctov,
@@ -83,6 +84,12 @@ export type DokladUctovania = {
   datumDodania: string | null;
   datumSplatnosti: string | null;
   datumPrijatia: string | null;
+  /**
+   * Dátum odpočtu DPH prijatého dokladu (prijatá faktúra, bloček) podľa voľby
+   * „Dátum odpočtu" v nastaveniach exportu — rovnako ako `dateTax` v Pohode.
+   * Z uzamknutého obdobia ide na deň po uzávierke. Vystavená faktúra null.
+   */
+  datumOdpoctu?: string | null;
   /** Dátum zaúčtovania, keď doklad patrí do uzamknutého obdobia; inak null. */
   datumZauctovania: string | null;
   mena: string;
@@ -169,6 +176,9 @@ export type NastaveniaUctovania = {
   radInterne?: string | null;
   pokladna?: string | null;
   zamknuteDo?: string | null;
+  /** Voľby „Dátum zápisu" a „Dátum odpočtu" z nastavení exportu (predvolene vyhotovenie a dodanie). */
+  datumZapisu?: DatumZapisu;
+  datumOdpoctu?: DatumOdpoctu;
   zakazkyDokladov?: Record<string, string>;
 };
 
@@ -187,6 +197,44 @@ export function datumPoUzavierke(datum: unknown, zamknuteDo: unknown): string | 
   n.setUTCDate(n.getUTCDate() + 1);
   return n.toISOString().slice(0, 10);
 }
+
+/**
+ * Dátum odpočtu DPH prijatého dokladu podľa nastavenia exportu (ako Pohoda
+ * `dateTax`); do uzamknutého obdobia sa nezapíše — posunie sa za uzávierku.
+ */
+export function datumOdpoctuPrijateho(
+  d: { vystavenie: unknown; dodanie: unknown; dorucenie: unknown },
+  nast: NastaveniaUctovania,
+): string | null {
+  const n = {
+    datumZapisu: nast.datumZapisu ?? "vyhotovenie",
+    datumOdpoctu: nast.datumOdpoctu ?? "dodanie",
+  } as const;
+  const zapis = datumyPrijateho(d, n).zapis;
+  const odpocet = datumyPrijateho(
+    { ...d, zauctovanie: datumPoUzavierke(zapis, nast.zamknuteDo) },
+    n,
+  ).odpocet;
+  if (!odpocet) return null;
+  return datumPoUzavierke(odpocet, nast.zamknuteDo) ?? odpocet;
+}
+
+/**
+ * Doklad, ktorého súčet riadkov sa s celkovou sumou rozchádza o viac než
+ * euro, by v programe dostal vymyslené zaokrúhlenie — taký sa nevyvezie.
+ * Odpočet zálohy mimo riadkov rieši každý program sám (ručné zúčtovanie).
+ */
+export function prekazkaZaokruhlenia(d: DokladUctovania): string | null {
+  if (d.odpocetZalohy > 0 && !d.odpocetVRiadkoch) return null;
+  if (Math.abs(d.zaokruhlenie) <= 1) return null;
+  return `${d.cislo || d.partner.nazov || d.id} — súčet riadkov (${r2(d.zaklad + d.dph)}) nesedí s celkovou sumou (${d.celkom}), skontrolujte rozpis DPH`;
+}
+
+/** Znamienko celého dokladu: záporne uložený (dobropis) sa otočí, riadky si svoje znamienko nechajú. */
+const znamienkoCelku = (celkom: unknown, riadky: { zaklad: number; dph: number }[]): 1 | -1 => {
+  const c = Number(celkom ?? 0) || riadky.reduce((a, r) => a + r.zaklad + r.dph, 0);
+  return c < 0 ? -1 : 1;
+};
 
 /** Zlúči riadky s rovnakou sadzbou a kódmi — do účtovníctva ide súhrn, nie položky. */
 export function zlucRiadky(riadky: RiadokUctovania[]): RiadokUctovania[] {
@@ -308,7 +356,16 @@ export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUcto
     datumVystavenia: datum,
     datumDodania: datum,
     datumSplatnosti: datum,
-    datumPrijatia: t(String(d?.created_at ?? "").slice(0, 10)) ?? datum,
+    // Bloček nemá dátum doručenia — prijatý je dňom vystavenia (dátum uloženia nie je dátum dokladu).
+    datumPrijatia: datum,
+    datumOdpoctu: datumOdpoctuPrijateho(
+      {
+        vystavenie: datum,
+        dodanie: datum,
+        dorucenie: t(String(d?.created_at ?? "").slice(0, 10)) ?? datum,
+      },
+      nast,
+    ),
     datumZauctovania: datumPoUzavierke(datum, nast.zamknuteDo),
     mena: String(d?.currency ?? "EUR").toUpperCase(),
     kurz: null,
@@ -369,20 +426,25 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
   const odpocet = p?.odpocet !== false && kv !== "X";
   const spolu = Number(p?.amount_total ?? 0);
   const dobropis = spolu < 0 || Boolean(p?.opravuje_cislo);
-  // Sumy riadkov sú kladné, dobropis nesie `druh`.
-  const rozpis = rozpisPrijatej(p).map((x) => ({
+  /*
+    Sumy dokladu sú kladné, dobropis nesie `druh` — otáča sa ale znamienko
+    celého dokladu, nie riadkov: zľava či odpočet zálohy sú záporné riadky
+    a absolútna hodnota by ich pripočítala.
+  */
+  const rozpis0 = rozpisPrijatej(p);
+  const zn = znamienkoCelku(spolu, rozpis0);
+  const rozpis = rozpis0.map((x) => ({
     sadzba: x.sadzba,
-    zaklad: Math.abs(x.zaklad),
-    dph: Math.abs(x.dph),
+    zaklad: zn * x.zaklad,
+    dph: zn * x.dph,
   }));
   const riadky = zlucRiadky(
     riadkyPrijatehoDokladu(rozpis, p, predkontacia, clenenie, kv, odpocet, nast),
   );
   const zaklad = r2(riadky.reduce((a, r) => a + r.zaklad, 0));
   const dph = r2(riadky.reduce((a, r) => a + r.dph, 0));
-  const celkom = r2(Math.abs(spolu) || zaklad + dph);
+  const celkom = r2(zn * spolu || zaklad + dph);
   const dodanie = t(p?.delivery_date) ?? t(p?.issue_date);
-  const items: any[] = Array.isArray(p?.items) ? p.items : [];
   return {
     id: String(p.id),
     agenda: "prijata",
@@ -397,6 +459,10 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     datumDodania: dodanie,
     datumSplatnosti: t(p?.due_date),
     datumPrijatia: t(p?.received_date) ?? t(p?.issue_date),
+    datumOdpoctu: datumOdpoctuPrijateho(
+      { vystavenie: p?.issue_date, dodanie, dorucenie: p?.received_date },
+      nast,
+    ),
     datumZauctovania: datumPoUzavierke(dodanie, nast.zamknuteDo),
     mena: String(p?.currency ?? "EUR").toUpperCase(),
     kurz: Number(p?.exchange_rate) || null,
@@ -427,19 +493,22 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     odpocetZalohy: Math.abs(Number(p?.advance_amount ?? 0)),
     dokladKPlatbe: false,
     dphRezim: t(p?.dph_rezim),
-    polozky: items
-      .filter((x) => t(x?.name))
-      .map((x) => ({
-        nazov: String(x.name),
-        mnozstvo: Number(x.quantity ?? 1) || 1,
-        mj: t(x.unit),
-        cena: Number(x.unit_price ?? 0),
-        sadzba: Number(x.vat_rate ?? 0) || 0,
-        zaklad: r2(Number(x.subtotal ?? x.total ?? 0)),
-        dph: r2(Number(x.vat_amount ?? 0)),
-        predkontacia: null,
-        clenenie: null,
-      })),
+    /*
+      Položky prepočítané na základ a daň (`polozkyPrijatej`) — z čítania
+      dokladu majú často len `total` s DPH, ktorý by inak išiel celý ako
+      základ s nulovou daňou. Keď nesedia so súčtami faktúry, žiadne.
+    */
+    polozky: (polozkyPrijatej(p) ?? []).map((x) => ({
+      nazov: x.nazov,
+      mnozstvo: x.mnozstvo,
+      mj: x.mj,
+      cena: r2(zn * x.cena),
+      sadzba: x.sadzba,
+      zaklad: r2(zn * x.zaklad),
+      dph: r2(zn * x.dph),
+      predkontacia: null,
+      clenenie: null,
+    })),
   };
 }
 
@@ -468,17 +537,32 @@ export function vystavenaNaUctovanie(
     (prenesenie ? t(nast.clenenieDphPdp) : null) ??
     t(nast.clenenieDph);
   const kv = t(inv?.kv_clenenie);
-  const polozky: PolozkaUctovania[] = (items ?? []).map((it) => ({
-    nazov: String(it?.name ?? it?.description ?? "").trim() || "Položka",
-    mnozstvo: Math.abs(Number(it?.quantity ?? 1)) || 1,
-    mj: t(it?.unit),
-    cena: Math.abs(Number(it?.unit_price ?? 0)),
-    sadzba: Number(it?.vat_rate ?? 0) || 0,
-    zaklad: r2(Math.abs(Number(it?.subtotal ?? 0))),
-    dph: r2(Math.abs(Number(it?.vat_amount ?? 0))),
-    predkontacia: t(it?.pohoda_predkontacia),
-    clenenie: t(it?.pohoda_clenenie_dph),
+  /*
+    Znamienko sa otáča celému dokladu (záporne uložený dobropis), nie
+    riadkom — riadok „Zľava" je záporný a musí odpočítať.
+  */
+  const surove = (items ?? []).map((it) => ({
+    zaklad: Number(it?.subtotal ?? 0),
+    dph: Number(it?.vat_amount ?? 0),
   }));
+  // Položky podľa ich vlastného súčtu (starší import mal hlavičku kladnú a položky záporné), hlavička podľa sumy.
+  const zn = znamienkoCelku(null, surove.length ? surove : [{ zaklad: Number(inv?.total ?? 0), dph: 0 }]);
+  const znHlavicky = znamienkoCelku(inv?.total, surove);
+  const polozky: PolozkaUctovania[] = (items ?? []).map((it) => {
+    const zaklad = r2(zn * Number(it?.subtotal ?? 0));
+    return {
+      nazov: String(it?.name ?? it?.description ?? "").trim() || "Položka",
+      mnozstvo: Math.abs(Number(it?.quantity ?? 1)) || 1,
+      mj: t(it?.unit),
+      // Množstvo je kladné, znamienko riadku nesie cena.
+      cena: (zaklad < 0 ? -1 : 1) * Math.abs(Number(it?.unit_price ?? 0)),
+      sadzba: Number(it?.vat_rate ?? 0) || 0,
+      zaklad,
+      dph: r2(zn * Number(it?.vat_amount ?? 0)),
+      predkontacia: t(it?.pohoda_predkontacia),
+      clenenie: t(it?.pohoda_clenenie_dph),
+    };
+  });
   // Zľava na doklad (v hlavičke) zníži základ aj daň po sadzbách pomerne.
   const zlava = Math.abs(Number(inv?.discount_total ?? 0));
   const spoluPolozky = polozky.reduce((a, p) => a + p.zaklad, 0);
@@ -518,7 +602,7 @@ export function vystavenaNaUctovanie(
   const zaklad = r2(riadky.reduce((a, r) => a + r.zaklad, 0));
   const dph = r2(riadky.reduce((a, r) => a + r.dph, 0));
   const celkom = r2(
-    (Math.abs(Number(inv?.total ?? 0)) || zaklad + dph) - (odpocty ? sumaOdpoctov(odpocty) : 0),
+    (znHlavicky * Number(inv?.total ?? 0) || zaklad + dph) - (odpocty ? sumaOdpoctov(odpocty) : 0),
   );
   const dodanie = t(inv?.delivery_date) ?? t(inv?.issue_date);
   return {

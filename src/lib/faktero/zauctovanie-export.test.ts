@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   blocekNaUctovanie,
   datumPoUzavierke,
+  prekazkaZaokruhlenia,
   prijataNaUctovanie,
   rozdelUcet,
   vystavenaNaUctovanie,
@@ -123,5 +124,102 @@ describe("doklady na zaúčtovanie", () => {
     expect(rozdelUcet("321")).toEqual({ synteticky: "321", analyticky: "" });
     expect(rozdelUcet("x")).toBeNull();
     expect(datumPoUzavierke("2026-10-02", "2026-09-30")).toBeNull();
+  });
+});
+
+describe("znamienka riadkov — zľava a odpočet zálohy sa neotáčajú", () => {
+  it("vystavená s riadkom „Sleva“ ho odpočíta", () => {
+    const d = vystavenaNaUctovanie(
+      { id: "v-sleva", type: "regular", invoice_number: "26810240", total: 110.7 },
+      [
+        { name: "Tlač", subtotal: 100, vat_amount: 23, vat_rate: 23, quantity: 1, unit_price: 100 },
+        {
+          name: "Sleva",
+          subtotal: -10,
+          vat_amount: -2.3,
+          vat_rate: 23,
+          quantity: 1,
+          unit_price: -10,
+        },
+      ],
+      nast,
+    );
+    expect(d.zaklad).toBe(90);
+    expect(d.dph).toBe(20.7);
+    expect(d.zaokruhlenie).toBe(0);
+    expect(d.polozky[1]).toMatchObject({ zaklad: -10, dph: -2.3, cena: -10, mnozstvo: 1 });
+  });
+
+  it("záporne uložený dobropis so zľavou: celok kladne, zľava ostane záporná", () => {
+    const d = vystavenaNaUctovanie(
+      { id: "v-dob", type: "credit_note", invoice_number: "D1", total: -110.7 },
+      [
+        {
+          name: "Vrátenie",
+          subtotal: -100,
+          vat_amount: -23,
+          vat_rate: 23,
+          quantity: -1,
+          unit_price: 100,
+        },
+        {
+          name: "Sleva",
+          subtotal: 10,
+          vat_amount: 2.3,
+          vat_rate: 23,
+          quantity: 1,
+          unit_price: -10,
+        },
+      ],
+      nast,
+    );
+    expect(d.druh).toBe("dobropis");
+    expect(d.zaklad).toBe(90);
+    expect(d.celkom).toBe(110.7);
+    expect(d.zaokruhlenie).toBe(0);
+    expect(d.polozky.map((p) => p.zaklad)).toEqual([100, -10]);
+  });
+
+  it("prijatý dobropis so zápornými sumami ide kladne aj s položkami", () => {
+    const d = prijataNaUctovanie(
+      {
+        id: "p-dob",
+        invoice_number: "DP1",
+        amount_total: -123,
+        amount_without_vat: -100,
+        vat_amount: -23,
+        items: [{ name: "Vrátenie", total: -123, quantity: 1, vat_rate: 23 }],
+      },
+      nast,
+    );
+    expect(d.druh).toBe("dobropis");
+    expect([d.zaklad, d.dph, d.celkom, d.zaokruhlenie]).toEqual([100, 23, 123, 0]);
+    expect(d.polozky).toMatchObject([{ zaklad: 100, dph: 23 }]);
+  });
+
+  it("doklad s rozdielom nad 1 € sa nevyvezie, halierové zaokrúhlenie áno", () => {
+    const zle = prijataNaUctovanie(
+      {
+        id: "p-zle",
+        invoice_number: "X1",
+        amount_total: 150,
+        amount_without_vat: 100,
+        vat_amount: 23,
+      },
+      nast,
+    );
+    expect(zle.zaokruhlenie).toBe(27);
+    expect(prekazkaZaokruhlenia(zle)).toMatch(/^X1 — súčet riadkov/);
+    const ok = prijataNaUctovanie(
+      {
+        id: "p-ok",
+        invoice_number: "X2",
+        amount_total: 123.01,
+        amount_without_vat: 100,
+        vat_amount: 23,
+      },
+      nast,
+    );
+    expect(prekazkaZaokruhlenia(ok)).toBeNull();
   });
 });
