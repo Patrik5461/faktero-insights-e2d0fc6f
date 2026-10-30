@@ -201,6 +201,7 @@ import { Route as AuthenticatedNastaveniaOnlinePlatbyRouteImport } from './route
 import { Route as AuthenticatedNastaveniaPoznamkyRouteImport } from './routes/_authenticated/nastavenia.poznamky'
 import { Route as AuthenticatedNastaveniaPrihlasitAppkuRouteImport } from './routes/_authenticated/nastavenia.prihlasit-appku'
 import { Route as AuthenticatedNastaveniaSchvalovanieRouteImport } from './routes/_authenticated/nastavenia.schvalovanie'
+import { Route as AuthenticatedNastaveniaTranseuRouteImport } from './routes/_authenticated/nastavenia.transeu'
 import { Route as AuthenticatedNastaveniaVzhladFakturyRouteImport } from './routes/_authenticated/nastavenia.vzhlad-faktury'
 import { Route as AuthenticatedNastaveniaZabezpecenieRouteImport } from './routes/_authenticated/nastavenia.zabezpecenie'
 import { Route as AuthenticatedNastaveniaZalohyRouteImport } from './routes/_authenticated/nastavenia.zalohy'
@@ -337,6 +338,7 @@ import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/pub
 import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public/hooks/reminders'
 import { Route as ApiPublicHooksShoptetImportRouteImport } from './routes/api/public/hooks/shoptet-import'
 import { Route as ApiPublicHooksStockAlertsRouteImport } from './routes/api/public/hooks/stock-alerts'
+import { Route as ApiPublicHooksTranseuSyncRouteImport } from './routes/api/public/hooks/transeu-sync'
 import { Route as ApiPublicHooksTrialLifecycleRouteImport } from './routes/api/public/hooks/trial-lifecycle'
 import { Route as ApiPublicHooksUcetZrusenieRouteImport } from './routes/api/public/hooks/ucet-zrusenie'
 import { Route as ApiPublicHooksVozovyParkPripomienkyRouteImport } from './routes/api/public/hooks/vozovy-park-pripomienky'
@@ -349,6 +351,7 @@ import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/pu
 import { Route as ApiPublicTatrabankaWebhookRouteImport } from './routes/api/public/tatrabanka/webhook'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
+import { Route as ApiPublicTranseuCallbackRouteImport } from './routes/api/public/transeu/callback'
 import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api/public/webhooks/gopay-merchant'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiV1CompaniesIdRouteImport } from './routes/api/v1/companies.$id'
@@ -1407,6 +1410,12 @@ const AuthenticatedNastaveniaSchvalovanieRoute =
     path: '/nastavenia/schvalovanie',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNastaveniaTranseuRoute =
+  AuthenticatedNastaveniaTranseuRouteImport.update({
+    id: '/nastavenia/transeu',
+    path: '/nastavenia/transeu',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedNastaveniaVzhladFakturyRoute =
   AuthenticatedNastaveniaVzhladFakturyRouteImport.update({
     id: '/nastavenia/vzhlad-faktury',
@@ -2177,6 +2186,12 @@ const ApiPublicHooksStockAlertsRoute =
     path: '/api/public/hooks/stock-alerts',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksTranseuSyncRoute =
+  ApiPublicHooksTranseuSyncRouteImport.update({
+    id: '/api/public/hooks/transeu-sync',
+    path: '/api/public/hooks/transeu-sync',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksTrialLifecycleRoute =
   ApiPublicHooksTrialLifecycleRouteImport.update({
     id: '/api/public/hooks/trial-lifecycle',
@@ -2246,6 +2261,12 @@ const ApiPublicTeslaCallbackRoute = ApiPublicTeslaCallbackRouteImport.update({
   path: '/api/public/tesla/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicTranseuCallbackRoute =
+  ApiPublicTranseuCallbackRouteImport.update({
+    id: '/api/public/transeu/callback',
+    path: '/api/public/transeu/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWebhooksGopayMerchantRoute =
   ApiPublicWebhooksGopayMerchantRouteImport.update({
     id: '/api/public/webhooks/gopay-merchant',
@@ -2627,6 +2648,7 @@ export interface FileRoutesByFullPath {
   '/nastavenia/poznamky': typeof AuthenticatedNastaveniaPoznamkyRoute
   '/nastavenia/prihlasit-appku': typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
   '/nastavenia/schvalovanie': typeof AuthenticatedNastaveniaSchvalovanieRoute
+  '/nastavenia/transeu': typeof AuthenticatedNastaveniaTranseuRoute
   '/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
   '/nastavenia/zalohy': typeof AuthenticatedNastaveniaZalohyRoute
@@ -2765,6 +2787,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
   '/api/public/hooks/shoptet-import': typeof ApiPublicHooksShoptetImportRoute
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
+  '/api/public/hooks/transeu-sync': typeof ApiPublicHooksTranseuSyncRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
   '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
@@ -2777,6 +2800,7 @@ export interface FileRoutesByFullPath {
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
+  '/api/public/transeu/callback': typeof ApiPublicTranseuCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
@@ -2996,6 +3020,7 @@ export interface FileRoutesByTo {
   '/nastavenia/poznamky': typeof AuthenticatedNastaveniaPoznamkyRoute
   '/nastavenia/prihlasit-appku': typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
   '/nastavenia/schvalovanie': typeof AuthenticatedNastaveniaSchvalovanieRoute
+  '/nastavenia/transeu': typeof AuthenticatedNastaveniaTranseuRoute
   '/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
   '/nastavenia/zalohy': typeof AuthenticatedNastaveniaZalohyRoute
@@ -3134,6 +3159,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
   '/api/public/hooks/shoptet-import': typeof ApiPublicHooksShoptetImportRoute
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
+  '/api/public/hooks/transeu-sync': typeof ApiPublicHooksTranseuSyncRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
   '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
@@ -3146,6 +3172,7 @@ export interface FileRoutesByTo {
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
+  '/api/public/transeu/callback': typeof ApiPublicTranseuCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
@@ -3376,6 +3403,7 @@ export interface FileRoutesById {
   '/_authenticated/nastavenia/poznamky': typeof AuthenticatedNastaveniaPoznamkyRoute
   '/_authenticated/nastavenia/prihlasit-appku': typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
   '/_authenticated/nastavenia/schvalovanie': typeof AuthenticatedNastaveniaSchvalovanieRoute
+  '/_authenticated/nastavenia/transeu': typeof AuthenticatedNastaveniaTranseuRoute
   '/_authenticated/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/_authenticated/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
   '/_authenticated/nastavenia/zalohy': typeof AuthenticatedNastaveniaZalohyRoute
@@ -3514,6 +3542,7 @@ export interface FileRoutesById {
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
   '/api/public/hooks/shoptet-import': typeof ApiPublicHooksShoptetImportRoute
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
+  '/api/public/hooks/transeu-sync': typeof ApiPublicHooksTranseuSyncRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
   '/api/public/hooks/vozovy-park-pripomienky': typeof ApiPublicHooksVozovyParkPripomienkyRoute
@@ -3526,6 +3555,7 @@ export interface FileRoutesById {
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
+  '/api/public/transeu/callback': typeof ApiPublicTranseuCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/v1/companies/$id': typeof ApiV1CompaniesIdRouteWithChildren
@@ -3756,6 +3786,7 @@ export interface FileRouteTypes {
     | '/nastavenia/poznamky'
     | '/nastavenia/prihlasit-appku'
     | '/nastavenia/schvalovanie'
+    | '/nastavenia/transeu'
     | '/nastavenia/vzhlad-faktury'
     | '/nastavenia/zabezpecenie'
     | '/nastavenia/zalohy'
@@ -3894,6 +3925,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/reminders'
     | '/api/public/hooks/shoptet-import'
     | '/api/public/hooks/stock-alerts'
+    | '/api/public/hooks/transeu-sync'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
     | '/api/public/hooks/vozovy-park-pripomienky'
@@ -3906,6 +3938,7 @@ export interface FileRouteTypes {
     | '/api/public/tatrabanka/webhook'
     | '/api/public/telegram/webhook'
     | '/api/public/tesla/callback'
+    | '/api/public/transeu/callback'
     | '/api/public/webhooks/gopay-merchant'
     | '/api/public/whatsapp/webhook'
     | '/api/v1/companies/$id'
@@ -4125,6 +4158,7 @@ export interface FileRouteTypes {
     | '/nastavenia/poznamky'
     | '/nastavenia/prihlasit-appku'
     | '/nastavenia/schvalovanie'
+    | '/nastavenia/transeu'
     | '/nastavenia/vzhlad-faktury'
     | '/nastavenia/zabezpecenie'
     | '/nastavenia/zalohy'
@@ -4263,6 +4297,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/reminders'
     | '/api/public/hooks/shoptet-import'
     | '/api/public/hooks/stock-alerts'
+    | '/api/public/hooks/transeu-sync'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
     | '/api/public/hooks/vozovy-park-pripomienky'
@@ -4275,6 +4310,7 @@ export interface FileRouteTypes {
     | '/api/public/tatrabanka/webhook'
     | '/api/public/telegram/webhook'
     | '/api/public/tesla/callback'
+    | '/api/public/transeu/callback'
     | '/api/public/webhooks/gopay-merchant'
     | '/api/public/whatsapp/webhook'
     | '/api/v1/companies/$id'
@@ -4504,6 +4540,7 @@ export interface FileRouteTypes {
     | '/_authenticated/nastavenia/poznamky'
     | '/_authenticated/nastavenia/prihlasit-appku'
     | '/_authenticated/nastavenia/schvalovanie'
+    | '/_authenticated/nastavenia/transeu'
     | '/_authenticated/nastavenia/vzhlad-faktury'
     | '/_authenticated/nastavenia/zabezpecenie'
     | '/_authenticated/nastavenia/zalohy'
@@ -4642,6 +4679,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/reminders'
     | '/api/public/hooks/shoptet-import'
     | '/api/public/hooks/stock-alerts'
+    | '/api/public/hooks/transeu-sync'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
     | '/api/public/hooks/vozovy-park-pripomienky'
@@ -4654,6 +4692,7 @@ export interface FileRouteTypes {
     | '/api/public/tatrabanka/webhook'
     | '/api/public/telegram/webhook'
     | '/api/public/tesla/callback'
+    | '/api/public/transeu/callback'
     | '/api/public/webhooks/gopay-merchant'
     | '/api/public/whatsapp/webhook'
     | '/api/v1/companies/$id'
@@ -4849,6 +4888,7 @@ export interface RootRouteChildren {
   ApiPublicHooksRemindersRoute: typeof ApiPublicHooksRemindersRoute
   ApiPublicHooksShoptetImportRoute: typeof ApiPublicHooksShoptetImportRoute
   ApiPublicHooksStockAlertsRoute: typeof ApiPublicHooksStockAlertsRoute
+  ApiPublicHooksTranseuSyncRoute: typeof ApiPublicHooksTranseuSyncRoute
   ApiPublicHooksTrialLifecycleRoute: typeof ApiPublicHooksTrialLifecycleRoute
   ApiPublicHooksUcetZrusenieRoute: typeof ApiPublicHooksUcetZrusenieRoute
   ApiPublicHooksVozovyParkPripomienkyRoute: typeof ApiPublicHooksVozovyParkPripomienkyRoute
@@ -4861,6 +4901,7 @@ export interface RootRouteChildren {
   ApiPublicTatrabankaWebhookRoute: typeof ApiPublicTatrabankaWebhookRoute
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
+  ApiPublicTranseuCallbackRoute: typeof ApiPublicTranseuCallbackRoute
   ApiPublicWebhooksGopayMerchantRoute: typeof ApiPublicWebhooksGopayMerchantRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   ApiV1PohodaDavkaRoute: typeof ApiV1PohodaDavkaRoute
@@ -6219,6 +6260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNastaveniaSchvalovanieRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/nastavenia/transeu': {
+      id: '/_authenticated/nastavenia/transeu'
+      path: '/nastavenia/transeu'
+      fullPath: '/nastavenia/transeu'
+      preLoaderRoute: typeof AuthenticatedNastaveniaTranseuRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/nastavenia/vzhlad-faktury': {
       id: '/_authenticated/nastavenia/vzhlad-faktury'
       path: '/nastavenia/vzhlad-faktury'
@@ -7171,6 +7219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksStockAlertsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/transeu-sync': {
+      id: '/api/public/hooks/transeu-sync'
+      path: '/api/public/hooks/transeu-sync'
+      fullPath: '/api/public/hooks/transeu-sync'
+      preLoaderRoute: typeof ApiPublicHooksTranseuSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/trial-lifecycle': {
       id: '/api/public/hooks/trial-lifecycle'
       path: '/api/public/hooks/trial-lifecycle'
@@ -7253,6 +7308,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/tesla/callback'
       fullPath: '/api/public/tesla/callback'
       preLoaderRoute: typeof ApiPublicTeslaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/transeu/callback': {
+      id: '/api/public/transeu/callback'
+      path: '/api/public/transeu/callback'
+      fullPath: '/api/public/transeu/callback'
+      preLoaderRoute: typeof ApiPublicTranseuCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/webhooks/gopay-merchant': {
@@ -7674,6 +7736,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNastaveniaPoznamkyRoute: typeof AuthenticatedNastaveniaPoznamkyRoute
   AuthenticatedNastaveniaPrihlasitAppkuRoute: typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
   AuthenticatedNastaveniaSchvalovanieRoute: typeof AuthenticatedNastaveniaSchvalovanieRoute
+  AuthenticatedNastaveniaTranseuRoute: typeof AuthenticatedNastaveniaTranseuRoute
   AuthenticatedNastaveniaVzhladFakturyRoute: typeof AuthenticatedNastaveniaVzhladFakturyRoute
   AuthenticatedNastaveniaZabezpecenieRoute: typeof AuthenticatedNastaveniaZabezpecenieRoute
   AuthenticatedNastaveniaZalohyRoute: typeof AuthenticatedNastaveniaZalohyRoute
@@ -7801,6 +7864,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedNastaveniaPrihlasitAppkuRoute,
   AuthenticatedNastaveniaSchvalovanieRoute:
     AuthenticatedNastaveniaSchvalovanieRoute,
+  AuthenticatedNastaveniaTranseuRoute: AuthenticatedNastaveniaTranseuRoute,
   AuthenticatedNastaveniaVzhladFakturyRoute:
     AuthenticatedNastaveniaVzhladFakturyRoute,
   AuthenticatedNastaveniaZabezpecenieRoute:
@@ -8434,6 +8498,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksRemindersRoute: ApiPublicHooksRemindersRoute,
   ApiPublicHooksShoptetImportRoute: ApiPublicHooksShoptetImportRoute,
   ApiPublicHooksStockAlertsRoute: ApiPublicHooksStockAlertsRoute,
+  ApiPublicHooksTranseuSyncRoute: ApiPublicHooksTranseuSyncRoute,
   ApiPublicHooksTrialLifecycleRoute: ApiPublicHooksTrialLifecycleRoute,
   ApiPublicHooksUcetZrusenieRoute: ApiPublicHooksUcetZrusenieRoute,
   ApiPublicHooksVozovyParkPripomienkyRoute:
@@ -8448,6 +8513,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicTatrabankaWebhookRoute: ApiPublicTatrabankaWebhookRoute,
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,
+  ApiPublicTranseuCallbackRoute: ApiPublicTranseuCallbackRoute,
   ApiPublicWebhooksGopayMerchantRoute: ApiPublicWebhooksGopayMerchantRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   ApiV1PohodaDavkaRoute: ApiV1PohodaDavkaRoute,
