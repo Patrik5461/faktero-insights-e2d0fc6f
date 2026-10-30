@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sumaSDph, rozpadSDph, oMesiacNeskor } from "./predplatne-cena";
+import { sumaSDph, rozpadSDph, oMesiacNeskor, vetaObnovy } from "./predplatne-cena";
 
 describe("cena predplatného", () => {
   it("Starter 9 € sa strhne ako 11,07 €", () => {
@@ -59,5 +59,23 @@ describe("predplatné pre platiteľa DPH z inej krajiny EÚ", () => {
     const { sumaNaUhradu } = await import("./predplatne-cena");
     expect(sumaNaUhradu(900, true)).toBe(900);
     expect(sumaNaUhradu(900, false)).toBe(1107);
+  });
+});
+
+describe("veta o obnove predplatného", () => {
+  it("skúšobná verzia bez karty nesľubuje mesačnú platbu", () => {
+    expect(vetaObnovy({ is_trialing: true, ma_ulozenu_kartu: false })).toBe("skusobna");
+  });
+  it("skúšobná verzia s kartou a termínom ukáže najbližšiu platbu", () => {
+    expect(
+      vetaObnovy({ is_trialing: true, ma_ulozenu_kartu: true, next_billing_at: "2026-11-29" }),
+    ).toBe("karta");
+  });
+  it("plán zadarmo a zrušené predplatné majú prednosť", () => {
+    expect(vetaObnovy({ zdarma: true, is_trialing: true })).toBe("zdarma");
+    expect(vetaObnovy({ cancel_at_period_end: true, ma_ulozenu_kartu: true })).toBe("zrusene");
+  });
+  it("aktívne predplatné bez termínu ostáva pri všeobecnej vete", () => {
+    expect(vetaObnovy({ ma_ulozenu_kartu: false })).toBe("mesacne");
   });
 });
