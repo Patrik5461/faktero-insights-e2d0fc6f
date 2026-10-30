@@ -148,3 +148,26 @@ describe("vyhodnotZakazku", () => {
     expect(v.vynosy).toBe(0.3);
   });
 });
+
+describe("bločky na zákazke (test 30. 10.)", () => {
+  it("bloček ide do nákladov bez DPH", async () => {
+    const { nakladZBlocku } = await import("./zakazky");
+    expect(nakladZBlocku({ net_amount: 40, vat_amount: 9.2, total_amount: 49.2 })).toBe(40);
+    // Bez rozpisu sa DPH odpočíta zo sumy, a keď ani tá nie je, ide celá suma.
+    expect(nakladZBlocku({ net_amount: null, vat_amount: 9.2, total_amount: 49.2 })).toBeCloseTo(
+      40,
+    );
+    expect(nakladZBlocku({ net_amount: null, total_amount: 12 })).toBe(12);
+  });
+
+  it("vyhodnotenie zákazky počíta aj bločky", () => {
+    const v = vyhodnotZakazku({
+      faktury: [{ type: "regular", status: "sent", subtotal: 1000 }],
+      prijateFaktury: [{ amount_without_vat: 200 }],
+      blocky: [{ net_amount: 40, vat_amount: 9.2, total_amount: 49.2 }],
+    });
+    expect(v.naklad_sluzby).toBe(240);
+    expect(v.naklady).toBe(240);
+    expect(v.zisk).toBe(760);
+  });
+});

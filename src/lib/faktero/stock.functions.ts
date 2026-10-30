@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { navrhniObjednavky } from "./stock-doobjednanie";
 import { objednaneNaCeste } from "./objednavky-dodavatel";
 import { colneUdajeNaZapis, jePlatnyColnyKod } from "./colny-kod";
+import { nazovHlavnehoSkladuFirmy } from "./hlavny-sklad";
 
 const CompanyScoped = z.object({ company_id: z.string().uuid() });
 
@@ -60,7 +61,11 @@ async function ensureDefaultWarehouse(supabase: any, companyId: string, debug: a
   if (existing) return { warehouse: existing, error: null };
   const { data: created, error } = await supabase
     .from("warehouses")
-    .insert({ company_id: companyId, name: "Hlavný sklad", active: true })
+    .insert({
+      company_id: companyId,
+      name: await nazovHlavnehoSkladuFirmy(supabase, companyId),
+      active: true,
+    })
     .select("id, name")
     .single();
   debug.default_warehouse_insert_result = { data: created, error: serializeDbError(error) };
@@ -460,13 +465,21 @@ export const completeInventory = createServerFn({ method: "POST" })
     let adjustments = 0;
     let hodnotaManka = 0;
     let hodnotaPrebytku = 0;
+    /*
+      Pohyb, ktorý databáza odmietne (najčastejšie záporný stav, keď sa medzi
+      začatím a ukončením inventúry vydávalo), sa predtým ticho zahodil —
+      inventúra sa uzavrela, hlásila „1 úprav“ a stav ostal nesprávny.
+    */
+    const zlyhane: { stock_item_id: string; chyba: string }[] = [];
     for (const it of items ?? []) {
       if (it.counted_quantity == null) continue;
+      // Rozdiel zapísaný pri predošlom (čiastočne neúspešnom) ukončení sa neopakuje.
+      if (it.difference != null) continue;
       const diff = Number(it.counted_quantity) - Number(it.expected_quantity);
       if (Math.abs(diff) < 1e-9) continue;
       const cena = cenaZasoby.get(it.stock_item_id) ?? 0;
       const hodnota = diff * cena;
-      await supabase.from("stock_movements").insert({
+      const { error: chybaPohybu } = await supabase.from("stock_movements").insert({
         company_id: data.company_id,
         warehouse_id: count.warehouse_id,
         stock_item_id: it.stock_item_id,
@@ -480,10 +493,37 @@ export const completeInventory = createServerFn({ method: "POST" })
         note: `Inventúra ${count.id.slice(0, 8)} — ${diff > 0 ? "prebytok" : "manko"}`,
         created_by: userId,
       });
+      if (chybaPohybu) {
+        zlyhane.push({ stock_item_id: it.stock_item_id, chyba: chybaPohybu.message });
+        continue;
+      }
       await supabase.from("inventory_count_items").update({ difference: diff }).eq("id", it.id);
       if (diff > 0) hodnotaPrebytku += hodnota;
       else hodnotaManka += Math.abs(hodnota);
       adjustments++;
+    }
+    if (zlyhane.length) {
+      // Inventúra ostáva otvorená: zapísané rozdiely sa pri ďalšom ukončení
+      // neopakujú a zvyšok sa dá po kontrole stavu dokončiť.
+      const { data: karty } = await supabase
+        .from("stock_items")
+        .select("id, sku, products(name)")
+        .in(
+          "id",
+          zlyhane.map((z) => z.stock_item_id),
+        );
+      const nazvy = zlyhane.map((z) => {
+        const k = (karty ?? []).find((x: any) => x.id === z.stock_item_id) as any;
+        return k?.products?.name ?? k?.sku ?? z.stock_item_id.slice(0, 8);
+      });
+      const zaporny = zlyhane.some((z) => z.chyba.includes("negative_stock"));
+      throw new Error(
+        (zaporny
+          ? "Inventúra nie je ukončená — úprava by spôsobila záporný stav (od začatia inventúry sa zo skladu vydávalo). Skontrolujte spočítané množstvo: "
+          : "Inventúra nie je ukončená — tieto úpravy sa nezapísali: ") +
+          nazvy.join(", ") +
+          (adjustments ? ` (zapísané úpravy: ${adjustments})` : ""),
+      );
     }
     await supabase
       .from("inventory_counts")
@@ -1121,7 +1161,11 @@ export const importStockCsv = createServerFn({ method: "POST" })
     if (!defaultWh) {
       const { data: created } = await supabase
         .from("warehouses")
-        .insert({ company_id: cid, name: "Hlavný sklad", active: true })
+        .insert({
+            company_id: cid,
+            name: await nazovHlavnehoSkladuFirmy(supabase, cid),
+            active: true,
+          })
         .select()
         .single();
       if (created) {
@@ -1585,7 +1629,11 @@ export const zalozZakladnySklad = createServerFn({ method: "POST" })
 
     const { data: novy, error } = await context.supabase
       .from("warehouses")
-      .insert({ company_id: data.company_id, name: "Hlavný sklad", active: true })
+      .insert({
+        company_id: data.company_id,
+        name: await nazovHlavnehoSkladuFirmy(context.supabase, data.company_id),
+        active: true,
+      })
       .select("id, name, active")
       .single();
     if (error) throw new Error(error.message);

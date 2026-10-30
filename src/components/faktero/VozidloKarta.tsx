@@ -35,7 +35,8 @@ export function StitokTerminu({ t: termin }: { t: Termin }) {
     <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>
       {t(termin.nazov)}{" "}
       {termin.stav === "prepadnute"
-        ? t("prepadlo {datum}", { datum: datumNaDoklade(termin.datum) })
+        ? // „prepadlo“ sedelo len na niektoré termíny („STK prepadlo“ je zle) — platnosť drží rod.
+          t("platnosť skončila {datum}", { datum: datumNaDoklade(termin.datum) })
         : t("do {datum}", { datum: datumNaDoklade(termin.datum) })}
     </span>
   );

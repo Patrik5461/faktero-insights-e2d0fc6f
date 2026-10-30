@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { formatujCislo } from "@/lib/faktero/mena";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -40,7 +40,8 @@ function NewTripPage() {
   const [nacitavam, setNacitavam] = useState(upravujem);
   const [form, setForm] = useState({
     vehicle_id: "",
-    trip_date: new Date().toISOString().slice(0, 10),
+    // Miestny dátum — toISOString je v UTC a po polnoci by ponúkol včerajšok.
+    trip_date: new Date().toLocaleDateString("sv-SE"),
     driver_name: "",
     start_location: "",
     end_location: "",
@@ -162,6 +163,44 @@ function NewTripPage() {
     // hneď po tom, čo ho sám nastaví.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.vehicle_id]);
+
+  /*
+    Tachometer na začiatku novej jazdy pokračuje tam, kde skončila posledná
+    jazda vozidla (inak počiatočným stavom vozidla). Prázdne pole sa predtým
+    vypĺňalo ručne a ľahko vznikla jazda, ktorá sa prekrýva s predošlou.
+  */
+  // Hodnota doplnená automaticky — pri zmene vozidla sa smie prepísať, ručná nie.
+  const doplnenyZaciatok = useRef<string | null>(null);
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (upravujem || !cid || !form.vehicle_id) return;
+    let zrusene = false;
+    supabase
+      .from("trips")
+      .select("end_odometer")
+      .eq("company_id", cid)
+      .eq("vehicle_id", form.vehicle_id)
+      .not("end_odometer", "is", null)
+      .order("end_odometer", { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (zrusene) return;
+        const posledny = data?.[0]?.end_odometer;
+        const vozidlo = vehicles.find((v) => v.id === form.vehicle_id);
+        const km = posledny != null ? Number(posledny) : Number(vozidlo?.initial_odometer ?? 0);
+        const novy = km > 0 ? String(km) : "";
+        setForm((p) => {
+          const smiem = !p.start_odometer || p.start_odometer === doplnenyZaciatok.current;
+          if (p.vehicle_id !== form.vehicle_id || !smiem) return p;
+          doplnenyZaciatok.current = novy;
+          return { ...p, start_odometer: novy };
+        });
+      });
+    return () => {
+      zrusene = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.vehicle_id, vehicles]);
 
   const vozidloBezSpotreby =
     !!form.vehicle_id && !vehicles.find((v) => v.id === form.vehicle_id)?.consumption_l_100km;
