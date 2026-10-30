@@ -17,6 +17,10 @@ export type PolozkaFaktury = {
   vat_rate?: number;
   subtotal?: number;
   vat_amount?: number;
+  /** Zľava riadku v % (jednotková cena ostáva pôvodná). */
+  discount_percent?: number;
+  /** Prenesenie daňovej povinnosti len pri tejto položke. */
+  prenesenie?: boolean;
 };
 
 export type VstupFaktury = {
@@ -42,10 +46,17 @@ export type VstupFaktury = {
   payment_method?: string;
   notes?: string | null;
   job_id?: string | null;
-  /** Daňový režim; bez neho ho určí odberateľ (`rezimNovejFaktury`). */
+  /**
+   * Prenesenie daňovej povinnosti na celej faktúre — DPH je nula. Bez režimu
+   * ho určí odberateľ (`rezimNovejFaktury`), ak žiadna položka nemá DPH.
+   */
   reverse_charge?: boolean;
   reverse_charge_type?: "domestic_69" | "eu_b2b" | "export" | null;
+  /** Dodanie do EÚ: tovar, služba alebo trojstranný obchod; pri vývoze tovar alebo služba. */
   eu_plnenie?: "tovar" | "sluzba" | "trojstranny" | null;
+  /** Zľava na celý doklad: percento alebo suma bez DPH. */
+  discount_type?: "percent" | "amount" | null;
+  discount_value?: number;
   items: PolozkaFaktury[];
   /**
    * Ďalšie stĺpce faktúry z verejného API (dodaci_list, zobrazit_peciatku,
@@ -74,8 +85,7 @@ export async function vytvorFakturu(
   companyId: string,
   d: VstupFaktury,
 ): Promise<VysledokFaktury> {
-  const { nextInvoiceNumberDetailed, computeInvoiceTotals } =
-    await import("./invoice-numbering.server");
+  const { nextInvoiceNumberDetailed } = await import("./invoice-numbering.server");
   // Rovnaký externý identifikátor = tá istá objednávka; druhá faktúra nevznikne.
   if (d.external_id) {
     const { data: dupe } = await supabase
@@ -119,6 +129,12 @@ export async function vytvorFakturu(
     .maybeSingle();
   const predvolenaSadzba =
     firma?.vat_payer === false ? 0 : zakladnaSadzba(krajinaDane(firma?.country), issue_date);
+  const polozky = d.items.map((i) => ({ ...i, vat_rate: i.vat_rate ?? predvolenaSadzba }));
+  /*
+    Výslovný režim platí. Bez neho rozhodne odberateľ (IČ DPH iného štátu EÚ →
+    dodanie do EÚ, mimo EÚ → vývoz) — len ak žiadna položka nenesie DPH, inak
+    by faktúra nesedela s tým, čo e-shop zákazníkovi naúčtoval.
+  */
   const { rezimNovejFaktury } = await import("./rezim-odberatela");
   const rezim = rezimNovejFaktury({
     vstup: d,
@@ -128,31 +144,50 @@ export async function vytvorFakturu(
   });
   if ("chyba" in rezim)
     return { ok: false, kod: "validation_error", sprava: rezim.chyba, status: 400 };
-  // Pri prenesení / oslobodení je na riadkoch nula — inak ich odmietne spúšťač v DB.
-  const polozky = d.items.map((i) => ({
-    ...i,
-    vat_rate: rezim.reverse_charge ? 0 : (i.vat_rate ?? predvolenaSadzba),
-    ...(rezim.reverse_charge && i.subtotal !== undefined ? { vat_amount: 0 } : {}),
-  }));
-  const { sumyRiadkov } = await import("./api-sumy-riadkov");
-  const presne = sumyRiadkov(polozky);
-  if ("chyba" in presne)
-    return { ok: false, kod: "validation_error", sprava: presne.chyba, status: 400 };
-  const totals =
-    presne.sumy ??
-    computeInvoiceTotals(
-      polozky.map((i) => ({
-        quantity: i.quantity,
-        unit_price: i.unit_price,
-        vat_rate: i.vat_rate,
-      })),
-    );
+  const pdp = rezim.reverse_charge;
+  const typPdp = rezim.reverse_charge_type;
+  // Rovnaké pravidlo ako formulár webu: dodanie do EÚ bez DPH len na IČ DPH z iného štátu.
+  if (typPdp === "eu_b2b") {
+    const icDph = String(cust.ic_dph ?? "").trim();
+    if (!/^[A-Z]{2}[A-Z0-9]{2,}$/i.test(icDph) || /^SK/i.test(icDph))
+      return {
+        ok: false,
+        kod: "validation_error",
+        sprava: "Pri dodaní do EÚ (eu_b2b) musí mať odberateľ IČ DPH z iného členského štátu.",
+        status: 400,
+      };
+  }
+  // Zľavy a prenesenie počíta rovnako ako web (`sumyFakturyApi`).
+  const { sumyFakturyApi } = await import("./api-sumy-riadkov");
+  const vypocet = sumyFakturyApi(polozky, {
+    reverse_charge: pdp,
+    discount_type: d.discount_type ?? null,
+    discount_value: d.discount_value ?? 0,
+  });
+  if ("chyba" in vypocet)
+    return { ok: false, kod: "validation_error", sprava: vypocet.chyba, status: 400 };
+  const totals = vypocet.sumy;
   const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
     companyId,
     issue_date,
   );
   const due_date = d.due_date ?? new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
   const variable_symbol = vsNaUlozenie(d.variable_symbol, invoice_number);
+  const currency = d.currency ?? (await predvolenaMena(supabase, companyId));
+  /*
+    Cudzia mena: kurz ECB (CZ firma ČNB) a sumy v domácej mene hneď do riadku,
+    ako pri vystavení na webe — bez nich by DPH v eurách chýbala vo výkazoch
+    aj v exportoch do účtovníctva.
+  */
+  const { doplnovacKurzov } = await import("./kurz-dokladu.server");
+  const kurz = await doplnovacKurzov(companyId)("invoices", {
+    currency,
+    issue_date,
+    delivery_date: d.delivery_date ?? null,
+    subtotal: totals.subtotal,
+    vat_total: totals.vat_total,
+    total: totals.total,
+  });
 
   const { data: created, error: insErr } = await supabase
     .from("invoices")
@@ -165,7 +200,7 @@ export async function vytvorFakturu(
       issue_date,
       delivery_date: d.delivery_date ?? null,
       due_date,
-      currency: d.currency ?? (await predvolenaMena(supabase, companyId)),
+      currency,
       payment_method: normalizePaymentMethod(d.payment_method),
       customer_name: cust.name,
       customer_ico: cust.ico ?? null,
@@ -179,14 +214,18 @@ export async function vytvorFakturu(
       subtotal: totals.subtotal,
       vat_total: totals.vat_total,
       total: totals.total,
+      discount_type: totals.discount_type,
+      discount_value: totals.discount_value,
+      discount_total: totals.discount_total,
+      reverse_charge: pdp,
+      reverse_charge_type: typPdp,
+      eu_plnenie: rezim.eu_plnenie,
       notes: d.notes ?? null,
       order_number: d.order_number ?? null,
       external_id: d.external_id ?? null,
       job_id: d.job_id ?? null,
-      reverse_charge: rezim.reverse_charge,
-      reverse_charge_type: rezim.reverse_charge_type,
-      eu_plnenie: rezim.eu_plnenie,
       ...(d.doplnky ?? {}),
+      ...kurz,
       status: "issued",
     })
     .select()
@@ -206,11 +245,7 @@ export async function vytvorFakturu(
     description: it.description ?? null,
     quantity: it.quantity,
     unit: it.unit ?? "ks",
-    unit_price: it.unit_price,
-    vat_rate: it.vat_rate,
-    subtotal: totals.enriched[i].subtotal,
-    vat_amount: totals.enriched[i].vat_amount,
-    total: totals.enriched[i].total,
+    ...totals.riadky[i],
   }));
   const { error: itErr } = await supabase.from("invoice_items").insert(itemRows);
   if (itErr) return { ok: false, kod: "db_error", sprava: itErr.message, status: 500 };

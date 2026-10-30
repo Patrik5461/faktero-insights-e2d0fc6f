@@ -72,7 +72,8 @@ export function MovementForm({
       if (!wh || wh.length === 0) {
         const { data: created, error } = await supabase
           .from("warehouses")
-          .insert({ company_id: cid, name: "Hlavný sklad", active: true })
+          // Názov v jazyku rozhrania — česká firma nemá dostať „Hlavný sklad“.
+          .insert({ company_id: cid, name: t("Hlavný sklad"), active: true })
           .select()
           .single();
         if (created) {

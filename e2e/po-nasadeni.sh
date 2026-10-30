@@ -22,7 +22,7 @@ COMMIT=${1:-$(git -C "$(dirname "$0")/.." rev-parse --short HEAD 2>/dev/null || 
 E2E=$(cd "$(dirname "$0")" && pwd)
 VYSLEDKY=${E2E_VYSLEDKY:-/home/patrik/e2e-vysledky}
 LOG=${E2E_DEPLOY_LOG:-/home/patrik/webhook/poll-deploy.log}
-STROP=${E2E_STROP_S:-600}
+STROP=${E2E_STROP_S:-1200}
 
 export HOME=${HOME:-/home/patrik}
 export PATH=/usr/local/bin:/usr/bin:/bin:${PATH:-}

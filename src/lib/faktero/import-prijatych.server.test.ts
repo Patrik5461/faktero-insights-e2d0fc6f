@@ -19,6 +19,7 @@ const klient = {
       select: () => q,
       eq: () => q,
       is: () => q,
+      maybeSingle: async () => ({ data: tabulka === "companies" ? { country: "CZ" } : null }),
       range: async () => ({
         data:
           tabulka === "purchase_invoices"
@@ -62,6 +63,8 @@ describe("import prijatých dokladov — balík z Doklado", () => {
     const s = suhrnPlanu(plan);
     expect(s).toMatchObject({ faktury: 1, blocky: 1, duplicity: 1, skenyPriradene: 1, skenyBezParu: 1 });
     expect(s.ukazka.find((u) => u.cislo === "FA2026/0815")?.sken).toBe("FA2026-0815.pdf");
+    // Doklady bez meny sú v domácej mene firmy — CZ firma koruny, nie eurá.
+    expect(plan.zaznamy.map((z) => z.mena)).toEqual(["CZK", "CZK", "CZK"]);
   });
 
   it("CSV v kódovaní Windows-1250 prečíta s diakritikou", async () => {

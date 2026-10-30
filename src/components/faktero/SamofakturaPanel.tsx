@@ -125,7 +125,9 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
             note: `Samofaktúra ${row.invoice_number} — ${row.supplier_name}`,
             source_document_type: "self_billing",
             source_document_id: row.id,
-            job_id: row.job_id ?? null,
+            // Bez zákazky: príjem pripnutý na zákazku je vrátenie materiálu a náklad
+            // by znížil — samofaktúra je už v nákladoch zákazky sama, náklad za
+            // materiál vznikne až jeho výdajom (rovnako ako pri objednávke).
           },
         });
         if (!r.ok) throw new Error(`${p.name}: ${r.error}`);

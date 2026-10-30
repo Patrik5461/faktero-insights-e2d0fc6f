@@ -159,9 +159,22 @@ export function kalendar(z: Zmluva): Splatka[] {
     obdobia.push(Math.max(0, dniMedzi(n === 0 ? zaciatok : datumy[n - 1], datumy[n])));
   }
 
+  /*
+    DPH v splátke (leasing). Istina aj úrok sú bez dane a DPH sa k nim
+    pripočíta — splátka v kalendári je celá suma, ktorá odíde z účtu, takže
+    istina + úrok + DPH = splátka na cent a párovanie s bankou sedí. Splátka
+    zo zmluvy sa zadáva s DPH, kalendár z nej základ vyráta. Predtým bola
+    splátka bez DPH a daň sa z nej ešte raz „vybrala“ — časti nesedeli so
+    splátkou a banka strhla viac, než kalendár čakal.
+  */
+  const koefDph = 1 + sadzbaDph / 100;
+  const sDph = (zaklad: number) => zaokruhli(zaklad * koefDph);
+  const splatkaZmluvy =
+    z.payment_amount && z.payment_amount > 0 ? zaokruhli(z.payment_amount) : null;
+
   const splatka =
-    z.payment_amount && z.payment_amount > 0
-      ? zaokruhli(z.payment_amount)
+    splatkaZmluvy != null
+      ? zaokruhli(splatkaZmluvy / koefDph)
       : podlaDni && z.interest_rate > 0
         ? hladajSplatku(splacana, z.interest_rate, obdobia, zaklad)
         : anuita(splacana, z.interest_rate, mesiacov);
@@ -201,15 +214,18 @@ export function kalendar(z: Zmluva): Splatka[] {
 
     zostava = zaokruhli(zostava - (posledna ? zostava : castIstiny));
 
+    // Plná splátka zo zmluvy ostáva presne taká, ako je v zmluve (DPH je
+    // rozdiel); dorovnaná a skrátená sa k DPH dopočíta zo základu.
+    const plna = splatkaZmluvy != null && suma === splatka;
+    const sDan = sadzbaDph > 0 ? (plna ? splatkaZmluvy! : sDph(suma)) : suma;
+
     riadky.push({
       number: n,
       due_date: datumy[n - 1],
-      amount: suma,
+      amount: sDan,
       principal_part: castIstiny,
       interest_part: urok,
-      // DPH je dopočítaná zo splátky ako z ceny s daňou — leasingové splátky
-      // sú v zmluvách uvádzané vrátane DPH.
-      vat_amount: sadzbaDph > 0 ? zaokruhli(suma - suma / (1 + sadzbaDph / 100)) : 0,
+      vat_amount: zaokruhli(sDan - suma),
       remaining_principal: posledna ? 0 : zostava,
     });
   }

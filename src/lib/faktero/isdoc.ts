@@ -96,12 +96,16 @@ function strana(p: any): Record<string, string> {
 }
 
 /**
- * `1` faktúra, `2` dobropis, `3` vrubopis, `4` zálohová faktúra.
- * Import pozná len bežnú faktúru a dobropis; zálohu preto označíme ako proformu.
+ * `1` faktúra, `2` dobropis, `3` vrubopis (ťarchopis), `4` zálohová faktúra
+ * (nedaňový zálohový list), `5` daňový doklad k prijatej platbe.
  */
-export function typDokladu(kod: string): "regular" | "credit_note" | "proforma" {
+export function typDokladu(
+  kod: string,
+): "regular" | "credit_note" | "debit_note" | "proforma" | "advance_payment" {
   if (kod === "2") return "credit_note";
+  if (kod === "3") return "debit_note";
   if (kod === "4") return "proforma";
+  if (kod === "5") return "advance_payment";
   return "regular";
 }
 
@@ -129,10 +133,31 @@ export function isdocNaRiadky(doc: any): IsdocRiadok[] {
     return "";
   };
 
-  const bezDph = cislo(hodnota(inv, "LegalMonetaryTotal", "TaxExclusiveAmount"));
+  /*
+    Faktúra v cudzej mene má v ISDOC sumy v domácej mene dodávateľa
+    (`LocalCurrencyCode`) a sumy v mene faktúry v prvkoch `…Curr` vedľa nich
+    (`ForeignCurrencyCode`). Predtým sa brali domáce — faktúra na 1 000 CZK
+    sa naimportovala ako 40 € a odberateľ by dlžil v inej mene, než mu prišla.
+    Kurz doplní import podľa pravidiel firmy (ECB/ČNB).
+  */
+  const cudzia = hodnota(inv, "ForeignCurrencyCode");
+  const sumaDokladu = (o: any, ...cesta: string[]): number => {
+    if (cudzia) {
+      const curr = hodnota(o, ...cesta.slice(0, -1), `${cesta[cesta.length - 1]}Curr`);
+      if (curr) return cislo(curr);
+    }
+    return cislo(hodnota(o, ...cesta));
+  };
+
+  const bezDph = sumaDokladu(inv, "LegalMonetaryTotal", "TaxExclusiveAmount");
   // Celková suma je `TaxInclusiveAmount`, nie `PayableAmount` — tá je po
   // odpočte záloh a zaokrúhlení a pri plne zálohovanej faktúre je nula.
-  const sDph = cislo(hodnota(inv, "LegalMonetaryTotal", "TaxInclusiveAmount"));
+  const sDph = sumaDokladu(inv, "LegalMonetaryTotal", "TaxInclusiveAmount");
+  // Odpočítané zálohy (daňové doklady k platbe aj nedaňové zálohové listy) —
+  // plnenie ostáva celé v `total`, na úhradu je rozdiel.
+  const zalohy =
+    sumaDokladu(inv, "LegalMonetaryTotal", "AlreadyClaimedTaxInclusiveAmount") +
+    Math.abs(sumaDokladu(inv, "LegalMonetaryTotal", "PaidDepositsAmount"));
 
   const hlavicka: IsdocRiadok = {
     invoice_number: hodnota(inv, "ID"),
@@ -141,10 +166,11 @@ export function isdocNaRiadky(doc: any): IsdocRiadok[] {
     issue_date: hodnota(inv, "IssueDate"),
     delivery_date: hodnota(inv, "TaxPointDate"),
     due_date: prvaHodnota("PaymentDueDate"),
-    currency: hodnota(inv, "LocalCurrencyCode") || hodnota(inv, "CurrCode"),
+    currency: cudzia || hodnota(inv, "LocalCurrencyCode") || hodnota(inv, "CurrCode"),
     subtotal: suma(bezDph),
     vat_total: suma(sDph - bezDph),
     total: suma(sDph),
+    advance_amount: suma(zalohy),
     notes: hodnota(inv, "Note"),
     document_type: typDokladu(hodnota(inv, "DocumentType")),
     customer_name: odberatel.name,
@@ -170,8 +196,9 @@ export function isdocNaRiadky(doc: any): IsdocRiadok[] {
 
   return riadky.map((r: any) => {
     const mnozstvo = uzol(r, "InvoicedQuantity");
-    const bezDphRiadok = cislo(hodnota(r, "LineExtensionAmount"));
-    const sDphRiadok = cislo(hodnota(r, "LineExtensionAmountTaxInclusive"));
+    const bezDphRiadok = sumaDokladu(r, "LineExtensionAmount");
+    const sDphRiadok = sumaDokladu(r, "LineExtensionAmountTaxInclusive");
+    const pocet = cislo(text(mnozstvo));
     return {
       ...hlavicka,
       item_name: hodnota(r, "Item", "Description"),
@@ -179,9 +206,15 @@ export function isdocNaRiadky(doc: any): IsdocRiadok[] {
       item_quantity: text(mnozstvo),
       // Merná jednotka je atribút, nie vlastný uzol.
       item_unit: typeof mnozstvo === "object" ? String((mnozstvo as any)["@unitCode"] ?? "") : "",
-      item_unit_price: hodnota(r, "UnitPrice"),
+      // `UnitPrice` je vždy v domácej mene; pri cudzej sa cena odvodí zo základu riadku.
+      item_unit_price:
+        cudzia && pocet
+          ? String(Math.round((bezDphRiadok / pocet) * 1e5) / 1e5)
+          : hodnota(r, "UnitPrice"),
       item_vat_rate: hodnota(r, "ClassifiedTaxCategory", "Percent"),
       item_total: suma(sDphRiadok || bezDphRiadok),
+      // Základ riadku tak, ako ho spočítal pôvodný systém (už po zľave riadku).
+      item_subtotal: suma(bezDphRiadok),
       item_sku: hodnota(r, "Item", "SellersItemIdentification", "ID"),
     };
   });

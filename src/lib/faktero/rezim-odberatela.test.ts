@@ -166,14 +166,31 @@ describe("rezimNovejFaktury (API, appka)", () => {
     ).toMatchObject({ reverse_charge: true, reverse_charge_type: "export", eu_plnenie: "sluzba" });
   });
 
-  it("prenesenie s DPH na položke je chyba", () => {
+  it("výslovné prenesenie: sadzbu stiahne výpočet, presná DPH je chyba", () => {
     expect(
       rezimNovejFaktury({
         ...sk,
         odberatel: de,
         vstup: { reverse_charge: true, items: [{ vat_rate: 23 }] },
       }),
+    ).toMatchObject({ reverse_charge: true, reverse_charge_type: "domestic_69" });
+    expect(
+      rezimNovejFaktury({
+        ...sk,
+        odberatel: de,
+        vstup: { reverse_charge: true, items: [{ vat_rate: 23, vat_amount: 23 }] },
+      }),
     ).toHaveProperty("chyba");
+  });
+
+  it("položka s prenesením sa za DPH nepočíta", () => {
+    expect(
+      rezimNovejFaktury({
+        ...sk,
+        odberatel: de,
+        vstup: { items: [{ vat_rate: 23, prenesenie: true }] },
+      }),
+    ).toMatchObject({ reverse_charge: true, reverse_charge_type: "eu_b2b" });
   });
 
   it("appka: predvolená služba, mimo EÚ vývoz", () => {

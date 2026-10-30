@@ -113,7 +113,7 @@ export function HromadnyPrikaz({
           return { data: [], error: e };
         }
       };
-      const [pohybyR, { data: zalohove }, kontrola] = await Promise.all([
+      const [pohybyR, zalohoveR, kontrola] = await Promise.all([
         // Úhrady faktúry — spárované pohyby z banky aj ručne zapísané čiastočné úhrady.
         nacitaj<any>(() =>
           riadkyPreIds(ids, (kus, od, po) =>
@@ -152,12 +152,14 @@ export function HromadnyPrikaz({
         ),
       ]);
       const pohyby = pohybyR.data;
+      const zalohove = zalohoveR.data;
       const out: Record<
         string,
         { uhradene: number; zaloha: number; naKontrolu?: boolean; cudzia?: boolean }
       > = {};
       for (const f of faktury) out[f.id] = { uhradene: 0, zaloha: 0 };
-      if (kontrola.error || pohybyR.error) {
+      // Aj zálohy: bez nich by išla faktúra celá, hoci časť je zaplatená zálohou.
+      if (kontrola.error || pohybyR.error || zalohoveR.error) {
         // Bez odpovede nevieme, ktorá je skontrolovaná a čo je už zaplatené — radšej žiadnu nepustiť.
         for (const f of faktury) out[f.id].naKontrolu = true;
         toast.error(

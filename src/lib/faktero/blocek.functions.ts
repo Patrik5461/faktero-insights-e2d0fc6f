@@ -236,6 +236,8 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
     const { ocrBlocek } = await import("./blocek-ocr.server");
     const ocr = await ocrBlocek(data.image_data_url, eet ? "CZ" : (data.krajina ?? "SK"));
     if (!ocr) {
+      // Z fotky nič, ale český QR sa prečítal — jeho údaje sa nezahodia.
+      if (eet) return (await import("./blocek-eet")).zlucEetSFotkou(eet, null);
       return {
         zdroj: "nic",
         overeny: false,
@@ -282,18 +284,8 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
       items,
     };
 
-    if (eet) {
-      // Hlavička ide z QR kódu — ten je odpísaný z pokladnice, kdežto fotka je
-      // odhad. Položky ostávajú z fotky, v českom QR nie sú a nikdy neboli.
-      vysledok.currency = "CZK";
-      if (eet.total != null) vysledok.total = eet.total;
-      if (eet.date) vysledok.date = eet.date;
-      if (eet.supplier) vysledok.supplier = eet.supplier;
-      if (eet.supplier_address) vysledok.supplier_address = eet.supplier_address;
-      if (eet.supplier_ico) vysledok.supplier_ico = eet.supplier_ico;
-      if (eet.supplier_dic) vysledok.supplier_dic = eet.supplier_dic;
-      if (eet.supplier_ic_dph) vysledok.supplier_ic_dph = eet.supplier_ic_dph;
-    }
+    // Hlavička z QR kódu, položky z fotky — a bloček ostáva bločkom s QR.
+    if (eet) return (await import("./blocek-eet")).zlucEetSFotkou(eet, vysledok, poznamka);
 
     return vysledok;
   });

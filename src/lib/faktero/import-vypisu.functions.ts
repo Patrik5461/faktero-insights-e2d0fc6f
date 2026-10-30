@@ -213,25 +213,39 @@ export const importujVypisFn = createServerFn({ method: "POST" })
       referenciu než vo výpise — jedinečný index ich nezastaví. Bez tejto
       kontroly by sa platba zapísala dvakrát (a raz by mohla byť spárovaná).
     */
+    /*
+      To isté platí pre účet napojený na banku (Tatra banka, Wise, Revolut…):
+      jeho pohyby nesú referenciu banky, výpis odtlačok — človek, ktorý si
+      stiahne XML a nahrá ho do ponúknutého (napojeného) účtu, by mal každý
+      pohyb dvakrát. Pri takom účte sa porovnáva so všetkým, čo neprišlo
+      z nahratého výpisu (ten stráži jedinečný index).
+    */
     const { bezPohybovZMailu } = await import("./banka-notifikacie");
-    let zMailov: any[] = [];
+    const { data: spojenie } = await supabaseAdmin
+      .from("bank_accounts")
+      .select("bank_connections(provider)")
+      .eq("id", ucet.id)
+      .maybeSingle();
+    const napojeny = !["import", "email"].includes(
+      String((spojenie as any)?.bank_connections?.provider ?? "import"),
+    );
+    let zIneho: any[] = [];
     if (r.odDna && r.doDna) {
       const posun = (d: string, dni: number) =>
         new Date(Date.parse(d) + dni * 86_400_000).toISOString().slice(0, 10);
-      const { data: zm } = await vsetkoAkoData((zac, kon) =>
-        supabaseAdmin
+      const { data: zm } = await vsetkoAkoData((zac, kon) => {
+        let q = supabaseAdmin
           .from("bank_transactions")
           .select("id, booking_date, amount, variable_symbol, counterparty")
           .eq("bank_account_id", ucet.id)
-          .eq("zdroj", "email")
           .gte("booking_date", posun(r.odDna!, -1))
-          .lte("booking_date", posun(r.doDna!, 1))
-          .order("id")
-          .range(zac, kon),
-      );
-      zMailov = zm ?? [];
+          .lte("booking_date", posun(r.doDna!, 1));
+        q = napojeny ? q.not("transaction_reference", "like", "import:%") : q.eq("zdroj", "email");
+        return q.order("id").range(zac, kon);
+      });
+      zIneho = zm ?? [];
     }
-    const riadky = zMailov.length ? bezPohybovZMailu(vsetkyRiadky, zMailov) : vsetkyRiadky;
+    const riadky = zIneho.length ? bezPohybovZMailu(vsetkyRiadky, zIneho) : vsetkyRiadky;
     // Ten istý zápis, aký používa nočná synchronizácia: preskočí duplicity a
     // nezhodí celý import kvôli jednému pohybu, ktorý tam už je.
     const vlozenych = await vlozPohyby(supabaseAdmin, riadky);

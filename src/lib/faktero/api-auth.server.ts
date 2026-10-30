@@ -140,6 +140,40 @@ export async function vyberFirmu(k: RiadokKluca, request: Request): Promise<Vybe
   return { ok: true, company_id: f.id, ucet: true };
 }
 
+/**
+ * Neplatné id (nie UUID) z adresy alebo tela databáza odmietne chybou
+ * „invalid input syntax for type uuid“ a trasa ju vráti ako 500 db_error.
+ * Pre klienta je to však jeho chyba: id z adresy = 404 not_found, id z tela =
+ * 400 validation_error. Rieši sa tu, aby to nemusela strážiť každá trasa.
+ */
+export function chybaNeplatnehoId(
+  result: { status: number; body: any },
+  path: string,
+): { status: number; body: any } {
+  const sprava = String(result?.body?.error?.message ?? "");
+  const m =
+    result?.status === 500 ? sprava.match(/invalid input syntax for type uuid: "(.*)"/) : null;
+  if (!m) return result;
+  const zAdresy = path.split("/").some((seg) => {
+    try {
+      return decodeURIComponent(seg) === m[1];
+    } catch {
+      return seg === m[1];
+    }
+  });
+  return zAdresy
+    ? {
+        status: 404,
+        body: { error: { code: "not_found", message: "Záznam s týmto id neexistuje." } },
+      }
+    : {
+        status: 400,
+        body: {
+          error: { code: "validation_error", message: `Neplatné id „${m[1]}“ (očakáva sa UUID).` },
+        },
+      };
+}
+
 export async function handleApi(
   request: Request,
   fn: (ctx: ApiCtx) => Promise<{ status: number; body: any }>,
@@ -317,6 +351,7 @@ export async function handleApi(
       body: { error: { code: "internal_error", message: e?.message ?? "Interná chyba." } },
     };
   }
+  result = chybaNeplatnehoId(result, path);
 
   // Fire-and-forget log + last_used_at
   void supabaseAdmin

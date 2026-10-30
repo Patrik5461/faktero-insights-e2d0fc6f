@@ -169,6 +169,8 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       predvolenePlnenie: "sluzba",
     });
     if ("chyba" in rezim) throw new Error(rezim.chyba);
+    // Pri prenesení / oslobodení je na riadkoch nula — inak ich odmietne spúšťač v DB.
+    if (rezim.reverse_charge) data.items = data.items.map((i) => ({ ...i, vat_rate: 0 }));
 
     const { computeInvoiceTotals, nextInvoiceNumberDetailed } =
       await import("./invoice-numbering.server");
@@ -230,12 +232,11 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       odpočítať cudzia záloha. Suma sa zároveň zastropuje jej celkom — viac,
       než záloha bola, sa odpočítať nedá.
     */
-    const ziadaneZalohy =
-      data.advances?.length
-        ? data.advances
-        : data.advance_invoice_id
-          ? [{ invoice_id: data.advance_invoice_id, amount: data.advance_amount ?? 0 }]
-          : [];
+    const ziadaneZalohy = data.advances?.length
+      ? data.advances
+      : data.advance_invoice_id
+        ? [{ invoice_id: data.advance_invoice_id, amount: data.advance_amount ?? 0 }]
+        : [];
 
     const zalohy: { id: string; suma: number }[] = [];
     if (ziadaneZalohy.length) {

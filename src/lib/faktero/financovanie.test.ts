@@ -81,7 +81,7 @@ describe("kalendár", () => {
     expect(zaokruhli(r.reduce((s, x) => s + x.principal_part, 0))).toBe(1000);
   });
 
-  it("DPH sa počíta zo splátky ako z ceny s daňou", () => {
+  it("DPH sa k istine a úroku pripočíta — splátka je celá suma z účtu", () => {
     const r = kalendar({
       ...uver,
       vat_rate: 23,
@@ -89,9 +89,42 @@ describe("kalendár", () => {
       principal: 1200,
       interest_rate: 0,
     });
-    // Splátka 100 € s DPH → základ 81,30, daň 18,70.
-    expect(r[0].amount).toBe(100);
-    expect(r[0].vat_amount).toBe(18.7);
+    // Istina 100 € bez DPH → splátka 123 €, daň 23 €.
+    expect(r[0].principal_part).toBe(100);
+    expect(r[0].vat_amount).toBe(23);
+    expect(r[0].amount).toBe(123);
+  });
+
+  it("istina + úrok + DPH = splátka na cent v každom riadku (leasing s úrokom)", () => {
+    const r = kalendar({
+      ...uver,
+      vat_rate: 23,
+      term_months: 24,
+      principal: 12000,
+      interest_rate: 6,
+      first_due_date: "2026-10-30",
+    });
+    for (const x of r)
+      expect(zaokruhli(x.principal_part + x.interest_part + x.vat_amount)).toBe(x.amount);
+    expect(zaokruhli(r.reduce((s, x) => s + x.principal_part, 0))).toBe(12000);
+    // Základ prvej splátky (istina + úrok) × 1,23.
+    expect(r[0].amount).toBe(zaokruhli((r[0].principal_part + r[0].interest_part) * 1.23));
+  });
+
+  it("splátka zo zmluvy je s DPH a ostáva presne taká", () => {
+    const r = kalendar({
+      ...uver,
+      vat_rate: 23,
+      term_months: 12,
+      principal: 1200,
+      interest_rate: 0,
+      payment_amount: 123,
+    });
+    expect(r[0].amount).toBe(123);
+    expect(r[0].principal_part).toBe(100);
+    expect(r[0].vat_amount).toBe(23);
+    for (const x of r)
+      expect(zaokruhli(x.principal_part + x.interest_part + x.vat_amount)).toBe(x.amount);
   });
 
   it("bez sadzby DPH je daň nula", () => {

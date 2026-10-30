@@ -3,6 +3,7 @@ import "./lib/sucet-presne";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { metodaApiNaJson } from "./lib/faktero/api-metoda";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -83,7 +84,10 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return sPlatnostou(request, await normalizeCatastrophicSsrResponse(response));
+      return sPlatnostou(
+        request,
+        await metodaApiNaJson(request, await normalizeCatastrophicSsrResponse(response)),
+      );
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {

@@ -49,13 +49,14 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
   const prazdne = {
     faktury: new Map<string, any[]>(),
     prijate: new Map<string, any[]>(),
+    blocky: new Map<string, any[]>(),
     pohyby: new Map<string, any[]>(),
     jazdy: new Map<string, any[]>(),
     objednavky: new Map<string, any[]>(),
   };
   if (!jobIds.length) return prazdne;
 
-  const [faktury, prijate, pohyby, jazdy, objednavky] = await Promise.all([
+  const [faktury, prijate, blocky, pohyby, jazdy, objednavky] = await Promise.all([
     supabase
       .from("invoices")
       .select("id, job_id, invoice_number, type, status, issue_date, subtotal, total, deleted_at")
@@ -69,6 +70,14 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
       .eq("company_id", companyId)
       // Náklad zákazky nesie ostrá faktúra; záloha by ho zdvojila.
       .eq("type", "regular")
+      .in("job_id", jobIds),
+    // Bločky sa dajú zákazke priradiť rovnako ako prijatá faktúra (aj z appky).
+    supabase
+      .from("expense_documents")
+      .select(
+        "id, job_id, document_number, supplier_name, issue_date, net_amount, vat_amount, total_amount",
+      )
+      .eq("company_id", companyId)
       .in("job_id", jobIds),
     supabase
       .from("stock_movements")
@@ -102,6 +111,7 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
   return {
     faktury: zoskup(faktury.data),
     prijate: zoskup(prijate.data),
+    blocky: zoskup(blocky.data),
     pohyby: zoskup(pohyby.data),
     jazdy: zoskup(jazdy.data),
     objednavky: zoskup(objednavky.data),
@@ -115,6 +125,7 @@ function vyhodnotenie(
   return vyhodnotZakazku({
     faktury: p.faktury.get(job.id) ?? [],
     prijateFaktury: p.prijate.get(job.id) ?? [],
+    blocky: p.blocky.get(job.id) ?? [],
     pohyby: p.pohyby.get(job.id) ?? [],
     jazdy: p.jazdy.get(job.id) ?? [],
     planovanyVynos: job.planned_revenue,
@@ -186,6 +197,7 @@ export const getJob = createServerFn({ method: "POST" })
       vyhodnotenie: vyhodnotenie(job, podklady),
       faktury: (podklady.faktury.get(job.id) ?? []).filter((f: any) => !f.deleted_at),
       prijate_faktury: (podklady.prijate.get(job.id) ?? []).filter((f: any) => !f.deleted_at),
+      blocky: podklady.blocky.get(job.id) ?? [],
       pohyby: pohyby.map((p: any) => ({ ...p, nazov: menaKariet.get(p.stock_item_id) ?? "—" })),
       jazdy: podklady.jazdy.get(job.id) ?? [],
       objednavky: podklady.objednavky.get(job.id) ?? [],
@@ -321,6 +333,7 @@ export const setJobStatus = createServerFn({ method: "POST" })
 const NAVIAZANE: Array<[tabulka: string, popis: string]> = [
   ["invoices", "faktúry"],
   ["purchase_invoices", "prijaté faktúry"],
+  ["expense_documents", "bločky"],
   ["stock_movements", "skladové pohyby"],
   ["trips", "jazdy"],
   ["purchase_orders", "objednávky u dodávateľa"],

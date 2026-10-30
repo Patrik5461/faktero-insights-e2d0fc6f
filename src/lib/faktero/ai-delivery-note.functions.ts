@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { nazovHlavnehoSkladuFirmy } from "./hlavny-sklad";
 
 export type DeliveryNoteItem = {
   name: string;
@@ -53,7 +54,11 @@ export const importDeliveryNoteFn = createServerFn({ method: "POST" })
       if (!whId) {
         const { data: created } = await supabase
           .from("warehouses")
-          .insert({ company_id: cid, name: "Hlavný sklad", active: true })
+          .insert({
+            company_id: cid,
+            name: await nazovHlavnehoSkladuFirmy(supabase, cid),
+            active: true,
+          })
           .select("id")
           .single();
         whId = created?.id ?? null;

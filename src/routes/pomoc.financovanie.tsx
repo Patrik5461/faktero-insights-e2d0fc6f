@@ -73,6 +73,11 @@ const sections: HelpSection[] = [
           <strong>splátka zo zmluvy</strong> — tú vyplňte vtedy, keď chcete, aby kalendár sedel na
           cent s papierom; inak si ju Faktero dopočíta.
         </p>
+        <p>
+          Pri leasingu s DPH zadajte financovanú sumu bez DPH a splátku zo zmluvy s DPH. Daň sa k
+          istine a úroku pripočíta, takže istina, úrok a DPH dajú spolu presne splátku, ktorá odíde
+          z účtu — a podľa nej sa spáruje platba z banky.
+        </p>
       </>
     ),
   },

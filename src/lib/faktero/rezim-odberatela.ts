@@ -170,7 +170,7 @@ export function rezimNovejFaktury(v: {
     reverse_charge?: boolean;
     reverse_charge_type?: TypPrenosu | null;
     eu_plnenie?: EuPlnenie | null;
-    items: { vat_rate?: number; vat_amount?: number }[];
+    items: { vat_rate?: number; vat_amount?: number; prenesenie?: boolean }[];
   };
   krajinaFirmy: string;
   platitel: boolean;
@@ -185,15 +185,19 @@ export function rezimNovejFaktury(v: {
       return (d.eu_plnenie ?? v.predvolenePlnenie) === "sluzba" ? "sluzba" : "tovar";
     return null;
   };
-  const sDph = d.items.some((i) => Number(i.vat_rate) > 0 || Number(i.vat_amount) > 0);
+  // Položka s prenesením (PDP po položkách) DPH nenesie, aj keď má sadzbu.
+  const sDph = d.items.some(
+    (i) => !i.prenesenie && (Number(i.vat_rate) > 0 || Number(i.vat_amount) > 0),
+  );
 
   if (d.reverse_charge === false)
     return { reverse_charge: false, reverse_charge_type: null, eu_plnenie: null, zNavrhu: false };
   if (d.reverse_charge === true || d.reverse_charge_type) {
-    if (sDph)
+    // Sadzbu na nulu stiahne výpočet súm; presnú sumu DPH však prepisovať nesmieme.
+    if (d.items.some((i) => Number(i.vat_amount) > 0))
       return {
         chyba:
-          "Pri prenesení daňovej povinnosti, dodaní do EÚ alebo vývoze nesmie mať položka DPH — pošlite vat_rate 0 alebo ho vynechajte.",
+          "Pri prenesení daňovej povinnosti, dodaní do EÚ alebo vývoze musí byť vat_amount položiek 0.",
       };
     const typ = d.reverse_charge_type ?? "domestic_69";
     return {

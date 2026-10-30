@@ -37,15 +37,25 @@ export function kodyBezOdpoctu(
     if (!vlastna && !cl) continue;
     return {
       predkontacia: vlastna,
-      clenenie: cl ?? kodClenenia("tuzemsko_bez_odpoctu", "prijate", ciselnik),
+      clenenie: cl ?? bezNaroku(ciselnik),
       zNastavenia: true,
     };
   }
   return {
     predkontacia: null,
-    clenenie: kodClenenia("tuzemsko_bez_odpoctu", "prijate", ciselnik),
+    clenenie: bezNaroku(ciselnik),
     zNastavenia: false,
   };
+}
+
+/*
+  Kód „bez nároku na odpočet“ z číselníka, inak PN (štandard Pohody SK).
+  Bez neho by neodpočítateľná polovica zdedila členenie riadku (PD) a Pohoda
+  by si odpočítala celú DPH — tak to vyšlo v QA firme, ktorej číselník mal
+  len PD a UD.
+*/
+function bezNaroku(ciselnik: KodCiselnika[]): string {
+  return kodClenenia("tuzemsko_bez_odpoctu", "prijate", ciselnik) ?? "PN";
 }
 
 export type VozidloNaOdpocet = {

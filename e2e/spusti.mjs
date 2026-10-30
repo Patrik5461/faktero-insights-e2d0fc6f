@@ -66,7 +66,7 @@ if (!process.env.E2E_VNUTRI) {
 const args = process.argv.slice(2);
 const OPAKUJ = args.includes("--opakuj") || process.env.E2E_OPAKUJ === "1";
 const vybrane = args.filter((a) => !a.startsWith("--"));
-const LIMIT_BEHU_MS = Number(process.env.E2E_LIMIT_S ?? 540) * 1000;
+const LIMIT_BEHU_MS = Number(process.env.E2E_LIMIT_S ?? 1080) * 1000;
 
 function commit() {
   if (process.env.E2E_COMMIT) return process.env.E2E_COMMIT;

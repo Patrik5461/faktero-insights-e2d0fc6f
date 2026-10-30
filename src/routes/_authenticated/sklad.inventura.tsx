@@ -85,7 +85,8 @@ function InventoryPage() {
       setZacata(r.zacata ?? null);
       await loadItems(r.id);
       if (r.resumed) toast.message(t("Pokračujete v otvorenej inventúre."));
-      if (r.doplnene) toast.message(t("Doplnené nové karty: {n}.", { n: r.doplnene }));
+      // Pri novej inventúre sú „doplnené“ všetky karty — hlásiť sa to má len pri pokračovaní.
+      if (r.resumed && r.doplnene) toast.message(t("Doplnené nové karty: {n}.", { n: r.doplnene }));
     } catch (e: any) {
       toast.error(e?.message ?? t("Chyba"));
     } finally {
@@ -106,7 +107,16 @@ function InventoryPage() {
     setBusy(true);
     try {
       const r = await complete({ data: { company_id: cid, inventory_count_id: countId } });
-      toast.success(t("Inventúra ukončená. {n} úprav.", { n: r.adjustments }));
+      const n = r.adjustments;
+      toast.success(
+        n === 0
+          ? t("Inventúra ukončená bez rozdielov.")
+          : n === 1
+            ? t("Inventúra ukončená. 1 úprava.")
+            : n < 5
+              ? t("Inventúra ukončená. {n} úpravy.", { n })
+              : t("Inventúra ukončená. {n} úprav.", { n }),
+      );
       setCountId(null);
       setZacata(null);
       setItems([]);

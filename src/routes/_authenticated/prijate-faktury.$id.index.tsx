@@ -85,6 +85,7 @@ import { useDizajn } from "@/hooks/useDizajn";
 import { AutomatickyZaradena } from "@/components/faktero/AutomatickyZaradena";
 import { PrijataDetailKompaktna } from "@/components/faktero/PrijataDetailKompaktna";
 import { KartaUhrady, UhradyOkno, useUhradyPrijatej } from "@/components/faktero/UhradyPrijatej";
+import { VazbaZalohyPrijatej } from "@/components/faktero/VazbaZalohyPrijatej";
 
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
   ACTC: "Pripravená na podpis",
@@ -679,6 +680,7 @@ function PurchaseInvoiceDetail() {
                 ) : null}
                 {samo && <SamofakturaPanel row={row} onZmena={load} />}
                 <AutomatickyZaradena id={row.id} naKontroluAt={(row as any).na_kontrolu_at} />
+                <VazbaZalohyPrijatej row={row} />
                 <UpozornenieKontrolyEfaktury invoiceId={row.id} />
                 <RegistrPlatcuDph
                   companyId={row.company_id}
@@ -785,7 +787,8 @@ function PurchaseInvoiceDetail() {
     zaklad: Number(row.amount_without_vat ?? 0),
     dph: Number(row.vat_amount ?? 0),
     zlava: Number(row.discount_total ?? 0),
-    zaloha: Number(row.advance_amount ?? 0) > 0 ? Number(row.advance_amount) : null,
+    // Odpočet zálohy na doklade aj zaplatená zálohová faktúra z väzby.
+    zaloha: uhradyFaktury.stav.zaloha > 0 ? uhradyFaktury.stav.zaloha : null,
     kUhrade: uhradyFaktury.stav.naUhradu,
     spolu: Number(row.amount_total ?? 0),
     rezimy: rezimDphPrijatej(row),
@@ -924,6 +927,9 @@ function PurchaseInvoiceDetail() {
       )}
       <div className="mt-2">
         <PredlzitSplatnost druh="prijata" faktura={row} onZmena={load} />
+      </div>
+      <div className="mt-2">
+        <VazbaZalohyPrijatej row={row} />
       </div>
       {row.payment_date && (
         <div>
