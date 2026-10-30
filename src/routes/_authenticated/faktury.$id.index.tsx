@@ -166,6 +166,7 @@ function InvoiceDetail() {
     recipient_email: "",
     subject: "",
     message: "",
+    doplnok: "",
   });
   const [reminders, setReminders] = useState<any[]>([]);
   const sendReminder = useServerFn(sendReminderFn);
@@ -581,6 +582,7 @@ function InvoiceDetail() {
         recipient_email: preview.recipient_email ?? "",
         subject: preview.subject,
         message: preview.message,
+        doplnok: preview.doplnok ?? "",
       });
       setReminderOpen(true);
     } catch (e: any) {
@@ -2214,6 +2216,12 @@ function InvoiceDetail() {
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </label>
+            {reminderForm.doplnok && (
+              <div className="text-xs text-muted-foreground">
+                <div className="font-medium">{t("Pod správu sa pripojí:")}</div>
+                <pre className="mt-1 whitespace-pre-wrap font-sans">{reminderForm.doplnok}</pre>
+              </div>
+            )}
             {reminders.length > 0 && (
               <div className="text-xs text-muted-foreground">
                 {t("Predchádzajúce upomienky:")}{" "}

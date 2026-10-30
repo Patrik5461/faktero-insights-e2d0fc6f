@@ -77,9 +77,14 @@ export const previewReminderFn = createServerFn({ method: "POST" })
       overrideMessage: sablona.body,
       prvaUpomienka: await prvaOdoslanaUpomienka(context.supabase, inv.id),
     });
+    /*
+      Do okna ide len text správy. Platobné údaje a podpis pripojí odoslanie
+      samo — keď okno dostalo celý `plain`, poslal sa s nimi dvakrát.
+    */
     return {
       recipient_email: recipient,
       subject: built.subject,
-      message: built.plain,
+      message: built.sprava,
+      doplnok: built.plain.slice(built.sprava.length).trim(),
     };
   });
