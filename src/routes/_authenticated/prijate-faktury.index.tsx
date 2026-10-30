@@ -85,6 +85,7 @@ import { useCiselnikyDokladov, filtreStavuAStitkov } from "@/hooks/useCiselnikyD
 import { dovodZamku, NAZOV_ZAMKU, platbaPreZoradenie } from "@/lib/faktero/doklady-hromadne";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 
+import { bezVzorca } from "@/lib/bezpecny-text";
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté faktúry — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
@@ -354,7 +355,8 @@ function PurchaseInvoicesPage() {
         r.status,
         vsPrijatej(r),
       ]
-        .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`)
+        // Meno dodávateľa píše cudzí človek (e-mail, eFaktúra) — `=HYPERLINK(…)` nesmie ožiť v Exceli.
+        .map((v) => `"${bezVzorca(v ?? "").replace(/"/g, '""')}"`)
         .join(";"),
     );
     return "\uFEFF" + [header.join(";"), ...rowsCsv].join("\n");

@@ -5,6 +5,7 @@ import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
 import { vsPrijatejNaUlozenie } from "./variabilny-symbol";
 import { CHYBA_PRESUNU_BLOCKU, jeSkutocnyBlocek } from "./doklad-je-blocek";
 
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 /**
  * Presun dokladu medzi prijaté faktúry.
  *
@@ -24,9 +25,7 @@ const Vstup = z.object({
 });
 
 function oDni(iso: string, dni: number): string {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + dni);
-  return d.toISOString().slice(0, 10);
+  return posunDni(iso, dni);
 }
 
 export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
@@ -71,7 +70,7 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
       file_size = subor.size ?? file_size;
     }
 
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     const vystavenie = (doklad.issue_date as string | null) ?? dnes;
     const zaklad = Number(doklad.net_amount ?? 0) || 0;
     const dph = Number(doklad.vat_amount ?? 0) || 0;

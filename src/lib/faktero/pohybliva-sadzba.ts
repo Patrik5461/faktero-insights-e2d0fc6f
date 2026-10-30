@@ -20,6 +20,7 @@
  */
 import { dniMedzi, zaokruhli } from "./financovanie";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /* ------------------------------------------------------------------ *
  * Číselníky
  * ------------------------------------------------------------------ */
@@ -632,7 +633,7 @@ export function odhadUrokov(p: {
     }
     return s;
   };
-  const dnes = p.dnes ?? new Date().toISOString().slice(0, 10);
+  const dnes = p.dnes ?? dnesBratislava();
 
   const riadky: RiadokOdhadu[] = [];
   for (

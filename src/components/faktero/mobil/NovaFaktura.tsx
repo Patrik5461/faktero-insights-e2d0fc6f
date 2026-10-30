@@ -44,6 +44,7 @@ import {
   odberatelZFaktury,
   type OdberatelFaktury,
 } from "@/lib/faktero/odberatel-faktury";
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 /**
  * Vystavenie faktúry v telefóne.
  *
@@ -109,13 +110,12 @@ export function datumSk(v: string): string {
 }
 
 export function dnes(): string {
-  return new Date().toISOString().slice(0, 10);
+  return dnesBratislava();
 }
 
+/** Splatnosť a platnosť: kalendárne dni, bez posunu časového pásma. */
 export function oDni(od: string, dni: number): string {
-  const d = new Date(`${od}T00:00:00`);
-  d.setDate(d.getDate() + dni);
-  return d.toISOString().slice(0, 10);
+  return posunDni(od, dni);
 }
 
 export function prazdnyRiadok(sadzba: number): Riadok {

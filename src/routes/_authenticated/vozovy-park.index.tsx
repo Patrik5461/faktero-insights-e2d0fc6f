@@ -10,6 +10,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { nazovVlastnictva, terminyNaRiesenie } from "@/lib/faktero/vozovy-park";
 import { StitokTerminu } from "@/components/faktero/VozidloKarta";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/vozovy-park/")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Vozový park — Faktero") }],
@@ -23,7 +24,7 @@ function VozovyPark() {
   const [vozidla, setVozidla] = useState<any[] | null>(null);
   const [dokumenty, setDokumenty] = useState<Record<string, number>>({});
   const [ajVyradene, setAjVyradene] = useState(false);
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
 
   useEffect(() => {
     const cid = getActiveCompanyId();

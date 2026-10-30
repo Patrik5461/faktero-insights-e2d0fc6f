@@ -108,6 +108,8 @@ import {
 } from "@/lib/faktero/dobropis-zobrazenie";
 import { riadokNaZapis, sumyFormulara, sumyNaZapis } from "@/lib/faktero/faktura-formular-sumy";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
+import { sOpakovanimPriKoliziiCisla } from "@/lib/faktero/kolizia-cisla";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová faktúra — Faktero") }] }),
   /**
@@ -232,9 +234,9 @@ function NewInvoice() {
   const [form, setForm] = useState({
     type: (search.type ?? "regular") as "regular" | "proforma" | "credit_note" | "debit_note",
     customer_id: "",
-    issue_date: new Date().toISOString().slice(0, 10),
-    delivery_date: new Date().toISOString().slice(0, 10),
-    due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+    issue_date: dnesBratislava(),
+    delivery_date: dnesBratislava(),
+    due_date: posunDni(dnesBratislava(), 14),
     variable_symbol: "",
     constant_symbol: "",
     specific_symbol: "",
@@ -1073,90 +1075,96 @@ function NewInvoice() {
     setSubmitting(true);
 
     try {
-      const { invoice_number, sequence_number, series_id } = await generateNumber(
-        cid,
-        form.issue_date,
-        form.type,
-        form.number_series_id,
-      );
-      const variable_symbol = vsNaUlozenie(form.variable_symbol, invoice_number);
+      /*
+        Číslo sa pýta tesne pred zápisom; keď ho medzitým obsadila faktúra
+        vystavená v inej karte alebo na inom zariadení, vypýta sa ďalšie.
+      */
+      const { data: inv, error } = await sOpakovanimPriKoliziiCisla<any>(async () => {
+        const { invoice_number, sequence_number, series_id } = await generateNumber(
+          cid,
+          form.issue_date,
+          form.type,
+          form.number_series_id,
+        );
+        const variable_symbol = vsNaUlozenie(form.variable_symbol, invoice_number);
 
-      const { data: inv, error } = await supabase
-        .from("invoices")
-        .insert({
-          company_id: cid,
-          customer_id: cust.id,
-          type: form.type,
-          status: "issued",
-          invoice_number,
-          sequence_number,
-          number_series_id: series_id,
-          variable_symbol,
-          constant_symbol: form.constant_symbol || null,
-          specific_symbol: form.specific_symbol || null,
-          order_number: form.order_number || null,
-          delivery_method: form.delivery_method || null,
-          rounding_mode: form.rounding_mode,
-          reverse_charge: form.reverse_charge,
-          eu_plnenie:
-            form.reverse_charge && form.reverse_charge_type === "eu_b2b"
-              ? form.eu_plnenie
-              : form.reverse_charge && form.reverse_charge_type === "export"
-                ? form.eu_plnenie === "sluzba"
-                  ? "sluzba"
-                  : "tovar"
-                : null,
-          oss: form.oss,
-          oss_country: form.oss ? form.oss_country : null,
-          osobitna_uprava: form.osobitna_uprava || null,
-          // Stĺpec sa posiela len keď je zaškrtnutý — inak by ho vkladala každá faktúra.
-          ...(krajina === "DE" && form.de_hinweis_aufbewahrung ? { de_hinweis_aufbewahrung: true } : {}),
-          language: form.language || null,
-          reverse_charge_type: form.reverse_charge
-            ? form.reverse_charge_type || "domestic_69"
-            : null,
-          // Prvá záloha aj v stĺpci kvôli staršiemu rozhraniu; celý zoznam sa
-          // zapisuje nižšie do `invoice_advances`.
-          advance_invoice_id: odpocty[0]?.id ?? null,
-          payment_account_id: form.payment_account_id || null,
-          // Dodacím listom môže byť len bežná faktúra.
-          dodaci_list: form.type === "regular" && form.dodaci_list,
-          zobrazit_peciatku: form.zobrazit_peciatku,
-          // Prázdne kódy doplní pravidlo účtovania (spúšťač), inak predvolené firmy pri exporte.
-          pohoda_predkontacia: form.predkontacia.trim() || null,
-          pohoda_clenenie_dph: form.clenenie.trim() || null,
-          kv_clenenie: form.kv || null,
-          opravuje_fakturu_id: form.opravuje_fakturu_id || null,
-          advance_amount: odpocty.length ? totals.advance : null,
-          job_id: form.job_id || null,
-          issue_date: form.issue_date,
-          // Dátum dodania je nepovinný a dátumové pole sa dá vyprázdniť.
-          // Prázdny reťazec Postgres odmietne s „invalid input syntax for
-          // type date" a faktúra sa neuloží.
-          delivery_date: form.delivery_date || null,
-          due_date: form.due_date,
-          currency: form.currency,
-          payment_method: form.payment_method,
-          customer_name: cust.name,
-          customer_ico: cust.ico,
-          customer_dic: cust.dic,
-          customer_ic_dph: cust.ic_dph,
-          customer_street: cust.street,
-          customer_city: cust.city,
-          customer_zip: cust.zip,
-          customer_country: cust.country,
-          customer_email: cust.email,
-          ...sumyNaZapis(totals),
-          notes: form.notes,
-          intro_note: form.intro_note.trim() || null,
-          // Zľava na doklad: typ a zadaná hodnota kvôli doúčtovaniu a PDF,
-          // discount_total je jej suma bez DPH, ktorú súčty už odpočítali.
-          discount_type: totals.zlava > 0 ? form.discount_type || "percent" : null,
-          discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
-          discount_total: totals.zlava,
-        })
-        .select()
-        .single();
+        return supabase
+          .from("invoices")
+          .insert({
+            company_id: cid,
+            customer_id: cust.id,
+            type: form.type,
+            status: "issued",
+            invoice_number,
+            sequence_number,
+            number_series_id: series_id,
+            variable_symbol,
+            constant_symbol: form.constant_symbol || null,
+            specific_symbol: form.specific_symbol || null,
+            order_number: form.order_number || null,
+            delivery_method: form.delivery_method || null,
+            rounding_mode: form.rounding_mode,
+            reverse_charge: form.reverse_charge,
+            eu_plnenie:
+              form.reverse_charge && form.reverse_charge_type === "eu_b2b"
+                ? form.eu_plnenie
+                : form.reverse_charge && form.reverse_charge_type === "export"
+                  ? form.eu_plnenie === "sluzba"
+                    ? "sluzba"
+                    : "tovar"
+                  : null,
+            oss: form.oss,
+            oss_country: form.oss ? form.oss_country : null,
+            osobitna_uprava: form.osobitna_uprava || null,
+            // Stĺpec sa posiela len keď je zaškrtnutý — inak by ho vkladala každá faktúra.
+            ...(krajina === "DE" && form.de_hinweis_aufbewahrung ? { de_hinweis_aufbewahrung: true } : {}),
+            language: form.language || null,
+            reverse_charge_type: form.reverse_charge
+              ? form.reverse_charge_type || "domestic_69"
+              : null,
+            // Prvá záloha aj v stĺpci kvôli staršiemu rozhraniu; celý zoznam sa
+            // zapisuje nižšie do `invoice_advances`.
+            advance_invoice_id: odpocty[0]?.id ?? null,
+            payment_account_id: form.payment_account_id || null,
+            // Dodacím listom môže byť len bežná faktúra.
+            dodaci_list: form.type === "regular" && form.dodaci_list,
+            zobrazit_peciatku: form.zobrazit_peciatku,
+            // Prázdne kódy doplní pravidlo účtovania (spúšťač), inak predvolené firmy pri exporte.
+            pohoda_predkontacia: form.predkontacia.trim() || null,
+            pohoda_clenenie_dph: form.clenenie.trim() || null,
+            kv_clenenie: form.kv || null,
+            opravuje_fakturu_id: form.opravuje_fakturu_id || null,
+            advance_amount: odpocty.length ? totals.advance : null,
+            job_id: form.job_id || null,
+            issue_date: form.issue_date,
+            // Dátum dodania je nepovinný a dátumové pole sa dá vyprázdniť.
+            // Prázdny reťazec Postgres odmietne s „invalid input syntax for
+            // type date" a faktúra sa neuloží.
+            delivery_date: form.delivery_date || null,
+            due_date: form.due_date,
+            currency: form.currency,
+            payment_method: form.payment_method,
+            customer_name: cust.name,
+            customer_ico: cust.ico,
+            customer_dic: cust.dic,
+            customer_ic_dph: cust.ic_dph,
+            customer_street: cust.street,
+            customer_city: cust.city,
+            customer_zip: cust.zip,
+            customer_country: cust.country,
+            customer_email: cust.email,
+            ...sumyNaZapis(totals),
+            notes: form.notes,
+            intro_note: form.intro_note.trim() || null,
+            // Zľava na doklad: typ a zadaná hodnota kvôli doúčtovaniu a PDF,
+            // discount_total je jej suma bez DPH, ktorú súčty už odpočítali.
+            discount_type: totals.zlava > 0 ? form.discount_type || "percent" : null,
+            discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
+            discount_total: totals.zlava,
+          })
+          .select()
+          .single();
+      });
       if (error || !inv) {
         const { friendlyError } = await import("@/lib/faktero/plan-error");
         toast.error(t(friendlyError(error)));

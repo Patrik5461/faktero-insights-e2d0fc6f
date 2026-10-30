@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 const Input = z.object({ quoteId: z.string().uuid() });
 
 /**
@@ -66,7 +67,6 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
     const { dnesBratislava } = await import("./datum-vystavenia");
     const today = dnesBratislava();
     const { nextInvoiceNumberDetailed } = await import("./invoice-numbering.server");
-    const cislo = await nextInvoiceNumberDetailed(quote.company_id, today);
     const { data: firma } = await supabase
       .from("companies")
       .select("country")
@@ -74,16 +74,21 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
       .maybeSingle();
     const { predvolenyJazykFirmy } = await import("./faktura-jazyk");
     const { hlavickaZPonuky, polozkyZPonuky } = await import("./ponuka-na-fakturu");
-    const hlavicka = hlavickaZPonuky(quote, cislo, today, predvolenyJazykFirmy(firma?.country));
-    // Cudzia mena: daň aj v domácej mene firmy (kurz ECB/ČNB).
     const { doplnovacKurzov } = await import("./kurz-dokladu.server");
-    Object.assign(hlavicka, await doplnovacKurzov(quote.company_id)("invoices", hlavicka));
-
-    const { data: inv, error: insErr } = await supabase
-      .from("invoices")
-      .insert(hlavicka as any)
-      .select()
-      .single();
+    const doplnKurz = doplnovacKurzov(quote.company_id);
+    // Číslo sa pri kolízii so súbežne vystavenou faktúrou vypýta znova.
+    const { sOpakovanimPriKoliziiCisla } = await import("./kolizia-cisla");
+    const { data: inv, error: insErr } = await sOpakovanimPriKoliziiCisla<any>(async () => {
+      const cislo = await nextInvoiceNumberDetailed(quote.company_id, today);
+      const hlavicka = hlavickaZPonuky(quote, cislo, today, predvolenyJazykFirmy(firma?.country));
+      // Cudzia mena: daň aj v domácej mene firmy (kurz ECB/ČNB).
+      Object.assign(hlavicka, await doplnKurz("invoices", hlavicka));
+      return supabase
+        .from("invoices")
+        .insert(hlavicka as any)
+        .select()
+        .single();
+    });
     if (insErr || !inv) throw new Error(insErr?.message ?? "Vytvorenie faktúry zlyhalo");
 
     if (items && items.length) {
@@ -136,8 +141,8 @@ export const duplicateQuote = createServerFn({ method: "POST" })
 
     const { nextQuoteNumber } = await import("./quote-numbering.server");
     const quote_number = await nextQuoteNumber(q.company_id);
-    const today = new Date().toISOString().slice(0, 10);
-    const validUntil = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    const today = dnesBratislava();
+    const validUntil = posunDni(dnesBratislava(), 30);
 
     const { data: copy, error: insErr } = await supabase
       .from("quotes")

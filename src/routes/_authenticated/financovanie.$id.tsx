@@ -25,6 +25,7 @@ import { SadzbaZmluvy } from "@/components/faktero/SadzbaZmluvy";
 import { nazovDruhuFinancovania } from "@/lib/faktero/kontokorent";
 import { potvrd as potvrdAkciu } from "@/lib/potvrdenie";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/financovanie/$id")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Zmluva o financovaní — Faktero") }],
@@ -144,7 +145,7 @@ function Stranka() {
   const z = data.zmluva;
   const splatky: Splatka[] = data.splatky;
   const s = data.suhrn;
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
   const cid = getActiveCompanyId()!;
   const kontokorent = z.kind === "kontokorent";
 

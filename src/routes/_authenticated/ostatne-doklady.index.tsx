@@ -37,6 +37,7 @@ import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
 import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Iné doklady — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>) => ({
@@ -119,7 +120,7 @@ function OstatneDokladyPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [nespracovanych, setNespracovanych] = useState<number | null>(null);
   const [pracujem, setPracujem] = useState(false);
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
 
   async function refresh() {
     if (!cid) return;

@@ -3,6 +3,7 @@ import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /*
   Oprava základu dane pri nevymožiteľnej pohľadávke (§ 25a zákona o DPH).
 
@@ -16,7 +17,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 */
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-const dnes = () => new Date().toISOString().slice(0, 10);
+const dnes = () => dnesBratislava();
 
 async function podklady(supabase: any, invoiceId: string) {
   const { data: f } = await supabase

@@ -171,6 +171,25 @@ export const importujVypisFn = createServerFn({ method: "POST" })
       if (!r0.ucet) {
         throw new Error("Vo výpise nie je číslo účtu — vyberte účet, do ktorého sa má nahrať.");
       }
+      /*
+        Účet s tým istým IBAN už firma má (napr. druhá karta nahrala ten istý
+        výpis o chvíľu skôr) — nahrá sa doň, nezakladá sa druhý rovnaký účet.
+      */
+      const ibanBezMedzier = r0.ucet.replace(/\s+/g, "").toUpperCase();
+      const { data: existujuce } = await supabaseAdmin
+        .from("bank_accounts")
+        .select("id, iban, currency")
+        .eq("company_id", data.company_id);
+      const uzJe = (existujuce ?? []).find(
+        (u: any) =>
+          String(u.iban ?? "")
+            .replace(/\s+/g, "")
+            .toUpperCase() === ibanBezMedzier,
+      );
+      if (uzJe) ucet = uzJe;
+    }
+    if (!ucet) {
+      const r0 = precitaj(data.obsah);
       const { data: spojenie, error: e1 } = await supabaseAdmin
         .from("bank_connections")
         .insert({

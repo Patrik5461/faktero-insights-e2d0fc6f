@@ -13,6 +13,7 @@ import { formatujDatum } from "@/lib/faktero/uzavierka";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/jazdy/vozidla")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vozidlá — Faktero") }] }),
   component: VehiclesPage,
@@ -438,7 +439,7 @@ function FuelDialog({
   const mena = useMenaFirmy();
   const [f, setF] = useState({
     vehicle_id: vehicles[0]?.id ?? "",
-    fuel_date: new Date().toISOString().slice(0, 10),
+    fuel_date: dnesBratislava(),
     liters: "",
     price_per_liter: "",
     station_name: "",

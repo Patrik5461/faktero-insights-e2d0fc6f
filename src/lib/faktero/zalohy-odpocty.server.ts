@@ -33,26 +33,37 @@ export async function nacitajOdpocty(
   invoiceIds: string[],
 ): Promise<Record<string, OdpocetZalohy[]>> {
   if (!invoiceIds.length) return {};
-  const { data: vazby } = await supabase
-    .from("invoice_advances")
-    .select("invoice_id, advance_invoice_id, amount")
-    .eq("company_id", companyId)
-    .in("invoice_id", invoiceIds);
-  if (!vazby?.length) return {};
+  /*
+    Po dávkach: pri stovkách faktúr v exporte by dlhá URL dotaz zhodila a bez
+    kontroly chyby by odpočty záloh v súbore ticho chýbali.
+  */
+  const { poDavkach } = await import("./strankovanie");
+  const vazby = await poDavkach<any>(invoiceIds, (kus) =>
+    supabase
+      .from("invoice_advances")
+      .select("invoice_id, advance_invoice_id, amount")
+      .eq("company_id", companyId)
+      .in("invoice_id", kus),
+  );
+  if (!vazby.length) return {};
   const zalohoveIds = [...new Set(vazby.map((v: any) => String(v.advance_invoice_id)))];
-  const [{ data: zalohove }, { data: kPlatbe }] = await Promise.all([
-    supabase
-      .from("invoices")
-      .select("id, invoice_number, variable_symbol")
-      .eq("company_id", companyId)
-      .in("id", zalohoveIds),
-    supabase
-      .from("invoices")
-      .select("id, invoice_number, advance_invoice_id, discount_total, status, invoice_items(vat_rate, subtotal, vat_amount, total, unit_price)")
-      .eq("company_id", companyId)
-      .eq("type", "advance_payment")
-      .is("deleted_at", null)
-      .in("advance_invoice_id", zalohoveIds),
+  const [zalohove, kPlatbe] = await Promise.all([
+    poDavkach<any>(zalohoveIds, (kus) =>
+      supabase
+        .from("invoices")
+        .select("id, invoice_number, variable_symbol")
+        .eq("company_id", companyId)
+        .in("id", kus),
+    ),
+    poDavkach<any>(zalohoveIds, (kus) =>
+      supabase
+        .from("invoices")
+        .select("id, invoice_number, advance_invoice_id, discount_total, status, invoice_items(vat_rate, subtotal, vat_amount, total, unit_price)")
+        .eq("company_id", companyId)
+        .eq("type", "advance_payment")
+        .is("deleted_at", null)
+        .in("advance_invoice_id", kus),
+    ),
   ]);
   const zf = new Map<string, any>((zalohove ?? []).map((z: any) => [String(z.id), z]));
   const ddp = new Map<string, any>();

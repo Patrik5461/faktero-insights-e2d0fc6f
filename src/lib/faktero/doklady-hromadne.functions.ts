@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /*
   Hromadná akcia v zoznamoch dokladov (bločky, prijaté, vystavené, iné doklady).
 
@@ -206,7 +207,7 @@ export const hromadneDokladyFn = createServerFn({ method: "POST" })
           }
           skupiny.set(novy, [...(skupiny.get(novy) ?? []), r.id]);
         }
-        const datum = a.datum ?? new Date().toISOString().slice(0, 10);
+        const datum = a.datum ?? dnesBratislava();
         for (const [status, g] of skupiny) {
           if (agenda === "prijata")
             await uprav(g, { status, payment_date: a.uhradene ? datum : null });

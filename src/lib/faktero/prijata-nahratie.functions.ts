@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Nahratie prijatej faktúry súborom — PDF alebo fotka.
  *
@@ -64,7 +65,7 @@ export const nahrajPrijatuFakturuFn = createServerFn({ method: "POST" })
     });
 
     const { zostavPrijatuFakturu } = await import("./mail-prijem");
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     const faktura = zostavPrijatuFakturu({
       ai,
       odosielatel: null,

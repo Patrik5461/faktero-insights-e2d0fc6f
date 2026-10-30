@@ -19,6 +19,7 @@ import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Koľko máp sa najviac priloží. Každá je pár desiatok dlaždíc z verejného
  * servera OpenStreetMap — celá ročná kniha jázd naraz by bola sťahovanie
@@ -53,7 +54,7 @@ function ExportPage() {
   const { t } = useT();
   const { vehicle_id } = Route.useSearch();
   const navigate = useNavigate({ from: "/jazdy/export" });
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dnesBratislava();
   const from0 = new Date();
   from0.setMonth(from0.getMonth() - 1);
   const [from, setFrom] = useState(from0.toISOString().slice(0, 10));

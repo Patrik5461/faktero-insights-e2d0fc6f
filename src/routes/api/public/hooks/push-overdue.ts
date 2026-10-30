@@ -10,6 +10,7 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 const SEND_BATCH_SIZE = 25;
 
 export const Route = createFileRoute("/api/public/hooks/push-overdue")({
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/api/public/hooks/push-overdue")({
           return Response.json({ ok: false, skipped: true, reason: "Push nie je nastavený" });
         }
 
-        const today = new Date().toISOString().slice(0, 10);
+        const today = dnesBratislava();
         const { data: invoices, error } = await supabaseAdmin
           .from("invoices")
           .select("id, invoice_number, company_id, total, currency, due_date, status")

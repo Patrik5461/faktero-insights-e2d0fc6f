@@ -43,6 +43,7 @@ import {
   type Pravidlo,
 } from "./pravidla-uctovania";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 type Klient = any;
 
 const prazdnyVysledok = (stav: StavNavrhu): VysledokNavrhu => ({ stav, polia: {}, dovod: null });
@@ -467,7 +468,7 @@ export async function navrhNespracovaneho(
     return prazdnyVysledok("netreba");
   const { nacitajUdaje, prijataZUdajov, blocekZUdajov } = await import("./nespracovane");
   const u = nacitajUdaje(r.udaje);
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
   let vstup: VstupNavrhu;
   if (druh === "blocek") vstup = vstupZBlocku(blocekZUdajov(u), krajina);
   else {

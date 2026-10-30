@@ -21,6 +21,7 @@ import {
   type ZdrojKurzu,
 } from "./kurzy";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 const DENNE = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
 const POSLEDNYCH_90 = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml";
 const CELA_HISTORIA = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.xml";
@@ -254,7 +255,7 @@ async function kurzPreDokladDe(
     const mesiac = mesiacBmf(datumDodania);
     let k = await kurzBmfZDb(m, mesiac);
     // Mesiac už skončil, ale v pamäti nie je — skúsi sa portál BMF.
-    if (!k && mesiac < mesiacBmf(new Date().toISOString().slice(0, 10))) {
+    if (!k && mesiac < mesiacBmf(dnesBratislava())) {
       try {
         const stiahnute = await stiahniKurzyBmf(Number(mesiac.slice(0, 4)));
         await ulozBmf(stiahnute);
@@ -311,7 +312,7 @@ export async function prepocitajPredbezneNaBmf(): Promise<number> {
   const r2 = (n: number) => Math.round(n * 100) / 100;
   let pocet = 0;
   // Len doklady z mesiacov, ktoré už skončili — za bežný mesiac kurz BMF ešte nie je.
-  const zaciatokMesiaca = mesiacBmf(new Date().toISOString().slice(0, 10));
+  const zaciatokMesiaca = mesiacBmf(dnesBratislava());
   const skonceny = `delivery_date.lt.${zaciatokMesiaca},and(delivery_date.is.null,issue_date.lt.${zaciatokMesiaca})`;
 
   const { data: faktury } = await db

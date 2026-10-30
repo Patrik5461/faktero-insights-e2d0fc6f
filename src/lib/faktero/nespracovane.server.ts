@@ -18,6 +18,7 @@ import {
 } from "./nespracovane";
 import { zdrojZauctovaniaPriVytvoreni } from "./nespracovane-nastavenia";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 type Klient = any;
 export const KOS_NESPRACOVANYCH = "nespracovane";
 
@@ -117,7 +118,7 @@ export async function zalozNespracovany(
     .from(KOS_NESPRACOVANYCH)
     .upload(cesta, args.bajty, { contentType: args.mime, upsert: false });
   if (up.error) throw new Error(`Súbor sa nepodarilo uložiť: ${up.error.message}`);
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
   const vytazene = args.ai !== undefined;
   let udaje = vytazene ? udajeZAi(args.ai, dnes) : null;
   if (udaje && args.poznamka) udaje.poznamka = [udaje.poznamka, args.poznamka].filter(Boolean).join("\n");
@@ -180,7 +181,7 @@ export async function vytazNespracovany(id: string): Promise<void> {
       r.company_id ? await volbyCitaniaFirmy(supabaseAdmin, r.company_id) : null,
       { ucel: "nespracovane", firma: r.company_id ?? null },
     );
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     const povodne = nacitajUdaje(r.udaje);
     const druh = r.druh ?? navrhDruhu(ai, r.file_name);
     // Čo už človek vyplnil (napr. druh z appky), sa neprepisuje.
@@ -248,7 +249,7 @@ export async function vytvorDoklad(
   druh: DruhNespracovaneho,
   u: UdajeNespracovaneho,
 ): Promise<{ agenda: "prijata" | "doklad" | "ostatny"; id: string; zauctovana?: boolean; cudzia?: boolean }> {
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
   const teraz = new Date().toISOString();
   let bajty: Uint8Array | null = null;
   if (r.file_path) {

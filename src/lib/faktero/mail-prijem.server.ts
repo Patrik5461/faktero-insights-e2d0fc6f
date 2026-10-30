@@ -25,6 +25,7 @@ import {
 import { DRUHY_PRE_AI } from "./ostatne-doklady-citanie.server";
 import { POKYN_POLOH } from "./polohy-ai";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * `%` a `_` sú v adrese povolené znaky, ale v `ilike` zastupujú čokoľvek —
  * mail na „%sro%@…“ by trafil cudziu tajnú adresu. Porovnávame doslovne.
@@ -655,7 +656,7 @@ export async function spracujPrijatyMail(
       return { stav: "bez_prilohy", vytvorenych: 0 };
     }
 
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     const vytvorene: string[] = [];
     const poznamky: string[] = [];
 

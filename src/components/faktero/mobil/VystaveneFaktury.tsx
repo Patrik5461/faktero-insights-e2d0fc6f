@@ -39,6 +39,7 @@ import {
   StatusBadge,
   type Ton,
 } from "./ui";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Vystavené faktúry v telefóne.
  *
@@ -93,8 +94,7 @@ export function stav(f: Pick<Faktura, "status" | "type" | "due_date">): { kluc: 
   if (f.status === "draft") return { kluc: "faktury.stav.navrh", ton: "neutral" };
   /* Dobropis nikto neuhrádza — červené „Po splatnosti" pri ňom strašilo. */
   if (f.type === "credit_note") return { kluc: "faktury.stav.dobropis", ton: "neutral" };
-  if (f.due_date < new Date().toISOString().slice(0, 10))
-    return { kluc: "faktury.stav.poSplatnosti", ton: "cervena" };
+  if (f.due_date < dnesBratislava()) return { kluc: "faktury.stav.poSplatnosti", ton: "cervena" };
   return { kluc: "faktury.stav.neuhradena", ton: "neutral" };
 }
 
@@ -120,7 +120,7 @@ export function prejdeFiltrom(
   filter: Filter,
 ): boolean {
   if (filter === "vsetky") return true;
-  const den = new Date().toISOString().slice(0, 10);
+  const den = dnesBratislava();
   if (filter === "uhradene") return f.status === "paid";
   if (f.status === "paid" || f.status === "cancelled" || f.status === "draft") return false;
   // Dobropis nie je pohľadávka — Prehľad ho do neuhradených tiež nepočíta.

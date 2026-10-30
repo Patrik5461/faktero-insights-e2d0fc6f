@@ -12,6 +12,7 @@
  */
 import { overApiKluc } from "./api-auth.server";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const MCP_VERZIA_PROTOKOLU = "2025-06-18";
 const PODPOROVANE = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
@@ -215,7 +216,7 @@ export const NASTROJE: Nastroj[] = [
     inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true, openWorldHint: false },
     async vykonaj(_a, volaj) {
-      const dnes = new Date().toISOString().slice(0, 10);
+      const dnes = dnesBratislava();
       // Všetky stránky (po 200), nie len prvých 200 v stave.
       const vsetky = async (stav: string) => {
         const out: any[] = [];
@@ -578,7 +579,7 @@ export const NASTROJE: Nastroj[] = [
       openWorldHint: false,
     },
     async vykonaj(a, volaj) {
-      const datum = a.payment_date || new Date().toISOString().slice(0, 10);
+      const datum = a.payment_date || dnesBratislava();
       return nutne(
         await volaj("PUT", `/api/v1/purchase-invoices/${encodeURIComponent(a.id)}`, {
           payment_date: datum,
