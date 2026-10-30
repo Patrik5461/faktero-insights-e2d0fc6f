@@ -167,6 +167,28 @@ export function kodyPrijatejUrcene(
   return Boolean(pk && cl);
 }
 
+/**
+ * Je bloček vytvorený z Nespracovaných zaúčtovaný? Rovnako ako ručná
+ * predkontácia bločku (`zauctujDokladyFn`): určená predkontácia = zaúčtovaný.
+ * Kód, ktorý vybral človek (hlavička alebo všetky položky), zaúčtuje vždy;
+ * kód, ktorý doplnilo pravidlo až pri zápise, len pri zapnutom „Vytvoriť =
+ * zaúčtovať“ a bez nepotvrdeného návrhu AI. Bez toho by bloček ostal
+ * nezaúčtovaný a automatické zaúčtovanie by ho vzalo ako nový.
+ */
+export function blocekZauctovanyPriVytvoreni(a: {
+  /** Predkontácia, ktorú zadal človek (hlavička), alebo kódy na všetkých položkách. */
+  odCloveka: boolean;
+  /** Predkontácia na uloženom bločku (vrátane tej od spúšťača pravidla). */
+  predkontaciaPoZapise: string | null | undefined;
+  zauctovat: boolean;
+  nepotvrdenychNavrhov: number;
+}): boolean {
+  if (a.odCloveka) return true;
+  return Boolean(
+    String(a.predkontaciaPoZapise ?? "").trim() && a.zauctovat && a.nepotvrdenychNavrhov === 0,
+  );
+}
+
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** Dátum „12.10.2026" za predponou nie je číslo objednávky („Po 12.10.2026" = pondelok). */
 const JE_DATUM = /^\d{1,2}[./]\d{1,2}[./]\d{2,4}$/;

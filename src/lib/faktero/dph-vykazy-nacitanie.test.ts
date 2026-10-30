@@ -65,6 +65,40 @@ describe("prijaté faktúry vo výkazoch", () => {
     expect(kontrolnyVykaz(vstup).b2.map((r) => r.s)).toEqual([23, 5]);
   });
 
+  it("faktúra iného odberateľa (nepotvrdená) do odpočtu nejde, ozve sa výtkou", async () => {
+    const riadok = {
+      id: "p9",
+      invoice_number: "TZ2026106",
+      supplier_ic_dph: "SK2120123456",
+      delivery_date: "2026-09-20",
+      currency: "EUR",
+      amount_without_vat: 100,
+      vat_amount: 23,
+      amount_total: 123,
+      type: "regular",
+      items: [],
+    };
+    const cudzia = await nacitajVstup(
+      klient({
+        purchase_invoices: [
+          { ...riadok, odberatel_nesedi: { dovod: "ico", odberatel: { ico: "86179504" }, firma: {} } },
+        ],
+      }) as any,
+      "f",
+      obdobie,
+    );
+    expect(priznanie(cudzia.vstup).r19 ?? 0).toBe(0);
+    expect(kontrolnyVykaz(cudzia.vstup).b2).toEqual([]);
+    expect(cudzia.vytky.map((v) => v.doklad)).toContain("TZ2026106");
+    // Po potvrdení „Faktúra patrí tejto firme“ (príznak null) ide normálne do odpočtu.
+    const potvrdena = await nacitajVstup(
+      klient({ purchase_invoices: [{ ...riadok, odberatel_nesedi: null }] }) as any,
+      "f",
+      obdobie,
+    );
+    expect(priznanie(potvrdena.vstup).r19).toBe(23);
+  });
+
   it("prijatý dobropis opraví odpočet (r. 28, C.2)", async () => {
     expect(odvodRezimPrijatej("SK2021987654", -11.5)).toBe("tuzemsko");
     const { vstup } = await nacitajVstup(

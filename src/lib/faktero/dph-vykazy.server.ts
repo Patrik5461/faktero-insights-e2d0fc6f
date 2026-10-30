@@ -100,7 +100,7 @@ export async function nacitajVstup(
       supabase
         .from("purchase_invoices")
         .select(
-          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, rozuctovanie, amount_total, vehicle_id",
+          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi",
         )
         .eq("company_id", companyId)
         /*
@@ -480,6 +480,18 @@ export async function nacitajVstup(
       vytky.push({
         doklad: p.invoice_number ?? p.supplier_name ?? "samofaktúra",
         text: "Samofaktúra ešte nie je odsúhlasená dodávateľom — do výkazu sa započíta až po odsúhlasení.",
+      });
+      continue;
+    }
+    /*
+      Faktúra s iným odberateľom (uložená „aj tak“, nepotvrdená) nie je doklad
+      tejto firmy — odpočet z nej by si firma uplatnila neoprávnene. Do výkazu
+      ide až po potvrdení „Faktúra patrí tejto firme“.
+    */
+    if (p.odberatel_nesedi) {
+      vytky.push({
+        doklad: p.invoice_number ?? p.supplier_name ?? "prijatá faktúra",
+        text: "Faktúra nepatrí tejto firme (odberateľ na doklade je iná firma) — do výkazu sa započíta až po potvrdení, že patrí tejto firme.",
       });
       continue;
     }

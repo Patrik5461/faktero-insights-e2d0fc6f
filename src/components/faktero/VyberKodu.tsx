@@ -264,8 +264,9 @@ export function VyberKodu({
           <ChevronDown className={`${riadok ? "h-3 w-3" : "h-4 w-4"} shrink-0 opacity-60`} />
         </button>
       </PopoverTrigger>
+      {/* z-[90]: zoznam musí byť nad ručne kreslenými oknami (z-[60] až z-[80]), inak sa voľba nedá kliknúť. */}
       <PopoverContent
-        className="w-[min(22rem,calc(100vw-2rem))] min-w-[var(--radix-popover-trigger-width)] p-0"
+        className="z-[90] w-[min(22rem,calc(100vw-2rem))] min-w-[var(--radix-popover-trigger-width)] p-0"
         align="start"
         collisionPadding={16}
         onClick={(e) => e.stopPropagation()}
