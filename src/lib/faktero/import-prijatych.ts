@@ -17,9 +17,13 @@ export type PolozkaPrijateho = {
   unit_price: number;
   vat_rate: number;
   total: number;
+  /** Základ a daň riadku (z Pohody) — na súčet dokladu v cudzej mene. */
+  zaklad?: number;
+  dph?: number;
 };
 
 export type PrijatyZaznam = {
+  /* `mena` prázdna = domáca mena firmy (doplní ju server podľa krajiny firmy). */
   typ: TypPrijateho;
   zdroj: string;
   cislo: string | null;
@@ -39,6 +43,8 @@ export type PrijatyZaznam = {
   poznamka: string | null;
   /** Dobropis či zálohová faktúra — do poznámky, nech to účtovník vidí. */
   druh: string | null;
+  /** Odpočítaná (zúčtovaná) záloha — znižuje sumu na úhradu, plnenie ostáva celé. */
+  zaloha?: number | null;
   polozky: PolozkaPrijateho[];
   /** Odberateľ zo skenu prečítaného AI — podľa neho sa spozná faktúra inej firmy. */
   odberatel?: { nazov: string | null; ico: string | null; dic: string | null; icDph: string | null } | null;
@@ -138,6 +144,73 @@ const TYPY_PRIJATYCH: Record<string, string | null> = {
   receivedadvanceinvoice: "Zálohová faktúra",
 };
 
+/** Sadzba podľa kódu Pohody, keď sa nedá odvodiť zo súm (slovenské priehradky). */
+const SADZBY_POHODA: Record<string, number> = { none: 0, third: 5, low: 19, high: 23 };
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/*
+  Doklad v cudzej mene má v Pohode sumy v mene dokladu v `foreignCurrency`
+  (hlavička aj položky); `homeCurrency` je prepočet, alebo vôbec nie je
+  (export z Faktera). Predtým sa čítala len domáca mena — doklad na 123 USD
+  sa naimportoval na 0,00 USD.
+*/
+function menaPolozky(p: any, cudzia: boolean): any {
+  return (cudzia && uzol(p, "foreignCurrency")) || uzol(p, "homeCurrency") || {};
+}
+
+/** Je položka odpočet zálohy (záporná suma s textom o zálohe)? */
+function jeOdpocetZalohy(p: any, cudzia: boolean): boolean {
+  const m = menaPolozky(p, cudzia);
+  const suma = cisloZTextu(hodnota(m, "price")) ?? cisloZTextu(hodnota(m, "unitPrice")) ?? 0;
+  return suma < 0 && /z[aá]loh|advance/i.test(hodnota(p, "text"));
+}
+
+/** Suma riadku s DPH (na odpočet zálohy). */
+function sumaRiadku(p: any, cudzia: boolean): number {
+  const m = menaPolozky(p, cudzia);
+  const spolu = cisloZTextu(hodnota(m, "priceSum"));
+  if (spolu != null) return spolu;
+  const cena = cisloZTextu(hodnota(m, "price"));
+  if (cena != null) return cena + (cisloZTextu(hodnota(m, "priceVAT")) ?? 0);
+  return (cisloZTextu(hodnota(m, "unitPrice")) ?? 0) * (cisloZTextu(hodnota(p, "quantity")) ?? 1);
+}
+
+/**
+ * Hlavička dokladu so sumami: domáca mena zo súhrnu; cudzia zo súčtu položiek
+ * a `foreignCurrency/priceSum` (súhrn v cudzej mene sadzby nerozpisuje).
+ */
+function sumyDokladu(doklad: any, suhrnUzol: string, polozky: PolozkaPrijateho[], cudzia: boolean) {
+  if (!cudzia) return suhrnDokladu(uzol(doklad, suhrnUzol, "homeCurrency") ?? {});
+  const zaklad = r2(polozky.reduce((a, p) => a + (p.zaklad ?? 0), 0));
+  const dph = r2(polozky.reduce((a, p) => a + (p.dph ?? 0), 0));
+  const spolu = cisloZTextu(hodnota(uzol(doklad, suhrnUzol, "foreignCurrency"), "priceSum"));
+  return { zaklad, dph, spolu: spolu ?? r2(zaklad + dph) };
+}
+
+/**
+ * Dobropis do databázy záporne (ako ho vedie formulár a exporty: záporná suma
+ * = dobropis). Pohoda ho vyváža kladne — bez otočenia by sa dobropis
+ * naimportoval ako ďalší náklad a DPH by sa odpočítala navyše.
+ */
+function zaporne(z: PrijatyZaznam): PrijatyZaznam {
+  if ((z.spolu ?? z.zaklad ?? 0) <= 0) return z;
+  const m = (n: number | null) => (n == null ? n : -n);
+  return {
+    ...z,
+    zaklad: m(z.zaklad),
+    dph: m(z.dph),
+    spolu: m(z.spolu),
+    polozky: z.polozky.map((p) => ({
+      ...p,
+      quantity: -p.quantity,
+      total: -p.total,
+      ...(p.zaklad != null ? { zaklad: -p.zaklad } : {}),
+      ...(p.dph != null ? { dph: -p.dph } : {}),
+    })),
+  };
+}
+
 function suhrnDokladu(suhrn: any) {
   const zaklad =
     (cisloZTextu(hodnota(suhrn, "priceNone")) ?? 0) +
@@ -149,23 +222,42 @@ function suhrnDokladu(suhrn: any) {
     (cisloZTextu(hodnota(suhrn, "priceHighVAT")) ?? 0) +
     (cisloZTextu(hodnota(suhrn, "price3VAT")) ?? 0);
   const zaokr = cisloZTextu(hodnota(suhrn, "round", "priceRound")) ?? 0;
-  const r2 = (n: number) => Math.round(n * 100) / 100;
   return { zaklad: r2(zaklad), dph: r2(dph), spolu: r2(zaklad + dph + zaokr) };
 }
 
-function polozkyPohody(zoznam: any[]): PolozkaPrijateho[] {
+/*
+  Položka Pohody. `price`/`priceVAT` sú základ a daň riadku už po zľave; keď
+  v súbore nie sú (XML určené na import do Pohody), dopočítajú sa z jednotkovej
+  ceny, zľavy a sadzby. `payVAT` = jednotková cena je s DPH — predtým sa
+  zapísala ako cena bez DPH, rovnako ako cena pred zľavou.
+*/
+function polozkyPohody(zoznam: any[], cudzia = false): PolozkaPrijateho[] {
   return zoznam
     .map((p) => {
-      const m = uzol(p, "homeCurrency") ?? {};
-      const zaklad = cisloZTextu(hodnota(m, "price")) ?? 0;
-      const dan = cisloZTextu(hodnota(m, "priceVAT")) ?? 0;
-      const sadzba = zaklad ? Math.round((dan / zaklad) * 100) : 0;
+      const m = menaPolozky(p, cudzia);
+      const mnozstvo = cisloZTextu(hodnota(p, "quantity")) ?? 1;
+      const jc = cisloZTextu(hodnota(m, "unitPrice"));
+      const zlava = cisloZTextu(hodnota(p, "discountPercentage")) ?? 0;
+      const sDph = /^true$/i.test(hodnota(p, "payVAT"));
+      const cena = cisloZTextu(hodnota(m, "price"));
+      const danZoSuboru = cisloZTextu(hodnota(m, "priceVAT"));
+      const sadzba =
+        cena && danZoSuboru != null
+          ? Math.round((danZoSuboru / cena) * 100)
+          : (cisloZTextu(hodnota(p, "percentVAT")) ?? SADZBY_POHODA[hodnota(p, "rateVAT").toLowerCase()] ?? 0);
+      const hruba = (jc ?? 0) * mnozstvo * (1 - zlava / 100);
+      const zaklad = cena ?? r2(sDph ? hruba / (1 + sadzba / 100) : hruba);
+      const dan = danZoSuboru ?? r2(sDph ? hruba - zaklad : (zaklad * sadzba) / 100);
       return {
         name: hodnota(p, "text"),
-        quantity: cisloZTextu(hodnota(p, "quantity")) ?? 1,
-        unit_price: cisloZTextu(hodnota(m, "unitPrice")) ?? zaklad,
+        quantity: mnozstvo,
+        // Cena bez DPH po zľave, aby množstvo × cena dalo základ riadku.
+        unit_price:
+          jc != null && !sDph && !zlava ? jc : mnozstvo ? Math.round((zaklad / mnozstvo) * 1e5) / 1e5 : zaklad,
         vat_rate: sadzba,
-        total: cisloZTextu(hodnota(m, "priceSum")) ?? Math.round((zaklad + dan) * 100) / 100,
+        total: cisloZTextu(hodnota(m, "priceSum")) ?? r2(zaklad + dan),
+        zaklad,
+        dph: dan,
       };
     })
     .filter((p) => p.name);
@@ -202,10 +294,24 @@ export function pohodaPrijate(doc: any): PrijatyZaznam[] {
       const h = uzol(f, "invoiceHeader") ?? {};
       const typ = hodnota(h, "invoiceType").toLowerCase();
       if (!(typ in TYPY_PRIJATYCH)) continue;
-      const s = suhrnDokladu(uzol(f, "invoiceSummary", "homeCurrency") ?? {});
       const zahranicna = uzol(f, "invoiceSummary", "foreignCurrency");
-      const mena = hodnota(zahranicna, "currency", "ids") || "EUR";
-      vysledok.push({
+      // Bez cudzej meny je doklad v domácej mene firmy — doplní ju `naplanuj` (CZ firma CZK).
+      const mena = hodnota(zahranicna, "currency", "ids");
+      const cudzia = !!hodnota(zahranicna, "currency", "ids");
+      const riadky = pole(uzol(f, "invoiceDetail", "invoiceItem"));
+      /*
+        Odpočet zálohy nie je položka nákladu, ale zúčtovaná záloha na doklade.
+        Pohoda ho vedie v `invoiceAdvancePaymentItem` (bez textu), iné programy
+        ako zápornú položku s textom o zálohe.
+      */
+      const odpocty = [
+        ...riadky.filter((p) => jeOdpocetZalohy(p, cudzia)),
+        ...pole(uzol(f, "invoiceDetail", "invoiceAdvancePaymentItem")),
+      ];
+      const polozky = polozkyPohody(riadky.filter((p) => !jeOdpocetZalohy(p, cudzia)), cudzia);
+      const zaloha = r2(-odpocty.reduce((a, p) => a + sumaRiadku(p, cudzia), 0));
+      const s = sumyDokladu(f, "invoiceSummary", polozky, cudzia);
+      const zaznam: PrijatyZaznam = {
         typ: "faktura",
         zdroj: "Pohoda XML",
         cislo: alebo(hodnota(h, "originalDocument") || hodnota(h, "number", "numberRequested") || hodnota(h, "symVar")),
@@ -219,15 +325,26 @@ export function pohodaPrijate(doc: any): PrijatyZaznam[] {
         uhrada: uhradaZTextu(hodnota(h, "paymentType", "paymentType")),
         poznamka: alebo(hodnota(h, "text") || hodnota(h, "note")),
         druh: TYPY_PRIJATYCH[typ] ?? null,
-        polozky: polozkyPohody(pole(uzol(f, "invoiceDetail", "invoiceItem"))),
-      });
+        zaloha: zaloha > 0 ? zaloha : null,
+        polozky,
+      };
+      // Pri odpočte zálohy sú v súhrne Pohody sumy po odpočte — plnenie je súčet položiek.
+      if (zaloha > 0 && polozky.length) {
+        zaznam.zaklad = r2(polozky.reduce((a, p) => a + (p.zaklad ?? 0), 0));
+        zaznam.dph = r2(polozky.reduce((a, p) => a + (p.dph ?? 0), 0));
+        zaznam.spolu = r2(zaznam.zaklad + zaznam.dph);
+      }
+      vysledok.push(typ === "receivedcreditnotice" ? zaporne(zaznam) : zaznam);
     }
 
     const pokladnicne = [...pole(uzol(item, "voucher")), ...pole(uzol(item, "listVoucher", "voucher"))];
     for (const v of pokladnicne) {
       const h = uzol(v, "voucherHeader") ?? {};
       if (hodnota(h, "voucherType").toLowerCase() !== "expense") continue;
-      const s = suhrnDokladu(uzol(v, "voucherSummary", "homeCurrency") ?? {});
+      const zahranicnaV = uzol(v, "voucherSummary", "foreignCurrency");
+      const menaV = hodnota(zahranicnaV, "currency", "ids");
+      const polozkyV = polozkyPohody(pole(uzol(v, "voucherDetail", "voucherItem")), !!menaV);
+      const s = sumyDokladu(v, "voucherSummary", polozkyV, !!menaV);
       vysledok.push({
         typ: "blocek",
         zdroj: "Pohoda XML",
@@ -238,11 +355,11 @@ export function pohodaPrijate(doc: any): PrijatyZaznam[] {
         vystavenie: datumZTextu(hodnota(h, "date")),
         splatnost: null,
         ...s,
-        mena: "EUR",
+        mena: menaV,
         uhrada: "hotovost",
         poznamka: alebo(hodnota(h, "text")),
         druh: null,
-        polozky: polozkyPohody(pole(uzol(v, "voucherDetail", "voucherItem"))),
+        polozky: polozkyV,
       });
     }
   }
@@ -309,7 +426,8 @@ const STLPCE: Record<Pole, string[]> = {
   icDph: ["ic dph", "icdph", "ic dph dodavatela", "vat id", "vat number"],
   iban: ["iban", "cislo uctu", "ucet", "bankovy ucet"],
   vs: ["variabilny symbol", "vs", "var. symbol"],
-  vystavenie: ["datum vystavenia", "vystavene", "datum dokladu", "datum", "datum nakupu", "issue date", "date"],
+  // „Vystavená“ píše export prijatých faktúr z Faktera — bez nej dostal každý doklad dnešný dátum.
+  vystavenie: ["datum vystavenia", "vystavene", "vystavena", "datum dokladu", "datum", "datum nakupu", "issue date", "date"],
   splatnost: ["datum splatnosti", "splatnost", "splatne", "due date"],
   zaklad: [
     "zaklad",
@@ -342,7 +460,7 @@ const STLPCE: Record<Pole, string[]> = {
   poznamka: ["poznamka", "popis", "text", "note", "description"],
   polozka: ["nazov polozky", "polozka", "text polozky", "item", "item name"],
   mnozstvo: ["mnozstvo", "pocet", "quantity"],
-  jednotkova: ["jednotkova cena", "cena za jednotku", "cena za mj", "unit price"],
+  jednotkova: ["jednotkova cena", "jedn. cena", "cena za jednotku", "cena za mj", "unit price"],
   sadzba: ["sadzba dph", "sadzba", "dph %", "vat rate"],
   polozkaSpolu: ["polozka spolu", "cena polozky", "spolu za polozku", "item total"],
 };
@@ -457,7 +575,7 @@ export function tabulkaNaZaznamy(riadky: unknown[][], zdroj: string): PrijatyZaz
         zaklad: cisloZTextu(surova(r, "zaklad")),
         dph: cisloZTextu(surova(r, "dph")),
         spolu,
-        mena: (bunka(r, "mena") || "EUR").toUpperCase().slice(0, 3),
+        mena: bunka(r, "mena").toUpperCase().slice(0, 3),
         uhrada: uhradaZTextu(bunka(r, "uhrada")),
         poznamka: alebo(bunka(r, "poznamka")),
         druh: /dobropis/.test(druhText) ? "Dobropis" : /zaloh/.test(druhText) ? "Zálohová faktúra" : null,
@@ -527,6 +645,11 @@ export function klucDuplicity(z: Pick<PrijatyZaznam, "typ" | "cislo" | "ico" | "
 
 export type StavImportu = "new" | "processed" | "exported";
 
+/** Položka do JSON stĺpca `items` — pomocný základ a daň riadku sa neukladajú. */
+function polozkaNaUlozenie({ zaklad: _z, dph: _d, ...p }: PolozkaPrijateho) {
+  return p;
+}
+
 /** Doplní chýbajúci člen trojice základ + DPH = spolu, nič nedomýšľa nasilu. */
 function sumy(z: Pick<PrijatyZaznam, "zaklad" | "dph" | "spolu">) {
   const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -566,13 +689,16 @@ export function riadokPrijatejFaktury(
     vat_amount: s.dph ?? 0,
     amount_total: s.spolu ?? 0,
     currency: z.mena || "EUR",
+    // Zálohová faktúra nie je náklad — bez typu by sa zaúčtovala aj do DPH.
+    type: z.druh === TYPY_PRIJATYCH.receivedadvanceinvoice ? "proforma" : "regular",
+    advance_amount: z.zaloha ?? null,
     payment_method: z.uhrada,
     // Prijatá faktúra nemá stav „odovzdaná" — zaúčtovaná je najbližšie.
     status: o.stav === "new" ? "received" : "booked",
     source: "import",
     note: poznamkaImportu(z, o.zdrojAplikacie),
     items: z.polozky.length
-      ? z.polozky.map((p) => ({ ...p, unit: null as string | null }))
+      ? z.polozky.map((p) => ({ ...polozkaNaUlozenie(p), unit: null as string | null }))
       : null,
   };
 }
@@ -611,7 +737,7 @@ export function riadokBlocku(
     ]
       .filter(Boolean)
       .join("\n"),
-    items: z.polozky.length ? z.polozky : null,
+    items: z.polozky.length ? z.polozky.map(polozkaNaUlozenie) : null,
     processed_at: o.stav === "new" ? null : now,
     exported_at: o.stav === "exported" ? now : null,
   };

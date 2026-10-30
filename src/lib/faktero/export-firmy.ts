@@ -42,6 +42,20 @@ export function nazovSuboru(text: string, pripona: string): string {
   return `${zaklad || "subor"}.${pripona}`;
 }
 
+/**
+ * Názov, ktorý v priečinku balíka ešte nie je. Dva skeny s rovnakým dátumom,
+ * dodávateľom a číslom (alebo bez čísla) sa predtým prepísali a v balíku
+ * ostal len jeden — hoci počet hlásil oba.
+ */
+export function volnyNazov(pouzite: Set<string>, nazov: string): string {
+  const bodka = nazov.lastIndexOf(".");
+  const [zaklad, pripona] = bodka > 0 ? [nazov.slice(0, bodka), nazov.slice(bodka)] : [nazov, ""];
+  let kandidat = nazov;
+  for (let i = 2; pouzite.has(kandidat.toLowerCase()); i++) kandidat = `${zaklad}-${i}${pripona}`;
+  pouzite.add(kandidat.toLowerCase());
+  return kandidat;
+}
+
 /** Čo všetko balík obsahuje — vypisuje sa aj do sprievodného súboru. */
 export const OBSAH_EXPORTU = [
   ["firma.csv", "údaje firmy vrátane nastavení DPH a číslovania"],
@@ -50,13 +64,27 @@ export const OBSAH_EXPORTU = [
   ["prijate-faktury.csv", "prijaté faktúry vrátane režimu DPH"],
   ["doklady.csv", "bločky a iné doklady s DPH"],
   ["ostatne-doklady.csv", "listy, predpisy, exekúcie a zmluvy"],
-  ["odberatelia.csv", "karty odberateľov"],
-  ["produkty.csv", "cenník a skladové karty"],
+  ["uhrady-faktur.csv, uhrady-prijatych.csv", "úhrady vystavených a prijatých faktúr"],
+  ["zalohy-faktur.csv", "zúčtovanie záloh na faktúrach"],
+  ["ponuky.csv, ponuky-polozky.csv", "cenové ponuky"],
+  ["objednavky.csv, objednavky-polozky.csv", "prijaté objednávky"],
+  ["objednavky-dodavatelom.csv, …-polozky.csv", "objednávky dodávateľom"],
+  ["pravidelne-faktury.csv", "pravidelné (opakované) faktúry"],
+  ["odberatelia.csv", "karty odberateľov a dodávateľov"],
+  ["produkty.csv", "cenník"],
+  ["cennik-ceny.csv, cenove-skupiny.csv", "osobitné ceny a cenové skupiny"],
+  ["sklad-*.csv", "sklady, skladové karty a pohyby"],
   ["pokladna.csv", "pokladničné pohyby"],
+  ["bankove-ucty.csv", "bankové účty firmy"],
   ["banka.csv", "bankové pohyby"],
   ["jazdy.csv", "kniha jázd"],
+  ["vozidla.csv, tankovanie.csv", "vozový park"],
+  ["financovanie*.csv", "leasingy a úvery so splátkami"],
+  ["vyuctovania-vydavkov.csv", "vyúčtovania výdavkov"],
   ["zakazky.csv", "zákazky"],
+  ["prilohy*.csv", "zoznam príloh dokladov"],
   ["faktury-pdf/", "PDF vystavených faktúr (ak ste ich zahrnuli)"],
+  ["skeny/, prilohy/", "skeny prijatých dokladov, ostatné doklady a prílohy (ak ste ich zahrnuli)"],
 ] as const;
 
 export function sprievodnyText(firma: string, kedy: string): string {

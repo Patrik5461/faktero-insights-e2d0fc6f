@@ -130,6 +130,29 @@ describe("Zásielkovňa", () => {
     ).not.toContain("<cod>");
   });
 
+  it("doručenie na adresu — dĺžky polí podľa WSDL", () => {
+    const x = xmlVytvorZasielku("x", {
+      cislo: "1",
+      meno: "A",
+      priezvisko: "B",
+      telefon: "+421 900 123 456 / kl. 12",
+      miestoId: 131,
+      mena: "EUR",
+      hodnota: 1,
+      hmotnost: 1,
+      odosielatel: "o",
+      ulica: "Ulica " + "x".repeat(80),
+      cisloDomu: "1234/5678-90 vchod B",
+      mesto: "Bratislava - mestská časť Petržalka",
+      psc: "851 01",
+    });
+    expect(x).toContain("<phone>+421 900 123 456 / k</phone>");
+    expect(x.match(/<street>([^<]*)<\/street>/)?.[1]).toHaveLength(64);
+    expect(x).toContain("<houseNumber>1234/5678-90 vch</houseNumber>");
+    expect(x).toContain("<city>Bratislava - mestská časť Petrža</city>");
+    expect(x).toContain("<zip>851 01</zip>");
+  });
+
   it("odpovede — skutočná chyba hesla, chybné polia, úspech", () => {
     // Doslova to, čo vrátil www.zasilkovna.cz/api/rest 2026-10-09.
     const zle = odpoved(

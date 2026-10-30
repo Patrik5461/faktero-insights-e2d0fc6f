@@ -93,6 +93,19 @@ const POLOZKA = {
   required: ["name", "quantity", "unit_price"],
 };
 
+/** Položka vystavenej faktúry — navyše zľava riadku a prenesenie pri položke. */
+const POLOZKA_FAKTURY = {
+  ...POLOZKA,
+  properties: {
+    ...POLOZKA.properties,
+    discount_percent: { type: "number", description: "Zľava riadku v % (cena ostáva pôvodná)" },
+    prenesenie: {
+      type: "boolean",
+      description: "Prenesenie daňovej povinnosti len pri tejto položke (DPH riadku 0)",
+    },
+  },
+};
+
 /** Pracovné značky dokladu — stav, štítky, komentár (do účtovníctva nejdú). */
 const ZNACKY = {
   stav: {
@@ -255,9 +268,29 @@ export const NASTROJE: Nastroj[] = [
         issue_date: { type: "string", description: "RRRR-MM-DD, predvolene dnes" },
         delivery_date: { type: "string", description: "RRRR-MM-DD" },
         due_date: { type: "string", description: "RRRR-MM-DD" },
-        currency: { type: "string", default: "EUR" },
+        currency: {
+          type: "string",
+          description:
+            "Mena (EUR, CZK, USD…); bez nej mena firmy. Cudzia mena dostane kurz ECB/ČNB.",
+        },
         notes: { type: "string" },
-        items: { type: "array", minItems: 1, items: POLOZKA },
+        reverse_charge: {
+          type: "boolean",
+          description: "Prenesenie daňovej povinnosti na celej faktúre (DPH 0)",
+        },
+        reverse_charge_type: {
+          type: "string",
+          enum: ["domestic_69", "eu_b2b", "export"],
+          description:
+            "Druh prenesenia: tuzemské § 69, dodanie do EÚ, vývoz; predvolene domestic_69",
+        },
+        discount_type: {
+          type: "string",
+          enum: ["percent", "amount"],
+          description: "Zľava na celý doklad: percento alebo suma bez DPH",
+        },
+        discount_value: { type: "number" },
+        items: { type: "array", minItems: 1, items: POLOZKA_FAKTURY },
         dodaci_list: {
           type: "boolean",
           description: "Faktúra slúži zároveň ako dodací list (podpisy odovzdania a prevzatia)",

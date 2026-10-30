@@ -7,7 +7,8 @@ const Item = z.object({
   quantity: z.number().positive().max(1000000),
   unit: z.string().max(20).optional().default("ks"),
   unit_price: z.number().nonnegative().max(10000000),
-  vat_rate: z.number().min(0).max(100).optional().default(23),
+  // Bez sadzby platí základná sadzba krajiny firmy (neplatiteľ 0 %), ako pri faktúre.
+  vat_rate: z.number().min(0).max(100).optional(),
 });
 const QuoteInput = z.object({
   customer_id: z.string().uuid().optional().nullable(),
@@ -27,7 +28,12 @@ const QuoteInput = z.object({
   external_id: z.string().max(120).optional().nullable(),
   issue_date: z.string().optional(),
   valid_until: z.string().optional(),
-  currency: z.string().length(3).optional().default("EUR"),
+  // Bez meny platí mena firmy (CZ firma koruny).
+  currency: z
+    .string()
+    .length(3)
+    .transform((m) => m.toUpperCase())
+    .optional(),
   notes: z.string().max(5000).optional().nullable(),
   items: z.array(Item).min(1).max(200),
 });
@@ -91,8 +97,23 @@ export const Route = createFileRoute("/api/v1/quotes")({
             return err("validation_error", "Vyžaduje sa customer_id alebo customer.", 400);
           }
 
+          const { data: firma } = await ctx.supabase
+            .from("companies")
+            .select("vat_payer, country, default_currency")
+            .eq("id", ctx.company_id)
+            .maybeSingle();
+          const { krajinaDane, zakladnaSadzba } = await import("@/lib/faktero/vat-rates");
+          const { domacaMena } = await import("@/lib/faktero/kurzy");
+          const predvolenaSadzba =
+            firma?.vat_payer === false
+              ? 0
+              : zakladnaSadzba(
+                  krajinaDane(firma?.country),
+                  d.issue_date ?? new Date().toISOString().slice(0, 10),
+                );
+          const polozky = d.items.map((i) => ({ ...i, vat_rate: i.vat_rate ?? predvolenaSadzba }));
           const totals = computeQuoteTotals(
-            d.items.map((i) => ({
+            polozky.map((i) => ({
               quantity: i.quantity,
               unit_price: i.unit_price,
               vat_rate: i.vat_rate,
@@ -112,7 +133,7 @@ export const Route = createFileRoute("/api/v1/quotes")({
               status: "draft",
               issue_date: d.issue_date ?? today,
               valid_until,
-              currency: d.currency ?? "EUR",
+              currency: d.currency ?? String(firma?.default_currency || domacaMena(firma?.country)),
               customer_name: cust.name,
               customer_ico: cust.ico ?? null,
               customer_dic: cust.dic ?? null,
@@ -133,7 +154,7 @@ export const Route = createFileRoute("/api/v1/quotes")({
           if (insErr || !created)
             return err("db_error", insErr?.message ?? "Vloženie zlyhalo.", 500);
 
-          const rows = d.items.map((it, i) => ({
+          const rows = polozky.map((it, i) => ({
             quote_id: created.id,
             position: i,
             name: it.name,

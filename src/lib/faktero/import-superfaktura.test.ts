@@ -166,8 +166,11 @@ describe("buildPreview", () => {
     const d = detectMapping(t.headers, t.rows);
     const p = buildPreview(t.rows, d.mapping);
     expect(p.invoicesCount).toBe(1);
-    // TaxInclusiveAmount = 396,58 (PayableAmount je 0, lebo doklad je zálohovaný)
-    expect(p.totalValue).toBeCloseTo(396.58, 2);
+    // Faktúra je v EUR (ForeignCurrencyCode), domáca mena dodávateľa CZK:
+    // TaxInclusiveAmountCurr = 15,80 € (396,58 Kč je prepočet). PayableAmount
+    // je 0, lebo doklad je zálohovaný — preto nie z neho.
+    expect(p.totalValue).toBeCloseTo(15.8, 2);
+    expect(p.currency).toBe("EUR");
     expect(p.sampleInvoices[0].customer_name).toBe("Ministerstvo financí ČR");
     expect(p.sampleInvoices[0].issue_date).toBe("2013-02-28");
   });

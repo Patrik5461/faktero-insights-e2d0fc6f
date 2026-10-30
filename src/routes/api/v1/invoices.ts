@@ -19,6 +19,10 @@ const Item = z.object({
   */
   subtotal: z.number().nonnegative().max(1000000000).optional(),
   vat_amount: z.number().nonnegative().max(1000000000).optional(),
+  /** Zľava riadku v % — jednotková cena ostáva pôvodná, zľava je v základe riadku. */
+  discount_percent: z.number().min(0).max(100).optional(),
+  /** Prenesenie daňovej povinnosti len pri tejto položke (DPH riadku = 0). */
+  prenesenie: z.boolean().optional(),
 });
 const InvoiceInput = z.object({
   customer_id: z.string().uuid().optional().nullable(),
@@ -42,10 +46,23 @@ const InvoiceInput = z.object({
   variable_symbol: z.string().max(40).optional().nullable(),
   /** Číslo objednávky odberateľa (napr. z e-shopu) — tlačí sa na faktúru a ide do eFaktúry. */
   order_number: z.string().max(60).optional().nullable(),
-  currency: z.string().length(3).optional().default("EUR"),
+  // Bez meny platí predvolená mena firmy (CZ firma koruny) — `default("EUR")`
+  // by českej firme vystavil faktúru v eurách.
+  currency: z
+    .string()
+    .length(3)
+    .transform((m) => m.toUpperCase())
+    .optional(),
   payment_method: z.string().max(40).optional().default("bank_transfer"),
   notes: z.string().max(5000).optional().nullable(),
   job_id: z.string().uuid().optional().nullable(),
+  /** Prenesenie daňovej povinnosti na celej faktúre (DPH = 0, veta podľa typu v PDF). */
+  reverse_charge: z.boolean().optional(),
+  reverse_charge_type: z.enum(["domestic_69", "eu_b2b", "export"]).optional().nullable(),
+  eu_plnenie: z.enum(["tovar", "sluzba", "trojstranny"]).optional().nullable(),
+  /** Zľava na celý doklad: `percent` (0–100) alebo `amount` (suma bez DPH). */
+  discount_type: z.enum(["percent", "amount"]).optional().nullable(),
+  discount_value: z.number().min(0).max(10000000).optional(),
   items: z.array(Item).min(1).max(200),
 });
 
@@ -66,11 +83,18 @@ export const Route = createFileRoute("/api/v1/invoices")({
             .eq("company_id", ctx.company_id)
             .is("deleted_at", null)
             .order("created_at", { ascending: false })
-            .range(offset, offset + limit - 1);
+            // O riadok viac: podľa neho sa pozná has_more bez druhého dotazu.
+            .range(offset, offset + limit);
           if (status) q = q.eq("status", status as any);
           const { data, error } = await q;
           if (error) return err("db_error", error.message, 500);
-          return ok({ data });
+          const riadky = data ?? [];
+          const has_more = riadky.length > limit;
+          return ok({
+            data: riadky.slice(0, limit),
+            has_more,
+            next_offset: has_more ? offset + limit : null,
+          });
         });
       },
       POST: async ({ request }) => {

@@ -30,7 +30,52 @@ const DATUMY: Record<string, Record<"vystavenia" | "dodania" | "vytvorenia", str
     dodania: "received_date",
     vytvorenia: "created_at",
   },
+  quotes: { vystavenia: "issue_date", dodania: "issue_date", vytvorenia: "created_at" },
+  sales_orders: { vystavenia: "order_date", dodania: "order_date", vytvorenia: "created_at" },
+  purchase_orders: { vystavenia: "order_date", dodania: "order_date", vytvorenia: "created_at" },
 };
+
+/*
+  Ďalšie agendy firmy, ktoré balík predtým vynechával (úhrady, ponuky,
+  objednávky, sklad, vozidlá, leasingy, prílohy…). Tabuľka, ktorú klient
+  nesmie čítať (práva po stĺpcoch, chýbajúci modul), sa preskočí — balík
+  kvôli nej nesmie spadnúť.
+*/
+const DALSIE_AGENDY: [subor: string, tabulka: string, pocet: string][] = [
+  ["uhrady-faktur.csv", "payments", "úhrady faktúr"],
+  ["uhrady-prijatych.csv", "purchase_invoice_payments", "úhrady prijatých faktúr"],
+  ["zalohy-faktur.csv", "invoice_advances", "zúčtované zálohy"],
+  ["ponuky.csv", "quotes", "cenové ponuky"],
+  ["objednavky.csv", "sales_orders", "objednávky"],
+  ["objednavky-dodavatelom.csv", "purchase_orders", "objednávky dodávateľom"],
+  ["pravidelne-faktury.csv", "recurring_invoices", "pravidelné faktúry"],
+  ["cennik-ceny.csv", "product_prices", "osobitné ceny"],
+  ["cenove-skupiny.csv", "price_groups", "cenové skupiny"],
+  ["sklad-sklady.csv", "warehouses", "sklady"],
+  ["sklad-karty.csv", "stock_items", "skladové karty"],
+  ["sklad-pohyby.csv", "stock_movements", "skladové pohyby"],
+  ["bankove-ucty.csv", "company_bank_accounts", "bankové účty"],
+  ["vozidla.csv", "vehicles", "vozidlá"],
+  ["tankovanie.csv", "fuel_records", "tankovanie"],
+  ["financovanie.csv", "financing_contracts", "leasingy a úvery"],
+  ["financovanie-splatky.csv", "financing_installments", "splátky"],
+  ["vyuctovania-vydavkov.csv", "vyuctovania_vydavkov", "vyúčtovania výdavkov"],
+  ["prilohy-faktur.csv", "invoice_attachments", "prílohy faktúr"],
+  ["prilohy-dokladov.csv", "prilohy_dokladov", "prílohy prijatých dokladov"],
+  ["ostatne-doklady-subory.csv", "other_document_files", "súbory ostatných dokladov"],
+];
+
+/** Položky dokladov, ktoré sa viažu na doklad, nie na firmu. */
+const POLOZKY_DOKLADOV: [subor: string, tabulka: string, stlpec: string, rodic: string][] = [
+  ["ponuky-polozky.csv", "quote_items", "quote_id", "quotes"],
+  ["objednavky-polozky.csv", "sales_order_items", "sales_order_id", "sales_orders"],
+  [
+    "objednavky-dodavatelom-polozky.csv",
+    "purchase_order_items",
+    "purchase_order_id",
+    "purchase_orders",
+  ],
+];
 
 export type VysledokBalika = {
   obsah: Uint8Array;
@@ -46,7 +91,7 @@ export async function zostavBalikFirmy(
   data: VstupBalika,
   limity: { maxPdf: number; maxSkenov: number },
 ): Promise<VysledokBalika> {
-  const { naCsv, nazovSuboru, sprievodnyText } = await import("./export-firmy");
+  const { naCsv, nazovSuboru, sprievodnyText, volnyNazov } = await import("./export-firmy");
   const JSZip = (await import("jszip")).default;
 
   const { data: firma } = await supabase
@@ -123,6 +168,39 @@ export async function zostavBalikFirmy(
         .range(zac, kon),
   );
 
+  // Ďalšie agendy — každá zvlášť, chyba jednej nezhodí balík.
+  const dalsie: Record<string, Record<string, unknown>[]> = {};
+  const preskocene: string[] = [];
+  await Promise.all(
+    DALSIE_AGENDY.map(async ([, tabulka]) => {
+      try {
+        dalsie[tabulka] = await zTabulky(tabulka);
+      } catch {
+        dalsie[tabulka] = [];
+        preskocene.push(tabulka);
+      }
+    }),
+  );
+  const polozkyDokladov: Record<string, Record<string, unknown>[]> = {};
+  for (const [, tabulka, stlpec, rodic] of POLOZKY_DOKLADOV) {
+    try {
+      polozkyDokladov[tabulka] = await riadkyPreIds<Record<string, unknown>>(
+        (dalsie[rodic] ?? []).map((r) => String(r.id)),
+        (kus, zac, kon) =>
+          supabase
+            .from(tabulka)
+            .select("*")
+            .in(stlpec, kus)
+            .order(stlpec)
+            .order("id")
+            .range(zac, kon),
+      );
+    } catch {
+      polozkyDokladov[tabulka] = [];
+      preskocene.push(tabulka);
+    }
+  }
+
   const pocty: Record<string, number> = {};
   pocty["firma"] = pridaj("firma.csv", [firma as Record<string, unknown>]);
   pocty["faktúry"] = pridaj("faktury.csv", faktury);
@@ -136,11 +214,16 @@ export async function zostavBalikFirmy(
   pocty["banka"] = pridaj("banka.csv", banka);
   pocty["jazdy"] = pridaj("jazdy.csv", jazdy);
   pocty["zákazky"] = pridaj("zakazky.csv", zakazky);
+  for (const [subor, tabulka, nazov] of DALSIE_AGENDY)
+    pocty[nazov] = pridaj(subor, dalsie[tabulka]!);
+  for (const [subor, tabulka] of POLOZKY_DOKLADOV)
+    pocty[subor.replace(/\.csv$/, "")] = pridaj(subor, polozkyDokladov[tabulka]!);
 
   let pdfka = 0;
   if (data.s_pdf) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const priecinok = zip.folder("faktury-pdf");
+    const pouzite = new Set<string>();
     // Len súbory z priečinka tejto firmy — cestu v riadku mohol niekto prepísať.
     const vlastny = (cesta: unknown) => String(cesta ?? "").startsWith(`${data.company_id}/`);
     const sPdf = faktury.filter((f) => vlastny(f.pdf_url)).slice(0, limity.maxPdf);
@@ -151,7 +234,7 @@ export async function zostavBalikFirmy(
           .download(String(f.pdf_url));
         if (!blob) continue;
         priecinok?.file(
-          nazovSuboru(String(f.invoice_number ?? f.id), "pdf"),
+          volnyNazov(pouzite, nazovSuboru(String(f.invoice_number ?? f.id), "pdf")),
           new Uint8Array(await blob.arrayBuffer()),
         );
         pdfka++;
@@ -164,40 +247,89 @@ export async function zostavBalikFirmy(
   let skenov = 0;
   if (data.s_skenmi) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const doklad = (riadky: Record<string, unknown>[]) =>
+      new Map(riadky.map((r) => [String(r.id), r]));
+    const fakturyPodlaId = doklad(faktury);
+    const prijatePodlaId = doklad(prijate);
+    const dokladyPodlaId = doklad(doklady);
+    const ostatnePodlaId = doklad(ostatne);
     const zdroje: {
       kos: string;
       priecinok: string;
       riadky: Record<string, unknown>[];
-      cislo: string;
+      /** Cesta k súboru v riadku. */
+      cesta: string;
+      /** Názov súboru v balíku (bez prípony). */
+      meno: (r: Record<string, unknown>) => unknown[];
     }[] = [
       {
         kos: "purchase-invoices",
         priecinok: "skeny/prijate-faktury",
         riadky: prijate,
-        cislo: "invoice_number",
+        cesta: "file_path",
+        meno: (r) => [r.issue_date, r.supplier_name, r.invoice_number],
       },
       {
         kos: "expense-receipts",
         priecinok: "skeny/blocky",
         riadky: doklady,
-        cislo: "document_number",
+        cesta: "file_path",
+        meno: (r) => [r.issue_date, r.supplier_name, r.document_number],
+      },
+      {
+        // Ostatné doklady (listy, predpisy, zmluvy) majú súbory v samostatnej tabuľke.
+        kos: "other-docs",
+        priecinok: "skeny/ostatne-doklady",
+        riadky: dalsie.other_document_files ?? [],
+        cesta: "path",
+        meno: (r) => {
+          const d = ostatnePodlaId.get(String(r.document_id));
+          return [d?.received_date, d?.sender, d?.subject, r.name];
+        },
+      },
+      {
+        kos: "invoice-attachments",
+        priecinok: "prilohy/faktury",
+        riadky: dalsie.invoice_attachments ?? [],
+        cesta: "path",
+        meno: (r) => [fakturyPodlaId.get(String(r.invoice_id))?.invoice_number, r.name],
+      },
+      {
+        kos: "invoice-attachments",
+        priecinok: "prilohy/doklady",
+        riadky: dalsie.prilohy_dokladov ?? [],
+        cesta: "path",
+        meno: (r) => [
+          prijatePodlaId.get(String(r.purchase_invoice_id))?.invoice_number ??
+            dokladyPodlaId.get(String(r.expense_document_id))?.document_number,
+          r.name,
+        ],
       },
     ];
     for (const z of zdroje) {
       const priec = zip.folder(z.priecinok);
+      const pouzite = new Set<string>();
       for (const r of z.riadky.filter((x) =>
-        String(x.file_path ?? "").startsWith(`${data.company_id}/`),
+        String(x[z.cesta] ?? "").startsWith(`${data.company_id}/`),
       )) {
         if (skenov >= limity.maxSkenov) break;
         try {
           const { data: blob } = await supabaseAdmin.storage
             .from(z.kos)
-            .download(String(r.file_path));
+            .download(String(r[z.cesta]));
           if (!blob) continue;
-          const pripona = String(r.file_path).split(".").pop()?.slice(0, 5) || "pdf";
+          const subor = String(r[z.cesta]);
+          const pripona = subor.includes(".") ? subor.split(".").pop()!.slice(0, 5) : "pdf";
           const meno =
-            [r.issue_date, r.supplier_name, r[z.cislo]].filter(Boolean).join("_") || String(r.id);
-          priec?.file(nazovSuboru(meno, pripona), new Uint8Array(await blob.arrayBuffer()));
+            z
+              .meno(r)
+              .filter(Boolean)
+              .map((c) => String(c).replace(/\.[a-z0-9]{2,5}$/i, ""))
+              .join("_") || String(r.id);
+          priec?.file(
+            volnyNazov(pouzite, nazovSuboru(meno, pripona)),
+            new Uint8Array(await blob.arrayBuffer()),
+          );
           skenov++;
         } catch {
           /* chýbajúci sken nezhodí balík */
@@ -208,7 +340,10 @@ export async function zostavBalikFirmy(
 
   zip.file(
     "OBSAH.txt",
-    sprievodnyText(String(firma.name ?? ""), new Date().toLocaleString("sk-SK")),
+    sprievodnyText(String(firma.name ?? ""), new Date().toLocaleString("sk-SK")) +
+      (preskocene.length
+        ? `\n\nNezahrnuté (bez prístupu alebo chyba čítania): ${preskocene.join(", ")}\n`
+        : ""),
   );
 
   const obsah = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });

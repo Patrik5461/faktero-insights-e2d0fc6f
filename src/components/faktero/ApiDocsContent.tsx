@@ -367,7 +367,7 @@ curl https://faktero.sk/api/v1/invoices \\
               <li>
                 <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_test_…</code> —{" "}
                 {t(
-                  "testovací režim. Faktúry sa neodosielajú naostro, e-maily idú do testovacej schránky.",
+                  "testovací režim — kľúč smie len čítať (GET). Zápis, odoslanie či úhrada vráti 403 s kódom test_key_read_only, takže skúšanie integrácie nič nezmení.",
                 )}
               </li>
               <li>
@@ -420,11 +420,24 @@ curl https://faktero.sk/api/v1/invoices \\
                     ["201", "Created — zdroj vytvorený"],
                     ["400", "Bad Request — chybný formát requestu"],
                     ["401", "Unauthorized — chýbajúci alebo neplatný API kľúč"],
-                    ["403", "Forbidden — kľúč nemá oprávnenie"],
-                    ["404", "Not Found — zdroj neexistuje"],
-                    ["409", "Conflict — konflikt stavu (napr. duplicitné číslo)"],
+                    ["402", "Payment Required — predplatné firmy nie je aktívne (plan_inactive)"],
+                    [
+                      "403",
+                      "Forbidden — kľúč nemá oprávnenie (test_key_read_only, company_forbidden, account_key_required)",
+                    ],
+                    ["404", "Not Found — zdroj neexistuje (aj neplatné id v adrese)"],
+                    ["405", "Method Not Allowed — koncový bod túto metódu neprijíma"],
+                    [
+                      "409",
+                      "Conflict — konflikt stavu: duplicate, invalid_state, locked, issue_date_in_past, approval_pending, buyer_mismatch, already_matched, bank_payment",
+                    ],
                     ["422", "Unprocessable Entity — validačná chyba"],
+                    [
+                      "429",
+                      "Too Many Requests — odosielanie e-mailov je dočasne zastavené (sending_blocked)",
+                    ],
                     ["500", "Internal Server Error — chyba na strane Faktero"],
+                    ["502", "Bad Gateway — e-mail sa nepodarilo odoslať (send_failed)"],
                   ].map(([k, v]) => (
                     <tr key={k}>
                       <td className="p-3 font-mono">{k}</td>
@@ -520,6 +533,73 @@ curl https://faktero.sk/api/v1/invoices \\
               />
               <Endpoint method="POST" path="/api/v1/invoices/{id}/cancel" desc="Storno faktúry" />
             </ul>
+            <h3 className="mt-5 font-semibold">{t("Vystavenie faktúry")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "Odberateľa pošlite ako customer_id z adresára alebo ako objekt customer (name, ico, dic, ic_dph, street, city, zip, country, email). Položka má name, quantity, unit, unit_price (bez DPH), vat_rate a voliteľne discount_percent (zľava riadku v %) a prenesenie (prenesenie daňovej povinnosti len pri tejto položke). Bez vat_rate platí základná sadzba krajiny firmy (neplatiteľ DPH 0 %), bez currency mena firmy. S external_id sa tá istá faktúra druhýkrát nevystaví — opakovaná požiadavka vráti existujúcu (200).",
+              )}
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+              <li>
+                <code className="font-mono">discount_type</code> (percent, amount) {t("a")}{" "}
+                <code className="font-mono">discount_value</code> —{" "}
+                {t(
+                  "zľava na celý doklad; rozpočíta sa pomerne medzi sadzby DPH a v odpovedi je discount_total.",
+                )}
+              </li>
+              <li>
+                <code className="font-mono">reverse_charge: true</code> {t("a")}{" "}
+                <code className="font-mono">reverse_charge_type</code> (domestic_69, eu_b2b, export)
+                —{" "}
+                {t(
+                  "prenesenie daňovej povinnosti; DPH faktúry je nula a PDF uvedie zákonnú vetu. Pri eu_b2b musí mať odberateľ IČ DPH z iného členského štátu (eu_plnenie: tovar, sluzba, trojstranny).",
+                )}
+              </li>
+              <li>
+                <code className="font-mono">currency</code> —{" "}
+                {t(
+                  "v cudzej mene Faktero doplní kurz (slovenská firma ECB zo dňa pred dodaním, česká ČNB) a sumy v domácej mene: exchange_rate, exchange_rate_date, vat_total_eur.",
+                )}
+              </li>
+              <li>
+                <code className="font-mono">subtotal</code>,{" "}
+                <code className="font-mono">vat_amount</code>{" "}
+                {t(
+                  "pri položke — presné sumy z e-shopu (pri všetkých položkách alebo pri žiadnej). Musia sedieť s cenou a sadzbou, inak 400; so zľavou sa nekombinujú.",
+                )}
+              </li>
+              <li>
+                <code className="font-mono">order_number</code>,{" "}
+                <code className="font-mono">variable_symbol</code>,{" "}
+                <code className="font-mono">delivery_date</code>,{" "}
+                <code className="font-mono">due_date</code> ({t("predvolene o 14 dní")}),{" "}
+                <code className="font-mono">payment_method</code>,{" "}
+                <code className="font-mono">notes</code>.
+              </li>
+            </ul>
+            <div className="mt-3">
+              <CodeBlock
+                lang="json"
+                code={`POST /api/v1/invoices
+{
+  "external_id": "eshop-10042",
+  "customer": { "name": "Stavby s.r.o.", "ico": "12345678", "ic_dph": "SK2020123456" },
+  "reverse_charge": true,
+  "reverse_charge_type": "domestic_69",
+  "discount_type": "percent",
+  "discount_value": 5,
+  "items": [
+    { "name": "Montáž", "quantity": 10, "unit": "hod", "unit_price": 40, "vat_rate": 23,
+      "discount_percent": 10 }
+  ]
+}`}
+              />
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                "GET /invoices vráti najviac 200 faktúr (limit, offset, status) a has_more s next_offset. GET /invoices/{id}/pdf vráti url (podpísaný odkaz na PDF) a expires_in v sekundách — odkaz platí hodinu.",
+              )}
+            </p>
             <h3 className="mt-5 font-semibold">{t("Dodací list, pečiatka a zaúčtovanie")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t(
@@ -552,13 +632,17 @@ curl https://faktero.sk/api/v1/invoices \\
               <Endpoint method="POST" path="/api/v1/quotes" desc="Vytvorenie ponuky" />
               <Endpoint method="GET" path="/api/v1/quotes" desc="Zoznam ponúk" />
               <Endpoint method="GET" path="/api/v1/quotes/{id}" desc="Detail ponuky" />
-              <Endpoint method="PUT" path="/api/v1/quotes/{id}" desc="Úprava ponuky" />
               <Endpoint
                 method="POST"
                 path="/api/v1/quotes/{id}/convert"
                 desc="Konverzia na faktúru"
               />
             </ul>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                "Ponuka prijíma rovnakého odberateľa a položky ako faktúra (bez vat_rate platí sadzba firmy, bez currency mena firmy). Konverzia vystaví faktúru s dnešným dátumom; opakovaná konverzia vráti tú istú faktúru.",
+              )}
+            </p>
           </section>
           <section
             id="recurring"
@@ -711,6 +795,20 @@ curl https://faktero.sk/api/v1/invoices \\
 }`}
               />
             </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                "Voliteľné pole buyer { name, ico, dic, ic_dph } je odberateľ uvedený na doklade. Keď nesedí s firmou kľúča (iné IČO, IČ DPH alebo názov), faktúra sa zapíše s príznakom odberatel_nesedi a nezaúčtuje sa ani s accounting.booked. Kým vo Fakteri nepotvrdíte, že patrí tejto firme, zaúčtovanie cez PUT vráti 409 s kódom buyer_mismatch.",
+              )}
+            </p>
+            <CodeBlock
+              lang="json"
+              code={`PUT /api/v1/purchase-invoices/{id}
+{ "accounting": { "booked": true } }
+
+409 Conflict
+{ "error": { "code": "buyer_mismatch",
+             "message": "Faktúra nepatrí firme …, odberateľ je … Kým vo Fakteri nepotvrdíte, že faktúra patrí tejto firme, nedá sa zaúčtovať." } }`}
+            />
             <p className="mt-3 text-sm text-muted-foreground">
               {t(
                 "Úhradu zapíšete cez PUT s payment_date. Bloček: issue_date, total_amount (s DPH), vat_breakdown [{ rate, base, vat }] a payment_method (hotovost, karta, prevod) — hotovosť sa započíta do pokladne, ak nepošlete cash_register: false.",
@@ -988,9 +1086,6 @@ curl -X POST https://faktero.sk/api/v1/companies/{id}/invitations \\
                 "invoice.cancelled",
                 "customer.created",
                 "bank_transaction.created",
-                "quote.created",
-                "quote.sent",
-                "quote.converted",
               ].map((e) => (
                 <li
                   key={e}
@@ -1005,6 +1100,31 @@ curl -X POST https://faktero.sk/api/v1/companies/{id}/invitations \\
             <p className="mt-2 text-sm text-muted-foreground">
               {t(
                 "Pri každej zmene faktúry na uhradenú — po spárovaní s bankovým pohybom (automaticky aj ručne), po hromadnom označení v zozname, cez POST /api/v1/invoices/…/mark-paid aj zmenou stavu v detaile faktúry. Pri mark-paid príde hneď, inak do minúty. Ak úhradu priniesla banka, payload má bank_transaction_id spárovaného pohybu.",
+              )}
+            </p>
+            <CodeBlock
+              lang="json"
+              code={`{
+  "event": "invoice.paid",
+  "created_at": "2026-10-24T18:01:12Z",
+  "data": {
+    "invoice_id": "8958a73f-…",
+    "invoice_number": "20260042",
+    "status": "paid",
+    "total": 370.04,
+    "currency": "EUR",
+    "external_id": "eshop-10042",
+    "customer_id": "40f865bf-…",
+    "customer_name": "Odberateľ s.r.o.",
+    "customer_email": "fakturacia@odberatel.sk",
+    "paid_at": "2026-10-24T18:00:58Z",
+    "bank_transaction_id": null
+  }
+}`}
+            />
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "Ostatné udalosti faktúry (invoice.created, invoice.sent, invoice.cancelled) majú rovnaké data bez paid_at a bank_transaction_id; customer.created nesie customer_id, name, email, ico a external_id.",
               )}
             </p>
             <h3 className="mt-6 font-semibold">bank_transaction.created</h3>
@@ -1038,7 +1158,8 @@ curl -X POST https://faktero.sk/api/v1/companies/{id}/invitations \\
               {t("Každá požiadavka má hlavičku")}{" "}
               <code className="font-mono">X-Faktero-Signature</code>{" "}
               {t("obsahujúcu HMAC SHA-256 podpis tela požiadavky vytvorený pomocou vášho")}{" "}
-              <em>signing secret</em>.
+              <em>signing secret</em>. {t("Názov udalosti nesie aj hlavička")}{" "}
+              <code className="font-mono">X-Faktero-Event</code>.
             </p>
             <div className="mt-3">
               <CodeBlock
@@ -1061,7 +1182,7 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
             <h3 className="mt-6 font-semibold">{t("Opakovanie pri zlyhaní")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t(
-                "Ak váš endpoint nevráti 2xx do 10 sekúnd, Faktero pokus zopakuje s exponenciálnym odstupom (1 min, 5 min, 30 min, 2 h, 12 h) — celkovo max. 5 pokusov. Všetky pokusy a ich stavy nájdete v sekcii Webhooky → Logy.",
+                "Ak váš endpoint nevráti 2xx do 10 sekúnd, Faktero doručenie hneď zopakuje — celkovo 3 pokusy počas niekoľkých sekúnd. Neskôr sa už neposiela, preto pri výpadku dočítajte zmeny cez API (napr. updated_since alebo GET /bank-transactions). Všetky pokusy a ich stavy nájdete v sekcii Webhooky → Logy. Adresa musí byť https na verejnom serveri (port 443).",
               )}
             </p>
           </section>
@@ -1220,8 +1341,8 @@ $customer = json_decode(curl_exec($ch), true);`}
   "https://faktero.sk/api/v1/invoices/inv_123/pdf",
   { headers: { Authorization: "Bearer fk_live_xxx" } }
 );
-const { signed_url } = await res.json();
-// signed_url platí 5 minút — stiahnite alebo presmerujte používateľa`}
+const { url, expires_in } = await res.json();
+// url platí hodinu (expires_in = 3600 s) — stiahnite alebo presmerujte používateľa`}
             />
 
             <h3 className="mt-6 font-semibold">{t("Odoslanie faktúry e-mailom")}</h3>
@@ -1286,7 +1407,7 @@ if (!hash_equals($expected, $sig)) {
 }
 
 $event = json_decode($payload, true);
-// $event["type"] === "invoice.paid" …
+// $event["event"] === "invoice.paid" …
 http_response_code(200);`}
             />
           </section>
