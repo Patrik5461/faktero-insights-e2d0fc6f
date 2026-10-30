@@ -12,8 +12,11 @@ it("faktúra v cudzej mene ide do Pohody s kurzom a sumami v mene", () => {
   });
   const d = prijataAkoDoklad({ id: "b1", company_id: "c", supplier_name: "Google Ireland", invoice_number: "INV-9", issue_date: "2026-10-01", delivery_date: "2026-10-01", due_date: "2026-10-20", currency: "USD", exchange_rate: 1.1, amount_without_vat: 100, vat_amount: 0, amount_total: 100, payment_method: "karta" } as any);
   const x2 = buildPohodaExpensesXml({ company, doklady: [d] } as any);
-  expect(x1).toContain("<typ:rate>4.081633</typ:rate>");
+  // SK Pohoda: kurz ECB (cudzia mena za 1 €), množstvo 1 — vzor Stormware
+  // invoice_05_v2.0_CM.xml (https://www.stormware.sk/pohoda/xml/dokladyimport/).
+  expect(x1).toContain("<typ:rate>24.5</typ:rate>");
+  expect(x1).toContain("<typ:amount>1</typ:amount>");
   expect(x2).toContain("<typ:ids>USD</typ:ids>");
-  expect(x2).toContain("<typ:rate>0.909091</typ:rate>");
+  expect(x2).toContain("<typ:rate>1.1</typ:rate>");
   expect(x1).not.toContain("<inv:homeCurrency>");
 });

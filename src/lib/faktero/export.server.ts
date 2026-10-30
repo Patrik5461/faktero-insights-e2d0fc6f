@@ -38,11 +38,12 @@ import {
   clenenieVydanejPdp,
   idDokladuPohody,
   jeTuzemskePdp,
-  KV_PDP_VYDANE,
   prekazkaDokladu,
   prekazkaVydanej,
 } from "./pohoda-kontrola";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
+import { kvPrijatehoPrePohodu, kvVystavenehoPrePohodu } from "./pohoda-kv";
+import { jeNezahrnovat } from "./uctovanie-agenda";
 import {
   datumyPrijateho,
   internaPoznamka,
@@ -439,14 +440,31 @@ export function pohodaPrekazka(
 }
 
 /**
- * Kurz pre Pohodu — koľko domácej meny za `amount` jednotiek cudzej. Na
- * doklade je kurz banky podľa krajiny firmy (SK ECB „X za 1 €“, CZ ČNB
- * „CZK za 1 X“); prevod robí `kurzZaMnozstvo`.
+ * Kurz pre Pohodu v zápise kurzového lístka tej verzie Pohody, do ktorej
+ * doklad ide.
+ *
+ *  - **SK Pohoda** má kurzy tak, ako ich vyhlasuje ECB: koľko cudzej meny
+ *    za 1 €. Vzor Stormware len pre SK verziu („Faktúra s položkou Odpočet
+ *    zálohy v cudzej mene“, `invoice_05_v2.0_CM.xml` na
+ *    https://www.stormware.sk/pohoda/xml/dokladyimport/) má pri CZK
+ *    `<typ:rate>25.346</typ:rate>` a `<typ:amount>1</typ:amount>` — 86,93 €
+ *    proti 2 193 Kč. Na doklade je ten istý kurz ECB, ide teda bez prevodu.
+ *  - **CZ Pohoda** chce koruny za `amount` jednotiek cudzej meny (kurzový
+ *    lístok ČNB, vzor `invoice_03_v2.0.xml`: EUR 21,232 za 1); prevod robí
+ *    `kurzZaMnozstvo`.
+ *
+ * Predtým išiel aj do SK Pohody český zápis (napr. 4,0816 € za 100 Kč) a SK
+ * Pohoda by ho prečítala ako 4,08 Kč za 1 € — faktúra by v eurách vyšla
+ * viac ako šesťkrát vyššia.
  */
 export function kurzPrePohodu(
   kurzDokladu: number,
   country: string | null | undefined = "SK",
 ): { rate: number; amount: number } {
+  if (krajinaDane(country) !== "CZ") {
+    const k = Number(kurzDokladu);
+    return { rate: Number.isFinite(k) && k > 0 ? Math.round(k * 1e6) / 1e6 : 0, amount: 1 };
+  }
   const { kurz, mnozstvo } = kurzZaMnozstvo(kurzDokladu, country);
   return { rate: kurz, amount: mnozstvo };
 }
@@ -494,20 +512,43 @@ export type OdpocetZalohy = {
  * ako to účtovníctvo vyžaduje. Nájde si ho **podľa čísla**, preto sa storno dá
  * poslať až vtedy, keď vieme, aké číslo doklad v Pohode dostal.
  */
-export function polozkyStorna(opts: { storna: { id: string; cislo: string }[] }): string {
+export function polozkyStorna(opts: {
+  storna: { id: string; cislo: string; typ?: string | null; cz?: boolean }[];
+}): string {
   return opts.storna
-    .map(
-      (s) => `
+    .map((s) => {
+      /*
+        Typ dokladu v hlavičke ako vo vzore Stormware (`invoiceStorno.xml` na
+        https://www.stormware.sk/pohoda/xml/dokladyimport/) — Vydané faktúry
+        a Vydané zálohové faktúry sú v Pohode rôzne agendy a storno sa hľadá
+        v tej, ktorú určí typ. Text navrhuje príručka POHODA („Storno vydanej
+        faktúry č. …“). Daňový doklad k platbe (interný doklad) typ faktúry nemá.
+      */
+      const typ = String(s.typ ?? "");
+      const typPohody =
+        typ === "advance_payment" || !typ
+          ? ""
+          : s.cz && (typ === "credit_note" || typ === "debit_note")
+            ? "issuedCorrectiveTax"
+            : (TYPY_DOKLADU[typ] ?? "issuedInvoice");
+      const hlavicka = typPohody
+        ? `
+      <inv:invoiceHeader>
+        <inv:invoiceType>${typPohody}</inv:invoiceType>
+        <inv:text>${esc(skrat(`Storno dokladu č. ${s.cislo}`, 240))}</inv:text>
+      </inv:invoiceHeader>`
+        : "";
+      return `
   <dat:dataPackItem id="${esc(s.id)}-storno" version="2.0">
     <inv:invoice version="2.0">
       <inv:cancelDocument>
         <typ:sourceDocument>
           <typ:number>${esc(skrat(s.cislo, 32))}</typ:number>
         </typ:sourceDocument>
-      </inv:cancelDocument>
+      </inv:cancelDocument>${hlavicka}
     </inv:invoice>
-  </dat:dataPackItem>`,
-    )
+  </dat:dataPackItem>`;
+    })
     .join("");
 }
 
@@ -728,20 +769,21 @@ export function polozkyFaktur(opts: {
           (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
         : [...kodyPoloziek][0] || predkontaciaJedna;
       const clenenie = zalohova ? "" : clenenieJedno;
-      const kvDokl = String((invoice as any).kv_clenenie ?? "").trim();
-      // Členenie KV DPH je len v SK verzii Pohody.
-      const kvHlavicka =
-        cz || zalohova
-          ? ""
-          : kvDokl
-            ? kvDokl !== "X"
-              ? kvDokl
-              : ""
-            : tuzemskePdp
-              ? KV_PDP_VYDANE
-              : invoice.type === "regular" && !invoice.reverse_charge
-                ? kvZPredvoleneho(nastavenia?.kvFaktura)
-                : "";
+      /*
+        Členenie KV DPH (len SK verzia). Bez neho by doklad v Pohode do
+        kontrolného výkazu nevstúpil vôbec — pozri `pohoda-kv.ts`.
+      */
+      const kvHlavicka = kvVystavenehoPrePohodu({
+        cz,
+        typ,
+        kvDokladu: (invoice as any).kv_clenenie,
+        predvolene: typ === "regular" || typ === "advance_payment" ? kvZPredvoleneho(nastavenia?.kvFaktura) : null,
+        reverseCharge: Boolean(invoice.reverse_charge),
+        tuzemskePdp,
+        maDph: items.some((it) => Math.abs(Number(it.vat_amount ?? 0)) >= 0.005),
+        icDphOdberatela: invoice.customer_ic_dph,
+        clenenieDph: clenenie,
+      });
       /*
         Colné údaje položky do Pohody: blok `intrastatItem` (kód tovaru KN,
         krajina pôvodu, krajina určenia, vlastná hmotnosť riadku). Hmotnosť
@@ -780,12 +822,24 @@ export function polozkyFaktur(opts: {
         // Pohoda odvodí z členenia DPH položky.
         const kvp =
           cz || zalohova ? "" : String((it as any).kv_clenenie ?? "").trim() || (pdpRiadok ? "A2" : "");
+        /*
+          Príznak prenesenia a kód tovaru na položke (invoice.xsd: `PDP` —
+          „Příznak Přenesení daňové povinnosti (pouze pro Vydané faktury, Vydané
+          zálohové faktury a Ostatní pohledávky)“, `CodePDP` — „Kód zboží (…
+          v SK verzi)“). Kód tovaru chce KV A.2 pri tovaroch § 69 ods. 12
+          písm. f) až i) ako 4-miestny kód colného sadzobníka (stĺpec TK);
+          pri stavebných prácach sa nevypĺňa, preto len keď ho položka má.
+        */
+        const pdpPolozka = tuzemskePdp || pdpRiadok;
+        const kodTovaru = String((it as any).colny_kod ?? "").replace(/\D/g, "").slice(0, 4);
         return `${pk ? `\n          <inv:accounting><typ:ids>${esc(pk)}</typ:ids></inv:accounting>` : ""}${
           cl ? `\n          <inv:classificationVAT><typ:ids>${esc(cl)}</typ:ids></inv:classificationVAT>` : ""
         }${
           kvp && kvp !== "X"
             ? `\n          <inv:classificationKVDPH><typ:ids>${esc(kvp)}</typ:ids></inv:classificationKVDPH>`
             : ""
+        }${pdpPolozka ? `\n          <inv:PDP>true</inv:PDP>` : ""}${
+          pdpPolozka && !cz && kodTovaru.length === 4 ? `\n          <inv:CodePDP>${kodTovaru}</inv:CodePDP>` : ""
         }`;
       };
 
@@ -946,6 +1000,16 @@ export function polozkyFaktur(opts: {
         )}${
           // CZ opravný daňový doklad: dátum pre kontrolné hlásenie (inak ostane prázdny).
           cz && opravny ? el("inv:dateKHDPH", invoice.delivery_date ?? invoice.issue_date, "        ") : ""
+        }${
+          /*
+            Dátum uplatnenia DPH dobropisu/vrubopisu (CZ opravného daňového
+            dokladu) — podľa neho Pohoda zaradí opravu do priznania (invoice.xsd,
+            `dateApplicationVAT`: „Datum pro zařazení dobropisu, resp. opravného
+            daňového dokladu do přiznání k DPH“). Oprava patrí do obdobia, v
+            ktorom bola vyhotovená (§ 25 ods. 1) — rovnako ako vo výkazoch Faktera.
+            Bez neho by sa riadila dátumom dodania pôvodného plnenia.
+          */
+          opravny ? el("inv:dateApplicationVAT", invoice.issue_date ?? invoice.delivery_date, "        ") : ""
         }${el("inv:dateDue", invoice.due_date, "        ")}${el(
           "inv:dateAccounting",
           nastavenia?.datumZauctovaniaPevny || datumZauctovania(invoice.issue_date, nastavenia?.zamknuteDo),
@@ -1092,6 +1156,9 @@ export function polozkyPokladne(opts: {
   nastavenia?: PohodaNastavenia;
 }): string {
   const { pohyby, nastavenia } = opts;
+  // Bez pokladne Pohoda doklad nezaloží (voucher.xsd: `cashAccount` je
+  // „vyžadován při vytvoření dokladu“) — volajúci to ohlási.
+  if (!String(nastavenia?.pokladna ?? "").trim()) return "";
 
   return pohyby
     .map((p, idx) => {
@@ -1383,6 +1450,7 @@ function dokladKPlatbeAkoDoklad(
     vat_breakdown: [...po.values()],
     pohoda_predkontacia: inv.pohoda_predkontacia || nastavenia?.predkontaciaZaloha || null,
     pohoda_clenenie_dph: inv.pohoda_clenenie_dph || nastavenia?.clenenieDph || null,
+    kv_clenenie: inv.kv_clenenie ?? null,
     stredisko: inv.stredisko,
     cinnost: inv.cinnost,
     int_poznamka: inv.int_poznamka,
@@ -1651,15 +1719,39 @@ export function polozkyDokladov(opts: {
       // „Nezahŕňať" (X) si človek zvolil vedome — prenesenie ho neprepíše.
       // Účet dodávateľa na príkaz na úhradu; bez kódu banky sa nezapíše vôbec.
       const ucetDodavatela = d?._ucetDodavatela ? rozdelUcet(d._ucetDodavatela) : null;
-      const kvHlavicka =
-        rozuctovany || cz
-          ? ""
-          : kv() ||
-            (d?._pdp && !String(d?.kv_clenenie ?? "").trim() ? "B1" : "") ||
-            // Bežný doklad bez vlastného KV dostane predvolené firmy.
-            (!d?._pdp && (blocek || typPohody === "receivedInvoice")
-              ? kvZPredvoleneho(blocek ? nastavenia?.kvDoklady : nastavenia?.kvPrijata)
-              : "");
+      /*
+        Členenie KV DPH dokladu (len SK). Prázdne pole Pohoda nečíta ako
+        „automaticky“, ale ako „do KV nepatrí“ (pozri `pohoda-kv.ts`) — preto
+        sa odvodí to isté, čo dávajú výkazy Faktera. Daňový doklad k platbe je
+        náš vystavený (A.1/D.2).
+      */
+      const maDphDokladu = rozpis.some((x) => Math.abs(Number(x.dph ?? 0)) >= 0.005);
+      const kvAuto = prijatyDoklad
+        ? kvPrijatehoPrePohodu({
+            cz,
+            kvDokladu: d?.kv_clenenie,
+            predvolene:
+              blocek || typPohody === "receivedInvoice"
+                ? kvZPredvoleneho(blocek ? nastavenia?.kvDoklady : nastavenia?.kvPrijata)
+                : null,
+            blocek,
+            dobropis: dobropisPrijaty,
+            pdp: Boolean(d?._pdp),
+            rezim: d?._rezim,
+            maDph: maDphDokladu,
+            odpocet: d?.odpocet,
+            clenenieDph: clenenie,
+          })
+        : kvVystavenehoPrePohodu({
+            cz,
+            typ: "advance_payment",
+            kvDokladu: d?.kv_clenenie,
+            predvolene: kvZPredvoleneho(nastavenia?.kvFaktura),
+            maDph: maDphDokladu,
+            icDphOdberatela: d?.supplier_ic_dph,
+            clenenieDph: clenenie,
+          });
+      const kvHlavicka = rozuctovany || cz ? "" : kvAuto;
 
       /*
         Položky bločku (voľba firmy): v cenách s DPH, ako sú na bločku. Pri
@@ -1710,7 +1802,15 @@ export function polozkyDokladov(opts: {
         .map((r) => {
           const pk = r.predkontacia || predkontaciaJedna;
           const cl = r.clenenie || clenenieJedno;
-          const kvr = kv(r.kv);
+          // Riadok bez vlastného KV dostane členenie dokladu (hlavička rozúčtovaného ho nemá).
+          const kvRiadku = String(r.kv ?? "").trim();
+          const kvr = cz
+            ? ""
+            : kvRiadku
+              ? kv(kvRiadku)
+              : Math.abs(Number(r.dph ?? 0)) >= 0.005 && !jeNezahrnovat(cl)
+                ? kvAuto
+                : "";
           return `
         <${p}:${koren}Item>${el(`${p}:text`, skrat(r.text || popis || "Prijatý doklad", 90), "          ")}
           <${p}:quantity>1</${p}:quantity>
@@ -1880,13 +1980,22 @@ export function polozkyDokladov(opts: {
       // Dátumy, ktoré pozná len jedna verzia: SK dátum dodania tovaru (prijaté
       // faktúry, interné doklady), CZ dátum pre kontrolné hlásenie.
       const datumDodania = String(d?._datumDph || "").trim();
-      const datumyVerzie = !prijatyDoklad
-        ? ""
-        : cz
-          ? el(`${p}:dateKHDPH`, datumDph, "        ")
-          : p !== "vch" && d?._typPohody
-            ? el(`${p}:dateDelivery`, datumDodania, "        ")
-            : "";
+      const datumyVerzie =
+        (!prijatyDoklad
+          ? ""
+          : cz
+            ? el(`${p}:dateKHDPH`, datumDph, "        ")
+            : p !== "vch" && d?._typPohody
+              ? el(`${p}:dateDelivery`, datumDodania, "        ")
+              : "") +
+        /*
+          Prijatý dobropis (CZ opravný daňový doklad): dátum uplatnenia DPH —
+          oprava odpočtu patrí do obdobia, v ktorom firma dobropis dostala
+          (invoice.xsd `dateApplicationVAT`, § 53 ods. 2), ako vo výkazoch Faktera.
+        */
+        (dobropisPrijaty && p === "inv"
+          ? el("inv:dateApplicationVAT", d?._datumUplatnenia || d?.issue_date, "        ")
+          : "");
       // Bez nároku na odpočet (Faktero ho nezapočíta do DPH): Pohoda to z čísel
       // nespozná — členenie si účtovník musí vybrať, poznámka ho na to upozorní.
       const bezOdpoctu = d?.odpocet === false && prijatyDoklad;
@@ -2388,13 +2497,14 @@ export function buildPohodaMovementsXml(opts: {
 /** Storná samostatne — na ručný import bez konektora. */
 export function buildPohodaStornaXml(opts: {
   company: CompanyRow;
-  storna: { id: string; cislo: string }[];
+  storna: { id: string; cislo: string; typ?: string | null }[];
 }): string {
+  const cz = krajinaDane(opts.company?.country) === "CZ";
   return obalka({
     ico: opts.company?.ico,
     note: "Storná z Faktero",
     prefixy: ["inv"],
-    entries: polozkyStorna(opts),
+    entries: polozkyStorna({ storna: opts.storna.map((s) => ({ ...s, cz })) }),
   });
 }
 
@@ -2440,7 +2550,7 @@ export function buildPohodaDavkaXml(opts: {
   zasoby?: DokladRow[];
   zakazkyNove?: DokladRow[];
   skupinyPohybov?: SkupinaPohybov[];
-  storna?: { id: string; cislo: string }[];
+  storna?: { id: string; cislo: string; typ?: string | null }[];
   nastavenia?: PohodaNastavenia;
   odkazy?: Record<string, string>;
   zakazky?: Record<string, string>;
@@ -2472,7 +2582,11 @@ export function buildPohodaDavkaXml(opts: {
     polozkyDokladov(opts),
     polozkyPokladne(opts),
     // Storno až nakoniec — ruší doklad, ktorý v Pohode už je.
-    opts.storna?.length ? polozkyStorna({ storna: opts.storna }) : "",
+    opts.storna?.length
+      ? polozkyStorna({
+          storna: opts.storna.map((s) => ({ ...s, cz: krajinaDane(opts.company?.country) === "CZ" })),
+        })
+      : "",
   ].join("");
   return obalka({
     ico: opts.company?.ico,

@@ -257,6 +257,10 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     _typPohody: spolu < 0 || p.opravuje_cislo ? "receivedCreditNotice" : "receivedInvoice",
     // Číslo faktúry, ktorú dobropis opravuje — SK Pohoda ho chce v „Pôvodné číslo dokladu".
     _opravujeCislo: p.opravuje_cislo,
+    // Dobropis: oprava odpočtu v období, keď ho firma dostala (ako výkazy Faktera).
+    _datumUplatnenia: p.received_date || p.issue_date || p.delivery_date || null,
+    // Režim DPH (dovoz, nadobudnutie z EÚ…) — podľa neho sa odvodí členenie KV.
+    _rezim: p.dph_rezim ?? null,
     // Nárok na odpočet DPH; `false` = Faktero DPH do výkazu nezapočíta.
     odpocet: p.odpocet,
     // Celá faktúra v prenesení — hlavička dostane členenie pre prenesenie a KV B.1.

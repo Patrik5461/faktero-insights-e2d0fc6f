@@ -281,7 +281,18 @@ export async function zostavDavku(
   const { prijataAkoDoklad } = await import("./prijate-do-pohody");
   const { ok: dokladySch } = await lenSchvalene(supabase, vstup.companyId, "doklad", dokladyNeschvalene ?? []);
   const doklady = vCasti(dokladySch, "issue_date");
-  const pokladnica = vCasti(pokladnicaVsetko ?? [], "entry_date");
+  /*
+    Pokladničný doklad bez pokladne Pohoda nezaloží — `cashAccount` je podľa
+    voucher.xsd „vyžadován při vytvoření dokladu“. Kým firma skratku pokladne
+    nevyplní, pohyby ostávajú vo fronte (neoznačia sa) a povie sa to.
+  */
+  const pokladnicaVCasti = vCasti(pokladnicaVsetko ?? [], "entry_date");
+  const pokladnaChyba = String(company.pohoda_pokladna ?? "").trim()
+    ? null
+    : pokladnicaVCasti.length
+      ? `Pokladňa (${pokladnicaVCasti.length}) — chýba skratka pokladne pre Pohodu, pohyby počkajú — nastavte ju v Účtovníctvo → Prepojenie s Pohodou`
+      : null;
+  const pokladnica = pokladnaChyba ? [] : pokladnicaVCasti;
   const { ok: prijateSch } = await lenSchvalene(
     supabase,
     vstup.companyId,
@@ -385,7 +396,7 @@ export async function zostavDavku(
       zakaziek: 0,
       pohybov: 0,
       storien: 0,
-      preskocene: [],
+      preskocene: pokladnaChyba ? [pokladnaChyba] : [],
     };
   }
 
@@ -452,7 +463,7 @@ export async function zostavDavku(
     Exportoch → Kontrola pred odovzdaním).
   */
   const { prekazkaDokladu } = await import("./pohoda-kontrola");
-  const preskoceneDoklady: string[] = [];
+  const preskoceneDoklady: string[] = pokladnaChyba ? [pokladnaChyba] : [];
   const dokladyOk = (doklady ?? []).filter((d: Riadok) => {
     const dovod = prekazkaDokladu(d, company, nastavenia as any);
     if (dovod) preskoceneDoklady.push(dovod);
@@ -572,13 +583,13 @@ export async function nacitajStorna(
   supabase: Klient,
   companyId: string,
   cisla: Map<string, string>,
-): Promise<{ id: string; cislo: string }[]> {
+): Promise<{ id: string; cislo: string; typ: string | null }[]> {
   if (!cisla.size) return [];
 
   const [{ data: zrusene }, { data: uzStornovane }] = await Promise.all([
     supabase
       .from("invoices")
-      .select("id, invoice_number, cancelled_at, status")
+      .select("id, invoice_number, cancelled_at, status, type")
       .eq("company_id", companyId)
       .not("cancelled_at", "is", null)
       .in("id", [...cisla.keys()]),
@@ -597,7 +608,11 @@ export async function nacitajStorna(
   return (zrusene ?? [])
     .filter((f: Riadok) => !uz.has(String(f.id)))
     .slice(0, STROP_DAVKY)
-    .map((f: Riadok) => ({ id: String(f.id), cislo: cisla.get(String(f.id)) as string }));
+    .map((f: Riadok) => ({
+      id: String(f.id),
+      cislo: cisla.get(String(f.id)) as string,
+      typ: f.type ? String(f.type) : null,
+    }));
 }
 
 /**
@@ -920,7 +935,7 @@ async function zapisOdovzdanie(
     zasoby: Riadok[];
     zakazkyNove: Riadok[];
     pohyby: Riadok[];
-    storna: { id: string; cislo: string }[];
+    storna: { id: string; cislo: string; typ?: string | null }[];
   },
 ): Promise<string | null> {
   const { data: job, error } = await supabase

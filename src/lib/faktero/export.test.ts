@@ -735,7 +735,10 @@ describe("Pohoda XML — pokladňa", () => {
       category: "Réžia",
     },
   ];
-  const posli = (nastavenia?: any) =>
+  // Bez skratky pokladne Pohoda pokladničný doklad nezaloží — `cashAccount` je
+  // podľa voucher.xsd „vyžadován při vytvoření dokladu“
+  // (https://www.stormware.cz/xml/schema/version_2/voucher.xsd).
+  const posli = (nastavenia: any = { pokladna: "HP" }) =>
     parser.parse(buildPohodaCashXml({ company: firmaSk, pohyby, nastavenia })).dataPack;
 
   it("príjem a výdavok sú rozlíšené", () => {
@@ -757,8 +760,8 @@ describe("Pohoda XML — pokladňa", () => {
     expect(String(t)).toContain("Vklad do pokladne");
   });
 
-  it("pokladňa a predkontácia sa doplnia, len keď sú nastavené", () => {
-    expect(posli().dataPackItem[0].voucher.voucherHeader.cashAccount).toBeUndefined();
+  it("bez pokladne sa pokladničný doklad nevyrobí, s ňou nesie pokladňu aj predkontáciu", () => {
+    expect(posli({}).dataPackItem).toBeUndefined();
     const h = posli({ pokladna: "HOT", predkontaciaPokladna: "3Pp" }).dataPackItem[0].voucher
       .voucherHeader;
     expect(h.cashAccount.ids).toBe("HOT");

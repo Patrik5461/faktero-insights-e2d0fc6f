@@ -1,8 +1,10 @@
 /*
   Členenie kontrolného výkazu DPH na prijatom doklade.
 
-  Prázdne = automaticky: Faktero aj Pohoda ho odvodia samy (bloček do B.3,
-  faktúra do B.2, prenesenie do B.1, opravný doklad do C.2). Vybrať ho treba
+  Prázdne = automaticky: Faktero ho odvodí samo (bloček do B.3, faktúra do
+  B.2, prenesenie do B.1, opravný doklad do C.2) a do Pohody ho pošle
+  vyplnené — Pohoda sama nič neodvodzuje, doklad s prázdnym členením do jej
+  kontrolného výkazu nevstúpi (`pohoda-kv.ts`). Vybrať ho treba
   len vtedy, keď doklad patrí inam — napríklad bloček, ktorý je v skutočnosti
   plnohodnotná faktúra (B.2), alebo doklad, ktorý do výkazu nepatrí vôbec.
 */

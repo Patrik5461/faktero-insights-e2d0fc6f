@@ -52,6 +52,8 @@ describe("konektor — odkedy sa posiela", () => {
 describe("dávka do Pohody", () => {
   const davka = buildPohodaDavkaXml({
     company: firma,
+    // Pokladničný doklad bez pokladne Pohoda nezaloží (voucher.xsd, cashAccount).
+    nastavenia: { pokladna: "HP" },
     invoices: [{ invoice: faktura, items: [polozka] }],
     doklady: [
       {

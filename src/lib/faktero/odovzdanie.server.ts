@@ -555,10 +555,20 @@ export async function zostavBalik(
   }
 
   if (pokladnica?.length) {
-    zip.file(
-      "pohoda-pokladna.xml",
-      buildPohodaCashXml({ company, pohyby: pokladnica, nastavenia }),
-    );
+    /*
+      Pokladničný doklad bez pokladne Pohoda nezaloží (voucher.xsd:
+      `cashAccount` je „vyžadován při vytvoření dokladu“) — XML sa bez skratky
+      pokladne nevyrobí, pohyby ostanú v súpiske a povie sa to.
+    */
+    if (String(company.pohoda_pokladna ?? "").trim())
+      zip.file(
+        "pohoda-pokladna.xml",
+        buildPohodaCashXml({ company, pohyby: pokladnica, nastavenia }),
+      );
+    else
+      preskocene.push(
+        `Pokladňa (${pokladnica.length}) — chýba skratka pokladne pre Pohodu — nastavte ju v Účtovníctvo → Prepojenie s Pohodou`,
+      );
     zip.file(
       "pokladna.csv",
       csvSubor(
