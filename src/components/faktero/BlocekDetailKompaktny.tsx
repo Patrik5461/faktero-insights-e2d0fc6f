@@ -40,7 +40,7 @@ import {
 } from "./DetailDokladuKompaktny";
 import { KodPohody } from "./KodPohody";
 import type { Navrhy } from "./ZauctovaniePanel";
-import { HistoriaOdovzdania, OpravitZauctovanie } from "./OdovzdanieDokladu";
+import { HistoriaOdovzdania, OpravitZauctovanie, useProgramOdovzdania } from "./OdovzdanieDokladu";
 import { ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { KomentarDokladu } from "./StavDokladu";
 import { PrilohyFaktury } from "./PrilohyFaktury";
@@ -105,6 +105,8 @@ export function BlocekDetailKompaktny({
 
   const menaDokladu = row.currency ?? "EUR";
   const zamknute = Boolean(row.exported_at || row.locked_at);
+  // Iný program než Pohoda (Money, Omega…) — null = Pohoda.
+  const program = useProgramOdovzdania(row.export_job_id, Boolean(row.exported_at));
   const spracovanie = spracovanieDokladu(row, "doklad");
   const spracoval = menoSpracovatela(spracovanie, mena);
   const ulozil = nahralDokladu(row.source, row.created_by, mena);
@@ -267,7 +269,12 @@ export function BlocekDetailKompaktny({
         {zamknute ? (
           <p className="mb-2 text-xs text-muted-foreground">
             {row.exported_at
-              ? t("Doklad je odovzdaný do Pohody — zmeniť sa dá až po vrátení z Pohody.")
+              ? program
+                ? t(
+                    "Doklad je odovzdaný do účtovníctva ({program}) — zmeniť sa dá až po vrátení.",
+                    { program },
+                  )
+                : t("Doklad je odovzdaný do Pohody — zmeniť sa dá až po vrátení z Pohody.")
               : t("Doklad je zamknutý proti úpravám — najprv ho odomknite.")}
           </p>
         ) : null}

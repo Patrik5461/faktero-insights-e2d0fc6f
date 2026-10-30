@@ -429,7 +429,9 @@ function PurchaseInvoicesPage() {
     Kontrola členenia DPH pred zaúčtovaním: koľkým faktúram sa doplní z
     pravidla či návyku a ktoré by ostali bez neho (platiteľ ich nezaúčtuje).
   */
-  const [kontrolaCl, setKontrolaCl] = useState<{ bez: string[]; doplnene: number } | null>(null);
+  const [kontrolaCl, setKontrolaCl] = useState<{ bez: string[]; doplnene: number; predkontacia: number } | null>(
+    null,
+  );
   useEffect(() => {
     setKontrolaCl(null);
     const cid = getActiveCompanyId();
@@ -440,13 +442,19 @@ function PurchaseInvoicesPage() {
         data: {
           company_id: cid,
           ids: [...selected],
+          predkontacia: kody.predkontacia || undefined,
           clenenie: kody.clenenie || undefined,
           kategoria: kody.kategoria || undefined,
           kontrolaClenenia: true,
         },
       })
         .then((r) => {
-          if (!zrusene) setKontrolaCl({ bez: r.bezClenenia ?? [], doplnene: r.doplneneClenenie ?? 0 });
+          if (!zrusene)
+            setKontrolaCl({
+              bez: r.bezClenenia ?? [],
+              doplnene: r.doplneneClenenie ?? 0,
+              predkontacia: r.doplnenaPredkontacia ?? 0,
+            });
         })
         .catch(() => {});
     }, 300);
@@ -455,7 +463,7 @@ function PurchaseInvoicesPage() {
       clearTimeout(casovac);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zauctovanie, kody.clenenie, kody.kategoria, selected]);
+  }, [zauctovanie, kody.clenenie, kody.kategoria, kody.predkontacia, selected]);
 
   // Predkontácie do stĺpca v riadku sa načítajú, keď je stĺpec zapnutý.
   const stlpecPredkontacie = zobrazenie.viditelne.includes("predkontacia");
@@ -1505,6 +1513,11 @@ function PurchaseInvoicesPage() {
             {kontrolaCl && kontrolaCl.doplnene > 0 && (
               <p className="mt-3 text-xs text-muted-foreground">
                 {t("Členenie DPH sa doplní z pravidla alebo zo zvyku dodávateľa: {n}", { n: kontrolaCl.doplnene })}
+              </p>
+            )}
+            {kontrolaCl && kontrolaCl.predkontacia > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("Predkontácia sa doplní z pravidla alebo zo zvyku dodávateľa: {n}", { n: kontrolaCl.predkontacia })}
               </p>
             )}
             {kontrolaCl && kontrolaCl.bez.length > 0 && (
