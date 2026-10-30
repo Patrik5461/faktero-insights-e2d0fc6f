@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /*
   Konvertor šablóny XLSX/CSV na XML Pohody. Riadky prečíta prehliadač, sem
   prídu ako objekty podľa hlavičky. Doklady vzniknú len v pamäti a prevedú
@@ -86,7 +87,7 @@ export const konvertorDoPohodyFn = createServerFn({ method: "POST" })
     if (!xml)
       throw new Error(preskocene.slice(0, 10).join(" · ") || "Žiadny doklad sa nedal previesť.");
 
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     return {
       xml,
       fileName: `pohoda-${data.druh === "vydane" ? "vydane-faktury" : data.druh === "prijate" ? "prijate-faktury" : "blocky"}-${dnes}.xml`,

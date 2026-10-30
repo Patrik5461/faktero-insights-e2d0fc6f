@@ -32,7 +32,6 @@ export const Route = createFileRoute("/api/v1/quotes/$id/convert")({
           const today = dnesBratislava();
           const { nextInvoiceNumberDetailed } =
             await import("@/lib/faktero/invoice-numbering.server");
-          const cislo = await nextInvoiceNumberDetailed(ctx.company_id, today);
           const { data: firma } = await ctx.supabase
             .from("companies")
             .select("country")
@@ -41,20 +40,25 @@ export const Route = createFileRoute("/api/v1/quotes/$id/convert")({
           const { predvolenyJazykFirmy } = await import("@/lib/faktero/faktura-jazyk");
           const { hlavickaZPonuky, polozkyZPonuky } =
             await import("@/lib/faktero/ponuka-na-fakturu");
-          const hlavicka = hlavickaZPonuky(
-            { ...q, company_id: ctx.company_id },
-            cislo,
-            today,
-            predvolenyJazykFirmy(firma?.country),
-          );
           const { doplnovacKurzov } = await import("@/lib/faktero/kurz-dokladu.server");
-          Object.assign(hlavicka, await doplnovacKurzov(ctx.company_id)("invoices", hlavicka));
-
-          const { data: inv, error: insErr } = await ctx.supabase
-            .from("invoices")
-            .insert(hlavicka as any)
-            .select()
-            .single();
+          const doplnKurz = doplnovacKurzov(ctx.company_id);
+          // Súbežne vystavená faktúra mohla číslo obsadiť — vtedy sa vypýta ďalšie.
+          const { sOpakovanimPriKoliziiCisla } = await import("@/lib/faktero/kolizia-cisla");
+          const { data: inv, error: insErr } = await sOpakovanimPriKoliziiCisla<any>(async () => {
+            const cislo = await nextInvoiceNumberDetailed(ctx.company_id, today);
+            const hlavicka = hlavickaZPonuky(
+              { ...q, company_id: ctx.company_id },
+              cislo,
+              today,
+              predvolenyJazykFirmy(firma?.country),
+            );
+            Object.assign(hlavicka, await doplnKurz("invoices", hlavicka));
+            return ctx.supabase
+              .from("invoices")
+              .insert(hlavicka as any)
+              .select()
+              .single();
+          });
           if (insErr || !inv) return err("db_error", insErr?.message ?? "Insert zlyhal", 500);
           if (items?.length) {
             const rows = polozkyZPonuky(inv.id, items);

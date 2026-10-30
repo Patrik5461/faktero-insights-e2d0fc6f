@@ -38,6 +38,7 @@ import {
   StatusBadge,
   type Ton,
 } from "./ui";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Vystavené faktúry v telefóne.
  *
@@ -90,8 +91,7 @@ function stav(f: Faktura): { kluc: Kluc; ton: Ton } {
   if (f.status === "paid") return { kluc: "faktury.stav.uhradena", ton: "zelena" };
   if (f.status === "cancelled") return { kluc: "faktury.stav.stornovana", ton: "neutral" };
   if (f.status === "draft") return { kluc: "faktury.stav.navrh", ton: "neutral" };
-  if (f.due_date < new Date().toISOString().slice(0, 10))
-    return { kluc: "faktury.stav.poSplatnosti", ton: "cervena" };
+  if (f.due_date < dnesBratislava()) return { kluc: "faktury.stav.poSplatnosti", ton: "cervena" };
   return { kluc: "faktury.stav.neuhradena", ton: "neutral" };
 }
 
@@ -100,7 +100,7 @@ type Filter = "vsetky" | "neuhradene" | "poSplatnosti" | "uhradene";
 
 function prejdeFiltrom(f: Faktura, filter: Filter): boolean {
   if (filter === "vsetky") return true;
-  const den = new Date().toISOString().slice(0, 10);
+  const den = dnesBratislava();
   if (filter === "uhradene") return f.status === "paid";
   if (f.status === "paid" || f.status === "cancelled") return false;
   if (filter === "poSplatnosti") return f.due_date < den;

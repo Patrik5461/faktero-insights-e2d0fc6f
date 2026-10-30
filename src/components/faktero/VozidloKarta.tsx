@@ -22,6 +22,7 @@ import {
   type Termin,
 } from "@/lib/faktero/vozovy-park";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /** Štítok termínu — prepadnutý červený, blížiaci sa oranžový, ostatné sivé. */
 export function StitokTerminu({ t: termin }: { t: Termin }) {
   const { t } = useT();
@@ -192,7 +193,7 @@ export function VozidloKarta({ id }: { id: string | null }) {
   const [ukladam, setUkladam] = useState(false);
   const [doplnene, setDoplnene] = useState<Set<string>>(new Set());
   const subor = useRef<HTMLInputElement>(null);
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
 
   async function nacitaj() {
     if (!cid) return;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { riadkyPreIds, vsetkyRiadky, vsetkyRiadkySubezne } from "./strankovanie";
+import { DAVKA_IDS, poDavkach, riadkyPreIds, vsetkyRiadky, vsetkyRiadkySubezne } from "./strankovanie";
 
 /*
   Supabase vráti najviac 1 000 riadkov na dotaz aj pri `.limit(5000)` — overené
@@ -93,5 +93,34 @@ describe("stránkovanie", () => {
         ),
       ),
     ).rejects.toThrow("zlé");
+  });
+});
+
+describe("poDavkach — .in() s tisíckami id", () => {
+  const ids = Array.from({ length: 3000 }, (_, i) => `id-${i}`);
+
+  it("žiadna dávka nepresiahne limit a nič nechýba ani sa nezopakuje", async () => {
+    const velkosti: number[] = [];
+    const r = await poDavkach([...ids, ...ids.slice(0, 50)], (kus) => {
+      velkosti.push(kus.length);
+      return Promise.resolve({ data: kus.map((id) => ({ id })), error: null });
+    });
+    expect(Math.max(...velkosti)).toBeLessThanOrEqual(DAVKA_IDS);
+    expect(r).toHaveLength(3000);
+    expect(new Set(r.map((x) => x.id)).size).toBe(3000);
+  });
+
+  it("chybu dávky nezamlčí — ani prázdnu správu", async () => {
+    await expect(
+      poDavkach(ids, (kus) =>
+        Promise.resolve(kus[0] === "id-400" ? { data: null, error: { message: "" } } : { data: [], error: null }),
+      ),
+    ).rejects.toThrow("Dotaz do databázy zlyhal.");
+  });
+
+  it("prázdny zoznam = žiadny dotaz", async () => {
+    let n = 0;
+    expect(await poDavkach([], () => (n++, Promise.resolve({ data: [], error: null })))).toEqual([]);
+    expect(n).toBe(0);
   });
 });

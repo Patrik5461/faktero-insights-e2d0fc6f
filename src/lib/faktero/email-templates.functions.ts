@@ -3,6 +3,7 @@ import { menoOdosielatela } from "@/lib/bezpecny-text";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 const TEMPLATE_TYPES = [
   "invoice_send",
   "reminder_1",
@@ -111,7 +112,7 @@ export const sendTestEmailTemplateFn = createServerFn({ method: "POST" })
       invoice_number: "2026001",
       total: 123.45,
       currency: "EUR",
-      due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+      due_date: posunDni(dnesBratislava(), 14),
       variable_symbol: "2026001",
       customer_name: "Ukážka s.r.o.",
     };

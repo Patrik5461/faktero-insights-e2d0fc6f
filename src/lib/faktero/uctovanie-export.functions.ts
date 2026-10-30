@@ -16,6 +16,7 @@ import {
   type ProgramUctovania,
 } from "./uctovanie-programy";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 const Vstup = z.object({
   company_id: z.string().uuid(),
   program: z.enum(["omega", "money_s3", "flexi", "mrp", "csv", "datev"]),
@@ -51,13 +52,12 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
     // Bloček ide do účtovníctva až po kontrole, samofaktúra až po odsúhlasení.
     let kandidati = vsetky;
     if (data.agenda === "doklad") {
-      const { data: stavy } = await supabase
-        .from("expense_documents")
-        .select("id, status, document_number")
-        .in(
-          "id",
-          vsetky.map((d) => d.id),
-        );
+      const { poDavkach } = await import("./strankovanie");
+      const stavy = await poDavkach<any>(
+        vsetky.map((d) => d.id),
+        (kus) =>
+          supabase.from("expense_documents").select("id, status, document_number").in("id", kus),
+      );
       const nove = new Set(
         (stavy ?? []).filter((s: any) => s.status === "new").map((s: any) => s.id),
       );
@@ -66,13 +66,15 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
       );
     } else if (data.agenda === "prijata") {
       const { zapocitatelna } = await import("./samofakturacia");
-      const { data: riadky } = await supabase
-        .from("purchase_invoices")
-        .select("id, samofakturacia, samofakturacia_stav")
-        .in(
-          "id",
-          vsetky.map((d) => d.id),
-        );
+      const { poDavkach } = await import("./strankovanie");
+      const riadky = await poDavkach<any>(
+        vsetky.map((d) => d.id),
+        (kus) =>
+          supabase
+            .from("purchase_invoices")
+            .select("id, samofakturacia, samofakturacia_stav")
+            .in("id", kus),
+      );
       const zle = new Set(
         (riadky ?? []).filter((r: any) => !zapocitatelna(r)).map((r: any) => r.id),
       );
@@ -141,7 +143,7 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
     if (!vyvezene.length) throw new Error([...preskocene, ...vynechane].join(" · "));
 
     const def = PROGRAMY_UCTOVANIA.find((p) => p.program === data.program)!;
-    const den = new Date().toISOString().slice(0, 10);
+    const den = dnesBratislava();
     // DATEV ponúkne na import len súbor, ktorého názov začína „EXTF_“.
     const fileName =
       data.program === "datev"
@@ -186,10 +188,19 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
           );
       } else {
         const tabulka = data.agenda === "prijata" ? "purchase_invoices" : "expense_documents";
-        await supabase
-          .from(tabulka)
-          .update({ exported_at: teraz, ...(job?.id ? { export_job_id: job.id } : {}) })
-          .in("id", ids);
+        /*
+          Po dávkach a s kontrolou chyby: pri stovkách dokladov URL s id
+          neprešla, súbor sa stiahol, ale doklady ostali neodovzdané — a pri
+          ďalšom exporte by išli do programu druhýkrát.
+        */
+        const { poDavkach } = await import("./strankovanie");
+        await poDavkach(ids, (kus) =>
+          supabase
+            .from(tabulka)
+            .update({ exported_at: teraz, ...(job?.id ? { export_job_id: job.id } : {}) })
+            .in("id", kus)
+            .select("id"),
+        );
       }
     }
 

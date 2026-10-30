@@ -4,6 +4,7 @@ import { z } from "zod";
 import { DRUHY_KLUCE, bezpecneMeno, jeCestaDokladu, jeRozpoznaniePouzitelne } from "./ostatne-doklady";
 import { nazovDruhuFinancovania } from "./kontokorent";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /*
   Iné doklady. Všetko ide cez používateľského klienta, takže o tom, kto čo
   smie, rozhodujú politiky v databáze — mazať smie len správca firmy.
@@ -372,7 +373,7 @@ export const ulozOstatnyZAppkyFn = createServerFn({ method: "POST" })
     */
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(data.company_id);
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     const pripona = mime === "application/pdf" ? "pdf" : mime.split("/")[1]!.replace("jpeg", "jpg");
     const { zalozNespracovany, vytazNespracovany } = await import("./nespracovane.server");
     const { id } = await zalozNespracovany(supabase as any, {

@@ -22,6 +22,7 @@ import {
   type StavImportu,
 } from "./import-prijatych";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export type Vstup = { meno: string; bajty: Uint8Array };
 
 const SKENY = /\.(pdf|jpe?g|png|webp|heic)$/i;
@@ -334,7 +335,7 @@ export async function vykonajImport(args: {
     stav: args.stav,
     doPokladne: args.doPokladne,
     zdrojAplikacie: args.zdrojAplikacie,
-    dnes: new Date().toISOString().slice(0, 10),
+    dnes: dnesBratislava(),
     kurz: (await import("./kurz-dokladu.server")).doplnovacKurzov(args.companyId),
   };
   const vysledok = { faktury: 0, blocky: 0, ostatne: 0, skenyPriradene: 0, preskocene: 0, chyby: [] as string[] };

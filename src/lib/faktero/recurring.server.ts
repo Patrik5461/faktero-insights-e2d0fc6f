@@ -4,6 +4,7 @@ import { nextInvoiceNumberDetailed } from "./invoice-numbering.server";
 import { triggerEvent, invoicePayload } from "./webhook-trigger.server";
 import { advanceNextRun, type Frequency } from "./opakovane";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export { advanceNextRun };
 export type { Frequency };
 
@@ -49,13 +50,6 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
   const due = new Date(new Date(`${today}T00:00:00Z`).getTime() + dueDays * 86400000)
     .toISOString()
     .slice(0, 10);
-  const { invoice_number, sequence_number, series_id } = await nextInvoiceNumberDetailed(
-    rec.company_id,
-    today,
-    "regular",
-    rec.number_series_id ?? null,
-  );
-  const variable_symbol = vsZCislaDokladu(invoice_number) || null;
 
   /*
     Položka bez sadzby dostane základnú sadzbu krajiny firmy (neplatiteľ 0 %),
@@ -88,11 +82,6 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
   const hlavicka: Record<string, any> = {
     company_id: rec.company_id,
     customer_id: rec.customer_id ?? null,
-    invoice_number,
-    sequence_number,
-    // Rad, z ktorého číslo naozaj prišlo — aj keď šablóna nemá vybraný vlastný.
-    number_series_id: series_id,
-    variable_symbol,
     issue_date: today,
     // Dátum dodania patrí na faktúru (§ 74 ods. 1 písm. f); bez neho PDF
     // ukazovalo „Dátum dodania —“.
@@ -124,11 +113,32 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
   */
   const { doplnovacKurzov } = await import("./kurz-dokladu.server");
   Object.assign(hlavicka, await doplnovacKurzov(rec.company_id)("invoices", hlavicka));
-  const { data: inv, error: insErr } = await supabaseAdmin
-    .from("invoices")
-    .insert(hlavicka as any)
-    .select()
-    .single();
+  /*
+    Číslo sa pýta až tesne pred zápisom a pri kolízii (súbežne vystavená
+    faktúra v tom istom rade) znova — inak by opakovaná faktúra v ten deň
+    jednoducho nevznikla.
+  */
+  const { sOpakovanimPriKoliziiCisla } = await import("./kolizia-cisla");
+  const { data: inv, error: insErr } = await sOpakovanimPriKoliziiCisla<any>(async () => {
+    const { invoice_number, sequence_number, series_id } = await nextInvoiceNumberDetailed(
+      rec.company_id,
+      today,
+      "regular",
+      rec.number_series_id ?? null,
+    );
+    return supabaseAdmin
+      .from("invoices")
+      .insert({
+        ...hlavicka,
+        invoice_number,
+        sequence_number,
+        // Rad, z ktorého číslo naozaj prišlo — aj keď šablóna nemá vybraný vlastný.
+        number_series_id: series_id,
+        variable_symbol: vsZCislaDokladu(invoice_number) || null,
+      } as any)
+      .select()
+      .single();
+  });
   if (insErr || !inv) {
     await logRun("failed", null, insErr?.message ?? "Invoice insert failed");
     throw new Error(insErr?.message ?? "Invoice insert failed");
@@ -191,7 +201,7 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
 
 /** Run all due recurring templates across all companies. */
 export async function runAllDueRecurring() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dnesBratislava();
   const { data: due } = await supabaseAdmin
     .from("recurring_invoices")
     .select("id")

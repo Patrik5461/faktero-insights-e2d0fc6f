@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Platby prijatých faktúr cez TB Premium API.
  *
@@ -251,7 +252,7 @@ export const refreshPaymentStatus = createServerFn({ method: "POST" })
     if (done && row.purchase_invoice_id) {
       await supabaseAdmin
         .from("purchase_invoices")
-        .update({ status: "paid", payment_date: new Date().toISOString().slice(0, 10) })
+        .update({ status: "paid", payment_date: dnesBratislava() })
         .eq("id", row.purchase_invoice_id);
     }
 

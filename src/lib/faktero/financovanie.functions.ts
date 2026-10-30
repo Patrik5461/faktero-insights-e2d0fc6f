@@ -9,6 +9,7 @@ import {
   type ZhodaSplatky,
 } from "./financovanie-parovanie";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Leasingy a úvery — serverová časť.
  *
@@ -423,7 +424,7 @@ export const zoznamZmluvFn = createServerFn({ method: "POST" })
       podlaZmluvy.get(s.contract_id)!.push(s);
     }
 
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     return {
       zmluvy: ((zmluvy ?? []) as any[]).map((z) => {
         const riadky = (podlaZmluvy.get(z.id) ?? []).sort((a, b) => a.number - b.number);

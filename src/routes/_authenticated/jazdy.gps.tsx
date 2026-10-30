@@ -19,6 +19,7 @@ import { formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/jazdy/gps")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "GPS jazda — Faktero") }] }),
   component: GpsTripPage,
@@ -94,7 +95,7 @@ function GpsTripPage() {
       .insert({
         company_id: cid,
         vehicle_id: vehicleId,
-        trip_date: new Date().toISOString().slice(0, 10),
+        trip_date: dnesBratislava(),
         purpose: purpose || "GPS jazda",
         start_odometer: 0,
         end_odometer: result.distance_km,

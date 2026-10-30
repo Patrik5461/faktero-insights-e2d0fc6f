@@ -39,6 +39,7 @@ import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { ZoznamMoznosti, moznostiKodov } from "./VyberVRiadku";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 type Akcia = AkciaHromadna;
 
 const KV_VYSTAVENE = KV_CLENENIA.filter((k) => ["A1", "A2", "C1", "D2", "X"].includes(k.kod));
@@ -135,7 +136,7 @@ export function HromadnaAkciaDokladov({
     if (uhradene) {
       const d = await zadaj(
         t("Dátum úhrady"),
-        { predvolene: new Date().toISOString().slice(0, 10), typ: "date" },
+        { predvolene: dnesBratislava(), typ: "date" },
         { potvrdit: t("Označiť ako uhradené") },
       );
       if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;

@@ -19,6 +19,7 @@ import { predvolenaSchema, type SchemaDph } from "./dph-rezim";
 import { skontrolujDatumy } from "./faktura-nalezitosti";
 import { ibanPlatny, normIban } from "./banka-notifikacie";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /* ───────────── limity ───────────── */
 
 export const LIMITY_ZADARMO = {
@@ -166,7 +167,7 @@ export function prazdnaPolozka(
 
 export function novaFakturaZadarmo(
   krajina: KrajinaZadarmo,
-  dnes: string = new Date().toISOString().slice(0, 10),
+  dnes: string = dnesBratislava(),
 ): FakturaZadarmo {
   return {
     krajina,
@@ -351,7 +352,7 @@ export type ChybaZadarmo = {
  */
 export function skontrolujFakturuZadarmo(
   f: FakturaZadarmo,
-  dnes: string = new Date().toISOString().slice(0, 10),
+  dnes: string = dnesBratislava(),
 ): ChybaZadarmo[] {
   const ch: ChybaZadarmo[] = [];
   const d = f.dodavatel;
@@ -456,7 +457,7 @@ const SK_LEHOTA =
 /** Upozornenia, ktoré PDF nezastavia (lehota 15 dní od dodania). */
 export function upozorneniaZadarmo(
   f: FakturaZadarmo,
-  dnes: string = new Date().toISOString().slice(0, 10),
+  dnes: string = dnesBratislava(),
 ): ChybaZadarmo[] {
   const r = skontrolujDatumy(
     {

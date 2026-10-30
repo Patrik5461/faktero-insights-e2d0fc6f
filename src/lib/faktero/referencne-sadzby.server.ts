@@ -23,6 +23,7 @@ import {
   type SadzbaObdobia,
 } from "./pohybliva-sadzba";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 async function stiahniText(url: string): Promise<string> {
   const res = await fetch(url, {
     signal: AbortSignal.timeout(20_000),
@@ -53,7 +54,7 @@ export async function stiahniReferencneSadzby(od?: string): Promise<{
   ulozenych: number;
   chyby: string[];
 }> {
-  const zaciatok = od ?? pridajDni(new Date().toISOString().slice(0, 10), -70);
+  const zaciatok = od ?? pridajDni(dnesBratislava(), -70);
   let ulozenych = 0;
   const chyby: string[] = [];
 
@@ -147,7 +148,7 @@ export async function dnesnaSadzba(
   rucne: RucnaSadzba[] = [],
 ): Promise<SadzbaObdobia | null> {
   if (!jePohybliva(nast)) return null;
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
   const sadzby = await nacitajReferencneSadzby(klient, nast.reference_index, pridajDni(dnes, -800));
   const s = sadzbaKDnu(nast, dnes, sadzby, rucne);
   return s.sadzba === null ? null : s;
@@ -172,7 +173,7 @@ export async function aktualizujSadzbyZmluv(): Promise<number> {
     .eq("status", "active");
   let zmenenych = 0;
   const pamat = new Map<string, ReferencnaSadzba[]>();
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
   for (const z of (data ?? []) as any[]) {
     const idx = String(z.reference_index ?? "");
     if (!pamat.has(idx))

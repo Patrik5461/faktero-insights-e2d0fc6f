@@ -1,3 +1,4 @@
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Prijatie a zamietnutie cenovej ponuky odberateľom.
  *
@@ -24,7 +25,7 @@ export type Prekazka =
 /** Prečo sa na ponuku už nedá odpovedať. `null` znamená, že sa dá. */
 export function prekazkaOdpovede(
   p: PonukaNaOdpoved,
-  dnes: string = new Date().toISOString().slice(0, 10),
+  dnes: string = dnesBratislava(),
 ): Prekazka | null {
   if (p.stav === "draft") {
     return { kod: "koncept", text: "Ponuka ešte nebola odoslaná." };

@@ -42,6 +42,7 @@ import {
   type TypVyuctovania,
 } from "@/lib/faktero/vyuctovanie-vydavkov";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 type Hladanie = { blocky?: string; prijate?: string };
 export const Route = createFileRoute("/_authenticated/doklady/vyuctovania/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vyúčtovanie výdavkov — Faktero") }] }),
@@ -57,7 +58,7 @@ const vstup = "mt-1 h-9 w-full rounded-md border border-input bg-background px-2
 const vstupZauctovania =
   "mt-1 h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm";
 const prvyDen = () => new Date().toISOString().slice(0, 8) + "01";
-const dnes = () => new Date().toISOString().slice(0, 10);
+const dnes = () => dnesBratislava();
 const idy = (s?: string) => (s ? s.split(",").filter((x) => /^[0-9a-f-]{36}$/.test(x)) : []);
 
 type Form = {

@@ -1,3 +1,4 @@
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Sadzby DPH podľa krajiny registrácie firmy.
  *
@@ -80,7 +81,7 @@ export const KRAJINY_DANE: { kod: KrajinaDane; nazov: string }[] = [
 ];
 
 function dnes(): string {
-  return new Date().toISOString().slice(0, 10);
+  return dnesBratislava();
 }
 
 /** Sadzby platné v daný deň. Pohoda ich potrebuje ako priehradky, nie percentá. */

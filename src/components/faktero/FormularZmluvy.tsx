@@ -29,6 +29,7 @@ import {
   type PravidloFixingu,
   type ReferencnyIndex,
 } from "@/lib/faktero/pohybliva-sadzba";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -148,7 +149,7 @@ export function FormularZmluvy({
   const [rate, setRate] = useState(zmluva ? text(zmluva.interest_rate) : "");
   const [months, setMonths] = useState(zmluva?.term_months ? String(zmluva.term_months) : "60");
   const [firstDue, setFirstDue] = useState(
-    zmluva?.first_due_date ?? new Date().toISOString().slice(0, 10),
+    zmluva?.first_due_date ?? dnesBratislava(),
   );
   const [payment, setPayment] = useState(text(zmluva?.payment_amount));
   const [vat, setVat] = useState(Number(zmluva?.vat_rate ?? 0));

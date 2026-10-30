@@ -28,6 +28,7 @@ import {
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová cenová ponuka — Faktero") }] }),
   component: NewQuote,
@@ -61,8 +62,8 @@ function NewQuote() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [form, setForm] = useState({
     customer_id: "",
-    issue_date: new Date().toISOString().slice(0, 10),
-    valid_until: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+    issue_date: dnesBratislava(),
+    valid_until: posunDni(dnesBratislava(), 30),
     currency: "EUR",
     notes: "",
     job_id: "",

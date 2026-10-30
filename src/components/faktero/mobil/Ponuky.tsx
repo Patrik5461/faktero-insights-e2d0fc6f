@@ -9,6 +9,7 @@ import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
 import { potvrd } from "@/lib/potvrdenie";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Cenové ponuky v telefóne.
  *
@@ -61,7 +62,7 @@ export function stavPonuky(p: Ponuka): { kluc: Kluc; trieda: string } {
     return { kluc: "ponuky.stav.zamietnuta", trieda: "bg-app-chyba-jemna text-app-chyba" };
   if (p.status === "accepted")
     return { kluc: "ponuky.stav.prijata", trieda: "bg-app-zelena-jemna text-emerald-600" };
-  if (p.valid_until && p.valid_until < new Date().toISOString().slice(0, 10)) {
+  if (p.valid_until && p.valid_until < dnesBratislava()) {
     return {
       kluc: "ponuky.stav.poPlatnosti",
       trieda: "bg-amber-500/15 text-app-text-2",

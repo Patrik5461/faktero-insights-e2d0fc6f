@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { zostavaUhradit } from "./zaloha";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /** Public view of a provider config (NO secret values). */
 export const getMyPaymentProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -367,7 +368,7 @@ export const syncInvoicePayment = createServerFn({ method: "POST" })
           company_id: data.companyId,
           invoice_id: link.invoice_id,
           amount: link.amount_cents / 100,
-          paid_at: new Date().toISOString().slice(0, 10),
+          paid_at: dnesBratislava(),
           method: "gopay",
           note,
         });

@@ -48,6 +48,7 @@ import { HistoriaJazd } from "./HistoriaJazd";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { potvrd } from "@/lib/potvrdenie";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Záznam jazdy v telefóne.
  *
@@ -435,7 +436,7 @@ export function Jazda({
         ? (vysledok.distance_km * Number(plne.consumption_l_100km)) / 100
         : null;
 
-      const dnes = new Date().toISOString().slice(0, 10);
+      const dnes = dnesBratislava();
       const zapis = {
         company_id: firma.id,
         vehicle_id: vozidloId,

@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import { isdocNaRiadky, jeIsdoc } from "./isdoc";
 import { krajinaDane, zakladnaSadzba } from "./vat-rates";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 // =========================================================
 // Lightweight CSV parser (semicolon / comma autodetect, RFC4180-ish)
 // =========================================================
@@ -1270,8 +1271,7 @@ export async function runImport(args: {
         items = z.polozky;
       }
 
-      const issueDate =
-        normDate(pick(head, mapping, "issue_date")) || new Date().toISOString().slice(0, 10);
+      const issueDate = normDate(pick(head, mapping, "issue_date")) || dnesBratislava();
       const dueDate = normDate(pick(head, mapping, "due_date")) || issueDate;
       const deliveryDate = normDate(pick(head, mapping, "delivery_date"));
       const knownStatus = stavDokladu(pick(head, mapping, "status")) as

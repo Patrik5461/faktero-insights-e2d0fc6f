@@ -16,6 +16,7 @@ import { datumNaDoklade, jazykDokladu, localeDokladu, type JazykDokladu } from "
 import { formatujMenu } from "./mena";
 import type { KrajinaDane } from "./vat-rates";
 
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 export const TYPY_SABLON = [
   "vsetky",
   "regular",
@@ -265,8 +266,8 @@ export function ukazkoveHodnoty(
       invoice_number: "2026001",
       total: typ === "credit_note" ? -123.45 : 123.45,
       currency: "EUR",
-      due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
-      issue_date: new Date().toISOString().slice(0, 10),
+      due_date: posunDni(dnesBratislava(), 14),
+      issue_date: dnesBratislava(),
       variable_symbol: "2026001",
       customer_name: "Ukážka s.r.o.",
       order_number: "OBJ-15",
