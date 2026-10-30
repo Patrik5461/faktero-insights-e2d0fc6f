@@ -139,6 +139,12 @@ function PonukaPage() {
                   {r.description && (
                     <span className="block text-xs text-muted-foreground">{r.description}</span>
                   )}
+                  {/* Zľava riadku je už v sume „Spolu“ — bez nej by cena × množstvo nesedela. */}
+                  {Number(r.discount_percent ?? 0) > 0 && (
+                    <span className="block text-xs text-muted-foreground">
+                      {t("Zľava {n} %", { n: formatujMnozstvo(Number(r.discount_percent), lokalJazyka(jazyk)) })}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
                   {formatujMnozstvo(r.quantity, lokalJazyka(jazyk))} {r.unit}
@@ -154,6 +160,11 @@ function PonukaPage() {
       </div>
 
       <div className="mt-4 space-y-1 text-right text-sm">
+        {Number(p.discount_total ?? 0) > 0 && (
+          <div className="text-muted-foreground">
+            {t("Zľava:")} −{suma(p.discount_total, p.currency)}
+          </div>
+        )}
         <div className="text-muted-foreground">
           {t("Základ:")} {suma(p.subtotal, p.currency)}
         </div>

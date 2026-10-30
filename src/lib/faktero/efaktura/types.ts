@@ -43,6 +43,12 @@ export type EN16931Invoice = {
   dueDate: string; // YYYY-MM-DD
   documentType: "380" | "381" | "383" | "384" | "386" | "389"; // UNCL1001: 380=invoice, 381=credit, 383=debit (ťarchopis), 384=corrected, 386=prepayment, 389=self-billed
   currency: string;
+  /**
+   * BT-6 + BT-111 — mena účtovania DPH a celková DPH v nej. Faktúra v cudzej
+   * mene musí niesť daň v domácej mene (SK € podľa § 26 zákona o DPH, CZ Kč);
+   * v UBL ide o TaxCurrencyCode a druhý TaxTotal bez rozpisu.
+   */
+  taxCurrency?: { code: string; taxAmount: number };
   buyerReference?: string;
   /** BT-13 — číslo objednávky odberateľa. */
   orderReference?: string;

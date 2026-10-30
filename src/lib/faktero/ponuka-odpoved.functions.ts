@@ -20,7 +20,7 @@ export const ponukaPodlaTokenuFn = createServerFn({ method: "GET" })
     const { data: q } = await supabaseAdmin
       .from("quotes")
       .select(
-        "id, company_id, quote_number, status, issue_date, valid_until, currency, subtotal, vat_total, total, notes, customer_name, responded_at, response_note, pdf_url",
+        "id, company_id, quote_number, status, issue_date, valid_until, currency, subtotal, vat_total, total, discount_total, notes, customer_name, responded_at, response_note, pdf_url",
       )
       .eq("approval_token", data.token)
       .maybeSingle();
@@ -29,7 +29,7 @@ export const ponukaPodlaTokenuFn = createServerFn({ method: "GET" })
     const [{ data: polozky }, { data: firma }] = await Promise.all([
       supabaseAdmin
         .from("quote_items")
-        .select("name, description, quantity, unit, unit_price, vat_rate, total")
+        .select("name, description, quantity, unit, unit_price, discount_percent, vat_rate, total")
         .eq("quote_id", q.id)
         .order("position", { ascending: true }),
       supabaseAdmin

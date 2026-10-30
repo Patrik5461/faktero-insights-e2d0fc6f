@@ -40,7 +40,8 @@ export function danoveCisla(f: FirmaVPodpise): string {
   return [
     f.ico ? `IČO ${f.ico}` : null,
     f.dic ? `DIČ ${f.dic}` : null,
-    f.ic_dph ? `IČ DPH ${f.ic_dph}` : null,
+    // Česká firma má DIČ = IČ DPH (CZ…) — dvakrát to isté číslo pod sebou len mätie.
+    f.ic_dph && String(f.ic_dph).trim() !== String(f.dic ?? "").trim() ? `IČ DPH ${f.ic_dph}` : null,
   ]
     .filter(Boolean)
     .join(" · ");

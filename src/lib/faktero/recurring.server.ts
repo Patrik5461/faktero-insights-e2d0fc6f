@@ -77,6 +77,11 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     const vat = +((line * Number(sadzba)) / 100).toFixed(2);
     return { it, sadzba, line, vat };
   });
+  // Značky obdobia ([MESIAC], [MINULY_MESIAC]…) podľa dňa vystavenia v jazyku krajiny firmy.
+  const { doplnObdobie } = await import("./opakovane-premenne");
+  const { predvolenyJazykFirmy } = await import("./faktura-jazyk");
+  const jazyk = predvolenyJazykFirmy(firma?.country);
+  const obdobie = <T extends string | null | undefined>(x: T) => doplnObdobie(x, today, jazyk);
   const subtotal = +riadky.reduce((a: number, r: any) => a + r.line, 0).toFixed(2);
   const vatTotal = +riadky.reduce((a: number, r: any) => a + r.vat, 0).toFixed(2);
 
@@ -107,10 +112,10 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     subtotal,
     vat_total: vatTotal,
     total: +(subtotal + vatTotal).toFixed(2),
-    notes: rec.notes ?? null,
+    notes: obdobie(rec.notes ?? null),
     // Text nad položkami zo šablóny — bez neho by faktúra z paušálu
     // nepovedala, za čo je.
-    intro_note: rec.intro_note ?? null,
+    intro_note: obdobie(rec.intro_note ?? null),
     status: "issued",
   };
   /*
@@ -133,8 +138,8 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     return {
       invoice_id: inv.id,
       position: i,
-      name: it.name,
-      description: it.description ?? null,
+      name: obdobie(it.name),
+      description: obdobie(it.description ?? null),
       quantity: it.quantity,
       unit: it.unit ?? "ks",
       unit_price: it.unit_price,

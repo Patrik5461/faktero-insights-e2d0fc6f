@@ -10,6 +10,7 @@ import { riadkySoZlavou } from "../zlavy";
 import { peppolId } from "./peppol-id";
 import { textOdpoctu, type OdpocetZalohy } from "../zalohy-odpocty";
 import { upravColnyKod, upravKrajinuPovodu } from "../colny-kod";
+import { domacaMena, domacejZaJednotku } from "../kurzy";
 
 type CompanyRow = {
   id: string;
@@ -59,6 +60,10 @@ type InvoiceRow = {
   reverse_charge_type?: string | null;
   customer_peppol_id?: string | null;
   advance_amount?: number | null;
+  /** Kurz v zápise banky krajiny firmy (SK „X za 1 €“, CZ „Kč za 1 X“). */
+  exchange_rate?: number | null;
+  /** DPH v domácej mene firmy (stĺpec sa volá _eur aj pri CZK). */
+  vat_total_eur?: number | null;
 };
 
 type InvoiceItemRow = {
@@ -371,6 +376,24 @@ export function mapToEN16931(args: {
         .join(" | ") || undefined,
   };
   /*
+    Faktúra v cudzej mene: daň aj v domácej mene firmy (BT-6, BT-111). Pomer
+    berieme z uložených súm faktúry (vat_total_eur / vat_total), aby sedel na
+    halier s PDF a výkazmi; bez nich prepočet kurzom faktúry.
+  */
+  const domaca = domacaMena(args.company.country);
+  if (dto.currency.toUpperCase() !== domaca) {
+    const dan = dto.totals.taxAmount;
+    const ulozenaDan = Number(invoice.vat_total);
+    const ulozenaDanDomaca = Number(invoice.vat_total_eur);
+    const zaJednotku = domacejZaJednotku(invoice.exchange_rate, args.company.country);
+    let danDomaca: number | null = null;
+    if (dan === 0) danDomaca = 0;
+    else if (invoice.vat_total_eur != null && Number.isFinite(ulozenaDanDomaca) && ulozenaDan)
+      danDomaca = r2((dan * ulozenaDanDomaca) / ulozenaDan);
+    else if (zaJednotku > 0) danDomaca = r2(dan * zaJednotku);
+    if (danDomaca != null) dto.taxCurrency = { code: domaca, taxAmount: danDomaca };
+  }
+  /*
     Dobropis (381) sa v UBL píše ako CreditNote s kladnými sumami — „mínus“
     nesie typ dokladu. Vo Fakteri má dobropis sumy záporné, tak sa otočia.
   */
@@ -390,6 +413,7 @@ export function mapToEN16931(args: {
     dto.totals = Object.fromEntries(
       Object.entries(dto.totals).map(([k, v]) => [k, a(v as number)]),
     ) as EN16931Invoice["totals"];
+    if (dto.taxCurrency) dto.taxCurrency = { ...dto.taxCurrency, taxAmount: a(dto.taxCurrency.taxAmount) };
   }
   return dto;
 }

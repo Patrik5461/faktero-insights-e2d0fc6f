@@ -334,6 +334,11 @@ function NewRecurring() {
               <span className="mt-1 block text-xs text-muted-foreground">
                 {t("Dostane ho každá faktúra z tejto šablóny. Položky pod ním sú nepovinné.")}
               </span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                {t(
+                  "Obdobie sa doplní samo: [MESIAC], [ROK], [MESIAC_ROK], [MINULY_MESIAC] a [BUDUCI_MESIAC] funguje v tomto texte aj v názvoch položiek a poznámke, napr. „Paušál za [MESIAC_ROK]“.",
+                )}
+              </span>
             </label>
           </section>
 
