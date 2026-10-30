@@ -275,6 +275,9 @@ function NewInvoice() {
   const poVystaveniRef = useRef<"" | "pdf" | "email">("");
   /* Predvolený text nad položkami z nastavení firmy (napr. „Fakturujeme vám:“). */
   const uvodFirmyRef = useRef<string>("");
+  /* Jazyk dokladu zvolený ručne alebo z opravovanej faktúry — pozri efekt jazyka odberateľa. */
+  const jazykPevnyRef = useRef(false);
+  const jazykOdberatelaRef = useRef<string>("");
   /*
     Krajina firmy dobehne až po načítaní. Prvé vykreslenie preto nesie
     slovenskú predvolenú sadzbu a českej firme by v položke ostalo 23 % —
@@ -426,6 +429,7 @@ function NewInvoice() {
       if (!sPolozkami || tarchopis) {
         if (tarchopis) {
           const fh = f as any;
+          if (fh.language) jazykPevnyRef.current = true;
           setForm((x) => ({
             ...x,
             type: "debit_note",
@@ -456,6 +460,7 @@ function NewInvoice() {
         .eq("invoice_id", f.id)
         .order("position");
       const ff = f as any;
+      if (ff.language) jazykPevnyRef.current = true;
       setForm((x) => ({
         ...x,
         type: "credit_note",
@@ -574,10 +579,19 @@ function NewInvoice() {
     nemá ho prepínať pri každej faktúre znovu. Ručnú zmenu to neprepisuje,
     lebo beží len pri zmene odberateľa.
   */
+  /*
+    Jazyk zvolený ručne alebo prevzatý z opravovanej faktúry (dobropis, ťarchopis)
+    je pevný — výber odberateľa ani obnovenie zoznamu odberateľov (napr. po
+    založení nového) ho už neprepíše. Predtým efekt bežal aj pri každej zmene
+    zoznamu a dobropis k anglickej faktúre prepol na slovenčinu.
+  */
   useEffect(() => {
     if (!form.customer_id) return;
     const odb = customers.find((c) => c.id === form.customer_id) as any;
     if (!odb) return;
+    if (jazykOdberatelaRef.current === form.customer_id) return;
+    jazykOdberatelaRef.current = form.customer_id;
+    if (jazykPevnyRef.current) return;
     setForm((f) => ({
       ...f,
       language: odb.invoice_language
@@ -596,7 +610,8 @@ function NewInvoice() {
     const novy = predvolenyJazykFirmy(krajina);
     const stary = predvolenyJazykRef.current;
     predvolenyJazykRef.current = novy;
-    if (novy !== stary) setForm((f) => (f.language === stary ? { ...f, language: novy } : f));
+    if (novy !== stary && !jazykPevnyRef.current)
+      setForm((f) => (f.language === stary ? { ...f, language: novy } : f));
   }, [krajina]);
 
   /*
@@ -1238,7 +1253,10 @@ function NewInvoice() {
             <select
               id="jazyk-dokladu"
               value={form.language}
-              onChange={(e) => setForm({ ...form, language: e.target.value })}
+              onChange={(e) => {
+                jazykPevnyRef.current = true;
+                setForm({ ...form, language: e.target.value });
+              }}
               title={t("Prekladajú sa popisky v PDF, nie názvy položiek a poznámky.")}
               className="rounded-md border border-input bg-background px-2 py-1 text-sm"
             >

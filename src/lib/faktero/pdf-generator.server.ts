@@ -8,6 +8,7 @@ import { RobotoRegularBase64 } from "./fonts/Roboto-Regular";
 import { RobotoBoldBase64 } from "./fonts/Roboto-Bold";
 import { paymentMethodLabel } from "./payment-method";
 import { maZuctovanuZalohu, zostavaUhradit } from "./zaloha";
+import type { OdpocetZalohy } from "./zalohy-odpocty";
 import { rezimFirmy, type FirmaDph } from "./dph-rezim";
 import { domacaMena, krajinaKurzu, textPrepoctu, trebaPrepocet } from "./kurzy";
 import { vetyNaDoklad } from "./faktura-nalezitosti";
@@ -82,6 +83,12 @@ export type InvoicePdfInput = {
   numberLabel?: string;
   /** Optional public URL where the customer can pay this invoice online (e.g. GoPay). */
   paymentLinkUrl?: string | null;
+  /**
+   * Odpočty záloh vyúčtovacej faktúry (`nacitajOdpocty`). Záloha zdanená
+   * dokladom k prijatej platbe sa odpočíta v rozpise DPH po sadzbách — daň
+   * z nej je už priznaná a odberateľ si ju už odpočítal.
+   */
+  zalohy?: OdpocetZalohy[] | null;
 };
 
 /**
@@ -688,8 +695,16 @@ async function vykresliFakturu(
     sa miešajú položky s DPH a bez nej (PDP, 0 %). Zľava na doklad sa do
     sadzieb rozpočíta rovnako ako do exportov.
   */
-  const rozpisDph = (() => {
-    const skupiny = new Map<string, { label: string; zaklad: number; dph: number; pdp: boolean; sadzba: number }>();
+  // Dobropis zálohy neodpočítava; nezdanená záloha ostáva len riadkom „Zúčtovaná záloha“.
+  const zdaneneZalohy = dobropis
+    ? []
+    : (input.zalohy ?? []).filter((o) => o.doklad && o.riadky.length);
+  const sumaZdanenych = zdaneneZalohy.reduce((a, o) => a + Number(o.suma || 0), 0);
+  let rozpisDph = (() => {
+    const skupiny = new Map<
+      string,
+      { label: string; zaklad: number; dph: number; pdp: boolean; sadzba: number; odpocet?: string }
+    >();
     for (const it of riadkySoZlavou(items as any[], discount)) {
       const pdp = Boolean(rcNaDoklade || (it as any).prenesenie);
       const sadzba = pdp ? 0 : Number(it.vat_rate ?? 0);
@@ -718,13 +733,58 @@ async function vykresliFakturu(
         if (!skupiny.has(kluc)) skupiny.set(kluc, { label: "", zaklad: 0, dph: 0, pdp: false, sadzba });
       }
     }
-    return [...skupiny.values()].sort((a, b) => Number(a.pdp) - Number(b.pdp) || b.sadzba - a.sadzba);
+    const zoradene = [...skupiny.values()].sort(
+      (a, b) => Number(a.pdp) - Number(b.pdp) || b.sadzba - a.sadzba,
+    );
+    /*
+      Záloha zdanená dokladom k prijatej platbe: jej základ a daň sa v rozpise
+      odpočítajú zápornými riadkami (QA 30. 10.: vyúčtovanie NK20260046 ukazovalo
+      plnú DPH 69 €, hoci 23 € už bolo priznaných dokladom DDP20260003 —
+      odberateľ by si ich odpočítal dvakrát). eFaktúra a výkaz DPH to robili už predtým.
+    */
+    const odpocty = zdaneneZalohy.flatMap((o) =>
+      o.riadky.map((r) => ({
+        label: "",
+        zaklad: -Number(r.zaklad),
+        dph: -Number(r.dph),
+        pdp: false,
+        sadzba: Number(r.sadzba),
+        odpocet: o.doklad ?? o.zaloha,
+      })),
+    );
+    return [...zoradene, ...odpocty];
   })();
 
   // Estimate totals block height
-  const totalsRows = (rozpisDph.length ? 1 : 2) + (discount > 0 ? 2 : 0);
-  const rozpisH = rozpisDph.length ? 11 + rozpisDph.length * 11.5 + 2 : 0;
-  const totalsH = totalsRows * 18 + rozpisH + 8 + 60;
+  // Zúčtovaná záloha: zdanená je v rozpise, riadky „Spolu“ a „Zúčtovaná záloha“ nesú len nezdanenú časť.
+  const zalohaSpolu = maZuctovanuZalohu((invoice as any).advance_amount)
+    ? Number((invoice as any).advance_amount)
+    : 0;
+  const zalohaNezdanena = Math.round(Math.max(0, zalohaSpolu - sumaZdanenych) * 100) / 100;
+  const totalsRows =
+    (rozpisDph.length ? 1 : 2) + (discount > 0 ? 2 : 0) + (zalohaNezdanena > 0 ? 2 : 0);
+  // Každý odpočet zálohy má nad sebou riadok s číslom dokladu k platbe.
+  const vyskaSuctov = (riadkovRozpisu: number) =>
+    totalsRows * 18 +
+    (riadkovRozpisu ? 11 + riadkovRozpisu * 11.5 + 2 : 0) +
+    rozpisDph.filter((r) => r.odpocet).length * 11.5 +
+    8 +
+    60;
+  /*
+    Nulové sadzby (19 % a 0 % bez základu) sú v rozpise len pre prehľad. Keď
+    by kvôli nim blok súčtov odišiel na novú stranu, vynechajú sa — doklad na
+    jednej strane je dôležitejší (QA 30. 10.: tri položky, zľava a päť riadkov
+    textu skončili na dvoch stranách o 8 bodov).
+  */
+  const bezNulovych = rozpisDph.filter((r) => r.zaklad || r.dph || r.pdp);
+  if (
+    bezNulovych.length &&
+    bezNulovych.length < rozpisDph.length &&
+    y - vyskaSuctov(rozpisDph.length) < BOTTOM_LIMIT &&
+    y - vyskaSuctov(bezNulovych.length) >= BOTTOM_LIMIT
+  )
+    rozpisDph = bezNulovych;
+  const totalsH = vyskaSuctov(rozpisDph.length);
   ensureSpace(totalsH);
 
   const totalsTop = y;
@@ -791,6 +851,10 @@ async function vykresliFakturu(
     drawAligned(cur, font, san(t.spolu), pravy, ty, 8, sub, "right");
     ty -= 11;
     for (const r of rozpisDph) {
+      if (r.odpocet) {
+        cur.drawText(san(`${t.odpocetZalohy} ${r.odpocet}`), { x: totalsX, y: ty, size: 8, font, color: sub });
+        ty -= 11.5;
+      }
       const nazov = r.pdp ? t.pdp : `${String(r.sadzba).replace(".", ",")}\u00A0%`;
       const prazdny = !r.zaklad && !r.dph;
       const farba = prazdny ? sub : ink;
@@ -817,7 +881,12 @@ async function vykresliFakturu(
       cur,
       font,
       rozpisDph.filter((r) => r.dph).length > 1 ? t.dphSpolu : t.dph,
-      fmt(Number(invoice.vat_total), invoice.currency),
+      // Bez dane zo zdanených záloh — tá je priznaná dokladom k platbe.
+      fmt(
+        Number(invoice.vat_total) -
+          zdaneneZalohy.reduce((a, o) => a + o.riadky.reduce((b, r) => b + Number(r.dph), 0), 0),
+        invoice.currency,
+      ),
       totalsX,
       ty,
       totalsBlockW,
@@ -840,15 +909,13 @@ async function vykresliFakturu(
     ty -= 18;
   }
   // Zúčtovaná záloha znižuje sumu na úhradu — odberateľ ju už zaplatil.
-  const zaloha = maZuctovanuZalohu((invoice as any).advance_amount)
-    ? Number((invoice as any).advance_amount)
-    : 0;
-  if (zaloha > 0) {
+  const zaloha = zalohaSpolu;
+  if (zalohaNezdanena > 0) {
     drawTotalRow(
       cur,
       font,
       t.spolu,
-      fmt(Number(invoice.total), invoice.currency),
+      fmt(Number(invoice.total) - sumaZdanenych, invoice.currency),
       totalsX,
       ty,
       totalsBlockW,
@@ -860,7 +927,7 @@ async function vykresliFakturu(
       cur,
       font,
       t.zuctovanaZaloha,
-      `− ${fmt(zaloha, invoice.currency)}`,
+      `− ${fmt(zalohaNezdanena, invoice.currency)}`,
       totalsX,
       ty,
       totalsBlockW,

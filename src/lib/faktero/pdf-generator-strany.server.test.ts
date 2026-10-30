@@ -231,3 +231,56 @@ describe("platobné údaje vedľa súčtov", () => {
     expect(pdf.getPage(0).node.Annots()?.size() ?? 0).toBeGreaterThan(0);
   });
 });
+
+/*
+  QA 30. 10. (2. kolo, NK20260033): tri položky, zľava na riadku aj na doklad
+  a päťriadkový text nad položkami. Súčty sa na prvú stranu zmestili, ale
+  odhad ich výšky bol o pár bodov väčší ako skutočná a celý blok súčtov aj
+  s platobnými údajmi odišiel na druhú stranu.
+*/
+describe("tri položky so zľavou a dlhým textom", () => {
+  it("ostanú na jednej strane", async () => {
+    const veta =
+      "Fakturujeme Vám za služby poskytnuté v mesiaci október 2026 podľa zmluvy o dielo č. 12/2026 zo dňa 1. 1. 2026, vrátane dopravy, montáže, zaškolenia obsluhy a odovzdania dokumentácie. ";
+    const b = await generateInvoicePdfBytes({
+      company: { ...dodavatel, vat_payer: true, phone: "+421 910 315 315" },
+      invoice: {
+        ...odberatel,
+        customer_dic: null,
+        customer_ic_dph: null,
+        customer_email: null,
+        invoice_number: "NK20260033",
+        type: "regular",
+        issue_date: "2026-10-30",
+        delivery_date: "2026-10-30",
+        due_date: "2026-11-13",
+        variable_symbol: "20260033",
+        payment_method: "bank_transfer",
+        currency: "EUR",
+        intro_note: veta.repeat(3).trim(),
+        discount_type: "percent",
+        discount_value: 5,
+        discount_total: 28.31,
+        subtotal: 537.79,
+        vat_total: 113.48,
+        total: 651.27,
+      },
+      items: [
+        {
+          name: "Konzultačné služby v oblasti účtovníctva a daní – dlhší názov položky na dva riadky",
+          quantity: 12,
+          unit: "ks",
+          unit_price: 45.5,
+          discount_percent: 10,
+          vat_rate: 23,
+          subtotal: 491.4,
+          vat_amount: 113.02,
+          total: 604.42,
+        },
+        { name: "Tovar", quantity: 3, unit: "ks", unit_price: 19.9, discount_percent: 0, vat_rate: 5, subtotal: 59.7, vat_amount: 2.98, total: 62.68 },
+        { name: "Doprava", quantity: 1, unit: "ks", unit_price: 15, discount_percent: 0, vat_rate: 23, subtotal: 15, vat_amount: 3.45, total: 18.45 },
+      ],
+    } as any);
+    expect(await strany(b)).toBe(1);
+  });
+});

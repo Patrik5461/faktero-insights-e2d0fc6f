@@ -190,8 +190,21 @@ export async function ensureInvoicePdf(
     if (povodna?.invoice_number) (invoice as any).opravuje_cislo = povodna.invoice_number;
   }
 
+  // Odpočty záloh (zdanená záloha ide do rozpisu DPH so zápornými riadkami).
+  let zalohy: import("./zalohy-odpocty").OdpocetZalohy[] | null = null;
+  if (invoice.type === "regular" && Number((invoice as any).advance_amount ?? 0) > 0) {
+    try {
+      const { nacitajOdpocty } = await import("./zalohy-odpocty.server");
+      zalohy =
+        (await nacitajOdpocty(supabaseAdmin, invoice.company_id, [invoice.id]))[invoice.id] ?? null;
+    } catch (e) {
+      console.warn("[pdf] odpočty záloh sa nenačítali:", String((e as Error)?.message ?? e));
+    }
+  }
+
   const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
   const bytes = await generateInvoicePdfBytes({
+    zalohy,
     company,
     invoice,
     items: items ?? [],

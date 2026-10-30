@@ -182,7 +182,15 @@ ${t.vatCategory === "O" ? "" : `        <cbc:Percent>${t.vatPercent}</cbc:Percen
     </cac:TaxSubtotal>`,
   )
   .join("\n")}
-  </cac:TaxTotal>`;
+  </cac:TaxTotal>${
+    /* BT-111 — DPH v mene účtovania: druhý TaxTotal bez rozpisu (PEPPOL-EN16931-R053). */
+    inv.taxCurrency
+      ? `
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="${esc(inv.taxCurrency.code)}">${fmt(inv.taxCurrency.taxAmount)}</cbc:TaxAmount>
+  </cac:TaxTotal>`
+      : ""
+  }`;
 
   const paymentXml = inv.paymentMeans
     ? `  <cac:PaymentMeans>
@@ -224,7 +232,7 @@ ${da.street ? `        <cbc:StreetName>${esc(da.street)}</cbc:StreetName>\n` : "
   <cbc:IssueDate>${esc(inv.issueDate)}</cbc:IssueDate>
 ${dobropis ? "" : `  <cbc:DueDate>${esc(inv.dueDate)}</cbc:DueDate>\n`}  <cbc:${koren}TypeCode>${esc(inv.documentType)}</cbc:${koren}TypeCode>
 ${inv.note ? `  <cbc:Note>${esc(inv.note)}</cbc:Note>\n` : ""}  <cbc:DocumentCurrencyCode>${esc(inv.currency)}</cbc:DocumentCurrencyCode>
-${inv.buyerReference ? `  <cbc:BuyerReference>${esc(inv.buyerReference)}</cbc:BuyerReference>\n` : ""}${inv.orderReference ? `  <cac:OrderReference><cbc:ID>${esc(inv.orderReference)}</cbc:ID></cac:OrderReference>\n` : ""}${
+${inv.taxCurrency ? `  <cbc:TaxCurrencyCode>${esc(inv.taxCurrency.code)}</cbc:TaxCurrencyCode>\n` : ""}${inv.buyerReference ? `  <cbc:BuyerReference>${esc(inv.buyerReference)}</cbc:BuyerReference>\n` : ""}${inv.orderReference ? `  <cac:OrderReference><cbc:ID>${esc(inv.orderReference)}</cbc:ID></cac:OrderReference>\n` : ""}${
     inv.precedingInvoice
       ? `  <cac:BillingReference>
     <cac:InvoiceDocumentReference>

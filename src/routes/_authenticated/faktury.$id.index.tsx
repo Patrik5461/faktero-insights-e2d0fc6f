@@ -1708,7 +1708,10 @@ function InvoiceDetail() {
         meta={
           <MetaRiadok
             polozky={[
-              t("Vystavená {datum}", { datum: datumNaDoklade(inv.issue_date) }),
+              /* Koncept ešte vystavený nie je — ukáže sa len plánovaný dátum vystavenia. */
+              inv.status === "draft"
+                ? t("Koncept, dátum vystavenia {datum}", { datum: datumNaDoklade(inv.issue_date) })
+                : t("Vystavená {datum}", { datum: datumNaDoklade(inv.issue_date) }),
               <PoTermine aktivne={isOverdue}>{t("splatná {splatnost}", { splatnost: popisSplatnosti(inv) })}</PoTermine>,
               predlzena(inv) && inv.predlzenie_poznamka ? inv.predlzenie_poznamka : null,
             ]}
