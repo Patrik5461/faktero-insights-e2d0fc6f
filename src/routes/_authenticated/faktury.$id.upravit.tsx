@@ -332,7 +332,9 @@ function EditInvoice() {
           // Prázdne pole je v HTML formulári "", nie null. Postgres na to
           // odpovie „invalid input syntax for type date" a faktúra bez dátumu
           // dodania sa nedala uložiť vôbec.
-          delivery_date: form.delivery_date || null,
+          // Vystavený doklad bez dátumu dodania nesmie vzniknúť — doplní sa dátum vystavenia.
+          delivery_date:
+            form.delivery_date || (inv?.status === "draft" && vystavitRef.current ? form.issue_date : null),
           due_date: form.due_date,
           // Prázdny VS sa doplní z čísla faktúry, rovnako ako pri vystavení.
           variable_symbol: vsNaUlozenie(form.variable_symbol, form.invoice_number),

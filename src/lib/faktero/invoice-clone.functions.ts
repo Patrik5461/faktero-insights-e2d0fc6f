@@ -28,13 +28,17 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
     if (itemsErr) throw new Error(itemsErr.message);
 
     // Compute new dates
-    const today = new Date();
-    const isoToday = today.toISOString().slice(0, 10);
+    // Dnešok podľa Bratislavy — toISOString() dával medzi polnocou a druhou
+    // ráno včerajší dátum.
+    const { dnesBratislava } = await import("./datum-vystavenia");
+    const isoToday = dnesBratislava();
     const origIssue = new Date(src.issue_date);
     const origDue = new Date(src.due_date);
     const dayMs = 86400000;
     const durationDays = Math.max(0, Math.round((origDue.getTime() - origIssue.getTime()) / dayMs));
-    const newDue = new Date(today.getTime() + durationDays * dayMs).toISOString().slice(0, 10);
+    const newDue = new Date(new Date(`${isoToday}T00:00:00Z`).getTime() + durationDays * dayMs)
+      .toISOString()
+      .slice(0, 10);
 
     // New invoice number (server-only helper, service role)
     const { nextInvoiceNumberDetailed } = await import("./invoice-numbering.server");
@@ -78,7 +82,12 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
       constant_symbol: src.constant_symbol,
       specific_symbol: src.specific_symbol,
       order_number: null,
-      delivery_date: null,
+      /*
+        Kópia je nové dodanie — dátum dodania dnes, ako pri novej faktúre.
+        Prázdny sa pri vystavení konceptu nedoplnil a faktúra vyšla s
+        „Dátum dodania —“ (bez DUZP, § 74 ods. 1 písm. f).
+      */
+      delivery_date: isoToday,
       delivery_method: src.delivery_method,
       reverse_charge: src.reverse_charge,
       reverse_charge_type: src.reverse_charge_type,

@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 
 export const Route = createFileRoute("/api/v1/quotes/$id/convert")({
   server: {
@@ -29,66 +28,37 @@ export const Route = createFileRoute("/api/v1/quotes/$id/convert")({
             .select("*")
             .eq("quote_id", q.id)
             .order("position");
-          const today = new Date().toISOString().slice(0, 10);
+          const { dnesBratislava } = await import("@/lib/faktero/datum-vystavenia");
+          const today = dnesBratislava();
           const { nextInvoiceNumberDetailed } =
             await import("@/lib/faktero/invoice-numbering.server");
-          const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
-            ctx.company_id,
+          const cislo = await nextInvoiceNumberDetailed(ctx.company_id, today);
+          const { data: firma } = await ctx.supabase
+            .from("companies")
+            .select("country")
+            .eq("id", ctx.company_id)
+            .maybeSingle();
+          const { predvolenyJazykFirmy } = await import("@/lib/faktero/faktura-jazyk");
+          const { hlavickaZPonuky, polozkyZPonuky } =
+            await import("@/lib/faktero/ponuka-na-fakturu");
+          const hlavicka = hlavickaZPonuky(
+            { ...q, company_id: ctx.company_id },
+            cislo,
             today,
+            predvolenyJazykFirmy(firma?.country),
           );
-          const due = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-          const variable_symbol = vsZCislaDokladu(invoice_number) || null;
+          const { doplnovacKurzov } = await import("@/lib/faktero/kurz-dokladu.server");
+          Object.assign(hlavicka, await doplnovacKurzov(ctx.company_id)("invoices", hlavicka));
 
           const { data: inv, error: insErr } = await ctx.supabase
             .from("invoices")
-            .insert({
-              company_id: ctx.company_id,
-              customer_id: q.customer_id ?? null,
-              invoice_number,
-              sequence_number,
-              variable_symbol,
-              issue_date: today,
-              due_date: due,
-              currency: q.currency,
-              payment_method: "bank_transfer",
-              customer_name: q.customer_name,
-              customer_ico: q.customer_ico,
-              customer_dic: q.customer_dic,
-              customer_ic_dph: q.customer_ic_dph,
-              customer_street: q.customer_street,
-              customer_city: q.customer_city,
-              customer_zip: q.customer_zip,
-              customer_country: q.customer_country ?? "SK",
-              customer_email: q.customer_email,
-              subtotal: q.subtotal,
-              vat_total: q.vat_total,
-              total: q.total,
-              notes: q.notes ?? null,
-              status: "issued",
-            })
+            .insert(hlavicka as any)
             .select()
             .single();
           if (insErr || !inv) return err("db_error", insErr?.message ?? "Insert zlyhal", 500);
           if (items?.length) {
-            const rows = items.map((it: any) => ({
-              invoice_id: inv.id,
-              position: it.position,
-              name: it.name,
-              description: it.description,
-              quantity: it.quantity,
-              unit: it.unit,
-              unit_price: it.unit_price,
-              vat_rate: it.vat_rate,
-              subtotal: it.subtotal,
-              vat_amount: it.vat_amount,
-              total: it.total,
-              product_id: it.product_id ?? null,
-              colny_kod: it.colny_kod ?? null,
-              krajina_povodu: it.krajina_povodu ?? null,
-              hmotnost_kg: it.hmotnost_kg ?? null,
-              prenesenie: Boolean(it.prenesenie),
-            }));
-            await ctx.supabase.from("invoice_items").insert(rows);
+            const rows = polozkyZPonuky(inv.id, items);
+            await ctx.supabase.from("invoice_items").insert(rows as any);
           }
           await ctx.supabase
             .from("quotes")

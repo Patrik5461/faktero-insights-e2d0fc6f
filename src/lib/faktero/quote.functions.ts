@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -64,75 +63,32 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
       .order("position");
     if (itErr) throw new Error(itErr.message);
 
-    const today = new Date().toISOString().slice(0, 10);
+    const { dnesBratislava } = await import("./datum-vystavenia");
+    const today = dnesBratislava();
     const { nextInvoiceNumberDetailed } = await import("./invoice-numbering.server");
-    const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
-      quote.company_id,
-      today,
-    );
-    const due = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-    const variable_symbol = vsZCislaDokladu(invoice_number) || null;
+    const cislo = await nextInvoiceNumberDetailed(quote.company_id, today);
+    const { data: firma } = await supabase
+      .from("companies")
+      .select("country")
+      .eq("id", quote.company_id)
+      .maybeSingle();
+    const { predvolenyJazykFirmy } = await import("./faktura-jazyk");
+    const { hlavickaZPonuky, polozkyZPonuky } = await import("./ponuka-na-fakturu");
+    const hlavicka = hlavickaZPonuky(quote, cislo, today, predvolenyJazykFirmy(firma?.country));
+    // Cudzia mena: daň aj v domácej mene firmy (kurz ECB/ČNB).
+    const { doplnovacKurzov } = await import("./kurz-dokladu.server");
+    Object.assign(hlavicka, await doplnovacKurzov(quote.company_id)("invoices", hlavicka));
 
     const { data: inv, error: insErr } = await supabase
       .from("invoices")
-      .insert({
-        company_id: quote.company_id,
-        customer_id: quote.customer_id ?? null,
-        invoice_number,
-        sequence_number,
-        variable_symbol,
-        issue_date: today,
-        due_date: due,
-        currency: quote.currency,
-        payment_method: "bank_transfer",
-        customer_name: quote.customer_name,
-        customer_ico: quote.customer_ico,
-        customer_dic: quote.customer_dic,
-        customer_ic_dph: quote.customer_ic_dph,
-        customer_street: quote.customer_street,
-        customer_city: quote.customer_city,
-        customer_zip: quote.customer_zip,
-        customer_country: quote.customer_country ?? "SK",
-        customer_email: quote.customer_email,
-        subtotal: quote.subtotal,
-        vat_total: quote.vat_total,
-        total: quote.total,
-        // Zľavy idú s ponukou na faktúru — dohodnutá cena je to, čo zákazník
-        // odsúhlasil; bez nich by faktúra pýtala viac než ponuka.
-        discount_type: quote.discount_type ?? null,
-        discount_value: quote.discount_value ?? 0,
-        discount_total: quote.discount_total ?? 0,
-        notes: quote.notes ?? null,
-        // Zákazka prechádza z ponuky na faktúru. Keby ju bolo treba vyberať
-        // znova, vypadla by práve pri doklade, ktorý nesie výnos.
-        job_id: quote.job_id ?? null,
-        status: "issued",
-      })
+      .insert(hlavicka as any)
       .select()
       .single();
     if (insErr || !inv) throw new Error(insErr?.message ?? "Vytvorenie faktúry zlyhalo");
 
     if (items && items.length) {
-      const rows = items.map((it: any) => ({
-        invoice_id: inv.id,
-        position: it.position,
-        name: it.name,
-        description: it.description,
-        quantity: it.quantity,
-        unit: it.unit,
-        unit_price: it.unit_price,
-        discount_percent: it.discount_percent ?? 0,
-        vat_rate: it.vat_rate,
-        subtotal: it.subtotal,
-        vat_amount: it.vat_amount,
-        total: it.total,
-        product_id: it.product_id ?? null,
-        colny_kod: it.colny_kod ?? null,
-        krajina_povodu: it.krajina_povodu ?? null,
-        hmotnost_kg: it.hmotnost_kg ?? null,
-        prenesenie: Boolean(it.prenesenie),
-      }));
-      const { error: copyErr } = await supabase.from("invoice_items").insert(rows);
+      const rows = polozkyZPonuky(inv.id, items);
+      const { error: copyErr } = await supabase.from("invoice_items").insert(rows as any);
       if (copyErr) throw new Error(copyErr.message);
     }
 

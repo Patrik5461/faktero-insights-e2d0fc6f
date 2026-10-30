@@ -140,7 +140,7 @@ describe("Nemecko — vety na faktúre", () => {
   it("predvolený jazyk: nemecká firma po nemecky, ostatné po slovensky", () => {
     expect(predvolenyJazykFirmy("DE")).toBe("de");
     expect(predvolenyJazykFirmy("SK")).toBe("sk");
-    expect(predvolenyJazykFirmy("CZ")).toBe("sk");
+    expect(predvolenyJazykFirmy("CZ")).toBe("cs");
     expect(predvolenyJazykFirmy(null)).toBe("sk");
   });
   it("dátum po nemecky 17.10.2026", () => {
