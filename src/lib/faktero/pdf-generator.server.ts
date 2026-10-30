@@ -1042,6 +1042,157 @@ async function vykresliFakturu(
     }
   }
 
+  /*
+    Faktúra v cudzej mene musí mať daň vyčíslenú aj v domácej mene firmy
+    (vysvetlenie pri kreslení nižšie). Text sa počíta vopred, lebo od jeho
+    výšky závisí, či sa platobná karta zmestí pod súčty.
+  */
+  const riadkyPrepoctu =
+    trebaPrepocet(invoice.currency, domacaMena(company.country)) &&
+    invoice.exchange_rate &&
+    invoice.vat_total_eur != null &&
+    Number(invoice.vat_total ?? 0) !== 0
+      ? wrapLines(
+          textPrepoctu(
+            String(invoice.currency),
+            Number(invoice.exchange_rate),
+            String(invoice.exchange_rate_date ?? invoice.delivery_date ?? invoice.issue_date),
+            Number(invoice.vat_total_eur),
+            krajinaDane(company.country) === "CZ" ? "cz" : krajinaDane(company.country) === "DE" ? "de" : "sk",
+            krajinaKurzu(company.country),
+            (invoice as any).exchange_rate_source,
+          ),
+          font,
+          9,
+          innerW,
+        )
+      : [];
+
+  // Platobné údaje (karta pod súčtami alebo vedľa nich) a ich QR.
+  const kresliPlatbu = !input.hidePayment && !isPaid && !lenOprava;
+  // Dobropis QR nemá nikdy (ani starší, kladne uložený) — pozri nižšie.
+  const kresliQr = Boolean(company.iban) && naUhradu > 0 && !dobropis;
+  const riadkyPlatby: [string, string][] = [
+    [t.iban, company.iban ?? "—"],
+    [t.swift, company.swift ?? "—"],
+    [t.variabilnySymbol, vsVystavenej(invoice) || "—"],
+    [t.datumSplatnosti, datumNaDoklade(invoice.due_date, jazyk)],
+  ];
+  /*
+    QR na platbu a odkaz PAYME. Formát QR podľa krajiny firmy: slovenská
+    banka číta PAY by square, česká SPD. Dovtedy sa aj slovenským firmám
+    kreslil český SPD, takže QR vyzeral funkčne a banka ho prečítať nemusela.
+    PAYME v mobile otvorí bankovú aplikáciu s vyplneným príkazom (Tatra
+    banka, Slovenská sporiteľňa) — len slovenské firmy a eurá.
+  */
+  const pripravQr = async () => {
+    const qr = await textQrPlatby(
+      {
+        iban: company.iban,
+        suma: naUhradu,
+        mena: invoice.currency,
+        vs: vsVystavenej(invoice) || null,
+        sprava: `${t.spravaQr} ${invoice.invoice_number}`,
+        splatnost: invoice.due_date,
+        prijemca: company.name,
+        bic: company.swift,
+      },
+      company.country,
+    );
+    if (!qr) throw new Error("bez QR");
+    const dataUrl = await QRCode.toDataURL(qr.text, { margin: 0, width: 240 });
+    const png = await doc.embedPng(dataUrl);
+    const payme =
+      krajinaDane(company.country) === "SK"
+        ? paymeOdkaz({
+            iban: company.iban,
+            suma: naUhradu,
+            mena: invoice.currency,
+            vs: vsVystavenej(invoice) || null,
+            sprava: `${t.spravaQr} ${invoice.invoice_number}`,
+            splatnost: invoice.due_date,
+            prijemca: company.name,
+          })
+        : null;
+    return { png, payme };
+  };
+  const PAYME_POPIS = t.paymeTlacidlo;
+  const kresliPayme = (bx: number, by: number, odkaz: string) => {
+    const bw = bold.widthOfTextAtSize(PAYME_POPIS, 7.5) + 14;
+    cur.drawRectangle({ x: bx, y: by, width: bw, height: 13, color: primary });
+    cur.drawText(PAYME_POPIS, { x: bx + 7, y: by + 3.8, size: 7.5, font: bold, color: white });
+    const annot = doc.context.register(
+      doc.context.obj({
+        Type: "Annot",
+        Subtype: "Link",
+        Rect: [bx, by, bx + bw, by + 13],
+        Border: [0, 0, 0],
+        A: { Type: "Action", S: "URI", URI: PDFString.of(odkaz) },
+      }),
+    );
+    cur.node.addAnnot(annot);
+  };
+
+  /*
+    Platobné údaje vedľa súčtov. Rozpis DPH so všetkými sadzbami krajiny
+    zväčšil blok súčtov o tri riadky a pri troch-štyroch položkách sa pod
+    neho už nezmestila ani kompaktná karta — platobné údaje osamoteli na
+    druhej strane. Keď je vľavo od súčtov voľno (bez pečiatky, prenesenia
+    a viet) a karta pod súčty nevojde, nakreslí sa tam užšia karta: údaje
+    pod sebou, QR vpravo.
+  */
+  let platbaVedla = false;
+  if (kresliPlatbu && !kresliPeciatku && !prenesenieHotove && !poznamkyHotove) {
+    const yPod = ty - heroH - 18 - (riadkyPrepoctu.length ? riadkyPrepoctu.length * 11 + 8 : 0);
+    const kompaktPod = (kresliQr ? 102 : 92) + 12;
+    const nezmestiSaPod = yPod + 8 - kompaktPod < BOTTOM_LIMIT;
+    const vX = margin;
+    const vW = totalsX - margin - 20;
+    const vQr = 64;
+    const vH = 4 * 21 + 30;
+    const vHore = totalsTop + 4;
+    const dostupne = vHore - (ty - heroH);
+    if (nezmestiSaPod && vW >= 200 && vH <= dostupne) {
+      platbaVedla = true;
+      cur.drawRectangle({
+        x: vX,
+        y: vHore - vH,
+        width: vW,
+        height: vH,
+        color: white,
+        borderColor: hairline,
+        borderWidth: 0.7,
+      });
+      cur.drawRectangle({ x: vX, y: vHore - vH, width: 3, height: vH, color: primary });
+      cur.drawText(t.platobneUdaje, { x: vX + 12, y: vHore - 16, size: 8, font: bold, color: muted });
+      const stlpecW = vW - 12 - (kresliQr ? vQr + 18 : 12);
+      riadkyPlatby.forEach(([k, v], i) => {
+        const ry = vHore - 30 - i * 21;
+        cur.drawText(String(k), { x: vX + 12, y: ry, size: 7, font, color: muted });
+        // IBAN sa nesmie skrátiť — radšej menšie písmo.
+        let vel = 9;
+        while (vel > 7 && bold.widthOfTextAtSize(String(v), vel) > stlpecW) vel -= 0.25;
+        cur.drawText(ellipsize(String(v), bold, vel, stlpecW), { x: vX + 12, y: ry - 10, size: vel, font: bold, color: ink });
+      });
+      if (kresliQr) {
+        try {
+          const { png, payme } = await pripravQr();
+          const qrX = vX + vW - vQr - 10;
+          const qrY = vHore - 22 - vQr;
+          const qrPopisW = bold.widthOfTextAtSize(t.qrPlatba, 7);
+          cur.drawText(t.qrPlatba, { x: vX + vW - 8 - qrPopisW, y: vHore - 16, size: 7, font: bold, color: muted });
+          cur.drawImage(png, { x: qrX, y: qrY, width: vQr, height: vQr });
+          if (payme) {
+            const bw = bold.widthOfTextAtSize(PAYME_POPIS, 7.5) + 14;
+            kresliPayme(Math.min(qrX, vX + vW - bw - 6), vHore - vH + 6, payme);
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
+
   y = ty - heroH - (isPaid ? 38 : 18);
   /** Kde končí blok súčtov — medzeru pod ním smie kompaktná platobná karta zúžiť. */
   const yPodSuctami = y;
@@ -1054,22 +1205,8 @@ async function vykresliFakturu(
     súčtami (ku ktorým patrí) — za platobnými údajmi sama odpadávala na
     druhú stranu.
   */
-  if (
-    trebaPrepocet(invoice.currency, domacaMena(company.country)) &&
-    invoice.exchange_rate &&
-    invoice.vat_total_eur != null &&
-    Number(invoice.vat_total ?? 0) !== 0
-  ) {
-    const text = textPrepoctu(
-      String(invoice.currency),
-      Number(invoice.exchange_rate),
-      String(invoice.exchange_rate_date ?? invoice.delivery_date ?? invoice.issue_date),
-      Number(invoice.vat_total_eur),
-      krajinaDane(company.country) === "CZ" ? "cz" : krajinaDane(company.country) === "DE" ? "de" : "sk",
-      krajinaKurzu(company.country),
-      (invoice as any).exchange_rate_source,
-    );
-    const lines = wrapLines(text, font, 9, innerW);
+  if (riadkyPrepoctu.length) {
+    const lines = riadkyPrepoctu;
     ensureSpace(14 + lines.length * 11 + 8);
     lines.forEach((ln) => {
       cur.drawText(ln, { x: margin, y, size: 9, font, color: sub });
@@ -1079,14 +1216,12 @@ async function vykresliFakturu(
   }
 
   // ── Payment card (full width, two columns: data | QR) ──
-  if (!input.hidePayment && !isPaid && !lenOprava) {
+  if (kresliPlatbu && !platbaVedla) {
     /*
       Výška karty je tesne na štyri riadky údajov a QR s popiskom. Pôvodných
       140 bodov s QR v strede nechávalo prázdny pás, pre ktorý sa faktúra s
       textom nad položkami a prenesením nezmestila na jednu stranu.
     */
-    // Dobropis QR nemá nikdy (ani starší, kladne uložený) — pozri nižšie.
-    const kresliQr = Boolean(company.iban) && naUhradu > 0 && !dobropis;
     /*
       Keď sa plná karta na stranu tesne nezmestí, nakreslí sa kompaktná
       (menší QR, hustejšie riadky) — inak by platobné údaje osamoteli na
@@ -1129,12 +1264,7 @@ async function vykresliFakturu(
       color: muted,
     });
 
-    const rows: [string, string][] = [
-      [t.iban, company.iban ?? "—"],
-      [t.swift, company.swift ?? "—"],
-      [t.variabilnySymbol, vsVystavenej(invoice) || "—"],
-      [t.datumSplatnosti, datumNaDoklade(invoice.due_date, jazyk)],
-    ];
+    const rows = riadkyPlatby;
     const labelColW = 110;
     const valueColW = Math.max(80, dataColW - labelColW - 16);
     rows.forEach(([k, v], i) => {
@@ -1156,22 +1286,7 @@ async function vykresliFakturu(
           česká SPD. Dovtedy sa aj slovenským firmám kreslil český SPD, takže
           QR vyzeral funkčne a banka ho prečítať nemusela.
         */
-        const qr = await textQrPlatby(
-          {
-            iban: company.iban,
-            suma: naUhradu,
-            mena: invoice.currency,
-            vs: vsVystavenej(invoice) || null,
-            sprava: `${t.spravaQr} ${invoice.invoice_number}`,
-            splatnost: invoice.due_date,
-            prijemca: company.name,
-            bic: company.swift,
-          },
-          company.country,
-        );
-        if (!qr) throw new Error("bez QR");
-        const dataUrl = await QRCode.toDataURL(qr.text, { margin: 0, width: 240 });
-        const png = await doc.embedPng(dataUrl);
+        const { png, payme } = await pripravQr();
         const qrX = payX + payW - qrSize - 16;
         const qrY = payY - payH + 10;
         cur.drawImage(png, { x: qrX, y: qrY, width: qrSize, height: qrSize });
@@ -1187,37 +1302,12 @@ async function vykresliFakturu(
           príkazom (Tatra banka, Slovenská sporiteľňa). Len slovenské firmy
           a eurá; je to klikateľný odkaz v PDF.
         */
-        const payme =
-          krajinaDane(company.country) === "SK"
-            ? paymeOdkaz({
-                iban: company.iban,
-                suma: naUhradu,
-                mena: invoice.currency,
-                vs: vsVystavenej(invoice) || null,
-                sprava: `${t.spravaQr} ${invoice.invoice_number}`,
-                splatnost: invoice.due_date,
-                prijemca: company.name,
-              })
-            : null;
         if (payme) {
           // V riadku splatnosti, hneď za dátumom — karta sa nezväčší.
           const datum = datumNaDoklade(invoice.due_date, jazyk);
           const bx = payX + 16 + 110 + bold.widthOfTextAtSize(datum, 10) + 12;
           const by = payY - rStart - 3 * rKrok - 3.5;
-          const popis = "PAYME · zaplatiť v mobile";
-          const bw = bold.widthOfTextAtSize(popis, 7.5) + 14;
-          cur.drawRectangle({ x: bx, y: by, width: bw, height: 13, color: primary });
-          cur.drawText(popis, { x: bx + 7, y: by + 3.8, size: 7.5, font: bold, color: white });
-          const odkaz = doc.context.register(
-            doc.context.obj({
-              Type: "Annot",
-              Subtype: "Link",
-              Rect: [bx, by, bx + bw, by + 13],
-              Border: [0, 0, 0],
-              A: { Type: "Action", S: "URI", URI: PDFString.of(payme) },
-            }),
-          );
-          cur.node.addAnnot(odkaz);
+          kresliPayme(bx, by, payme);
         }
       } catch {
         /* ignore */
