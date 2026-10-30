@@ -26,7 +26,14 @@ type Potvrdenie = {
   received_at: string;
 };
 
-export function PotvrdeniePreposielania({ companyId }: { companyId: string | null }) {
+export function PotvrdeniePreposielania({
+  companyId,
+  pocuvat = true,
+}: {
+  companyId: string | null;
+  /** Človek práve nastavuje preposielanie (karta je otvorená) — čakať na mail naživo. */
+  pocuvat?: boolean;
+}) {
   const { t } = useT();
   const [potvrdenia, setPotvrdenia] = useState<Potvrdenie[]>([]);
   const [skopirovany, setSkopirovany] = useState<string | null>(null);
@@ -46,7 +53,26 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
 
   useEffect(() => {
     void nacitaj();
-    if (!companyId) return;
+  }, [nacitaj]);
+
+  /*
+    Kanál realtime len vtedy, keď sa na niečo čaká: karta s nastavením je
+    otvorená alebo nejaké potvrdenie visí. Zoznam prijatých faktúr so zavretou
+    kartou si inak pri každom otvorení držal otvorený websocket zbytočne.
+    Bez kanála stačí pozrieť znova po návrate na kartu (z Gmailu).
+  */
+  const caka = pocuvat || potvrdenia.length > 0;
+  useEffect(() => {
+    if (!companyId || caka) return;
+    const naKarte = () => {
+      if (document.visibilityState === "visible") void nacitaj();
+    };
+    document.addEventListener("visibilitychange", naKarte);
+    return () => document.removeEventListener("visibilitychange", naKarte);
+  }, [companyId, caka, nacitaj]);
+
+  useEffect(() => {
+    if (!companyId || !caka) return;
     /*
       Mail príde v okamihu, keď človek v Gmaile klikne na „Pridať adresu" —
       stránku už znovu neotvorí. Bez tohto by tam sedel a čakal na nič.
@@ -67,7 +93,7 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
     return () => {
       void supabase.removeChannel(kanal);
     };
-  }, [companyId, nacitaj]);
+  }, [companyId, caka, nacitaj]);
 
   if (!companyId || potvrdenia.length === 0) return null;
 

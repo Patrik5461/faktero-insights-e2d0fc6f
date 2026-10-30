@@ -115,16 +115,12 @@ async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
  */
 async function notifikacieZamestnancov(companyId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: firma } = await supabaseAdmin
-    .from("companies")
-    .select("module_employees")
-    .eq("id", companyId)
-    .maybeSingle();
-  if (!firma?.module_employees) return [];
   const dnes = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(
     new Date(),
   );
-  const [zam, zml] = await Promise.all([
+  // Modul sa overí súčasne so zamestnancami — za sebou to boli dve cesty k databáze.
+  const [{ data: firma }, zam, zml] = await Promise.all([
+    supabaseAdmin.from("companies").select("module_employees").eq("id", companyId).maybeSingle(),
     supabaseAdmin
       .from("employees")
       .select(
@@ -138,6 +134,7 @@ async function notifikacieZamestnancov(companyId: string): Promise<AppNotificati
       .eq("company_id", companyId)
       .eq("status", "active"),
   ]);
+  if (!firma?.module_employees) return [];
   return pripomienkyZamestnancov(dnes, (zam.data ?? []) as any, (zml.data ?? []) as any).map(
     (p) => ({
       key: p.kluc,
@@ -185,15 +182,17 @@ async function lehotyOstatnych(companyId: string): Promise<AppNotification[]> {
 /** Iné doklady (listy, predpisy, exekúcie) čakajúce na spracovanie. */
 async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, count } = await supabaseAdmin
-    .from("other_documents")
-    .select("id, created_at", { count: "exact" })
-    .eq("company_id", companyId)
-    .eq("status", "new")
-    .order("created_at", { ascending: false })
-    .limit(1);
+  const [{ data, count }, lehoty] = await Promise.all([
+    supabaseAdmin
+      .from("other_documents")
+      .select("id, created_at", { count: "exact" })
+      .eq("company_id", companyId)
+      .eq("status", "new")
+      .order("created_at", { ascending: false })
+      .limit(1),
+    lehotyOstatnych(companyId),
+  ]);
   const najnovsi = data?.[0];
-  const lehoty = await lehotyOstatnych(companyId);
   if (!count || !najnovsi) return lehoty;
   return [
     ...lehoty,
@@ -217,15 +216,17 @@ async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[
  */
 async function notifikaciaNespracovanychDokladov(companyId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, count } = await supabaseAdmin
-    .from("expense_documents")
-    .select("id, created_at", { count: "exact" })
-    .eq("company_id", companyId)
-    .eq("status", "new")
-    .order("created_at", { ascending: false })
-    .limit(1);
+  const [{ data, count }, ostatne] = await Promise.all([
+    supabaseAdmin
+      .from("expense_documents")
+      .select("id, created_at", { count: "exact" })
+      .eq("company_id", companyId)
+      .eq("status", "new")
+      .order("created_at", { ascending: false })
+      .limit(1),
+    notifikaciaOstatnych(companyId),
+  ]);
   const najnovsi = data?.[0];
-  const ostatne = await notifikaciaOstatnych(companyId);
   if (!count || !najnovsi) return ostatne;
   return [
     ...ostatne,
@@ -356,17 +357,17 @@ async function notifikacieKomentarov(companyId: string, userId: string): Promise
 /** Doklady, ktoré čakajú na schválenie práve týmto používateľom. */
 async function notifikaciaSchvalovania(companyId: string, userId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const [{ data: firma }, { data: clen }] = await Promise.all([
+  const [{ data: firma }, { data: clen }, { data }] = await Promise.all([
     supabaseAdmin.from("companies").select("schvalovanie_zapnute").eq("id", companyId).maybeSingle(),
     supabaseAdmin.from("company_users").select("role, schvalovanie_prava").eq("company_id", companyId).eq("user_id", userId).maybeSingle(),
+    supabaseAdmin
+      .from("schvalovanie")
+      .select("urovne, schvalena_uroven, stav")
+      .eq("company_id", companyId)
+      .eq("stav", "caka")
+      .limit(500),
   ]);
   if (!(firma as any)?.schvalovanie_zapnute) return [];
-  const { data } = await supabaseAdmin
-    .from("schvalovanie")
-    .select("urovne, schvalena_uroven, stav")
-    .eq("company_id", companyId)
-    .eq("stav", "caka")
-    .limit(500);
   const { mozeSchvalit, nacitajUrovne } = await import("./schvalovanie");
   const pocet = ((data ?? []) as any[]).filter((r) =>
     mozeSchvalit(
@@ -391,6 +392,17 @@ async function notifikaciaSchvalovania(companyId: string, userId: string): Promi
 }
 
 async function vsetkyNotifikacie(companyId: string, userId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  // Rola a krajina sa pýtajú súčasne so signálmi, nie až po nich.
+  const clenAFirma = Promise.all([
+    supabaseAdmin
+      .from("company_users")
+      .select("role, permissions")
+      .eq("company_id", companyId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabaseAdmin.from("companies").select("country").eq("id", companyId).maybeSingle(),
+  ]);
   const zoznam = await (async () => {
     const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie, efaktury] = await Promise.all([
       zozbierajSignaly(companyId),
@@ -426,16 +438,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
     Človek s vlastným prístupom preto dostane len upozornenia z oblastí, ku
     ktorým prístup má — rovnaké pravidlo ako menu (podľa stránky, kam vedú).
   */
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const [{ data: clen }, { data: firma }] = await Promise.all([
-    supabaseAdmin
-      .from("company_users")
-      .select("role, permissions")
-      .eq("company_id", companyId)
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabaseAdmin.from("companies").select("country").eq("id", companyId).maybeSingle(),
-  ]);
+  const [{ data: clen }, { data: firma }] = await clenAFirma;
   /*
     Nemecká firma nemá pokladňu, knihu jázd ani zamestnancov (agendy-krajiny.ts) —
     upozornenie s odkazom na ne (pripomienka zmluvy, komentár k jazde) by viedlo
@@ -458,10 +461,15 @@ export const listNotifications = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyInput.parse(d))
   .handler(async ({ data, context }) => {
-    await assertMember(context.supabase, context.userId, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [vsetky, precitane] = await Promise.all([
+    /*
+      Členstvo sa overuje súčasne so zbieraním — za sebou to bola cesta k
+      databáze navyše pri každom otvorení zvončeka. Zbieranie len číta, a keď
+      overenie zlyhá, `Promise.all` skončí chybou a z nazbieraného neodíde nič.
+    */
+    const [, vsetky, precitane] = await Promise.all([
+      assertMember(context.supabase, context.userId, data.company_id),
       vsetkyNotifikacie(data.company_id, context.userId),
       supabaseAdmin
         .from("notification_reads")

@@ -52,3 +52,23 @@ export async function fetchMyCompanies() {
     .filter((r: any) => r.company)
     .map((r: any) => ({ role: r.role, permissions: r.permissions ?? {}, ...r.company }));
 }
+
+/** Udalosť, po ktorej rozloženie aplikácie načíta zoznam firiem znova. */
+export const FIRMY_ZMENENE = "faktero:firmy-zmenene";
+
+/**
+ * Oznámi, že sa zmenilo niečo, čo ukazuje menu a prepínač firiem (názov,
+ * krajina, rola). Zoznam firiem sa inak pri prechode medzi stránkami
+ * nenačítava znova.
+ */
+export function oznamZmenuFiriem() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(FIRMY_ZMENENE));
+}
+
+/** Ako dlho vydrží zoznam firiem v pamäti, kým sa pri prechode načíta znova. */
+export const FIRMY_PLATIA_MS = 60_000;
+
+export function firmyZastarane(nacitaneOd: number, teraz: number) {
+  return teraz - nacitaneOd > FIRMY_PLATIA_MS;
+}
