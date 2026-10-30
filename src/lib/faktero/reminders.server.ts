@@ -8,6 +8,7 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { krajinaDane } from "./vat-rates";
 import { jePodnikatel, omeskanieDe, upomienkaDe } from "./upomienky-de";
 import { datumNaDoklade } from "./faktura-jazyk";
+import { jazykFaktury } from "./email-jazyk";
 
 export type ReminderNumber = 1 | 2 | 3;
 
@@ -24,6 +25,22 @@ const DEFAULT_MESSAGES: Record<ReminderNumber, string> = {
   1: "Dobrý deň,\n\ndovoľujeme si Vás upozorniť, že faktúra {invoice_number} v sume {total} bola splatná dňa {due_date} a k dnešnému dňu evidujeme, že ešte nebola uhradená.\n\nProsíme Vás o jej úhradu v čo najkratšom možnom čase. V prípade, že platba bola už uskutočnená, považujte túto upomienku za bezpredmetnú.\n\nĎakujeme,\n{company_name}",
   2: "Dobrý deň,\n\ntoto je druhá upomienka k faktúre {invoice_number} v sume {total}, ktorá bola splatná dňa {due_date} a doteraz nebola uhradená.\n\nProsíme o bezodkladnú úhradu, aby sme nemuseli pristúpiť k ďalším krokom.\n\nS pozdravom,\n{company_name}",
   3: "Dobrý deň,\n\njedná sa o tretiu a poslednú upomienku k faktúre {invoice_number} v sume {total}, splatnej dňa {due_date}.\n\nAk nebude čiastka uhradená v najbližších dňoch, budeme nútení postúpiť pohľadávku na ďalšie vymáhanie.\n\nS pozdravom,\n{company_name}",
+};
+
+/*
+  Česká firma (alebo faktúra po česky) dostávala upomienku po slovensky —
+  QA 30. 10.: „Dobrý deň, dovoľujeme si Vás upozorniť…“ k faktúre v CZK.
+*/
+const DEFAULT_SUBJECTS_CS: Record<ReminderNumber, string> = {
+  1: "Upomínka: Faktura {invoice_number} je po splatnosti",
+  2: "2. upomínka: Faktura {invoice_number} je po splatnosti",
+  3: "3. upomínka: Faktura {invoice_number} je po splatnosti",
+};
+
+const DEFAULT_MESSAGES_CS: Record<ReminderNumber, string> = {
+  1: "Dobrý den,\n\ndovolujeme si Vás upozornit, že faktura {invoice_number} na částku {total} byla splatná dne {due_date} a k dnešnímu dni evidujeme, že dosud nebyla uhrazena.\n\nProsíme Vás o její úhradu v co nejkratším možném termínu. Pokud již byla platba provedena, považujte prosím tuto upomínku za bezpředmětnou.\n\nDěkujeme,\n{company_name}",
+  2: "Dobrý den,\n\ntoto je druhá upomínka k faktuře {invoice_number} na částku {total}, která byla splatná dne {due_date} a dosud nebyla uhrazena.\n\nProsíme o neprodlenou úhradu, abychom nemuseli přistoupit k dalším krokům.\n\nS pozdravem,\n{company_name}",
+  3: "Dobrý den,\n\njedná se o třetí a poslední upomínku k faktuře {invoice_number} na částku {total}, splatné dne {due_date}.\n\nPokud nebude částka uhrazena v nejbližších dnech, budeme nuceni postoupit pohledávku k dalšímu vymáhání.\n\nS pozdravem,\n{company_name}",
 };
 
 export function defaultReminderSubject(n: ReminderNumber) {
@@ -105,16 +122,17 @@ export function buildReminderContent({
         }),
       })
     : null;
+  const cs = !jeDe && jazykFaktury(invoice, company) === "cs";
   const subjectTpl =
     overrideSubject ??
     (company as any)?.[`reminder_subject_${reminderNumber}`] ??
     de?.predmet ??
-    DEFAULT_SUBJECTS[reminderNumber];
+    (cs ? DEFAULT_SUBJECTS_CS : DEFAULT_SUBJECTS)[reminderNumber];
   const messageTpl =
     overrideMessage ??
     (company as any)?.[`reminder_message_${reminderNumber}`] ??
     de?.text ??
-    DEFAULT_MESSAGES[reminderNumber];
+    (cs ? DEFAULT_MESSAGES_CS : DEFAULT_MESSAGES)[reminderNumber];
 
   const subject = applyVars(subjectTpl, invoice, company);
   const message = applyVars(messageTpl, invoice, company);
@@ -125,7 +143,9 @@ export function buildReminderContent({
         udaje: "Zahlungsdaten",
         vs: "Verwendungszweck",
       }
-    : { suma: "Suma", splatnost: "Pôvodná splatnosť", udaje: "Platobné údaje", vs: "VS" };
+    : cs
+      ? { suma: "Částka", splatnost: "Původní splatnost", udaje: "Platební údaje", vs: "VS" }
+      : { suma: "Suma", splatnost: "Pôvodná splatnosť", udaje: "Platobné údaje", vs: "VS" };
 
   const paymentDetails = [
     sUctomFaktury(company ?? {}, invoice).iban
