@@ -71,6 +71,7 @@ import { NotificationBell } from "@/components/faktero/NotificationBell";
 import { NahlasitChybu } from "@/components/faktero/NahlasitChybu";
 import { getMyAdminRole } from "@/lib/faktero/admin.functions";
 import { pocetMojichUlohFn } from "@/lib/faktero/moje-ulohy.functions";
+import { POCTY_ZMENENE, trebaObnovitPocty } from "@/lib/faktero/pocty-menu";
 import { useServerFn } from "@tanstack/react-start";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { useIsNative } from "@/hooks/useIsNative";
@@ -89,10 +90,7 @@ import {
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import type { KrajinaDane } from "@/lib/faktero/vat-rates";
-import {
-  CESTA_PRIJATYCH_EFAKTUR,
-  dotazNezaevidovanych,
-} from "@/lib/faktero/efaktura/upozornenie-prijatej";
+import { CESTA_PRIJATYCH_EFAKTUR } from "@/lib/faktero/efaktura/upozornenie-prijatej";
 type Company = {
   id: string;
   name: string;
@@ -213,12 +211,14 @@ export function AppShell({
     let cancelled = false;
     (async () => {
       try {
-        const { data: u } = await supabase.auth.getUser();
-        if (!u.user || cancelled) return;
+        // Id z relácie v pamäti stačí — riadok platform_admins aj tak stráži RLS.
+        const { data: u } = await supabase.auth.getSession();
+        const uid = u.session?.user?.id;
+        if (!uid || cancelled) return;
         const { data } = await supabase
           .from("platform_admins")
           .select("role")
-          .eq("user_id", u.user.id)
+          .eq("user_id", uid)
           .maybeSingle();
         if (!cancelled) setAdminRole((data?.role as string | undefined) ?? null);
       } catch {
@@ -231,85 +231,69 @@ export function AppShell({
   }, []);
 
   /*
-    Počet nespracovaných dokladov pri položke v menu: doklady v Nespracovaných
-    a bločky, ktoré ešte nikto neskontroloval — to isté, čo ukazuje stránka.
-    Obnoví sa pri prechode na inú stránku a raz za minútu.
-  */
-  const [pocetNespracovanych, setPocetNespracovanych] = useState(0);
-  useEffect(() => {
-    let zrusene = false;
-    const nacitaj = async () => {
-      const cid = getActiveCompanyId();
-      if (!cid) return;
-      const [a, b] = await Promise.all([
-        supabase.from("nespracovane_doklady" as any).select("id", { count: "exact", head: true }).eq("company_id", cid),
-        supabase
-          .from("expense_documents")
-          .select("id", { count: "exact", head: true })
-          .eq("company_id", cid)
-          .eq("status", "new"),
-      ]);
-      if (!zrusene) setPocetNespracovanych((a.count ?? 0) + (b.count ?? 0));
-    };
-    void nacitaj().catch(() => {});
-    const casovac = setInterval(() => void nacitaj().catch(() => {}), 60_000);
-    return () => {
-      zrusene = true;
-      clearInterval(casovac);
-    };
-  }, [pathname]);
+    Počty pri položkách menu — Nespracované (doklady a neskontrolované
+    bločky), Prijaté eFaktúry (nezaevidované) a Moje úlohy (schválenie,
+    komentáre, nespracované, eFaktúry). Všetko dá jedna serverová funkcia
+    prihláseným klientom, takže vlastný prístup bez oblasti Doklady dostane
+    pri eFaktúrach 0, tak ako na stránke.
 
-  /*
-    Počet prijatých eFaktúr, ktoré ešte nikto nezaevidoval — pri položke
-    Prijaté eFaktúry. Prihláseným klientom, takže vlastný prístup bez oblasti
-    Doklady dostane 0. Obnovuje sa ako počet nespracovaných.
+    Obnovujú sa raz za minútu (jeden časovač), po prepnutí firmy, po udalosti
+    `obnovPoctyMenu()`, po návrate na kartu a pri prechode na inú stránku
+    podľa `trebaObnovitPocty` — po odchode zo stránky s dokladmi vždy, inak
+    len keď sú staršie než 30 s.
   */
-  const [pocetEfaktur, setPocetEfaktur] = useState(0);
+  const nacitajPocty = useServerFn(pocetMojichUlohFn);
+  const [pocty, setPocty] = useState({ nespracovane: 0, efaktury: 0, spolu: 0 });
+  const poctyRef = useRef({ cesta: null as string | null, kedy: 0, firma: null as string | null });
+  const obnovPocty = useRef<() => void>(() => {});
   useEffect(() => {
     let zrusene = false;
+    let poradie = 0;
     const nacitaj = async () => {
       const cid = getActiveCompanyId();
       if (!cid) return;
-      const { count, error } = await dotazNezaevidovanych(supabase, cid, "id", true);
-      if (!zrusene && !error) setPocetEfaktur(count ?? 0);
+      const moje = ++poradie;
+      poctyRef.current.kedy = Date.now();
+      poctyRef.current.firma = cid;
+      const r = await nacitajPocty({ data: { company_id: cid } });
+      // Staršia odpoveď nesmie prepísať novšiu (alebo počty inej firmy).
+      if (zrusene || moje !== poradie || getActiveCompanyId() !== cid) return;
+      setPocty({ nespracovane: r.nespracovane, efaktury: r.efaktury, spolu: r.spolu });
     };
-    void nacitaj().catch(() => {});
-    const casovac = setInterval(() => void nacitaj().catch(() => {}), 60_000);
+    obnovPocty.current = () => void nacitaj().catch(() => {});
+    const naKarte = () => {
+      if (document.visibilityState === "visible") obnovPocty.current();
+    };
+    const casovac = setInterval(() => {
+      if (document.visibilityState !== "hidden") obnovPocty.current();
+    }, 60_000);
+    window.addEventListener(POCTY_ZMENENE, obnovPocty.current);
+    document.addEventListener("visibilitychange", naKarte);
     return () => {
       zrusene = true;
       clearInterval(casovac);
+      window.removeEventListener(POCTY_ZMENENE, obnovPocty.current);
+      document.removeEventListener("visibilitychange", naKarte);
     };
-  }, [pathname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    const p = poctyRef.current;
+    const inaFirma = p.firma !== getActiveCompanyId();
+    if (inaFirma || trebaObnovitPocty(p.cesta, pathname, Date.now() - p.kedy)) {
+      obnovPocty.current();
+    }
+    p.cesta = pathname;
+  }, [pathname, activeId]);
+  const pocetNespracovanych = pocty.nespracovane;
+  const pocetEfaktur = pocty.efaktury;
+  const pocetUloh = pocty.spolu;
   const pocetPriPolozke = (to: string) =>
     to === "/nespracovane"
       ? pocetNespracovanych
       : to === CESTA_PRIJATYCH_EFAKTUR
         ? pocetEfaktur
         : undefined;
-
-  /*
-    Počet pri „Moje úlohy": schválenie, komentáre na vyriešenie a nespracované
-    doklady — to isté, čo stránka vypíše. Obnovuje sa rovnako ako počet
-    nespracovaných.
-  */
-  const nacitajPocetUloh = useServerFn(pocetMojichUlohFn);
-  const [pocetUloh, setPocetUloh] = useState(0);
-  useEffect(() => {
-    let zrusene = false;
-    const nacitaj = async () => {
-      const cid = getActiveCompanyId();
-      if (!cid) return;
-      const r = await nacitajPocetUloh({ data: { company_id: cid } });
-      if (!zrusene) setPocetUloh(r.spolu);
-    };
-    void nacitaj().catch(() => {});
-    const casovac = setInterval(() => void nacitaj().catch(() => {}), 60_000);
-    return () => {
-      zrusene = true;
-      clearInterval(casovac);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
 
   /* Okno na nahlásenie chyby má stav tu — otvára sa z ponuky pod avatarom. */
   const [nahlasenieOtvorene, setNahlasenieOtvorene] = useState(false);

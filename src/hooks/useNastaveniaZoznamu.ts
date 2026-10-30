@@ -40,8 +40,9 @@ export function useNastaveniaZoznamu(zoznam: string, stlpce: StlpecZoznamu[]) {
     zmena: { stlpce?: string[] | null; filtre?: UlozenyFilter[] },
   ) {
     if (!cid) return;
-    const { data: auth } = await supabase.auth.getUser();
-    const userId = auth.user?.id;
+    // Id z relácie v pamäti — zápis aj tak stráži RLS, `getUser` by sa pýtal servera.
+    const { data: auth } = await supabase.auth.getSession();
+    const userId = auth.session?.user?.id;
     if (!userId) return;
     const companyId = preVsetky ? null : cid;
     let q = supabase

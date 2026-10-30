@@ -3,7 +3,7 @@ import { VlastnySmtp } from "@/components/faktero/VlastnySmtp";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { getActiveCompanyId, oznamZmenuFiriem } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
@@ -58,6 +58,8 @@ function CompanyPage() {
     // zabudnúť, inak by faktúra ďalej ponúkala sadzby predchádzajúcej krajiny.
     zabudniKrajinuDane(id);
     zabudniRezimDph(id);
+    // Názov a krajinu ukazuje aj menu — zoznam firiem sa inak neobnoví.
+    oznamZmenuFiriem();
     toast.success(t("Uložené"));
   }
 

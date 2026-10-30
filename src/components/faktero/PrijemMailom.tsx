@@ -105,7 +105,7 @@ export function PrijemMailom({
     <>
       {/* Potvrdenie je nad kartou a nie v nej — keď je karta zavretá, kód by
           človek nikdy nenašiel. */}
-      <PotvrdeniePreposielania companyId={firmaId} />
+      <PotvrdeniePreposielania companyId={firmaId} pocuvat={otvorene} />
 
       <div className="mb-4 rounded-xl border border-border bg-card">
         <button

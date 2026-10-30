@@ -5,7 +5,7 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EfakturaOznam } from "@/components/faktero/EfakturaOznam";
 import { AppShell, type ProductMode } from "@/components/faktero/AppShell";
@@ -13,6 +13,8 @@ import {
   getActiveCompanyId,
   setActiveCompanyId,
   fetchMyCompanies,
+  firmyZastarane,
+  FIRMY_ZMENENE,
 } from "@/lib/faktero/active-company";
 import { PlanGateBanner } from "@/components/faktero/PlanGateBanner";
 import { zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
@@ -109,12 +111,15 @@ function AuthedLayout() {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!mounted || !data.user) return;
+    // `getSession` stačí: id je z relácie v pamäti a riadok aj tak stráži RLS.
+    // `getUser` by sa pri každom otvorení pýtal servera.
+    supabase.auth.getSession().then(({ data }) => {
+      const uid = data.session?.user?.id;
+      if (!mounted || !uid) return;
       supabase
         .from("profiles")
         .select("product_mode, deletion_scheduled_for")
-        .eq("id", data.user.id)
+        .eq("id", uid)
         .maybeSingle()
         .then(({ data: p }) => {
           if (!mounted) return;
@@ -130,27 +135,69 @@ function AuthedLayout() {
     };
   }, []);
 
+  /*
+    Firmy sa načítajú raz, nie pri každom prechode na inú stránku. Znova sa
+    pýtajú, keď:
+    - niekto oznámi zmenu (`oznamZmenuFiriem` — uloženie údajov firmy),
+    - človek sa vráti na kartu prehliadača (rolu mu mohol zmeniť kolega),
+    - pri prechode, ak je zoznam prázdny (onboarding práve založil firmu)
+      alebo starší než minúta.
+    Presmerovanie na onboarding a z neho beží pri každom prechode nad
+    zoznamom v pamäti — tak ako doteraz.
+  */
+  const firmyRef = useRef<any[] | null>(null);
+  const nacitaneOd = useRef(0);
+  const presmeruj = useCallback(
+    (list: any[], cesta: string) => {
+      if (list.length === 0 && !cesta.startsWith("/onboarding")) {
+        navigate({ to: "/onboarding", replace: true });
+      } else if (list.length > 0 && cesta.startsWith("/onboarding")) {
+        navigate({ to: "/dashboard", replace: true });
+      }
+    },
+    [navigate],
+  );
+  const nacitajFirmy = useCallback(async () => {
+    const list = await fetchMyCompanies();
+    nacitaneOd.current = Date.now();
+    firmyRef.current = list;
+    setCompanies(list);
+    const stored = getActiveCompanyId();
+    const next = list.find((c: any) => c.id === stored)?.id ?? list[0]?.id ?? null;
+    if (next !== stored) setActiveCompanyId(next);
+    setActiveId(next);
+    return list;
+  }, []);
+
   useEffect(() => {
     let mounted = true;
-    fetchMyCompanies()
-      .then((list) => {
-        if (!mounted) return;
-        setCompanies(list);
-        const stored = getActiveCompanyId();
-        const next = list.find((c: any) => c.id === stored)?.id ?? list[0]?.id ?? null;
-        if (next !== stored) setActiveCompanyId(next);
-        setActiveId(next);
-        if (list.length === 0 && !pathname.startsWith("/onboarding")) {
-          navigate({ to: "/onboarding", replace: true });
-        } else if (list.length > 0 && pathname.startsWith("/onboarding")) {
-          navigate({ to: "/dashboard", replace: true });
-        }
+    const list = firmyRef.current;
+    if (list && list.length > 0 && !firmyZastarane(nacitaneOd.current, Date.now())) {
+      presmeruj(list, pathname);
+      return;
+    }
+    nacitajFirmy()
+      .then((nove) => {
+        if (mounted) presmeruj(nove, pathname);
       })
       .catch(console.error);
     return () => {
       mounted = false;
     };
-  }, [pathname]);
+  }, [pathname, nacitajFirmy, presmeruj]);
+
+  useEffect(() => {
+    const znova = () => void nacitajFirmy().catch(console.error);
+    const naKarte = () => {
+      if (document.visibilityState === "visible") znova();
+    };
+    window.addEventListener(FIRMY_ZMENENE, znova);
+    document.addEventListener("visibilitychange", naKarte);
+    return () => {
+      window.removeEventListener(FIRMY_ZMENENE, znova);
+      document.removeEventListener("visibilitychange", naKarte);
+    };
+  }, [nacitajFirmy]);
 
   useEffect(() => {
     if (!profileLoaded || !productMode) return;
@@ -162,9 +209,10 @@ function AuthedLayout() {
     if (!needsUpgrade) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user || cancelled) return;
-      await supabase.from("profiles").update({ product_mode: "both" }).eq("id", data.user.id);
+      const { data } = await supabase.auth.getSession();
+      const uid = data.session?.user?.id;
+      if (!uid || cancelled) return;
+      await supabase.from("profiles").update({ product_mode: "both" }).eq("id", uid);
       if (!cancelled) setProductMode("both");
     })();
     return () => {
