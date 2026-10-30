@@ -17,6 +17,7 @@ import {
   bezTajomstiev,
   jazdaNaTrip,
   normalizujSpz,
+  najblizsiaSkupina,
   oknoStahovania,
   tankovanieNaRiadok,
   trebaSynchronizovat,
@@ -273,48 +274,52 @@ export async function synchronizujPripojenie(
     const sparovane = (vazby ?? []).filter((x: any) => x.vehicle_id);
     v.nesparovane = (vazby ?? []).length - sparovane.length;
 
-    // Jazdy po vozidlách a oknách.
-    for (const vz of sparovane) {
-      let jazdyDo: string | null = vz.jazdy_do;
-      for (;;) {
-        if (Date.now() > koniec - 3000) {
-          v.neuplne = true;
-          break;
-        }
-        const teraz = new Date();
-        const okno = oknoStahovania(jazdyDo, teraz);
-        if (!okno) break;
-        const jazdy: GpsJazda[] = await adapter.jazdy(p, okno.od, okno.do_, [
-          String(vz.externe_id),
-        ]);
-        v.stiahnute += jazdy.length;
-        const riadky: TripRiadok[] = [];
-        for (const j of jazdy) {
-          if (String(j.vozidloExterneId) !== String(vz.externe_id)) continue;
-          const r = jazdaNaTrip(j, {
-            companyId: pr.company_id,
-            vehicleId: vz.vehicle_id,
-            poskytovatel: adapter.id,
-            nazovPoskytovatela: adapter.nazov,
-            pripojenieId: pr.id,
-            teraz,
-          });
-          if ("preskoc" in r) v.preskocene++;
-          else riadky.push(r.riadok);
-        }
-        const z = await zapisNove("trips", pr.company_id, adapter.id, riadky);
-        v.importovane += z.nove;
-        v.duplicity += z.duplicity;
-        v.chyby += z.chyby;
-        jazdyDo = okno.do_.toISOString();
-        await db
-          .from("gps_vozidla_vazby")
-          .update({ jazdy_do: jazdyDo, posledna_sync_at: new Date().toISOString() })
-          .eq("id", vz.id);
-        // Okno dobehlo po „teraz“ → vozidlo je aktuálne.
-        if (okno.do_.getTime() >= teraz.getTime() - 60_000) break;
+    // Jazdy po oknách. Vozidlá s rovnakým kurzorom (pri prvom stiahnutí a po
+    // každom úplnom behu sú všetky rovnaké) idú jedným volaním — poskytovatelia
+    // s prísnym limitom (Webfleet 1 volanie/min) tak nečakajú na každé auto.
+    const teraz = new Date();
+    const kurzory = new Map<string, string | null>();
+    for (const vz of sparovane) kurzory.set(vz.id, vz.jazdy_do ?? null);
+    for (;;) {
+      if (Date.now() > koniec - 3000) {
+        v.neuplne = true;
+        break;
       }
-      if (v.neuplne) break;
+      const skupina = najblizsiaSkupina(
+        sparovane.map((vz: any) => ({ id: vz.id, jazdyDo: kurzory.get(vz.id) ?? null })),
+        teraz,
+      );
+      if (!skupina) break;
+      const { okno, ids } = skupina;
+      const vSkupine = sparovane.filter((vz: any) => ids.includes(vz.id));
+      const podlaExt = new Map<string, any>(vSkupine.map((vz: any) => [String(vz.externe_id), vz]));
+      const jazdy: GpsJazda[] = await adapter.jazdy(p, okno.od, okno.do_, [...podlaExt.keys()]);
+      v.stiahnute += jazdy.length;
+      const riadky: TripRiadok[] = [];
+      for (const j of jazdy) {
+        const vz = podlaExt.get(String(j.vozidloExterneId));
+        if (!vz) continue;
+        const r = jazdaNaTrip(j, {
+          companyId: pr.company_id,
+          vehicleId: vz.vehicle_id,
+          poskytovatel: adapter.id,
+          nazovPoskytovatela: adapter.nazov,
+          pripojenieId: pr.id,
+          teraz,
+        });
+        if ("preskoc" in r) v.preskocene++;
+        else riadky.push(r.riadok);
+      }
+      const z = await zapisNove("trips", pr.company_id, adapter.id, riadky);
+      v.importovane += z.nove;
+      v.duplicity += z.duplicity;
+      v.chyby += z.chyby;
+      const jazdyDo = okno.do_.toISOString();
+      for (const id of ids) kurzory.set(id, jazdyDo);
+      await db
+        .from("gps_vozidla_vazby")
+        .update({ jazdy_do: jazdyDo, posledna_sync_at: new Date().toISOString() })
+        .in("id", ids);
     }
 
     // Tankovania (ak poskytovateľ vie).

@@ -227,3 +227,41 @@ describe("Geotab adaptér", () => {
     await expect(adapter.test(P)).rejects.toMatchObject({ druh: "siet" });
   });
 });
+
+describe("server (bezpečnosť)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it("povolí len *.geotab.com", async () => {
+    const { jeServerGeotabu } = await import("./geotab.server");
+    expect(jeServerGeotabu("my.geotab.com")).toBe(true);
+    expect(jeServerGeotabu("my123.geotab.com")).toBe(true);
+    expect(jeServerGeotabu("geotab.com.evil.sk")).toBe(false);
+    expect(jeServerGeotabu("10.0.0.1")).toBe(false);
+    expect(jeServerGeotabu("evil.sk/x.geotab.com")).toBe(false);
+    expect(jeServerGeotabu("my.geotab.com:8080")).toBe(false);
+  });
+  it("zadaný cudzí server heslo nedostane", async () => {
+    const f = vi.fn();
+    vi.stubGlobal("fetch", f);
+    const e = await adapter.test({ ...P, server: "https://127.0.0.1" }).catch((x) => x);
+    expect(e.druh).toBe("prihlasenie");
+    expect(f).not.toHaveBeenCalled();
+  });
+  it("path z odpovede mimo geotab.com sa nepoužije", async () => {
+    const f = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            result: {
+              credentials: { database: "d", userName: "u", sessionId: "s" },
+              path: "10.0.0.1",
+            },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    );
+    vi.stubGlobal("fetch", f);
+    const e = await adapter.test(P).catch((x) => x);
+    expect(e).toBeInstanceOf(GpsChyba);
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+});

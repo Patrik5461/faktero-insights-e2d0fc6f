@@ -29,6 +29,7 @@
  *    späť cez API → `sukromna: null`.
  */
 import { GpsChyba, type GpsAdapter, type GpsJazda, type GpsVozidlo } from "./typy";
+import { overVerejnyServer } from "../odoslanie-mailu.server";
 
 const PREDVOLENY_HOST = "hst-api.wialon.com";
 /** 0x1 základ + 0x2000 počítadlá + 0x00800000 profilové polia. */
@@ -91,10 +92,18 @@ async function volaj<T>(
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: telo.toString(),
+      // Presmerovanie by obišlo kontrolu adresy hostingu.
+      redirect: "manual",
+      signal: AbortSignal.timeout(20_000),
     });
   } catch {
     throw new GpsChyba("siet", "Server Wialon je nedostupný — skontrolujte adresu hostingu.");
   }
+  if (odp.status >= 300 && odp.status < 400)
+    throw new GpsChyba(
+      "prihlasenie",
+      "Hosting Wialon presmerúva na inú adresu — zadajte priamo adresu, na ktorej Wialon beží.",
+    );
   if (!odp.ok) throw new GpsChyba("api", `Wialon odpovedal stavom ${odp.status}.`);
   let r: unknown;
   try {
@@ -109,10 +118,40 @@ async function volaj<T>(
   return r as T;
 }
 
+/**
+ * Adresa hostingu, kam pôjde token: len https, bez mena/hesla a parametrov
+ * a len verejná IP (inak by sa cez pole „Adresa hostingu“ dalo volať do
+ * vnútornej siete servera). Predvolený hosting Wialonu netreba overovať.
+ */
+export async function overAdresuWialonu(host: string | undefined): Promise<string> {
+  const url = ajaxUrl(host);
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    throw new GpsChyba("prihlasenie", "Adresa hostingu Wialon nie je platná.");
+  }
+  if (u.protocol !== "https:")
+    throw new GpsChyba("prihlasenie", "Hosting Wialon musí byť na https:// adrese.");
+  if (u.username || u.password || u.search || u.hash)
+    throw new GpsChyba("prihlasenie", "Zadajte len adresu hostingu, bez mena, hesla a parametrov.");
+  if (u.hostname.toLowerCase() !== PREDVOLENY_HOST) {
+    try {
+      await overVerejnyServer(u.hostname.replace(/^\[|\]$/g, ""));
+    } catch {
+      throw new GpsChyba(
+        "prihlasenie",
+        `Server ${u.hostname} nie je verejne dostupná adresa — zadajte adresu, na ktorú sa dá pripojiť z internetu.`,
+      );
+    }
+  }
+  return url;
+}
+
 async function prihlas(p: Record<string, string>): Promise<Relacia> {
   const token = (p.token ?? "").trim();
   if (!token) throw new GpsChyba("prihlasenie", "Zadajte token z Wialonu.");
-  const url = ajaxUrl(p.url);
+  const url = await overAdresuWialonu(p.url);
   const r = await volaj<{ eid?: string }>(url, "token/login", { token, fl: 1 });
   if (!r?.eid) throw new GpsChyba("prihlasenie", "Wialon nevrátil reláciu.");
   return { url, sid: r.eid };
@@ -205,7 +244,7 @@ export const adapter: GpsAdapter = {
       typ: "url",
       povinne: false,
       pomoc:
-        "Predvolene hst-api.wialon.com (Wialon Hosting); pri Wialon Local adresa vášho servera.",
+        "Predvolene hst-api.wialon.com (Wialon Hosting); pri Wialon Local https:// adresa vášho servera dostupná z internetu.",
     },
     {
       kluc: "token",

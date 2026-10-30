@@ -25,11 +25,39 @@ export function oknoStahovania(
   jazdyDo: string | null | undefined,
   teraz: Date,
 ): { od: Date; do_: Date } | null {
+  // Kurzor až po „teraz“ → aktuálne. Prekryv platí až pre ďalší beh.
+  if (jazdyDo && new Date(jazdyDo).getTime() >= teraz.getTime() - 60_000) return null;
   const najskor = teraz.getTime() - PRVE_STIAHNUTIE_DNI * DEN_MS;
   const od = jazdyDo ? Math.max(najskor, new Date(jazdyDo).getTime() - PREKRYV_MS) : najskor;
   const do_ = Math.min(teraz.getTime(), od + MAX_OKNO_DNI * DEN_MS);
   if (do_ - od < 60_000) return null;
   return { od: new Date(od), do_: new Date(do_) };
+}
+
+/**
+ * Ďalšie okno na stiahnutie: vozidlá s najstarším kurzorom, ktoré majú
+ * rovnaké okno, idú spolu. `null` = všetky vozidlá sú aktuálne.
+ */
+export function najblizsiaSkupina(
+  vozidla: Array<{ id: string; jazdyDo: string | null }>,
+  teraz: Date,
+): { okno: { od: Date; do_: Date }; ids: string[] } | null {
+  let najlepsie: { od: Date; do_: Date } | null = null;
+  let ids: string[] = [];
+  for (const v of vozidla) {
+    const o = oknoStahovania(v.jazdyDo, teraz);
+    if (!o) continue;
+    if (!najlepsie || o.od.getTime() < najlepsie.od.getTime()) {
+      najlepsie = o;
+      ids = [v.id];
+    } else if (
+      o.od.getTime() === najlepsie.od.getTime() &&
+      o.do_.getTime() === najlepsie.do_.getTime()
+    ) {
+      ids.push(v.id);
+    }
+  }
+  return najlepsie ? { okno: najlepsie, ids } : null;
 }
 
 /** Patrí pripojenie do tohto behu cronu? */

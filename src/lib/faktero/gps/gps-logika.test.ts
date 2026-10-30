@@ -3,6 +3,7 @@ import {
   bezTajomstiev,
   chybajucePolia,
   jazdaNaTrip,
+  najblizsiaSkupina,
   normalizujSpz,
   oknoStahovania,
   rozdelPrihlasenie,
@@ -66,9 +67,42 @@ describe("oknoStahovania", () => {
     const o = oknoStahovania("2026-10-29T03:00:00.000Z", teraz)!;
     expect(o.od.toISOString()).toBe("2026-10-27T03:00:00.000Z");
   });
+  it("kurzor po teraz = aktuálne", () => {
+    expect(oknoStahovania(teraz.toISOString(), teraz)).toBeNull();
+  });
   it("starý kurzor neťahá viac ako 30 dní", () => {
     const o = oknoStahovania("2025-01-01T00:00:00Z", teraz)!;
     expect(o.od.toISOString()).toBe("2026-09-30T12:00:00.000Z");
+  });
+});
+
+describe("najblizsiaSkupina", () => {
+  const teraz = new Date("2026-10-30T12:00:00Z");
+  it("vozidlá s rovnakým kurzorom idú spolu, najstarší najprv", () => {
+    const s = najblizsiaSkupina(
+      [
+        { id: "a", jazdyDo: "2026-10-29T12:00:00Z" },
+        { id: "b", jazdyDo: null },
+        { id: "c", jazdyDo: null },
+        { id: "d", jazdyDo: teraz.toISOString() },
+      ],
+      teraz,
+    )!;
+    expect(s.ids).toEqual(["b", "c"]);
+    expect(s.okno.od.toISOString()).toBe("2026-09-30T12:00:00.000Z");
+  });
+  it("všetko aktuálne = null", () => {
+    expect(najblizsiaSkupina([{ id: "a", jazdyDo: teraz.toISOString() }], teraz)).toBeNull();
+  });
+  it("posun okien vždy skončí", () => {
+    let kurzor: string | null = "2026-01-01T00:00:00Z";
+    let krokov = 0;
+    for (;;) {
+      const s = najblizsiaSkupina([{ id: "a", jazdyDo: kurzor }], teraz);
+      if (!s) break;
+      kurzor = s.okno.do_.toISOString();
+      expect(++krokov).toBeLessThan(5);
+    }
   });
 });
 

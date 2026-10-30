@@ -117,21 +117,40 @@ function chybaZGeotabu(e: GeotabChyba): GpsChyba {
   return new GpsChyba("api", `Geotab vrátil chybu${typ ? ` (${typ})` : ""}.`);
 }
 
+/**
+ * Heslo a relácia smú ísť len na servery Geotabu — ako zo zadaného poľa
+ * „Server“, tak z `path` v odpovedi Authenticate. Inak by sa cez ne dalo
+ * volať do vnútornej siete servera alebo na cudzí server.
+ */
+export function jeServerGeotabu(server: string): boolean {
+  return /^([a-z0-9-]+\.)+geotab\.com$/i.test(server);
+}
+
 async function zavolaj<T>(
   server: string,
   method: string,
   params: Record<string, unknown>,
 ): Promise<T> {
+  if (!jeServerGeotabu(server))
+    throw new GpsChyba(
+      "prihlasenie",
+      "Server Geotab musí byť adresa na geotab.com (napr. my.geotab.com).",
+    );
   let odp: Response;
   try {
     odp = await fetch(`https://${server}/apiv1`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ method, params }),
+      // Presmerovanie by obišlo kontrolu servera.
+      redirect: "manual",
+      signal: AbortSignal.timeout(20_000),
     });
   } catch {
     throw new GpsChyba("siet", `Server Geotab ${server} je nedostupný.`);
   }
+  if (odp.status >= 300 && odp.status < 400)
+    throw new GpsChyba("api", "Server Geotab presmerúva na inú adresu.");
   if (odp.status === 429) throw new GpsChyba("limit", "Geotab: prekročený limit volaní.");
   if (!odp.ok) throw new GpsChyba("api", `Geotab odpovedal stavom ${odp.status}.`);
   let telo: { result?: T; error?: GeotabChyba };

@@ -205,3 +205,31 @@ describe("Wialon adaptér", () => {
     expect(volania).toHaveLength(0);
   });
 });
+
+describe("adresa hostingu (bezpečnosť)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it("http, meno v adrese a vnútorná IP sa odmietnu bez volania", async () => {
+    const f = vi.fn();
+    vi.stubGlobal("fetch", f);
+    for (const url of [
+      "http://gps.firma.sk",
+      "https://a:b@gps.firma.sk",
+      "https://127.0.0.1",
+      "https://10.0.0.5",
+    ]) {
+      const e = await adapter.test({ url, token: TOKEN }).catch((x) => x);
+      expect(e).toBeInstanceOf(GpsChyba);
+      expect(e.druh).toBe("prihlasenie");
+    }
+    expect(f).not.toHaveBeenCalled();
+  });
+  it("presmerovanie sa nenasleduje", async () => {
+    const f = vi.fn(
+      async () => new Response("", { status: 302, headers: { location: "http://10.0.0.1/" } }),
+    );
+    vi.stubGlobal("fetch", f);
+    const e = await adapter.test(P).catch((x) => x);
+    expect(e).toBeInstanceOf(GpsChyba);
+    expect((f.mock.calls[0] as any)[1].redirect).toBe("manual");
+  });
+});
