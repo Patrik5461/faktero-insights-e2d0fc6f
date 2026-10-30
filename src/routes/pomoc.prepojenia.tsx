@@ -285,6 +285,42 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "transeu",
+    title: "Trans.eu pre dopravcov",
+    body: (
+      <>
+        <p>
+          Dopravca, ktorý berie prepravy z burzy Trans.eu, ich vo Fakteri nemusí prepisovať. V{" "}
+          <strong>Nastavenia → Trans.eu</strong> pripojíte účet (Trans.eu vás požiada o povolenie;
+          heslo Faktero nevidí) a tlačidlom <strong>Stiahnuť z Trans.eu</strong> načítate prijaté
+          prepravné objednávky — zákazníka, trasu, termíny nakládky a vykládky, cenu a menu. Nové
+          objednávky sa môžu sťahovať aj samy každú hodinu.
+        </p>
+        <ul>
+          <li>
+            <strong>Založiť objednávku</strong> — z prepravy vznikne prijatá objednávka. Zákazníka
+            Faktero nájde v adresári podľa IČ DPH, inak ho založí aj s adresou z Trans.eu.
+          </li>
+          <li>
+            <strong>Vystaviť faktúru</strong> — faktúra jedným klikom. Režim DPH sa navrhne podľa
+            zákazníka: firma s IČ DPH iného štátu EÚ dostane faktúru bez DPH s prenesením daňovej
+            povinnosti (služba, § 15 ods. 1), zákazník mimo EÚ tiež bez DPH, tuzemský so základnou
+            sadzbou. Ak chcete faktúru pred vystavením upraviť, otvorte ju vo formulári.
+          </li>
+          <li>
+            <strong>Poslať faktúru do Trans.eu</strong> — PDF faktúry sa priloží k objednávke a
+            zákazník ho uvidí priamo v Trans.eu.
+          </li>
+        </ul>
+        <p>
+          Úhradu faktúry Trans.eu od dopravcu neprijíma — sledujete ju vo Fakteri ako pri ostatných
+          faktúrach (párovanie s bankou). Cena za kilometer sa prepočíta podľa vzdialenosti, ktorú
+          Trans.eu k objednávke uvádza.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "jazdy",
     title: "Kniha jázd a vozidlá",
     body: (
