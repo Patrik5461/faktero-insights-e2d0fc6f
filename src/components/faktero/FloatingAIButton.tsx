@@ -8,6 +8,7 @@ import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
+import { BEZPECNY_MARKDOWN } from "@/lib/faktero/markdown-ai";
 import { Sparkles, X, Minus, Send, Loader2, Plus, RotateCcw } from "lucide-react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
@@ -404,7 +405,7 @@ function ChatBody({ companyId }: { companyId: string }) {
             >
               {m.role === "assistant" ? (
                 <div className="prose prose-sm max-w-none dark:prose-invert [&_p]:my-1 [&_ul]:my-1 [&_a]:text-primary">
-                  <ReactMarkdown>{m.content}</ReactMarkdown>
+                  <ReactMarkdown {...BEZPECNY_MARKDOWN}>{m.content}</ReactMarkdown>
                 </div>
               ) : (
                 <p className="whitespace-pre-wrap">{m.content}</p>

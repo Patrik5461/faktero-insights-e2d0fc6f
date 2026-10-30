@@ -723,3 +723,16 @@ describe("MRP-K/S — položky prijatej faktúry, záporné riadky a dátum odpo
     );
   });
 });
+
+describe("MRP-K/S — nebezpečný text z dokladu", () => {
+  it("&, <, ]]> a riadiace znaky nerozbijú XML ani schému", () => {
+    const zly = 'A&B <b>x</b> ]]> "q"\u000B\u0001￿';
+    const d = vystavena({ total: 123, customer_name: zly, customer_street: zly, notes: zly }, [
+      { ...dveSadzby[0], name: zly, quantity: 1, unit_price: 100 },
+    ]);
+    const { xml } = buildMrpUctovanie({ firma: firmaSk, doklady: [d] });
+    expect(xml).not.toMatch(/[\u0001\u000B￿]/);
+    expect(xml).toContain("A&amp;B &lt;b&gt;");
+    expect(chybaSchemy(xml)).toBeNull();
+  });
+});

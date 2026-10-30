@@ -28,8 +28,20 @@ export type Partner = {
 const VstupPartnera = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(1, "Názov je povinný").max(80),
-  logo_url: z.string().trim().max(500).nullable().optional(),
-  website: z.string().trim().max(300).nullable().optional(),
+  logo_url: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => !v || /^https?:\/\//i.test(v), "Logo musí byť adresa https://")
+    .nullable()
+    .optional(),
+  website: z
+    .string()
+    .trim()
+    .max(300)
+    .refine((v) => !v || /^https?:\/\//i.test(v), "Web musí začínať https://")
+    .nullable()
+    .optional(),
   sort_order: z.number().int().min(0).max(9999).optional(),
   active: z.boolean().optional(),
 });

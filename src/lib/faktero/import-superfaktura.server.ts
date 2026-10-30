@@ -1,4 +1,5 @@
-import { unzipSync, strFromU8 } from "fflate";
+import { strFromU8 } from "fflate";
+import { overZip, rozbalZip } from "./bezpecny-zip";
 import { XMLParser } from "fast-xml-parser";
 import { vsNaUlozenie } from "./variabilny-symbol";
 import * as XLSX from "xlsx";
@@ -114,7 +115,8 @@ export async function extractTables(
     return parseXlsx(fileBytes, fileName);
   }
   if (lower.endsWith(".zip")) {
-    const unzipped = unzipSync(fileBytes);
+    // So stropom — ZIP bomba by inak zhodila celý server.
+    const unzipped = rozbalZip(fileBytes);
     const tables: ParsedTable[] = [];
     for (const [path, bytes] of Object.entries(unzipped)) {
       const l = path.toLowerCase();
@@ -163,6 +165,7 @@ export async function extractTables(
 function parseXlsx(bytes: Uint8Array, fileName: string): ParsedTable[] {
   let wb: XLSX.WorkBook;
   try {
+    overZip(bytes);
     wb = XLSX.read(bytes, { type: "array", cellDates: false, raw: false });
   } catch {
     return [];

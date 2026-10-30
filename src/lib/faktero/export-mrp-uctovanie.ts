@@ -32,6 +32,7 @@
   - Databáza MRP je vo Windows-1250 — znaky mimo nej sa nahradia.
 */
 
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import {
   prekazkaZaokruhlenia,
   type DokladUctovania,
@@ -123,7 +124,7 @@ export function textPreMrp(s: unknown): string {
 }
 
 const esc = (s: unknown) =>
-  textPreMrp(s)
+  bezZakazanychXml(textPreMrp(s))
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

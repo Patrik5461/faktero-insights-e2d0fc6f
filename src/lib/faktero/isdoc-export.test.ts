@@ -220,3 +220,19 @@ describe("ISDOC vývoz", () => {
     ).toThrow(/nemá položky/);
   });
 });
+
+describe("ISDOC — nebezpečný text z dokladu", () => {
+  const zly = "A&B <b>x</b> ]]> \"q\" 'a'\u000B\u0001￿";
+  it("ostane platný podľa schémy a bez znakov, ktoré XML 1.0 nepovoľuje", () => {
+    const x = buildIsdoc({
+      invoice: { ...faktura, customer_name: zly, customer_street: zly, notes: zly },
+      items: polozky.map((p) => ({ ...p, name: zly })),
+      company: { ...firma, name: zly },
+    });
+    expect(x).not.toMatch(/[\u0001\u000B￿]/);
+    expect(x).toContain("A&amp;B &lt;b&gt;");
+    const doc = XmlDocument.fromString(x);
+    expect(() => validator.validate(doc)).not.toThrow();
+    doc.dispose();
+  });
+});

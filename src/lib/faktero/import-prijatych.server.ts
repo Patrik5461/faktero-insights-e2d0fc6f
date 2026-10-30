@@ -5,6 +5,13 @@
  * Beží na pozadí (nginx zruší požiadavku po 30 s a sto skenov číta AI aj
  * desať minút); priebeh sa zapisuje do `import_jobs` a stránka sa naň pýta.
  */
+import {
+  PrilisVelkyZip,
+  novyRozpocet,
+  overZip,
+  rozbalZip,
+  type RozpocetZipu,
+} from "./bezpecny-zip";
 import { XMLParser } from "fast-xml-parser";
 import {
   citajCsv,
@@ -61,7 +68,11 @@ const parser = new XMLParser({
  * Neznáme súbory sa preskočia s poznámkou — ZIP od Doklado býva aj s
  * pomocnými súbormi.
  */
-export async function rozbal(vstupy: Vstup[], hlbka = 0): Promise<{
+export async function rozbal(
+  vstupy: Vstup[],
+  hlbka = 0,
+  rozpocet: RozpocetZipu = novyRozpocet(),
+): Promise<{
   zaznamy: PrijatyZaznam[];
   skeny: Vstup[];
   poznamky: string[];
@@ -76,14 +87,12 @@ export async function rozbal(vstupy: Vstup[], hlbka = 0): Promise<{
     try {
       if (nizke.endsWith(".zip")) {
         if (hlbka > 2) continue;
-        const JSZip = (await import("jszip")).default;
-        const zip = await JSZip.loadAsync(v.bajty);
-        const vnutri: Vstup[] = [];
-        for (const f of Object.values(zip.files)) {
-          if (f.dir) continue;
-          vnutri.push({ meno: f.name, bajty: new Uint8Array(await f.async("uint8array")) });
-        }
-        const r = await rozbal(vnutri, hlbka + 1);
+        // So stropom spoločným pre všetky vnorené archívy — ZIP bomba by inak
+        // zaplnila pamäť servera.
+        const vnutri: Vstup[] = Object.entries(rozbalZip(v.bajty, rozpocet)).map(
+          ([meno, bajty]) => ({ meno, bajty }),
+        );
+        const r = await rozbal(vnutri, hlbka + 1, rozpocet);
         zaznamy.push(...r.zaznamy);
         skeny.push(...r.skeny);
         poznamky.push(...r.poznamky);
@@ -102,6 +111,7 @@ export async function rozbal(vstupy: Vstup[], hlbka = 0): Promise<{
         zaznamy.push(...najdene);
       } else if (nizke.endsWith(".xlsx") || nizke.endsWith(".xls")) {
         const XLSX = await import("xlsx");
+        overZip(v.bajty);
         const kniha = XLSX.read(v.bajty, { type: "array" });
         let pocet = 0;
         for (const nazov of kniha.SheetNames) {
@@ -121,6 +131,7 @@ export async function rozbal(vstupy: Vstup[], hlbka = 0): Promise<{
         poznamky.push(`${meno}: neznámy typ súboru, preskočené`);
       }
     } catch (e: any) {
+      if (e instanceof PrilisVelkyZip) throw e;
       poznamky.push(`${meno}: súbor sa nepodarilo prečítať (${String(e?.message ?? e).slice(0, 80)})`);
     }
   }

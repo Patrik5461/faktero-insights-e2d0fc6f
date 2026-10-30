@@ -256,3 +256,32 @@ describe("doterajší export vystavených faktúr do Money S3", () => {
     }
   });
 });
+
+describe("Money S3 — nebezpečný text z dokladu", () => {
+  it("&, <, ]]> a riadiace znaky v mene a položke nerozbijú XML ani schému", () => {
+    const zly = 'A&B <b>x</b> ]]> "q"\u000B\u0001￿';
+    const d = vystavenaNaUctovanie(
+      {
+        id: "v9",
+        type: "regular",
+        invoice_number: "2026009",
+        variable_symbol: "2026009",
+        issue_date: "2026-10-01",
+        delivery_date: "2026-10-01",
+        due_date: "2026-10-15",
+        total: 123,
+        customer_name: zly,
+        customer_street: zly,
+        customer_city: zly,
+        customer_country: "SK",
+        notes: zly,
+      },
+      [{ name: zly, quantity: 1, unit_price: 100, subtotal: 100, vat_amount: 23, vat_rate: 23 }],
+      nast,
+    );
+    const { xml } = buildMoneyS3Uctovanie({ firma, doklady: [d], kody });
+    expect(xml).not.toMatch(/[\u0001\u000B￿]/);
+    expect(xml).toContain("A&amp;B &lt;b&gt;");
+    expect(chybaSchemy(xml)).toBeNull();
+  });
+});

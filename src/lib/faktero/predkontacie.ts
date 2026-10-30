@@ -9,6 +9,7 @@
   Čisté funkcie bez databázy, aby sa dali skúšať.
 */
 
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 export type DruhCiselnika =
   | "predkontacia"
   | "clenenie_dph"
@@ -272,7 +273,7 @@ ${o}</dat:dataPackItem>`;
 }
 
 const xmlEsc = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  bezZakazanychXml(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const LST = 'xmlns:lst="http://www.stormware.cz/schema/version_2/list.xsd"';
 
