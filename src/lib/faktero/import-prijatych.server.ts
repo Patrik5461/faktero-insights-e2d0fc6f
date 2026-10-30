@@ -175,6 +175,13 @@ export type Plan = {
 
 export async function naplanuj(klient: any, companyId: string, vstupy: Vstup[]): Promise<Plan> {
   const { zaznamy, skeny, poznamky } = await rozbal(vstupy);
+  // Doklad bez uvedenej meny je v domácej mene firmy — CZ firme koruny, nie eurá.
+  if (zaznamy.some((z) => !z.mena)) {
+    const { data: firma } = await klient.from("companies").select("country").eq("id", companyId).maybeSingle();
+    const { domacaMena } = await import("./kurzy");
+    const domaca = domacaMena(firma?.country);
+    for (const z of zaznamy) if (!z.mena) z.mena = domaca;
+  }
   const existuju = await existujuceKluce(klient, companyId);
   const duplicity = new Set<number>();
   const videne = new Set<string>();

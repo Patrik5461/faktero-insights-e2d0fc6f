@@ -187,3 +187,79 @@ describe("riadky do databázy", () => {
     expect(zaznamZAI({ supplier_name: "Shell", amount_total: 40 }, "b.jpg")).toMatchObject({ typ: "blocek", dodavatel: "Shell" });
   });
 });
+
+describe("Pohoda XML — cudzia mena, dobropis, záloha, payVAT a zľava", () => {
+  const balik = (faktura: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<dat:dataPack xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd" xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd" xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd" id="t" ico="1" application="Faktero" version="2.0">
+  <dat:dataPackItem id="1" version="2.0"><inv:invoice version="2.0">${faktura}</inv:invoice></dat:dataPackItem>
+</dat:dataPack>`;
+  const hlavicka = (typ: string) =>
+    `<inv:invoiceHeader><inv:invoiceType>${typ}</inv:invoiceType><inv:originalDocument>D-1</inv:originalDocument><inv:date>2026-10-05</inv:date><inv:partnerIdentity><typ:address><typ:company>Dodávateľ s.r.o.</typ:company><typ:ico>44111222</typ:ico></typ:address></inv:partnerIdentity></inv:invoiceHeader>`;
+  const polozka = (text: string, mena: string, extra = "") =>
+    `<inv:invoiceItem><inv:text>${text}</inv:text><inv:quantity>1</inv:quantity>${extra}<inv:${mena}>`;
+
+  // Export z Faktera (a Pohoda pri cudzej mene) má sumy len vo foreignCurrency — predtým 0,00 USD.
+  it("faktúra v USD má sumy v mene dokladu", () => {
+    const xml = balik(
+      hlavicka("receivedInvoice") +
+        `<inv:invoiceDetail>${polozka("Licencia", "foreignCurrency", "<inv:payVAT>false</inv:payVAT><inv:rateVAT>high</inv:rateVAT>")}<typ:unitPrice>100.00</typ:unitPrice><typ:price>100.00</typ:price><typ:priceVAT>23.00</typ:priceVAT><typ:priceSum>123.00</typ:priceSum></inv:foreignCurrency></inv:invoiceItem></inv:invoiceDetail>` +
+        `<inv:invoiceSummary><inv:foreignCurrency><typ:currency><typ:ids>USD</typ:ids></typ:currency><typ:rate>0.909091</typ:rate><typ:amount>1</typ:amount><typ:priceSum>123.00</typ:priceSum></inv:foreignCurrency></inv:invoiceSummary>`,
+    );
+    const [z] = pohodaPrijate(parser.parse(xml));
+    expect(z).toMatchObject({ mena: "USD", zaklad: 100, dph: 23, spolu: 123 });
+    expect(z!.polozky[0]).toMatchObject({ unit_price: 100, vat_rate: 23, total: 123 });
+  });
+
+  // Pohoda vyváža dobropis kladne; vo Fakteri je prijatý dobropis záporný.
+  it("prijatý dobropis je záporný", () => {
+    const xml = balik(
+      hlavicka("receivedCreditNotice") +
+        `<inv:invoiceDetail>${polozka("Vrátenie", "homeCurrency")}<typ:unitPrice>100</typ:unitPrice><typ:price>100</typ:price><typ:priceVAT>23</typ:priceVAT><typ:priceSum>123</typ:priceSum></inv:homeCurrency></inv:invoiceItem></inv:invoiceDetail>` +
+        `<inv:invoiceSummary><inv:homeCurrency><typ:priceHigh>100</typ:priceHigh><typ:priceHighVAT>23</typ:priceHighVAT></inv:homeCurrency></inv:invoiceSummary>`,
+    );
+    const [z] = pohodaPrijate(parser.parse(xml));
+    expect(z).toMatchObject({ druh: "Dobropis", zaklad: -100, dph: -23, spolu: -123, mena: "" });
+    expect(z!.polozky[0]).toMatchObject({ quantity: -1, unit_price: 100, total: -123 });
+  });
+
+  // Pohoda vedie odpočet v invoiceAdvancePaymentItem a súhrn má po odpočte.
+  it("odpočet zálohy ide do zálohy, plnenie ostáva celé", () => {
+    const xml = balik(
+      hlavicka("receivedInvoice") +
+        `<inv:invoiceDetail>${polozka("Konzultácia", "homeCurrency")}<typ:unitPrice>100</typ:unitPrice><typ:price>100</typ:price><typ:priceVAT>23</typ:priceVAT><typ:priceSum>123</typ:priceSum></inv:homeCurrency></inv:invoiceItem>` +
+        `<inv:invoiceAdvancePaymentItem><inv:sourceDocument><typ:number>ZF1</typ:number></inv:sourceDocument><inv:quantity>1</inv:quantity><inv:homeCurrency><typ:unitPrice>-50</typ:unitPrice><typ:price>-50</typ:price><typ:priceVAT>-11.50</typ:priceVAT></inv:homeCurrency></inv:invoiceAdvancePaymentItem></inv:invoiceDetail>` +
+        `<inv:invoiceSummary><inv:homeCurrency><typ:priceHigh>50</typ:priceHigh><typ:priceHighVAT>11.50</typ:priceHighVAT></inv:homeCurrency></inv:invoiceSummary>`,
+    );
+    const [z] = pohodaPrijate(parser.parse(xml));
+    expect(z).toMatchObject({ zaklad: 100, dph: 23, spolu: 123, zaloha: 61.5 });
+    expect(z!.polozky).toHaveLength(1);
+    const r = riadokPrijatejFaktury({ ...z!, mena: "EUR" }, { stav: "new", dnes: "2026-10-30", zdrojAplikacie: "Pohoda" });
+    expect(r).toMatchObject({ amount_total: 123, advance_amount: 61.5, type: "regular" });
+    // Pomocné sumy riadku sa do JSON položiek neukladajú.
+    expect(Object.keys(r.items![0]!).sort()).toEqual(["name", "quantity", "total", "unit", "unit_price", "vat_rate"]);
+  });
+
+  // XML na import do Pohody nemá price — cena s DPH (payVAT) a zľava sa museli prepočítať.
+  it("payVAT a zľava bez súm riadku", () => {
+    const xml = balik(
+      hlavicka("receivedAdvanceInvoice") +
+        `<inv:invoiceDetail><inv:invoiceItem><inv:text>Tovar</inv:text><inv:quantity>2</inv:quantity><inv:payVAT>true</inv:payVAT><inv:rateVAT>high</inv:rateVAT><inv:discountPercentage>10</inv:discountPercentage><inv:homeCurrency><typ:unitPrice>123</typ:unitPrice></inv:homeCurrency></inv:invoiceItem></inv:invoiceDetail>`,
+    );
+    const [z] = pohodaPrijate(parser.parse(xml));
+    // 2 × 123 s DPH − 10 % = 221,40 s DPH = 180 + 41,40
+    expect(z!.polozky[0]).toMatchObject({ quantity: 2, unit_price: 90, vat_rate: 23, total: 221.4 });
+    const r = riadokPrijatejFaktury({ ...z!, mena: "EUR" }, { stav: "new", dnes: "2026-10-30", zdrojAplikacie: "Pohoda" });
+    expect(r.type).toBe("proforma");
+  });
+
+  it("export prijatých faktúr z Faktera — stĺpec „Vystavená“", () => {
+    const z = tabulkaNaZaznamy(
+      [
+        ["Číslo", "Dodávateľ", "IČO", "Vystavená", "Splatnosť", "Základ", "DPH", "Spolu", "Mena"],
+        ["NK1", "Firma", "123", "2026-10-06", "2026-10-20", 100, 23, 123, "EUR"],
+      ],
+      "XLSX",
+    );
+    expect(z[0]).toMatchObject({ vystavenie: "2026-10-06", splatnost: "2026-10-20", spolu: 123 });
+  });
+});

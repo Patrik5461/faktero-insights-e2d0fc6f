@@ -327,7 +327,9 @@ export type FieldKey =
   | "item_subtotal"
   | "item_discount_percent"
   /** Zúčtovaná záloha na doklade — znižuje sumu na úhradu, nie základ. */
-  | "advance_amount";
+  | "advance_amount"
+  /** Druh dokladu (faktúra, dobropis, zálohová…) — ISDOC ho nesie v `DocumentType`. */
+  | "document_type";
 
 const HEURISTICS: Record<FieldKey, RegExp[]> = {
   invoice_number: [/^(invoice_)?number$/i, /\bfakt(u|ú)ra\b/i, /^cislo/i, /\bnumber\b/i],
@@ -362,6 +364,7 @@ const HEURISTICS: Record<FieldKey, RegExp[]> = {
   item_subtotal: [/^item.?subtotal$/i, /z[aá]klad polo[zž]ky/i],
   item_discount_percent: [/^(z[lľ]ava|discount)\s*(%|percent|v %)/i],
   advance_amount: [/uhraden[aá] z[aá]loha|odpo[cč]et z[aá]loh|advance.?amount/i],
+  document_type: [/^document.?type$|^typ dokladu$|^druh dokladu$/i],
 };
 
 export function suggestMapping(headers: string[]): Partial<Record<FieldKey, string>> {
@@ -513,6 +516,7 @@ const SYNONYMS: Record<FieldKey, string[]> = {
   item_subtotal: ["zaklad polozky", "item subtotal"],
   item_discount_percent: ["zlava %", "zlava v %", "discount %"],
   advance_amount: ["uhradena zaloha", "odpocet zalohy", "advance amount"],
+  document_type: ["document type", "typ dokladu", "druh dokladu"],
 };
 
 /**
@@ -812,6 +816,57 @@ function sumaSDph(row: Record<string, string>, mapping: Partial<Record<FieldKey,
   const dan = num(pick(row, mapping, "vat_total"));
   if (zaklad || dan) return Math.round((zaklad + dan + Number.EPSILON) * 100) / 100;
   return 0;
+}
+
+/**
+ * Druh dokladu z importu. Bez neho sa dobropis zo SuperFaktúry (ISDOC
+ * `DocumentType` 2) naimportoval ako bežná faktúra s kladnou sumou — tržby
+ * a DPH narástli o to, o čo mali klesnúť — a zálohová faktúra sa rátala do
+ * výnosov. Pri pochybnosti ostáva bežná faktúra.
+ */
+export function druhDokladu(
+  hodnota: string | undefined,
+): "regular" | "credit_note" | "debit_note" | "proforma" | "advance_payment" {
+  const t = (hodnota ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+  if (["regular", "credit_note", "debit_note", "proforma", "advance_payment"].includes(t))
+    return t as ReturnType<typeof druhDokladu>;
+  if (/dobropis|credit|opravn/.test(t)) return "credit_note";
+  if (/tarchopis|vrubopis|debit/.test(t)) return "debit_note";
+  if (/k (prijatej )?platbe|danovy doklad k/.test(t)) return "advance_payment";
+  if (/zalohov|proforma/.test(t)) return "proforma";
+  return "regular";
+}
+
+/**
+ * Dobropis sa v DB ukladá so záporným množstvom aj sumami (ako z formulára).
+ * Súbor ho môže mať kladne (ISDOC: znamienko určuje druh dokladu) — potom sa
+ * otočí; už záporný sa nechá, inak by sa z neho stala kladná suma.
+ */
+export function dobropisZaporne<
+  H extends { subtotal: number; vat_total: number; total: number },
+  P extends { quantity: number; subtotal: number; vat_amount: number; total: number },
+>(hlavicka: H, polozky: P[]): { hlavicka: H; polozky: P[] } {
+  if (hlavicka.total < 0 || (hlavicka.total === 0 && hlavicka.subtotal <= 0))
+    return { hlavicka, polozky };
+  return {
+    hlavicka: {
+      ...hlavicka,
+      subtotal: -hlavicka.subtotal,
+      vat_total: -hlavicka.vat_total,
+      total: -hlavicka.total,
+    },
+    polozky: polozky.map((p) => ({
+      ...p,
+      quantity: -p.quantity,
+      subtotal: -p.subtotal,
+      vat_amount: -p.vat_amount,
+      total: -p.total,
+    })),
+  };
 }
 
 export function normDate(v: string): string | null {
@@ -1162,9 +1217,11 @@ export async function runImport(args: {
       }
 
       // Build items: prefer per-row item mapping; else synthesize a single line from totals
-      const items = group
+      // Záporný riadok (zľava, položka dobropisu) je platná položka — predtým
+      // vypadol a súčet položiek nesedel so sumou faktúry.
+      let items = group
         .map((r) => buildItem(r, mapping, predvolenaSadzba))
-        .filter((it) => it.quantity > 0 || it.unit_price > 0 || it.total > 0);
+        .filter((it) => it.quantity !== 0 || it.unit_price !== 0 || it.total !== 0);
       let subtotal = num(pick(head, mapping, "subtotal"));
       let vatTotal = num(pick(head, mapping, "vat_total"));
       let total = sumaSDph(head, mapping);
@@ -1206,6 +1263,12 @@ export async function runImport(args: {
         vatTotal = items.reduce((s, i) => s + i.vat_amount, 0);
       }
       if (total === 0) total = items.reduce((s, i) => s + i.total, 0);
+      const druh = druhDokladu(pick(head, mapping, "document_type"));
+      if (druh === "credit_note") {
+        const z = dobropisZaporne({ subtotal, vat_total: vatTotal, total }, items);
+        ({ subtotal, vat_total: vatTotal, total } = z.hlavicka);
+        items = z.polozky;
+      }
 
       const issueDate =
         normDate(pick(head, mapping, "issue_date")) || new Date().toISOString().slice(0, 10);
@@ -1233,6 +1296,7 @@ export async function runImport(args: {
         delivery_date: deliveryDate,
         currency: pick(head, mapping, "currency") || "EUR",
         status: knownStatus,
+        type: druh,
         subtotal,
         vat_total: vatTotal,
         total,
@@ -1363,7 +1427,8 @@ export function buildItem(
     name: pick(row, mapping, "item_name") || "Položka",
     description: pick(row, mapping, "item_description") || null,
     quantity: quantity || (subtotal || total ? 1 : 0),
-    unit: "ks",
+    // Merná jednotka zo súboru (ISDOC `unitCode`, stĺpec MJ) — predtým vždy „ks“.
+    unit: (pick(row, mapping, "item_unit") || "ks").slice(0, 20),
     unit_price: unit_price || subtotal,
     vat_rate,
     discount_percent,

@@ -51,16 +51,18 @@ export function xmlVytvorZasielku(heslo: string, z: ZasielkaZFaktury): string {
     el("surname", z.priezvisko.slice(0, 32)) +
     el("company", z.firma?.slice(0, 32)) +
     el("email", z.email) +
-    el("phone", z.telefon) +
+    // Dĺžky podľa WSDL (phone 20, street 64, houseNumber 16, city 32) — dlhší
+    // údaj z faktúry by Zásielkovňa odmietla celú zásielku a v okne sa opraviť nedá.
+    el("phone", z.telefon?.slice(0, 20)) +
     el("addressId", z.miestoId) +
     (z.dobierka && z.dobierka > 0 ? el("cod", z.dobierka.toFixed(2)) : "") +
     el("currency", z.mena) +
     el("value", z.hodnota.toFixed(2)) +
     el("weight", z.hmotnost.toFixed(3)) +
     el("eshop", z.odosielatel.slice(0, 64)) +
-    el("street", z.ulica) +
-    el("houseNumber", z.cisloDomu) +
-    el("city", z.mesto) +
+    el("street", z.ulica?.slice(0, 64)) +
+    el("houseNumber", z.cisloDomu?.slice(0, 16)) +
+    el("city", z.mesto?.slice(0, 32)) +
     el("zip", z.psc) +
     `</packetAttributes></createPacket>`
   );

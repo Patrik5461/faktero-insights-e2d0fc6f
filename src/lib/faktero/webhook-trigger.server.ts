@@ -68,7 +68,12 @@ export async function triggerEvent(opts: {
         company_id: opts.company_id,
         title: "Faktúra zaplatená 💰",
         body: `Faktúra ${inv.invoice_number ?? ""} bola označená ako uhradená.`,
-        data: { path: `/faktury/${inv.id}`, invoice_id: String(inv.id ?? "") },
+        // Payload z `invoicePayload` nesie `invoice_id`, nie `id` — bez neho viedlo
+        // upozornenie na /faktury/undefined.
+        data: {
+          path: `/faktury/${inv.invoice_id ?? inv.id}`,
+          invoice_id: String(inv.invoice_id ?? inv.id ?? ""),
+        },
       });
     } else if (opts.event === "efaktura.received") {
       const d = opts.data as any;
