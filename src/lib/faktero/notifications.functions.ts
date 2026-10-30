@@ -7,6 +7,7 @@ import {
   kluceNaPrecitanie,
   type AppNotification,
   type NotificationInput,
+  notifikaciaNespracovanych,
 } from "./notifications";
 import { pripomienkyZamestnancov } from "./zamestnanci";
 import { agendaPreKrajinu } from "./agendy-krajiny";
@@ -45,6 +46,8 @@ async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
       .in("status", ["sent", "issued", "overdue"])
       .lt("due_date", today)
       .is("deleted_at", null)
+      // Zaplatená s `paid_at`, ktorej stav ešte nestihol prejsť — `jeOtvorena` ju tiež neberie.
+      .is("paid_at", null)
       // Zvonček hlási pohľadávky po splatnosti. Zálohová faktúra ani dobropis
       // medzi ne nepatria — rovnaké pravidlo ako `jeOtvorena`.
       .or("type.is.null,type.eq.regular")
@@ -57,6 +60,8 @@ async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
       .in("status", ["received", "booked"])
       .lt("due_date", today)
       .is("deleted_at", null)
+      // Prijatý dobropis (záporná suma) sa neplatí — „neuhradená … po splatnosti“ by klamala.
+      .gt("amount_total", 0)
       .order("due_date", { ascending: true })
       .limit(LIMIT),
     // Len príchodzie platby — odchodzie sa k faktúram nepárujú.
@@ -211,12 +216,15 @@ async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[
 }
 
 /**
- * Doklady čakajúce na spracovanie ako jedna položka. Kľúč nesie najnovší
- * doklad, takže po prečítaní sa zvonček ozve znova až pri ďalšom doklade.
+ * Doklady čakajúce na spracovanie ako jedna položka — to isté, čo počíta
+ * odznak Nespracované v menu: doklady z e-mailu a nahratia
+ * (`nespracovane_doklady`) aj bločky zo skenu (`expense_documents` „new“).
+ * Kľúč nesie najnovší doklad, takže po prečítaní sa zvonček ozve znova až
+ * pri ďalšom doklade.
  */
 async function notifikaciaNespracovanychDokladov(companyId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const [{ data, count }, ostatne] = await Promise.all([
+  const [blocky, doklady, ostatne] = await Promise.all([
     supabaseAdmin
       .from("expense_documents")
       .select("id, created_at", { count: "exact" })
@@ -224,21 +232,21 @@ async function notifikaciaNespracovanychDokladov(companyId: string): Promise<App
       .eq("status", "new")
       .order("created_at", { ascending: false })
       .limit(1),
+    (supabaseAdmin as any)
+      .from("nespracovane_doklady")
+      .select("id, created_at", { count: "exact" })
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
+      .limit(1),
     notifikaciaOstatnych(companyId),
   ]);
-  const najnovsi = data?.[0];
-  if (!count || !najnovsi) return ostatne;
   return [
     ...ostatne,
-    {
-      key: `doklady-nespracovane:${najnovsi.id}`,
-      severity: "info",
-      title: count === 1 ? "1 nespracovaný doklad" : `${count} nespracovaných dokladov`,
-      detail: "Čaká na kontrolu a označenie ako spracovaný.",
-      // Bez parametra: `/doklady` sa otvára na nespracovaných a Link parameter v `to` nečíta.
-      to: "/doklady",
-      date: String(najnovsi.created_at).slice(0, 10),
-    },
+    ...notifikaciaNespracovanych([
+      { pocet: blocky.count ?? 0, najnovsi: blocky.data?.[0] ?? null },
+      // Kým tabuľka nie je dostupná (chyba), radšej bez nej než bez celej položky.
+      doklady.error ? null : { pocet: doklady.count ?? 0, najnovsi: doklady.data?.[0] ?? null },
+    ]),
   ];
 }
 
