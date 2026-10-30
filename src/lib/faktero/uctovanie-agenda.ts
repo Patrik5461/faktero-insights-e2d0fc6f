@@ -167,11 +167,12 @@ export const jeNezahrnovat = (kod: unknown) => /^[PU]N/.test(text(kod));
 
 /**
  * Je firma neplatiteľ DPH? Podľa `vat_payer` + `vat_scheme` (nie IČ DPH).
- * Keď riadok firmy tie stĺpce vôbec nemá (výber bez nich), nevieme —
- * vtedy sa nič neblokuje.
+ * Blokuje sa len pri výslovne zvolenom režime (`vat_scheme`): firmy
+ * z prenosu majú `vat_payer=false` bez režimu, hoci platiteľmi sú —
+ * vtedy nevieme a nič sa neblokuje.
  */
 export function jeNeplatitel(firma: FirmaDph | null | undefined): boolean {
-  if (!firma || (firma.vat_payer == null && !text(firma.vat_scheme))) return false;
+  if (!firma || !text(firma.vat_scheme)) return false;
   return !rezimFirmy(firma).platitel;
 }
 

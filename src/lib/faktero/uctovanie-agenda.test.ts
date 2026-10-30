@@ -229,7 +229,7 @@ describe("členenie DPH proti smeru dokladu", () => {
 });
 
 describe("neplatiteľ DPH", () => {
-  const neplatitel = { country: "SK", vat_payer: false, vat_scheme: null };
+  const neplatitel = { country: "SK", vat_payer: false, vat_scheme: "sk_neplatitel" };
   const platitel = { country: "SK", vat_payer: true };
 
   it("rozhoduje vat_payer / vat_scheme, bez nich sa nič neblokuje", () => {
@@ -238,6 +238,8 @@ describe("neplatiteľ DPH", () => {
     expect(jeNeplatitel(platitel)).toBe(false);
     expect(jeNeplatitel({ country: "SK" })).toBe(false);
     expect(jeNeplatitel({ country: "SK", ic_dph: "" })).toBe(false);
+    // Prenos bez režimu: vat_payer=false, vat_scheme=null — neblokovať.
+    expect(jeNeplatitel({ country: "SK", vat_payer: false, vat_scheme: null })).toBe(false);
     expect(jeNeplatitel(null)).toBe(false);
   });
 
