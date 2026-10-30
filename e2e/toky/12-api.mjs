@@ -14,7 +14,7 @@ async function novyKluc(t, firma, mode) {
   const r = await t.rest.post("api_keys", {
     company_id: firma,
     mode,
-    name: `E2E API ${mode}`,
+    name: `${t.znacka} API ${mode}`,
     prefix: kluc.slice(0, 14),
     key_hash: createHash("sha256").update(kluc).digest("hex"),
   });
@@ -68,7 +68,7 @@ export default {
 
     await t.krok("testovací kľúč len číta", async () => {
       t.over((await test("GET", "/invoices?limit=1")).status === 200, "testovací kľúč nečíta");
-      const r = await test("POST", "/customers", { name: "E2E nesmie vzniknúť" });
+      const r = await test("POST", "/customers", { name: `${t.znacka} nesmie vzniknúť` });
       t.over(r.data?.error?.code === "test_key_read_only", `zápis testovacím kľúčom: ${r.status}`);
     });
 
@@ -76,7 +76,7 @@ export default {
       const r = await live(
         "POST",
         "/customers",
-        { name: "E2E cudzia" },
+        { name: `${t.znacka} cudzia` },
         { "x-company": CUDZIA_FIRMA },
       );
       t.over(r.status === 403, `zápis do cudzej firmy vrátil ${r.status}`);
@@ -92,9 +92,23 @@ export default {
       );
     });
 
+    await t.krok("OPTIONS (CORS) → 204 s hlavičkami", async () => {
+      // Koncový bod s vlastnou obsluhou OPTIONS (handleApi) aj bez nej.
+      for (const cesta of ["/tags", "/invoices"]) {
+        const r = await fetch(`${BASE}/api/v1${cesta}`, {
+          method: "OPTIONS",
+          headers: { origin: "https://example.com", "access-control-request-method": "POST" },
+        });
+        t.over(
+          r.status === 204 && r.headers.get("access-control-allow-origin") === "*",
+          `OPTIONS ${cesta}: ${r.status} ${r.headers.get("content-type") ?? ""}`,
+        );
+      }
+    });
+
     await t.krok("zľava riadku aj na doklad", async () => {
       const f = await vystav(live, {
-        customer: { name: "E2E API zľava" },
+        customer: { name: `${t.znacka} API zľava` },
         discount_type: "amount",
         discount_value: 10,
         items: [
@@ -111,7 +125,7 @@ export default {
 
     await t.krok("prenesenie daňovej povinnosti", async () => {
       const f = await vystav(live, {
-        customer: { name: "E2E API PDP", ic_dph: "SK2020123456" },
+        customer: { name: `${t.znacka} API PDP`, ic_dph: "SK2020123456" },
         reverse_charge: true,
         items: [{ name: "Stavebné práce", quantity: 1, unit_price: 1000, vat_rate: 23 }],
       });
@@ -125,7 +139,7 @@ export default {
 
     await t.krok("cudzia mena má kurz a DPH v eurách", async () => {
       const f = await vystav(live, {
-        customer: { name: "E2E API USD", country: "US" },
+        customer: { name: `${t.znacka} API USD`, country: "US" },
         currency: "USD",
         delivery_date: t.dnes,
         items: [{ name: "Služba", quantity: 1, unit_price: 100, vat_rate: 23 }],
@@ -138,7 +152,7 @@ export default {
 
     await t.krok("česká firma: bez meny a sadzby CZK a 21 %", async () => {
       const f = await vystav(cz, {
-        customer: { name: "E2E API CZ" },
+        customer: { name: `${t.znacka} API CZ` },
         items: [{ name: "Služba", quantity: 1, unit_price: 1000 }],
       });
       t.over(f.currency === "CZK" && Number(f.vat_total) === 210, `${f.currency} ${f.vat_total}`);

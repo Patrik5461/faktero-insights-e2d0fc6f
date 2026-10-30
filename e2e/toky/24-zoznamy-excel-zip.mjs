@@ -49,12 +49,11 @@ export default {
       );
       const cisla = faktury.slice(1).map((r) => String(r[0]));
       t.over(cisla.length > 0, "Excel je prázdny");
-      const db = (
-        await t.rest.get(
-          `purchase_invoices?company_id=eq.${firma}&deleted_at=is.null&select=invoice_number,items,amount_total`,
-        )
-      ).data;
-      const vybrane = db.filter((r) => cisla.includes(String(r.invoice_number)));
+      const db = await t.rest.vsetko(
+        `purchase_invoices?company_id=eq.${firma}&deleted_at=is.null&select=invoice_number,items,amount_total&order=id`,
+      );
+      const vExceli = new Set(cisla);
+      const vybrane = db.filter((r) => vExceli.has(String(r.invoice_number)));
       t.over(
         vybrane.length >= cisla.length,
         `v Exceli sú faktúry, ktoré DB nepozná (${cisla.length} vs ${vybrane.length})`,
@@ -105,11 +104,11 @@ export default {
       );
       const [doklady, polozky] = await nacitajXlsx(subor);
       const n = doklady.length - 1;
-      const db = (
-        await t.rest.get(`expense_documents?company_id=eq.${firma}&select=document_number,items`)
-      ).data;
-      const cisla = doklady.slice(1).map((r) => String(r[4] ?? ""));
-      const vybrane = db.filter((r) => cisla.includes(String(r.document_number ?? "")));
+      const db = await t.rest.vsetko(
+        `expense_documents?company_id=eq.${firma}&select=document_number,items&order=id`,
+      );
+      const cisla = new Set(doklady.slice(1).map((r) => String(r[4] ?? "")));
+      const vybrane = db.filter((r) => cisla.has(String(r.document_number ?? "")));
       t.over(
         n > 0 && vybrane.length >= n,
         `doklady v Exceli ${n}, v DB nájdených ${vybrane.length}`,

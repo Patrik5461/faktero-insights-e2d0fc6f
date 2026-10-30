@@ -60,5 +60,13 @@ export async function prijataCezRest(t, zmeny = {}, firma = "test") {
     ...zmeny,
   });
   t.uprac(`prijatá ${p.id.slice(0, 8)}`, () => zmazPrijatu(t, p.id));
+  // Zaúčtovanie si spúšťač zapamätá ako návyk dodávateľa (doklad_navyky) — bez
+  // upratania rástol z behu na beh a autopilot by podľa neho účtoval aj v iných tokoch.
+  const ico = zmeny.supplier_ico ?? "50000001";
+  t.uprac(`návyk dodávateľa ${ico}`, async () => {
+    await t.rest.delete(
+      `doklad_navyky?company_id=eq.${t.firmy[firma]}&kluc_dodavatela=eq.ico:${ico}`,
+    );
+  });
   return p;
 }

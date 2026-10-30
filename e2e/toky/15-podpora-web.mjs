@@ -29,14 +29,16 @@ export default {
           const tg = await web.locator('footer a[href^="https://t.me/"]').count();
           t.over(tg > 0, `${cesta}: v pätičke chýba odkaz na Telegram`);
           whatsappZapnuty ||= (await web.locator('footer a[href*="wa.me"]').count()) > 0;
+          if (cesta !== "/") continue;
+          // Kanonická adresa sa číta na úvodnej stránke (predtým až po prechode na /kontakt).
+          const kanonicka = await web.evaluate(
+            () => document.querySelector('link[rel="canonical"]')?.getAttribute("href") ?? null,
+          );
+          t.over(
+            kanonicka === "https://www.faktero.sk/",
+            `kanonická adresa úvodnej stránky je ${kanonicka}, čaká sa https://www.faktero.sk/`,
+          );
         }
-        const kanonicka = await web.evaluate(
-          () => document.querySelector('link[rel="canonical"]')?.getAttribute("href") ?? null,
-        );
-        t.over(
-          kanonicka === "https://www.faktero.sk/",
-          `kanonická adresa úvodnej stránky je ${kanonicka}, čaká sa https://www.faktero.sk/`,
-        );
       });
 
       await t.krok("plávajúca Pomoc: Telegram hneď, dialóg, Esc", async () => {

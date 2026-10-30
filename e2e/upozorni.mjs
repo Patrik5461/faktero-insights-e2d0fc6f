@@ -5,6 +5,7 @@
   do admin chatov spárovaných v Admin → Podpora (`telegram_admin_chaty`).
 
     node e2e/upozorni.mjs <cesta k suhrn.json>
+    node e2e/upozorni.mjs --skuska "text"   # skúšobná správa len do Telegramu (bez e-mailu)
 
   Kľúče sa berú z /home/patrik/ecosystem.config.cjs (E2E_ECOSYSTEM ho prebije).
   Bez kľúča sa daný kanál ticho preskočí; zlyhanie odoslania beh nezastaví.
@@ -12,7 +13,11 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
-const suhrn = JSON.parse(readFileSync(process.argv[2], "utf8"));
+const SKUSKA =
+  process.argv[2] === "--skuska" ? process.argv[3] || "TEST E2E upozornenia — ignorovať" : null;
+const suhrn = SKUSKA
+  ? { commit: "skúška", toky: [] }
+  : JSON.parse(readFileSync(process.argv[2], "utf8"));
 const ECOSYSTEM = process.env.E2E_ECOSYSTEM || "/home/patrik/ecosystem.config.cjs";
 const PRIJEMCA = process.env.E2E_PRIJEMCA || "info@tobify.sk";
 
@@ -82,7 +87,8 @@ async function telegram() {
       },
       signal: AbortSignal.timeout(15000),
     });
-    return r.ok ? r.json() : [];
+    if (!r.ok) throw new Error(`databáza ${cesta.split("?")[0]}: ${r.status}`);
+    return r.json();
   };
   const chaty = await db("telegram_admin_chaty?select=chat_id,user_id");
   if (!chaty.length) return console.log("telegram: žiadny spárovaný admin chat");
@@ -101,7 +107,7 @@ async function telegram() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         chat_id: c.chat_id,
-        text: `${predmet}\n\n${riadky.join("\n")}`.slice(0, 4000),
+        text: SKUSKA ?? `${predmet}\n\n${riadky.join("\n")}`.slice(0, 4000),
         link_preview_options: { is_disabled: true },
       }),
       signal: AbortSignal.timeout(15000),
@@ -113,5 +119,5 @@ async function telegram() {
   console.log(`telegram: odoslané ${poslane}`);
 }
 
-await mail().catch((e) => console.log("e-mail zlyhal:", e?.message ?? e));
+if (!SKUSKA) await mail().catch((e) => console.log("e-mail zlyhal:", e?.message ?? e));
 await telegram().catch((e) => console.log("telegram zlyhal:", e?.message ?? e));

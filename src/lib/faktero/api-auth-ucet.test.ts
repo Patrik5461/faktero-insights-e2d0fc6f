@@ -99,3 +99,16 @@ describe("kľúč firmy", () => {
     });
   });
 });
+
+describe("OPTIONS (predbežná požiadavka CORS)", () => {
+  it("vráti 204 bez tela s hlavičkami CORS, nie výnimku", async () => {
+    const { handleApi } = await import("./api-auth.server");
+    const r = await handleApi(
+      new Request("https://www.faktero.sk/api/v1/tags", { method: "OPTIONS" }),
+      async () => ({ status: 204, body: {} }),
+    );
+    expect(r.status).toBe(204);
+    expect(await r.text()).toBe("");
+    expect(r.headers.get("access-control-allow-headers")).toContain("x-company");
+  });
+});

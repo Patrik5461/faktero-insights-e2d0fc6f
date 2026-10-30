@@ -142,6 +142,20 @@ export function restKlient(jwt) {
     patch: (c, t, o) => volaj("PATCH", c, t, o),
     delete: (c, o) => volaj("DELETE", c, undefined, o),
     rpc: (meno, args, o) => volaj("POST", `rpc/${meno}`, args ?? {}, o),
+    /**
+     * Všetky riadky dotazu po stránkach — PostgREST vráti najviac 1 000 riadkov
+     * naraz, aj keď ich je viac (QA firma test2 má po skúškach výkonu tisíce dokladov).
+     * Cesta potrebuje `order`, inak stránky nemusia sedieť.
+     */
+    vsetko: async (cesta, strana = 1000) => {
+      const von = [];
+      for (let od = 0; ; od += strana) {
+        const r = await volaj("GET", `${cesta}&limit=${strana}&offset=${od}`);
+        if (r.status !== 200) throw new Error(`GET ${cesta}: ${r.status} ${r.text.slice(0, 200)}`);
+        von.push(...r.data);
+        if (r.data.length < strana) return von;
+      }
+    },
     /** Počet riadkov (HEAD s count=exact). */
     pocet: async (cesta) => {
       const r = await fetch(`${SUPABASE.url}/rest/v1/${cesta}`, {

@@ -67,6 +67,9 @@ const args = process.argv.slice(2);
 const OPAKUJ = args.includes("--opakuj") || process.env.E2E_OPAKUJ === "1";
 const vybrane = args.filter((a) => !a.startsWith("--"));
 const LIMIT_BEHU_MS = Number(process.env.E2E_LIMIT_S ?? 1080) * 1000;
+// Tvrdý koniec behu: tok spustený tesne pred LIMIT_BEHU_MS dostane len zvyšok do tohto času,
+// aby celý beh (vrátane upratovania) skončil pred stropom v po-nasadeni.sh (E2E_STROP_S 1200).
+const KONIEC_BEHU_MS = LIMIT_BEHU_MS + Number(process.env.E2E_REZERVA_S ?? 60) * 1000;
 
 function commit() {
   if (process.env.E2E_COMMIT) return process.env.E2E_COMMIT;
@@ -303,7 +306,10 @@ async function spustiTok(tok, pokus) {
   const { t, kroky, upratVsetko, zavri, konteksty } = vytvorKontext(tok, pokus);
   const z = Date.now();
   const vysledok = { tok: tok.meno, popis: tok.popis, pokus, ok: false, ms: 0, kroky, chyba: null };
-  const limit = tok.limit ?? 150000;
+  const limit = Math.max(
+    30000,
+    Math.min(tok.limit ?? 150000, KONIEC_BEHU_MS - (Date.now() - zaciatok)),
+  );
   let casovac;
   try {
     if (!tok.bezPrehliadaca) t.page = await t.novaStranka();
@@ -393,6 +399,38 @@ for (const tok of toky) {
 
 await prehliadac.close().catch(() => {});
 
+/*
+  Kontrola upratania: všetky toky pomenúvajú dáta značkou behu (E2E-MMDD-HHMMSS).
+  Čo s ňou po behu ostalo v QA firmách, je diera v upratovaní niektorého toku —
+  beh kvôli tomu nezlyhá, ale súhrn to vypíše.
+*/
+const zvysky = [];
+if (rest && !chybaPrihlasenia) {
+  const firmy = Object.values(FIRMY).join(",");
+  const vzor = encodeURIComponent(`${ZNACKA}*`);
+  for (const [tabulka, stlpec] of [
+    ["invoices", "invoice_number"],
+    ["invoices", "customer_name"],
+    ["purchase_invoices", "invoice_number"],
+    ["purchase_invoices", "supplier_name"],
+    ["expense_documents", "document_number"],
+    ["expense_documents", "supplier_name"],
+    ["customers", "name"],
+    ["quotes", "quote_number"],
+    ["jobs", "job_number"],
+    ["vehicles", "name"],
+    ["api_keys", "name"],
+    ["doklad_navyky", "nazov_dodavatela"],
+    ["pravidla_uctovania", "nazov"],
+  ]) {
+    const r = await rest
+      .get(`${tabulka}?company_id=in.(${firmy})&${stlpec}=like.${vzor}&select=company_id&limit=50`)
+      .catch(() => null);
+    if (r?.status === 200 && r.data?.length) zvysky.push(`${tabulka}.${stlpec}: ${r.data.length}`);
+  }
+  if (zvysky.length) log(`! po behu ostali dáta so značkou ${ZNACKA}: ${zvysky.join(", ")}`);
+}
+
 const zlyhane = vysledky.filter((v) => !v.ok);
 const suhrn = {
   ok: zlyhane.length === 0,
@@ -405,6 +443,7 @@ const suhrn = {
   zlyhalo: zlyhane.length,
   zlyhane: zlyhane.map((v) => v.tok),
   nestabilne: vysledky.filter((v) => v.nestabilny).map((v) => v.tok),
+  zvysky,
   vystup: VYSTUP,
   toky: vysledky,
 };

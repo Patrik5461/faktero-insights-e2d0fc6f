@@ -20,8 +20,11 @@ async function sha256Hex(s: string) {
     .join("");
 }
 
-function jsonResp(status: number, body: any) {
-  return new Response(JSON.stringify(body), {
+export function jsonResp(status: number, body: any) {
+  // 204/205/304 nesmú mať telo — `new Response("{}", { status: 204 })` hodí TypeError
+  // a každý OPTIONS (predbežná požiadavka CORS) skončil ako HTML 500.
+  const bezTela = status === 204 || status === 205 || status === 304;
+  return new Response(bezTela ? null : JSON.stringify(body), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",

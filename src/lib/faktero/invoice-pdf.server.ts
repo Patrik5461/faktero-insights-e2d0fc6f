@@ -251,13 +251,12 @@ export async function ensureInvoicePdf(
     }
   }
 
-  // Drop the stale cached object before writing the fresh one.
-  try {
-    await supabaseAdmin.storage.from("invoice-pdfs").remove([path]);
-  } catch {
-    /* ignore */
-  }
-
+  /*
+    Starý súbor sa NEMAŽE pred nahratím — `upsert` ho nahradí naraz. Mazanie otváralo
+    okno, v ktorom súbor neexistoval: detail faktúry na širokej obrazovke si pýta PDF
+    pre bočný náhľad a súčasne používateľ klikne „Stiahnuť PDF“ (force) — jedno volanie
+    zmazalo súbor, druhé ho práve podpisovalo a hlásilo „PDF sa nepodarilo podpísať“.
+  */
   const { error: upErr } = await supabaseAdmin.storage.from("invoice-pdfs").upload(path, pdfBajty, {
     contentType: "application/pdf",
     upsert: true,
@@ -278,9 +277,16 @@ export async function ensureInvoicePdf(
 }
 
 export async function signInvoicePdf(path: string, fileName: string) {
-  const { data: signed, error } = await supabaseAdmin.storage
-    .from("invoice-pdfs")
-    .createSignedUrl(path, 60 * 60, { download: fileName });
+  const podpis = () =>
+    supabaseAdmin.storage
+      .from("invoice-pdfs")
+      .createSignedUrl(path, 60 * 60, { download: fileName });
+  let { data: signed, error } = await podpis();
+  // Súbežné generovanie toho istého PDF ho môže práve nahrávať — raz počkať a skúsiť znova.
+  if (error && /not found/i.test(String(error.message ?? ""))) {
+    await new Promise((r) => setTimeout(r, 1500));
+    ({ data: signed, error } = await podpis());
+  }
   if (error || !signed) {
     console.error("[pdf] sign failed", path, error);
     throw new Error("PDF sa nepodarilo podpísať na stiahnutie.");

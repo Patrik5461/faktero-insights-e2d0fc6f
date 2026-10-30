@@ -4,7 +4,8 @@
 #
 #   e2e/po-nasadeni.sh <commit>
 #
-# - beh má strop 10 minút (E2E_STROP_S), súbežne beží najviac jeden (zámok v spusti.mjs);
+# - beh má strop 20 minút (E2E_STROP_S 1200; spusti.mjs nové toky nespúšťa po E2E_LIMIT_S 1080
+#   a bežiaci tok utne do 60 s po ňom, aby stihol upratať), súbežne beží najviac jeden (zámok v spusti.mjs);
 # - neúspešný tok sa skúsi ešte raz (--opakuj), až potom je to chyba;
 # - výsledky: /home/patrik/e2e-vysledky/<čas>-<commit>/ (suhrn.json, beh.log, snímky),
 #   staršie ako 14 dní sa mažú;
