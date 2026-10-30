@@ -577,7 +577,7 @@
     },
     {
      "nadpis": "Zapísanie zmluvy",
-     "text": "<>\nNová zmluva (/financovanie/nova) sa dá vyplniť dvomi spôsobmi — ručne\nalebo nahratím dokumentu.\nRučne stačí päť údajov:\n-\nFinancovaná suma (istina) — koľko vám požičali, teda cena bez\nakontácie.\n-\nÚrok % p. a. — ročná sadzba zo zmluvy. Nula je v poriadku, bezúročné\nsplátky u predajcov sú bežné.\n-\nPočet splátok a dátum prvej splátky .\n-\nVariabilný symbol splátok — podľa neho sa neskôr páruje banka. Bez neho\npárovanie funguje oveľa horšie, oplatí sa ho vyplniť.\nNepovinné je akontácia , zostatková cena ,\nDPH v splátke (pri leasingu obvykle 23 %) a\nsplátka zo zmluvy — tú vyplňte vtedy, keď chcete, aby kalendár sedel na\ncent s papierom; inak si ju Faktero dopočíta."
+     "text": "<>\nNová zmluva (/financovanie/nova) sa dá vyplniť dvomi spôsobmi — ručne\nalebo nahratím dokumentu.\nRučne stačí päť údajov:\n-\nFinancovaná suma (istina) — koľko vám požičali, teda cena bez\nakontácie.\n-\nÚrok % p. a. — ročná sadzba zo zmluvy. Nula je v poriadku, bezúročné\nsplátky u predajcov sú bežné.\n-\nPočet splátok a dátum prvej splátky .\n-\nVariabilný symbol splátok — podľa neho sa neskôr páruje banka. Bez neho\npárovanie funguje oveľa horšie, oplatí sa ho vyplniť.\nNepovinné je akontácia , zostatková cena ,\nDPH v splátke (pri leasingu obvykle 23 %) a\nsplátka zo zmluvy — tú vyplňte vtedy, keď chcete, aby kalendár sedel na\ncent s papierom; inak si ju Faktero dopočíta.\nPri leasingu s DPH zadajte financovanú sumu bez DPH a splátku zo zmluvy s DPH. Daň sa k\nistine a úroku pripočíta, takže istina, úrok a DPH dajú spolu presne splátku, ktorá odíde\nz účtu — a podľa nej sa spáruje platba z banky."
     },
     {
      "nadpis": "Načítanie zmluvy z PDF",
@@ -861,11 +861,11 @@
     },
     {
      "nadpis": "Nastavenie šablóny",
-     "text": "<>\nV Opakované → Nová (/opakovane/nova) zadajte odberateľa, položky, interval\na dátum najbližšieho vystavenia .\nFaktúra sa vystaví v ten deň a dátum sa posunie o interval ďalej. Pri mesačnom intervale\nsa deň drží tak, aby dával zmysel: šablóna nastavená na 31. sa vo februári vystaví\nposledný februárový deň, nie začiatkom marca."
+     "text": "<>\nV Opakované → Nová (/opakovane/nova) zadajte odberateľa, položky, interval\na dátum najbližšieho vystavenia .\nFaktúra sa vystaví v ten deň a dátum sa posunie o interval ďalej. Pri mesačnom intervale\nsa deň drží tak, aby dával zmysel: šablóna nastavená na 31. sa vo februári vystaví\nposledný februárový deň, nie začiatkom marca.\nObdobie v texte sa posúva samo. Do textu nad položkami, názvu či popisu položky a poznámky\nnapíšte značku a pri vystavení sa doplní podľa dátumu vystavenia:\n[MESIAC] (október), [ROK] (2026),\n[MESIAC_ROK] (október 2026), [MINULY_MESIAC] (september\n2026) a [BUDUCI_MESIAC] (november 2026). Napríklad „Paušál za\n[MINULY_MESIAC]“ dá v novembri „Paušál za október 2026“."
     },
     {
      "nadpis": "Automatické vystavovanie",
-     "text": "<>\nFaktero kontroluje šablóny každý deň. Faktúra dostane riadne poradové číslo a správa sa\nako každá iná — dá sa upraviť, odoslať aj stornovať.\nAk má šablóna zapnuté odosielanie, faktúra rovno odíde odberateľovi na e-mail."
+     "text": "<>\nFaktero kontroluje šablóny každý deň. Faktúra dostane riadne poradové číslo a správa sa\nako každá iná — dá sa upraviť, odoslať aj stornovať.\nOdberateľovi sa faktúra sama neposiela — nájdete ju medzi vystavenými a odošlete e-mailom\nalebo eFaktúrou ako každú inú."
     },
     {
      "nadpis": "Pozastavenie a ukončenie",

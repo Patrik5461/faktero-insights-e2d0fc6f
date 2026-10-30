@@ -104,6 +104,8 @@ export const Route = createFileRoute("/api/v1/quotes")({
             .maybeSingle();
           const { krajinaDane, zakladnaSadzba } = await import("@/lib/faktero/vat-rates");
           const { domacaMena } = await import("@/lib/faktero/kurzy");
+          // Dnešok podľa Bratislavy — v UTC by ponuka po polnoci vznikla včerajším dátumom.
+          const { dnesBratislava } = await import("@/lib/faktero/datum-vystavenia");
           const predvolenaSadzba =
             firma?.vat_payer === false
               ? 0
@@ -120,8 +122,6 @@ export const Route = createFileRoute("/api/v1/quotes")({
             })),
           );
           const quote_number = await nextQuoteNumber(ctx.company_id);
-          // Dnešok podľa Bratislavy — v UTC by ponuka po polnoci vznikla včerajším dátumom.
-          const { dnesBratislava } = await import("@/lib/faktero/datum-vystavenia");
           const today = dnesBratislava();
           let platnost = new Date(`${d.issue_date ?? today}T12:00:00Z`);
           if (Number.isNaN(platnost.getTime())) platnost = new Date(`${today}T12:00:00Z`);
