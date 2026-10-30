@@ -13,6 +13,7 @@
   uložiť hromadne bez toho, aby sa na ne človek pozrel.
 */
 
+import { nesediZChyby, textNesedi } from "@/lib/faktero/cudzia-faktura";
 import {
   chybajuce,
   nacitajUdaje,
@@ -214,6 +215,9 @@ export function naHromadneUlozenie(davka: DokladVDavke[]): DokladVDavke[] {
 export function poChybeUlozenia(sprava: string): Pick<DokladVDavke, "stav" | "chyba"> {
   if (sprava.startsWith(PREDPONA_DUPLICITY))
     return { stav: "duplicita", chyba: sprava.slice(PREDPONA_DUPLICITY.length).trim() };
+  // Faktúra inej firmy — po ťuknutí detail ponúkne „Uložiť aj tak“.
+  const cudzia = nesediZChyby(sprava);
+  if (cudzia) return { stav: "chyba", chyba: textNesedi(cudzia) };
   return { stav: "chyba", chyba: sprava || null };
 }
 

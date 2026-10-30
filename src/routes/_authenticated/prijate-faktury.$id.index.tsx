@@ -19,6 +19,9 @@ import {
   SekundarnaAkcia,
   StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
+import { CudziaFakturaUpozornenie, CudziaFakturaZnak } from "@/components/faktero/CudziaFaktura";
+import { nacitajNesedi } from "@/lib/faktero/cudzia-faktura";
+import { potvrdOdberatelaFn } from "@/lib/faktero/cudzia-faktura.functions";
 import { UpozornenieKontrolyEfaktury } from "@/components/faktero/NalezyKontrolyEfaktury";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
@@ -339,6 +342,44 @@ function PurchaseInvoiceDetail() {
     await load();
   }
 
+  /*
+    Odberateľ na doklade je iná firma — upozornenie s voľbami Zmazať,
+    Faktúra patrí tejto firme a Presunúť k firme, ktorej patrí.
+  */
+  const potvrdOdberatela = useServerFn(potvrdOdberatelaFn);
+  async function patriTejtoFirme() {
+    if (
+      !(await potvrd(
+        t("Faktúra patrí tejto firme?") +
+          "\n" +
+          t(
+            "Potvrďte len vtedy, keď je odberateľ na doklade zle prečítaný alebo ste ho opravili. Potvrdenie sa zapíše do histórie dokladu a faktúra sa dá zaúčtovať.",
+          ),
+        { potvrdit: t("Faktúra patrí tejto firme") },
+      ))
+    )
+      return;
+    try {
+      await potvrdOdberatela({ data: { id } });
+      toast.success(t("Potvrdené — faktúra sa dá zaúčtovať"));
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    }
+  }
+  const nesedi = row ? nacitajNesedi(row.odberatel_nesedi) : null;
+  const upozornenieCudzej =
+    row && nesedi ? (
+      <CudziaFakturaUpozornenie
+        nesedi={nesedi}
+        druh="prijata"
+        id={row.id}
+        onZmaz={() => void del()}
+        onPatri={() => void patriTejtoFirme()}
+        onPresunute={() => navigate({ to: "/prijate-faktury" })}
+      />
+    ) : null;
+
   async function del() {
     if (!(await potvrd(t("Naozaj vymazať túto prijatú faktúru?")))) return;
     const { error } = await supabase
@@ -552,7 +593,16 @@ function PurchaseInvoiceDetail() {
         <DocumentDetailHeader
           title={titulok}
           number={row.invoice_number}
-          status={stavOdznak}
+          status={
+            nesedi ? (
+              <span className="inline-flex items-center gap-1.5">
+                <CudziaFakturaZnak nesedi={nesedi} />
+                {stavOdznak}
+              </span>
+            ) : (
+              stavOdznak
+            )
+          }
           meta={<MetaRiadok polozky={[row.supplier_name]} />}
           secondaryActions={
             <>
@@ -596,6 +646,7 @@ function PurchaseInvoiceDetail() {
             onPrepniPolozky={prepniPolozky}
             hore={
               <>
+                {upozornenieCudzej}
                 {!navrh ? (
                   <div className="flex flex-wrap items-start gap-3 [&>*]:min-w-0">
                     <StitkyDokladu
@@ -1071,7 +1122,16 @@ function PurchaseInvoiceDetail() {
       <DocumentDetailHeader
         title={titulok}
         number={row.invoice_number}
-        status={stavOdznak}
+        status={
+          nesedi ? (
+            <span className="inline-flex items-center gap-1.5">
+              <CudziaFakturaZnak nesedi={nesedi} />
+              {stavOdznak}
+            </span>
+          ) : (
+            stavOdznak
+          )
+        }
         meta={
           <MetaRiadok
             polozky={[
@@ -1114,6 +1174,7 @@ function PurchaseInvoiceDetail() {
         menuActions={menu}
       />
       <PageBody>
+        {upozornenieCudzej ? <div className="mb-4">{upozornenieCudzej}</div> : null}
         <div className="mb-4 empty:hidden">
           <UpozornenieKontrolyEfaktury invoiceId={row.id} />
         </div>

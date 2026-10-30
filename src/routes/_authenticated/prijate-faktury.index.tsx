@@ -3,6 +3,8 @@ import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
+import { CudziaFakturaZnak } from "@/components/faktero/CudziaFaktura";
+import { nacitajNesedi } from "@/lib/faktero/cudzia-faktura";
 import { stavOdovzdania, textOdznaku } from "@/lib/faktero/stav-odovzdania";
 import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
 import { UpozornenieNespracovane } from "@/components/faktero/UpozornenieNespracovane";
@@ -1180,6 +1182,9 @@ function PurchaseInvoicesPage() {
                     )}
                   </td>
                   <td className="p-3">
+                    {r.odberatel_nesedi ? (
+                      <CudziaFakturaZnak nesedi={nacitajNesedi(r.odberatel_nesedi)} className="mr-1.5 align-middle" />
+                    ) : null}
                     {r.supplier_name}
                     {r.stitky?.length ? (
                         <div className="mt-0.5 flex flex-wrap gap-1">

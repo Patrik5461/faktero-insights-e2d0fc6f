@@ -289,3 +289,31 @@ describe("suma na úhradu prijatej faktúry", () => {
     expect(s.naUhradu).toBe(615);
   });
 });
+
+describe("odberateľ z eFaktúry (kontrola, či faktúra patrí firme)", () => {
+  const xml = generatePeppolBisXml(
+    mapToEN16931({ company: firma, invoice: faktura(), items: [polozka()] }),
+  ).xml;
+
+  it("rozobratie vráti odberateľa s IČO, DIČ a IČ DPH", () => {
+    const r = rozoberPrijatuUbl(xml)!;
+    expect(r.odberatel).toMatchObject({ ico: "43291067", icDph: "SK5843291067" });
+    expect(r.odberatel?.nazov).toBeTruthy();
+  });
+
+  it("eFaktúra pre inú firmu dostane príznak, pre správnu nie", async () => {
+    const { overOdberatela } = await import("../cudzia-faktura");
+    const r = rozoberPrijatuUbl(xml)!;
+    expect(
+      overOdberatela({
+        odberatel: r.odberatel,
+        dodavatel: r.dodavatel,
+        firma: { ico: "43291067" },
+      }),
+    ).toBeNull();
+    expect(
+      overOdberatela({ odberatel: r.odberatel, dodavatel: r.dodavatel, firma: { ico: "11111111" } })
+        ?.dovod,
+    ).toBe("ico");
+  });
+});

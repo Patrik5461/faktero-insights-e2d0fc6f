@@ -525,6 +525,7 @@ export async function navrhPreRiadok(
     typ === "prijata" ? "amount_without_vat" : typ === "blocek" ? "net_amount" : "subtotal";
   const dphStlpec = typ === "vystavena" ? "vat_total" : "vat_amount";
   const bl = blokatory({
+    cudziOdberatel: typ === "prijata" && Boolean(row.odberatel_nesedi),
     polozkyNesedia:
       typ !== "vystavena" &&
       !(Array.isArray(row.polozky_vypnute) && row.polozky_vypnute.length) &&
@@ -689,6 +690,8 @@ export async function potvrdNavrh(
   args: { automat: boolean; userId?: string | null },
 ): Promise<boolean> {
   if (jeUzavrety(row)) return false;
+  // Faktúra inej firmy (iný odberateľ) sa nezaúčtuje — ani ručným potvrdením návrhu.
+  if (typ === "prijata" && row.odberatel_nesedi) return false;
   const zmena: Riadok = {
     zauctovane_at: new Date().toISOString(),
     zauctoval: args.automat ? null : (args.userId ?? null),
@@ -745,6 +748,8 @@ export async function smieSaZauctovat(typ: TypDokladu, row: Riadok, sb?: Klient)
   }
   if (typ === "prijata") {
     if (!["received", "paid"].includes(String(row.status))) return false;
+    // Odberateľ na doklade je iná firma — čaká na rozhodnutie človeka.
+    if (row.odberatel_nesedi) return false;
     // Zálohová nie je náklad a konektor ju neberie.
     if (row.type === "proforma") return false;
     const { zapocitatelna } = await import("./samofakturacia");

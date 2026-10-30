@@ -53,9 +53,16 @@ const POLIA: Record<string, string> = {
   reverse_charge: "Prenesenie daňovej povinnosti",
   sent_at: "Odoslanie",
   paid_at: "Úhrada",
+  odberatel_nesedi: "Odberateľ na doklade",
 };
 
 function hodnota(pole: string, v: unknown, t: (s: string) => string, loc: string): string {
+  // Príznak „faktúra nepatrí firme“ — zrušený = človek potvrdil, že patrí tejto firme.
+  if (pole === "odberatel_nesedi") {
+    if (v == null) return t("patrí tejto firme (potvrdené)");
+    const o = ((v as any)?.odberatel ?? {}) as { nazov?: string | null; ico?: string | null };
+    return `${t("iná firma")}${o.nazov || o.ico ? ` — ${[o.nazov, o.ico].filter(Boolean).join(", ")}` : ""}`;
+  }
   if (v == null || v === "") return "—";
   if (Array.isArray(v)) return v.length ? v.join(", ") : "—";
   if (typeof v === "boolean") return v ? t("áno") : t("nie");

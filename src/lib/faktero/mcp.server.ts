@@ -506,6 +506,17 @@ export const NASTROJE: Nastroj[] = [
         external_id: { type: "string", description: "Vlastné id — opakované volanie nič nezdvojí" },
         accounting: ZAUCTOVANIE,
         int_poznamka: { type: "string", description: "Účtovná poznámka" },
+        buyer: {
+          type: "object",
+          description:
+            "Odberateľ z dokladu (voliteľné). Keď nesedí na firmu, faktúra dostane príznak odberatel_nesedi a nedá sa zaúčtovať.",
+          properties: {
+            name: { type: "string" },
+            ico: { type: "string" },
+            dic: { type: "string" },
+            ic_dph: { type: "string" },
+          },
+        },
         ...ZNACKY,
       },
       required: ["invoice_number", "supplier", "issue_date"],

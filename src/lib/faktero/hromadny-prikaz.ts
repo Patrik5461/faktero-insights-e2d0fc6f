@@ -34,7 +34,13 @@ export type FakturaNaUhradu = {
   vyuctovanie_id?: string | null;
   /** Účtovná poznámka faktúry — do správy pre príjemcu, keď si to firma zvolí. */
   note?: string | null;
+  /** Faktúra nepatrí firme (iný odberateľ) — `purchase_invoices.odberatel_nesedi`. */
+  odberatel_nesedi?: unknown;
 };
+
+/** Dôvod vynechania faktúry, ktorá nepatrí firme (rovnaký text ako `DOVOD_CUDZIA`). */
+export const DOVOD_CUDZIA_PRIKAZ =
+  "faktúra nepatrí tejto firme (odberateľ na doklade je iná firma) — skontrolujte ju a potvrďte, že patrí tejto firme, alebo ju presuňte či zmažte";
 
 export type Platba = {
   id: string;
@@ -131,6 +137,10 @@ export function pripravPlatby(faktury: FakturaNaUhradu[]): {
     }
     if (f.status === "cancelled") {
       skip("je stornovaná");
+      continue;
+    }
+    if (f.odberatel_nesedi) {
+      skip(DOVOD_CUDZIA_PRIKAZ);
       continue;
     }
     if (f.vyuctovanie_id) {

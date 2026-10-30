@@ -257,10 +257,14 @@ export async function zaevidujPrijatuEfakturu(
     const advanceInvoiceId = riadok.advance_amount
       ? await najdiZalohovu(supabase, companyId, r)
       : null;
+    // Odberateľ na eFaktúre je iná firma — faktúra sa zaeviduje s príznakom a nezaúčtuje.
+    const { priznakPrijatej } = await import("../cudzia-faktura.server");
+    const cudzia = await priznakPrijatej(supabase, companyId, r.odberatel, r.dodavatel);
     const { data: faktura, error: chybaZapisu } = await supabase
       .from("purchase_invoices")
       .insert({
         ...riadok,
+        ...cudzia,
         company_id: companyId,
         created_by: args.userId,
         status: "received",
@@ -359,7 +363,20 @@ async function doNespracovanych(
     file_name: cesta ? nazov : null,
     file_mime: cesta ? "application/pdf" : null,
     file_size: velkost,
-    ai: null,
+    // Odberateľ a dodávateľ z UBL — podľa nich Nespracované spoznajú faktúru inej firmy.
+    ai: a.r.odberatel
+      ? ({
+          zdroj_udajov: "ubl",
+          buyer_name: a.r.odberatel.nazov,
+          buyer_ico: a.r.odberatel.ico,
+          buyer_dic: a.r.odberatel.dic,
+          buyer_ic_dph: a.r.odberatel.icDph,
+          supplier_name: a.r.dodavatel.nazov,
+          supplier_ico: a.r.dodavatel.ico,
+          supplier_dic: a.r.dodavatel.dic,
+          supplier_ic_dph: a.r.dodavatel.icDph,
+        } as any)
+      : null,
     udaje,
   });
   if (error) {
