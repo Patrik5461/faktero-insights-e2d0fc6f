@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/zamestnanci")({
           "Personalistika vo Fakteru: karta zamestnanca, zmluvy a dokumenty zo šablón, dochádzka, neprítomnosti a pripomienky lehôt.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/zamestnanci" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/zamestnanci" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/zamestnanci" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/zamestnanci" }],
   }),
   component: Page,
 });

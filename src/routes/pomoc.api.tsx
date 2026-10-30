@@ -19,9 +19,9 @@ export const Route = createFileRoute("/pomoc/api")({
         property: "og:description",
         content: preloz(match.context.jazyk, "Návod pre vývojárov na prácu s Faktero API."),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/api" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/api" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/api" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/api" }],
   }),
   component: Page,
 });

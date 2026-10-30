@@ -17,10 +17,10 @@ export const Route = createFileRoute("/pomoc/videa")({
         ),
       },
       { property: "og:title", content: preloz(match.context.jazyk, "Video návody — Faktero") },
-      { property: "og:url", content: "https://faktero.sk/pomoc/videa" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/videa" },
       ...(VIDEO_NAVODY[0] ? [{ property: "og:image", content: VIDEO_NAVODY[0].posterUrl }] : []),
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/videa" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/videa" }],
     scripts: VIDEO_NAVODY.map((v) => ({
       type: "application/ld+json",
       children: JSON.stringify(videoJsonLd(v)),

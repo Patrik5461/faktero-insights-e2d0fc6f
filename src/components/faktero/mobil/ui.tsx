@@ -426,12 +426,14 @@ export function QuickAction({
     <button
       type="button"
       onClick={onClick}
-      className="flex min-w-0 flex-1 flex-col items-center gap-2 rounded-app border border-app-obrys bg-app-karta px-1.5 py-3.5 transition active:scale-[0.98] active:bg-app-pozadie"
+      className="flex min-w-0 flex-1 flex-col items-center gap-2 rounded-app border border-app-obrys bg-app-karta px-1 py-3.5 transition active:scale-[0.98] active:bg-app-pozadie"
     >
       <span className="grid h-10 w-10 place-items-center rounded-[12px] bg-app-zelena-jemna text-app-zelena">
         <Icon className="h-5 w-5" />
       </span>
-      <span className="w-full truncate text-center text-[13px] font-semibold leading-tight text-app-text">
+      {/* Štyri dlaždice vedľa seba: na 375–390 px sa „Rechnung“, „Beolvasás“ či „Skenovať“
+          pri 13 px nezmestili a končili trojbodkou. */}
+      <span className="w-full truncate text-center text-[12px] font-semibold leading-tight text-app-text min-[400px]:text-[13px]">
         {label}
       </span>
     </button>

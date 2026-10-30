@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/exporty")({
           "Účtovné exporty pre účtovníčku — Pohoda, KROS Omega, Money S3, MRP-K/S, ISDOC, ABRA Flexi aj súpiska CSV — a prenos dát zo SuperFaktúry, iDokladu a KROSu do Faktera.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/exporty" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/exporty" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/exporty" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/exporty" }],
   }),
   component: Page,
 });

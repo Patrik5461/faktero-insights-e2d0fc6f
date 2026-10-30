@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/zabezpecenie")({
           "Dvojfaktorové overenie, dôveryhodné zariadenia, prihlasovanie, zabudnuté heslo a zrušenie účtu vo Fakteru.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/zabezpecenie" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/zabezpecenie" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/zabezpecenie" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/zabezpecenie" }],
   }),
   component: Page,
 });

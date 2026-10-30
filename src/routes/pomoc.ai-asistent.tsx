@@ -25,9 +25,9 @@ export const Route = createFileRoute("/pomoc/ai-asistent")({
           "Otázky nad vlastnými dátami — a čo asistent nevie a nesmie.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/ai-asistent" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/ai-asistent" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/ai-asistent" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/ai-asistent" }],
   }),
   component: Page,
 });

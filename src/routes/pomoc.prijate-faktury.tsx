@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/prijate-faktury")({
           "Prijaté faktúry vo Faktere: zápis ručne aj e-mailom, položky a náhľad dokladu, hromadné akcie, splatnosť, úhrady, platba z banky, DPH na vstupe a samofakturácia.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/prijate-faktury" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/prijate-faktury" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/prijate-faktury" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/prijate-faktury" }],
   }),
   component: Page,
 });

@@ -3,6 +3,7 @@ import { Check, ArrowRight, FileText, Car, RefreshCw, ShieldCheck, Mail, Lock } 
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { kanonicka } from "@/lib/faktero/kanonicka";
 
 const INVOICING_PLANS = [
   {
@@ -112,6 +113,7 @@ export const Route = createFileRoute("/cennik")({
   head: ({ match }) => {
     const j = match.context.jazyk;
     return {
+      links: kanonicka("/cennik"),
       meta: [
         { title: preloz(j, "Cenník — Faktero") },
         {

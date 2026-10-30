@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/oss")({
           "Predaj tovaru a digitálnych služieb spotrebiteľom v EÚ: hranica 10 000 €, sadzba štátu zákazníka a podklady pre priznanie OSS.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/oss" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/oss" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/oss" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/oss" }],
   }),
   component: Page,
 });

@@ -50,7 +50,7 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { lokalJazyka, preloz, type Jazyk } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 
-const URL_STRANKY = "https://faktero.sk/faktura-zadarmo";
+const URL_STRANKY = "https://www.faktero.sk/faktura-zadarmo";
 
 export const Route = createFileRoute("/faktura-zadarmo")({
   head: ({ match }) => {

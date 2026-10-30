@@ -29,9 +29,9 @@ export const Route = createFileRoute("/pravne/obchodne-podmienky")({
         property: "og:description",
         content: preloz(match.context.jazyk, "Obchodné podmienky používania služby Faktero."),
       },
-      { property: "og:url", content: "https://faktero.sk/pravne/obchodne-podmienky" },
+      { property: "og:url", content: "https://www.faktero.sk/pravne/obchodne-podmienky" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pravne/obchodne-podmienky" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pravne/obchodne-podmienky" }],
   }),
   component: Page,
 });

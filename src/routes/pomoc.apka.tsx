@@ -15,9 +15,9 @@ export const Route = createFileRoute("/pomoc/apka")({
           "Faktero v telefóne: vystavovanie faktúr a skenovanie dokladov bez signálu, automatické rozpoznanie jazdy a samostatná appka Kniha jázd.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/apka" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/apka" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/apka" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/apka" }],
   }),
   component: Page,
 });

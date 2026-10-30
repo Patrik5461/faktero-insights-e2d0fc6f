@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import type { HelpSection } from "@/components/faktero/HelpArticle";
 import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
+import { kanonicka } from "@/lib/faktero/kanonicka";
 
 /**
  * Stránka ostáva kvôli uloženým odkazom, ale hovorí to, čo dnes platí:
@@ -10,6 +11,7 @@ import { PrelozenyManual } from "@/lib/i18n/prelozStrom";
  */
 export const Route = createFileRoute("/pomoc/online-platby/gopay")({
   head: ({ match }) => ({
+    links: kanonicka("/pomoc/online-platby/gopay"),
     meta: [
       { title: preloz(match.context.jazyk, "Pomoc — Ako od zákazníkov dostať peniaze — Faktero") },
       {

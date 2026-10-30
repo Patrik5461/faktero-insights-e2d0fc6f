@@ -26,9 +26,9 @@ export const Route = createFileRoute("/pomoc/woocommerce")({
           "Ako napojiť e-shop na WooCommerce na Faktero, aby sa faktúry vystavovali samy.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/woocommerce" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/woocommerce" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/woocommerce" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/woocommerce" }],
   }),
   component: Page,
 });

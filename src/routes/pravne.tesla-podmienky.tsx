@@ -21,9 +21,9 @@ export const Route = createFileRoute("/pravne/tesla-podmienky")({
           "Podmienky pripojenia Tesla vozidiel cez Tesla Fleet API v službe Faktero.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pravne/tesla-podmienky" },
+      { property: "og:url", content: "https://www.faktero.sk/pravne/tesla-podmienky" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pravne/tesla-podmienky" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pravne/tesla-podmienky" }],
   }),
   component: Page,
 });

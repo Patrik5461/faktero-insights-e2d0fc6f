@@ -18,11 +18,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { LEGAL_COMPANY } from "@/components/faktero/LegalShell";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { kanonicka } from "@/lib/faktero/kanonicka";
 
 export const Route = createFileRoute("/objednavka")({
   head: ({ match }) => {
     const j = match.context.jazyk;
     return {
+      links: kanonicka("/objednavka"),
       meta: [
         { title: preloz(j, "Objednávka — Faktero") },
         {

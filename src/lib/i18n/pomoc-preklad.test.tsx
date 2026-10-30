@@ -39,6 +39,8 @@ vi.mock("@tanstack/react-router", async (povodny) => {
     Link: ({ to, children }: { to?: string; children?: ReactNode }) => <a href={to}>{children}</a>,
   };
 });
+// Manuál podpory ukáže časť o WhatsAppe len pri zapnutej integrácii — preklad má pokryť aj ju.
+vi.mock("@/hooks/useWhatsAppPodpora", () => ({ useWhatsAppVerejne: () => "421902101967" }));
 vi.mock("@/components/faktero/MarketingShell", () => ({
   MarketingShell: ({ children }: { children?: ReactNode }) => <>{children}</>,
 }));

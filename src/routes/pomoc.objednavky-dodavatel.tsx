@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/objednavky-dodavatel")({
           "Objednávky u dodávateľov: návrh doobjednania podľa minimálnych zásob, odoslanie, čiastočný príjem tovaru a stav objednávky.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/objednavky-dodavatel" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/objednavky-dodavatel" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/objednavky-dodavatel" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/objednavky-dodavatel" }],
   }),
   component: Page,
 });

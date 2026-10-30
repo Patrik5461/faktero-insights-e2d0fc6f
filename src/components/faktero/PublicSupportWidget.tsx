@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import ReactMarkdown from "react-markdown";
 import { MessageCircle, X, Send, Loader2, Minus, Mail, Phone } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
@@ -24,6 +25,10 @@ const GREETING: Msg = {
     "Ahoj! 👋 Som **Faktero AI podpora**. Rád zodpoviem vaše otázky o Fakteri — cenách, skúšobnej verzii, API, eFaktúre 2027 alebo prechode z iného systému.",
 };
 
+/** AI odpovedá v jazyku webu — „neviem“ treba spoznať aj po česky a nemecky. */
+const NEVIE_ODPOVEDAT =
+  /neviem zodpoved|nevím|neumím odpovědět|nedokážu odpovědět|kann (ich )?(das |diese frage )?nicht beantworten|weiß (ich )?(das )?nicht/i;
+
 export function PublicSupportWidget() {
   const { t } = useT();
   const [open, setOpen] = useState(false);
@@ -33,6 +38,7 @@ export function PublicSupportWidget() {
   const [busy, setBusy] = useState(false);
   const [escalate, setEscalate] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  useZatvorNaEscape(open ? () => setOpen(false) : null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -62,13 +68,15 @@ export function PublicSupportWidget() {
             role: "assistant",
             content:
               data?.message ??
-              "Napíšte nám na podpora@faktero.sk alebo zavolajte na +421 902 101 967 a ozveme sa vám.",
+              t(
+                "Napíšte nám na podpora@faktero.sk alebo zavolajte na +421 902 101 967 a ozveme sa vám.",
+              ),
           },
         ]);
         setEscalate(true);
       } else {
         setMsgs((m) => [...m, { role: "assistant", content: data.content }]);
-        if (typeof data.content === "string" && /neviem zodpoved/i.test(data.content)) {
+        if (typeof data.content === "string" && NEVIE_ODPOVEDAT.test(data.content)) {
           setEscalate(true);
         }
       }
@@ -77,8 +85,9 @@ export function PublicSupportWidget() {
         ...m,
         {
           role: "assistant",
-          content:
+          content: t(
             "Napíšte nám na podpora@faktero.sk alebo zavolajte na +421 902 101 967 a ozveme sa vám.",
+          ),
         },
       ]);
       setEscalate(true);
@@ -98,6 +107,8 @@ export function PublicSupportWidget() {
     >
       {open && (
         <div
+          role="dialog"
+          aria-label={t("Faktero AI podpora")}
           className="flex w-[calc(100vw-2rem)] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10"
           style={{ maxHeight: "min(520px, 70vh)" }}
         >
@@ -187,7 +198,9 @@ export function PublicSupportWidget() {
               </div>
             )}
 
-            {escalate && !busy && (
+            {/* Kontakty (aj Telegram) hneď pri otvorení, nielen keď AI nevie odpovedať —
+                kto chce písať človeku, nemá ich ako vyvolať. */}
+            {(escalate || msgs.length === 1) && !busy && (
               <div className="rounded-lg border border-border bg-muted/50 p-2.5 text-xs">
                 <div className="mb-1.5 text-muted-foreground">
                   {t("Napíšte nám alebo zavolajte a ozveme sa vám.")}

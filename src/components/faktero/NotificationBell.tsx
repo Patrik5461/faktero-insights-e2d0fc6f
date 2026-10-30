@@ -9,7 +9,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listNotifications, markNotificationsRead } from "@/lib/faktero/notifications.functions";
-import { kluceNaPrecitanie, type AppNotification, type NotificationSeverity } from "@/lib/faktero/notifications";
+import {
+  kluceNaPrecitanie,
+  textNotifikacie,
+  type AppNotification,
+  type NotificationSeverity,
+} from "@/lib/faktero/notifications";
 import { useT } from "@/lib/i18n/useT";
 
 const IKONA: Record<NotificationSeverity, typeof Info> = {
@@ -149,8 +154,8 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
                 >
                   <Ikona className={`mt-0.5 h-4 w-4 shrink-0 ${FARBA[n.severity]}`} />
                   <span className="min-w-0">
-                    <span className="block truncate text-sm text-foreground">{t(n.title, n.params)}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{t(n.detail, n.params)}</span>
+                    <span className="block truncate text-sm text-foreground">{textNotifikacie(n, "title", t)}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{textNotifikacie(n, "detail", t)}</span>
                   </span>
                   {!n.read && (
                     <span

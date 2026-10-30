@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/pohoda")({
           "Ako dostať doklady z Faktera do programu POHODA: mesačné podklady mailom, automatické odosielanie a priame prepojenie, pri ktorom si Pohoda doklady vezme sama.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/pohoda" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/pohoda" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/pohoda" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/pohoda" }],
   }),
   component: Page,
 });

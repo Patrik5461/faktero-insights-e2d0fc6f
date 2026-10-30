@@ -8,9 +8,11 @@ import {
 } from "@/components/faktero/LegalShell";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { kanonicka } from "@/lib/faktero/kanonicka";
 
 export const Route = createFileRoute("/pravne/opakovane-platby")({
   head: ({ match }) => ({
+    links: kanonicka("/pravne/opakovane-platby"),
     meta: [
       { title: preloz(match.context.jazyk, "Opakované platby — Faktero") },
       {

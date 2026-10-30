@@ -18,9 +18,9 @@ export const Route = createFileRoute("/pomoc/odberatelia")({
           "Karta odberateľa vo Faktere: doplnenie údajov podľa IČO, cenová skupina, zľava, predvolená zákazka a mazanie.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/odberatelia" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/odberatelia" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/odberatelia" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/odberatelia" }],
     scripts: VIDEO_ODBERATEL
       ? [{ type: "application/ld+json", children: JSON.stringify(videoJsonLd(VIDEO_ODBERATEL)) }]
       : [],

@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/zakazky")({
           "Zákazky vo Faktere: sledovanie výnosov, nákladov a marže jednej práce naprieč faktúrami, skladom a jazdami.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/zakazky" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/zakazky" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/zakazky" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/zakazky" }],
   }),
   component: Page,
 });

@@ -112,6 +112,17 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((b - a) / 86_400_000);
 }
 
+/**
+ * „1 deň / {dni} dni / {dni} dní po splatnosti" ako šablóna na preklad — tri
+ * tvary ako v slovenčine (čeština ich má rovnako, nemčina dva). Číslo ide do
+ * `params.dni`.
+ */
+export function poSplatnosti(n: number): string {
+  if (n === 1) return "1 deň po splatnosti";
+  if (n >= 2 && n <= 4) return "{dni} dni po splatnosti";
+  return "{dni} dní po splatnosti";
+}
+
 /** „3 dni", „1 deň", „12 dní" — slovenčina má tri tvary. */
 export function dniText(n: number): string {
   if (n === 1) return "1 deň";
@@ -143,10 +154,17 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
       key: `invoice_overdue:${f.id}`,
       // Mesiac po splatnosti je iná situácia než včerajšia splatnosť.
       severity: dni > 30 ? "danger" : "warning",
+      // Šablóny s {…} namiesto hotového textu — inak by zvonček v CZ/DE ostal po slovensky.
       title: f.invoice_number
-        ? `Faktúra ${f.invoice_number} je ${dniText(dni)} po splatnosti`
-        : `Faktúra je ${dniText(dni)} po splatnosti`,
-      detail: `${f.customer_name ?? "Neznámy odberateľ"} · ${formatMoney(f.total, f.currency)}`,
+        ? `Faktúra {cislo} je ${poSplatnosti(dni)}`
+        : `Faktúra je ${poSplatnosti(dni)}`,
+      detail: f.customer_name ? "{odberatel} · {suma}" : "Neznámy odberateľ · {suma}",
+      params: {
+        cislo: f.invoice_number ?? "",
+        dni,
+        odberatel: f.customer_name ?? "",
+        suma: formatMoney(f.total, f.currency),
+      },
       to: `/faktury/${f.id}`,
       date: f.due_date,
     });
@@ -159,8 +177,16 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
     out.push({
       key: `purchase_overdue:${f.id}`,
       severity: dni > 30 ? "danger" : "warning",
-      title: `Neuhradená prijatá faktúra ${f.invoice_number ?? ""}`.trim(),
-      detail: `${f.supplier_name ?? "Neznámy dodávateľ"} · ${formatMoney(f.amount_total, f.currency)} · ${dniText(dni)} po splatnosti`,
+      title: f.invoice_number ? "Neuhradená prijatá faktúra {cislo}" : "Neuhradená prijatá faktúra",
+      detail: f.supplier_name
+        ? `{dodavatel} · {suma} · ${poSplatnosti(dni)}`
+        : `Neznámy dodávateľ · {suma} · ${poSplatnosti(dni)}`,
+      params: {
+        cislo: f.invoice_number ?? "",
+        dni,
+        dodavatel: f.supplier_name ?? "",
+        suma: formatMoney(f.amount_total, f.currency),
+      },
       to: `/prijate-faktury/${f.id}`,
       date: f.due_date,
     });
@@ -171,7 +197,8 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
     out.push({
       key: `bank_unmatched:${t.id}`,
       severity: "info",
-      title: `Nepriradená platba ${formatMoney(t.amount, t.currency)}`,
+      title: "Nepriradená platba {suma}",
+      params: { suma: formatMoney(t.amount, t.currency) },
       detail: [
         t.counterparty ?? "Neznáma protistrana",
         t.variable_symbol ? `VS ${t.variable_symbol}` : null,
@@ -188,7 +215,8 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
     out.push({
       key: `payment_failed:${p.id}`,
       severity: "danger",
-      title: `Platba ${formatMoney(p.amount, p.currency)} neprešla`,
+      title: "Platba {suma} neprešla",
+      params: { suma: formatMoney(p.amount, p.currency) },
       detail: [p.creditor_name ?? "Neznámy príjemca", p.error_message ?? stavText(p.status)]
         .filter(Boolean)
         .join(" · "),
@@ -265,6 +293,24 @@ function stavText(status: string | null): string {
   }
 }
 
+/**
+ * Text notifikácie v jazyku rozhrania. Preloží sa šablóna aj textové hodnoty
+ * v `params` — napríklad režim DPH („Neplatiteľ DPH“) je hodnota, nie šablóna.
+ * Mená a čísla dokladov v slovníku nie sú, tie prejdú nezmenené.
+ */
+export function textNotifikacie(
+  n: Pick<AppNotification, "title" | "detail" | "params">,
+  pole: "title" | "detail",
+  t: (text: string, params?: Record<string, string | number>) => string,
+): string {
+  const params = n.params
+    ? Object.fromEntries(
+        Object.entries(n.params).map(([k, v]) => [k, typeof v === "string" && v ? t(v) : v]),
+      )
+    : undefined;
+  return t(n[pole], params);
+}
+
 /** Kľúče na zápis prečítania — pri zlúčenej položke aj kľúče jej členov. */
 export function kluceNaPrecitanie(items: Pick<AppNotification, "key" | "kluceClenov">[]): string[] {
   return [...new Set(items.flatMap((n) => [n.key, ...(n.kluceClenov ?? [])]))];
@@ -318,7 +364,10 @@ export function notifikaciaNespracovanych(zdroje: ZdrojNespracovanych[]): AppNot
             ? "{n} nespracované doklady"
             : "{n} nespracovaných dokladov",
       params: { n: count },
-      detail: "Čaká na kontrolu a označenie ako spracovaný.",
+      detail:
+        count === 1
+          ? "Čaká na kontrolu a označenie ako spracovaný."
+          : "Čakajú na kontrolu a označenie ako spracované.",
       to: "/nespracovane",
       date: String(najnovsi.created_at).slice(0, 10),
     },

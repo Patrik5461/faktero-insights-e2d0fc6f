@@ -22,9 +22,9 @@ export const Route = createFileRoute("/pravne/gdpr")({
         ),
       },
       { property: "og:title", content: preloz(match.context.jazyk, "GDPR — Faktero") },
-      { property: "og:url", content: "https://faktero.sk/pravne/gdpr" },
+      { property: "og:url", content: "https://www.faktero.sk/pravne/gdpr" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pravne/gdpr" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pravne/gdpr" }],
   }),
   component: Page,
 });

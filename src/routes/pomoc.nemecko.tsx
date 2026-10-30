@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/nemecko")({
           "Firma so sídlom v Nemecku: Regelbesteuerung a Kleinunternehmer, Soll a Ist, nemecká faktúra s GiroCode, ZUGFeRD a XRechnung, export do DATEV, prehľad UStVA s termínmi a upomienky podľa BGB.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/nemecko" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/nemecko" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/nemecko" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/nemecko" }],
   }),
   component: Page,
 });

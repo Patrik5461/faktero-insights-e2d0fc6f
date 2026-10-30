@@ -2,9 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { kanonicka } from "@/lib/faktero/kanonicka";
 
 export const Route = createFileRoute("/pravne/")({
   head: ({ match }) => ({
+    links: kanonicka("/pravne"),
     meta: [
       { title: preloz(match.context.jazyk, "Právne dokumenty — Faktero") },
       {

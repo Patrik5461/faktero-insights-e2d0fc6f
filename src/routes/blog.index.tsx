@@ -5,11 +5,13 @@ import { postsByDate } from "@/lib/faktero/blog-content";
 import { BlogCover } from "@/components/faktero/BlogCover";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { kanonicka } from "@/lib/faktero/kanonicka";
 
 export const Route = createFileRoute("/blog/")({
   head: ({ match }) => {
     const j = match.context.jazyk;
     return {
+      links: kanonicka("/blog"),
       meta: [
         { title: "Blog — Faktero" },
         {

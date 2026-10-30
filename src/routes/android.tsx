@@ -30,9 +30,9 @@ export const Route = createFileRoute("/android")({
           ),
         },
         { property: "og:title", content: preloz(j, "Faktero pre Android") },
-        { property: "og:url", content: "https://faktero.sk/android" },
+        { property: "og:url", content: "https://www.faktero.sk/android" },
       ],
-      links: [{ rel: "canonical", href: "https://faktero.sk/android" }],
+      links: [{ rel: "canonical", href: "https://www.faktero.sk/android" }],
     };
   },
   component: AndroidPage,

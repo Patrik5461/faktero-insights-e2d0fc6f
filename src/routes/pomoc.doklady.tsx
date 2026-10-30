@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/doklady")({
           "Doklady vo Faktere: odfotenie bločku, načítanie eKasa QR kódu z Finančnej správy, nahratie PDF, presun medzi prijaté faktúry a odovzdanie účtovníčke.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/doklady" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/doklady" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/doklady" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/doklady" }],
   }),
   component: Page,
 });

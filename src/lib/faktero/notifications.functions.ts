@@ -204,10 +204,14 @@ async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[
     {
       key: `ostatne-nespracovane:${najnovsi.id}`,
       severity: "info",
+      // Tri tvary ako pri Nespracovaných — „2 nespracovaných iných dokladov“ bolo zle.
       title:
         count === 1
           ? "1 nespracovaný iný doklad"
-          : `${count} nespracovaných iných dokladov`,
+          : count < 5
+            ? "{n} nespracované iné doklady"
+            : "{n} nespracovaných iných dokladov",
+      params: { n: count },
       detail: "List, predpis alebo zmluva čaká na účtovníka.",
       to: "/ostatne-doklady",
       date: String(najnovsi.created_at).slice(0, 10),
@@ -273,9 +277,8 @@ async function notifikacieOdpovediNaPonuky(companyId: string): Promise<AppNotifi
     key: `ponuka-odpoved:${q.id}:${q.status}`,
     severity: q.status === "accepted" ? "info" : "info",
     title:
-      q.status === "accepted"
-        ? `Ponuka ${q.quote_number} bola prijatá`
-        : `Ponuka ${q.quote_number} bola zamietnutá`,
+      q.status === "accepted" ? "Ponuka {cislo} bola prijatá" : "Ponuka {cislo} bola zamietnutá",
+    params: { cislo: q.quote_number ?? "" },
     detail:
       q.status === "accepted"
         ? `${q.customer_name ?? "Odberateľ"} ponuku prijal — dá sa premeniť na faktúru.`
@@ -326,7 +329,8 @@ async function notifikacieOdpovediPodpory(userId: string): Promise<AppNotificati
     .map((p) => ({
       key: `podpora:${p.id}:${p.posledna_sprava_at}`,
       severity: "info" as const,
-      title: `Podpora odpovedala na ${cisloPoziadavky(p.cislo)}`,
+      title: "Podpora odpovedala na {cislo}",
+      params: { cislo: cisloPoziadavky(p.cislo) },
       detail: p.predmet,
       to: `/podpora/${p.id}`,
       date: String(p.posledna_sprava_at).slice(0, 10),
@@ -391,7 +395,13 @@ async function notifikaciaSchvalovania(companyId: string, userId: string): Promi
     {
       key: `schvalovanie:${dnes}:${pocet}`,
       severity: "warning" as const,
-      title: `${pocet} ${pocet === 1 ? "doklad čaká" : pocet < 5 ? "doklady čakajú" : "dokladov čaká"} na vaše schválenie`,
+      title:
+        pocet === 1
+          ? "1 doklad čaká na vaše schválenie"
+          : pocet < 5
+            ? "{n} doklady čakajú na vaše schválenie"
+            : "{n} dokladov čaká na vaše schválenie",
+      params: { n: pocet },
       detail: "Do Pohody a na úhradu pôjdu až po schválení.",
       to: "/schvalovanie",
       date: dnes,

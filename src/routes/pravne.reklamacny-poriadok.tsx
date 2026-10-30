@@ -21,9 +21,9 @@ export const Route = createFileRoute("/pravne/reklamacny-poriadok")({
           "Postup pri reklamácii služby Faktero, lehoty a kontaktné údaje.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pravne/reklamacny-poriadok" },
+      { property: "og:url", content: "https://www.faktero.sk/pravne/reklamacny-poriadok" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pravne/reklamacny-poriadok" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pravne/reklamacny-poriadok" }],
   }),
   component: Page,
 });

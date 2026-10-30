@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/pokladna")({
           "Pokladňa vo Faktere: stav hotovosti, pokladničné doklady, bločky, spôsob platby a načítanie eKasa QR kódu.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/pokladna" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/pokladna" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/pokladna" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/pokladna" }],
   }),
   component: Page,
 });

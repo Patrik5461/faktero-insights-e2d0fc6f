@@ -21,9 +21,9 @@ export const Route = createFileRoute("/pravne/gopay-podmienky")({
           "Ako funguje GoPay vo Faktere — peniaze nikdy nejdú cez Faktero, každá firma má vlastný GoPay účet.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pravne/gopay-podmienky" },
+      { property: "og:url", content: "https://www.faktero.sk/pravne/gopay-podmienky" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pravne/gopay-podmienky" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pravne/gopay-podmienky" }],
   }),
   component: Page,
 });

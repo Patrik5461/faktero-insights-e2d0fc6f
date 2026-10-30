@@ -14,9 +14,9 @@ export const Route = createFileRoute("/pomoc/objednavky")({
           "Prijaté objednávky od odberateľov: potvrdenie, rezervácia tovaru, čiastočné fakturovanie a stav vybavenia.",
         ),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/objednavky" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/objednavky" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/objednavky" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/objednavky" }],
   }),
   component: Page,
 });

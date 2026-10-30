@@ -22,9 +22,9 @@ export const Route = createFileRoute("/pomoc/predplatne")({
         property: "og:description",
         content: preloz(match.context.jazyk, "Ako funguje predplatné a fakturácia Faktera."),
       },
-      { property: "og:url", content: "https://faktero.sk/pomoc/predplatne" },
+      { property: "og:url", content: "https://www.faktero.sk/pomoc/predplatne" },
     ],
-    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/predplatne" }],
+    links: [{ rel: "canonical", href: "https://www.faktero.sk/pomoc/predplatne" }],
   }),
   component: Page,
 });
