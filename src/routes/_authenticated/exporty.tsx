@@ -37,6 +37,7 @@ import {
 } from "@/lib/faktero/odovzdanie-exportu";
 import { riadkyPreIds, vsetkyRiadky } from "@/lib/faktero/strankovanie";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /** Kľúč podľa počtu: 1 / 2–4 / 5 a viac (slovenské tvary, preklad ich zjednotí). */
 const tvar = (n: number, jeden: string, dva: string, pat: string) =>
   n === 1 ? jeden : n >= 2 && n <= 4 ? dva : pat;
@@ -105,7 +106,7 @@ function ExportsPage() {
   const [dateFrom, setDateFrom] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
   );
-  const [dateTo, setDateTo] = useState(new Date().toISOString().slice(0, 10));
+  const [dateTo, setDateTo] = useState(dnesBratislava());
   const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
   const [lenNeexportovane, setLenNeexportovane] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -245,7 +246,7 @@ function ExportsPage() {
       setPicked({});
       load();
     } catch (e: any) {
-      toast.error(e?.message ?? t("Export zlyhal"));
+      toast.error(e?.message || t("Export zlyhal"));
     } finally {
       setBusy(false);
     }
@@ -256,7 +257,7 @@ function ExportsPage() {
       const r = await getContent({ data: { jobId: j.id } });
       downloadFile(r.fileName ?? "export.xml", r.content ?? "", r.mime, r.encoding);
     } catch (e: any) {
-      toast.error(e?.message ?? t("Stiahnutie zlyhalo"));
+      toast.error(e?.message || t("Stiahnutie zlyhalo"));
     }
   }
 
@@ -893,7 +894,7 @@ function ZauctovaneDoProgramu() {
   const [od, setOd] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toISOString().slice(0, 10),
   );
-  const [doDna, setDoDna] = useState(new Date().toISOString().slice(0, 10));
+  const [doDna, setDoDna] = useState(dnesBratislava());
   const [riadky, setRiadky] = useState<any[]>([]);
   const [vyber, setVyber] = useState<Record<string, boolean>>({});
   const [oznacit, setOznacit] = useState(true);
@@ -1032,7 +1033,7 @@ function ZauctovaneDoProgramu() {
         });
       void nacitaj();
     } catch (e: any) {
-      toast.error(e?.message ?? t("Export zlyhal"));
+      toast.error(e?.message || t("Export zlyhal"));
     } finally {
       setBusy(false);
     }

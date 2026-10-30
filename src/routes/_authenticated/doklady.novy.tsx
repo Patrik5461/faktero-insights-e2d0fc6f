@@ -76,6 +76,7 @@ import {
 } from "@/components/faktero/DocumentDetailHeader";
 import { ExternalLink, Eye, MessageSquare, Pencil, Printer, SendHorizontal, Trash2, Paperclip } from "lucide-react";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nový doklad — Faktero") }] }),
   // `prenos` znamená, že bloček prečítaný v skeneri čaká v `sessionStorage`.
@@ -121,7 +122,7 @@ const EMPTY: Form = {
   supplier_ico: "",
   supplier_ic_dph: "",
   document_number: "",
-  issue_date: new Date().toISOString().slice(0, 10),
+  issue_date: dnesBratislava(),
   /*
     Do stavu pokladne vstupujú len doklady platené hotovosťou, a práve preto
     sa tu nič nepredvolí. Kým tu bola hotovosť, kartová platba sa uložila ako
@@ -652,7 +653,7 @@ function NovyDokladPage() {
        * Doklad z minulého mesiaca nahratý dnes by tam preto nebol vidieť — tak
        * sa zoznam otvorí rovno na mesiaci, do ktorého doklad patrí.
        */
-      const mesiac = (form.issue_date || new Date().toISOString().slice(0, 10)).slice(0, 7);
+      const mesiac = (form.issue_date || dnesBratislava()).slice(0, 7);
       navigate({
         to: "/doklady",
         search: {

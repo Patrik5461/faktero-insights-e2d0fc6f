@@ -121,6 +121,7 @@ export const sk = {
   "faktury.stav.neuhradena": "Neuhradená",
   "faktury.stav.splatna": "Splatná",
   "faktury.stav.poSplatnosti": "Po splatnosti",
+  "faktury.stav.dobropis": "Dobropis",
   "faktury.stav.stornovana": "Stornovaná",
   "faktury.otvoritPdf": "Otvoriť PDF",
   "faktury.zdielat": "Zdieľať faktúru",
@@ -486,6 +487,7 @@ export const sk = {
   "ponuky.vytvaram": "Vytváram ponuku…",
 
   /* kniha jázd — zvyšok */
+  "jz.odHodiny": "od {cas}",
   "jz.odCasu":
     "Od {cas}. Keď ste dojazdili, ukončite ju — inak sa zastaví sama až po piatich minútach státia.",
   "jz.rozpoznalaJazdu": "Appka rozpoznala jazdu",
@@ -544,7 +546,7 @@ export const sk = {
   "faktury.uhradena": "Uhradená",
   "faktury.odoslana": "Odoslaná",
   "faktury.cisloOstava":
-    "Zmizne zo zoznamu, ale číslo ostáva obsadené — v číselnom rade nevznikne diera.",
+    "Zmizne zo zoznamu a jej číslo sa uvoľní — dostane ho ďalšia vystavená faktúra, takže v číselnom rade nevznikne diera.",
   "jazdy.nacitavam": "Načítavam jazdy…",
   "jazdy.prvaPribudne":
     "Prvá pribudne po ukončení merania — alebo sa natiahne z GPS jednotky, keď je vozidlo prepojené.",
@@ -1081,6 +1083,11 @@ export const sk = {
   "davka.stav.dlho": "Čítanie trvá dlho — ťuknite a počkajte",
   "davka.stav.ulozene": "Uložené",
   "davka.stav.chyba": "Chyba — ťuknite a skúste znova",
+  "davka.stav.chybaUlozenia": "Neuložilo sa — ťuknite a otvorte doklad",
+  "davka.natrvalo.predplatne": "Predplatné nie je aktívne — doklad sa nenahrá",
+  "davka.natrvalo.prazdny": "Súbor je prázdny — vyberte ho znova",
+  "davka.natrvalo.velky": "Súbor je väčší než 15 MB",
+  "davka.natrvalo.neplatny": "Tento súbor sa nedá nahrať — skúste fotku alebo PDF",
   "davka.pole.druh": "druh dokladu",
   "davka.pole.platba": "spôsob úhrady",
   "davka.pole.polozky": "položky nesedia so sumou",

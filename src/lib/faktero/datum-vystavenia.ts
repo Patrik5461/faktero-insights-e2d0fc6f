@@ -18,6 +18,20 @@ export function dnesBratislava(teraz: Date = new Date()): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(teraz);
 }
 
+/**
+ * Dátum RRRR-MM-DD posunutý o `dni` dní — čisto kalendárne, v UTC.
+ *
+ * `new Date("…T00:00:00")` + `setDate` + `toISOString()` počíta v miestnom
+ * čase a vracia UTC: v Bratislave vyšla splatnosť „o 14 dní“ o deň skôr
+ * (v appke vždy, vo formulároch cez prechod na letný čas).
+ */
+export function posunDni(iso: string, dni: number): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? ""));
+  if (!m) return iso;
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + dni));
+  return d.toISOString().slice(0, 10);
+}
+
 /** Typy vydaných dokladov, ktoré sa odosielajú odberateľovi — všetky z `invoices`. */
 export const TYPY_S_KONTROLOU_DATUMU = [
   "regular",

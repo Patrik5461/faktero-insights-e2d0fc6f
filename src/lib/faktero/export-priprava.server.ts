@@ -55,12 +55,15 @@ export async function pripravFaktury(
   ];
   const cislaOpravovanych: Record<string, string> = {};
   if (opravovaneIds.length) {
-    const { data: povodne } = await supabase
-      .from("invoices")
-      .select("id, invoice_number")
-      .eq("company_id", companyId)
-      .in("id", opravovaneIds);
-    for (const r of povodne ?? []) cislaOpravovanych[r.id] = r.invoice_number;
+    const { poDavkach } = await import("./strankovanie");
+    const povodne = await poDavkach<any>(opravovaneIds as string[], (kus) =>
+      supabase
+        .from("invoices")
+        .select("id, invoice_number")
+        .eq("company_id", companyId)
+        .in("id", kus),
+    );
+    for (const r of povodne) cislaOpravovanych[r.id] = r.invoice_number;
   }
 
   // Odpočty záloh na vyúčtovacích faktúrach (väzba v `invoice_advances`).

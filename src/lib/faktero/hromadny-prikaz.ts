@@ -10,6 +10,7 @@
   `/VS…/SS…/KS…` — tak ich banka ukáže príjemcovi vo výpise a jeho párovanie
   (aj to vo Fakteri) podľa nich spozná, čo bolo zaplatené.
 */
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import { upravIban } from "./platobny-ucet";
 import type { TextPrijemcu } from "./export-nastavenia";
 
@@ -277,7 +278,11 @@ export function textPrijemcu(
 }
 
 const xml = (v: string) =>
-  v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  bezZakazanychXml(v)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 
 /** `/VS123/SS/KS0308` — prázdne symboly sa vynechajú; bez žiadneho `NOTPROVIDED`. */
 export function endToEndId(p: Pick<Platba, "vs" | "ss" | "ks">): string {

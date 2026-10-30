@@ -16,6 +16,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /** Dátum pre človeka po slovensky („30. 9. 2026“), prázdny ako „—“. */
 const formatujDatum = (d: unknown) => datumNaDoklade(d);
 
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/uzavierka")({
 });
 
 function dnesISO() {
-  return new Date().toISOString().slice(0, 10);
+  return dnesBratislava();
 }
 
 function UzavierkaPage() {

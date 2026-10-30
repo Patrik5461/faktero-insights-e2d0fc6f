@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
+import { BEZPECNY_MARKDOWN } from "@/lib/faktero/markdown-ai";
 import { toast } from "sonner";
 import { Sparkles, Send, Plus, Trash2, Copy, Check, Loader2, X } from "lucide-react";
 import {
@@ -25,7 +26,7 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose?: () => void }) {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const qc = useQueryClient();
   const listFn = useServerFn(listConversationsFn);
   const createFn = useServerFn(createConversationFn);
@@ -40,6 +41,12 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
     queryKey: ["ai-conv", companyId],
     queryFn: () => listFn({ data: { companyId } }),
   });
+
+  // Po prepnutí firmy nesmie ostať otvorená konverzácia predošlej firmy
+  // (server by správu odmietol — konverzácia patrí inej firme).
+  useEffect(() => {
+    setActiveId(null);
+  }, [companyId]);
 
   useEffect(() => {
     if (!activeId && conversations.data && conversations.data.length > 0) {
@@ -62,7 +69,7 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
         convId = conv.id;
         setActiveId(convId);
       }
-      return sendFn({ data: { conversationId: convId!, companyId, content } });
+      return sendFn({ data: { conversationId: convId!, companyId, content, jazyk } });
     },
     onMutate: () => setInput(""),
     onSuccess: () => {
@@ -152,7 +159,9 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
                   onClick={async () => {
                     if (await potvrd(t("Vymazať konverzáciu?"))) delConv.mutate(c.id);
                   }}
-                  className="opacity-0 transition group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                  aria-label={t("Vymazať konverzáciu")}
+                  title={t("Vymazať konverzáciu")}
+                  className="opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-destructive"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -271,7 +280,7 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
           <p className="whitespace-pre-wrap">{content}</p>
         ) : (
           <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-headings:mt-2 prose-headings:mb-1">
-            <ReactMarkdown>{content}</ReactMarkdown>
+            <ReactMarkdown {...BEZPECNY_MARKDOWN}>{content}</ReactMarkdown>
           </div>
         )}
         {!isUser && (

@@ -66,6 +66,11 @@ export type DokladVDavke = {
   chyba: string | null;
   /** Súbor je na nahratie priveľký — opakovať nemá zmysel. */
   prilisVelky: boolean;
+  /**
+   * Nahratie zlyhalo tak, že opakovanie nepomôže (prázdny alebo neplatný
+   * súbor, neaktívne predplatné) — ťuknutie ho už neskúša znova.
+   */
+  natrvalo?: TrvalaChyba | null;
   zaciatokCitania: number | null;
 };
 
@@ -110,8 +115,38 @@ export function novyDoklad(
     povinne: [],
     chyba: null,
     prilisVelky,
+    natrvalo: null,
     zaciatokCitania: vstup.id ? teraz : null,
   };
+}
+
+/** Prečo sa súbor nedá nahrať ani na ďalší pokus. */
+export type TrvalaChyba = "predplatne" | "prazdny" | "velky" | "neplatny";
+
+/**
+ * Chyba nahratia: dá sa to skúsiť znova (sieť, výpadok servera), alebo nie?
+ *
+ * Predtým každá chyba svietila „Chyba — ťuknite a skúste znova" a ťuknutie
+ * nahrávalo ten istý súbor dokola — pri prázdnom súbore (fotka z iCloudu,
+ * ktorá sa ešte nestiahla) či neaktívnom predplatnom zakaždým s tým istým
+ * výsledkom. Kontrola vstupu na serveri (zod) navyše vracia JSON, ktorý sa
+ * vypísal človeku ako správa.
+ */
+export function chybaNahratia(sprava: string): {
+  chyba: string | null;
+  natrvalo: TrvalaChyba | null;
+} {
+  const t = String(sprava ?? "").trim();
+  if (/predplatn|plan_inactive/i.test(t)) return { chyba: t, natrvalo: "predplatne" };
+  if (/súbor je prázdny/i.test(t)) return { chyba: null, natrvalo: "prazdny" };
+  if (/väčší než|too large|payload too large|413/i.test(t))
+    return { chyba: null, natrvalo: "velky" };
+  // Odmietnutý vstup (zod): `[{"code":"too_small",…,"path":["subor"]}]`.
+  if (/^\[\s*\{/.test(t) && /"code"\s*:/.test(t)) {
+    const prazdny = /"path"\s*:\s*\[\s*"subor"/.test(t) && /too_small/.test(t);
+    return { chyba: null, natrvalo: prazdny ? "prazdny" : "neplatny" };
+  }
+  return { chyba: t || null, natrvalo: null };
 }
 
 /**
@@ -230,7 +265,7 @@ export function poChybeUlozenia(sprava: string): Pick<DokladVDavke, "stav" | "ch
  * - `null` — nie je čo robiť (pracuje sa na ňom, je uložený, je priveľký).
  */
 export function poTuknuti(d: DokladVDavke): "detail" | "znova" | null {
-  if (d.stav === "chyba") return d.id ? "detail" : d.prilisVelky ? null : "znova";
+  if (d.stav === "chyba") return d.id ? "detail" : d.prilisVelky || d.natrvalo ? null : "znova";
   if (["citam", "dlho", "rozpoznane", "doplnit", "duplicita"].includes(d.stav)) return "detail";
   return null;
 }
@@ -263,7 +298,7 @@ export function suhrn(davka: DokladVDavke[]): {
     spolu: davka.length,
     ulozene: davka.filter((d) => d.stav === "ulozene").length,
     vNespracovanych: davka.filter((d) => d.id && d.stav !== "ulozene").length,
-    nenahrane: davka.filter((d) => !d.id && !d.prilisVelky).length,
+    nenahrane: davka.filter((d) => !d.id && !d.prilisVelky && !d.natrvalo).length,
     naHromadne: naHromadneUlozenie(davka).length,
     pracuje: davka.some((d) => d.stav === "nahravam" || d.stav === "ukladam"),
   };

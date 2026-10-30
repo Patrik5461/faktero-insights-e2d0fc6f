@@ -15,6 +15,7 @@ import { pripomienkyZamestnancov } from "./zamestnanci";
 import { agendaPreKrajinu } from "./agendy-krajiny";
 import { krajinaDane } from "./vat-rates";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 const CompanyInput = z.object({ company_id: z.string().uuid() });
 
 const MarkInput = z.object({
@@ -38,7 +39,7 @@ const LIMIT = 50;
 
 async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dnesBratislava();
 
   const [faktury, prijate, transakcie, platby, vozidla, ucty] = await Promise.all([
     supabaseAdmin
@@ -285,7 +286,7 @@ async function notifikacieEfaktur(companyId: string): Promise<AppNotification[]>
   const { data } = await dotazNezaevidovanych(supabaseAdmin, companyId, STLPCE_UPOZORNENIA)
     .order("received_at", { ascending: false })
     .limit(LIMIT);
-  return zostav((data ?? []) as any[], new Date().toISOString().slice(0, 10));
+  return zostav((data ?? []) as any[], dnesBratislava());
 }
 
 const PORADIE_ZAVAZNOSTI = { danger: 0, warning: 1, info: 2 } as const;
@@ -373,7 +374,7 @@ async function notifikaciaSchvalovania(companyId: string, userId: string): Promi
     ),
   ).length;
   if (!pocet) return [];
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesBratislava();
   return [
     {
       key: `schvalovanie:${dnes}:${pocet}`,
@@ -416,7 +417,7 @@ async function notifikacieDph(companyId: string): Promise<AppNotification[]> {
   ]);
   if (!firma) return [];
   const { upozorneniaDph } = await import("./platitel-dph");
-  return upozorneniaDph(firma, (zaznamy ?? []) as any[], new Date().toISOString().slice(0, 10));
+  return upozorneniaDph(firma, (zaznamy ?? []) as any[], dnesBratislava());
 }
 
 async function vsetkyNotifikacie(companyId: string, userId: string): Promise<AppNotification[]> {

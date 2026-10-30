@@ -43,8 +43,16 @@ export const DRUHY_S_PRILOHAMI = {
 
 export type DruhSPrilohou = keyof typeof DRUHY_S_PRILOHAMI;
 
-/** 15 MB na súbor; toľko znesie aj úložisko (`invoice-attachments`). */
-export const MAX_PRILOHA = 15 * 1024 * 1024;
+/**
+ * 15 MB na súbor (desiatkovo, 15 000 000 B). Súbor ide na server v base64 —
+ * narastie o tretinu — a nginx pustí telo požiadavky najviac 20 MiB
+ * (`client_max_body_size 20M`). Pri 15 MiB by base64 vyšlo presne na 20 MiB
+ * a s obalom požiadavky by ho nginx odmietol (413). Úložisko berie 15 MiB.
+ */
+export const MAX_PRILOHA = 15_000_000;
+
+/** Strop tela požiadavky v nginx (`client_max_body_size 20M`). */
+export const STROP_POZIADAVKY = 20 * 1024 * 1024;
 
 /** Viac než desať príloh na doklad už nie je príloha, ale archív. */
 export const MAX_PRILOH = 10;
@@ -88,6 +96,52 @@ export function typSuboru(mime: string, nazov: string): string | null {
   const pripona = nazov.toLowerCase().split(".").pop() ?? "";
   const podlaPripony = Object.entries(POVOLENE_TYPY).find(([, p]) => p === pripona);
   return podlaPripony ? podlaPripony[0] : null;
+}
+
+/**
+ * Sedí obsah súboru s typom, za ktorý sa vydáva? Príloha odchádza odberateľom
+ * e-mailom z našej adresy — program (.exe) premenovaný na „faktura.pdf“ by sme
+ * inak rozposielali pod svojím menom. Kontroluje sa začiatok súboru, nie prípona.
+ * Vracia hlášku, alebo `null`, keď je obsah v poriadku.
+ */
+export function chybaObsahuPrilohy(typ: string, bajty: Uint8Array): string | null {
+  const b = bajty;
+  const zacina = (...z: number[]) => z.every((x, i) => b[i] === x);
+  // Spustiteľné súbory (Windows MZ, Linux ELF, macOS Mach-O) nikdy, nech sa volajú akokoľvek.
+  if (
+    zacina(0x4d, 0x5a) ||
+    zacina(0x7f, 0x45, 0x4c, 0x46) ||
+    zacina(0xcf, 0xfa, 0xed, 0xfe) ||
+    zacina(0xfe, 0xed, 0xfa, 0xcf) ||
+    zacina(0xca, 0xfe, 0xba, 0xbe)
+  )
+    return "Spustiteľný program sa nedá priložiť.";
+  const ascii = new TextDecoder("latin1").decode(b.subarray(0, 1024));
+  const zip = zacina(0x50, 0x4b, 0x03, 0x04) || zacina(0x50, 0x4b, 0x05, 0x06);
+  const ole = zacina(0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1);
+  const ok: Record<string, () => boolean> = {
+    // PDF smie mať pred hlavičkou pár bajtov smetí (tlačiarne, skenery).
+    "application/pdf": () => ascii.includes("%PDF-"),
+    "image/png": () => zacina(0x89, 0x50, 0x4e, 0x47),
+    "image/jpeg": () => zacina(0xff, 0xd8, 0xff),
+    "image/webp": () => ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WEBP",
+    "image/heic": () => ascii.slice(4, 8) === "ftyp",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": () => zip,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": () => zip,
+    "application/vnd.oasis.opendocument.spreadsheet": () => zip,
+    "application/vnd.oasis.opendocument.text": () => zip,
+    "application/zip": () => zip,
+    "application/vnd.ms-excel": () => ole || zip,
+    "application/msword": () => ole,
+  };
+  const kontrola = ok[typ];
+  if (kontrola) return kontrola() ? null : "Obsah súboru nezodpovedá jeho typu (prípone).";
+  // Text, CSV a XML: žiadne nulové bajty (binárny súbor s príponou .txt).
+  // UTF-16 (Excel „Unicode text“) nuly má — spozná sa podľa BOM.
+  const utf16 = zacina(0xff, 0xfe) || zacina(0xfe, 0xff);
+  if (!utf16 && b.subarray(0, 8192).includes(0))
+    return "Obsah súboru nezodpovedá jeho typu (prípone).";
+  return null;
 }
 
 /** Hláška, prečo sa súbor priložiť nedá — alebo `null`, keď je v poriadku. */

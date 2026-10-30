@@ -30,6 +30,7 @@ import {
 import { citajPravidlom } from "./banka-notifikacie-parsery";
 import { notifikaciaZAi, PROMPT_NOTIFIKACIA } from "./banka-notifikacie-ai";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export type VysledokNotifikacie =
   | "spracovane"
   | "na_kontrolu"
@@ -326,7 +327,7 @@ export async function prijmiBankovuNotifikaciu(args: {
     if (!ucet || ucet.company_id !== adresa.company_id)
       throw new Error("účet k adrese sa nenašiel");
 
-    const dnes = args.dnes ?? new Date().toISOString().slice(0, 10);
+    const dnes = args.dnes ?? dnesBratislava();
     const datumMailu = Date.parse(
       String(obsah.created_at ?? (hlavicka(obsah.headers, "date") || "")),
     );

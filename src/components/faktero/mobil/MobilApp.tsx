@@ -766,6 +766,23 @@ function ObsahApky() {
       }
     }
 
+    /*
+      Nepoužité rezervované čísla treba vrátiť ešte s platnou reláciou — po
+      odhlásení by ich appka zabudla, ale server by ich držal dva týždne.
+    */
+    try {
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      if (await isOnline()) {
+        const { uvolniNepouziteCisla } = await import("@/lib/mobile/faktury-fronta");
+        const { volajOperaciu } = await import("@/lib/mobile/server-most-volanie");
+        await uvolniNepouziteCisla((companyId, cisla) =>
+          volajOperaciu("cisla-uvolni", { company_id: companyId, numbers: cisla }),
+        );
+      }
+    } catch {
+      /* čísla prepadnú samy po vypršaní */
+    }
+
     // Odhlásenie odvoláva token na serveri, takže bez signálu zlyhá. Relácia v
     // telefóne sa musí zmazať tak či tak — na požičanom telefóne by inak ostala.
     // `scope: "local"` odhlási len tento telefón; bez neho by Supabase odvolal
@@ -1610,7 +1627,8 @@ function ZachytDokladu({
   /** Doklad prečítaný — ďalej sa pýtame na úhradu a na fotku. */
   function prijmi(r: BlocekVysledok, prilozene?: string | null) {
     setVysledok(r);
-    setUhrada(r.payment_method ?? null);
+    // Úhrada z dokladu má prednosť; inak ostáva tá, ktorú človek zvolil na skeneri.
+    setUhrada(r.payment_method ?? prednastavene?.uhrada ?? null);
     if (prilozene) setFoto(prilozene);
     setStav("potvrdenie");
     if (r.zdroj === "nic") toast.error(r.poznamka ?? t("app.nepodariloPrecitat"));
@@ -1818,7 +1836,15 @@ function ZachytDokladu({
   async function vyberPdf() {
     const subory = await vyberSubory("application/pdf,image/*", true);
     if (subory.length === 0) return;
-    if (subory.length === 1) return rozpoznajAleboPrecitaj(subory[0].dataUrl);
+    /*
+      Fotka z galérie ide tou istou cestou ako odfotená: QR bločku sa hľadá
+      v telefóne a bloček sa načíta z Finančnej správy. Predtým išla rovno na
+      AI — pomalšie, drahšie a bez položiek z eKasy.
+    */
+    if (subory.length === 1)
+      return subory[0].dataUrl.startsWith("data:image/")
+        ? void (await spracujStrany([subory[0].dataUrl]))
+        : rozpoznajAleboPrecitaj(subory[0].dataUrl);
     const { isOnline } = await import("@/lib/mobile/offline-queue");
     if (!(await isOnline())) {
       toast.error(t("davka.bezSignalu"));
@@ -2250,7 +2276,7 @@ export function Potvrdenie({
           }`}
         >
           <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
-            Ako ste platili?
+            {t("rd.uhrada")}
             {!uhrada && (
               <span className="rounded-full bg-app-zelena-plocha px-2 py-0.5 text-[11px] font-semibold text-white">
                 {t("app.povinne")}

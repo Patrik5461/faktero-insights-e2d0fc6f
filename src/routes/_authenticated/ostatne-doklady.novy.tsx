@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/novy")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Iný doklad — Faktero") }] }),
   /*
@@ -74,7 +75,7 @@ const PRAZDNY: Form = {
   kind: "ine",
   sender: "",
   subject: "",
-  received_date: new Date().toISOString().slice(0, 10),
+  received_date: dnesBratislava(),
   amount: "",
   currency: "EUR",
   due_date: "",

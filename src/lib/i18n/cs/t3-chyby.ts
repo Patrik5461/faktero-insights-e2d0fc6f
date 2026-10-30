@@ -16,8 +16,6 @@ export default {
     "Faktura {cislo} se neuložila celá: {chyba} Klikněte znovu na vystavení — doplní se tatáž faktura.",
   "Faktúru sa nepodarilo uložiť. Skúste to znova.":
     "Fakturu se nepodařilo uložit. Zkuste to znovu.",
-  "Položky faktúry sa neuložili: {chyba} Kliknite znova na Uložiť — kým sa to nepodarí, faktúra je bez položiek.":
-    "Položky faktury se neuložily: {chyba} Klikněte znovu na Uložit — dokud se to nepodaří, faktura je bez položek.",
   "účet bol otvorený až počas mesiaca, banka za celý mesiac výpis nevydá":
     "účet byl otevřen až během měsíce, banka za celý měsíc výpis nevydá",
   "banka účet pod týmto pripojením nepozná": "banka účet pod tímto připojením nezná",

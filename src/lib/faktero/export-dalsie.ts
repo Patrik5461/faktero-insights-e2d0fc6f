@@ -14,6 +14,7 @@
  * musí sám otočiť znamienko — inak účtovníčke dobropis výnosy zvýši.
  */
 
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import { bezVzorca } from "@/lib/bezpecny-text";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
@@ -262,7 +263,7 @@ export function buildUniverzalCsv(opts: {
 }
 
 const esc = (h: unknown): string =>
-  text(h)
+  bezZakazanychXml(text(h))
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

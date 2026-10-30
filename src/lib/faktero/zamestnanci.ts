@@ -9,6 +9,7 @@
  * kam ich server doplní až pri výrobe PDF.
  */
 
+import { bezVzorca } from "@/lib/bezpecny-text";
 export type DruhZmluvy = "pracovna_zmluva" | "dovp" | "dopc" | "brigadnicka" | "ina";
 export type DruhNepritomnosti =
   | "dovolenka"
@@ -314,7 +315,7 @@ export function mesacnySuhrn(
 }
 
 function bunka(v: string | number): string {
-  const s = String(v);
+  const s = bezVzorca(v);
   return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

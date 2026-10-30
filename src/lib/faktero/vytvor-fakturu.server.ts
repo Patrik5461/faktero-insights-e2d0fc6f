@@ -6,6 +6,7 @@
 import { normalizePaymentMethod } from "./payment-method";
 import { vsNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 type Klient = any;
 
 export type PolozkaFaktury = {
@@ -119,7 +120,7 @@ export async function vytvorFakturu(
     };
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dnesBratislava();
   const issue_date = d.issue_date ?? today;
   const { krajinaDane, zakladnaSadzba } = await import("./vat-rates");
   const { data: firma } = await supabase
@@ -167,12 +168,7 @@ export async function vytvorFakturu(
   if ("chyba" in vypocet)
     return { ok: false, kod: "validation_error", sprava: vypocet.chyba, status: 400 };
   const totals = vypocet.sumy;
-  const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
-    companyId,
-    issue_date,
-  );
-  const due_date = d.due_date ?? new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-  const variable_symbol = vsNaUlozenie(d.variable_symbol, invoice_number);
+  const due_date = d.due_date ?? posunDni(dnesBratislava(), 14);
   const currency = d.currency ?? (await predvolenaMena(supabase, companyId));
   /*
     Cudzia mena: kurz ECB (CZ firma ČNB) a sumy v domácej mene hneď do riadku,
@@ -189,47 +185,70 @@ export async function vytvorFakturu(
     total: totals.total,
   });
 
-  const { data: created, error: insErr } = await supabase
-    .from("invoices")
-    .insert({
-      company_id: companyId,
-      customer_id: d.customer_id ?? null,
-      invoice_number,
-      sequence_number,
-      variable_symbol,
+  /*
+    E-shop posiela objednávky súbežne: dve vystavenia môžu dostať to isté
+    číslo (index ho druhému odmietne) — vtedy sa vypýta ďalšie číslo.
+  */
+  const { sOpakovanimPriKoliziiCisla } = await import("./kolizia-cisla");
+  const { data: created, error: insErr } = await sOpakovanimPriKoliziiCisla<any>(async () => {
+    const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
+      companyId,
       issue_date,
-      delivery_date: d.delivery_date ?? null,
-      due_date,
-      currency,
-      payment_method: normalizePaymentMethod(d.payment_method),
-      customer_name: cust.name,
-      customer_ico: cust.ico ?? null,
-      customer_dic: cust.dic ?? null,
-      customer_ic_dph: cust.ic_dph ?? null,
-      customer_street: cust.street ?? null,
-      customer_city: cust.city ?? null,
-      customer_zip: cust.zip ?? null,
-      customer_country: cust.country ?? "SK",
-      customer_email: cust.email ?? null,
-      subtotal: totals.subtotal,
-      vat_total: totals.vat_total,
-      total: totals.total,
-      discount_type: totals.discount_type,
-      discount_value: totals.discount_value,
-      discount_total: totals.discount_total,
-      reverse_charge: pdp,
-      reverse_charge_type: typPdp,
-      eu_plnenie: rezim.eu_plnenie,
-      notes: d.notes ?? null,
-      order_number: d.order_number ?? null,
-      external_id: d.external_id ?? null,
-      job_id: d.job_id ?? null,
-      ...(d.doplnky ?? {}),
-      ...kurz,
-      status: "issued",
-    })
-    .select()
-    .single();
+    );
+    const variable_symbol = vsNaUlozenie(d.variable_symbol, invoice_number);
+    return supabase
+      .from("invoices")
+      .insert({
+        company_id: companyId,
+        customer_id: d.customer_id ?? null,
+        invoice_number,
+        sequence_number,
+        variable_symbol,
+        issue_date,
+        delivery_date: d.delivery_date ?? null,
+        due_date,
+        currency,
+        payment_method: normalizePaymentMethod(d.payment_method),
+        customer_name: cust.name,
+        customer_ico: cust.ico ?? null,
+        customer_dic: cust.dic ?? null,
+        customer_ic_dph: cust.ic_dph ?? null,
+        customer_street: cust.street ?? null,
+        customer_city: cust.city ?? null,
+        customer_zip: cust.zip ?? null,
+        customer_country: cust.country ?? "SK",
+        customer_email: cust.email ?? null,
+        subtotal: totals.subtotal,
+        vat_total: totals.vat_total,
+        total: totals.total,
+        discount_type: totals.discount_type,
+        discount_value: totals.discount_value,
+        discount_total: totals.discount_total,
+        reverse_charge: pdp,
+        reverse_charge_type: typPdp,
+        eu_plnenie: rezim.eu_plnenie,
+        notes: d.notes ?? null,
+        order_number: d.order_number ?? null,
+        external_id: d.external_id ?? null,
+        job_id: d.job_id ?? null,
+        ...(d.doplnky ?? {}),
+        ...kurz,
+        status: "issued",
+      })
+      .select()
+      .single();
+  });
+  // Tá istá objednávka prišla dvakrát naraz: druhá požiadavka vráti prvú faktúru.
+  if (insErr && d.external_id && /idx_invoices_external/.test(String(insErr.message))) {
+    const { data: uz } = await supabase
+      // aj-zmazane: unikátny index external_id platí aj pre zmazané, ako kontrola vyššie
+      .from("invoices")
+      .select("*")
+      .eq("company_id", companyId)
+      .eq("external_id", d.external_id)
+      .maybeSingle();
+    if (uz) return { ok: true, faktura: uz, nova: false };
+  }
   if (insErr || !created)
     return {
       ok: false,

@@ -9,6 +9,7 @@ import {
   pocetCakajucichFaktur,
   rezervacie,
   ulozRezervacie,
+  uvolniNepouziteCisla,
   vezmiRezervaciu,
   volnychCisel,
   vycistiFaktury,
@@ -230,6 +231,27 @@ describe("rezervované čísla", () => {
     expect(pocetCakajucichFaktur(FIRMA)).toBe(0);
     expect(volnychCisel(FIRMA)).toBe(0);
     expect(jeCislovanieDopredu(FIRMA)).toBe(false);
+  });
+
+  it("pred odhlásením vráti serveru len nepoužité čísla, aj iných firiem", async () => {
+    ulozRezervacie(FIRMA, CISLA);
+    ulozRezervacie("f2", [{ ...CISLA[0], invoice_number: "F2-1" }]);
+    vezmiRezervaciu(FIRMA); // 20260007 už nesie odložená faktúra
+    const vratene: Record<string, string[]> = {};
+    const pocet = await uvolniNepouziteCisla(async (firma, cisla) => {
+      vratene[firma] = cisla;
+    });
+    expect(pocet).toBe(2);
+    expect(vratene).toEqual({ [FIRMA]: ["20260008"], f2: ["F2-1"] });
+  });
+
+  it("zlyhanie pri vracaní čísel odhlásenie nezastaví", async () => {
+    ulozRezervacie(FIRMA, CISLA);
+    await expect(
+      uvolniNepouziteCisla(async () => {
+        throw new Error("bez siete");
+      }),
+    ).resolves.toBe(0);
   });
 
   it("zabudnutie rezervácií nechá frontu na pokoji", () => {

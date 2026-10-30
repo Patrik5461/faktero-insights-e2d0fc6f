@@ -34,7 +34,8 @@ function Polozka({ partner }: { partner: Partner }) {
     </span>
   );
 
-  if (!partner.website) {
+  // Len http(s) — `javascript:` z administrácie by sa spustil na úvodnej stránke.
+  if (!partner.website || !/^https?:\/\//i.test(partner.website.trim())) {
     return <div className="group flex h-14 shrink-0 items-center px-8">{obsah}</div>;
   }
   return (

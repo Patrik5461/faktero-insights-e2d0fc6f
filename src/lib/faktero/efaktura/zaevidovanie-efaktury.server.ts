@@ -28,6 +28,7 @@ import {
   type VysledokZaevidovania,
 } from "./zaevidovanie-efaktury";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 type Klient = any;
 
 const SAMOFAKTURA =
@@ -208,7 +209,7 @@ export async function zaevidujPrijatuEfakturu(
 
   try {
     const xml = doklad.xml_payload ? String(doklad.xml_payload) : null;
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     const riadok = prijataZUbl(r, {
       dnes,
       // Za dátum prijatia berieme, kedy eFaktúra naozaj dorazila.

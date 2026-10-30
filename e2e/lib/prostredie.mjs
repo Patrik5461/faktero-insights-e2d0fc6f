@@ -143,6 +143,24 @@ export function restKlient(jwt) {
     delete: (c, o) => volaj("DELETE", c, undefined, o),
     rpc: (meno, args, o) => volaj("POST", `rpc/${meno}`, args ?? {}, o),
     /**
+     * Zmaže súbory z košíka Storage (právami QA účtu). Zmazanie riadku dokladu
+     * súbor v košíku nechá — toky, ktoré nahrávajú, ho majú upratať samy.
+     */
+    zmazSubory: async (kos, cesty) => {
+      const zoznam = (cesty ?? []).filter(Boolean);
+      if (!zoznam.length) return { status: 200 };
+      const r = await fetch(`${SUPABASE.url}/storage/v1/object/${kos}`, {
+        method: "DELETE",
+        headers: {
+          apikey: SUPABASE.kluc,
+          "content-type": "application/json",
+          ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+        },
+        body: JSON.stringify({ prefixes: zoznam }),
+      });
+      return { status: r.status, text: await r.text() };
+    },
+    /**
      * Všetky riadky dotazu po stránkach — PostgREST vráti najviac 1 000 riadkov
      * naraz, aj keď ich je viac (QA firma test2 má po skúškach výkonu tisíce dokladov).
      * Cesta potrebuje `order`, inak stránky nemusia sedieť.

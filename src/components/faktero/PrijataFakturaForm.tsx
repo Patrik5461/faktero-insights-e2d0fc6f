@@ -25,13 +25,12 @@ import { PravidloZDokladu } from "@/components/faktero/PravidloZDokladu";
 import { PrijataUpravaKompaktna } from "@/components/faktero/PrijataUpravaKompaktna";
 import type { PolozkaK } from "@/components/faktero/DetailDokladuKompaktny";
 
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  return dnesBratislava();
 }
 function addDays(iso: string, d: number) {
-  const dt = new Date(iso);
-  dt.setDate(dt.getDate() + d);
-  return dt.toISOString().slice(0, 10);
+  return posunDni(iso, d);
 }
 
 /**

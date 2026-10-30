@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /*
   Vrátenie zle zatriedeného alebo zle zaúčtovaného dokladu.
 
@@ -252,7 +253,7 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
     // Prelom rokov: každý rok do vlastného súboru (Pohoda importuje do jedného roka).
     const roky = data.datum_zauctovania ? [{ rok: "", doklady: ok }] : podlaRoka(ok, (p: any) => p.delivery_date || p.issue_date);
-    const den0 = new Date().toISOString().slice(0, 10);
+    const den0 = dnesBratislava();
     const subory = roky.map((r) => ({
       xml: buildPohodaExpensesXml({ company: firma, doklady: r.doklady.map(prijataAkoDoklad), nastavenia }),
       fileName:
@@ -284,7 +285,7 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
           );
       }
     }
-    const den = new Date().toISOString().slice(0, 10);
+    const den = dnesBratislava();
     return {
       xml,
       fileName: subory[0].fileName,

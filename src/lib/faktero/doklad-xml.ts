@@ -11,6 +11,7 @@
  * `total` sú s DPH a `unit_price` bez DPH — tak ich chápe `rozpisZAi`.
  */
 import { XMLParser } from "fast-xml-parser";
+import { jednotkaZKodu } from "./efaktura/prijata-z-ubl";
 
 export type ZdrojXml = "isdoc" | "zugferd" | "ubl";
 
@@ -91,7 +92,8 @@ function polozka(
   return {
     name: nazov,
     quantity: mnozstvo,
-    unit: jednotka || null,
+    // CII a UBL nesú kód UN/ECE Rec. 20 („C62", „HUR") — na doklade má stáť „ks", „hod".
+    unit: jednotkaZKodu(jednotka),
     unit_price: cenaBezDph,
     vat_rate: sadzba,
     total: zaklad === null ? null : r2(zaklad * (1 + (sadzba ?? 0) / 100)),
@@ -119,6 +121,22 @@ function zIsdoc(inv: any): Record<string, unknown> {
     .filter(Boolean)
     .join(" ");
   const riadky = pole(uzol(inv, "InvoiceLines", "InvoiceLine"));
+  /*
+    Faktúra v cudzej mene nesie sumy bez prípony v domácej mene vystaviteľa
+    (`LocalCurrencyCode`) a sumy v mene faktúry v prvkoch `…Curr`
+    (`ForeignCurrencyCode`). Platí sa v mene faktúry — tú treba prečítať,
+    inak česká faktúra v eurách prišla ako korunová s prepočítanými sumami
+    (a slovenská v korunách ako eurová).
+  */
+  const cudzia = h(inv, "ForeignCurrencyCode").toUpperCase();
+  const suma = (o: any, ...cesta: string[]) => {
+    if (cudzia) {
+      const c = [...cesta.slice(0, -1), `${cesta[cesta.length - 1]}Curr`];
+      const v = cislo(h(o, ...c));
+      if (v !== null) return v;
+    }
+    return cislo(h(o, ...cesta));
+  };
   return {
     supplier_name: h(dod, "PartyName", "Name") || null,
     supplier_ico: h(dod, "PartyIdentification", "ID") || null,
@@ -138,20 +156,27 @@ function zIsdoc(inv: any): Record<string, unknown> {
     issue_date: datum(h(inv, "IssueDate")),
     delivery_date: datum(h(inv, "TaxPointDate")),
     due_date: datum(prva("PaymentDueDate")),
-    currency: h(inv, "LocalCurrencyCode") || "EUR",
-    amount_without_vat: cislo(h(inv, "LegalMonetaryTotal", "TaxExclusiveAmount")),
-    vat_amount: cislo(h(inv, "TaxTotal", "TaxAmount")),
-    amount_total: cislo(h(inv, "LegalMonetaryTotal", "TaxInclusiveAmount")),
-    items: riadky.map((r) =>
-      polozka(
+    currency: cudzia || h(inv, "LocalCurrencyCode") || "EUR",
+    amount_without_vat: suma(inv, "LegalMonetaryTotal", "TaxExclusiveAmount"),
+    vat_amount: suma(inv, "TaxTotal", "TaxAmount"),
+    amount_total: suma(inv, "LegalMonetaryTotal", "TaxInclusiveAmount"),
+    items: riadky.map((r) => {
+      const mnozstvo = cislo(h(r, "InvoicedQuantity"));
+      const zaklad = suma(r, "LineExtensionAmount");
+      // Jednotková cena je v ISDOC len v domácej mene — v cudzej sa dopočíta z riadku.
+      const cena =
+        cudzia && zaklad !== null && mnozstvo
+          ? Math.round((zaklad / mnozstvo) * 10000) / 10000
+          : cislo(h(r, "UnitPrice"));
+      return polozka(
         h(r, "Item", "Description"),
-        cislo(h(r, "InvoicedQuantity")),
+        mnozstvo,
         text(uzol(r, "InvoicedQuantity", "@unitCode")),
-        cislo(h(r, "UnitPrice")),
+        cena,
         cislo(h(r, "ClassifiedTaxCategory", "Percent")),
-        cislo(h(r, "LineExtensionAmount")),
-      ),
-    ),
+        zaklad,
+      );
+    }),
     document_subtype: podtyp(kod),
   };
 }

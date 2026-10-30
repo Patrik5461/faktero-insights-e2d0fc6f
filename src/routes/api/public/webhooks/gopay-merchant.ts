@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Per-merchant GoPay notification endpoint.
  * Authenticated by per-company webhook secret embedded in the notify URL:
@@ -120,7 +121,7 @@ async function handle(request: Request): Promise<Response> {
           company_id: cid,
           invoice_id: inv.id,
           amount: link.amount_cents / 100,
-          paid_at: new Date().toISOString().slice(0, 10),
+          paid_at: dnesBratislava(),
           method: "gopay",
           note: `GoPay payment ${payment.id}`,
         });

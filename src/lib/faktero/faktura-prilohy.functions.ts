@@ -9,6 +9,7 @@ import {
   MAX_PRILOH,
   MAX_ZIP_PRILOH,
   cestaPrilohy,
+  chybaObsahuPrilohy,
   nazvyDoZipu,
   typSuboru,
   type DruhSPrilohou,
@@ -62,8 +63,8 @@ export const prilohyFakturyFn = createServerFn({ method: "POST" })
 const Nahratie = Doklad.extend({
   name: z.string().min(1).max(200),
   mime: z.string().max(150),
-  /** Obsah súboru; 15 MB v base64 narastie zhruba na 20 MB textu. */
-  base64: z.string().min(1).max(21_000_000),
+  /** Obsah súboru; 15 MB v base64 narastie na 20 000 000 znakov. */
+  base64: z.string().min(1).max(20_000_100),
 });
 
 export const nahrajPrilohuFn = createServerFn({ method: "POST" })
@@ -79,6 +80,8 @@ export const nahrajPrilohuFn = createServerFn({ method: "POST" })
     const bajty = Buffer.from(data.base64, "base64");
     if (!bajty.length) throw new Error("Súbor je prázdny.");
     if (bajty.length > MAX_PRILOHA) throw new Error("Súbor je väčší než 15 MB.");
+    const zlyObsah = chybaObsahuPrilohy(typ, bajty);
+    if (zlyObsah) throw new Error(zlyObsah);
 
     const tabulkaPriloh = DRUHY_S_PRILOHAMI[data.druh].prilohy;
     const { count } = await (context.supabase as any)

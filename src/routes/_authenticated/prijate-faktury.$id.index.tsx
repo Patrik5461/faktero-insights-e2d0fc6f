@@ -87,6 +87,7 @@ import { PrijataDetailKompaktna } from "@/components/faktero/PrijataDetailKompak
 import { KartaUhrady, UhradyOkno, useUhradyPrijatej } from "@/components/faktero/UhradyPrijatej";
 import { VazbaZalohyPrijatej } from "@/components/faktero/VazbaZalohyPrijatej";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
   ACTC: "Pripravená na podpis",
   ACSP: "Banka spracováva",
@@ -312,7 +313,7 @@ function PurchaseInvoiceDetail() {
   async function markPaid() {
     const d = await zadaj(
       t("Dátum úhrady"),
-      { predvolene: new Date().toISOString().slice(0, 10), typ: "date" },
+      { predvolene: dnesBratislava(), typ: "date" },
       { potvrdit: t("Označiť ako uhradenú") },
     );
     if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;

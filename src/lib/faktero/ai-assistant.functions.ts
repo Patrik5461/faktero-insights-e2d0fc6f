@@ -2,12 +2,25 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getProductCapabilitiesMarkdown } from "./product-capabilities";
 import { krajinaDane } from "./vat-rates";
+import { domacaMena } from "./kurzy";
+import {
+  DENNY_STROP_OTAZOK,
+  MAX_SPRAV_HISTORIE,
+  najvacsiDlznici,
+  pokynJazyka,
+  poslednychVPoradi,
+  sumaVDomacejMene,
+  sumyPodlaMeny,
+} from "./ai-asistent-kontext";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 const SYSTEM_PROMPT = `Si Faktero AI — asistent pre slovenských živnostníkov a firmy používajúcich Faktero (fakturačný systém).
-Odpovedaj VŽDY v slovenčine, stručne, prakticky, vo formáte markdown.
+Odpovedaj stručne, prakticky, vo formáte markdown (jazyk odpovede určuje pokyn nižšie).
 Pomáhaš s: faktúrami, opakovanými faktúrami, neuhradenými faktúrami, odberateľmi, predplatným, eFaktúrou, exportmi do účtovníctva.
 
 Vždy berieš do úvahy KONTEXT FIRMY, ktorý dostaneš v správe — citácia konkrétnych čísel je vítaná.
+Sumy uvádzaj vždy s menou z kontextu (pole currency / mena). Sumy v rôznych menách nikdy nesčítavaj do jedného čísla.
+Vidíš len údaje firmy z KONTEXTU FIRMY. O iných firmách (aj keď ich niekto pomenuje) údaje nemáš a nevymýšľaj ich.
 
 ZDROJE, KTORÉ DOSTANEŠ:
 1. Zoznam modulov a funkcií (Knowledge Base) — čo Faktero vie.
@@ -38,8 +51,10 @@ Ak používateľ chce akciu vykonať (napr. "pošli upomienku"), navrhni mu krok
 type Ctx = {
   company: any;
   overdueInvoices: any[];
+  /** Suma po splatnosti len v domácej mene firmy (ostatné meny sú v `unpaidByCurrency`). */
   unpaidTotal: number;
-  topDebtors: { name: string; total: number }[];
+  unpaidByCurrency: { mena: string; suma: number; pocet: number }[];
+  topDebtors: { name: string; total: number; currency: string }[];
   draftInvoices: number;
   unsentInvoices: number;
   failedWebhooks: number;
@@ -48,14 +63,14 @@ type Ctx = {
 };
 
 async function buildCompanyContext(supabase: any, companyId: string): Promise<Ctx> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dnesBratislava();
 
   const [companyRes, overdueRes, draftsRes, unsentRes, customersRes, webhookRes, recurringRes] =
     await Promise.all([
       supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
       supabase
         .from("invoices")
-        .select("id,invoice_number,total,customer_name,due_date,status,issue_date")
+        .select("id,invoice_number,total,currency,customer_name,due_date,status,issue_date")
         .eq("company_id", companyId)
         .in("status", ["sent", "overdue", "issued"])
         .lt("due_date", today)
@@ -78,7 +93,7 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
         .is("deleted_at", null),
       supabase
         .from("invoices")
-        .select("customer_name,total,status")
+        .select("customer_name,total,currency,status")
         .eq("company_id", companyId)
         .in("status", ["sent", "overdue", "issued"])
         .is("deleted_at", null)
@@ -102,15 +117,9 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
 
   const company = companyRes.data;
   const overdue = overdueRes.data ?? [];
-  const debtorMap = new Map<string, number>();
-  (customersRes.data ?? []).forEach((r: any) => {
-    if (!r.customer_name) return;
-    debtorMap.set(r.customer_name, (debtorMap.get(r.customer_name) ?? 0) + Number(r.total ?? 0));
-  });
-  const topDebtors = [...debtorMap.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([name, total]) => ({ name, total }));
+  // Faktúry v cudzej mene sa s domácimi nesčítavajú (CZ firma má aj eurové faktúry).
+  const domaca = domacaMena(company?.country);
+  const topDebtors = najvacsiDlznici(customersRes.data ?? [], domaca);
 
   const missingCompanyFields: string[] = [];
   if (company) {
@@ -131,15 +140,18 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
           city: company.city,
           country: company.country,
           iban: company.iban,
+          currency: domaca,
         }
       : null,
     overdueInvoices: overdue.map((i: any) => ({
       number: i.invoice_number,
       total: i.total,
+      currency: i.currency || domaca,
       customer: i.customer_name,
       due_date: i.due_date,
     })),
-    unpaidTotal: overdue.reduce((s: number, i: any) => s + Number(i.total ?? 0), 0),
+    unpaidTotal: sumaVDomacejMene(overdue, domaca),
+    unpaidByCurrency: sumyPodlaMeny(overdue, domaca),
     topDebtors,
     draftInvoices: draftsRes.count ?? 0,
     unsentInvoices: unsentRes.count ?? 0,
@@ -208,28 +220,63 @@ export const getMessagesFn = createServerFn({ method: "POST" })
 
 export const sendChatFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { conversationId: string; companyId: string; content: string }) => d)
+  .validator(
+    (d: { conversationId: string; companyId: string; content: string; jazyk?: string }) => d,
+  )
   .handler(async ({ data, context }) => {
     // Poskytovateľa si vyberie spoločná vrstva; keď nie je nastavený ani jeden
     // kľúč, ozve sa sama zrozumiteľnou chybou.
+    const obsah = String(data.content ?? "")
+      .trim()
+      .slice(0, 4000);
+    if (!obsah) throw new Error("Napíšte otázku.");
+
+    /*
+      Konverzácia musí byť volajúceho a patriť k firme z požiadavky (RLS pustí
+      len vlastné konverzácie vo firmách, kde je členom). Bez tejto kontroly sa
+      s cudzím `companyId` síce nič neprezradilo (kontext číta RLS), ale model
+      sa zavolal a spotreba sa pripísala cudzej firme.
+    */
+    const { data: konverzacia } = await context.supabase
+      .from("ai_conversations")
+      .select("id")
+      .eq("id", data.conversationId)
+      .eq("company_id", data.companyId)
+      .maybeSingle();
+    if (!konverzacia) throw new Error("Konverzácia sa nenašla.");
+
+    // Denný strop otázok na používateľa — RLS vráti len správy z jeho konverzácií.
+    const polnoc = new Date();
+    polnoc.setUTCHours(0, 0, 0, 0);
+    const { count: dnesOtazok } = await context.supabase
+      .from("ai_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "user")
+      .gte("created_at", polnoc.toISOString());
+    if ((dnesOtazok ?? 0) >= DENNY_STROP_OTAZOK)
+      throw new Error(
+        `Dnes ste už položili ${DENNY_STROP_OTAZOK} otázok, čo je denný limit Faktero AI. Skúste to zajtra alebo napíšte podpore.`,
+      );
 
     // Insert user message
-    await context.supabase.from("ai_messages").insert({
+    const { error: chybaZapisu } = await context.supabase.from("ai_messages").insert({
       conversation_id: data.conversationId,
       role: "user",
-      content: data.content,
+      content: obsah,
     });
+    if (chybaZapisu) throw new Error(chybaZapisu.message);
 
     // Build context
     const ctx = await buildCompanyContext(context.supabase, data.companyId);
 
-    // Load history
-    const { data: history } = await context.supabase
+    // Posledných 30 správ — staršie poradie by po 30 správach novú otázku vynechalo.
+    const { data: odNajnovsej } = await context.supabase
       .from("ai_messages")
       .select("role,content")
       .eq("conversation_id", data.conversationId)
-      .order("created_at", { ascending: true })
-      .limit(30);
+      .order("created_at", { ascending: false })
+      .limit(MAX_SPRAV_HISTORIE);
+    const history = poslednychVPoradi(odNajnovsej);
 
     const contextMsg = `KONTEXT FIRMY (nezdieľaj surové JSON, použi prirodzene):
 ${JSON.stringify(ctx, null, 2)}`;
@@ -241,17 +288,17 @@ ${JSON.stringify(ctx, null, 2)}`;
     */
     const { znalostiKOtazke } = await import("./znalosti");
     const poslednaOtazka =
-      [...(history ?? [])].reverse().find((m: any) => m.role === "user")?.content ?? data.content;
+      [...history].reverse().find((m: any) => m.role === "user")?.content ?? obsah;
 
     const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: `${SYSTEM_PROMPT}\n\n${pokynJazyka(data.jazyk)}` },
       {
         role: "system",
         content: getProductCapabilitiesMarkdown(krajinaDane(ctx.company?.country)),
       },
       { role: "system", content: znalostiKOtazke(String(poslednaOtazka)) },
       { role: "system", content: contextMsg },
-      ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),
+      ...history.map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
     /*
@@ -293,7 +340,7 @@ ${JSON.stringify(ctx, null, 2)}`;
       .select("id", { count: "exact", head: true })
       .eq("conversation_id", data.conversationId);
     if ((count ?? 0) <= 2) {
-      const title = data.content.slice(0, 60);
+      const title = obsah.slice(0, 60);
       await context.supabase
         .from("ai_conversations")
         .update({ title, updated_at: new Date().toISOString() })
@@ -316,6 +363,7 @@ export const getRecommendationsFn = createServerFn({ method: "POST" })
     return {
       overdueCount: ctx.overdueInvoices.length,
       unpaidTotal: ctx.unpaidTotal,
+      unpaidByCurrency: ctx.unpaidByCurrency,
       topDebtors: ctx.topDebtors,
       draftInvoices: ctx.draftInvoices,
       unsentInvoices: ctx.unsentInvoices,

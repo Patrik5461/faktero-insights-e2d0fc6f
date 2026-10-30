@@ -7,6 +7,7 @@
  * nesedí, takže „skoro správne" XML je horšie než žiadne.
  */
 
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import {
   centy,
   verziaPriznania,
@@ -15,6 +16,7 @@ import {
   type SuhrnnyVykaz,
 } from "./dph-vykazy";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export type UdajeFirmy = {
   icDph: string;
   dic: string;
@@ -36,7 +38,7 @@ export type UdajeFirmy = {
 export type TypVykazu = "R" | "O" | "D";
 
 function esc(v: unknown): string {
-  return String(v ?? "")
+  return bezZakazanychXml(v)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -209,7 +211,7 @@ export function priznanieNaXml(
   } = {},
 ): string {
   const typ = nastavenie.typ ?? "R";
-  const datum = nastavenie.datum ?? new Date().toISOString().slice(0, 10);
+  const datum = nastavenie.datum ?? dnesBratislava();
   const menoRiadky = rozdelNaRiadky(firma.nazov, 4);
   const nove = verziaPriznania(obdobie) === "2025";
   /*
@@ -309,7 +311,7 @@ export function svNaXml(
   nastavenie: { typ?: TypVykazu; datum?: string } = {},
 ): string {
   const typ = nastavenie.typ ?? "R";
-  const datum = nastavenie.datum ?? new Date().toISOString().slice(0, 10);
+  const datum = nastavenie.datum ?? dnesBratislava();
   const [rok, mesiac, denCislo] = datum.split("-");
   const menoRiadky = rozdelNaRiadky(firma.nazov, 4);
 

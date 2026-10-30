@@ -25,6 +25,7 @@ import {
 import { DRUHY_PRE_AI } from "./ostatne-doklady-citanie.server";
 import { POKYN_POLOH } from "./polohy-ai";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * `%` a `_` sú v adrese povolené znaky, ale v `ilike` zastupujú čokoľvek —
  * mail na „%sro%@…“ by trafil cudziu tajnú adresu. Porovnávame doslovne.
@@ -141,11 +142,19 @@ položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie s
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.
 ${POKYN_POLOH}`;
 
+/**
+ * Odkiaľ čítanie prišlo — pre prehľad využitia AI v admine (`ai_pouzitie`).
+ * Bez neho sa každé čítanie zapísalo ako „Doklady z e-mailu“ bez firmy, aj keď
+ * doklad odfotili v appke alebo nahrali na webe.
+ */
+export type KontextCitania = { ucel?: string; firma?: string | null };
+
 /** Prečíta doklad cez Gemini. Keď sa to nepodarí, vráti null a doklad vznikne prázdny. */
 export async function precitajDoklad(
   base64: string,
   mimeType: string,
   volby?: import("./vytazenie-mena").VolbyCitania | null,
+  kontext?: KontextCitania,
 ): Promise<Record<string, unknown> | null> {
   /*
     Faktúra so strojovými údajmi (ISDOC, ZUGFeRD / Factur-X, UBL — vložené v
@@ -165,7 +174,8 @@ export async function precitajDoklad(
     const { pokynCitania } = await import("./vytazenie-mena");
     let kto: "gemini" | "openai" | null = null;
     const odpoved = await aiVision(base64, mimeType, pokynCitania(PROMPT, volby), {
-      ucel: "doklad-z-posty",
+      ucel: kontext?.ucel ?? "doklad-z-posty",
+      firma: kontext?.firma ?? null,
       odpovedal: (p) => (kto = p),
     });
     const json = odpoved.match(/\{[\s\S]*\}/)?.[0];
@@ -261,6 +271,7 @@ async function ulozPotvrdeniePreposielania(args: {
     spf: obsah.spf,
     dkim: obsah.dkim,
     domena: args.poskytovatel.domena,
+    authservId: process.env.MAIL_AUTHSERV_ID ?? null,
   });
   if (!pravost.ok) {
     // Do logu ide len zoznam názvov hlavičiek — podľa neho sa dá zistiť, či ich
@@ -646,7 +657,7 @@ export async function spracujPrijatyMail(
       return { stav: "bez_prilohy", vytvorenych: 0 };
     }
 
-    const dnes = new Date().toISOString().slice(0, 10);
+    const dnes = dnesBratislava();
     const vytvorene: string[] = [];
     const poznamky: string[] = [];
 
@@ -697,7 +708,9 @@ export async function spracujPrijatyMail(
       const ai = uz
         ? uz.ai
         : ((await zXmlVedla(priloha).catch(() => null)) ??
-          (await precitajDoklad(bajty.toString("base64"), mime, volbyCitania)));
+          (await precitajDoklad(bajty.toString("base64"), mime, volbyCitania, {
+            firma: adresa.company_id,
+          })));
 
       /*
         Z prílohy, z ktorej sa nedá prečítať ani dodávateľ, ani číslo, ani

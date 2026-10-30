@@ -283,3 +283,27 @@ describe("server pri odoslaní", () => {
     );
   });
 });
+
+describe("polnoc, prelom roka a 29. 2.", () => {
+  it("dnes podľa Bratislavy, nie UTC", async () => {
+    const { dnesBratislava } = await import("./datum-vystavenia");
+    // 31. 12. 23:30 UTC = 1. 1. 0:30 v Bratislave (zima, +1 h)
+    expect(dnesBratislava(new Date("2026-12-31T23:30:00Z"))).toBe("2027-01-01");
+    // leto (+2 h): 22:30 UTC je už ďalší deň
+    expect(dnesBratislava(new Date("2026-06-30T22:30:00Z"))).toBe("2026-07-01");
+    expect(dnesBratislava(new Date("2026-06-30T21:59:00Z"))).toBe("2026-06-30");
+  });
+
+  it("posunDni je kalendárny — bez posunu o deň cez letný čas a prelom roka", async () => {
+    const { posunDni } = await import("./datum-vystavenia");
+    expect(posunDni("2026-10-30", 14)).toBe("2026-11-13");
+    expect(posunDni("2026-03-20", 14)).toBe("2026-04-03"); // cez prechod na letný čas
+    expect(posunDni("2026-10-20", 14)).toBe("2026-11-03"); // cez prechod na zimný čas
+    expect(posunDni("2026-12-25", 14)).toBe("2027-01-08");
+    expect(posunDni("2028-02-15", 14)).toBe("2028-02-29");
+    expect(posunDni("2027-02-15", 14)).toBe("2027-03-01");
+    expect(posunDni("2028-02-29", 365)).toBe("2029-02-28");
+    expect(posunDni("2026-01-10", -14)).toBe("2025-12-27");
+    expect(posunDni("nie-je-datum", 3)).toBe("nie-je-datum");
+  });
+});

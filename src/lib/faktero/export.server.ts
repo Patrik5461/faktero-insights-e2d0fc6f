@@ -1,5 +1,6 @@
 // Server-only helpers for accounting exports.
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import { intNoteSEfakturou } from "./efaktura-odoslana";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { icoPrePohodu } from "./ico-z-mena";
@@ -52,6 +53,7 @@ import {
   partnerACislo,
   type NastaveniaExportu,
 } from "./export-nastavenia";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 type InvoiceRow = any;
 type ItemRow = any;
 type CompanyRow = any;
@@ -60,7 +62,7 @@ type DokladRow = any;
 
 function esc(s: any): string {
   if (s === null || s === undefined) return "";
-  return String(s)
+  return bezZakazanychXml(s)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -2284,7 +2286,7 @@ export function polozkySkladu(opts: {
     .map((s) => {
       const nazov = skrat(s?.nazov ?? s?.name, 90);
       if (!nazov) return "";
-      const tab = sadzbyKuDnu(new Date().toISOString().slice(0, 10), opts.krajina ?? "SK");
+      const tab = sadzbyKuDnu(dnesBratislava(), opts.krajina ?? "SK");
       const sadzba = kodSadzby(Number(s?.vat_rate ?? 0), tab);
 
       return `
@@ -2680,7 +2682,7 @@ export const POHODA_XML: ExportStrategy = {
       povodneCisla,
       zakazky,
     });
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = dnesBratislava();
     const fileName = `pohoda-faktury-${stamp}.xml`;
     return { content, fileName, mime: "application/xml", preskocene };
   },
@@ -2700,7 +2702,7 @@ export const OMEGA_TXT: ExportStrategy = {
     if (preskocene.length === invoices.length) {
       throw new Error(`Do Omegy sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
     }
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = dnesBratislava();
     return { content, fileName: `omega-faktury-${stamp}.txt`, mime: "text/plain", preskocene };
   },
 };
@@ -2720,7 +2722,7 @@ export const MONEY_S3_XML: ExportStrategy = {
     if (preskocene.length === invoices.length) {
       throw new Error(`Do Money S3 sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
     }
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = dnesBratislava();
     return {
       content: xml,
       fileName: `money-s3-faktury-${stamp}.xml`,
@@ -2770,7 +2772,7 @@ export const ISDOC_ZIP: ExportStrategy = {
     }
 
     const content = await zip.generateAsync({ type: "base64", compression: "DEFLATE" });
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = dnesBratislava();
     return { content, fileName: `isdoc-faktury-${stamp}.zip`, mime: "application/zip", preskocene };
   },
 };
@@ -2841,7 +2843,7 @@ export const BIS_ZIP: ExportStrategy = {
       throw new Error(`Do BIS XML sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
     }
     const content = await zip.generateAsync({ type: "base64", compression: "DEFLATE" });
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = dnesBratislava();
     return { content, fileName: `bis-faktury-${stamp}.zip`, mime: "application/zip", preskocene };
   },
 };
@@ -2863,7 +2865,7 @@ export const FLEXI_XML: ExportStrategy = {
     if (preskocene.length === invoices.length) {
       throw new Error(`Do ABRA Flexi sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
     }
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = dnesBratislava();
     return {
       content: xml,
       fileName: `flexi-faktury-${stamp}.xml`,
@@ -2908,7 +2910,7 @@ export const MRP_XML: ExportStrategy = {
     if (preskocene.length === invoices.length) {
       throw new Error(`Do MRP sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
     }
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = dnesBratislava();
     return {
       content: xml,
       fileName: `mrp-faktury-${stamp}.xml`,
@@ -2931,7 +2933,7 @@ export const CSV_UNIVERZAL: ExportStrategy = {
       invoices: invoices as never,
       krajina: (company as any)?.country,
     });
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = dnesBratislava();
     return { content, fileName: `faktury-${stamp}.csv`, mime: "text/csv" };
   },
 };

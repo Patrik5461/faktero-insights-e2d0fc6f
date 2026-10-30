@@ -23,13 +23,12 @@ import { UPRAVY_NA_VYBER } from "@/lib/faktero/faktura-nalezitosti";
 import { JAZYKY_DOKLADU } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 function dnes() {
-  return new Date().toISOString().slice(0, 10);
+  return dnesBratislava();
 }
 function pridajDni(iso: string, d: number) {
-  const dt = new Date(iso);
-  dt.setDate(dt.getDate() + d);
-  return dt.toISOString().slice(0, 10);
+  return posunDni(iso, d);
 }
 
 type Riadok = {

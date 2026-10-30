@@ -397,8 +397,8 @@ describe("pruh prebiehajúcej jazdy", () => {
     );
     expect(html).toContain("Nahrávam jazdu");
     // Vykreslenie na serveri kúsky textu oddeľuje značkami, preto po častiach.
-    expect(html).toContain("12.4");
-    expect(html).toContain("km · od");
+    expect(html).toContain("12,4");
+    expect(html.replace(/<!--[\s\S]*?-->/g, "")).toMatch(/km · od \d/);
     expect(html).toContain("1 h 15 min");
     expect(html).not.toContain("ručne");
   });
@@ -457,7 +457,7 @@ describe("stav cenovej ponuky", () => {
   čas hlásila „nahrávam jazdu" a ponúkala len ovládanie ručného merania.
 */
 describe("prebiehajúca rozpoznaná jazda", () => {
-  /* React medzi textové uzly vkladá `<!-- -->`; bez odstránenia by „12.3 km"
+  /* React medzi textové uzly vkladá `<!-- -->`; bez odstránenia by „12,3 km"
      nesedelo, hoci na obrazovke je presne to. */
   const bezZnaciek = (h: string) => h.replace(/<!--[\s\S]*?-->/g, "");
 
@@ -471,7 +471,7 @@ describe("prebiehajúca rozpoznaná jazda", () => {
       ),
     );
     expect(html).toContain("Nahrávam jazdu");
-    expect(html).toContain("12.3 km");
+    expect(html).toContain("12,3 km");
     expect(html).toContain("25 min");
   });
 

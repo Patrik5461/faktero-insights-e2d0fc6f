@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { sucetDokladov } from "@/lib/faktero/faktury-sumy";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import {
@@ -38,6 +39,7 @@ import {
   StatusBadge,
   type Ton,
 } from "./ui";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Vystavené faktúry v telefóne.
  *
@@ -86,23 +88,43 @@ function nazovMesiaca(kluc: string, loc: string): string {
  */
 /* Vracia kľúč, nie hotový text — funkcia je mimo komponentu a preklad tam
    nedosiahne. Prekladá sa až tam, kde sa odznak kreslí. */
-function stav(f: Faktura): { kluc: Kluc; ton: Ton } {
+export function stav(f: Pick<Faktura, "status" | "type" | "due_date">): { kluc: Kluc; ton: Ton } {
   if (f.status === "paid") return { kluc: "faktury.stav.uhradena", ton: "zelena" };
   if (f.status === "cancelled") return { kluc: "faktury.stav.stornovana", ton: "neutral" };
   if (f.status === "draft") return { kluc: "faktury.stav.navrh", ton: "neutral" };
-  if (f.due_date < new Date().toISOString().slice(0, 10))
-    return { kluc: "faktury.stav.poSplatnosti", ton: "cervena" };
+  /* Dobropis nikto neuhrádza — červené „Po splatnosti" pri ňom strašilo. */
+  if (f.type === "credit_note") return { kluc: "faktury.stav.dobropis", ton: "neutral" };
+  if (f.due_date < dnesBratislava()) return { kluc: "faktury.stav.poSplatnosti", ton: "cervena" };
   return { kluc: "faktury.stav.neuhradena", ton: "neutral" };
 }
 
-/** Filter nad zoznamom. Zodpovedá tomu, na čo sa človek pýta najčastejšie. */
-type Filter = "vsetky" | "neuhradene" | "poSplatnosti" | "uhradene";
+/**
+ * Súčet mesiaca pri nadpise — tými istými pravidlami ako Prehľad a web:
+ * zálohová faktúra a daňový doklad k platbe sa nepripočítajú (to isté plnenie
+ * by bolo dvakrát), dobropis odpočíta, koncept a storno sa nerátajú. Faktúry
+ * v rôznych menách sa sčítať nedajú — vtedy ostane len počet.
+ */
+export function sucetMesiaca(
+  riadky: Pick<Faktura, "status" | "type" | "total" | "currency">[],
+): { spolu: number; mena: string } | null {
+  const meny = new Set(riadky.map((f) => f.currency || "EUR"));
+  if (meny.size !== 1) return null;
+  return { spolu: sucetDokladov(riadky, "total"), mena: [...meny][0] };
+}
 
-function prejdeFiltrom(f: Faktura, filter: Filter): boolean {
+/** Filter nad zoznamom. Zodpovedá tomu, na čo sa človek pýta najčastejšie. */
+export type Filter = "vsetky" | "neuhradene" | "poSplatnosti" | "uhradene";
+
+export function prejdeFiltrom(
+  f: Pick<Faktura, "status" | "type" | "due_date">,
+  filter: Filter,
+): boolean {
   if (filter === "vsetky") return true;
-  const den = new Date().toISOString().slice(0, 10);
+  const den = dnesBratislava();
   if (filter === "uhradene") return f.status === "paid";
-  if (f.status === "paid" || f.status === "cancelled") return false;
+  if (f.status === "paid" || f.status === "cancelled" || f.status === "draft") return false;
+  // Dobropis nie je pohľadávka — Prehľad ho do neuhradených tiež nepočíta.
+  if (f.type === "credit_note") return false;
   if (filter === "poSplatnosti") return f.due_date < den;
   return true;
 }
@@ -335,12 +357,16 @@ export function VystaveneFaktury({
       ) : (
         <div className="space-y-5">
           {mesiace.map(([kluc, riadky]) => {
-            const spolu = riadky.reduce((s, f) => s + Number(f.total || 0), 0);
+            const sucet = sucetMesiaca(riadky);
             return (
               <div key={kluc}>
                 <SectionHeader
                   title={nazovMesiaca(kluc, loc)}
-                  right={`${riadky.length} × · ${suma(spolu, riadky[0]?.currency ?? "EUR", loc)}`}
+                  right={
+                    sucet
+                      ? `${riadky.length} × · ${suma(sucet.spolu, sucet.mena, loc)}`
+                      : `${riadky.length} ×`
+                  }
                 />
                 <ListCard>
                   {riadky.map((f) => {
@@ -442,8 +468,10 @@ function DetailFaktury({
   >(null);
 
   /**
-   * Mäkké zmazanie — presne ako na webe. Doklad nezmizne z histórie a jeho
-   * číslo ostáva obsadené, takže v číselnom rade nevznikne diera.
+   * Mäkké zmazanie — presne ako na webe. Doklad nezmizne z histórie, ale jeho
+   * číslo sa uvoľní: `faktero_next_invoice_number` hľadá najnižšie voľné číslo
+   * medzi živými faktúrami, takže ho dostane ďalšia vystavená a v rade
+   * nevznikne diera.
    */
   async function zmaz() {
     setBusy("mazem");

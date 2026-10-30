@@ -118,3 +118,33 @@ export function menoVlozenejSnimky(mime: string, teraz: Date = new Date()): stri
 export function cestaPrilohyPodpory(poziadavkaId: string, mime: string): string {
   return `${poziadavkaId}/${crypto.randomUUID()}.${TYPY_PODPORY[mime] ?? "bin"}`;
 }
+
+const zacinaNa = (b: Uint8Array, od: number, vzor: number[]) =>
+  vzor.every((x, i) => b[od + i] === x);
+const ascii = (t: string) => [...t].map((z) => z.charCodeAt(0));
+
+/**
+ * Sedí obsah súboru s typom? Typ sa berie z MIME a prípony, ktoré si klient
+ * napíše sám — bez tejto kontroly prešla ako „obrázok“ hocijaká HTML stránka
+ * či text. Prílohu potom otvára podpora a číta ju aj automatická oprava.
+ */
+export function obsahZodpovedaTypu(typ: string, b: Uint8Array): boolean {
+  switch (typ) {
+    case "image/png":
+      return zacinaNa(b, 0, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    case "image/jpeg":
+      return zacinaNa(b, 0, [0xff, 0xd8, 0xff]);
+    case "image/webp":
+      return zacinaNa(b, 0, ascii("RIFF")) && zacinaNa(b, 8, ascii("WEBP"));
+    case "image/heic":
+    case "image/heif":
+      return zacinaNa(b, 4, ascii("ftyp"));
+    case "application/pdf": {
+      // Hlavička %PDF- smie byť podľa špecifikácie kdekoľvek v prvom kilobajte.
+      const zaciatok = new TextDecoder("latin1").decode(b.subarray(0, 1024));
+      return zaciatok.includes("%PDF-");
+    }
+    default:
+      return false;
+  }
+}

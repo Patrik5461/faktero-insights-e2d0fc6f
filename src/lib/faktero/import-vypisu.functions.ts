@@ -172,10 +172,10 @@ export const importujVypisFn = createServerFn({ method: "POST" })
         throw new Error("Vo výpise nie je číslo účtu — vyberte účet, do ktorého sa má nahrať.");
       }
       /*
-        Účet s týmto číslom už firma má? Stáva sa to pri opakovaní: prvý pokus
-        účet založil, ale odpoveď pre výpadok siete nedošla (alebo zlyhal až
-        zápis pohybov) a formulár ostal na „nový účet“. Každé ďalšie „Nahrať“
-        potom založilo ďalší účet s tým istým IBAN-om.
+        Účet s týmto číslom už firma má? Stáva sa to pri opakovaní (prvý pokus
+        účet založil, ale odpoveď pre výpadok siete nedošla) alebo keď druhá
+        karta nahrala ten istý výpis o chvíľu skôr — nahrá sa doň, nezakladá sa
+        druhý rovnaký účet. Porovnanie rovnakyUcet (bez medzier, veľké písmená).
       */
       const { data: existujuce } = await supabaseAdmin
         .from("bank_accounts")

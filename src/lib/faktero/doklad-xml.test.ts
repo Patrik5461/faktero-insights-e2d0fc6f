@@ -155,7 +155,8 @@ describe("údaje faktúry z XML", () => {
     expect((d.items as any[])[0]).toMatchObject({
       name: "Wartung Server",
       quantity: 2,
-      unit: "HUR",
+      // Kód UN/ECE Rec. 20 sa preloží na jednotku, ktorú pozná človek.
+      unit: "hod",
       unit_price: 50,
       vat_rate: 19,
       total: 119,
@@ -173,6 +174,7 @@ describe("údaje faktúry z XML", () => {
       amount_total: 12.3,
       document_subtype: "dobropis",
     });
+    expect((d.items as any[])[0].unit).toBe("ks");
     expect(navrhDruhu(d)).toBe("dobropis");
   });
 
@@ -180,6 +182,35 @@ describe("údaje faktúry z XML", () => {
     expect(dokladZXml("<root><a>1</a></root>")).toBeNull();
     expect(dokladZXml("toto nie je xml")).toBeNull();
     expect(dokladZXml("")).toBeNull();
+  });
+});
+
+describe("ISDOC v cudzej mene", () => {
+  it("sumy a mena sa berú z mena faktúry (…Curr), nie z domácej meny vystaviteľa", () => {
+    // Slovenská firma fakturuje v korunách: domáca mena EUR, faktúra v CZK.
+    const xml = buildIsdoc({
+      invoice: {
+        ...invoice,
+        currency: "CZK",
+        exchange_rate: 25,
+        subtotal: 1000,
+        vat_total: 230,
+        total: 1230,
+      },
+      items: [
+        { ...items[0], quantity: 4, unit_price: 250, subtotal: 1000, vat_amount: 230, total: 1230 },
+      ],
+      company,
+    });
+    expect(xml).toContain("<ForeignCurrencyCode>CZK</ForeignCurrencyCode>");
+    const d = dokladZXml(xml)!;
+    expect(d).toMatchObject({
+      currency: "CZK",
+      amount_without_vat: 1000,
+      vat_amount: 230,
+      amount_total: 1230,
+    });
+    expect((d.items as any[])[0]).toMatchObject({ quantity: 4, unit_price: 250, total: 1230 });
   });
 });
 

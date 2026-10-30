@@ -268,6 +268,8 @@ export const importCiselnikaFn = createServerFn({ method: "POST" })
     let riadky: unknown[][];
     if (meno.endsWith(".xlsx") || meno.endsWith(".xls") || meno.endsWith(".ods")) {
       const XLSX = await import("xlsx");
+      const { overZip } = await import("./bezpecny-zip");
+      overZip(bajty);
       const wb = XLSX.read(bajty, { type: "array", raw: false });
       const ws = wb.Sheets[wb.SheetNames[0]];
       riadky = ws ? XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: "" }) : [];

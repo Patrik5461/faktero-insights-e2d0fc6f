@@ -4,8 +4,8 @@
  * Pravidlá sú tie isté ako na webe — appka nesmie dovoliť viac než počítač:
  *
  * - **stornovaná faktúra sa už neopravuje**, tá sa len archivuje;
- * - **zmazanie je mäkké** (`deleted_at`), doklad nezmizne z histórie a číslo
- *   ostáva obsadené;
+ * - **zmazanie je mäkké** (`deleted_at`), doklad nezmizne z histórie, ale číslo
+ *   sa uvoľní — generátor ho pridelí ďalšej faktúre (diery sa zapĺňajú);
  * - položky, ktoré hýbu **skladom**, sa v telefóne neopravujú. Web pri nich
  *   dopočítava rozdiel v zásobách; robiť to isté na malej obrazovke by bola
  *   najistejšia cesta k rozhádzanému skladu, tak takú faktúru appka pošle na

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
+import { BEZPECNY_MARKDOWN } from "@/lib/faktero/markdown-ai";
 import { toast } from "sonner";
 import {
   Sparkles,
@@ -355,7 +356,7 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
           <p className="whitespace-pre-wrap">{content}</p>
         ) : (
           <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2 prose-headings:mt-3 prose-headings:mb-1">
-            <ReactMarkdown>{content}</ReactMarkdown>
+            <ReactMarkdown {...BEZPECNY_MARKDOWN}>{content}</ReactMarkdown>
           </div>
         )}
         {!isUser && (
@@ -383,6 +384,16 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
   );
 }
 
+/** Nezaplatené po splatnosti — každá mena zvlášť (CZ firma má aj eurové faktúry). */
+function sumyNezaplatenych(
+  data: { unpaidTotal: number; unpaidByCurrency?: { mena: string; suma: number }[] },
+  domaca: string,
+): string {
+  const meny = data.unpaidByCurrency ?? [];
+  if (!meny.length) return formatujMenu(data.unpaidTotal, domaca);
+  return meny.map((m) => formatujMenu(m.suma, m.mena)).join(" + ");
+}
+
 function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab }) {
   const { t } = useT();
   const mena = useMenaFirmy();
@@ -408,7 +419,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             color: "text-amber-600",
             title: "Faktúry po splatnosti",
             value: data.overdueCount,
-            hint: t("{suma} nezaplatených", { suma: formatujMenu(data.unpaidTotal, mena.kod) }),
+            hint: t("{suma} nezaplatených", { suma: sumyNezaplatenych(data, mena.kod) }),
             to: "/faktury",
             search: { poSplatnosti: true as const },
           },
@@ -454,7 +465,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               color: "text-amber-600",
               title: "Faktúry po splatnosti",
               value: data.overdueCount,
-              hint: t("{suma} nezaplatených", { suma: formatujMenu(data.unpaidTotal, mena.kod) }),
+              hint: t("{suma} nezaplatených", { suma: sumyNezaplatenych(data, mena.kod) }),
               to: "/faktury",
               search: { poSplatnosti: true as const },
             },

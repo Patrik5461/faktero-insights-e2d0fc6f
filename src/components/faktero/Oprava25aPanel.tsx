@@ -8,6 +8,7 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Nezaplatená faktúra po splatnosti — oprava DPH podľa § 25a.
  *
@@ -28,7 +29,7 @@ export function Oprava25aPanel({ invoice }: { invoice: any }) {
     !invoice?.reverse_charge &&
     Number(invoice?.vat_total ?? 0) > 0 &&
     invoice?.due_date &&
-    String(invoice.due_date) < new Date().toISOString().slice(0, 10);
+    String(invoice.due_date) < dnesBratislava();
 
   useEffect(() => {
     if (!relevantna) return;

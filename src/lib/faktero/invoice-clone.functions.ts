@@ -104,11 +104,20 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
       status: "draft" as const,
     };
 
-    const { data: created, error: insErr } = await supabase
-      .from("invoices")
-      .insert(insertRow)
-      .select("id")
-      .single();
+    // Pri kolízii so súbežne vystavenou faktúrou sa vypýta ďalšie číslo.
+    const { sOpakovanimPriKoliziiCisla } = await import("./kolizia-cisla");
+    const { data: created, error: insErr } = await sOpakovanimPriKoliziiCisla<{ id: string }>(
+      async (pokus) => {
+        if (pokus > 0) {
+          const dalsie = await nextInvoiceNumberDetailed(src.company_id, isoToday, src.type);
+          insertRow.invoice_number = dalsie.invoice_number;
+          insertRow.sequence_number = dalsie.sequence_number;
+          insertRow.number_series_id = dalsie.series_id;
+          insertRow.variable_symbol = vsZCislaDokladu(dalsie.invoice_number) || null;
+        }
+        return supabase.from("invoices").insert(insertRow).select("id").single();
+      },
+    );
     if (insErr || !created) throw new Error(insErr?.message ?? "Nepodarilo sa vytvoriť kópiu.");
 
     // Clone items with month-incremented name/description

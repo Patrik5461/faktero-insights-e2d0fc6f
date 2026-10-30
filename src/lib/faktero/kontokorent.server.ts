@@ -39,6 +39,7 @@ import {
   type ZhodaPoplatku,
 } from "./kontokorent";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /** Koľko dozadu hľadať nespárované úroky — rovnako ako pri splátkach. */
 const DNI_DOZADU = 400;
 
@@ -351,7 +352,7 @@ export async function sadzbaZmluvy(
     interest_from?: string | null;
     created_at?: string | null;
   },
-  dnes = new Date().toISOString().slice(0, 10),
+  dnes = dnesBratislava(),
 ): Promise<PodkladySadzby & { sadzby: ReferencnaSadzba[]; od: string }> {
   let od = pridajMesiace(dnes, -(MESIACOV_ODHADU - 1));
   if (zmluva.interest_from && zmluva.interest_from > od) od = zmluva.interest_from;
@@ -383,7 +384,7 @@ export async function odhadUrokovKontokorentu(
     interest_period: string | null;
   },
   podklady: { sadzby: ReferencnaSadzba[]; rucne: RucnaSadzba[]; od: string },
-  dnes = new Date().toISOString().slice(0, 10),
+  dnes = dnesBratislava(),
 ): Promise<OdhadUrokov> {
   if (!zmluva.bank_account_id) return { ok: false, dovod: "bez_uctu" };
   const { data: ucet } = await klient

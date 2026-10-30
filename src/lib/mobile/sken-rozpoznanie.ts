@@ -16,7 +16,7 @@ import {
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
 } from "@/lib/faktero/nespracovane";
-import { isEkasaQr } from "@/lib/faktero/ekasa";
+import { identifikatoryZQr, isEkasaQr } from "@/lib/faktero/ekasa";
 import { jeEetQr } from "@/lib/faktero/eet-cz";
 
 /**
@@ -152,7 +152,13 @@ export function jeBlockovyQr(qr: string | null | undefined): boolean {
   if (jeEetQr(t)) return true;
   // PAY by square je base32hex (0–9, A–V), SPD začína hlavičkou „SPD*".
   if (/^SPD\*/i.test(t) || /^[0-9A-V]{40,}$/.test(t)) return false;
-  return isEkasaQr(t);
+  /*
+    Bežná pokladnica tlačí do QR holý identifikátor dokladu (`O-…`), offline
+    doklad OKP s kódom pokladnice. Samotné `isEkasaQr` pozná len odkaz a
+    dlhý zakódovaný tvar — fotka bločku s holým UID by inak išla na AI
+    namiesto Finančnej správy. Server to rozlišuje rovnako (`doklad-je-blocek`).
+  */
+  return identifikatoryZQr(t) !== null || isEkasaQr(t);
 }
 
 /** Dokedy sa oplatí čakať na prečítanie, kým appka ponúkne odchod. */

@@ -4,11 +4,9 @@
   packetLabelPdf, packetStatus. Odpoveď: <response><status>ok|fault</status>…
 */
 
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 const esc = (v: unknown) =>
-  String(v ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  bezZakazanychXml(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 const el = (n: string, v: unknown) =>
   v === null || v === undefined || v === "" ? "" : `<${n}>${esc(v)}</${n}>`;

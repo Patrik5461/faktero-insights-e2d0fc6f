@@ -115,6 +115,8 @@ import {
 } from "@/lib/faktero/dobropis-zobrazenie";
 import { riadokNaZapis, sumyFormulara, sumyNaZapis } from "@/lib/faktero/faktura-formular-sumy";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
+import { sOpakovanimPriKoliziiCisla } from "@/lib/faktero/kolizia-cisla";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová faktúra — Faktero") }] }),
   /**
@@ -239,9 +241,9 @@ function NewInvoice() {
   const [form, setForm] = useState({
     type: (search.type ?? "regular") as "regular" | "proforma" | "credit_note" | "debit_note",
     customer_id: "",
-    issue_date: new Date().toISOString().slice(0, 10),
-    delivery_date: new Date().toISOString().slice(0, 10),
-    due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+    issue_date: dnesBratislava(),
+    delivery_date: dnesBratislava(),
+    due_date: posunDni(dnesBratislava(), 14),
     variable_symbol: "",
     constant_symbol: "",
     specific_symbol: "",
@@ -1218,24 +1220,31 @@ function NewInvoice() {
         inv = r.data;
         error = r.error;
       } else {
+        /*
+          Číslo sa pýta tesne pred zápisom; keď ho medzitým obsadila faktúra
+          vystavená v inej karte alebo na inom zariadení, vypýta sa ďalšie.
+          Id ostáva to isté — pri kolízii sa riadok nezapísal.
+        */
+        const r = await sOpakovanimPriKoliziiCisla<any>(async () => {
         const { invoice_number, sequence_number, series_id } = await generateNumber(
           cid,
           form.issue_date,
           form.type,
           form.number_series_id,
         );
-        const r = await supabase
-          .from("invoices")
-          .insert({
-            ...hlavicka,
-            id: novaId,
-            invoice_number,
-            sequence_number,
-            number_series_id: series_id,
-            variable_symbol: vsNaUlozenie(form.variable_symbol, invoice_number),
-          })
-          .select()
-          .single();
+          return supabase
+            .from("invoices")
+            .insert({
+              ...hlavicka,
+              id: novaId,
+              invoice_number,
+              sequence_number,
+              number_series_id: series_id,
+              variable_symbol: vsNaUlozenie(form.variable_symbol, invoice_number),
+            })
+            .select()
+            .single();
+        });
         inv = r.data;
         error = r.error;
       }

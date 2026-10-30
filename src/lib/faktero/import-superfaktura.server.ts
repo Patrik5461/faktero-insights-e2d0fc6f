@@ -1,10 +1,12 @@
-import { unzipSync, strFromU8 } from "fflate";
+import { strFromU8 } from "fflate";
+import { overZip, rozbalZip } from "./bezpecny-zip";
 import { XMLParser } from "fast-xml-parser";
 import { vsNaUlozenie } from "./variabilny-symbol";
 import * as XLSX from "xlsx";
 import { isdocNaRiadky, jeIsdoc } from "./isdoc";
 import { krajinaDane, zakladnaSadzba } from "./vat-rates";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 // =========================================================
 // Lightweight CSV parser (semicolon / comma autodetect, RFC4180-ish)
 // =========================================================
@@ -113,7 +115,8 @@ export async function extractTables(
     return parseXlsx(fileBytes, fileName);
   }
   if (lower.endsWith(".zip")) {
-    const unzipped = unzipSync(fileBytes);
+    // So stropom — ZIP bomba by inak zhodila celý server.
+    const unzipped = rozbalZip(fileBytes);
     const tables: ParsedTable[] = [];
     for (const [path, bytes] of Object.entries(unzipped)) {
       const l = path.toLowerCase();
@@ -162,6 +165,7 @@ export async function extractTables(
 function parseXlsx(bytes: Uint8Array, fileName: string): ParsedTable[] {
   let wb: XLSX.WorkBook;
   try {
+    overZip(bytes);
     wb = XLSX.read(bytes, { type: "array", cellDates: false, raw: false });
   } catch {
     return [];
@@ -1270,8 +1274,7 @@ export async function runImport(args: {
         items = z.polozky;
       }
 
-      const issueDate =
-        normDate(pick(head, mapping, "issue_date")) || new Date().toISOString().slice(0, 10);
+      const issueDate = normDate(pick(head, mapping, "issue_date")) || dnesBratislava();
       const dueDate = normDate(pick(head, mapping, "due_date")) || issueDate;
       const deliveryDate = normDate(pick(head, mapping, "delivery_date"));
       const knownStatus = stavDokladu(pick(head, mapping, "status")) as

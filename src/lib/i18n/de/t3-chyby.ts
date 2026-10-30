@@ -16,8 +16,6 @@ export default {
     "Die Rechnung {cislo} wurde nicht vollständig gespeichert: {chyba} Klicken Sie erneut auf Ausstellen — dieselbe Rechnung wird ergänzt.",
   "Faktúru sa nepodarilo uložiť. Skúste to znova.":
     "Die Rechnung konnte nicht gespeichert werden. Versuchen Sie es erneut.",
-  "Položky faktúry sa neuložili: {chyba} Kliknite znova na Uložiť — kým sa to nepodarí, faktúra je bez položiek.":
-    "Die Rechnungspositionen wurden nicht gespeichert: {chyba} Klicken Sie erneut auf Speichern — bis dahin hat die Rechnung keine Positionen.",
   "účet bol otvorený až počas mesiaca, banka za celý mesiac výpis nevydá":
     "das Konto wurde erst im Laufe des Monats eröffnet, die Bank stellt für den ganzen Monat keinen Auszug aus",
   "banka účet pod týmto pripojením nepozná":

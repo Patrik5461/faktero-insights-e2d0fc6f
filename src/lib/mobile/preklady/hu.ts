@@ -104,6 +104,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "faktury.stav.neuhradena": "Kifizetetlen",
   "faktury.stav.splatna": "Esedékes",
   "faktury.stav.poSplatnosti": "Lejárt",
+  "faktury.stav.dobropis": "Jóváírás",
   "faktury.stav.stornovana": "Sztornózva",
   "faktury.otvoritPdf": "PDF megnyitása",
   "faktury.zdielat": "Számla megosztása",
@@ -474,6 +475,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "ponuky.vytvaram": "Árajánlat létrehozása…",
 
   /* kniha jázd — zvyšok */
+  "jz.odHodiny": "{cas} óta",
   "jz.odCasu":
     "{cas} óta. Ha megérkezett, zárja le — különben csak öt perc állás után áll le magától.",
   "jz.rozpoznalaJazdu": "Az alkalmazás felismert egy utat",
@@ -533,7 +535,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "faktury.uhradena": "Kifizetve",
   "faktury.odoslana": "Elküldve",
   "faktury.cisloOstava":
-    "Eltűnik a listáról, de a szám foglalt marad — a számsorban nem keletkezik lyuk.",
+    "Eltűnik a listáról, a száma pedig felszabadul — a következő kiállított számla kapja meg, így a számsorban nem keletkezik lyuk.",
   "jazdy.nacitavam": "Utak betöltése…",
   "jazdy.prvaPribudne":
     "Az első a mérés befejezése után jelenik meg — vagy a GPS-egységből töltődik be, ha a jármű csatlakoztatva van.",
@@ -1072,6 +1074,11 @@ export const hu: Partial<Record<Kluc, string>> = {
   "davka.stav.dlho": "Az olvasás sokáig tart — koppintson és várjon",
   "davka.stav.ulozene": "Mentve",
   "davka.stav.chyba": "Hiba — koppintson és próbálja újra",
+  "davka.stav.chybaUlozenia": "Nem mentődött — koppintson a bizonylat megnyitásához",
+  "davka.natrvalo.predplatne": "Az előfizetés nem aktív — a bizonylat nem töltődik fel",
+  "davka.natrvalo.prazdny": "A fájl üres — válassza ki újra",
+  "davka.natrvalo.velky": "A fájl nagyobb mint 15 MB",
+  "davka.natrvalo.neplatny": "Ez a fájl nem tölthető fel — próbáljon fotót vagy PDF-et",
   "davka.pole.druh": "bizonylat típusa",
   "davka.pole.platba": "fizetési mód",
   "davka.pole.polozky": "a tételek nem egyeznek az összeggel",

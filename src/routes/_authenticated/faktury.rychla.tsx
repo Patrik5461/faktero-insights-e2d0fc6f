@@ -15,6 +15,7 @@ import { friendlyError } from "@/lib/faktero/plan-error";
 import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/faktury/rychla")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Rýchla faktúra — Faktero") }] }),
   component: QuickInvoicePage,
@@ -76,8 +77,8 @@ function QuickInvoicePage() {
       return toast.error(t("Vyplňte text nad položkami — hovorí, čo sa fakturuje."));
     }
     setSaving(true);
-    const today = new Date().toISOString().slice(0, 10);
-    const due = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+    const today = dnesBratislava();
+    const due = posunDni(dnesBratislava(), 14);
     // Suma sa zadáva s DPH, v položke je cena bez nej.
     const unitPrice = Math.round((amt / (1 + vatRate / 100)) * 100) / 100;
     try {

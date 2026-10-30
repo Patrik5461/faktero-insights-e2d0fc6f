@@ -33,10 +33,13 @@ function nedavnePokusy(ip: string): number[] {
 const MAX_SPOLU_ZA_OKNO = 40;
 let spolocne: number[] = [];
 
-function prekrocenyLimit(ip: string): boolean {
+/** `ip` je null, keď skutočnú adresu nepoznáme — vtedy platí len spoločný strop. */
+function prekrocenyLimit(ip: string | null): boolean {
   const teraz = Date.now();
   spolocne = spolocne.filter((t) => teraz - t < OKNO_MS);
-  return nedavnePokusy(ip).length >= MAX_ZA_OKNO || spolocne.length >= MAX_SPOLU_ZA_OKNO;
+  return (
+    (ip !== null && nedavnePokusy(ip).length >= MAX_ZA_OKNO) || spolocne.length >= MAX_SPOLU_ZA_OKNO
+  );
 }
 
 /**
@@ -44,9 +47,10 @@ function prekrocenyLimit(ip: string): boolean {
  * vyplnené odoslanie, používateľ, ktorý si dvakrát pomýli e-mail, by sa sám
  * zablokoval na desať minút.
  */
-function zapisPokus(ip: string): void {
+function zapisPokus(ip: string | null): void {
   const teraz = Date.now();
   spolocne.push(teraz);
+  if (ip === null) return;
   historia.set(ip, [...nedavnePokusy(ip), teraz]);
   // Mapa by inak rástla donekonečna — staré IP adresy priebežne vyhadzujeme.
   if (historia.size > 5000) {
@@ -87,10 +91,15 @@ export const Route = createFileRoute("/api/public/kontakt")({
         sCors(new Response(null, { status: 204 }), request.headers.get("origin")),
       POST: async ({ request }) => {
         const origin = request.headers.get("origin");
-        const ip =
-          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-          request.headers.get("x-real-ip") ||
-          "neznama";
+        /*
+          IP len z hlavičiek od nginxu — prvú položku X-Forwarded-For si klient
+          vymyslí a obíde ňou limit. Súkromná adresa (router ju dnes dosadí
+          každému) za IP klienta neplatí, inak by limit 5 správ za 10 minút
+          platil pre celý web naraz.
+        */
+        const { ipKlienta, jeVerejnaIp } = await import("@/lib/faktero/registracia.server");
+        const zistena = ipKlienta(request.headers);
+        const ip = jeVerejnaIp(zistena) ? zistena : null;
         if (prekrocenyLimit(ip)) {
           return sCors(
             new Response(JSON.stringify({ error: "rate_limited" }), {
@@ -127,7 +136,7 @@ export const Route = createFileRoute("/api/public/kontakt")({
           "",
           data.message,
           "",
-          `— odoslané z kontaktného formulára na faktero.sk (IP ${ip})`,
+          `— odoslané z kontaktného formulára na faktero.sk (IP ${zistena ?? "neznáma"})`,
         ].join("\n");
 
         const html =
@@ -135,7 +144,7 @@ export const Route = createFileRoute("/api/public/kontakt")({
           `<p><strong>Meno:</strong> ${escapeHtml(data.name)}<br>` +
           `<strong>E-mail:</strong> <a href="mailto:${escapeHtml(data.email)}">${escapeHtml(data.email)}</a></p>` +
           `<div style="white-space:pre-wrap;border-left:3px solid #12734f;padding-left:12px">${escapeHtml(data.message)}</div>` +
-          `<p style="margin-top:16px;font-size:12px;color:#6b7280">Odoslané z kontaktného formulára na faktero.sk (IP ${escapeHtml(ip)})</p>` +
+          `<p style="margin-top:16px;font-size:12px;color:#6b7280">Odoslané z kontaktného formulára na faktero.sk (IP ${escapeHtml(zistena ?? "neznáma")})</p>` +
           `</div>`;
 
         try {

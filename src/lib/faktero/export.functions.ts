@@ -38,18 +38,21 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
     if (!strategy) throw new Error("Neznámy formát exportu");
     if (!data.invoiceIds.length) throw new Error("Žiadne faktúry");
 
-    const [{ data: company, error: cErr }, { data: invsVsetky, error: iErr }] = await Promise.all([
+    // Tisíce vybraných faktúr sa načítajú po dávkach — dlhá URL by dotaz zhodila.
+    const { poDavkach } = await import("./strankovanie");
+    const [{ data: company, error: cErr }, invsVsetky] = await Promise.all([
       supabase.from("companies").select("*").eq("id", data.companyId).single(),
-      supabase
-        .from("invoices")
-        .select("*")
-        .eq("company_id", data.companyId)
-        .in("id", data.invoiceIds)
-        // Poistka aj na serveri: zoznam sa dá obísť priamym volaním.
-        .is("deleted_at", null),
+      poDavkach<any>(data.invoiceIds, (kus) =>
+        supabase
+          .from("invoices")
+          .select("*")
+          .eq("company_id", data.companyId)
+          .in("id", kus)
+          // Poistka aj na serveri: zoznam sa dá obísť priamym volaním.
+          .is("deleted_at", null),
+      ),
     ]);
     if (cErr) throw new Error(cErr.message);
-    if (iErr) throw new Error(iErr.message);
     if (!company) throw new Error("Firma nenájdená");
     if (!invsVsetky || invsVsetky.length === 0) throw new Error("Faktúry nenájdené");
     // Schvaľovanie: do účtovníctva len schválené.
@@ -73,16 +76,21 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       // Kam išla naposledy — hláška nesmie hovoriť o Pohode, keď išla do Money.
       const formatPodlaFaktury = new Map<string, string>();
       if (odovzdane.length) {
-        const { data: logy } = await supabase
-          .from("export_logs")
-          .select("invoice_id, created_at, export_jobs(format)")
-          .in(
-            "invoice_id",
-            odovzdane.map((i) => i.id),
-          )
-          .eq("status", "ok")
-          .order("created_at", { ascending: true });
-        for (const l of (logy ?? []) as any[])
+        const { riadkyPreIds } = await import("./strankovanie");
+        const logy = await riadkyPreIds<any>(
+          odovzdane.map((i) => i.id),
+          (kus, od, po) =>
+            supabase
+              .from("export_logs")
+              .select("invoice_id, created_at, export_jobs(format)")
+              .in("invoice_id", kus)
+              .eq("status", "ok")
+              .order("created_at", { ascending: true })
+              .order("id")
+              .range(od, po),
+        );
+        logy.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+        for (const l of logy)
           formatPodlaFaktury.set(l.invoice_id, l.export_jobs?.format ?? "");
       }
       const { uzOdovzdanaRiadok } = await import("./odovzdanie-exportu");

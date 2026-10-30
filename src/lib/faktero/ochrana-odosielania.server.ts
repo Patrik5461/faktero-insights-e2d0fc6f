@@ -162,19 +162,22 @@ export function stropyFirmy(v: { vekDni: number; overena: boolean }) {
   };
 }
 
+/**
+ * Adresy z poľa „Komu": jedna položka môže niesť viac adries oddelených
+ * čiarkou či bodkočiarkou („a@x.sk, b@y.sk" z karty odberateľa alebo API).
+ * Strážca ich musí počítať jednotlivo — inak by desať adries v jednej
+ * položke prešlo ako jeden adresát a strop by sa dal obísť.
+ */
+export function rozdelAdresy(adresati: string[]): string[] {
+  return adresati
+    .flatMap((a) => String(a ?? "").split(/[,;]/))
+    .map((a) => a.trim())
+    .filter(Boolean);
+}
+
 /** Zoznam adresátov: malými písmenami, bez prázdnych a duplicít. */
 export function upravAdresatov(adresati: string[]): string[] {
-  return [
-    ...new Set(
-      adresati
-        .map((a) =>
-          String(a ?? "")
-            .trim()
-            .toLowerCase(),
-        )
-        .filter(Boolean),
-    ),
-  ];
+  return [...new Set(rozdelAdresy(adresati).map((a) => a.toLowerCase()))];
 }
 
 function ukazka(k: KontextOdoslania): string {

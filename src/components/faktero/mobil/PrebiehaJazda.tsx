@@ -16,6 +16,7 @@ import { Car } from "lucide-react";
 import { beziacaJazda, type BeziacaJazda } from "@/lib/mobile/auto-jazdy-sync";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { kilometre } from "@/lib/mobile/km";
 /** Ako často sa appka pýta pluginu. Kilometre pribúdajú pomaly, stačí to. */
 const OBNOVA_MS = 10_000;
 
@@ -54,8 +55,8 @@ export function PruhJazdy({
       <span className="min-w-0 text-left text-[13px]">
         <span className="block font-medium text-app-zelena">{t("jz.nahravamJazdu")}</span>
         <span className="block text-app-text-2">
-          {jazda.km.toFixed(1)} km · od {cas(jazda.zaciatok, loc)} ({trvanie(jazda.zaciatok, teraz)})
-          {jazda.rucna ? ` · ${t("jz.spustenaRucne")}` : ""}
+          {kilometre(jazda.km, loc)} km · {t("jz.odHodiny", { cas: cas(jazda.zaciatok, loc) })} (
+          {trvanie(jazda.zaciatok, teraz)}){jazda.rucna ? ` · ${t("jz.spustenaRucne")}` : ""}
         </span>
       </span>
     </>

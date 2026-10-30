@@ -82,6 +82,7 @@ import { dovodZamku, NAZOV_ZAMKU, platbaPreZoradenie } from "@/lib/faktero/dokla
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { zauctujVystavenuFn } from "@/lib/faktero/zauctovanie.functions";
 
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 type BulkAction = null | "paid" | "email" | "efaktura" | "clone" | "reminder" | "zip";
 
 /** Ponuka zoradenia. Prvá možnosť je predvolená — od najnovšej faktúry. */
@@ -394,7 +395,7 @@ function InvoicesPage() {
     };
   }, [list.rows]);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dnesBratislava();
   const visibleRows = useMemo(() => {
     let riadky = list.rows;
     if (poSplatnosti) riadky = riadky.filter((r: Splatnost) => jePoSplatnosti(r, today));

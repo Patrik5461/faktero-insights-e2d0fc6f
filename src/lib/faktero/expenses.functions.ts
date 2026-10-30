@@ -1,3 +1,4 @@
+import { bezVzorca } from "@/lib/bezpecny-text";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -700,7 +701,7 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       "subor",
     ].join(";");
     const escape = (v: unknown) => {
-      const s = v == null ? "" : String(v);
+      const s = v == null ? "" : bezVzorca(v);
       return /[;"\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
     };
     const lines = [header];

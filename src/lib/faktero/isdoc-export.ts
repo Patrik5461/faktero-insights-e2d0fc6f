@@ -1,3 +1,4 @@
+import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import { krajinaDane } from "./vat-rates";
 import { kodStatu } from "./company-autofill";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
@@ -26,7 +27,7 @@ type Riadok = Record<string, any>;
 
 function esc(s: unknown): string {
   if (s === null || s === undefined) return "";
-  return String(s)
+  return bezZakazanychXml(s)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")

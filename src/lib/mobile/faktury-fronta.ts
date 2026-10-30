@@ -249,6 +249,34 @@ export function nastavCislovanieDopredu(companyId: string, zapnute: boolean): vo
   else zmaz(NASTAVENIE + companyId);
 }
 
+/**
+ * Vráti serveru nepoužité rezervované čísla všetkých firiem v telefóne.
+ *
+ * Volá sa pred odhlásením. Bez toho `vycistiFaktury` zabudne čísla len v
+ * telefóne, kým na serveri ostanú držané dva týždne: faktúry vystavené
+ * medzitým ich preskočia (po NK…33 príde NK…39) a po vypršaní ich generátor
+ * pridelí neskorším faktúram — v rade by tak čísla nešli podľa dátumu.
+ * Chyba pri vracaní odhlásenie nezastaví; čísla potom prepadnú samy.
+ */
+export async function uvolniNepouziteCisla(
+  vrat: (companyId: string, cisla: string[]) => Promise<unknown>,
+): Promise<number> {
+  let spolu = 0;
+  for (const k of klucePamate()) {
+    if (!k.startsWith(REZERVACIE)) continue;
+    const firma = k.slice(REZERVACIE.length);
+    const cisla = nepouziteCisla(firma);
+    if (!cisla.length) continue;
+    try {
+      await vrat(firma, cisla);
+      spolu += cisla.length;
+    } catch {
+      /* prepadnú po vypršaní — odhlásenie kvôli tomu nečaká */
+    }
+  }
+  return spolu;
+}
+
 /** Po odhlásení nesmie v telefóne ostať ani fronta, ani cudzie čísla. */
 export function vycistiFaktury(): void {
   for (const k of klucePamate()) {

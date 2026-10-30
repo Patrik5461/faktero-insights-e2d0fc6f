@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import {
+  chybaObsahuPrilohy,
   DRUHY_S_PRILOHAMI,
   MAX_PRILOH,
+  MAX_PRILOHA,
+  STROP_POZIADAVKY,
   nazvyDoZipu,
   POVOLENE_TYPY,
   PRIPONY_PRE_VYBER,
@@ -60,6 +63,17 @@ describe("hláška, prečo sa súbor priložiť nedá", () => {
     const velky = chybaPrilohy(subor("velky.pdf", 16 * 1024 * 1024, "application/pdf"), 0);
     expect(velky).toContain("velky.pdf");
     expect(velky).toContain("15 MB");
+  });
+
+  it("najväčšia povolená príloha sa v base64 zmestí pod strop nginx (20 MiB)", () => {
+    // Zistené naostro 30. 10. 2026: súbor s 15 MiB nginx odmietol (413).
+    const base64 = Math.ceil(MAX_PRILOHA / 3) * 4;
+    // Rezerva na obal požiadavky (JSON, názov súboru, id dokladu).
+    expect(base64 + 4096).toBeLessThan(STROP_POZIADAVKY);
+    expect(chybaPrilohy(subor("presne.pdf", MAX_PRILOHA, "application/pdf"), 0)).toBeNull();
+    expect(chybaPrilohy(subor("o-bajt.pdf", MAX_PRILOHA + 1, "application/pdf"), 0)).toContain(
+      "15 MB",
+    );
   });
 
   it("nad desať príloh sa už nepridáva", () => {
@@ -159,5 +173,31 @@ describe("nazvyDoZipu", () => {
       "priloha",
       "skryty",
     ]);
+  });
+});
+
+describe("chybaObsahuPrilohy — obsah musí sedieť s typom", () => {
+  const b = (s: string | number[]) =>
+    typeof s === "string" ? new TextEncoder().encode(s) : new Uint8Array(s);
+  it("pustí skutočné PDF, obrázky, xlsx a text", () => {
+    expect(chybaObsahuPrilohy("application/pdf", b("%PDF-1.7\n..."))).toBeNull();
+    expect(chybaObsahuPrilohy("application/pdf", b("\r\n%PDF-1.4"))).toBeNull();
+    expect(chybaObsahuPrilohy("image/png", b([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]))).toBeNull();
+    expect(chybaObsahuPrilohy("image/jpeg", b([0xff, 0xd8, 0xff, 0xe0]))).toBeNull();
+    expect(
+      chybaObsahuPrilohy(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        b([0x50, 0x4b, 0x03, 0x04, 1, 2]),
+      ),
+    ).toBeNull();
+    expect(chybaObsahuPrilohy("text/csv", b("=1+1;a\n"))).toBeNull();
+    expect(chybaObsahuPrilohy("text/plain", b([0xff, 0xfe, 0x41, 0x00]))).toBeNull();
+  });
+  it("odmietne EXE premenované na PDF, HTML vydávané za PDF či obrázok a binárny „text“", () => {
+    expect(chybaObsahuPrilohy("application/pdf", b("MZ\x90\x00\x03"))).toMatch(/Spustiteľný/);
+    expect(chybaObsahuPrilohy("text/plain", b([0x7f, 0x45, 0x4c, 0x46, 2]))).toMatch(/Spustiteľný/);
+    expect(chybaObsahuPrilohy("application/pdf", b("<html><script>alert(1)</script>"))).toMatch(/nezodpovedá/);
+    expect(chybaObsahuPrilohy("image/png", b('<svg onload="alert(1)">'))).toMatch(/nezodpovedá/);
+    expect(chybaObsahuPrilohy("text/plain", b([0x41, 0x00, 0x42]))).toMatch(/nezodpovedá/);
   });
 });

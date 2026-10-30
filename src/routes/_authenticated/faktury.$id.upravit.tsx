@@ -324,57 +324,45 @@ function EditInvoice() {
       }
     }
     setSaving(true);
-    // Medzi zmazaním a zápisom položiek je faktúra bez nich — výpadok siete tam
-    // musí človeku povedať, že treba uložiť znova (formulár údaje drží).
-    let polozkyZmazane = false;
     try {
-      const { error: upErr } = await supabase
-        .from("invoices")
-        .update({
-          invoice_number: form.invoice_number.trim(),
-          issue_date: form.issue_date,
-          // Prázdne pole je v HTML formulári "", nie null. Postgres na to
-          // odpovie „invalid input syntax for type date" a faktúra bez dátumu
-          // dodania sa nedala uložiť vôbec.
-          // Vystavený doklad bez dátumu dodania nesmie vzniknúť — doplní sa dátum vystavenia.
-          delivery_date:
-            form.delivery_date || (inv?.status === "draft" && vystavitRef.current ? form.issue_date : null),
-          due_date: form.due_date,
-          // Prázdny VS sa doplní z čísla faktúry, rovnako ako pri vystavení.
-          variable_symbol: vsNaUlozenie(form.variable_symbol, form.invoice_number),
-          currency: form.currency,
-          payment_method: form.payment_method,
-          job_id: form.job_id || null,
-          notes: form.notes,
-          intro_note: form.intro_note.trim() || null,
-          discount_type: totals.zlava > 0 ? form.discount_type || "percent" : null,
-          discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
-          discount_total: totals.zlava,
-          language: form.language || null,
-          dodaci_list: inv?.type === "regular" && form.dodaci_list,
-          zobrazit_peciatku: form.zobrazit_peciatku,
-          // Účtovné kódy len keď sa zmenili — odovzdanú faktúru inak nič nepreúčtuje.
-          ...(form.predkontacia.trim() !== (inv?.pohoda_predkontacia ?? "")
-            ? { pohoda_predkontacia: form.predkontacia.trim() || null }
-            : {}),
-          ...(form.clenenie.trim() !== (inv?.pohoda_clenenie_dph ?? "")
-            ? { pohoda_clenenie_dph: form.clenenie.trim() || null }
-            : {}),
-          ...(form.kv !== (inv?.kv_clenenie ?? "") ? { kv_clenenie: form.kv || null } : {}),
-          ...(odberatel ? odberatelNaZapis(odberatel) : {}),
-          ...(inv?.status === "draft" && vystavitRef.current ? { status: "issued" } : {}),
-          subtotal: Number(totals.subtotal.toFixed(2)),
-          vat_total: Number(totals.vat_total.toFixed(2)),
-          total: Number(totals.total.toFixed(2)),
-          pdf_url: null,
-        })
-        .eq("id", id);
-      if (upErr) throw upErr;
-
-      const { error: delErr } = await supabase.from("invoice_items").delete().eq("invoice_id", id);
-      if (delErr) throw delErr;
-      polozkyZmazane = true;
-
+      const hlavicka = {
+        invoice_number: form.invoice_number.trim(),
+        issue_date: form.issue_date,
+        // Prázdne pole je v HTML formulári "", nie null. Postgres na to
+        // odpovie „invalid input syntax for type date" a faktúra bez dátumu
+        // dodania sa nedala uložiť vôbec.
+        // Vystavený doklad bez dátumu dodania nesmie vzniknúť — doplní sa dátum vystavenia.
+        delivery_date:
+          form.delivery_date || (inv?.status === "draft" && vystavitRef.current ? form.issue_date : null),
+        due_date: form.due_date,
+        // Prázdny VS sa doplní z čísla faktúry, rovnako ako pri vystavení.
+        variable_symbol: vsNaUlozenie(form.variable_symbol, form.invoice_number),
+        currency: form.currency,
+        payment_method: form.payment_method,
+        job_id: form.job_id || null,
+        notes: form.notes,
+        intro_note: form.intro_note.trim() || null,
+        discount_type: totals.zlava > 0 ? form.discount_type || "percent" : null,
+        discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
+        discount_total: totals.zlava,
+        language: form.language || null,
+        dodaci_list: inv?.type === "regular" && form.dodaci_list,
+        zobrazit_peciatku: form.zobrazit_peciatku,
+        // Účtovné kódy len keď sa zmenili — odovzdanú faktúru inak nič nepreúčtuje.
+        ...(form.predkontacia.trim() !== (inv?.pohoda_predkontacia ?? "")
+          ? { pohoda_predkontacia: form.predkontacia.trim() || null }
+          : {}),
+        ...(form.clenenie.trim() !== (inv?.pohoda_clenenie_dph ?? "")
+          ? { pohoda_clenenie_dph: form.clenenie.trim() || null }
+          : {}),
+        ...(form.kv !== (inv?.kv_clenenie ?? "") ? { kv_clenenie: form.kv || null } : {}),
+        ...(odberatel ? odberatelNaZapis(odberatel) : {}),
+        ...(inv?.status === "draft" && vystavitRef.current ? { status: "issued" } : {}),
+        subtotal: Number(totals.subtotal.toFixed(2)),
+        vat_total: Number(totals.vat_total.toFixed(2)),
+        total: Number(totals.total.toFixed(2)),
+        pdf_url: null,
+      };
       const rows = riadkyZapis.map((it, idx) => {
         const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
         // Ako pri vystavení (`riadokNaZapis`): prenesenie na celej faktúre aj na riadku = 0 %.
@@ -400,11 +388,35 @@ function EditInvoice() {
           total: Number((s + v).toFixed(2)),
         };
       });
-      if (rows.length) {
-        const { error: insErr } = await supabase.from("invoice_items").insert(rows);
-        if (insErr) throw insErr;
+      /*
+        Hlavička aj položky v jednej transakcii (RPC uloz_upravu_faktury): výpadok
+        siete medzi zmazaním a vložením položiek nechal faktúru bez položiek
+        a druhá karta s tou istou faktúrou potichu prepísala prvú. RPC odmietne
+        uloženie, keď sa faktúra medzitým zmenila (updated_at).
+      */
+      const { error: rpcErr } = await (supabase as any).rpc("uloz_upravu_faktury", {
+        p_id: id,
+        p_hlavicka: hlavicka,
+        p_polozky: rows,
+        p_povodne_upravena: inv?.updated_at ?? null,
+      });
+      if (rpcErr && !/uloz_upravu_faktury|PGRST202/.test(`${rpcErr.code} ${rpcErr.message}`)) {
+        throw rpcErr;
       }
-      polozkyZmazane = false;
+      if (rpcErr) {
+        // Databáza bez funkcie (pred migráciou) — pôvodné ukladanie po krokoch.
+        const { error: upErr } = await supabase
+          .from("invoices")
+          .update(hlavicka as any)
+          .eq("id", id);
+        if (upErr) throw upErr;
+        const { error: delErr } = await supabase.from("invoice_items").delete().eq("invoice_id", id);
+        if (delErr) throw delErr;
+        if (rows.length) {
+          const { error: insErr } = await supabase.from("invoice_items").insert(rows);
+          if (insErr) throw insErr;
+        }
+      }
 
       /*
         „Pokračovať v tomto rade" — až po uložení dokladu. Keby sa rad zmenil
@@ -435,13 +447,7 @@ function EditInvoice() {
       const po = poUlozeniRef.current;
       navigate({ to: "/faktury/$id", params: { id }, search: po ? { po } : {} });
     } catch (err: any) {
-      const veta = t(zrozumitelnaChyba(err?.message));
-      toast.error(
-        polozkyZmazane
-          ? t("Položky faktúry sa neuložili: {chyba} Kliknite znova na Uložiť — kým sa to nepodarí, faktúra je bez položiek.", { chyba: veta })
-          : veta,
-        polozkyZmazane ? { duration: 20000 } : undefined,
-      );
+      toast.error(t(zrozumitelnaChyba(err?.message)));
     } finally {
       setSaving(false);
     }
@@ -1255,15 +1261,17 @@ function CellSpolu({
  */
 function zrozumitelnaChyba(sprava: string | undefined): string {
   const s = sprava ?? "Chyba pri ukladaní";
-  const technicka = technickaChyba(s);
-  if (technicka) return technicka;
+  if (s.includes("FAKTERO_SUBEH")) {
+    return "Faktúru medzitým zmenil niekto iný (iná karta alebo kolega). Načítajte ju znova — vaše zmeny sa neuložili.";
+  }
   if (s.includes("invoices_cislo_uniq") || s.includes("duplicate key")) {
     return "Faktúra s týmto číslom už existuje. Zvoľte iné číslo.";
   }
   if (s.toLowerCase().includes("uzamknut") || s.includes("locked")) {
     return "Obdobie je uzamknuté uzávierkou — číslo, dátumy ani sumy sa v ňom meniť nedajú.";
   }
-  return s;
+  // Výpadok siete, chyba servera, vypršané prihlásenie — veta namiesto „Failed to fetch“.
+  return technickaChyba(s) ?? s;
 }
 
 function Lbl({ label, children }: { label: string; children: React.ReactNode }) {
