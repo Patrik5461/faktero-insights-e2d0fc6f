@@ -549,7 +549,9 @@ export function AppShell({
 
               {/* Profile avatar */}
               <DropdownMenu>
-                <DropdownMenuTrigger className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-[12px] font-semibold text-primary ring-1 ring-border hover:ring-primary/40 max-md:from-white/25 max-md:to-white/10 max-md:text-primary-foreground max-md:ring-white/40">
+                <DropdownMenuTrigger
+                  aria-label={t("Účet")}
+                  className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-[12px] font-semibold text-primary ring-1 ring-border hover:ring-primary/40 max-md:from-white/25 max-md:to-white/10 max-md:text-primary-foreground max-md:ring-white/40">
                   {(active?.name?.[0] ?? "U").toUpperCase()}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">

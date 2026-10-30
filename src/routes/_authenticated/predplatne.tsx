@@ -34,7 +34,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveProduct } from "@/lib/faktero/active-product";
 import { potvrd } from "@/lib/potvrdenie";
-import { mozePrenesenieDph } from "@/lib/faktero/predplatne-cena";
+import { mozePrenesenieDph, vetaObnovy } from "@/lib/faktero/predplatne-cena";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { preloz, type Jazyk, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -391,14 +391,14 @@ function PredplatnePage() {
             <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-900 dark:text-blue-100">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
               <div className="space-y-1">
-                {plan.zdarma ? (
+                {vetaObnovy(plan) === "zdarma" ? (
                   /* Pridelený plán sa neúčtuje — veta o mesačnej obnove by tu
                      len strašila. */
                   <p>
                     {t("Tento plán máte pridelený")} <strong>{t("zadarmo a natrvalo")}</strong>.{" "}
                     {t("Nič sa neúčtuje a nič netreba obnovovať.")}
                   </p>
-                ) : plan.cancel_at_period_end ? (
+                ) : vetaObnovy(plan) === "zrusene" ? (
                   <p>
                     {t("Predplatné je zrušené k")}{" "}
                     <strong>
@@ -406,12 +406,21 @@ function PredplatnePage() {
                     </strong>
                     . {t("Do toho dňa funguje všetko ako doteraz a nič sa už nestrhne.")}
                   </p>
-                ) : plan.next_billing_at && plan.ma_ulozenu_kartu ? (
+                ) : vetaObnovy(plan) === "karta" ? (
                   <p>
                     {t("Najbližšia platba")} <strong>{fmtDate(plan.next_billing_at, jazyk)}</strong>{" "}
                     — <strong>{fmtEurSDph(planPriceFromSlug(plans, plan?.plan_slug))}</strong>{" "}
                     {t(
                       "s DPH z uloženej karty cez GoPay. Upozornenie pošleme 7 dní vopred, zrušiť môžete kedykoľvek.",
+                    )}
+                  </p>
+                ) : vetaObnovy(plan) === "skusobna" ? (
+                  /* Skúšobná verzia bez karty: nič sa nestrhne a tlačidlo
+                     „Zrušiť predplatné“ sa tu ani neukazuje — veta o mesačnej
+                     obnove by sľubovala niečo, čo neexistuje. */
+                  <p>
+                    {t(
+                      "Skúšobná verzia je zadarmo a karta nie je uložená, takže sa nič samo nestrhne. Ak chcete pokračovať aj po jej skončení, aktivujte plán nižšie.",
                     )}
                   </p>
                 ) : (
