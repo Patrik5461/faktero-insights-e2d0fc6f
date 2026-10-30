@@ -1,4 +1,5 @@
 import { CudziaFakturaZnak } from "@/components/faktero/CudziaFaktura";
+import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -141,6 +142,7 @@ function Stranka() {
         setNahravam((n) => n - 1);
       }
     }
+    obnovPoctyMenu();
     void obnov();
   }
 
@@ -234,6 +236,7 @@ function Stranka() {
     toast.success(t("V koši: {n}", { n: ok }));
     setVybrane(new Set());
     setHromadneBusy(false);
+    if (ok) obnovPoctyMenu();
     await obnov();
   }
 

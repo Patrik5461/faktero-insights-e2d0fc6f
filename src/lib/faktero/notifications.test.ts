@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { buildNotifications, applyReadState, daysBetween, dniText } from "./notifications";
+import {
+  buildNotifications,
+  applyReadState,
+  daysBetween,
+  dniText,
+  notifikaciaNespracovanych,
+} from "./notifications";
 
 const PRAZDNE = {
   today: "2026-08-07",
@@ -408,5 +414,39 @@ describe("bankový účet bez pohybov", () => {
     expect(n.map((x) => x.key)).toEqual(["bank_pohyby:a1:2026-10-01"]);
     expect(n[0].severity).toBe("danger");
     expect(n[0].to).toBe("/bankove-ucty");
+  });
+});
+
+describe("notifikaciaNespracovanych", () => {
+  const blocek = { id: "b1", created_at: "2026-10-29T10:00:00Z" };
+  const doklad = { id: "d1", created_at: "2026-10-30T08:00:00Z" };
+
+  it("sčíta doklady z e-mailu aj bločky a vedie do Nespracovaných", () => {
+    const [n] = notifikaciaNespracovanych([
+      { pocet: 4, najnovsi: blocek },
+      { pocet: 3, najnovsi: doklad },
+    ]);
+    expect(n.title).toBe("{n} nespracovaných dokladov");
+    expect(n.params).toEqual({ n: 7 });
+    expect(n.to).toBe("/nespracovane");
+    // Kľúč podľa najnovšieho — po prečítaní sa ozve až pri ďalšom doklade.
+    expect(n.key).toBe("doklady-nespracovane:d1");
+    expect(n.date).toBe("2026-10-30");
+  });
+
+  it("len doklady z e-mailu (bez bločkov) sa tiež ohlásia", () => {
+    const out = notifikaciaNespracovanych([
+      { pocet: 0, najnovsi: null },
+      { pocet: 1, najnovsi: doklad },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].title).toBe("1 nespracovaný doklad");
+  });
+
+  it("nedostupný zdroj sa preskočí, nič nečaká = nič", () => {
+    expect(notifikaciaNespracovanych([{ pocet: 2, najnovsi: blocek }, null])[0].title).toBe(
+      "{n} nespracované doklady",
+    );
+    expect(notifikaciaNespracovanych([{ pocet: 0, najnovsi: null }, null])).toEqual([]);
   });
 });

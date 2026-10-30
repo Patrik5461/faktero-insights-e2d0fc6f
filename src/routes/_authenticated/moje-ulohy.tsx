@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useEffect, useState, type ReactNode } from "react";
@@ -130,6 +131,7 @@ function Stranka() {
     setRiesim(id);
     try {
       await vyries({ data: { company_id: companyId, id, vyriesene } });
+      obnovPoctyMenu();
       if (vyriesene) {
         setUlohy((u) => (u ? { ...u, komentare: u.komentare.filter((k) => k.id !== id) } : u));
         toast.success(t("Komentár je vyriešený"), {

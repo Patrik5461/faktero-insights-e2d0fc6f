@@ -284,3 +284,43 @@ export function applyReadState(
   }));
   return { items: withState, unread: withState.filter((n) => !n.read).length };
 }
+
+/** Zdroj nespracovaných dokladov: počet a najnovší riadok. */
+export type ZdrojNespracovanych = {
+  pocet: number;
+  najnovsi: { id: string; created_at: string } | null;
+} | null;
+
+/**
+ * Jedna položka „N nespracovaných dokladov“ zo všetkých zdrojov (doklady
+ * z e-mailu a nahratia, bločky zo skenu) — rovnaký súčet ako odznak
+ * Nespracované v menu. Vedie do Nespracovaných: `/doklady` sa otvára na
+ * spracovaných bločkoch. Kľúč nesie najnovší doklad, takže po prečítaní sa
+ * zvonček ozve znova až pri ďalšom.
+ */
+export function notifikaciaNespracovanych(zdroje: ZdrojNespracovanych[]): AppNotification[] {
+  const platne = zdroje.filter((z): z is NonNullable<ZdrojNespracovanych> => Boolean(z));
+  const count = platne.reduce((a, z) => a + Math.max(0, z.pocet), 0);
+  const najnovsi = platne
+    .map((z) => z.najnovsi)
+    .filter((x): x is { id: string; created_at: string } => Boolean(x))
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0];
+  if (!count || !najnovsi) return [];
+  return [
+    {
+      key: `doklady-nespracovane:${najnovsi.id}`,
+      severity: "info",
+      // Šablóna s {n}, nie hotové číslo v texte — inak by sa v CZ/DE nepreložila.
+      title:
+        count === 1
+          ? "1 nespracovaný doklad"
+          : count < 5
+            ? "{n} nespracované doklady"
+            : "{n} nespracovaných dokladov",
+      params: { n: count },
+      detail: "Čaká na kontrolu a označenie ako spracovaný.",
+      to: "/nespracovane",
+      date: String(najnovsi.created_at).slice(0, 10),
+    },
+  ];
+}

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useEffect, useState } from "react";
@@ -64,6 +65,7 @@ function Stranka() {
         spolu += r.hotovo;
       }
       toast.success(t("Hotovo: {n}", { n: spolu }));
+      if (spolu) obnovPoctyMenu();
       setPoznamka("");
       await obnov();
     } catch (e: any) {

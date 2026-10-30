@@ -1,4 +1,5 @@
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { useT } from "@/lib/i18n/useT";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
@@ -337,6 +338,7 @@ function DokladyPage() {
     }
     if (ok) toast.success(t("Do koša presunuté: {n}", { n: ok }));
     if (chyby.length) toast.warning(t("Nezmazané: {n}", { n: chyby.length }), { description: chyby[0] });
+    if (ok) obnovPoctyMenu();
     refresh();
   }
   const [predkontaciaOkno, setPredkontaciaOkno] = useState(false);
@@ -504,6 +506,8 @@ function DokladyPage() {
       } else if (v.zmenene) {
         toast.success(t("Vrátené medzi nespracované."));
       }
+      // Odznak Nespracované v menu počíta bločky v stave „new“.
+      obnovPoctyMenu();
       refresh();
     } catch (e: any) {
       toast.error(e?.message ?? t("Zmena stavu sa nepodarila."));
@@ -699,6 +703,7 @@ function DokladyPage() {
     if (!(await potvrd(t("Presunúť doklad do koša? Do 90 dní sa dá obnoviť.")))) return;
     try {
       await deleteFn({ data: { id } });
+      obnovPoctyMenu();
       refresh();
     } catch (e: any) {
       toast.error(e?.message ?? t("Zmazanie zlyhalo"));

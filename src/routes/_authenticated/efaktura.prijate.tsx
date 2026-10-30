@@ -1,4 +1,5 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Fragment, useEffect, useState } from "react";
@@ -339,6 +340,8 @@ function ReceivedPage() {
         );
       q.refetch();
       void kontrolyQ.refetch();
+      // Odznaky Prijaté eFaktúry, Nespracované a Moje úlohy sa tým zmenili.
+      obnovPoctyMenu();
       if (r.otvorit) window.open(odkaz, "_blank", "noopener,noreferrer");
     } catch (e) {
       toast.error((e as Error).message);
@@ -372,6 +375,7 @@ function ReceivedPage() {
       if (r.zaevidovanych)
         toast.success(t("Automaticky zaevidované: {n}.", { n: r.zaevidovanych }));
       void kontrolyQ.refetch();
+      if (n || r.zaevidovanych) obnovPoctyMenu();
       // Problémy sa nezamlčia: doklad, ktorý sa nepodarilo stiahnuť, by inak
       // ticho chýbal a nikto by nevedel, že vôbec bol.
       if (r.problemy?.length)
