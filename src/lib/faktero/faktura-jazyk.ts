@@ -601,11 +601,13 @@ export function vetaPreneseniaDe(
 
 /**
  * Predvolený jazyk dokladu podľa krajiny firmy, keď ho nedá faktúra ani
- * odberateľ. Nemecká firma fakturuje po nemecky; ostatné ostávajú pri
- * slovenčine, ako doteraz.
+ * odberateľ. Nemecká firma fakturuje po nemecky, česká po česky (inak jej
+ * faktúra vyšla celá po slovensky — „FAKTÚRA“, „Bankový prevod“, „Vystavené
+ * cez Faktero“); ostatné ostávajú pri slovenčine.
  */
 export function predvolenyJazykFirmy(country: string | null | undefined): JazykDokladu {
-  return krajinaDane(country) === "DE" ? "de" : VYCHODZI_JAZYK;
+  const k = krajinaDane(country);
+  return k === "DE" ? "de" : k === "CZ" ? "cs" : VYCHODZI_JAZYK;
 }
 
 /**
