@@ -133,3 +133,18 @@ describe("eFaktúra v cudzej mene", () => {
     expect(chybaXsd(UBL_CREDIT, xml)).toBeNull();
   });
 });
+
+describe("príjem eFaktúry v cudzej mene", () => {
+  it("DPH v mene účtovania nezdvojí sumy dokladu", async () => {
+    const { rozoberPrijatuUbl } = await import("./prijata-z-ubl");
+    const xml = generatePeppolBisXml(
+      mapToEN16931({ company: firmaSk, invoice: fakturaUsd, items: polozky }),
+    ).xml;
+    const r = rozoberPrijatuUbl(xml)!;
+    expect(r.mena).toBe("USD");
+    expect(r.zaklad).toBe(100);
+    expect(r.dph).toBe(23);
+    expect(r.celkom).toBe(123);
+    expect(r.rozpis).toHaveLength(1);
+  });
+});

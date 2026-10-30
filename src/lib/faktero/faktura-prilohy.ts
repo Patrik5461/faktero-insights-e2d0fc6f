@@ -108,7 +108,8 @@ export function velkost(bajty: unknown): string {
   if (!Number.isFinite(n) || n <= 0) return "";
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${Math.round(n / 1024)} kB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  // Desatinná čiarka ako všade v slovenskom, českom aj nemeckom rozhraní.
+  return `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
 }
 
 /**

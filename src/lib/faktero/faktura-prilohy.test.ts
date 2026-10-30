@@ -103,7 +103,7 @@ describe("veľkosť pre človeka", () => {
   it("bajty, kilobajty a megabajty", () => {
     expect(velkost(512)).toBe("512 B");
     expect(velkost(2048)).toBe("2 kB");
-    expect(velkost(3 * 1024 * 1024)).toBe("3.0 MB");
+    expect(velkost(3 * 1024 * 1024)).toBe("3,0 MB");
   });
 
   it("nezmysel nič nezobrazí", () => {
