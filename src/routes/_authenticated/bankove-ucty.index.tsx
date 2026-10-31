@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { zostatkyPodlaMien, formatujSumu, zobrazitZauctovany } from "@/lib/faktero/zostatky";
+import { stavSuhlasu, datumSuhlasu } from "@/lib/faktero/bank-suhlas";
 import {
   Building2,
   Plus,
@@ -380,6 +381,9 @@ function BankAccountsPage() {
                         })
                       : t("Ešte nesynchronizované")}
                   </div>
+                  {c.provider === "tatrabanka" && c.status === "connected" && (
+                    <PlatnostSuhlasu platiDo={c.token_expires_at} />
+                  )}
                 </div>
                 {/*
                   Tlačidlá podľa poskytovateľa. Kým tu bola len Tatra banka,
@@ -600,5 +604,32 @@ function BankAccountsPage() {
         {getActiveCompanyId() ? <NastaveniaBanky companyId={getActiveCompanyId()!} /> : null}
       </PageBody>
     </>
+  );
+}
+
+/**
+ * Dokedy platí súhlas Tatra banky. 14 dní pred koncom sa zafarbí — bez toho sa
+ * koniec súhlasu prejavil až tak, že pohyby prestali chodiť.
+ */
+function PlatnostSuhlasu({ platiDo }: { platiDo: string | null }) {
+  const { t } = useT();
+  const s = stavSuhlasu(platiDo);
+  if (!s) return null;
+  const datum = datumSuhlasu(s.platiDo);
+  if (s.stav === "ok") {
+    return (
+      <div className="text-xs text-muted-foreground">
+        {t("Súhlas banky platí do {datum}", { datum })}
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`mt-0.5 text-xs font-medium ${s.stav === "vyprsal" ? "text-destructive" : "text-amber-700 dark:text-amber-300"}`}
+    >
+      {s.stav === "vyprsal"
+        ? t("Súhlas banky vypršal {datum} — kliknite na Obnoviť súhlas.", { datum })
+        : t("Súhlas banky vyprší {datum} — kliknite na Obnoviť súhlas.", { datum })}
+    </div>
   );
 }

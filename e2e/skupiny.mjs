@@ -60,6 +60,7 @@ export const SKUPINY = [
       "zamok-blocky-cisla",
       "presun-blocku-raz",
       "kompaktny-prechod",
+      "banka-tb-suhlas",
     ],
   },
   {
@@ -86,6 +87,7 @@ export const SKUPINY = [
       "cz-vykazy-jazyk",
       "pohoda-cz-spatny-chod",
       "mobil-zoznamy",
+      "banka-tb-notifikacie",
     ],
   },
   {

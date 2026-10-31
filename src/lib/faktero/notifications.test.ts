@@ -496,6 +496,45 @@ describe("bankový účet bez pohybov", () => {
   });
 });
 
+describe("súhlas Tatra banky pred koncom", () => {
+  const zaklad = {
+    today: "2026-10-31",
+    overdueInvoices: [],
+    overduePurchases: [],
+    unmatchedIncoming: [],
+    failedPayments: [],
+  };
+
+  it("14 dní pred koncom varuje, po konci hlási chybu, platný a iné banky mlčia", () => {
+    const n = buildNotifications({
+      ...zaklad,
+      bankConsents: [
+        { id: "c1", provider: "tatrabanka", token_expires_at: "2026-11-10T12:00:00Z" },
+        { id: "c2", provider: "tatrabanka", token_expires_at: "2026-10-20T12:00:00Z" },
+        { id: "c3", provider: "tatrabanka", token_expires_at: "2027-02-03T19:35:07Z" },
+        { id: "c4", provider: "revolut", token_expires_at: "2026-10-31T10:00:00Z" },
+      ],
+    });
+    expect(n.map((x) => [x.key, x.severity])).toEqual([
+      ["bank_suhlas:c2:2026-10-20", "danger"],
+      ["bank_suhlas:c1:2026-11-10", "warning"],
+    ]);
+    expect(n[1].title).toBe("Súhlas Tatra banky vyprší {datum}");
+    expect(n[1].params).toEqual({ datum: "10. 11. 2026" });
+    expect(n[1].to).toBe("/bankove-ucty");
+  });
+
+  it("texty zvončeka majú preklad", () => {
+    for (const k of [
+      "Súhlas Tatra banky vypršal {datum}",
+      "Súhlas Tatra banky vyprší {datum}",
+      "Pohyby sa nesťahujú — kliknite na Obnoviť súhlas pri banke.",
+      "Kliknite na Obnoviť súhlas pri banke, inak sa prestanú sťahovať pohyby.",
+    ])
+      for (const j of ["cs", "de"] as const) expect(slovnikJazyka(j)[k], `${k} ${j}`).toBeDefined();
+  });
+});
+
 describe("notifikaciaNespracovanych", () => {
   const blocek = { id: "b1", created_at: "2026-10-29T10:00:00Z" };
   const doklad = { id: "d1", created_at: "2026-10-30T08:00:00Z" };

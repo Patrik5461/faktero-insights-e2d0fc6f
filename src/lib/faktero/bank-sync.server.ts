@@ -364,12 +364,33 @@ export async function syncPripojenie(
   supabaseAdmin: any,
   conn: any,
   daysBack = DEFAULT_DAYS_BACK,
+  /**
+   * Skúsiť aj účty, ktorým vypršal súhlas. Denný beh áno (raz za deň), notifikácie nie.
+   * Súhlas k účtu v inej banke (SLSP cez multibanking TB) sa dá obnoviť aj priamo
+   * v aplikácii Tatra banky — `consent_id` sa pritom nezmení, takže bez tohto
+   * pokusu by sme sa o obnovení nikdy nedozvedeli a účet by ostal stáť navždy.
+   */
+  {
+    skusitVyprsane = false,
+    lenUcty = [],
+  }: {
+    skusitVyprsane?: boolean;
+    /**
+     * Stiahnuť pohyby len týchto účtov (`external_account_id`). Keď žiaden
+     * nesedí (napr. účet, ktorý sme ešte nepoznali), ťahajú sa všetky.
+     */
+    lenUcty?: string[];
+  } = {},
 ): Promise<SyncResult> {
   const base = { connection_id: conn.id, company_id: conn.company_id, accounts: 0, inserted: 0 };
   try {
     if (!conn.access_token) throw new Error("chýba access_token");
     const accessToken = await ensureFreshToken(supabaseAdmin, conn);
-    const accounts = await syncAccounts(supabaseAdmin, conn, accessToken);
+    const vsetkyUcty = await syncAccounts(supabaseAdmin, conn, accessToken);
+    const vybrane = lenUcty.length
+      ? vsetkyUcty.filter((a: any) => lenUcty.includes(a.external_account_id))
+      : [];
+    const accounts = vybrane.length ? vybrane : vsetkyUcty;
     /*
      * Účty sa ťahajú každý zvlášť a chyba jedného nesmie zhodiť ostatné.
      * Firmy majú v jednom pripojení aj účty vedené v iných bankách (TB ich
@@ -388,7 +409,7 @@ export async function syncPripojenie(
       );
     const zlySuhlas = new Map(((stavy ?? []) as any[]).map((x) => [x.id, x.pohyby_chyba_suhlas]));
     for (const acc of accounts) {
-      if (conn.consent_id && zlySuhlas.get(acc.id) === conn.consent_id) {
+      if (!skusitVyprsane && conn.consent_id && zlySuhlas.get(acc.id) === conn.consent_id) {
         console.log(
           `[bank-sync] účet ${acc.iban ?? acc.id} preskočený — súhlas vypršal, čaká na obnovenie`,
         );
@@ -486,7 +507,7 @@ export async function runDailyBankSync(daysBack = DEFAULT_DAYS_BACK) {
 
   const results: SyncResult[] = [];
   for (const conn of connections ?? []) {
-    results.push(await syncPripojenie(supabaseAdmin, conn, daysBack));
+    results.push(await syncPripojenie(supabaseAdmin, conn, daysBack, { skusitVyprsane: true }));
   }
 
   const r = zhrnutie(results);
@@ -502,7 +523,12 @@ export async function runDailyBankSync(daysBack = DEFAULT_DAYS_BACK) {
  * Neznámy `consentId` sa ticho preskočí: banka posiela aj súhlasy, ktoré už
  * nemáme (staré, odvolané), a nie je to chyba.
  */
-export async function syncPodlaSuhlasov(consentIds: string[], daysBack = DEFAULT_DAYS_BACK) {
+export async function syncPodlaSuhlasov(
+  consentIds: string[],
+  daysBack = DEFAULT_DAYS_BACK,
+  /** Účty (external_account_id) podľa súhlasu — keď ich notifikácia menuje, ťahajú sa len ony. */
+  uctyPodlaSuhlasu?: Map<string, string[]>,
+) {
   if (!consentIds.length) return zhrnutie([]);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: connections } = await supabaseAdmin
@@ -514,7 +540,8 @@ export async function syncPodlaSuhlasov(consentIds: string[], daysBack = DEFAULT
 
   const results: SyncResult[] = [];
   for (const conn of connections ?? []) {
-    results.push(await syncPripojenie(supabaseAdmin, conn, daysBack));
+    const lenUcty = uctyPodlaSuhlasu?.get(conn.consent_id ?? "") ?? [];
+    results.push(await syncPripojenie(supabaseAdmin, conn, daysBack, { lenUcty }));
   }
 
   const r = zhrnutie(results);

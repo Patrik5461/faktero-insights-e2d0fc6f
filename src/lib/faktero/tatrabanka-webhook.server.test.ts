@@ -6,6 +6,7 @@ let odmietnutychZaDen = 0;
 let suhlasyVDb: string[] = [];
 /** Pre ktoré súhlasy sa spustilo sťahovanie. */
 const stiahnute: string[][] = [];
+const stiahnuteUcty: Map<string, string[]>[] = [];
 
 vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: {
@@ -39,8 +40,9 @@ vi.mock("@/integrations/supabase/client.server", () => ({
 }));
 
 vi.mock("./bank-sync.server", () => ({
-  syncPodlaSuhlasov: (consentIds: string[]) => {
+  syncPodlaSuhlasov: (consentIds: string[], _dni: number, ucty?: Map<string, string[]>) => {
     stiahnute.push(consentIds);
+    stiahnuteUcty.push(ucty ?? new Map());
     return Promise.resolve({ connections: consentIds.length, inserted: 0, failed: 0, results: [] });
   },
 }));
@@ -48,8 +50,14 @@ vi.mock("./bank-sync.server", () => ({
 /** Sťahovanie beží mimo odpovede — treba pustiť frontu úloh. */
 const dobehni = () => new Promise((r) => setTimeout(r, 0));
 
-const { handleTatraWebhook, schemaAutorizacie, odtlacokTajomstva, suhlasyZNotifikacie } =
-  await import("./tatrabanka-webhook.server");
+const {
+  handleTatraWebhook,
+  schemaAutorizacie,
+  odtlacokTajomstva,
+  suhlasyZNotifikacie,
+  uctyZNotifikacie,
+  naplanujSync,
+} = await import("./tatrabanka-webhook.server");
 
 const CESTA = "/api/public/tatrabanka/webhook";
 const TELO = JSON.stringify({ event: "ACCOUNT_UPDATED", iban: "SK0011000000002600000000" });
@@ -314,5 +322,85 @@ describe("odtlacokTajomstva", () => {
 
   it("prázdnu hodnotu nevydáva za tvar", () => {
     expect(odtlacokTajomstva("   ")).toBe("prázdne");
+  });
+});
+
+describe("účty z notifikácie", () => {
+  const A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+  it("priradí účty k svojmu súhlasu — v jednej notifikácii chodia aj cudzie firmy", () => {
+    const telo = {
+      events: {
+        transactionEvents: [
+          { consentId: A, eventType: "NEW", accounts: [{ accountId: "dc96c8db-fa1f" }] },
+          { consentId: B, eventType: "NEW", accounts: [{ accountId: "8E64B4F6ABC" }] },
+        ],
+      },
+    };
+    const m = uctyZNotifikacie(telo);
+    expect(m.get(A)).toEqual(["dc96c8db-fa1f"]);
+    expect(m.get(B)).toEqual(["8E64B4F6ABC"]);
+  });
+
+  it("nezmyselné id účtu zahodí, súhlas bez účtov ostane s prázdnym zoznamom", () => {
+    const m = uctyZNotifikacie({
+      consentId: A,
+      accounts: [{ accountId: "../x y" }, { accountId: 5 }, {}],
+    });
+    expect(m.get(A)).toEqual([]);
+  });
+
+  it("notifikácia s účtom pošle do sťahovania len ten účet", async () => {
+    suhlasyVDb = [A];
+    stiahnute.length = 0;
+    stiahnuteUcty.length = 0;
+    const telo = JSON.stringify({
+      events: { transactionEvents: [{ consentId: A, accounts: [{ accountId: "ucet-1" }] }] },
+    });
+    const r = await handleTatraWebhook(
+      new Request("https://www.faktero.sk/api/public/tatrabanka/webhook", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: telo,
+      }),
+      CESTA,
+    );
+    await dobehni();
+    expect(r.status).toBe(200);
+    expect(stiahnute).toEqual([[A]]);
+    expect(stiahnuteUcty[0].get(A)).toEqual(["ucet-1"]);
+  });
+});
+
+describe("plán sťahovania (odstup a denný strop)", () => {
+  const C = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  const nova = () => ({ posledny: new Map<string, number>(), zaDen: new Map<string, number>() });
+  const T0 = Date.parse("2026-10-31T10:00:00Z");
+
+  it("iný účet toho istého súhlasu sa stiahne aj v tej istej minúte", () => {
+    const p = nova();
+    expect(naplanujSync([C], new Map([[C, ["u1"]]]), T0, p)).toEqual([
+      { consentId: C, ucty: ["u1"] },
+    ]);
+    expect(naplanujSync([C], new Map([[C, ["u1"]]]), T0 + 1000, p)).toEqual([]);
+    expect(naplanujSync([C], new Map([[C, ["u2"]]]), T0 + 2000, p)).toEqual([
+      { consentId: C, ucty: ["u2"] },
+    ]);
+  });
+
+  it("bez účtov v notifikácii ťahá celé pripojenie (prázdny zoznam)", () => {
+    expect(naplanujSync([C], new Map(), T0, nova())).toEqual([{ consentId: C, ucty: [] }]);
+  });
+
+  it("po dennom strope už neťahá, na druhý deň znova áno", () => {
+    const p = nova();
+    let behov = 0;
+    for (let i = 0; i < 100; i++) {
+      behov += naplanujSync([C], new Map([[C, [`u${i}`]]]), T0 + i * 61_000, p).length;
+    }
+    expect(behov).toBe(60);
+    const zajtra = Date.parse("2026-11-01T10:00:00Z");
+    expect(naplanujSync([C], new Map([[C, ["u0"]]]), zajtra, p)).toHaveLength(1);
   });
 });

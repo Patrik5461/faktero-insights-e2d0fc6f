@@ -13,6 +13,7 @@
 import { formatujMenu } from "./mena";
 import { terminyNaRiesenie } from "./vozovy-park";
 import { pohybyZastarane } from "./bank-stav-pohybov";
+import { stavSuhlasu, datumSuhlasu } from "./bank-suhlas";
 
 export type NotificationSeverity = "info" | "warning" | "danger";
 
@@ -86,6 +87,14 @@ export type NotificationInput = {
   vehicleDeadlines?: VehicleDeadlines[];
   /** Bankové účty, z ktorých sa nedarí sťahovať pohyby (vypršaný súhlas). */
   bankAccountsStale?: BankAccountStale[];
+  /** Pripojenia bánk so súhlasom, ktorý raz vyprší (Tatra banka, 180 dní). */
+  bankConsents?: BankConsent[];
+};
+
+export type BankConsent = {
+  id: string;
+  provider: string;
+  token_expires_at: string | null;
 };
 
 export type BankAccountStale = {
@@ -257,6 +266,29 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
       },
       to: "/bankove-ucty",
       date: (u.pohyby_ok_at ?? input.today).slice(0, 10),
+    });
+  }
+
+  for (const c of input.bankConsents ?? []) {
+    // Len Tatra banka: Wise/Fio tokeny nevypršia, Revolut má v stĺpci 40-minútový token.
+    if (c.provider !== "tatrabanka") continue;
+    const s = stavSuhlasu(c.token_expires_at, new Date(`${input.today}T12:00:00Z`));
+    if (!s || s.stav === "ok") continue;
+    out.push({
+      // Dátum konca v kľúči: po obnovení je to nový súhlas a nové upozornenie.
+      key: `bank_suhlas:${c.id}:${s.platiDo}`,
+      severity: s.stav === "vyprsal" ? "danger" : "warning",
+      title:
+        s.stav === "vyprsal"
+          ? "Súhlas Tatra banky vypršal {datum}"
+          : "Súhlas Tatra banky vyprší {datum}",
+      detail:
+        s.stav === "vyprsal"
+          ? "Pohyby sa nesťahujú — kliknite na Obnoviť súhlas pri banke."
+          : "Kliknite na Obnoviť súhlas pri banke, inak sa prestanú sťahovať pohyby.",
+      params: { datum: datumSuhlasu(s.platiDo) },
+      to: "/bankove-ucty",
+      date: s.platiDo,
     });
   }
 

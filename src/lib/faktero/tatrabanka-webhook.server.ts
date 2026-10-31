@@ -42,8 +42,19 @@ const DNI_PRI_NOTIFIKACII = 7;
 /** Ako často najviac sa smie kvôli notifikáciám ťahať ten istý súhlas. */
 const MIN_ODSTUP_MS = 60_000;
 
-/** Kedy sme naposledy ťahali pre daný súhlas. Banka pošle aj niekoľko výziev za sebou. */
+/**
+ * Strop sťahovaní kvôli notifikáciám na jeden súhlas za deň. Bežne ich banka
+ * pošle zopár denne; strop chráni pred zahltením, keby notifikácie začali
+ * chodiť v slučke (alebo ich niekto podvrhol so správne uhádnutým súhlasom).
+ * Nočný cron beží nezávisle, takže po prekročení nič nechýba — len príde neskôr.
+ */
+const MAX_SYNCOV_ZA_DEN = 60;
+
+/** Kedy sme naposledy ťahali pre daný súhlas a účet. Banka pošle aj niekoľko výziev za sebou. */
 const poslednyBeh = new Map<string, number>();
+
+/** Koľko sťahovaní kvôli notifikáciám mal súhlas v daný deň (`deň|súhlas`). */
+const behovZaDen = new Map<string, number>();
 
 /** Porovnanie odolné voči časovej analýze. */
 function safeEqual(a: string, b: string): boolean {
@@ -194,6 +205,44 @@ export function suhlasyZNotifikacie(payload: unknown): string[] {
 }
 
 /**
+ * Účty, o ktorých notifikácia hovorí, podľa súhlasu.
+ *
+ * Banka posiela `{consentId, accounts: [{accountId}]}` — a v jednej
+ * notifikácii aj súhlasy iných firiem. `accountId` je to isté id, aké vracia
+ * `/v3/accounts` (u nás `bank_accounts.external_account_id`). Keď ho poznáme,
+ * stačí stiahnuť ten jeden účet, nie všetky účty pripojenia. Ostatné údaje
+ * z tela sa nepoužijú — sumy v ňom ani nie sú a nedôverovali by sme im.
+ */
+export function uctyZNotifikacie(payload: unknown): Map<string, string[]> {
+  const out = new Map<string, Set<string>>();
+  const prejdi = (uzol: unknown, hlbka: number): void => {
+    if (out.size >= 10 || hlbka > 8 || !uzol || typeof uzol !== "object") return;
+    if (Array.isArray(uzol)) {
+      for (const p of uzol.slice(0, 100)) prejdi(p, hlbka + 1);
+      return;
+    }
+    const o = uzol as Record<string, unknown>;
+    const cid = Object.entries(o).find(([k]) => k.toLowerCase() === "consentid")?.[1];
+    if (typeof cid === "string" && UUID.test(cid)) {
+      const ucty = out.get(cid) ?? new Set<string>();
+      const zoznam = Object.entries(o).find(([k]) => k.toLowerCase() === "accounts")?.[1];
+      if (Array.isArray(zoznam)) {
+        for (const a of zoznam.slice(0, 50)) {
+          const id = (a as any)?.accountId;
+          // Id účtu býva UUID aj dlhý hex; čokoľvek iné (medzery, priveľa znakov) sa zahodí.
+          if (typeof id === "string" && /^[A-Za-z0-9-]{1,200}$/.test(id)) ucty.add(id);
+        }
+      }
+      out.set(cid, ucty);
+      return;
+    }
+    for (const h of Object.values(o)) prejdi(h, hlbka + 1);
+  };
+  prejdi(payload, 0);
+  return new Map([...out].map(([k, v]) => [k, [...v]]));
+}
+
+/**
  * Ktoré zo súhlasov v notifikácii patria našim živým pripojeniam.
  *
  * Toto je celé overenie: `consentId` vzniklo pri udelení súhlasu a pozná ho len
@@ -220,25 +269,64 @@ async function znameSuhlasy(consentIds: string[]): Promise<string[]> {
 }
 
 /**
+ * Rozhodne, čo sa naozaj stiahne: súhlas × účty, ktoré nie sú v minútovom
+ * odstupe a súhlas nemá vyčerpaný denný strop. Vydelené kvôli testom —
+ * `teraz` a pamäte sa dajú podstrčiť.
+ */
+export function naplanujSync(
+  consentIds: string[],
+  ucty: Map<string, string[]>,
+  teraz: number,
+  pamat: { posledny: Map<string, number>; zaDen: Map<string, number> } = {
+    posledny: poslednyBeh,
+    zaDen: behovZaDen,
+  },
+): { consentId: string; ucty: string[] }[] {
+  const den = new Date(teraz).toISOString().slice(0, 10);
+  const plan: { consentId: string; ucty: string[] }[] = [];
+  for (const c of consentIds) {
+    const kluceDna = `${den}|${c}`;
+    if ((pamat.zaDen.get(kluceDna) ?? 0) >= MAX_SYNCOV_ZA_DEN) continue;
+    const ziadane = ucty.get(c) ?? [];
+    // Bez účtov v notifikácii sa ťahá celé pripojenie (kľúč „*“).
+    const kluce = ziadane.length ? ziadane : ["*"];
+    const volne = kluce.filter(
+      (u) => teraz - (pamat.posledny.get(`${c}|${u}`) ?? 0) >= MIN_ODSTUP_MS,
+    );
+    if (!volne.length) continue;
+    for (const u of volne) pamat.posledny.set(`${c}|${u}`, teraz);
+    pamat.zaDen.set(kluceDna, (pamat.zaDen.get(kluceDna) ?? 0) + 1);
+    plan.push({ consentId: c, ucty: volne.filter((u) => u !== "*") });
+  }
+  // Staré dni sa z pamäte zahodia, nech mapa nerastie donekonečna.
+  for (const k of pamat.zaDen.keys()) if (!k.startsWith(den)) pamat.zaDen.delete(k);
+  return plan;
+}
+
+/**
  * Spustí sťahovanie pre súhlasy z notifikácie — mimo odpovede banke.
  *
  * Banka čaká na potvrdenie a nginx volanie po 30 sekundách preruší, kým celé
  * sťahovanie trvá dlhšie. Preto sa odpovie hneď a ťahá sa až potom; keby to
  * padlo, nočný cron to o pár hodín dobehne.
  */
-function spustiSync(consentIds: string[]): void {
-  const teraz = Date.now();
-  const nato = consentIds.filter((c) => teraz - (poslednyBeh.get(c) ?? 0) >= MIN_ODSTUP_MS);
-  if (!nato.length) {
-    console.log("[tatrabanka webhook] sťahovanie preskočené — bolo pred chvíľou");
+function spustiSync(consentIds: string[], ucty: Map<string, string[]>): void {
+  const plan = naplanujSync(consentIds, ucty, Date.now());
+  if (!plan.length) {
+    console.log(
+      "[tatrabanka webhook] sťahovanie preskočené — bolo pred chvíľou alebo je vyčerpaný strop",
+    );
     return;
   }
-  for (const c of nato) poslednyBeh.set(c, teraz);
 
   void (async () => {
     try {
       const { syncPodlaSuhlasov } = await import("./bank-sync.server");
-      await syncPodlaSuhlasov(nato, DNI_PRI_NOTIFIKACII);
+      await syncPodlaSuhlasov(
+        plan.map((p) => p.consentId),
+        DNI_PRI_NOTIFIKACII,
+        new Map(plan.map((p) => [p.consentId, p.ucty])),
+      );
     } catch (e: any) {
       console.error("[tatrabanka webhook] sťahovanie zlyhalo:", e?.message ?? e);
     }
@@ -335,6 +423,6 @@ export async function handleTatraWebhook(request: Request, path: string): Promis
   }
 
   await ulozUdalost({ request, path, raw, payload, chyba: null });
-  if (suhlasy.length) spustiSync(suhlasy);
+  if (suhlasy.length) spustiSync(suhlasy, uctyZNotifikacie(payload));
   return new Response("ok", { status: 200 });
 }

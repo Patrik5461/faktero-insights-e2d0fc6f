@@ -11,18 +11,24 @@ const tatra = vi.fn();
 const ostatne = vi.fn();
 vi.mock("./bank-sync.server", () => ({ runDailyBankSync: (d: number) => tatra(d) }));
 vi.mock("./bank-sync-ostatne.server", () => ({ runDailySyncOstatnych: () => ostatne() }));
+const upozornenia = vi.fn();
+vi.mock("./bank-suhlas-pripomienky.server", () => ({
+  runBankConsentReminders: () => upozornenia(),
+}));
 
 /** Necháme dobehnúť prácu, ktorá beží mimo odpovede. */
 async function dobehni() {
-  for (let i = 0; i < 20; i++) await Promise.resolve();
-  await new Promise((r) => setTimeout(r, 0));
-  for (let i = 0; i < 20; i++) await Promise.resolve();
+  for (let k = 0; k < 3; k++) {
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    await new Promise((r) => setTimeout(r, 0));
+  }
 }
 
 beforeEach(() => {
   vi.resetModules();
   tatra.mockReset().mockResolvedValue({ connections: 5, inserted: 3, failed: 0, results: [] });
   ostatne.mockReset().mockResolvedValue({ connections: 1, inserted: 2, failed: 0, results: [] });
+  upozornenia.mockReset().mockResolvedValue({ upozorneni: 0, vysledky: [] });
 });
 
 describe("denný beh mimo odpovede", () => {
@@ -91,5 +97,16 @@ describe("denný beh mimo odpovede", () => {
     expect(stavBehu().chyba).toBe("databáza nedostupná");
     expect(stavBehu().bezi).toBe(false);
     expect(spustiDennyBeh(14)).toBe(true);
+  });
+
+  it("upozornenia na súhlas idú po stiahnutí a ich zlyhanie beh nepokazí", async () => {
+    upozornenia.mockRejectedValue(new Error("Resend nedostupný"));
+    const { spustiDennyBeh, stavBehu } = await import("./bank-sync-beh.server");
+    spustiDennyBeh(14);
+    await dobehni();
+    expect(upozornenia).toHaveBeenCalledTimes(1);
+    const v = stavBehu().vysledok as any;
+    expect(v.inserted).toBe(3);
+    expect(stavBehu().chyba).toBeNull();
   });
 });

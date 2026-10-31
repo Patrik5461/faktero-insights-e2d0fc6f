@@ -67,7 +67,24 @@ export function spustiDennyBeh(daysBack: number): boolean {
         console.error("[bank-sync] ostatné banky zlyhali:", chybaOstatnych);
       }
 
-      stav.vysledok = { ...tb, ostatne, ...(chybaOstatnych ? { chybaOstatnych } : {}) };
+      /*
+        Upozornenie na koniec súhlasu ide až po stiahnutí — chyby pohybov sú
+        vtedy čerstvé. Jeho zlyhanie nesmie pokaziť výsledok behu bánk.
+      */
+      let upozornenia: unknown = null;
+      try {
+        const { runBankConsentReminders } = await import("./bank-suhlas-pripomienky.server");
+        upozornenia = await runBankConsentReminders();
+      } catch (e: any) {
+        console.error("[bank-sync] upozornenia na súhlas zlyhali:", e?.message ?? e);
+      }
+
+      stav.vysledok = {
+        ...tb,
+        ostatne,
+        upozornenia,
+        ...(chybaOstatnych ? { chybaOstatnych } : {}),
+      };
     } catch (e: any) {
       stav.chyba = e?.message ?? "sync_failed";
       console.error("[bank-sync] denný beh zlyhal:", stav.chyba);
