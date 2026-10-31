@@ -5,7 +5,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { riadkyPreIds, vsetkoAkoData } from "@/lib/faktero/strankovanie";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { znamienkoDokladu } from "@/lib/faktero/faktury-sumy";
+import {
+  sumyVystavenej,
+  vstupPrehladu,
+  vystupPrehladu,
+  type RiadokPrehladu,
+} from "@/lib/faktero/dph-prehlad";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,12 +31,7 @@ import {
 } from "@/components/ui/table";
 import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
-import {
-  najblizsiaSadzba,
-  vatBucketKey,
-  vatBucketLabel,
-  vatBucketOrder,
-} from "@/lib/faktero/vat-rates";
+import { vatBucketLabel, vatBucketOrder } from "@/lib/faktero/vat-rates";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -101,25 +101,13 @@ function fmt(n: number, currency = "EUR") {
   }).format(n || 0);
 }
 
-type Bucket = { base: number; vat: number; count: number; docs: Set<string> };
+type Bucket = RiadokPrehladu;
 
-/**
- * Riadky prehľadu nie sú pevný zoznam — vznikajú z toho, čo je v dátach. Vďaka
- * tomu sa objaví aj riadok pre historickú sadzbu (20 % / 10 %) na opravnom
- * doklade k plneniu spred 2025, namiesto toho, aby taká suma spadla medzi
- * oslobodené plnenia.
- */
-function emptyBuckets(): Record<string, Bucket> {
-  const b: Record<string, Bucket> = {};
-  for (const r of ["exempt", "pdp"]) b[r] = { base: 0, vat: 0, count: 0, docs: new Set() };
-  return b;
-}
-
-function bucket(b: Record<string, Bucket>, key: string): Bucket {
-  b[key] ??= { base: 0, vat: 0, count: 0, docs: new Set() };
-  return b[key];
-}
-
+/*
+  Riadky prehľadu nie sú pevný zoznam — vznikajú z toho, čo je v dátach
+  (`dph-prehlad.ts`). Vďaka tomu sa objaví aj riadok pre historickú sadzbu
+  (20 % / 10 %) na opravnom doklade k plneniu spred 2025.
+*/
 const PRAZDNY_RIADOK: Bucket = { base: 0, vat: 0, count: 0, docs: new Set() };
 
 /** Riadok pre zobrazenie — sadzba sa môže vyskytnúť len na vstupe alebo len na výstupe. */
@@ -221,47 +209,12 @@ function DphPage() {
     load(); /* eslint-disable-next-line */
   }, [period.from, period.to]);
 
-  const output = useMemo(() => {
-    const b = emptyBuckets();
-    const invById = new Map(invoices.map((i) => [i.id, i]));
-    for (const it of items) {
-      const inv = invById.get(it.invoice_id);
-      if (!inv) continue;
-      const key = inv.reverse_charge ? "pdp" : vatBucketKey(it.vat_rate);
-      const riadok = bucket(b, key);
-      const zn = znamienkoDokladu(inv.type, inv.total);
-      riadok.base += zn * Number(it.subtotal || 0);
-      riadok.vat += zn * Number(it.vat_amount || 0);
-      riadok.docs.add(it.invoice_id);
-    }
-    for (const r of Object.keys(b)) b[r].count = b[r].docs.size;
-    return b;
-  }, [invoices, items]);
+  // Dobropis vstupuje záporne v súčtoch aj v zozname dokladov (`dph-prehlad.ts`).
+  const output = useMemo(() => vystupPrehladu(invoices, items), [invoices, items]);
 
-  const input = useMemo(() => {
-    const b = emptyBuckets();
-    for (const p of purchases) {
-      const base = Number(p.amount_without_vat || 0);
-      const vat = Number(p.vat_amount || 0);
-      // Prijaté faktúry nemajú sadzbu uloženú, dopočíta sa z pomeru dane
-      // k základu. Zaokrúhlenie na centy vie dať napr. 22,97 % namiesto 23 %,
-      // preto sa hodnota prilepí k najbližšej platnej sadzbe (do 0,5 p. b.).
-      let key = "exempt";
-      if (base > 0 && vat > 0) {
-        key = vatBucketKey(najblizsiaSadzba((vat / base) * 100, krajina));
-      } else if (vat === 0 && base > 0) {
-        key = "0";
-      }
-      const riadok = bucket(b, key);
-      riadok.base += base;
-      riadok.vat += vat;
-      riadok.docs.add(p.id);
-    }
-    for (const r of Object.keys(b)) b[r].count = b[r].docs.size;
-    return b;
-    // Krajina prichádza až po načítaní firmy — bez nej v závislostiach by
-    // prijaté faktúry ostali priradené k sadzbám tej predchádzajúcej.
-  }, [purchases, krajina]);
+  // Krajina prichádza až po načítaní firmy — bez nej v závislostiach by
+  // prijaté faktúry ostali priradené k sadzbám tej predchádzajúcej.
+  const input = useMemo(() => vstupPrehladu(purchases, krajina), [purchases, krajina]);
 
   // Spoločné poradie riadkov pre obe tabuľky, nech sa dajú porovnávať vedľa seba.
   const rateOrder = useMemo(
@@ -307,9 +260,9 @@ function DphPage() {
     lines.push(t("VYSTAVENÉ FAKTÚRY"));
     lines.push(t("Číslo;Dátum;Odberateľ;Základ;DPH;Spolu;PDP"));
     for (const i of invoices) {
-      const zn = znamienkoDokladu(i.type, i.total);
+      const s = sumyVystavenej(i);
       lines.push(
-        `${bezVzorca(i.invoice_number)};${i.issue_date};${bezVzorca((i.customer_name || "").replace(/;/g, ","))};${(zn * Number(i.subtotal || 0)).toFixed(2)};${(zn * Number(i.vat_total || 0)).toFixed(2)};${(zn * Number(i.total || 0)).toFixed(2)};${i.reverse_charge ? t("áno") : t("nie")}`,
+        `${bezVzorca(i.invoice_number)};${i.issue_date};${bezVzorca((i.customer_name || "").replace(/;/g, ","))};${s.zaklad.toFixed(2)};${s.dph.toFixed(2)};${s.spolu.toFixed(2)};${i.reverse_charge ? t("áno") : t("nie")}`,
       );
     }
     lines.push("");
@@ -360,7 +313,7 @@ function DphPage() {
 <table><tr class="tot"><td>${rozdiel >= 0 ? t("Odvod DPH") : t("Nadmerný odpočet")}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
 <h2>${t("Vystavené faktúry ({n})", { n: invoices.length })}</h2>
 <table><thead><tr><th>${t("Číslo")}</th><th>${t("Dátum")}</th><th>${t("Odberateľ")}</th><th style="text-align:right">${t("Základ")}</th><th style="text-align:right">${t("DPH")}</th><th style="text-align:right">${t("Spolu")}</th></tr></thead>
-<tbody>${invoices.map((i) => `<tr><td>${escHtml(i.invoice_number)}</td><td>${escHtml(datumNaDoklade(i.issue_date))}</td><td>${escHtml(i.customer_name)}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
+<tbody>${invoices.map((i) => `<tr><td>${escHtml(i.invoice_number)}</td><td>${escHtml(datumNaDoklade(i.issue_date))}</td><td>${escHtml(i.customer_name)}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).zaklad, i.currency || "EUR")}</td><td style="text-align:right">${fmt(sumyVystavenej(i).dph, i.currency || "EUR")}</td><td style="text-align:right">${fmt(sumyVystavenej(i).spolu, i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
 <h2>${t("Prijaté faktúry ({n})", { n: purchases.length })}</h2>
 <table><thead><tr><th>${t("Číslo")}</th><th>${t("Dátum")}</th><th>${t("Dodávateľ")}</th><th style="text-align:right">${t("Základ")}</th><th style="text-align:right">${t("DPH")}</th><th style="text-align:right">${t("Spolu")}</th></tr></thead>
 <tbody>${purchases.map((p) => `<tr><td>${escHtml(p.invoice_number)}</td><td>${escHtml(datumNaDoklade(p.issue_date))}</td><td>${escHtml(p.supplier_name)}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
@@ -575,9 +528,9 @@ function DphPage() {
                 cislo: i.invoice_number,
                 datum: datumNaDoklade(i.issue_date),
                 meno: `${i.customer_name ?? ""}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}`,
-                zaklad: fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR"),
-                dph: fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR"),
-                spolu: fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR"),
+                zaklad: fmt(sumyVystavenej(i).zaklad, i.currency || "EUR"),
+                dph: fmt(sumyVystavenej(i).dph, i.currency || "EUR"),
+                spolu: fmt(sumyVystavenej(i).spolu, i.currency || "EUR"),
               }))}
             />
             <Table className="hidden md:table">
@@ -602,16 +555,13 @@ function DphPage() {
                       {typDokladu(i.type)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}
+                      {fmt(sumyVystavenej(i).zaklad, i.currency || "EUR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(
-                        znamienkoDokladu(i.type) * Number(i.vat_total || 0),
-                        i.currency || "EUR",
-                      )}
+                      {fmt(sumyVystavenej(i).dph, i.currency || "EUR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR")}
+                      {fmt(sumyVystavenej(i).spolu, i.currency || "EUR")}
                     </TableCell>
                   </TableRow>
                 ))}

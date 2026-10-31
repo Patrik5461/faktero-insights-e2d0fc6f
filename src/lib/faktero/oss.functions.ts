@@ -1,4 +1,5 @@
 import { vsetkoAkoData } from "./strankovanie";
+import { znamienkoDokladu } from "./faktury-sumy";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -32,7 +33,7 @@ export const ossPrehladFn = createServerFn({ method: "POST" })
       context.supabase
         .from("invoices")
         .select(
-          "id, invoice_number, type, status, issue_date, delivery_date, oss_country, subtotal, invoice_items(vat_rate, subtotal, quantity, unit_price)",
+          "id, invoice_number, type, status, issue_date, delivery_date, oss_country, subtotal, total, invoice_items(vat_rate, subtotal, quantity, unit_price)",
         )
         .eq("company_id", data.company_id)
         .eq("oss", true)
@@ -41,8 +42,10 @@ export const ossPrehladFn = createServerFn({ method: "POST" })
         .range(zac, kon),
     );
 
+    // Zálohová faktúra nie je plnenie — do OSS ani do ročnej hranice nepatrí.
     const vsetky = (rows ?? []).filter(
-      (f: any) => !["draft", "cancelled"].includes(String(f.status)),
+      (f: any) =>
+        !["draft", "cancelled"].includes(String(f.status)) && String(f.type) !== "proforma",
     );
     const vObdobi = vsetky.filter((f: any) => {
       const d = String(f.delivery_date || f.issue_date);
@@ -80,7 +83,11 @@ export const ossPrehladFn = createServerFn({ method: "POST" })
     // Ročný objem kvôli hranici 10 000 € — počíta sa za všetky štáty spolu.
     const zaRok = vsetky
       .filter((f: any) => String(f.delivery_date || f.issue_date).startsWith(String(data.rok)))
-      .reduce((a: number, f: any) => a + Number(f.subtotal ?? 0), 0);
+      // Dobropis znižuje — otáča sa len kladne uložený (`znamienkoDokladu`).
+      .reduce(
+        (a: number, f: any) => a + znamienkoDokladu(f.type, f.total) * Number(f.subtotal ?? 0),
+        0,
+      );
 
     return {
       obdobie: { rok: data.rok, stvrtrok: data.stvrtrok, od, do: doDna },
