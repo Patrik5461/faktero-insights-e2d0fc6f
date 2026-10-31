@@ -52,6 +52,8 @@ describe("RozlozenieDetailu + KartaNahladu", () => {
     const h = strom("vlavo");
     expect(h).toContain('data-strana-nahladu="vlavo"');
     expect(h).toContain("lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]");
+    // Na mobile jeden stĺpec s minmax(0, 1fr) — široká tabuľka nesmie roztiahnuť stránku.
+    expect(h).toMatch(/class="grid grid-cols-1 /);
     const [n, u] = pozicie(h, ["PDF", "UDAJE"]);
     expect(n).toBeGreaterThan(-1);
     expect(n).toBeLessThan(u);
@@ -73,6 +75,7 @@ describe("RozlozenieDetailu + KartaNahladu", () => {
     // Na mobile je viditeľná (nad/pod údajmi), na širokej obrazovke sa drží pri vrchu.
     expect(h).not.toContain("hidden lg:block");
     expect(h).toContain("lg:sticky");
+    expect(h).toContain("self-start");
   });
 
   it("lenSiroka: na úzkej obrazovke sa karta nekreslí", () => {

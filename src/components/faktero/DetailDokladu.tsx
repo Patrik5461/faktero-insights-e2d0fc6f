@@ -12,8 +12,13 @@ import { useT } from "@/lib/i18n/useT";
   vystavená a zálohová faktúra, prijatá faktúra aj bloček.
 */
 
-/** Triedy mriežky — dva rovnako široké stĺpce, na úzkej obrazovke pod sebou. */
-export const MRIEZKA_DETAILU = "grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]";
+/**
+ * Triedy mriežky — dva rovnako široké stĺpce, na úzkej obrazovke pod sebou.
+ * `grid-cols-1` (= minmax(0, 1fr)) je nutné: bez neho je stĺpec na mobile
+ * `auto` a rastie podľa najširšej tabuľky (položky nespracovaného dokladu
+ * majú min. 30rem) — stránka sa potom posúvala do strany.
+ */
+export const MRIEZKA_DETAILU = "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]";
 
 /**
  * Náhľad a obsah vedľa seba. Na úzkej obrazovke sú pod sebou — poradie v DOM
@@ -45,7 +50,8 @@ export function RozlozenieDetailu({
 
 /**
  * Karta s náhľadom dokladu. Na širokej obrazovke sa drží pri vrchu a roluje
- * sama; pod náhľadom je odkaz na súbor, prepínač strany a voliteľne
+ * sama; výška podľa obsahu (`self-start`), nie podľa stĺpca s údajmi — inak
+ * pod krátkym PDF ostával prázdny pruh; pod náhľadom je odkaz na súbor, prepínač strany a voliteľne
  * „Skryť náhľad“.
  *
  * `lenSiroka` — na úzkej obrazovke sa karta nekreslí (stránka tam má náhľad
@@ -74,7 +80,7 @@ export function KartaNahladu({
     <aside
       aria-label={nazov ? `${t("Náhľad dokladu")} — ${nazov}` : t("Náhľad dokladu")}
       data-karta-nahladu=""
-      className={`min-w-0 max-h-[80vh] overflow-auto rounded-xl border border-border bg-card p-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] ${lenSiroka ? "hidden lg:block" : ""}`}
+      className={`min-w-0 max-h-[80vh] self-start overflow-auto rounded-xl border border-border bg-card p-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] ${lenSiroka ? "hidden lg:block" : ""}`}
     >
       {children}
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
