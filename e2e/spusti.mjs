@@ -153,6 +153,7 @@ async function prihlas(prehliadac) {
   const ctx = await prehliadac.newContext({
     viewport: { width: 1400, height: 1000 },
     locale: "sk-SK",
+    timezoneId: "Europe/Bratislava",
   });
   const page = await ctx.newPage();
   try {
@@ -292,6 +293,7 @@ function vytvorKontext(tok, pokus, prehliadac) {
         : { width: sirka ?? 1400, height: 1000 },
       ...(mobil ? { isMobile: true, hasTouch: true } : {}),
       locale: "sk-SK",
+      timezoneId: "Europe/Bratislava",
       acceptDownloads: true,
     });
     konteksty.push(ctx);

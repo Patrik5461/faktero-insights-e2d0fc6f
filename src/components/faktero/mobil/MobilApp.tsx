@@ -300,6 +300,8 @@ export function MobilnaApka() {
 function ObsahApky() {
   const { t, mnozne, locale, jazyk } = usePreklad();
   const [krok, setKrok] = useState<Krok>("nacitavam");
+  /** Zvýši sa pri každom vstupe do Prijatých eFaktúr — obrazovka začne zoznamom. */
+  const [efakturyKluc, setEfakturyKluc] = useState(0);
   /* Neskoro dobehnutá relácia sa rozhoduje mimo renderu — `krok` v uzávere je
      v tej chvíli už zastaraný. */
   const krokRef = useRef<Krok>("nacitavam");
@@ -907,7 +909,15 @@ function ObsahApky() {
   }
   const naNovuFakturu = () => setKrok("novaFaktura");
   /* Prijaté eFaktúry — Kniha jázd fakturáciu nemá, tak ani tento vstup. */
-  const naEfaktury = JE_KNIHA_JAZD ? undefined : () => setKrok("efaktury");
+  /* Nové ťuknutie na vstup (aj keď je obrazovka otvorená na detaile) ukáže
+     zoznam — `key` obrazovku prekreslí, inak by detail ostal a vstup by
+     „nič nerobil“ (`efakturyKluc` je hore pri `krok`). */
+  const naEfaktury = JE_KNIHA_JAZD
+    ? undefined
+    : () => {
+        setEfakturyKluc((n) => n + 1);
+        setKrok("efaktury");
+      };
   /** Zaevidovaná eFaktúra je prijatá faktúra — Doklady sa otvoria rovno na nich. */
   const naPrijateFaktury = () => {
     setAgendaDokladov("faktury");
@@ -1088,6 +1098,7 @@ function ObsahApky() {
       <SoSpodnouListou aktivna="doklady" {...listaProps}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <PrijateEfaktury
+            key={efakturyKluc}
             firma={firma}
             onSpat={() => setKrok(DOMOV)}
             onOtvorPrijate={naPrijateFaktury}

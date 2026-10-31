@@ -17,6 +17,7 @@
 */
 import { mkdirSync } from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { otvorApku, tlacidlo, tukni, zalozka } from "../lib/apka.mjs";
 
 async function snimka(page, meno) {
@@ -62,7 +63,12 @@ export default {
         total: vzor.total,
         vat_total: vzor.vat_total,
         xml_payload: zamen(vzor.xml_payload),
-        parsed_data: vzor.parsed_data ?? {},
+        // Vlastné id správy — kópia vzorového by narazila na jedinečný index
+        // efaktura_received_sprava_uniq (company_id, providerMessageId).
+        parsed_data: {
+          ...(vzor.parsed_data ?? {}),
+          providerMessageId: `e2e-${t.znacka}-${randomUUID()}`,
+        },
         status: "parsed",
         // Firme nesmie odísť e-mail o „novej“ eFaktúre.
         upozornenie_odoslane_at: new Date().toISOString(),
