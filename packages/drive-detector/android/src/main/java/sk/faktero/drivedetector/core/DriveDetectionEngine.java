@@ -346,10 +346,13 @@ public final class DriveDetectionEngine {
 
         TripPoint bod = new TripPoint(fix);
         if (!trip.points.isEmpty()) {
-            trip.distanceMeters += Distance.meters(trip.points.get(trip.points.size() - 1), bod);
+            // Skok polohy sa do kilometrov nepripočíta; bod v trase ostáva.
+            trip.distanceMeters += Distance.usek(trip.points.get(trip.points.size() - 1), bod);
         }
         trip.points.add(bod);
-        trip.maxSpeedKmh = Math.max(trip.maxSpeedKmh, bod.speedKmh);
+        if (bod.speedKmh <= Distance.MAX_ROZUMNA_KMH) {
+            trip.maxSpeedKmh = Math.max(trip.maxSpeedKmh, bod.speedKmh);
+        }
 
         if (bod.speedKmh >= config.stopSpeedKmh) {
             lastMovingAt = Math.max(now, bod.timestamp);

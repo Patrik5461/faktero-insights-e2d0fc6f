@@ -4,6 +4,7 @@
  * Server-only.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { dnesBratislava } from "./datum-vystavenia";
 import { decryptSecret } from "./payment-crypto.server";
 import {
   commanderListVehicles,
@@ -277,7 +278,11 @@ async function syncCompanyDaily(
         );
         continue;
       }
-      const trip_date = start.toISOString().slice(0, 10);
+      // Deň podľa Bratislavy — jazda o 00:30 by v UTC padla na predošlý deň (a mesiac).
+      const trip_date = dnesBratislava(start);
+      // Staršie importy mali deň podľa UTC; kontrola duplicity bez external_id
+      // sa preto pozerá na oba, inak by tú istú nočnú jazdu zapísala druhýkrát.
+      const trip_date_utc = start.toISOString().slice(0, 10);
       const rawEnd = getRideEndDate(r);
       const end = parseCommanderDate(rawEnd);
       const start_time_iso = start.toISOString();
@@ -347,7 +352,7 @@ async function syncCompanyDaily(
           .select("id")
           .eq("company_id", companyId)
           .eq("vehicle_id", mappedLink.faktero_vehicle_id!)
-          .eq("trip_date", trip_date)
+          .in("trip_date", [...new Set([trip_date, trip_date_utc])])
           .eq("distance_km", distance);
         dupQuery =
           startLocation === null

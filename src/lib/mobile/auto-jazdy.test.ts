@@ -4,6 +4,7 @@ import {
   cakaNaCloveka,
   jePrikratka,
   miestnyDatum,
+  ocistiJazdu,
   prekazkaDetekcie,
   prekryvajucaSaJazda,
   riadokZJazdy,
@@ -24,7 +25,7 @@ function jazda(zmeny: Partial<BufferedTrip> = {}): BufferedTrip {
         speedKmh: 88,
         accuracy: 8,
         altitude: 160,
-        timestamp: zaciatok + 1000,
+        timestamp: zaciatok + 30 * 60 * 1000,
       },
     ],
     distanceMeters: 45_000,
@@ -278,5 +279,55 @@ describe("prekryvajucaSaJazda", () => {
     // Jazda bez konca nemá trvanie, takže spoločný čas vyjde nula. Radšej
     // duplicita, ktorú človek vidí, než ticho zahodená jazda.
     expect(prekryvajucaSaJazda({ startedAt: zaciatok }, [vKnihe(-10, 10)])).toBeNull();
+  });
+});
+
+describe("skoky polohy (ocistiJazdu)", () => {
+  const t0 = new Date("2026-10-31T08:00:00+01:00").getTime();
+  const bod = (lat: number, s: number, speedKmh = 40) => ({
+    lat,
+    lng: 17.11,
+    speedKmh,
+    accuracy: 10,
+    altitude: null,
+    timestamp: t0 + s * 1000,
+  });
+  // Dva úseky po ~111 m za 10 s a medzi nimi skok o 2 km tam a späť — tak,
+  // ako ho starý plugin pripočítal (spolu ~4,2 km).
+  const body = [bod(48.15, 0), bod(48.151, 10), bod(48.17, 20), bod(48.152, 30), bod(48.153, 40)];
+  const nafuknuta = jazda({
+    startedAt: t0,
+    endedAt: t0 + 40_000,
+    points: body,
+    distanceMeters: 4_200,
+    maxSpeedKmh: 720,
+  });
+
+  it("skok sa do kilometrov ani do najvyššej rýchlosti nezapočíta", () => {
+    const j = ocistiJazdu(nafuknuta);
+    expect(j.distanceMeters).toBeGreaterThan(215);
+    expect(j.distanceMeters).toBeLessThan(230);
+    expect(j.maxSpeedKmh).toBe(40);
+    expect(j.avgSpeedKmh).toBeLessThan(25);
+  });
+
+  it("prepočet je opakovateľný — už očistená jazda sa nezmení", () => {
+    const raz = ocistiJazdu(nafuknuta);
+    expect(ocistiJazdu(raz).distanceMeters).toBeCloseTo(raz.distanceMeters, 6);
+  });
+
+  it("jazda bez skoku si kilometre z pluginu nechá", () => {
+    expect(ocistiJazdu(jazda()).distanceMeters).toBe(45_000);
+  });
+
+  it("riadok knihy jázd aj kontrola krátkej jazdy berú očistené kilometre", () => {
+    const r = riadokZJazdy({
+      jazda: nafuknuta,
+      companyId: "f",
+      vehicleId: "v",
+      classification: "business",
+    });
+    expect(r.distance_km).toBeCloseTo(0.22, 2);
+    expect(jePrikratka(nafuknuta)).toBe(true);
   });
 });

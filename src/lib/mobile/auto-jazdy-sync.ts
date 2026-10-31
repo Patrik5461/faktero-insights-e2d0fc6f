@@ -12,6 +12,7 @@ import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import {
   TEXT_PREKAZKY,
   jePrikratka,
+  ocistiJazdu,
   prekazkaDetekcie,
   prekryvajucaSaJazda,
   riadokZJazdy,
@@ -255,7 +256,8 @@ export async function nacitajRozpoznaneJazdy(): Promise<BufferedTrip[]> {
         await p.markSynced({ tripId: jazda.id });
         continue;
       }
-      pouzitelne.push(jazda);
+      // Obrazovka ukazuje kilometre, ktoré sa naozaj zapíšu — bez skokov GPS.
+      pouzitelne.push(ocistiJazdu(jazda));
     }
     return pouzitelne;
   } catch {

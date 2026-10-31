@@ -391,6 +391,9 @@ export const gpsZalozVozidlo = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!vazba) throw new Error("Vozidlo integrácie neexistuje.");
     if (vazba.vehicle_id) return { ok: true, vehicleId: vazba.vehicle_id as string };
+    // Stav tachometra prevezmeme z GPS, ak ho poskytovateľ dáva — inak 0 ako doteraz.
+    const { tachometerUPoskytovatela } = await import("./gps/gps-sync.server");
+    const tachometer = await tachometerUPoskytovatela(vazba.pripojenie_id, vazba.externe_id);
     const { data: auto, error } = await db
       .from("vehicles")
       .insert({
@@ -398,7 +401,7 @@ export const gpsZalozVozidlo = createServerFn({ method: "POST" })
         name: vazba.nazov || vazba.spz || `GPS ${vazba.externe_id}`,
         license_plate: vazba.spz || null,
         vin: vazba.vin || null,
-        initial_odometer: 0,
+        initial_odometer: tachometer ?? 0,
         active: true,
       })
       .select("id")
@@ -409,7 +412,7 @@ export const gpsZalozVozidlo = createServerFn({ method: "POST" })
       .update({ vehicle_id: auto.id, jazdy_do: null })
       .eq("id", vazba.id);
     await naRadeHned(db, vazba.pripojenie_id);
-    return { ok: true, vehicleId: auto.id as string };
+    return { ok: true, vehicleId: auto.id as string, tachometer };
   });
 
 /** Po prepnutí súkromná/služobná v knihe jázd zapíše zmenu aj do GPS, ak to API vie. */

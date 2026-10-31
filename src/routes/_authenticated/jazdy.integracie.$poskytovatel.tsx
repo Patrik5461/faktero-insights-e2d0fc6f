@@ -29,6 +29,7 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { prelozChybuGps } from "@/lib/faktero/gps/chyby-preklad";
 
 export const Route = createFileRoute("/_authenticated/jazdy/integracie/$poskytovatel")({
   head: ({ match }) => ({
@@ -91,11 +92,11 @@ function textLogu(
   if (l.druh === "vozidla" && l.stav === "ok" && typeof d.vozidla === "number")
     return t("Vozidlá: {n}, nové: {nove}.", { n: d.vozidla, nove: d.nove ?? 0 });
   if (l.druh === "test" && l.stav === "ok") return t("Pripojenie funguje.");
-  return l.sprava;
+  return prelozChybuGps(l.sprava, t);
 }
 
 function GpsIntegraciaPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const { poskytovatel } = Route.useParams();
   const cid = getActiveCompanyId();
   const _stav = useServerFn(gpsStav);
@@ -121,7 +122,7 @@ function GpsIntegraciaPage() {
       setChybaNacitania(null);
       if (!s.pripojenia.length) setFormular((f) => f ?? "");
     } catch (e: any) {
-      setChybaNacitania(e?.message ?? t("Chyba"));
+      setChybaNacitania(prelozChybuGps(e?.message, t));
     }
   }, [cid, poskytovatel]);
 
@@ -134,7 +135,7 @@ function GpsIntegraciaPage() {
     setBusy("sync:" + id);
     try {
       const r: any = await _sync({ data: { companyId: cid, pripojenieId: id } });
-      if (r?.chyba) toast.error(r.chyba);
+      if (r?.chyba) toast.error(prelozChybuGps(r.chyba, t));
       else if (r?.neuplne)
         toast.info(
           t(
@@ -151,7 +152,7 @@ function GpsIntegraciaPage() {
         );
       await nacitaj();
     } catch (e: any) {
-      toast.error(e?.message ?? t("Chyba"));
+      toast.error(prelozChybuGps(e?.message, t));
     } finally {
       setBusy(null);
     }
@@ -171,7 +172,7 @@ function GpsIntegraciaPage() {
       toast.success(t("Odpojené"));
       await nacitaj();
     } catch (e: any) {
-      toast.error(e?.message ?? t("Chyba"));
+      toast.error(prelozChybuGps(e?.message, t));
     } finally {
       setBusy(null);
     }
@@ -183,7 +184,7 @@ function GpsIntegraciaPage() {
       await _nastav({ data: { companyId: cid, pripojenieId: id, ...patch } });
       await nacitaj();
     } catch (e: any) {
-      toast.error(e?.message ?? t("Chyba"));
+      toast.error(prelozChybuGps(e?.message, t));
     }
   }
 
@@ -194,7 +195,7 @@ function GpsIntegraciaPage() {
       toast.success(vehicleId ? t("Vozidlo spárované") : t("Párovanie zrušené"));
       await nacitaj();
     } catch (e: any) {
-      toast.error(e?.message ?? t("Chyba"));
+      toast.error(prelozChybuGps(e?.message, t));
     }
   }
 
@@ -202,11 +203,18 @@ function GpsIntegraciaPage() {
     if (!cid) return;
     setBusy("zaloz:" + vazbaId);
     try {
-      await _zaloz({ data: { companyId: cid, vazbaId } });
-      toast.success(t("Vozidlo založené a spárované"));
+      const r = await _zaloz({ data: { companyId: cid, vazbaId } });
+      const km = (r as { tachometer?: number | null }).tachometer;
+      toast.success(
+        km
+          ? t("Vozidlo založené a spárované, tachometer z GPS: {km} km", {
+              km: km.toLocaleString(jazyk === "de" ? "de-DE" : jazyk === "cs" ? "cs-CZ" : "sk-SK"),
+            })
+          : t("Vozidlo založené a spárované"),
+      );
       await nacitaj();
     } catch (e: any) {
-      toast.error(e?.message ?? t("Chyba"));
+      toast.error(prelozChybuGps(e?.message, t));
     } finally {
       setBusy(null);
     }
@@ -435,7 +443,7 @@ function PripojenieKarta(props: {
       )}
       {p.posledna_chyba && (
         <div className="mt-3 break-words rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {p.posledna_chyba}
+          {prelozChybuGps(p.posledna_chyba, t)}
         </div>
       )}
 
@@ -560,10 +568,12 @@ function Formular(props: {
     try {
       const r = await props.test({ data: data() });
       setVysledok(
-        r.ok ? { ok: true, text: t("Pripojenie funguje.") } : { ok: false, text: r.chyba },
+        r.ok
+          ? { ok: true, text: t("Pripojenie funguje.") }
+          : { ok: false, text: prelozChybuGps(r.chyba, t) },
       );
     } catch (e: any) {
-      setVysledok({ ok: false, text: e?.message ?? t("Chyba") });
+      setVysledok({ ok: false, text: prelozChybuGps(e?.message, t) });
     } finally {
       setBusy(null);
     }
@@ -576,14 +586,14 @@ function Formular(props: {
     try {
       const r = await props.uloz({ data: data() });
       if (!r.ok) {
-        setVysledok({ ok: false, text: r.chyba });
+        setVysledok({ ok: false, text: prelozChybuGps(r.chyba, t) });
         return;
       }
       toast.success(t("Uložené — nájdených vozidiel: {n}", { n: r.vozidla ?? 0 }));
-      if (r.vozidlaChyba) toast.error(r.vozidlaChyba);
+      if (r.vozidlaChyba) toast.error(prelozChybuGps(r.vozidlaChyba, t));
       await props.onUlozene(pr ? null : r.id);
     } catch (e: any) {
-      setVysledok({ ok: false, text: e?.message ?? t("Chyba") });
+      setVysledok({ ok: false, text: prelozChybuGps(e?.message, t) });
     } finally {
       setBusy(null);
     }

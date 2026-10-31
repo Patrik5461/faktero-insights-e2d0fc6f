@@ -52,4 +52,26 @@ public class DistanceTest {
         BufferedTrip jazda = new BufferedTrip("x", 100, 100d, new ArrayList<>(), 500, 0, null, false);
         assertEquals(0, jazda.avgSpeedKmh(), 0.0001);
     }
+
+    private TripPoint bodVCase(double lat, double cas, double speed) {
+        return new TripPoint(lat, 17.110, speed, 10, null, cas);
+    }
+
+    @Test
+    public void skokPolohySaDoTrasyNezapocita() {
+        // Dva úseky po ~111 m za 10 s (40 km/h) a medzi nimi skok o 2 km tam a späť.
+        List<TripPoint> body = Arrays.asList(
+                bodVCase(48.150, 0, 40),
+                bodVCase(48.151, 10, 40),
+                bodVCase(48.170, 20, 40),
+                bodVCase(48.152, 30, 40),
+                bodVCase(48.153, 40, 40));
+        assertEquals(222, Distance.total(body), 5);
+    }
+
+    @Test
+    public void nezmyselnaRychlostSaDoNajvyssejNepocita() {
+        List<TripPoint> body = Arrays.asList(bodVCase(48.150, 0, 50), bodVCase(48.151, 10, 400));
+        assertEquals(50, Distance.maxSpeed(body), 0.0001);
+    }
 }

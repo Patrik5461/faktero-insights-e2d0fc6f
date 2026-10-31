@@ -290,10 +290,13 @@ public final class DriveDetectionEngine {
 
         let bod = TripPoint(fix: fix)
         if let posledny = bezi.points.last {
-            bezi.distanceMeters += Distance.meters(from: posledny, to: bod)
+            // Skok polohy sa do kilometrov nepripočíta; bod v trase ostáva.
+            bezi.distanceMeters += Distance.usek(from: posledny, to: bod)
         }
         bezi.points.append(bod)
-        bezi.maxSpeedKmh = max(bezi.maxSpeedKmh, bod.speedKmh)
+        if bod.speedKmh <= Distance.maxRozumnaKmh {
+            bezi.maxSpeedKmh = max(bezi.maxSpeedKmh, bod.speedKmh)
+        }
         trip = bezi
 
         if bod.speedKmh >= config.stopSpeedKmh {

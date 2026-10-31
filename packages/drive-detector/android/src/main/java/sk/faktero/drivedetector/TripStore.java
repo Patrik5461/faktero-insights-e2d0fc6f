@@ -95,13 +95,33 @@ public final class TripStore {
         prefs.edit().putBoolean(K_MONITORING, value).apply();
     }
 
+    /*
+      Umlčanie sa kedysi ukladalo ako float. Čas v sekundách (~1,8 miliardy)
+      má vo floate krok 128 s, takže koniec umlčania sa posúval až o dve
+      minúty. Teraz ide ako long v milisekundách pod novým kľúčom; starý
+      záznam sa ešte prečíta (getFloat na long by spadol na ClassCastException,
+      preto dva kľúče) a pri ďalšom zápise sa zmaže.
+    */
+    private static final String K_DEBOUNCE_MS = "debounce_ms";
+
     public Double nacitajDebounce() {
-        double v = prefs.getFloat(K_DEBOUNCE, -1);
-        return v < 0 ? null : v;
+        if (prefs.contains(K_DEBOUNCE_MS)) {
+            long ms = prefs.getLong(K_DEBOUNCE_MS, -1L);
+            return ms < 0 ? null : ms / 1000d;
+        }
+        try {
+            double v = prefs.getFloat(K_DEBOUNCE, -1);
+            return v < 0 ? null : v;
+        } catch (ClassCastException e) {
+            return null;
+        }
     }
 
     public void ulozDebounce(Double dokedy) {
-        prefs.edit().putFloat(K_DEBOUNCE, dokedy == null ? -1 : dokedy.floatValue()).apply();
+        prefs.edit()
+                .putLong(K_DEBOUNCE_MS, dokedy == null ? -1L : Math.round(dokedy * 1000d))
+                .remove(K_DEBOUNCE)
+                .apply();
     }
 
     // ── Jazdy ──────────────────────────────────────────────────────────────
