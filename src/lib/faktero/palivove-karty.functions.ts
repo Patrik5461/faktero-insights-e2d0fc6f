@@ -357,6 +357,10 @@ export const ulozVypisKartyFn = createServerFn({ method: "POST" })
     if (!data.riadky.length && !data.faktura.cislo) throw new Error("Vo výpise nie je čo uložiť.");
     const { pripojenieFirmy, ulozVypis } = await import("./palivove-karty/nahratie.server");
     const pripojenie = await pripojenieFirmy(data.company_id, data.id);
+    // Režim „faktura“ založí aj prijatú faktúru — na to treba právo na doklady.
+    const { pristupUlozeniaVypisu } = await import("./palivove-karty/spracovanie");
+    for (const p of pristupUlozeniaVypisu(pripojenie.rezim))
+      await overPristup(context as any, data.company_id, p);
     return ulozVypis({
       pripojenie,
       riadky: data.riadky,

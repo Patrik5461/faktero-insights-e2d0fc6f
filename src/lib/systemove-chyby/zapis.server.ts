@@ -16,6 +16,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { jeOdpojenieKlienta } from "@/lib/odpojenie-klienta";
 import {
+  OknoPokusov,
   StropZapisov,
   bezTajomstiev,
   cistaTrasa,
@@ -130,19 +131,61 @@ const NAZOV_ZDROJA: Record<ZdrojChyby, string> = {
   hook: "hook",
 };
 
+/**
+ * Chyby z prehliadača a appky prichádzajú cez verejný endpoint bez prihlásenia —
+ * ich text si môže napísať ktokoľvek (aj s odkazom). Preto:
+ * - spolu najviac `MAX_UPOZORNENI_KLIENTA` upozornení za hodinu (inak by sa dalo
+ *   každú minútu poslať adminom do Telegramu desiatky „nových chýb“),
+ * - text je označený ako neoverený a odkazy sú znefunkčnené (Telegram ich inak
+ *   zobrazí ako klikateľné).
+ * Chyby servera, cronov a hookov pôjdu ako doteraz.
+ */
+export const MAX_UPOZORNENI_KLIENTA = 10;
+let oknoUpozorneniKlienta = new OknoPokusov(MAX_UPOZORNENI_KLIENTA, 3_600_000);
+/** Len pre testy — nové okno (s vlastnými hodinami). */
+export function _resetUpozorneniKlienta(teraz?: () => number) {
+  oknoUpozorneniKlienta = new OknoPokusov(MAX_UPOZORNENI_KLIENTA, 3_600_000, teraz);
+}
+
+const jeZKlienta = (z: ZdrojChyby) => z === "prehliadac" || z === "appka";
+
+/** Odkazy v texte od klienta nebudú v Telegrame klikateľné. */
+export function bezOdkazov(text: string): string {
+  return (
+    text
+      .replace(/\b(https?|ftp|wss?):\/\//gi, "$1[:]//")
+      // Každé „meno.koncovka“ — Telegram robí odkaz aj z holej domény.
+      .replace(/([a-z0-9-])\.(?=[a-z]{2,24}\b)/gi, "$1[.]")
+  );
+}
+
+/** Text upozornenia do Telegramu (exportované pre testy). */
+export function textUpozornenia(r: ReturnType<typeof pripravRiadok>, nova: boolean): string {
+  const web = (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
+  const klient = jeZKlienta(r.zdroj);
+  const sprava = r.sprava.slice(0, 400);
+  const miesto = [r.metoda, r.trasa, r.http_status].filter(Boolean).join(" ") || null;
+  return [
+    `${nova ? "Nová" : "Znovu sa objavila"} chyba (${NAZOV_ZDROJA[r.zdroj]})`,
+    klient ? "Text poslal prehliadač/appka bez overenia — na odkazy v ňom neklikajte." : null,
+    klient ? bezOdkazov(sprava) : sprava,
+    miesto && klient ? bezOdkazov(miesto) : miesto,
+    `${web}/admin/errors`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/** Smie táto chyba poslať upozornenie? Klientske majú spoločný hodinový strop. */
+export function smieUpozornit(zdroj: ZdrojChyby): boolean {
+  return !jeZKlienta(zdroj) || oknoUpozorneniKlienta.skus("klient");
+}
+
 async function upozorni(r: ReturnType<typeof pripravRiadok>, nova: boolean) {
   try {
+    if (!smieUpozornit(r.zdroj)) return;
     const { upozorniAdminovTelegram } = await import("@/lib/faktero/telegram.server");
-    const web = (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
-    const text = [
-      `${nova ? "Nová" : "Znovu sa objavila"} chyba (${NAZOV_ZDROJA[r.zdroj]})`,
-      r.sprava.slice(0, 400),
-      [r.metoda, r.trasa, r.http_status].filter(Boolean).join(" ") || null,
-      `${web}/admin/errors`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-    await upozorniAdminovTelegram({ text });
+    await upozorniAdminovTelegram({ text: textUpozornenia(r, nova) });
   } catch {
     /* upozornenie je doplnok — chyba sa už zapísala */
   }

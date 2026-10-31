@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  pristupUlozeniaVypisu,
   casVBratislave,
   duplicitneBlocky,
   existujuceTankovanie,
@@ -292,5 +293,15 @@ describe("prijatá faktúra z faktúry Shell", () => {
   it("opravný doklad (Reversal) ide na kontrolu", () => {
     const { naKontrolu } = prijataZFaktury({ ...F, typ: "Reversal" }, [t()], K);
     expect(naKontrolu).toBe(true);
+  });
+});
+
+describe("prístup k uloženiu výpisu (audit 31. 10.)", () => {
+  it("režim faktúra chce aj zápis do dokladov, len tankovania nie", () => {
+    expect(pristupUlozeniaVypisu("faktura")).toEqual([
+      { oblast: "jazdy", zapis: true },
+      { oblast: "doklady", zapis: true },
+    ]);
+    expect(pristupUlozeniaVypisu("len_tankovania")).toEqual([{ oblast: "jazdy", zapis: true }]);
   });
 });
