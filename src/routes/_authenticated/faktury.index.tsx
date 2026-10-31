@@ -34,7 +34,6 @@ import {
   Zap,
   BookCheck,
   Eye,
-  FileCheck2,
   Send,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -73,6 +72,13 @@ import {
   skontrolujPredOdoslanimFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
+import { OdznakEfakturyWeb } from "@/components/faktero/EfakturaStavWeb";
+import {
+  stavEfaktury,
+  STLPCE_DORUCENIA,
+  type StavEfaktury,
+} from "@/lib/faktero/efaktura/stav-efaktury";
+import { efakturaUzOdisla } from "@/lib/faktero/efaktura/stav-efaktury-texty";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
 import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
@@ -262,7 +268,7 @@ function InvoicesPage() {
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
   const [reminderMap, setReminderMap] = useState<Record<string, number>>({});
-  const [efakturaMap, setEfakturaMap] = useState<Record<string, EfakturaStav>>({});
+  const [efakturaMap, setEfakturaMap] = useState<Record<string, StavEfaktury>>({});
   const exportFn = useServerFn(exportInvoicesFn);
   const [zauctovanie, setZauctovanie] = useState(false);
   const sch = useStavSchvalovania(
@@ -351,8 +357,12 @@ function InvoicesPage() {
       });
   }, [list.rows]);
 
-  // Či faktúra odišla ako eFaktúra — rovnaké pravidlo ako na detaile: rozhoduje
-  // posledné doručenie dokumentu, zlyhané či odmietnuté sa neráta za odoslané.
+  /*
+    Stav eFaktúry pri každej faktúre — spoločné pravidlá s appkou a detailom
+    (`stavEfaktury`): rozhoduje posledné doručenie, `deliveryFailure` od
+    ePoštáka je zlyhanie, `accepted` je len prevzatie ePoštákom (odoslaná).
+    Jeden vnorený dotaz na celý zoznam.
+  */
   useEffect(() => {
     const ids = list.rows.map((r: any) => r.id);
     if (ids.length === 0) {
@@ -361,32 +371,15 @@ function InvoicesPage() {
     }
     let zruseny = false;
     (async () => {
-      const { data: docs } = await supabase
+      const { data } = await supabase
         .from("efaktura_documents")
-        .select("id, invoice_id")
+        .select(`invoice_id, efaktura_deliveries(${STLPCE_DORUCENIA})`)
         .in("invoice_id", ids);
-      const faktura: Record<string, string> = {};
-      for (const d of docs ?? []) if (d.invoice_id) faktura[d.id] = d.invoice_id;
-      const docIds = Object.keys(faktura);
-      if (docIds.length === 0) {
-        if (!zruseny) setEfakturaMap({});
-        return;
-      }
-      const { data: dorucenia } = await supabase
-        .from("efaktura_deliveries")
-        .select("document_id, status, delivered_at, created_at")
-        .in("document_id", docIds)
-        .order("created_at", { ascending: true });
-      const m: Record<string, EfakturaStav> = {};
-      // Vzostupne podľa času — posledné doručenie prepíše staršie pokusy.
-      for (const d of dorucenia ?? []) {
-        const id = faktura[d.document_id];
-        if (!id) continue;
-        m[id] = ["failed", "rejected"].includes(String(d.status))
-          ? { stav: "zlyhala" }
-          : d.status === "delivered" || d.status === "accepted"
-            ? { stav: "dorucena", kedy: d.delivered_at }
-            : { stav: "odoslana" };
+      const m: Record<string, StavEfaktury> = {};
+      for (const d of (data ?? []) as any[]) {
+        if (!d.invoice_id) continue;
+        const s = stavEfaktury(d.efaktura_deliveries);
+        if (s) m[d.invoice_id] = s;
       }
       if (!zruseny) setEfakturaMap(m);
     })();
@@ -639,8 +632,7 @@ function InvoicesPage() {
         r.status !== "draft" &&
         r.status !== "cancelled" &&
         r.type !== "proforma" &&
-        efakturaMap[r.id]?.stav !== "odoslana" &&
-        efakturaMap[r.id]?.stav !== "dorucena",
+        !efakturaUzOdisla(efakturaMap[r.id]),
     );
   const efakturaCount = efakturovatelne(selectedRows).length;
 
@@ -1220,7 +1212,7 @@ function InvoicesPage() {
                       {i.type === "credit_note" ? t("Dobropis") : t("Ťarchopis")}
                     </span>
                   ) : null}
-                  <OdznakEfaktury stav={efakturaMap[i.id]} />
+                  <OdznakEfakturyWeb stav={efakturaMap[i.id]} />
                   {reminderMap[i.id] ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200">
                       <Bell className="h-3 w-3" /> {t("Upomienka #{n}", { n: reminderMap[i.id] })}
@@ -1353,7 +1345,7 @@ function InvoicesPage() {
                               {i.type === "credit_note" ? t("Dobropis") : t("Ťarchopis")}
                             </span>
                           ) : null}
-                          <OdznakEfaktury stav={efakturaMap[i.id]} />
+                          <OdznakEfakturyWeb stav={efakturaMap[i.id]} />
                           {reminderMap[i.id] ? (
                             <span
                               className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200"
@@ -1590,31 +1582,3 @@ function InvoicesPage() {
   );
 }
 
-type EfakturaStav = { stav: "odoslana" | "dorucena" | "zlyhala"; kedy?: string | null };
-
-/** Štítok pri čísle faktúry: odišla ako eFaktúra, bola doručená, alebo odoslanie zlyhalo. */
-function OdznakEfaktury({ stav }: { stav?: EfakturaStav }) {
-  const { t } = useT();
-  if (!stav) return null;
-  const zlyhala = stav.stav === "zlyhala";
-  const popis = zlyhala
-    ? t("Odoslanie eFaktúry zlyhalo")
-    : stav.stav === "dorucena"
-      ? stav.kedy
-        ? t("eFaktúra doručená {kedy}", { kedy: datumNaDoklade(stav.kedy.slice(0, 10)) })
-        : t("eFaktúra doručená")
-      : t("eFaktúra odoslaná");
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-        zlyhala
-          ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200"
-          : "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200"
-      }`}
-      title={popis}
-      aria-label={popis}
-    >
-      <FileCheck2 className="h-3 w-3" aria-hidden="true" /> {t("eFaktúra")}
-    </span>
-  );
-}

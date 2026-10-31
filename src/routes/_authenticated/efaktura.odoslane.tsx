@@ -21,6 +21,9 @@ import {
   stavDorucenia,
   typDokladuEfaktury,
 } from "@/components/faktero/EfakturaStatusBadge";
+import { BunkaStavuEfaktury } from "@/components/faktero/EfakturaStavWeb";
+import { stavEfaktury } from "@/lib/faktero/efaktura/stav-efaktury";
+import type { DorucenieVZozname } from "@/lib/faktero/efaktura/efaktura.functions";
 import { OdoslanieEfakturyOkno } from "@/components/faktero/OdoslanieEfakturyOkno";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
@@ -64,11 +67,13 @@ function SentPage() {
     queryFn: () => listDorucenia({ data: { companyId: companyId! } }),
     enabled: !!companyId,
   });
-  const dorucenia = new Map<string, any>();
-  for (const d of (qd.data ?? []) as any[]) {
-    // Posledné doručenie na doklad — staršie pokusy sú história.
-    if (!dorucenia.has(d.document_id)) dorucenia.set(d.document_id, d);
+  // Všetky pokusy dokladu — stav určí `stavEfaktury` (posledný pokus, zlyhanie
+  // hlásené ePoštákom, odpoveď odberateľa), rovnako ako v zozname faktúr a v appke.
+  const poDokladoch = new Map<string, DorucenieVZozname[]>();
+  for (const d of qd.data ?? []) {
+    poDokladoch.set(d.document_id, [...(poDokladoch.get(d.document_id) ?? []), d]);
   }
+  const stavDokladu = (docId: string) => stavEfaktury(poDokladoch.get(docId));
 
   /* Odoslanie ide cez to isté okno ako z detailu faktúry — PDF a prílohy. */
   const [okno, setOkno] = useState<{ invoiceId: string; cislo: string } | null>(null);
@@ -107,21 +112,7 @@ function SentPage() {
   }
 
   function dorucenieBunka(row: any) {
-    const d = dorucenia.get(row.id);
-    if (!d) return <span className="text-xs text-muted-foreground">{t("Neodoslaná")}</span>;
-    return (
-      <span
-        className={`text-xs ${d.status === "failed" || d.status === "rejected" ? "text-destructive" : "text-primary"}`}
-        title={d.error_message ?? undefined}
-      >
-        {t(stavDorucenia(d.status))}
-        {d.sent_at && (
-          <span className="block whitespace-nowrap text-muted-foreground">
-            {kratkyCas(d.sent_at)}
-          </span>
-        )}
-      </span>
-    );
+    return <BunkaStavuEfaktury stav={stavDokladu(row.id)} />;
   }
 
   function validaciaBunka(row: any) {
@@ -164,15 +155,21 @@ function SentPage() {
         <button onClick={() => row.invoice_id && handleRevalidate(row.invoice_id)} className={btn}>
           <RefreshCw className="h-3.5 w-3.5" /> {t("Validovať")}
         </button>
-        {/* Odoslanie je nevratné, tak je až za validáciou a pýta sa. */}
+        {/* Odoslanie je nevratné, tak je až za validáciou a pýta sa.
+            Zlyhaná eFaktúra má tlačidlo zvýraznené — dá sa poslať znova. */}
         <button
           disabled={okno?.invoiceId === row.invoice_id}
           onClick={() =>
             row.invoice_id && odosli(row.invoice_id, row.document_number ?? row.invoice_id)
           }
-          className={btn}
+          className={
+            stavDokladu(row.id)?.stav === "zlyhala"
+              ? `${btn} border-destructive/50 bg-destructive/10 font-medium text-destructive`
+              : btn
+          }
         >
-          <Send className="h-3.5 w-3.5" /> {t("Odoslať")}
+          <Send className="h-3.5 w-3.5" />{" "}
+          {stavDokladu(row.id)?.stav === "zlyhala" ? t("Odoslať znova") : t("Odoslať")}
         </button>
         <button
           onClick={() => row.invoice_id && handleDownload(row.invoice_id)}

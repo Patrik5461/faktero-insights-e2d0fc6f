@@ -55,11 +55,15 @@ export function EfakturaStatusBadge({ status }: { status: EfakturaUiStatus }) {
   );
 }
 
-/* Surové hodnoty z databázy (enumy) po slovensky pre zoznamy eFaktúr. */
+/*
+  Surové hodnoty z databázy (enumy) po slovensky — len na hlášku po odoslaní.
+  Stav faktúry na obrazovke počíta `stavEfaktury` (číta aj zlyhanie a odpoveď
+  odberateľa). `accepted` je prevzatie dokladu ePoštákom, nie odberateľom.
+*/
 const STAV_DORUCENIA: Record<string, string> = {
   pending: "Čaká",
   sent: "Odoslaná",
-  accepted: "Prijatá",
+  accepted: "Odoslaná",
   delivered: "Doručená",
   failed: "Zlyhala",
   rejected: "Odmietnutá",

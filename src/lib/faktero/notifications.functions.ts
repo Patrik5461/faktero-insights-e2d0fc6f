@@ -299,6 +299,43 @@ async function notifikacieEfaktur(companyId: string): Promise<AppNotification[]>
   return zostav((data ?? []) as any[], dnesBratislava());
 }
 
+/*
+  eFaktúry, ktoré neodišli alebo ich odberateľ zamietol — z doručení za
+  posledných 30 dní (staršie pokusy už neplatia: novší pokus je v okne).
+  Logika a kľúče sú v `efaktura/upozornenie-zlyhania.ts`.
+*/
+async function notifikacieZlyhanychEfaktur(companyId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { STLPCE_DORUCENIA } = await import("./efaktura/stav-efaktury");
+  const { notifikacieZlyhanychEfaktur: zostav } = await import("./efaktura/upozornenie-zlyhania");
+  const od = new Date(Date.now() - 30 * 86_400_000).toISOString();
+  const { data: dorucenia } = await supabaseAdmin
+    .from("efaktura_deliveries")
+    .select(`document_id, ${STLPCE_DORUCENIA}`)
+    .eq("company_id", companyId)
+    .gte("created_at", od)
+    .order("created_at", { ascending: false })
+    .limit(LIMIT);
+  const docIds = [...new Set(((dorucenia ?? []) as any[]).map((d) => d.document_id as string))];
+  if (!docIds.length) return [];
+  const { data: doklady } = await supabaseAdmin
+    .from("efaktura_documents")
+    .select("id, invoice_id, invoices(invoice_number, customer_name, status, deleted_at)")
+    .eq("company_id", companyId)
+    .in("id", docIds);
+  return zostav(
+    (dorucenia ?? []) as any[],
+    ((doklady ?? []) as any[]).map((d) => ({
+      id: d.id,
+      invoice_id: d.invoice_id,
+      invoice_number: d.invoices?.invoice_number ?? null,
+      customer_name: d.invoices?.customer_name ?? null,
+      status: d.invoices?.status ?? null,
+      deleted_at: d.invoices?.deleted_at ?? null,
+    })),
+  );
+}
+
 const PORADIE_ZAVAZNOSTI = { danger: 0, warning: 1, info: 2 } as const;
 
 /** Faktúry, banka aj zamestnanci v jednom zozname, zoradené rovnako. */
@@ -466,7 +503,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
     supabaseAdmin.from("companies").select("country").eq("id", companyId).maybeSingle(),
   ]);
   const zoznam = await (async () => {
-    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie, efaktury, dph, webhooky] = await Promise.all([
+    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie, efaktury, dph, webhooky, efakturyZlyhane] = await Promise.all([
       zozbierajSignaly(companyId),
       notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
       notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
@@ -477,6 +514,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
       notifikacieEfaktur(companyId).catch(() => [] as AppNotification[]),
       notifikacieDph(companyId).catch(() => [] as AppNotification[]),
       notifikacieWebhookov(companyId).catch(() => [] as AppNotification[]),
+      notifikacieZlyhanychEfaktur(companyId).catch(() => [] as AppNotification[]),
     ]);
     // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
     // inak najstaršie (najdlhšie po termíne).
@@ -491,6 +529,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
       ...efaktury,
       ...dph,
       ...webhooky,
+      ...efakturyZlyhane,
     ].sort(
       (a, b) => {
         const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
@@ -515,7 +554,10 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
     (n) =>
       agendaPreKrajinu(String(n.to ?? "").split("?")[0]!, krajina) &&
       // Webhooky spravuje len majiteľ a správca (rovnako ako RLS denníka doručení).
-      (!n.key.startsWith("webhook_vzdane:") || clen?.role === "owner" || clen?.role === "admin"),
+      // Neodoslanú či zamietnutú eFaktúru hlási zvonček tiež majiteľovi a správcovi.
+      (!/^(webhook_vzdane|efaktura_zlyhala|efaktura_zamietnuta):/.test(n.key) ||
+        clen?.role === "owner" ||
+        clen?.role === "admin"),
   );
   if (clen?.role !== "custom") return preKrajinu;
   const { oblastPodlaCesty, vidiOblast } = await import("./opravnenia");

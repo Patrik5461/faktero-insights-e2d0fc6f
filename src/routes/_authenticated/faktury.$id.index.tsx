@@ -89,7 +89,19 @@ import {
 import {
   deriveEfakturaUiStatus,
   EfakturaStatusBadge,
+  stavDorucenia,
 } from "@/components/faktero/EfakturaStatusBadge";
+import {
+  IkonaEfaktury,
+  UpozornenieEfaktury,
+  usePopisEfaktury,
+} from "@/components/faktero/EfakturaStavWeb";
+import {
+  stavEfaktury,
+  STLPCE_DORUCENIA,
+  type RiadokDorucenia,
+} from "@/lib/faktero/efaktura/stav-efaktury";
+import { jeChybaEfaktury, textStavuEfaktury } from "@/lib/faktero/efaktura/stav-efaktury-texty";
 import { useQuery } from "@tanstack/react-query";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { maZuctovanuZalohu, zostavaUhradit } from "@/lib/faktero/zaloha";
@@ -299,7 +311,9 @@ function InvoiceDetail() {
         duration: 10000,
       });
     } else {
-      toast.success(t("Odoslané cez eFaktúru — stav {stav}.", { stav: r.status }));
+      toast.success(
+        t("Odoslané cez eFaktúru — stav {stav}.", { stav: t(stavDorucenia(r.status)).toLowerCase() }),
+      );
     }
     efakturaQuery.refetch();
     dorucenieQuery.refetch();
@@ -319,23 +333,24 @@ function InvoiceDetail() {
   });
   const efakturaDoc = efakturaQuery.data ?? null;
   const efakturaUi = deriveEfakturaUiStatus(efakturaDoc);
-  // Posledné doručenie eFaktúry — či už odišla a v akom je stave u odberateľa.
+  /*
+    Stav eFaktúry zo všetkých doručení — spoločné pravidlá s appkou a zoznamom
+    (`stavEfaktury`): zlyhanie hlásené ePoštákom (`deliveryFailure`) nie je
+    „odoslaná“ a `accepted` je len prevzatie ePoštákom, nie odberateľom.
+  */
   const dorucenieQuery = useQuery({
     queryKey: ["efaktura-dorucenie", (efakturaDoc as any)?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("efaktura_deliveries")
-        .select("status, sent_at, delivered_at")
-        .eq("document_id", (efakturaDoc as any).id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
+        .select(STLPCE_DORUCENIA)
+        .eq("document_id", (efakturaDoc as any).id);
+      return stavEfaktury((data ?? []) as RiadokDorucenia[]);
     },
     enabled: !!(efakturaDoc as any)?.id,
   });
-  const dorucenie = dorucenieQuery.data ?? null;
-  const efakturaOdoslana = !!dorucenie && !["failed", "error", "rejected"].includes(String(dorucenie.status));
+  const stavEf = dorucenieQuery.data ?? null;
+  const popisEfaktury = usePopisEfaktury();
 
   async function handleGenerateXml() {
     if (!inv?.company_id) return;
@@ -1664,6 +1679,9 @@ function InvoiceDetail() {
           </span>
         </div>
       )}
+      {inv.status !== "draft" && inv.status !== "cancelled" && inv.type !== "proforma" && (
+        <UpozornenieEfaktury stav={stavEf} onZnova={handleSendEfaktura} zaneprazdnene={efakturaOkno} />
+      )}
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
         <span className="text-muted-foreground">{t("eFaktúra:")}</span>
         <EfakturaStatusBadge status={efakturaUi} />
@@ -1825,22 +1843,18 @@ function InvoiceDetail() {
                 <XCircle className="h-3 w-3" /> {t("Zamietnuté")}
               </StavOdznak>
             )}
-            {/* Odoslaná eFaktúra: namiesto tlačidla stav (opakované odoslanie je v „Odoslať“). */}
-            {inv.status !== "draft" && inv.status !== "cancelled" && inv.type !== "proforma" && efakturaOdoslana && (
+            {/* Stav eFaktúry (opakované odoslanie je v hlavnej akcii). */}
+            {inv.status !== "draft" && inv.status !== "cancelled" && inv.type !== "proforma" && stavEf && (
               <StavOdznak
-                className="bg-emerald-600/10 text-emerald-700 dark:text-emerald-400"
-                title={
-                  dorucenie?.delivered_at
-                    ? t("Doručená {kedy}", { kedy: new Date(dorucenie.delivered_at).toLocaleString("sk-SK") })
-                    : dorucenie?.sent_at
-                      ? t("Odoslaná {kedy}", { kedy: new Date(dorucenie.sent_at).toLocaleString("sk-SK") })
-                      : undefined
+                className={
+                  jeChybaEfaktury(stavEf)
+                    ? "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400"
+                    : "bg-emerald-600/10 text-emerald-700 dark:text-emerald-400"
                 }
+                title={popisEfaktury(stavEf)}
               >
-                <CheckCircle2 className="h-3 w-3" />
-                {dorucenie?.delivered_at || dorucenie?.status === "delivered"
-                  ? t("eFaktúra doručená")
-                  : t("eFaktúra odoslaná")}
+                <IkonaEfaktury stav={stavEf} />
+                <span data-efaktura-stav={stavEf.stav}>{t(textStavuEfaktury(stavEf))}</span>
                 {efakturaTest ? ` (${t("test")})` : ""}
               </StavOdznak>
             )}
@@ -1872,7 +1886,11 @@ function InvoiceDetail() {
           ) : (
             <PrimarnaAkcia onClick={handleSendEfaktura} disabled={efakturaOkno}>
               <Send className="h-4 w-4" />
-              {efakturaTest ? t("Odoslať eFaktúru (test)") : t("Odoslať eFaktúru")}
+              {stavEf?.stav === "zlyhala"
+                ? t("Odoslať eFaktúru znova")
+                : efakturaTest
+                  ? t("Odoslať eFaktúru (test)")
+                  : t("Odoslať eFaktúru")}
             </PrimarnaAkcia>
           )
         }

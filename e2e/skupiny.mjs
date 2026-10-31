@@ -63,6 +63,7 @@ export const SKUPINY = [
       "kompaktny-prechod",
       "banka-tb-suhlas",
       "apka-efaktura-stav",
+      "web-efaktura-stav",
     ],
   },
   {

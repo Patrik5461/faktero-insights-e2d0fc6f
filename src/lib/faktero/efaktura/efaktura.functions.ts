@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { OdosielanieFirmy, ReadinessReport } from "./types";
 import type { Database, Json, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { STLPCE_DORUCENIA } from "./stav-efaktury";
 
 type Sb = SupabaseClient<Database>;
 
@@ -11,6 +12,23 @@ type EfakturaProfileInsert = TablesInsert<"efaktura_profiles">;
 type EfakturaProfileUpdate = TablesUpdate<"efaktura_profiles">;
 type EfakturaDocumentRow = Database["public"]["Tables"]["efaktura_documents"]["Row"];
 type EfakturaDeliveryRow = Database["public"]["Tables"]["efaktura_deliveries"]["Row"];
+/** Riadok stránky Doručenia — stĺpce na zobrazenie + to, čo potrebuje `stavEfaktury`. */
+export type DorucenieVZozname = Pick<
+  EfakturaDeliveryRow,
+  | "id"
+  | "document_id"
+  | "recipient_participant_id"
+  | "recipient_endpoint"
+  | "attempt_count"
+  | "status"
+  | "channel"
+  | "sent_at"
+  | "delivered_at"
+  | "created_at"
+  | "updated_at"
+  | "error_code"
+  | "error_message"
+> & { zlyhanie: Json | null; odpoved: string | null };
 
 async function assertCompanyMember(supabase: Sb, companyId: string, userId: string) {
   const { data, error } = await supabase.rpc("is_company_member", {
@@ -406,17 +424,21 @@ export const listEfakturaDocumentsFn = createServerFn({ method: "POST" })
 export const listEfakturaDeliveriesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: { companyId: string }) => d)
-  .handler(async ({ data, context }): Promise<EfakturaDeliveryRow[]> => {
+  .handler(async ({ data, context }): Promise<DorucenieVZozname[]> => {
     const { supabase, userId } = context;
     await assertCompanyMember(supabase, data.companyId, userId);
+    // Bez celého `raw_response` (pár kB na riadok) — stav potrebuje z neho len
+    // `deliveryFailure` a `invoiceResponseStatus` (pozri `stavEfaktury`).
     const { data: rows, error } = await supabase
       .from("efaktura_deliveries")
-      .select("*")
+      .select(
+        `id, document_id, recipient_participant_id, recipient_endpoint, attempt_count, ${STLPCE_DORUCENIA}`,
+      )
       .eq("company_id", data.companyId)
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw error;
-    return rows ?? [];
+    return (rows ?? []) as unknown as DorucenieVZozname[];
   });
 
 /* ─── Odosielanie cez ePoštáka ──────────────────────────────────────────── */

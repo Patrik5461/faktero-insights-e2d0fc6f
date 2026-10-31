@@ -8,7 +8,9 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listEfakturaDeliveriesFn } from "@/lib/faktero/efaktura/efaktura.functions";
 import { Send } from "lucide-react";
-import { kanalDorucenia, kratkyCas, stavDorucenia } from "@/components/faktero/EfakturaStatusBadge";
+import { kanalDorucenia, kratkyCas } from "@/components/faktero/EfakturaStatusBadge";
+import { BunkaStavuEfaktury } from "@/components/faktero/EfakturaStavWeb";
+import { stavEfaktury } from "@/lib/faktero/efaktura/stav-efaktury";
 
 function prijemca(d: {
   recipient_participant_id?: string | null;
@@ -81,11 +83,10 @@ function DeliveriesPage() {
                     {prijemca(d)}
                   </td>
                   <td className="p-3">
-                    <span
-                      className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${d.status === "failed" || d.status === "rejected" ? "bg-destructive/10 text-destructive" : "bg-muted"}`}
-                    >
-                      {t(stavDorucenia(d.status))}
-                    </span>
+                    {/* Stav tohto pokusu podľa spoločných pravidiel (`stavEfaktury`):
+                        zlyhanie hlásené ePoštákom nie je „čaká“ a `accepted` je len
+                        prevzatie ePoštákom, nie prijatie odberateľom. */}
+                    <BunkaStavuEfaktury stav={stavEfaktury([d])} />
                   </td>
                   <td className="p-3 tabular-nums">{d.attempt_count}</td>
                   <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
