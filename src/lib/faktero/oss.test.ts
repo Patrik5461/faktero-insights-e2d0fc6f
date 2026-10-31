@@ -37,6 +37,15 @@ describe("prehľad OSS", () => {
     expect(p.riadky.find((r) => r.stat === "DE")).toMatchObject({ zaklad: 200, dan: 38 });
   });
 
+  it("záporne uložený dobropis (formulár) sa neotáča druhýkrát", () => {
+    const p = ossPrehlad([
+      ...doklady,
+      { cislo: "4", datum: "2026-08-20", stat: "DE", opravny: true, riadky: [{ sadzba: 19, zaklad: -100, dan: -19 }] },
+    ]);
+    expect(p.riadky.find((r) => r.stat === "DE")).toMatchObject({ zaklad: 200, dan: 38 });
+    expect(p.danSpolu).toBe(48);
+  });
+
   it("štát mimo EÚ a nulová sadzba sa ozvú", () => {
     const p = ossPrehlad([
       { cislo: "5", datum: "2026-08-20", stat: "US", riadky: [{ sadzba: 19, zaklad: 10, dan: 1.9 }] },

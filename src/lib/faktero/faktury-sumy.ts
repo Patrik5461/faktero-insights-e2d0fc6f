@@ -37,8 +37,11 @@ export function jeZapocitatelny(f: DokladRiadok): boolean {
  * Dobropis znižuje — do súčtov vstupuje záporne. Formulár ho ukladá so
  * zápornými sumami, starší import kladne; otáča sa preto len kladný, inak by
  * záporný dobropis po druhom otočení tržby zvýšil.
+ *
+ * `celkom` je povinné: bez sumy by sa otočil aj záporne uložený dobropis
+ * (DPH prehľad tak ukazoval dobropisy kladne, kým exporty záporne).
  */
-export function znamienkoDokladu(typ: string | null | undefined, celkom?: unknown): 1 | -1 {
+export function znamienkoDokladu(typ: string | null | undefined, celkom: unknown): 1 | -1 {
   if (typ !== "credit_note") return 1;
   return Number(celkom) < 0 ? 1 : -1;
 }

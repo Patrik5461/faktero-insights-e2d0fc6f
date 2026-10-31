@@ -50,7 +50,12 @@ export function ossPrehlad(doklady: OssDoklad[]): OssPrehlad {
       });
       continue;
     }
-    const znamienko = d.opravny ? -1 : 1;
+    /*
+      Dobropis je v databáze záporný (formulár) — ten sa už neotáča, inak by
+      priznanie OSS zvýšil. Otáča sa len kladne uložený (starší import).
+    */
+    const sucet = d.riadky.reduce((a, r) => a + r.zaklad, 0);
+    const znamienko = d.opravny && sucet > 0 ? -1 : 1;
     for (const r of d.riadky) {
       if (r.zaklad === 0 && r.dan === 0) continue;
       if (r.sadzba <= 0) {

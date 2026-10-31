@@ -66,10 +66,11 @@ describe("po splatnosti", () => {
 });
 
 describe("znamienkoDokladu", () => {
-  it("mínus len pre dobropis", () => {
-    expect(znamienkoDokladu("credit_note")).toBe(-1);
-    expect(znamienkoDokladu("regular")).toBe(1);
-    expect(znamienkoDokladu(null)).toBe(1);
+  it("mínus len pre kladne uložený dobropis", () => {
+    expect(znamienkoDokladu("credit_note", 123)).toBe(-1);
+    expect(znamienkoDokladu("credit_note", -123)).toBe(1);
+    expect(znamienkoDokladu("regular", 100)).toBe(1);
+    expect(znamienkoDokladu(null, 100)).toBe(1);
   });
 });
 
