@@ -2781,17 +2781,27 @@ function NewInvoice() {
                 type="submit"
                 disabled={submitting}
                 onClick={() => (poVystaveniRef.current = "pdf")}
+                title={t("Vystaviť a stiahnuť PDF")}
+                aria-label={t("Vystaviť a stiahnuť PDF")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-60"
               >
-                <FileDown className="h-4 w-4" /> {t("Vystaviť a stiahnuť PDF")}
+                <FileDown className="h-4 w-4" />
+                {/* Na telefóne krátko — štyri dlhé tlačidlá lepkavej lišty zakrývali štvrtinu obrazovky. */}
+                <span className="sm:hidden">{t("PDF")}</span>
+                <span className="hidden sm:inline">{t("Vystaviť a stiahnuť PDF")}</span>
               </button>
               <button
                 type="submit"
                 disabled={submitting}
                 onClick={() => (poVystaveniRef.current = "email")}
+                title={t("Vystaviť a odoslať e-mailom")}
+                aria-label={t("Vystaviť a odoslať e-mailom")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-60"
               >
-                <Mail className="h-4 w-4" /> {t("Vystaviť a odoslať e-mailom")}
+                <Mail className="h-4 w-4" />
+                {/* Na telefóne krátko — štyri dlhé tlačidlá lepkavej lišty zakrývali štvrtinu obrazovky. */}
+                <span className="sm:hidden">{t("E-mail")}</span>
+                <span className="hidden sm:inline">{t("Vystaviť a odoslať e-mailom")}</span>
               </button>
               <button
                 id="invoice-submit"

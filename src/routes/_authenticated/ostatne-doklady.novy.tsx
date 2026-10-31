@@ -466,20 +466,23 @@ function OstatnyDokladPage() {
                     className={pole}
                   />
                 </label>
-                <label className="block text-sm">
-                  <span className="mb-1 block text-xs text-muted-foreground">{t("Suma (nepovinné)")}</span>
-                  <div className="flex gap-2">
+                {/* Suma a mena ako dve polia — v kompaktnom rozložení má tak aj suma popis v rámčeku. */}
+                <div className="flex gap-2">
+                  <label className="block min-w-0 flex-1 text-sm">
+                    <span className="mb-1 block text-xs text-muted-foreground">{t("Suma (nepovinné)")}</span>
                     <input
                       inputMode="decimal"
                       value={form.amount}
                       onChange={(e) => nastav("amount", e.target.value)}
                       className={`${pole} min-w-0`}
                     />
+                  </label>
+                  <label className="block w-24 shrink-0 text-sm">
+                    <span className="mb-1 block text-xs text-muted-foreground">{t("Mena")}</span>
                     <select
                       value={form.currency}
                       onChange={(e) => nastav("currency", e.target.value)}
-                      aria-label={t("Mena")}
-                      className="rounded-md border border-border bg-background px-2 text-sm"
+                      className={pole}
                     >
                       {MENY.map((m) => (
                         <option key={m.code} value={m.code}>
@@ -487,8 +490,8 @@ function OstatnyDokladPage() {
                         </option>
                       ))}
                     </select>
-                  </div>
-                </label>
+                  </label>
+                </div>
                 <label className="block text-sm">
                   <span className="mb-1 block text-xs text-muted-foreground">
                     {t("Lehota / splatnosť (nepovinné)")}

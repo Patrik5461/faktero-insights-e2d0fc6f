@@ -15,6 +15,9 @@ import {
   StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
+import { PonukaDetailKompaktna } from "@/components/faktero/PonukaDetailKompaktna";
+import { BEZ_RAMU, type SuborKompaktny } from "@/components/faktero/KompaktnyDetail";
+import { useDizajn } from "@/hooks/useDizajn";
 import { useServerFn } from "@tanstack/react-start";
 import { generateQuotePdf, getQuotePdfSignedUrl } from "@/lib/faktero/quote-pdf.functions";
 import { convertQuoteToInvoice, duplicateQuote } from "@/lib/faktero/quote.functions";
@@ -86,6 +89,9 @@ function QuoteDetail() {
   const [nenajdena, setNenajdena] = useState(false);
   const dup = useServerFn(duplicateQuote);
   const send = useServerFn(sendQuoteEmailFn);
+  // Kompaktné rozloženie: náhľad PDF ponuky a panel ako pri faktúre (KompaktnyDetail).
+  const kompaktne = useDizajn() === "kompaktny";
+  const [pdfNahlad, setPdfNahlad] = useState<SuborKompaktny | null | undefined>(undefined);
 
   async function load() {
     // Ponuka sa načítava v rámci aktívnej firmy. Bez toho sa dala otvoriť
@@ -110,6 +116,28 @@ function QuoteDetail() {
   useEffect(() => {
     load();
   }, [id]);
+  useEffect(() => {
+    if (!kompaktne || !q) return;
+    if (!q.pdf_url) {
+      setPdfNahlad(null);
+      return;
+    }
+    let zruseny = false;
+    getPdf({ data: { quoteId: q.id } })
+      .then((r: any) => {
+        if (!zruseny)
+          setPdfNahlad(
+            r?.signedUrl
+              ? { url: r.signedUrl, nazov: `${q.quote_number ?? "ponuka"}.pdf`, mime: "application/pdf" }
+              : null,
+          );
+      })
+      .catch(() => !zruseny && setPdfNahlad(null));
+    return () => {
+      zruseny = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kompaktne, q?.id, q?.pdf_url]);
 
   async function setStatus(status: string) {
     setBusy(status);
@@ -339,177 +367,229 @@ function QuoteDetail() {
         }
       />
       <PageBody>
-        {converted && q.converted_invoice_id && (
-          <div className="mb-6 flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 p-4 text-sm">
-            <span>{t("Táto ponuka bola konvertovaná na faktúru.")}</span>
-            <Link
-              to="/faktury/$id"
-              params={{ id: q.converted_invoice_id }}
-              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
-            >
-              {t("Otvoriť faktúru →")}
-            </Link>
-          </div>
-        )}
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="space-y-6">
-            <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
-              <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {t("Dodávateľ")}
-                </div>
-                <div className="mt-1 font-medium">{company?.name}</div>
-                <div className="text-sm text-muted-foreground">
-                  {company?.street}
-                  <br />
-                  {company?.zip} {company?.city}, {company?.country}
-                </div>
-                <div className="mt-2 text-sm">
-                  {t("IČO")}: {company?.ico ?? "—"} · {t("DIČ")}: {company?.dic ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {t("Odberateľ")}
-                </div>
-                <div className="mt-1 font-medium">{q.customer_name}</div>
-                <div className="text-sm text-muted-foreground">
-                  {q.customer_street}
-                  <br />
-                  {q.customer_zip} {q.customer_city}, {q.customer_country}
-                </div>
-                <div className="mt-2 text-sm">
-                  {t("IČO")}: {q.customer_ico ?? "—"} · {t("DIČ")}: {q.customer_dic ?? "—"}
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto rounded-xl border border-border bg-card">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="p-3">{t("Položka")}</th>
-                    <th className="p-3 text-right">{t("Mn.")}</th>
-                    <th className="p-3">{t("MJ")}</th>
-                    <th className="p-3 text-right">{t("Cena")}</th>
-                    <th className="p-3 text-right">{t("DPH")}</th>
-                    <th className="p-3 text-right">{t("Spolu")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {items.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="p-6 text-center text-muted-foreground">
-                        {t("Žiadne položky.")}
-                      </td>
-                    </tr>
+        {kompaktne ? (
+          <PonukaDetailKompaktna
+            q={q}
+            polozky={items}
+            stav={
+              <StavOdznak className={STATUS_CLS[q.status] ?? "bg-muted"}>
+                {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
+              </StavOdznak>
+            }
+            subor={pdfNahlad}
+            hore={
+              q.responded_at && (q.status === "accepted" || q.status === "rejected") ? (
+                <>
+                  {/* Ako odberateľ odpovedal cez odkaz v e-maile. Dôvod zamietnutia sa
+                      inak stratí v pošte a pri ďalšej ponuke nikto nevie, čo mu vadilo. */}
+                  {q.responded_at && (q.status === "accepted" || q.status === "rejected") && (
+                    <div
+                      className={`rounded-xl border p-5 text-sm ${
+                        q.status === "accepted"
+                          ? "border-emerald-500/40 bg-emerald-500/10"
+                          : "border-destructive/40 bg-destructive/10"
+                      }`}
+                    >
+                      <div className="font-medium">
+                        {q.status === "accepted" ? t("Odberateľ ponuku prijal {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") }) : t("Odberateľ ponuku zamietol {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") })}
+                      </div>
+                      {q.response_note && (
+                        <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                          {t("Dôvod:")} {q.response_note}
+                        </div>
+                      )}
+                    </div>
                   )}
-                  {items.map((it) => (
-                    <tr key={it.id}>
-                      <td className="p-3">
-                        <div className="font-medium">{it.name}</div>
-                        {it.description && (
-                          <div className="text-xs text-muted-foreground">{it.description}</div>
-                        )}
-                        {Number(it.discount_percent ?? 0) > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            {t("Zľava {n} %", { n: formatujMnozstvo(Number(it.discount_percent), lokalJazyka(jazyk)) })}
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-3 text-right">{formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}</td>
-                      <td className="p-3">{it.unit}</td>
-                      <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
-                      <td className="p-3 text-right">{it.vat_rate}%</td>
-                      <td className="p-3 text-right font-medium">{formatujCislo(it.total, 2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {q.notes && (
-              <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">
-                {q.notes}
+                </>
+              ) : null
+            }
+            prilohy={
+              <div className={`border-b border-border px-4 py-4 sm:[&_ul]:grid-cols-3! ${BEZ_RAMU}`}>
+                <PrilohyFaktury
+                  druh="quote"
+                  dokladId={q.id}
+                  mozeMenit={!converted}
+                  onZmena={setPocetPriloh}
+                  kompaktne
+                />
+              </div>
+            }
+          />
+        ) : (
+          <>
+            {converted && q.converted_invoice_id && (
+              <div className="mb-6 flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 p-4 text-sm">
+                <span>{t("Táto ponuka bola konvertovaná na faktúru.")}</span>
+                <Link
+                  to="/faktury/$id"
+                  params={{ id: q.converted_invoice_id }}
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                >
+                  {t("Otvoriť faktúru →")}
+                </Link>
               </div>
             )}
-
-            {/* Ako odberateľ odpovedal cez odkaz v e-maile. Dôvod zamietnutia sa
-                inak stratí v pošte a pri ďalšej ponuke nikto nevie, čo mu vadilo. */}
-            {q.responded_at && (q.status === "accepted" || q.status === "rejected") && (
-              <div
-                className={`rounded-xl border p-5 text-sm ${
-                  q.status === "accepted"
-                    ? "border-emerald-500/40 bg-emerald-500/10"
-                    : "border-destructive/40 bg-destructive/10"
-                }`}
-              >
-                <div className="font-medium">
-                  {q.status === "accepted" ? t("Odberateľ ponuku prijal {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") }) : t("Odberateľ ponuku zamietol {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") })}
+            <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+              <div className="space-y-6">
+                <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      {t("Dodávateľ")}
+                    </div>
+                    <div className="mt-1 font-medium">{company?.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {company?.street}
+                      <br />
+                      {company?.zip} {company?.city}, {company?.country}
+                    </div>
+                    <div className="mt-2 text-sm">
+                      {t("IČO")}: {company?.ico ?? "—"} · {t("DIČ")}: {company?.dic ?? "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      {t("Odberateľ")}
+                    </div>
+                    <div className="mt-1 font-medium">{q.customer_name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {q.customer_street}
+                      <br />
+                      {q.customer_zip} {q.customer_city}, {q.customer_country}
+                    </div>
+                    <div className="mt-2 text-sm">
+                      {t("IČO")}: {q.customer_ico ?? "—"} · {t("DIČ")}: {q.customer_dic ?? "—"}
+                    </div>
+                  </div>
                 </div>
-                {q.response_note && (
-                  <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
-                    {t("Dôvod:")} {q.response_note}
+
+                <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="p-3">{t("Položka")}</th>
+                        <th className="p-3 text-right">{t("Mn.")}</th>
+                        <th className="p-3">{t("MJ")}</th>
+                        <th className="p-3 text-right">{t("Cena")}</th>
+                        <th className="p-3 text-right">{t("DPH")}</th>
+                        <th className="p-3 text-right">{t("Spolu")}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {items.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                            {t("Žiadne položky.")}
+                          </td>
+                        </tr>
+                      )}
+                      {items.map((it) => (
+                        <tr key={it.id}>
+                          <td className="p-3">
+                            <div className="font-medium">{it.name}</div>
+                            {it.description && (
+                              <div className="text-xs text-muted-foreground">{it.description}</div>
+                            )}
+                            {Number(it.discount_percent ?? 0) > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                {t("Zľava {n} %", { n: formatujMnozstvo(Number(it.discount_percent), lokalJazyka(jazyk)) })}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-3 text-right">{formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}</td>
+                          <td className="p-3">{it.unit}</td>
+                          <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
+                          <td className="p-3 text-right">{it.vat_rate}%</td>
+                          <td className="p-3 text-right font-medium">{formatujCislo(it.total, 2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {q.notes && (
+                  <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">
+                    {q.notes}
                   </div>
                 )}
-              </div>
-            )}
 
-            <PrilohyFaktury
-              druh="quote"
-              dokladId={q.id}
-              mozeMenit={!converted}
-              onZmena={setPocetPriloh}
-            />
-          </div>
-
-          <aside className="space-y-4">
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
-              <div className="mt-3 space-y-1 text-sm">
-                {Number(q.discount_total ?? 0) > 0 && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t("Medzisúčet")}</span>
-                      <span>
-                        {formatujCislo(Number(q.subtotal) + Number(q.discount_total), 2)} {q.currency}
-                      </span>
+                {/* Ako odberateľ odpovedal cez odkaz v e-maile. Dôvod zamietnutia sa
+                    inak stratí v pošte a pri ďalšej ponuke nikto nevie, čo mu vadilo. */}
+                {q.responded_at && (q.status === "accepted" || q.status === "rejected") && (
+                  <div
+                    className={`rounded-xl border p-5 text-sm ${
+                      q.status === "accepted"
+                        ? "border-emerald-500/40 bg-emerald-500/10"
+                        : "border-destructive/40 bg-destructive/10"
+                    }`}
+                  >
+                    <div className="font-medium">
+                      {q.status === "accepted" ? t("Odberateľ ponuku prijal {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") }) : t("Odberateľ ponuku zamietol {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") })}
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t("Zľava")}</span>
-                      <span>
-                        −{formatujCislo(Number(q.discount_total), 2)} {q.currency}
-                      </span>
-                    </div>
-                  </>
+                    {q.response_note && (
+                      <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                        {t("Dôvod:")} {q.response_note}
+                      </div>
+                    )}
+                  </div>
                 )}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("Bez DPH")}</span>
-                  <span>
-                    {formatujCislo(Number(q.subtotal), 2)} {q.currency}
-                  </span>
+
+                <PrilohyFaktury
+                  druh="quote"
+                  dokladId={q.id}
+                  mozeMenit={!converted}
+                  onZmena={setPocetPriloh}
+                />
+              </div>
+
+              <aside className="space-y-4">
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
+                  <div className="mt-3 space-y-1 text-sm">
+                    {Number(q.discount_total ?? 0) > 0 && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t("Medzisúčet")}</span>
+                          <span>
+                            {formatujCislo(Number(q.subtotal) + Number(q.discount_total), 2)} {q.currency}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t("Zľava")}</span>
+                          <span>
+                            −{formatujCislo(Number(q.discount_total), 2)} {q.currency}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("Bez DPH")}</span>
+                      <span>
+                        {formatujCislo(Number(q.subtotal), 2)} {q.currency}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("DPH")}</span>
+                      <span>
+                        {formatujCislo(Number(q.vat_total), 2)} {q.currency}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-3 border-t border-border pt-3 text-lg font-semibold">
+                    {formatujCislo(Number(q.total), 2)} {q.currency}
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("DPH")}</span>
-                  <span>
-                    {formatujCislo(Number(q.vat_total), 2)} {q.currency}
-                  </span>
+                <div className="rounded-xl border border-border bg-card p-5 text-sm">
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Údaje")}</div>
+                  <div className="mt-2">
+                    {t("Číslo:")} <span className="font-mono">{q.quote_number}</span>
+                  </div>
+                  <div>{t("Mena:")} {q.currency}</div>
+                  <div>{t("Platnosť do:")} {datumNaDoklade(q.valid_until)}</div>
                 </div>
-              </div>
-              <div className="mt-3 border-t border-border pt-3 text-lg font-semibold">
-                {formatujCislo(Number(q.total), 2)} {q.currency}
-              </div>
+              </aside>
             </div>
-            <div className="rounded-xl border border-border bg-card p-5 text-sm">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Údaje")}</div>
-              <div className="mt-2">
-                {t("Číslo:")} <span className="font-mono">{q.quote_number}</span>
-              </div>
-              <div>{t("Mena:")} {q.currency}</div>
-              <div>{t("Platnosť do:")} {datumNaDoklade(q.valid_until)}</div>
-            </div>
-          </aside>
-        </div>
+          </>
+        )}
       </PageBody>
 
       {emailOpen && (

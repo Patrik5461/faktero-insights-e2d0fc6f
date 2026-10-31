@@ -376,7 +376,7 @@ export function LogsToolbar({
         <>
           <label className="flex flex-col text-[11px] font-medium text-muted-foreground">
             <span className="mb-1 inline-flex items-center gap-1 uppercase tracking-wider">
-              <CalendarRange className="h-3 w-3" /> {t("Od")}
+              <CalendarRange className="inline-block h-3 w-3" /> {t("Od")}
             </span>
             <input
               type="date"
@@ -387,7 +387,7 @@ export function LogsToolbar({
           </label>
           <label className="flex flex-col text-[11px] font-medium text-muted-foreground">
             <span className="mb-1 inline-flex items-center gap-1 uppercase tracking-wider">
-              <CalendarRange className="h-3 w-3" /> {t("Do")}
+              <CalendarRange className="inline-block h-3 w-3" /> {t("Do")}
             </span>
             <input
               type="date"
