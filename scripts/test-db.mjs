@@ -12,7 +12,13 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 const require = createRequire(import.meta.url);
-const KLUCE = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_PUBLISHABLE_KEY"];
+const KLUCE = [
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "SUPABASE_PUBLISHABLE_KEY",
+  /* Šifrovanie tokenov (Trans.eu) — rovnaký kľúč ako na serveri. */
+  "PAYMENT_SECRETS_KEY",
+];
 
 if (KLUCE.some((k) => !process.env[k])) {
   const cesta = join(homedir(), "ecosystem.config.cjs");
@@ -32,9 +38,15 @@ if (chyba.length) {
   process.exit(1);
 }
 
-const r = spawnSync("npx", ["vitest", "run", "--testTimeout=30000", "ciselne-rady.db"], {
-  stdio: "inherit",
-  /* Bez tohto sa testy preskočia — do ostrej databázy sa zapisuje len na požiadanie. */
-  env: { ...process.env, FAKTERO_DB_TESTY: "1" },
-});
+/* Bez argumentu bežia všetky `*.db.test.ts`; `npm run test:db -- transeu` vyberie jeden. */
+const vyber = process.argv.slice(2);
+const r = spawnSync(
+  "npx",
+  ["vitest", "run", "--testTimeout=30000", ...(vyber.length ? vyber : [".db.test"])],
+  {
+    stdio: "inherit",
+    /* Bez tohto sa testy preskočia — do ostrej databázy sa zapisuje len na požiadanie. */
+    env: { ...process.env, FAKTERO_DB_TESTY: "1" },
+  },
+);
 process.exit(r.status ?? 1);

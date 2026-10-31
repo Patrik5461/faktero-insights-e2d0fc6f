@@ -33,6 +33,22 @@ export const Route = createFileRoute("/_authenticated/nastavenia/transeu")({
   component: Stranka,
 });
 
+/** Kódy z návratu `/api/public/transeu/callback` ako vety pre človeka. */
+const CHYBY_PRIHLASENIA: Record<string, string> = {
+  access_denied: "V Trans.eu ste prístup pre Faktero nepovolili.",
+  missing_code: "Trans.eu nevrátil prihlasovací kód. Skúste pripojenie znova.",
+  invalid_state:
+    "Prihlásenie vypršalo alebo nepatrí k tejto firme. Kliknite na Pripojiť Trans.eu znova.",
+  csrf: "Prihlásenie nezačalo v tomto prehliadači. Kliknite na Pripojiť Trans.eu znova.",
+  callback_failed: "Trans.eu prihlásenie neprijal. Dôvod je uvedený pri účte Trans.eu.",
+  invalid_client: "Trans.eu neprijal Client ID. Skontrolujte prístupové údaje k API.",
+  invalid_scope: "Trans.eu neprijal požadované oprávnenia aplikácie.",
+  unauthorized_client:
+    "Aplikácia v Trans.eu nemá povolené prihlásenie. Skontrolujte jej nastavenie.",
+  server_error: "Trans.eu má práve poruchu. Skúste pripojenie neskôr.",
+  temporarily_unavailable: "Trans.eu má práve poruchu. Skúste pripojenie neskôr.",
+};
+
 const vstup = "mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm";
 type Stav = Awaited<ReturnType<typeof stavTranseuFn>>;
 type Riadok = Awaited<ReturnType<typeof objednavkyTranseuFn>>[number];
@@ -52,10 +68,13 @@ function Stranka() {
   useEffect(obnov, [cid]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (search.pripojene) toast.success(t("Trans.eu je pripojený."));
-    if (search.chyba)
-      toast.error(t("Prihlásenie do Trans.eu sa nepodarilo ({kod}).", { kod: search.chyba }), {
-        duration: 10000,
-      });
+    if (search.chyba) {
+      const veta = CHYBY_PRIHLASENIA[search.chyba];
+      toast.error(
+        veta ? t(veta) : t("Prihlásenie do Trans.eu sa nepodarilo ({kod}).", { kod: search.chyba }),
+        { duration: 10000 },
+      );
+    }
   }, [search.pripojene, search.chyba]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!cid) return null;
   return (
@@ -109,6 +128,7 @@ function Pripojenie({
   const [clientId, setClientId] = useState("");
   const [secret, setSecret] = useState("");
   const [apiKluc, setApiKluc] = useState("");
+  const [zmenitUdaje, setZmenitUdaje] = useState(false);
   const n = stav.napojenie;
 
   async function prihlasit() {
@@ -132,8 +152,10 @@ function Pripojenie({
   }
 
   const maVlastnuUlozenu = Boolean(n?.vlastnaAplikacia);
-  const daSaPrihlasit =
-    maVlastnuUlozenu || (vlastna ? Boolean(clientId && secret && apiKluc) : stav.aplikaciaFaktera);
+  const vyplnene = Boolean(clientId && secret && apiKluc);
+  const daSaPrihlasit = zmenitUdaje
+    ? vyplnene
+    : maVlastnuUlozenu || (vlastna ? vyplnene : stav.aplikaciaFaktera);
 
   return (
     <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
@@ -252,7 +274,43 @@ function Pripojenie({
                   )}
                 </p>
               )}
-              {vlastna && !maVlastnuUlozenu ? (
+              {n?.posledna_chyba ? (
+                <p className="text-xs text-red-700 dark:text-red-300">{n.posledna_chyba}</p>
+              ) : null}
+              {maVlastnuUlozenu && !zmenitUdaje ? (
+                <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="min-w-0 break-all">
+                    {t("vlastná aplikácia {id}", { id: n?.client_id ?? "" })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVlastna(true);
+                      setZmenitUdaje(true);
+                    }}
+                    className="rounded-md border border-border px-2 py-1 hover:bg-secondary"
+                  >
+                    {t("Zmeniť prístupové údaje")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!(await potvrd(t("Odstrániť uložené prístupové údaje k API Trans.eu?"))))
+                        return;
+                      try {
+                        await odpoj({ data: { company_id: companyId } });
+                        onZmena();
+                      } catch (e: any) {
+                        toast.error(e?.message ?? t("Chyba"));
+                      }
+                    }}
+                    className="rounded-md border border-border px-2 py-1 hover:bg-secondary"
+                  >
+                    {t("Odstrániť")}
+                  </button>
+                </p>
+              ) : null}
+              {vlastna && (!maVlastnuUlozenu || zmenitUdaje) ? (
                 <div className="grid gap-2 sm:grid-cols-3">
                   <label className="block min-w-0">
                     <span className="text-xs text-muted-foreground">Client ID</span>
